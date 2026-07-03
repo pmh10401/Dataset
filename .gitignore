@@ -1,0 +1,14 @@
+# Large files and DBs
+univariate_ts.db
+*.db
+*.csv
+
+# Python caches and local files
+__pycache__/
+*.pyc
+.DS_Store
+
+# Virtual Environments
+.venv/
+venv/
+env/
