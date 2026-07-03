@@ -53,6 +53,7 @@
 11. **이중 적응 하이브리드 VAE 스크립트**: [run_hybrid_adaptive_vae_evaluations.py](file:///Users/minho/Documents/Dataset/run_hybrid_adaptive_vae_evaluations.py) (시계열 길이에 따른 가우시안 NLL 스코어 및 시간축 MSE 스코어 결합 병합 스크립트)
 12. **길이 게이트형 주기 VAE 스크립트**: [run_all_length_gated_periodicity_evaluations.py](file:///Users/minho/Documents/Dataset/run_all_length_gated_periodicity_evaluations.py) (짧은 FFT 분해능을 통제하되 주기성 신호에만 STFT를 제한 연동하는 구조)
 13. **연속 오케스트레이션 파이프라인**: [run_sequential_experiments.py](file:///Users/minho/Documents/Dataset/run_sequential_experiments.py) (선행 종료 시 4종 차세대 혁신 실험 자동 순차 실행)
+14. **융합형 Ultimate VAE 스크립트**: [run_all_adaptive_cnn_fused_sota.py](file:///Users/minho/Documents/Dataset/run_all_adaptive_cnn_fused_sota.py) (잠재 대조 학습 + KL 어닐링 + 분위수 POT 융합 및 동적 가중치 배정 장치 탑재)
 
 ### B. 최종 벤치마크 요약 (947개 데이터셋 전수 평가 완료)
 * **극값 이론(Extreme Value Theory, EVT) 기반 임계치**:
@@ -71,7 +72,13 @@
   * **전체 평균 AUC-ROC**: **0.8971 (+0.38%p)**
   * **전체 평균 F1-Score (EVT)**: **0.3663 (+0.71%p 추가 상승, SOTA 갱신) 🌟**
   * **전체 평균 Oracle F1**: **0.6527 (+1.10%p 상승, 상한선 돌파) 🌟**
-* **잠재 대조 VAE (실험 1 - Contrastive Latent VAE) 결과 (단독 최고 SOTA) 🌟**:
+* **잠재 대조 VAE (실험 1 - Contrastive Latent VAE) 결과 🌟**:
   * **전체 평균 AUC-ROC**: **0.8934**
-  * **전체 평균 F1-Score (EVT)**: **0.3682 (+2.49%p 상승, 단독 최고 기록 수립) 🌟**
-  * **학술적 성과**: 정상 데이터만을 학습할 때 잠재 공간 $z$ 상에서 원본과 증강 쌍 간의 코사인 유사도(InfoNCE Loss)를 최적화하여 정상 도메인의 응집력을 인위적으로 좁혀두는 잠재 공간 대조 기법이, 변칙 유입 시 복원 오차 마진을 가장 극대화하는 최우수 구조임을 실증했습니다.
+  * **전체 평균 F1-Score (EVT)**: **0.3682 (+2.49%p 상승) 🌟**
+* **융합형 Ultimate VAE (Fused SOTA VAE) 결과 (전역 단독 최고 SOTA) 👑**:
+  * **전체 평균 AUC-ROC**: **0.8946**
+  * **전체 평균 AUC-PR**: **0.5328**
+  * **전체 평균 F1-Score (EVT)**: **0.3806 (+3.73%p 전역 SOTA 돌파!) 👑**
+  * **전체 평균 Oracle F1**: **0.6453**
+  * **학술적 성과**: 각 기법(대조 학습, KL 어닐링, 분위수 POT)이 독자적으로 동작할 때보다, 훈련 상호 보완성 및 평가 임계 튜닝이 결합되었을 때 극적인 시너지가 창출되어 전역 성능 한계선(F1 0.38)을 최종 돌파함을 실증하였습니다.
+
