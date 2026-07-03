@@ -3,6 +3,10 @@ univariate_ts.db
 *.db
 *.csv
 
+# Raw Dataset Directories (Large files)
+Univariate_ts/
+univariate_ts/
+
 # Python caches and local files
 __pycache__/
 *.pyc
