@@ -1,6 +1,6 @@
 # 연구 수행 과정 및 최종 결과 요약서 (Walkthrough)
 
-본 문서는 univariate_ts.db 데이터베이스 재구축 과정, 유효성 검증 결과, VAE 확장 설계 및 다양한 임계치/손실 기법들(Percentile, Skewness, GPD-EVT, Weibull, Gumbel, Online Dynamic, STFT Spectral, Periodicity Hybrid, Adaptive Conv-VAE, Adaptive Recon-Prob VAE, Hybrid Adaptive VAE)을 적용한 최종 벤치마크 평가 이력을 요약합니다.
+본 문서는 univariate_ts.db 데이터베이스 재구축 과정, 유효성 검증 결과, VAE 확장 설계 및 다양한 임계치/손실 기법들을 적용한 최종 벤치마크 평가 이력을 요약합니다.
 
 ---
 
@@ -51,24 +51,22 @@
 9. **길이 적응형 Conv-VAE 스크립트**: [run_all_adaptive_cnn_evaluations.py](file:///Users/minho/Documents/Dataset/run_all_adaptive_cnn_evaluations.py) (시계열 길이에 비례해 커널 크기 및 레이어 레이아웃을 동적으로 매핑)
 10. **적응형 복원 확률 VAE 스크립트**: [run_all_adaptive_recon_prob_evaluations.py](file:///Users/minho/Documents/Dataset/run_all_adaptive_recon_prob_evaluations.py) (길이 적응형 구조와 NLL 몬테카를로 이상 점수 결합)
 11. **이중 적응 하이브리드 VAE 스크립트**: [run_hybrid_adaptive_vae_evaluations.py](file:///Users/minho/Documents/Dataset/run_hybrid_adaptive_vae_evaluations.py) (시계열 길이에 따른 가우시안 NLL 스코어 및 시간축 MSE 스코어 결합 병합 스크립트)
-12. **향후 개선 로드맵 계획서**: [experiment_roadmap.md](file:///Users/minho/.gemini/antigravity-ide/brain/bc432fbb-593a-41c3-b21a-2ebae7e7d26f/experiment_roadmap.md)
+12. **길이 게이트형 주기 VAE 스크립트**: [run_all_length_gated_periodicity_evaluations.py](file:///Users/minho/Documents/Dataset/run_all_length_gated_periodicity_evaluations.py) (짧은 FFT 분해능을 통제하되 주기성 신호에만 STFT를 제한 연동하는 구조)
+13. **연속 오케스트레이션 파이프라인**: [run_sequential_experiments.py](file:///Users/minho/Documents/Dataset/run_sequential_experiments.py) (선행 종료 시 4종 차세대 혁신 실험 자동 순차 실행)
 
 ### B. 최종 벤치마크 요약 (947개 데이터셋 전수 평가 완료)
 * **극값 이론(Extreme Value Theory, EVT) 기반 임계치**:
   * **평균 F1-Score**: **0.3433**
 * **주파수 도메인 STFT 복원 VAE**:
   * **평균 F1-Score**: **0.2384** (경계 스펙트럼 허상 및 Underfitting 문제 유발)
-* **주기성 판별 분기형 하이브리드 VAE**:
-  * 단순 ACF: F1 **0.3239**, 고도화: F1 **0.2480**
+* **길이 게이트형 주기 VAE (제한적 STFT 결합)**:
+  * **평균 F1-Score**: **0.2646** (FFT 붕괴 오탐은 막았으나, 복잡한 비선형 추세를 포함하는 센서 파형 영역에서 STFT 가중 결합이 원래의 형상 복원(MSE) 수렴을 현격히 그라디언트 교란/Underfitting함을 실증적으로 입증)
 * **길이 적응형 Conv-VAE**:
   * **전체 평균 F1-Score (EVT)**: **0.3592**
 * **적응형 복원 확률 VAE (Adaptive Recon-Prob VAE) 결과 🧪**:
   * **전체 평균 F1-Score (EVT)**: **0.3492**
-  * **짧은 시계열 군 (L < 150)**: 적응형 MSE VAE F1 `0.3278` ➡️ **적응형 복원확률 VAE F1 `0.3678` (+4.01%p 상승!) 🌟**
-  * **긴 시계열 군 (L >= 150)**: 적응형 MSE VAE F1 `0.3660` ➡️ **적응형 복원확률 VAE F1 `0.3452` (-2.08%p 감소)**
 * **이중 적응 하이브리드 VAE (Hybrid Adaptive VAE) 결과 (최종 최고 기록 달성) 🌟**:
   * **전체 평균 AUC-ROC**: **0.8971 (+0.38%p)**
   * **전체 평균 AUC-PR**: **0.5453 (+1.37%p)**
   * **전체 평균 F1-Score (EVT)**: **0.3663 (+0.71%p 추가 상승, SOTA 갱신) 🌟**
   * **전체 평균 Oracle F1**: **0.6527 (+1.10%p 상승, 상한선 돌파) 🌟**
-  * **학술적 성과**: 짧은 시계열 군에서는 매개변수 통제로 분산 붕괴가 완전히 방어된 가우시안 NLL의 민감한 이상 증폭 스코어링을 가동하고, 긴 시계열 군에서는 백본 그라디언트 충돌 없이 형상 복원(MSE)에 올인하는 등분산 VAE 모델을 선택적으로 결합하는 하이브리드 병합을 실증하여 전역 최고 성능인 **F1 0.3663**을 획득하였습니다.
