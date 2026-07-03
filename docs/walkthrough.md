@@ -54,6 +54,8 @@
 12. **길이 게이트형 주기 VAE 스크립트**: [run_all_length_gated_periodicity_evaluations.py](file:///Users/minho/Documents/Dataset/run_all_length_gated_periodicity_evaluations.py) (짧은 FFT 분해능을 통제하되 주기성 신호에만 STFT를 제한 연동하는 구조)
 13. **연속 오케스트레이션 파이프라인**: [run_sequential_experiments.py](file:///Users/minho/Documents/Dataset/run_sequential_experiments.py) (선행 종료 시 4종 차세대 혁신 실험 자동 순차 실행)
 14. **융합형 Ultimate VAE 스크립트**: [run_all_adaptive_cnn_fused_sota.py](file:///Users/minho/Documents/Dataset/run_all_adaptive_cnn_fused_sota.py) (잠재 대조 학습 + KL 어닐링 + 분위수 POT 융합 및 동적 가중치 배정 장치 탑재)
+15. **다중 위상 증강 대조 VAE 스크립트**: [run_all_adaptive_cnn_multi_aug_contrastive.py](file:///Users/minho/Documents/Dataset/run_all_adaptive_cnn_multi_aug_contrastive.py) (시간 왜곡 및 세그먼트 셔플링 대조 학습 융합 스크립트)
+16. **잠재 밀도 가중 VAE 스크립트**: [run_all_adaptive_cnn_density_weighted.py](file:///Users/minho/Documents/Dataset/run_all_adaptive_cnn_density_weighted.py) (배치 내 KNN 잠재 밀도를 이용한 복원 MSE 가중 조절 스크립트)
 
 ### B. 최종 벤치마크 요약 (947개 데이터셋 전수 평가 완료)
 * **극값 이론(Extreme Value Theory, EVT) 기반 임계치**:
