@@ -31,6 +31,34 @@ class OperationalTriageTests(unittest.TestCase):
         self.assertEqual((hard['tp'], hard['fp'], hard['fn']), (1, 1, 1))
         self.assertEqual((review['tp'], review['fp']), (1, 0))
 
+    def test_summary_keeps_autonomous_and_review_totals_separate(self):
+        rows = [
+            {
+                'hard_tp': 2,
+                'hard_fp': 1,
+                'hard_fn': 1,
+                'hard_f1': 2 / 3,
+                'standard_review_tp': 1,
+                'standard_review_fp': 2,
+                'priority_review_tp': 1,
+                'priority_review_fp': 0,
+                'combined_tp': 4,
+                'combined_fp': 3,
+                'combined_fn': 0,
+                'combined_f1': 8 / 11,
+                'routing_uses_test_labels': 0,
+                'hard_alert_count': 3,
+                'standard_review_count': 3,
+                'priority_review_count': 1,
+            }
+        ]
+        summary = target.summarize(rows)[0]
+        self.assertEqual(summary['hard_total_tp'], 2)
+        self.assertEqual(summary['hard_total_fp'], 1)
+        self.assertEqual(summary['priority_review_total_tp'], 1)
+        self.assertEqual(summary['priority_review_total_fp'], 0)
+        self.assertEqual(summary['routing_uses_test_labels_rows'], 0)
+
 
 if __name__ == '__main__':
     unittest.main()
