@@ -129,6 +129,7 @@ def summarize(rows):
     standard_tp, standard_fp = total('standard_review_tp'), total('standard_review_fp')
     priority_tp, priority_fp = total('priority_review_tp'), total('priority_review_fp')
     n = len(rows)
+    mean_hard_f1 = mean('hard_f1')
     return [{
         'experiment_id': EXPERIMENT_ID,
         'config_name': CONFIG_NAME,
@@ -140,7 +141,9 @@ def summarize(rows):
         'hard_total_tp': hard_tp,
         'hard_total_fp': hard_fp,
         'hard_alert_precision': hard_tp / max(1, hard_tp + hard_fp),
-        'mean_hard_f1': mean('hard_f1'),
+        'mean_hard_f1': mean_hard_f1,
+        'mean_f1': mean_hard_f1,
+        'mean_f1_scope': 'autonomous_hard_alert',
         'hard_zero_f1_count': int(sum(as_float(row.get('hard_f1')) == 0 for row in rows)),
         'standard_review_total_candidates': total('standard_review_count'),
         'standard_review_total_tp': standard_tp,

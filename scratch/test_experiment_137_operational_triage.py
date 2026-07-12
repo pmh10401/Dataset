@@ -58,6 +58,8 @@ class OperationalTriageTests(unittest.TestCase):
         self.assertEqual(summary['priority_review_total_tp'], 1)
         self.assertEqual(summary['priority_review_total_fp'], 0)
         self.assertEqual(summary['routing_uses_test_labels_rows'], 0)
+        self.assertEqual(summary['mean_f1'], summary['mean_hard_f1'])
+        self.assertEqual(summary['mean_f1_scope'], 'autonomous_hard_alert')
 
 
 if __name__ == '__main__':
