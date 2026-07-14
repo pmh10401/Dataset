@@ -1,0 +1,41 @@
+# Exp153--157 output manifest
+
+No TEST metric selected alpha, pooling, fusion, confirmation, or risk target.
+
+- `00_cache_contract.json`: `166de2fe3b5955641758faf132919db2b457491d09991a47ded01d3ed30219ff`
+- `00_code_contract_review.md`: `8e82d1c2574e363b6b7c741174a5fb198a0121ec117f36032016fa16b35d239b`
+- `01_score_cache_manifest.csv`: `bf73796c046a6102fce53d3b6fc606afa1ed0a5161ebb6e92d94698ab56a68a0`
+- `02_exp153_dataset_audit.csv`: `884a6d398e4a81501f7a023fed11319c9073e7654a52bc18c345c67021f78eae`
+- `03_exp153_summary.csv`: `66121f57fcf0533ca30276c9e33ed3d2fcefe0b4bd49920384fd1355a0fd162e`
+- `04_exp153_summary.md`: `68cf7e1a499947f28309de8b9737d4f0eabbc6c6fe7c3a58a099fde14fed09c0`
+- `05_exp154_predictions.jsonl`: `e8913fc1893160c39c8c2b25bdd0984ab5ded12dc4f8614476efd43a797b9550`
+- `06_exp154_prediction_manifest.json`: `06aff9a4cb5e5ceca087a9fa2fd7cc5bd58c668ad3c1d7de85d8917bc9f5025a`
+- `06a_exp154_pool_contract.json`: `5bad3ee2334c602b61982bb6b21374f2e596ac9b21e22cb5a9f36f33ca124416`
+- `07_exp154_results.csv`: `b2c8e93c9280f5302329dadd2346219425fef9fc1d3d3d2e4da9942f2092b004`
+- `08_exp154_summary.csv`: `d0e6a862cc0423b984bb0c432326f24571551feb666f0872d0d2ae9628afb770`
+- `09_exp154_summary.md`: `02b6fe1973d5c7f8f5b4bb7f39c852d37493d956af9fb286c7d2f9c388844c64`
+- `10_exp155_source_independence_audit.csv`: `798cd63637fe3fe73ade0c3402bde77664d3ac95a3aebc7ccdea075bfa4cceb1`
+- `11_exp155_predictions.jsonl`: `3b440dec3126d72d027ada8ff8e7acad6f183514e6c5b95dcf9b27965c3b58a7`
+- `12_exp155_prediction_manifest.json`: `bb311e695cc7058e5766d3a285b7bf8753562a85b68b9d44150b440db173362a`
+- `13_exp155_results.csv`: `c5f9f2c79f25a3e9cd9b1913c86df464d6ea3f7fc02b37c68095bf9271b46f17`
+- `14_exp155_summary.csv`: `89c7af9ba50d57c30343dbeff6d983e26abef93f18a29f4c81a65615ca0909b9`
+- `15_exp155_summary.md`: `efaba2828a4180ba4f106c13ba57974140f0583a9354dbced0f589e12dfe8f08`
+- `16_exp156_predictions.jsonl`: `e9ead26283ea513ab7e01736c933ee841e79a3677beaecb597aa65e61988366b`
+- `17_exp156_prediction_manifest.json`: `420c276bcee14d670411c09075f681de7493649190bcee6d310f4ff5dca346a9`
+- `18_exp156_results.csv`: `a1f07236a89f19b62bf05e8956ba23920538b26b2307de041d62108a2fcd6d96`
+- `19_exp156_summary.csv`: `43f29e90de85907b59c7ea0a772a7e7712f0148a0f2b52aabf75a93d95311306`
+- `20_exp156_summary.md`: `540d82f24084f9c34af2b18e0fee458428fa666b672e8a9900e7b77afa13fd7f`
+- `21_exp157_predictions.jsonl`: `52a6bd11d8af136d4767c4dd3905c757f2875fc069aab3120b6442a51fc46c7f`
+- `22_exp157_prediction_manifest.json`: `13769a8aeea9e90bf4f081f8604386cf9dc0bc9fc697d8d324e66ff9273e8bc4`
+- `23_exp157_results.csv`: `ba4f5ec525d29abf1160a6b7a5ec2600e9dab080fedbfc570a31078fbf10b5bf`
+- `24_exp157_summary.csv`: `7f8b2fc7989c9f52f5639b2064b8461b746322e302cbc4afb1883314b427cf0a`
+- `25_exp157_summary.md`: `d37e9728f3811009fcc4fd84c5227d8a7b1cb0db3696538adfcc74ae4f68c45e`
+- `28_unit_test_log.txt`: `68ca644812b065c60d6deaa82378e5b790af6d6dfb5c59f341b3c7c6658b5c43`
+- `28_unit_test_log_initial_failure.txt`: `b2690deb3ed2f3ea1e69464f2db6185b35125ff3aa4e8ec081e2e4e3a798f301`
+- `29_d2_configuration_provenance_audit.csv`: `b8fd869337750cb451dc8bedcc308610692139f5ba66783866ad814df0a61f32`
+- `29_d2_configuration_provenance_audit.md`: `4dcd31a4b6238ca6d7655e630a12cca0c810512791c1762348ad6be53f06efd3`
+- `29_independent_reaggregation.csv`: `ec268eba0a7e32f954eb26e61db7477b4280a1a9254b4e46cdb372f37e8c0116`
+- `29a_consistency_checks.csv`: `2684bf4a81d282c3e1a29fffaf05ecd35bc894ac2297266b9ddea39cc6c6d851`
+- `30_consistency_report.md`: `7662b80c264de33667e3bb7430e57763eb3e5ca094ab30d2ab2dce5185c1b32c`
+- `direct_pipeline_screen.log`: `8e0123360c34d36393c3d8d81e14a418d3d7cff153f9f0a76426e6cec930f6bb`
+- `full_pipeline_queue.log`: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`

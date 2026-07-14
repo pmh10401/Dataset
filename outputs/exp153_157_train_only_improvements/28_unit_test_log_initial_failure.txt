@@ -1,0 +1,17 @@
+E.....
+======================================================================
+ERROR: test_exp153_157_train_only_improvements (unittest.loader._FailedTest.test_exp153_157_train_only_improvements)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_exp153_157_train_only_improvements
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+  File "/Users/minho/Documents/timesries project/experiments/exp153_157/test_exp153_157_train_only_improvements.py", line 10, in <module>
+    import exp153_157_core as core
+ModuleNotFoundError: No module named 'exp153_157_core'
+
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.008s
+
+FAILED (errors=1)

@@ -1,0 +1,13 @@
+{
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "experiment_ids": [
+    "experiment_154_small_sample_pooled_conformal"
+  ],
+  "input_hashes": {
+    "score_cache_manifest": "bf73796c046a6102fce53d3b6fc606afa1ed0a5161ebb6e92d94698ab56a68a0"
+  },
+  "prediction_path": "outputs/exp153_157_train_only_improvements/05_exp154_predictions.jsonl",
+  "prediction_sha256": "e8913fc1893160c39c8c2b25bdd0984ab5ded12dc4f8614476efd43a797b9550",
+  "row_count": 17872
+}

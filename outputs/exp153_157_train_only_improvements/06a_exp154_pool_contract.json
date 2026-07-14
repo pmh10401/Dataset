@@ -1,0 +1,22 @@
+{
+  "family_used": false,
+  "length_quantile_boundaries": [
+    176.0,
+    315.0,
+    1024.0
+  ],
+  "minimum_pool_reference": 200,
+  "test_statistics_used": false,
+  "train_count_bins": [
+    "5-19",
+    "20-49",
+    "50-99",
+    "100+"
+  ],
+  "variants": [
+    "local_baseline",
+    "global_pool",
+    "group_pool",
+    "hybrid_fallback"
+  ]
+}
