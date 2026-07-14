@@ -1,0 +1,13 @@
+{
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "experiment_ids": [
+    "experiment_155_source_independence_continuous_fusion"
+  ],
+  "input_hashes": {
+    "score_cache_manifest": "bf73796c046a6102fce53d3b6fc606afa1ed0a5161ebb6e92d94698ab56a68a0"
+  },
+  "prediction_path": "outputs/exp153_157_train_only_improvements/11_exp155_predictions.jsonl",
+  "prediction_sha256": "3b440dec3126d72d027ada8ff8e7acad6f183514e6c5b95dcf9b27965c3b58a7",
+  "row_count": 13404
+}

@@ -1,0 +1,5 @@
+experiment_id,alpha,datasets,pseudo_normal_runs,hard_false_alerts,hard_false_alert_rate,hard_false_alerts_per_100_runs,standard_false_reviews,standard_reviews_per_100_runs,priority_false_reviews,priority_reviews_per_100_runs,abstained_datasets,resolution_blocked_datasets,uses_test_labels,uses_test_values
+experiment_153_train_normal_calibration_validity_audit,0.005,1117,146796,229,0.0015599880105724951,0.1559988010572495,37,0.02520504645903158,8,0.005449739774925747,162,940,0,0
+experiment_153_train_normal_calibration_validity_audit,0.01,1117,146796,482,0.0032834682143927625,0.32834682143927624,144,0.09809531594866346,30,0.020436524155971553,162,866,0,0
+experiment_153_train_normal_calibration_validity_audit,0.02,1117,146796,940,0.006403444235537753,0.6403444235537753,642,0.4373416169377913,88,0.05994713752418322,162,616,0,0
+experiment_153_train_normal_calibration_validity_audit,0.05,1117,146796,1605,0.010933540423444781,1.093354042344478,3433,2.338619580915011,178,0.12125670999209787,162,478,0,0

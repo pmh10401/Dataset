@@ -1,0 +1,15 @@
+{
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "experiment_ids": [
+    "experiment_156_confirmation_calibration"
+  ],
+  "input_hashes": {
+    "exp152_prediction": "9684f6bae6e561535f190969a4c71b1f258c97d0b7cf9899b8d9147a74c13499",
+    "exp152_prediction_manifest": "bce61baee9f08a68e1bebef5b74ec93b230ed18634a66798b2baa293cb372b48",
+    "score_cache_manifest": "bf73796c046a6102fce53d3b6fc606afa1ed0a5161ebb6e92d94698ab56a68a0"
+  },
+  "prediction_path": "outputs/exp153_157_train_only_improvements/16_exp156_predictions.jsonl",
+  "prediction_sha256": "e9ead26283ea513ab7e01736c933ee841e79a3677beaecb597aa65e61988366b",
+  "row_count": 13404
+}

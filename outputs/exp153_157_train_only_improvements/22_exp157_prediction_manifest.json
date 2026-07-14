@@ -1,0 +1,15 @@
+{
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "experiment_ids": [
+    "experiment_157_train_only_risk_controlled_alpha_policy"
+  ],
+  "input_hashes": {
+    "exp152_prediction": "9684f6bae6e561535f190969a4c71b1f258c97d0b7cf9899b8d9147a74c13499",
+    "exp152_prediction_manifest": "bce61baee9f08a68e1bebef5b74ec93b230ed18634a66798b2baa293cb372b48",
+    "exp153_audit": "884a6d398e4a81501f7a023fed11319c9073e7654a52bc18c345c67021f78eae"
+  },
+  "prediction_path": "outputs/exp153_157_train_only_improvements/21_exp157_predictions.jsonl",
+  "prediction_sha256": "52a6bd11d8af136d4767c4dd3905c757f2875fc069aab3120b6442a51fc46c7f",
+  "row_count": 3351
+}
