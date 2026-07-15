@@ -1092,6 +1092,35 @@ EXPERIMENTS = [
             ("185", "experiment_185_final_independent_reaggregation", "Exp185 · final independent reaggregation", 639),
         )
     ],
+    *[
+        {
+            "id": exp_id,
+            "label": label,
+            "script": ROOT / "experiments/exp186_200/run_experiment_186_200.py",
+            "args": ["--stage", stage],
+            "detail_csv": DATA_DIR / f"{exp_id}_results.csv",
+            "summary_csv": DATA_DIR / f"{exp_id}_summary.csv",
+            "stdout_log": DATA_DIR / "exp186_200_unattended" / f"exp{stage}_stdout.log",
+            "expected_datasets": expected,
+        }
+        for stage, exp_id, label, expected in (
+            ("186", "experiment_186_conservative_canonical_knn_agreement", "Exp186 · Conservative plus Canonical KNN agreement", 639),
+            ("187", "experiment_187_conservative_dual_canonical_agreement", "Exp187 · Conservative plus dual canonical agreement", 639),
+            ("188", "experiment_188_train_oof_stability_guarded_review", "Exp188 · TRAIN-OOF stability guarded review", 639),
+            ("189", "experiment_189_train_normal_workload_guarded_review", "Exp189 · TRAIN-normal workload guarded review", 639),
+            ("190", "experiment_190_three_tier_review_routing", "Exp190 · Three-tier review routing", 639),
+            ("191", "experiment_191_conservative_canonical_shadow_agreement", "Exp191 · Conservative-canonical shadow agreement", 639),
+            ("192", "experiment_192_conservative_dual_backend_shadow_agreement", "Exp192 · Conservative-dual-backend shadow agreement", 639),
+            ("193", "experiment_193_three_existing_source_canonical_confirmation", "Exp193 · Three-existing-source plus canonical confirmation", 639),
+            ("194", "experiment_194_fold_stable_shadow_agreement", "Exp194 · Fold-stable shadow agreement", 639),
+            ("195", "experiment_195_zero_normal_candidate_shadow_guard", "Exp195 · Zero-normal-candidate shadow guard", 639),
+            ("196", "experiment_196_expanded_train_risk_review", "Exp196 · Expanded TRAIN-risk review", 639),
+            ("197", "experiment_197_conservative_canonical_unique_union", "Exp197 · Conservative plus canonical-unique union", 639),
+            ("198", "experiment_198_existing_one_canonical_alpha_001", "Exp198 · Existing-one plus canonical alpha 0.01", 639),
+            ("199", "experiment_199_expanded_two_of_six_train_workload_guard", "Exp199 · Expanded two-of-six with TRAIN workload guard", 639),
+            ("200", "experiment_200_frozen_frontier_reaggregation", "Exp200 · Frozen frontier reaggregation", 639),
+        )
+    ],
 ]
 
 DEFAULT_QUEUE = ["experiment_26_rocket"]
@@ -1105,6 +1134,24 @@ EXP177_185_BATCH = [
     "experiment_183_wavelet_multiscale_feature_prediction",
     "experiment_184_extension_source_fusion_prediction",
     "experiment_185_final_independent_reaggregation",
+]
+
+EXP186_200_BATCH = [
+    "experiment_186_conservative_canonical_knn_agreement",
+    "experiment_187_conservative_dual_canonical_agreement",
+    "experiment_188_train_oof_stability_guarded_review",
+    "experiment_189_train_normal_workload_guarded_review",
+    "experiment_190_three_tier_review_routing",
+    "experiment_191_conservative_canonical_shadow_agreement",
+    "experiment_192_conservative_dual_backend_shadow_agreement",
+    "experiment_193_three_existing_source_canonical_confirmation",
+    "experiment_194_fold_stable_shadow_agreement",
+    "experiment_195_zero_normal_candidate_shadow_guard",
+    "experiment_196_expanded_train_risk_review",
+    "experiment_197_conservative_canonical_unique_union",
+    "experiment_198_existing_one_canonical_alpha_001",
+    "experiment_199_expanded_two_of_six_train_workload_guard",
+    "experiment_200_frozen_frontier_reaggregation",
 ]
 
 
@@ -1398,9 +1445,9 @@ def run_experiment(exp, overlap_checked=False):
     log(f"START {exp['id']} script={exp['script']} rank_workers={worker_count}")
     start = time.time()
     with exp["stdout_log"].open("w") as stdout_log:
-        batch_meta = state.get("exp177_185_batch") or {}
+        batch_meta = state.get("exp186_200_batch") or state.get("exp177_185_batch") or {}
         child_env = {**os.environ, "RANK_EXPERIMENT_WORKERS": worker_count}
-        if exp["id"] in EXP177_185_BATCH and batch_meta.get("hard_deadline_unix"):
+        if (exp["id"] in EXP177_185_BATCH or exp["id"] in EXP186_200_BATCH) and batch_meta.get("hard_deadline_unix"):
             child_env["EXP177_185_BATCH_DEADLINE_UNIX"] = str(batch_meta["hard_deadline_unix"])
         process = subprocess.Popen(
             [
@@ -1525,17 +1572,25 @@ def cmd_run_queue(poll_seconds=30):
         log("QUEUE runner started")
         while True:
             state = reconcile_running_state(load_state())
-            batch_meta = state.get("exp177_185_batch") or {}
-            hard_deadline = float(batch_meta.get("hard_deadline_unix") or 0)
-            if hard_deadline and time.time() >= hard_deadline:
-                remaining = [item for item in state.get("queue", []) if item in EXP177_185_BATCH]
-                state["queue"] = [item for item in state.get("queue", []) if item not in EXP177_185_BATCH]
-                state.setdefault("skipped", []).extend(
-                    {"id": item, "skipped_at": now(), "reason": "12-hour batch hard deadline"}
-                    for item in remaining
-                )
-                save_state(state)
-                log(f"QUEUE Exp177-185 hard deadline reached; skipped {len(remaining)} remaining stages")
+            skipped_any = False
+            for batch_name, batch_list, label in [
+                ("exp177_185_batch", EXP177_185_BATCH, "Exp177-185"),
+                ("exp186_200_batch", EXP186_200_BATCH, "Exp186-200")
+            ]:
+                batch_meta = state.get(batch_name) or {}
+                hard_deadline = float(batch_meta.get("hard_deadline_unix") or 0)
+                if hard_deadline and time.time() >= hard_deadline:
+                    remaining = [item for item in state.get("queue", []) if item in batch_list]
+                    if remaining:
+                        state["queue"] = [item for item in state.get("queue", []) if item not in batch_list]
+                        state.setdefault("skipped", []).extend(
+                            {"id": item, "skipped_at": now(), "reason": "12-hour batch hard deadline"}
+                            for item in remaining
+                        )
+                        save_state(state)
+                        log(f"QUEUE {label} hard deadline reached; skipped {len(remaining)} remaining stages")
+                        skipped_any = True
+            if skipped_any:
                 continue
             queue = [exp_id for exp_id in state.get("queue", []) if exp_id not in state.get("completed", [])]
             if not queue:
@@ -1583,6 +1638,27 @@ def queue_exp177_185_batch():
     log(f"QUEUE registered Exp177-185 batch ({len(EXP177_185_BATCH)} experiments)")
 
 
+def queue_exp186_200_batch():
+    state = reconcile_running_state(load_state())
+    completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP186_200_BATCH]
+    queue.extend(item for item in EXP186_200_BATCH if item not in completed)
+    state["queue"] = queue
+    registered_unix = time.time()
+    state["exp186_200_batch"] = {
+        "registered_at": now(),
+        "registered_unix": registered_unix,
+        "hard_deadline_unix": registered_unix + 12 * 60 * 60,
+        "worker_count": int(os.environ.get("RANK_EXPERIMENT_WORKERS", "7")),
+        "soft_checkpoint_hours": 5,
+        "hard_limit_hours": 12,
+        "agent_monitoring": False,
+        "experiments": EXP186_200_BATCH,
+    }
+    save_state(state)
+    log(f"QUEUE registered Exp186-200 batch ({len(EXP186_200_BATCH)} experiments)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run rank experiments one at a time.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1591,6 +1667,7 @@ def main():
     sub.add_parser("run-next")
     sub.add_parser("run-queue")
     sub.add_parser("queue-exp177-185")
+    sub.add_parser("queue-exp186-200")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -1613,6 +1690,8 @@ def main():
         cmd_run_queue()
     elif args.command == "queue-exp177-185":
         queue_exp177_185_batch()
+    elif args.command == "queue-exp186-200":
+        queue_exp186_200_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

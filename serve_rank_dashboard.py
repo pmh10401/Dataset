@@ -1368,6 +1368,38 @@ for _stage, _exp_id, _label, _expected in (
     }
 
 
+for _stage, _exp_id, _label, _expected in (
+    ("186", "experiment_186_conservative_canonical_knn_agreement", "Exp186 · Conservative plus Canonical KNN agreement", 639),
+    ("187", "experiment_187_conservative_dual_canonical_agreement", "Exp187 · Conservative plus dual canonical agreement", 639),
+    ("188", "experiment_188_train_oof_stability_guarded_review", "Exp188 · TRAIN-OOF stability guarded review", 639),
+    ("189", "experiment_189_train_normal_workload_guarded_review", "Exp189 · TRAIN-normal workload guarded review", 639),
+    ("190", "experiment_190_three_tier_review_routing", "Exp190 · Three-tier review routing", 639),
+    ("191", "experiment_191_conservative_canonical_shadow_agreement", "Exp191 · Conservative-canonical shadow agreement", 639),
+    ("192", "experiment_192_conservative_dual_backend_shadow_agreement", "Exp192 · Conservative-dual-backend shadow agreement", 639),
+    ("193", "experiment_193_three_existing_source_canonical_confirmation", "Exp193 · Three-existing-source plus canonical confirmation", 639),
+    ("194", "experiment_194_fold_stable_shadow_agreement", "Exp194 · Fold-stable shadow agreement", 639),
+    ("195", "experiment_195_zero_normal_candidate_shadow_guard", "Exp195 · Zero-normal-candidate shadow guard", 639),
+    ("196", "experiment_196_expanded_train_risk_review", "Exp196 · Expanded TRAIN-risk review", 639),
+    ("197", "experiment_197_conservative_canonical_unique_union", "Exp197 · Conservative plus canonical-unique union", 639),
+    ("198", "experiment_198_existing_one_canonical_alpha_001", "Exp198 · Existing-one plus canonical alpha 0.01", 639),
+    ("199", "experiment_199_expanded_two_of_six_train_workload_guard", "Exp199 · Expanded two-of-six with TRAIN workload guard", 639),
+    ("200", "experiment_200_frozen_frontier_reaggregation", "Exp200 · Frozen frontier reaggregation", 639),
+):
+    EXPERIMENTS[_exp_id] = {
+        "label": _label,
+        "comparison_eligible": False,
+        "scope": "retrospective_review_sensitivity",
+        "status_reason": "unattended sequential batch; autonomous Exp137 Hard alerts unchanged",
+        "autonomous_metric_scope": "unchanged_exp137_hard_alert",
+        "review_metric_scope": "retrospective_human_assisted_review_sensitivity",
+        "detail_csv": DATA_DIR / f"{_exp_id}_results.csv",
+        "summary_csv": DATA_DIR / f"{_exp_id}_summary.csv",
+        "stdout_log": DATA_DIR / "exp186_200_unattended" / f"exp{_stage}_stdout.log",
+        "expected_datasets": _expected,
+    }
+
+
+
 HISTORICAL_EXPERIMENT_META = {
     "experiment_138_policy_train_only_audit": {
         "label": "Exp138 - TRAIN-only policy audit",
