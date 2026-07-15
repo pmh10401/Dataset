@@ -1,0 +1,162 @@
+{
+  "active_datasets": 16,
+  "agreement_candidates": 25,
+  "agreement_fp": 25,
+  "agreement_tp": 0,
+  "candidate_concentration": {
+    "DistalPhalanxTW_normal_8": 1,
+    "ECG5000_normal_1": 1,
+    "ECG5000_normal_2": 1,
+    "ElectricDevices_normal_7": 2,
+    "HandOutlines_normal_0": 1,
+    "MelbournePedestrian_normal_7": 1,
+    "MixedShapesRegularTrain_normal_4": 2,
+    "MoteStrain_normal_2": 1,
+    "PhalangesOutlinesCorrect_normal_0": 2,
+    "RefrigerationDevices_normal_1": 1,
+    "StarLightCurves_normal_1": 4,
+    "StarLightCurves_normal_3": 1,
+    "TwoPatterns_normal_3": 3,
+    "UWaveGestureLibraryY_normal_2": 1,
+    "UWaveGestureLibraryZ_normal_4": 2,
+    "Wafer_normal_-1": 1
+  },
+  "duplicate_trace_groups": [
+    {
+      "all_values_blob_identical": true,
+      "dataset": "StarLightCurves_normal_1",
+      "indices": [
+        444,
+        685,
+        882,
+        1052
+      ],
+      "sha256": [
+        "8ffaeb1beb1c06171b26e7f174b1dc5053dc73a2b703380852cf7a29ecd2e01c",
+        "8ffaeb1beb1c06171b26e7f174b1dc5053dc73a2b703380852cf7a29ecd2e01c",
+        "8ffaeb1beb1c06171b26e7f174b1dc5053dc73a2b703380852cf7a29ecd2e01c",
+        "8ffaeb1beb1c06171b26e7f174b1dc5053dc73a2b703380852cf7a29ecd2e01c"
+      ]
+    },
+    {
+      "all_values_blob_identical": true,
+      "dataset": "TwoPatterns_normal_3",
+      "indices": [
+        447,
+        452,
+        911
+      ],
+      "sha256": [
+        "7fb0a0c5ae269bf9ea65d41b38968ffe95536b7bc367aa1a9445cfe0a8e1e0d5",
+        "7fb0a0c5ae269bf9ea65d41b38968ffe95536b7bc367aa1a9445cfe0a8e1e0d5",
+        "7fb0a0c5ae269bf9ea65d41b38968ffe95536b7bc367aa1a9445cfe0a8e1e0d5"
+      ]
+    },
+    {
+      "all_values_blob_identical": true,
+      "dataset": "ElectricDevices_normal_7",
+      "indices": [
+        263,
+        1197
+      ],
+      "sha256": [
+        "e9be58e12043bc2669d7345cf3be7c4f86217c874e1733f1a78327324c56a054",
+        "e9be58e12043bc2669d7345cf3be7c4f86217c874e1733f1a78327324c56a054"
+      ]
+    },
+    {
+      "all_values_blob_identical": true,
+      "dataset": "PhalangesOutlinesCorrect_normal_0",
+      "indices": [
+        433,
+        809
+      ],
+      "sha256": [
+        "7cf53f407a7dbb0afe5385a3d7e1abfe1cff3f6070d3e5d6f2cbd28a10bf406d",
+        "7cf53f407a7dbb0afe5385a3d7e1abfe1cff3f6070d3e5d6f2cbd28a10bf406d"
+      ]
+    }
+  ],
+  "individual_sources": {
+    "interval": {
+      "candidates": 1589,
+      "datasets_auc_below_0_5": 34,
+      "datasets_with_auc": 251,
+      "fp": 1338,
+      "mean_dataset_auc_high_score_is_anomaly": 0.6983334055267636,
+      "median_dataset_auc_high_score_is_anomaly": 0.6979591836734694,
+      "precision": 0.157960981749528,
+      "tp": 251
+    },
+    "shapelet": {
+      "candidates": 1811,
+      "datasets_auc_below_0_5": 30,
+      "datasets_with_auc": 251,
+      "fp": 1309,
+      "mean_dataset_auc_high_score_is_anomaly": 0.7310745152172207,
+      "median_dataset_auc_high_score_is_anomaly": 0.7528344671201814,
+      "precision": 0.2771949199337383,
+      "tp": 502
+    },
+    "spectral": {
+      "candidates": 1618,
+      "datasets_auc_below_0_5": 35,
+      "datasets_with_auc": 251,
+      "fp": 1319,
+      "mean_dataset_auc_high_score_is_anomaly": 0.713210138668622,
+      "median_dataset_auc_high_score_is_anomaly": 0.7232142857142857,
+      "precision": 0.18479604449938195,
+      "tp": 299
+    }
+  },
+  "must_not_select_policy_from_this_report": true,
+  "nearest_anomaly_distance": {
+    "max": 1780,
+    "median": 411.0,
+    "min": 14
+  },
+  "raw_3of3_before_exp137_lane_exclusion": {
+    "candidates": 96,
+    "fp": 44,
+    "tp": 52
+  },
+  "raw_3of3_by_size_stratum": {
+    "100-199": {
+      "candidates": 14,
+      "fp": 1,
+      "precision": 0.9285714285714286,
+      "tp": 13
+    },
+    "200+": {
+      "candidates": 82,
+      "fp": 43,
+      "precision": 0.47560975609756095,
+      "tp": 39
+    }
+  },
+  "raw_3of3_overlap_by_exp137_lane": {
+    "hard": {
+      "candidates": 61,
+      "fp": 11,
+      "tp": 50
+    },
+    "priority": {
+      "candidates": 0,
+      "fp": 0,
+      "tp": 0
+    },
+    "standard": {
+      "candidates": 10,
+      "fp": 8,
+      "tp": 2
+    }
+  },
+  "raw_3of3_overlap_with_existing_exp137_lanes": {
+    "candidates": 71,
+    "fp": 19,
+    "tp": 52
+  },
+  "raw_3of3_test_normal_false_alert_rate": 0.0003019365109863717,
+  "retrospective_diagnostic_only": true,
+  "total_test_normal_instances": 145726
+}
