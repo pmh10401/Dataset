@@ -1,0 +1,14 @@
+{
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "experiment_ids": [
+    "experiment_160_candidate_zero_similarity_recovery"
+  ],
+  "input_hashes": {
+    "baseline_predictions": "9684f6bae6e561535f190969a4c71b1f258c97d0b7cf9899b8d9147a74c13499",
+    "score_cache_manifest": "bf73796c046a6102fce53d3b6fc606afa1ed0a5161ebb6e92d94698ab56a68a0"
+  },
+  "prediction_path": "outputs/exp160_candidate_zero_similarity_recovery/02_exp160_predictions.jsonl",
+  "prediction_sha256": "ce97a7df2873d4bc628bbd58e2a7b83142f9d8cf8670bdf598f2b79aa0ded73d",
+  "row_count": 4468
+}

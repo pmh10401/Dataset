@@ -1,0 +1,13 @@
+{
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "experiment_ids": [
+    "experiment_158_train_score_similarity_pooling"
+  ],
+  "input_hashes": {
+    "score_cache_manifest": "bf73796c046a6102fce53d3b6fc606afa1ed0a5161ebb6e92d94698ab56a68a0"
+  },
+  "prediction_path": "outputs/exp158_159_small_train_similarity_pooling/02_exp158_predictions.jsonl",
+  "prediction_sha256": "48602683e9edccf88ed68c106e7bd46fbea65b24bf0085953223f838f5e00676",
+  "row_count": 4468
+}

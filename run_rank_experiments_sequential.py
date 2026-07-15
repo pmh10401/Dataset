@@ -966,6 +966,33 @@ EXPERIMENTS = [
         "summary_csv": DATA_DIR / "experiment_137_operational_triage_summary.csv",
         "stdout_log": DATA_DIR / "experiment_137_operational_triage_stdout.log",
     },
+    {
+        "id": "experiment_153_157_train_only_improvements",
+        "label": "Exp153-157 · TRAIN-only calibration and coverage sensitivities",
+        "script": ROOT / "experiments/exp153_157/run_experiment_153_157_pipeline.py",
+        "detail_csv": ROOT / "outputs/exp153_157_train_only_improvements/23_exp157_results.csv",
+        "summary_csv": ROOT / "outputs/exp153_157_train_only_improvements/24_exp157_summary.csv",
+        "stdout_log": ROOT / "outputs/exp153_157_train_only_improvements/full_pipeline_queue.log",
+        "expected_datasets": 1117,
+    },
+    {
+        "id": "experiment_165_small_sample_calibration",
+        "label": "Exp165 · small-sample TRAIN-only similarity calibration audit",
+        "script": ROOT / "experiments/exp165/run_experiment_165_small_sample_calibration.py",
+        "detail_csv": ROOT / "outputs/exp165_small_sample_calibration/03_dataset_alpha_summary.csv",
+        "summary_csv": ROOT / "outputs/exp165_small_sample_calibration/04_global_summary.csv",
+        "stdout_log": ROOT / "outputs/exp165_small_sample_calibration/full_run.log",
+        "expected_datasets": 316,
+    },
+    {
+        "id": "experiment_166_small_sample_anomaly_coverage",
+        "label": "Exp166 · small-sample similarity calibration anomaly coverage",
+        "script": ROOT / "experiments/exp166/run_experiment_166_small_sample_anomaly_coverage.py",
+        "detail_csv": ROOT / "outputs/exp166_small_sample_anomaly_coverage/04_dataset_metrics.csv",
+        "summary_csv": ROOT / "outputs/exp166_small_sample_anomaly_coverage/05_global_summary.csv",
+        "stdout_log": ROOT / "outputs/exp166_small_sample_anomaly_coverage/full_run.log",
+        "expected_datasets": 316,
+    },
 ]
 
 DEFAULT_QUEUE = ["experiment_26_rocket"]
@@ -1032,6 +1059,15 @@ def active_rank_processes():
     return matches
 
 
+def active_rank_processes_or_none():
+    """Return active experiments, or defer queue work when process inspection fails."""
+    try:
+        return active_rank_processes()
+    except (BlockingIOError, OSError, subprocess.CalledProcessError) as exc:
+        log(f"PROCESS inspection unavailable ({exc}); queue will retry")
+        return None
+
+
 def pid_alive(pid):
     try:
         pid = int(pid)
@@ -1063,7 +1099,16 @@ def reconcile_running_state(state):
         exp = get_experiment(stale.get("id"))
         log_text = exp["stdout_log"].read_text(errors="replace") if exp["stdout_log"].exists() else ""
         recovered_summary = summarize_csv(exp["detail_csv"])
-        recovered = bool(recovered_summary and f"{exp['id']} finished" in log_text)
+        expected = int(exp.get("expected_datasets") or 0)
+        summary_complete = bool(
+            recovered_summary
+            and expected > 0
+            and int(recovered_summary.get("datasets") or 0) >= expected
+            and exp.get("summary_csv")
+            and Path(exp["summary_csv"]).exists()
+            and Path(exp["summary_csv"]).stat().st_size > 0
+        )
+        recovered = bool(recovered_summary and (f"{exp['id']} finished" in log_text or summary_complete))
     except (KeyError, OSError, ValueError):
         exp = None
     if recovered:
@@ -1118,7 +1163,7 @@ def next_experiment(state):
 
 def queue_experiment(exp_id):
     get_experiment(exp_id)
-    state = load_state()
+    state = reconcile_running_state(load_state())
     if exp_id in state.get("completed", []):
         log(f"QUEUE skip already completed {exp_id}")
         return
@@ -1158,7 +1203,13 @@ def summarize_csv(path):
             configs.setdefault(group_name, []).append(0.0)
     return {
         "rows": len(rows),
-        "datasets": len({row.get("dataset_name") for row in rows if row.get("dataset_name")}),
+        "datasets": len(
+            {
+                row.get("dataset_name") or row.get("dataset")
+                for row in rows
+                if row.get("dataset_name") or row.get("dataset")
+            }
+        ),
         "configs": {
             name: {
                 "mean_f1_evt": sum(values) / len(values),
@@ -1214,6 +1265,7 @@ def run_experiment(exp, overlap_checked=False):
     if not exp["script"].exists():
         raise SystemExit(f"Script does not exist: {exp['script']}")
 
+    ensure_output_directories(exp)
     archive_existing_outputs(exp)
 
     state = load_state()
@@ -1232,7 +1284,7 @@ def run_experiment(exp, overlap_checked=False):
         }
     )
 
-    worker_count = os.environ.get("RANK_EXPERIMENT_WORKERS", "6")
+    worker_count = os.environ.get("RANK_EXPERIMENT_WORKERS", "7")
     log(f"START {exp['id']} script={exp['script']} rank_workers={worker_count}")
     start = time.time()
     with exp["stdout_log"].open("w") as stdout_log:
@@ -1262,6 +1314,7 @@ def run_experiment(exp, overlap_checked=False):
             raise
 
     elapsed = time.time() - start
+    final_summary = summarize_csv(exp["detail_csv"])
     state = load_state()
     state["running"] = None
     state.setdefault("history", []).append(
@@ -1270,7 +1323,7 @@ def run_experiment(exp, overlap_checked=False):
             "finished_at": now(),
             "return_code": return_code,
             "elapsed_minutes": round(elapsed / 60, 2),
-            "summary": summarize_csv(exp["detail_csv"]),
+            "summary": final_summary,
         }
     )
     if return_code == 0 and exp["id"] not in state.get("completed", []):
@@ -1283,6 +1336,11 @@ def run_experiment(exp, overlap_checked=False):
             "experiment_id": exp["id"],
             "status": "completed" if return_code == 0 else "failed",
             "return_code": return_code,
+            "done": int((final_summary or {}).get("datasets") or 0),
+            "expected": int(exp.get("expected_datasets") or 0),
+            "rows": int((final_summary or {}).get("rows") or 0),
+            "current_dataset": "",
+            "errors": 0 if return_code == 0 else 1,
             "updated_at": now(),
         }
     )
@@ -1301,8 +1359,13 @@ def archive_existing_outputs(exp):
             log(f"ARCHIVE {path} -> {archive_path}")
 
 
+def ensure_output_directories(exp):
+    for key in ("detail_csv", "summary_csv", "stdout_log"):
+        Path(exp[key]).parent.mkdir(parents=True, exist_ok=True)
+
+
 def cmd_status():
-    state = load_state()
+    state = reconcile_running_state(load_state())
     print(json.dumps(state, indent=2, sort_keys=True))
     active = active_rank_processes()
     if active:
@@ -1316,7 +1379,7 @@ def cmd_status():
 
 
 def cmd_list():
-    state = load_state()
+    state = reconcile_running_state(load_state())
     completed = set(state.get("completed", []))
     queued = set(state.get("queue", []))
     running_id = (state.get("running") or {}).get("id")
@@ -1348,7 +1411,10 @@ def cmd_run_queue(poll_seconds=30):
             if not queue:
                 log("QUEUE empty; runner exiting")
                 return
-            active = active_rank_processes()
+            active = active_rank_processes_or_none()
+            if active is None:
+                time.sleep(min(poll_seconds, 5))
+                continue
             if state.get("running") or active:
                 time.sleep(poll_seconds)
                 continue

@@ -1,0 +1,24 @@
+{
+  "agreements": [
+    2,
+    3
+  ],
+  "alphas": [
+    0.005,
+    0.01,
+    0.02,
+    0.05
+  ],
+  "candidate_lane": "research_review_candidate",
+  "config_hash": "3a45a5807bde4579a0309b151bddec1892044821796427fa34088117d334b84f",
+  "experiment_id": "experiment_166_small_sample_anomaly_coverage",
+  "methods": [
+    "local_crossfit_reference",
+    "similarity_pool_reference"
+  ],
+  "prediction_uses_test_labels": false,
+  "prediction_uses_test_values": true,
+  "retrospective": true,
+  "scope": "316 datasets with 5 <= n_train < 20",
+  "test_metric_policy_selection": false
+}

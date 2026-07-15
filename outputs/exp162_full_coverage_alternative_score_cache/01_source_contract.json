@@ -1,0 +1,28 @@
+{
+  "experiment_id": "exp162_full_coverage_alternative_score_cache",
+  "source_config_hash": "889799817fe4984c7996717a88defea3417edd7679d9ed33c804a663fa8ae413",
+  "population_file_sha256": "ce97a7df2873d4bc628bbd58e2a7b83142f9d8cf8670bdf598f2b79aa0ded73d",
+  "population_list_sha256": "18aa5649e2b6a8b2240d6ba50995442771ebb9c0d351af8a1ceb7a70559ed8d1",
+  "database_path": "/Users/minho/Documents/Dataset/univariate_ts.db",
+  "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+  "population_size": 1117,
+  "full_population_size": 1117,
+  "contains_test_labels": false,
+  "contains_evaluation_metrics": false,
+  "source_configurations": {
+    "spectral_derivative": {
+      "score_rule": "mean absolute robust deviation",
+      "features": "raw+diff+diff2 mean/std/median/p90-p10/max-abs + 8 fft bands + centroid/entropy/peak"
+    },
+    "shapelet_normal_prototype": {
+      "score_rule": "mean absolute robust deviation of 32 min-distance features",
+      "prototypes": "32 train-only, lengths [8, 16, 32, 64], capped at 512, z-normalized"
+    },
+    "interval_quantile": {
+      "score_rule": "mean absolute robust deviation",
+      "intervals": 16,
+      "views": "raw+diff+periodogram",
+      "interval_features": "mean, std, min, max, q05, q25, q50, q75, q95, slope"
+    }
+  }
+}

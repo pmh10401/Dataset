@@ -1,0 +1,30 @@
+{
+  "experiment_id": "exp164_train_normal_agreement_risk_audit",
+  "global_config_hash": "8e2db9b25249ded8f6e7c78aa61aa3d434d3646508c5ec36a461e1d7898631a0",
+  "exp162_manifest_sha256": "ec8e1a1c617aa2216a81da1959bd1aec529ad7aadb908ababe3f7e05b7f288c1",
+  "exp162_contract_sha256": "0a80d8a26387d81cd7b2e18ae36f3116c829d20742dd1fa79bb8a3c5bc3d6461",
+  "database_path": "/Users/minho/Documents/Dataset/univariate_ts.db",
+  "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+  "population_size": 1117,
+  "frozen_population_sha256": "18aa5649e2b6a8b2240d6ba50995442771ebb9c0d351af8a1ceb7a70559ed8d1",
+  "run_population_sha256": "18aa5649e2b6a8b2240d6ba50995442771ebb9c0d351af8a1ceb7a70559ed8d1",
+  "alphas": [
+    0.005,
+    0.01,
+    0.02,
+    0.05
+  ],
+  "variants": [
+    "train_audit_2of3",
+    "train_audit_3of3"
+  ],
+  "risk_targets": [
+    0.005,
+    0.01,
+    0.02
+  ],
+  "wilson_confidence": 0.95,
+  "contains_test_values": false,
+  "contains_test_labels": false,
+  "contains_evaluation_metrics": false
+}

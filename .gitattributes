@@ -1,0 +1,7 @@
+# Preserve generated result bytes and their recorded SHA-256 values.
+outputs/**/*.csv -diff
+outputs/**/*.md -diff
+
+# These source files are hash-pinned by the Exp163 manifest.
+experiments/exp163/exp163_io.py -diff
+docs/EXP163_PREREGISTRATION_KO.md -diff

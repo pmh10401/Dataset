@@ -1,0 +1,49 @@
+$ python3 -m py_compile experiments/exp163/*.py
+$ python3 -m unittest discover -s experiments/exp163 -p test_*.py
+..................
+----------------------------------------------------------------------
+Ran 18 tests in 0.022s
+
+OK
+$ independent full validation
+{
+  "evaluation": {
+    "errors": {
+      "metric_mismatch": 0,
+      "result_row_count_mismatch": 0
+    },
+    "passed": true,
+    "rows": 8936
+  },
+  "prediction": {
+    "added_standard_candidates_including_variants": 618,
+    "candidate_zero_rows_after": 3666,
+    "datasets": 1117,
+    "errors": {
+      "added_standard_mismatch": 0,
+      "duplicate_key": 0,
+      "forbidden_prediction_field": 0,
+      "hard_baseline_mismatch": 0,
+      "index_range": 0,
+      "input_hash_mismatch": 0,
+      "lane_count_mismatch": 0,
+      "lane_overlap": 0,
+      "lane_union_mismatch": 0,
+      "manifest_row_count_mismatch": 0,
+      "missing_key": 0,
+      "prediction_hash_mismatch": 0,
+      "priority_baseline_mismatch": 0,
+      "source_agreement_mismatch": 0,
+      "target_gate_mismatch": 0,
+      "variant_subset_mismatch": 0
+    },
+    "passed": true,
+    "prediction_sha256": "54fb3f1a94a268428b00835c7433d2ef0b033c8880a254c96c59d49e1477c655",
+    "rows": 8936,
+    "target_rows_including_variants": 2824
+  }
+}
+$ deterministic full prediction replay
+54fb3f1a94a268428b00835c7433d2ef0b033c8880a254c96c59d49e1477c655  outputs/exp163_alternative_source_tail_agreement_review/02_exp163_predictions.jsonl
+54fb3f1a94a268428b00835c7433d2ef0b033c8880a254c96c59d49e1477c655  outputs/exp163_alternative_source_tail_agreement_review_repro/02_exp163_predictions.jsonl
+$ git diff --check Exp163 files

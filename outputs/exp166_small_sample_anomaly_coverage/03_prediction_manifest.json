@@ -1,0 +1,16 @@
+{
+  "autonomous_metric_scope": "not_evaluated",
+  "checkpoint_sha256": "447972d157193adca1e39919b011e971356ca2682f2a9ecdf875a9ce56e70b07",
+  "config_hash": "3a45a5807bde4579a0309b151bddec1892044821796427fa34088117d334b84f",
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "created_at": "2026-07-15 08:58:40",
+  "dataset_count": 316,
+  "experiment_id": "experiment_166_small_sample_anomaly_coverage",
+  "prediction_file": "02_frozen_predictions.jsonl",
+  "prediction_rows": 5056,
+  "prediction_sha256": "5e2efa9f5a9ec90165f5d8383760f0737411480af21eaf2465edbadefab3d930",
+  "retrospective": true,
+  "review_metric_scope": "human_review_candidate_research_only",
+  "workers": 7
+}

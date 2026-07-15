@@ -14,5 +14,17 @@ __pycache__/
 
 # Virtual Environments
 .venv/
+.venv*/
 venv/
 env/
+
+# Regenerable experiment runtime artifacts
+outputs/**/cache/
+outputs/**/target_caches/
+outputs/**/*_cache.npz
+outputs/**/*checkpoint*.jsonl
+outputs/**/CHECKPOINT.jsonl
+outputs/**/*smoke*/
+outputs/**/*.log
+outputs/**/*.zip
+outputs/**/*.pptx
