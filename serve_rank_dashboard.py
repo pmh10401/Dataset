@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import base64
 import csv
+import hashlib
 import hmac
 import json
 import os
 import re
+import signal
 import shlex
 import sqlite3
 import subprocess
@@ -17,7 +19,7 @@ from urllib.parse import parse_qs, quote, urlparse
 import numpy as np
 
 
-ROOT = Path("/Users/minho/Documents/timesries project")
+ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path("/Users/minho/Documents/Dataset")
 DB_PATH = DATA_DIR / "univariate_ts.db"
 DETAIL_PATH = DATA_DIR / "rank_ensemble_threshold_calibration.csv"
@@ -35,6 +37,9 @@ CSV_READ_ERRORS = {}
 LIVE_CHECKPOINT_CACHE = {}
 MAX_CACHED_CSV_BYTES = 2 * 1024 * 1024
 SERVER_STARTED_UNIX = time.time()
+SERVER_INSTANCE_ID = hashlib.sha256(
+    f"{os.getpid()}:{SERVER_STARTED_UNIX}:{__file__}".encode()
+).hexdigest()[:16]
 EVALUATION_EXCLUSIONS = {"CornellWhaleChallenge", "Wafer_normal_1"}
 VALIDATION_PLAN = [
     {"id": "experiment_143_test_length_budget_binding_audit", "label": "Exp143 · TEST-length budget binding audit", "status": "planned", "runner_id": "experiment_144_train_threshold_only_no_budget"},
@@ -44,6 +49,60 @@ VALIDATION_PLAN = [
     {"id": "experiment_147_policy_level_train_only_no_budget", "label": "Exp147 · B2 + threshold-only", "status": "planned", "runner_id": "experiment_144_train_threshold_only_no_budget"},
     {"id": "experiment_148_policy_level_train_only_train_budget", "label": "Exp148 · B2 + TRAIN-normal budget", "status": "blocked", "blocked_reason": "Exp145 run-grain blocker에 의존"},
 ]
+
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def read_pid_metadata(path=PID_PATH):
+    """Read legacy integer PID files as well as versioned JSON metadata."""
+
+    try:
+        raw = Path(path).read_text(encoding="utf-8").strip()
+    except OSError:
+        return {}
+    if not raw:
+        return {}
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        try:
+            return {"pid": int(raw), "legacy": True}
+        except ValueError:
+            return {}
+    if isinstance(value, int):
+        return {"pid": value, "legacy": True}
+    if not isinstance(value, dict):
+        return {}
+    try:
+        value["pid"] = int(value["pid"])
+    except (KeyError, TypeError, ValueError):
+        return {}
+    return value
+
+
+def write_pid_metadata(payload, path=PID_PATH):
+    target = Path(path)
+    temporary = target.with_suffix(".tmp")
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(target)
+
+
+def server_instance_metadata():
+    script = Path(__file__).resolve()
+    return {
+        "pid": os.getpid(),
+        "instance_id": SERVER_INSTANCE_ID,
+        "started_unix": SERVER_STARTED_UNIX,
+        "started_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(SERVER_STARTED_UNIX)),
+        "script": str(script),
+        "code_sha256": sha256_file(script),
+    }
 
 METRIC_GLOSSARY = [
     {
@@ -2523,7 +2582,12 @@ INDEX_HTML = r"""<!doctype html>
         const experimentHistory = data.experiment_history || data.completed_results || [];
         refreshDelayMs = data.running ? 5000 : 10000;
         document.getElementById('statusDot').classList.toggle('running', !!data.running);
-        setText('statusText', data.running ? '실험 실행 중' : '실험 미실행');
+        setText(
+          'statusText',
+          data.running
+            ? `실험 실행 중: ${data.active_label || data.active_experiment || '-'}`
+            : `실험 미실행${data.last_completed_label ? ` · 마지막 완료: ${data.last_completed_label}` : ''}`
+        );
         setText('progressValue', fmtPct(data.progress_percent));
         document.getElementById('progressBar').style.width = `${Math.min(100, data.progress_percent || 0)}%`;
         setText('datasetCount', `${data.datasets_done} / ${data.expected_datasets} datasets`);
@@ -3050,7 +3114,17 @@ def gpt_handoff_snapshot(status, dataset_context):
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S %Z"),
         "current_status": {
             key: status.get(key)
-            for key in ("running", "active_experiment", "active_label", "progress_percent", "datasets_done", "expected_datasets", "coverage")
+            for key in (
+                "running",
+                "active_experiment",
+                "active_label",
+                "last_completed_experiment",
+                "last_completed_label",
+                "progress_percent",
+                "datasets_done",
+                "expected_datasets",
+                "coverage",
+            )
         },
         "experiment_work_items": status.get("unified_experiments", []),
         "experiment_history": experiment_history,
@@ -3084,7 +3158,8 @@ def gpt_handoff_markdown(handoff):
         "# Time-series anomaly project handoff",
         "",
         f"Generated: {handoff.get('generated_at', '-')}",
-        f"Current experiment: {status.get('active_experiment', '-')}",
+        f"Current experiment: {status.get('active_experiment') or 'none'}",
+        f"Last completed experiment: {status.get('last_completed_experiment') or '-'}",
         f"Progress: {done}/{expected} ({progress:.2f}%)",
         "",
         "## Experiment work items",
@@ -3252,6 +3327,21 @@ def experiment_history_status(exp_id, info, state):
     if exp_id in (state.get("queue") or []):
         return {"history_status": "queued", "status_reason": "sequential queue"}
 
+    completed = set(state.get("completed") or [])
+    if exp_id in completed:
+        detail = (info or {}).get("detail_csv")
+        if detail and Path(detail).exists():
+            configured = (info or {}).get("history_status")
+            completed_status = configured if configured == "completed_research" else "completed_valid"
+            return {
+                "history_status": completed_status,
+                "status_reason": "queue recorded successful completion",
+            }
+        return {
+            "history_status": "invalid",
+            "status_reason": "queue marked completed but result artifact is missing",
+        }
+
     configured = (info or {}).get("history_status")
     if configured in {"invalid", "blocked", "not_run"}:
         return {
@@ -3278,10 +3368,14 @@ def active_paths(state):
     latest_history_id = history[-1].get("id") if history and isinstance(history[-1], dict) else None
     completed = state.get("completed") or []
     latest_completed_id = completed[-1] if completed else None
-    exp_id = running.get("id") or latest_history_id or latest_completed_id or "rank_threshold_calibration"
+    active_id = running.get("id") or None
+    last_completed_id = latest_history_id or latest_completed_id
+    exp_id = active_id or last_completed_id or "rank_threshold_calibration"
     info = experiment_info(exp_id)
     return {
         "id": exp_id,
+        "active_id": active_id,
+        "last_completed_id": last_completed_id,
         "label": info.get("label", exp_id),
         "detail_csv": info.get("detail_csv", DETAIL_PATH),
         "stdout_log": info.get("stdout_log", LOG_PATH),
@@ -4587,10 +4681,16 @@ def build_status(include_details=True):
     unified = unified_experiment_items(state, external_for_items, VALIDATION_PLAN)
     queue_items = [row for row in unified if row.get("status") in {"running", "queued", "planned", "blocked", "failed"}]
     dataset_context = dataset_context_snapshot()
+    actual_active_id = paths["active_id"] if is_running else None
+    actual_active_label = paths["label"] if actual_active_id else "실행 중인 실험 없음"
+    last_completed_id = paths["last_completed_id"]
+    last_completed_info = experiment_info(last_completed_id) if last_completed_id else {}
     payload = {
         "running": is_running,
-        "active_experiment": paths["id"],
-        "active_label": paths["label"],
+        "active_experiment": actual_active_id,
+        "active_label": actual_active_label,
+        "last_completed_experiment": last_completed_id,
+        "last_completed_label": last_completed_info.get("label", last_completed_id),
         "running_state": running,
         "process": process_snapshot,
         "system": system_resource_snapshot(),
@@ -4624,6 +4724,7 @@ def build_status(include_details=True):
         "elapsed_seconds": elapsed,
         "eta_seconds": eta,
         "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "server": server_instance_metadata(),
     }
     if include_details:
         payload.update(
@@ -4791,6 +4892,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/status":
             self.send_payload(200, "application/json; charset=utf-8", json.dumps(build_status()).encode())
             return
+        if path == "/api/healthz":
+            payload = {
+                "ok": True,
+                "server": server_instance_metadata(),
+                "state_updated_unix": (read_state() or {}).get("updated_unix"),
+            }
+            self.send_payload(200, "application/json; charset=utf-8", json.dumps(payload).encode())
+            return
         if path == "/api/overview":
             self.send_payload(200, "application/json; charset=utf-8", json.dumps(build_status(include_details=False)).encode())
             return
@@ -4850,10 +4959,17 @@ class ReusableThreadingHTTPServer(ThreadingHTTPServer):
     daemon_threads = True
 
 
+def handle_shutdown(_signum, _frame):
+    """Exit through main's cleanup path so stale PID metadata is never retained."""
+
+    raise SystemExit(0)
+
+
 def main():
     port = int(os.environ.get("RANK_DASHBOARD_PORT", "8765"))
     server = ReusableThreadingHTTPServer(("127.0.0.1", port), Handler)
-    PID_PATH.write_text(str(os.getpid()))
+    write_pid_metadata(server_instance_metadata())
+    signal.signal(signal.SIGTERM, handle_shutdown)
     print(f"Rank dashboard listening at http://127.0.0.1:{port}/", flush=True)
     if os.environ.get("RANK_DASHBOARD_USER") and os.environ.get("RANK_DASHBOARD_PASSWORD"):
         print("Rank dashboard HTTP Basic Auth enabled.", flush=True)
