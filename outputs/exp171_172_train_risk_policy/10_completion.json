@@ -1,0 +1,39 @@
+{
+  "autonomous_metric_scope": "not_evaluated",
+  "completed_at": "2026-07-15 12:13:34",
+  "dataset_count": 316,
+  "experiment_id": "experiment_172_frozen_train_risk_policy_review",
+  "policy_sha256": "f0997ddecb6ee5c21c0b04bc37e16dff6238b41ea0eea7f972ade9d922ae520e",
+  "prediction_sha256": "9d9172668a51e74904279275c89109eac96a76ddac749f349fc769029b1dc5c9",
+  "prospective_validated": false,
+  "retrospective": true,
+  "review_metric_scope": "retrospective_research_review_candidate",
+  "selected_policy": {
+    "alpha": 0.02,
+    "autonomous_hard_alert": false,
+    "candidate_lane": "research_review_candidate",
+    "comparisons": 60,
+    "confidence": 0.95,
+    "datasets": 316,
+    "eligibility_reason": "eligible",
+    "eligible": 1,
+    "normal_review_rate_micro": 0.004400724825265338,
+    "policy_key": [
+      "global_balanced_pool",
+      0.02,
+      "spectral+interval"
+    ],
+    "pool_policy": "global_balanced_pool",
+    "resolution_blocked_datasets": 0,
+    "risk_target": 0.01,
+    "selected": 1,
+    "selection_input_scope": "train_oob_only",
+    "selection_rank": 1,
+    "selection_rule": "max_train_oob_review_count_under_simultaneous_risk_cap",
+    "simultaneous_wilson_upper": 0.009240863139379945,
+    "source_config": "spectral+interval",
+    "test_metrics_used": 0,
+    "total_normal_instances": 3863,
+    "total_normal_review_count": 17
+  }
+}

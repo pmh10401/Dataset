@@ -1,0 +1,19 @@
+{
+  "autonomous_metric_scope": "not_evaluated",
+  "candidate_zero_datasets": 284,
+  "dataset_metrics_sha256": "c95dc3ddd2ab142ba7e0a7e3cab5157523c06a1ea8f2a3dfe20cfbb097b44456",
+  "datasets": 316,
+  "fp": 10,
+  "global_summary_sha256": "0534d197f2ff02702292bed01d428bbc431715d917648a398b39dc58956c82fb",
+  "mean_f1": 0.08966244725738397,
+  "mean_recall": 0.0949367088607595,
+  "micro_precision": 0.75,
+  "mismatch_count": 0,
+  "mismatches": [],
+  "policy_sha256": "f0997ddecb6ee5c21c0b04bc37e16dff6238b41ea0eea7f972ade9d922ae520e",
+  "prediction_sha256": "9d9172668a51e74904279275c89109eac96a76ddac749f349fc769029b1dc5c9",
+  "retrospective": true,
+  "review_candidates": 40,
+  "tp": 30,
+  "zero_f1_datasets": 286
+}

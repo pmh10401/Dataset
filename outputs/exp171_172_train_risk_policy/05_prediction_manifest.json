@@ -1,0 +1,15 @@
+{
+  "autonomous_metric_scope": "not_evaluated",
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "created_at": "2026-07-15 12:13:33",
+  "dataset_count": 316,
+  "experiment_id": "experiment_172_frozen_train_risk_policy_review",
+  "policy_file": "03_exp171_frozen_policy.json",
+  "policy_sha256": "f0997ddecb6ee5c21c0b04bc37e16dff6238b41ea0eea7f972ade9d922ae520e",
+  "prediction_file": "04_exp172_frozen_predictions.jsonl",
+  "prediction_sha256": "9d9172668a51e74904279275c89109eac96a76ddac749f349fc769029b1dc5c9",
+  "review_metric_scope": "retrospective_research_review_candidate",
+  "source_prediction_file": "06_frozen_predictions.jsonl",
+  "source_prediction_sha256": "836a773001c97888dd218372e3579c36dd1811c275d7cd418f46fd39aeeef4a4"
+}

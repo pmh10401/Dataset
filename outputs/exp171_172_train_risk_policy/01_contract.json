@@ -1,0 +1,33 @@
+{
+  "audit_experiment_id": "experiment_171_train_normal_risk_policy_freeze",
+  "config": {
+    "autonomous_hard_alert": false,
+    "candidate_lane": "research_review_candidate",
+    "comparisons": 60,
+    "confidence": 0.95,
+    "dataset_name_routing": false,
+    "family_routing": false,
+    "multiple_comparison_correction": "bonferroni",
+    "risk_target": 0.01,
+    "selection_rule": "max_train_oob_review_count_under_simultaneous_risk_cap",
+    "test_length_budget": false,
+    "test_metric_selection": false,
+    "version": "exp171_172_train_risk_policy_v1"
+  },
+  "config_hash": "f3607a662552d6992db36f8a3eedd1cfd43f28eb30ffe0139b58da49792c7694",
+  "database_path": "/Users/minho/Documents/Dataset/univariate_ts.db",
+  "database_sha256_expected": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+  "end_to_end_train_only_provenance_validated": false,
+  "evaluation_experiment_id": "experiment_172_frozen_train_risk_policy_review",
+  "expected_datasets": 316,
+  "prediction_uses_test_labels": false,
+  "prospective_validated": false,
+  "retrospective": true,
+  "selection_input_scope": "train_oob_only",
+  "source_files": {
+    "04_exp169_dataset_audit.csv": "0a85e46dcf9d5869f025163004bc2fd5d2d89e3084f1a31c5c9045c21dfb4946",
+    "05_exp169_global_summary.csv": "f042af4eecf72843ade4c282eb9840483b28f3854aceecf06a68aa3e92dce352",
+    "06_frozen_predictions.jsonl": "836a773001c97888dd218372e3579c36dd1811c275d7cd418f46fd39aeeef4a4",
+    "MANIFEST.csv": "824a8d96c86fa0fd47d1821878efad95e5e01b71826542c41a1fd9efa464c668"
+  }
+}
