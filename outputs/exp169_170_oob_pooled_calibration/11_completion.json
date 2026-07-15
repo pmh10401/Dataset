@@ -1,0 +1,10 @@
+{
+  "autonomous_metric_scope": "not_evaluated",
+  "completed_at": "2026-07-15 10:48:59",
+  "dataset_count": 316,
+  "experiment_id": "experiment_170_oob_pooled_review_evaluation",
+  "prediction_rows": 18960,
+  "prediction_sha256": "836a773001c97888dd218372e3579c36dd1811c275d7cd418f46fd39aeeef4a4",
+  "retrospective": true,
+  "selected_policy": false
+}

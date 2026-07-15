@@ -617,8 +617,8 @@ def test_history_metric_text_rejects_unavailable_values_before_number_conversion
     assert "historyMetricText(variant, 'mean_f1', fmt, item)" in html
 
 
-def test_historical_catalog_covers_exp138_through_exp168():
-    for number in range(138, 169):
+def test_historical_catalog_covers_exp138_through_exp170():
+    for number in range(138, 171):
         assert any(exp_id.startswith(f"experiment_{number}") for exp_id in dash.HISTORICAL_EXPERIMENT_META)
 
 
@@ -670,6 +670,42 @@ def test_exp167_168_are_registered_as_non_operational_research_results():
     assert exp168["expected_datasets"] == 316
     assert exp168["selected_alpha"] is None
     assert exp168["autonomous_metric_scope"] == "not_evaluated"
+
+
+def test_exp169_170_are_registered_as_unselected_research_results():
+    exp169_id = "experiment_169_oob_pooled_calibration_audit"
+    exp170_id = "experiment_170_oob_pooled_review_evaluation"
+
+    for exp_id in (exp169_id, exp170_id):
+        assert exp_id in dash.EXPERIMENTS
+        assert exp_id in dash.HISTORICAL_EXPERIMENT_META
+        assert dash.EXPERIMENTS[exp_id]["history_status"] == "completed_research"
+        assert dash.EXPERIMENTS[exp_id]["comparison_eligible"] is False
+        assert dash.EXPERIMENTS[exp_id]["expected_datasets"] == 316
+
+    exp169 = dash.EXPERIMENTS[exp169_id]
+    assert exp169["scope"] == "retrospective_label_free_oob_calibration_audit"
+    assert exp169["selected_alpha"] is None
+    assert exp169["selected_pool_policy"] is None
+
+    exp170 = dash.EXPERIMENTS[exp170_id]
+    assert exp170["scope"] == "retrospective_human_assisted_review_sensitivity"
+    assert exp170["selected_alpha"] is None
+    assert exp170["selected_pool_policy"] is None
+    assert exp170["autonomous_metric_scope"] == "not_evaluated"
+
+    summary_rows = dash.read_csv_rows(
+        Path(__file__).resolve().parents[1]
+        / "outputs/exp169_170_oob_pooled_calibration/09_exp170_global_summary.csv"
+    )
+    normalized = dash.normalize_historical_metrics({}, summary_rows, exp170)
+    assert len(normalized["variants"]) == 60
+    assert {row["pool_policy"] for row in normalized["variants"]} == {
+        "similarity_pool",
+        "coarse_strata_pool",
+        "global_balanced_pool",
+    }
+    assert all(row["variant_name"] == row["pool_policy"] for row in normalized["variants"])
 
 
 def test_experiment_catalog_includes_exp33_reconstruction_artifacts():
@@ -1087,10 +1123,11 @@ if __name__ == "__main__":
     test_completed_snapshot_exposes_operational_columns()
     test_history_ui_has_status_filter_and_separate_review_metrics()
     test_history_metric_text_rejects_unavailable_values_before_number_conversion()
-    test_historical_catalog_covers_exp138_through_exp168()
+    test_historical_catalog_covers_exp138_through_exp170()
     test_normalize_runtime_state_hides_dead_running_pid_and_stale_queue_item()
     test_exp164_is_audit_only_and_exp165_is_registered_for_live_queue()
     test_exp167_168_are_registered_as_non_operational_research_results()
+    test_exp169_170_are_registered_as_unselected_research_results()
     test_experiment_catalog_includes_exp33_reconstruction_artifacts()
     test_history_artifact_path_rejects_unknown_ids_and_paths_outside_allowed_roots()
     test_historical_catalog_records_have_explicit_status_contracts()

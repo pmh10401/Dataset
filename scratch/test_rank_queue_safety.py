@@ -136,6 +136,19 @@ def test_queue_catalog_includes_exp167_168_artifacts():
     assert exp168["summary_csv"].name == "07_exp168_global_summary.csv"
 
 
+def test_queue_catalog_includes_exp169_170_artifacts():
+    by_id = {experiment["id"]: experiment for experiment in queue.EXPERIMENTS}
+    exp169 = by_id["experiment_169_oob_pooled_calibration_audit"]
+    exp170 = by_id["experiment_170_oob_pooled_review_evaluation"]
+
+    assert exp169["expected_datasets"] == 316
+    assert exp169["detail_csv"].name == "04_exp169_dataset_audit.csv"
+    assert exp169["summary_csv"].name == "05_exp169_global_summary.csv"
+    assert exp170["expected_datasets"] == 316
+    assert exp170["detail_csv"].name == "08_exp170_dataset_metrics.csv"
+    assert exp170["summary_csv"].name == "09_exp170_global_summary.csv"
+
+
 if __name__ == "__main__":
     test_reconcile_running_state_clears_dead_pid_without_touching_queue()
     test_reconcile_running_state_keeps_live_pid()
@@ -143,4 +156,5 @@ if __name__ == "__main__":
     test_process_inspection_failure_defers_queue_work()
     test_queue_creates_output_directories_before_opening_logs()
     test_queue_catalog_includes_exp167_168_artifacts()
+    test_queue_catalog_includes_exp169_170_artifacts()
     print("rank queue safety tests passed")
