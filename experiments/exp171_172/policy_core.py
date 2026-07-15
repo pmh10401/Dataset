@@ -195,4 +195,3 @@ def select_train_risk_policy(
         "selected": selected,
         "candidates": candidates,
     }
-

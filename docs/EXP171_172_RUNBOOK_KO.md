@@ -35,4 +35,3 @@ python3 experiments/exp171_172/independent_reaggregate_exp171_172.py \
 
 `evaluate`는 frozen policy와 prediction SHA256 검증 후에만 TEST label을 읽는다.
 결과가 좋거나 나쁘더라도 이번 실험에서 policy를 다시 고르지 않는다.
-
