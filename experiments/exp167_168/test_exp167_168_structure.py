@@ -97,6 +97,12 @@ class Exp167168StructureTests(unittest.TestCase):
             runner.stable_hash({"b": 2, "a": 1}),
         )
 
+    def test_project_relative_path_accepts_relative_and_absolute_outputs(self):
+        relative = Path("outputs/demo/cache.npz")
+        absolute = runner.PROJECT_DIR / relative
+        self.assertEqual(runner.project_relative_path(relative), str(relative))
+        self.assertEqual(runner.project_relative_path(absolute), str(relative))
+
 
 if __name__ == "__main__":
     unittest.main()

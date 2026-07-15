@@ -78,6 +78,13 @@ def stable_hash(payload: dict) -> str:
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
+def project_relative_path(path: Path) -> str:
+    candidate = Path(path)
+    if not candidate.is_absolute():
+        return str(candidate)
+    return str(candidate.resolve().relative_to(PROJECT_DIR.resolve()))
+
+
 def frozen_config() -> dict:
     return {
         "version": CONFIG_VERSION,
@@ -347,7 +354,7 @@ def _audit_worker(row: dict[str, str], output_dir: Path, config_hash: str) -> di
             "target_length_min": int(np.min(scored["target_lengths"])),
             "target_length_max": int(np.max(scored["target_lengths"])),
             "full_target_length": int(scored["full_target_length"]),
-            "cache_file": str(cache_path.relative_to(PROJECT_DIR)),
+            "cache_file": project_relative_path(cache_path),
             "cache_sha256": sha256_file(cache_path),
             "config_hash": config_hash,
         }
