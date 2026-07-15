@@ -993,6 +993,24 @@ EXPERIMENTS = [
         "stdout_log": ROOT / "outputs/exp166_small_sample_anomaly_coverage/full_run.log",
         "expected_datasets": 316,
     },
+    {
+        "id": "experiment_167_score_calibration_parity_audit",
+        "label": "Exp167 · fold-matched score calibration parity audit",
+        "script": ROOT / "experiments/exp167_168/run_experiment_167_168_score_calibration_parity.py",
+        "detail_csv": ROOT / "outputs/exp167_168_score_calibration_parity/02_parity_audit.csv",
+        "summary_csv": ROOT / "outputs/exp167_168_score_calibration_parity/03_fold_score_summary.csv",
+        "stdout_log": ROOT / "outputs/exp167_168_score_calibration_parity/full_run.log",
+        "expected_datasets": 316,
+    },
+    {
+        "id": "experiment_168_fold_matched_parity_evaluation",
+        "label": "Exp168 · fold-matched parity review sensitivity",
+        "script": ROOT / "experiments/exp167_168/run_experiment_167_168_score_calibration_parity.py",
+        "detail_csv": ROOT / "outputs/exp167_168_score_calibration_parity/06_exp168_dataset_metrics.csv",
+        "summary_csv": ROOT / "outputs/exp167_168_score_calibration_parity/07_exp168_global_summary.csv",
+        "stdout_log": ROOT / "outputs/exp167_168_score_calibration_parity/full_run.log",
+        "expected_datasets": 316,
+    },
 ]
 
 DEFAULT_QUEUE = ["experiment_26_rocket"]

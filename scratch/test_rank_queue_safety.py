@@ -124,10 +124,23 @@ def test_queue_creates_output_directories_before_opening_logs():
             handle.write("ready\n")
 
 
+def test_queue_catalog_includes_exp167_168_artifacts():
+    by_id = {experiment["id"]: experiment for experiment in queue.EXPERIMENTS}
+    exp167 = by_id["experiment_167_score_calibration_parity_audit"]
+    exp168 = by_id["experiment_168_fold_matched_parity_evaluation"]
+
+    assert exp167["expected_datasets"] == 316
+    assert exp167["detail_csv"].name == "02_parity_audit.csv"
+    assert exp168["expected_datasets"] == 316
+    assert exp168["detail_csv"].name == "06_exp168_dataset_metrics.csv"
+    assert exp168["summary_csv"].name == "07_exp168_global_summary.csv"
+
+
 if __name__ == "__main__":
     test_reconcile_running_state_clears_dead_pid_without_touching_queue()
     test_reconcile_running_state_keeps_live_pid()
     test_reconcile_running_state_recovers_complete_expected_dataset_output()
     test_process_inspection_failure_defers_queue_work()
     test_queue_creates_output_directories_before_opening_logs()
+    test_queue_catalog_includes_exp167_168_artifacts()
     print("rank queue safety tests passed")

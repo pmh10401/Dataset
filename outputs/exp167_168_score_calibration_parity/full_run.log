@@ -1,0 +1,8 @@
+[2026-07-15 09:50:01] reconstructed full-run summary from frozen artifacts
+[2026-07-15 09:50:01] experiment_167_score_calibration_parity_audit finished datasets=316 source_rows=948 errors=0
+[2026-07-15 09:50:01] resolution_blocked alpha=0.005:316 alpha=0.01:316 alpha=0.02:316 alpha=0.05:309
+[2026-07-15 09:50:01] experiment_168_fold_matched_parity_evaluation prediction frozen datasets=316 rows=6320 errors=0
+[2026-07-15 09:50:01] prediction_sha256=2eb0a80273f822e76a6e78f1a2a31ccb9df63f454e7421b359cf8cf0d521504b
+[2026-07-15 09:50:01] frozen prediction validation passed datasets=316 rows=6320 forbidden_fields=0 out_of_range_rows=0
+[2026-07-15 09:50:01] experiment_168_fold_matched_parity_evaluation finished datasets=316 prediction_rows=6320 summary_rows=20
+[2026-07-15 09:50:01] retrospective=true autonomous_metric_scope=not_evaluated selected_policy=false

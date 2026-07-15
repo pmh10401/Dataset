@@ -1,0 +1,52 @@
+{
+  "audit_experiment_id": "experiment_167_score_calibration_parity_audit",
+  "candidate_lane": "research_review_candidate",
+  "config": {
+    "alphas": [
+      0.005,
+      0.01,
+      0.02,
+      0.05
+    ],
+    "candidate_lane": "research_review_candidate",
+    "dataset_name_routing": false,
+    "family_routing": false,
+    "finite_sample_correction": 1,
+    "fold_method": "leave_one_out",
+    "fold_seed": 20260715,
+    "p_value": "(1 + paired_oof_ge_test) / (n_train + 1)",
+    "source_configs": [
+      "spectral+shapelet",
+      "spectral+interval",
+      "shapelet+interval",
+      "2of3",
+      "3of3"
+    ],
+    "sources": [
+      "spectral",
+      "shapelet",
+      "interval"
+    ],
+    "target_train_range": [
+      5,
+      20
+    ],
+    "test_length_routing": false,
+    "test_metric_selection": false,
+    "top_n_budget": null,
+    "version": "exp167_168_score_calibration_parity_v1"
+  },
+  "config_hash": "61ae6e522b0ed4df0c9ab564780ed64d3ca1ea9ca813b193a534ef385492f05a",
+  "database_path": "/Users/minho/Documents/Dataset/univariate_ts.db",
+  "database_sha256_expected": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+  "evaluation_experiment_id": "experiment_168_fold_matched_parity_evaluation",
+  "exp164_contract_sha256": "cd5af2984efb88d85d8de380dacb5c11016d2e3f7c9a2dbaf61d9b98c78448e0",
+  "exp164_manifest_sha256": "a3226c4c30f5217440126ebab1b502fd11e3dceec64451b7be88437e845e439e",
+  "expected_datasets": 316,
+  "prediction_rows_per_dataset": 20,
+  "prediction_uses_test_labels": false,
+  "prediction_uses_test_values": true,
+  "prospective_validated": false,
+  "retrospective": true,
+  "test_metric_policy_selection": false
+}
