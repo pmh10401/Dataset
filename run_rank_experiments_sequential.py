@@ -1069,9 +1069,43 @@ EXPERIMENTS = [
         "stdout_log": ROOT / "outputs/exp173_174_balanced_train_selector/full_run.log",
         "expected_datasets": 316,
     },
+    *[
+        {
+            "id": exp_id,
+            "label": label,
+            "script": ROOT / "experiments/exp177_185/run_experiment_177_185_unattended.py",
+            "args": ["--stage", stage],
+            "detail_csv": DATA_DIR / f"{exp_id}_results.csv",
+            "summary_csv": DATA_DIR / f"{exp_id}_summary.csv",
+            "stdout_log": DATA_DIR / "exp177_185_unattended" / f"exp{stage}_stdout.log",
+            "expected_datasets": expected,
+        }
+        for stage, exp_id, label, expected in (
+            ("177", "experiment_177_train_oof_review_policy_freeze", "Exp177 · TRAIN OOF review policy freeze", 639),
+            ("178", "experiment_178_frozen_policy_review_prediction", "Exp178 · frozen policy review prediction", 639),
+            ("179", "experiment_179_canonical_multiscale_feature_cache", "Exp179 · canonical multiscale feature cache", 639),
+            ("180", "experiment_180_canonical_score_backend_prediction", "Exp180 · canonical score backend prediction", 639),
+            ("181", "experiment_181_existing_new_source_fusion_prediction", "Exp181 · existing/new source fusion prediction", 639),
+            ("182", "experiment_182_five_hour_checkpoint_evaluation", "Exp182 · five-hour checkpoint evaluation", 639),
+            ("183", "experiment_183_wavelet_multiscale_feature_prediction", "Exp183 · wavelet multiscale feature prediction", 639),
+            ("184", "experiment_184_extension_source_fusion_prediction", "Exp184 · extension source fusion prediction", 639),
+            ("185", "experiment_185_final_independent_reaggregation", "Exp185 · final independent reaggregation", 639),
+        )
+    ],
 ]
 
 DEFAULT_QUEUE = ["experiment_26_rocket"]
+EXP177_185_BATCH = [
+    "experiment_177_train_oof_review_policy_freeze",
+    "experiment_178_frozen_policy_review_prediction",
+    "experiment_179_canonical_multiscale_feature_cache",
+    "experiment_180_canonical_score_backend_prediction",
+    "experiment_181_existing_new_source_fusion_prediction",
+    "experiment_182_five_hour_checkpoint_evaluation",
+    "experiment_183_wavelet_multiscale_feature_prediction",
+    "experiment_184_extension_source_fusion_prediction",
+    "experiment_185_final_independent_reaggregation",
+]
 
 
 def now():
@@ -1364,6 +1398,10 @@ def run_experiment(exp, overlap_checked=False):
     log(f"START {exp['id']} script={exp['script']} rank_workers={worker_count}")
     start = time.time()
     with exp["stdout_log"].open("w") as stdout_log:
+        batch_meta = state.get("exp177_185_batch") or {}
+        child_env = {**os.environ, "RANK_EXPERIMENT_WORKERS": worker_count}
+        if exp["id"] in EXP177_185_BATCH and batch_meta.get("hard_deadline_unix"):
+            child_env["EXP177_185_BATCH_DEADLINE_UNIX"] = str(batch_meta["hard_deadline_unix"])
         process = subprocess.Popen(
             [
                 str(exp.get("python_bin", PYTHON_BIN)),
@@ -1371,7 +1409,7 @@ def run_experiment(exp, overlap_checked=False):
                 *[str(argument) for argument in exp.get("args", [])],
             ],
             cwd=str(ROOT),
-            env={**os.environ, "RANK_EXPERIMENT_WORKERS": worker_count},
+            env=child_env,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -1487,6 +1525,18 @@ def cmd_run_queue(poll_seconds=30):
         log("QUEUE runner started")
         while True:
             state = reconcile_running_state(load_state())
+            batch_meta = state.get("exp177_185_batch") or {}
+            hard_deadline = float(batch_meta.get("hard_deadline_unix") or 0)
+            if hard_deadline and time.time() >= hard_deadline:
+                remaining = [item for item in state.get("queue", []) if item in EXP177_185_BATCH]
+                state["queue"] = [item for item in state.get("queue", []) if item not in EXP177_185_BATCH]
+                state.setdefault("skipped", []).extend(
+                    {"id": item, "skipped_at": now(), "reason": "12-hour batch hard deadline"}
+                    for item in remaining
+                )
+                save_state(state)
+                log(f"QUEUE Exp177-185 hard deadline reached; skipped {len(remaining)} remaining stages")
+                continue
             queue = [exp_id for exp_id in state.get("queue", []) if exp_id not in state.get("completed", [])]
             if not queue:
                 log("QUEUE empty; runner exiting")
@@ -1500,7 +1550,37 @@ def cmd_run_queue(poll_seconds=30):
                 continue
             exp_id = queue[0]
             log(f"QUEUE starting {exp_id}")
-            run_experiment(get_experiment(exp_id), overlap_checked=True)
+            try:
+                run_experiment(get_experiment(exp_id), overlap_checked=True)
+            except SystemExit as exc:
+                state = load_state()
+                state["queue"] = [item for item in state.get("queue", []) if item != exp_id]
+                state.setdefault("failed", []).append(
+                    {"id": exp_id, "failed_at": now(), "return_code": exc.code}
+                )
+                save_state(state)
+                log(f"QUEUE recorded failure {exp_id} return_code={exc.code}; continuing")
+
+
+def queue_exp177_185_batch():
+    state = reconcile_running_state(load_state())
+    completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP177_185_BATCH]
+    queue.extend(item for item in EXP177_185_BATCH if item not in completed)
+    state["queue"] = queue
+    registered_unix = time.time()
+    state["exp177_185_batch"] = {
+        "registered_at": now(),
+        "registered_unix": registered_unix,
+        "hard_deadline_unix": registered_unix + 12 * 60 * 60,
+        "worker_count": int(os.environ.get("RANK_EXPERIMENT_WORKERS", "7")),
+        "soft_checkpoint_hours": 5,
+        "hard_limit_hours": 12,
+        "agent_monitoring": False,
+        "experiments": EXP177_185_BATCH,
+    }
+    save_state(state)
+    log(f"QUEUE registered Exp177-185 batch ({len(EXP177_185_BATCH)} experiments)")
 
 
 def main():
@@ -1510,6 +1590,7 @@ def main():
     sub.add_parser("status")
     sub.add_parser("run-next")
     sub.add_parser("run-queue")
+    sub.add_parser("queue-exp177-185")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -1530,6 +1611,8 @@ def main():
         queue_experiment(args.experiment_id)
     elif args.command == "run-queue":
         cmd_run_queue()
+    elif args.command == "queue-exp177-185":
+        queue_exp177_185_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

@@ -1284,6 +1284,31 @@ EXPERIMENTS = {
     },
 }
 
+for _stage, _exp_id, _label, _expected in (
+    ("177", "experiment_177_train_oof_review_policy_freeze", "Exp177 · TRAIN OOF review policy freeze", 639),
+    ("178", "experiment_178_frozen_policy_review_prediction", "Exp178 · frozen policy review prediction", 639),
+    ("179", "experiment_179_canonical_multiscale_feature_cache", "Exp179 · canonical multiscale feature cache", 639),
+    ("180", "experiment_180_canonical_score_backend_prediction", "Exp180 · canonical score backend prediction", 639),
+    ("181", "experiment_181_existing_new_source_fusion_prediction", "Exp181 · existing/new source fusion prediction", 639),
+    ("182", "experiment_182_five_hour_checkpoint_evaluation", "Exp182 · five-hour checkpoint evaluation", 639),
+    ("183", "experiment_183_wavelet_multiscale_feature_prediction", "Exp183 · wavelet multiscale feature prediction", 639),
+    ("184", "experiment_184_extension_source_fusion_prediction", "Exp184 · extension source fusion prediction", 639),
+    ("185", "experiment_185_final_independent_reaggregation", "Exp185 · final independent reaggregation", 639),
+):
+    EXPERIMENTS[_exp_id] = {
+        "label": _label,
+        "history_status": "planned",
+        "comparison_eligible": False,
+        "scope": "retrospective_review_sensitivity",
+        "status_reason": "unattended sequential batch; autonomous Exp137 Hard alerts unchanged",
+        "autonomous_metric_scope": "unchanged_exp137_hard_alert",
+        "review_metric_scope": "retrospective_human_assisted_review_sensitivity",
+        "detail_csv": DATA_DIR / f"{_exp_id}_results.csv",
+        "summary_csv": DATA_DIR / f"{_exp_id}_summary.csv",
+        "stdout_log": DATA_DIR / "exp177_185_unattended" / f"exp{_stage}_stdout.log",
+        "expected_datasets": _expected,
+    }
+
 
 HISTORICAL_EXPERIMENT_META = {
     "experiment_138_policy_train_only_audit": {
