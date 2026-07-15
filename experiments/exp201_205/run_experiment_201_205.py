@@ -5,6 +5,7 @@ import argparse
 import csv
 import json
 import os
+import sys
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -12,6 +13,10 @@ from pathlib import Path
 from typing import Iterable
 
 import numpy as np
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from experiments.exp201_205.artifacts import (
     DATA_DIR,
