@@ -1196,6 +1196,38 @@ EXPERIMENTS = {
         "stdout_log": ROOT / "outputs/exp167_168_score_calibration_parity/full_run.log",
         "expected_datasets": 316,
     },
+    "experiment_169_oob_pooled_calibration_audit": {
+        "label": "Exp169 · OOB pooled calibration audit",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_label_free_oob_calibration_audit",
+        "status_reason": "label-free OOB normal-risk audit; no alpha, pool, or source configuration selected",
+        "autonomous_metric_scope": "not_evaluated",
+        "review_metric_scope": "not_evaluated",
+        "selected_alpha": None,
+        "selected_pool_policy": None,
+        "selected_source_config": None,
+        "detail_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/04_exp169_dataset_audit.csv",
+        "summary_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/05_exp169_global_summary.csv",
+        "stdout_log": ROOT / "outputs/exp169_170_oob_pooled_calibration/full_run.log",
+        "expected_datasets": 316,
+    },
+    "experiment_170_oob_pooled_review_evaluation": {
+        "label": "Exp170 · OOB pooled review evaluation",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_human_assisted_review_sensitivity",
+        "status_reason": "research review sensitivity; no alpha, pool, or source configuration selected",
+        "autonomous_metric_scope": "not_evaluated",
+        "review_metric_scope": "retrospective_research_review_candidate",
+        "selected_alpha": None,
+        "selected_pool_policy": None,
+        "selected_source_config": None,
+        "detail_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/08_exp170_dataset_metrics.csv",
+        "summary_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/09_exp170_global_summary.csv",
+        "stdout_log": ROOT / "outputs/exp169_170_oob_pooled_calibration/full_run.log",
+        "expected_datasets": 316,
+    },
 }
 
 
@@ -1499,6 +1531,45 @@ HISTORICAL_EXPERIMENT_META = {
         "selected_alpha": None,
         "detail_csv": ROOT / "outputs/exp167_168_score_calibration_parity/06_exp168_dataset_metrics.csv",
         "summary_csv": ROOT / "outputs/exp167_168_score_calibration_parity/07_exp168_global_summary.csv",
+    },
+    "experiment_169_oob_pooled_calibration_audit": {
+        "label": "Exp169 - OOB pooled calibration audit",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_label_free_oob_calibration_audit",
+        "status_reason": "label-free OOB normal-risk audit; no alpha, pool, or source configuration selected",
+        "autonomous_metric_scope": "not_evaluated",
+        "review_metric_scope": "not_evaluated",
+        "selected_alpha": None,
+        "selected_pool_policy": None,
+        "selected_source_config": None,
+        "detail_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/04_exp169_dataset_audit.csv",
+        "summary_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/05_exp169_global_summary.csv",
+        "artifact_paths": [
+            ROOT / "outputs/exp169_170_oob_pooled_calibration/01_contract.json",
+            ROOT / "outputs/exp169_170_oob_pooled_calibration/03_pool_manifest.csv",
+            ROOT / "outputs/exp169_170_oob_pooled_calibration/12_independent_reaggregation.json",
+        ],
+    },
+    "experiment_170_oob_pooled_review_evaluation": {
+        "label": "Exp170 - OOB pooled review evaluation",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_human_assisted_review_sensitivity",
+        "status_reason": "research review sensitivity; no alpha, pool, or source configuration selected",
+        "autonomous_metric_scope": "not_evaluated",
+        "review_metric_scope": "retrospective_research_review_candidate",
+        "selected_alpha": None,
+        "selected_pool_policy": None,
+        "selected_source_config": None,
+        "detail_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/08_exp170_dataset_metrics.csv",
+        "summary_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/09_exp170_global_summary.csv",
+        "artifact_paths": [
+            ROOT / "outputs/exp169_170_oob_pooled_calibration/06_frozen_predictions.jsonl",
+            ROOT / "outputs/exp169_170_oob_pooled_calibration/07_prediction_manifest.json",
+            ROOT / "outputs/exp169_170_oob_pooled_calibration/10_candidate_transition.csv",
+            ROOT / "outputs/exp169_170_oob_pooled_calibration/11_completion.json",
+        ],
     },
 }
 
@@ -3138,10 +3209,12 @@ def _normalize_historical_variant(row):
     review_tp = first_number(row, ["review_tp", "tp"])
     review_fp = first_number(row, ["review_fp", "fp"])
     review_precision = first_number(row, ["review_precision", "micro_precision", "precision"])
+    pool_policy = row.get("pool_policy")
     return {
         "alpha": as_float(row.get("alpha")),
+        "pool_policy": pool_policy,
         "source_config": row.get("source_config") or row.get("config_name"),
-        "variant_name": row.get("variant") or row.get("method"),
+        "variant_name": row.get("variant") or row.get("method") or pool_policy,
         "mean_f1": first_number(row, ["mean_hard_f1", "mean_f1", "f1_evt", "mean_f1_evt", "f1"]),
         "mean_combined_f1": first_number(row, ["mean_combined_f1"]),
         "mean_fp": first_number(row, ["mean_hard_fp", "mean_fp"]),
@@ -3153,6 +3226,15 @@ def _normalize_historical_variant(row):
         "review_tp": safe_int(review_tp),
         "review_fp": safe_int(review_fp),
         "review_precision": review_precision,
+        "normal_review_count": safe_int(
+            first_number(row, ["total_normal_review_count", "normal_review_count"])
+        ),
+        "normal_review_rate": first_number(
+            row, ["mean_normal_review_rate", "normal_review_rate"]
+        ),
+        "resolution_blocked_datasets": safe_int(
+            first_number(row, ["resolution_blocked_datasets", "resolution_blocked"])
+        ),
     }
 
 

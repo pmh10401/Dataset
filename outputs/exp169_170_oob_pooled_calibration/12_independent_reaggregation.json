@@ -1,0 +1,493 @@
+{
+  "dataset_count": 316,
+  "metric_rows": 18960,
+  "metrics_sha256": "0653ee79db52850cbf8871a731b608aa2e06704bf0dd01d869099a1308cd42d2",
+  "mismatch_count": 0,
+  "prediction_rows": 18960,
+  "prediction_sha256": "836a773001c97888dd218372e3579c36dd1811c275d7cd418f46fd39aeeef4a4",
+  "results": [
+    {
+      "key": [
+        "similarity_pool",
+        0.005,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.005,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.005,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.005,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.005,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.01,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.01,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.01,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.01,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.01,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.02,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.02,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.02,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.02,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.02,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.05,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.05,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.05,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.05,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "similarity_pool",
+        0.05,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.005,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.005,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.005,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.005,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.005,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.01,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.01,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.01,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.01,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.01,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.02,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.02,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.02,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.02,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.02,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.05,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.05,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.05,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.05,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "coarse_strata_pool",
+        0.05,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.005,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.005,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.005,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.005,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.005,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.01,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.01,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.01,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.01,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.01,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.02,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.02,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.02,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.02,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.02,
+        "3of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.05,
+        "spectral+shapelet"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.05,
+        "spectral+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.05,
+        "shapelet+interval"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.05,
+        "2of3"
+      ],
+      "status": "verified"
+    },
+    {
+      "key": [
+        "global_balanced_pool",
+        0.05,
+        "3of3"
+      ],
+      "status": "verified"
+    }
+  ],
+  "status": "success",
+  "summary_sha256": "bb4ba6889ef251b00a86c744c90fe886ca84185f58050779d8983cb590370bef",
+  "timestamp": "2026-07-15 10:56:28"
+}

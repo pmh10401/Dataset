@@ -1,0 +1,20 @@
+{
+  "autonomous_metric_scope": "not_evaluated",
+  "cache_manifest_file": "02_oob_cache_manifest.csv",
+  "cache_manifest_sha256": "217cc64f9f20e4f4aa349d295111938b09d2b2929561f79cebf61d8d0d3e5a20",
+  "config_hash": "7ee880a55b9a686b0233dcaaeb4e14dff9414299cb287fddb4a9fca8836b679e",
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "created_at": "2026-07-15 10:48:32",
+  "dataset_count": 316,
+  "experiment_id": "experiment_170_oob_pooled_review_evaluation",
+  "pool_manifest_file": "03_pool_manifest.csv",
+  "pool_manifest_sha256": "e5825c11ac26a8889b841b65fe360d25437a9f1b435752e8f5d476432b80b7f8",
+  "prediction_file": "06_frozen_predictions.jsonl",
+  "prediction_rows": 18960,
+  "prediction_sha256": "836a773001c97888dd218372e3579c36dd1811c275d7cd418f46fd39aeeef4a4",
+  "retrospective": true,
+  "review_metric_scope": "human_review_candidate_research_only",
+  "score_config_hash": "52f61c285915c010bf35d7ce241504a3c666c17f4d012c0adb62fe811ffa1c1d",
+  "workers": 7
+}

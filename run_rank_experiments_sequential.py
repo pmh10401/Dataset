@@ -1011,6 +1011,24 @@ EXPERIMENTS = [
         "stdout_log": ROOT / "outputs/exp167_168_score_calibration_parity/full_run.log",
         "expected_datasets": 316,
     },
+    {
+        "id": "experiment_169_oob_pooled_calibration_audit",
+        "label": "Exp169 · OOB pooled calibration audit",
+        "script": ROOT / "experiments/exp169_170/run_experiment_169_170_oob_pooled_calibration.py",
+        "detail_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/04_exp169_dataset_audit.csv",
+        "summary_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/05_exp169_global_summary.csv",
+        "stdout_log": ROOT / "outputs/exp169_170_oob_pooled_calibration/full_run.log",
+        "expected_datasets": 316,
+    },
+    {
+        "id": "experiment_170_oob_pooled_review_evaluation",
+        "label": "Exp170 · OOB pooled review evaluation",
+        "script": ROOT / "experiments/exp169_170/run_experiment_169_170_oob_pooled_calibration.py",
+        "detail_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/08_exp170_dataset_metrics.csv",
+        "summary_csv": ROOT / "outputs/exp169_170_oob_pooled_calibration/09_exp170_global_summary.csv",
+        "stdout_log": ROOT / "outputs/exp169_170_oob_pooled_calibration/full_run.log",
+        "expected_datasets": 316,
+    },
 ]
 
 DEFAULT_QUEUE = ["experiment_26_rocket"]
