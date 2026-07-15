@@ -6,12 +6,33 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from experiments.exp171_172 import policy_core
 from experiments.exp171_172 import run_experiment_171_172_train_risk_policy as runner
 
 
 class StructureTests(unittest.TestCase):
+    def test_frozen_policy_is_byte_deterministic(self):
+        class ProgressStub:
+            def __init__(self, **_kwargs):
+                pass
+
+            def start(self, **_kwargs):
+                pass
+
+            def finish(self, **_kwargs):
+                pass
+
+        with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
+            with patch.object(runner, "ExperimentProgress", ProgressStub):
+                runner.run_audit(Path(first))
+                runner.run_audit(Path(second))
+            self.assertEqual(
+                (Path(first) / "03_exp171_frozen_policy.json").read_bytes(),
+                (Path(second) / "03_exp171_frozen_policy.json").read_bytes(),
+            )
+
     def test_policy_core_does_not_reference_exp170_metrics(self):
         source = inspect.getsource(policy_core)
         self.assertNotIn("08_exp170_dataset_metrics", source)
@@ -64,4 +85,3 @@ class StructureTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

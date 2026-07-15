@@ -1035,7 +1035,7 @@ EXPERIMENTS = [
         "script": ROOT / "experiments/exp171_172/run_experiment_171_172_train_risk_policy.py",
         "args": ["--phase", "audit"],
         "detail_csv": ROOT / "outputs/exp171_172_train_risk_policy/02_exp171_policy_candidates.csv",
-        "summary_csv": ROOT / "outputs/exp171_172_train_risk_policy/03_exp171_frozen_policy.json",
+        "summary_csv": ROOT / "outputs/exp171_172_train_risk_policy/02_exp171_policy_candidates.csv",
         "stdout_log": ROOT / "outputs/exp171_172_train_risk_policy/full_run.log",
         "expected_datasets": 316,
     },

@@ -201,7 +201,6 @@ def run_audit(output_dir: Path) -> dict:
             "config_hash": contract["config_hash"],
             "source_dataset_audit_sha256": sha256_file(SOURCE_DATASET_AUDIT),
             "source_global_audit_sha256": sha256_file(SOURCE_GLOBAL_AUDIT),
-            "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
             "retrospective": True,
             "prospective_validated": False,
         }
