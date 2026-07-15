@@ -36,6 +36,11 @@ class Exp177185QueueContractTest(unittest.TestCase):
         for number in range(177, 186):
             self.assertIn(f'"{number}"', source)
 
+    def test_dashboard_does_not_freeze_batch_history_as_planned(self):
+        source = (ROOT / "serve_rank_dashboard.py").read_text(encoding="utf-8")
+        batch_block = source[source.index('for _stage, _exp_id'):source.index('HISTORICAL_EXPERIMENT_META =')]
+        self.assertNotIn('"history_status": "planned"', batch_block)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1297,7 +1297,6 @@ for _stage, _exp_id, _label, _expected in (
 ):
     EXPERIMENTS[_exp_id] = {
         "label": _label,
-        "history_status": "planned",
         "comparison_eligible": False,
         "scope": "retrospective_review_sensitivity",
         "status_reason": "unattended sequential batch; autonomous Exp137 Hard alerts unchanged",
