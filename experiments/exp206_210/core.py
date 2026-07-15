@@ -188,3 +188,13 @@ def validate_prediction_payload(payload: Mapping[str, object]) -> None:
         raise ValueError("duplicate candidate indices")
     if indices and (min(indices) < 0 or max(indices) >= n_test):
         raise ValueError("candidate index outside TEST range")
+
+
+def parse_indices(value: object) -> set[int]:
+    if value is None:
+        return set()
+    if isinstance(value, (list, tuple, set, np.ndarray)):
+        return {int(item) for item in value}
+    text = str(value).replace(",", " ").strip()
+    return {int(token) for token in text.split() if token}
+
