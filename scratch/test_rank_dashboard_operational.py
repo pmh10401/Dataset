@@ -8,6 +8,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import serve_rank_dashboard as dash
 
 
+def test_dashboard_catalog_includes_exp201_205_shadow_batch():
+    expected = [
+        "experiment_201_frozen_large_size_baseline",
+        "experiment_202_alternative_3of3_train_risk_rescue",
+        "experiment_203_current_alternative_cross_confirmation",
+        "experiment_204_size_stratified_shadow_router",
+        "experiment_205_independent_large_zero_f1_frontier",
+    ]
+    for experiment_id in expected:
+        item = dash.EXPERIMENTS[experiment_id]
+        assert item["expected_datasets"] == 251
+        assert item["comparison_eligible"] is False
+        assert item["scope"] == "retrospective_shadow_hard_diagnostic"
+        assert item["autonomous_metric_scope"] == "unchanged_exp137_hard_alert"
+
+
 def test_summarize_by_config_includes_operational_metrics():
     rows = [
         {

@@ -177,6 +177,23 @@ def test_queue_catalog_includes_exp173_174_artifacts():
     assert exp174["args"] == ["--phase", "predict-evaluate"]
 
 
+def test_queue_catalog_and_batch_include_exp201_205_in_order():
+    expected = [
+        "experiment_201_frozen_large_size_baseline",
+        "experiment_202_alternative_3of3_train_risk_rescue",
+        "experiment_203_current_alternative_cross_confirmation",
+        "experiment_204_size_stratified_shadow_router",
+        "experiment_205_independent_large_zero_f1_frontier",
+    ]
+    assert queue.EXP201_205_BATCH == expected
+    by_id = {experiment["id"]: experiment for experiment in queue.EXPERIMENTS}
+    for stage, experiment_id in zip(range(201, 206), expected, strict=True):
+        item = by_id[experiment_id]
+        assert item["expected_datasets"] == 251
+        assert item["args"] == ["--stage", str(stage)]
+        assert item["stdout_log"].name == f"exp{stage}_stdout.log"
+
+
 if __name__ == "__main__":
     test_reconcile_running_state_clears_dead_pid_without_touching_queue()
     test_reconcile_running_state_keeps_live_pid()
@@ -187,4 +204,5 @@ if __name__ == "__main__":
     test_queue_catalog_includes_exp169_170_artifacts()
     test_queue_catalog_includes_exp171_172_artifacts()
     test_queue_catalog_includes_exp173_174_artifacts()
+    test_queue_catalog_and_batch_include_exp201_205_in_order()
     print("rank queue safety tests passed")

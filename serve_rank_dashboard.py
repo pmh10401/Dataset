@@ -1369,6 +1369,27 @@ for _stage, _exp_id, _label, _expected in (
 
 
 for _stage, _exp_id, _label, _expected in (
+    ("201", "experiment_201_frozen_large_size_baseline", "Exp201 · Frozen large-size baseline", 251),
+    ("202", "experiment_202_alternative_3of3_train_risk_rescue", "Exp202 · Alternative 3-of-3 TRAIN-risk rescue", 251),
+    ("203", "experiment_203_current_alternative_cross_confirmation", "Exp203 · Current-alternative cross confirmation", 251),
+    ("204", "experiment_204_size_stratified_shadow_router", "Exp204 · Size-stratified shadow router", 251),
+    ("205", "experiment_205_independent_large_zero_f1_frontier", "Exp205 · Independent large Zero-F1 frontier", 251),
+):
+    EXPERIMENTS[_exp_id] = {
+        "label": _label,
+        "comparison_eligible": False,
+        "scope": "retrospective_shadow_hard_diagnostic",
+        "status_reason": "large TRAIN-size Zero-F1 recovery shadow diagnostic; not operational promotion",
+        "autonomous_metric_scope": "unchanged_exp137_hard_alert",
+        "review_metric_scope": "retrospective_shadow_hard_diagnostic",
+        "detail_csv": DATA_DIR / f"{_exp_id}_results.csv",
+        "summary_csv": DATA_DIR / f"{_exp_id}_summary.csv",
+        "stdout_log": DATA_DIR / "exp201_205_large_zero_f1_recovery" / f"exp{_stage}_stdout.log",
+        "expected_datasets": _expected,
+    }
+
+
+for _stage, _exp_id, _label, _expected in (
     ("186", "experiment_186_conservative_canonical_knn_agreement", "Exp186 · Conservative plus Canonical KNN agreement", 639),
     ("187", "experiment_187_conservative_dual_canonical_agreement", "Exp187 · Conservative plus dual canonical agreement", 639),
     ("188", "experiment_188_train_oof_stability_guarded_review", "Exp188 · TRAIN-OOF stability guarded review", 639),

@@ -1121,6 +1121,25 @@ EXPERIMENTS = [
             ("200", "experiment_200_frozen_frontier_reaggregation", "Exp200 · Frozen frontier reaggregation", 639),
         )
     ],
+    *[
+        {
+            "id": exp_id,
+            "label": label,
+            "script": ROOT / "experiments/exp201_205/run_experiment_201_205.py",
+            "args": ["--stage", stage],
+            "detail_csv": DATA_DIR / f"{exp_id}_results.csv",
+            "summary_csv": DATA_DIR / f"{exp_id}_summary.csv",
+            "stdout_log": DATA_DIR / "exp201_205_large_zero_f1_recovery" / f"exp{stage}_stdout.log",
+            "expected_datasets": expected,
+        }
+        for stage, exp_id, label, expected in (
+            ("201", "experiment_201_frozen_large_size_baseline", "Exp201 · Frozen large-size baseline", 251),
+            ("202", "experiment_202_alternative_3of3_train_risk_rescue", "Exp202 · Alternative 3-of-3 TRAIN-risk rescue", 251),
+            ("203", "experiment_203_current_alternative_cross_confirmation", "Exp203 · Current-alternative cross confirmation", 251),
+            ("204", "experiment_204_size_stratified_shadow_router", "Exp204 · Size-stratified shadow router", 251),
+            ("205", "experiment_205_independent_large_zero_f1_frontier", "Exp205 · Independent large Zero-F1 frontier", 251),
+        )
+    ],
 ]
 
 DEFAULT_QUEUE = ["experiment_26_rocket"]
@@ -1152,6 +1171,14 @@ EXP186_200_BATCH = [
     "experiment_198_existing_one_canonical_alpha_001",
     "experiment_199_expanded_two_of_six_train_workload_guard",
     "experiment_200_frozen_frontier_reaggregation",
+]
+
+EXP201_205_BATCH = [
+    "experiment_201_frozen_large_size_baseline",
+    "experiment_202_alternative_3of3_train_risk_rescue",
+    "experiment_203_current_alternative_cross_confirmation",
+    "experiment_204_size_stratified_shadow_router",
+    "experiment_205_independent_large_zero_f1_frontier",
 ]
 
 
@@ -1659,6 +1686,24 @@ def queue_exp186_200_batch():
     log(f"QUEUE registered Exp186-200 batch ({len(EXP186_200_BATCH)} experiments)")
 
 
+def queue_exp201_205_batch():
+    state = reconcile_running_state(load_state())
+    completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP201_205_BATCH]
+    queue.extend(item for item in EXP201_205_BATCH if item not in completed)
+    state["queue"] = queue
+    state["exp201_205_batch"] = {
+        "registered_at": now(),
+        "registered_unix": time.time(),
+        "worker_count": int(os.environ.get("RANK_EXPERIMENT_WORKERS", "7")),
+        "agent_monitoring": False,
+        "execution_mode": "sequential_one_stage_at_a_time",
+        "experiments": EXP201_205_BATCH,
+    }
+    save_state(state)
+    log(f"QUEUE registered Exp201-205 batch ({len(EXP201_205_BATCH)} experiments)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run rank experiments one at a time.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1668,6 +1713,7 @@ def main():
     sub.add_parser("run-queue")
     sub.add_parser("queue-exp177-185")
     sub.add_parser("queue-exp186-200")
+    sub.add_parser("queue-exp201-205")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -1692,6 +1738,8 @@ def main():
         queue_exp177_185_batch()
     elif args.command == "queue-exp186-200":
         queue_exp186_200_batch()
+    elif args.command == "queue-exp201-205":
+        queue_exp201_205_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 
