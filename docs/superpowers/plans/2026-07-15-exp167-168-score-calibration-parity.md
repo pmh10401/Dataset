@@ -40,7 +40,7 @@
 ```python
 def test_fold_paired_p_values_use_matching_fold_and_plus_one(self):
     heldout = np.array([1.0, 5.0, 3.0])
-    test = np.array([[2.0, 0.0], [4.0, 6.0], [3.0, 2.0]])
+    test = np.array([[2.0, 2.0], [4.0, 6.0], [3.0, 2.0]])
     actual = fold_paired_p_values(heldout, test)
     np.testing.assert_allclose(actual, np.array([3 / 4, 2 / 4]))
 
