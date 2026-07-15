@@ -40,6 +40,27 @@ def array_sha256(values: np.ndarray) -> str:
     return hashlib.sha256(array.view(np.uint8)).hexdigest()
 
 
+def snapshot_hashes(database_path: Path, baseline_path: Path) -> dict[str, str]:
+    return {
+        "database_sha256": sha256_file(database_path),
+        "baseline_sha256": sha256_file(baseline_path),
+    }
+
+
+def verify_snapshot_hashes(snapshot: dict[str, object], database_path: Path, baseline_path: Path) -> None:
+    if sha256_file(database_path) != snapshot.get("database_sha256"):
+        raise ValueError("database SHA256 drift detected")
+    if sha256_file(baseline_path) != snapshot.get("baseline_sha256"):
+        raise ValueError("baseline SHA256 drift detected")
+
+
+def resolve_frozen_path(output_dir: Path, stored_path: str) -> Path:
+    relative = Path(stored_path)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError("frozen prediction path must be relative to output directory")
+    return Path(output_dir) / relative
+
+
 def read_rows(path: Path) -> list[dict[str, str]]:
     with Path(path).open(newline="", encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
@@ -138,6 +159,11 @@ def freeze_score_diagnostics(record: dict[str, object], cache_sha256: str) -> di
         "contains_evaluation_metrics": False,
         "retrospective": True,
         "prospective_validated": False,
+        "end_to_end_train_only_provenance_validated": False,
+        "source_configuration_provenance_limit": (
+            "inherited source configurations include historically TEST-informed choices; "
+            "only the new freeze/evaluation separation is directly verified"
+        ),
     }
     core.validate_frozen_record(record)
     return payload
@@ -145,37 +171,41 @@ def freeze_score_diagnostics(record: dict[str, object], cache_sha256: str) -> di
 
 def freeze_all(output_dir: Path, cache_root: Path) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    manifest = {row["dataset_name"]: row for row in read_rows(CACHE_MANIFEST_PATH)}
-    baseline = eligible_baseline_rows()
-    missing = [row["dataset_name"] for row in baseline if row["dataset_name"] not in manifest]
-    if missing:
-        raise ValueError(f"score cache manifest missing {len(missing)} datasets")
+    manifest_rows = read_rows(CACHE_MANIFEST_PATH)
+    if len(manifest_rows) != 1117:
+        raise ValueError(f"score cache manifest coverage mismatch: {len(manifest_rows)} != 1117")
+    eligible = sorted(
+        (row for row in manifest_rows if int(row["n_train"]) >= 20),
+        key=lambda row: row["dataset_name"],
+    )
+    if len(eligible) != EXPECTED_DATASETS:
+        raise ValueError(f"eligible cache count mismatch: {len(eligible)} != {EXPECTED_DATASETS}")
     frozen_path = output_dir / "02_frozen_score_diagnostics.jsonl"
     with frozen_path.open("w", encoding="utf-8") as handle:
-        for number, row in enumerate(baseline, 1):
+        for number, row in enumerate(eligible, 1):
             name = row["dataset_name"]
-            record, cache_sha = load_cache_record(name, manifest[name], cache_root)
-            if int(row["train_normal_count"]) != int(record["n_train"]):
+            record, cache_sha = load_cache_record(name, row, cache_root)
+            if int(row["n_train"]) != int(record["n_train"]):
                 raise ValueError(f"n_train mismatch for {name}")
             payload = freeze_score_diagnostics(record, cache_sha)
-            if int(row["test_size"]) != int(payload["n_test"]):
+            if int(row["n_test"]) != int(payload["n_test"]):
                 raise ValueError(f"n_test mismatch for {name}")
             handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
-            if number % 50 == 0 or number == len(baseline):
-                print(f"freeze {number}/{len(baseline)}", flush=True)
+            if number % 50 == 0 or number == len(eligible):
+                print(f"freeze {number}/{len(eligible)}", flush=True)
     prediction_sha = sha256_file(frozen_path)
+    snapshots = snapshot_hashes(DB_PATH, BASELINE_PATH)
     manifest_payload = {
         "experiment_id": "experiment_175_large_train_miss_structure_diagnostic",
-        "dataset_count": len(baseline),
+        "dataset_count": len(eligible),
         "eligible_rule": "train_normal_count >= 20",
-        "frozen_prediction_path": str(frozen_path),
+        "frozen_prediction_path": frozen_path.name,
         "frozen_prediction_sha256": prediction_sha,
-        "baseline_path": str(BASELINE_PATH),
-        "baseline_sha256": sha256_file(BASELINE_PATH),
-        "cache_manifest_path": str(CACHE_MANIFEST_PATH),
+        "cache_manifest_path": str(CACHE_MANIFEST_PATH.relative_to(ROOT)),
         "cache_manifest_sha256": sha256_file(CACHE_MANIFEST_PATH),
         "database_path": str(DB_PATH),
-        "database_sha256": sha256_file(DB_PATH),
+        "baseline_path": str(BASELINE_PATH.relative_to(ROOT)),
+        **snapshots,
         "contains_test_labels": False,
         "contains_evaluation_metrics": False,
         "alphas": list(core.ALPHAS),
@@ -194,7 +224,7 @@ def freeze_all(output_dir: Path, cache_root: Path) -> dict[str, object]:
 def load_frozen(output_dir: Path) -> dict[str, dict[str, object]]:
     manifest_path = output_dir / "03_frozen_prediction_manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    frozen_path = Path(manifest["frozen_prediction_path"])
+    frozen_path = resolve_frozen_path(output_dir, manifest["frozen_prediction_path"])
     if sha256_file(frozen_path) != manifest["frozen_prediction_sha256"]:
         raise ValueError("frozen prediction SHA256 mismatch")
     rows: dict[str, dict[str, object]] = {}
@@ -230,10 +260,22 @@ def percentile(values: list[float], q: float) -> float:
 
 
 def evaluate_all(output_dir: Path) -> dict[str, object]:
+    prediction_manifest = json.loads(
+        (output_dir / "03_frozen_prediction_manifest.json").read_text(encoding="utf-8")
+    )
+    verify_snapshot_hashes(prediction_manifest, DB_PATH, BASELINE_PATH)
     frozen = load_frozen(output_dir)
     baseline = eligible_baseline_rows()
     dataset_rows: list[dict[str, object]] = []
     anomaly_rows: list[dict[str, object]] = []
+    alpha_counterfactual: dict[float, list[dict[str, int | float]]] = {
+        alpha: [] for alpha in core.ALPHAS
+    }
+    rank_counterfactual: dict[tuple[str, int], list[dict[str, int | float]]] = {
+        (method, depth): []
+        for method in ("any_source", "mean_rank")
+        for depth in core.RANK_DEPTHS
+    }
     with sqlite3.connect(DB_PATH) as connection:
         for number, base in enumerate(baseline, 1):
             name = base["dataset_name"]
@@ -247,6 +289,51 @@ def evaluate_all(output_dir: Path) -> dict[str, object]:
             priority = parse_indices(base["priority_review_indices"])
             if hard & standard or hard & priority or standard & priority:
                 raise ValueError(f"lane overlap for {name}")
+            all_lanes = hard | standard | priority
+            pvalue_matrix = np.vstack(
+                [np.asarray(score_row["sources"][source]["pvalue"], dtype=float) for source in core.SOURCE_NAMES]
+            )
+            rank_matrix = np.vstack(
+                [np.asarray(score_row["sources"][source]["rank"], dtype=int) for source in core.SOURCE_NAMES]
+            )
+            mean_ranks = np.asarray(score_row["mean_rank"], dtype=float)
+            for alpha in core.ALPHAS:
+                candidates = set(np.flatnonzero(np.sum(pvalue_matrix <= alpha, axis=0) >= 2).astype(int).tolist())
+                metrics = core.counterfactual_metrics(labels, candidates, hard)
+                beyond_hard = core.counterfactual_metrics(labels, candidates - hard, hard)
+                beyond_all = core.counterfactual_metrics(labels, candidates - all_lanes, hard)
+                metrics.update(
+                    {
+                        "resolution_eligible": int(1.0 / (int(base["train_normal_count"]) + 1) <= alpha),
+                        "new_beyond_hard": len(candidates - hard),
+                        "new_beyond_hard_tp": beyond_hard["tp"],
+                        "new_beyond_hard_fp": beyond_hard["fp"],
+                        "new_beyond_all_exp137_lanes": len(candidates - all_lanes),
+                        "new_beyond_all_exp137_lanes_tp": beyond_all["tp"],
+                        "new_beyond_all_exp137_lanes_fp": beyond_all["fp"],
+                    }
+                )
+                alpha_counterfactual[alpha].append(metrics)
+            for depth in core.RANK_DEPTHS:
+                candidate_sets = {
+                    "any_source": set(np.flatnonzero(np.min(rank_matrix, axis=0) <= depth).astype(int).tolist()),
+                    "mean_rank": set(np.flatnonzero(mean_ranks <= depth).astype(int).tolist()),
+                }
+                for method, candidates in candidate_sets.items():
+                    metrics = core.counterfactual_metrics(labels, candidates, hard)
+                    beyond_hard = core.counterfactual_metrics(labels, candidates - hard, hard)
+                    beyond_all = core.counterfactual_metrics(labels, candidates - all_lanes, hard)
+                    metrics.update(
+                        {
+                            "new_beyond_hard": len(candidates - hard),
+                            "new_beyond_hard_tp": beyond_hard["tp"],
+                            "new_beyond_hard_fp": beyond_hard["fp"],
+                            "new_beyond_all_exp137_lanes": len(candidates - all_lanes),
+                            "new_beyond_all_exp137_lanes_tp": beyond_all["tp"],
+                            "new_beyond_all_exp137_lanes_fp": beyond_all["fp"],
+                        }
+                    )
+                    rank_counterfactual[(method, depth)].append(metrics)
             missed = sorted(true_indices - hard)
             local_causes: Counter[str] = Counter()
             source_missed_ranks: dict[str, list[int]] = defaultdict(list)
@@ -328,6 +415,10 @@ def evaluate_all(output_dir: Path) -> dict[str, object]:
     alpha_rows = []
     for alpha in core.ALPHAS:
         counts = [int(row[f"support_count_alpha_{alpha:g}"]) for row in anomaly_rows]
+        counterfactual = alpha_counterfactual[alpha]
+        candidate_count = sum(int(row["candidate_count"]) for row in counterfactual)
+        tp = sum(int(row["tp"]) for row in counterfactual)
+        fp = sum(int(row["fp"]) for row in counterfactual)
         alpha_rows.append(
             {
                 "alpha": alpha,
@@ -336,6 +427,39 @@ def evaluate_all(output_dir: Path) -> dict[str, object]:
                 "one_source_support": sum(count == 1 for count in counts),
                 "two_or_more_source_support": sum(count >= 2 for count in counts),
                 "four_source_support": sum(count == 4 for count in counts),
+                "all_test_candidate_count": candidate_count,
+                "all_test_tp": tp,
+                "all_test_fp": fp,
+                "all_test_precision": tp / max(1, tp + fp),
+                "hard_miss_recovered": sum(int(row["hard_miss_recovered"]) for row in counterfactual),
+                "new_candidates_beyond_hard": sum(int(row["new_beyond_hard"]) for row in counterfactual),
+                "new_beyond_hard_tp": sum(int(row["new_beyond_hard_tp"]) for row in counterfactual),
+                "new_beyond_hard_fp": sum(int(row["new_beyond_hard_fp"]) for row in counterfactual),
+                "new_candidates_beyond_all_exp137_lanes": sum(
+                    int(row["new_beyond_all_exp137_lanes"]) for row in counterfactual
+                ),
+                "new_beyond_all_exp137_lanes_tp": sum(
+                    int(row["new_beyond_all_exp137_lanes_tp"]) for row in counterfactual
+                ),
+                "new_beyond_all_exp137_lanes_fp": sum(
+                    int(row["new_beyond_all_exp137_lanes_fp"]) for row in counterfactual
+                ),
+                "candidate_mean_per_dataset": candidate_count / len(dataset_rows),
+                "candidate_nonzero_datasets": sum(int(row["candidate_count"]) > 0 for row in counterfactual),
+                "resolution_eligible_datasets": sum(int(row["resolution_eligible"]) for row in counterfactual),
+                "candidate_p95_per_dataset": percentile(
+                    [int(row["candidate_count"]) for row in counterfactual], 95
+                ),
+                "candidate_max_per_dataset": max(int(row["candidate_count"]) for row in counterfactual),
+                "new_beyond_all_nonzero_datasets": sum(
+                    int(row["new_beyond_all_exp137_lanes"]) > 0 for row in counterfactual
+                ),
+                "new_beyond_all_p95_per_dataset": percentile(
+                    [int(row["new_beyond_all_exp137_lanes"]) for row in counterfactual], 95
+                ),
+                "new_beyond_all_max_per_dataset": max(
+                    int(row["new_beyond_all_exp137_lanes"]) for row in counterfactual
+                ),
                 "scope": "retrospective_diagnostic_only",
             }
         )
@@ -343,15 +467,45 @@ def evaluate_all(output_dir: Path) -> dict[str, object]:
 
     rank_rows = []
     for depth in core.RANK_DEPTHS:
-        rank_rows.append(
-            {
-                "rank_depth_k": depth,
-                "hard_misses": len(anomaly_rows),
-                "visible_in_any_source_top_k": sum(int(row[f"any_source_top_{depth}"]) for row in anomaly_rows),
-                "visible_in_mean_rank_top_k": sum(int(row[f"mean_rank_top_{depth}"]) for row in anomaly_rows),
-                "scope": "workload_sensitivity_not_policy_selection",
-            }
-        )
+        for method in ("any_source", "mean_rank"):
+            counterfactual = rank_counterfactual[(method, depth)]
+            candidate_count = sum(int(row["candidate_count"]) for row in counterfactual)
+            tp = sum(int(row["tp"]) for row in counterfactual)
+            fp = sum(int(row["fp"]) for row in counterfactual)
+            rank_rows.append(
+                {
+                    "method": method,
+                    "rank_depth_k": depth,
+                    "hard_misses": len(anomaly_rows),
+                    "hard_misses_visible": sum(
+                        int(row[f"any_source_top_{depth}" if method == "any_source" else f"mean_rank_top_{depth}"])
+                        for row in anomaly_rows
+                    ),
+                    "all_test_candidate_count": candidate_count,
+                    "all_test_tp": tp,
+                    "all_test_fp": fp,
+                    "all_test_precision": tp / max(1, tp + fp),
+                    "hard_miss_recovered": sum(int(row["hard_miss_recovered"]) for row in counterfactual),
+                    "new_candidates_beyond_hard": sum(int(row["new_beyond_hard"]) for row in counterfactual),
+                    "new_beyond_hard_tp": sum(int(row["new_beyond_hard_tp"]) for row in counterfactual),
+                    "new_beyond_hard_fp": sum(int(row["new_beyond_hard_fp"]) for row in counterfactual),
+                    "new_candidates_beyond_all_exp137_lanes": sum(
+                        int(row["new_beyond_all_exp137_lanes"]) for row in counterfactual
+                    ),
+                    "new_beyond_all_exp137_lanes_tp": sum(
+                        int(row["new_beyond_all_exp137_lanes_tp"]) for row in counterfactual
+                    ),
+                    "new_beyond_all_exp137_lanes_fp": sum(
+                        int(row["new_beyond_all_exp137_lanes_fp"]) for row in counterfactual
+                    ),
+                    "candidate_mean_per_dataset": candidate_count / len(dataset_rows),
+                    "candidate_p95_per_dataset": percentile(
+                        [int(row["candidate_count"]) for row in counterfactual], 95
+                    ),
+                    "candidate_max_per_dataset": max(int(row["candidate_count"]) for row in counterfactual),
+                    "scope": "workload_sensitivity_not_policy_selection",
+                }
+            )
     write_rows(output_dir / "07_rank_depth_summary.csv", rank_rows)
 
     cause_counts = Counter(row["cause_category"] for row in anomaly_rows)
@@ -403,6 +557,10 @@ def write_contract(output_dir: Path) -> None:
         "evaluation_reads_test_labels_after_frozen_hash": True,
         "test_metric_policy_selection": False,
         "autonomous_policy_changed": False,
+        "end_to_end_train_only_provenance_validated": False,
+        "source_configuration_provenance_limit": (
+            "inherited source configurations include historically TEST-informed choices"
+        ),
         "retrospective": True,
         "prospective_validated": False,
     }
@@ -425,7 +583,10 @@ def write_manifest(output_dir: Path) -> None:
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "retrospective_or_prospective": "retrospective",
                 "autonomous_or_human_assisted": "diagnostic_only",
-                "known_limitations": "TEST labels used only after frozen score hash for retrospective diagnosis",
+                "known_limitations": (
+                    "TEST labels used only after frozen score hash; inherited source configurations "
+                    "include historically TEST-informed choices; not end-to-end strict TRAIN-only"
+                ),
             }
         )
     write_rows(output_dir / "MANIFEST.csv", rows)

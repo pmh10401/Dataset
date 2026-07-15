@@ -16,6 +16,25 @@ def write_csv(path: Path, rows: list[dict[str, object]]) -> None:
 
 
 class ReaggregationTests(unittest.TestCase):
+    def test_row_contract_detects_scope_drift(self):
+        actual = {"hard_misses": "2", "scope": "wrong"}
+        expected = {"hard_misses": 2, "scope": "retrospective_diagnostic_only"}
+        self.assertFalse(reaggregate.row_matches(actual, expected, ("hard_misses", "scope")))
+
+    def test_completion_contract_detects_flag_drift(self):
+        expected = {
+            "datasets": 2,
+            "true_anomalies": 4,
+            "hard_tp": 2,
+            "hard_fp": 1,
+            "hard_misses": 2,
+            "retrospective": True,
+            "prospective_validated": False,
+            "test_metrics_used_for_policy_selection": False,
+        }
+        actual = dict(expected, prospective_validated=True)
+        self.assertFalse(reaggregate.completion_matches(actual, expected))
+
     def test_reaggregate_reconciles_dataset_and_cause_totals(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

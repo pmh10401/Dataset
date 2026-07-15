@@ -1,0 +1,6 @@
+cause_category,hard_miss_count,share_of_hard_misses
+already_in_standard_review,254,0.12055054579971523
+already_in_priority_review,7,0.0033222591362126247
+score_visible_policy_miss,746,0.3540579022306597
+single_source_only,432,0.20503084954912199
+representation_blind,668,0.3170384432842905

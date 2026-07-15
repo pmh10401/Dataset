@@ -92,6 +92,10 @@ Interpretation:
   relative to the complete Exp137 lanes.
 - Autonomous Hard metrics and human-assisted review metrics stay separate.
 - Tail replacement is not used.
+- The inherited score-source configurations are not claimed to have end-to-end
+  strict TRAIN-only provenance. Exp55/56 were historically selected after TEST
+  result inspection and Exp84 lacks a clean original preregistration record.
+  Exp175/176 validates only the new score-freeze and delayed-evaluation boundary.
 
 ## 7. Outputs
 

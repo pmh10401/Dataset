@@ -54,6 +54,17 @@ class DiagnosticCoreTests(unittest.TestCase):
         self.assertAlmostEqual(result["pvalue"], 0.25)
         self.assertFalse(any(result[f"support_alpha_{alpha:g}"] for alpha in core.ALPHAS))
 
+    def test_counterfactual_metrics_keep_hard_recovery_separate(self):
+        result = core.counterfactual_metrics(
+            labels=np.array([1, 0, 1, 0]),
+            candidate_indices={0, 1, 2},
+            hard_indices={0},
+        )
+        self.assertEqual(result["candidate_count"], 3)
+        self.assertEqual(result["tp"], 2)
+        self.assertEqual(result["fp"], 1)
+        self.assertEqual(result["hard_miss_recovered"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

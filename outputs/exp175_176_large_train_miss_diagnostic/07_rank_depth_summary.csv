@@ -1,0 +1,13 @@
+method,rank_depth_k,hard_misses,hard_misses_visible,all_test_candidate_count,all_test_tp,all_test_fp,all_test_precision,hard_miss_recovered,new_candidates_beyond_hard,new_beyond_hard_tp,new_beyond_hard_fp,new_candidates_beyond_all_exp137_lanes,new_beyond_all_exp137_lanes_tp,new_beyond_all_exp137_lanes_fp,candidate_mean_per_dataset,candidate_p95_per_dataset,candidate_max_per_dataset,scope
+any_source,1,2107,255,1604,792,812,0.4937655860349127,255,944,255,689,721,149,572,2.5101721439749607,4.0,4,workload_sensitivity_not_policy_selection
+mean_rank,1,2107,6,119,112,7,0.9411764705882353,6,7,6,1,0,0,0,0.18622848200312989,1.0,1,workload_sensitivity_not_policy_selection
+any_source,2,2107,423,3132,1154,1978,0.36845466155810985,423,2240,423,1817,1930,280,1650,4.901408450704225,7.0,8,workload_sensitivity_not_policy_selection
+mean_rank,2,2107,44,337,260,77,0.771513353115727,44,84,44,40,41,20,21,0.5273865414710485,2.0,2,workload_sensitivity_not_policy_selection
+any_source,3,2107,532,4549,1402,3147,0.30819960430863924,532,3493,532,2961,3123,365,2758,7.118935837245696,11.0,12,workload_sensitivity_not_policy_selection
+mean_rank,3,2107,91,631,405,226,0.6418383518225039,91,264,91,173,181,46,135,0.9874804381846636,3.0,4,workload_sensitivity_not_policy_selection
+any_source,5,2107,724,7158,1756,5402,0.24531992176585637,724,5917,724,5193,5460,519,4941,11.2018779342723,16.100000000000023,20,workload_sensitivity_not_policy_selection
+mean_rank,5,2107,150,1370,597,773,0.43576642335766425,150,842,150,692,715,88,627,2.143974960876369,5.0,7,workload_sensitivity_not_policy_selection
+any_source,8,2107,921,10601,2085,8516,0.19667955853221394,921,9209,921,8288,8696,687,8009,16.58998435054773,25.0,31,workload_sensitivity_not_policy_selection
+mean_rank,8,2107,243,2745,840,1905,0.30601092896174864,243,2053,243,1810,1850,144,1706,4.295774647887324,8.0,10,workload_sensitivity_not_policy_selection
+any_source,10,2107,1039,12863,2239,10624,0.17406514809919926,1039,11426,1039,10387,10889,796,10093,20.129890453834115,31.0,37,workload_sensitivity_not_policy_selection
+mean_rank,10,2107,300,3724,981,2743,0.2634264232008593,300,2939,300,2639,2690,177,2513,5.827856025039123,10.0,13,workload_sensitivity_not_policy_selection

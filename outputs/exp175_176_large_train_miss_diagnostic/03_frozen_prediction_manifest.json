@@ -1,0 +1,37 @@
+{
+  "alphas": [
+    0.005,
+    0.01,
+    0.02,
+    0.05
+  ],
+  "baseline_path": "results/exp137/experiment_137_operational_triage_results.csv",
+  "baseline_sha256": "7bedd1bd2fc8a01688aa86a89601155d57478bf5158af05487df8696f0bd57a4",
+  "cache_manifest_path": "outputs/exp153_157_train_only_improvements/01_score_cache_manifest.csv",
+  "cache_manifest_sha256": "bf73796c046a6102fce53d3b6fc606afa1ed0a5161ebb6e92d94698ab56a68a0",
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "database_path": "/Users/minho/Documents/Dataset/univariate_ts.db",
+  "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+  "dataset_count": 639,
+  "eligible_rule": "train_normal_count >= 20",
+  "experiment_id": "experiment_175_large_train_miss_structure_diagnostic",
+  "frozen_prediction_path": "02_frozen_score_diagnostics.jsonl",
+  "frozen_prediction_sha256": "3a8d312fbe8253997bfbee2c7f1eb1d37af792268d4b6e9fbdcef46349cddb41",
+  "prospective_validated": false,
+  "rank_depths": [
+    1,
+    2,
+    3,
+    5,
+    8,
+    10
+  ],
+  "retrospective": true,
+  "source_names": [
+    "temporal_random_kernel",
+    "spectral_image",
+    "texture_image",
+    "interval_statistical"
+  ]
+}

@@ -131,6 +131,27 @@ def mean_rank(test_scores_by_source: Mapping[str, np.ndarray]) -> np.ndarray:
     return np.mean(np.vstack(ranks), axis=0)
 
 
+def counterfactual_metrics(
+    labels: np.ndarray,
+    candidate_indices: set[int],
+    hard_indices: set[int],
+) -> dict[str, int | float]:
+    truth = set(np.flatnonzero(np.asarray(labels) != 0).astype(int).tolist())
+    candidates = {int(index) for index in candidate_indices}
+    hard = {int(index) for index in hard_indices}
+    if candidates and (min(candidates) < 0 or max(candidates) >= len(labels)):
+        raise ValueError("candidate index outside TEST range")
+    tp = len(candidates & truth)
+    fp = len(candidates - truth)
+    return {
+        "candidate_count": len(candidates),
+        "tp": tp,
+        "fp": fp,
+        "precision": tp / max(1, tp + fp),
+        "hard_miss_recovered": len(candidates & (truth - hard)),
+    }
+
+
 def multiplicity_bin(anomaly_count: int) -> str:
     count = int(anomaly_count)
     if count <= 1:
