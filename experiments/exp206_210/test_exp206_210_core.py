@@ -13,6 +13,10 @@ from experiments.exp206_210.core import (
     wilson_upper,
     validate_prediction_payload,
 )
+from experiments.exp206_210.alternative_oof import (
+    fit_score_source,
+    crossfit_alternative_sources,
+)
 
 
 class Exp206210CoreTests(unittest.TestCase):
@@ -36,9 +40,6 @@ class Exp206210CoreTests(unittest.TestCase):
         ref = [1.0, 2.0, 3.0]
         query = [2.5, 0.5, 4.0]
         pvals = empirical_upper_pvalues(ref, query)
-        # 2.5: ref >= 2.5 is [3.0] (1 value). count = 1. p = (1 + 1) / (3 + 1) = 2/4 = 0.5
-        # 0.5: ref >= 0.5 is [1.0, 2.0, 3.0] (3 values). count = 3. p = (3 + 1) / (3 + 1) = 1.0
-        # 4.0: ref >= 4.0 is [] (0 values). count = 0. p = (0 + 1) / (3 + 1) = 0.25
         np.testing.assert_allclose(pvals, [0.5, 1.0, 0.25])
 
     def test_robust_z_pair(self):
@@ -47,9 +48,6 @@ class Exp206210CoreTests(unittest.TestCase):
         tr_z, q_z = robust_z_pair(train, query)
         self.assertEqual(len(tr_z), 5)
         self.assertEqual(len(q_z), 2)
-        # Median is 3. MAD = median(|1-3|, |2-3|, |3-3|, |4-3|, |5-3|) = median(2, 1, 0, 1, 2) = 1.
-        # Scale = 1.4826 * 1 = 1.4826
-        # Expected tr_z = (train - 3.0) / 1.4826
         np.testing.assert_allclose(tr_z, (train - 3.0) / 1.4826)
         np.testing.assert_allclose(q_z, (query - 3.0) / 1.4826)
 
@@ -59,12 +57,9 @@ class Exp206210CoreTests(unittest.TestCase):
             [10.0, 5.0, 8.0]
         ])
         res = top2_mean(mat)
-        # row 0 top 2: 4.0 and 2.0 -> mean = 3.0
-        # row 1 top 2: 10.0 and 8.0 -> mean = 9.0
         np.testing.assert_allclose(res, [3.0, 9.0])
 
     def test_inverse_spearman_weights(self):
-        # Generate some dummy data
         np.random.seed(42)
         x = np.random.randn(100, 3)
         weights = inverse_spearman_weights(x)
@@ -74,33 +69,57 @@ class Exp206210CoreTests(unittest.TestCase):
     def test_fisher_stat(self):
         pvals = np.array([0.05, 0.01])
         stat = fisher_stat(pvals)
-        # stat = -2 * (log(0.05) + log(0.01)) = -2 * (-2.995732 + -4.60517) = 15.2018
         self.assertAlmostEqual(stat, -2.0 * (np.log(0.05) + np.log(0.01)))
 
     def test_wilson_upper(self):
-        # 0 successes out of 100 trials, 95% confidence one-sided
         upper = wilson_upper(0, 100)
-        # Check that it is greater than 0 and less than 0.05 (specifically around 0.03)
         self.assertTrue(0.0 < upper < 0.05)
-        # 0 trials returns 1.0
         self.assertEqual(wilson_upper(0, 0), 1.0)
 
     def test_validate_payload(self):
         valid = {"n_test": 10, "candidate_indices": [1, 2, 5], "contains_test_labels": False, "contains_evaluation_metrics": False}
-        validate_prediction_payload(valid)  # Should not raise
+        validate_prediction_payload(valid)
 
         with self.assertRaises(ValueError):
-            # Forbidden field
             validate_prediction_payload({"n_test": 10, "candidate_indices": [1], "contains_test_labels": False, "contains_evaluation_metrics": False, "y_test": [0]})
 
         with self.assertRaises(ValueError):
-            # Missing flag
             validate_prediction_payload({"n_test": 10, "candidate_indices": [1], "contains_evaluation_metrics": False})
             
         with self.assertRaises(ValueError):
-            # Duplicate indices
             validate_prediction_payload({"n_test": 10, "candidate_indices": [1, 1], "contains_test_labels": False, "contains_evaluation_metrics": False})
 
         with self.assertRaises(ValueError):
-            # Out of bounds index
             validate_prediction_payload({"n_test": 10, "candidate_indices": [10], "contains_test_labels": False, "contains_evaluation_metrics": False})
+
+
+class Exp206210AlternativeOOFTests(unittest.TestCase):
+
+    def test_query_values_do_not_change_fit_scores(self):
+        # Create synthetic time series data
+        np.random.seed(42)
+        train = np.random.randn(20, 100)
+        test = np.random.randn(10, 100)
+
+        for source in ["spectral", "shapelet", "interval"]:
+            fit_a, query_a = fit_score_source(source, train, test, seed=7)
+            changed_query = test.copy()
+            changed_query[0] += np.sin(np.linspace(0, 20, test.shape[1]))
+            fit_b, query_b = fit_score_source(source, train, changed_query, seed=7)
+
+            np.testing.assert_allclose(fit_a, fit_b, err_msg=f"Fit scores changed for {source}")
+            self.assertFalse(np.array_equal(query_a, query_b), f"Query scores did not change for {source}")
+
+    def test_crossfit_completeness_and_determinism(self):
+        np.random.seed(42)
+        train = np.random.randn(15, 100)
+        test = np.random.randn(5, 100)
+
+        res_a = crossfit_alternative_sources(train, test, folds=3, seed=123)
+        res_b = crossfit_alternative_sources(train, test, folds=3, seed=123)
+
+        for key in ["spectral_train", "spectral_test", "shapelet_train", "shapelet_test", "interval_train", "interval_test"]:
+            self.assertIn(key, res_a)
+            self.assertEqual(len(res_a[key]), 15 if "train" in key else 5)
+            self.assertTrue(np.all(np.isfinite(res_a[key])))
+            np.testing.assert_array_equal(res_a[key], res_b[key])
