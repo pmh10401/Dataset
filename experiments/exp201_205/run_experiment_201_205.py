@@ -301,7 +301,11 @@ def run_stage(stage: str, dataset_limit: int | None, output_root: Path, workers:
             except Exception as exc:
                 errors.append({"dataset": dataset, "error": repr(exc)})
             if done % 10 == 0 or done == len(futures):
-                print(f"PROGRESS stage={stage} datasets={done}/{len(futures)} errors={len(errors)}", flush=True)
+                print(
+                    f"Progress: [{done:4d}/{len(futures)}] "
+                    f"rows={len(predictions)} dataset={dataset} errors={len(errors)}",
+                    flush=True,
+                )
     if errors:
         _write_csv(output_root / f"exp{stage}_errors.csv", errors)
         raise SystemExit(2)
