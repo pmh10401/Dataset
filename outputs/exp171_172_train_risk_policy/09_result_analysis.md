@@ -13,7 +13,10 @@ Exp171은 TEST 결과를 사용하지 않고 정상 run 100개당 검토 요청 
 - 위험 목표: `1.0%`
 
 따라서 TRAIN audit 기준으로는 사전등록한 정상 검토 요청 상한을 충족했다.
-이 선택은 이상 탐지 TEST F1을 보지 않고 완료됐다.
+이 선택은 이상 탐지 TEST F1을 보지 않고 완료됐다. 다만 이 1%는 3,863개
+TRAIN OOB run을 합친 aggregate 통계 상한이다. 모든 데이터셋 각각의 1% 보장,
+실제 설비 SLA, 또는 prospective false-alarm 보장을 의미하지 않는다. Wilson
+상한과 Bonferroni 보정 역시 이번 retrospective audit의 통계적 안전 장치다.
 
 ## Exp172 사후 평가
 
@@ -51,4 +54,3 @@ Exp172는 Exp170의 60개 sensitivity 중 TRAIN audit으로 미리 고정한 한
 모든 Exp172 성능은 retrospective human-assisted review 지표다. Autonomous
 Hard alert 성능, 실제 설비 성능, end-to-end strict TRAIN-only 개발 계보를
 의미하지 않는다.
-
