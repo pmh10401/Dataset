@@ -1,0 +1,13 @@
+alpha,source_1,source_2,phi_correlation,jaccard_similarity
+0.005,spectral,shapelet,0.110218,0.059289
+0.005,spectral,interval,0.201608,0.118075
+0.005,shapelet,interval,0.083705,0.045437
+0.01,spectral,shapelet,0.111832,0.063666
+0.01,spectral,interval,0.190746,0.113562
+0.01,shapelet,interval,0.091802,0.052903
+0.02,spectral,shapelet,0.108324,0.067179
+0.02,spectral,interval,0.186787,0.116137
+0.02,shapelet,interval,0.098647,0.061894
+0.05,spectral,shapelet,0.144436,0.101591
+0.05,spectral,interval,0.194531,0.135905
+0.05,shapelet,interval,0.125908,0.091135

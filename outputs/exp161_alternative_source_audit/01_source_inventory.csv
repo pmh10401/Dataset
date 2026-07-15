@@ -1,0 +1,4 @@
+source_key,display_name,source_type,policy_eligible_scope,description
+spectral_derivative,미분·스펙트럼 통계 점수,Exp99 spectral/derivative feature score,None (Always Ineligible due to family/research target provenance),Z-normalized first/second derivative statistics and FFT magnitude band distributions.
+shapelet_normal_prototype,부분 형태 일치 점수,Exp101 shapelet normal prototype,None (Always Ineligible due to research target provenance),Subsequence normal shapelet prototype minimum distance features.
+interval_quantile,구간 분포 점수,Exp46 model hard interval drcif lite results,None for historical artifact (family/difficulty-selected partial coverage),Interval quantile distribution anomaly detection (DrCIF-lite based).

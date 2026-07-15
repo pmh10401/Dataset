@@ -1,0 +1,269 @@
+dataset_name,alpha,source_name,base_indices,source_indices,overlap_indices,overlap_count
+Adiac_normal_14,0.005,shapelet_normal_prototype,1,14 29,,0
+Adiac_normal_14,0.01,shapelet_normal_prototype,1,14 29,,0
+Adiac_normal_14,0.02,shapelet_normal_prototype,1,14 29,,0
+Adiac_normal_14,0.05,shapelet_normal_prototype,1,14 29,,0
+Adiac_normal_19,0.005,shapelet_normal_prototype,2,0 2,2,1
+Adiac_normal_22,0.005,shapelet_normal_prototype,3,22 38,,0
+Adiac_normal_22,0.01,shapelet_normal_prototype,3,22 38,,0
+Adiac_normal_22,0.02,shapelet_normal_prototype,3,22 38,,0
+Adiac_normal_22,0.05,shapelet_normal_prototype,3,22 38,,0
+Adiac_normal_26,0.005,shapelet_normal_prototype,1,40,,0
+Adiac_normal_26,0.01,shapelet_normal_prototype,1,40,,0
+Adiac_normal_26,0.02,shapelet_normal_prototype,1,40,,0
+Adiac_normal_26,0.05,shapelet_normal_prototype,1,40,,0
+Adiac_normal_6,0.005,shapelet_normal_prototype,2,2 5,2,1
+Adiac_normal_6,0.01,shapelet_normal_prototype,2,2 5,2,1
+AllGestureWiimoteX_normal_5,0.005,spectral_derivative,10,71 73,,0
+AllGestureWiimoteX_normal_5,0.01,spectral_derivative,10,71 73,,0
+AllGestureWiimoteX_normal_5,0.02,spectral_derivative,10,71 73,,0
+AllGestureWiimoteX_normal_5,0.05,spectral_derivative,10,71 73,,0
+AllGestureWiimoteZ_normal_4,0.005,spectral_derivative,8,33,,0
+AllGestureWiimoteZ_normal_4,0.01,spectral_derivative,8,33,,0
+AllGestureWiimoteZ_normal_4,0.02,spectral_derivative,8,33,,0
+ArrowHead_normal_1,0.005,shapelet_normal_prototype,9,35,,0
+ArrowHead_normal_1,0.01,shapelet_normal_prototype,9,35,,0
+ArrowHead_normal_1,0.02,shapelet_normal_prototype,9,35,,0
+ArrowHead_normal_2,0.005,shapelet_normal_prototype,3,3,3,1
+ArrowHead_normal_2,0.01,shapelet_normal_prototype,3,3,3,1
+ArrowHead_normal_2,0.02,shapelet_normal_prototype,3,3,3,1
+BeetleFly_normal_2,0.005,shapelet_normal_prototype,1,17 20,,0
+BeetleFly_normal_2,0.01,shapelet_normal_prototype,1,17 20,,0
+BeetleFly_normal_2,0.02,shapelet_normal_prototype,1,17 20,,0
+BeetleFly_normal_2,0.05,shapelet_normal_prototype,1,17 20,,0
+CricketX_normal_12,0.005,spectral_derivative,6,6,6,1
+CricketX_normal_12,0.01,spectral_derivative,6,6,6,1
+CricketX_normal_12,0.02,spectral_derivative,6,6,6,1
+CricketX_normal_12,0.05,spectral_derivative,6,6,6,1
+CricketX_normal_6,0.005,spectral_derivative,4,2 4,4,1
+CricketX_normal_6,0.01,spectral_derivative,4,2 4,4,1
+CricketX_normal_6,0.02,spectral_derivative,4,2 4,4,1
+CricketX_normal_9,0.005,spectral_derivative,6,,,0
+CricketX_normal_9,0.01,spectral_derivative,6,,,0
+CricketX_normal_9,0.02,spectral_derivative,6,,,0
+CricketX_normal_9,0.05,spectral_derivative,6,,,0
+CricketY_normal_1,0.005,spectral_derivative,10,17,,0
+CricketY_normal_1,0.01,spectral_derivative,10,17,,0
+CricketY_normal_10,0.005,spectral_derivative,7,18 22,,0
+CricketY_normal_10,0.01,spectral_derivative,7,18 22,,0
+CricketY_normal_10,0.02,spectral_derivative,7,18 22,,0
+CricketY_normal_10,0.05,spectral_derivative,7,18 22,,0
+CricketZ_normal_1,0.005,spectral_derivative,7,30,,0
+CricketZ_normal_1,0.01,spectral_derivative,7,30,,0
+CricketZ_normal_10,0.005,spectral_derivative,9,47,,0
+CricketZ_normal_10,0.01,spectral_derivative,9,47,,0
+CricketZ_normal_10,0.02,spectral_derivative,9,47,,0
+CricketZ_normal_10,0.05,spectral_derivative,9,47,,0
+CricketZ_normal_11,0.005,spectral_derivative,27,27,27,1
+CricketZ_normal_11,0.01,spectral_derivative,27,27,27,1
+CricketZ_normal_11,0.02,spectral_derivative,27,27,27,1
+CricketZ_normal_11,0.05,spectral_derivative,27,27,27,1
+CricketZ_normal_12,0.005,spectral_derivative,10,47,,0
+CricketZ_normal_12,0.01,spectral_derivative,10,47,,0
+CricketZ_normal_12,0.02,spectral_derivative,10,47,,0
+CricketZ_normal_5,0.005,spectral_derivative,2,2 48,2,1
+CricketZ_normal_5,0.01,spectral_derivative,2,2 48,2,1
+CricketZ_normal_6,0.005,spectral_derivative,7,7 32,7,1
+CricketZ_normal_6,0.01,spectral_derivative,7,7 32,7,1
+CricketZ_normal_6,0.02,spectral_derivative,7,7 32,7,1
+CricketZ_normal_9,0.005,spectral_derivative,5,41 49,,0
+CricketZ_normal_9,0.01,spectral_derivative,5,41 49,,0
+CricketZ_normal_9,0.02,spectral_derivative,5,41 49,,0
+DistalPhalanxOutlineCorrect_normal_0,0.005,shapelet_normal_prototype,25 40,25 205,25,1
+DistalPhalanxTW_normal_6,0.005,shapelet_normal_prototype,3,27 29,,0
+DistalPhalanxTW_normal_6,0.01,shapelet_normal_prototype,3,27 29,,0
+DistalPhalanxTW_normal_6,0.02,shapelet_normal_prototype,3,27 29,,0
+DistalPhalanxTW_normal_6,0.05,shapelet_normal_prototype,3,27 29,,0
+DistalPhalanxTW_normal_7,0.005,shapelet_normal_prototype,4,48,,0
+DistalPhalanxTW_normal_7,0.01,shapelet_normal_prototype,4,48,,0
+DistalPhalanxTW_normal_7,0.02,shapelet_normal_prototype,4,48,,0
+DistalPhalanxTW_normal_7,0.05,shapelet_normal_prototype,4,48,,0
+EOGHorizontalSignal_normal_9,0.005,spectral_derivative,2,7 16,,0
+EOGHorizontalSignal_normal_9,0.01,spectral_derivative,2,7 16,,0
+EOGHorizontalSignal_normal_9,0.02,spectral_derivative,2,7 16,,0
+EOGVerticalSignal_normal_1,0.005,spectral_derivative,6,,,0
+EOGVerticalSignal_normal_1,0.01,spectral_derivative,6,,,0
+EOGVerticalSignal_normal_1,0.02,spectral_derivative,6,,,0
+EOGVerticalSignal_normal_10,0.005,spectral_derivative,4,,,0
+EOGVerticalSignal_normal_10,0.01,spectral_derivative,4,,,0
+EOGVerticalSignal_normal_10,0.02,spectral_derivative,4,,,0
+EOGVerticalSignal_normal_2,0.005,spectral_derivative,10,11 39,,0
+EOGVerticalSignal_normal_2,0.01,spectral_derivative,10,11 39,,0
+EOGVerticalSignal_normal_2,0.02,spectral_derivative,10,11 39,,0
+EOGVerticalSignal_normal_4,0.005,spectral_derivative,0,4 21,,0
+EOGVerticalSignal_normal_4,0.01,spectral_derivative,0,4 21,,0
+EOGVerticalSignal_normal_4,0.02,spectral_derivative,0,4 21,,0
+EOGVerticalSignal_normal_8,0.005,spectral_derivative,4,,,0
+EOGVerticalSignal_normal_8,0.01,spectral_derivative,4,,,0
+EOGVerticalSignal_normal_8,0.02,spectral_derivative,4,,,0
+EOGVerticalSignal_normal_8,0.05,spectral_derivative,4,,,0
+EthanolLevel_normal_1,0.005,spectral_derivative,4 43,86 121,,0
+EthanolLevel_normal_2,0.005,spectral_derivative,16 24 35 37,25 76,,0
+EthanolLevel_normal_2,0.01,spectral_derivative,16 24 35 37,25 76,,0
+EthanolLevel_normal_3,0.005,spectral_derivative,3 41 45,102 135,,0
+EthanolLevel_normal_3,0.01,spectral_derivative,3 41 45,102 135,,0
+EthanolLevel_normal_3,0.02,spectral_derivative,3 41 45,102 135,,0
+FiftyWords_normal_10,0.005,shapelet_normal_prototype,1,1 7,1,1
+FiftyWords_normal_16,0.005,shapelet_normal_prototype,2,4 6,,0
+FiftyWords_normal_16,0.01,shapelet_normal_prototype,2,4 6,,0
+FiftyWords_normal_16,0.02,shapelet_normal_prototype,2,4 6,,0
+FiftyWords_normal_16,0.05,shapelet_normal_prototype,2,4 6,,0
+FiftyWords_normal_3,0.005,shapelet_normal_prototype,7,,,0
+FiftyWords_normal_3,0.01,shapelet_normal_prototype,7,,,0
+FiftyWords_normal_3,0.02,shapelet_normal_prototype,7,,,0
+FiftyWords_normal_6,0.005,shapelet_normal_prototype,3,27 45,,0
+FiftyWords_normal_6,0.01,shapelet_normal_prototype,3,27 45,,0
+FiftyWords_normal_6,0.02,shapelet_normal_prototype,3,27 45,,0
+FiftyWords_normal_6,0.05,shapelet_normal_prototype,3,27 45,,0
+FiftyWords_normal_9,0.005,shapelet_normal_prototype,3,3 27,3,1
+FiftyWords_normal_9,0.01,shapelet_normal_prototype,3,3 27,3,1
+FiftyWords_normal_9,0.02,shapelet_normal_prototype,3,3 27,3,1
+Fish_normal_1,0.005,shapelet_normal_prototype,4,16,,0
+Fish_normal_1,0.01,shapelet_normal_prototype,4,16,,0
+Fish_normal_1,0.02,shapelet_normal_prototype,4,16,,0
+Fish_normal_2,0.005,shapelet_normal_prototype,6,33,,0
+Fish_normal_2,0.01,shapelet_normal_prototype,6,33,,0
+Fish_normal_2,0.02,shapelet_normal_prototype,6,33,,0
+Fish_normal_3,0.005,shapelet_normal_prototype,2,16,,0
+Fish_normal_3,0.01,shapelet_normal_prototype,2,16,,0
+Fish_normal_3,0.02,shapelet_normal_prototype,2,16,,0
+Fish_normal_3,0.05,shapelet_normal_prototype,2,16,,0
+Fish_normal_6,0.005,shapelet_normal_prototype,7,25 31,,0
+Fish_normal_6,0.01,shapelet_normal_prototype,7,25 31,,0
+Fish_normal_6,0.02,shapelet_normal_prototype,7,25 31,,0
+Fish_normal_6,0.05,shapelet_normal_prototype,7,25 31,,0
+HandOutlines_normal_0,0.005,shapelet_normal_prototype,36 77 93 96 98 292 451,189 476,,0
+HandOutlines_normal_0,0.01,shapelet_normal_prototype,36 77 93 96 98 292 451,189 476,,0
+Haptics_normal_2,0.005,spectral_derivative,9,,,0
+Haptics_normal_2,0.01,spectral_derivative,9,,,0
+Haptics_normal_2,0.02,spectral_derivative,9,,,0
+Haptics_normal_3,0.005,spectral_derivative,5,5 40,5,1
+InlineSkate_normal_1,0.005,spectral_derivative,4,,,0
+InlineSkate_normal_1,0.01,spectral_derivative,4,,,0
+InlineSkate_normal_1,0.02,spectral_derivative,4,,,0
+MiddlePhalanxOutlineAgeGroup_normal_1,0.005,shapelet_normal_prototype,5,23 35,,0
+MiddlePhalanxOutlineAgeGroup_normal_1,0.01,shapelet_normal_prototype,5,23 35,,0
+MiddlePhalanxOutlineCorrect_normal_0,0.005,shapelet_normal_prototype,4 22 29 62,134 282,,0
+MiddlePhalanxOutlineCorrect_normal_0,0.01,shapelet_normal_prototype,4 22 29 62,134 282,,0
+MiddlePhalanxTW_normal_4,0.005,shapelet_normal_prototype,19 21,62 77,,0
+MiddlePhalanxTW_normal_4,0.01,shapelet_normal_prototype,19 21,62 77,,0
+MiddlePhalanxTW_normal_4,0.02,shapelet_normal_prototype,19 21,62 77,,0
+MiddlePhalanxTW_normal_5,0.005,shapelet_normal_prototype,4,6 16,,0
+MiddlePhalanxTW_normal_5,0.01,shapelet_normal_prototype,4,6 16,,0
+MiddlePhalanxTW_normal_5,0.02,shapelet_normal_prototype,4,6 16,,0
+MiddlePhalanxTW_normal_5,0.05,shapelet_normal_prototype,4,6 16,,0
+OSULeaf_normal_2,0.005,shapelet_normal_prototype,0,48,,0
+OSULeaf_normal_2,0.01,shapelet_normal_prototype,0,48,,0
+OSULeaf_normal_2,0.02,shapelet_normal_prototype,0,48,,0
+OSULeaf_normal_2,0.05,shapelet_normal_prototype,0,48,,0
+OSULeaf_normal_3,0.005,shapelet_normal_prototype,7,6 34,,0
+OSULeaf_normal_3,0.01,shapelet_normal_prototype,7,6 34,,0
+OSULeaf_normal_5,0.005,shapelet_normal_prototype,1,15 26,,0
+OSULeaf_normal_5,0.01,shapelet_normal_prototype,1,15 26,,0
+Phoneme_normal_11,0.005,spectral_derivative,0,21 48,,0
+Phoneme_normal_11,0.01,spectral_derivative,0,21 48,,0
+Phoneme_normal_11,0.02,spectral_derivative,0,21 48,,0
+Phoneme_normal_11,0.05,spectral_derivative,0,21 48,,0
+Phoneme_normal_12,0.005,spectral_derivative,2,8 34,,0
+Phoneme_normal_12,0.01,spectral_derivative,2,8 34,,0
+Phoneme_normal_12,0.02,spectral_derivative,2,8 34,,0
+Phoneme_normal_12,0.05,spectral_derivative,2,8 34,,0
+Phoneme_normal_13,0.005,spectral_derivative,2,5 49,,0
+Phoneme_normal_13,0.01,spectral_derivative,2,5 49,,0
+Phoneme_normal_14,0.005,spectral_derivative,0,41,,0
+Phoneme_normal_14,0.01,spectral_derivative,0,41,,0
+Phoneme_normal_14,0.02,spectral_derivative,0,41,,0
+Phoneme_normal_14,0.05,spectral_derivative,0,41,,0
+Phoneme_normal_16,0.005,spectral_derivative,2,7 20,,0
+Phoneme_normal_16,0.01,spectral_derivative,2,7 20,,0
+Phoneme_normal_16,0.02,spectral_derivative,2,7 20,,0
+Phoneme_normal_18,0.005,spectral_derivative,8,1 4,,0
+Phoneme_normal_18,0.01,spectral_derivative,8,1 4,,0
+Phoneme_normal_18,0.02,spectral_derivative,8,1 4,,0
+Phoneme_normal_19,0.005,spectral_derivative,2,2 49,2,1
+Phoneme_normal_19,0.01,spectral_derivative,2,2 49,2,1
+Phoneme_normal_19,0.02,spectral_derivative,2,2 49,2,1
+Phoneme_normal_2,0.005,spectral_derivative,8,3 21,,0
+Phoneme_normal_2,0.01,spectral_derivative,8,3 21,,0
+Phoneme_normal_2,0.02,spectral_derivative,8,3 21,,0
+Phoneme_normal_20,0.005,spectral_derivative,13,1 10,,0
+Phoneme_normal_20,0.01,spectral_derivative,13,1 10,,0
+Phoneme_normal_20,0.02,spectral_derivative,13,1 10,,0
+Phoneme_normal_22,0.005,spectral_derivative,11,21,,0
+Phoneme_normal_22,0.01,spectral_derivative,11,21,,0
+Phoneme_normal_22,0.02,spectral_derivative,11,21,,0
+Phoneme_normal_24,0.005,spectral_derivative,3,2 49,,0
+Phoneme_normal_24,0.01,spectral_derivative,3,2 49,,0
+Phoneme_normal_27,0.005,spectral_derivative,1,7 21,,0
+Phoneme_normal_27,0.01,spectral_derivative,1,7 21,,0
+Phoneme_normal_27,0.02,spectral_derivative,1,7 21,,0
+Phoneme_normal_34,0.005,spectral_derivative,2,2 3,2,1
+Phoneme_normal_34,0.01,spectral_derivative,2,2 3,2,1
+Phoneme_normal_34,0.02,spectral_derivative,2,2 3,2,1
+Phoneme_normal_34,0.05,spectral_derivative,2,2 3,2,1
+Phoneme_normal_4,0.005,spectral_derivative,3,8 10,,0
+Phoneme_normal_4,0.01,spectral_derivative,3,8 10,,0
+Phoneme_normal_4,0.02,spectral_derivative,3,8 10,,0
+Phoneme_normal_4,0.05,spectral_derivative,3,8 10,,0
+Phoneme_normal_6,0.005,spectral_derivative,2,10,,0
+Phoneme_normal_6,0.01,spectral_derivative,2,10,,0
+Phoneme_normal_6,0.02,spectral_derivative,2,10,,0
+Phoneme_normal_7,0.005,spectral_derivative,8,,,0
+Phoneme_normal_7,0.01,spectral_derivative,8,,,0
+Phoneme_normal_7,0.02,spectral_derivative,8,,,0
+Phoneme_normal_7,0.05,spectral_derivative,8,,,0
+Plane_normal_2,0.005,shapelet_normal_prototype,0,0 3,0,1
+Plane_normal_2,0.01,shapelet_normal_prototype,0,0 3,0,1
+Plane_normal_2,0.02,shapelet_normal_prototype,0,0 3,0,1
+ProximalPhalanxOutlineAgeGroup_normal_1,0.005,shapelet_normal_prototype,9,47,,0
+ProximalPhalanxOutlineAgeGroup_normal_1,0.01,shapelet_normal_prototype,9,47,,0
+ProximalPhalanxOutlineCorrect_normal_0,0.005,shapelet_normal_prototype,1 32 35,91 115,,0
+ProximalPhalanxOutlineCorrect_normal_0,0.01,shapelet_normal_prototype,1 32 35,91 115,,0
+ProximalPhalanxTW_normal_6,0.005,shapelet_normal_prototype,3,49,,0
+ProximalPhalanxTW_normal_6,0.01,shapelet_normal_prototype,3,49,,0
+ProximalPhalanxTW_normal_6,0.02,shapelet_normal_prototype,3,49,,0
+ProximalPhalanxTW_normal_7,0.005,shapelet_normal_prototype,6,25,,0
+ProximalPhalanxTW_normal_7,0.01,shapelet_normal_prototype,6,25,,0
+ProximalPhalanxTW_normal_7,0.02,shapelet_normal_prototype,6,25,,0
+ProximalPhalanxTW_normal_7,0.05,shapelet_normal_prototype,6,25,,0
+ShapesAll_normal_25,0.005,shapelet_normal_prototype,0,6 25,,0
+ShapesAll_normal_25,0.01,shapelet_normal_prototype,0,6 25,,0
+ShapesAll_normal_25,0.02,shapelet_normal_prototype,0,6 25,,0
+ShapesAll_normal_48,0.005,shapelet_normal_prototype,2,16,,0
+ShapesAll_normal_48,0.01,shapelet_normal_prototype,2,16,,0
+ShapesAll_normal_48,0.02,shapelet_normal_prototype,2,16,,0
+ShapesAll_normal_48,0.05,shapelet_normal_prototype,2,16,,0
+SwedishLeaf_normal_6,0.005,shapelet_normal_prototype,12,19 20,,0
+SwedishLeaf_normal_6,0.01,shapelet_normal_prototype,12,19 20,,0
+SwedishLeaf_normal_6,0.02,shapelet_normal_prototype,12,19 20,,0
+SwedishLeaf_normal_6,0.05,shapelet_normal_prototype,12,19 20,,0
+UWaveGestureLibraryY_normal_3,0.005,spectral_derivative,44 47 53 72 73 101 103,28 186,,0
+WordSynonyms_normal_1,0.005,shapelet_normal_prototype,0,1 16,,0
+WordSynonyms_normal_1,0.01,shapelet_normal_prototype,0,1 16,,0
+WordSynonyms_normal_1,0.02,shapelet_normal_prototype,0,1 16,,0
+WordSynonyms_normal_1,0.05,shapelet_normal_prototype,0,1 16,,0
+WordSynonyms_normal_15,0.005,shapelet_normal_prototype,0,14 15,,0
+WordSynonyms_normal_15,0.01,shapelet_normal_prototype,0,14 15,,0
+WordSynonyms_normal_15,0.02,shapelet_normal_prototype,0,14 15,,0
+WordSynonyms_normal_16,0.005,shapelet_normal_prototype,1,,,0
+WordSynonyms_normal_16,0.01,shapelet_normal_prototype,1,,,0
+WordSynonyms_normal_16,0.02,shapelet_normal_prototype,1,,,0
+WordSynonyms_normal_16,0.05,shapelet_normal_prototype,1,,,0
+WordSynonyms_normal_19,0.005,shapelet_normal_prototype,2,24 25,,0
+WordSynonyms_normal_19,0.01,shapelet_normal_prototype,2,24 25,,0
+WordSynonyms_normal_19,0.02,shapelet_normal_prototype,2,24 25,,0
+WordSynonyms_normal_20,0.005,shapelet_normal_prototype,3,13 33,,0
+WordSynonyms_normal_20,0.01,shapelet_normal_prototype,3,13 33,,0
+WordSynonyms_normal_20,0.02,shapelet_normal_prototype,3,13 33,,0
+WordSynonyms_normal_20,0.05,shapelet_normal_prototype,3,13 33,,0
+WordSynonyms_normal_8,0.005,shapelet_normal_prototype,5,7,,0
+WormsTwoClass_normal_2,0.005,shapelet_normal_prototype,19,95 137,,0
+WormsTwoClass_normal_2,0.01,shapelet_normal_prototype,19,95 137,,0
+WormsTwoClass_normal_2,0.02,shapelet_normal_prototype,19,95 137,,0
+Worms_normal_1,0.005,shapelet_normal_prototype,65,65,65,1
+Worms_normal_1,0.01,shapelet_normal_prototype,65,65,65,1
+Worms_normal_1,0.02,shapelet_normal_prototype,65,65,65,1
+Worms_normal_3,0.005,shapelet_normal_prototype,4,,,0
+Worms_normal_3,0.01,shapelet_normal_prototype,4,,,0
+Worms_normal_3,0.02,shapelet_normal_prototype,4,,,0
+Worms_normal_3,0.05,shapelet_normal_prototype,4,,,0

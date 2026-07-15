@@ -1,0 +1,5 @@
+experiment_id,alpha,datasets,hard_alerts,hard_tp,hard_fp,hard_precision,mean_hard_recall,mean_hard_f1,standard_review_candidates,standard_review_tp,standard_review_fp,standard_review_precision,priority_review_candidates,priority_review_tp,priority_review_fp,priority_review_precision,mean_combined_f1,mean_combined_f1_scope,abstained_datasets
+experiment_158_train_score_similarity_pooling,0.005,1117,104,99,5,0.9519230769230769,0.08863025962399283,0.08728737690241718,0,0,0,0.0,2,1,1,0.5,0.08788421366756191,human_assisted_diagnostic_only,162
+experiment_158_train_score_similarity_pooling,0.01,1117,147,133,14,0.9047619047619048,0.11906893464637422,0.11668158758579526,2,2,0,1.0,5,3,2,0.6,0.12056102655923602,human_assisted_diagnostic_only,162
+experiment_158_train_score_similarity_pooling,0.02,1117,188,163,25,0.8670212765957447,0.1459265890778872,0.14115189495672933,5,3,2,0.6,8,4,4,0.5,0.14652342584303193,human_assisted_diagnostic_only,162
+experiment_158_train_score_similarity_pooling,0.05,1117,254,206,48,0.8110236220472441,0.18442256042972247,0.17517159056997914,23,11,12,0.4782608695652174,12,7,5,0.5833333333333334,0.18815279021187706,human_assisted_diagnostic_only,162

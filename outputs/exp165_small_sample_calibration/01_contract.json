@@ -1,0 +1,23 @@
+{
+  "experiment_id": "experiment_165_small_sample_calibration",
+  "config_hash": "0f890126fed936c26d5b4ade7965fcc157f09917238eadc919884dbf66aa7182",
+  "database_path": "/Users/minho/Documents/Dataset/univariate_ts.db",
+  "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+  "exp164_contract_sha256": "cd5af2984efb88d85d8de380dacb5c11016d2e3f7c9a2dbaf61d9b98c78448e0",
+  "exp164_manifest_sha256": "a3226c4c30f5217440126ebab1b502fd11e3dceec64451b7be88437e845e439e",
+  "population": 1117,
+  "target_datasets": 316,
+  "target_rule": "5 <= n_train < 20",
+  "donor_rule": "n_train >= 20",
+  "minimum_pool_reference": 200,
+  "alphas": [
+    0.005,
+    0.01,
+    0.02,
+    0.05
+  ],
+  "contains_test_values": false,
+  "contains_test_labels": false,
+  "contains_evaluation_metrics": false,
+  "retrospective_train_normal_calibration_audit": true
+}

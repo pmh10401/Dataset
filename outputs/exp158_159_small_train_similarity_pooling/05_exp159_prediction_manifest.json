@@ -1,0 +1,14 @@
+{
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "experiment_ids": [
+    "experiment_159_similarity_pool_review_integration"
+  ],
+  "input_hashes": {
+    "baseline_predictions": "9684f6bae6e561535f190969a4c71b1f258c97d0b7cf9899b8d9147a74c13499",
+    "score_cache_manifest": "bf73796c046a6102fce53d3b6fc606afa1ed0a5161ebb6e92d94698ab56a68a0"
+  },
+  "prediction_path": "outputs/exp158_159_small_train_similarity_pooling/04_exp159_predictions.jsonl",
+  "prediction_sha256": "ee4fae949c71407498eb2ea7f1fdb42c0cbe1b080b8c9476c6e5ba14e0591e7d",
+  "row_count": 4468
+}

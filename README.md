@@ -193,3 +193,11 @@ Conv1D 피처 스택 전후에 Multi-Head Self-Attention(Transformer Encoder) �
 **향후 연구 방향**:
 1. 다변량 시계열(Multivariate Time Series) 이상치 탐지 환경으로의 범용성 확장 및 차원 간 상관성 복원 기법 연구
 2. 디코더의 형상 복원력을 방해하지 않으면서 정상 데이터의 잠재 공간(Latent Space) 상 응집도를 높여 이상 유입 시 오차 마진을 벌리는 **잠재 공간 대조 학습 (Contrastive Latent Representation) 도입**
+
+---
+
+## 최신 연구 자료
+
+- [Exp151~166 코드·문서·결과 인덱스](docs/EXP151_166_RESEARCH_RELEASE_KO.md)
+
+대용량 SQLite 데이터베이스, 가상환경, 재생성 가능한 score cache와 체크포인트는 저장소에 포함하지 않는다.

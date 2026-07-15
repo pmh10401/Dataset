@@ -5,13 +5,16 @@ import hmac
 import json
 import os
 import re
+import shlex
 import sqlite3
 import subprocess
 import time
 from collections import defaultdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, quote, urlparse
+
+import numpy as np
 
 
 ROOT = Path("/Users/minho/Documents/timesries project")
@@ -23,11 +26,24 @@ LOG_PATH = DATA_DIR / "rank_ensemble_threshold_calibration_stdout.log"
 STATE_PATH = DATA_DIR / "rank_experiments_sequential_state.json"
 PID_PATH = DATA_DIR / "rank_dashboard_server.pid"
 HEARTBEAT_PATH = DATA_DIR / "rank_experiments_dashboard_heartbeat.json"
+EXTERNAL_LIVE_RUN_PATH = DATA_DIR / "rank_dashboard_external_live_run.json"
 EXPECTED_DATASETS = 1117
 AUTH_REALM = "Rank Experiment Monitor"
 RESOURCE_CACHE = {"gpu": {"expires_at": 0, "value": None}}
 CSV_CACHE = {}
+CSV_READ_ERRORS = {}
+LIVE_CHECKPOINT_CACHE = {}
+MAX_CACHED_CSV_BYTES = 2 * 1024 * 1024
 SERVER_STARTED_UNIX = time.time()
+EVALUATION_EXCLUSIONS = {"CornellWhaleChallenge", "Wafer_normal_1"}
+VALIDATION_PLAN = [
+    {"id": "experiment_143_test_length_budget_binding_audit", "label": "Exp143 · TEST-length budget binding audit", "status": "planned", "runner_id": "experiment_144_train_threshold_only_no_budget"},
+    {"id": "experiment_144_train_threshold_only_no_budget", "label": "Exp144 · TRAIN-threshold-only no budget", "status": "planned", "runner_id": "experiment_144_train_threshold_only_no_budget"},
+    {"id": "experiment_145_train_normal_count_budget", "label": "Exp145 · TRAIN-normal conformal budget", "status": "blocked", "blocked_reason": "TRAIN instance와 실제 wafer run의 대응이 DB에서 검증되지 않음"},
+    {"id": "experiment_146_fixed_k_workload_sensitivity", "label": "Exp146 · Fixed-K sensitivity", "status": "planned", "runner_id": "experiment_144_train_threshold_only_no_budget"},
+    {"id": "experiment_147_policy_level_train_only_no_budget", "label": "Exp147 · B2 + threshold-only", "status": "planned", "runner_id": "experiment_144_train_threshold_only_no_budget"},
+    {"id": "experiment_148_policy_level_train_only_train_budget", "label": "Exp148 · B2 + TRAIN-normal budget", "status": "blocked", "blocked_reason": "Exp145 run-grain blocker에 의존"},
+]
 
 METRIC_GLOSSARY = [
     {
@@ -242,6 +258,16 @@ EXPERIMENTS = {
         "detail_csv": DATA_DIR / "experiment_32_knn_score_capacity_sweep_results.csv",
         "summary_csv": DATA_DIR / "experiment_32_knn_score_capacity_sweep_summary.csv",
         "stdout_log": DATA_DIR / "experiment_32_knn_score_capacity_sweep_stdout.log",
+    },
+    "experiment_33_evalset_reconstruction": {
+        "label": "Experiment 33 · Evaluation-set reconstruction validation",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_evaluation_set_reconstruction",
+        "status_reason": "evaluation-set reconstruction validation; not an operational comparison candidate",
+        "detail_csv": DATA_DIR / "experiment_33_evalset_reconstruction_results.csv",
+        "summary_csv": DATA_DIR / "experiment_33_evalset_reconstruction_summary.csv",
+        "stdout_log": DATA_DIR / "experiment_33_evalset_reconstruction.log",
     },
     "experiment_34_balanced_feature_capacity_sweep": {
         "label": "Experiment 34 · Clean-balanced ROCKET capacity sweep",
@@ -1111,6 +1137,321 @@ EXPERIMENTS = {
         "stdout_log": DATA_DIR / "experiment_112_parametric_umap_oof_probe_stdout.log",
         "expected_datasets": 15,
     },
+    "experiment_153_157_train_only_improvements": {
+        "label": "Exp153-157 · TRAIN-only calibration and coverage sensitivities",
+        "detail_csv": ROOT / "outputs/exp153_157_train_only_improvements/23_exp157_results.csv",
+        "summary_csv": ROOT / "outputs/exp153_157_train_only_improvements/24_exp157_summary.csv",
+        "stdout_log": ROOT / "outputs/exp153_157_train_only_improvements/full_pipeline_queue.log",
+        "expected_datasets": 1117,
+    },
+    "experiment_165_small_sample_calibration": {
+        "label": "Exp165 · small-sample TRAIN-only similarity calibration audit",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_train_normal_calibration_audit",
+        "status_reason": "normal calibration sensitivity; anomaly F1 not evaluated",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp165_small_sample_calibration/03_dataset_alpha_summary.csv",
+        "summary_csv": ROOT / "outputs/exp165_small_sample_calibration/04_global_summary.csv",
+        "stdout_log": ROOT / "outputs/exp165_small_sample_calibration/full_run.log",
+        "expected_datasets": 316,
+    },
+    "experiment_166_small_sample_anomaly_coverage": {
+        "label": "Exp166 · small-sample similarity calibration anomaly coverage",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_human_assisted_review_sensitivity",
+        "status_reason": "small-sample anomaly coverage sensitivity; no alpha or variant selected",
+        "autonomous_metric_scope": "not_evaluated",
+        "review_metric_scope": "retrospective_human_review_candidate",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp166_small_sample_anomaly_coverage/04_dataset_metrics.csv",
+        "summary_csv": ROOT / "outputs/exp166_small_sample_anomaly_coverage/05_global_summary.csv",
+        "stdout_log": ROOT / "outputs/exp166_small_sample_anomaly_coverage/full_run.log",
+        "expected_datasets": 316,
+    },
+}
+
+
+HISTORICAL_EXPERIMENT_META = {
+    "experiment_138_policy_train_only_audit": {
+        "label": "Exp138 - TRAIN-only policy audit",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_train_only_audit",
+        "status_reason": "completed audit and lane replay; research evidence, not a comparable performance run",
+        "detail_csv": ROOT / "outputs/exp137_strict_train_only_execution/a1_final_lane_replay.csv",
+        "summary_csv": ROOT / "outputs/exp137_strict_train_only_execution/evaluation_contract_a0_a1_b1.json",
+        "artifact_paths": [
+            ROOT / "outputs/exp137_strict_train_only_execution/a1_final_lane_replay.csv",
+            ROOT / "outputs/exp137_strict_train_only_execution/b1_common_support_source_audit.csv",
+            ROOT / "outputs/exp137_strict_train_only_execution/evaluation_contract_a0_a1_b1.json",
+        ],
+    },
+    "experiment_139_family_neutral_common_support": {
+        "label": "Exp139 - family-neutral common support",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_counterfactual_common_support",
+        "status_reason": "completed family-neutral replay on common support; retrospective research evidence",
+        "detail_csv": ROOT / "outputs/exp137_strict_train_only_execution/b1_full/b1_family_neutral_common_support_results.csv",
+        "summary_csv": ROOT / "outputs/exp137_strict_train_only_execution/b1_full/b1_family_neutral_common_support_summary.json",
+    },
+    "experiment_140_policy_budget_replay": {
+        "label": "Exp140 - policy-budget replay",
+        "history_status": "not_run",
+        "comparison_eligible": False,
+        "scope": "retrospective_policy_budget_replay",
+        "status_reason": "no qualifying full result artifact found",
+    },
+    "experiment_141_family_neutral_full_coverage": {
+        "label": "Exp141 - family-neutral full coverage",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_counterfactual_full_coverage",
+        "status_reason": "completed B2 full-coverage replay; retrospective research evidence",
+        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/b2_full/17_b2_family_neutral_results.csv",
+        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/b2_full/18_b2_family_neutral_summary.json",
+    },
+    "experiment_142_policy_level_train_only": {
+        "label": "Exp142 - policy-level TRAIN-only replay",
+        "history_status": "not_run",
+        "comparison_eligible": False,
+        "scope": "retrospective_policy_level_train_only",
+        "status_reason": "no qualifying full result artifact found",
+    },
+    "experiment_143_test_length_budget_binding_audit": {
+        "label": "Exp143 - TEST-length budget binding audit",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_audit",
+        "status_reason": "completed binding audit; diagnostic evidence rather than a standalone model comparison",
+        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/34_test_length_budget_binding_dataset.csv",
+        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/36_test_length_budget_binding_summary.md",
+    },
+    "experiment_144_train_threshold_only_no_budget": {
+        "label": "Exp144 - TRAIN-threshold-only no budget",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_counterfactual_threshold_sensitivity",
+        "status_reason": "completed threshold-only sensitivity; retrospective research evidence",
+        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/38_c0_threshold_only_results.csv",
+        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/39_c0_threshold_only_summary.md",
+    },
+    "experiment_145_train_normal_count_budget": {
+        "label": "Exp145 - TRAIN-normal conformal budget",
+        "history_status": "blocked",
+        "comparison_eligible": False,
+        "scope": "prospective_contract_blocked",
+        "status_reason": "blocked because TRAIN instances are not mapped to real wafer runs",
+    },
+    "experiment_146_fixed_k_workload_sensitivity": {
+        "label": "Exp146 - fixed-K workload sensitivity",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_counterfactual_workload_sensitivity",
+        "status_reason": "completed fixed-K sensitivity; no operational winner selected",
+        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/51_fixed_k_sensitivity_metrics.csv",
+        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/52_fixed_k_workload_frontier.md",
+    },
+    "experiment_147_policy_level_train_only_no_budget": {
+        "label": "Exp147 - B2 plus threshold-only",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_counterfactual_policy_sensitivity",
+        "status_reason": "completed D1a no-budget policy replay; retrospective research evidence",
+        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/54_d1a_policy_train_only_no_budget_results.csv",
+        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/55_d1a_policy_train_only_no_budget_summary.md",
+    },
+    "experiment_148_policy_level_train_only_train_budget": {
+        "label": "Exp148 - B2 plus TRAIN-normal budget",
+        "history_status": "blocked",
+        "comparison_eligible": False,
+        "scope": "prospective_contract_blocked",
+        "status_reason": "blocked because the Exp145 run-grain contract is unresolved",
+    },
+    "experiment_149_virtual_run_conformal_policy": {
+        "label": "Exp149 - virtual-run conformal current source",
+        "history_status": "invalid",
+        "comparison_eligible": False,
+        "scope": "retrospective_counterfactual",
+        "status_reason": "routing implementation defect corrected by Exp151/152",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/virtual_run_conformal/03_exp149_current_source_results.csv",
+        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/virtual_run_conformal/04_exp149_current_source_summary.csv",
+    },
+    "experiment_150_virtual_run_conformal_policy": {
+        "label": "Exp150 - virtual-run conformal B2 source",
+        "history_status": "invalid",
+        "comparison_eligible": False,
+        "scope": "retrospective_counterfactual",
+        "status_reason": "routing implementation defect corrected by Exp151/152",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/virtual_run_conformal/06_exp150_b2_source_results.csv",
+        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/virtual_run_conformal/07_exp150_b2_source_summary.csv",
+    },
+    "experiment_151_virtual_run_conformal_policy_v2": {
+        "label": "Exp151 - corrected virtual-run conformal current source",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_counterfactual_virtual_wafer_run",
+        "status_reason": "corrected retrospective result; all alpha variants retained and no alpha selected",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp151_152_virtual_run_conformal_v2/06_exp151_current_source_results.csv",
+        "summary_csv": ROOT / "outputs/exp151_152_virtual_run_conformal_v2/07_exp151_current_source_summary.csv",
+        "alpha_sensitivity_csv": ROOT / "outputs/exp151_152_virtual_run_conformal_v2/12_alpha_sensitivity_comparison.csv",
+    },
+    "experiment_152_virtual_run_conformal_policy_v2": {
+        "label": "Exp152 - corrected virtual-run conformal B2 source",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_counterfactual_virtual_wafer_run",
+        "status_reason": "corrected retrospective result; all alpha variants retained and no alpha selected",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp151_152_virtual_run_conformal_v2/09_exp152_b2_source_results.csv",
+        "summary_csv": ROOT / "outputs/exp151_152_virtual_run_conformal_v2/10_exp152_b2_source_summary.csv",
+        "alpha_sensitivity_csv": ROOT / "outputs/exp151_152_virtual_run_conformal_v2/12_alpha_sensitivity_comparison.csv",
+    },
+    "experiment_153_train_normal_calibration_audit": {
+        "label": "Exp153 - TRAIN-normal calibration audit",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_train_normal_calibration_audit",
+        "status_reason": "TRAIN-normal audit only; no operating alpha selected",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp153_157_train_only_improvements/02_exp153_dataset_audit.csv",
+        "summary_csv": ROOT / "outputs/exp153_157_train_only_improvements/03_exp153_summary.csv",
+    },
+    "experiment_154_pooled_conformal": {
+        "label": "Exp154 - pooled conformal sensitivity",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_train_only_pooling_sensitivity",
+        "status_reason": "all pooled variants retained; no primary variant selected",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp153_157_train_only_improvements/07_exp154_results.csv",
+        "summary_csv": ROOT / "outputs/exp153_157_train_only_improvements/08_exp154_summary.csv",
+    },
+    "experiment_155_source_fusion": {
+        "label": "Exp155 - TRAIN-only source fusion sensitivity",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_train_only_fusion_sensitivity",
+        "status_reason": "all fusion variants retained; no primary variant selected",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp153_157_train_only_improvements/13_exp155_results.csv",
+        "summary_csv": ROOT / "outputs/exp153_157_train_only_improvements/14_exp155_summary.csv",
+    },
+    "experiment_156_confirmation_calibration": {
+        "label": "Exp156 - confirmation calibration sensitivity",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_confirmation_sensitivity",
+        "status_reason": "frozen candidate universe; all confirmation variants retained",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp153_157_train_only_improvements/18_exp156_results.csv",
+        "summary_csv": ROOT / "outputs/exp153_157_train_only_improvements/19_exp156_summary.csv",
+    },
+    "experiment_157_risk_controlled_alpha_policy": {
+        "label": "Exp157 - TRAIN-only risk-controlled alpha sensitivity",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_train_only_risk_sensitivity",
+        "status_reason": "all risk targets retained; no deployment policy selected",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp153_157_train_only_improvements/23_exp157_results.csv",
+        "summary_csv": ROOT / "outputs/exp153_157_train_only_improvements/24_exp157_summary.csv",
+    },
+    "experiment_158_train_score_similarity_pooling": {
+        "label": "Exp158 - TRAIN-score similarity pooling",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_small_train_similarity_sensitivity",
+        "status_reason": "small-train pooling sensitivity; no alpha selected",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp158_159_small_train_similarity_pooling/06_exp158_results.csv",
+        "summary_csv": ROOT / "outputs/exp158_159_small_train_similarity_pooling/07_exp158_summary.csv",
+    },
+    "experiment_159_similarity_pool_review_integration": {
+        "label": "Exp159 - similarity-pool review integration",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_human_assisted_review_sensitivity",
+        "status_reason": "Hard preserved and review-only candidates added; no alpha selected",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp158_159_small_train_similarity_pooling/09_exp159_results.csv",
+        "summary_csv": ROOT / "outputs/exp158_159_small_train_similarity_pooling/10_exp159_summary.csv",
+    },
+    "experiment_160_candidate_zero_similarity_recovery": {
+        "label": "Exp160 - candidate-zero similarity recovery",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_candidate_zero_recovery",
+        "status_reason": "candidate-zero recovery sensitivity; no alpha selected",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp160_candidate_zero_similarity_recovery/06_exp160_results.csv",
+        "summary_csv": ROOT / "outputs/exp160_candidate_zero_similarity_recovery/07_exp160_summary.csv",
+    },
+    "experiment_161_alternative_source_audit": {
+        "label": "Exp161 - alternative source audit",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_source_coverage_audit",
+        "status_reason": "source audit completed with documented coverage blocker",
+        "detail_csv": ROOT / "outputs/exp161_alternative_source_audit/02_candidate_zero_source_coverage.csv",
+        "summary_csv": ROOT / "outputs/exp161_alternative_source_audit/04_audit_summary.csv",
+    },
+    "experiment_162_full_coverage_alternative_score_cache": {
+        "label": "Exp162 - full-coverage alternative score cache",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_train_only_score_cache",
+        "status_reason": "feature/score cache construction audit; no F1 metric",
+        "detail_csv": ROOT / "outputs/exp162_full_coverage_alternative_score_cache/02_cache_manifest.csv",
+        "summary_csv": ROOT / "outputs/exp162_full_coverage_alternative_score_cache/04_coverage_summary.csv",
+    },
+    "experiment_163_alternative_source_tail_agreement_review": {
+        "label": "Exp163 - alternative-source agreement review",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_human_assisted_review_sensitivity",
+        "status_reason": "candidate-empty review sensitivity; no alpha or variant selected",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp163_alternative_source_tail_agreement_review/04_exp163_results.csv",
+        "summary_csv": ROOT / "outputs/exp163_alternative_source_tail_agreement_review/05_exp163_summary.csv",
+    },
+    "experiment_164_train_normal_agreement_risk_audit": {
+        "label": "Exp164 - TRAIN-normal agreement risk audit",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_train_normal_calibration_audit",
+        "status_reason": "normal false-review audit only; anomaly F1 not evaluated",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp164_train_normal_agreement_risk_audit/04_dataset_alpha_summary.csv",
+        "summary_csv": ROOT / "outputs/exp164_train_normal_agreement_risk_audit/05_global_summary.csv",
+    },
+    "experiment_165_small_sample_calibration": {
+        "label": "Exp165 - small-sample similarity calibration audit",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_train_normal_calibration_audit",
+        "status_reason": "normal calibration sensitivity; anomaly F1 not evaluated",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp165_small_sample_calibration/03_dataset_alpha_summary.csv",
+        "summary_csv": ROOT / "outputs/exp165_small_sample_calibration/04_global_summary.csv",
+    },
+    "experiment_166_small_sample_anomaly_coverage": {
+        "label": "Exp166 - small-sample anomaly coverage sensitivity",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_human_assisted_review_sensitivity",
+        "status_reason": "small-sample anomaly coverage sensitivity; no alpha or variant selected",
+        "autonomous_metric_scope": "not_evaluated",
+        "review_metric_scope": "retrospective_human_review_candidate",
+        "selected_alpha": None,
+        "detail_csv": ROOT / "outputs/exp166_small_sample_anomaly_coverage/04_dataset_metrics.csv",
+        "summary_csv": ROOT / "outputs/exp166_small_sample_anomaly_coverage/05_global_summary.csv",
+    },
 }
 
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
@@ -1356,10 +1697,34 @@ INDEX_HTML = r"""<!doctype html>
     .footer { margin-top: 16px; color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 16px; }
     .toolbar { display: flex; align-items: center; gap: 8px; }
     .toolbar select { border: 1px solid var(--line); background: #fff; color: var(--text); border-radius: 6px; padding: 5px 8px; font-size: 12px; }
+    .history-table { min-width: 1410px; table-layout: fixed; }
+    .history-table th, .history-table td { white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
+    .history-table .history-status { width: 92px; font-weight: 760; }
+    .history-table .history-experiment { width: 190px; }
+    .history-table .history-metric { width: 90px; }
+    .history-table .history-review { width: 112px; }
+    .history-table .history-scope { width: 180px; }
+    .history-table .history-reason { width: 260px; color: var(--muted); }
+    .history-table .history-artifacts-cell { width: 150px; }
+    .history-table .history-variants-cell { width: 170px; }
+    .history-artifacts { display: flex; gap: 6px; flex-wrap: wrap; }
+    .history-artifacts a { color: var(--accent); font-weight: 700; text-decoration: none; }
+    .history-artifacts a:hover { text-decoration: underline; }
+    .history-missing { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .history-variants { min-width: 150px; }
+    .history-variants summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+    .history-variant-table { min-width: 660px; margin-top: 8px; font-size: 12px; }
+    .history-variant-table th, .history-variant-table td { white-space: nowrap; }
+    .action-button { border: 1px solid var(--line); background: #fff; color: var(--text); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .action-button:hover { border-color: #94a3b8; background: #f8fafc; }
+    .context-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .context-item { border: 1px solid var(--line); padding: 10px; border-radius: 6px; }
+    .context-item .k { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .context-item .v { margin-top: 4px; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
     @media (max-width: 980px) {
       header { align-items: flex-start; flex-direction: column; }
       .status { justify-content: flex-start; }
-      .metrics, .ops, .two, .three, .breakdown, .mini-grid, .metric-help-grid { grid-template-columns: 1fr; }
+      .metrics, .ops, .two, .three, .breakdown, .mini-grid, .metric-help-grid, .context-grid { grid-template-columns: 1fr; }
       main { padding: 18px; }
       .value { font-size: 26px; }
       .footer, .event { grid-template-columns: 1fr; flex-direction: column; align-items: flex-start; }
@@ -1575,6 +1940,35 @@ INDEX_HTML = r"""<!doctype html>
       </div>
     </section>
 
+    <section class="grid two" style="margin-top:16px">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>GPT Handoff</h2>
+          <span class="pill" id="gptExportStatus">ready</span>
+        </div>
+        <div class="detail-box">
+          <div class="toolbar">
+            <button class="action-button" type="button" id="copyGptHandoff">Copy Markdown</button>
+            <button class="action-button" type="button" id="downloadGptJson">Download JSON</button>
+          </div>
+        </div>
+      </div>
+      <details class="panel" id="datasetContext">
+        <summary class="panel-head metric-help-summary">
+          <span class="summary-main"><h2>Dataset Context</h2><span class="hint" id="datasetContextSummary">database grain and purpose</span></span>
+          <span class="summary-action" aria-hidden="true"></span>
+        </summary>
+        <div class="detail-box context-grid">
+          <div class="context-item"><div class="k">DB datasets</div><div class="v" id="contextDatasetCount">-</div></div>
+          <div class="context-item"><div class="k">Evaluation</div><div class="v" id="contextEvaluationCount">-</div></div>
+          <div class="context-item"><div class="k">TRAIN normal</div><div class="v" id="contextTrainCount">-</div></div>
+          <div class="context-item"><div class="k">TEST total / anomaly</div><div class="v" id="contextTestCount">-</div></div>
+          <div class="context-item"><div class="k">Candidate index</div><div class="v" id="contextCandidateMeaning">-</div></div>
+          <div class="context-item"><div class="k">Production mapping</div><div class="v" id="contextProductionMapping">-</div></div>
+        </div>
+      </details>
+    </section>
+
     <section class="panel" style="margin-top:16px">
       <div class="panel-head">
         <h2>Experiment Queue</h2>
@@ -1582,7 +1976,7 @@ INDEX_HTML = r"""<!doctype html>
       </div>
       <div class="table-wrap" style="max-height:280px">
         <table>
-          <thead><tr><th>status</th><th>experiment</th><th>progress</th><th>rows</th><th>datasets</th></tr></thead>
+          <thead><tr><th>status</th><th>experiment</th><th>progress</th><th>rows</th><th>datasets</th><th>note</th></tr></thead>
           <tbody id="queueRows"></tbody>
         </table>
       </div>
@@ -1590,13 +1984,13 @@ INDEX_HTML = r"""<!doctype html>
 
     <section class="panel" style="margin-top:16px">
       <div class="panel-head">
-        <h2>Completed Results</h2>
-        <div class="toolbar"><select id="completedFilter" aria-label="완료 실험 필터"><option value="all">전체</option><option value="operational">운영 후보</option><option value="research">연구 후보</option><option value="excluded">배제</option></select><span class="pill" id="completedInfo">0 completed</span></div>
+        <h2>Experiment History</h2>
+        <div class="toolbar"><select id="historyStatusFilter" aria-label="실험 이력 상태 필터"><option value="all">전체 상태</option><option value="completed_valid">유효 완료</option><option value="completed_research">연구 완료</option><option value="invalid">무효</option><option value="blocked">차단</option><option value="not_run">미실행</option><option value="running">실행 중</option><option value="queued">대기</option></select><span class="pill" id="historyInfo">0 history</span></div>
       </div>
       <div class="table-wrap" style="max-height:320px">
-        <table>
-          <thead><tr><th>experiment</th><th>best config / strategy</th><th>tier</th><th>mean F1</th><th>median</th><th>FP</th><th>precision</th><th>train exceed</th><th>pred</th><th>PR</th><th>oracle</th><th>zero</th><th>datasets</th><th>rows</th><th>elapsed</th><th>finished</th></tr></thead>
-          <tbody id="completedRows"></tbody>
+        <table class="history-table">
+          <thead><tr><th class="history-status">상태</th><th class="history-experiment">실험</th><th class="history-metric">Hard F1</th><th class="history-metric">Hard FP</th><th class="history-metric">Hard Precision</th><th class="history-metric">Combined F1</th><th class="history-review">검토 후보</th><th class="history-scope">범위</th><th class="history-reason">사유</th><th class="history-artifacts-cell">자료</th><th class="history-variants-cell">Alpha 변형</th></tr></thead>
+          <tbody id="historyRows"></tbody>
         </table>
       </div>
     </section>
@@ -1746,8 +2140,98 @@ INDEX_HTML = r"""<!doctype html>
     let refreshDelayMs = 10000;
     let detailCache = null;
     let detailFetchedAt = 0;
-    let completedFilter = 'all';
-    document.getElementById('completedFilter').addEventListener('change', event => { completedFilter = event.target.value; detailFetchedAt = 0; refresh(); });
+    let historyStatusFilter = 'all';
+    const historyStatusLabels = {
+      completed_valid: '유효 완료',
+      completed_research: '연구 완료',
+      invalid: '무효',
+      blocked: '차단',
+      not_run: '미실행',
+      running: '실행 중',
+      queued: '대기',
+    };
+    function historyReason(item) {
+      return item.metric_availability_reason || item.status_reason || 'metric not recorded';
+    }
+    function historyMetricText(item, field, formatter, reasonItem = item) {
+      const value = item[field];
+      if (value === null || value === undefined || value === '') return historyReason(reasonItem);
+      return Number.isFinite(Number(value)) ? formatter(value) : historyReason(reasonItem);
+    }
+    function renderHistoryArtifacts(cell, item) {
+      const links = item.artifact_links || [];
+      cell.className = 'history-artifacts-cell';
+      if (!links.length) {
+        cell.textContent = '자료 없음';
+        cell.classList.add('history-missing');
+        return;
+      }
+      const wrap = document.createElement('div');
+      wrap.className = 'history-artifacts';
+      links.forEach(link => {
+        const anchor = document.createElement('a');
+        anchor.href = link.href;
+        anchor.textContent = link.label;
+        anchor.title = `${item.label || item.id} ${link.label} 파일`;
+        wrap.appendChild(anchor);
+      });
+      cell.appendChild(wrap);
+    }
+    function renderHistoryVariants(cell, item) {
+      const variants = item.variants || [];
+      if (!variants.length) {
+        cell.textContent = '변형 없음';
+        return;
+      }
+      const details = document.createElement('details');
+      details.className = 'history-variants';
+      const summary = document.createElement('summary');
+      summary.textContent = `${variants.length} alpha variants`;
+      details.appendChild(summary);
+      const table = document.createElement('table');
+      table.className = 'history-variant-table';
+      const head = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      appendCells(headRow, ['alpha', 'Hard F1', 'Hard FP', 'Hard Precision', 'Combined F1', '검토 후보']);
+      head.appendChild(headRow);
+      table.appendChild(head);
+      const body = document.createElement('tbody');
+      variants.forEach(variant => {
+        const row = document.createElement('tr');
+        appendCells(row, [
+          historyMetricText(variant, 'alpha', value => fmt(value, 3), item),
+          historyMetricText(variant, 'mean_f1', fmt, item),
+          historyMetricText(variant, 'mean_fp', value => fmt(value, 2), item),
+          historyMetricText(variant, 'alert_precision', fmtPrecision, item),
+          historyMetricText(variant, 'mean_combined_f1', fmt, item),
+          historyMetricText(variant, 'total_review_candidate_count', value => fmt(value, 0), item),
+        ]);
+        body.appendChild(row);
+      });
+      table.appendChild(body);
+      details.appendChild(table);
+      cell.appendChild(details);
+    }
+    async function copyGptHandoff() {
+      const response = await fetch('/api/gpt-handoff.md', {cache:'no-store'});
+      if (!response.ok) throw new Error(`handoff ${response.status}`);
+      await navigator.clipboard.writeText(await response.text());
+      setText('gptExportStatus', 'copied');
+    }
+    async function downloadGptJson() {
+      const response = await fetch('/api/gpt-handoff.json', {cache:'no-store'});
+      if (!response.ok) throw new Error(`handoff ${response.status}`);
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `timeseries-gpt-handoff-${new Date().toISOString().slice(0,19).replaceAll(':','-')}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      setText('gptExportStatus', 'downloaded');
+    }
+    document.getElementById('copyGptHandoff').addEventListener('click', () => copyGptHandoff().catch(error => setText('gptExportStatus', error.message)));
+    document.getElementById('downloadGptJson').addEventListener('click', () => downloadGptJson().catch(error => setText('gptExportStatus', error.message)));
+    document.getElementById('historyStatusFilter').addEventListener('change', event => { historyStatusFilter = event.target.value; refresh(); });
     async function refresh() {
       if (refreshInFlight) return;
       refreshInFlight = true;
@@ -1760,6 +2244,7 @@ INDEX_HTML = r"""<!doctype html>
           detailFetchedAt = Date.now();
         }
         const data = {...detailCache, ...core};
+        const experimentHistory = data.experiment_history || data.completed_results || [];
         refreshDelayMs = data.running ? 5000 : 10000;
         document.getElementById('statusDot').classList.toggle('running', !!data.running);
         setText('statusText', data.running ? '실험 실행 중' : '실험 미실행');
@@ -1794,7 +2279,7 @@ INDEX_HTML = r"""<!doctype html>
         const heartbeatAge = Number.isFinite(heartbeat.age_seconds) ? `${fmt(heartbeat.age_seconds, 0)}s` : '-';
         setText('runtimeHealth', `server pid ${health.server_pid || '-'} · build ${health.code_mtime || '-'} · heartbeat ${heartbeat.status || '-'} (${heartbeatAge})`);
         setText('queueInfo', `${(data.queue || []).length} queued`);
-        setText('completedInfo', `${(data.completed_results || []).length} completed`);
+        setText('historyInfo', `${experimentHistory.length} history`);
         document.getElementById('logBox').textContent = data.log_tail || '';
         renderMetricGlossary(data.metric_glossary || []);
         const throughput = data.throughput || {};
@@ -1803,6 +2288,14 @@ INDEX_HTML = r"""<!doctype html>
         setText('avgSpeed', throughput.average_datasets_per_minute == null ? '-' : fmt(throughput.average_datasets_per_minute, 2));
         setText('recentEta', throughput.recent_eta_seconds == null ? '-' : runtime(throughput.recent_eta_seconds));
         setText('lastProgressMark', throughput.last_progress ? `${throughput.last_progress.done}/${throughput.last_progress.expected}` : '-');
+        const context = data.dataset_context || {};
+        setText('contextDatasetCount', context.dataset_count ?? '-');
+        setText('contextEvaluationCount', context.evaluation_dataset_count ?? '-');
+        setText('contextTrainCount', context.train_normal_instances ?? '-');
+        setText('contextTestCount', context.test_total_instances == null ? '-' : `${context.test_total_instances} / ${context.test_anomaly_instances}`);
+        setText('contextCandidateMeaning', context.candidate_index_meaning || '-');
+        setText('contextProductionMapping', context.production_run_mapping_verified ? 'verified' : 'not verified');
+        setText('datasetContextSummary', context.purpose || 'database grain and purpose');
 
         const tbody = document.getElementById('strategyRows');
         tbody.innerHTML = '';
@@ -1869,34 +2362,39 @@ INDEX_HTML = r"""<!doctype html>
         (data.queue_items || []).forEach(item => {
           const tr = document.createElement('tr');
           if (item.status === 'running') tr.className = 'best';
-          tr.innerHTML = `<td>${item.status}</td><td>${item.label}</td><td>${fmt(item.progress_percent, 2)}%</td><td>${item.rows}</td><td>${item.datasets_done}/${item.expected_datasets}</td>`;
+          const progressText = item.progress_percent == null ? '-' : `${fmt(item.progress_percent, 2)}%`;
+          const datasetText = item.datasets_done == null ? '-' : `${item.datasets_done}/${item.expected_datasets ?? '-'}`;
+          tr.innerHTML = `<td>${item.status}</td><td>${item.label}</td><td>${progressText}</td><td>${item.rows ?? '-'}</td><td>${datasetText}</td><td>${item.blocked_reason || '-'}</td>`;
           queueRows.appendChild(tr);
         });
+        setText('queueInfo', `${(data.queue_items || []).length} active / planned`);
 
-        const completedRows = document.getElementById('completedRows');
-        completedRows.innerHTML = '';
-        (data.completed_results || []).filter(item => completedFilter === 'all' || (completedFilter === 'excluded' ? item.operational_excluded : item.operational_tier === (completedFilter === 'operational' ? '운영 기본 후보' : '연구 후보'))).forEach(item => {
+        const historyRows = document.getElementById('historyRows');
+        historyRows.innerHTML = '';
+        const historyItems = experimentHistory.filter(item => historyStatusFilter === 'all' || item.history_status === historyStatusFilter);
+        historyItems.forEach(item => {
           const tr = document.createElement('tr');
           appendCells(tr, [
-            item.label,
-            item.best_strategy,
-            {text: item.operational_tier || '-', className: 'tier'},
-            fmt(item.mean_f1),
-            fmt(item.median_f1),
-            fmt(item.mean_fp, 2),
-            fmtPrecision(item.alert_precision),
-            fmtRate(item.mean_train_exceed_rate),
-            fmt(item.mean_predicted_count, 2),
-            fmt(item.mean_auc_pr),
-            fmt(item.mean_oracle_f1),
-            item.zero_f1_count ?? '-',
-            item.datasets ?? '-',
-            item.rows ?? '-',
-            item.elapsed_minutes == null ? '-' : `${fmt(item.elapsed_minutes, 1)}m`,
-            {text: item.finished_at || '-', className: 'muted-cell'},
+            {text: historyStatusLabels[item.history_status] || item.history_status || '미실행', className: 'history-status'},
+            {text: item.label || item.id, className: 'history-experiment'},
+            {text: historyMetricText(item, 'mean_f1', fmt), className: item.mean_f1 == null ? 'history-missing' : 'history-metric'},
+            {text: historyMetricText(item, 'mean_fp', value => fmt(value, 2)), className: item.mean_fp == null ? 'history-missing' : 'history-metric'},
+            {text: historyMetricText(item, 'alert_precision', fmtPrecision), className: item.alert_precision == null ? 'history-missing' : 'history-metric'},
+            {text: historyMetricText(item, 'mean_combined_f1', fmt), className: item.mean_combined_f1 == null ? 'history-missing' : 'history-metric'},
+            {text: historyMetricText(item, 'review_candidate_count', value => fmt(value, 0)), className: item.review_candidate_count == null ? 'history-missing' : 'history-review'},
+            {text: item.scope || item.status_reason || 'scope not recorded', className: 'history-scope'},
+            {text: item.status_reason || item.metric_availability_reason || 'reason not recorded', className: 'history-reason'},
           ]);
-          completedRows.appendChild(tr);
+          const artifactsCell = document.createElement('td');
+          renderHistoryArtifacts(artifactsCell, item);
+          tr.appendChild(artifactsCell);
+          const variantsCell = document.createElement('td');
+          variantsCell.className = 'history-variants-cell';
+          renderHistoryVariants(variantsCell, item);
+          tr.appendChild(variantsCell);
+          historyRows.appendChild(tr);
         });
+        setText('historyInfo', `${historyItems.length}/${experimentHistory.length} history`);
       } catch (err) {
         document.getElementById('statusDot').classList.remove('running');
         setText('statusText', `대시보드 오류: ${err.message}`);
@@ -1915,17 +2413,29 @@ INDEX_HTML = r"""<!doctype html>
 
 
 def read_csv_rows(path):
-    if not path.exists() or path.stat().st_size == 0:
-        return []
-    stat = path.stat()
+    path = Path(path)
     key = str(path)
-    cached = CSV_CACHE.get(key)
-    signature = (stat.st_mtime_ns, stat.st_size)
-    if cached and cached.get("signature") == signature:
-        return cached["rows"]
-    with path.open(newline="") as f:
-        rows = list(csv.DictReader(f))
-    CSV_CACHE[key] = {"signature": signature, "rows": rows}
+    try:
+        if not path.exists() or path.stat().st_size == 0:
+            CSV_READ_ERRORS.pop(key, None)
+            return []
+        stat = path.stat()
+        cached = CSV_CACHE.get(key)
+        signature = (stat.st_mtime_ns, stat.st_size)
+        if cached and cached.get("signature") == signature:
+            CSV_READ_ERRORS.pop(key, None)
+            return cached["rows"]
+        with path.open(newline="") as f:
+            rows = list(csv.DictReader(f))
+    except (OSError, UnicodeError, csv.Error) as exc:
+        CSV_CACHE.pop(key, None)
+        CSV_READ_ERRORS[key] = f"{type(exc).__name__}: {exc}"
+        return []
+    CSV_READ_ERRORS.pop(key, None)
+    if stat.st_size <= MAX_CACHED_CSV_BYTES:
+        CSV_CACHE[key] = {"signature": signature, "rows": rows}
+    else:
+        CSV_CACHE.pop(key, None)
     return rows
 
 
@@ -1938,6 +2448,43 @@ def read_state():
         return {}
 
 
+def pid_is_alive(pid):
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+def normalize_runtime_state_for_display(state, pid_checker=pid_is_alive):
+    """Hide stale runner state without mutating the queue state file."""
+
+    normalized = dict(state or {})
+    normalized["completed"] = list(normalized.get("completed") or [])
+    normalized["queue"] = list(normalized.get("queue") or [])
+    normalized["history"] = list(normalized.get("history") or [])
+    running = dict(normalized.get("running") or {})
+    if not running:
+        normalized["running"] = None
+        return normalized
+    pids = [running.get("child_pid"), running.get("pid")]
+    if any(pid_checker(pid) for pid in pids if pid is not None):
+        normalized["running"] = running
+        return normalized
+    stale_id = running.get("id")
+    normalized["running"] = None
+    normalized["queue"] = [item for item in normalized["queue"] if item != stale_id]
+    return normalized
+
+
 def read_heartbeat():
     try:
         value = json.loads(HEARTBEAT_PATH.read_text())
@@ -1947,6 +2494,395 @@ def read_heartbeat():
     if updated is not None:
         value["age_seconds"] = max(0.0, time.time() - updated)
     return value
+
+
+def read_external_live_run():
+    """Read a non-queue experiment status without mutating queue state."""
+    try:
+        value = json.loads(EXTERNAL_LIVE_RUN_PATH.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return value if value.get("status") in {"running", "completed", "failed"} else {}
+
+
+def _exp151_152_checkpoint_progress(checkpoint_path):
+    checkpoint_path = Path(checkpoint_path)
+    if not checkpoint_path.exists():
+        return 0, None
+    try:
+        stat = checkpoint_path.stat()
+    except OSError:
+        return 0, None
+    signature = (stat.st_mtime_ns, stat.st_size)
+    key = str(checkpoint_path)
+    cached = LIVE_CHECKPOINT_CACHE.get(key)
+    if cached and cached.get("signature") == signature:
+        return cached["datasets_done"], cached.get("current_dataset")
+    datasets_done = 0
+    current_dataset = None
+    try:
+        with checkpoint_path.open(encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                datasets_done += 1
+                try:
+                    current_dataset = json.loads(line).get("dataset_name")
+                except json.JSONDecodeError:
+                    continue
+    except OSError:
+        return 0, None
+    LIVE_CHECKPOINT_CACHE[key] = {
+        "signature": signature,
+        "datasets_done": datasets_done,
+        "current_dataset": current_dataset,
+    }
+    return datasets_done, current_dataset
+
+
+def detect_exp151_152_run(ps_output=None):
+    """Expose the active v2 run when its runner did not publish live JSON.
+
+    Exp151/152 is intentionally a standalone experiment runner and does not
+    write the legacy external-live JSON file. The dashboard can observe its
+    process command and read-only checkpoint without touching the runner,
+    database, or experiment outputs.
+    """
+
+    if ps_output is None:
+        try:
+            ps_output = subprocess.check_output(
+                ["ps", "-Ao", "pid=,ppid=,pcpu=,pmem=,command="],
+                text=True,
+                stderr=subprocess.DEVNULL,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            ps_output = ""
+
+    for line in ps_output.splitlines():
+        fields = line.strip().split(maxsplit=4)
+        if len(fields) != 5:
+            continue
+        pid_text, _ppid, _cpu, _mem, command = fields
+        if (
+            "run_experiment_151_152_virtual_run_conformal_policy_v2.py" not in command
+            or "--phase" not in command
+        ):
+            continue
+        try:
+            args = shlex.split(command)
+            pid = int(pid_text)
+            phase = args[args.index("--phase") + 1]
+            output_arg = args[args.index("--output-dir") + 1]
+        except (ValueError, IndexError, TypeError):
+            continue
+        output_dir = Path(output_arg)
+        if not output_dir.is_absolute():
+            output_dir = (ROOT / output_dir).resolve()
+        checkpoint = output_dir / "prediction_checkpoint_v2.jsonl"
+        datasets_done, current_dataset = _exp151_152_checkpoint_progress(checkpoint)
+        expected = EXPECTED_DATASETS
+        return {
+            "id": "experiment_151_152_virtual_run_conformal_policy_v2",
+            "label": "Exp151/152 · corrected virtual-run conformal policy v2",
+            "status": "running",
+            "phase": phase,
+            "pid": pid,
+            "child_pid": pid,
+            "expected_datasets": expected,
+            "datasets_done": datasets_done,
+            "progress_percent": datasets_done / expected * 100 if expected else 0.0,
+            "rows": datasets_done * 8,
+            "current_dataset": current_dataset,
+            "detail_csv": str(output_dir / "06_exp151_current_source_results.csv"),
+            "stdout_log": str(output_dir / "full_run.log"),
+            "scope": "retrospective counterfactual virtual wafer-run benchmark",
+            "autonomous_metric": "hard_alert_only",
+            "review_metric": "human_assisted_diagnostic_only",
+        }
+
+    return {}
+
+
+def _exp153_157_cache_progress(cache_dir):
+    cache_dir = Path(cache_dir)
+    if not cache_dir.exists():
+        return 0, None
+    datasets_done = 0
+    current_dataset = None
+    try:
+        for entry in cache_dir.iterdir():
+            if entry.is_file() and entry.suffix == ".npz":
+                datasets_done += 1
+                current_dataset = entry.stem
+    except OSError:
+        return 0, None
+    return datasets_done, current_dataset
+
+
+def detect_exp153_157_run(ps_output=None):
+    """Observe the Exp153-157 pipeline without writing to its artifacts."""
+
+    if ps_output is None:
+        try:
+            ps_output = subprocess.check_output(
+                ["ps", "-Ao", "pid=,ppid=,pcpu=,pmem=,command="],
+                text=True,
+                stderr=subprocess.DEVNULL,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            ps_output = ""
+
+    script_name = "run_experiment_153_157_pipeline.py"
+    for line in ps_output.splitlines():
+        fields = line.strip().split(maxsplit=4)
+        if len(fields) != 5:
+            continue
+        pid_text, _ppid, _cpu, _mem, command = fields
+        if script_name not in command:
+            continue
+        try:
+            args = shlex.split(command)
+            pid = int(pid_text)
+        except (ValueError, TypeError):
+            continue
+        stages = [args[index + 1] for index, value in enumerate(args[:-1]) if value == "--stage"]
+        phase = stages[0] if len(stages) == 1 else "pipeline"
+        try:
+            output_arg = args[args.index("--output-dir") + 1]
+        except (ValueError, IndexError):
+            output_arg = "outputs/exp153_157_train_only_improvements"
+        output_dir = Path(output_arg)
+        if not output_dir.is_absolute():
+            output_dir = (ROOT / output_dir).resolve()
+        datasets_done, current_dataset = _exp153_157_cache_progress(output_dir / "cache")
+        expected = EXPECTED_DATASETS
+        return {
+            "id": "experiment_153_157_train_only_improvements",
+            "label": "Exp153-157 · TRAIN-only calibration and coverage sensitivities",
+            "status": "running",
+            "phase": phase,
+            "pid": pid,
+            "child_pid": pid,
+            "expected_datasets": expected,
+            "datasets_done": datasets_done,
+            "progress_percent": datasets_done / expected * 100 if expected else 0.0,
+            "rows": datasets_done,
+            "current_dataset": current_dataset,
+            "detail_csv": str(output_dir / "23_exp157_results.csv"),
+            "stdout_log": str(output_dir / "full_pipeline_queue.log"),
+            "scope": "retrospective TRAIN-only sensitivity experiments",
+            "autonomous_metric": "hard_alert_only",
+            "review_metric": "human_assisted_diagnostic_only",
+        }
+    return {}
+
+
+def unified_experiment_items(state, external_live_run=None, validation_plan=None):
+    external_live_run = external_live_run or {}
+    validation_plan = validation_plan or []
+    items = {}
+    completed = set(state.get("completed") or [])
+    running = state.get("running") or {}
+    completed_order = {exp_id: index for index, exp_id in enumerate(state.get("completed") or [])}
+    for exp_id in state.get("completed") or []:
+        info = experiment_info(exp_id)
+        items[exp_id] = {"id": exp_id, "label": info.get("label", exp_id), "status": "completed", "completed_order": completed_order[exp_id]}
+    for exp_id in state.get("queue") or []:
+        info = experiment_info(exp_id)
+        items[exp_id] = {"id": exp_id, "label": info.get("label", exp_id), "status": "queued"}
+    if running.get("id"):
+        items[running["id"]] = {**running, "label": running.get("label") or experiment_info(running["id"]).get("label", running["id"]), "status": "running"}
+    for row in validation_plan:
+        item = dict(row)
+        if external_live_run.get("id") and item.get("runner_id") == external_live_run.get("id"):
+            item["status"] = external_live_run.get("status", "running")
+            item["progress_percent"] = external_live_run.get("progress_percent")
+        else:
+            info = experiment_info(item.get("id"))
+            if info:
+                history_status = experiment_history_status(item["id"], info, state)["history_status"]
+                if history_status in {"completed_valid", "completed_research"}:
+                    item["status"] = "completed"
+                elif history_status in {"blocked", "invalid", "not_run", "queued", "running"}:
+                    item["status"] = {
+                        "invalid": "failed",
+                        "not_run": item.get("status", "planned"),
+                    }.get(history_status, history_status)
+        items[item["id"]] = item
+    if external_live_run.get("id"):
+        items[external_live_run["id"]] = {
+            **items.get(external_live_run["id"], {}),
+            **external_live_run,
+        }
+    order = {"running": 0, "queued": 1, "planned": 2, "blocked": 3, "failed": 4, "completed": 5}
+    return sorted(
+        items.values(),
+        key=lambda row: (
+            order.get(row.get("status"), 9),
+            row.get("completed_order", 10**9) if row.get("status") == "completed" else row.get("id", ""),
+        ),
+    )
+
+
+def dataset_context_snapshot(db_path=DB_PATH):
+    db_path = Path(db_path)
+    if not db_path.exists():
+        return {"available": False, "error": f"missing database: {db_path}"}
+    conn = sqlite3.connect(db_path)
+    try:
+        rows = conn.execute(
+            "SELECT name, train_normal_count, test_normal_count, test_anomaly_count, test_total_count FROM datasets"
+        ).fetchall()
+    finally:
+        conn.close()
+    train_counts = sorted(int(row[1]) for row in rows)
+    names = {row[0] for row in rows}
+    total = lambda position: int(sum(int(row[position]) for row in rows))
+    percentile = lambda value: float(np.percentile(train_counts, value)) if train_counts else 0.0
+    return {
+        "available": True,
+        "source": str(db_path),
+        "purpose": "normal-only training and rare-anomaly benchmark evaluation",
+        "dataset_count": len(rows),
+        "evaluation_dataset_count": len(rows) - len(names & EVALUATION_EXCLUSIONS),
+        "excluded_datasets": sorted(names & EVALUATION_EXCLUSIONS),
+        "train_normal_instances": total(1),
+        "test_normal_instances": total(2),
+        "test_anomaly_instances": total(3),
+        "test_total_instances": total(4),
+        "train_count_distribution": {
+            "min": min(train_counts) if train_counts else 0,
+            "median": percentile(50),
+            "p90": percentile(90),
+            "p95": percentile(95),
+            "max": max(train_counts) if train_counts else 0,
+            "lt20_datasets": sum(value < 20 for value in train_counts),
+        },
+        "dataset_grain": "benchmark dataset containing multiple TRAIN/TEST time-series instances",
+        "candidate_index_meaning": "TEST time-series instance index",
+        "candidate_index_is_time_position": False,
+        "production_run_mapping_verified": False,
+        "missing_operational_fields": ["equipment_id", "recipe_id", "sensor_id", "step_id", "run_id", "timestamp", "user_feedback"],
+    }
+
+
+def gpt_handoff_snapshot(status, dataset_context):
+    experiment_history = status.get("experiment_history") or status.get("completed_results") or []
+    return {
+        "schema_version": "1.0",
+        "generated_at": time.strftime("%Y-%m-%d %H:%M:%S %Z"),
+        "current_status": {
+            key: status.get(key)
+            for key in ("running", "active_experiment", "active_label", "progress_percent", "datasets_done", "expected_datasets", "coverage")
+        },
+        "experiment_work_items": status.get("unified_experiments", []),
+        "experiment_history": experiment_history,
+        "experiment_compare": status.get("experiment_compare") or [],
+        "current_metrics": {"best": status.get("best"), "operational_best": status.get("operational_best")},
+        "external_validation": status.get("external_validation") or {},
+        "data_context": dataset_context,
+        "interpretation_rules": {
+            "hard_alert_scope": "autonomous",
+            "review_scope": "human_assisted_diagnostic_only",
+            "retrospective_not_prospective": True,
+            "test_metrics_must_not_select_policy": True,
+            "end_to_end_strict_train_only_verified": False,
+        },
+    }
+
+
+def gpt_handoff_markdown(handoff):
+    status = handoff.get("current_status", {})
+    context = handoff.get("data_context", {})
+    external_validation = handoff.get("external_validation", {})
+    items = handoff.get("experiment_work_items", [])
+    experiment_history = handoff.get("experiment_history", [])
+    progress = as_float(status.get("progress_percent")) or 0.0
+    done = safe_int(status.get("datasets_done")) or 0
+    expected = safe_int(status.get("expected_datasets")) or 0
+    active_items = [item for item in items if item.get("status") != "completed"]
+    completed_items = [item for item in items if item.get("status") == "completed"]
+    shown_completed = completed_items[-10:]
+    lines = [
+        "# Time-series anomaly project handoff",
+        "",
+        f"Generated: {handoff.get('generated_at', '-')}",
+        f"Current experiment: {status.get('active_experiment', '-')}",
+        f"Progress: {done}/{expected} ({progress:.2f}%)",
+        "",
+        "## Experiment work items",
+        "",
+    ]
+    lines.extend(f"- {item.get('id')}: {item.get('status')}" + (f" - {item.get('blocked_reason')}" if item.get("blocked_reason") else "") for item in active_items)
+    if shown_completed:
+        lines.extend(["", "## Recent completed experiments", ""])
+        lines.extend(f"- {item.get('id')}: completed" for item in shown_completed)
+    omitted = len(completed_items) - len(shown_completed)
+    if omitted > 0:
+        lines.append(f"- {omitted} additional completed experiments omitted from Markdown; retained in JSON")
+    if experiment_history:
+        def history_cell(value):
+            if value is None or value == "":
+                return "not recorded"
+            return str(value).replace("|", "/").replace("\n", " ")
+
+        lines.extend(
+            [
+                "",
+                "## Experiment history",
+                "",
+                "Hard metrics are autonomous. Combined F1 and review counts are human-assisted diagnostics.",
+                "Research, invalid, blocked, and not-run rows are excluded from operational winner selection.",
+                "",
+                "| Experiment | Status | Hard F1 | Hard FP | Hard precision | Combined F1 | Review candidates | Reason |",
+                "|---|---|---:|---:|---:|---:|---:|---|",
+            ]
+        )
+        for row in experiment_history:
+            lines.append(
+                "| "
+                + " | ".join(
+                    history_cell(value)
+                    for value in (
+                        row.get("label") or row.get("id"),
+                        row.get("history_status"),
+                        row.get("mean_f1"),
+                        row.get("mean_fp"),
+                        row.get("alert_precision"),
+                        row.get("mean_combined_f1"),
+                        row.get("review_candidate_count"),
+                        row.get("status_reason") or row.get("metric_availability_reason"),
+                    )
+                )
+                + " |"
+            )
+    if external_validation.get("result_summary"):
+        lines.extend(["", "## Current validation summary", "", "```json", json.dumps(external_validation["result_summary"], ensure_ascii=False, indent=2), "```"])
+    if external_validation.get("artifacts"):
+        lines.extend(["", "## Result artifacts", ""])
+        lines.extend(f"- {name}: {path}" for name, path in external_validation["artifacts"].items())
+    lines.extend(
+        [
+            "",
+            "## Dataset context",
+            "",
+            f"- Database datasets: {context.get('dataset_count', '-')}",
+            f"- Evaluation datasets: {context.get('evaluation_dataset_count', '-')}",
+            f"- Candidate index meaning: {context.get('candidate_index_meaning', '-')}",
+            f"- Production run mapping verified: {context.get('production_run_mapping_verified', False)}",
+            "- Important caveat: production run mapping is not verified; candidate indices are benchmark TEST time-series instance indices, not time positions.",
+            "",
+            "## Interpretation rules",
+            "",
+            "- Hard alerts are autonomous metrics.",
+            "- Review metrics are human-assisted diagnostics and must remain separate.",
+            "- Results are retrospective unless a prospective validation artifact says otherwise.",
+            "- TEST metrics must not select thresholds, budgets, routing, or feature sources.",
+            "- The full pipeline is not yet verified as end-to-end strict TRAIN-only.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
 
 
 def runtime_health_snapshot(heartbeat):
@@ -1987,7 +2923,73 @@ def count_expected_datasets():
 
 
 def experiment_info(exp_id):
-    return EXPERIMENTS.get(exp_id) or {}
+    return EXPERIMENTS.get(exp_id) or HISTORICAL_EXPERIMENT_META.get(exp_id) or {}
+
+
+HISTORY_ARTIFACT_FIELDS = {
+    "detail": ("detail_csv", "결과"),
+    "summary": ("summary_csv", "요약"),
+    "log": ("stdout_log", "로그"),
+}
+
+
+def history_artifact_path(exp_id, kind):
+    field = HISTORY_ARTIFACT_FIELDS.get(kind)
+    info = experiment_info(exp_id)
+    if not field or not info:
+        return None
+    raw_path = info.get(field[0])
+    if not raw_path:
+        return None
+    try:
+        path = Path(raw_path).resolve(strict=True)
+        allowed_roots = (DATA_DIR.resolve(strict=True), ROOT.resolve(strict=True))
+    except OSError:
+        return None
+    if not path.is_file() or not any(path.is_relative_to(root) for root in allowed_roots):
+        return None
+    return path
+
+
+def history_artifact_links(exp_id, info=None):
+    links = []
+    for kind, (_, label) in HISTORY_ARTIFACT_FIELDS.items():
+        if history_artifact_path(exp_id, kind) is None:
+            continue
+        links.append(
+            {
+                "kind": kind,
+                "label": label,
+                "href": f"/api/history-artifact?experiment_id={quote(exp_id)}&kind={quote(kind)}",
+            }
+        )
+    return links
+
+
+def experiment_history_status(exp_id, info, state):
+    """Reconcile live queue state with explicit historical metadata and files."""
+
+    state = state or {}
+    running = state.get("running") or {}
+    if exp_id == running.get("id"):
+        return {"history_status": "running", "status_reason": "active process"}
+    if exp_id in (state.get("queue") or []):
+        return {"history_status": "queued", "status_reason": "sequential queue"}
+
+    configured = (info or {}).get("history_status")
+    if configured in {"invalid", "blocked", "not_run"}:
+        return {
+            "history_status": configured,
+            "status_reason": (info or {}).get("status_reason"),
+        }
+
+    detail = (info or {}).get("detail_csv")
+    if detail and Path(detail).exists():
+        return {
+            "history_status": configured or "completed_valid",
+            "status_reason": (info or {}).get("status_reason"),
+        }
+    return {"history_status": "not_run", "status_reason": "result artifact missing"}
 
 
 def expected_for_experiment(info, fallback):
@@ -2023,6 +3025,153 @@ def first_number(row, fields):
         if value is not None:
             return value
     return None
+
+
+def _detail_values(rows, fields):
+    values = []
+    for row in rows:
+        value = first_number(row, fields)
+        if value is not None:
+            values.append(value)
+    return values
+
+
+def _detail_mean(rows, fields):
+    values = _detail_values(rows, fields)
+    return sum(values) / len(values) if values else None
+
+
+def _detail_sum(rows, fields):
+    values = _detail_values(rows, fields)
+    return sum(values) if values else None
+
+
+def _review_candidate_counts(row, detail_rows):
+    standard = first_number(
+        row,
+        ["standard_review_total_candidates", "standard_review_candidates", "standard_review_count"],
+    )
+    if standard is None:
+        standard = _detail_sum(
+            detail_rows,
+            ["standard_review_total_candidates", "standard_review_candidates", "standard_review_count"],
+        )
+    priority = first_number(
+        row,
+        ["priority_review_total_candidates", "priority_review_candidates", "priority_review_count"],
+    )
+    if priority is None:
+        priority = _detail_sum(
+            detail_rows,
+            ["priority_review_total_candidates", "priority_review_candidates", "priority_review_count"],
+        )
+    total = first_number(row, ["total_review_candidate_count", "review_candidates_total", "review_candidate_count"])
+    if total is None and (standard is not None or priority is not None):
+        total = (standard or 0) + (priority or 0)
+    return safe_int(standard), safe_int(priority), safe_int(total)
+
+
+def _normalize_historical_variant(row):
+    standard, priority, total = _review_candidate_counts(row, [])
+    return {
+        "alpha": as_float(row.get("alpha")),
+        "mean_f1": first_number(row, ["mean_hard_f1", "mean_f1", "f1_evt", "mean_f1_evt", "f1"]),
+        "mean_combined_f1": first_number(row, ["mean_combined_f1"]),
+        "mean_fp": first_number(row, ["mean_hard_fp", "mean_fp"]),
+        "alert_precision": first_number(row, ["hard_alert_precision", "hard_precision", "alert_precision"]),
+        "standard_review_candidate_count": standard,
+        "priority_review_candidate_count": priority,
+        "total_review_candidate_count": total,
+    }
+
+
+def normalize_historical_metrics(summary_row, detail_rows, metadata=None):
+    row = summary_row or {}
+    details = [detail for detail in (detail_rows or []) if isinstance(detail, dict)]
+    variant_rows = [detail for detail in details if as_float(detail.get("alpha")) is not None]
+    if not variant_rows and as_float(row.get("alpha")) is not None:
+        variant_rows = [row]
+    variants = [_normalize_historical_variant(detail) for detail in variant_rows]
+    alpha_values = {variant["alpha"] for variant in variants if variant["alpha"] is not None}
+    no_alpha_selection = bool(
+        metadata
+        and "selected_alpha" in metadata
+        and metadata.get("selected_alpha") is None
+        and len(alpha_values) > 1
+    )
+    metadata = metadata or {}
+    scope_text = str(metadata.get("scope") or "").lower()
+    audit_text = " ".join(
+        str(metadata.get(key) or "").lower() for key in ("label", "status_reason", "artifact_type")
+    )
+    summary_path = str(metadata.get("summary_csv") or "").lower()
+    audit_only = (
+        "audit" in scope_text
+        or "audit" in audit_text
+        or metadata.get("history_status") == "audit_only"
+        or (metadata.get("artifact_type") == "audit")
+        or (summary_path.endswith((".md", ".json")) and "audit" in audit_text)
+    )
+    mean_f1 = first_number(row, ["mean_hard_f1", "mean_f1", "f1_evt", "mean_f1_evt", "f1"])
+    if mean_f1 is None:
+        mean_f1 = _detail_mean(details, ["hard_f1", "mean_hard_f1", "f1"])
+
+    mean_combined_f1 = first_number(row, ["mean_combined_f1"])
+    if mean_combined_f1 is None:
+        mean_combined_f1 = _detail_mean(details, ["combined_f1", "mean_combined_f1"])
+
+    mean_fp = first_number(row, ["mean_hard_fp", "mean_fp"])
+    if mean_fp is None:
+        mean_fp = _detail_mean(details, ["hard_fp", "mean_hard_fp", "fp"])
+    if mean_fp is None:
+        mean_fp = first_number(row, ["hard_fp", "fp"])
+
+    hard_tp = first_number(row, ["hard_tp", "mean_hard_tp", "mean_tp", "tp"])
+    if hard_tp is None:
+        hard_tp = _detail_sum(details, ["hard_tp", "mean_hard_tp", "mean_tp", "tp"])
+    hard_fp = first_number(row, ["hard_fp", "mean_hard_fp", "mean_fp", "fp"])
+    if hard_fp is None:
+        hard_fp = _detail_sum(details, ["hard_fp", "mean_hard_fp", "mean_fp", "fp"])
+    hard_fn = first_number(row, ["hard_fn", "mean_hard_fn", "mean_fn", "fn"])
+    if hard_fn is None:
+        hard_fn = _detail_sum(details, ["hard_fn", "mean_hard_fn", "mean_fn", "fn"])
+
+    alert_precision = first_number(row, ["hard_alert_precision", "hard_precision", "alert_precision"])
+    if alert_precision is None:
+        alert_precision = alert_precision_from(hard_tp, hard_fp)
+
+    standard_review_candidate_count, priority_review_candidate_count, total_review_candidate_count = _review_candidate_counts(
+        row, details
+    )
+    if audit_only or no_alpha_selection:
+        mean_f1 = mean_fp = mean_combined_f1 = None
+        hard_tp = hard_fp = hard_fn = alert_precision = None
+        standard_review_candidate_count = priority_review_candidate_count = total_review_candidate_count = None
+    audit_keys = {"binding_dataset_count", "removed_candidate_count", "coverage_count"}
+    reason = (
+        "audit only"
+        if audit_only or audit_keys.intersection(row)
+        else "no alpha selected"
+        if no_alpha_selection
+        else None
+        if mean_f1 is not None
+        else "metric not recorded"
+    )
+    return {
+        "mean_f1": mean_f1,
+        "mean_combined_f1": mean_combined_f1,
+        "mean_tp": hard_tp,
+        "mean_fp": mean_fp,
+        "mean_fn": hard_fn,
+        "alert_precision": alert_precision,
+        "standard_review_candidate_count": standard_review_candidate_count,
+        "priority_review_candidate_count": priority_review_candidate_count,
+        "total_review_candidate_count": total_review_candidate_count,
+        "review_candidate_count": total_review_candidate_count,
+        "variants": variants,
+        "selected_alpha": None,
+        "metric_availability_reason": reason,
+    }
 
 
 def result_name(row):
@@ -2116,8 +3265,24 @@ def history_by_id(state):
     return result
 
 
-def best_summary_row(exp_id, info, history):
-    rows = read_csv_rows(info.get("summary_csv"))
+def experiment_sort_key(exp_id):
+    info = experiment_info(exp_id)
+    text = f"{exp_id} {info.get('label', '')}".lower()
+    match = re.search(r"(?:experiment|exp)[_\s-]*(\d+)([a-z]?)", text)
+    if match:
+        return (0, int(match.group(1)), match.group(2), exp_id)
+    return (1, 0, "", exp_id)
+
+
+def _rows_for_experiment(rows, exp_id):
+    tagged = [row for row in rows if str(row.get("experiment_id") or "").strip()]
+    if not tagged:
+        return rows
+    return [row for row in tagged if str(row.get("experiment_id")).strip() == exp_id]
+
+
+def best_summary_row(exp_id, info, history, summary_rows=None):
+    rows = list(summary_rows) if summary_rows is not None else read_csv_rows(info.get("summary_csv"))
     if rows:
         default_selector = OPERATIONAL_DEFAULT_SELECTORS.get(exp_id)
         if default_selector:
@@ -2159,27 +3324,69 @@ def best_summary_row(exp_id, info, history):
 
 
 def completed_result_snapshot(state):
-    completed = [exp_id for exp_id in state.get("completed", []) if exp_id in EXPERIMENTS]
+    known_experiments = set(EXPERIMENTS) | set(HISTORICAL_EXPERIMENT_META)
+    completed = []
+    for exp_id in state.get("completed", []):
+        if exp_id in known_experiments and exp_id not in completed:
+            completed.append(exp_id)
+    catalog_only = sorted(known_experiments - set(completed), key=experiment_sort_key)
+    experiment_ids = completed + catalog_only
     history = history_by_id(state)
     rows = []
-    for exp_id in completed:
-        info = EXPERIMENTS[exp_id]
+    for exp_id in experiment_ids:
+        info = experiment_info(exp_id)
+        historical_catalog = exp_id in HISTORICAL_EXPERIMENT_META
         hist = history.get(exp_id) or {}
-        best = best_summary_row(exp_id, info, history)
+        status = experiment_history_status(exp_id, info, state)
+        history_status = status["history_status"]
+        comparison_eligible = bool(info.get("comparison_eligible", history_status == "completed_valid"))
         summary_meta = hist.get("summary") if isinstance(hist.get("summary"), dict) else {}
+        summary_rows = _rows_for_experiment(read_csv_rows(info.get("summary_csv")), exp_id) if info.get("summary_csv") else []
+        variant_rows = (
+            _rows_for_experiment(read_csv_rows(info.get("alpha_sensitivity_csv")), exp_id)
+            if info.get("alpha_sensitivity_csv")
+            else []
+        )
+        if not variant_rows and any(as_float(row.get("alpha")) is not None for row in summary_rows):
+            variant_rows = summary_rows
+        detail_rows = []
+        if historical_catalog and not summary_rows and not variant_rows and info.get("detail_csv"):
+            detail_rows = read_csv_rows(info.get("detail_csv"))
+        artifact_errors = []
+        for artifact_key in ("summary_csv", "detail_csv", "alpha_sensitivity_csv"):
+            artifact_path = info.get(artifact_key)
+            error = CSV_READ_ERRORS.get(str(artifact_path)) if artifact_path else None
+            if error:
+                artifact_errors.append(f"{Path(artifact_path).name}: {error}")
+        artifact_unreadable = bool(artifact_errors)
+        if artifact_unreadable and history_status not in {"running", "queued"}:
+            history_status = "invalid"
+            status = {
+                "history_status": "invalid",
+                "status_reason": f"artifact unreadable: {'; '.join(artifact_errors)}",
+            }
+            comparison_eligible = False
+        alpha_values = {as_float(row.get("alpha")) for row in variant_rows if as_float(row.get("alpha")) is not None}
+        no_alpha_selection = "selected_alpha" in info and info.get("selected_alpha") is None and len(alpha_values) > 1
+        catalog_nonmetric = artifact_unreadable or history_status in {"not_run", "blocked", "queued"}
+        if no_alpha_selection:
+            comparison_eligible = False
+        best = None if no_alpha_selection or catalog_nonmetric else best_summary_row(exp_id, info, history, summary_rows)
+        normalization_rows = [] if catalog_nonmetric else variant_rows or (detail_rows if historical_catalog else [])
+        normalized = normalize_historical_metrics(best or {}, normalization_rows, info)
         if best:
-            mean_f1 = first_number(best, ["mean_f1", "f1_evt", "mean_f1_evt", "f1"])
+            mean_f1 = normalized["mean_f1"]
             median_f1 = first_number(best, ["median_f1", "median_f1_evt"])
             mean_auc_roc = first_number(best, ["mean_auc_roc", "auc_roc"])
             mean_auc_pr = first_number(best, ["mean_auc_pr", "auc_pr"])
             mean_oracle_f1 = first_number(best, ["mean_oracle_f1", "oracle_f1"])
             zero_f1_count = first_number(best, ["zero_f1_count"])
             mean_predicted_count = first_number(best, ["mean_predicted_count", "predicted_count"])
-            mean_tp = first_number(best, ["mean_tp", "tp"])
-            mean_fp = first_number(best, ["mean_fp", "fp"])
-            mean_fn = first_number(best, ["mean_fn", "fn"])
+            mean_tp = normalized["mean_tp"]
+            mean_fp = normalized["mean_fp"]
+            mean_fn = normalized["mean_fn"]
             mean_train_exceed_rate = first_number(best, ["mean_train_exceed_rate", "train_exceed_rate"])
-            alert_precision = first_number(best, ["alert_precision"])
+            alert_precision = normalized["alert_precision"]
             if alert_precision is None:
                 alert_precision = alert_precision_from(mean_tp, mean_fp)
             datasets = first_number(best, ["num_datasets"]) or summary_meta.get("datasets")
@@ -2189,16 +3396,27 @@ def completed_result_snapshot(state):
             if median_f1 is None:
                 median_f1 = first_number(history_values, ["median_f1_evt", "median_f1"])
         else:
-            mean_f1 = median_f1 = mean_auc_roc = mean_auc_pr = mean_oracle_f1 = zero_f1_count = None
-            mean_predicted_count = mean_tp = mean_fp = mean_fn = mean_train_exceed_rate = alert_precision = None
+            mean_f1 = normalized["mean_f1"] if historical_catalog else None
+            median_f1 = mean_auc_roc = mean_auc_pr = mean_oracle_f1 = zero_f1_count = None
+            mean_predicted_count = None
+            mean_tp = normalized["mean_tp"] if historical_catalog else None
+            mean_fp = normalized["mean_fp"] if historical_catalog else None
+            mean_fn = normalized["mean_fn"] if historical_catalog else None
+            alert_precision = normalized["alert_precision"] if historical_catalog else None
+            mean_train_exceed_rate = None
             datasets = summary_meta.get("datasets")
-            best_strategy = "-"
+            if no_alpha_selection:
+                best_strategy = f"{len(alpha_values)} alpha variants (no selection)"
+            elif normalized["metric_availability_reason"] == "audit only":
+                best_strategy = "audit only"
+            else:
+                best_strategy = "-"
         detail_row_count = summary_meta.get("rows")
         if detail_row_count is None:
             detail_path = info.get("detail_csv")
             try:
                 detail_row_count = sum(1 for _ in detail_path.open()) - 1 if detail_path and detail_path.exists() else 0
-            except OSError:
+            except (OSError, UnicodeError):
                 detail_row_count = 0
         ops_row = {
             "mean_f1": mean_f1,
@@ -2227,6 +3445,20 @@ def completed_result_snapshot(state):
                 "mean_fp": mean_fp,
                 "mean_fn": mean_fn,
                 "alert_precision": alert_precision,
+                "mean_combined_f1": normalized["mean_combined_f1"],
+                "standard_review_candidate_count": normalized["standard_review_candidate_count"],
+                "priority_review_candidate_count": normalized["priority_review_candidate_count"],
+                "total_review_candidate_count": normalized["total_review_candidate_count"],
+                "review_candidate_count": normalized["review_candidate_count"],
+                "variants": normalized["variants"],
+                "selected_alpha": normalized["selected_alpha"],
+                "metric_availability_reason": normalized["metric_availability_reason"],
+                "autonomous_metric_scope": info.get("autonomous_metric_scope", "hard_alert_or_legacy_primary"),
+                "review_metric_scope": info.get("review_metric_scope", "human_assisted_diagnostic_only"),
+                "history_status": history_status,
+                "comparison_eligible": comparison_eligible,
+                "scope": info.get("scope"),
+                "status_reason": status.get("status_reason"),
                 "mean_train_exceed_rate": mean_train_exceed_rate,
                 "operational_tier": operational_tier(ops_row),
                 "operational_excluded": exp_id in EXCLUDED_OPERATIONAL_EXPERIMENTS,
@@ -2240,9 +3472,10 @@ def completed_result_snapshot(state):
                 "elapsed_minutes": hist.get("elapsed_minutes"),
                 "finished_at": hist.get("finished_at"),
                 "summary_csv": str(info.get("summary_csv")),
+                "artifact_links": history_artifact_links(exp_id, info),
             }
         )
-    return sorted(rows, key=lambda row: row.get("finished_at") or "", reverse=True)
+    return rows
 
 
 def parse_log_tail(path):
@@ -2272,12 +3505,12 @@ def recent_from_rows(rows, limit=12):
     seen = set()
     recent = []
     for row in reversed(rows):
-        name = row.get("dataset_name")
+        name = row.get("dataset_name") or row.get("dataset")
         if not name or name in seen:
             continue
         seen.add(name)
         length = safe_int(row.get("sequence_length") or row.get("metadata_len") or row.get("actual_len_median"))
-        train_size = safe_int(row.get("train_count") or row.get("train_score_count"))
+        train_size = safe_int(row.get("train_count") or row.get("train_score_count") or row.get("n_train"))
         recent.append(
             {
                 "time": "csv",
@@ -2390,7 +3623,7 @@ def process_info(pid):
             text=True,
             stderr=subprocess.DEVNULL,
         ).strip()
-    except subprocess.CalledProcessError:
+    except (BlockingIOError, OSError, subprocess.CalledProcessError):
         return None
     parts = out.split(None, 3)
     if len(parts) < 4:
@@ -2438,7 +3671,7 @@ def process_tree_snapshot(pid, ps_output=None):
                 text=True,
                 stderr=subprocess.DEVNULL,
             )
-        except subprocess.CalledProcessError:
+        except (BlockingIOError, OSError, subprocess.CalledProcessError):
             return process_info(root_pid)
     rows = parse_ps_process_rows(ps_output)
     by_pid = {row["pid"]: row for row in rows}
@@ -2481,8 +3714,8 @@ def system_cpu_snapshot(top_output=None):
                 stderr=subprocess.DEVNULL,
                 timeout=3,
             )
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
-            return {"available": False, "source": "top", "note": "top command unavailable"}
+        except (BlockingIOError, OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+            return {"available": False, "source": "top", "note": "top command temporarily unavailable"}
     match = re.search(
         r"CPU usage:\s*([0-9.]+)%\s*user,\s*([0-9.]+)%\s*sys,\s*([0-9.]+)%\s*idle",
         top_output,
@@ -2563,7 +3796,7 @@ def gpu_snapshot(nvidia_output=None, powermetrics_output=None, errors=None):
                 return parsed
         except subprocess.TimeoutExpired:
             errors.append("nvidia-smi timed out")
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        except (BlockingIOError, OSError, subprocess.CalledProcessError, FileNotFoundError):
             errors.append("nvidia-smi unavailable")
     if powermetrics_output is not None:
         parsed = parse_powermetrics_gpu_output(powermetrics_output)
@@ -2587,7 +3820,7 @@ def gpu_snapshot(nvidia_output=None, powermetrics_output=None, errors=None):
                     return parsed
             except subprocess.TimeoutExpired:
                 errors.append("powermetrics timed out")
-            except subprocess.CalledProcessError:
+            except (BlockingIOError, OSError, subprocess.CalledProcessError):
                 errors.append("powermetrics 권한 필요 또는 GPU sampler 사용 불가")
             except FileNotFoundError:
                 errors.append("powermetrics unavailable")
@@ -2770,6 +4003,7 @@ def parse_progress_events(lines):
         r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}),\d+ \[INFO\] Progress: \[\s*(\d+)/(\d+)\] rows=(\d+)"
     )
     compact_pattern = re.compile(r"\bprogress\s+(\d+)/(\d+)\b(?:\s+last=([^\s]+))?", re.IGNORECASE)
+    plain_pattern = re.compile(r"^Progress:\s*\[\s*(\d+)/(\d+)\]\s*rows=(\d+)", re.IGNORECASE)
     events = []
     for line in lines:
         match = canonical_pattern.match(line)
@@ -2783,6 +4017,19 @@ def parse_progress_events(lines):
                     "expected": int(match.group(4)),
                     "rows": int(match.group(5)),
                     "source": "canonical",
+                }
+            )
+            continue
+        match = plain_pattern.match(line)
+        if match:
+            events.append(
+                {
+                    "timestamp": None,
+                    "time": "log",
+                    "done": int(match.group(1)),
+                    "expected": int(match.group(2)),
+                    "rows": int(match.group(3)),
+                    "source": "plain",
                 }
             )
             continue
@@ -2838,14 +4085,13 @@ def throughput_snapshot(events, done, expected, elapsed):
 
 def experiment_compare_snapshot(active_id, active_label, active_summary, completed_results, is_running):
     rows = []
-    completed_ids = {item.get("id") for item in completed_results}
-    if active_summary and (is_running or active_id not in completed_ids):
-        active = active_summary[0]
+    if is_running:
+        active = active_summary[0] if active_summary else {}
         rows.append(
             {
                 "id": active_id,
                 "label": active_label,
-                "status": "running" if is_running else "selected",
+                "status": "running",
                 "best_strategy": active.get("strategy"),
                 "mean_f1": active.get("mean_f1"),
                 "median_f1": active.get("median_f1"),
@@ -2856,7 +4102,14 @@ def experiment_compare_snapshot(active_id, active_label, active_summary, complet
                 "operational_excluded": active.get("operational_excluded"),
             }
         )
-    for item in sorted(completed_results, key=lambda row: as_float(row.get("mean_f1")) or float("-inf"), reverse=True):
+    eligible_completed = [
+        item
+        for item in completed_results
+        if item.get("comparison_eligible")
+        and item.get("history_status") == "completed_valid"
+        and as_float(item.get("mean_f1")) is not None
+    ]
+    for item in sorted(eligible_completed, key=lambda row: as_float(row.get("mean_f1")), reverse=True):
         rows.append(
             {
                 "id": item.get("id"),
@@ -2887,10 +4140,27 @@ def experiment_compare_snapshot(active_id, active_label, active_summary, complet
 
 
 def build_status(include_details=True):
-    state = read_state()
+    state = normalize_runtime_state_for_display(read_state())
     running = state.get("running") or {}
+    external_record = read_external_live_run()
+    external_live_run = external_record if external_record.get("status") == "running" else {}
+    detected_exp151_152 = detect_exp151_152_run()
+    if detected_exp151_152.get("status") == "running":
+        external_live_run = detected_exp151_152
+    detected_exp153_157 = detect_exp153_157_run()
+    if detected_exp153_157.get("status") == "running":
+        external_live_run = detected_exp153_157
+    if external_live_run.get("status") == "running":
+        running = external_live_run
     heartbeat = read_heartbeat()
     paths = active_paths(state)
+    if external_live_run:
+        paths = {
+            "id": external_live_run.get("id", "external_validation"),
+            "label": external_live_run.get("label", "External validation"),
+            "detail_csv": Path(external_live_run.get("detail_csv", DATA_DIR / "missing_external_results.csv")),
+            "stdout_log": Path(external_live_run.get("stdout_log", LOG_PATH)),
+        }
     rows = read_csv_rows(paths["detail_csv"])
     default_expected = count_expected_datasets()
     expected = expected_for_experiment(experiment_info(paths["id"]), default_expected)
@@ -2904,13 +4174,22 @@ def build_status(include_details=True):
     errors = parse_error_events(log_lines)
     warnings = warning_summary(log_lines)
     progress_events = parse_progress_events(log_lines)
-    csv_done = len({r.get("dataset_name") for r in rows if r.get("dataset_name")})
+    csv_done = len(
+        {
+            r.get("dataset_name") or r.get("dataset")
+            for r in rows
+            if r.get("dataset_name") or r.get("dataset")
+        }
+    )
     progress_latest = progress_events[-1] if progress_events else None
     done = csv_done
     heartbeat_matches = bool(running and heartbeat.get("experiment_id") == running.get("id") and heartbeat.get("status") == "running")
     if heartbeat_matches and heartbeat.get("done") is not None:
         done = safe_int(heartbeat.get("done")) or done
         expected = safe_int(heartbeat.get("expected")) or expected
+    elif external_live_run.get("status") == "running" and external_live_run.get("datasets_done") is not None:
+        done = safe_int(external_live_run.get("datasets_done")) or done
+        expected = safe_int(external_live_run.get("expected_datasets")) or expected
     elif running and progress_latest:
         done = progress_latest["done"]
         expected = progress_latest.get("expected") or expected
@@ -2936,6 +4215,12 @@ def build_status(include_details=True):
     current = recent[-1] if recent and is_running else {}
     if heartbeat_matches and heartbeat.get("current_dataset"):
         current = {"name": heartbeat.get("current_dataset"), "length": "-", "train_size": "-"}
+    if external_live_run.get("current_dataset"):
+        current = {
+            "name": external_live_run["current_dataset"],
+            "length": "-",
+            "train_size": "-",
+        }
     elapsed = elapsed_from_started(running.get("started_at")) if is_running else None
     eta = None
     if is_running and elapsed and done:
@@ -2952,12 +4237,15 @@ def build_status(include_details=True):
                 -(row.get("mean_f1") or 0),
             ),
         )[0]
-    completed_results = completed_result_snapshot(state) if include_details else []
+    history_state = {**state, "running": running if is_running else None}
+    experiment_history = completed_result_snapshot(history_state) if include_details else []
+    legacy_completed_ids = set(state.get("completed") or [])
+    completed_results = [row for row in experiment_history if row.get("id") in legacy_completed_ids]
     if include_details:
         primary_completed = next(
             (
                 row
-                for row in completed_results
+                for row in experiment_history
                 if row.get("id") == PRIMARY_OPERATIONAL_EXPERIMENT and not row.get("operational_excluded")
             ),
             None,
@@ -2967,7 +4255,7 @@ def build_status(include_details=True):
         if not operational_best:
             completed_operational_candidates = [
                 row
-                for row in completed_results
+                for row in experiment_history
                 if row.get("operational_tier") == "운영 기본 후보" and not row.get("operational_excluded")
             ]
             if completed_operational_candidates:
@@ -2987,7 +4275,15 @@ def build_status(include_details=True):
     ]
     queue_ids = [running_id, *pending_queue]
     experiment_snapshot = experiment_queue_snapshot(state, default_expected, experiment_ids=queue_ids, heartbeat=heartbeat)
-    queue_items = [row for row in experiment_snapshot if row.get("status") in {"running", "queued"}]
+    external_for_items = dict(external_live_run)
+    if external_for_items:
+        external_for_items["progress_percent"] = progress
+        external_for_items["datasets_done"] = done
+        external_for_items["expected_datasets"] = expected
+        external_for_items["rows"] = safe_int(external_live_run.get("rows")) or len(rows)
+    unified = unified_experiment_items(state, external_for_items, VALIDATION_PLAN)
+    queue_items = [row for row in unified if row.get("status") in {"running", "queued", "planned", "blocked", "failed"}]
+    dataset_context = dataset_context_snapshot()
     payload = {
         "running": is_running,
         "active_experiment": paths["id"],
@@ -2997,11 +4293,13 @@ def build_status(include_details=True):
         "system": system_resource_snapshot(),
         "queue": pending_queue,
         "queue_items": queue_items,
-        "catalog_count": len(EXPERIMENTS),
+        "unified_experiments": unified,
+        "dataset_context": dataset_context,
+        "catalog_count": len(set(EXPERIMENTS) | set(HISTORICAL_EXPERIMENT_META)),
         "datasets_done": done,
         "expected_datasets": expected,
         "progress_percent": progress,
-        "rows": len(rows),
+        "rows": safe_int(external_live_run.get("rows")) or len(rows),
         "current_dataset": current.get("name"),
         "current_meta": (
             "progress log fallback"
@@ -3018,6 +4316,7 @@ def build_status(include_details=True):
         "throughput": throughput_snapshot(progress_events, done, expected, elapsed),
         "best": summary[0] if summary else None,
         "runtime_health": runtime_health_snapshot(heartbeat),
+        "external_validation": external_live_run,
         "log_tail": log_tail,
         "elapsed_seconds": elapsed,
         "eta_seconds": eta,
@@ -3027,9 +4326,10 @@ def build_status(include_details=True):
         payload.update(
             {
                 "metric_glossary": metric_glossary_snapshot(),
+                "experiment_history": experiment_history,
                 "completed_results": completed_results,
                 "experiment_compare": experiment_compare_snapshot(
-                    paths["id"], paths["label"], summary, completed_results, is_running
+                    paths["id"], paths["label"], summary, experiment_history, is_running
                 ),
                 "strategy_details": strategy_detail_snapshot(rows, summary),
                 "operational_best": operational_best,
@@ -3148,11 +4448,40 @@ class Handler(BaseHTTPRequestHandler):
         except ConnectionResetError:
             pass
 
+    def send_file(self, path):
+        content_types = {
+            ".csv": "text/csv; charset=utf-8",
+            ".json": "application/json; charset=utf-8",
+            ".md": "text/markdown; charset=utf-8",
+            ".log": "text/plain; charset=utf-8",
+            ".txt": "text/plain; charset=utf-8",
+        }
+        try:
+            size = path.stat().st_size
+            source = path.open("rb")
+        except OSError:
+            self.send_payload(404, "text/plain; charset=utf-8", b"artifact unavailable")
+            return
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", content_types.get(path.suffix.lower(), "application/octet-stream"))
+            self.send_header("Content-Length", str(size))
+            self.send_header("Content-Disposition", f'attachment; filename="{path.name}"')
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            while chunk := source.read(1024 * 1024):
+                self.wfile.write(chunk)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+        finally:
+            source.close()
+
     def do_GET(self):
         if not self.is_authenticated():
             self.send_unauthorized()
             return
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
         if path == "/":
             self.send_payload(200, "text/html; charset=utf-8", INDEX_HTML.encode())
             return
@@ -3161,6 +4490,30 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/overview":
             self.send_payload(200, "application/json; charset=utf-8", json.dumps(build_status(include_details=False)).encode())
+            return
+        if path == "/api/dataset-context":
+            self.send_payload(200, "application/json; charset=utf-8", json.dumps(dataset_context_snapshot()).encode())
+            return
+        if path == "/api/gpt-handoff.json":
+            status = build_status(include_details=True)
+            payload = gpt_handoff_snapshot(status, status.get("dataset_context") or dataset_context_snapshot())
+            self.send_payload(200, "application/json; charset=utf-8", json.dumps(payload, ensure_ascii=False, indent=2).encode())
+            return
+        if path == "/api/gpt-handoff.md":
+            status = build_status(include_details=True)
+            payload = gpt_handoff_snapshot(status, status.get("dataset_context") or dataset_context_snapshot())
+            self.send_payload(200, "text/markdown; charset=utf-8", gpt_handoff_markdown(payload).encode())
+            return
+        if path == "/api/history-artifact":
+            query = parse_qs(parsed.query)
+            artifact = history_artifact_path(
+                (query.get("experiment_id") or [""])[0],
+                (query.get("kind") or [""])[0],
+            )
+            if artifact is None:
+                self.send_payload(404, "text/plain; charset=utf-8", b"artifact not found")
+                return
+            self.send_file(artifact)
             return
         if path == "/favicon.ico":
             self.send_response(204)
@@ -3189,9 +4542,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
 
+class ReusableThreadingHTTPServer(ThreadingHTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
 def main():
     port = int(os.environ.get("RANK_DASHBOARD_PORT", "8765"))
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = ReusableThreadingHTTPServer(("127.0.0.1", port), Handler)
     PID_PATH.write_text(str(os.getpid()))
     print(f"Rank dashboard listening at http://127.0.0.1:{port}/", flush=True)
     if os.environ.get("RANK_DASHBOARD_USER") and os.environ.get("RANK_DASHBOARD_PASSWORD"):
@@ -3199,6 +4557,7 @@ def main():
     try:
         server.serve_forever()
     finally:
+        server.server_close()
         try:
             PID_PATH.unlink()
         except FileNotFoundError:

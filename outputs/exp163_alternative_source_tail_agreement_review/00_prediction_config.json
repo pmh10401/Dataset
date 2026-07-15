@@ -1,0 +1,29 @@
+{
+  "alphas": [
+    0.005,
+    0.01,
+    0.02,
+    0.05
+  ],
+  "comparison": "test_score > threshold",
+  "destination_lane": "standard_review_only",
+  "experiment_id": "experiment_163_alternative_source_tail_agreement_review",
+  "prospective_validated": 0,
+  "retrospective_counterfactual": 1,
+  "source_config_hash": "889799817fe4984c7996717a88defea3417edd7679d9ed33c804a663fa8ae413",
+  "sources": [
+    "spectral",
+    "shapelet",
+    "interval"
+  ],
+  "target_gate": "n_train>=5 and frozen_exp160_candidate_count==0",
+  "threshold": "np.quantile(finite_train_scores, 1-alpha, method=higher)",
+  "uses_dataset_name_for_policy": 0,
+  "uses_family_name": 0,
+  "uses_test_candidate_empty_gate": 1,
+  "uses_test_length_for_policy": 0,
+  "variants": [
+    "tail_rank_2of3",
+    "tail_rank_3of3"
+  ]
+}
