@@ -617,8 +617,8 @@ def test_history_metric_text_rejects_unavailable_values_before_number_conversion
     assert "historyMetricText(variant, 'mean_f1', fmt, item)" in html
 
 
-def test_historical_catalog_covers_exp138_through_exp170():
-    for number in range(138, 171):
+def test_historical_catalog_covers_exp138_through_exp172():
+    for number in range(138, 173):
         assert any(exp_id.startswith(f"experiment_{number}") for exp_id in dash.HISTORICAL_EXPERIMENT_META)
 
 
@@ -706,6 +706,26 @@ def test_exp169_170_are_registered_as_unselected_research_results():
         "global_balanced_pool",
     }
     assert all(row["variant_name"] == row["pool_policy"] for row in normalized["variants"])
+
+
+def test_exp171_172_are_registered_as_frozen_review_policy_results():
+    exp171_id = "experiment_171_train_normal_risk_policy_freeze"
+    exp172_id = "experiment_172_frozen_train_risk_policy_review"
+
+    for exp_id in (exp171_id, exp172_id):
+        assert exp_id in dash.EXPERIMENTS
+        assert exp_id in dash.HISTORICAL_EXPERIMENT_META
+        assert dash.EXPERIMENTS[exp_id]["comparison_eligible"] is False
+        assert dash.EXPERIMENTS[exp_id]["expected_datasets"] == 316
+
+    exp171 = dash.EXPERIMENTS[exp171_id]
+    assert exp171["scope"] == "train_oob_risk_policy_freeze"
+    assert exp171["autonomous_metric_scope"] == "not_evaluated"
+
+    exp172 = dash.EXPERIMENTS[exp172_id]
+    assert exp172["scope"] == "retrospective_frozen_human_review_policy"
+    assert exp172["autonomous_metric_scope"] == "not_evaluated"
+    assert exp172["review_metric_scope"] == "retrospective_research_review_candidate"
 
 
 def test_experiment_catalog_includes_exp33_reconstruction_artifacts():
@@ -1123,11 +1143,12 @@ if __name__ == "__main__":
     test_completed_snapshot_exposes_operational_columns()
     test_history_ui_has_status_filter_and_separate_review_metrics()
     test_history_metric_text_rejects_unavailable_values_before_number_conversion()
-    test_historical_catalog_covers_exp138_through_exp170()
+    test_historical_catalog_covers_exp138_through_exp172()
     test_normalize_runtime_state_hides_dead_running_pid_and_stale_queue_item()
     test_exp164_is_audit_only_and_exp165_is_registered_for_live_queue()
     test_exp167_168_are_registered_as_non_operational_research_results()
     test_exp169_170_are_registered_as_unselected_research_results()
+    test_exp171_172_are_registered_as_frozen_review_policy_results()
     test_experiment_catalog_includes_exp33_reconstruction_artifacts()
     test_history_artifact_path_rejects_unknown_ids_and_paths_outside_allowed_roots()
     test_historical_catalog_records_have_explicit_status_contracts()

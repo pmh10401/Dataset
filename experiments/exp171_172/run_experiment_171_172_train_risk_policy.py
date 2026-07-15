@@ -437,7 +437,11 @@ def run_evaluation(output_dir: Path) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--phase", choices=("audit", "predict", "evaluate", "all"), default="all")
+    parser.add_argument(
+        "--phase",
+        choices=("audit", "predict", "evaluate", "predict-evaluate", "all"),
+        default="all",
+    )
     parser.add_argument("--dataset-limit", type=int)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
@@ -446,14 +450,13 @@ def main() -> None:
     if args.phase in {"audit", "all"}:
         result = run_audit(args.output_dir)
         print(f"{AUDIT_EXPERIMENT_ID} finished: {json.dumps(result['selected'], sort_keys=True)}")
-    if args.phase in {"predict", "all"}:
+    if args.phase in {"predict", "predict-evaluate", "all"}:
         result = run_prediction(args.output_dir, args.dataset_limit)
         print(f"prediction frozen: {json.dumps(result, sort_keys=True)}")
-    if args.phase in {"evaluate", "all"}:
+    if args.phase in {"evaluate", "predict-evaluate", "all"}:
         result = run_evaluation(args.output_dir)
         print(f"{EVALUATION_EXPERIMENT_ID} finished: {json.dumps(result, sort_keys=True)}")
 
 
 if __name__ == "__main__":
     main()
-

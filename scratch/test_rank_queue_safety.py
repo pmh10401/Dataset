@@ -149,6 +149,20 @@ def test_queue_catalog_includes_exp169_170_artifacts():
     assert exp170["summary_csv"].name == "09_exp170_global_summary.csv"
 
 
+def test_queue_catalog_includes_exp171_172_artifacts():
+    by_id = {experiment["id"]: experiment for experiment in queue.EXPERIMENTS}
+    exp171 = by_id["experiment_171_train_normal_risk_policy_freeze"]
+    exp172 = by_id["experiment_172_frozen_train_risk_policy_review"]
+
+    assert exp171["expected_datasets"] == 316
+    assert exp171["detail_csv"].name == "02_exp171_policy_candidates.csv"
+    assert exp171["args"] == ["--phase", "audit"]
+    assert exp172["expected_datasets"] == 316
+    assert exp172["detail_csv"].name == "06_exp172_dataset_metrics.csv"
+    assert exp172["summary_csv"].name == "07_exp172_global_summary.csv"
+    assert exp172["args"] == ["--phase", "predict-evaluate"]
+
+
 if __name__ == "__main__":
     test_reconcile_running_state_clears_dead_pid_without_touching_queue()
     test_reconcile_running_state_keeps_live_pid()
@@ -157,4 +171,5 @@ if __name__ == "__main__":
     test_queue_creates_output_directories_before_opening_logs()
     test_queue_catalog_includes_exp167_168_artifacts()
     test_queue_catalog_includes_exp169_170_artifacts()
+    test_queue_catalog_includes_exp171_172_artifacts()
     print("rank queue safety tests passed")
