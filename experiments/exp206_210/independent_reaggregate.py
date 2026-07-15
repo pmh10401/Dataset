@@ -39,7 +39,7 @@ def independently_reaggregate(
     # 1. Load results from all active prediction/evaluation stages (208 and 209)
     for stage, path in sorted(stage_files.items()):
         if not path.exists():
-            continue
+            raise FileNotFoundError(f"required stage result is missing: {path}")
         with path.open(newline="", encoding="utf-8") as handle:
             stage_rows = list(csv.DictReader(handle))
         for row in stage_rows:
@@ -80,11 +80,13 @@ def independently_reaggregate(
 
     # 3. Stratified summaries with Bootstrapped F1 intervals
     summary_rows = []
-    grouped: dict[tuple[str, str, str], list[dict[str, object]]] = defaultdict(list)
+    grouped: dict[tuple[str, str, str, str], list[dict[str, object]]] = defaultdict(list)
     for row in rows:
-        grouped[(str(row["source_stage"]), str(row["variant"]), str(row["size_stratum"]))].append(row)
+        scope = str(row["metric_scope"])
+        grouped[(str(row["source_stage"]), str(row["variant"]), str(row["size_stratum"]), scope)].append(row)
+        grouped[(str(row["source_stage"]), str(row["variant"]), "ALL", scope)].append(row)
 
-    for (stage, variant, stratum), group in sorted(grouped.items()):
+    for (stage, variant, stratum, scope), group in sorted(grouped.items()):
         candidate_count = sum(int(row["candidate_count"]) for row in group)
         tp = sum(int(row["candidate_tp"]) for row in group)
         fp = sum(int(row["candidate_fp"]) for row in group)
@@ -100,11 +102,14 @@ def independently_reaggregate(
                 "source_stage": stage,
                 "variant": variant,
                 "size_stratum": stratum,
+                "metric_scope": scope,
                 "datasets": len(group),
                 "candidate_count": candidate_count,
                 "candidate_tp": tp,
                 "candidate_fp": fp,
                 "candidate_precision": tp / max(1, candidate_count),
+                "mean_candidate_recall": float(np.mean([float(row["candidate_recall"]) for row in group])),
+                "mean_candidate_f1": float(np.mean([float(row["candidate_f1"]) for row in group])),
                 "baseline_mean_hard_f1": float(np.mean(base_f1s)),
                 "counterfactual_mean_f1": float(np.mean(cf_f1s)),
                 "paired_f1_bootstrap_low": boot_low,
@@ -144,7 +149,7 @@ def write_manifest(output_root: Path, experiment_id: str, files: list[Path], inp
             "sha256": sha256_file(path),
             "experiment_id": experiment_id,
             "retrospective_or_prospective": "retrospective",
-            "autonomous_or_human_assisted": "shadow_hard_diagnostic",
+            "autonomous_or_human_assisted": "mixed_shadow_review_research_diagnostic",
             "known_limitations": "not prospective; inherited feature provenance unresolved",
         }
         for path in files if path.exists()

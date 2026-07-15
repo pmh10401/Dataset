@@ -8,7 +8,13 @@ import os
 import sys
 import time
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+for _variable in (
+    "OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS",
+):
+    os.environ.setdefault(_variable, "1")
+
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -31,6 +37,8 @@ from experiments.exp206_210.core import (
     top2_mean,
     inverse_spearman_weights,
     fisher_stat,
+    rankdata_average,
+    spearman_correlation_matrix,
     wilson_upper,
     sha256_file,
     validate_prediction_payload,
@@ -38,13 +46,15 @@ from experiments.exp206_210.core import (
 )
 
 from experiments.exp206_210.alternative_oof import (
-    fit_score_source,
+    alternative_oof_config_hash,
     crossfit_alternative_sources,
 )
 
 from experiments.exp206_210.artifacts import (
     DATA_DIR,
     DB_PATH,
+    EXP137_CSV,
+    EXP153_MANIFEST,
     EXP206_CACHE_DIR,
     EXP206_MANIFEST,
     EXP206_ROOT,
@@ -54,6 +64,7 @@ from experiments.exp206_210.artifacts import (
     load_exp206_cache,
     load_test_labels_for_evaluation,
     freeze_predictions,
+    load_verified_predictions,
 )
 
 from experiments.exp206_210.independent_reaggregate import independently_reaggregate, write_manifest
@@ -65,6 +76,31 @@ STAGE_META = {
     "209": ("experiment_209_seven_source_joint_normal_novelty", 251),
     "210": ("experiment_210_independent_frontier_reaggregation", 251),
 }
+
+
+def frozen_prediction_input_hashes(
+    output_root: Path, *additional_paths: Path
+) -> dict[str, str]:
+    paths = (
+        EXP137_CSV,
+        EXP153_MANIFEST,
+        output_root / "01_score_cache_manifest.csv",
+        *additional_paths,
+    )
+    missing = [path for path in paths if not Path(path).exists()]
+    if missing:
+        raise FileNotFoundError(f"required frozen input missing: {missing[0]}")
+    return {str(path): sha256_file(path) for path in paths}
+
+
+def publish_progress(
+    done: int, expected: int, rows: int, dataset: str, errors: int = 0
+) -> None:
+    print(
+        f"Progress: [{done} / {expected}] rows={rows} "
+        f"dataset={dataset} errors={errors}",
+        flush=True,
+    )
 
 
 # For 7-source joint normal novelty
@@ -151,30 +187,49 @@ def compute_fused_train_test(
 ) -> tuple[np.ndarray, np.ndarray]:
     train_mat = np.column_stack([alt_scores[f"{s}_train"] for s in ["spectral", "shapelet", "interval"]])
     test_mat = np.column_stack([alt_scores[f"{s}_test"] for s in ["spectral", "shapelet", "interval"]])
+    return crossfit_fused_train_scores(alt_scores, method), _fusion_query_score(
+        train_mat, test_mat, method
+    )
 
-    train_z = np.zeros_like(train_mat)
-    test_z = np.zeros_like(test_mat)
-    for col in range(3):
-        tr_z, te_z = robust_z_pair(train_mat[:, col], test_mat[:, col])
-        train_z[:, col] = tr_z
-        test_z[:, col] = te_z
 
+def _fusion_query_score(
+    fit_matrix: np.ndarray, query_matrix: np.ndarray, method: str
+) -> np.ndarray:
+    fit_z = np.zeros_like(fit_matrix, dtype=float)
+    query_z = np.zeros_like(query_matrix, dtype=float)
+    for col in range(fit_matrix.shape[1]):
+        fit_z[:, col], query_z[:, col] = robust_z_pair(
+            fit_matrix[:, col], query_matrix[:, col]
+        )
     if method == "top2_mean":
-        fused_train = top2_mean(train_z)
-        fused_test = top2_mean(test_z)
-    elif method == "weighted_top2":
-        weights = inverse_spearman_weights(train_z)
-        fused_train = top2_mean(train_z * weights)
-        fused_test = top2_mean(test_z * weights)
-    elif method == "fisher":
-        p_train = np.column_stack([leave_one_out_pvalues(train_mat[:, col]) for col in range(3)])
-        p_test = np.column_stack([empirical_upper_pvalues(train_mat[:, col], test_mat[:, col]) for col in range(3)])
-        fused_train = fisher_stat(p_train)
-        fused_test = fisher_stat(p_test)
-    else:
-        raise ValueError(f"Unknown fusion method: {method}")
+        return top2_mean(query_z)
+    if method == "weighted_top2":
+        return top2_mean(query_z * inverse_spearman_weights(fit_z))
+    if method == "fisher":
+        p_query = np.column_stack(
+            [
+                empirical_upper_pvalues(fit_matrix[:, col], query_matrix[:, col])
+                for col in range(fit_matrix.shape[1])
+            ]
+        )
+        return np.asarray(fisher_stat(p_query), dtype=float)
+    raise ValueError(f"Unknown fusion method: {method}")
 
-    return fused_train, fused_test
+
+def crossfit_fused_train_scores(
+    alt_scores: dict[str, np.ndarray], method: str, seed: int = SEED
+) -> np.ndarray:
+    matrix = np.column_stack(
+        [alt_scores[f"{source}_train"] for source in ("spectral", "shapelet", "interval")]
+    )
+    result = np.full(len(matrix), np.nan, dtype=float)
+    for fit_indices, query_indices in fold_plan(len(matrix), 5, seed):
+        result[query_indices] = _fusion_query_score(
+            matrix[fit_indices], matrix[query_indices], method
+        )
+    if not np.all(np.isfinite(result)):
+        raise ValueError("incomplete cross-fitted fusion scores")
+    return result
 
 
 def compute_joint_train_test(
@@ -194,24 +249,54 @@ def compute_joint_train_test(
     train_mat = np.column_stack(train_parts)
     test_mat = np.column_stack(test_parts)
 
+    train_oof = crossfit_joint_train_scores(current_scores, alt_scores, method)
+    full_query = _joint_query_score(train_mat, test_mat, method)
+    if full_query is None or len(train_oof) == 0:
+        return None
+    return train_oof, full_query
+
+
+def _joint_query_score(
+    fit_matrix: np.ndarray, query_matrix: np.ndarray, method: str
+) -> np.ndarray | None:
     if method == "rank_gaussian_diagonal":
-        return rank_gaussian_diagonal_score(train_mat, test_mat)
-    elif method == "shrinkage_covariance":
-        return shrinkage_covariance_score(train_mat, test_mat)
-    else:
-        raise ValueError(f"Unknown joint method: {method}")
+        return rank_gaussian_diagonal_score(fit_matrix, query_matrix)[1]
+    if method == "shrinkage_covariance":
+        scored = shrinkage_covariance_score(fit_matrix, query_matrix)
+        return None if scored is None else scored[1]
+    raise ValueError(f"Unknown joint method: {method}")
+
+
+def crossfit_joint_train_scores(
+    current_scores: dict[str, np.ndarray],
+    alt_scores: dict[str, np.ndarray],
+    method: str,
+    seed: int = SEED,
+) -> np.ndarray:
+    columns = [
+        current_scores[f"{source}_train"]
+        for source in ("rocket_exp40", "exp55_best", "exp56_best", "exp84")
+    ] + [
+        alt_scores[f"{source}_train"]
+        for source in ("spectral", "shapelet", "interval")
+    ]
+    matrix = np.column_stack(columns)
+    result = np.full(len(matrix), np.nan, dtype=float)
+    for fit_indices, query_indices in fold_plan(len(matrix), 5, seed):
+        query_scores = _joint_query_score(
+            matrix[fit_indices], matrix[query_indices], method
+        )
+        if query_scores is None:
+            return np.asarray([], dtype=float)
+        result[query_indices] = query_scores
+    if not np.all(np.isfinite(result)):
+        raise ValueError("incomplete cross-fitted joint scores")
+    return result
 
 
 def compute_oof_false_alerts(fused_train: np.ndarray, alpha: float, seed: int = SEED) -> int:
-    n = len(fused_train)
-    plan = fold_plan(n, 5, seed)
-    false_alerts = 0
-    for fit_idx, query_idx in plan:
-        fit_scores = fused_train[fit_idx]
-        query_scores = fused_train[query_idx]
-        threshold = np.quantile(fit_scores, 1.0 - alpha, method="higher")
-        false_alerts += np.sum(query_scores > threshold)
-    return int(false_alerts)
+    del seed
+    return int(np.sum(leave_one_out_pvalues(fused_train) <= float(alpha)))
 
 
 def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
@@ -233,11 +318,28 @@ def _load_exp153_inputs(datasets: list[dict[str, object]]) -> dict[str, dict[str
     return current_cache
 
 
-def _load_exp206_inputs(datasets: list[dict[str, object]]) -> dict[str, dict[str, np.ndarray]]:
+def _load_exp206_inputs(
+    datasets: list[dict[str, object]], cache_dir: Path
+) -> dict[str, dict[str, np.ndarray]]:
+    manifest_path = Path(cache_dir).parent / "01_score_cache_manifest.csv"
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"Exp206 cache manifest not found: {manifest_path}")
+    with manifest_path.open(newline="", encoding="utf-8") as handle:
+        manifest = {row["dataset_name"]: row for row in csv.DictReader(handle)}
+    expected_names = {str(entry["dataset"]) for entry in datasets}
+    if set(manifest) != expected_names:
+        missing = sorted(expected_names - set(manifest))
+        extra = sorted(set(manifest) - expected_names)
+        raise ValueError(
+            f"Exp206 cache coverage mismatch missing={missing[:5]} extra={extra[:5]}"
+        )
     alt_cache = {}
     for entry in datasets:
-        ds = entry["dataset"]
-        alt_cache[ds] = load_exp206_cache(ds)
+        ds = str(entry["dataset"])
+        cache_path = Path(cache_dir) / manifest[ds]["cache_file"]
+        if sha256_file(cache_path) != manifest[ds]["cache_sha256"]:
+            raise ValueError(f"Exp206 cache SHA256 mismatch for {ds}")
+        alt_cache[ds] = load_exp206_cache(ds, cache_dir)
     return alt_cache
 
 
@@ -246,35 +348,113 @@ def process_dataset_206(entry: dict[str, object], cache_dir: Path) -> dict[str, 
     X_train, X_test, target_len = load_dataset_series_only(ds)
     payload = crossfit_alternative_sources(X_train, X_test, folds=5, seed=SEED)
     
-    # Save NPZ
     cache_path = cache_dir / f"{ds}.npz"
-    from experiments.exp162.full_coverage_score_core import source_config_hash
+    temporary_path = cache_path.with_suffix(".npz.tmp")
     metadata = {
         "dataset": ds,
         "target_length": int(target_len),
-        "source_config_hash": source_config_hash(),
+        "source_config_hash": alternative_oof_config_hash(),
         "seed": int(SEED),
+        "folds": 5,
         "train_rows": int(X_train.shape[0]),
         "test_rows": int(X_test.shape[0]),
         "contains_test_labels": False
     }
     
-    np.savez_compressed(
-        cache_path,
-        metadata_json=np.array(json.dumps(metadata)),
-        **payload
-    )
+    with temporary_path.open("wb") as handle:
+        np.savez_compressed(handle, metadata_json=np.array(json.dumps(metadata)), **payload)
+    os.replace(temporary_path, cache_path)
     
-    return {
+    result = {
         "dataset_name": ds,
         "n_train": int(entry["n_train"]),
         "n_test": int(entry["n_test"]),
         "train_target_len": int(target_len),
         "abstain": 0,
         "source_names": str(list(SOURCE_NAMES)),
+        "source_config_hash": metadata["source_config_hash"],
+        "seed": SEED,
+        "folds": 5,
         "cache_file": f"{ds}.npz",
         "cache_sha256": sha256_file(cache_path),
+        "status": "computed",
     }
+    for source in SOURCE_NAMES:
+        oof = np.asarray(payload[f"{source}_train"], dtype=float)
+        full = np.asarray(payload[f"{source}_train_full"], dtype=float)
+        oof_scale = float(np.median(np.abs(oof - np.median(oof))))
+        full_scale = float(np.median(np.abs(full - np.median(full))))
+        if len(oof) > 1:
+            rank_corr = float(
+                np.corrcoef(rankdata_average(oof), rankdata_average(full))[0, 1]
+            )
+        else:
+            rank_corr = 1.0
+        result.update({
+            f"{source}_oof_median": float(np.median(oof)),
+            f"{source}_full_median": float(np.median(full)),
+            f"{source}_oof_mad": oof_scale,
+            f"{source}_full_mad": full_scale,
+            f"{source}_oof_full_rank_corr": rank_corr,
+        })
+    return result
+
+
+def reusable_exp206_cache(
+    entry: dict[str, object], cache_dir: Path
+) -> dict[str, object] | None:
+    dataset = str(entry["dataset"])
+    cache_path = cache_dir / f"{dataset}.npz"
+    if not cache_path.exists():
+        return None
+    try:
+        with np.load(cache_path, allow_pickle=False) as archive:
+            metadata = json.loads(str(archive["metadata_json"].item()))
+            if metadata.get("source_config_hash") != alternative_oof_config_hash():
+                return None
+            if int(metadata.get("seed", -1)) != SEED or int(metadata.get("folds", -1)) != 5:
+                return None
+            if int(metadata.get("train_rows", -1)) != int(entry["n_train"]):
+                return None
+            if int(metadata.get("test_rows", -1)) != int(entry["n_test"]):
+                return None
+            for source in SOURCE_NAMES:
+                if len(archive[f"{source}_train"]) != int(entry["n_train"]):
+                    return None
+                if len(archive[f"{source}_train_full"]) != int(entry["n_train"]):
+                    return None
+                if len(archive[f"{source}_test"]) != int(entry["n_test"]):
+                    return None
+    except (OSError, KeyError, ValueError, json.JSONDecodeError):
+        return None
+    result = {
+        "dataset_name": dataset,
+        "n_train": int(entry["n_train"]),
+        "n_test": int(entry["n_test"]),
+        "train_target_len": int(metadata["target_length"]),
+        "abstain": 0,
+        "source_names": str(list(SOURCE_NAMES)),
+        "source_config_hash": metadata["source_config_hash"],
+        "seed": SEED,
+        "folds": 5,
+        "cache_file": cache_path.name,
+        "cache_sha256": sha256_file(cache_path),
+        "status": "reused",
+    }
+    with np.load(cache_path, allow_pickle=False) as archive:
+        for source in SOURCE_NAMES:
+            oof = np.asarray(archive[f"{source}_train"], dtype=float)
+            full = np.asarray(archive[f"{source}_train_full"], dtype=float)
+            result.update({
+                f"{source}_oof_median": float(np.median(oof)),
+                f"{source}_full_median": float(np.median(full)),
+                f"{source}_oof_mad": float(np.median(np.abs(oof - np.median(oof)))),
+                f"{source}_full_mad": float(np.median(np.abs(full - np.median(full)))),
+                f"{source}_oof_full_rank_corr": float(
+                    np.corrcoef(rankdata_average(oof), rankdata_average(full))[0, 1]
+                ) if len(oof) > 1 else 1.0,
+            })
+    return result
 
 
 def run_stage_206(dataset_limit: int | None, output_root: Path, workers: int) -> None:
@@ -285,17 +465,51 @@ def run_stage_206(dataset_limit: int | None, output_root: Path, workers: int) ->
     print(f"Starting Exp206 Alternative-Source OOF Reconstruction. datasets={len(datasets)} workers={workers}")
     manifest_rows = []
     errors = []
+    pending = []
+    for entry in datasets:
+        reused = reusable_exp206_cache(entry, cache_dir)
+        if reused is None:
+            pending.append(entry)
+        else:
+            manifest_rows.append(reused)
+    reused_count = len(manifest_rows)
+    print(
+        f"Resume: reused={len(manifest_rows)} pending={len(pending)}",
+        flush=True,
+    )
 
-    with ThreadPoolExecutor(max_workers=max(1, workers)) as executor:
-        futures = {executor.submit(process_dataset_206, entry, cache_dir): entry["dataset"] for entry in datasets}
-        for done, future in enumerate(as_completed(futures), 1):
-            ds = futures[future]
+    if workers <= 1:
+        for done, entry in enumerate(pending, 1):
+            dataset = str(entry["dataset"])
             try:
-                manifest_rows.append(future.result())
-            except Exception as e:
-                errors.append({"dataset": ds, "error": repr(e)})
-            if done % 10 == 0 or done == len(futures):
-                print(f"OOF CrossFit progress: {done}/{len(futures)} datasets scored. errors={len(errors)}")
+                manifest_rows.append(process_dataset_206(entry, cache_dir))
+            except Exception as error:
+                errors.append({"dataset": dataset, "error": repr(error)})
+            total_done = reused_count + done
+            print(
+                f"Progress: [{total_done} / {len(datasets)}] rows={total_done} "
+                f"dataset={dataset} errors={len(errors)}",
+                flush=True,
+            )
+    else:
+        with ProcessPoolExecutor(max_workers=workers) as executor:
+            futures = {
+                executor.submit(process_dataset_206, entry, cache_dir): entry["dataset"]
+                for entry in pending
+            }
+            for done, future in enumerate(as_completed(futures), 1):
+                dataset = str(futures[future])
+                try:
+                    manifest_rows.append(future.result())
+                except Exception as error:
+                    errors.append({"dataset": dataset, "error": repr(error)})
+                if done % 10 == 0 or done == len(futures):
+                    total_done = reused_count + done
+                    print(
+                        f"Progress: [{total_done} / {len(datasets)}] rows={total_done} "
+                        f"dataset={dataset} errors={len(errors)}",
+                        flush=True,
+                    )
 
     if errors:
         _write_csv(output_root / "exp206_errors.csv", errors)
@@ -320,28 +534,82 @@ def run_stage_207(dataset_limit: int | None, output_root: Path) -> None:
 
     # Load caches
     current_cache = _load_exp153_inputs(datasets)
-    alt_cache = _load_exp206_inputs(datasets)
+    alt_cache = _load_exp206_inputs(datasets, output_root / "cache")
 
     # Fixed alpha grid
     alphas = ALPHAS
     methods = ["top2_mean", "weighted_top2", "fisher"]
 
     audit_rows = []
+    pair_rows = []
     risk_summary = []
 
     # Map of rule -> list of (false_alerts, n_train)
     rule_counts = defaultdict(list)
 
-    for entry in datasets:
+    for dataset_number, entry in enumerate(datasets, 1):
         ds = entry["dataset"]
         n_train = int(entry["n_train"])
-        
         curr_ds = current_cache[ds]
         alt_ds = alt_cache[ds]
 
-        for method in methods:
-            fused_train, _ = compute_fused_train_test(alt_ds, method)
-            for alpha in alphas:
+        source_order = (
+            "rocket_exp40", "exp55_best", "exp56_best", "exp84",
+            "spectral", "shapelet", "interval",
+        )
+        vectors = {
+            source: (
+                curr_ds[f"{source}_train"]
+                if source in source_order[:4]
+                else alt_ds[f"{source}_train"]
+            )
+            for source in source_order
+        }
+        score_matrix = np.column_stack([vectors[source] for source in source_order])
+        correlations = spearman_correlation_matrix(score_matrix)
+
+        for alpha in alphas:
+            flags = {
+                source: leave_one_out_pvalues(vectors[source]) <= alpha
+                for source in source_order
+            }
+            current_support = np.column_stack(
+                [flags[source] for source in source_order[:4]]
+            ).sum(axis=1)
+            alternative_support = np.column_stack(
+                [flags[source] for source in source_order[4:]]
+            ).sum(axis=1)
+            alternative_2of3 = alternative_support >= 2
+            alternative_3of3 = alternative_support == 3
+            current_zero = current_support == 0
+
+            for left_index, left in enumerate(source_order):
+                for right_index in range(left_index + 1, len(source_order)):
+                    right = source_order[right_index]
+                    left_flag = flags[left]
+                    right_flag = flags[right]
+                    intersection = int(np.sum(left_flag & right_flag))
+                    union = int(np.sum(left_flag | right_flag))
+                    a = int(np.sum(left_flag & right_flag))
+                    b = int(np.sum(left_flag & ~right_flag))
+                    c = int(np.sum(~left_flag & right_flag))
+                    d = int(np.sum(~left_flag & ~right_flag))
+                    denominator = float((a + b) * (c + d) * (a + c) * (b + d))
+                    phi = ((a * d - b * c) / np.sqrt(denominator)) if denominator else 0.0
+                    pair_rows.append({
+                        "dataset": ds,
+                        "alpha": alpha,
+                        "left_source": left,
+                        "right_source": right,
+                        "spearman": float(correlations[left_index, right_index]),
+                        "tail_intersection": intersection,
+                        "tail_union": union,
+                        "tail_jaccard": intersection / max(1, union),
+                        "tail_phi": phi,
+                    })
+
+            for method in methods:
+                fused_train, _ = compute_fused_train_test(alt_ds, method)
                 fa = compute_oof_false_alerts(fused_train, alpha)
                 rule_counts[(method, alpha)].append((fa, n_train))
                 audit_rows.append({
@@ -352,7 +620,20 @@ def run_stage_207(dataset_limit: int | None, output_root: Path) -> None:
                     "false_alerts": fa,
                     "false_alert_rate": fa / n_train,
                     "wilson_upper": wilson_upper(fa, n_train),
+                    "current_any_count": int(np.sum(current_support >= 1)),
+                    "alternative_2of3_count": int(np.sum(alternative_2of3)),
+                    "alternative_3of3_count": int(np.sum(alternative_3of3)),
+                    "alternative_when_current_zero_count": int(
+                        np.sum(alternative_2of3 & current_zero)
+                    ),
+                    "alternative_3of3_when_current_zero_count": int(
+                        np.sum(alternative_3of3 & current_zero)
+                    ),
                 })
+        if dataset_number % 5 == 0 or dataset_number == len(datasets):
+            publish_progress(
+                dataset_number, len(datasets), len(audit_rows), str(ds)
+            )
 
     # Classify rules globally
     frozen_rules = {}
@@ -379,6 +660,7 @@ def run_stage_207(dataset_limit: int | None, output_root: Path) -> None:
 
     # Save CSVs
     _write_csv(output_root / "exp207_dataset_audit.csv", audit_rows)
+    _write_csv(output_root / "exp207_source_pair_audit.csv", pair_rows)
     _write_csv(output_root / "exp207_summary.csv", risk_summary)
 
     completion = output_root / "exp207_completion.json"
@@ -398,8 +680,7 @@ def run_stage_208(dataset_limit: int | None, output_root: Path) -> None:
         raise FileNotFoundError(f"Exp207 frozen rules not found at {rules_path}")
     frozen_rules = json.loads(rules_path.read_text(encoding="utf-8"))
 
-    current_cache = _load_exp153_inputs(datasets)
-    alt_cache = _load_exp206_inputs(datasets)
+    alt_cache = _load_exp206_inputs(datasets, output_root / "cache")
 
     methods = ["top2_mean", "weighted_top2", "fisher"]
     alphas = ALPHAS
@@ -407,20 +688,19 @@ def run_stage_208(dataset_limit: int | None, output_root: Path) -> None:
     prediction_rows = []
 
     # 1. Label-free prediction
-    for entry in datasets:
+    for dataset_number, entry in enumerate(datasets, 1):
         ds = str(entry["dataset"])
         n_train = int(entry["n_train"])
         n_test = int(entry["n_test"])
         excluded = set(entry["hard_indices"]) | set(entry["standard_indices"]) | set(entry["priority_indices"])
 
-        curr_ds = current_cache[ds]
         alt_ds = alt_cache[ds]
 
         for method in methods:
             fused_train, fused_test = compute_fused_train_test(alt_ds, method)
             for alpha in alphas:
-                threshold = np.quantile(fused_train, 1.0 - alpha, method="higher")
-                test_candidates = set(np.where(fused_test > threshold)[0].tolist())
+                test_pvalues = empirical_upper_pvalues(fused_train, fused_test)
+                test_candidates = set(np.where(test_pvalues <= alpha)[0].tolist())
                 final_candidates = test_candidates - excluded
 
                 rule_key = f"{method}__{alpha}"
@@ -447,18 +727,23 @@ def run_stage_208(dataset_limit: int | None, output_root: Path) -> None:
                     "retrospective_counterfactual": 1,
                     "prospective_validated": 0,
                 })
+        if dataset_number % 5 == 0 or dataset_number == len(datasets):
+            publish_progress(
+                dataset_number, len(datasets), len(prediction_rows), ds
+            )
 
     prediction_rows.sort(key=lambda x: (x["dataset"], x["variant"]))
 
     # Save and freeze prediction jsonl
-    input_hashes = {str(rules_path): sha256_file(rules_path)}
+    input_hashes = frozen_prediction_input_hashes(output_root, rules_path)
     pred_path, manifest_path = freeze_predictions(
         "208", STAGE_META["208"][0], prediction_rows, output_root, input_hashes
     )
+    frozen_prediction_rows = load_verified_predictions(pred_path, manifest_path)
 
     # 2. Delayed evaluation
     results = []
-    for pred in prediction_rows:
+    for pred in frozen_prediction_rows:
         ds = pred["dataset"]
         labels = load_test_labels_for_evaluation(ds)
         if len(labels) != pred["n_test"]:
@@ -533,7 +818,7 @@ def run_stage_209(dataset_limit: int | None, output_root: Path) -> None:
     print(f"Starting Exp209 Seven-Source Joint Normal Novelty. datasets={len(datasets)}")
 
     current_cache = _load_exp153_inputs(datasets)
-    alt_cache = _load_exp206_inputs(datasets)
+    alt_cache = _load_exp206_inputs(datasets, output_root / "cache")
 
     methods = ["rank_gaussian_diagonal", "shrinkage_covariance"]
     alphas = ALPHAS
@@ -562,9 +847,15 @@ def run_stage_209(dataset_limit: int | None, output_root: Path) -> None:
         global_upper = wilson_upper(total_fa, total_n)
         frozen_rules[f"{method}__{alpha}"] = classify_risk(global_upper)
 
+    joint_rules_path = output_root / "exp209_frozen_rules.json"
+    joint_rules_path.write_text(
+        json.dumps(frozen_rules, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
     # 2. Label-free prediction
     prediction_rows = []
-    for entry in datasets:
+    for dataset_number, entry in enumerate(datasets, 1):
         ds = str(entry["dataset"])
         n_train = int(entry["n_train"])
         n_test = int(entry["n_test"])
@@ -605,8 +896,8 @@ def run_stage_209(dataset_limit: int | None, output_root: Path) -> None:
                     })
                 else:
                     fused_train, fused_test = res
-                    threshold = np.quantile(fused_train, 1.0 - alpha, method="higher")
-                    test_candidates = set(np.where(fused_test > threshold)[0].tolist())
+                    test_pvalues = empirical_upper_pvalues(fused_train, fused_test)
+                    test_candidates = set(np.where(test_pvalues <= alpha)[0].tolist())
                     final_candidates = test_candidates - excluded
 
                     prediction_rows.append({
@@ -631,17 +922,23 @@ def run_stage_209(dataset_limit: int | None, output_root: Path) -> None:
                         "prospective_validated": 0,
                         "abstained": 0,
                     })
+        if dataset_number % 5 == 0 or dataset_number == len(datasets):
+            publish_progress(
+                dataset_number, len(datasets), len(prediction_rows), ds
+            )
 
     prediction_rows.sort(key=lambda x: (x["dataset"], x["variant"]))
 
     # Save and freeze prediction jsonl
+    input_hashes = frozen_prediction_input_hashes(output_root, joint_rules_path)
     pred_path, manifest_path = freeze_predictions(
-        "209", STAGE_META["209"][0], prediction_rows, output_root, {}
+        "209", STAGE_META["209"][0], prediction_rows, output_root, input_hashes
     )
+    frozen_prediction_rows = load_verified_predictions(pred_path, manifest_path)
 
     # 3. Delayed evaluation
     results = []
-    for pred in prediction_rows:
+    for pred in frozen_prediction_rows:
         ds = pred["dataset"]
         labels = load_test_labels_for_evaluation(ds)
         if len(labels) != pred["n_test"]:
@@ -730,7 +1027,14 @@ def run_stage_210(dataset_limit: int | None, output_root: Path) -> None:
     
     completion = output_root / "exp210_completion.json"
     completion.write_text(
-        json.dumps({"experiment_id": STAGE_META["210"][0], "status": "completed", "datasets": 251}, indent=2) + "\n"
+        json.dumps(
+            {
+                "experiment_id": STAGE_META["210"][0],
+                "status": "completed",
+                "datasets": len(load_population_values_only(dataset_limit)),
+            },
+            indent=2,
+        ) + "\n"
     )
     
     write_manifest(

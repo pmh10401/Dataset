@@ -14,6 +14,7 @@ import numpy as np
 
 from experiments.exp206_210 import artifacts
 from experiments.exp206_210.run_experiment_206_210 import STAGE_META
+from experiments.exp206_210.independent_reaggregate import independently_reaggregate
 
 
 class Exp206210StructureTests(unittest.TestCase):
@@ -25,6 +26,35 @@ class Exp206210StructureTests(unittest.TestCase):
 
     def test_stage_ids_are_frozen(self):
         self.assertEqual(list(STAGE_META), ["206", "207", "208", "209", "210"])
+
+    def test_verified_prediction_loader_rejects_tampering(self):
+        payload = {
+            "dataset": "x",
+            "n_test": 3,
+            "candidate_indices": [1],
+            "contains_test_labels": False,
+            "contains_evaluation_metrics": False,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prediction, manifest = artifacts.freeze_predictions(
+                "208", "experiment", [payload], root, {}
+            )
+            self.assertEqual(len(artifacts.load_verified_predictions(prediction, manifest)), 1)
+            prediction.write_text(prediction.read_text() + "\n", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                artifacts.load_verified_predictions(prediction, manifest)
+
+    def test_reaggregate_requires_every_stage_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self.assertRaises(FileNotFoundError):
+                independently_reaggregate(
+                    output_root=root,
+                    stage_files={"208": root / "missing.csv"},
+                    result_path=root / "results.csv",
+                    summary_path=root / "summary.csv",
+                )
 
     def test_runner_can_start_by_absolute_script_path_without_pythonpath(self):
         script = Path(__file__).with_name("run_experiment_206_210.py").resolve()
@@ -69,16 +99,20 @@ class Exp206210StructureTests(unittest.TestCase):
         mock_load_series.side_effect = side_effect_series
 
         # Mock current OOF cache (4 sources)
-        mock_load_current.return_value = {
-            "rocket_exp40_train": np.random.randn(100),
-            "rocket_exp40_test": np.random.randn(50),
-            "exp55_best_train": np.random.randn(100),
-            "exp55_best_test": np.random.randn(50),
-            "exp56_best_train": np.random.randn(100),
-            "exp56_best_test": np.random.randn(50),
-            "exp84_train": np.random.randn(100),
-            "exp84_test": np.random.randn(50),
-        }
+        def side_effect_current(dataset):
+            n_train = 100 if dataset == "ds_A" else 150
+            n_test = 50 if dataset == "ds_A" else 60
+            return {
+                "rocket_exp40_train": np.random.randn(n_train),
+                "rocket_exp40_test": np.random.randn(n_test),
+                "exp55_best_train": np.random.randn(n_train),
+                "exp55_best_test": np.random.randn(n_test),
+                "exp56_best_train": np.random.randn(n_train),
+                "exp56_best_test": np.random.randn(n_test),
+                "exp84_train": np.random.randn(n_train),
+                "exp84_test": np.random.randn(n_test),
+            }
+        mock_load_current.side_effect = side_effect_current
 
         # Mock test labels
         mock_load_labels.return_value = np.zeros(50, dtype=np.int8)
@@ -95,7 +129,7 @@ class Exp206210StructureTests(unittest.TestCase):
             self.assertTrue((out_root / "cache" / "ds_B.npz").exists())
 
             # Now mock load_exp206_cache to return the saved cached files
-            def side_effect_exp206(dataset):
+            def side_effect_exp206(dataset, cache_dir=None):
                 cache_path = out_root / "cache" / f"{dataset}.npz"
                 with np.load(cache_path, allow_pickle=False) as archive:
                     return {
@@ -110,6 +144,9 @@ class Exp206210StructureTests(unittest.TestCase):
             run_stage_207(None, out_root)
             self.assertTrue((out_root / "exp207_frozen_rules.json").exists())
             self.assertTrue((out_root / "exp207_summary.csv").exists())
+            with (out_root / "exp207_dataset_audit.csv").open(newline="", encoding="utf-8") as handle:
+                audit_fields = set(next(csv.DictReader(handle)).keys())
+            self.assertTrue({"alternative_2of3_count", "alternative_3of3_count", "alternative_when_current_zero_count"} <= audit_fields)
 
             # Stage 208
             from experiments.exp206_210.run_experiment_206_210 import run_stage_208
@@ -118,22 +155,6 @@ class Exp206210StructureTests(unittest.TestCase):
                 n_test = 50 if dataset == "ds_A" else 60
                 return np.zeros(n_test, dtype=np.int8)
             mock_load_labels.side_effect = side_effect_labels
-
-            # Also mock_load_current to return arrays of correct size (100 and 150 train, 50 and 60 test)
-            def side_effect_current(dataset):
-                n_train = 100 if dataset == "ds_A" else 150
-                n_test = 50 if dataset == "ds_A" else 60
-                return {
-                    "rocket_exp40_train": np.random.randn(n_train),
-                    "rocket_exp40_test": np.random.randn(n_test),
-                    "exp55_best_train": np.random.randn(n_train),
-                    "exp55_best_test": np.random.randn(n_test),
-                    "exp56_best_train": np.random.randn(n_train),
-                    "exp56_best_test": np.random.randn(n_test),
-                    "exp84_train": np.random.randn(n_train),
-                    "exp84_test": np.random.randn(n_test),
-                }
-            mock_load_current.side_effect = side_effect_current
 
             from experiments.exp206_210.run_experiment_206_210 import run_stage_208
             run_stage_208(None, out_root)
@@ -145,6 +166,10 @@ class Exp206210StructureTests(unittest.TestCase):
             run_stage_209(None, out_root)
             self.assertTrue((out_root / "exp209_frozen_predictions.jsonl").exists())
             self.assertTrue((out_root / "experiment_209_seven_source_joint_normal_novelty_results.csv").exists())
+            prediction_manifest = json.loads(
+                (out_root / "exp209_prediction_manifest.json").read_text()
+            )
+            self.assertTrue(prediction_manifest["input_hashes"])
 
             # Stage 210
             from experiments.exp206_210.run_experiment_206_210 import run_stage_210
@@ -152,6 +177,14 @@ class Exp206210StructureTests(unittest.TestCase):
             self.assertTrue((out_root / "experiment_210_independent_frontier_reaggregation_results.csv").exists())
             self.assertTrue((out_root / "experiment_210_independent_frontier_reaggregation_summary.csv").exists())
             self.assertTrue((out_root / "exp210_candidate_overlap.csv").exists())
+            with (out_root / "experiment_210_independent_frontier_reaggregation_summary.csv").open(
+                newline="", encoding="utf-8"
+            ) as handle:
+                summary_fields = set(next(csv.DictReader(handle)).keys())
+            self.assertTrue(
+                {"metric_scope", "mean_candidate_recall", "mean_candidate_f1"}
+                <= summary_fields
+            )
 
 
 if __name__ == "__main__":

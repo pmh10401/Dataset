@@ -4471,10 +4471,13 @@ def strategy_detail_snapshot(rows, summary, limit=12):
 
 def parse_progress_events(lines):
     canonical_pattern = re.compile(
-        r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}),\d+ \[INFO\] Progress: \[\s*(\d+)/(\d+)\] rows=(\d+)"
+        r"^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2}),\d+ \[INFO\] Progress: \[\s*(\d+)\s*/\s*(\d+)\] rows=(\d+)"
     )
     compact_pattern = re.compile(r"\bprogress\s+(\d+)/(\d+)\b(?:\s+last=([^\s]+))?", re.IGNORECASE)
-    plain_pattern = re.compile(r"^Progress:\s*\[\s*(\d+)/(\d+)\]\s*rows=(\d+)", re.IGNORECASE)
+    plain_pattern = re.compile(
+        r"^Progress:\s*\[\s*(\d+)\s*/\s*(\d+)\]\s*rows=(\d+)",
+        re.IGNORECASE,
+    )
     events = []
     for line in lines:
         match = canonical_pattern.match(line)

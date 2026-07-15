@@ -1629,7 +1629,8 @@ def cmd_run_queue(poll_seconds=30):
             skipped_any = False
             for batch_name, batch_list, label in [
                 ("exp177_185_batch", EXP177_185_BATCH, "Exp177-185"),
-                ("exp186_200_batch", EXP186_200_BATCH, "Exp186-200")
+                ("exp186_200_batch", EXP186_200_BATCH, "Exp186-200"),
+                ("exp206_210_batch", EXP206_210_BATCH, "Exp206-210"),
             ]:
                 batch_meta = state.get(batch_name) or {}
                 hard_deadline = float(batch_meta.get("hard_deadline_unix") or 0)

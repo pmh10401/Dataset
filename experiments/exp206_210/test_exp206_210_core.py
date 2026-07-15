@@ -17,6 +17,10 @@ from experiments.exp206_210.alternative_oof import (
     fit_score_source,
     crossfit_alternative_sources,
 )
+from experiments.exp206_210.run_experiment_206_210 import (
+    crossfit_fused_train_scores,
+    crossfit_joint_train_scores,
+)
 
 
 class Exp206210CoreTests(unittest.TestCase):
@@ -118,8 +122,40 @@ class Exp206210AlternativeOOFTests(unittest.TestCase):
         res_a = crossfit_alternative_sources(train, test, folds=3, seed=123)
         res_b = crossfit_alternative_sources(train, test, folds=3, seed=123)
 
-        for key in ["spectral_train", "spectral_test", "shapelet_train", "shapelet_test", "interval_train", "interval_test"]:
+        for key in [
+            "spectral_train", "spectral_train_full", "spectral_test",
+            "shapelet_train", "shapelet_train_full", "shapelet_test",
+            "interval_train", "interval_train_full", "interval_test",
+        ]:
             self.assertIn(key, res_a)
             self.assertEqual(len(res_a[key]), 15 if "train" in key else 5)
             self.assertTrue(np.all(np.isfinite(res_a[key])))
             np.testing.assert_array_equal(res_a[key], res_b[key])
+
+    def test_crossfit_fusion_is_deterministic_and_complete(self):
+        rng = np.random.default_rng(31)
+        scores = {
+            f"{source}_train": rng.normal(size=101)
+            for source in ("spectral", "shapelet", "interval")
+        }
+        first = crossfit_fused_train_scores(scores, "weighted_top2")
+        second = crossfit_fused_train_scores(scores, "weighted_top2")
+        self.assertEqual(first.shape, (101,))
+        self.assertTrue(np.all(np.isfinite(first)))
+        np.testing.assert_array_equal(first, second)
+
+    def test_crossfit_joint_score_is_deterministic_and_complete(self):
+        rng = np.random.default_rng(32)
+        current = {
+            f"{source}_train": rng.normal(size=101)
+            for source in ("rocket_exp40", "exp55_best", "exp56_best", "exp84")
+        }
+        alternative = {
+            f"{source}_train": rng.normal(size=101)
+            for source in ("spectral", "shapelet", "interval")
+        }
+        first = crossfit_joint_train_scores(current, alternative, "rank_gaussian_diagonal")
+        second = crossfit_joint_train_scores(current, alternative, "rank_gaussian_diagonal")
+        self.assertEqual(first.shape, (101,))
+        self.assertTrue(np.all(np.isfinite(first)))
+        np.testing.assert_array_equal(first, second)

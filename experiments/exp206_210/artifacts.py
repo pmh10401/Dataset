@@ -185,19 +185,27 @@ def load_current_oof_cache(dataset: str) -> dict[str, np.ndarray]:
                     raise ValueError(f"Exp153 cache SHA256 mismatch for {dataset}")
 
                 with np.load(cache_path, allow_pickle=False) as archive:
-                    return {
-                        f"{src}_{split}": np.asarray(archive[f"{src}_{split}"], dtype=np.float32)
-                        for src in ["rocket_exp40", "exp55_best", "exp56_best", "exp84"]
-                        for split in ["train", "test"]
-                    }
+                    result = {}
+                    for source in (
+                        "rocket_exp40", "exp55_best", "exp56_best", "exp84"
+                    ):
+                        result[f"{source}_train"] = np.asarray(
+                            archive[f"{source}__train_oof"], dtype=np.float32
+                        )
+                        result[f"{source}_test"] = np.asarray(
+                            archive[f"{source}__test"], dtype=np.float32
+                        )
+                    return result
     raise ValueError(f"Dataset {dataset} not found in Exp153 manifest")
 
 
-def load_exp206_cache(dataset: str) -> dict[str, np.ndarray]:
+def load_exp206_cache(
+    dataset: str, cache_dir: Path | None = None
+) -> dict[str, np.ndarray]:
     """
     Loads alternative OOF cache NPZ file for dataset from Exp206.
     """
-    cache_path = EXP206_CACHE_DIR / f"{dataset}.npz"
+    cache_path = Path(cache_dir or EXP206_CACHE_DIR) / f"{dataset}.npz"
     if not cache_path.exists():
         raise FileNotFoundError(f"Exp206 cache not found for dataset {dataset}")
     with np.load(cache_path, allow_pickle=False) as archive:
@@ -265,3 +273,25 @@ def freeze_predictions(
     }
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return prediction_path, manifest_path
+
+
+def load_verified_predictions(
+    prediction_path: Path, manifest_path: Path
+) -> list[dict[str, object]]:
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    expected = str(manifest["prediction_sha256"])
+    actual = sha256_file(Path(prediction_path))
+    if actual != expected:
+        raise ValueError(
+            f"prediction hash mismatch expected={expected} actual={actual}"
+        )
+    rows = [
+        json.loads(line)
+        for line in Path(prediction_path).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    for row in rows:
+        validate_prediction_payload(row)
+    if len(rows) != int(manifest["prediction_rows"]):
+        raise ValueError("prediction row count mismatch")
+    return rows

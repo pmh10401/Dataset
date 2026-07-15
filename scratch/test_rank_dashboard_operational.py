@@ -8,6 +8,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import serve_rank_dashboard as dash
 
 
+def test_progress_parser_accepts_spaces_around_slash():
+    events = dash.parse_progress_events(
+        ["Progress: [5 / 251] rows=5 dataset=Demo errors=0"]
+    )
+    assert len(events) == 1
+    assert events[0]["done"] == 5
+    assert events[0]["expected"] == 251
+
+
 def test_dashboard_catalog_includes_exp201_205_shadow_batch():
     expected = [
         "experiment_201_frozen_large_size_baseline",

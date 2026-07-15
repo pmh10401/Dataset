@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+
 import numpy as np
 
 from experiments.exp206_210.core import SEED, fold_plan
@@ -11,6 +14,27 @@ from experiments.exp162.full_coverage_score_core import (
     robust_score_pair,
     z_normalize,
 )
+
+
+def alternative_oof_config_hash() -> str:
+    config = {
+        "experiment_seed": SEED,
+        "folds": 5,
+        "sources": {
+            "spectral": "exp162_spectral_features",
+            "shapelet": {
+                "features": "32_fit_fold_only_prototypes",
+                "lengths": [8, 16, 32, 64],
+                "seed": "experiment_seed_plus_fold_index",
+            },
+            "interval": "exp162_interval_features",
+        },
+        "score": "fit_fold_only_robust_score_pair",
+        "test": "full_train_fit",
+    }
+    return hashlib.sha256(
+        json.dumps(config, sort_keys=True).encode("utf-8")
+    ).hexdigest()
 
 
 def fit_score_source(
@@ -75,9 +99,12 @@ def crossfit_alternative_sources(
             train_oof[query_idx] = query_scores.astype(np.float32)
 
         # 2. Fit on full TRAIN and score TEST
-        _, test_scores = fit_score_source(source, x_train, x_test, seed=seed)
+        full_train_scores, test_scores = fit_score_source(
+            source, x_train, x_test, seed=seed
+        )
 
         payload[f"{source}_train"] = train_oof
+        payload[f"{source}_train_full"] = full_train_scores.astype(np.float32)
         payload[f"{source}_test"] = test_scores.astype(np.float32)
 
     return payload
