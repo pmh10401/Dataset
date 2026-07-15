@@ -617,8 +617,8 @@ def test_history_metric_text_rejects_unavailable_values_before_number_conversion
     assert "historyMetricText(variant, 'mean_f1', fmt, item)" in html
 
 
-def test_historical_catalog_covers_exp138_through_exp165():
-    for number in range(138, 166):
+def test_historical_catalog_covers_exp138_through_exp168():
+    for number in range(138, 169):
         assert any(exp_id.startswith(f"experiment_{number}") for exp_id in dash.HISTORICAL_EXPERIMENT_META)
 
 
@@ -649,6 +649,27 @@ def test_exp164_is_audit_only_and_exp165_is_registered_for_live_queue():
     assert "experiment_165_small_sample_calibration" in dash.EXPERIMENTS
     assert dash.EXPERIMENTS["experiment_165_small_sample_calibration"]["history_status"] == "completed_research"
     assert dash.EXPERIMENTS["experiment_165_small_sample_calibration"]["comparison_eligible"] is False
+
+
+def test_exp167_168_are_registered_as_non_operational_research_results():
+    exp167_id = "experiment_167_score_calibration_parity_audit"
+    exp168_id = "experiment_168_fold_matched_parity_evaluation"
+
+    for exp_id in (exp167_id, exp168_id):
+        assert exp_id in dash.EXPERIMENTS
+        assert exp_id in dash.HISTORICAL_EXPERIMENT_META
+        assert dash.EXPERIMENTS[exp_id]["history_status"] == "completed_research"
+        assert dash.EXPERIMENTS[exp_id]["comparison_eligible"] is False
+
+    exp167 = dash.EXPERIMENTS[exp167_id]
+    assert exp167["scope"] == "label_free_score_calibration_parity_audit"
+    assert exp167["expected_datasets"] == 316
+
+    exp168 = dash.EXPERIMENTS[exp168_id]
+    assert exp168["scope"] == "retrospective_human_assisted_review_sensitivity"
+    assert exp168["expected_datasets"] == 316
+    assert exp168["selected_alpha"] is None
+    assert exp168["autonomous_metric_scope"] == "not_evaluated"
 
 
 def test_experiment_catalog_includes_exp33_reconstruction_artifacts():
@@ -1033,9 +1054,10 @@ if __name__ == "__main__":
     test_completed_snapshot_exposes_operational_columns()
     test_history_ui_has_status_filter_and_separate_review_metrics()
     test_history_metric_text_rejects_unavailable_values_before_number_conversion()
-    test_historical_catalog_covers_exp138_through_exp165()
+    test_historical_catalog_covers_exp138_through_exp168()
     test_normalize_runtime_state_hides_dead_running_pid_and_stale_queue_item()
     test_exp164_is_audit_only_and_exp165_is_registered_for_live_queue()
+    test_exp167_168_are_registered_as_non_operational_research_results()
     test_experiment_catalog_includes_exp33_reconstruction_artifacts()
     test_history_artifact_path_rejects_unknown_ids_and_paths_outside_allowed_roots()
     test_historical_catalog_records_have_explicit_status_contracts()
