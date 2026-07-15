@@ -2240,20 +2240,33 @@ INDEX_HTML = r"""<!doctype html>
       table.className = 'history-variant-table';
       const head = document.createElement('thead');
       const headRow = document.createElement('tr');
-      appendCells(headRow, ['alpha', 'Hard F1', 'Hard FP', 'Hard Precision', 'Combined F1', '검토 후보']);
+      const reviewOnly = item.autonomous_metric_scope === 'not_evaluated';
+      appendCells(headRow, reviewOnly
+        ? ['alpha', '점수 조합', 'Review F1', 'Review FP', 'Review Precision', '검토 후보']
+        : ['alpha', '점수 조합', 'Hard F1', 'Hard FP', 'Hard Precision', 'Combined F1', '검토 후보']);
       head.appendChild(headRow);
       table.appendChild(head);
       const body = document.createElement('tbody');
       variants.forEach(variant => {
         const row = document.createElement('tr');
-        appendCells(row, [
+        const common = [
           historyMetricText(variant, 'alpha', value => fmt(value, 3), item),
-          historyMetricText(variant, 'mean_f1', fmt, item),
-          historyMetricText(variant, 'mean_fp', value => fmt(value, 2), item),
-          historyMetricText(variant, 'alert_precision', fmtPrecision, item),
-          historyMetricText(variant, 'mean_combined_f1', fmt, item),
-          historyMetricText(variant, 'total_review_candidate_count', value => fmt(value, 0), item),
-        ]);
+          variant.source_config || variant.variant_name || '-',
+        ];
+        appendCells(row, reviewOnly
+          ? common.concat([
+              historyMetricText(variant, 'mean_f1', fmt, item),
+              historyMetricText(variant, 'review_fp', value => fmt(value, 0), item),
+              historyMetricText(variant, 'review_precision', fmtPrecision, item),
+              historyMetricText(variant, 'review_candidate_count', value => fmt(value, 0), item),
+            ])
+          : common.concat([
+              historyMetricText(variant, 'mean_f1', fmt, item),
+              historyMetricText(variant, 'mean_fp', value => fmt(value, 2), item),
+              historyMetricText(variant, 'alert_precision', fmtPrecision, item),
+              historyMetricText(variant, 'mean_combined_f1', fmt, item),
+              historyMetricText(variant, 'total_review_candidate_count', value => fmt(value, 0), item),
+            ]));
         body.appendChild(row);
       });
       table.appendChild(body);
@@ -3121,8 +3134,14 @@ def _review_candidate_counts(row, detail_rows):
 
 def _normalize_historical_variant(row):
     standard, priority, total = _review_candidate_counts(row, [])
+    review_candidates = first_number(row, ["review_candidates", "review_candidate_count", "predicted_count"])
+    review_tp = first_number(row, ["review_tp", "tp"])
+    review_fp = first_number(row, ["review_fp", "fp"])
+    review_precision = first_number(row, ["review_precision", "micro_precision", "precision"])
     return {
         "alpha": as_float(row.get("alpha")),
+        "source_config": row.get("source_config") or row.get("config_name"),
+        "variant_name": row.get("variant") or row.get("method"),
         "mean_f1": first_number(row, ["mean_hard_f1", "mean_f1", "f1_evt", "mean_f1_evt", "f1"]),
         "mean_combined_f1": first_number(row, ["mean_combined_f1"]),
         "mean_fp": first_number(row, ["mean_hard_fp", "mean_fp"]),
@@ -3130,6 +3149,10 @@ def _normalize_historical_variant(row):
         "standard_review_candidate_count": standard,
         "priority_review_candidate_count": priority,
         "total_review_candidate_count": total,
+        "review_candidate_count": safe_int(review_candidates),
+        "review_tp": safe_int(review_tp),
+        "review_fp": safe_int(review_fp),
+        "review_precision": review_precision,
     }
 
 
@@ -3453,12 +3476,18 @@ def completed_result_snapshot(state):
             alert_precision = normalized["alert_precision"] if historical_catalog else None
             mean_train_exceed_rate = None
             datasets = summary_meta.get("datasets")
+            if datasets is None and variant_rows:
+                datasets = first_number(variant_rows[0], ["datasets", "num_datasets"])
+            if datasets is None and history_status in {"completed_valid", "completed_research"}:
+                datasets = info.get("expected_datasets")
             if no_alpha_selection:
                 best_strategy = f"{len(alpha_values)} alpha variants (no selection)"
             elif normalized["metric_availability_reason"] == "audit only":
                 best_strategy = "audit only"
             else:
                 best_strategy = "-"
+        if datasets is None and history_status in {"completed_valid", "completed_research"}:
+            datasets = info.get("expected_datasets")
         detail_row_count = summary_meta.get("rows")
         if detail_row_count is None:
             detail_path = info.get("detail_csv")

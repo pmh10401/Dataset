@@ -804,6 +804,39 @@ def test_alpha_variants_remain_ordered_and_selected_alpha_stays_none():
     assert metrics["selected_alpha"] is None
 
 
+def test_research_review_variants_preserve_source_and_review_metrics():
+    metrics = dash.normalize_historical_metrics(
+        {},
+        [
+            {
+                "alpha": "0.05",
+                "source_config": "spectral+interval",
+                "review_candidates": "4",
+                "tp": "3",
+                "fp": "1",
+                "micro_precision": "0.75",
+                "mean_f1": "0.0084",
+            }
+        ],
+        {
+            "scope": "retrospective_human_assisted_review_sensitivity",
+            "autonomous_metric_scope": "not_evaluated",
+            "selected_alpha": None,
+        },
+    )
+
+    variant = metrics["variants"][0]
+    assert variant["source_config"] == "spectral+interval"
+    assert variant["review_candidate_count"] == 4
+    assert variant["review_tp"] == 3
+    assert variant["review_fp"] == 1
+    assert variant["review_precision"] == 0.75
+
+    html = dash.INDEX_HTML
+    assert "variant.source_config" in html
+    assert "const reviewOnly = item.autonomous_metric_scope === 'not_evaluated'" in html
+
+
 def test_hard_detail_rows_supply_mean_fields_and_micro_precision():
     metrics = dash.normalize_historical_metrics(
         {},
@@ -1066,6 +1099,7 @@ if __name__ == "__main__":
     test_hard_schema_never_uses_combined_f1_as_autonomous_f1()
     test_audit_schema_reports_reason_instead_of_fabricated_f1()
     test_alpha_variants_remain_ordered_and_selected_alpha_stays_none()
+    test_research_review_variants_preserve_source_and_review_metrics()
     test_hard_detail_rows_supply_mean_fields_and_micro_precision()
     test_exp149_150_stay_invalid_and_exp151_152_stay_completed_research()
     test_snapshot_filters_shared_alpha_rows_and_keeps_unselected_metrics_empty()
