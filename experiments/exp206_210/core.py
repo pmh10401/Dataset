@@ -1,10 +1,17 @@
-from __future__ import annotations
-
+import hashlib
 import math
+from pathlib import Path
 from statistics import NormalDist
 from typing import Iterable, Mapping
 
 import numpy as np
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 ALPHAS = (0.005, 0.01, 0.02, 0.05)
 SHADOW_RISK = 0.001
