@@ -1390,6 +1390,27 @@ for _stage, _exp_id, _label, _expected in (
 
 
 for _stage, _exp_id, _label, _expected in (
+    ("206", "experiment_206_alternative_source_oof_reconstruction", "Exp206 · Alternative-Source OOF Reconstruction", 251),
+    ("207", "experiment_207_train_oof_conditional_novelty_audit", "Exp207 · TRAIN-OOF Conditional Novelty Audit", 251),
+    ("208", "experiment_208_continuous_alternative_source_fusion", "Exp208 · Continuous Alternative-Source Fusion", 251),
+    ("209", "experiment_209_seven_source_joint_normal_novelty", "Exp209 · Seven-Source Joint Normal Novelty", 251),
+    ("210", "experiment_210_independent_frontier_reaggregation", "Exp210 · Independent Frontier Reaggregation", 251),
+):
+    EXPERIMENTS[_exp_id] = {
+        "label": _label,
+        "comparison_eligible": False,
+        "scope": "retrospective_shadow_hard_diagnostic",
+        "status_reason": "continuous residual-coverage evaluation; not operational promotion",
+        "autonomous_metric_scope": "unchanged_exp137_hard_alert",
+        "review_metric_scope": "retrospective_shadow_hard_diagnostic",
+        "detail_csv": DATA_DIR / "exp206_210_residual_coverage" / (f"{_exp_id}_results.csv" if _stage != "206" else "01_score_cache_manifest.csv"),
+        "summary_csv": DATA_DIR / "exp206_210_residual_coverage" / (f"{_exp_id}_summary.csv" if _stage not in ["206", "207"] else "exp207_summary.csv" if _stage == "207" else "01_score_cache_manifest.csv"),
+        "stdout_log": DATA_DIR / "exp206_210_residual_coverage" / f"exp{_stage}_stdout.log",
+        "expected_datasets": _expected,
+    }
+
+
+for _stage, _exp_id, _label, _expected in (
     ("186", "experiment_186_conservative_canonical_knn_agreement", "Exp186 · Conservative plus Canonical KNN agreement", 639),
     ("187", "experiment_187_conservative_dual_canonical_agreement", "Exp187 · Conservative plus dual canonical agreement", 639),
     ("188", "experiment_188_train_oof_stability_guarded_review", "Exp188 · TRAIN-OOF stability guarded review", 639),
@@ -4607,6 +4628,8 @@ def build_status(include_details=True):
     if external_live_run:
         paths = {
             "id": external_live_run.get("id", "external_validation"),
+            "active_id": external_live_run.get("id"),
+            "last_completed_id": paths.get("last_completed_id"),
             "label": external_live_run.get("label", "External validation"),
             "detail_csv": Path(external_live_run.get("detail_csv", DATA_DIR / "missing_external_results.csv")),
             "stdout_log": Path(external_live_run.get("stdout_log", LOG_PATH)),

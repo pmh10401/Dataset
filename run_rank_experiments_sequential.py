@@ -1140,6 +1140,25 @@ EXPERIMENTS = [
             ("205", "experiment_205_independent_large_zero_f1_frontier", "Exp205 · Independent large Zero-F1 frontier", 251),
         )
     ],
+    *[
+        {
+            "id": exp_id,
+            "label": label,
+            "script": ROOT / "experiments/exp206_210/run_experiment_206_210.py",
+            "args": ["--stage", stage, "--workers", "7"] if stage == "206" else ["--stage", stage],
+            "detail_csv": DATA_DIR / "exp206_210_residual_coverage" / (f"{exp_id}_results.csv" if stage != "206" else "01_score_cache_manifest.csv"),
+            "summary_csv": DATA_DIR / "exp206_210_residual_coverage" / (f"{exp_id}_summary.csv" if stage not in ["206", "207"] else "exp207_summary.csv" if stage == "207" else "01_score_cache_manifest.csv"),
+            "stdout_log": DATA_DIR / "exp206_210_residual_coverage" / f"exp{stage}_stdout.log",
+            "expected_datasets": expected,
+        }
+        for stage, exp_id, label, expected in (
+            ("206", "experiment_206_alternative_source_oof_reconstruction", "Exp206 · Alternative-Source OOF Reconstruction", 251),
+            ("207", "experiment_207_train_oof_conditional_novelty_audit", "Exp207 · TRAIN-OOF Conditional Novelty Audit", 251),
+            ("208", "experiment_208_continuous_alternative_source_fusion", "Exp208 · Continuous Alternative-Source Fusion", 251),
+            ("209", "experiment_209_seven_source_joint_normal_novelty", "Exp209 · Seven-Source Joint Normal Novelty", 251),
+            ("210", "experiment_210_independent_frontier_reaggregation", "Exp210 · Independent Frontier Reaggregation", 251),
+        )
+    ],
 ]
 
 DEFAULT_QUEUE = ["experiment_26_rocket"]
@@ -1179,6 +1198,14 @@ EXP201_205_BATCH = [
     "experiment_203_current_alternative_cross_confirmation",
     "experiment_204_size_stratified_shadow_router",
     "experiment_205_independent_large_zero_f1_frontier",
+]
+
+EXP206_210_BATCH = [
+    "experiment_206_alternative_source_oof_reconstruction",
+    "experiment_207_train_oof_conditional_novelty_audit",
+    "experiment_208_continuous_alternative_source_fusion",
+    "experiment_209_seven_source_joint_normal_novelty",
+    "experiment_210_independent_frontier_reaggregation",
 ]
 
 
@@ -1704,6 +1731,24 @@ def queue_exp201_205_batch():
     log(f"QUEUE registered Exp201-205 batch ({len(EXP201_205_BATCH)} experiments)")
 
 
+def queue_exp206_210_batch():
+    state = reconcile_running_state(load_state())
+    completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP206_210_BATCH]
+    queue.extend(item for item in EXP206_210_BATCH if item not in completed)
+    state["queue"] = queue
+    state["exp206_210_batch"] = {
+        "registered_at": now(),
+        "registered_unix": time.time(),
+        "worker_count": int(os.environ.get("RANK_EXPERIMENT_WORKERS", "7")),
+        "agent_monitoring": False,
+        "execution_mode": "sequential_one_stage_at_a_time",
+        "experiments": EXP206_210_BATCH,
+    }
+    save_state(state)
+    log(f"QUEUE registered Exp206-210 batch ({len(EXP206_210_BATCH)} experiments)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run rank experiments one at a time.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1714,6 +1759,7 @@ def main():
     sub.add_parser("queue-exp177-185")
     sub.add_parser("queue-exp186-200")
     sub.add_parser("queue-exp201-205")
+    sub.add_parser("queue-exp206-210")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -1740,6 +1786,8 @@ def main():
         queue_exp186_200_batch()
     elif args.command == "queue-exp201-205":
         queue_exp201_205_batch()
+    elif args.command == "queue-exp206-210":
+        queue_exp206_210_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 
