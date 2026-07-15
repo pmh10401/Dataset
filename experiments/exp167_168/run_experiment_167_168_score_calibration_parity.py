@@ -515,6 +515,26 @@ def _checkpoint_rows(path: Path, config_hash: str) -> dict[str, list[dict]]:
     return completed
 
 
+def validate_prediction_grid(predictions: list[dict], expected_datasets: int) -> None:
+    expected_keys = {(float(alpha), source_config) for alpha in ALPHAS for source_config in SOURCE_CONFIGS}
+    by_dataset: dict[str, list[dict]] = {}
+    for row in predictions:
+        assert_label_free_prediction(row)
+        by_dataset.setdefault(row["dataset"], []).append(row)
+    if len(by_dataset) != int(expected_datasets):
+        raise ValueError("prediction dataset coverage mismatch")
+    for dataset, rows in by_dataset.items():
+        if len(rows) != PREDICTION_ROWS_PER_DATASET:
+            raise ValueError(f"prediction row count mismatch for {dataset}")
+        keys = [(float(row["alpha"]), row["source_config"]) for row in rows]
+        if len(keys) != len(set(keys)) or set(keys) != expected_keys:
+            raise ValueError(f"prediction grid mismatch for {dataset}")
+        if len({int(row["n_train"]) for row in rows}) != 1:
+            raise ValueError(f"n_train mismatch within {dataset}")
+        if len({int(row["n_test"]) for row in rows}) != 1:
+            raise ValueError(f"n_test mismatch within {dataset}")
+
+
 def run_prediction(
     output_dir: Path,
     workers: int,
@@ -576,6 +596,7 @@ def run_prediction(
         raise RuntimeError("prediction coverage incomplete")
     predictions = [row for dataset in sorted(completed) for row in completed[dataset]]
     predictions.sort(key=lambda row: (row["dataset"], row["alpha"], row["source_config"]))
+    validate_prediction_grid(predictions, expected_datasets=len(targets))
     prediction_path = output_dir / "04_frozen_predictions.jsonl"
     write_jsonl(prediction_path, predictions)
     manifest = {
@@ -622,8 +643,7 @@ def _exp166_local_map() -> dict[tuple[str, float, str], set[int]]:
 def run_evaluation(output_dir: Path, dataset_limit: int | None = None) -> dict:
     manifest, prediction_path = verify_prediction_manifest(output_dir)
     predictions = read_jsonl(prediction_path)
-    for prediction in predictions:
-        assert_label_free_prediction(prediction)
+    validate_prediction_grid(predictions, expected_datasets=int(manifest["dataset_count"]))
     expected_rows = int(manifest["dataset_count"]) * PREDICTION_ROWS_PER_DATASET
     if len(predictions) != expected_rows:
         raise ValueError("prediction row coverage mismatch")

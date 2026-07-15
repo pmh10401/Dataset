@@ -10,6 +10,7 @@ from experiments.exp167_168.parity_core import (
     candidate_rows,
     evaluate_indices,
     fold_paired_p_values,
+    resolution_blocked,
 )
 
 
@@ -37,6 +38,10 @@ class FoldPairedPValueTests(unittest.TestCase):
             fold_paired_p_values(np.array([1.0, 2.0]), np.ones((3, 4)))
         with self.assertRaises(ValueError):
             fold_paired_p_values(np.array([1.0, np.nan]), np.ones((2, 4)))
+
+    def test_resolution_blocked_uses_finite_sample_minimum(self):
+        self.assertTrue(resolution_blocked(9, 0.05))
+        self.assertFalse(resolution_blocked(19, 0.05))
 
 
 class CandidateGridTests(unittest.TestCase):

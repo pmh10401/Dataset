@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -54,6 +55,47 @@ class Exp167168StructureTests(unittest.TestCase):
         self.assertNotIn("load_test_labels", prediction_source)
         self.assertIn("verify_prediction_manifest", evaluation_source)
         self.assertIn("load_test_labels", evaluation_source)
+
+    def test_prediction_grid_requires_every_fixed_row_once(self):
+        p_values = {
+            source: runner.np.array([0.01, 0.50]) for source in runner.SOURCES
+        }
+        rows = runner.candidate_rows(
+            dataset="demo",
+            n_train=9,
+            n_test=2,
+            p_values=p_values,
+            config_hash="abc",
+        )
+        runner.validate_prediction_grid(rows, expected_datasets=1)
+
+        with self.assertRaises(ValueError):
+            runner.validate_prediction_grid(rows[:-1], expected_datasets=1)
+        with self.assertRaises(ValueError):
+            runner.validate_prediction_grid(rows + [dict(rows[0])], expected_datasets=1)
+
+    def test_prediction_manifest_detects_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary)
+            prediction_path = output_dir / "04_frozen_predictions.jsonl"
+            prediction_path.write_text('{"dataset":"demo"}\n', encoding="utf-8")
+            runner.write_json(
+                output_dir / "05_prediction_manifest.json",
+                {
+                    "prediction_file": prediction_path.name,
+                    "prediction_sha256": runner.sha256_file(prediction_path),
+                },
+            )
+            runner.verify_prediction_manifest(output_dir)
+            prediction_path.write_text('{"dataset":"changed"}\n', encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "hash mismatch"):
+                runner.verify_prediction_manifest(output_dir)
+
+    def test_stable_hash_is_independent_of_mapping_order(self):
+        self.assertEqual(
+            runner.stable_hash({"a": 1, "b": 2}),
+            runner.stable_hash({"b": 2, "a": 1}),
+        )
 
 
 if __name__ == "__main__":
