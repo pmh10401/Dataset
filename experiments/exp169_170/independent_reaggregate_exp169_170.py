@@ -6,7 +6,6 @@ import csv
 import json
 import math
 import sys
-import time
 from pathlib import Path
 import numpy as np
 
@@ -190,7 +189,6 @@ def main() -> None:
         "metrics_sha256": sha256_file(metrics_path),
         "summary_sha256": sha256_file(summary_path),
         "results": verification_results,
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
     write_path = args.output_dir / "12_independent_reaggregation.json"

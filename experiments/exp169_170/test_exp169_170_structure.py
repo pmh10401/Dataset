@@ -316,6 +316,10 @@ class TestExp169170Structure(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "TP plus FP"):
             reaggregate.validate_metric_prediction_alignment([prediction], [metric])
 
+    def test_independent_reaggregation_output_is_not_wall_clock_dependent(self):
+        source = inspect.getsource(reaggregate)
+        self.assertNotIn('"timestamp": time.strftime', source)
+
 
 if __name__ == "__main__":
     unittest.main()
