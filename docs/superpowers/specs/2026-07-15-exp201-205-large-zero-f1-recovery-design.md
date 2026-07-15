@@ -68,8 +68,10 @@ experiment measures unique recovery.
 ### Current-alternative cross confirmation
 
 A cross-confirmed candidate must have all-three alternative-source support and
-at least one current primary or canonical score source at the same frozen
-alpha. This is the precision-first rescue rule.
+the frozen Exp198 current-source confirmation at the same `alpha=0.01`.
+Exp198 already requires at least one inherited source and canonical KNN to
+agree, so this avoids reconstructing a historical score rule with subtly
+different arithmetic. This is the precision-first rescue rule.
 
 ## Experiments
 

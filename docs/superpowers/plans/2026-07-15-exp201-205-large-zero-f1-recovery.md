@@ -31,7 +31,7 @@
 - Create: `experiments/exp201_205/test_exp201_205_structure.py`
 
 **Interfaces:**
-- Consumes: Exp137 lane rows, Exp190 prediction rows, Exp162 score-cache manifest/NPZ files, Exp164 TRAIN-risk summary.
+- Consumes: Exp137 lane rows, Exp190 and Exp198 prediction rows, Exp162 score-cache manifest/NPZ files, Exp164 TRAIN-risk summary.
 - Produces: `SizeStratum`, `classify_size_stratum()`, `empirical_upper_tail_pvalues()`, `three_source_agreement()`, `cross_confirmed_candidates()`, `validate_prediction_payload()`, `FrozenInputs`, `load_frozen_inputs()`, `freeze_predictions()`, and `load_verified_predictions()`.
 
 - [ ] **Step 1: Write failing core tests**
@@ -89,7 +89,7 @@ STAGE_RULES = {
 }
 ```
 
-Assert Exp202 emits both preregistered variants, Exp203 requires current support, and Exp204 uses cross-confirmation for `100-199` and Exp190 high+standard plus unique cross-confirmed rescue for `200+`.
+Assert Exp202 emits both preregistered variants, Exp203 requires frozen Exp198 support, and Exp204 uses cross-confirmation for `100-199` and Exp190 high+standard plus unique cross-confirmed rescue for `200+`.
 
 - [ ] **Step 2: Run stage tests and confirm RED**
 
