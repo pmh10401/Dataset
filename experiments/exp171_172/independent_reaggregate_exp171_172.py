@@ -2,9 +2,14 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import numpy as np
+
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+if str(PROJECT_DIR) not in sys.path:
+    sys.path.insert(0, str(PROJECT_DIR))
 
 from experiments.exp171_172.run_experiment_171_172_train_risk_policy import (
     read_csv,
@@ -120,4 +125,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
