@@ -1049,6 +1049,26 @@ EXPERIMENTS = [
         "stdout_log": ROOT / "outputs/exp171_172_train_risk_policy/full_run.log",
         "expected_datasets": 316,
     },
+    {
+        "id": "experiment_173_balanced_train_selector_freeze",
+        "label": "Exp173 · balanced TRAIN-only selector freeze",
+        "script": ROOT / "experiments/exp173_174/run_experiment_173_174_balanced_train_selector.py",
+        "args": ["--phase", "audit"],
+        "detail_csv": ROOT / "outputs/exp173_174_balanced_train_selector/02_exp173_policy_candidates.csv",
+        "summary_csv": ROOT / "outputs/exp173_174_balanced_train_selector/02_exp173_policy_candidates.csv",
+        "stdout_log": ROOT / "outputs/exp173_174_balanced_train_selector/full_run.log",
+        "expected_datasets": 316,
+    },
+    {
+        "id": "experiment_174_balanced_frozen_review",
+        "label": "Exp174 · balanced frozen review policy",
+        "script": ROOT / "experiments/exp173_174/run_experiment_173_174_balanced_train_selector.py",
+        "args": ["--phase", "predict-evaluate"],
+        "detail_csv": ROOT / "outputs/exp173_174_balanced_train_selector/06_exp174_dataset_metrics.csv",
+        "summary_csv": ROOT / "outputs/exp173_174_balanced_train_selector/07_exp174_global_summary.csv",
+        "stdout_log": ROOT / "outputs/exp173_174_balanced_train_selector/full_run.log",
+        "expected_datasets": 316,
+    },
 ]
 
 DEFAULT_QUEUE = ["experiment_26_rocket"]

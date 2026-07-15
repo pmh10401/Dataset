@@ -617,8 +617,8 @@ def test_history_metric_text_rejects_unavailable_values_before_number_conversion
     assert "historyMetricText(variant, 'mean_f1', fmt, item)" in html
 
 
-def test_historical_catalog_covers_exp138_through_exp172():
-    for number in range(138, 173):
+def test_historical_catalog_covers_exp138_through_exp174():
+    for number in range(138, 175):
         assert any(exp_id.startswith(f"experiment_{number}") for exp_id in dash.HISTORICAL_EXPERIMENT_META)
 
 
@@ -726,6 +726,26 @@ def test_exp171_172_are_registered_as_frozen_review_policy_results():
     assert exp172["scope"] == "retrospective_frozen_human_review_policy"
     assert exp172["autonomous_metric_scope"] == "not_evaluated"
     assert exp172["review_metric_scope"] == "retrospective_research_review_candidate"
+
+
+def test_exp173_174_are_registered_as_balanced_frozen_review_results():
+    exp173_id = "experiment_173_balanced_train_selector_freeze"
+    exp174_id = "experiment_174_balanced_frozen_review"
+
+    for exp_id in (exp173_id, exp174_id):
+        assert exp_id in dash.EXPERIMENTS
+        assert exp_id in dash.HISTORICAL_EXPERIMENT_META
+        assert dash.EXPERIMENTS[exp_id]["comparison_eligible"] is False
+        assert dash.EXPERIMENTS[exp_id]["expected_datasets"] == 316
+
+    exp173 = dash.EXPERIMENTS[exp173_id]
+    assert exp173["scope"] == "train_oob_balanced_policy_freeze"
+    assert exp173["autonomous_metric_scope"] == "not_evaluated"
+
+    exp174 = dash.EXPERIMENTS[exp174_id]
+    assert exp174["scope"] == "retrospective_balanced_frozen_review_policy"
+    assert exp174["autonomous_metric_scope"] == "not_evaluated"
+    assert exp174["review_metric_scope"] == "retrospective_research_review_candidate"
 
 
 def test_experiment_catalog_includes_exp33_reconstruction_artifacts():
@@ -1143,12 +1163,13 @@ if __name__ == "__main__":
     test_completed_snapshot_exposes_operational_columns()
     test_history_ui_has_status_filter_and_separate_review_metrics()
     test_history_metric_text_rejects_unavailable_values_before_number_conversion()
-    test_historical_catalog_covers_exp138_through_exp172()
+    test_historical_catalog_covers_exp138_through_exp174()
     test_normalize_runtime_state_hides_dead_running_pid_and_stale_queue_item()
     test_exp164_is_audit_only_and_exp165_is_registered_for_live_queue()
     test_exp167_168_are_registered_as_non_operational_research_results()
     test_exp169_170_are_registered_as_unselected_research_results()
     test_exp171_172_are_registered_as_frozen_review_policy_results()
+    test_exp173_174_are_registered_as_balanced_frozen_review_results()
     test_experiment_catalog_includes_exp33_reconstruction_artifacts()
     test_history_artifact_path_rejects_unknown_ids_and_paths_outside_allowed_roots()
     test_historical_catalog_records_have_explicit_status_contracts()
