@@ -1159,6 +1159,24 @@ EXPERIMENTS = [
             ("210", "experiment_210_independent_frontier_reaggregation", "Exp210 · Independent Frontier Reaggregation", 251),
         )
     ],
+    *[
+        {
+            "id": exp_id,
+            "label": label,
+            "script": ROOT / "experiments/exp211_214/run_experiment_211_214.py",
+            "args": ["--stage", stage, "--workers", "7"] if stage == "212" else ["--stage", stage],
+            "detail_csv": DATA_DIR / "exp211_214_calibration_transport" / f"{exp_id}_results.csv",
+            "summary_csv": DATA_DIR / "exp211_214_calibration_transport" / f"{exp_id}_summary.csv",
+            "stdout_log": DATA_DIR / "exp211_214_calibration_transport" / f"exp{stage}_stdout.log",
+            "expected_datasets": expected,
+        }
+        for stage, exp_id, label, expected in (
+            ("211", "experiment_211_calibration_transport_audit", "Exp211 · Calibration Transport Audit", 251),
+            ("212", "experiment_212_fold_ensemble_query_scoring", "Exp212 · Fold-Ensemble Query Scoring", 251),
+            ("213", "experiment_213_train_only_source_stability_guard", "Exp213 · TRAIN-Only Source Stability Guard", 251),
+            ("214", "experiment_214_calibration_transport_reaggregation", "Exp214 · Calibration Transport Reaggregation", 251),
+        )
+    ],
 ]
 
 DEFAULT_QUEUE = ["experiment_26_rocket"]
@@ -1206,6 +1224,13 @@ EXP206_210_BATCH = [
     "experiment_208_continuous_alternative_source_fusion",
     "experiment_209_seven_source_joint_normal_novelty",
     "experiment_210_independent_frontier_reaggregation",
+]
+
+EXP211_214_BATCH = [
+    "experiment_211_calibration_transport_audit",
+    "experiment_212_fold_ensemble_query_scoring",
+    "experiment_213_train_only_source_stability_guard",
+    "experiment_214_calibration_transport_reaggregation",
 ]
 
 
@@ -1631,6 +1656,7 @@ def cmd_run_queue(poll_seconds=30):
                 ("exp177_185_batch", EXP177_185_BATCH, "Exp177-185"),
                 ("exp186_200_batch", EXP186_200_BATCH, "Exp186-200"),
                 ("exp206_210_batch", EXP206_210_BATCH, "Exp206-210"),
+                ("exp211_214_batch", EXP211_214_BATCH, "Exp211-214"),
             ]:
                 batch_meta = state.get(batch_name) or {}
                 hard_deadline = float(batch_meta.get("hard_deadline_unix") or 0)
@@ -1750,6 +1776,24 @@ def queue_exp206_210_batch():
     log(f"QUEUE registered Exp206-210 batch ({len(EXP206_210_BATCH)} experiments)")
 
 
+def queue_exp211_214_batch():
+    state = reconcile_running_state(load_state())
+    completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP211_214_BATCH]
+    queue.extend(item for item in EXP211_214_BATCH if item not in completed)
+    state["queue"] = queue
+    state["exp211_214_batch"] = {
+        "registered_at": now(),
+        "registered_unix": time.time(),
+        "worker_count": int(os.environ.get("RANK_EXPERIMENT_WORKERS", "7")),
+        "agent_monitoring": False,
+        "execution_mode": "sequential_one_stage_at_a_time",
+        "experiments": EXP211_214_BATCH,
+    }
+    save_state(state)
+    log(f"QUEUE registered Exp211-214 batch ({len(EXP211_214_BATCH)} experiments)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run rank experiments one at a time.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1761,6 +1805,7 @@ def main():
     sub.add_parser("queue-exp186-200")
     sub.add_parser("queue-exp201-205")
     sub.add_parser("queue-exp206-210")
+    sub.add_parser("queue-exp211-214")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -1789,6 +1834,8 @@ def main():
         queue_exp201_205_batch()
     elif args.command == "queue-exp206-210":
         queue_exp206_210_batch()
+    elif args.command == "queue-exp211-214":
+        queue_exp211_214_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

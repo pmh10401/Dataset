@@ -1369,6 +1369,26 @@ for _stage, _exp_id, _label, _expected in (
 
 
 for _stage, _exp_id, _label, _expected in (
+    ("211", "experiment_211_calibration_transport_audit", "Exp211 · Calibration Transport Audit", 251),
+    ("212", "experiment_212_fold_ensemble_query_scoring", "Exp212 · Fold-Ensemble Query Scoring", 251),
+    ("213", "experiment_213_train_only_source_stability_guard", "Exp213 · TRAIN-Only Source Stability Guard", 251),
+    ("214", "experiment_214_calibration_transport_reaggregation", "Exp214 · Calibration Transport Reaggregation", 251),
+):
+    EXPERIMENTS[_exp_id] = {
+        "label": _label,
+        "comparison_eligible": False,
+        "scope": "retrospective_calibration_transport_diagnostic",
+        "status_reason": "OOF-to-query calibration transport validation; not operational promotion",
+        "autonomous_metric_scope": "unchanged_exp137_hard_alert",
+        "review_metric_scope": "retrospective_research_candidate",
+        "detail_csv": DATA_DIR / "exp211_214_calibration_transport" / f"{_exp_id}_results.csv",
+        "summary_csv": DATA_DIR / "exp211_214_calibration_transport" / f"{_exp_id}_summary.csv",
+        "stdout_log": DATA_DIR / "exp211_214_calibration_transport" / f"exp{_stage}_stdout.log",
+        "expected_datasets": _expected,
+    }
+
+
+for _stage, _exp_id, _label, _expected in (
     ("201", "experiment_201_frozen_large_size_baseline", "Exp201 · Frozen large-size baseline", 251),
     ("202", "experiment_202_alternative_3of3_train_risk_rescue", "Exp202 · Alternative 3-of-3 TRAIN-risk rescue", 251),
     ("203", "experiment_203_current_alternative_cross_confirmation", "Exp203 · Current-alternative cross confirmation", 251),
