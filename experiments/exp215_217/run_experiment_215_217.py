@@ -136,7 +136,7 @@ def run_risk(entries: list[dict], root: Path, stage: str = '216') -> list[dict]:
 def summarize(rows: list[dict], stage: str) -> list[dict]:
     if stage in {'215','216','218'} and rows and 'stable_train_only' in rows[0]:
         return [{'datasets':len(rows),'stable_datasets':sum(int(r['stable_train_only']) for r in rows),'median_rank_corr':float(np.median([r['oof_full_rank_corr'] for r in rows])),'dictionary_mode':MODE[stage],'metric_scope':'label_free_transport_diagnostic'}]
-    if stage == '216':
+    if stage in {'216', '218'}:
         out=[]
         for variant in sorted({r['variant'] for r in rows}):
             selected=[r for r in rows if r['variant']==variant]
