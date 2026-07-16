@@ -1074,7 +1074,7 @@ EXPERIMENTS = [
             "id": exp_id,
             "label": label,
             "script": ROOT / "experiments/exp177_185/run_experiment_177_185_unattended.py",
-            "args": ["--stage", stage],
+            "args": ["--stage", stage, "--workers", "7"] if stage in {"215", "216"} else ["--stage", stage],
             "detail_csv": DATA_DIR / f"{exp_id}_results.csv",
             "summary_csv": DATA_DIR / f"{exp_id}_summary.csv",
             "stdout_log": DATA_DIR / "exp177_185_unattended" / f"exp{stage}_stdout.log",

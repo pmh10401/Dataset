@@ -5,6 +5,7 @@ import argparse
 import csv
 import json
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -78,16 +79,22 @@ def load_or_build(dataset: str, stage: str, root: Path) -> dict:
     return build_artifact(dataset, stage, root)
 
 
-def run_transport(stage: str, entries: list[dict], root: Path) -> list[dict]:
+def _transport_row(entry: dict, stage: str, root: Path) -> dict:
+    data=load_or_build(entry['dataset'], stage, root)
+    metrics=transport_metrics(data['oof'], data['full_train'], data['full_test'])
+    return {'dataset':entry['dataset'], 'n_train':entry['n_train'], 'n_test':entry['n_test'], **metrics,
+        'stable_train_only':int(source_stability(metrics)), 'dictionary_mode':MODE[stage],
+        'contains_test_labels':0, 'metric_scope':'label_free_transport_diagnostic'}
+
+
+def run_transport(stage: str, entries: list[dict], root: Path, workers: int) -> list[dict]:
     rows=[]
-    for number, entry in enumerate(entries, 1):
-        data=load_or_build(entry['dataset'], stage, root)
-        metrics=transport_metrics(data['oof'], data['full_train'], data['full_test'])
-        rows.append({'dataset':entry['dataset'], 'n_train':entry['n_train'], 'n_test':entry['n_test'], **metrics,
-            'stable_train_only':int(source_stability(metrics)), 'dictionary_mode':MODE[stage],
-            'contains_test_labels':0, 'metric_scope':'label_free_transport_diagnostic'})
-        if number % 5 == 0 or number == len(entries): print(f'Progress: [{number} / {len(entries)}] rows={len(rows)} dataset={entry["dataset"]}', flush=True)
-    return rows
+    with ProcessPoolExecutor(max_workers=max(1, workers)) as pool:
+        futures={pool.submit(_transport_row, entry, stage, root):entry['dataset'] for entry in entries}
+        for number, future in enumerate(as_completed(futures), 1):
+            rows.append(future.result())
+            if number % 5 == 0 or number == len(entries): print(f'Progress: [{number} / {len(entries)}] rows={len(rows)} dataset={futures[future]}', flush=True)
+    return sorted(rows, key=lambda row: row['dataset'])
 
 
 def run_prediction(entries: list[dict], root: Path) -> list[dict]:
@@ -141,10 +148,10 @@ def summarize(rows: list[dict], stage: str) -> list[dict]:
 
 
 def main() -> None:
-    parser=argparse.ArgumentParser(); parser.add_argument('--stage',choices=('215','216','217'),required=True); parser.add_argument('--dataset-limit',type=int); parser.add_argument('--output-dir',type=Path,default=OUTPUT_ROOT); args=parser.parse_args()
+    parser=argparse.ArgumentParser(); parser.add_argument('--stage',choices=('215','216','217'),required=True); parser.add_argument('--dataset-limit',type=int); parser.add_argument('--workers',type=int,default=7); parser.add_argument('--output-dir',type=Path,default=OUTPUT_ROOT); args=parser.parse_args()
     entries=load_population_values_only(args.dataset_limit); root=args.output_dir
     if args.stage in {'215','216'}:
-        audit=run_transport(args.stage,entries,root)
+        audit=run_transport(args.stage,entries,root,args.workers)
         write_csv(root/f'{META[args.stage]}_transport_results.csv',audit)
         write_csv(root/f'{META[args.stage]}_transport_summary.csv',summarize(audit,args.stage))
         if args.stage == '215':
