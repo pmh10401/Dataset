@@ -19,8 +19,19 @@ from experiments.exp206_210.artifacts import (
     freeze_predictions, load_dataset_series_only, load_population_values_only,
     load_test_labels_for_evaluation, load_verified_predictions,
 )
-from experiments.exp206_210.core import ALPHAS, SEED, empirical_upper_pvalues, fold_plan
-from experiments.exp211_214.core import pooled_cross_conformal_pvalues, source_stability, transport_metrics
+from experiments.exp206_210.core import (
+    ALPHAS,
+    SEED,
+    empirical_upper_pvalues,
+    fold_plan,
+    sha256_file,
+)
+from experiments.exp211_214.core import (
+    aggregate_fold_pvalues,
+    pooled_cross_conformal_pvalues,
+    source_stability,
+    transport_metrics,
+)
 from experiments.exp215_217.core import fit_shape_source
 
 
@@ -30,8 +41,25 @@ META = {
     '216': 'experiment_216_normal_consensus_medoid_transport',
     '217': 'experiment_217_train_normal_shapelet_risk_audit',
     '218': 'experiment_218_true_bootstrap_consensus_normal_prototypes',
+    '219': 'experiment_219_fixed_dictionary_frozen_candidate_audit',
 }
-MODE = {'215': 'fixed_dictionary_control', '216': 'normal_consensus_medoid', '218': 'bootstrap_consensus_medoid'}
+MODE = {
+    '215': 'fixed_dictionary_control',
+    '216': 'normal_consensus_medoid',
+    '218': 'bootstrap_consensus_medoid',
+    '219': 'fixed_dictionary_control',
+}
+
+
+def artifact_source_stage(stage: str) -> str:
+    """Exp219 is a read-only candidate/risk audit of frozen Exp215 artifacts."""
+    return '215' if stage == '219' else stage
+
+
+def prediction_aggregations(stage: str) -> tuple[str, ...]:
+    if stage == '219':
+        return ('conservative_max', 'pooled_cross_conformal')
+    return ('pooled_cross_conformal',)
 
 
 def write_csv(path: Path, rows: list[dict]) -> None:
@@ -73,11 +101,12 @@ def build_artifact(dataset: str, stage: str, root: Path) -> dict:
 
 
 def load_or_build(dataset: str, stage: str, root: Path) -> dict:
-    path = artifact_path(root, stage, dataset)
+    source_stage = artifact_source_stage(stage)
+    path = artifact_path(root, source_stage, dataset)
     if path.exists():
         with np.load(path, allow_pickle=False) as data:
             return {name: np.asarray(data[name]) for name in data.files}
-    return build_artifact(dataset, stage, root)
+    return build_artifact(dataset, source_stage, root)
 
 
 def _transport_row(entry: dict, stage: str, root: Path) -> dict:
@@ -102,13 +131,20 @@ def run_prediction(entries: list[dict], root: Path, stage: str) -> list[dict]:
     rows=[]
     for entry in entries:
         data=load_or_build(entry['dataset'], stage, root)
-        pvalues=pooled_cross_conformal_pvalues(data['test_counts'], data['fit_sizes'])
         excluded=set(entry['hard_indices'])|set(entry['standard_indices'])|set(entry['priority_indices'])
-        for alpha in ALPHAS:
-            indices=set(np.flatnonzero(pvalues <= alpha).tolist())-excluded
-            rows.append({'experiment_id':META[stage], 'dataset':entry['dataset'], 'variant':f'{MODE[stage]}_pooled_cross_conformal__{alpha}', 'alpha':alpha,
-                'n_train':entry['n_train'], 'n_test':entry['n_test'], 'candidate_indices':sorted(indices), 'candidate_count':len(indices),
-                'final_lane':'research_sensitivity_only', 'autonomous_alert':False, 'contains_test_labels':False, 'contains_evaluation_metrics':False})
+        for aggregation in prediction_aggregations(stage):
+            if aggregation == 'pooled_cross_conformal':
+                pvalues=pooled_cross_conformal_pvalues(data['test_counts'], data['fit_sizes'])
+            else:
+                fold_pvalues=(1.0 + np.asarray(data['test_counts'], dtype=float)) / (
+                    1.0 + np.asarray(data['fit_sizes'], dtype=float)[:, None]
+                )
+                pvalues=aggregate_fold_pvalues(fold_pvalues, aggregation)
+            for alpha in ALPHAS:
+                indices=set(np.flatnonzero(pvalues <= alpha).tolist())-excluded
+                rows.append({'experiment_id':META[stage], 'dataset':entry['dataset'], 'variant':f'{MODE[stage]}_{aggregation}__{alpha}', 'aggregation':aggregation, 'alpha':alpha,
+                    'n_train':entry['n_train'], 'n_test':entry['n_test'], 'candidate_indices':sorted(indices), 'candidate_count':len(indices),
+                    'final_lane':'research_sensitivity_only', 'autonomous_alert':False, 'contains_test_labels':False, 'contains_evaluation_metrics':False})
     return rows
 
 
@@ -136,12 +172,13 @@ def run_risk(entries: list[dict], root: Path, stage: str = '216') -> list[dict]:
 def summarize(rows: list[dict], stage: str) -> list[dict]:
     if stage in {'215','216','218'} and rows and 'stable_train_only' in rows[0]:
         return [{'datasets':len(rows),'stable_datasets':sum(int(r['stable_train_only']) for r in rows),'median_rank_corr':float(np.median([r['oof_full_rank_corr'] for r in rows])),'dictionary_mode':MODE[stage],'metric_scope':'label_free_transport_diagnostic'}]
-    if stage in {'216', '218'}:
+    if stage in {'216', '218', '219'}:
         out=[]
         for variant in sorted({r['variant'] for r in rows}):
             selected=[r for r in rows if r['variant']==variant]
             tp=sum(r['candidate_tp'] for r in selected); fp=sum(r['candidate_fp'] for r in selected)
-            out.append({'variant':variant,'datasets':len(selected),'candidate_count':tp+fp,'candidate_tp':tp,'candidate_fp':fp,'candidate_precision':tp/max(1,tp+fp),'metric_scope':'retrospective_research_candidate','autonomous_exp137_unchanged':1,'selected_for_operation':0})
+            primary = stage == '219' and variant == 'fixed_dictionary_control_conservative_max__0.005'
+            out.append({'variant':variant,'datasets':len(selected),'candidate_count':tp+fp,'candidate_tp':tp,'candidate_fp':fp,'candidate_precision':tp/max(1,tp+fp),'metric_scope':'retrospective_research_candidate','autonomous_exp137_unchanged':1,'preregistered_primary':int(primary),'selected_for_operation':0})
         return out
     grouped={}
     for row in rows: grouped.setdefault(row['alpha'],[]).append(row)
@@ -149,7 +186,7 @@ def summarize(rows: list[dict], stage: str) -> list[dict]:
 
 
 def main() -> None:
-    parser=argparse.ArgumentParser(); parser.add_argument('--stage',choices=('215','216','217','218'),required=True); parser.add_argument('--dataset-limit',type=int); parser.add_argument('--workers',type=int,default=7); parser.add_argument('--output-dir',type=Path,default=OUTPUT_ROOT); args=parser.parse_args()
+    parser=argparse.ArgumentParser(); parser.add_argument('--stage',choices=('215','216','217','218','219'),required=True); parser.add_argument('--dataset-limit',type=int); parser.add_argument('--workers',type=int,default=7); parser.add_argument('--output-dir',type=Path,default=OUTPUT_ROOT); args=parser.parse_args()
     entries=load_population_values_only(args.dataset_limit); root=args.output_dir
     if args.stage in {'215','216','218'}:
         audit=run_transport(args.stage,entries,root,args.workers)
@@ -162,8 +199,24 @@ def main() -> None:
             frozen=run_prediction(entries,root,args.stage); freeze_predictions(args.stage,META[args.stage],frozen,root,{})
             evaluated=evaluate(frozen); write_csv(root/f'{META[args.stage]}_results.csv',evaluated); write_csv(root/f'{META[args.stage]}_summary.csv',summarize(evaluated,args.stage))
             risk=run_risk(entries,root,args.stage); write_csv(root/f'{META[args.stage]}_train_normal_risk_results.csv',risk); write_csv(root/f'{META[args.stage]}_train_normal_risk_summary.csv',summarize(risk,'217'))
+    elif args.stage == '219':
+        frozen=run_prediction(entries,root,args.stage)
+        input_hashes={
+            f'exp215_cache/{entry["dataset"]}.npz': sha256_file(artifact_path(root, '215', entry['dataset']))
+            for entry in entries
+        }
+        prediction_path, manifest_path=freeze_predictions(args.stage,META[args.stage],frozen,root,input_hashes)
+        verified=load_verified_predictions(prediction_path,manifest_path)
+        evaluated=evaluate(verified)
+        write_csv(root/f'{META[args.stage]}_results.csv',evaluated)
+        write_csv(root/f'{META[args.stage]}_summary.csv',summarize(evaluated,args.stage))
+        risk=run_risk(entries,root,args.stage)
+        write_csv(root/f'{META[args.stage]}_train_normal_risk_results.csv',risk)
+        write_csv(root/f'{META[args.stage]}_train_normal_risk_summary.csv',summarize(risk,'217'))
     else:
-        rows=run_risk(entries,root); write_csv(root/f'{META['217']}_results.csv',rows); write_csv(root/f'{META['217']}_summary.csv',summarize(rows,args.stage))
+        rows=run_risk(entries,root)
+        write_csv(root/f"{META['217']}_results.csv",rows)
+        write_csv(root/f"{META['217']}_summary.csv",summarize(rows,args.stage))
     (root/f'exp{args.stage}_completion.json').write_text(json.dumps({'experiment_id':META[args.stage],'status':'completed','datasets':len(entries)},indent=2))
 
 
