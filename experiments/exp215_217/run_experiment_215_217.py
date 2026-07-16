@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from experiments.exp201_205.core import binary_metrics, wilson_interval
+from experiments.exp206_210.artifacts import (
+    freeze_predictions, load_dataset_series_only, load_population_values_only,
+    load_test_labels_for_evaluation, load_verified_predictions,
+)
+from experiments.exp206_210.core import ALPHAS, SEED, empirical_upper_pvalues, fold_plan
+from experiments.exp211_214.core import pooled_cross_conformal_pvalues, source_stability, transport_metrics
+from experiments.exp215_217.core import fit_shape_source
+
+
+OUTPUT_ROOT = Path('/Users/minho/Documents/Dataset/exp215_217_shapelet_stability')
+META = {
+    '215': 'experiment_215_fixed_dictionary_transport_control',
+    '216': 'experiment_216_normal_consensus_medoid_transport',
+    '217': 'experiment_217_train_normal_shapelet_risk_audit',
+}
+MODE = {'215': 'fixed_dictionary_control', '216': 'normal_consensus_medoid'}
+
+
+def write_csv(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('w', newline='', encoding='utf-8') as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]) if rows else [])
+        if rows:
+            writer.writeheader(); writer.writerows(rows)
+
+
+def artifact_path(root: Path, stage: str, dataset: str) -> Path:
+    return root / f'exp{stage}_cache' / f'{dataset}.npz'
+
+
+def build_artifact(dataset: str, stage: str, root: Path) -> dict:
+    x_train, x_test, _ = load_dataset_series_only(dataset)
+    mode = MODE[stage]
+    plan = fold_plan(len(x_train), 5, SEED)
+    oof = np.zeros(len(x_train), dtype=np.float32)
+    fold_counts, fold_sizes, normal_flags = [], [], []
+    for number, (fit_idx, hold_idx) in enumerate(plan):
+        fit_scores, held_scores = fit_shape_source(mode, x_train[fit_idx], x_train[hold_idx], seed=SEED + number)
+        oof[hold_idx] = held_scores
+        normal_flags.append(empirical_upper_pvalues(fit_scores, held_scores))
+        _, test_scores = fit_shape_source(mode, x_train[fit_idx], x_test, seed=SEED + number)
+        ordered = np.sort(fit_scores)
+        fold_counts.append(len(ordered) - np.searchsorted(ordered, test_scores, side='left'))
+        fold_sizes.append(len(ordered))
+    full_train, full_test = fit_shape_source(mode, x_train, x_test, seed=SEED)
+    payload = {
+        'oof': oof, 'full_train': full_train, 'full_test': full_test,
+        'test_counts': np.asarray(fold_counts, dtype=np.int32),
+        'fit_sizes': np.asarray(fold_sizes, dtype=np.int32),
+        'normal_pvalues': np.concatenate(normal_flags),
+    }
+    path = artifact_path(root, stage, dataset); path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(path, **payload)
+    return payload
+
+
+def load_or_build(dataset: str, stage: str, root: Path) -> dict:
+    path = artifact_path(root, stage, dataset)
+    if path.exists():
+        with np.load(path, allow_pickle=False) as data:
+            return {name: np.asarray(data[name]) for name in data.files}
+    return build_artifact(dataset, stage, root)
+
+
+def run_transport(stage: str, entries: list[dict], root: Path) -> list[dict]:
+    rows=[]
+    for number, entry in enumerate(entries, 1):
+        data=load_or_build(entry['dataset'], stage, root)
+        metrics=transport_metrics(data['oof'], data['full_train'], data['full_test'])
+        rows.append({'dataset':entry['dataset'], 'n_train':entry['n_train'], 'n_test':entry['n_test'], **metrics,
+            'stable_train_only':int(source_stability(metrics)), 'dictionary_mode':MODE[stage],
+            'contains_test_labels':0, 'metric_scope':'label_free_transport_diagnostic'})
+        if number % 5 == 0 or number == len(entries): print(f'Progress: [{number} / {len(entries)}] rows={len(rows)} dataset={entry["dataset"]}', flush=True)
+    return rows
+
+
+def run_prediction(entries: list[dict], root: Path) -> list[dict]:
+    rows=[]
+    for entry in entries:
+        data=load_or_build(entry['dataset'], '216', root)
+        pvalues=pooled_cross_conformal_pvalues(data['test_counts'], data['fit_sizes'])
+        excluded=set(entry['hard_indices'])|set(entry['standard_indices'])|set(entry['priority_indices'])
+        for alpha in ALPHAS:
+            indices=set(np.flatnonzero(pvalues <= alpha).tolist())-excluded
+            rows.append({'experiment_id':META['216'], 'dataset':entry['dataset'], 'variant':f'normal_consensus_medoid_pooled_cross_conformal__{alpha}', 'alpha':alpha,
+                'n_train':entry['n_train'], 'n_test':entry['n_test'], 'candidate_indices':sorted(indices), 'candidate_count':len(indices),
+                'final_lane':'research_sensitivity_only', 'autonomous_alert':False, 'contains_test_labels':False, 'contains_evaluation_metrics':False})
+    return rows
+
+
+def evaluate(rows: list[dict]) -> list[dict]:
+    output=[]
+    for row in rows:
+        labels=load_test_labels_for_evaluation(row['dataset'])
+        base=binary_metrics(labels, [])
+        cand=binary_metrics(labels, row['candidate_indices'])
+        output.append({**row, 'candidate_tp':cand['tp'], 'candidate_fp':cand['fp'], 'candidate_precision':cand['precision'], 'candidate_f1':cand['f1'], 'metric_scope':'retrospective_research_candidate', 'autonomous_exp137_unchanged':1})
+    return output
+
+
+def run_risk(entries: list[dict], root: Path) -> list[dict]:
+    rows=[]
+    for entry in entries:
+        data=load_or_build(entry['dataset'], '216', root)
+        normal_pvalues=np.asarray(data['normal_pvalues'], dtype=float)
+        for alpha in ALPHAS:
+            alerts=int(np.sum(normal_pvalues <= alpha)); total=len(normal_pvalues); _, upper=wilson_interval(alerts,total)
+            rows.append({'dataset':entry['dataset'],'n_train':entry['n_train'],'alpha':alpha,'normal_pseudo_runs':total,'normal_false_alerts':alerts,'normal_false_alert_rate':alerts/max(1,total),'wilson_upper_95':upper,'contains_test_labels':0,'metric_scope':'train_normal_empirical_risk_diagnostic'})
+    return rows
+
+
+def summarize(rows: list[dict], stage: str) -> list[dict]:
+    if stage in {'215','216'} and rows and 'stable_train_only' in rows[0]:
+        return [{'datasets':len(rows),'stable_datasets':sum(int(r['stable_train_only']) for r in rows),'median_rank_corr':float(np.median([r['oof_full_rank_corr'] for r in rows])),'dictionary_mode':MODE[stage],'metric_scope':'label_free_transport_diagnostic'}]
+    if stage == '216':
+        out=[]
+        for variant in sorted({r['variant'] for r in rows}):
+            selected=[r for r in rows if r['variant']==variant]
+            tp=sum(r['candidate_tp'] for r in selected); fp=sum(r['candidate_fp'] for r in selected)
+            out.append({'variant':variant,'datasets':len(selected),'candidate_count':tp+fp,'candidate_tp':tp,'candidate_fp':fp,'candidate_precision':tp/max(1,tp+fp),'metric_scope':'retrospective_research_candidate','autonomous_exp137_unchanged':1,'selected_for_operation':0})
+        return out
+    grouped={}
+    for row in rows: grouped.setdefault(row['alpha'],[]).append(row)
+    return [{'alpha':alpha,'datasets':len(group),'normal_false_alerts':sum(r['normal_false_alerts'] for r in group),'normal_pseudo_runs':sum(r['normal_pseudo_runs'] for r in group),'max_dataset_wilson_upper_95':max(r['wilson_upper_95'] for r in group),'metric_scope':'train_normal_empirical_risk_diagnostic'} for alpha,group in grouped.items()]
+
+
+def main() -> None:
+    parser=argparse.ArgumentParser(); parser.add_argument('--stage',choices=('215','216','217'),required=True); parser.add_argument('--dataset-limit',type=int); parser.add_argument('--output-dir',type=Path,default=OUTPUT_ROOT); args=parser.parse_args()
+    entries=load_population_values_only(args.dataset_limit); root=args.output_dir
+    if args.stage in {'215','216'}:
+        audit=run_transport(args.stage,entries,root)
+        write_csv(root/f'{META[args.stage]}_transport_results.csv',audit)
+        write_csv(root/f'{META[args.stage]}_transport_summary.csv',summarize(audit,args.stage))
+        if args.stage == '215':
+            write_csv(root/f'{META[args.stage]}_results.csv',audit)
+            write_csv(root/f'{META[args.stage]}_summary.csv',summarize(audit,args.stage))
+        if args.stage=='216':
+            frozen=run_prediction(entries,root); freeze_predictions('216',META['216'],frozen,root,{})
+            evaluated=evaluate(frozen); write_csv(root/f'{META[args.stage]}_results.csv',evaluated); write_csv(root/f'{META[args.stage]}_summary.csv',summarize(evaluated,args.stage))
+    else:
+        rows=run_risk(entries,root); write_csv(root/f'{META['217']}_results.csv',rows); write_csv(root/f'{META['217']}_summary.csv',summarize(rows,args.stage))
+    (root/f'exp{args.stage}_completion.json').write_text(json.dumps({'experiment_id':META[args.stage],'status':'completed','datasets':len(entries)},indent=2))
+
+
+if __name__=='__main__': main()

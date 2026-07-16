@@ -1177,6 +1177,23 @@ EXPERIMENTS = [
             ("214", "experiment_214_calibration_transport_reaggregation", "Exp214 · Calibration Transport Reaggregation", 251),
         )
     ],
+    *[
+        {
+            "id": exp_id,
+            "label": label,
+            "script": ROOT / "experiments/exp215_217/run_experiment_215_217.py",
+            "args": ["--stage", stage],
+            "detail_csv": DATA_DIR / "exp215_217_shapelet_stability" / f"{exp_id}_results.csv",
+            "summary_csv": DATA_DIR / "exp215_217_shapelet_stability" / f"{exp_id}_summary.csv",
+            "stdout_log": DATA_DIR / "exp215_217_shapelet_stability" / f"exp{stage}_stdout.log",
+            "expected_datasets": expected,
+        }
+        for stage, exp_id, label, expected in (
+            ("215", "experiment_215_fixed_dictionary_transport_control", "Exp215 · Fixed Dictionary Transport Control", 251),
+            ("216", "experiment_216_normal_consensus_medoid_transport", "Exp216 · Normal Consensus Medoid Transport", 251),
+            ("217", "experiment_217_train_normal_shapelet_risk_audit", "Exp217 · TRAIN-Normal Shapelet Risk Audit", 251),
+        )
+    ],
 ]
 
 DEFAULT_QUEUE = ["experiment_26_rocket"]
@@ -1231,6 +1248,12 @@ EXP211_214_BATCH = [
     "experiment_212_fold_ensemble_query_scoring",
     "experiment_213_train_only_source_stability_guard",
     "experiment_214_calibration_transport_reaggregation",
+]
+
+EXP215_217_BATCH = [
+    "experiment_215_fixed_dictionary_transport_control",
+    "experiment_216_normal_consensus_medoid_transport",
+    "experiment_217_train_normal_shapelet_risk_audit",
 ]
 
 
@@ -1794,6 +1817,24 @@ def queue_exp211_214_batch():
     log(f"QUEUE registered Exp211-214 batch ({len(EXP211_214_BATCH)} experiments)")
 
 
+def queue_exp215_217_batch():
+    state = reconcile_running_state(load_state())
+    completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP215_217_BATCH]
+    queue.extend(item for item in EXP215_217_BATCH if item not in completed)
+    state["queue"] = queue
+    state["exp215_217_batch"] = {
+        "registered_at": now(),
+        "registered_unix": time.time(),
+        "worker_count": 1,
+        "agent_monitoring": False,
+        "execution_mode": "sequential_one_stage_at_a_time",
+        "experiments": EXP215_217_BATCH,
+    }
+    save_state(state)
+    log(f"QUEUE registered Exp215-217 batch ({len(EXP215_217_BATCH)} experiments)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run rank experiments one at a time.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1806,6 +1847,7 @@ def main():
     sub.add_parser("queue-exp201-205")
     sub.add_parser("queue-exp206-210")
     sub.add_parser("queue-exp211-214")
+    sub.add_parser("queue-exp215-217")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -1836,6 +1878,8 @@ def main():
         queue_exp206_210_batch()
     elif args.command == "queue-exp211-214":
         queue_exp211_214_batch()
+    elif args.command == "queue-exp215-217":
+        queue_exp215_217_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

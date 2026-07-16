@@ -1367,6 +1367,24 @@ for _stage, _exp_id, _label, _expected in (
         "expected_datasets": _expected,
     }
 
+for _stage, _exp_id, _label, _expected in (
+    ("215", "experiment_215_fixed_dictionary_transport_control", "Exp215 · Fixed Dictionary Transport Control", 251),
+    ("216", "experiment_216_normal_consensus_medoid_transport", "Exp216 · Normal Consensus Medoid Transport", 251),
+    ("217", "experiment_217_train_normal_shapelet_risk_audit", "Exp217 · TRAIN-Normal Shapelet Risk Audit", 251),
+):
+    EXPERIMENTS[_exp_id] = {
+        "label": _label,
+        "comparison_eligible": False,
+        "scope": "retrospective_train_only_shapelet_diagnostic",
+        "status_reason": "random-dictionary control and normal-prototype stability; not operational promotion",
+        "autonomous_metric_scope": "unchanged_exp137_hard_alert",
+        "review_metric_scope": "retrospective_research_candidate",
+        "detail_csv": DATA_DIR / "exp215_217_shapelet_stability" / f"{_exp_id}_results.csv",
+        "summary_csv": DATA_DIR / "exp215_217_shapelet_stability" / f"{_exp_id}_summary.csv",
+        "stdout_log": DATA_DIR / "exp215_217_shapelet_stability" / f"exp{_stage}_stdout.log",
+        "expected_datasets": _expected,
+    }
+
 
 for _stage, _exp_id, _label, _expected in (
     ("211", "experiment_211_calibration_transport_audit", "Exp211 · Calibration Transport Audit", 251),
