@@ -27,5 +27,10 @@ DB: /Users/minho/Documents/Dataset/univariate_ts.db
 - tail replacement를 사용하지 않는다.
 - 결과를 본 뒤 alpha, threshold, source, budget을 선택하거나 바꾸지 않는다.
 
-Exp218은 완료됐지만 운영 채택 실험이 아니라 bootstrap consensus prototype의 연구 후보 검증이다. 가장 최신 결과는 /Users/minho/Documents/Dataset/exp215_217_shapelet_stability/에 있다. 먼저 결과 파일과 completion JSON을 읽고, 그 다음 새 가설을 제안하되 사전등록 및 TRAIN-only 코드 감사를 먼저 해줘.
+Exp218 이후 Exp219, Exp224, Exp225까지 완료됐다. 최신 결과는
+outputs/exp225_validation/RESULT_ANALYSIS.md를 먼저 읽어라. Exp225는 Exp219의
+고정 dictionary 후보를 시간 랜덤 커널과 정규 형태 통계로 독립 확인한
+retrospective review-only 실험이다. 자동 경보는 추가하지 않았고 Exp137도
+변경하지 않았다. 다음 우선순위는 Exp226 TRAIN-normal conditional risk audit이며,
+TEST 결과를 이용해 규칙이나 alpha를 다시 선택하면 안 된다.
 ```

@@ -11,7 +11,10 @@ git rev-parse HEAD
 git status --short --branch
 ```
 
-최근 완료 실험은 `experiment_218_true_bootstrap_consensus_normal_prototypes`이며, 2026-07-16에 251개 대상에서 완료됐다. 이는 **운영 후보가 아니라 연구용 사후 후보 평가**다. Exp137의 자동 경보 기준을 바꾸거나 승격하지 않는다.
+Exp218 이후 Exp219, Exp224, Exp225까지 진행됐다. 가장 최근 완료 실험은
+`experiment_225_fixed_dictionary_independent_confirmation_review`이다. 이는
+**운영 후보가 아니라 연구용 사후 review 평가**다. Exp137의 자동 경보 기준을
+바꾸거나 승격하지 않는다.
 
 ## 반드시 유지할 원칙
 
@@ -100,6 +103,27 @@ python3 run_rank_experiments_sequential.py status
   experiment_218_true_bootstrap_consensus_normal_prototypes_train_normal_risk_summary.csv
   exp218_completion.json
 ```
+
+### Exp219: 고정 dictionary frozen 후보 감사
+
+사전등록 주 설정 `conservative_max`, alpha `0.005`에서 후보 257개 중 TP 39,
+FP 218, precision 15.18%였다. 고정 dictionary는 재현성을 개선했지만 단독 후보
+생성기로는 오탐이 많아 운영에 선택하지 않았다.
+
+### Exp224: 안정적인 두 점수원 prospective shadow 계약
+
+시간 랜덤 커널과 정규 형태 통계 점수원을 TRAIN-normal risk로 동결했다. 동일 DB
+SHA256에서 raw replay 639/639, mismatch 0, gate passed를 확인했다. selected alpha는
+TRAIN-only로 정한 `0.01`이다. prospective 실행 구조를 검증한 것이며 실제 신규
+설비 성능 검증이 끝난 것은 아니다.
+
+### Exp225: Exp219 후보 독립 확인
+
+Exp219 후보를 시간 랜덤 커널과 정규 형태 통계로 exact-index 확인했다. 후보는
+257개에서 38개로 줄었고 TP 22, FP 16, precision 57.89%였다. FP의 92.66%를
+제거했지만 TP 보존율은 56.41%이며 Zero-F1 데이터셋은 239/251이다. 자동 경보는
+0개이고 Exp137은 변경하지 않았다. 상세 분석은
+`outputs/exp225_validation/RESULT_ANALYSIS.md`에 있다.
 
 ## 다음 작업을 시작하기 전 점검
 
