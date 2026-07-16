@@ -5,6 +5,7 @@ import unittest
 import numpy as np
 
 from experiments.exp215_217.core import (
+    bootstrap_consensus_medoid_dictionary,
     central_normal_medoid_dictionary,
     fixed_kernel_dictionary,
     fit_shape_source,
@@ -34,6 +35,18 @@ class ShapeletStabilityCoreTests(unittest.TestCase):
         changed_query[0] *= 1000
         _, second = fit_shape_source("normal_consensus_medoid", fit, changed_query, seed=7)
         self.assertTrue(np.allclose(first[1:], second[1:]))
+
+    def test_bootstrap_consensus_dictionary_is_repeatable(self) -> None:
+        normal = np.vstack([
+            np.sin(np.linspace(0, 8, 128) + offset)
+            for offset in np.linspace(0, 1.5, 24)
+        ]).astype(np.float32)
+        left, left_frequency = bootstrap_consensus_medoid_dictionary(normal, seed=17)
+        right, right_frequency = bootstrap_consensus_medoid_dictionary(normal, seed=17)
+        self.assertEqual(len(left), 32)
+        self.assertTrue(all(np.array_equal(a, b) for a, b in zip(left, right)))
+        self.assertTrue(np.array_equal(left_frequency, right_frequency))
+        self.assertTrue(np.all(left_frequency >= 0.60))
 
 
 if __name__ == "__main__":

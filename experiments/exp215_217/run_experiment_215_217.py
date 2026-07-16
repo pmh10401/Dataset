@@ -29,8 +29,9 @@ META = {
     '215': 'experiment_215_fixed_dictionary_transport_control',
     '216': 'experiment_216_normal_consensus_medoid_transport',
     '217': 'experiment_217_train_normal_shapelet_risk_audit',
+    '218': 'experiment_218_true_bootstrap_consensus_normal_prototypes',
 }
-MODE = {'215': 'fixed_dictionary_control', '216': 'normal_consensus_medoid'}
+MODE = {'215': 'fixed_dictionary_control', '216': 'normal_consensus_medoid', '218': 'bootstrap_consensus_medoid'}
 
 
 def write_csv(path: Path, rows: list[dict]) -> None:
@@ -97,15 +98,15 @@ def run_transport(stage: str, entries: list[dict], root: Path, workers: int) -> 
     return sorted(rows, key=lambda row: row['dataset'])
 
 
-def run_prediction(entries: list[dict], root: Path) -> list[dict]:
+def run_prediction(entries: list[dict], root: Path, stage: str) -> list[dict]:
     rows=[]
     for entry in entries:
-        data=load_or_build(entry['dataset'], '216', root)
+        data=load_or_build(entry['dataset'], stage, root)
         pvalues=pooled_cross_conformal_pvalues(data['test_counts'], data['fit_sizes'])
         excluded=set(entry['hard_indices'])|set(entry['standard_indices'])|set(entry['priority_indices'])
         for alpha in ALPHAS:
             indices=set(np.flatnonzero(pvalues <= alpha).tolist())-excluded
-            rows.append({'experiment_id':META['216'], 'dataset':entry['dataset'], 'variant':f'normal_consensus_medoid_pooled_cross_conformal__{alpha}', 'alpha':alpha,
+            rows.append({'experiment_id':META[stage], 'dataset':entry['dataset'], 'variant':f'{MODE[stage]}_pooled_cross_conformal__{alpha}', 'alpha':alpha,
                 'n_train':entry['n_train'], 'n_test':entry['n_test'], 'candidate_indices':sorted(indices), 'candidate_count':len(indices),
                 'final_lane':'research_sensitivity_only', 'autonomous_alert':False, 'contains_test_labels':False, 'contains_evaluation_metrics':False})
     return rows
@@ -121,10 +122,10 @@ def evaluate(rows: list[dict]) -> list[dict]:
     return output
 
 
-def run_risk(entries: list[dict], root: Path) -> list[dict]:
+def run_risk(entries: list[dict], root: Path, stage: str = '216') -> list[dict]:
     rows=[]
     for entry in entries:
-        data=load_or_build(entry['dataset'], '216', root)
+        data=load_or_build(entry['dataset'], stage, root)
         normal_pvalues=np.asarray(data['normal_pvalues'], dtype=float)
         for alpha in ALPHAS:
             alerts=int(np.sum(normal_pvalues <= alpha)); total=len(normal_pvalues); _, upper=wilson_interval(alerts,total)
@@ -133,7 +134,7 @@ def run_risk(entries: list[dict], root: Path) -> list[dict]:
 
 
 def summarize(rows: list[dict], stage: str) -> list[dict]:
-    if stage in {'215','216'} and rows and 'stable_train_only' in rows[0]:
+    if stage in {'215','216','218'} and rows and 'stable_train_only' in rows[0]:
         return [{'datasets':len(rows),'stable_datasets':sum(int(r['stable_train_only']) for r in rows),'median_rank_corr':float(np.median([r['oof_full_rank_corr'] for r in rows])),'dictionary_mode':MODE[stage],'metric_scope':'label_free_transport_diagnostic'}]
     if stage == '216':
         out=[]
@@ -148,18 +149,19 @@ def summarize(rows: list[dict], stage: str) -> list[dict]:
 
 
 def main() -> None:
-    parser=argparse.ArgumentParser(); parser.add_argument('--stage',choices=('215','216','217'),required=True); parser.add_argument('--dataset-limit',type=int); parser.add_argument('--workers',type=int,default=7); parser.add_argument('--output-dir',type=Path,default=OUTPUT_ROOT); args=parser.parse_args()
+    parser=argparse.ArgumentParser(); parser.add_argument('--stage',choices=('215','216','217','218'),required=True); parser.add_argument('--dataset-limit',type=int); parser.add_argument('--workers',type=int,default=7); parser.add_argument('--output-dir',type=Path,default=OUTPUT_ROOT); args=parser.parse_args()
     entries=load_population_values_only(args.dataset_limit); root=args.output_dir
-    if args.stage in {'215','216'}:
+    if args.stage in {'215','216','218'}:
         audit=run_transport(args.stage,entries,root,args.workers)
         write_csv(root/f'{META[args.stage]}_transport_results.csv',audit)
         write_csv(root/f'{META[args.stage]}_transport_summary.csv',summarize(audit,args.stage))
         if args.stage == '215':
             write_csv(root/f'{META[args.stage]}_results.csv',audit)
             write_csv(root/f'{META[args.stage]}_summary.csv',summarize(audit,args.stage))
-        if args.stage=='216':
-            frozen=run_prediction(entries,root); freeze_predictions('216',META['216'],frozen,root,{})
+        if args.stage in {'216','218'}:
+            frozen=run_prediction(entries,root,args.stage); freeze_predictions(args.stage,META[args.stage],frozen,root,{})
             evaluated=evaluate(frozen); write_csv(root/f'{META[args.stage]}_results.csv',evaluated); write_csv(root/f'{META[args.stage]}_summary.csv',summarize(evaluated,args.stage))
+            risk=run_risk(entries,root,args.stage); write_csv(root/f'{META[args.stage]}_train_normal_risk_results.csv',risk); write_csv(root/f'{META[args.stage]}_train_normal_risk_summary.csv',summarize(risk,'217'))
     else:
         rows=run_risk(entries,root); write_csv(root/f'{META['217']}_results.csv',rows); write_csv(root/f'{META['217']}_summary.csv',summarize(rows,args.stage))
     (root/f'exp{args.stage}_completion.json').write_text(json.dumps({'experiment_id':META[args.stage],'status':'completed','datasets':len(entries)},indent=2))

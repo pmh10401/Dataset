@@ -1371,6 +1371,7 @@ for _stage, _exp_id, _label, _expected in (
     ("215", "experiment_215_fixed_dictionary_transport_control", "Exp215 · Fixed Dictionary Transport Control", 251),
     ("216", "experiment_216_normal_consensus_medoid_transport", "Exp216 · Normal Consensus Medoid Transport", 251),
     ("217", "experiment_217_train_normal_shapelet_risk_audit", "Exp217 · TRAIN-Normal Shapelet Risk Audit", 251),
+    ("218", "experiment_218_true_bootstrap_consensus_normal_prototypes", "Exp218 · True Bootstrap-Consensus Normal Prototypes", 251),
 ):
     EXPERIMENTS[_exp_id] = {
         "label": _label,

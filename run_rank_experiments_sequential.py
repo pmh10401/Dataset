@@ -1074,7 +1074,7 @@ EXPERIMENTS = [
             "id": exp_id,
             "label": label,
             "script": ROOT / "experiments/exp177_185/run_experiment_177_185_unattended.py",
-            "args": ["--stage", stage, "--workers", "7"] if stage in {"215", "216"} else ["--stage", stage],
+            "args": ["--stage", stage, "--workers", "7"] if stage in {"215", "216", "218"} else ["--stage", stage],
             "detail_csv": DATA_DIR / f"{exp_id}_results.csv",
             "summary_csv": DATA_DIR / f"{exp_id}_summary.csv",
             "stdout_log": DATA_DIR / "exp177_185_unattended" / f"exp{stage}_stdout.log",
@@ -1192,6 +1192,7 @@ EXPERIMENTS = [
             ("215", "experiment_215_fixed_dictionary_transport_control", "Exp215 · Fixed Dictionary Transport Control", 251),
             ("216", "experiment_216_normal_consensus_medoid_transport", "Exp216 · Normal Consensus Medoid Transport", 251),
             ("217", "experiment_217_train_normal_shapelet_risk_audit", "Exp217 · TRAIN-Normal Shapelet Risk Audit", 251),
+            ("218", "experiment_218_true_bootstrap_consensus_normal_prototypes", "Exp218 · True Bootstrap-Consensus Normal Prototypes", 251),
         )
     ],
 ]

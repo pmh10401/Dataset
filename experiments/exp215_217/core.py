@@ -11,6 +11,9 @@ from experiments.exp162.full_coverage_score_core import (
 
 PROTOTYPE_LENGTHS = (8, 16, 32, 64)
 PROTOTYPES_PER_LENGTH = 8
+BOOTSTRAP_REPEATS = 16
+CONSENSUS_FREQUENCY = 0.60
+CONSENSUS_SIGNATURE_DISTANCE = 2.5
 
 
 def _normalize_window(values: np.ndarray) -> np.ndarray:
@@ -69,17 +72,63 @@ def central_normal_medoid_dictionary(x_fit: np.ndarray) -> list[np.ndarray]:
     return dictionary[: len(PROTOTYPE_LENGTHS) * PROTOTYPES_PER_LENGTH]
 
 
+def bootstrap_consensus_medoid_dictionary(
+    x_fit: np.ndarray, *, seed: int, repeats: int = BOOTSTRAP_REPEATS
+) -> tuple[list[np.ndarray], np.ndarray]:
+    """Keep central normal prototypes that recur across TRAIN-only bootstraps."""
+    values = z_normalize(np.asarray(x_fit, dtype=np.float32)).astype(np.float32)
+    if values.ndim != 2 or len(values) < 2:
+        raise ValueError("bootstrap consensus requires at least two TRAIN-normal rows")
+    rng = np.random.default_rng(seed)
+    by_length: dict[int, list[tuple[int, np.ndarray]]] = {length: [] for length in PROTOTYPE_LENGTHS}
+    for repeat in range(int(repeats)):
+        bootstrap_rows = rng.integers(0, len(values), size=len(values))
+        dictionary = central_normal_medoid_dictionary(values[bootstrap_rows])
+        for prototype in dictionary:
+            by_length[len(prototype)].append((repeat, prototype))
+    final: list[np.ndarray] = []
+    frequencies: list[float] = []
+    for length in PROTOTYPE_LENGTHS:
+        candidates = by_length.get(length, [])
+        if not candidates:
+            continue
+        signatures = np.vstack([_signature(item[1]) for item in candidates])
+        # Greedily choose representatives covering the most independent bootstraps.
+        remaining = set(range(len(candidates)))
+        for _ in range(PROTOTYPES_PER_LENGTH):
+            if not remaining:
+                break
+            best_index = min(remaining)
+            best_support: set[int] = set()
+            for index in sorted(remaining):
+                distance = np.sqrt(np.mean((signatures - signatures[index]) ** 2, axis=1))
+                support = {candidates[item][0] for item in range(len(candidates)) if distance[item] <= CONSENSUS_SIGNATURE_DISTANCE}
+                if len(support) > len(best_support):
+                    best_index, best_support = index, support
+            final.append(candidates[best_index][1])
+            frequencies.append(len(best_support) / float(repeats))
+            distance = np.sqrt(np.mean((signatures - signatures[best_index]) ** 2, axis=1))
+            remaining = {item for item in remaining if distance[item] > CONSENSUS_SIGNATURE_DISTANCE}
+    if not final:
+        raise ValueError("bootstrap consensus produced no valid normal prototypes")
+    while len(final) < len(PROTOTYPE_LENGTHS) * PROTOTYPES_PER_LENGTH:
+        final.append(final[len(final) % len(final)].copy())
+        frequencies.append(frequencies[len(frequencies) % len(frequencies)])
+    return final[:32], np.asarray(frequencies[:32], dtype=np.float32)
+
+
 def fit_shape_source(
     mode: str, x_fit: np.ndarray, x_query: np.ndarray, *, seed: int
 ) -> tuple[np.ndarray, np.ndarray]:
     """Fit a TRAIN-normal shape representation and score fit/query rows."""
-    del seed  # Dictionaries are deterministic by contract.
     fit = z_normalize(np.asarray(x_fit, dtype=np.float32)).astype(np.float32)
     query = z_normalize(np.asarray(x_query, dtype=np.float32)).astype(np.float32)
     if mode == "fixed_dictionary_control":
         dictionary = [item for item in fixed_kernel_dictionary() if len(item) <= fit.shape[1]]
     elif mode == "normal_consensus_medoid":
         dictionary = central_normal_medoid_dictionary(fit)
+    elif mode == "bootstrap_consensus_medoid":
+        dictionary, _ = bootstrap_consensus_medoid_dictionary(fit, seed=seed)
     else:
         raise ValueError(f"unknown shape source mode: {mode}")
     fit_features = shapelet_distance_features(fit, dictionary)
