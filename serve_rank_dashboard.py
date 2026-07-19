@@ -1889,6 +1889,35 @@ HISTORICAL_EXPERIMENT_META = {
     },
 }
 
+HARD_ALERT_QUALITY_ROOT = DATA_DIR / "exp226_235_hard_alert_quality"
+_HARD_ALERT_QUALITY_EXPERIMENTS = {
+    226: ("TRAIN-normal risk audit", False, "train_only_risk_audit"),
+    227: ("Independent confirmation", True, "retrospective_autonomous_ablation"),
+    228: ("Conformal margin confidence", True, "retrospective_autonomous_sensitivity"),
+    229: ("Correlation-aware agreement", True, "retrospective_autonomous_sensitivity"),
+    230: ("Seed stability", False, "blocked_missing_frozen_seed_repetitions"),
+    231: ("Normal-mode calibration", True, "retrospective_autonomous_sensitivity"),
+    232: ("Calibration reliability gate", True, "retrospective_autonomous_ablation"),
+    233: ("Conformal FDR", True, "retrospective_autonomous_sensitivity"),
+    234: ("Precision-first rescue", False, "retrospective_research_review_only"),
+    235: ("Shadow export", False, "shadow_mode_export"),
+}
+for _number, (_label, _eligible, _scope) in _HARD_ALERT_QUALITY_EXPERIMENTS.items():
+    EXPERIMENTS[f"experiment_{_number}_hard_alert_quality"] = {
+        "label": f"Exp{_number} - {_label}",
+        "comparison_eligible": _eligible,
+        "scope": _scope,
+        "status_reason": "connected Exp226-235 hard-alert quality pipeline",
+        "autonomous_metric_scope": (
+            "retrospective_hard_alert" if _eligible else "not_primary_autonomous_metric"
+        ),
+        "review_metric_scope": "retrospective_human_assisted_diagnostic",
+        "detail_csv": HARD_ALERT_QUALITY_ROOT / "results" / f"experiment_{_number}_results.csv",
+        "summary_csv": HARD_ALERT_QUALITY_ROOT / "results" / f"experiment_{_number}_summary.csv",
+        "stdout_log": HARD_ALERT_QUALITY_ROOT / "logs" / "pipeline.log",
+        "expected_datasets": EXPECTED_DATASETS,
+    }
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",

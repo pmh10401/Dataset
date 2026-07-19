@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import ast
+import csv
 import json
 import os
 import tempfile
@@ -9,6 +11,22 @@ import numpy as np
 
 from experiments.exp226_235_hard_alert_quality.contracts import ScoreBundle
 from experiments.exp226_235_hard_alert_quality.database import sha256_file
+
+
+EXP153_ROOT = Path(
+    "/Users/minho/Documents/timesries project/outputs/exp153_157_train_only_improvements"
+)
+EXP153_MANIFEST = EXP153_ROOT / "01_score_cache_manifest.csv"
+EXP153_MANIFEST_SHA256 = "bf73796c046a6102fce53d3b6fc606afa1ed0a5161ebb6e92d94698ab56a68a0"
+CANONICAL_ROOT = Path("/Users/minho/Documents/Dataset/exp177_185_unattended")
+CANONICAL_MANIFEST = CANONICAL_ROOT / "exp180_canonical_score_manifest.csv"
+CANONICAL_MANIFEST_SHA256 = "36810c14a5cca10d9758aa55144bcd785e1bae4d12278039cac83af2b96901ce"
+SOURCE_NAMES = {
+    "rocket_exp40": "temporal_random_kernel",
+    "exp55_best": "frequency_image",
+    "exp56_best": "texture_shape",
+    "exp84": "auxiliary_texture_shape",
+}
 
 
 def _validated_vectors(values: dict[str, np.ndarray], kind: str) -> dict[str, np.ndarray]:
@@ -92,3 +110,84 @@ def load_verified_score_bundle(cache_path: Path, manifest_path: Path) -> ScoreBu
         provenance=dict(manifest.get("provenance", {})),
     )
 
+
+def _csv_map(path: Path, key: str) -> dict[str, dict[str, str]]:
+    with Path(path).open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    mapped = {str(row[key]): row for row in rows}
+    if len(mapped) != len(rows):
+        raise ValueError(f"duplicate manifest key: {path}")
+    return mapped
+
+
+class FrozenScoreRepository:
+    def __init__(
+        self,
+        source_rows: dict[str, dict[str, str]],
+        canonical_rows: dict[str, dict[str, str]],
+    ) -> None:
+        self.source_rows = source_rows
+        self.canonical_rows = canonical_rows
+
+    @classmethod
+    def from_frozen_manifests(cls) -> "FrozenScoreRepository":
+        if sha256_file(EXP153_MANIFEST) != EXP153_MANIFEST_SHA256:
+            raise ValueError("Exp153 score manifest SHA-256 mismatch")
+        if sha256_file(CANONICAL_MANIFEST) != CANONICAL_MANIFEST_SHA256:
+            raise ValueError("canonical score manifest SHA-256 mismatch")
+        source = _csv_map(EXP153_MANIFEST, "dataset_name")
+        canonical = _csv_map(CANONICAL_MANIFEST, "dataset_name")
+        if len(source) != 1117:
+            raise ValueError(f"full score source coverage mismatch: {len(source)}/1117")
+        return cls(source, canonical)
+
+    def load(self, dataset: str) -> ScoreBundle:
+        if dataset not in self.source_rows:
+            raise ValueError(f"dataset missing from full score manifest: {dataset}")
+        row = self.source_rows[dataset]
+        path = EXP153_ROOT / "cache" / row["cache_file"]
+        if sha256_file(path) != row["cache_sha256"]:
+            raise ValueError(f"full score cache SHA-256 mismatch: {dataset}")
+        raw_names = tuple(str(name) for name in ast.literal_eval(row["source_names"]))
+        train: dict[str, np.ndarray] = {}
+        test: dict[str, np.ndarray] = {}
+        with np.load(path, allow_pickle=False) as archive:
+            for raw_name in raw_names:
+                if raw_name not in SOURCE_NAMES:
+                    continue
+                name = SOURCE_NAMES[raw_name]
+                train[name] = np.asarray(archive[f"{raw_name}__train_oof"], dtype=float)
+                test[name] = np.asarray(archive[f"{raw_name}__test"], dtype=float)
+
+        canonical_available = dataset in self.canonical_rows
+        if canonical_available:
+            canonical_row = self.canonical_rows[dataset]
+            canonical_path = CANONICAL_ROOT / "canonical_score_cache" / canonical_row["score_file"]
+            if sha256_file(canonical_path) != canonical_row["score_sha256"]:
+                raise ValueError(f"canonical score cache SHA-256 mismatch: {dataset}")
+            with np.load(canonical_path, allow_pickle=False) as archive:
+                train["canonical_normal_state"] = np.asarray(
+                    archive["knn_local_gap__train_oof"], dtype=float
+                )
+                test["canonical_normal_state"] = np.asarray(
+                    archive["knn_local_gap__test"], dtype=float
+                )
+        train_lengths = {len(values) for values in train.values()}
+        test_lengths = {len(values) for values in test.values()}
+        if train_lengths != {int(row["n_train"])} or test_lengths != {int(row["n_test"])}:
+            raise ValueError(f"frozen score vector length mismatch: {dataset}")
+        return ScoreBundle(
+            dataset=dataset,
+            train_oof=_validated_vectors(train, "TRAIN OOF"),
+            test_scores=_validated_vectors(test, "TEST score"),
+            provenance={
+                "source_cache_sha256": row["cache_sha256"],
+                "canonical_available": canonical_available,
+                "canonical_cache_sha256": (
+                    self.canonical_rows[dataset]["score_sha256"] if canonical_available else None
+                ),
+                "n_train": int(row["n_train"]),
+                "n_test": int(row["n_test"]),
+                "train_target_length": int(row["train_target_len"]),
+            },
+        )

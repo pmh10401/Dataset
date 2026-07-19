@@ -12,6 +12,7 @@ from experiments.exp226_235_hard_alert_quality.baseline_exp137 import (
 )
 from experiments.exp226_235_hard_alert_quality.contracts import ScoreBundle
 from experiments.exp226_235_hard_alert_quality.score_cache import (
+    FrozenScoreRepository,
     load_verified_score_bundle,
     write_score_bundle,
 )
@@ -59,6 +60,25 @@ class Exp137BaselineTests(unittest.TestCase):
         self.assertEqual(report.hard_fp, 314)
         self.assertEqual(report.lane_overlap_datasets, 0)
         self.assertEqual(report.index_error_datasets, 0)
+
+
+class FrozenSourceIntegrationTests(unittest.TestCase):
+    def test_full_source_cache_loads_operational_names(self) -> None:
+        repository = FrozenScoreRepository.from_frozen_manifests()
+        bundle = repository.load("ACSF1_normal_0")
+        self.assertIn("temporal_random_kernel", bundle.train_oof)
+        self.assertIn("frequency_image", bundle.train_oof)
+        self.assertIn("texture_shape", bundle.train_oof)
+        self.assertEqual(len(bundle.train_oof["temporal_random_kernel"]), 16)
+        self.assertEqual(len(bundle.test_scores["temporal_random_kernel"]), 50)
+
+    def test_canonical_availability_is_explicit(self) -> None:
+        repository = FrozenScoreRepository.from_frozen_manifests()
+        available = repository.load("Adiac_normal_12")
+        unavailable = repository.load("ACSF1_normal_0")
+        self.assertIn("canonical_normal_state", available.train_oof)
+        self.assertNotIn("canonical_normal_state", unavailable.train_oof)
+        self.assertFalse(unavailable.provenance["canonical_available"])
 
 
 if __name__ == "__main__":
