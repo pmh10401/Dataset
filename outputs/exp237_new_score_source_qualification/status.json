@@ -1,0 +1,29 @@
+{
+  "autonomous_metric": "not_evaluated",
+  "child_pid": 94517,
+  "current_dataset": null,
+  "datasets_done": 1117,
+  "detail_csv": "/Users/minho/Documents/Dataset/exp237_new_score_source_qualification/experiment_237_results.csv",
+  "done": 1117,
+  "errors": 0,
+  "expected": 1117,
+  "expected_datasets": 1117,
+  "experiment_id": "experiment_237_new_score_source_qualification",
+  "id": "experiment_237_new_score_source_qualification",
+  "label": "Exp237 - New score-source qualification",
+  "phase": "completed",
+  "pid": 94517,
+  "progress_percent": 100.0,
+  "result_summary": {
+    "datasets": 1117,
+    "variants": 20
+  },
+  "review_metric": "research_candidates_only",
+  "rows": 22340,
+  "scope": "retrospective_research_score_source_qualification",
+  "started_at": "2026-07-19 19:47:55",
+  "status": "completed",
+  "stdout_log": "/Users/minho/Documents/Dataset/exp237_new_score_source_qualification/exp237_full.log",
+  "updated_at": "2026-07-19 19:47:55",
+  "updated_unix": 1784458075.3032372
+}
