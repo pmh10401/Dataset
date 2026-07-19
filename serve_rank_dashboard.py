@@ -1523,7 +1523,7 @@ HISTORICAL_EXPERIMENT_META = {
     },
     "experiment_142_policy_level_train_only": {
         "label": "Exp142 - policy-level TRAIN-only replay",
-        "history_status": "not_run",
+        "history_status": "completed_research",
         "comparison_eligible": False,
         "scope": "retrospective_policy_level_train_only",
         "status_reason": "no qualifying full result artifact found",
@@ -1969,6 +1969,39 @@ EXPERIMENTS["experiment_238_rocket_dimension_confidence"] = {
     ],
     "expected_datasets": EXPECTED_DATASETS,
 }
+
+EXP239_248_ROOT = DATA_DIR / "exp239_248_diverse_score_sources"
+_EXP239_248_SOURCES = {
+    239: "multiscale_wavelet_energy_deviation",
+    240: "ordinal_pattern_distribution_shift",
+    241: "symbolic_motif_rarity",
+    242: "complexity_signature_deviation",
+    243: "recurrence_dynamics_deviation",
+    244: "robust_state_space_innovation",
+    245: "smooth_fourier_normal_residual",
+    246: "transformation_consistency",
+    247: "masked_patch_context_error",
+    248: "nonlinear_normal_density",
+}
+for _number, _source_name in _EXP239_248_SOURCES.items():
+    _source_root = EXP239_248_ROOT / f"experiment_{_number}_{_source_name}"
+    EXPERIMENTS[f"experiment_{_number}_{_source_name}"] = {
+        "label": f"Exp{_number} - {_source_name.replace('_', ' ')}",
+        "history_status": "completed_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_score_source_qualification",
+        "status_reason": "score evidence audit; frozen Exp236 alert lanes remain unchanged",
+        "autonomous_metric_scope": "frozen_exp236_unchanged",
+        "review_metric_scope": "retrospective_research_candidates_only",
+        "detail_csv": _source_root / "results.csv",
+        "summary_csv": _source_root / "summary.csv",
+        "artifact_paths": [
+            _source_root / "prediction_manifest.json",
+            _source_root / "independent_reaggregation.json",
+            _source_root / "MANIFEST.json",
+        ],
+        "expected_datasets": EXPECTED_DATASETS,
+    }
 
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
@@ -4963,7 +4996,7 @@ def experiment_queue_snapshot(state, expected, experiment_ids=None, heartbeat=No
             continue
         detail_rows = read_csv_rows(info["detail_csv"])
         item_expected = expected_for_experiment(info, expected)
-        done = len({r.get("dataset_name") for r in detail_rows if r.get("dataset_name")})
+        done = len({r.get("dataset_name") or r.get("dataset") for r in detail_rows if r.get("dataset_name") or r.get("dataset")})
         row_count = len(detail_rows)
         hist_summary = ((history.get(exp_id) or {}).get("summary") or {})
         if exp_id in completed and done == 0 and hist_summary.get("datasets"):

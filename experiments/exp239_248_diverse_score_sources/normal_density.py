@@ -49,13 +49,14 @@ class NonlinearNormalDensity:
     def score_from_embeddings(self,train:np.ndarray,test:np.ndarray,seed:int)->ScoreResult:
         if len(train)<self.minimum_train:
             dummy=DatasetBundle("embedding",np.empty((len(train),1)),np.empty((len(test),1)),1);return abstained_result(self.name,dummy,self.minimum_train)
-        seeds=self.seeds or (int(seed),SECOND_SEED);train_by_seed=[];test_by_seed=[];test_typicality=[]
+        seeds=self.seeds or (int(seed),SECOND_SEED);train_by_seed=[];test_by_seed=[];train_typicality=[];test_typicality=[]
         for current_seed in seeds:
-            oof=np.empty(len(train))
+            oof=np.empty(len(train));oof_typicality=np.empty(len(train))
             for fold,(fit,query) in enumerate(crossfit_plan(len(train),seed=current_seed)):
-                model,center,scale=_fit_flow(train[fit],current_seed+fold,self.epochs,self.device);oof[query]=_flow_scores(model,train[query],center,scale,self.device)
+                model,center,scale=_fit_flow(train[fit],current_seed+fold,self.epochs,self.device);fit_nll=_flow_scores(model,train[fit],center,scale,self.device);oof[query]=_flow_scores(model,train[query],center,scale,self.device);oof_typicality[query]=np.abs(oof[query]-np.median(fit_nll))
             model,center,scale=_fit_flow(train,current_seed,self.epochs,self.device);test_nll=_flow_scores(model,test,center,scale,self.device);train_nll=_flow_scores(model,train,center,scale,self.device);train_by_seed.append(oof);test_by_seed.append(test_nll);test_typicality.append(np.abs(test_nll-np.median(train_nll)))
-        return ScoreResult(self.name,np.median(train_by_seed,axis=0),np.median(test_by_seed,axis=0),False,None,{"seeds":list(seeds),"epochs":self.epochs,"layers":4,"width":32,"device":self.device,"test_used_for_fit":False,"cross_fitted":True,"self_reference_violations":0,"contains_test_labels":False},artifacts={"test_typicality":np.median(test_typicality,axis=0),"train_nll_by_seed":np.asarray(train_by_seed),"test_nll_by_seed":np.asarray(test_by_seed)})
+            train_typicality.append(oof_typicality)
+        return ScoreResult(self.name,np.median(train_by_seed,axis=0),np.median(test_by_seed,axis=0),False,None,{"seeds":list(seeds),"epochs":self.epochs,"layers":4,"width":32,"device":self.device,"test_used_for_fit":False,"cross_fitted":True,"self_reference_violations":0,"contains_test_labels":False},artifacts={"train_typicality":np.median(train_typicality,axis=0),"test_typicality":np.median(test_typicality,axis=0),"train_nll_by_seed":np.asarray(train_by_seed),"test_nll_by_seed":np.asarray(test_by_seed)})
 
     def score(self,bundle:DatasetBundle,seed:int,artifact_dir:Path)->ScoreResult:
         path=Path(artifact_dir)/"masked_patch_embeddings.npz"

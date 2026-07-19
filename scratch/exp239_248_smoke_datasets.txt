@@ -1,0 +1,10 @@
+ACSF1_normal_0
+Adiac_normal_12
+Adiac_normal_25
+BME_normal_1
+Car_normal_1
+AllGestureWiimoteX_normal_1
+AllGestureWiimoteX_normal_3
+AllGestureWiimoteY_normal_2
+AllGestureWiimoteZ_normal_4
+AllGestureWiimoteZ_normal_7
