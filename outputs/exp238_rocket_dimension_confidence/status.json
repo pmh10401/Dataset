@@ -1,0 +1,23 @@
+{
+  "autonomous_metric": "frozen_exp236_unchanged",
+  "child_pid": 11785,
+  "current_dataset": null,
+  "datasets_done": 1117,
+  "detail_csv": "/Users/minho/Documents/Dataset/exp238_rocket_dimension_confidence/experiment_238_results.csv",
+  "done": 1117,
+  "errors": 0,
+  "expected": 1117,
+  "expected_datasets": 1117,
+  "experiment_id": "experiment_238_rocket_dimension_confidence",
+  "id": "experiment_238_rocket_dimension_confidence",
+  "label": "Exp238 - ROCKET dimension confidence",
+  "phase": "completed",
+  "pid": 11785,
+  "progress_percent": 100.0,
+  "review_metric": "priority_strata_only",
+  "scope": "retrospective_confidence_tier_audit",
+  "status": "completed",
+  "stdout_log": "/Users/minho/Documents/Dataset/exp238_rocket_dimension_confidence/exp238_full.log",
+  "updated_at": "2026-07-19 20:42:30",
+  "updated_unix": 1784461350.294373
+}
