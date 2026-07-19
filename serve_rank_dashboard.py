@@ -1918,6 +1918,23 @@ for _number, (_label, _eligible, _scope) in _HARD_ALERT_QUALITY_EXPERIMENTS.item
         "expected_datasets": EXPECTED_DATASETS,
     }
 
+EXPERIMENTS["experiment_236_three_source_hard_two_source_review"] = {
+    "label": "Exp236 - Three-source Hard expansion and two-source review",
+    "history_status": "completed_research",
+    "comparison_eligible": False,
+    "scope": "retrospective_candidate_packaging_selected_from_prior_test_review",
+    "status_reason": "requires newly locked holdout or prospective shadow validation before deployment",
+    "autonomous_metric_scope": "retrospective_autonomous_counterfactual",
+    "review_metric_scope": "human_assisted_diagnostic_only",
+    "detail_csv": DATA_DIR / "exp236_detection_coverage_expansion" / "experiment_236_results.csv",
+    "summary_csv": DATA_DIR / "exp236_detection_coverage_expansion" / "experiment_236_summary.csv",
+    "artifact_paths": [
+        DATA_DIR / "exp236_detection_coverage_expansion" / "exp236_prediction_manifest.json",
+        DATA_DIR / "exp236_detection_coverage_expansion" / "exp236_independent_reaggregation.json",
+    ],
+    "expected_datasets": EXPECTED_DATASETS,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
