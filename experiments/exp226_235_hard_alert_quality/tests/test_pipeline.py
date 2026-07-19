@@ -160,6 +160,18 @@ class ExperimentRegistryTests(unittest.TestCase):
         self.assertEqual(rows[0].evidence["status"], "blocked_missing_frozen_seed_repetitions")
         self.assertFalse(rows[0].autonomous_alert)
 
+    def test_abstained_source_never_reuses_baseline_hard_as_autonomous(self) -> None:
+        abstained = ScoreBundle(
+            dataset="demo",
+            train_oof={"temporal_random_kernel": np.asarray([])},
+            test_scores={"temporal_random_kernel": np.asarray([])},
+            provenance={"source_abstained": True, "n_train": 4, "n_test": 4},
+        )
+        rows = generate_rows_for_dataset(227, self.baseline, abstained)
+        self.assertEqual(rows[0].hard_indices, ())
+        self.assertEqual(rows[0].review_indices, (0, 1, 2))
+        self.assertEqual(rows[0].evidence["status"], "calibration_abstention_n_train_lt_5")
+
 
 class EvaluationBoundaryTests(unittest.TestCase):
     def test_hard_and_review_metrics_are_separate(self) -> None:

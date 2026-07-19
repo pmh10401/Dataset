@@ -159,6 +159,25 @@ class FrozenScoreRepository:
                 train[name] = np.asarray(archive[f"{raw_name}__train_oof"], dtype=float)
                 test[name] = np.asarray(archive[f"{raw_name}__test"], dtype=float)
 
+        source_abstained = bool(int(row.get("abstain", "0") or 0))
+        if source_abstained:
+            if any(len(values) != 0 for values in (*train.values(), *test.values())):
+                raise ValueError(f"abstained source contains non-empty vectors: {dataset}")
+            return ScoreBundle(
+                dataset=dataset,
+                train_oof=_validated_vectors(train, "TRAIN OOF"),
+                test_scores=_validated_vectors(test, "TEST score"),
+                provenance={
+                    "source_cache_sha256": row["cache_sha256"],
+                    "source_abstained": True,
+                    "canonical_available": False,
+                    "canonical_cache_sha256": None,
+                    "n_train": int(row["n_train"]),
+                    "n_test": int(row["n_test"]),
+                    "train_target_length": int(row["train_target_len"]),
+                },
+            )
+
         canonical_available = dataset in self.canonical_rows
         if canonical_available:
             canonical_row = self.canonical_rows[dataset]
@@ -182,6 +201,7 @@ class FrozenScoreRepository:
             test_scores=_validated_vectors(test, "TEST score"),
             provenance={
                 "source_cache_sha256": row["cache_sha256"],
+                "source_abstained": False,
                 "canonical_available": canonical_available,
                 "canonical_cache_sha256": (
                     self.canonical_rows[dataset]["score_sha256"] if canonical_available else None

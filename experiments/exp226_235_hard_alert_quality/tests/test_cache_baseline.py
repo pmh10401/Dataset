@@ -80,6 +80,13 @@ class FrozenSourceIntegrationTests(unittest.TestCase):
         self.assertNotIn("canonical_normal_state", unavailable.train_oof)
         self.assertFalse(unavailable.provenance["canonical_available"])
 
+    def test_small_train_abstention_is_explicit_not_a_length_error(self) -> None:
+        repository = FrozenScoreRepository.from_frozen_manifests()
+        bundle = repository.load("FiftyWords_normal_49")
+        self.assertTrue(bundle.provenance["source_abstained"])
+        self.assertEqual(bundle.provenance["n_train"], 4)
+        self.assertTrue(all(len(values) == 0 for values in bundle.train_oof.values()))
+
 
 if __name__ == "__main__":
     unittest.main()

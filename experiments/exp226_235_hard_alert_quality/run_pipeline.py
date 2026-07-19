@@ -268,6 +268,19 @@ def generate_rows_for_dataset(
     experiment: int, baseline: BaselineLanes, scores: ScoreBundle
 ) -> list[PredictionRow]:
     number = int(experiment)
+    if bool(scores.provenance.get("source_abstained", False)):
+        return [_prediction(
+            number,
+            baseline,
+            "calibration_abstention",
+            (),
+            baseline.hard,
+            {
+                "status": "calibration_abstention_n_train_lt_5",
+                "n_train": int(scores.provenance.get("n_train", 0)),
+                "source_abstained": True,
+            },
+        )]
     pvalues = _source_pvalues(scores)
     hard = set(baseline.hard)
     available = sorted(pvalues)
