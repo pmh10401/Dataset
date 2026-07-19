@@ -1,5 +1,10 @@
 # Exp226 TRAIN-normal Conditional Confirmation Risk Audit Design
 
+> Superseded for implementation structure by
+> `2026-07-19-exp226-235-hard-alert-quality-pipeline-design.md`. This document
+> remains the preregistered Exp226 method contract and is not deleted or
+> rewritten after observing results.
+
 ## 목적
 
 Exp225의 검토 후보 규칙을 TEST 라벨이나 TEST 성능 없이 TRAIN 정상 pseudo-run에 그대로 재생한다. 이 실험은 자동 경보를 만들거나 운영 정책을 선택하지 않는다. 다음 세 조건이 같은 TRAIN 정상 인스턴스에서 동시에 또는 부분적으로 발생하는 빈도만 측정한다.

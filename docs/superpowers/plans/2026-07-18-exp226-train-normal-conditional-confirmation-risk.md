@@ -1,5 +1,9 @@
 # Exp226 TRAIN-normal Conditional Confirmation Risk Audit Implementation Plan
 
+> Superseded before implementation by the connected Exp226-235 pipeline design
+> in `docs/superpowers/specs/2026-07-19-exp226-235-hard-alert-quality-pipeline-design.md`.
+> No Exp226 production code was created from this standalone plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replay the frozen Exp225 review rule on aligned TRAIN-normal pseudo-runs and report dual/single confirmation risk without reading TEST data or selecting a policy.
