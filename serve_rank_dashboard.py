@@ -1935,6 +1935,24 @@ EXPERIMENTS["experiment_236_three_source_hard_two_source_review"] = {
     "expected_datasets": EXPECTED_DATASETS,
 }
 
+EXPERIMENTS["experiment_237_new_score_source_qualification"] = {
+    "label": "Exp237 - New score-source qualification",
+    "history_status": "research_audit",
+    "comparison_eligible": False,
+    "scope": "retrospective_research_score_source_qualification",
+    "status_reason": "new score sources are audited before any operational policy integration",
+    "autonomous_metric_scope": "not_evaluated",
+    "review_metric_scope": "retrospective_research_candidates_only",
+    "detail_csv": DATA_DIR / "exp237_new_score_source_qualification" / "experiment_237_results.csv",
+    "summary_csv": DATA_DIR / "exp237_new_score_source_qualification" / "experiment_237_summary.csv",
+    "stdout_log": DATA_DIR / "exp237_new_score_source_qualification" / "exp237_full.log",
+    "artifact_paths": [
+        DATA_DIR / "exp237_new_score_source_qualification" / "exp237_prediction_manifest.json",
+        DATA_DIR / "exp237_new_score_source_qualification" / "exp237_independent_reaggregation.json",
+    ],
+    "expected_datasets": EXPECTED_DATASETS,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",

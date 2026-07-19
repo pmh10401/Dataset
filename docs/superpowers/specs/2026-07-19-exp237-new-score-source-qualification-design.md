@@ -21,6 +21,7 @@ The first three are primary compute paths. The two bounded approximations are re
 - Target length, preprocessing, model fitting, score calibration, and source qualification use TRAIN normal values only.
 - Datasets with fewer than five TRAIN rows abstain from calibration.
 - A deterministic five-fold plan with seed `20260719` generates one OOF score per TRAIN row.
+- The source-computation length is capped at 256 points by deterministic interpolation after the TRAIN-derived alignment length is fixed. This cap is frozen before TEST evaluation.
 - Full TRAIN is then fitted once to score TEST rows.
 - Frozen alpha grid: `0.005, 0.01, 0.02, 0.05`. All variants are reported; none is selected from TEST outcomes.
 - Prediction JSONL contains score-derived candidate indices and provenance, but no labels or TP/FP/F1 fields.
