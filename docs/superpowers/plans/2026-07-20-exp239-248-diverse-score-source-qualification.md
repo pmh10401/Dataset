@@ -201,7 +201,7 @@ Emit the exact fixed feature vector from the design and apply shrinkage Mahalano
 
 - [ ] **Step 7: Implement Exp243 recurrence dynamics**
 
-Build delay embeddings with dimensions 2/3, select delay from TRAIN-only autocorrelation clipped to 1..16, and use a TRAIN distance 10th percentile recurrence threshold. Emit recurrence rate, determinism, laminarity, trapping time, and line entropies before robust distance scoring.
+Deterministically resample TRAIN-aligned traces to at most 256 points, build delay embeddings with dimensions 2/3, select delay from TRAIN-only autocorrelation clipped to 1..16, and use a TRAIN distance 10th percentile recurrence threshold. Emit recurrence rate, determinism, laminarity, trapping time, and line entropies before robust distance scoring.
 
 - [ ] **Step 8: Run source tests and compile**
 

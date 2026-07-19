@@ -89,6 +89,7 @@ Every configuration is fixed before full evaluation and included in a hashed con
 
 ### Exp243
 
+- Recurrence feature extraction deterministically resamples each TRAIN-aligned trace to at most 256 points to bound quadratic distance cost.
 - Delay embedding dimensions: 2 and 3.
 - Delay selected from a fixed TRAIN-only autocorrelation rule, clipped to `[1, 16]`.
 - Recurrence threshold: TRAIN-only distance quantile fixed at 10%.
