@@ -48,7 +48,7 @@ def build_prediction_rows(scores: ScoreBundle) -> list[SourcePrediction]:
         else:
             pvalues = empirical_upper_pvalues(scores.train_oof[source], scores.test_scores[source])
             for alpha in ALPHAS:
-                indices = tuple(np.flatnonzero(pvalues <= alpha).astype(int))
+                indices = tuple(int(value) for value in np.flatnonzero(pvalues <= alpha))
                 rows.append(SourcePrediction(
                     experiment_id="experiment_237_new_score_source_qualification",
                     dataset=scores.dataset,

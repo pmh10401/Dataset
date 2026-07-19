@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
+from experiments.exp226_235_hard_alert_quality.contracts import ScoreBundle
 from experiments.exp237_new_score_source_qualification.core import (
     ALPHAS,
     SOURCE_NAMES,
@@ -115,6 +116,20 @@ class PredictionContractTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "SHA-256"):
                 load_verified_predictions(prediction_path, manifest_path)
+
+    def test_nonempty_candidate_indices_are_json_serializable_python_ints(self) -> None:
+        scores = ScoreBundle(
+            dataset="forced",
+            train_oof={name: np.arange(300, dtype=float) for name in SOURCE_NAMES},
+            test_scores={name: np.asarray([1000.0]) for name in SOURCE_NAMES},
+            provenance={"n_train": 300, "n_test": 1, "calibration_abstained": False},
+        )
+        rows = build_prediction_rows(scores)
+        nonempty = [row for row in rows if row.candidate_indices]
+        self.assertTrue(nonempty)
+        self.assertTrue(all(type(index) is int for row in nonempty for index in row.candidate_indices))
+        with tempfile.TemporaryDirectory() as directory:
+            freeze_predictions(nonempty, Path(directory) / "p.jsonl", Path(directory) / "m.json")
 
     def test_evaluation_is_separate_and_summarizes_source_alpha(self) -> None:
         bundle = build_score_bundle(
