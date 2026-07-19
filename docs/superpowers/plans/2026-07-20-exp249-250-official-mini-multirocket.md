@@ -14,6 +14,8 @@
 - Use the exact transformer, seed, alpha, score, and lane contracts from the design document.
 - Use no TEST labels, positions, lengths for budgets, family routing, or past family TEST performance during prediction.
 - Run Exp249 before Exp250 with seven outer workers and one inner aeon thread.
+- Cap each transformer/KNN TRAIN reference at a deterministic 1,000 rows while retaining OOF scores for every TRAIN row.
+- Transform TRAIN-fold and TEST queries in chunks of 128 to bound memory.
 - Do not claim prospective or deployment validation.
 
 ---
@@ -103,4 +105,3 @@
 - [ ] Verify all variants have 10 rows per alpha, no missing datasets, no forbidden prediction fields, and zero independent mismatches.
 - [ ] Confirm no other experiment process or canonical queue is active.
 - [ ] Start the full sequential queue and verify the dashboard shows Exp249 running and Exp250 queued.
-

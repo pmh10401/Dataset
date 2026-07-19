@@ -1,0 +1,10 @@
+Phoneme_normal_39
+FiftyWords_normal_49
+Rock_normal_3
+ACSF1_normal_0
+BME_normal_1
+Car_normal_1
+Fish_normal_1
+FreezerRegularTrain_normal_1
+HandOutlines_normal_0
+EthanolLevel_normal_1

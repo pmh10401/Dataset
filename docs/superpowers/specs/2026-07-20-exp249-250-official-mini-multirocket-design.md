@@ -54,14 +54,18 @@ metrics.
 
 For each deterministic fold and seed:
 
-1. fit the transformer on fold-fit TRAIN-normal instances only;
-2. transform fold-fit and fold-query instances;
-3. robust-scale features using fold-fit median and IQR only;
-4. calculate KNN-3 local-gap query scores against fold-fit features;
-5. place the scores into one OOF vector.
+1. select at most 1,000 fold-fit TRAIN-normal instances with a frozen seed;
+2. fit the transformer on that fold-fit reference only;
+3. transform fold-query instances in fixed chunks of 128;
+4. robust-scale features using the fold-fit reference median and IQR only;
+5. calculate KNN-3 local-gap query scores against the fold-fit reference;
+6. place the scores into one OOF vector.
 
-Fit a fresh transformer on all TRAIN-normal instances to transform TRAIN and
-TEST. Use the full TRAIN feature reference for TEST KNN-3 local-gap scores.
+Fit a fresh transformer on a frozen-seed reference of at most 1,000
+TRAIN-normal instances and transform TEST in chunks of 128. All TRAIN-normal
+instances still receive OOF scores and remain in the empirical calibration
+reference. The cap controls memory for datasets with up to 18,378 TRAIN rows
+and does not use TEST labels, TEST length, or TEST performance.
 The TEST set never affects alignment length, transformer parameters, scaling,
 distance reference, threshold, or candidate policy.
 
@@ -81,8 +85,9 @@ deployment setting.
 ## Execution
 
 - Seven outer dataset workers; one inner aeon thread per worker.
+- Maximum transformer/KNN TRAIN reference: 1,000, selected deterministically.
+- Query transform chunk size: 128.
 - Exp249 runs before Exp250.
 - Per-dataset NPZ/JSON caches are hash-verified and resumable.
 - A mixed 10-dataset smoke set must pass before the full queue starts.
 - The dashboard must show Exp249/250 queue, active dataset, progress, and errors.
-

@@ -2003,6 +2003,32 @@ for _number, _source_name in _EXP239_248_SOURCES.items():
         "expected_datasets": EXPECTED_DATASETS,
     }
 
+EXP249_250_ROOT = DATA_DIR / "exp249_250_official_mini_multirocket"
+_EXP249_250_SOURCES = {
+    249: "official_minirocket",
+    250: "official_multirocket",
+}
+for _number, _source_name in _EXP249_250_SOURCES.items():
+    _source_root = EXP249_250_ROOT / f"experiment_{_number}_{_source_name}"
+    EXPERIMENTS[f"experiment_{_number}_{_source_name}"] = {
+        "label": f"Exp{_number} - {_source_name.replace('_', ' ')}",
+        "history_status": "planned_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_score_source_qualification",
+        "status_reason": "official aeon ROCKET evidence audit; frozen Exp236 alert lanes remain unchanged",
+        "autonomous_metric_scope": "frozen_exp236_unchanged",
+        "review_metric_scope": "retrospective_research_candidates_only",
+        "detail_csv": _source_root / "results.csv",
+        "summary_csv": _source_root / "summary.csv",
+        "stdout_log": _source_root / "full.log",
+        "artifact_paths": [
+            _source_root / "prediction_manifest.json",
+            _source_root / "independent_reaggregation.json",
+            _source_root / "MANIFEST.json",
+        ],
+        "expected_datasets": EXPECTED_DATASETS,
+    }
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
