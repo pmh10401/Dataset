@@ -118,6 +118,7 @@ Every configuration is fixed before full evaluation and included in a hashed con
 - Objective: identify or align fixed transforms using TRAIN-normal traces only.
 - Score: mean latent inconsistency across transforms relative to TRAIN-normal OOF inconsistency.
 - Seeds: two fixed seeds; both are reported and their intersection is reported separately.
+- Training epochs: 8 per fold and seed.
 - Eligibility: `n_train >= 20`.
 
 ### Exp247
@@ -126,6 +127,7 @@ Every configuration is fixed before full evaluation and included in a hashed con
 - Patch and mask ratios: frozen config, one model size, two fixed seeds.
 - Score: 0.5 masked reconstruction error plus 0.5 robust latent nearest-normal distance after TRAIN-only standardization.
 - Eligibility: `n_train >= 20`.
+- Training epochs: 12 per fold and seed.
 
 ### Exp248
 
@@ -134,6 +136,7 @@ Every configuration is fixed before full evaluation and included in a hashed con
 - Score: ensemble median negative log density.
 - Eligibility: `n_train >= 50`; otherwise model-specific abstention.
 - Raw likelihood and typicality-corrected rank are both reported; neither is selected from TEST metrics.
+- Training epochs: 40 per fold and seed.
 
 ## 6. OOF Calibration Contract
 

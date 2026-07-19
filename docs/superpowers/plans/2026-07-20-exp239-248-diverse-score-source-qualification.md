@@ -324,7 +324,7 @@ Use the compact encoder and a small convolutional decoder. Freeze mask ratio at 
 
 - [ ] **Step 6: Implement Exp248 compact RealNVP density**
 
-Use four affine coupling layers of width 32 on Exp247's 32-dimensional embeddings, fixed standard-normal base, 100 epochs, early stopping from TRAIN folds only, and two fixed seeds. Report median negative log density and typicality-corrected rank as separate sensitivity variants.
+Use four affine coupling layers of width 32 on Exp247's 32-dimensional embeddings, fixed standard-normal base, 40 epochs, early stopping from TRAIN folds only, and two fixed seeds. Report median negative log density and typicality-corrected rank as separate sensitivity variants.
 
 - [ ] **Step 7: Benchmark CPU and MPS smoke parity**
 
