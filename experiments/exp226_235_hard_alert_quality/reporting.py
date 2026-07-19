@@ -8,6 +8,20 @@ from pathlib import Path
 import numpy as np
 
 
+DASHBOARD_POLICY_VARIANTS = {
+    226: ("train_normal_conditional_risk",),
+    227: ("dual_only", "single_or_dual"),
+    228: ("margin_0", "margin_0.5", "margin_0.8"),
+    229: ("weight_0.5", "weight_0.67", "weight_0.75"),
+    230: ("seed_stability_unavailable",),
+    231: ("normal_modes_1", "normal_modes_2", "normal_modes_4"),
+    232: ("review_only",),
+    233: ("fdr_0.005", "fdr_0.01", "fdr_0.02", "fdr_0.05"),
+    234: ("minimum_sources_2", "minimum_sources_3", "minimum_sources_4"),
+    235: ("shadow_export",),
+}
+
+
 def _metrics(indices: Iterable[int], labels: np.ndarray) -> dict[str, object]:
     selected = {int(value) for value in indices}
     if selected and (min(selected) < 0 or max(selected) >= len(labels)):
@@ -101,6 +115,26 @@ def summarize_evaluated_rows(
             }
         )
     return summaries
+
+
+def dashboard_policy_summaries(
+    experiment: int, rows: Iterable[dict[str, object]]
+) -> list[dict[str, object]]:
+    source = list(rows)
+    fallback_names = {"calibration_abstention"}
+    if int(experiment) == 227:
+        fallback_names.add("canonical_unavailable")
+    fallbacks = [row for row in source if str(row.get("variant")) in fallback_names]
+    output: list[dict[str, object]] = []
+    for variant in DASHBOARD_POLICY_VARIANTS[int(experiment)]:
+        selected = [row for row in source if str(row.get("variant")) == variant]
+        if not selected:
+            continue
+        combined = [{**row, "variant": variant} for row in selected + fallbacks]
+        summary = summarize_evaluated_rows(combined)[0]
+        summary["dashboard_all_dataset_view"] = 1
+        output.append(summary)
+    return output
 
 
 def write_csv(path: Path, rows: list[dict[str, object]]) -> None:

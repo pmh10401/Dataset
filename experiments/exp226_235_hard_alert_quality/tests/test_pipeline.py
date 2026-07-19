@@ -22,6 +22,7 @@ from experiments.exp226_235_hard_alert_quality.run_pipeline import (
     write_pipeline_status,
 )
 from experiments.exp226_235_hard_alert_quality.reporting import (
+    dashboard_policy_summaries,
     evaluate_prediction_rows,
     summarize_evaluated_rows,
 )
@@ -121,6 +122,21 @@ class PipelineStatusTests(unittest.TestCase):
         for number in range(226, 236):
             self.assertIn(f"experiment_{number}_hard_alert_quality", EXPERIMENTS)
 
+    def test_dashboard_selects_hard_metric_variant(self) -> None:
+        from serve_rank_dashboard import best_summary_row, result_name
+
+        best = best_summary_row(
+            "experiment_228_hard_alert_quality",
+            {},
+            {},
+            [
+                {"variant": "calibration_abstention", "mean_hard_f1": "0.0"},
+                {"variant": "margin_0", "mean_hard_f1": "0.0619"},
+            ],
+        )
+        self.assertEqual(best["variant"], "margin_0")
+        self.assertEqual(result_name(best), "margin_0")
+
 
 class ExperimentRegistryTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -159,6 +175,14 @@ class ExperimentRegistryTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0].evidence["status"], "blocked_missing_frozen_seed_repetitions")
         self.assertFalse(rows[0].autonomous_alert)
+
+    def test_exp234_uses_connected_pipeline_experiment_id(self) -> None:
+        rows = generate_rows_for_dataset(234, self.baseline, self.scores)
+        self.assertTrue(rows)
+        self.assertTrue(
+            all(row.experiment_id == "experiment_234_hard_alert_quality" for row in rows)
+        )
+        self.assertTrue(all(not row.autonomous_alert for row in rows))
 
     def test_abstained_source_never_reuses_baseline_hard_as_autonomous(self) -> None:
         abstained = ScoreBundle(
@@ -233,6 +257,16 @@ class EvaluationBoundaryTests(unittest.TestCase):
         self.assertAlmostEqual(summary["hard_precision"], 0.75)
         self.assertEqual(summary["review_candidates"], 3)
         self.assertEqual(summary["research_candidates"], 1)
+
+    def test_dashboard_policy_summary_includes_abstention_rows(self) -> None:
+        rows = [
+            {"experiment_id": "experiment_228_hard_alert_quality", "dataset": "A", "variant": "margin_0", "hard_tp": 1, "hard_fp": 0, "hard_fn": 0, "hard_f1": 1.0, "review_tp": 0, "review_fp": 0, "research_tp": 0, "research_fp": 0},
+            {"experiment_id": "experiment_228_hard_alert_quality", "dataset": "B", "variant": "calibration_abstention", "hard_tp": 0, "hard_fp": 0, "hard_fn": 1, "hard_f1": 0.0, "review_tp": 1, "review_fp": 0, "research_tp": 0, "research_fp": 0},
+        ]
+        summary = dashboard_policy_summaries(228, rows)[0]
+        self.assertEqual(summary["datasets"], 2)
+        self.assertEqual(summary["variant"], "margin_0")
+        self.assertEqual(summary["mean_hard_f1"], 0.5)
 
 
 if __name__ == "__main__":

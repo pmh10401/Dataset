@@ -42,11 +42,11 @@ from experiments.exp226_235_hard_alert_quality.exp231_normal_mode_calibration im
 from experiments.exp226_235_hard_alert_quality.exp232_calibration_reliability_gate import reliability_state
 from experiments.exp226_235_hard_alert_quality.exp233_conformal_fdr import FDR_LEVELS, bh_indices
 from experiments.exp226_235_hard_alert_quality.exp234_precision_first_rescue import (
-    build_rescue_prediction,
     research_rescue_candidates,
 )
 from experiments.exp226_235_hard_alert_quality.exp235_shadow_export import build_shadow_rows
 from experiments.exp226_235_hard_alert_quality.reporting import (
+    dashboard_policy_summaries,
     evaluate_prediction_rows,
     summarize_evaluated_rows,
     write_csv,
@@ -392,13 +392,17 @@ def generate_rows_for_dataset(
         excluded = set(baseline.hard) | set(baseline.standard_review) | set(baseline.priority_review)
         hits = {name: set(np.flatnonzero(values <= CONFIRMATION_ALPHA)) for name, values in pvalues.items()}
         return [
-            build_rescue_prediction(
+            PredictionRow(
+                experiment_id="experiment_234_hard_alert_quality",
                 dataset=baseline.dataset,
                 variant=f"minimum_sources_{minimum}",
-                candidate_indices=research_rescue_candidates(
+                research_indices=tuple(sorted(research_rescue_candidates(
                     source_hits=hits, excluded_indices=excluded, minimum_sources=minimum
-                ),
+                ))),
                 evidence={"minimum_sources": minimum, "available_sources": available},
+                autonomous_alert=False,
+                contains_test_labels=False,
+                contains_evaluation_metrics=False,
             )
             for minimum in (2, 3, 4)
             if minimum <= len(hits)
@@ -672,16 +676,23 @@ def run_report_stage(
     experiments: tuple[int, ...], *, output_root: Path = OUTPUT_ROOT
 ) -> Path:
     rows: list[dict[str, object]] = []
+    dashboard_rows: list[dict[str, object]] = []
     for experiment in experiments:
         path = Path(output_root) / "results" / f"experiment_{experiment}_summary.csv"
         if not path.exists():
             continue
         with path.open(newline="", encoding="utf-8") as handle:
             rows.extend(csv.DictReader(handle))
+        result_path = Path(output_root) / "results" / f"experiment_{experiment}_results.csv"
+        with result_path.open(newline="", encoding="utf-8") as handle:
+            dashboard_rows.extend(
+                dashboard_policy_summaries(experiment, list(csv.DictReader(handle)))
+            )
     if not rows:
         raise ValueError("no experiment summaries available for report")
     output = REPO_OUTPUT_ROOT / "experiment_comparison.csv"
     write_csv(output, rows)
+    write_csv(Path(output_root) / "results" / "dashboard_policy_summary.csv", dashboard_rows)
     return output
 
 

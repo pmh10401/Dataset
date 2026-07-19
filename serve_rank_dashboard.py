@@ -1913,7 +1913,7 @@ for _number, (_label, _eligible, _scope) in _HARD_ALERT_QUALITY_EXPERIMENTS.item
         ),
         "review_metric_scope": "retrospective_human_assisted_diagnostic",
         "detail_csv": HARD_ALERT_QUALITY_ROOT / "results" / f"experiment_{_number}_results.csv",
-        "summary_csv": HARD_ALERT_QUALITY_ROOT / "results" / f"experiment_{_number}_summary.csv",
+        "summary_csv": HARD_ALERT_QUALITY_ROOT / "results" / "dashboard_policy_summary.csv",
         "stdout_log": HARD_ALERT_QUALITY_ROOT / "logs" / "pipeline.log",
         "expected_datasets": EXPECTED_DATASETS,
     }
@@ -3715,6 +3715,8 @@ def result_name(row):
         parts.append(row["strategy"])
     if row.get("threshold_method"):
         parts.append(row["threshold_method"])
+    if row.get("variant"):
+        parts.append(row["variant"])
     return " / ".join(parts) or "-"
 
 
@@ -3833,7 +3835,9 @@ def best_summary_row(exp_id, info, history, summary_rows=None):
             rows = operational_rows
 
         def score(row):
-            value = first_number(row, ["mean_f1", "f1_evt", "mean_f1_evt", "f1"])
+            value = first_number(
+                row, ["mean_hard_f1", "mean_f1", "f1_evt", "mean_f1_evt", "f1"]
+            )
             return value if value is not None else float("-inf")
         return max(rows, key=score)
 
@@ -3922,7 +3926,7 @@ def completed_result_snapshot(state):
             alert_precision = normalized["alert_precision"]
             if alert_precision is None:
                 alert_precision = alert_precision_from(mean_tp, mean_fp)
-            datasets = first_number(best, ["num_datasets"]) or summary_meta.get("datasets")
+            datasets = first_number(best, ["datasets", "num_datasets"]) or summary_meta.get("datasets")
             best_strategy = result_name(best)
             history_configs = (summary_meta.get("configs") or {}) if isinstance(summary_meta, dict) else {}
             history_values = history_configs.get(best_strategy) or {}
