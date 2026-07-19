@@ -1953,6 +1953,23 @@ EXPERIMENTS["experiment_237_new_score_source_qualification"] = {
     "expected_datasets": EXPECTED_DATASETS,
 }
 
+EXPERIMENTS["experiment_238_rocket_dimension_confidence"] = {
+    "label": "Exp238 - ROCKET dimension confidence",
+    "history_status": "research_audit",
+    "comparison_eligible": False,
+    "scope": "retrospective_confidence_tier_audit",
+    "status_reason": "Exp236 lanes remain frozen; dimensions only label confidence and review priority",
+    "autonomous_metric_scope": "frozen_exp236_unchanged",
+    "review_metric_scope": "retrospective_priority_strata_only",
+    "detail_csv": DATA_DIR / "exp238_rocket_dimension_confidence" / "experiment_238_results.csv",
+    "summary_csv": DATA_DIR / "exp238_rocket_dimension_confidence" / "experiment_238_summary.csv",
+    "stdout_log": DATA_DIR / "exp238_rocket_dimension_confidence" / "exp238_full.log",
+    "artifact_paths": [
+        DATA_DIR / "exp238_rocket_dimension_confidence" / "exp238_prediction_manifest.json",
+    ],
+    "expected_datasets": EXPECTED_DATASETS,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
