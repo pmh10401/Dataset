@@ -25,7 +25,7 @@ Exp254는 Exp252의 단순 통계 특징과 다른 구조 정보를 추출한다
 - TEST 라벨은 동결된 prediction 평가에만 사용
 - seed: `20260723`
 - 정상 TRAIN 최소 개수: 5
-- working length: TRAIN에서 정한 정렬 길이를 사용하되 최대 256으로 고정 압축
+- working length: TRAIN에서 정한 정렬 길이를 사용하되 32 미만은 32로 보간하고 최대 256으로 고정 압축
 - score: KNN-3 local-gap
 - calibration: 5-fold TRAIN OOF empirical conformal
 - alpha: 0.005, 0.01, 0.02, 0.05

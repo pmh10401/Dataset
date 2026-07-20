@@ -2091,6 +2091,27 @@ EXPERIMENTS["experiment_253_guarded_standard_to_hard_expansion"] = {
     "expected_datasets": EXPECTED_DATASETS,
 }
 
+EXP254_ROOT = DATA_DIR / "exp254_sktime_structural_features"
+EXPERIMENTS["experiment_254_sktime_structural_features"] = {
+    "label": "Exp254 - sktime structural features",
+    "history_status": "planned_research",
+    "comparison_eligible": False,
+    "scope": "retrospective_score_source_qualification",
+    "status_reason": "RandomInterval, MatrixProfile, SAX, SFA structural evidence; frozen alert lanes unchanged",
+    "autonomous_metric_scope": "frozen_exp236_and_exp253_unchanged",
+    "review_metric_scope": "retrospective_research_candidates_only",
+    "detail_csv": EXP254_ROOT / "results.csv",
+    "summary_csv": EXP254_ROOT / "summary.csv",
+    "stdout_log": EXP254_ROOT / "full.log",
+    "artifact_paths": [
+        EXP254_ROOT / "prediction_manifest.json",
+        EXP254_ROOT / "independent_reaggregation.json",
+        EXP254_ROOT / "RESULT_REPORT.md",
+        EXP254_ROOT / "MANIFEST.json",
+    ],
+    "expected_datasets": EXPECTED_DATASETS,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
