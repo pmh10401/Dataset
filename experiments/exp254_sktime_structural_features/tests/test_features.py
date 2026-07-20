@@ -9,6 +9,7 @@ from experiments.exp254_sktime_structural_features.features import (
     FEATURE_DIMENSIONS,
     StructuralFeatureExtractor,
     _profile_summary,
+    _sax_symbols_instancewise,
     matrix_profile_windows,
 )
 
@@ -68,6 +69,19 @@ class StructuralFeatureTest(unittest.TestCase):
             result = extractor._matrix_profile(panel)
         self.assertFalse([item for item in seen if issubclass(item.category, RuntimeWarning)])
         self.assertEqual(result.shape, (2, 16))
+
+    def test_sax_is_instancewise_and_constant_maps_to_center(self) -> None:
+        first = np.linspace(-1.0, 1.0, 32)
+        other = np.linspace(3.0, -2.0, 32)
+        single = _sax_symbols_instancewise(first.reshape(1, 1, -1), alphabet_size=8)
+        together = _sax_symbols_instancewise(
+            np.stack([first, other])[:, np.newaxis, :], alphabet_size=8
+        )
+        np.testing.assert_array_equal(single[0], together[0])
+        constant = _sax_symbols_instancewise(
+            np.ones((1, 1, 32), dtype=float), alphabet_size=8
+        )
+        np.testing.assert_array_equal(constant, np.full((1, 32), 4, dtype=int))
 
 
 if __name__ == "__main__":

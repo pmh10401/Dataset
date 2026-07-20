@@ -73,6 +73,30 @@ def _sax_features(symbols: np.ndarray, alphabet_size: int = 8) -> np.ndarray:
     return output
 
 
+def _sax_symbols_instancewise(
+    panel: np.ndarray, *, alphabet_size: int = 8
+) -> np.ndarray:
+    values = np.asarray(panel, dtype=float)
+    if values.ndim != 3 or values.shape[1] != 1:
+        raise ValueError("SAX requires a univariate panel")
+    transformer = SAX(word_size=32, alphabet_size=alphabet_size)
+    output = np.empty((len(values), 32), dtype=int)
+    center = alphabet_size // 2
+    for index, row in enumerate(values[:, 0, :]):
+        scale = max(1.0, float(np.max(np.abs(row))))
+        if float(np.ptp(row)) <= 1e-7 * scale:
+            output[index] = center
+            continue
+        with warnings.catch_warnings(record=True) as seen:
+            warnings.simplefilter("always", RuntimeWarning)
+            symbols = np.asarray(transformer.fit_transform(row), dtype=int).reshape(-1)
+        if any(issubclass(item.category, RuntimeWarning) for item in seen):
+            output[index] = center
+        else:
+            output[index] = symbols
+    return output
+
+
 def _sfa_dicts(values: object) -> list[dict[str, int]]:
     if not isinstance(values, list) or len(values) != 1 or not isinstance(values[0], list):
         raise ValueError("unexpected SFA dictionary output")
@@ -86,7 +110,6 @@ class StructuralFeatureExtractor:
         self.random_intervals = RandomIntervals(
             n_intervals=32, random_state=self.seed, n_jobs=1
         )
-        self.sax = SAX(word_size=32, alphabet_size=8)
         self.sfa = SFA(
             word_length=8,
             alphabet_size=4,
@@ -120,12 +143,11 @@ class StructuralFeatureExtractor:
     def _blocks(self, panel: np.ndarray, *, fit: bool) -> dict[str, np.ndarray]:
         if fit:
             intervals = self.random_intervals.fit_transform(panel)
-            symbols = self.sax.fit_transform(panel)
             words = self.sfa.fit_transform(panel)
         else:
             intervals = self.random_intervals.transform(panel)
-            symbols = self.sax.transform(panel)
             words = self.sfa.transform(panel)
+        symbols = _sax_symbols_instancewise(panel, alphabet_size=8)
         blocks = {
             "random_interval_224": np.asarray(intervals, dtype=float),
             "matrix_profile_16": self._matrix_profile(panel),

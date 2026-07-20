@@ -33,3 +33,16 @@
   - RuntimeWarning: 0
 
 초기 105개 partial cache는 결과로 사용하지 않고 `--reset-cache`로 전체 재생성한다.
+
+## SAX panel-input correction
+
+재실행 중 SAX의 scipy z-score에서 catastrophic-cancellation RuntimeWarning이
+발견됐다. 조사 결과 `SAX`는 한 Series 입력용인데 panel 전체를 전달하여 z-score가
+instance 축을 함께 사용하고 있었다. 이는 한 TEST instance의 표현이 다른 TEST
+instance에 의존하게 만들 수 있다.
+
+- SAX를 시계열별 1차원 입력으로 독립 변환한다.
+- 값 범위가 scale의 `1e-7` 이하인 near-constant series는 중립 심볼 4로 변환한다.
+- scipy가 정밀도 RuntimeWarning을 보고한 series도 중립 심볼로 안전 처리한다.
+- 단일 변환과 여러 instance 동시 변환에서 첫 series 결과가 동일한지 테스트한다.
+- 수정 전 partial cache는 결과에 사용하지 않고 다시 전체 생성한다.

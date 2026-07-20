@@ -51,6 +51,7 @@ def source_config() -> dict[str, object]:
             "sfa_hash_128": {"word_length": 8, "alphabet_size": 4, "hash_features": 128},
         },
         "matrix_profile_nonfinite_policy": "finite_only_row_summary_then_train_median",
+        "sax_policy": "instancewise_near_constant_to_center_symbol",
         "seed": SEED,
         "minimum_train": MINIMUM_TRAIN,
         "score": "knn3_local_gap",
