@@ -7,6 +7,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
@@ -25,6 +26,124 @@ def _read_rows(path: Path) -> list[dict[str, object]]:
 
 
 class PredictionEvaluationBoundaryTest(unittest.TestCase):
+    def test_evaluation_rejects_prediction_hash_mismatch_before_loading_labels(self) -> None:
+        from experiments.exp263_264_full_missing_aware_integration.evaluation import (
+            evaluate_all,
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            prediction = Path(directory) / "frozen_predictions.jsonl"
+            prediction.write_text('{"dataset":"x"}\n', encoding="utf-8")
+            with patch(
+                "experiments.exp226_235_hard_alert_quality.database.load_test_labels_for_evaluation"
+            ) as labels:
+                with self.assertRaisesRegex(ValueError, "SHA256"):
+                    evaluate_all(prediction, expected_sha256="wrong")
+
+            labels.assert_not_called()
+
+    def test_evaluation_reports_lanes_metrics_baseline_and_diagnostic_groups(self) -> None:
+        from experiments.exp263_264_full_missing_aware_integration.evaluation import (
+            evaluate_all,
+        )
+
+        rows = [
+            {
+                "dataset": "small_nonmissing",
+                "n_train": 99,
+                "n_test": 3,
+                "missing_override": False,
+                "baseline_hard_indices": [0],
+                "final_hard_indices": [0],
+                "final_standard_indices": [1],
+                "final_priority_indices": [2],
+                "promoted_indices": [],
+            },
+            {
+                "dataset": "large_missing",
+                "n_train": 100,
+                "n_test": 3,
+                "missing_override": True,
+                "baseline_hard_indices": [],
+                "final_hard_indices": [1],
+                "final_standard_indices": [],
+                "final_priority_indices": [],
+                "promoted_indices": [1],
+            },
+        ]
+        labels = {
+            "small_nonmissing": np.asarray([1, 0, 1], dtype=np.int8),
+            "large_missing": np.asarray([0, 1, 0], dtype=np.int8),
+        }
+        payload = "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows).encode()
+
+        with tempfile.TemporaryDirectory() as directory:
+            prediction = Path(directory) / "frozen_predictions.jsonl"
+            prediction.write_bytes(payload)
+            with patch(
+                "experiments.exp226_235_hard_alert_quality.database.load_test_labels_for_evaluation",
+                side_effect=lambda dataset: labels[dataset],
+            ):
+                evaluated, summary = evaluate_all(
+                    prediction,
+                    expected_sha256=hashlib.sha256(payload).hexdigest(),
+                )
+
+            self.assertEqual(len(evaluated), 2)
+            self.assertEqual(summary["prediction_sha256"], hashlib.sha256(payload).hexdigest())
+            autonomous_hard = summary["autonomous_hard"]
+            self.assertEqual({
+                "datasets": 2,
+                "alerts": 2,
+                "tp": 2,
+                "fp": 0,
+                "fn": 1,
+                "total_anomalies": 3,
+                "micro_precision": 1.0,
+                "micro_recall": 2 / 3,
+                "zero_f1_datasets": 0,
+            }, {key: value for key, value in autonomous_hard.items() if key != "macro_mean_f1"})
+            self.assertAlmostEqual(autonomous_hard["macro_mean_f1"], 5 / 6)
+            self.assertEqual(summary["standard_review"]["alerts"], 1)
+            self.assertEqual(summary["standard_review"]["tp"], 0)
+            self.assertEqual(summary["priority_review"]["tp"], 1)
+            self.assertEqual(summary["review"]["alerts"], 2)
+            self.assertEqual(summary["paired_baseline_comparison"]["datasets"], 2)
+            self.assertEqual(
+                summary["paired_baseline_comparison"]["macro_mean_f1_delta"], 0.5
+            )
+            self.assertEqual(summary["diagnostic_subgroups"]["missing_override"]["datasets"], 1)
+            self.assertEqual(summary["diagnostic_subgroups"]["nonmissing"]["datasets"], 1)
+            self.assertEqual(summary["diagnostic_subgroups"]["n_train_lt_100"]["datasets"], 1)
+            self.assertEqual(summary["diagnostic_subgroups"]["n_train_ge_100"]["datasets"], 1)
+            self.assertTrue(
+                all(
+                    subgroup["used_for_policy_selection"] is False
+                    for subgroup in summary["diagnostic_subgroups"].values()
+                )
+            )
+            self.assertTrue((prediction.parent / "results.csv").is_file())
+            self.assertTrue((prediction.parent / "summary.json").is_file())
+            self.assertTrue((prediction.parent / "lane_transitions.csv").is_file())
+
+    def test_evaluation_metrics_define_zero_denominators_as_zero(self) -> None:
+        from experiments.exp263_264_full_missing_aware_integration.evaluation import metrics
+
+        self.assertEqual(
+            metrics(set(), set()),
+            {
+                "alerts": 0,
+                "tp": 0,
+                "fp": 0,
+                "fn": 0,
+                "precision_denominator": 0,
+                "recall_denominator": 0,
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+            },
+        )
+
     def test_prediction_signature_excludes_test_labels(self) -> None:
         parameters = inspect.signature(predict_all).parameters
 
