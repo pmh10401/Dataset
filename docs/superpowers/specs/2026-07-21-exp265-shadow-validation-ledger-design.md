@@ -83,13 +83,17 @@ flowchart TD
 
 ### 6.1 로컬 prediction/export
 
+Exp265는 Exp253/Exp252/Exp254/Exp255/Exp257 점수 알고리즘을 새로 구현하지 않는다. 별도의 고정 upstream scorer가 신규 run과 TRAIN-normal 데이터만으로 baseline lane, 네 점수원, score/threshold, 품질 상태를 생성한다. Exp265 로컬 경계는 이 label-free payload를 엄격히 검증하고 shadow routing과 전달을 담당한다.
+
 로컬 실행기는 다음을 수행한다.
 
-1. 신규 run을 읽고 TRAIN-normal 기준으로 feature, score, threshold와 후보를 계산한다.
+1. 신규 run용 upstream payload에 고정 config hash와 금지 필드가 없는지 검사한다.
 2. TEST 또는 사용자 라벨 없이 lane과 신뢰도 등급을 결정한다.
 3. prediction payload와 설정 hash를 로컬 append-only spool에 먼저 기록한다.
 4. Vercel ingest API로 전송한다.
 5. 성공 응답을 받으면 해당 spool 항목을 전송 완료로 표시한다.
+
+실제 신규 run을 생성하는 upstream feed가 준비되지 않았다면 소프트웨어 검증까지만 완료하고 prospective 100-run 수집은 시작하지 않는다. 과거 1,117개 TEST 데이터를 신규 run처럼 재사용하지 않는다.
 
 네트워크 실패 시 prediction 결과를 삭제하지 않는다. 같은 `run_id`와 `candidate_id`의 재전송은 중복 생성 없이 동일한 결과를 반환해야 한다.
 
@@ -149,6 +153,7 @@ Machine ingest는 기존 bearer token과 writer session을 사용한다. 사용�
 
 - `run_id`
 - `missed_anomaly_state`: `none`, `exists`, `unknown`
+- `missed_anomaly_count`: `none`이면 0, `exists`일 때 사용자가 확인한 개수, `unknown`이면 null
 - 선택적 위치 또는 설명
 - `reviewer_id`, `created_at`
 
@@ -192,7 +197,7 @@ Machine ingest는 기존 bearer token과 writer session을 사용한다. 사용�
 - 모델이 놓친 다른 이상 있음
 - 확인할 수 없음
 
-이 정보가 없는 run은 Recall 계산에서 완전 라벨 run으로 취급하지 않는다.
+`놓친 이상 있음`을 선택하면 확인된 놓친 이상 개수를 함께 입력한다. 이 정보가 없거나 개수를 확인할 수 없는 run은 Recall 계산에서 완전 라벨 run으로 취급하지 않는다.
 
 ## 8. 지표와 해석
 
