@@ -11,6 +11,10 @@ export interface ShadowReportCandidate {
 
 export interface ShadowReportRun {
   run_id: string;
+  observed_at?: string;
+  collection_mode?: string;
+  policy_version?: string;
+  config_sha256?: string;
   candidate_count: number;
   hard_count: number;
   shadow_count: number;

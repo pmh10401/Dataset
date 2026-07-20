@@ -4,6 +4,10 @@ import type { ShadowReportRun } from "./shadow-metrics";
 
 type RunRow = {
   run_id: string;
+  observed_at: string;
+  collection_mode: string;
+  policy_version: string;
+  config_sha256: string;
   candidate_count: number;
   hard_count: number;
   shadow_count: number;
@@ -13,7 +17,7 @@ type RunRow = {
 
 export async function loadShadowReportRows(supabase: SupabaseClient): Promise<ShadowReportRun[]> {
   const { data: runs, error: runError } = await supabase.from("shadow_validation_runs")
-    .select("run_id,candidate_count,hard_count,shadow_count,priority_count,standard_count")
+    .select("run_id,observed_at,collection_mode,policy_version,config_sha256,candidate_count,hard_count,shadow_count,priority_count,standard_count")
     .order("observed_at", { ascending: false })
     .limit(5000);
   if (runError) throw new Error(runError.message);
