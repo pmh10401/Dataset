@@ -2069,6 +2069,28 @@ EXPERIMENTS["experiment_252_sktime_statistical_features_safe_hurst"] = {
     "expected_datasets": EXPECTED_DATASETS,
 }
 
+EXP253_ROOT = DATA_DIR / "exp253_guarded_standard_to_hard_expansion"
+EXPERIMENTS["experiment_253_guarded_standard_to_hard_expansion"] = {
+    "label": "Exp253 - guarded Standard-to-Hard expansion",
+    "history_status": "retrospective_research",
+    "comparison_eligible": False,
+    "scope": "retrospective_guarded_alert_expansion",
+    "status_reason": "prior TEST review에서 선택된 MiniROCKET 확인 규칙의 후향 재현; 배포 불가",
+    "autonomous_metric_scope": "baseline_hard_plus_guarded_standard_promotions",
+    "review_metric_scope": "remaining_standard_and_unchanged_priority",
+    "detail_csv": EXP253_ROOT / "results.csv",
+    "summary_csv": EXP253_ROOT / "summary.csv",
+    "stdout_log": EXP253_ROOT / "full.log",
+    "artifact_paths": [
+        EXP253_ROOT / "audit.json",
+        EXP253_ROOT / "prediction_manifest.json",
+        EXP253_ROOT / "independent_reaggregation.json",
+        EXP253_ROOT / "RESULT_REPORT.md",
+        EXP253_ROOT / "MANIFEST.json",
+    ],
+    "expected_datasets": EXPECTED_DATASETS,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
