@@ -60,3 +60,27 @@ Every subgroup is marked `used_for_policy_selection: false` in `summary.json`.
 - Exp253 retains the `selected_from_prior_test_review=True` provenance limitation, so `deployment_eligible` remains `false`.
 - The two Hard additions produced true positives without new false positives, but the aggregate F1 change is small. No threshold, alpha, source variant, agreement count, or `n_train` rule was changed after these results.
 - The missing-override subgroup has substantially lower autonomous-Hard precision than the nonmissing subgroup. It is a diagnostic observation only, not a trigger for policy adjustment in this task.
+
+## Review Fixes: Contract Hardening
+
+Review fixes were applied on top of Task 5 commit `58a36eb9` using the unchanged frozen prediction SHA256 `8c7a2f52027c6a3127c79166bb109b61e348558574d98a42a8ccf5622921d653`.
+
+- `evaluate_all` reads `frozen_predictions.jsonl` once as bytes, SHA256-checks that exact payload, then parses the same verified byte payload.
+- Production defaults now require exactly the `load_population()` dataset names (1,117 unique rows), TEST-label length equal to every row's `n_test`, and exactly 3,918 total anomalies before any output is written.
+- Explicit `expected_population` and `expected_total_anomalies` parameters preserve small deterministic test fixtures without weakening production defaults.
+- Final Hard, Standard, and Priority lanes are checked pairwise for overlap before any TEST labels or metrics are read.
+- `lane_transitions.csv` now records baseline Hard/Standard/Priority counts plus explicit `standard_to_hard_additions` and `standard_to_priority_additions`. The same aggregates appear in `summary.json`.
+
+### Review Verification
+
+- `python3 -m unittest experiments.exp263_264_full_missing_aware_integration.tests.test_prediction_evaluation_boundary -v`
+  - 14 tests passed, including negative partial-population, duplicate-name, unexpected-name, TEST-label-length, total-anomaly, and final-lane-overlap cases.
+- `python3 -m unittest discover -s experiments/exp263_264_full_missing_aware_integration/tests -v`
+  - 41 tests passed.
+- `python3 -m py_compile experiments/exp263_264_full_missing_aware_integration/evaluation.py experiments/exp263_264_full_missing_aware_integration/tests/test_prediction_evaluation_boundary.py`
+  - Passed.
+- Production `evaluate_all` against the frozen artifact
+  - 1,117 `results.csv` rows and 1,117 `lane_transitions.csv` rows.
+  - Exact total anomalies: 3,918.
+  - Standard-to-Hard additions: 2.
+  - Standard-to-Priority additions: 22.

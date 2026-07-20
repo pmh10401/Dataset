@@ -54,6 +54,8 @@ class PredictionEvaluationBoundaryTest(unittest.TestCase):
                 "n_test": 3,
                 "missing_override": False,
                 "baseline_hard_indices": [0],
+                "baseline_standard_indices": [1, 2],
+                "baseline_priority_indices": [],
                 "final_hard_indices": [0],
                 "final_standard_indices": [1],
                 "final_priority_indices": [2],
@@ -65,6 +67,8 @@ class PredictionEvaluationBoundaryTest(unittest.TestCase):
                 "n_test": 3,
                 "missing_override": True,
                 "baseline_hard_indices": [],
+                "baseline_standard_indices": [1],
+                "baseline_priority_indices": [],
                 "final_hard_indices": [1],
                 "final_standard_indices": [],
                 "final_priority_indices": [],
@@ -87,6 +91,8 @@ class PredictionEvaluationBoundaryTest(unittest.TestCase):
                 evaluated, summary = evaluate_all(
                     prediction,
                     expected_sha256=hashlib.sha256(payload).hexdigest(),
+                    expected_population=("small_nonmissing", "large_missing"),
+                    expected_total_anomalies=3,
                 )
 
             self.assertEqual(len(evaluated), 2)
@@ -125,6 +131,152 @@ class PredictionEvaluationBoundaryTest(unittest.TestCase):
             self.assertTrue((prediction.parent / "results.csv").is_file())
             self.assertTrue((prediction.parent / "summary.json").is_file())
             self.assertTrue((prediction.parent / "lane_transitions.csv").is_file())
+            with (prediction.parent / "lane_transitions.csv").open(
+                newline="", encoding="utf-8"
+            ) as handle:
+                transitions = {row["dataset"]: row for row in csv.DictReader(handle)}
+            self.assertEqual(transitions["small_nonmissing"]["baseline_standard_count"], "2")
+            self.assertEqual(transitions["small_nonmissing"]["standard_to_priority_additions"], "1")
+            self.assertEqual(transitions["large_missing"]["standard_to_hard_additions"], "1")
+            self.assertEqual(summary["lane_transitions"]["standard_to_hard_additions"], 1)
+            self.assertEqual(summary["lane_transitions"]["standard_to_priority_additions"], 1)
+
+    def test_evaluation_reads_prediction_once_and_parses_verified_payload(self) -> None:
+        from experiments.exp263_264_full_missing_aware_integration.evaluation import (
+            evaluate_all,
+        )
+
+        row = {
+            "dataset": "only",
+            "n_train": 10,
+            "n_test": 1,
+            "missing_override": False,
+            "baseline_hard_indices": [],
+            "baseline_standard_indices": [],
+            "baseline_priority_indices": [],
+            "final_hard_indices": [],
+            "final_standard_indices": [],
+            "final_priority_indices": [],
+            "promoted_indices": [],
+        }
+        payload = (json.dumps(row) + "\n").encode()
+        with tempfile.TemporaryDirectory() as directory:
+            prediction = Path(directory) / "frozen_predictions.jsonl"
+            prediction.write_bytes(payload)
+            with (
+                patch.object(Path, "read_bytes", wraps=prediction.read_bytes) as read_bytes,
+                patch.object(Path, "read_text", side_effect=AssertionError("must parse bytes")),
+                patch(
+                    "experiments.exp226_235_hard_alert_quality.database.load_test_labels_for_evaluation",
+                    return_value=np.asarray([0], dtype=np.int8),
+                ),
+            ):
+                evaluate_all(
+                    prediction,
+                    expected_sha256=hashlib.sha256(payload).hexdigest(),
+                    expected_population=("only",),
+                    expected_total_anomalies=0,
+                )
+        self.assertEqual(read_bytes.call_count, 1)
+
+    def test_evaluation_rejects_partial_population_before_outputs(self) -> None:
+        row = {
+            "dataset": "one", "n_train": 10, "n_test": 1, "missing_override": False,
+            "baseline_hard_indices": [], "baseline_standard_indices": [],
+            "baseline_priority_indices": [], "final_hard_indices": [],
+            "final_standard_indices": [], "final_priority_indices": [], "promoted_indices": [],
+        }
+        from experiments.exp263_264_full_missing_aware_integration.evaluation import evaluate_all
+        with tempfile.TemporaryDirectory() as directory:
+            prediction = Path(directory) / "frozen_predictions.jsonl"
+            payload = (json.dumps(row) + "\n").encode()
+            prediction.write_bytes(payload)
+            with self.assertRaisesRegex(ValueError, "population"):
+                evaluate_all(
+                    prediction, expected_sha256=hashlib.sha256(payload).hexdigest(),
+                    expected_population=("one", "two"), expected_total_anomalies=0,
+                )
+            self.assertFalse((prediction.parent / "results.csv").exists())
+
+    def test_evaluation_rejects_duplicate_dataset_names(self) -> None:
+        rows = [
+            {
+                "dataset": "one", "n_train": 10, "n_test": 1, "missing_override": False,
+                "baseline_hard_indices": [], "baseline_standard_indices": [],
+                "baseline_priority_indices": [], "final_hard_indices": [],
+                "final_standard_indices": [], "final_priority_indices": [], "promoted_indices": [],
+            },
+        ] * 2
+        self._assert_fixture_rejected(rows, ("one", "two"), {}, 0, "duplicate")
+
+    def test_evaluation_rejects_unexpected_dataset_name(self) -> None:
+        row = {
+            "dataset": "unexpected", "n_train": 10, "n_test": 1, "missing_override": False,
+            "baseline_hard_indices": [], "baseline_standard_indices": [],
+            "baseline_priority_indices": [], "final_hard_indices": [],
+            "final_standard_indices": [], "final_priority_indices": [], "promoted_indices": [],
+        }
+        self._assert_fixture_rejected([row], ("expected",), {}, 0, "names")
+
+    def test_evaluation_rejects_test_label_length_mismatch(self) -> None:
+        row = {
+            "dataset": "one", "n_train": 10, "n_test": 2, "missing_override": False,
+            "baseline_hard_indices": [], "baseline_standard_indices": [],
+            "baseline_priority_indices": [], "final_hard_indices": [],
+            "final_standard_indices": [], "final_priority_indices": [], "promoted_indices": [],
+        }
+        self._assert_fixture_rejected(
+            [row], ("one",), {"one": np.asarray([0], dtype=np.int8)}, 0, "length"
+        )
+
+    def test_evaluation_rejects_total_anomaly_mismatch(self) -> None:
+        row = {
+            "dataset": "one", "n_train": 10, "n_test": 1, "missing_override": False,
+            "baseline_hard_indices": [], "baseline_standard_indices": [],
+            "baseline_priority_indices": [], "final_hard_indices": [],
+            "final_standard_indices": [], "final_priority_indices": [], "promoted_indices": [],
+        }
+        self._assert_fixture_rejected(
+            [row], ("one",), {"one": np.asarray([1], dtype=np.int8)}, 2, "anomaly"
+        )
+
+    def test_evaluation_rejects_overlapping_final_lanes_before_metrics(self) -> None:
+        row = {
+            "dataset": "one", "n_train": 10, "n_test": 1, "missing_override": False,
+            "baseline_hard_indices": [], "baseline_standard_indices": [0],
+            "baseline_priority_indices": [], "final_hard_indices": [0],
+            "final_standard_indices": [0], "final_priority_indices": [], "promoted_indices": [0],
+        }
+        self._assert_fixture_rejected(
+            [row], ("one",), {"one": np.asarray([1], dtype=np.int8)}, 1, "overlap"
+        )
+
+    def _assert_fixture_rejected(
+        self,
+        rows: list[dict[str, object]],
+        expected_population: tuple[str, ...],
+        labels: dict[str, np.ndarray],
+        expected_total_anomalies: int,
+        message: str,
+    ) -> None:
+        from experiments.exp263_264_full_missing_aware_integration.evaluation import evaluate_all
+
+        payload = "".join(json.dumps(row) + "\n" for row in rows).encode()
+        with tempfile.TemporaryDirectory() as directory:
+            prediction = Path(directory) / "frozen_predictions.jsonl"
+            prediction.write_bytes(payload)
+            with patch(
+                "experiments.exp226_235_hard_alert_quality.database.load_test_labels_for_evaluation",
+                side_effect=lambda dataset: labels[dataset],
+            ):
+                with self.assertRaisesRegex(ValueError, message):
+                    evaluate_all(
+                        prediction,
+                        expected_sha256=hashlib.sha256(payload).hexdigest(),
+                        expected_population=expected_population,
+                        expected_total_anomalies=expected_total_anomalies,
+                    )
+            self.assertFalse((prediction.parent / "results.csv").exists())
 
     def test_evaluation_metrics_define_zero_denominators_as_zero(self) -> None:
         from experiments.exp263_264_full_missing_aware_integration.evaluation import metrics
