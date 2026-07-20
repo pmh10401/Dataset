@@ -60,6 +60,9 @@ class ContractTest(unittest.TestCase):
         right = dict(reversed(list(raw.items())))
         self.assertEqual(prediction_sha256(left), prediction_sha256(right))
 
+    def test_prediction_hash_normalizes_integral_float_for_web_runtime(self) -> None:
+        self.assertEqual(prediction_sha256({"score": 2.0}), prediction_sha256({"score": 2}))
+
     def test_rejects_candidate_outside_range(self) -> None:
         raw = valid_run_input()
         raw["baseline_standard_indices"] = [5]

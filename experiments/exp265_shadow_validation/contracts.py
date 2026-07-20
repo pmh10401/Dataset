@@ -242,6 +242,22 @@ def validate_run_input(raw: Mapping[str, object]) -> ShadowRunInput:
 
 
 def prediction_sha256(payload: Mapping[str, object]) -> str:
-    canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    canonical = json.dumps(
+        _canonical_json_value(payload),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
+
+def _canonical_json_value(value: object) -> object:
+    """Match JavaScript JSON number semantics for cross-runtime hashing."""
+    if isinstance(value, Mapping):
+        return {str(key): _canonical_json_value(child) for key, child in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_canonical_json_value(child) for child in value]
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value
