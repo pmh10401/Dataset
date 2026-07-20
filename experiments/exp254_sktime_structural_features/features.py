@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import warnings
 from sklearn.feature_extraction import FeatureHasher
 from sktime.transformations.dictionary_based import SFA
 from sktime.transformations.matrix_profile import MatrixProfileFeatures
@@ -44,18 +45,17 @@ def matrix_profile_windows(length: int) -> tuple[int, int]:
 
 def _profile_summary(values: np.ndarray) -> np.ndarray:
     array = np.asarray(values, dtype=float)
-    return np.column_stack(
-        [
-            np.min(array, axis=1),
-            np.mean(array, axis=1),
-            np.std(array, axis=1),
-            np.quantile(array, 0.25, axis=1),
-            np.quantile(array, 0.50, axis=1),
-            np.quantile(array, 0.75, axis=1),
-            np.quantile(array, 0.90, axis=1),
-            np.max(array, axis=1),
-        ]
-    )
+    output = np.full((len(array), 8), np.nan, dtype=float)
+    for index, row in enumerate(array):
+        finite = row[np.isfinite(row)]
+        if not len(finite):
+            continue
+        output[index] = (
+            np.min(finite), np.mean(finite), np.std(finite),
+            np.quantile(finite, 0.25), np.quantile(finite, 0.50),
+            np.quantile(finite, 0.75), np.quantile(finite, 0.90), np.max(finite),
+        )
+    return output
 
 
 def _sax_features(symbols: np.ndarray, alphabet_size: int = 8) -> np.ndarray:
@@ -111,7 +111,9 @@ class StructuralFeatureExtractor:
     def _matrix_profile(self, panel: np.ndarray) -> np.ndarray:
         summaries = []
         for window in matrix_profile_windows(self.working_length):
-            profile = MatrixProfileFeatures(m=window).fit_transform(panel)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                profile = MatrixProfileFeatures(m=window).fit_transform(panel)
             summaries.append(_profile_summary(np.asarray(profile, dtype=float)))
         return np.concatenate(summaries, axis=1)
 

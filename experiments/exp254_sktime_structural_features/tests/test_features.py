@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import unittest
+import warnings
 
 import numpy as np
 
 from experiments.exp254_sktime_structural_features.features import (
     FEATURE_DIMENSIONS,
     StructuralFeatureExtractor,
+    _profile_summary,
     matrix_profile_windows,
 )
 
@@ -50,6 +52,22 @@ class StructuralFeatureTest(unittest.TestCase):
         self.assertEqual(len(windows), 2)
         self.assertTrue(all(3 <= value < 32 for value in windows))
         self.assertEqual(windows, matrix_profile_windows(32))
+
+    def test_profile_summary_uses_only_finite_distances(self) -> None:
+        values = np.asarray([[1.0, np.inf, np.nan, 3.0], [np.inf, np.nan, np.inf, np.nan]])
+        result = _profile_summary(values)
+        self.assertTrue(np.isfinite(result[0]).all())
+        np.testing.assert_allclose(result[0, [0, 1, 7]], [1.0, 2.0, 3.0])
+        self.assertTrue(np.isnan(result[1]).all())
+
+    def test_constant_matrix_profile_does_not_emit_runtime_warning(self) -> None:
+        extractor = StructuralFeatureExtractor(seed=3, working_length=32)
+        panel = np.zeros((2, 1, 32), dtype=np.float32)
+        with warnings.catch_warnings(record=True) as seen:
+            warnings.simplefilter("always")
+            result = extractor._matrix_profile(panel)
+        self.assertFalse([item for item in seen if issubclass(item.category, RuntimeWarning)])
+        self.assertEqual(result.shape, (2, 16))
 
 
 if __name__ == "__main__":

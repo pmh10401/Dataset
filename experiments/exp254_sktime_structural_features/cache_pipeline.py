@@ -50,6 +50,7 @@ def source_config() -> dict[str, object]:
             "sax_transition_72": {"word_size": 32, "alphabet_size": 8},
             "sfa_hash_128": {"word_length": 8, "alphabet_size": 4, "hash_features": 128},
         },
+        "matrix_profile_nonfinite_policy": "finite_only_row_summary_then_train_median",
         "seed": SEED,
         "minimum_train": MINIMUM_TRAIN,
         "score": "knn3_local_gap",
