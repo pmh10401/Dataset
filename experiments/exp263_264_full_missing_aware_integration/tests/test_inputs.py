@@ -1,6 +1,13 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from experiments.exp263_264_full_missing_aware_integration import config
+from experiments.exp263_264_full_missing_aware_integration.inputs import (
+    audit_source_contract,
+    select_rows,
+)
 
 
 class ConfigurationContractTest(unittest.TestCase):
@@ -109,6 +116,38 @@ class ConfigurationContractTest(unittest.TestCase):
             self.assertTrue(path.is_absolute())
         for spec in config.SOURCE_CONTRACT.values():
             self.assertTrue(spec.artifact_path.is_absolute())
+
+
+class SourceContractTest(unittest.TestCase):
+    def test_source_contract_requires_full_coverage(self) -> None:
+        audit = audit_source_contract()
+
+        self.assertEqual(audit["dataset_count"], 1117)
+        self.assertEqual(audit["baseline_coverage"], 1117)
+        self.assertEqual(audit["statistical_coverage"], 1117)
+        self.assertEqual(audit["structural_coverage"], 1117)
+        self.assertEqual(audit["change_point_coverage"], 1117)
+        self.assertEqual(audit["reconstruction_coverage"], 251)
+        self.assertEqual(audit["missing_override_coverage"], 20)
+        self.assertEqual(audit["missing_datasets_without_override"], [])
+
+    def test_select_rows_rejects_duplicate_dataset_for_source_variant(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact = Path(directory) / "source.jsonl"
+            artifact.write_text(
+                "\n".join(
+                    json.dumps(row)
+                    for row in (
+                        {"dataset": "demo", "variant": "fixed", "alpha": 0.005},
+                        {"dataset": "demo", "variant": "fixed", "alpha": 0.005},
+                    )
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "duplicate source row: demo"):
+                select_rows(artifact, "fixed", 0.005)
 
 
 if __name__ == "__main__":
