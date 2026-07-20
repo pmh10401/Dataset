@@ -30,7 +30,7 @@ Exp265는 실제 설비 배포 정책이 아니라 prospective shadow validation
 - `run`: 신규 데이터 입력 한 건. 고유한 `run_id`로 식별한다.
 - `candidate`: 한 run 안에서 모델이 사용자 확인 대상으로 제시한 index 또는 event.
 - `Hard alert`: 기존 Exp253가 생성한 자동 경보. Exp265에서 추가하거나 제거하지 않는다.
-- `Shadow candidate`: 기존 Standard 후보 중 보조 점수원 3개 이상이 동의하고 데이터 품질 검사를 통과한 후보.
+- `Shadow candidate`: `n_train >= 100`인 기존 Standard 후보 중 보조 점수원 3개 이상이 동의하고 데이터 품질 검사를 통과한 후보.
 - `Priority review`: 보조 점수원 2개가 동의하거나, 3개 이상 동의했지만 데이터 품질 검사를 통과하지 못한 후보.
 - `Standard review`: 보조 점수원 동의가 0~1개인 기존 검토 후보.
 - `No alert`: 자동 경보 또는 검토 후보가 없는 상태.
@@ -66,8 +66,8 @@ flowchart TD
     A --> C["4개 보조 점수원 계산"]
     B --> D["Hard alert 유지"]
     C --> E{"보조 점수원 합의"}
-    E -->|"3개 이상 + 품질 통과"| F["Shadow candidate"]
-    E -->|"2개 또는 품질 차단"| G["Priority review"]
+    E -->|"n_train 100 이상 + 3개 이상 + 품질 통과"| F["Shadow candidate"]
+    E -->|"2개 이상이나 Shadow 조건 미충족"| G["Priority review"]
     E -->|"0~1개"| H["Standard review"]
     D --> I["신뢰도 A/B/C"]
     F --> J["사용자 판정"]
