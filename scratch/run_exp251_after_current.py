@@ -5,13 +5,17 @@ import fcntl
 import json
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from experiments.exp251_sktime_statistical_features.config import OUTPUT_ROOT, SOURCE, VENV_PYTHON
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_STATE_PATH = Path("/Users/minho/Documents/Dataset/rank_experiments_sequential_state.json")
 QUEUE_LOCK_PATH = Path("/Users/minho/Documents/Dataset/exp251_sktime_statistical_features.lock")
 EXPERIMENT_ID = f"experiment_251_{SOURCE}"

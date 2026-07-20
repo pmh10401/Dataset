@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+import subprocess
+import sys
 from pathlib import Path
 
 from experiments.exp251_sktime_statistical_features.config import VENV_PYTHON
@@ -21,6 +23,15 @@ class QueueDashboardContractTest(unittest.TestCase):
         source = (REPO_ROOT / "serve_rank_dashboard.py").read_text()
         self.assertIn(EXPERIMENT_ID, source)
         self.assertIn("exp251_sktime_statistical_features", source)
+
+    def test_deferred_runner_can_start_outside_repository(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scratch/run_exp251_after_current.py"), "--help"],
+            cwd="/tmp",
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":
