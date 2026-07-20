@@ -2112,6 +2112,27 @@ EXPERIMENTS["experiment_254_sktime_structural_features"] = {
     "expected_datasets": EXPECTED_DATASETS,
 }
 
+EXP255_ROOT = DATA_DIR / "exp255_change_point_features"
+EXPERIMENTS["experiment_255_change_point_features"] = {
+    "label": "Exp255 - change-point features",
+    "history_status": "planned_research",
+    "comparison_eligible": False,
+    "scope": "retrospective_score_source_qualification",
+    "status_reason": "Robust CUSUM/MOSUM and PELT L1/L2/RBF evidence; frozen alert lanes unchanged",
+    "autonomous_metric_scope": "frozen_exp236_and_exp253_unchanged",
+    "review_metric_scope": "retrospective_research_candidates_only",
+    "detail_csv": EXP255_ROOT / "results.csv",
+    "summary_csv": EXP255_ROOT / "summary.csv",
+    "stdout_log": EXP255_ROOT / "full.log",
+    "artifact_paths": [
+        EXP255_ROOT / "prediction_manifest.json",
+        EXP255_ROOT / "independent_reaggregation.json",
+        EXP255_ROOT / "RESULT_REPORT.md",
+        EXP255_ROOT / "MANIFEST.json",
+    ],
+    "expected_datasets": EXPECTED_DATASETS,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
