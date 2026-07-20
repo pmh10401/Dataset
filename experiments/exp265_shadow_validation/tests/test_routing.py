@@ -27,6 +27,7 @@ class RoutingTest(unittest.TestCase):
             },
         )
         self.assertEqual(result["hard_indices"], [0, 2, 4])
+        self.assertEqual(result["baseline_hard_indices"], result["hard_indices"])
         self.assertEqual(result["confidence"], {"0": "A", "2": "B", "4": "C"})
 
     def test_shadow_never_enters_hard(self) -> None:
