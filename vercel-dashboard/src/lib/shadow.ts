@@ -170,6 +170,10 @@ export function assertValidShadowPrediction(raw: unknown): ShadowPrediction {
   const baselineHard = indices(payload.baseline_hard_indices, "baseline_hard_indices", nTest);
   const baselineStandard = indices(payload.baseline_standard_indices, "baseline_standard_indices", nTest);
   const baselinePriority = indices(payload.baseline_priority_indices, "baseline_priority_indices", nTest);
+  const baselineLanes = [baselineHard, baselineStandard, baselinePriority];
+  for (let left = 0; left < baselineLanes.length; left++) for (let right = left + 1; right < baselineLanes.length; right++) {
+    if (baselineLanes[left].some((index) => baselineLanes[right].includes(index))) throw new Error("baseline lane overlap");
+  }
   const hard = indices(payload.hard_indices, "hard_indices", nTest);
   const shadow = indices(payload.shadow_indices, "shadow_indices", nTest);
   const priority = indices(payload.priority_indices, "priority_indices", nTest);
@@ -207,8 +211,8 @@ export function assertValidShadowPrediction(raw: unknown): ShadowPrediction {
     candidateIndices.add(index);
     if (candidate.candidate_id !== `${runId}:${index}`) throw new Error("candidate_id mismatch");
     const lane = candidate.final_lane as ShadowLane;
-    const expectedLane = hard.includes(index) ? "Hard" : shadow.includes(index) ? "Shadow" : priority.includes(index) ? "Priority" : standard.includes(index) ? "Standard" : null;
-    if (lane !== expectedLane) throw new Error("candidate lane mismatch");
+    const declaredLane = hard.includes(index) ? "Hard" : shadow.includes(index) ? "Shadow" : priority.includes(index) ? "Priority" : standard.includes(index) ? "Standard" : null;
+    if (lane !== declaredLane) throw new Error("candidate lane mismatch");
     if (lane === "Hard") {
       if (candidate.confidence_grade !== confidence[String(index)]) throw new Error("Hard confidence mismatch");
     } else if (candidate.confidence_grade !== null) throw new Error("review candidate confidence must be null");
@@ -224,11 +228,21 @@ export function assertValidShadowPrediction(raw: unknown): ShadowPrediction {
       if (item.score !== null) finite(item.score, `source_evidence.${source}.score`);
       if (item.agrees) agreeing.push(source);
       if (item.agrees !== (item.score !== null)) throw new Error("source score/agreement mismatch");
+      if (item.agrees && (item.score as number) < (item.threshold as number)) throw new Error("source candidate score is below threshold");
     }
     const supportCount = integer(candidate.support_count, "support_count");
     if (!Array.isArray(candidate.support_sources) || candidate.support_sources.some((item) => typeof item !== "string")) throw new Error("support_sources must be strings");
     if (supportCount !== agreeing.length || !sameStrings(candidate.support_sources as string[], agreeing)) throw new Error("support evidence mismatch");
     if (lane === "Shadow" && (nTrain < 100 || supportCount < 3 || candidate.quality_flagged)) throw new Error("Shadow eligibility failed");
+    const expectedLane: ShadowLane = baselineHard.includes(index) ? "Hard"
+      : baselinePriority.includes(index) ? "Priority"
+      : nTrain >= 100 && supportCount >= 3 && !candidate.quality_flagged ? "Shadow"
+      : supportCount >= 2 ? "Priority" : "Standard";
+    if (lane !== expectedLane) throw new Error("routing policy mismatch");
+    if (lane === "Hard") {
+      const expectedConfidence: ConfidenceGrade = supportCount >= 3 ? "A" : supportCount >= 1 ? "B" : "C";
+      if (candidate.confidence_grade !== expectedConfidence) throw new Error("Hard confidence policy mismatch");
+    }
   }
   if ([...finalUnion].some((index) => !candidateIndices.has(index))) throw new Error("candidates must cover final lanes");
 

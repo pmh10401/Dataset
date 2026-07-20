@@ -110,4 +110,23 @@ describe("Exp265 shadow prediction contract", () => {
     payload.n_train = 99;
     expect(() => assertValidShadowPrediction(rehash(payload))).toThrow("Shadow eligibility");
   });
+
+  it("recomputes every Standard review routing decision", () => {
+    const payload = validShadowPayload();
+    const candidates = payload.candidates as Array<Record<string, unknown>>;
+    candidates.find((item) => item.candidate_index === 1)!.final_lane = "Priority";
+    payload.shadow_indices = [];
+    payload.priority_indices = [1, 3];
+    payload.shadow_count = 0;
+    payload.priority_count = 2;
+    expect(() => assertValidShadowPrediction(rehash(payload))).toThrow("routing policy mismatch");
+  });
+
+  it("derives Hard confidence from source agreement", () => {
+    const payload = validShadowPayload();
+    payload.confidence = { "0": "C" };
+    const candidates = payload.candidates as Array<Record<string, unknown>>;
+    candidates.find((item) => item.candidate_index === 0)!.confidence_grade = "C";
+    expect(() => assertValidShadowPrediction(rehash(payload))).toThrow("Hard confidence policy mismatch");
+  });
 });

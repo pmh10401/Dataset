@@ -49,8 +49,11 @@ create table if not exists public.shadow_feedback_events (
   verdict text not null check (verdict in ('true_anomaly', 'false_alarm', 'deferred')),
   reviewer_id uuid not null references auth.users(id) on delete restrict,
   note text check (char_length(note) <= 2000),
-  corrects_event_id bigint references public.shadow_feedback_events(id) on delete restrict,
-  created_at timestamptz not null default now()
+  corrects_event_id bigint,
+  created_at timestamptz not null default now(),
+  unique (id, candidate_id),
+  foreign key (corrects_event_id, candidate_id)
+    references public.shadow_feedback_events(id, candidate_id) on delete restrict
 );
 
 create table if not exists public.shadow_run_feedback_events (
@@ -60,8 +63,11 @@ create table if not exists public.shadow_run_feedback_events (
   missed_anomaly_count integer,
   reviewer_id uuid not null references auth.users(id) on delete restrict,
   note text check (char_length(note) <= 2000),
-  corrects_event_id bigint references public.shadow_run_feedback_events(id) on delete restrict,
+  corrects_event_id bigint,
   created_at timestamptz not null default now(),
+  unique (id, run_id),
+  foreign key (corrects_event_id, run_id)
+    references public.shadow_run_feedback_events(id, run_id) on delete restrict,
   check (
     (missed_anomaly_state = 'none' and missed_anomaly_count = 0) or
     (missed_anomaly_state = 'exists' and missed_anomaly_count > 0) or

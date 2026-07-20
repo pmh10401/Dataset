@@ -45,6 +45,11 @@ describe("Exp265 shadow ledger migration", () => {
     expect(sql).toContain("row_number() over");
   });
 
+  it("binds correction events to the same candidate or run", () => {
+    expect(sql).toContain("foreign key (corrects_event_id, candidate_id)");
+    expect(sql).toContain("foreign key (corrects_event_id, run_id)");
+  });
+
   it("publishes ledger changes for realtime", () => {
     expect(sql).toContain("alter publication supabase_realtime add table public.shadow_validation_runs");
     expect(sql).toContain("alter publication supabase_realtime add table public.shadow_feedback_events");
