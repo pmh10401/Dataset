@@ -63,8 +63,9 @@ def run(args: argparse.Namespace) -> None:
     root = Path(args.output_root); names = selected_names(args.dataset_limit); total = len(names)
     write_status(root, "running", args.stage, 0, total)
     if args.stage in {"audit", "all"}:
-        audit(root, names); write_status(root, "running", "audit", total, total)
+        audit(root, names); write_status(root, "running", "audit", 0, total)
     if args.stage in {"cache", "all"}:
+        write_status(root, "running", "cache", 0, total)
         def progress(done: int, expected: int, current: str, errors: int) -> None:
             write_status(root, "running", "cache", done, expected, current, errors)
             print(f"progress {done}/{expected} last={current} errors={errors}", flush=True)
