@@ -25,7 +25,10 @@ SUMMARY_FIELDS = (
     "alerts",
     "tp",
     "fp",
+    "fn",
+    "total_anomalies",
     "micro_precision",
+    "micro_recall",
     "macro_mean_f1",
     "zero_f1_datasets",
 )
@@ -117,12 +120,115 @@ def _lane_totals(rows: list[dict[str, object]], lane: str) -> dict[str, float | 
 
 
 def reaggregate_results(rows: list[dict[str, object]]) -> dict[str, object]:
-    """Independently recompute summary metrics from persisted result rows."""
+    """Legacy CSV-column aggregation used only to construct trusted test fixtures."""
 
     return {
         "datasets": len(rows),
         **{lane: _lane_totals(rows, lane) for lane in LANES},
     }
+
+
+def _lane_indices(row: Mapping[str, object], lane: str, dataset: str) -> set[int]:
+    if lane == "review":
+        return _integer_set(row, "final_standard_indices", dataset) | _integer_set(
+            row, "final_priority_indices", dataset
+        )
+    field = {
+        "baseline_hard": "baseline_hard_indices",
+        "autonomous_hard": "final_hard_indices",
+        "standard_review": "final_standard_indices",
+        "priority_review": "final_priority_indices",
+    }[lane]
+    return _integer_set(row, field, dataset)
+
+
+def _lane_metric(indices: set[int], truth: set[int]) -> dict[str, float | int]:
+    tp = len(indices & truth)
+    fp = len(indices - truth)
+    fn = len(truth - indices)
+    alerts = len(indices)
+    precision = tp / alerts if alerts else 0.0
+    recall = tp / len(truth) if truth else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    return {
+        "alerts": alerts,
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+    }
+
+
+def _require_persisted_metric_agreement(
+    row: Mapping[str, object], dataset: str, lane: str, expected: Mapping[str, float | int]
+) -> None:
+    for field, expected_value in expected.items():
+        key = f"{lane}_{field}"
+        try:
+            actual = int(str(row[key])) if type(expected_value) is int else float(str(row[key]))
+        except (KeyError, ValueError) as exc:
+            raise ValueError(
+                f"persisted metric mismatch: dataset={dataset} lane={lane} field={field}"
+            ) from exc
+        if actual != expected_value:
+            raise ValueError(
+                f"persisted metric mismatch: dataset={dataset} lane={lane} field={field} "
+                f"expected={expected_value!r} actual={actual!r}"
+            )
+
+
+def _truth_for_row(
+    row: Mapping[str, object], truth_loader: Callable[[str], set[int]]
+) -> set[int]:
+    dataset = str(row["dataset"])
+    n_test = row["n_test"]
+    assert type(n_test) is int
+    truth = set(truth_loader(dataset))
+    if any(type(index) is not int or index < 0 or index >= n_test for index in truth):
+        raise ValueError(f"truth index outside TEST range: dataset={dataset}")
+    if int(row["true_anomaly_count"]) != len(truth):
+        raise ValueError(f"truth count mismatch: dataset={dataset}")
+    return truth
+
+
+def reaggregate_results_from_truth(
+    rows: list[dict[str, object]], *, truth_loader: Callable[[str], set[int]]
+) -> dict[str, object]:
+    """Recompute every lane metric from persisted indices and independently loaded truth."""
+
+    preflight_routing_rows(rows)
+    per_lane = {lane: [] for lane in LANES}
+    total_anomalies = 0
+    for row in rows:
+        dataset = str(row["dataset"])
+        truth = _truth_for_row(row, truth_loader)
+        total_anomalies += len(truth)
+        for lane in LANES:
+            metric = _lane_metric(_lane_indices(row, lane, dataset), truth)
+            _require_persisted_metric_agreement(row, dataset, lane, metric)
+            per_lane[lane].append(metric)
+
+    def totals(metrics: list[dict[str, float | int]]) -> dict[str, float | int]:
+        tp = sum(int(metric["tp"]) for metric in metrics)
+        fp = sum(int(metric["fp"]) for metric in metrics)
+        fn = sum(int(metric["fn"]) for metric in metrics)
+        alerts = sum(int(metric["alerts"]) for metric in metrics)
+        return {
+            "datasets": len(metrics),
+            "alerts": alerts,
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "total_anomalies": total_anomalies,
+            "micro_precision": tp / alerts if alerts else 0.0,
+            "micro_recall": tp / total_anomalies if total_anomalies else 0.0,
+            "macro_mean_f1": _mean(float(metric["f1"]) for metric in metrics),
+            "zero_f1_datasets": sum(float(metric["f1"]) == 0.0 for metric in metrics),
+        }
+
+    return {"datasets": len(rows), **{lane: totals(per_lane[lane]) for lane in LANES}}
 
 
 def require_exact_summary_agreement(
@@ -459,8 +565,15 @@ def _manifest(output_root: Path, database_path: Path) -> dict[str, object]:
         "lane_transitions.csv",
         "source_agreement_diagnostics.csv",
     )
+    evidence = (
+        "00_source_contract_audit.json",
+        "01_source_coverage.csv",
+        "evaluation_manifest.json",
+        "status.json",
+    )
     package_root = Path(__file__).parent
     experiments_root = package_root.parent
+    repository_root = package_root.parents[1]
     code_paths = (
         Path(__file__),
         package_root / "config.py",
@@ -468,7 +581,10 @@ def _manifest(output_root: Path, database_path: Path) -> dict[str, object]:
         package_root / "routing.py",
         package_root / "evaluation.py",
         package_root / "inputs.py",
+        package_root / "run_pipeline.py",
         experiments_root / "exp226_235_hard_alert_quality" / "database.py",
+        repository_root / "scratch" / "run_exp263_264_full_missing_aware_integration.py",
+        repository_root / "serve_rank_dashboard.py",
     )
     prediction = output_root / "frozen_predictions.jsonl"
     outputs = ("independent_reaggregation.json", "RESULT_REPORT.md")
@@ -483,11 +599,14 @@ def _manifest(output_root: Path, database_path: Path) -> dict[str, object]:
             "sha256": sha256_file(database_path),
         },
         "inputs": {name: sha256_file(output_root / name) for name in inputs},
+        "evidence": {name: sha256_file(output_root / name) for name in evidence},
         "code": {str(path.resolve()): sha256_file(path) for path in code_paths},
         "git_commit_sha": _git_commit_sha(package_root.parents[1]),
         "prediction": {prediction.name: sha256_file(prediction)},
         "outputs": {name: sha256_file(output_root / name) for name in outputs},
         "manifest_excludes_self_hash": True,
+        "manifest_self_hash_exclusion_reason": "MANIFEST.json is excluded to avoid recursive hashing",
+        "status_capture": "status.json is hashed only after the report phase reaches completed",
     }
 
 
@@ -508,11 +627,13 @@ def generate_report(
     database_path: Path = DB_PATH,
     truth_loader: Callable[[str], set[int]] | None = None,
 ) -> dict[str, object]:
-    """Write Task 6 artifacts after strict CSV-to-summary consistency checks."""
+    """Write independently reaggregated Task 6 artifacts after frozen-boundary checks."""
 
     output_root = Path(output_root)
+    verify_frozen_prediction_boundary(output_root)
     rows = read_results(output_root / "results.csv")
-    reaggregation = reaggregate_results(rows)
+    loader = truth_loader or (lambda dataset: _load_truth(dataset, Path(database_path)))
+    reaggregation = reaggregate_results_from_truth(rows, truth_loader=loader)
     summary = json.loads((output_root / "summary.json").read_text(encoding="utf-8"))
     if type(summary) is not dict:
         raise ValueError("summary.json is not an object")
@@ -526,8 +647,7 @@ def generate_report(
 
     diagnostics = source_diagnostics(
         rows,
-        truth_loader=truth_loader
-        or (lambda dataset: _load_truth(dataset, Path(database_path))),
+        truth_loader=loader,
     )
     payload: dict[str, object] = {
         "datasets": reaggregation["datasets"],
@@ -543,8 +663,33 @@ def generate_report(
         json.dumps(payload, sort_keys=True, indent=2) + "\n",
     )
     _atomic_write(output_root / "RESULT_REPORT.md", _report_markdown(reaggregation, diagnostics))
-    _atomic_write(
-        output_root / "MANIFEST.json",
-        json.dumps(_manifest(output_root, database_path), sort_keys=True, indent=2) + "\n",
-    )
     return payload
+
+
+def verify_frozen_prediction_boundary(output_root: Path) -> str:
+    """Verify the same frozen prediction digest used by evaluation before reporting reads truth."""
+
+    output_root = Path(output_root)
+    prediction = output_root / "frozen_predictions.jsonl"
+    prediction_manifest = json.loads((output_root / "prediction_manifest.json").read_text())
+    evaluation_manifest = json.loads((output_root / "evaluation_manifest.json").read_text())
+    if type(prediction_manifest) is not dict or type(evaluation_manifest) is not dict:
+        raise ValueError("reporting prediction manifest is not an object")
+    actual = sha256_file(prediction)
+    if prediction_manifest.get("prediction_sha256") != actual:
+        raise ValueError("reporting prediction SHA256 mismatch: prediction manifest")
+    if evaluation_manifest.get("prediction_sha256") != actual:
+        raise ValueError("reporting prediction SHA256 mismatch: evaluation manifest")
+    return actual
+
+
+def finalize_manifest(output_root: Path, *, database_path: Path = DB_PATH) -> dict[str, object]:
+    """Hash completed evidence after status.json has reached its terminal state."""
+
+    output_root = Path(output_root)
+    status = json.loads((output_root / "status.json").read_text(encoding="utf-8"))
+    if type(status) is not dict or status.get("status") != "completed" or status.get("phase") != "report":
+        raise ValueError("manifest requires completed report status")
+    manifest = _manifest(output_root, database_path)
+    _atomic_write(output_root / "MANIFEST.json", json.dumps(manifest, sort_keys=True, indent=2) + "\n")
+    return manifest

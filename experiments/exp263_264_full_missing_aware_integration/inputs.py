@@ -25,6 +25,104 @@ EXP260_AUDIT_PATH = (
     SOURCE_CONTRACT["missing_override"].artifact_path.parent / "audit.json"
 )
 
+FIXED_SOURCE_PROVENANCE: dict[str, dict[str, object]] = {
+    "statistical": {
+        "variant": "combined_40",
+        "alpha": 0.005,
+        "audit_sha256": "a10ed60e138d289de6c659d31f19cd6ad41cd73064b28e7aa50ec007c15ce507",
+        "audit": {"experiment": 252, "datasets": 1117, "full_population": True},
+        "config": {
+            "experiment": 252,
+            "source": "sktime_statistical_features_safe_hurst",
+            "seed": 20260722,
+            "score": "knn3_local_gap",
+            "train_calibration": "five_fold_oof",
+            "minimum_train": 5,
+            "feature_dimensions": {
+                "catch22_22": 22, "combined_40": 40, "hurst_3": 3,
+                "signature_6": 6, "summary_9": 9,
+            },
+        },
+        "manifest": {"experiment": 252, "datasets": 1117, "hard_policy_changed": False},
+    },
+    "structural": {
+        "variant": "structural_combined_440",
+        "alpha": 0.005,
+        "audit_sha256": "3bd3556b3bc7d2216796218a60c31f9fab4edadfc7371e003dfb972546bf738b",
+        "audit": {
+            "experiment_id": "experiment_254_sktime_structural_features",
+            "datasets": 1117, "full_population": True,
+        },
+        "config": {
+            "experiment": 254,
+            "source": "sktime_structural_features",
+            "seed": 20260723,
+            "score": "knn3_local_gap",
+            "train_calibration": "five_fold_oof",
+            "minimum_train": 5,
+            "uses_mps": False,
+            "feature_dimensions": {
+                "matrix_profile_16": 16, "random_interval_224": 224,
+                "sax_transition_72": 72, "sfa_hash_128": 128,
+                "structural_combined_440": 440,
+            },
+        },
+        "manifest": {
+            "experiment_id": "experiment_254_sktime_structural_features",
+            "datasets": 1117, "hard_policy_changed": False,
+        },
+    },
+    "change_point": {
+        "variant": "change_point_combined_33",
+        "alpha": 0.005,
+        "audit_sha256": "36037886f957033bf371dd52c187edbdb34d645b87dffe710bf9164d51b15bc3",
+        "audit": {
+            "experiment_id": "experiment_255_change_point_features",
+            "datasets": 1117, "full_population": True,
+        },
+        "config": {
+            "experiment": 255,
+            "source": "change_point_features",
+            "seed": 20260724,
+            "score": "knn3_local_gap",
+            "train_calibration": "five_fold_oof",
+            "minimum_train": 5,
+            "normalization": "pointwise_train_median_mad",
+            "uses_mps": False,
+            "uses_dataset_name_policy": False,
+            "uses_family_name": False,
+            "uses_test_length_budget": False,
+            "feature_dimensions": {
+                "change_point_combined_33": 33, "cusum_mosum_18": 18,
+                "pelt_l1_l2_10": 10, "pelt_rbf_5": 5,
+            },
+        },
+        "manifest": {
+            "experiment_id": "experiment_255_change_point_features",
+            "datasets": 1117, "hard_policy_changed": False,
+        },
+    },
+    "reconstruction": {
+        "variant": "mask_025__seed_intersection",
+        "alpha": 0.005,
+        "audit_sha256": "fbe71e4eb7a279fbc406845404c5d6ed52617d37285841c1aa59f431de241dcc",
+        "audit": {
+            "experiment_id": "experiment_257_mask_ratio_timeseries_sweep",
+            "datasets": 251,
+            "device": "mps",
+            "population_rule": "train_normal_count >= 100",
+            "mask_variants": {
+                "mask_00625": [0.0625], "mask_0125": [0.125], "mask_025": [0.25],
+                "mask_multiscale_00625_0125": [0.0625, 0.125],
+            },
+        },
+        "manifest": {
+            "experiment_id": "experiment_257_mask_ratio_timeseries_sweep", "datasets": 251,
+        },
+        "seed_mode": "seed_intersection",
+    },
+}
+
 BASELINE_SCHEMA = {
     "baseline_hard_indices": list,
     "baseline_priority_indices": list,
@@ -452,6 +550,47 @@ def _validate_missing_override_provenance() -> None:
         raise SourceContractError("missing override audit flags mismatch")
 
 
+def _validate_fixed_source_provenance(
+    name: str, spec: SourceSpec, audit: Mapping[str, object], manifest: Mapping[str, object]
+) -> None:
+    """Require the preregistered source variant, alpha, audit config, and seed mode."""
+
+    expected = FIXED_SOURCE_PROVENANCE[name]
+    if spec.alpha != expected["alpha"]:
+        raise SourceContractError(f"fixed source alpha mismatch: {name}")
+    if spec.variant != expected["variant"]:
+        raise SourceContractError(f"fixed source variant mismatch: {name}")
+    for field, value in expected["audit"].items():
+        if audit.get(field) != value:
+            raise SourceContractError(f"fixed source audit mismatch: {name} field={field}")
+    expected_config = expected.get("config")
+    if expected_config is not None:
+        config = audit.get("config")
+        if type(config) is not dict or any(config.get(field) != value for field, value in expected_config.items()):
+            raise SourceContractError(f"fixed source audit config mismatch: {name}")
+    for field, value in expected["manifest"].items():
+        if manifest.get(field) != value:
+            raise SourceContractError(f"fixed source manifest mismatch: {name} field={field}")
+    if expected.get("seed_mode") == "seed_intersection" and not spec.variant.endswith("__seed_intersection"):
+        raise SourceContractError(f"fixed source seed provenance mismatch: {name}")
+
+
+def _validate_fixed_source_provenance_artifacts(
+    name: str, spec: SourceSpec, manifest: Mapping[str, object]
+) -> None:
+    audit_path = spec.artifact_path.parent / "audit.json"
+    expected = FIXED_SOURCE_PROVENANCE[name]
+    actual_hash = sha256_file(audit_path)
+    if actual_hash != expected["audit_sha256"]:
+        raise SourceContractError(
+            f"fixed source audit SHA256 mismatch: {name} "
+            f"expected={expected['audit_sha256']} actual={actual_hash}"
+        )
+    _validate_fixed_source_provenance(
+        name, spec, _read_json_object(audit_path, description="fixed source audit"), manifest
+    )
+
+
 def load_source_maps() -> FrozenSourceMaps:
     """Load and validate every frozen artifact without reading TEST labels."""
 
@@ -468,6 +607,8 @@ def load_source_maps() -> FrozenSourceMaps:
         )
         for name, spec in SOURCE_CONTRACT.items()
     }
+    for name in SOURCE_NAMES:
+        _validate_fixed_source_provenance_artifacts(name, SOURCE_CONTRACT[name], manifests[name])
     del manifests  # Manifest validation is a contract gate, not routing input.
     _validate_baseline_provenance()
     _validate_missing_override_provenance()
@@ -601,9 +742,12 @@ def load_source_maps() -> FrozenSourceMaps:
     )
 
 
-def _write_audit_files(audit: Mapping[str, object], sources: FrozenSourceMaps) -> None:
-    OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
-    (OUTPUT_ROOT / "00_source_contract_audit.json").write_text(
+def _write_audit_files(
+    output_root: Path, audit: Mapping[str, object], sources: FrozenSourceMaps
+) -> None:
+    output_root = Path(output_root)
+    output_root.mkdir(parents=True, exist_ok=True)
+    (output_root / "00_source_contract_audit.json").write_text(
         json.dumps(audit, sort_keys=True, indent=2) + "\n", encoding="utf-8"
     )
     fields = [
@@ -617,7 +761,7 @@ def _write_audit_files(audit: Mapping[str, object], sources: FrozenSourceMaps) -
         "reconstruction",
         "missing_override",
     ]
-    with (OUTPUT_ROOT / "01_source_coverage.csv").open(
+    with (output_root / "01_source_coverage.csv").open(
         "w", newline="", encoding="utf-8"
     ) as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
@@ -639,7 +783,7 @@ def _write_audit_files(audit: Mapping[str, object], sources: FrozenSourceMaps) -
             )
 
 
-def audit_source_contract() -> dict[str, object]:
+def audit_source_contract(output_root: Path) -> dict[str, object]:
     """Validate frozen inputs and materialize the label-free source audit."""
 
     sources = load_source_maps()
@@ -689,13 +833,13 @@ def audit_source_contract() -> dict[str, object]:
         "contains_evaluation_metrics": False,
         "database_read_only": True,
     }
-    _write_audit_files(audit, sources)
+    _write_audit_files(output_root, audit, sources)
     return audit
 
 
 def main() -> int:
     try:
-        audit_source_contract()
+        audit_source_contract(OUTPUT_ROOT)
     except SourceContractError as exc:
         print(str(exc), file=sys.stderr)
         return 2

@@ -264,6 +264,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    output_root = Path(args.output_root).expanduser().resolve()
+    if args.dataset_limit is not None and output_root == OUTPUT_ROOT.resolve():
+        raise ValueError("smoke runs require an explicit non-production output root")
     if args.dataset_limit is None and args.expected_total_anomalies is not None:
         raise ValueError("expected-total-anomalies requires --dataset-limit")
     if (

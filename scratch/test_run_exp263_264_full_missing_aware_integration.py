@@ -112,6 +112,7 @@ class RunnerStateTest(unittest.TestCase):
         args = argparse.Namespace(
             dataset_limit=None,
             expected_total_anomalies=10,
+            output_root=self.runner.OUTPUT_ROOT,
         )
         with self.assertRaisesRegex(ValueError, "dataset-limit"):
             self.runner.validate_args(args)
@@ -120,8 +121,18 @@ class RunnerStateTest(unittest.TestCase):
         args = argparse.Namespace(
             dataset_limit=1117,
             expected_total_anomalies=10,
+            output_root=Path("/tmp/exp263_264_runner_unit"),
         )
         with self.assertRaisesRegex(ValueError, "strict subset"):
+            self.runner.validate_args(args)
+
+    def test_runner_rejects_smoke_at_production_output_root(self):
+        args = argparse.Namespace(
+            dataset_limit=10,
+            expected_total_anomalies=10,
+            output_root=self.runner.OUTPUT_ROOT,
+        )
+        with self.assertRaisesRegex(ValueError, "non-production output root"):
             self.runner.validate_args(args)
 
     def test_claim_run_slot_refuses_to_replace_unrelated_active_run(self):

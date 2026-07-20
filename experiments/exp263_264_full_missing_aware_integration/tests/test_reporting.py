@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import tempfile
 import unittest
@@ -21,6 +22,7 @@ def _metrics(selected: list[int], truth: set[int]) -> dict[str, float | int]:
         "fp": fp,
         "fn": fn,
         "precision": precision,
+        "recall": recall,
         "f1": f1,
     }
 
@@ -86,10 +88,38 @@ def _write_results(path: Path, rows: list[dict[str, object]]) -> None:
 
 
 class IndependentReportingTest(unittest.TestCase):
+    def test_truth_reaggregation_rejects_adversarial_persisted_lane_metrics(self) -> None:
+        from experiments.exp263_264_full_missing_aware_integration.reporting import (
+            reaggregate_results_from_truth,
+        )
+
+        row = _result_row(
+            "tampered",
+            {2},
+            baseline_hard=[],
+            baseline_standard=[2],
+            baseline_priority=[],
+            final_hard=[2],
+            final_standard=[],
+            final_priority=[],
+            promoted=[2],
+            sources={
+                "statistical": [2], "structural": [2], "change_point": [2],
+                "reconstruction": [],
+            },
+        )
+        row["autonomous_hard_tp"] = 0
+
+        with self.assertRaisesRegex(
+            ValueError, "persisted metric mismatch: dataset=tampered lane=autonomous_hard field=tp"
+        ):
+            reaggregate_results_from_truth([row], truth_loader=lambda _: {2})
+
     def test_generates_independent_diagnostics_and_manifest_without_self_hash(self) -> None:
         from experiments.exp263_264_full_missing_aware_integration.reporting import (
+            finalize_manifest,
             generate_report,
-            reaggregate_results,
+            reaggregate_results_from_truth,
         )
 
         rows = [
@@ -132,8 +162,17 @@ class IndependentReportingTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             _write_results(root / "results.csv", rows)
-            (root / "frozen_predictions.jsonl").write_text("{}\n", encoding="utf-8")
-            (root / "prediction_manifest.json").write_text("{}\n", encoding="utf-8")
+            prediction = root / "frozen_predictions.jsonl"
+            prediction.write_text("{}\n", encoding="utf-8")
+            prediction_sha256 = hashlib.sha256(prediction.read_bytes()).hexdigest()
+            (root / "prediction_manifest.json").write_text(
+                json.dumps({"prediction_sha256": prediction_sha256}), encoding="utf-8"
+            )
+            (root / "evaluation_manifest.json").write_text(
+                json.dumps({"prediction_sha256": prediction_sha256}), encoding="utf-8"
+            )
+            (root / "00_source_contract_audit.json").write_text("{}\n", encoding="utf-8")
+            (root / "01_source_coverage.csv").write_text("dataset\n", encoding="utf-8")
             (root / "lane_transitions.csv").write_text("dataset\n", encoding="utf-8")
             (root / "source_agreement_diagnostics.csv").write_text(
                 "dataset\n", encoding="utf-8"
@@ -145,7 +184,9 @@ class IndependentReportingTest(unittest.TestCase):
                 "retrospective": True,
                 "selected_from_prior_test_review": True,
                 "deployment_eligible": False,
-                **reaggregate_results(rows),
+                **reaggregate_results_from_truth(
+                    rows, truth_loader={"first": {0, 2}, "second": {1}}.__getitem__
+                ),
             }
             (root / "summary.json").write_text(
                 json.dumps(summary), encoding="utf-8"
@@ -174,16 +215,27 @@ class IndependentReportingTest(unittest.TestCase):
                 "Aggregate source agreement on baseline Standard candidates across all 2 result rows",
                 (root / "RESULT_REPORT.md").read_text(encoding="utf-8"),
             )
-            manifest = json.loads((root / "MANIFEST.json").read_text(encoding="utf-8"))
+            (root / "status.json").write_text(
+                json.dumps({"status": "completed", "phase": "report"}), encoding="utf-8"
+            )
+            manifest = finalize_manifest(root, database_path=database)
             self.assertEqual(set(manifest["outputs"]), {
                 "RESULT_REPORT.md",
                 "independent_reaggregation.json",
             })
+            self.assertEqual(set(manifest["evidence"]), {
+                "00_source_contract_audit.json",
+                "01_source_coverage.csv",
+                "evaluation_manifest.json",
+                "status.json",
+            })
             self.assertTrue({
                 "reporting.py", "config.py", "prediction.py", "routing.py",
-                "evaluation.py", "inputs.py", "database.py",
+                "evaluation.py", "inputs.py", "run_pipeline.py", "database.py",
+                "run_exp263_264_full_missing_aware_integration.py", "serve_rank_dashboard.py",
             } <= {Path(path).name for path in manifest["code"]})
             self.assertIsInstance(manifest["git_commit_sha"], str)
+            self.assertTrue(manifest["manifest_excludes_self_hash"])
 
     def test_rejects_summary_metric_mismatch(self) -> None:
         from experiments.exp263_264_full_missing_aware_integration.reporting import (
@@ -191,8 +243,9 @@ class IndependentReportingTest(unittest.TestCase):
         )
 
         lane = {
-            "datasets": 1, "alerts": 1, "tp": 1, "fp": 0,
-            "micro_precision": 1.0, "macro_mean_f1": 1.0,
+            "datasets": 1, "alerts": 1, "tp": 1, "fp": 0, "fn": 0,
+            "total_anomalies": 1, "micro_precision": 1.0, "micro_recall": 1.0,
+            "macro_mean_f1": 1.0,
             "zero_f1_datasets": 0,
         }
         actual = {"datasets": 1, **{name: dict(lane) for name in (

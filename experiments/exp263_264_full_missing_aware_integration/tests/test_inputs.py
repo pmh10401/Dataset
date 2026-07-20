@@ -2,6 +2,7 @@ import io
 import json
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -15,6 +16,7 @@ from experiments.exp263_264_full_missing_aware_integration.inputs import (
     _validate_n_test,
     _validate_row_indices,
     _validate_row_schema,
+    _validate_fixed_source_provenance,
     audit_source_contract,
     load_population,
     main,
@@ -133,7 +135,11 @@ class ConfigurationContractTest(unittest.TestCase):
 
 class SourceContractTest(unittest.TestCase):
     def test_source_contract_requires_full_coverage(self) -> None:
-        audit = audit_source_contract()
+        with tempfile.TemporaryDirectory() as directory:
+            output_root = Path(directory)
+            audit = audit_source_contract(output_root)
+            self.assertTrue((output_root / "00_source_contract_audit.json").is_file())
+            self.assertTrue((output_root / "01_source_coverage.csv").is_file())
 
         self.assertEqual(audit["raw_database_dataset_count"], 1119)
         self.assertEqual(
@@ -159,6 +165,29 @@ class SourceContractTest(unittest.TestCase):
                 "provenance_audit": "/Users/minho/Documents/Dataset/exp260_262_missing_aware_alert/audit.json",
             },
         )
+
+    def test_fixed_source_provenance_rejects_audit_seed_mismatch(self) -> None:
+        spec = config.SOURCE_CONTRACT["statistical"]
+        audit = json.loads((spec.artifact_path.parent / "audit.json").read_text())
+        manifest = json.loads((spec.artifact_path.parent / "prediction_manifest.json").read_text())
+
+        _validate_fixed_source_provenance("statistical", spec, audit, manifest)
+        audit["config"]["seed"] = 0
+
+        with self.assertRaisesRegex(
+            SourceContractError, "fixed source audit config mismatch: statistical"
+        ):
+            _validate_fixed_source_provenance("statistical", spec, audit, manifest)
+
+    def test_fixed_source_provenance_rejects_variant_mutation(self) -> None:
+        spec = config.SOURCE_CONTRACT["reconstruction"]
+        audit = json.loads((spec.artifact_path.parent / "audit.json").read_text())
+        manifest = json.loads((spec.artifact_path.parent / "prediction_manifest.json").read_text())
+
+        with self.assertRaisesRegex(SourceContractError, "fixed source variant mismatch: reconstruction"):
+            _validate_fixed_source_provenance(
+                "reconstruction", replace(spec, variant="mask_0125"), audit, manifest
+            )
 
     def test_select_rows_rejects_duplicate_dataset_for_source_variant(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

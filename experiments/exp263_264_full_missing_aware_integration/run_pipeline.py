@@ -436,8 +436,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    output_root = Path(args.output_root).expanduser().resolve()
     if args.dataset_limit is not None and not 1 <= args.dataset_limit <= EXPECTED_POPULATION:
         raise ValueError(f"dataset-limit must be between 1 and {EXPECTED_POPULATION}")
+    if args.dataset_limit is not None and output_root == OUTPUT_ROOT.resolve():
+        raise ValueError("smoke runs require an explicit non-production output root")
     if args.expected_total_anomalies is not None and args.expected_total_anomalies < 0:
         raise ValueError("expected-total-anomalies must be nonnegative")
     if args.expected_total_anomalies is not None and args.dataset_limit is None:
@@ -470,9 +473,14 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     args.output_root = args.output_root.expanduser().resolve()
     expected = args.dataset_limit or EXPECTED_POPULATION
-    reporter = StatusReporter(phase=args.phase, output_root=args.output_root, expected=expected)
     try:
         validate_args(args)
+    except ValueError as exc:
+        print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
+
+    reporter = StatusReporter(phase=args.phase, output_root=args.output_root, expected=expected)
+    try:
         _append_log(args.output_root, f"START phase={args.phase} expected={expected}")
         result = run_phase(args, reporter)
         reporter.update(
@@ -481,6 +489,8 @@ def main(argv: list[str] | None = None) -> int:
             current_dataset=result.get("current_dataset"),
             finished_at=time.strftime("%Y-%m-%d %H:%M:%S"),
         )
+        if args.phase == "report":
+            reporting.finalize_manifest(args.output_root, database_path=DB_PATH)
         _append_log(args.output_root, f"DONE phase={args.phase} done={result.get('done', expected)}")
         return 0
     except BaseException as exc:

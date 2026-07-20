@@ -84,10 +84,36 @@ class RunPipelineTest(unittest.TestCase):
     def test_smoke_evaluation_requires_explicit_anomaly_override(self):
         parser = run_pipeline.build_parser()
         args = parser.parse_args(
-            ["--phase", "evaluate", "--dataset-limit", "10"]
+            [
+                "--phase", "evaluate", "--dataset-limit", "10",
+                "--output-root", "/tmp/exp263_264_unit_smoke",
+            ]
         )
         with self.assertRaisesRegex(ValueError, "expected-total-anomalies"):
             run_pipeline.validate_args(args)
+
+    def test_smoke_requires_explicit_nonproduction_output_root_for_every_phase(self):
+        parser = run_pipeline.build_parser()
+        for phase in run_pipeline.PHASES:
+            arguments = ["--phase", phase, "--dataset-limit", "10"]
+            if phase == "evaluate":
+                arguments.extend(["--expected-total-anomalies", "10"])
+            with self.subTest(phase=phase):
+                args = parser.parse_args(arguments)
+                with self.assertRaisesRegex(ValueError, "non-production output root"):
+                    run_pipeline.validate_args(args)
+
+    def test_invalid_production_smoke_does_not_create_status_or_log(self):
+        with tempfile.TemporaryDirectory() as directory:
+            production_root = Path(directory) / "production"
+            with mock.patch.object(run_pipeline, "OUTPUT_ROOT", production_root):
+                return_code = run_pipeline.main(
+                    ["--phase", "audit", "--dataset-limit", "10"]
+                )
+
+            self.assertNotEqual(return_code, 0)
+            self.assertFalse((production_root / "status.json").exists())
+            self.assertFalse((production_root / "full.log").exists())
 
     def test_production_evaluation_rejects_anomaly_override(self):
         parser = run_pipeline.build_parser()
@@ -105,6 +131,8 @@ class RunPipelineTest(unittest.TestCase):
                 "evaluate",
                 "--dataset-limit",
                 "1117",
+                "--output-root",
+                "/tmp/exp263_264_unit_smoke",
                 "--expected-total-anomalies",
                 "10",
             ]
