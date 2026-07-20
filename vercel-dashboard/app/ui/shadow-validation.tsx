@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, ArrowLeft, Check, CircleHelp, Clock3, Eye, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, CircleHelp, Clock3, Database, Eye, RefreshCw, ShieldCheck, X } from "lucide-react";
 
 import type { ShadowLane } from "@/src/lib/shadow";
 import type { ShadowReport } from "@/src/lib/shadow-metrics";
-import { metricDisplay, progressLabel, shadowKoreanLabel, sortCandidates, type ShadowCandidateView } from "@/src/lib/shadow-view-model";
+import { collectionStatus, metricDisplay, progressLabel, shadowKoreanLabel, sortCandidates, type ShadowCandidateView } from "@/src/lib/shadow-view-model";
 import { createBrowserSupabaseClient } from "@/src/lib/supabase/browser";
 
 type Feedback = { id: number; verdict: "true_anomaly" | "false_alarm" | "deferred" } | null;
@@ -84,6 +84,7 @@ export default function ShadowValidation() {
     && (verdict === "all" || (verdict === "unreviewed" ? candidate.verdict === null : candidate.verdict === verdict)),
   )), [runs, activeLane, confidence, missing, verdict]);
   const selectedCandidate = candidates.find((candidate) => candidate.candidate_id === selected) ?? candidates[0] ?? null;
+  const collection = collectionStatus(report?.runs_collected ?? 0);
 
   async function submitCandidate(candidate: typeof selectedCandidate, nextVerdict: "true_anomaly" | "false_alarm" | "deferred") {
     if (!candidate) return;
@@ -122,6 +123,7 @@ export default function ShadowValidation() {
         <div><span>후보 Precision</span><strong>{metricDisplay(report?.candidate_precision, "precision")}</strong></div>
       </div>
     </section>
+    <div className={`shadow-collection-state ${collection.state}`}><Database size={18} /><div><strong>{collection.title}</strong><span>{collection.description}</span></div></div>
     <div className="shadow-notice"><ShieldCheck size={18} /><strong>Shadow는 자동 경보가 아닙니다.</strong><span>사용자 검토를 위한 관찰 후보이며 Exp253 자동 경보는 변경하지 않습니다.</span></div>
     <nav className="shadow-tabs" aria-label="검토 lane">{TABS.map((tab) => <button key={tab.lane} className={activeLane === tab.lane ? "active" : ""} onClick={() => setActiveLane(tab.lane)}>{tab.label}</button>)}</nav>
     <section className="shadow-filters">

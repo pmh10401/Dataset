@@ -45,6 +45,28 @@ export function progressLabel(runsCollected: number) {
   return `신규 run 검증 ${runsCollected}/100`;
 }
 
+export function collectionStatus(runsCollected: number) {
+  if (runsCollected <= 0) {
+    return {
+      state: "waiting" as const,
+      title: "개발 준비 완료 · 신규 데이터 대기",
+      description: "개발 과정에는 신규 run이 없으므로 성능 검증은 시작 전입니다. 새 run이 들어오면 자동으로 집계합니다.",
+    };
+  }
+  if (runsCollected < 100) {
+    return {
+      state: "collecting" as const,
+      title: "신규 데이터 검증 진행 중",
+      description: "실제 신규 run만 누적하고 있으며 과거 TEST 데이터는 새 검증으로 계산하지 않습니다.",
+    };
+  }
+  return {
+    state: "complete" as const,
+    title: "1차 신규 데이터 수집 목표 도달",
+    description: "수집 결과는 사용자 판정이 완료된 범위에서만 성능 지표로 계산합니다.",
+  };
+}
+
 export function metricDisplay(value: number | null | undefined, _metric: "precision" | "recall" | "f1") {
   return value === null || value === undefined ? "계산 전" : `${(value * 100).toFixed(1)}%`;
 }

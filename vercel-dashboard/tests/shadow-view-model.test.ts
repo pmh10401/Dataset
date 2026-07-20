@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { metricDisplay, progressLabel, shadowKoreanLabel, sortCandidates, type ShadowCandidateView } from "../src/lib/shadow-view-model";
+import { collectionStatus, metricDisplay, progressLabel, shadowKoreanLabel, sortCandidates, type ShadowCandidateView } from "../src/lib/shadow-view-model";
 
 function candidate(final_lane: ShadowCandidateView["final_lane"], confidence_grade: ShadowCandidateView["confidence_grade"] = null, verdict: ShadowCandidateView["verdict"] = null): ShadowCandidateView {
   return { candidate_id: `${final_lane}-${confidence_grade}-${verdict}`, candidate_index: 0, final_lane, confidence_grade, verdict, quality_flagged: false, support_count: 0 };
@@ -26,5 +26,14 @@ describe("shadow dashboard view model", () => {
   it("hides recall and f1 when the report is not eligible", () => {
     expect(metricDisplay(null, "recall")).toBe("계산 전");
     expect(metricDisplay(0.84339, "precision")).toBe("84.3%");
+  });
+
+  it("distinguishes development readiness from prospective data collection", () => {
+    expect(collectionStatus(0)).toMatchObject({
+      state: "waiting",
+      title: "개발 준비 완료 · 신규 데이터 대기",
+    });
+    expect(collectionStatus(37)).toMatchObject({ state: "collecting" });
+    expect(collectionStatus(100)).toMatchObject({ state: "complete" });
   });
 });

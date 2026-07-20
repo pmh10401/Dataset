@@ -1,6 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+export function isPublicRoute(pathname: string) {
+  return pathname === "/login"
+    || pathname.startsWith("/api/ingest")
+    || pathname === "/api/shadow/ingest";
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
@@ -18,7 +24,7 @@ export async function proxy(request: NextRequest) {
     },
   );
   const { data } = await supabase.auth.getUser();
-  const isPublic = request.nextUrl.pathname === "/login" || request.nextUrl.pathname.startsWith("/api/ingest");
+  const isPublic = isPublicRoute(request.nextUrl.pathname);
   if (!data.user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
