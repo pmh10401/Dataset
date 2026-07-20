@@ -186,7 +186,19 @@ def require_persisted_routing_agreement(
     quality_flags = _integer_set(row, "quality_flag_indices", dataset)
     actual_promoted = _integer_set(row, "promoted_indices", dataset)
     actual_quality_blocked = _integer_set(row, "quality_blocked_indices", dataset)
-    for name, indices in {**baseline, **sources, "quality_flags": quality_flags}.items():
+    final = {
+        "hard": _integer_set(row, "final_hard_indices", dataset),
+        "standard": _integer_set(row, "final_standard_indices", dataset),
+        "priority": _integer_set(row, "final_priority_indices", dataset),
+    }
+    for name, indices in {
+        **baseline,
+        **sources,
+        **final,
+        "quality_flags": quality_flags,
+        "promoted": actual_promoted,
+        "quality_blocked": actual_quality_blocked,
+    }.items():
         if any(index < 0 or index >= n_test for index in indices):
             raise ValueError(f"index outside TEST range: dataset={dataset} source={name}")
 
@@ -206,9 +218,20 @@ def require_persisted_routing_agreement(
         for index, count in support.items()
         if count >= REQUIRED_PROMOTION_AGREEMENT and index in quality_flags
     }
+    expected_priority_added = {
+        index for index, count in support.items() if count >= 2 and index not in expected_promoted
+    }
+    expected_final = {
+        "hard": baseline["hard"] | expected_promoted,
+        "standard": baseline["standard"] - expected_promoted - expected_priority_added,
+        "priority": baseline["priority"] | expected_priority_added,
+    }
     for field, actual, expected in (
         ("promoted_indices", actual_promoted, expected_promoted),
         ("quality_blocked_indices", actual_quality_blocked, expected_quality_blocked),
+        ("final_hard_indices", final["hard"], expected_final["hard"]),
+        ("final_standard_indices", final["standard"], expected_final["standard"]),
+        ("final_priority_indices", final["priority"], expected_final["priority"]),
     ):
         if actual != expected:
             raise ValueError(
@@ -216,6 +239,17 @@ def require_persisted_routing_agreement(
                 f"dataset={dataset} field={field} expected={sorted(expected)} actual={sorted(actual)}"
             )
     return baseline, sources
+
+
+def preflight_routing_rows(
+    rows: list[dict[str, object]],
+) -> list[tuple[dict[str, object], dict[str, set[int]], dict[str, set[int]]]]:
+    """Validate label-free routing evidence for every row before scoring any row."""
+
+    return [
+        (row, *require_persisted_routing_agreement(row))
+        for row in rows
+    ]
 
 
 def _metric(indices: set[int], truth: set[int]) -> dict[str, float | int]:
@@ -263,9 +297,8 @@ def source_diagnostics(
     hard_confirmed: list[dict[str, float | int]] = []
     baseline_standard = baseline_priority = final_standard = final_priority = 0
 
-    for row in rows:
+    for row, baseline, sources in preflight_routing_rows(rows):
         dataset = str(row["dataset"])
-        baseline, sources = require_persisted_routing_agreement(row)
         n_test = row["n_test"]
         assert type(n_test) is int
         truth = set(truth_loader(dataset))

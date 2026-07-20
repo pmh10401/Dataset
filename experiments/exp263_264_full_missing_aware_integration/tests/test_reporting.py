@@ -238,6 +238,37 @@ class IndependentReportingTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "routing mismatch: .*quality_blocked_indices"):
             source_diagnostics([row], truth_loader=lambda _: self.fail("truth must not load"))
 
+    def test_preflight_rejects_later_invalid_row_before_any_truth_load(self) -> None:
+        from experiments.exp263_264_full_missing_aware_integration.reporting import (
+            source_diagnostics,
+        )
+
+        valid = _result_row(
+            "valid_first", {2}, baseline_hard=[], baseline_standard=[2],
+            baseline_priority=[], final_hard=[2], final_standard=[], final_priority=[],
+            promoted=[2], sources={
+                "statistical": [2], "structural": [2], "change_point": [2],
+                "reconstruction": [],
+            },
+        )
+        invalid = _result_row(
+            "invalid_second", {2}, baseline_hard=[], baseline_standard=[1, 2],
+            baseline_priority=[], final_hard=[1], final_standard=[2], final_priority=[],
+            promoted=[1], sources={
+                "statistical": [2], "structural": [2], "change_point": [2],
+                "reconstruction": [],
+            },
+        )
+        truth_loader_calls: list[str] = []
+
+        def truth_loader(dataset: str) -> set[int]:
+            truth_loader_calls.append(dataset)
+            return {2}
+
+        with self.assertRaisesRegex(ValueError, "dataset=invalid_second field=promoted_indices"):
+            source_diagnostics([valid, invalid], truth_loader=truth_loader)
+        self.assertEqual(truth_loader_calls, [])
+
 
 if __name__ == "__main__":
     unittest.main()
