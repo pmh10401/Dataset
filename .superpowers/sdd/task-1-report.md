@@ -46,3 +46,19 @@ The pre-existing dirty worktree files were not modified, staged, or included.
   database validation, routing, prediction, and evaluation remain Task 2 onward.
 - The implementation commit deliberately excludes all unrelated pre-existing dirty
   and untracked files in the worktree.
+
+## Fix Review
+
+The review finding was addressed by extending `test_inputs.py` with focused assertions
+for the exact six-entry `SOURCE_CONTRACT`, every fixed variant and alpha, the exact
+absolute DB/output paths, and every exact absolute source artifact path.
+
+Command:
+
+`python3 -m unittest experiments.exp263_264_full_missing_aware_integration.tests.test_inputs -v`
+
+Output summary:
+
+`Ran 3 tests in 0.000s` and `OK`.
+
+Fix commit SHA: `ebe1115445e9f35afd4feb5f447d85083140890d`
