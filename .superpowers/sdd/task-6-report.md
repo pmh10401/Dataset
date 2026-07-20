@@ -32,7 +32,7 @@
 
 ## Results
 
-- Exact summary agreement: `true` for all 1,117 datasets.
+- Exact summary agreement: `true` from aggregate totals across all 1,117 result rows.
 - Autonomous Hard: 2,255 alerts, 1,917 TP, 338 FP, precision `0.850111`,
   Mean F1 `0.608711`, and 356 Zero-F1 datasets.
 - Source raw-candidate TP/FP: statistical `703/139`, structural `861/142`,
@@ -79,8 +79,8 @@
   `routing.py`, `evaluation.py`, `inputs.py`, and
   `exp226_235_hard_alert_quality/database.py` in addition to the DB, inputs,
   frozen prediction, and non-manifest outputs.
-- The real report run recorded available Git commit SHA
-  `561696ee4d4eb28e0a50979268eae3284310d2bb` in `MANIFEST.json`.
+- The current real report run recorded behavioral Git commit SHA
+  `23477441eeb08ad7a5c56bcf1f3fdcb94da9141e` in `MANIFEST.json`.
 - The agreement table now explicitly states that it is an aggregate across all
   result rows, not a per-dataset agreement measure.
 
@@ -99,3 +99,26 @@
     quality-blocked remains empty.
   - `MANIFEST.json` contains all seven required code hashes, the available Git
     SHA, and still excludes self-hashing.
+
+### Complete Label-Free Preflight
+
+- `preflight_routing_rows` now validates every persisted result row before the
+  scoring pass can call the TEST truth loader. It checks baseline/source/final
+  lanes, source-agreement-derived promotions, quality blocks, and the derived
+  Standard/Priority routing partition.
+- A two-row regression fixture has a valid first row and invalid second row;
+  the instrumented truth loader records zero calls when the second-row preflight
+  fails.
+
+### Final Verification
+
+- `python3 -m unittest experiments.exp263_264_full_missing_aware_integration.tests.test_reporting -v`
+  - Passed: 5 tests.
+- `python3 -m unittest discover -s experiments/exp263_264_full_missing_aware_integration/tests -v`
+  - Passed: 46 tests.
+- `generate_report(...)` after behavioral commit `23477441`
+  - Completed the label-free preflight across all 1,117 rows before the separate
+    scoring pass.
+  - Exact summary agreement remains `true` and the refreshed `MANIFEST.json`
+    records Git SHA `23477441eeb08ad7a5c56bcf1f3fdcb94da9141e`.
+  - Refreshed manifest SHA256: `ff1d3732d4c1440be3d6104d8fa2da6f1168df3dd470b2827fb0e1bee425d9fa`.
