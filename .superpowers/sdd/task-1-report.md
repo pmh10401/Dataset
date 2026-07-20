@@ -62,3 +62,20 @@ Output summary:
 `Ran 3 tests in 0.000s` and `OK`.
 
 Fix commit SHA: `ebe1115445e9f35afd4feb5f447d85083140890d`
+
+## Fix Review 2
+
+The remaining review gap was addressed by asserting every `SourceSpec.experiment` and
+`SourceSpec.scope`. The test now fixes `all_1117` for the baseline, statistical,
+structural, and change-point sources, `n_train_at_least_100` for reconstruction, and
+`missing_20` for the missing-data override.
+
+Command:
+
+`python3 -m unittest experiments.exp263_264_full_missing_aware_integration.tests.test_inputs -v`
+
+Output summary:
+
+`Ran 3 tests in 0.000s` and `OK`.
+
+Fix commit SHA: `33538039d12c3cdcae85e652d23f42542f35d348`
