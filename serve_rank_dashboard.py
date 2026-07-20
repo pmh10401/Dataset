@@ -3241,6 +3241,30 @@ def read_external_live_run():
     return value if value.get("status") in {"running", "completed", "failed"} else {}
 
 
+def read_explicit_run_status(path=None):
+    """Read one explicitly configured Task 7 status file without directory scanning."""
+    configured = path if path is not None else os.environ.get("RANK_DASHBOARD_STATUS_PATH")
+    if not configured:
+        return {}
+    candidate = Path(configured).expanduser()
+    if not candidate.is_absolute() or candidate.name != "status.json":
+        return {}
+    try:
+        candidate = candidate.resolve()
+        value = json.loads(candidate.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if value.get("id") not in {
+        "experiment_263_full_missing_aware_integration",
+        "experiment_264_full_missing_aware_posthoc_evaluation",
+    }:
+        return {}
+    if value.get("status") not in {"running", "completed", "failed"}:
+        return {}
+    value["status_path"] = str(candidate)
+    return value
+
+
 def _exp151_152_checkpoint_progress(checkpoint_path):
     checkpoint_path = Path(checkpoint_path)
     if not checkpoint_path.exists():
@@ -4950,6 +4974,9 @@ def build_status(include_details=True):
     detected_exp153_157 = detect_exp153_157_run()
     if detected_exp153_157.get("status") == "running":
         external_live_run = detected_exp153_157
+    explicit_run = read_explicit_run_status()
+    if explicit_run.get("status") == "running":
+        external_live_run = explicit_run
     if external_live_run.get("status") == "running":
         running = external_live_run
     heartbeat = read_heartbeat()
@@ -5013,7 +5040,7 @@ def build_status(include_details=True):
         ]
     pid = running.get("child_pid") or running.get("pid")
     process_snapshot = process_tree_snapshot(pid)
-    is_running = bool(process_snapshot)
+    is_running = bool(process_snapshot) or external_live_run.get("status") == "running"
     current = recent[-1] if recent and is_running else {}
     if heartbeat_matches and heartbeat.get("current_dataset"):
         current = {"name": heartbeat.get("current_dataset"), "length": "-", "train_size": "-"}
@@ -5077,8 +5104,8 @@ def build_status(include_details=True):
     ]
     queue_ids = [running_id, *pending_queue]
     experiment_snapshot = experiment_queue_snapshot(state, default_expected, experiment_ids=queue_ids, heartbeat=heartbeat)
-    external_for_items = dict(external_live_run)
-    if external_for_items:
+    external_for_items = dict(explicit_run or external_live_run)
+    if external_for_items.get("status") == "running":
         external_for_items["progress_percent"] = progress
         external_for_items["datasets_done"] = done
         external_for_items["expected_datasets"] = expected
@@ -5124,7 +5151,7 @@ def build_status(include_details=True):
         "throughput": throughput_snapshot(progress_events, done, expected, elapsed),
         "best": summary[0] if summary else None,
         "runtime_health": runtime_health_snapshot(heartbeat),
-        "external_validation": external_live_run,
+        "external_validation": external_for_items,
         "log_tail": log_tail,
         "elapsed_seconds": elapsed,
         "eta_seconds": eta,

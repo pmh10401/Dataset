@@ -68,8 +68,8 @@
   phase `report`, `10/10`, while both catalog entries remained at `1117`.
 - The canonical queue state mtime remained `2026-07-20 23:19:33`, before the
   smoke run, confirming the direct phase commands did not mutate the full queue.
-- The existing dashboard server PID `32416` remained alive. No server restart,
-  signal, port bind, or request was performed.
+- The existing dashboard server PID `32416` remained alive and received no
+  restart or signal. Review verification later used a separate temporary port.
 - The full production output root was not used by smoke commands.
 
 ## Concerns
@@ -80,5 +80,80 @@
 - The smoke anomaly total is intentionally explicit and smoke-only. Task 8 must
   omit both smoke arguments so production evaluation enforces 1,117 datasets and
   3,918 anomalies.
-- The dashboard has unrelated user changes in the same file. Only the two new
-  Exp263/264 catalog dictionaries belong to this Task 7 commit.
+- The dashboard has unrelated user changes in the same file. Only the Exp263/264
+  catalog and explicit status-discovery hunks belong to Task 7 commits.
+
+## Review Fixes
+
+### Production Contract Protection
+
+- `--expected-total-anomalies` is now rejected unless `--dataset-limit` selects
+  a strict subset smaller than 1,117, in both the phase pipeline and scratch
+  runner. The pipeline also rejects that option outside the `evaluate` phase.
+- Production evaluation therefore always reaches `evaluate_all` without an
+  anomaly override and retains the fixed 3,918-anomaly contract.
+- Direct pipeline and runner checks with `--dataset-limit 1117` both exited `1`
+  before reading or writing production results.
+
+### Canonical State Ownership
+
+- The production runner uses the canonical
+  `/Users/minho/Documents/Dataset/rank_experiments_sequential.lock`; temporary
+  state files derive their own adjacent lock.
+- Each phase atomically claims an idle canonical slot under that lock with a
+  UUID ownership token before spawning its child process.
+- Child PID attachment, phase completion, queue cleanup, completed markers, and
+  return-code history are written only after reloading state under the lock and
+  matching that ownership token. A different owner causes a no-op, preserving
+  unrelated active runs.
+- The isolated scratch-runner smoke ended with `running=null`, an empty queue,
+  both experiment IDs completed, and four history rows with `return_code=0`.
+
+### Dashboard Smoke Discovery
+
+- `RANK_DASHBOARD_STATUS_PATH` explicitly selects one absolute Task 7
+  `status.json`; no directory scan or canonical queue mutation is required.
+- The reader accepts only Exp263/264 IDs and `running`, `completed`, or `failed`
+  states. Completed smoke records remain visible in `external_validation` and
+  the unified experiment list, while only running records become active.
+- The staged dashboard was launched separately on port `8880` with its PID file
+  redirected to `/tmp`. `/api/status` showed completed Exp264 phase `report`,
+  `10/10`, and the exact smoke status path. The temporary server was then
+  stopped; the existing server was not restarted or signaled.
+- An earlier verification invocation briefly replaced only the production PID
+  metadata because the writer's default path was bound at import time. The live
+  process was never signaled; its exact captured metadata was restored
+  immediately, and PID `32416` plus instance `7aa4963a53200ea0` were confirmed
+  alive before and after the corrected port-8880 check.
+- Both production catalog entries remain fixed at 1,117 datasets.
+
+### Error And Artifact Contracts
+
+- `SourceContractError` now writes the same failed atomic status and returns
+  exit code `2`; generic failures continue to return `1` and interrupts return
+  `130`.
+- `output_paths` now includes `independent_reaggregation.json`.
+
+### Review Verification
+
+- `python3 -m unittest discover -s experiments/exp263_264_full_missing_aware_integration/tests -v`
+  - Passed: 55 tests.
+- `python3 -m unittest scratch.test_run_exp263_264_full_missing_aware_integration scratch.test_dashboard_state_contract -v`
+  - Passed: 22 tests.
+- Scratch runner smoke:
+  - `python3 scratch/run_exp263_264_full_missing_aware_integration.py --dataset-limit 10 --expected-total-anomalies 10 --output-root /tmp/exp263_264_task7_final_smoke_20260721 --state-path /tmp/exp263_264_task7_final_state_20260721.json --poll-seconds 0.1`
+  - Exited `0`; prediction SHA256 remained
+    `dde03dc489040eaaf691123709fa71a815aafea9f3df770ae0bbe42d4606a90c`;
+    expected and actual anomalies remained `10`.
+- Final smoke state had `running=null`, `queue=[]`, both experiments completed,
+  and four history return codes of `0`. Its completed status was `10/10` with
+  zero errors and included the `independent_reaggregation.json` output path.
+- Canonical queue mtime remained `2026-07-20 23:19:33`, confirming the review
+  smoke did not alter the full queue.
+
+## Commit Record
+
+- Initial Task 7 implementation reviewed here: `25a7c633e787a1217362acf036d5d0bfe1c59764`.
+- The review fixes and this report are committed together. Their final SHA is
+  recorded in the completion response because a Git commit cannot contain its
+  own final hash.

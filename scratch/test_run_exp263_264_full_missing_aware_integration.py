@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import argparse
 import tempfile
 import unittest
 from pathlib import Path
@@ -46,13 +47,18 @@ class RunnerStateTest(unittest.TestCase):
             "completed": [],
             "history": [],
             "queue": [self.runner.EXP263_ID, self.runner.EXP264_ID],
-            "running": {"id": self.runner.EXP263_ID, "phase": "predict"},
+            "running": {
+                "id": self.runner.EXP263_ID,
+                "phase": "predict",
+                "owner_token": "owner-a",
+            },
         }
 
         finished = self.runner.finish_phase(
             state,
             experiment_id=self.runner.EXP263_ID,
             phase="predict",
+            owner_token="owner-a",
             return_code=7,
             started_unix=100.0,
             finished_unix=160.0,
@@ -70,13 +76,18 @@ class RunnerStateTest(unittest.TestCase):
             "completed": [],
             "history": [],
             "queue": [self.runner.EXP263_ID, self.runner.EXP264_ID],
-            "running": {"id": self.runner.EXP263_ID, "phase": "predict"},
+            "running": {
+                "id": self.runner.EXP263_ID,
+                "phase": "predict",
+                "owner_token": "owner-a",
+            },
         }
 
         finished = self.runner.finish_phase(
             state,
             experiment_id=self.runner.EXP263_ID,
             phase="predict",
+            owner_token="owner-a",
             return_code=0,
             started_unix=100.0,
             finished_unix=100.0,
@@ -96,6 +107,103 @@ class RunnerStateTest(unittest.TestCase):
 
         self.assertEqual(loaded, payload)
         self.assertEqual(leftovers, [])
+
+    def test_runner_rejects_production_anomaly_override(self):
+        args = argparse.Namespace(
+            dataset_limit=None,
+            expected_total_anomalies=10,
+        )
+        with self.assertRaisesRegex(ValueError, "dataset-limit"):
+            self.runner.validate_args(args)
+
+    def test_runner_rejects_full_population_anomaly_override(self):
+        args = argparse.Namespace(
+            dataset_limit=1117,
+            expected_total_anomalies=10,
+        )
+        with self.assertRaisesRegex(ValueError, "strict subset"):
+            self.runner.validate_args(args)
+
+    def test_claim_run_slot_refuses_to_replace_unrelated_active_run(self):
+        state = {
+            "completed": [],
+            "history": [],
+            "queue": [self.runner.EXP263_ID],
+            "running": {"id": "unrelated", "owner_token": "other-owner"},
+        }
+
+        claimed = self.runner.claim_run_slot(
+            state,
+            experiment_id=self.runner.EXP263_ID,
+            phase="audit",
+            owner_token="owner-a",
+            expected_datasets=1117,
+            output_root=Path("/tmp/output"),
+        )
+
+        self.assertIsNone(claimed)
+        self.assertEqual(state["running"]["id"], "unrelated")
+
+    def test_finish_phase_does_not_clear_different_owner(self):
+        state = {
+            "completed": [],
+            "history": [],
+            "queue": [self.runner.EXP263_ID],
+            "running": {
+                "id": "unrelated",
+                "phase": "audit",
+                "owner_token": "other-owner",
+            },
+        }
+
+        finished = self.runner.finish_phase(
+            state,
+            experiment_id=self.runner.EXP263_ID,
+            phase="audit",
+            owner_token="owner-a",
+            return_code=1,
+            started_unix=100.0,
+            finished_unix=101.0,
+        )
+
+        self.assertEqual(finished, state)
+
+    def test_claim_phase_is_serialized_and_second_claim_cannot_overwrite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "state.json"
+            lock_path = root / "state.lock"
+            self.runner.write_state(self.runner.default_state(), state_path)
+
+            first = self.runner.claim_phase(
+                state_path=state_path,
+                lock_path=lock_path,
+                experiment_id=self.runner.EXP263_ID,
+                phase="audit",
+                owner_token="owner-a",
+                expected_datasets=10,
+                output_root=root / "output",
+            )
+            second = self.runner.claim_phase(
+                state_path=state_path,
+                lock_path=lock_path,
+                experiment_id=self.runner.EXP263_ID,
+                phase="audit",
+                owner_token="owner-b",
+                expected_datasets=10,
+                output_root=root / "output",
+            )
+            state = self.runner.load_state(state_path)
+
+        self.assertTrue(first)
+        self.assertFalse(second)
+        self.assertEqual(state["running"]["owner_token"], "owner-a")
+
+    def test_production_state_uses_canonical_global_lock(self):
+        self.assertEqual(
+            self.runner.state_lock_path(self.runner.STATE_PATH),
+            self.runner.GLOBAL_STATE_LOCK_PATH,
+        )
 
 
 if __name__ == "__main__":

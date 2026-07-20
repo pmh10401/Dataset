@@ -22,6 +22,7 @@ from .inputs import (
     FROZEN_EXCLUDED_DATASETS,
     FrozenSourceMaps,
     SOURCE_NAMES,
+    SourceContractError,
     load_source_maps,
     sha256_file,
 )
@@ -45,6 +46,7 @@ def output_paths(output_root: Path) -> dict[str, str]:
         "lane_transitions": str(output_root / "lane_transitions.csv"),
         "summary": str(output_root / "summary.json"),
         "evaluation_manifest": str(output_root / "evaluation_manifest.json"),
+        "independent_reaggregation": str(output_root / "independent_reaggregation.json"),
         "report": str(output_root / "RESULT_REPORT.md"),
         "manifest": str(output_root / "MANIFEST.json"),
     }
@@ -438,6 +440,16 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError(f"dataset-limit must be between 1 and {EXPECTED_POPULATION}")
     if args.expected_total_anomalies is not None and args.expected_total_anomalies < 0:
         raise ValueError("expected-total-anomalies must be nonnegative")
+    if args.expected_total_anomalies is not None and args.dataset_limit is None:
+        raise ValueError("expected-total-anomalies requires --dataset-limit")
+    if (
+        args.expected_total_anomalies is not None
+        and args.dataset_limit is not None
+        and args.dataset_limit >= EXPECTED_POPULATION
+    ):
+        raise ValueError("expected-total-anomalies requires a strict subset")
+    if args.expected_total_anomalies is not None and args.phase != "evaluate":
+        raise ValueError("expected-total-anomalies is valid only for the evaluate phase")
     if (
         args.phase == "evaluate"
         and args.dataset_limit is not None
@@ -475,7 +487,9 @@ def main(argv: list[str] | None = None) -> int:
         reporter.fail(exc)
         _append_log(args.output_root, traceback.format_exc())
         print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
-        return 130 if isinstance(exc, KeyboardInterrupt) else 1
+        if isinstance(exc, KeyboardInterrupt):
+            return 130
+        return 2 if isinstance(exc, SourceContractError) else 1
 
 
 if __name__ == "__main__":
