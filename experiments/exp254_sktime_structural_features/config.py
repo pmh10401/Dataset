@@ -9,6 +9,7 @@ MINIMUM_TRAIN = 5
 CROSSFIT_FOLDS = 5
 KNN_NEIGHBORS = 3
 MAX_WORKING_LENGTH = 256
+MIN_WORKING_LENGTH = 32
 DB_PATH = Path("/Users/minho/Documents/Dataset/univariate_ts.db")
 OUTPUT_ROOT = Path("/Users/minho/Documents/Dataset/exp254_sktime_structural_features")
 VENV_PYTHON = Path("/Users/minho/Documents/Dataset/venvs/tsai-sktime-py314/bin/python")
