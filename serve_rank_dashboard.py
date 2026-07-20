@@ -2029,6 +2029,26 @@ for _number, _source_name in _EXP249_250_SOURCES.items():
         "expected_datasets": EXPECTED_DATASETS,
     }
 
+EXP251_ROOT = DATA_DIR / "exp251_sktime_statistical_features"
+EXPERIMENTS["experiment_251_sktime_statistical_features"] = {
+    "label": "Exp251 - sktime statistical features",
+    "history_status": "planned_research",
+    "comparison_eligible": False,
+    "scope": "retrospective_score_source_qualification",
+    "status_reason": "sktime statistical-feature evidence audit; frozen Exp236 alert lanes remain unchanged",
+    "autonomous_metric_scope": "frozen_exp236_unchanged",
+    "review_metric_scope": "retrospective_research_candidates_only",
+    "detail_csv": EXP251_ROOT / "results.csv",
+    "summary_csv": EXP251_ROOT / "summary.csv",
+    "stdout_log": EXP251_ROOT / "full.log",
+    "artifact_paths": [
+        EXP251_ROOT / "prediction_manifest.json",
+        EXP251_ROOT / "independent_reaggregation.json",
+        EXP251_ROOT / "MANIFEST.json",
+    ],
+    "expected_datasets": EXPECTED_DATASETS,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
