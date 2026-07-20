@@ -2049,6 +2049,26 @@ EXPERIMENTS["experiment_251_sktime_statistical_features"] = {
     "expected_datasets": EXPECTED_DATASETS,
 }
 
+EXP252_ROOT = DATA_DIR / "exp252_sktime_statistical_features_safe_hurst"
+EXPERIMENTS["experiment_252_sktime_statistical_features_safe_hurst"] = {
+    "label": "Exp252 - sktime statistical features safe Hurst",
+    "history_status": "planned_research",
+    "comparison_eligible": False,
+    "scope": "retrospective_score_source_qualification",
+    "status_reason": "implementation correction for per-series Hurst failures; frozen Exp236 alert lanes remain unchanged",
+    "autonomous_metric_scope": "frozen_exp236_unchanged",
+    "review_metric_scope": "retrospective_research_candidates_only",
+    "detail_csv": EXP252_ROOT / "results.csv",
+    "summary_csv": EXP252_ROOT / "summary.csv",
+    "stdout_log": EXP252_ROOT / "full.log",
+    "artifact_paths": [
+        EXP252_ROOT / "prediction_manifest.json",
+        EXP252_ROOT / "independent_reaggregation.json",
+        EXP252_ROOT / "MANIFEST.json",
+    ],
+    "expected_datasets": EXPECTED_DATASETS,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
