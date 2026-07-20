@@ -2133,6 +2133,45 @@ EXPERIMENTS["experiment_255_change_point_features"] = {
     "expected_datasets": EXPECTED_DATASETS,
 }
 
+EXP263_264_ROOT = DATA_DIR / "exp263_264_full_missing_aware_integration"
+EXPERIMENTS["experiment_263_full_missing_aware_integration"] = {
+    "label": "Exp263 - full missing-aware integration",
+    "history_status": "planned_research",
+    "comparison_eligible": False,
+    "scope": "retrospective_full_missing_aware_integration",
+    "status_reason": "Frozen label-free routing across the full 1,117-dataset population",
+    "autonomous_metric_scope": "Exp253 Hard plus guarded multi-source promotions",
+    "review_metric_scope": "remaining Standard and Priority review lanes",
+    "detail_csv": EXP263_264_ROOT / "results.csv",
+    "stdout_log": EXP263_264_ROOT / "full.log",
+    "artifact_paths": [
+        EXP263_264_ROOT / "00_source_contract_audit.json",
+        EXP263_264_ROOT / "prediction_manifest.json",
+        EXP263_264_ROOT / "status.json",
+    ],
+    "expected_datasets": 1117,
+}
+
+EXPERIMENTS["experiment_264_full_missing_aware_posthoc_evaluation"] = {
+    "label": "Exp264 - full missing-aware post-hoc evaluation",
+    "history_status": "planned_research",
+    "comparison_eligible": False,
+    "scope": "retrospective_full_missing_aware_posthoc_evaluation",
+    "status_reason": "Evaluation begins only after the Exp263 prediction SHA256 is frozen",
+    "autonomous_metric_scope": "autonomous Hard evaluated separately from review lanes",
+    "review_metric_scope": "human-assisted Standard and Priority review metrics",
+    "detail_csv": EXP263_264_ROOT / "results.csv",
+    "stdout_log": EXP263_264_ROOT / "full.log",
+    "artifact_paths": [
+        EXP263_264_ROOT / "evaluation_manifest.json",
+        EXP263_264_ROOT / "independent_reaggregation.json",
+        EXP263_264_ROOT / "RESULT_REPORT.md",
+        EXP263_264_ROOT / "MANIFEST.json",
+        EXP263_264_ROOT / "status.json",
+    ],
+    "expected_datasets": 1117,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
