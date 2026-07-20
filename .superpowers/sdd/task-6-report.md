@@ -55,3 +55,47 @@
   content hash are retained in the manifest for reproducibility.
 - There were no quality-blocked candidates in this frozen result, so that
   diagnostic path is covered by the focused fixture test rather than live rows.
+
+## Review Fixes
+
+### Routing Contract Reaggregation
+
+- Before loading any TEST truth, reporting now rederives `promoted_indices` and
+  `quality_blocked_indices` from baseline Standard, four-source agreement,
+  `n_train`, and quality flags.
+- The rederived promotion rule exactly mirrors routing: `n_train >= 100`, at
+  least three supporting sources, and no quality flag. The quality-blocked rule
+  records flagged baseline-Standard candidates with at least three supporting
+  sources.
+- A mismatch fails closed with the dataset, field, expected set, and persisted
+  set. Focused tests prove impossible promoted sets and stale quality-blocked
+  sets fail before the truth loader is called.
+- The fixture quality-blocked index is now inside baseline Standard and is a
+  flagged three-of-four candidate.
+
+### Manifest And Wording
+
+- `MANIFEST.json` now hashes `reporting.py`, `config.py`, `prediction.py`,
+  `routing.py`, `evaluation.py`, `inputs.py`, and
+  `exp226_235_hard_alert_quality/database.py` in addition to the DB, inputs,
+  frozen prediction, and non-manifest outputs.
+- The real report run recorded available Git commit SHA
+  `561696ee4d4eb28e0a50979268eae3284310d2bb` in `MANIFEST.json`.
+- The agreement table now explicitly states that it is an aggregate across all
+  result rows, not a per-dataset agreement measure.
+
+### Review Verification
+
+- `python3 -m unittest experiments.exp263_264_full_missing_aware_integration.tests.test_reporting -v`
+  - Passed: 4 tests.
+- `python3 -m unittest discover -s experiments/exp263_264_full_missing_aware_integration/tests -v`
+  - Passed: 45 tests.
+- `python3 -m py_compile experiments/exp263_264_full_missing_aware_integration/reporting.py experiments/exp263_264_full_missing_aware_integration/tests/test_reporting.py`
+  - Passed.
+- Production `generate_report(...)`
+  - Passed routing-contract rederivation for all 1,117 result rows before TEST
+    truth was loaded.
+  - Exact summary agreement remains `true`; promoted remains 2 TP / 0 FP and
+    quality-blocked remains empty.
+  - `MANIFEST.json` contains all seven required code hashes, the available Git
+    SHA, and still excludes self-hashing.

@@ -36,11 +36,14 @@ def _result_row(
     final_standard: list[int],
     final_priority: list[int],
     sources: dict[str, list[int]],
+    n_train: int = 100,
+    quality_flags: list[int] = [],
     promoted: list[int] = [],
     quality_blocked: list[int] = [],
 ) -> dict[str, object]:
     row: dict[str, object] = {
         "dataset": dataset,
+        "n_train": n_train,
         "n_test": 4,
         "true_anomaly_count": len(truth),
         "baseline_hard_indices": baseline_hard,
@@ -51,6 +54,7 @@ def _result_row(
         "final_priority_indices": final_priority,
         "promoted_indices": promoted,
         "quality_blocked_indices": quality_blocked,
+        "quality_flag_indices": quality_flags,
         "source_indices": sources,
     }
     lanes = {
@@ -110,16 +114,17 @@ class IndependentReportingTest(unittest.TestCase):
                 "second",
                 {1},
                 baseline_hard=[],
-                baseline_standard=[0],
+                baseline_standard=[0, 3],
                 baseline_priority=[1],
                 final_hard=[],
                 final_standard=[0],
-                final_priority=[1],
+                final_priority=[1, 3],
+                quality_flags=[3],
                 quality_blocked=[3],
                 sources={
                     "statistical": [3],
-                    "structural": [0],
-                    "change_point": [],
+                    "structural": [0, 3],
+                    "change_point": [3],
                     "reconstruction": [],
                 },
             ),
@@ -156,33 +161,82 @@ class IndependentReportingTest(unittest.TestCase):
             diagnostics = generated["source_diagnostics"]
             self.assertEqual(diagnostics["sources"]["statistical"]["raw_candidates"], 4)
             self.assertEqual(diagnostics["sources"]["statistical"]["tp"], 2)
-            self.assertEqual(diagnostics["sources"]["statistical"]["overlap"]["outside"], 2)
-            self.assertEqual(diagnostics["agreement_count_distribution"], {"0": 0, "1": 2, "2": 0, "3": 1, "4": 0})
+            self.assertEqual(diagnostics["sources"]["statistical"]["overlap"]["outside"], 1)
+            self.assertEqual(diagnostics["agreement_count_distribution"], {"0": 0, "1": 2, "2": 0, "3": 2, "4": 0})
             self.assertEqual(diagnostics["promoted"]["tp"], 1)
             self.assertEqual(diagnostics["quality_blocked"]["fp"], 1)
             self.assertEqual(diagnostics["hard_confidence_confirmed"]["tp"], 1)
-            self.assertEqual(diagnostics["workload_change"]["standard_review"]["delta"], -1)
-            self.assertEqual(diagnostics["workload_change"]["priority_review"]["delta"], 0)
+            self.assertEqual(diagnostics["workload_change"]["standard_review"]["delta"], -2)
+            self.assertEqual(diagnostics["workload_change"]["priority_review"]["delta"], 1)
             self.assertTrue((root / "independent_reaggregation.json").is_file())
             self.assertTrue((root / "RESULT_REPORT.md").is_file())
+            self.assertIn(
+                "Aggregate source agreement on baseline Standard candidates across all 2 result rows",
+                (root / "RESULT_REPORT.md").read_text(encoding="utf-8"),
+            )
             manifest = json.loads((root / "MANIFEST.json").read_text(encoding="utf-8"))
             self.assertEqual(set(manifest["outputs"]), {
                 "RESULT_REPORT.md",
                 "independent_reaggregation.json",
             })
+            self.assertTrue({
+                "reporting.py", "config.py", "prediction.py", "routing.py",
+                "evaluation.py", "inputs.py", "database.py",
+            } <= {Path(path).name for path in manifest["code"]})
+            self.assertIsInstance(manifest["git_commit_sha"], str)
 
     def test_rejects_summary_metric_mismatch(self) -> None:
         from experiments.exp263_264_full_missing_aware_integration.reporting import (
             require_exact_summary_agreement,
         )
 
-        actual = {"datasets": 1, "autonomous_hard": {"datasets": 1, "alerts": 1, "tp": 1, "fp": 0,
-                                       "micro_precision": 1.0, "macro_mean_f1": 1.0,
-                                       "zero_f1_datasets": 0}}
-        expected = {"datasets": 1, "autonomous_hard": {**actual["autonomous_hard"], "fp": 1}}
+        lane = {
+            "datasets": 1, "alerts": 1, "tp": 1, "fp": 0,
+            "micro_precision": 1.0, "macro_mean_f1": 1.0,
+            "zero_f1_datasets": 0,
+        }
+        actual = {"datasets": 1, **{name: dict(lane) for name in (
+            "baseline_hard", "autonomous_hard", "standard_review", "priority_review", "review",
+        )}}
+        expected = {name: dict(value) if type(value) is dict else value for name, value in actual.items()}
+        expected["autonomous_hard"]["fp"] = 1
 
-        with self.assertRaisesRegex(ValueError, "summary mismatch"):
+        with self.assertRaisesRegex(
+            ValueError, "summary mismatch: lane=autonomous_hard field=fp"
+        ):
             require_exact_summary_agreement(actual, expected)
+
+    def test_rejects_impossible_promoted_indices_before_loading_truth(self) -> None:
+        from experiments.exp263_264_full_missing_aware_integration.reporting import (
+            source_diagnostics,
+        )
+
+        row = _result_row(
+            "impossible_promotion", {2}, baseline_hard=[], baseline_standard=[1, 2],
+            baseline_priority=[], final_hard=[1], final_standard=[2], final_priority=[],
+            promoted=[1], sources={
+                "statistical": [2], "structural": [2], "change_point": [2],
+                "reconstruction": [],
+            },
+        )
+        with self.assertRaisesRegex(ValueError, "routing mismatch: .*promoted_indices"):
+            source_diagnostics([row], truth_loader=lambda _: self.fail("truth must not load"))
+
+    def test_rejects_stale_quality_blocked_indices_before_loading_truth(self) -> None:
+        from experiments.exp263_264_full_missing_aware_integration.reporting import (
+            source_diagnostics,
+        )
+
+        row = _result_row(
+            "stale_quality", {2}, baseline_hard=[], baseline_standard=[1, 2],
+            baseline_priority=[], final_hard=[2], final_standard=[1], final_priority=[],
+            promoted=[2], quality_blocked=[1], sources={
+                "statistical": [2], "structural": [2], "change_point": [2],
+                "reconstruction": [],
+            },
+        )
+        with self.assertRaisesRegex(ValueError, "routing mismatch: .*quality_blocked_indices"):
+            source_diagnostics([row], truth_loader=lambda _: self.fail("truth must not load"))
 
 
 if __name__ == "__main__":

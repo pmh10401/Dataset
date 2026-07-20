@@ -4,11 +4,12 @@ import csv
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
-from .config import DB_PATH
+from .config import DB_PATH, MIN_TRAIN_FOR_PROMOTION, REQUIRED_PROMOTION_AGREEMENT
 
 
 LANES = (
@@ -37,6 +38,7 @@ STRUCTURED_FIELDS = (
     "final_priority_indices",
     "promoted_indices",
     "quality_blocked_indices",
+    "quality_flag_indices",
     "source_indices",
 )
 
@@ -83,6 +85,11 @@ def read_results(path: Path) -> list[dict[str, object]]:
                 elif type(value) is not list:
                     raise ValueError(f"results row has invalid {field}")
                 row[field] = value
+            for field in ("n_train", "n_test", "true_anomaly_count"):
+                try:
+                    row[field] = int(str(row[field]))
+                except (KeyError, ValueError) as exc:
+                    raise ValueError(f"results row has invalid {field}") from exc
             rows.append(row)
     if not rows:
         raise ValueError("results.csv has no rows")
@@ -144,6 +151,73 @@ def require_exact_summary_agreement(
                     "summary mismatch: "
                     f"lane={lane} field={field} expected={expected!r} actual={actual!r}"
                 )
+
+
+def _integer_set(row: Mapping[str, object], field: str, dataset: str) -> set[int]:
+    values = row.get(field)
+    if type(values) is not list or any(type(index) is not int for index in values):
+        raise ValueError(f"routing evidence is invalid: dataset={dataset} field={field}")
+    return set(values)
+
+
+def require_persisted_routing_agreement(
+    row: Mapping[str, object],
+) -> tuple[dict[str, set[int]], dict[str, set[int]]]:
+    """Rebuild persisted promotion evidence before any retrospective scoring."""
+
+    dataset = str(row.get("dataset", ""))
+    n_test = row.get("n_test")
+    n_train = row.get("n_train")
+    if type(n_test) is not int or n_test < 0:
+        raise ValueError(f"routing evidence is invalid: dataset={dataset} field=n_test")
+    if type(n_train) is not int or n_train < 0:
+        raise ValueError(f"routing evidence is invalid: dataset={dataset} field=n_train")
+    baseline = {
+        "hard": _integer_set(row, "baseline_hard_indices", dataset),
+        "standard": _integer_set(row, "baseline_standard_indices", dataset),
+        "priority": _integer_set(row, "baseline_priority_indices", dataset),
+    }
+    raw_sources = row.get("source_indices")
+    if type(raw_sources) is not dict or set(raw_sources) != set(SOURCE_NAMES):
+        raise ValueError(f"routing evidence is invalid: dataset={dataset} field=source_indices")
+    sources = {
+        source: _integer_set(raw_sources, source, dataset) for source in SOURCE_NAMES
+    }
+    quality_flags = _integer_set(row, "quality_flag_indices", dataset)
+    actual_promoted = _integer_set(row, "promoted_indices", dataset)
+    actual_quality_blocked = _integer_set(row, "quality_blocked_indices", dataset)
+    for name, indices in {**baseline, **sources, "quality_flags": quality_flags}.items():
+        if any(index < 0 or index >= n_test for index in indices):
+            raise ValueError(f"index outside TEST range: dataset={dataset} source={name}")
+
+    support = {
+        index: sum(index in indices for indices in sources.values())
+        for index in baseline["standard"]
+    }
+    expected_promoted = {
+        index
+        for index, count in support.items()
+        if n_train >= MIN_TRAIN_FOR_PROMOTION
+        and count >= REQUIRED_PROMOTION_AGREEMENT
+        and index not in quality_flags
+    }
+    expected_quality_blocked = {
+        index
+        for index, count in support.items()
+        if count >= REQUIRED_PROMOTION_AGREEMENT and index in quality_flags
+    }
+    for field, actual, expected in (
+        ("promoted_indices", actual_promoted, expected_promoted),
+        ("quality_blocked_indices", actual_quality_blocked, expected_quality_blocked),
+    ):
+        if actual != expected:
+            raise ValueError(
+                "routing mismatch: "
+                f"dataset={dataset} field={field} expected={sorted(expected)} actual={sorted(actual)}"
+            )
+    return baseline, sources
+
+
 def _metric(indices: set[int], truth: set[int]) -> dict[str, float | int]:
     tp = len(indices & truth)
     fp = len(indices - truth)
@@ -191,28 +265,16 @@ def source_diagnostics(
 
     for row in rows:
         dataset = str(row["dataset"])
+        baseline, sources = require_persisted_routing_agreement(row)
+        n_test = row["n_test"]
+        assert type(n_test) is int
         truth = set(truth_loader(dataset))
-        n_test = int(row["n_test"])
         if any(index < 0 or index >= n_test for index in truth):
             raise ValueError(f"truth index outside TEST range: dataset={dataset}")
         if int(row["true_anomaly_count"]) != len(truth):
             raise ValueError(f"truth count mismatch: dataset={dataset}")
 
-        baseline = {
-            "hard": {int(index) for index in row["baseline_hard_indices"]},
-            "standard": {int(index) for index in row["baseline_standard_indices"]},
-            "priority": {int(index) for index in row["baseline_priority_indices"]},
-        }
         baseline_union = set().union(*baseline.values())
-        raw_sources = row["source_indices"]
-        assert type(raw_sources) is dict
-        sources = {
-            source: {int(index) for index in raw_sources[source]}
-            for source in SOURCE_NAMES
-        }
-        for name, indices in {**baseline, **sources}.items():
-            if any(index < 0 or index >= n_test for index in indices):
-                raise ValueError(f"index outside TEST range: dataset={dataset} source={name}")
         for source, indices in sources.items():
             source_metrics[source].append(_metric(indices, truth))
             for lane in baseline:
@@ -223,10 +285,10 @@ def source_diagnostics(
             count = sum(index in indices for indices in sources.values())
             agreement[str(count)] += 1
 
-        promoted.append(_metric({int(index) for index in row["promoted_indices"]}, truth))
-        quality_blocked.append(
-            _metric({int(index) for index in row["quality_blocked_indices"]}, truth)
-        )
+        promoted.append(_metric(_integer_set(row, "promoted_indices", dataset), truth))
+        quality_blocked.append(_metric(
+            _integer_set(row, "quality_blocked_indices", dataset), truth
+        ))
         hard_confirmed.append(_metric(set().union(*sources.values()) & baseline["hard"], truth))
         baseline_standard += len(baseline["standard"])
         baseline_priority += len(baseline["priority"])
@@ -244,7 +306,8 @@ def source_diagnostics(
             "overlap": source_overlap[source],
         }
     return {
-        "agreement_scope": "baseline_standard_indices",
+        "agreement_scope": "aggregate_baseline_standard_candidates_across_all_result_rows",
+        "agreement_rows": len(rows),
         "sources": source_output,
         "agreement_count_distribution": agreement,
         "promoted": _merge_metrics(promoted),
@@ -318,7 +381,8 @@ def _report_markdown(
     lines.extend(
         [
             "",
-            "| Source agreement on baseline Standard candidates | 0 | 1 | 2 | 3 | 4 |",
+            "| Aggregate source agreement on baseline Standard candidates across all "
+            f"{reaggregation['datasets']} result rows | 0 | 1 | 2 | 3 | 4 |",
             "|---|---:|---:|---:|---:|---:|",
             "| Candidates | " + " | ".join(str(distribution[str(count)]) for count in range(5)) + " |",
             "",
@@ -362,7 +426,17 @@ def _manifest(output_root: Path, database_path: Path) -> dict[str, object]:
         "lane_transitions.csv",
         "source_agreement_diagnostics.csv",
     )
-    code_paths = (Path(__file__),)
+    package_root = Path(__file__).parent
+    experiments_root = package_root.parent
+    code_paths = (
+        Path(__file__),
+        package_root / "config.py",
+        package_root / "prediction.py",
+        package_root / "routing.py",
+        package_root / "evaluation.py",
+        package_root / "inputs.py",
+        experiments_root / "exp226_235_hard_alert_quality" / "database.py",
+    )
     prediction = output_root / "frozen_predictions.jsonl"
     outputs = ("independent_reaggregation.json", "RESULT_REPORT.md")
     database_path = Path(database_path)
@@ -377,10 +451,22 @@ def _manifest(output_root: Path, database_path: Path) -> dict[str, object]:
         },
         "inputs": {name: sha256_file(output_root / name) for name in inputs},
         "code": {str(path.resolve()): sha256_file(path) for path in code_paths},
+        "git_commit_sha": _git_commit_sha(package_root.parents[1]),
         "prediction": {prediction.name: sha256_file(prediction)},
         "outputs": {name: sha256_file(output_root / name) for name in outputs},
         "manifest_excludes_self_hash": True,
     }
+
+
+def _git_commit_sha(repository_root: Path) -> str | None:
+    result = subprocess.run(
+        ["git", "-C", str(repository_root), "rev-parse", "HEAD"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    commit = result.stdout.strip()
+    return commit if result.returncode == 0 and commit else None
 
 
 def generate_report(
