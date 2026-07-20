@@ -37,6 +37,7 @@ def write_status(
     total: int,
     current: str | None = None,
     errors: int = 0,
+    publish_global: bool = True,
 ) -> None:
     now = time.time()
     payload = {
@@ -64,8 +65,9 @@ def write_status(
         "stdout_log": str(root / "full.log"),
     }
     _atomic_json(root / "status.json", payload)
-    _atomic_json(EXTERNAL_STATUS_PATH, payload)
-    _atomic_json(HEARTBEAT_PATH, payload)
+    if publish_global:
+        _atomic_json(EXTERNAL_STATUS_PATH, payload)
+        _atomic_json(HEARTBEAT_PATH, payload)
 
 
 def selected_names(limit: int | None) -> tuple[str, ...]:
@@ -95,15 +97,25 @@ def run(args: argparse.Namespace) -> None:
     root = Path(args.output_root)
     names = selected_names(args.dataset_limit)
     total = len(names)
-    write_status(root, "running", args.stage, 0, total)
+    publish_global = root.resolve() == OUTPUT_ROOT.resolve()
+    write_status(root, "running", args.stage, 0, total, publish_global=publish_global)
     if args.stage in {"audit", "all"}:
         audit(root, names)
-        write_status(root, "running", "audit", 0, total)
+        write_status(root, "running", "audit", 0, total, publish_global=publish_global)
     if args.stage in {"cache", "all"}:
-        write_status(root, "running", "cache", 0, total)
+        write_status(root, "running", "cache", 0, total, publish_global=publish_global)
 
         def progress(done: int, expected: int, current: str, errors: int) -> None:
-            write_status(root, "running", "cache", done, expected, current, errors)
+            write_status(
+                root,
+                "running",
+                "cache",
+                done,
+                expected,
+                current,
+                errors,
+                publish_global=publish_global,
+            )
             print(f"progress {done}/{expected} last={current} errors={errors}", flush=True)
 
         cache_all(
@@ -114,18 +126,18 @@ def run(args: argparse.Namespace) -> None:
             progress=progress,
         )
     if args.stage in {"predict", "all"}:
-        write_status(root, "running", "predict", 0, total)
+        write_status(root, "running", "predict", 0, total, publish_global=publish_global)
         predict_experiment(root, names=names)
-        write_status(root, "running", "predict", total, total)
+        write_status(root, "running", "predict", total, total, publish_global=publish_global)
     if args.stage in {"evaluate", "all"}:
-        write_status(root, "running", "evaluate", 0, total)
+        write_status(root, "running", "evaluate", 0, total, publish_global=publish_global)
         evaluate_experiment(root)
         result = reaggregate(root)
         if not result["passed"]:
             raise RuntimeError("independent reaggregation failed")
         write_report(root)
         write_manifest(root, " ".join(map(str, sys.argv)))
-        write_status(root, "completed", "completed", total, total)
+        write_status(root, "completed", "completed", total, total, publish_global=publish_global)
 
 
 def parser() -> argparse.ArgumentParser:
@@ -144,4 +156,3 @@ def parser() -> argparse.ArgumentParser:
 
 if __name__ == "__main__":
     run(parser().parse_args())
-

@@ -34,6 +34,30 @@ class ChangePointPipelineTest(unittest.TestCase):
             self.assertFalse(status["contains_test_labels"])
             self.assertEqual(status, json.loads(heartbeat.read_text()))
 
+    def test_smoke_status_does_not_overwrite_global_heartbeat(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            heartbeat = root / "heartbeat.json"
+            external = root / "external.json"
+            with patch(
+                "experiments.exp255_change_point_features.run_pipeline.HEARTBEAT_PATH",
+                heartbeat,
+            ), patch(
+                "experiments.exp255_change_point_features.run_pipeline.EXTERNAL_STATUS_PATH",
+                external,
+            ):
+                write_status(
+                    root,
+                    "running",
+                    "cache",
+                    1,
+                    10,
+                    publish_global=False,
+                )
+            self.assertTrue((root / "status.json").exists())
+            self.assertFalse(heartbeat.exists())
+            self.assertFalse(external.exists())
+
     def test_dashboard_registration(self) -> None:
         root = Path(__file__).resolve().parents[3]
         dashboard = (root / "serve_rank_dashboard.py").read_text()
