@@ -49,6 +49,33 @@ class ConfigurationContractTest(unittest.TestCase):
                 "missing_override": 0.005,
             },
         )
+        self.assertEqual(
+            {
+                name: spec.experiment
+                for name, spec in config.SOURCE_CONTRACT.items()
+            },
+            {
+                "baseline": "exp253",
+                "statistical": "exp252",
+                "structural": "exp254",
+                "change_point": "exp255",
+                "reconstruction": "exp257",
+                "missing_override": "exp260_262",
+            },
+        )
+        self.assertEqual(
+            {
+                name: spec.scope for name, spec in config.SOURCE_CONTRACT.items()
+            },
+            {
+                "baseline": "all_1117",
+                "statistical": "all_1117",
+                "structural": "all_1117",
+                "change_point": "all_1117",
+                "reconstruction": "n_train_at_least_100",
+                "missing_override": "missing_20",
+            },
+        )
 
     def test_database_output_and_source_paths_are_absolute(self) -> None:
         self.assertEqual(
