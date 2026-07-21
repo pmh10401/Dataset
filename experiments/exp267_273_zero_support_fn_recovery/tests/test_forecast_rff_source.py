@@ -67,6 +67,21 @@ class RFFNormalForecastResidualTests(unittest.TestCase):
             all(count == 0 for count in result.provenance["outer_fit_query_overlap_counts"])
         )
 
+    def test_fold_group_statistics_are_reused_across_nested_alpha_checks(self) -> None:
+        result = RFFNormalForecastResidual().score(bundle(n_train=20), SEED, self.path)
+
+        self.assertEqual(result.provenance["global_fold_count"], 5)
+        self.assertEqual(result.provenance["fold_group_statistics_builds"], 5)
+        self.assertEqual(
+            result.provenance["fold_group_context_statistics_builds"], 15
+        )
+        self.assertEqual(
+            result.provenance["statistics_train_row_transforms"], 20 * 3
+        )
+        self.assertEqual(result.provenance["alpha_candidate_count"], 4)
+        self.assertEqual(result.provenance["ridge_eigendecompositions"], 16 * 3)
+        self.assertEqual(result.provenance["all_alpha_validation_calls"], 25)
+
     def test_scores_are_finite_deterministic_and_use_train_only_calibration(self) -> None:
         original = bundle(n_train=20)
         changed_test = DatasetBundle(
