@@ -8,11 +8,31 @@ import warnings
 import numpy as np
 import scipy.special
 
-# Kymatio 0.3.0 imports this legacy SciPy name while loading its unused 3D API.
-if not hasattr(scipy.special, "sph_harm"):
-    scipy.special.sph_harm = scipy.special.sph_harm_y
 
-from kymatio.numpy import Scattering1D
+_MISSING = object()
+
+
+def _legacy_sph_harm(m: object, n: object, theta: object, phi: object) -> object:
+    """Adapt SciPy's removed ``sph_harm(m, n, theta, phi)`` signature."""
+    return scipy.special.sph_harm_y(n, m, theta, phi)
+
+
+def _load_scattering1d() -> object:
+    """Import Kymatio without leaking its temporary SciPy compatibility hook."""
+    previous = getattr(scipy.special, "sph_harm", _MISSING)
+    scipy.special.sph_harm = _legacy_sph_harm
+    try:
+        from kymatio.numpy import Scattering1D
+
+        return Scattering1D
+    finally:
+        if previous is _MISSING:
+            delattr(scipy.special, "sph_harm")
+        else:
+            scipy.special.sph_harm = previous
+
+
+Scattering1D = _load_scattering1d()
 
 from experiments.exp239_248_diverse_score_sources.contracts import DatasetBundle
 from experiments.exp239_248_diverse_score_sources.source_base import (

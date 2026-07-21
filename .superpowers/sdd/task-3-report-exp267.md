@@ -53,11 +53,37 @@ Result: 6 tests passed; compilation and whitespace validation succeeded.
 ## Concerns
 
 - Kymatio 0.3.0's NumPy namespace imports the removed `scipy.special.sph_harm`
-  name under installed SciPy 1.17.1. The source applies a local import-time
-  compatibility alias to `sph_harm_y`; the Exp268 path itself uses only 1D
+  name under installed SciPy 1.17.1. The source now installs a temporary
+  legacy-signature wrapper only while importing Kymatio, then restores or
+  removes the attribute in `finally`; the Exp268 path itself uses only 1D
   scattering. This should be removable after a Kymatio/SciPy compatibility
   upgrade.
 - Kymatio warns about possible border effects at the required short-series
   configuration. The known construction warning is suppressed locally because
   the mandated `J` formula is retained; no signal padding or data-dependent
   parameter selection is introduced.
+
+## Reviewer-Fix Evidence
+
+### RED
+
+After adding the SciPy regression tests, the focused suite failed with three
+expected `AttributeError` results because `_legacy_sph_harm` and
+`_load_scattering1d` did not yet exist.
+
+### GREEN
+
+Command:
+
+```bash
+python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_scattering_source -v
+python3 -m py_compile experiments/exp267_273_zero_support_fn_recovery/scattering_source.py experiments/exp267_273_zero_support_fn_recovery/tests/test_scattering_source.py
+git diff --check
+```
+
+Result: 9 tests passed; compilation and whitespace validation succeeded.
+
+The wrapper is verified against SciPy's current `sph_harm_y(n, m, theta, phi)`
+semantics using legacy input order `(m, n, theta, phi)`. Regression tests prove
+the temporary attribute is visible during the Kymatio import, removed when
+absent beforehand, and restored unchanged when it already existed.

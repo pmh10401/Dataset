@@ -2,10 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 import numpy as np
+import scipy.special
 
 from experiments.exp239_248_diverse_score_sources.contracts import DatasetBundle
+from experiments.exp267_273_zero_support_fn_recovery import (
+    scattering_source as scattering_module,
+)
 from experiments.exp267_273_zero_support_fn_recovery.scattering_source import (
     MultiscaleScatteringDeviation,
     scattering_features,
@@ -27,6 +32,51 @@ class ScatteringSourceTests(unittest.TestCase):
         np.testing.assert_array_equal(
             scattering_features(self.rows), scattering_features(self.rows)
         )
+
+    def test_legacy_spherical_harmonic_wrapper_adapts_scipy_arguments(self) -> None:
+        m, n, theta, phi = 1, 3, 0.2, 0.7
+
+        actual = scattering_module._legacy_sph_harm(m, n, theta, phi)
+
+        expected = scipy.special.sph_harm_y(n, m, theta, phi)
+        np.testing.assert_allclose(actual, expected)
+
+    def test_kymatio_import_removes_temporary_scipy_attribute(self) -> None:
+        missing = object()
+        original = getattr(scipy.special, "sph_harm", missing)
+        if original is not missing:
+            delattr(scipy.special, "sph_harm")
+        observed = {}
+        builtin_import = __import__
+
+        def observe_import(name, globals, locals, fromlist, level):
+            if name == "kymatio.numpy":
+                observed["temporary"] = scipy.special.sph_harm
+            return builtin_import(name, globals, locals, fromlist, level)
+
+        try:
+            with patch("builtins.__import__", side_effect=observe_import):
+                scattering_module._load_scattering1d()
+            self.assertIs(observed["temporary"], scattering_module._legacy_sph_harm)
+            self.assertFalse(hasattr(scipy.special, "sph_harm"))
+        finally:
+            if original is not missing:
+                scipy.special.sph_harm = original
+
+    def test_kymatio_import_restores_existing_scipy_attribute(self) -> None:
+        missing = object()
+        previous = getattr(scipy.special, "sph_harm", missing)
+        original = object()
+        scipy.special.sph_harm = original
+
+        try:
+            scattering_module._load_scattering1d()
+            self.assertIs(scipy.special.sph_harm, original)
+        finally:
+            if previous is missing:
+                delattr(scipy.special, "sph_harm")
+            else:
+                scipy.special.sph_harm = previous
 
     def test_score_records_train_length_config_and_oof_scores(self) -> None:
         bundle = DatasetBundle(
