@@ -15,6 +15,7 @@ from experiments.exp267_273_zero_support_fn_recovery.config import (
     MIN_TRAIN_FOR_CALIBRATION,
     PRIMARY_ALPHA,
     REVIEW_RISK_LIMIT,
+    RFF_MAX_TRAIN_RESIDUAL_VALUES,
     RFF_MIN_TRAIN,
     SECOND_SEED,
     SEED,
@@ -39,6 +40,7 @@ class ContractTest(unittest.TestCase):
         self.assertEqual(SEED, 20260721)
         self.assertEqual(SECOND_SEED, 20261721)
         self.assertEqual(RFF_MIN_TRAIN, 20)
+        self.assertEqual(RFF_MAX_TRAIN_RESIDUAL_VALUES, 10_000_000)
         self.assertEqual(TCN_MIN_TRAIN, 100)
         self.assertEqual(CALIBRATION_MIN_TRAIN, 5)
         self.assertEqual(MIN_TRAIN_FOR_CALIBRATION, 5)

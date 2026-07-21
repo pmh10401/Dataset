@@ -15,7 +15,7 @@
 - Repository evidence goes to `outputs/exp267_273_zero_support_fn_recovery/`.
 - Population accounting is exactly 1,117 unique datasets; no silent omission is allowed.
 - Primary alpha is `0.005`; `0.01`, `0.02`, and `0.05` are sensitivity outputs only.
-- `n_train < 5` is calibration abstention, `n_train >= 20` enables lightweight forecasting, and `n_train >= 100` enables Causal TCN forecasting.
+- `n_train < 5` is calibration abstention, `n_train >= 20` enables lightweight forecasting, and `n_train >= 100` enables Causal TCN forecasting. RFF forecasting additionally abstains before any scoring when its TRAIN-only residual-work estimate exceeds `RFF_MAX_TRAIN_RESIDUAL_VALUES = 10_000_000`; this is a preregistered resource-safety boundary, not a TEST-performance policy.
 - TEST labels, anomaly positions, family names, dataset names, and TEST length never select features, thresholds, eligibility, candidates, budgets, epochs, or routes.
 - Existing Exp253 Hard and Exp266 review-lane indices are immutable through Exp272.
 - Tail replacement and TEST-length top-N budgets are forbidden.
@@ -331,11 +331,11 @@ python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_f
 
 - [ ] **Step 3: Implement frozen forecast windows and RFF model**
 
-Use context lengths `(8, 16, 32)` clipped to TRAIN-derived target length and a forecast horizon of `max(1, min(8, target_length // 16))`. Use 256 `RBFSampler` components with seed `20260721`. Select ridge alpha by TRAIN-only cross-fitting over `(0.01, 0.1, 1.0, 10.0)` and freeze the lowest TRAIN validation loss with numeric-alpha tie breaking.
+Use context lengths `(8, 16, 32)` clipped to TRAIN-derived target length and a forecast horizon of `max(1, min(8, target_length // 16))`. Use 256 `RBFSampler` components with seed `20260721`. Select ridge alpha by TRAIN-only cross-fitting over `(0.01, 0.1, 1.0, 10.0)` and freeze the lowest TRAIN validation loss with numeric-alpha tie breaking. Before any RFF transform, estimate the full-model residual spool from only `n_train`, TRAIN target length, the frozen contexts, and horizon. If the estimate exceeds `RFF_MAX_TRAIN_RESIDUAL_VALUES = 10_000_000`, abstain with `train_residual_work_exceeds_10000000`; do not inspect TEST values, count, labels, or metrics. This resource boundary leaves the TCN source available for larger eligible datasets.
 
 - [ ] **Step 4: Implement trace-level residual score**
 
-Aggregate absolute forecast residual by median, p95, maximum, and longest run above the TRAIN residual p95. Robustly standardize the four aggregates using the fit TRAIN set and sum them with equal weights.
+Aggregate absolute forecast residual by median, p95, maximum, and longest run above the TRAIN residual p95. Compute the p95 through an exact float64 disk spool with in-place linear-quantile partitioning, then delete the temporary spool. For OOF, robustly standardize the four aggregates using trace features from the selected outer model on its outer-fit TRAIN rows; for TEST, use trace features from the full model on all TRAIN rows. Sum the four standardized aggregates with equal weights.
 
 - [ ] **Step 5: Run tests and commit**
 

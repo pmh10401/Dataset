@@ -146,6 +146,15 @@ Eligibility: `n_train >= 20`.
 - The score combines robust median, p95, and maximum forecast residuals.
 - Every pseudo-test TRAIN instance is excluded from its fitted predictor and
   calibration reference.
+- Before any score transform, a TRAIN-only residual-work estimate must not
+  exceed `RFF_MAX_TRAIN_RESIDUAL_VALUES = 10_000_000`. This bounds one
+  float64 residual spool to about 80 MB for an exact p95 calculation. It is a
+  preregistered compute-safety abstention, not a TEST-selected threshold; the
+  Causal TCN remains available for larger eligible datasets.
+- OOF aggregate standardization uses the selected outer predictor applied to
+  its outer-fit TRAIN rows. TEST aggregate standardization uses the full
+  predictor applied to all TRAIN rows. Temporary residual spools are deleted
+  after exact linear-quantile calculation.
 
 ### Exp270-B: Causal TCN Normal Forecasting
 

@@ -156,3 +156,82 @@ claim for every dataset length.
   candidates.
 - The fixed RFF representation, contexts, horizon, ridge grid, and residual
   aggregates are frozen here and must not be changed after TEST evaluation.
+
+## Second Review Correction
+
+The second review identified two P1 issues: the optimized path had replaced
+the original standardization references with nested OOF features, and exact
+TRAIN residual p95 calculation could retain an unbounded in-memory residual
+array. Both are corrected before any TEST evaluation.
+
+### Restored Score Semantics
+
+- For every OOF outer query fold, aggregate center and scale now come from
+  trace features scored by that fold's selected outer model on its
+  `outer_fit_rows`. The query fold is excluded from both the model and this
+  reference.
+- For TEST scoring, aggregate center and scale now come from trace features
+  scored by the full model on all TRAIN-normal rows.
+- Provenance names are explicit: `oof_standardization_reference`,
+  `test_standardization_reference`,
+  `test_full_model_train_aggregate_centers`, and
+  `test_full_model_train_aggregate_scales`.
+
+### Exact Bounded-RAM Residual p95
+
+`RFF_MAX_TRAIN_RESIDUAL_VALUES = 10_000_000` is frozen in `config.py` and
+locked by the contract tests. Before TEST input is read or any RFF transform is
+started, the source estimates the full-model residual count from only
+`n_train`, the actual TRAIN target length, contexts, and horizon. An estimate
+above the limit returns the label-free abstention
+`train_residual_work_exceeds_10000000`.
+
+For eligible runs, residuals are streamed to a temporary float64 memmap under
+the supplied artifact directory. The implementation uses in-place partition at
+the two linear-interpolation ranks, matching `np.quantile(...,
+method="linear")` exactly, then closes and deletes the spool on both success
+and failure. The 10,000,000-value ceiling represents about 80 MB of raw
+float64 spool capacity. It is a preregistered operational resource boundary,
+not a TEST-performance decision. The TCN source remains available for larger
+eligible datasets.
+
+### Verification
+
+Focused RFF and contract suites:
+
+```text
+Ran 26 tests in 5.858s
+OK
+```
+
+Package suite:
+
+```text
+Ran 56 tests in 14.583s
+OK
+```
+
+New tests verify exact interpolated quantiles, temporary-file cleanup after
+success and a generator failure, pre-transform safety abstention, restored
+outer/full standardization references, and an end-to-end smoke path with a
+bounded spool estimate. Existing query-exclusion, deterministic, short-trace,
+and constant-trace tests continue to pass.
+
+### End-to-End Resource Smoke
+
+The deterministic local smoke benchmark used `n_train=100`, TRAIN length 256,
+four TEST traces, and seed `20260721`. It is observational only; the tests do
+not assert a wall-clock threshold.
+
+```text
+elapsed seconds:          4.198668
+Python traced peak bytes: 13,544,783
+process ru_maxrss:        203,456,512
+TRAIN residual estimate:  69,100 values
+temporary spools left:    0
+finite scores:            true
+```
+
+`ru_maxrss` is process-wide and platform-dependent. The meaningful safety
+contract is the frozen 10,000,000-value spool cap plus verified cleanup, not a
+peak-RSS deployment guarantee.

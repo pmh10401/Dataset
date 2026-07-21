@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
+import tempfile
 from typing import Iterable, Sequence
 
 import numpy as np
@@ -9,7 +11,11 @@ from sklearn.kernel_approximation import RBFSampler
 
 from experiments.exp239_248_diverse_score_sources.contracts import DatasetBundle
 from experiments.exp239_248_diverse_score_sources.foundation import deterministic_folds
-from experiments.exp267_273_zero_support_fn_recovery.config import RFF_MIN_TRAIN, SEED
+from experiments.exp267_273_zero_support_fn_recovery.config import (
+    RFF_MAX_TRAIN_RESIDUAL_VALUES,
+    RFF_MIN_TRAIN,
+    SEED,
+)
 from experiments.exp267_273_zero_support_fn_recovery.contracts import SourceScore
 
 
@@ -36,6 +42,15 @@ def forecast_context_lengths(target_length: int) -> tuple[int, ...]:
     if maximum_context < 1:
         return ()
     return tuple(sorted({min(context, maximum_context) for context in CONTEXT_REQUESTS}))
+
+
+def estimate_train_residual_values(n_train: int, target_length: int) -> int:
+    """Estimate the largest TRAIN-only residual spool required by this source."""
+    length = int(target_length)
+    contexts = forecast_context_lengths(length)
+    horizon = forecast_horizon(length)
+    per_trace = sum(length - context - horizon + 1 for context in contexts)
+    return int(n_train) * int(per_trace)
 
 
 def _validate_rows(rows: np.ndarray, *, expected_length: int, name: str) -> np.ndarray:
@@ -271,10 +286,84 @@ def _selected_alpha_index(alpha: float) -> int:
     raise ValueError(f"unknown frozen ridge alpha: {alpha}")
 
 
-def _residual_threshold(
-    family: _CoefficientFamily, alpha_index: int, row_groups: Sequence[np.ndarray]
+def exact_spooled_quantile(
+    chunks: Iterable[np.ndarray],
+    *,
+    value_count: int,
+    artifact_dir: Path,
+    quantile: float,
 ) -> float:
-    pieces: list[np.ndarray] = []
+    """Return NumPy-linear quantile exactly while retaining only a disk spool."""
+    count = int(value_count)
+    if count < 1:
+        raise ValueError("spooled quantile requires at least one value")
+    if not 0.0 <= float(quantile) <= 1.0:
+        raise ValueError("quantile must be in [0, 1]")
+    directory = Path(artifact_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+    descriptor, raw_path = tempfile.mkstemp(
+        prefix="exp270_rff_residual_", suffix=".dat", dir=directory
+    )
+    os.close(descriptor)
+    path = Path(raw_path)
+    spool: np.memmap | None = None
+    mapping = None
+    try:
+        spool = np.memmap(path, mode="w+", dtype=np.float64, shape=(count,))
+        mapping = spool._mmap
+        offset = 0
+        for chunk in chunks:
+            values = np.asarray(chunk, dtype=np.float64).reshape(-1)
+            if not np.isfinite(values).all():
+                raise ValueError("spooled residuals must be finite")
+            next_offset = offset + len(values)
+            if next_offset > count:
+                raise ValueError("residual spool received too many values")
+            spool[offset:next_offset] = values
+            offset = next_offset
+        if offset != count:
+            raise ValueError("residual spool received too few values")
+        spool.flush()
+        position = (count - 1) * float(quantile)
+        lower = int(np.floor(position))
+        upper = int(np.ceil(position))
+        spool.partition((lower, upper))
+        lower_value = float(spool[lower])
+        upper_value = float(spool[upper])
+        return lower_value + (position - lower) * (upper_value - lower_value)
+    finally:
+        try:
+            if spool is not None:
+                spool.flush()
+        finally:
+            try:
+                if mapping is not None:
+                    mapping.close()
+            finally:
+                path.unlink(missing_ok=True)
+
+
+def _residual_value_count(
+    family: _CoefficientFamily, row_groups: Sequence[np.ndarray]
+) -> int:
+    total = 0
+    for rows in row_groups:
+        values = np.asarray(rows, dtype=float)
+        if values.ndim != 2:
+            raise ValueError("residual rows must have shape (batch, time)")
+        per_trace = sum(
+            values.shape[1] - context.context_length - family.horizon + 1
+            for context in family.contexts
+        )
+        if per_trace < 1:
+            raise ValueError("forecast model has no residual values")
+        total += len(values) * per_trace
+    return int(total)
+
+
+def _iter_absolute_residuals(
+    family: _CoefficientFamily, alpha_index: int, row_groups: Sequence[np.ndarray]
+) -> Iterable[np.ndarray]:
     for rows in row_groups:
         for row in np.asarray(rows, dtype=float):
             for context in family.contexts:
@@ -284,10 +373,22 @@ def _residual_threshold(
                     horizon=family.horizon,
                 )
                 prediction = context.sampler.transform(inputs) @ context.coefficients[:, alpha_index]
-                pieces.append(np.abs(targets - prediction))
-    if not pieces:
-        raise ValueError("TRAIN residual p95 requires fitted TRAIN rows")
-    threshold = float(np.quantile(np.concatenate(pieces), 0.95))
+                yield np.abs(targets - prediction)
+
+
+def _residual_threshold(
+    family: _CoefficientFamily,
+    alpha_index: int,
+    row_groups: Sequence[np.ndarray],
+    artifact_dir: Path,
+) -> float:
+    value_count = _residual_value_count(family, row_groups)
+    threshold = exact_spooled_quantile(
+        _iter_absolute_residuals(family, alpha_index, row_groups),
+        value_count=value_count,
+        artifact_dir=artifact_dir,
+        quantile=0.95,
+    )
     if not np.isfinite(threshold):
         raise ValueError("non-finite TRAIN forecast residual p95")
     return threshold
@@ -328,6 +429,20 @@ def _trace_features(
     if not np.isfinite(features).all():
         raise ValueError("non-finite forecast residual aggregate")
     return features
+
+
+def _trace_features_for_groups(
+    family: _CoefficientFamily,
+    alpha_index: int,
+    threshold: float,
+    row_groups: Sequence[np.ndarray],
+) -> np.ndarray:
+    pieces = [
+        _trace_features(family, alpha_index, threshold, rows) for rows in row_groups
+    ]
+    if not pieces:
+        return np.empty((0, len(RESIDUAL_AGGREGATES)), dtype=float)
+    return np.vstack(pieces)
 
 
 def _rows_for_groups(
@@ -378,22 +493,17 @@ class RFFNormalForecastResidual:
     def score(
         self, bundle: DatasetBundle, seed: int, artifact_dir: Path
     ) -> SourceScore:
-        del artifact_dir
         raw_train = np.asarray(bundle.train_normal, dtype=float)
         if raw_train.ndim != 2:
             raise ValueError("TRAIN rows must have shape (batch, time)")
         target_length = int(raw_train.shape[1])
         train_rows = _validate_rows(raw_train, expected_length=target_length, name="TRAIN")
-        test_rows = _validate_rows(
-            bundle.test_values, expected_length=target_length, name="TEST"
-        )
         contexts = forecast_context_lengths(target_length)
         horizon = forecast_horizon(target_length)
         common_provenance = {
             "seed": int(seed),
             "rff_random_seed": RFF_RANDOM_SEED,
             "n_train": int(len(train_rows)),
-            "n_test": int(len(test_rows)),
             "minimum_train": self.minimum_train,
             "target_length": target_length,
             "target_length_from_train_only": True,
@@ -401,6 +511,7 @@ class RFFNormalForecastResidual:
             "context_lengths": contexts,
             "forecast_horizon": horizon,
             "rff_components": RFF_COMPONENTS,
+            "rff_max_train_residual_values": RFF_MAX_TRAIN_RESIDUAL_VALUES,
             "rff_gamma_rule": "1/context_length",
             "ridge_alphas": RIDGE_ALPHAS,
             "residual_aggregates": RESIDUAL_AGGREGATES,
@@ -442,6 +553,33 @@ class RFFNormalForecastResidual:
                 },
             )
 
+        estimated_residual_values = estimate_train_residual_values(
+            len(train_rows), target_length
+        )
+        if estimated_residual_values > RFF_MAX_TRAIN_RESIDUAL_VALUES:
+            return SourceScore(
+                source=self.name,
+                variant="primary",
+                train_oof=np.asarray([], dtype=float),
+                test_scores=np.asarray([], dtype=float),
+                eligible=False,
+                abstained=True,
+                abstention_reason="train_residual_work_exceeds_10000000",
+                provenance={
+                    **common_provenance,
+                    "estimated_train_residual_values": estimated_residual_values,
+                    "max_residual_spool_values": RFF_MAX_TRAIN_RESIDUAL_VALUES,
+                    "compute_safety_boundary": "TRAIN-only residual spool capacity",
+                    "cross_fitted": False,
+                    "self_reference_violations": 0,
+                    "alpha_selection_query_fit_violations": 0,
+                },
+            )
+
+        test_rows = _validate_rows(
+            bundle.test_values, expected_length=target_length, name="TEST"
+        )
+        common_provenance["n_test"] = int(len(test_rows))
         folds = deterministic_folds(len(train_rows), seed=int(seed))
         groups = _build_fold_group_statistics(
             train_rows, folds, contexts=contexts, horizon=horizon
@@ -488,30 +626,13 @@ class RFFNormalForecastResidual:
         outer_overlap_counts: list[int] = []
         for outer_index, indices in enumerate(folds):
             alpha_index = _selected_alpha_index(selected_outer_alpha[outer_index])
-            reference_pieces: list[np.ndarray] = []
-            for inner_query in range(len(folds)):
-                if inner_query == outer_index:
-                    continue
-                inner_family = cache.get((outer_index, inner_query))
-                inner_fit_rows = _rows_for_groups(
-                    train_rows, folds, (outer_index, inner_query)
-                )
-                threshold = _residual_threshold(
-                    inner_family, alpha_index, inner_fit_rows
-                )
-                reference_pieces.append(
-                    _trace_features(
-                        inner_family,
-                        alpha_index,
-                        threshold,
-                        train_rows[folds[inner_query]],
-                    )
-                )
-            reference = np.vstack(reference_pieces)
             outer_family = cache.get((outer_index,))
             outer_fit_rows = _rows_for_groups(train_rows, folds, (outer_index,))
             outer_threshold = _residual_threshold(
-                outer_family, alpha_index, outer_fit_rows
+                outer_family, alpha_index, outer_fit_rows, artifact_dir
+            )
+            reference = _trace_features_for_groups(
+                outer_family, alpha_index, outer_threshold, outer_fit_rows
             )
             query_features = _trace_features(
                 outer_family,
@@ -529,29 +650,18 @@ class RFFNormalForecastResidual:
             )
 
         final_alpha_index = _selected_alpha_index(selected_test_alpha)
-        final_reference_pieces: list[np.ndarray] = []
-        for query_index, indices in enumerate(folds):
-            family = cache.get((query_index,))
-            fit_rows = _rows_for_groups(train_rows, folds, (query_index,))
-            threshold = _residual_threshold(family, final_alpha_index, fit_rows)
-            final_reference_pieces.append(
-                _trace_features(
-                    family,
-                    final_alpha_index,
-                    threshold,
-                    train_rows[indices],
-                )
-            )
-        final_reference = np.vstack(final_reference_pieces)
         full_family = cache.get(())
         full_train_threshold = _residual_threshold(
-            full_family, final_alpha_index, (train_rows,)
+            full_family, final_alpha_index, (train_rows,), artifact_dir
+        )
+        full_train_features = _trace_features(
+            full_family, final_alpha_index, full_train_threshold, train_rows
         )
         test_features = _trace_features(
             full_family, final_alpha_index, full_train_threshold, test_rows
         )
         standardized_test, centers, scales = _robust_standardize_features(
-            final_reference, test_features
+            full_train_features, test_features
         )
         test_scores = standardized_test.sum(axis=1)
         if not np.isfinite(train_oof).all() or not np.isfinite(test_scores).all():
@@ -576,8 +686,21 @@ class RFFNormalForecastResidual:
                 "selected_alpha_test": selected_test_alpha,
                 "selected_alpha_test_train_losses": test_alpha_losses,
                 "full_train_residual_p95": full_train_threshold,
-                "full_train_aggregate_centers": tuple(float(value) for value in centers),
-                "full_train_aggregate_scales": tuple(float(value) for value in scales),
+                "oof_standardization_reference": "selected_outer_model_on_outer_fit_rows",
+                "oof_reference_row_counts": tuple(
+                    int(len(train_rows) - len(indices)) for indices in folds
+                ),
+                "test_standardization_reference": "full_model_on_all_train_rows",
+                "test_reference_row_count": int(len(train_rows)),
+                "test_full_model_train_aggregate_centers": tuple(
+                    float(value) for value in centers
+                ),
+                "test_full_model_train_aggregate_scales": tuple(
+                    float(value) for value in scales
+                ),
+                "estimated_train_residual_values": estimated_residual_values,
+                "max_residual_spool_values": estimated_residual_values,
+                "compute_safety_boundary": "TRAIN-only residual spool capacity",
                 "global_fold_count": len(folds),
                 "fold_group_statistics_builds": len(groups),
                 "fold_group_context_statistics_builds": len(groups) * len(contexts),

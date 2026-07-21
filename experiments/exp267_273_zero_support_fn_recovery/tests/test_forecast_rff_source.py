@@ -1,16 +1,26 @@
 from __future__ import annotations
 
 import tempfile
+import tracemalloc
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
 from experiments.exp239_248_diverse_score_sources.contracts import DatasetBundle
-from experiments.exp267_273_zero_support_fn_recovery.config import SEED
+from experiments.exp267_273_zero_support_fn_recovery.config import (
+    RFF_MAX_TRAIN_RESIDUAL_VALUES,
+    SEED,
+)
+from experiments.exp267_273_zero_support_fn_recovery import (
+    forecast_rff_source as rff_module,
+)
 from experiments.exp267_273_zero_support_fn_recovery.forecast_rff_source import (
     RIDGE_ALPHAS,
     RFFNormalForecastResidual,
+    estimate_train_residual_values,
+    exact_spooled_quantile,
     forecast_context_lengths,
     forecast_horizon,
     select_ridge_alpha,
@@ -81,6 +91,100 @@ class RFFNormalForecastResidualTests(unittest.TestCase):
         self.assertEqual(result.provenance["alpha_candidate_count"], 4)
         self.assertEqual(result.provenance["ridge_eigendecompositions"], 16 * 3)
         self.assertEqual(result.provenance["all_alpha_validation_calls"], 25)
+
+    def test_exact_spooled_quantile_matches_numpy_linear_interpolation(self) -> None:
+        values = np.asarray([9.0, 2.0, 7.0, 1.0, 4.0, 12.0], dtype=float)
+
+        actual = exact_spooled_quantile(
+            (values[:2], values[2:]),
+            value_count=len(values),
+            artifact_dir=self.path,
+            quantile=0.35,
+        )
+
+        self.assertEqual(actual, np.quantile(values, 0.35, method="linear"))
+        self.assertFalse(list(self.path.glob("exp270_rff_residual_*.dat")))
+
+    def test_spooled_quantile_cleans_temporary_file_after_generator_failure(self) -> None:
+        def broken_chunks():
+            yield np.asarray([1.0, 2.0], dtype=float)
+            raise RuntimeError("intentional spool failure")
+
+        with self.assertRaisesRegex(RuntimeError, "intentional spool failure"):
+            exact_spooled_quantile(
+                broken_chunks(),
+                value_count=3,
+                artifact_dir=self.path,
+                quantile=0.95,
+            )
+        self.assertFalse(list(self.path.glob("exp270_rff_residual_*.dat")))
+
+    def test_large_train_residual_estimate_abstains_before_rff_work(self) -> None:
+        target_length = 250_000
+        train = np.zeros((20, target_length), dtype=np.float32)
+        oversized = DatasetBundle(
+            dataset="oversized",
+            train_normal=train,
+            test_values=train[:1],
+            target_length=target_length,
+        )
+        self.assertGreater(
+            estimate_train_residual_values(20, target_length),
+            RFF_MAX_TRAIN_RESIDUAL_VALUES,
+        )
+
+        with patch.object(rff_module, "_build_fold_group_statistics") as build:
+            result = RFFNormalForecastResidual().score(oversized, SEED, self.path)
+
+        build.assert_not_called()
+        self.assertTrue(result.abstained)
+        self.assertEqual(
+            result.abstention_reason, "train_residual_work_exceeds_10000000"
+        )
+        self.assertEqual(
+            result.provenance["rff_max_train_residual_values"], 10_000_000
+        )
+
+    def test_standardization_references_use_selected_outer_and_full_train_models(self) -> None:
+        captured = []
+        original = rff_module._robust_standardize_features
+
+        def observe(reference, values):
+            captured.append((reference.shape[0], values.shape[0]))
+            return original(reference, values)
+
+        with patch.object(rff_module, "_robust_standardize_features", side_effect=observe):
+            result = RFFNormalForecastResidual().score(bundle(n_train=20), SEED, self.path)
+
+        self.assertEqual(captured[:-1], [(16, 4)] * 5)
+        self.assertEqual(captured[-1], (20, 2))
+        self.assertEqual(
+            result.provenance["oof_standardization_reference"],
+            "selected_outer_model_on_outer_fit_rows",
+        )
+        self.assertEqual(
+            result.provenance["test_standardization_reference"],
+            "full_model_on_all_train_rows",
+        )
+        self.assertEqual(result.provenance["test_reference_row_count"], 20)
+
+    def test_end_to_end_smoke_records_bounded_spool_work(self) -> None:
+        smoke = bundle(n_train=40, target_length=128)
+        tracemalloc.start()
+        result = RFFNormalForecastResidual().score(smoke, SEED, self.path)
+        _, peak_bytes = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        self.assertFalse(result.abstained)
+        self.assertGreater(peak_bytes, 0)
+        self.assertLessEqual(
+            result.provenance["estimated_train_residual_values"],
+            RFF_MAX_TRAIN_RESIDUAL_VALUES,
+        )
+        self.assertLessEqual(
+            result.provenance["max_residual_spool_values"],
+            RFF_MAX_TRAIN_RESIDUAL_VALUES,
+        )
 
     def test_scores_are_finite_deterministic_and_use_train_only_calibration(self) -> None:
         original = bundle(n_train=20)
