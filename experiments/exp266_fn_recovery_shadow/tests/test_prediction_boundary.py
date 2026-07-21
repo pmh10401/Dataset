@@ -5,10 +5,16 @@ import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import MappingProxyType
+from unittest.mock import patch
 
-from experiments.exp266_fn_recovery_shadow.config import EVIDENCE_GROUPS
-from experiments.exp266_fn_recovery_shadow.contracts import FrozenDatasetInputs
-from experiments.exp266_fn_recovery_shadow.inputs import sha256_file
+from experiments.exp266_fn_recovery_shadow import prediction as prediction_module
+from experiments.exp266_fn_recovery_shadow.config import EVIDENCE_GROUPS, EXPECTED_DATASETS
+from experiments.exp266_fn_recovery_shadow.contracts import (
+    FrozenDatasetInputs,
+    FrozenRecoveryInputs,
+)
+from experiments.exp266_fn_recovery_shadow.inputs import InputContractError, sha256_file
 from experiments.exp266_fn_recovery_shadow.prediction import freeze_rows, predict_all
 from experiments.exp266_fn_recovery_shadow.routing import route_recovery
 
@@ -49,6 +55,31 @@ def example_inputs_with_n_test(n_test: int) -> FrozenDatasetInputs:
     )
 
 
+def example_recovery_inputs(count: int) -> FrozenRecoveryInputs:
+    population = tuple(f"dataset_{index:04d}" for index in range(count))
+    datasets = {
+        dataset: FrozenDatasetInputs(
+            dataset=dataset,
+            n_train=100,
+            n_test=8,
+            hard=frozenset({0}),
+            shadow=frozenset(),
+            priority=frozenset(),
+            standard=frozenset(),
+            evidence={group: frozenset() for group in EVIDENCE_GROUPS},
+            available_groups=frozenset(EVIDENCE_GROUPS),
+            quality_flags=frozenset(),
+        )
+        for dataset in population
+    }
+    return FrozenRecoveryInputs(
+        population=population,
+        datasets=MappingProxyType(datasets),
+        input_sha256=MappingProxyType({"exp253": "a" * 64}),
+        lane_totals=MappingProxyType({"hard": count}),
+    )
+
+
 class PredictionBoundaryTests(unittest.TestCase):
     def test_prediction_has_no_evaluation_fields(self) -> None:
         with TemporaryDirectory() as directory:
@@ -72,3 +103,106 @@ class PredictionBoundaryTests(unittest.TestCase):
 
     def test_prediction_api_has_no_label_parameter(self) -> None:
         self.assertNotIn("y_test", inspect.signature(predict_all).parameters)
+
+    def test_freeze_rows_rejects_nested_forbidden_prediction_fields(self) -> None:
+        row = prediction_row("a")
+        row["support_sources"] = {"kernel": {"nested": {"label": [1]}}}
+        with TemporaryDirectory() as directory, self.assertRaises(InputContractError):
+            freeze_rows(Path(directory), [row])
+
+    def test_freeze_rows_rejects_true_evaluation_or_anomaly_flags(self) -> None:
+        for field in ("contains_evaluation_metrics", "has_anomaly_positions"):
+            with self.subTest(field=field):
+                row = prediction_row("a")
+                row[field] = True
+                with TemporaryDirectory() as directory, self.assertRaises(InputContractError):
+                    freeze_rows(Path(directory), [row])
+
+    def test_freeze_rows_rejects_test_length_at_any_depth(self) -> None:
+        row = prediction_row("a")
+        row["support_sources"] = {"kernel": {"n_test": 8}}
+        with TemporaryDirectory() as directory, self.assertRaises(InputContractError):
+            freeze_rows(Path(directory), [row])
+
+    @patch("experiments.exp266_fn_recovery_shadow.prediction.load_frozen_inputs")
+    def test_full_and_smoke_outputs_are_separate_and_explicit(self, load_inputs) -> None:
+        load_inputs.return_value = example_recovery_inputs(EXPECTED_DATASETS)
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            full_path = predict_all(root)
+            full_manifest = json.loads(
+                (root / "04_prediction_manifest.json").read_text(encoding="utf-8")
+            )
+            full_row = json.loads(full_path.read_text(encoding="utf-8").splitlines()[0])
+
+            smoke_path = predict_all(root, dataset_limit=2)
+            smoke_root = root / "smoke" / "dataset_limit_2"
+            smoke_manifest = json.loads(
+                (smoke_root / "04_prediction_manifest.json").read_text(encoding="utf-8")
+            )
+
+            self.assertEqual(full_path, root / "03_frozen_predictions.jsonl")
+            self.assertEqual(smoke_path, smoke_root / "03_frozen_predictions.jsonl")
+            self.assertNotEqual(full_path, smoke_path)
+            self.assertNotIn("n_test", full_row)
+            self.assertIs(full_manifest["complete_population"], True)
+            self.assertIs(full_manifest["smoke"], False)
+            self.assertIs(smoke_manifest["complete_population"], False)
+            self.assertIs(smoke_manifest["smoke"], True)
+            self.assertIs(smoke_manifest["deployment_eligible"], False)
+            self.assertEqual(
+                full_manifest["lane_policy"]["Hard"],
+                {"autonomous": True, "unchanged": True},
+            )
+            for lane in ("RecoveryShadow", "RecoveryPriority", "DataQualityReview"):
+                self.assertEqual(
+                    full_manifest["lane_policy"][lane],
+                    {"deployment_eligible": False, "human_assisted": True, "review_only": True},
+                )
+
+    @patch("experiments.exp266_fn_recovery_shadow.prediction.load_frozen_inputs")
+    def test_full_prediction_rejects_incomplete_population(self, load_inputs) -> None:
+        load_inputs.return_value = example_recovery_inputs(EXPECTED_DATASETS - 1)
+        with TemporaryDirectory() as directory, self.assertRaisesRegex(ValueError, "1,117"):
+            predict_all(Path(directory))
+
+    def test_pending_checkpoint_is_rejected_until_recovered(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            freeze_rows(root, [prediction_row("a")])
+            manifest = json.loads(
+                (root / "04_prediction_manifest.json").read_text(encoding="utf-8")
+            )
+            (root / prediction_module.PENDING_FILENAME).write_text(
+                json.dumps(
+                    {
+                        "generation": manifest["generation"],
+                        "prediction_sha256": manifest["prediction_sha256"],
+                    },
+                    sort_keys=True,
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(prediction_module.CheckpointError):
+                prediction_module.verify_prediction_checkpoint(root)
+
+            recovered = prediction_module.recover_prediction_checkpoint(root)
+            self.assertEqual(recovered["generation"], manifest["generation"])
+            self.assertFalse((root / prediction_module.PENDING_FILENAME).exists())
+            self.assertEqual(
+                prediction_module.verify_prediction_checkpoint(root)["prediction_sha256"],
+                manifest["prediction_sha256"],
+            )
+
+    def test_checkpoint_verification_requires_manifest_hash_match(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            freeze_rows(root, [prediction_row("a")])
+            manifest_path = root / "04_prediction_manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["prediction_sha256"] = "0" * 64
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+            with self.assertRaises(prediction_module.CheckpointError):
+                prediction_module.verify_prediction_checkpoint(root)

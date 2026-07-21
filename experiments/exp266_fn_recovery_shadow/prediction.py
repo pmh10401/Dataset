@@ -18,12 +18,17 @@ from .config import (
     SEED,
 )
 from .contracts import FrozenDatasetInputs, FrozenRecoveryInputs
-from .inputs import load_frozen_inputs
+from .inputs import InputContractError, load_frozen_inputs, validate_prediction_boundary
 from .routing import RecoveryPrediction, route_recovery
 
 
 PREDICTION_FILENAME = "03_frozen_predictions.jsonl"
 MANIFEST_FILENAME = "04_prediction_manifest.json"
+PENDING_FILENAME = ".03_frozen_predictions.pending.json"
+
+
+class CheckpointError(ValueError):
+    """Raised when a prediction checkpoint cannot be accepted safely."""
 
 
 def _canonical_json(value: object) -> bytes:
@@ -39,6 +44,7 @@ def _atomic_write(path: Path, payload: bytes) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary_name, path)
+        _sync_directory(path.parent)
     except BaseException:
         try:
             os.unlink(temporary_name)
@@ -47,8 +53,102 @@ def _atomic_write(path: Path, payload: bytes) -> None:
         raise
 
 
+def _sync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
 def _atomic_json(path: Path, value: Mapping[str, object]) -> None:
     _atomic_write(path, _canonical_json(value) + b"\n")
+
+
+def _remove_checkpoint_marker(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        return
+    _sync_directory(path.parent)
+
+
+def _read_json_object(path: Path, description: str) -> dict[str, object]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CheckpointError(f"cannot read {description}") from exc
+    if type(value) is not dict:
+        raise CheckpointError(f"invalid {description}")
+    return value
+
+
+def _checkpoint_generation(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _validate_serialized_prediction_row(value: object, path: str = "root") -> None:
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            if key == "n_test":
+                raise InputContractError(f"TEST length cannot be published: {path}.{key}")
+            _validate_serialized_prediction_row(child, f"{path}.{key}")
+    elif isinstance(value, (list, tuple)):
+        for index, child in enumerate(value):
+            _validate_serialized_prediction_row(child, f"{path}[{index}]")
+
+
+def verify_prediction_checkpoint(output_root: Path) -> dict[str, object]:
+    """Return a manifest only when its prediction file is complete and hash-bound."""
+
+    output_root = Path(output_root)
+    if (output_root / PENDING_FILENAME).exists():
+        raise CheckpointError("prediction checkpoint publication is pending")
+    manifest = _read_json_object(output_root / MANIFEST_FILENAME, "prediction manifest")
+    prediction_path = output_root / PREDICTION_FILENAME
+    try:
+        actual_sha256 = _checkpoint_generation(prediction_path.read_bytes())
+    except OSError as exc:
+        raise CheckpointError("cannot read frozen predictions") from exc
+    expected_sha256 = manifest.get("prediction_sha256")
+    if type(expected_sha256) is not str or expected_sha256 != actual_sha256:
+        raise CheckpointError("prediction manifest SHA256 mismatch")
+    if manifest.get("generation") != actual_sha256:
+        raise CheckpointError("prediction manifest generation mismatch")
+    if manifest.get("checkpoint") not in (None, PREDICTION_FILENAME):
+        raise CheckpointError("prediction manifest checkpoint mismatch")
+    if manifest.get("contains_test_labels") is not False:
+        raise CheckpointError("prediction manifest contains TEST labels")
+    if manifest.get("contains_evaluation_metrics") is not False:
+        raise CheckpointError("prediction manifest contains evaluation metrics")
+    return manifest
+
+
+def recover_prediction_checkpoint(output_root: Path) -> dict[str, object]:
+    """Finalize an interrupted publish only when both files match the marker."""
+
+    output_root = Path(output_root)
+    pending_path = output_root / PENDING_FILENAME
+    if not pending_path.exists():
+        return verify_prediction_checkpoint(output_root)
+    pending = _read_json_object(pending_path, "pending prediction checkpoint")
+    manifest = _read_json_object(output_root / MANIFEST_FILENAME, "prediction manifest")
+    prediction_path = output_root / PREDICTION_FILENAME
+    try:
+        actual_sha256 = _checkpoint_generation(prediction_path.read_bytes())
+    except OSError as exc:
+        raise CheckpointError("cannot recover missing frozen predictions") from exc
+    expected_sha256 = pending.get("prediction_sha256")
+    if (
+        type(expected_sha256) is not str
+        or pending.get("generation") != expected_sha256
+        or actual_sha256 != expected_sha256
+        or manifest.get("generation") != expected_sha256
+        or manifest.get("prediction_sha256") != expected_sha256
+    ):
+        raise CheckpointError("pending prediction checkpoint does not match manifest")
+    _remove_checkpoint_marker(pending_path)
+    return verify_prediction_checkpoint(output_root)
 
 
 def _config_snapshot() -> dict[str, object]:
@@ -84,7 +184,6 @@ def _prediction_row(
     return {
         "dataset": inputs.dataset,
         "n_train": inputs.n_train,
-        "n_test": inputs.n_test,
         "hard_indices": _sorted_indices(prediction.hard),
         "shadow_indices": _sorted_indices(prediction.shadow),
         "priority_indices": _sorted_indices(prediction.priority),
@@ -108,25 +207,82 @@ def _prediction_row(
     }
 
 
-def freeze_rows(output_root: Path, rows: Collection[Mapping[str, object]]) -> Path:
+def freeze_rows(
+    output_root: Path,
+    rows: Collection[Mapping[str, object]],
+    *,
+    manifest_extra: Mapping[str, object] | None = None,
+) -> Path:
     output_root = Path(output_root)
+    for row in rows:
+        validate_prediction_boundary(row, "prediction row")
+        _validate_serialized_prediction_row(row)
     ordered = sorted(rows, key=lambda row: str(row["dataset"]))
     payload = b"".join(_canonical_json(row) + b"\n" for row in ordered)
     path = output_root / PREDICTION_FILENAME
-    _atomic_write(path, payload)
+    generation = _checkpoint_generation(payload)
+    manifest = {
+        "experiment_id": EXPERIMENT_ID,
+        "rows": len(ordered),
+        "datasets": len(ordered),
+        "generation": generation,
+        "prediction_sha256": generation,
+        "contains_test_labels": False,
+        "contains_evaluation_metrics": False,
+        "retrospective": True,
+    }
+    if manifest_extra is not None:
+        manifest.update(manifest_extra)
     _atomic_json(
-        output_root / MANIFEST_FILENAME,
+        output_root / PENDING_FILENAME,
         {
-            "experiment_id": EXPERIMENT_ID,
-            "rows": len(ordered),
-            "datasets": len(ordered),
-            "prediction_sha256": hashlib.sha256(payload).hexdigest(),
-            "contains_test_labels": False,
-            "contains_evaluation_metrics": False,
-            "retrospective": True,
+            "generation": generation,
+            "prediction_filename": PREDICTION_FILENAME,
+            "prediction_sha256": generation,
         },
     )
+    _atomic_write(path, payload)
+    _atomic_json(output_root / MANIFEST_FILENAME, manifest)
+    _remove_checkpoint_marker(output_root / PENDING_FILENAME)
     return path
+
+
+def _publication_root(output_root: Path, dataset_limit: int | None) -> Path:
+    root = Path(output_root)
+    if dataset_limit is None:
+        return root
+    return root / "smoke" / f"dataset_limit_{dataset_limit}"
+
+
+def _validate_complete_population(recovery: FrozenRecoveryInputs) -> None:
+    population = recovery.population
+    if (
+        len(population) != EXPECTED_DATASETS
+        or len(set(population)) != EXPECTED_DATASETS
+        or set(population) != set(recovery.datasets)
+    ):
+        raise ValueError("full prediction requires exactly 1,117 unique datasets")
+
+
+def _lane_policy() -> dict[str, dict[str, bool]]:
+    return {
+        "Hard": {"autonomous": True, "unchanged": True},
+        "RecoveryShadow": {
+            "deployment_eligible": False,
+            "human_assisted": True,
+            "review_only": True,
+        },
+        "RecoveryPriority": {
+            "deployment_eligible": False,
+            "human_assisted": True,
+            "review_only": True,
+        },
+        "DataQualityReview": {
+            "deployment_eligible": False,
+            "human_assisted": True,
+            "review_only": True,
+        },
+    }
 
 
 def predict_all(output_root: Path, dataset_limit: int | None = None) -> Path:
@@ -135,28 +291,31 @@ def predict_all(output_root: Path, dataset_limit: int | None = None) -> Path:
     if dataset_limit is not None and (type(dataset_limit) is not int or dataset_limit < 0):
         raise ValueError("dataset_limit must be a non-negative integer or None")
 
-    output_root = Path(output_root)
-    recovery = load_frozen_inputs(output_root=output_root)
+    publication_root = _publication_root(output_root, dataset_limit)
+    recovery = load_frozen_inputs(output_root=publication_root)
+    if dataset_limit is None:
+        _validate_complete_population(recovery)
     population = recovery.population if dataset_limit is None else recovery.population[:dataset_limit]
     rows = [
         _prediction_row(recovery.datasets[dataset], route_recovery(recovery.datasets[dataset]), recovery)
         for dataset in population
     ]
-    path = freeze_rows(output_root, rows)
-    manifest_path = output_root / MANIFEST_FILENAME
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    manifest.update(
-        {
+    return freeze_rows(
+        publication_root,
+        rows,
+        manifest_extra={
+            "checkpoint": PREDICTION_FILENAME,
+            "complete_population": dataset_limit is None,
             "config": _config_snapshot(),
             "config_sha256": hashlib.sha256(_canonical_json(_config_snapshot())).hexdigest(),
-            "input_sha256": dict(sorted(recovery.input_sha256.items())),
             "coverage": {
                 "expected_datasets": EXPECTED_DATASETS,
                 "frozen_population": len(recovery.population),
                 "predicted_datasets": len(population),
             },
-            "checkpoint": PREDICTION_FILENAME,
-        }
+            "deployment_eligible": False,
+            "input_sha256": dict(sorted(recovery.input_sha256.items())),
+            "lane_policy": _lane_policy(),
+            "smoke": dataset_limit is not None,
+        },
     )
-    _atomic_json(manifest_path, manifest)
-    return path
