@@ -68,3 +68,33 @@ two-worker macOS `spawn` smoke using real scattering cache units.
 Final verification after the hardening pass: focused Task 7 tests passed and
 the Exp267-273 package suite passed `91/91` tests.  The real DB one-dataset
 smoke again completed `cache -> freeze -> exact verify` for `ACSF1_normal_0`.
+
+## Follow-up Hardening: Canonical Context And Machine Lock
+
+- Cache scoring, freeze, and verification now derive a canonical invocation
+  context from the current source registration, function arguments, policy
+  constants, seed, device request, verified benchmark-record hash, code
+  dependency hashes, and current DB SHA-256.  A supplied context is only an
+  assertion: it is rejected unless it exactly equals the newly derived
+  context before scoring or writing begins.
+- Cache metadata now stores both `config` and `runtime_config` and requires
+  exact equality with the canonical context, in addition to run-contract and
+  content self-hash checks.  Device, seed, benchmark, and shared dependency
+  changes therefore invalidate reuse rather than being accepted as metadata.
+- The TCN/MPS lock is machine-level and deterministic:
+  `/Users/minho/Documents/Dataset/.locks/exp267_273_tcn_mps.lock`.  It no
+  longer depends on a run output folder, so two independent output roots
+  cannot use the selected accelerator concurrently.  A lock-path override is
+  retained only for isolated tests.
+- Each cache/freeze/verify stage builds one frozen context per source.  The DB
+  SHA-256 is measured once per stage, and source dependency hashes are
+  measured once per source before worker fan-out.  Workers and cache reads use
+  that immutable context rather than rehashing the multi-GB DB per dataset.
+  Focused mock-counter coverage verifies one DB hash for a multi-dataset
+  freeze and one for verification, while mismatch rejection remains active.
+
+Remaining limitation: the context protects the invocation currently being
+run; it does not establish historical end-to-end configuration provenance or
+prospective equipment validation.  The TCN device benchmark is fingerprinted
+and required at cache construction, but hardware throughput selection itself
+remains a separately frozen operational decision.

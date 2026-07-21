@@ -41,8 +41,10 @@ from .contracts import FrozenSourcePrediction, SourceScore
 from .source_registry import build_source, registration, source_names, source_variants
 
 
-CACHE_SCHEMA_VERSION = 2
-PREDICTION_SCHEMA_VERSION = 2
+CACHE_SCHEMA_VERSION = 3
+PREDICTION_SCHEMA_VERSION = 3
+DATA_DIR = DB_PATH.parent
+MACHINE_TCN_LOCK_PATH = DATA_DIR / ".locks" / "exp267_273_tcn_mps.lock"
 _FORBIDDEN_PREDICTION_FIELDS = frozenset(
     {
         "y_test", "label", "labels", "tp", "fp", "fn", "f1", "precision", "metrics",
@@ -220,6 +222,111 @@ def _run_contract(
     return {**payload, "run_contract_sha256": _run_contract_hash(payload)}
 
 
+def _invocation_context_hash(context: Mapping[str, object]) -> str:
+    return stable_json_hash(_json_safe({
+        key: value for key, value in context.items() if key != "invocation_context_sha256"
+    }))
+
+
+def _canonical_invocation_context(
+    source: str,
+    *,
+    device: str,
+    benchmark_record: Mapping[str, object] | None,
+    db_sha256: str,
+) -> dict[str, object]:
+    """Create the only cache/prediction contract accepted for this invocation.
+
+    This function is deliberately fed an internally measured DB hash by the
+    stage builder.  A caller-provided contract can only be compared against
+    this result; it can never replace it.
+    """
+    canonical = registration(source).source
+    runtime_config = _source_config(
+        canonical, device=device, benchmark_record=benchmark_record,
+    )
+    contract = _run_contract(
+        canonical, device=device, benchmark_record=benchmark_record,
+        db_sha256=db_sha256,
+    )
+    context: dict[str, object] = {
+        "context_schema_version": 1,
+        "source": canonical,
+        "device": str(device),
+        "benchmark_record": _json_safe(dict(benchmark_record)) if benchmark_record is not None else None,
+        "runtime_config": runtime_config,
+        "db_sha256": str(db_sha256),
+        "code_sha256": _source_code_hash(canonical),
+        "run_contract": contract,
+        "run_contract_sha256": contract["run_contract_sha256"],
+    }
+    context["invocation_context_sha256"] = _invocation_context_hash(context)
+    return context
+
+
+def _require_context_integrity(
+    context: Mapping[str, object],
+    *,
+    source: str,
+) -> dict[str, object]:
+    """Reject a changed/incomplete frozen context before it reaches scoring."""
+    materialized = _json_safe(dict(context))
+    if not isinstance(materialized, dict):
+        raise ValueError("invocation context must be an object")
+    canonical = registration(source).source
+    if materialized.get("source") != canonical:
+        raise ValueError("invocation context source mismatch")
+    if materialized.get("invocation_context_sha256") != _invocation_context_hash(materialized):
+        raise ValueError("invocation context self-hash mismatch")
+    contract = materialized.get("run_contract")
+    if not isinstance(contract, Mapping) or contract.get("run_contract_sha256") != _run_contract_hash(contract):
+        raise ValueError("invocation context run-contract mismatch")
+    if (
+        materialized.get("run_contract_sha256") != contract.get("run_contract_sha256")
+        or materialized.get("runtime_config") != contract.get("runtime_config")
+        or materialized.get("db_sha256") != contract.get("db_sha256")
+    ):
+        raise ValueError("invocation context contract fields disagree")
+    return materialized
+
+
+def _stage_invocation_contexts(
+    sources: Iterable[str],
+    *,
+    source_runtime: Mapping[str, Mapping[str, object]] | None = None,
+    supplied_contexts: Mapping[str, Mapping[str, object]] | None = None,
+) -> dict[str, dict[str, object]]:
+    """Freeze current invocation facts once for one stage.
+
+    The DB hash is intentionally measured once here rather than by every
+    cache worker or every dataset read.  Supplied contexts are verification
+    artifacts only and must exactly match the freshly derived context.
+    """
+    selected = _canonical_sources(sources)
+    if supplied_contexts is not None:
+        supplied_sources = tuple(registration(str(key)).source for key in supplied_contexts)
+        if len(supplied_sources) != len(set(supplied_sources)) or set(supplied_sources) != set(selected):
+            raise ValueError("supplied invocation context source universe mismatch")
+    db_sha256 = database_hash(DB_PATH)
+    contexts: dict[str, dict[str, object]] = {}
+    for source in selected:
+        device, benchmark_record = _runtime_for_source(source, source_runtime)
+        current = _canonical_invocation_context(
+            source, device=device, benchmark_record=benchmark_record, db_sha256=db_sha256,
+        )
+        if supplied_contexts is not None:
+            matching = [
+                value for key, value in supplied_contexts.items()
+                if registration(str(key)).source == source
+            ]
+            if len(matching) > 1:
+                raise ValueError(f"duplicate supplied invocation contexts for source={source}")
+            if matching and _canonical_bytes(matching[0]) != _canonical_bytes(current):
+                raise ValueError(f"supplied invocation context differs from current invocation: source={source}")
+        contexts[source] = current
+    return contexts
+
+
 def _run_contract_hash(contract: Mapping[str, object]) -> str:
     return stable_json_hash(_json_safe({
         key: value for key, value in contract.items() if key != "run_contract_sha256"
@@ -251,7 +358,7 @@ def _source_config(
     benchmark_hash = None
     if benchmark_record is not None:
         benchmark_hash = stable_json_hash(_json_safe(dict(benchmark_record)))
-    return {
+    return _json_safe({
         "cache_schema_version": CACHE_SCHEMA_VERSION,
         "source": item.source,
         "algorithm": item.algorithm,
@@ -264,7 +371,7 @@ def _source_config(
         "device_request": str(device),
         "tcn_benchmark_record_hash": benchmark_hash,
         "contains_test_labels": False,
-    }
+    })  # type: ignore[return-value]
 
 
 def _array_hash(values: np.ndarray) -> str:
@@ -375,6 +482,7 @@ def _cache_is_valid(
             "cache_schema_version", "config_hash", "db_sha256", "code_sha256",
             "input_sha256", "cache_sha256", "metadata_sha256", "archive_sha256",
             "run_contract", "run_contract_sha256", "variant_run_contract_sha256",
+            "runtime_config",
         )
         if any(field not in metadata for field in required):
             return None
@@ -404,29 +512,59 @@ def build_cache_unit(
     reset: bool = False,
     benchmark_record: Mapping[str, object] | None = None,
     source_factory: Callable[..., object] | None = None,
-    db_hash: str | None = None,
-    code_hash: str | None = None,
-    run_contract: Mapping[str, object] | None = None,
+    invocation_context: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
-    """Build or verify one atomic label-free source cache unit."""
+    """Build one cache unit from the canonical *current* invocation.
+
+    ``invocation_context`` is accepted only as a tamper-detection assertion.
+    It is recomputed from actual arguments/current code/current DB first and
+    must match byte-for-byte before any score is read or written.
+    """
     canonical = registration(source).source
     if canonical == "tcn_forecast" and benchmark_record is None:
         raise ValueError("TCN cache requires one frozen verified benchmark record")
-    archive_path, metadata_path = cache_paths(Path(root), canonical, dataset)
-    config = _source_config(canonical, device=device, benchmark_record=benchmark_record)
-    db_sha256 = db_hash or database_hash(DB_PATH)
-    contract = dict(run_contract) if run_contract is not None else _run_contract(
-        canonical, device=device, benchmark_record=benchmark_record, db_sha256=db_sha256
+    contexts = _stage_invocation_contexts(
+        (canonical,),
+        source_runtime={canonical: {"device": device, "benchmark_record": benchmark_record}},
+        supplied_contexts={canonical: invocation_context} if invocation_context is not None else None,
     )
-    if contract.get("run_contract_sha256") != _run_contract_hash(contract):
-        raise ValueError("run contract self-hash mismatch")
-    if contract.get("source") != canonical or contract.get("db_sha256") != db_sha256:
-        raise ValueError("run contract does not match source or DB invocation")
+    return _build_cache_unit_from_context(
+        Path(root), canonical, dataset, context=contexts[canonical], reset=reset,
+        source_factory=source_factory,
+    )
+
+
+def _build_cache_unit_from_context(
+    root: Path,
+    source: str,
+    dataset: str,
+    *,
+    context: Mapping[str, object],
+    reset: bool,
+    source_factory: Callable[..., object] | None = None,
+) -> dict[str, object]:
+    """Worker-safe cache builder using a stage-frozen canonical context."""
+    canonical = registration(source).source
+    verified_context = _require_context_integrity(context, source=canonical)
+    archive_path, metadata_path = cache_paths(Path(root), canonical, dataset)
+    config = verified_context["runtime_config"]
+    if not isinstance(config, Mapping):
+        raise ValueError("invocation context runtime_config is invalid")
+    contract = verified_context["run_contract"]
+    if not isinstance(contract, Mapping):
+        raise ValueError("invocation context run-contract is invalid")
+    device = str(verified_context["device"])
+    benchmark_record = verified_context.get("benchmark_record")
+    if benchmark_record is not None and not isinstance(benchmark_record, Mapping):
+        raise ValueError("invocation context benchmark record is invalid")
     expected_base = {
         "cache_schema_version": CACHE_SCHEMA_VERSION,
         "config_hash": stable_json_hash(config),
-        "db_sha256": db_sha256,
-        "code_sha256": code_hash or _source_code_hash(canonical),
+        "config": config,
+        "runtime_config": config,
+        "db_sha256": verified_context["db_sha256"],
+        "code_sha256": verified_context["code_sha256"],
+        "run_contract": contract,
         "run_contract_sha256": contract["run_contract_sha256"],
     }
     if not reset and archive_path.exists() and metadata_path.exists():
@@ -472,6 +610,7 @@ def build_cache_unit(
         "abstained": bool(result.abstained),
         "abstention_reason": result.abstention_reason,
         "config": config,
+        "runtime_config": config,
         "run_contract": contract,
         "run_contract_sha256": contract["run_contract_sha256"],
         "variant_run_contract_sha256": _variant_run_contract_hashes(contract),
@@ -495,12 +634,11 @@ def build_cache_unit(
 
 
 def _worker_build_cache_unit(arguments: tuple[object, ...]) -> dict[str, object]:
-    root, source, dataset, device, reset, benchmark_record, db_hash, code_hash, contract = arguments
-    return build_cache_unit(
-        Path(str(root)), str(source), str(dataset), device=str(device), reset=bool(reset),
-        benchmark_record=benchmark_record if isinstance(benchmark_record, Mapping) else None,
-        db_hash=str(db_hash), code_hash=str(code_hash),
-        run_contract=contract if isinstance(contract, Mapping) else None,
+    root, source, dataset, reset, context = arguments
+    if not isinstance(context, Mapping):
+        raise ValueError("worker invocation context is required")
+    return _build_cache_unit_from_context(
+        Path(str(root)), str(source), str(dataset), reset=bool(reset), context=context,
     )
 
 
@@ -522,9 +660,14 @@ def _write_csv(path: Path, rows: Iterable[Mapping[str, object]], fields: tuple[s
 
 
 @contextmanager
-def tcn_exclusive_lock(root: Path, *, nonblocking: bool = True) -> Iterator[dict[str, object]]:
+def tcn_exclusive_lock(
+    *, lock_path: Path | None = None, nonblocking: bool = True,
+) -> Iterator[dict[str, object]]:
     """Hold an OS-level exclusive lock for the complete TCN cache stage."""
-    path = source_root(Path(root), "tcn_forecast") / "tcn_exclusive.lock"
+    # This must not depend on an output root.  Two runs writing separate
+    # output folders can still contend for one MPS device and must serialize.
+    # ``lock_path`` exists solely to isolate unit tests from the machine lock.
+    path = Path(lock_path) if lock_path is not None else MACHINE_TCN_LOCK_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     handle = path.open("a+", encoding="utf-8")
     flags = fcntl.LOCK_EX | (fcntl.LOCK_NB if nonblocking else 0)
@@ -581,11 +724,14 @@ def cache_source(
             raise ValueError("TCN cache requires one verified frozen benchmark record")
     worker_count = 1 if item.model_based else min(7, max(1, int(workers)))
     base = source_root(Path(root), canonical)
-    db_sha = database_hash(DB_PATH)
-    code_sha = _source_code_hash(canonical)
-    contract = _run_contract(
-        canonical, device=device, benchmark_record=benchmark_record, db_sha256=db_sha
+    contexts = _stage_invocation_contexts(
+        (canonical,),
+        source_runtime={canonical: {"device": device, "benchmark_record": benchmark_record}},
     )
+    context = contexts[canonical]
+    contract = context["run_contract"]
+    if not isinstance(contract, Mapping):
+        raise ValueError("stage invocation context is missing a run contract")
     rows: list[dict[str, object]] = []
     errors: list[dict[str, object]] = []
 
@@ -593,26 +739,24 @@ def cache_source(
         if progress is not None:
             progress(done, len(selected), dataset, len(errors))
 
-    lock_context = tcn_exclusive_lock(Path(root)) if item.model_based else nullcontext(None)
+    lock_context = tcn_exclusive_lock() if item.model_based else nullcontext(None)
     with lock_context as lock_owner:
         if worker_count == 1:
             for done, dataset in enumerate(selected, 1):
                 try:
-                    rows.append(build_cache_unit(
-                        Path(root), canonical, dataset, device=device, reset=reset,
-                        benchmark_record=benchmark_record, db_hash=db_sha, code_hash=code_sha,
-                        run_contract=contract,
+                    rows.append(_build_cache_unit_from_context(
+                        Path(root), canonical, dataset, context=context, reset=reset,
                     ))
                 except Exception as error:  # persist failures and block prediction freeze.
                     errors.append({"dataset": dataset, "error_type": type(error).__name__, "error": str(error)})
                 finish(done, dataset)
         else:
             arguments = [
-                (str(root), canonical, dataset, device, reset, None, db_sha, code_sha, contract)
+                (str(root), canonical, dataset, reset, context)
                 for dataset in selected
             ]
-            context = multiprocessing.get_context("spawn")
-            with ProcessPoolExecutor(max_workers=worker_count, mp_context=context) as executor:
+            spawn_context = multiprocessing.get_context("spawn")
+            with ProcessPoolExecutor(max_workers=worker_count, mp_context=spawn_context) as executor:
                 futures = {executor.submit(_worker_build_cache_unit, argument): argument[2] for argument in arguments}
                 for done, future in enumerate(as_completed(futures), 1):
                     dataset = str(futures[future])
@@ -641,7 +785,7 @@ def cache_source(
         "workers": worker_count,
         "tcn_exclusive": bool(item.model_based),
         "run_contract_sha256": contract["run_contract_sha256"],
-        "runtime_config": contract["runtime_config"],
+        "runtime_config": context["runtime_config"],
         "tcn_lock": lock_owner if item.model_based else None,
         "contains_test_labels": False,
     })
@@ -654,39 +798,33 @@ def _read_cache(
     dataset: str,
     *,
     bundle_loader: Callable[[str], object] = load_bundle,
-    device: str = "cpu",
-    benchmark_record: Mapping[str, object] | None = None,
+    invocation_context: Mapping[str, object] | None = None,
 ) -> tuple[dict[str, object], dict[str, np.ndarray]]:
     archive_path, metadata_path = cache_paths(root, source, dataset)
+    if invocation_context is None:
+        invocation_context = _stage_invocation_contexts((source,))[registration(source).source]
+    context = _require_context_integrity(invocation_context, source=source)
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     if not isinstance(metadata, dict):
         raise ValueError("cache metadata must be an object")
     config = metadata.get("config")
-    item = registration(source)
-    if not isinstance(config, dict) or any(
-        config.get(field) != expected
-        for field, expected in {
-            "source": item.source,
-            "algorithm": item.algorithm,
-            "source_version": item.source_version,
-            "cache_schema_version": CACHE_SCHEMA_VERSION,
-        }.items()
-    ):
+    expected_config = context["runtime_config"]
+    if not isinstance(config, dict) or config != expected_config or metadata.get("runtime_config") != expected_config:
         raise ValueError(f"cache configuration is stale or incompatible: source={source}")
     if metadata.get("config_hash") != stable_json_hash(config):
         raise ValueError(f"cache configuration hash mismatch: source={source}")
-    current_contract = _run_contract(
-        source,
-        device=device,
-        benchmark_record=benchmark_record,
-        db_sha256=database_hash(DB_PATH),
-    )
+    contract = context["run_contract"]
+    if not isinstance(contract, Mapping):
+        raise ValueError("invocation context run-contract is invalid")
     expected = {
         "cache_schema_version": CACHE_SCHEMA_VERSION,
-        "config_hash": metadata.get("config_hash"),
-        "db_sha256": current_contract["db_sha256"],
-        "code_sha256": _source_code_hash(source),
-        "run_contract_sha256": current_contract["run_contract_sha256"],
+        "config_hash": stable_json_hash(expected_config),
+        "config": expected_config,
+        "runtime_config": expected_config,
+        "db_sha256": context["db_sha256"],
+        "code_sha256": context["code_sha256"],
+        "run_contract": contract,
+        "run_contract_sha256": context["run_contract_sha256"],
     }
     verified = _cache_is_valid(archive_path, metadata_path, expected=expected)
     if verified is None:
@@ -694,7 +832,7 @@ def _read_cache(
     if verified.get("input_sha256") != _input_hash(bundle_loader(dataset)):
         raise ValueError(f"cache input hash mismatch: source={source} dataset={dataset}")
     stored_contract = verified.get("run_contract")
-    if not isinstance(stored_contract, Mapping) or _run_contract_hash(stored_contract) != current_contract["run_contract_sha256"]:
+    if not isinstance(stored_contract, Mapping) or _canonical_bytes(stored_contract) != _canonical_bytes(contract):
         raise ValueError(f"cache run-contract content mismatch: source={source}")
     with np.load(archive_path, allow_pickle=False) as archive:
         arrays = {key: np.asarray(archive[key]) for key in archive.files}
@@ -817,6 +955,7 @@ def freeze_source_predictions(
     output_dir: Path | None = None,
     bundle_loader: Callable[[str], object] = load_bundle,
     source_runtime: Mapping[str, Mapping[str, object]] | None = None,
+    invocation_contexts: Mapping[str, Mapping[str, object]] | None = None,
 ) -> tuple[Path, Path]:
     """Freeze deterministic candidates after cache verification and before labels."""
     selected_sources = _canonical_sources(sources or source_names())
@@ -824,19 +963,22 @@ def freeze_source_predictions(
     if len(selected_datasets) != len(tuple(datasets)) or len(selected_datasets) != expected_dataset_count:
         raise ValueError("prediction population coverage contract mismatch")
     expected_keys = _expected_prediction_keys(selected_sources, selected_datasets)
+    contexts = _stage_invocation_contexts(
+        selected_sources, source_runtime=source_runtime, supplied_contexts=invocation_contexts,
+    )
     rows: list[dict[str, object]] = []
     source_contracts: dict[str, str] = {}
     variant_contracts: dict[str, str] = {}
     for source in selected_sources:
         canonical = source
-        device, benchmark_record = _runtime_for_source(canonical, source_runtime)
+        context = contexts[canonical]
         _assert_source_manifest_complete(
             Path(root), canonical, expected_dataset_count=expected_dataset_count
         )
         for dataset in selected_datasets:
             metadata, arrays = _read_cache(
                 Path(root), canonical, dataset, bundle_loader=bundle_loader,
-                device=device, benchmark_record=benchmark_record,
+                invocation_context=context,
             )
             source_contracts.setdefault(canonical, str(metadata["run_contract_sha256"]))
             if source_contracts[canonical] != str(metadata["run_contract_sha256"]):
@@ -899,6 +1041,9 @@ def freeze_source_predictions(
         "key_universe_sha256": _key_universe_hash(expected_keys),
         "source_run_contract_sha256": source_contracts,
         "variant_run_contract_sha256": variant_contracts,
+        "source_invocation_context_sha256": {
+            source: contexts[source]["invocation_context_sha256"] for source in selected_sources
+        },
         "canonical_order": ("source", "variant", "dataset", "alpha"),
         "contains_test_labels": False,
     }
@@ -957,6 +1102,7 @@ def verify_prediction_hash(
     cache_root: Path | None = None,
     bundle_loader: Callable[[str], object] = load_bundle,
     source_runtime: Mapping[str, Mapping[str, object]] | None = None,
+    invocation_contexts: Mapping[str, Mapping[str, object]] | None = None,
 ) -> bool:
     """Verify immutable prediction bytes, universe, contracts, and cached candidates.
 
@@ -1010,26 +1156,31 @@ def verify_prediction_hash(
 
     root = Path(cache_root) if cache_root is not None else Path(prediction_path).parent.parent
     bundles = {dataset: bundle_loader(dataset) for dataset in datasets}
+    contexts = _stage_invocation_contexts(
+        sources, source_runtime=source_runtime, supplied_contexts=invocation_contexts,
+    )
     source_contracts: dict[str, str] = {}
     variant_contracts: dict[str, str] = {}
     cache_rows: dict[tuple[str, str], tuple[dict[str, object], dict[str, np.ndarray]]] = {}
     for source in sources:
-        device, benchmark_record = _runtime_for_source(source, source_runtime)
-        db_sha = database_hash(DB_PATH)
-        contract = _run_contract(
-            source, device=device, benchmark_record=benchmark_record, db_sha256=db_sha
-        )
+        context = contexts[source]
+        contract = context["run_contract"]
+        if not isinstance(contract, Mapping):
+            raise ValueError("invocation context run-contract is invalid")
         source_contracts[source] = str(contract["run_contract_sha256"])
         for item in source_variants(source):
             variant_contracts[f"{source}:{item.variant}"] = _variant_run_contract_hashes(contract)[item.variant]
         for dataset in datasets:
             cache_rows[(source, dataset)] = _read_cache(
                 root, source, dataset, bundle_loader=bundle_loader,
-                device=device, benchmark_record=benchmark_record,
+                invocation_context=context,
             )
     if (
         manifest.get("source_run_contract_sha256") != source_contracts
         or manifest.get("variant_run_contract_sha256") != variant_contracts
+        or manifest.get("source_invocation_context_sha256") != {
+            source: contexts[source]["invocation_context_sha256"] for source in sources
+        }
     ):
         raise ValueError("prediction manifest run-contract mismatch")
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import subprocess
 import sys
@@ -82,7 +83,6 @@ class SourcePipelineTests(unittest.TestCase):
         reset: bool = False,
         dataset: str = "d1",
         source_factory= None,
-        code_hash: str | None = None,
         device: str = "cpu",
     ) -> dict[str, object]:
         from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import build_cache_unit
@@ -98,8 +98,6 @@ class SourcePipelineTests(unittest.TestCase):
                 reset=reset,
                 device=device,
                 source_factory=source_factory or (lambda *_args, **_kwargs: _FakeSource()),
-                db_hash=None,
-                code_hash=code_hash,
             )
 
     def _freeze(self) -> tuple[Path, Path]:
@@ -140,7 +138,10 @@ class SourcePipelineTests(unittest.TestCase):
         first = self._build()
         second = self._build()
         self.assertEqual(first["cache_sha256"], second["cache_sha256"])
-        changed = self._build(reset=False, code_hash="changed-code-hash")
+        from experiments.exp267_273_zero_support_fn_recovery import source_pipeline
+
+        with patch.object(source_pipeline, "_source_code_hash", return_value="changed-code-hash"):
+            changed = self._build(reset=False)
         self.assertNotEqual(first["cache_sha256"], changed["cache_sha256"])
         self.assertEqual(changed["code_sha256"], "changed-code-hash")
 
@@ -340,6 +341,65 @@ class SourcePipelineTests(unittest.TestCase):
             changed_seed = self._build()
         self.assertNotEqual(first["run_contract_sha256"], changed_seed["run_contract_sha256"])
 
+    def test_canonical_current_context_rejects_forged_device_seed_and_benchmark(self) -> None:
+        from experiments.exp267_273_zero_support_fn_recovery import source_pipeline
+
+        cpu = source_pipeline._stage_invocation_contexts(("scattering",))["scattering"]
+        mps = source_pipeline._stage_invocation_contexts(
+            ("scattering",), source_runtime={"scattering": {"device": "mps"}},
+        )["scattering"]
+        with patch(
+            "experiments.exp267_273_zero_support_fn_recovery.source_pipeline.load_bundle",
+            return_value=_bundle(),
+        ):
+            with self.assertRaises(ValueError):
+                source_pipeline.build_cache_unit(
+                    self.root, "scattering", "d1", device="cpu",
+                    source_factory=lambda *_args, **_kwargs: _FakeSource(), invocation_context=mps,
+                )
+        with patch.object(source_pipeline, "SEED", 999):
+            with self.assertRaises(ValueError):
+                source_pipeline._stage_invocation_contexts(
+                    ("scattering",), supplied_contexts={"scattering": cpu},
+                )
+        tcn_one = source_pipeline._stage_invocation_contexts(
+            ("tcn_forecast",),
+            source_runtime={"tcn_forecast": {"device": "mps", "benchmark_record": {"id": "one"}}},
+        )["tcn_forecast"]
+        with self.assertRaises(ValueError):
+            source_pipeline._stage_invocation_contexts(
+                ("tcn_forecast",),
+                source_runtime={"tcn_forecast": {"device": "mps", "benchmark_record": {"id": "two"}}},
+                supplied_contexts={"tcn_forecast": tcn_one},
+            )
+
+    def test_stage_context_hashes_db_once_and_rejects_rewritten_context(self) -> None:
+        from experiments.exp267_273_zero_support_fn_recovery import source_pipeline
+
+        self._build(dataset="d1")
+        self._build(dataset="d2")
+        real_hash = source_pipeline.database_hash
+        with patch.object(source_pipeline, "database_hash", wraps=real_hash) as counter:
+            prediction_path, manifest_path = source_pipeline.freeze_source_predictions(
+                self.root, sources=("scattering",), datasets=("d1", "d2"),
+                expected_dataset_count=2, bundle_loader=_bundle,
+            )
+            self.assertEqual(counter.call_count, 1)
+        with patch.object(source_pipeline, "database_hash", wraps=real_hash) as counter:
+            self.assertTrue(source_pipeline.verify_prediction_hash(
+                prediction_path, manifest_path, expected_datasets=("d1", "d2"),
+                expected_sources=("scattering",), cache_root=self.root, bundle_loader=_bundle,
+            ))
+            self.assertEqual(counter.call_count, 1)
+        forged = copy.deepcopy(source_pipeline._stage_invocation_contexts(("scattering",))["scattering"])
+        forged["device"] = "mps"
+        with self.assertRaises(ValueError):
+            source_pipeline.freeze_source_predictions(
+                self.root, sources=("scattering",), datasets=("d1", "d2"),
+                expected_dataset_count=2, bundle_loader=_bundle,
+                invocation_contexts={"scattering": forged},
+            )
+
     def test_tcn_benchmark_contract_hash_changes(self) -> None:
         from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import _run_contract
 
@@ -352,16 +412,29 @@ class SourcePipelineTests(unittest.TestCase):
         self.assertNotEqual(first["run_contract_sha256"], second["run_contract_sha256"])
 
     def test_tcn_lock_rejects_second_process(self) -> None:
-        from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import tcn_exclusive_lock
+        from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import (
+            MACHINE_TCN_LOCK_PATH,
+            tcn_exclusive_lock,
+        )
 
-        with tcn_exclusive_lock(self.root):
+        lock_path = self.root / "machine.lock"
+        self.assertTrue(str(MACHINE_TCN_LOCK_PATH).endswith("Dataset/.locks/exp267_273_tcn_mps.lock"))
+        output_root_a = self.root / "output-a"
+        output_root_b = self.root / "output-b"
+        output_root_a.mkdir()
+        output_root_b.mkdir()
+        # The shared machine lock deliberately does not derive from either
+        # output root; distinct runs must still serialize selected-device use.
+        self.assertFalse(str(lock_path).startswith(str(output_root_a)))
+        self.assertFalse(str(lock_path).startswith(str(output_root_b)))
+        with tcn_exclusive_lock(lock_path=lock_path):
             result = subprocess.run(
                 [
                     sys.executable,
                     "-m",
                     "experiments.exp267_273_zero_support_fn_recovery.tests.spawn_smoke_helper",
                     "--try-tcn-lock",
-                    str(self.root),
+                    str(lock_path),
                 ],
                 cwd=Path(__file__).parents[3],
                 check=True,

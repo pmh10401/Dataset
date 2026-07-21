@@ -11,23 +11,19 @@ from pathlib import Path
 
 from experiments.exp267_273_zero_support_fn_recovery.population import load_frozen_population
 from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import (
-    _run_contract,
-    _source_code_hash,
+    _stage_invocation_contexts,
     _worker_build_cache_unit,
     tcn_exclusive_lock,
 )
-from experiments.exp239_248_diverse_score_sources.foundation import database_hash
 
 
 def run_spawn_smoke() -> dict[str, object]:
     """Run two real scattering cache units through pickle-safe spawn workers."""
     datasets = tuple(load_frozen_population()[:2])
-    db_sha = database_hash()
-    contract = _run_contract("scattering", device="cpu", benchmark_record=None, db_sha256=db_sha)
-    code_sha = _source_code_hash("scattering")
+    context = _stage_invocation_contexts(("scattering",))["scattering"]
     with tempfile.TemporaryDirectory(prefix="exp267-task7-spawn-") as directory:
         arguments = [
-            (directory, "scattering", dataset, "cpu", True, None, db_sha, code_sha, contract)
+            (directory, "scattering", dataset, True, context)
             for dataset in datasets
         ]
         context = multiprocessing.get_context("spawn")
@@ -47,7 +43,7 @@ def main() -> None:
     args = parser.parse_args()
     if args.try_tcn_lock is not None:
         try:
-            with tcn_exclusive_lock(args.try_tcn_lock):
+            with tcn_exclusive_lock(lock_path=args.try_tcn_lock):
                 print(json.dumps({"entered": True}, sort_keys=True))
         except RuntimeError:
             print(json.dumps({"entered": False}, sort_keys=True))
