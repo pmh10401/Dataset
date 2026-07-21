@@ -63,16 +63,24 @@ precision, recall, F1을 사후 평가한다.
 
 ### 4.2 Exp266-B: TRAIN-normal combined-policy risk audit
 
-동일한 3개/2개 근거 합의 규칙을 TRAIN 정상 pseudo-run에 교차적합으로
-재생한다. 각 pseudo-run은 자신의 feature fitting, threshold reference,
-score calibration에서 제외한다.
+동일한 3개/2개 근거 합의 규칙을 TRAIN 정상 pseudo-run에 재생한다. 각
+점수원의 동결 cache에 저장된 교차적합 OOF score만 사용하며, cache
+manifest가 query를 source fitting에서 제외한 계약을 증명해야 한다. 각
+pseudo-run의 p-value를 계산할 때는 자신의 OOF score를 calibration
+reference에서도 제외한다.
 
 - `n_train < 5`: 복구 정책 calibration abstention
-- `5 <= n_train < 20`: deterministic leave-one-out
-- `n_train >= 20`: deterministic shuffled 5-fold
-- seed: `20260721`
+- `n_train >= 5`: 동결된 source별 deterministic OOF score 사용
+- calibration: query를 제외한 나머지 finite OOF score의 empirical tail
+  p-value
+- audit seed: `20260721`; source fitting seed는 각 기존 artifact의 동결값
 - 정상 검토 요청 위험 기준: virtual run당 0.01 이하
 - 신뢰 구간: one-sided 95% Wilson upper bound
+
+Source cache가 query-excluded OOF fitting을 증명하지 못하거나 TRAIN index
+정렬과 길이가 서로 다르면 위험감사를 중단한다. 서로 다른 fold model에서
+생성된 OOF score를 하나의 calibration reference로 사용하는 한계는 결과
+보고서에 명시한다.
 
 이 기준은 이전 TRAIN-normal risk policy의 운영 계약을 재사용하며 TEST
 결과로 변경하지 않는다. Exp266-A 성능이 좋아도 Exp266-B가 위험 기준을
