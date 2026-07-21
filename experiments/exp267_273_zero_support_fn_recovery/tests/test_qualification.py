@@ -59,6 +59,27 @@ class TrainRiskTests(unittest.TestCase):
 
 
 class QualificationTests(unittest.TestCase):
+    def test_oof_coverage_allows_only_fully_abstained_missing_variant(self) -> None:
+        risk = {
+            "active": {"coverage_complete": True, "eligible_datasets": 2, "abstained_datasets": 0},
+            "small_train": {
+                "coverage_complete": True,
+                "eligible_datasets": 0,
+                "abstained_datasets": 2,
+                "invalid_required_datasets": 0,
+                "undocumented_abstentions": 0,
+            },
+        }
+        module._assert_oof_variant_coverage(
+            {"active", "small_train"}, {"active"}, risk, 2,
+        )
+        with self.assertRaises(ValueError):
+            module._assert_oof_variant_coverage(
+                {"active", "small_train"}, {"active"},
+                {**risk, "small_train": {**risk["small_train"], "abstained_datasets": 1}},
+                2,
+            )
+
     def test_certified_oof_vector_accepts_empty_abstention_and_both_seed_axes(self) -> None:
         self.assertEqual(len(module._one_vector(np.empty((2, 0)), 4)), 0)
         np.testing.assert_allclose(

@@ -628,6 +628,28 @@ def _risk_by_variant(
     return summary
 
 
+def _assert_oof_variant_coverage(
+    predicted_variants: set[str],
+    oof_variants: set[str],
+    risk: Mapping[str, Mapping[str, object]],
+    expected_dataset_count: int,
+) -> None:
+    """Allow an absent OOF vector only when that variant abstained everywhere."""
+    if oof_variants - predicted_variants:
+        raise ValueError("TRAIN OOF coverage differs from frozen primary prediction variants")
+    for variant in predicted_variants - oof_variants:
+        row = risk.get(variant, {})
+        fully_abstained = bool(
+            row.get("coverage_complete")
+            and int(row.get("eligible_datasets", -1)) == 0
+            and int(row.get("abstained_datasets", -1)) == expected_dataset_count
+            and int(row.get("invalid_required_datasets", -1)) == 0
+            and int(row.get("undocumented_abstentions", -1)) == 0
+        )
+        if not fully_abstained:
+            raise ValueError("TRAIN OOF coverage differs from frozen primary prediction variants")
+
+
 def _cache_input_hashes(cache_root: Path, rows: Iterable[Mapping[str, object]]) -> dict[str, str]:
     """Read only source-cache provenance, never TEST labels or results."""
     from .source_pipeline import cache_paths
@@ -690,11 +712,12 @@ def qualify_sources(
         prediction_path, prediction_manifest_path, expected_datasets=expected,
     )
     predicted_variants = {_variant_key(row["source"], row["variant"]) for row in primary_rows}
-    if set(evidence.train_oof_by_variant) != predicted_variants:
-        raise ValueError("TRAIN OOF coverage differs from frozen primary prediction variants")
     risk = _risk_by_variant(evidence.risk_rows, expected)
     if set(risk) != predicted_variants:
         raise ValueError("TRAIN-risk coverage differs from frozen primary prediction variants")
+    _assert_oof_variant_coverage(
+        predicted_variants, set(evidence.train_oof_by_variant), risk, len(expected),
+    )
     collapsed = collapse_correlated_families(evidence.train_oof_by_variant)
     existing_independence = _existing_independence(
         evidence.train_oof_by_variant, evidence.existing_train_oof,

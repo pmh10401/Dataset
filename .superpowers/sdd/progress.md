@@ -24,3 +24,6 @@ reaggregation; 118 package tests passed; full evaluation awaits Task 12 artifact
 Task 11: implementation complete (atomic dashboard heartbeat, exact Exp267-273
 sequential queue registration, Korean dashboard labels, live phase/rate/ETA and
 hash metadata, recovery-only Exp273 hypothetical audit; 123 package tests passed)
+Task 12: steps 1-2 complete (124 package tests passed; 10-dataset CPU smoke
+completed with 200 label-free source rows, 10 disjoint-lane prediction rows,
+zero forbidden evaluation fields, and a frozen prediction SHA256)

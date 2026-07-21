@@ -692,7 +692,7 @@ git commit -m "feat: queue and monitor Exp267-273"
 - Consumes: all prior tasks.
 - Produces: complete frozen artifacts, reports, manifest, and dashboard history.
 
-- [ ] **Step 1: Run syntax and full unit tests**
+- [x] **Step 1: Run syntax and full unit tests**
 
 ```bash
 python3 -m py_compile experiments/exp267_273_zero_support_fn_recovery/*.py scratch/run_exp267_273_zero_support_fn_recovery.py
@@ -701,7 +701,7 @@ python3 -m unittest discover -s experiments/exp267_273_zero_support_fn_recovery/
 
 Expected: all tests pass before any smoke or full run.
 
-- [ ] **Step 2: Run a 10-dataset CPU smoke**
+- [x] **Step 2: Run a 10-dataset CPU smoke**
 
 ```bash
 python3 -m experiments.exp267_273_zero_support_fn_recovery.run_pipeline \
