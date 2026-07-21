@@ -15,3 +15,6 @@ Task 8: complete (cache-bound TRAIN risk, explicit two-run reproducibility proof
 Exp266 certified OOF independence checks, pinned-lane post-freeze evaluation;
 16 focused tests and 109 package tests passed; live pinned-input audit confirmed
 1,117 lane datasets and 955 certified OOF datasets per family)
+Task 9: implementation complete (ordered review-only routing, one-source
+sensitivity, canonical prediction freeze, pinned Exp266 row/manifest audit;
+full Exp272 result freeze awaits Exp268-270 cache and Exp271 membership artifacts)

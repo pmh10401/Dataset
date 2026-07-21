@@ -514,7 +514,7 @@ git commit -m "feat: add Exp270 risk and Exp271 qualification"
 - Consumes: hash-verified Exp266 lane rows, Exp266 certified source support, the label-free `exp272_source_membership.json`, and new source predictions.
 - Produces: `route_recovery_review(...) -> RecoveryLanes`.
 
-- [ ] **Step 1: Write failing immutability and routing tests**
+- [x] **Step 1: Write failing immutability and routing tests**
 
 ```python
 def test_existing_lanes_are_immutable(self):
@@ -528,13 +528,13 @@ def test_three_and_two_independent_families_route_separately(self):
     self.assertEqual(result.recovery_priority_indices, (7,))
 ```
 
-- [ ] **Step 2: Run the tests and verify failure**
+- [x] **Step 2: Run the tests and verify failure**
 
 ```bash
 python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_recovery_routing -v
 ```
 
-- [ ] **Step 3: Implement ordered routing**
+- [x] **Step 3: Implement ordered routing**
 
 Combine the five existing Exp266 evidence families with the new families frozen
 in `exp272_source_membership.json`. Preserve existing lanes first, then Data
@@ -543,11 +543,11 @@ exactly-two-family Recovery Priority. Keep one-source candidates as No Alert and
 write them to a separate sensitivity table. Ensure all lanes are pairwise
 disjoint and every index is within TEST instance bounds.
 
-- [ ] **Step 4: Freeze Exp272 predictions**
+- [x] **Step 4: Freeze Exp272 predictions**
 
 Write one label-free row per dataset with existing lanes, new recovery lanes, support families, source eligibility, config hash, and input hashes. Verify all 1,117 datasets and write the canonical prediction SHA-256.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_recovery_routing -v

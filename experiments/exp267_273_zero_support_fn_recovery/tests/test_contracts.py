@@ -173,6 +173,7 @@ class ContractTest(unittest.TestCase):
                 "standard_indices",
                 "recovery_shadow_indices",
                 "recovery_priority_indices",
+                "data_quality_review_indices",
             },
         )
 

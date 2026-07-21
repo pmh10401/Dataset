@@ -102,6 +102,7 @@ class RecoveryLanes:
     standard_indices: tuple[int, ...]
     recovery_shadow_indices: tuple[int, ...]
     recovery_priority_indices: tuple[int, ...]
+    data_quality_review_indices: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
         names = (
@@ -111,6 +112,7 @@ class RecoveryLanes:
             "standard_indices",
             "recovery_shadow_indices",
             "recovery_priority_indices",
+            "data_quality_review_indices",
         )
         normalized = {
             name: _index_tuple(getattr(self, name), name) for name in names
