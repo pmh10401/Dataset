@@ -87,3 +87,19 @@ The wrapper is verified against SciPy's current `sph_harm_y(n, m, theta, phi)`
 semantics using legacy input order `(m, n, theta, phi)`. Regression tests prove
 the temporary attribute is visible during the Kymatio import, removed when
 absent beforehand, and restored unchanged when it already existed.
+
+## Final Angle-Semantics Correction
+
+### RED
+
+The legacy wrapper test was changed to independently expect
+`sph_harm_y(n, m, phi, theta)` using non-symmetric values
+`theta=1.23` and `phi=0.47`. The previous no-swap implementation failed with a
+complex-value difference of approximately `0.5408`.
+
+### GREEN
+
+The wrapper now maps legacy `(m, n, theta_azimuth, phi_polar)` to SciPy's
+current `(n, m, theta_polar, phi_azimuth)` as
+`sph_harm_y(n, m, phi, theta)`. The focused suite passed all 9 tests after this
+correction, and the source and test modules compiled successfully.

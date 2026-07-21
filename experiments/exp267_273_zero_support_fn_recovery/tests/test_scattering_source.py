@@ -34,11 +34,11 @@ class ScatteringSourceTests(unittest.TestCase):
         )
 
     def test_legacy_spherical_harmonic_wrapper_adapts_scipy_arguments(self) -> None:
-        m, n, theta, phi = 1, 3, 0.2, 0.7
+        m, n, theta, phi = 1, 3, 1.23, 0.47
 
         actual = scattering_module._legacy_sph_harm(m, n, theta, phi)
 
-        expected = scipy.special.sph_harm_y(n, m, theta, phi)
+        expected = scipy.special.sph_harm_y(n, m, phi, theta)
         np.testing.assert_allclose(actual, expected)
 
     def test_kymatio_import_removes_temporary_scipy_attribute(self) -> None:

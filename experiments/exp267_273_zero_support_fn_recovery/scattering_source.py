@@ -13,8 +13,8 @@ _MISSING = object()
 
 
 def _legacy_sph_harm(m: object, n: object, theta: object, phi: object) -> object:
-    """Adapt SciPy's removed ``sph_harm(m, n, theta, phi)`` signature."""
-    return scipy.special.sph_harm_y(n, m, theta, phi)
+    """Adapt legacy azimuth/polar angles to SciPy's polar/azimuth API."""
+    return scipy.special.sph_harm_y(n, m, phi, theta)
 
 
 def _load_scattering1d() -> object:
