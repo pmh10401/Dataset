@@ -6,6 +6,7 @@ import json
 import math
 import os
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 from statistics import NormalDist
 
@@ -336,6 +337,7 @@ def write_reports(
     *,
     exp253_prediction_path: Path = EXP253_PREDICTION,
     require_full_population: bool = True,
+    progress_callback: Callable[[str, int, int], None] | None = None,
 ) -> tuple[Path, Path, Path, Path]:
     output_root = Path(output_root)
     prediction_sha256, rows = _prediction_boundary(
@@ -345,6 +347,7 @@ def write_reports(
         output_root,
         exp253_prediction_path=exp253_prediction_path,
         require_full_population=require_full_population,
+        progress_callback=progress_callback,
     )
     if not reaggregation["passed"]:
         raise ValueError("independent reaggregation failed")

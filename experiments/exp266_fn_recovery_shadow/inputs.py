@@ -5,7 +5,7 @@ import hashlib
 import json
 import re
 import sqlite3
-from collections.abc import Collection, Mapping
+from collections.abc import Callable, Collection, Mapping
 from pathlib import Path
 from types import MappingProxyType
 
@@ -554,7 +554,11 @@ def _write_audit(output_root: Path, recovery: FrozenRecoveryInputs) -> None:
             })
 
 
-def load_frozen_inputs(*, output_root: Path = OUTPUT_ROOT) -> FrozenRecoveryInputs:
+def load_frozen_inputs(
+    *,
+    output_root: Path = OUTPUT_ROOT,
+    progress_callback: Callable[[str, int, int], None] | None = None,
+) -> FrozenRecoveryInputs:
     """Load and audit Exp266's immutable, label-free source population."""
 
     exp253_rows = _validate_prediction_artifact("exp253", EXP253_PREDICTION, EXPECTED_DATASETS)
@@ -612,6 +616,8 @@ def load_frozen_inputs(*, output_root: Path = OUTPUT_ROOT) -> FrozenRecoveryInpu
             quality_flags=_indices(integration, "quality_flag_indices", dataset, n_test),
             target_length=target_length,
         )
+        if progress_callback is not None:
+            progress_callback(dataset, len(datasets), len(population))
     totals = {
         lane: sum(len(getattr(item, lane)) for item in datasets.values())
         for lane in ("hard", "shadow", "priority", "standard")

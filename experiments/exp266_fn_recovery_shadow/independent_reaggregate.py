@@ -7,7 +7,7 @@ import json
 import math
 import os
 import tempfile
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
 from .config import (
@@ -252,6 +252,7 @@ def _prediction_audit(
     *,
     exp253_prediction_path: Path,
     require_full_population: bool,
+    progress_callback: Callable[[str, int, int], None] | None = None,
 ) -> dict[str, object]:
     prediction = output_root / "03_frozen_predictions.jsonl"
     manifest_path = output_root / "04_prediction_manifest.json"
@@ -336,7 +337,7 @@ def _prediction_audit(
                 metrics += child_metrics
         return labels, metrics
 
-    for row in rows:
+    for done, row in enumerate(rows, start=1):
         dataset = str(row.get("dataset", ""))
         n_test = result_sizes.get(dataset, 0)
         lanes: dict[str, set[int]] = {}
@@ -399,6 +400,8 @@ def _prediction_audit(
         prediction_evaluation_fields += metrics
         prediction_label_fields += row.get("contains_test_labels") is not False
         prediction_evaluation_fields += row.get("contains_evaluation_metrics") is not False
+        if progress_callback is not None:
+            progress_callback(dataset, done, len(rows))
 
     baseline = {lane: lane_totals[lane] for lane in ("hard", "shadow", "priority", "standard")}
     baseline["union"] = sum(baseline.values())
@@ -427,12 +430,14 @@ def write_independent_reaggregation(
     *,
     exp253_prediction_path: Path = EXP253_PREDICTION,
     require_full_population: bool = True,
+    progress_callback: Callable[[str, int, int], None] | None = None,
 ) -> dict[str, object]:
     output_root = Path(output_root)
     audit = _prediction_audit(
         output_root,
         exp253_prediction_path=exp253_prediction_path,
         require_full_population=require_full_population,
+        progress_callback=progress_callback,
     )
     actual = str(audit["actual_sha256"])
     expected = str(audit["expected_sha256"])

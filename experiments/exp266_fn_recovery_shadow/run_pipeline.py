@@ -142,23 +142,30 @@ class StatusHeartbeat:
         self._last_progress_done = 0
         self._last_progress_unix = self.started_unix
         self._recent_rate = 0.0
+        self.status = "running"
+        self.errors: list[str] = []
 
     def _emit(self) -> None:
         with self._lock:
             write_status(
-                self.status_path, status="running", stage=self.stage,
+                self.status_path, status=self.status, stage=self.stage,
                 datasets_done=self.datasets_done, expected_datasets=self.expected_datasets,
                 current_dataset=self.current_dataset, workers=self.workers,
                 output_root=self.output_root, stdout_log=self.stdout_log,
-                started_unix=self.started_unix, warnings=[], errors=[],
+                started_unix=self.started_unix, warnings=[], errors=self.errors,
                 recent_datasets_per_minute=self._recent_rate,
             )
 
     def start(self, stage: str) -> None:
         with self._lock:
             self.stage = stage
+            self.status = "running"
+            self.errors = []
             self.datasets_done = 0
             self.current_dataset = None
+            self._last_progress_done = 0
+            self._last_progress_unix = time.time()
+            self._recent_rate = 0.0
         self._emit()
         if self._thread is None:
             self._thread = threading.Thread(target=self._run, name="exp266-status-heartbeat", daemon=True)
@@ -180,6 +187,12 @@ class StatusHeartbeat:
         with self._lock:
             self.datasets_done = self.expected_datasets
             self.current_dataset = None
+        self._emit()
+
+    def fail(self, errors: Sequence[str]) -> None:
+        with self._lock:
+            self.status = "failed"
+            self.errors = list(errors)
         self._emit()
 
     def _run(self) -> None:
@@ -312,11 +325,15 @@ def run_stage(stage: str, output_root: Path, dataset_limit: int | None, workers:
     root = publication_root(output_root, dataset_limit)
     root.mkdir(parents=True, exist_ok=True)
     actions: dict[str, Callable[[], object]] = {
-        "audit": lambda: load_frozen_inputs(output_root=root),
+        "audit": lambda: load_frozen_inputs(output_root=root, progress_callback=progress_callback),
         "predict": lambda: predict_all(output_root, dataset_limit, workers=workers, progress_callback=progress_callback),
-        "risk": lambda: audit_train_risk(output_root=root),
-        "evaluate": lambda: evaluate_predictions(root, require_full_population=dataset_limit is None),
-        "report": lambda: write_reports(root, require_full_population=dataset_limit is None),
+        "risk": lambda: audit_train_risk(output_root=root, progress_callback=progress_callback),
+        "evaluate": lambda: evaluate_predictions(
+            root, require_full_population=dataset_limit is None, progress_callback=progress_callback,
+        ),
+        "report": lambda: write_reports(
+            root, require_full_population=dataset_limit is None, progress_callback=progress_callback,
+        ),
     }
     if stage not in actions:
         raise ValueError(f"unknown stage: {stage}")
@@ -413,11 +430,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                      output_root=root, stdout_log=log_path, started_unix=started, warnings=[], errors=[])
         return 0
     except BaseException as exc:
+        heartbeat.fail([f"{type(exc).__name__}: {exc}", traceback.format_exc(limit=3)])
         heartbeat.close()
-        write_status(status_path, status="failed", stage=current_stage, datasets_done=0,
-                     expected_datasets=expected, current_dataset=None, workers=args.workers,
-                     output_root=root, stdout_log=log_path, started_unix=started, warnings=[],
-                     errors=[f"{type(exc).__name__}: {exc}", traceback.format_exc(limit=3)])
         if isinstance(exc, KeyboardInterrupt):
             raise
         return 1

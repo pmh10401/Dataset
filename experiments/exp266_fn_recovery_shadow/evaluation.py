@@ -6,7 +6,7 @@ import json
 import os
 import sqlite3
 import tempfile
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from urllib.parse import quote
 
@@ -477,6 +477,7 @@ def evaluate_predictions(
     database_path: Path = DB_PATH,
     exp253_prediction_path: Path = EXP253_PREDICTION,
     require_full_population: bool = True,
+    progress_callback: Callable[[str, int, int], None] | None = None,
 ) -> tuple[list[dict[str, object]], dict[str, object]]:
     """Evaluate a verified frozen checkpoint without ever writing prediction artifacts."""
 
@@ -513,11 +514,13 @@ def evaluate_predictions(
     connection = _read_only_connection(database_path)
     try:
         connection.execute("PRAGMA query_only = ON")
-        for row, lanes in preflight:
+        for done, (row, lanes) in enumerate(preflight, start=1):
             labels = labels_for_dataset(connection, str(row["dataset"]))
             result, diagnostic = _evaluate_row(row, lanes, labels, prediction_sha256)
             evaluated.append(result)
             diagnostics.append(diagnostic)
+            if progress_callback is not None:
+                progress_callback(str(row["dataset"]), done, len(preflight))
     finally:
         connection.close()
 

@@ -103,6 +103,72 @@ class PipelineTests(unittest.TestCase):
         self.assertGreater(status["average_datasets_per_minute"], 0)
         self.assertGreater(status["updated_unix"], 0)
 
+    def test_failed_heartbeat_preserves_last_progress_and_adds_error(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            heartbeat = run_pipeline.StatusHeartbeat(
+                root / "status.json",
+                output_root=root,
+                stdout_log=root / "full.log",
+                workers=7,
+                expected_datasets=10,
+                interval_seconds=1.0,
+            )
+            heartbeat.start("evaluate")
+            time.sleep(0.01)
+            heartbeat.progress("latest-dataset", 4)
+            heartbeat.fail(["RuntimeError: intentional failure"])
+            heartbeat.close()
+            status = json.loads((root / "status.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(status["status"], "failed")
+        self.assertEqual(status["stage"], "evaluate")
+        self.assertEqual(status["datasets_done"], 4)
+        self.assertEqual(status["current_dataset"], "latest-dataset")
+        self.assertGreater(status["recent_datasets_per_minute"], 0)
+        self.assertEqual(status["errors"], ["RuntimeError: intentional failure"])
+
+    def test_new_stage_resets_rate_sample_until_its_own_progress_arrives(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            heartbeat = run_pipeline.StatusHeartbeat(
+                root / "status.json", output_root=root, stdout_log=root / "full.log",
+                workers=7, expected_datasets=10, interval_seconds=1.0,
+            )
+            heartbeat.start("predict")
+            time.sleep(0.01)
+            heartbeat.progress("predict-dataset", 1)
+            heartbeat.start("risk")
+            status = json.loads((root / "status.json").read_text(encoding="utf-8"))
+            heartbeat.close()
+
+        self.assertEqual(status["stage"], "risk")
+        self.assertEqual(status["datasets_done"], 0)
+        self.assertEqual(status["recent_datasets_per_minute"], 0.0)
+
+    def test_run_stage_passes_progress_callback_to_each_dataset_stage(self):
+        callback = lambda *_args: None
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            calls: dict[str, object] = {}
+
+            def record(stage):
+                def action(*_args, **kwargs):
+                    calls[stage] = kwargs.get("progress_callback")
+
+                return action
+
+            with patch.object(run_pipeline, "load_frozen_inputs", record("audit")), \
+                 patch.object(run_pipeline, "predict_all", record("predict")), \
+                 patch.object(run_pipeline, "audit_train_risk", record("risk")), \
+                 patch.object(run_pipeline, "evaluate_predictions", record("evaluate")), \
+                 patch.object(run_pipeline, "write_reports", record("report")), \
+                 patch.object(run_pipeline, "_stage_complete", return_value=True):
+                for stage in run_pipeline.STAGE_ORDER:
+                    run_pipeline.run_stage(stage, root, None, progress_callback=callback)
+
+        self.assertEqual(calls, {stage: callback for stage in run_pipeline.STAGE_ORDER})
+
     def test_completion_rejects_truncated_or_inconsistent_artifacts(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

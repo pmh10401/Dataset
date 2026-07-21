@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from statistics import NormalDist
@@ -719,7 +719,11 @@ def write_train_risk_audit(
     return path
 
 
-def audit_train_risk(*, output_root: Path = OUTPUT_ROOT) -> tuple[TrainRiskRow, ...]:
+def audit_train_risk(
+    *,
+    output_root: Path = OUTPUT_ROOT,
+    progress_callback: Callable[[str, int, int], None] | None = None,
+) -> tuple[TrainRiskRow, ...]:
     """Audit Exp266's review policy using frozen TRAIN OOF cache arrays only."""
 
     (
@@ -749,6 +753,8 @@ def audit_train_risk(*, output_root: Path = OUTPUT_ROOT) -> tuple[TrainRiskRow, 
                 _validated_provenance=validated_provenance,
             )
         )
+        if progress_callback is not None:
+            progress_callback(dataset, len(rows), len(population))
     result = tuple(rows)
     if len(result) != EXPECTED_DATASETS or len({row.dataset for row in result}) != EXPECTED_DATASETS:
         raise TrainRiskContractError("TRAIN-risk audit must contain 1,117 unique datasets")

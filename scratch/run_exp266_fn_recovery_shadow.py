@@ -8,6 +8,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import uuid
 from contextlib import contextmanager
@@ -144,6 +145,99 @@ def _terminate_child(child: object | None) -> None:
         getattr(child, "terminate")()
 
 
+class _TerminationController:
+    """Record launcher termination before a child exists and forward it afterwards."""
+
+    def __init__(self) -> None:
+        self.requested = threading.Event()
+        self.signal_number: int | None = None
+        self.child: object | None = None
+
+    def handle(self, signum, _frame) -> None:
+        self.signal_number = int(signum)
+        self.requested.set()
+        _terminate_child(self.child)
+
+    def return_code(self) -> int:
+        return 128 + (self.signal_number or signal.SIGTERM)
+
+
+def _wait_for_claim(
+    state_path: Path,
+    owner_token: str,
+    output_root: Path,
+    expected: int,
+    *,
+    poll_seconds: float,
+    termination_requested: threading.Event,
+) -> bool:
+    """Claim the sole queue slot, unless cancellation arrives while waiting."""
+
+    while not termination_requested.is_set():
+        with _locked(GLOBAL_STATE_LOCK_PATH):
+            claimed = _claim(_read_state(state_path), owner_token, output_root, expected)
+            if claimed is not None:
+                _write_state(claimed, state_path)
+                return True
+        if termination_requested.wait(max(0.1, poll_seconds)):
+            return False
+    return False
+
+
+def _dequeue(state: dict[str, object]) -> dict[str, object]:
+    updated = dict(state)
+    updated["queue"] = [item for item in updated.get("queue") or [] if item != EXPERIMENT_ID]
+    return updated
+
+
+def _write_failure_preserving_progress(
+    status_path: Path,
+    *,
+    output_root: Path,
+    stdout_log: Path,
+    expected: int,
+    started_unix: float,
+    error: str,
+) -> None:
+    """Mark a launch failure without discarding a child runner's latest heartbeat."""
+
+    try:
+        snapshot = json.loads(status_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        snapshot = {}
+    done = snapshot.get("datasets_done", snapshot.get("done", 0))
+    current = snapshot.get("current_dataset")
+    stage = snapshot.get("stage", snapshot.get("phase", "all"))
+    rate = snapshot.get("recent_datasets_per_minute")
+    prior_errors = snapshot.get("errors", [])
+    if type(done) is not int or done < 0:
+        done = 0
+    if type(current) is not str:
+        current = None
+    if type(stage) is not str:
+        stage = "all"
+    if type(rate) not in (int, float) or rate < 0:
+        rate = None
+    if not isinstance(prior_errors, list):
+        prior_errors = []
+    errors = [str(item) for item in prior_errors] + [error]
+    write_status(
+        status_path,
+        status="failed",
+        stage=stage,
+        datasets_done=done,
+        expected_datasets=expected,
+        current_dataset=current,
+        workers=FULL_RUN_WORKERS,
+        output_root=output_root,
+        stdout_log=stdout_log,
+        started_unix=float(snapshot.get("started_unix", started_unix)),
+        warnings=[],
+        errors=errors,
+        recent_datasets_per_minute=rate,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Queue the resumable Exp266 full run")
     parser.add_argument("--output-root", type=Path, default=OUTPUT_ROOT)
@@ -171,11 +265,9 @@ def main(argv: list[str] | None = None) -> int:
     owner_token: str | None = None
     return_code: int | str = 1
     succeeded = False
-
-    def forward_sigterm(_signum, _frame):
-        _terminate_child(child)
-
-    previous_handler = signal.signal(signal.SIGTERM, forward_sigterm)
+    termination = _TerminationController()
+    previous_sigterm = signal.signal(signal.SIGTERM, termination.handle)
+    previous_sigint = signal.signal(signal.SIGINT, termination.handle)
     try:
         with (output_root / ".runner.lock").open("w", encoding="utf-8") as runner_lock:
             try:
@@ -185,21 +277,35 @@ def main(argv: list[str] | None = None) -> int:
             with _locked(GLOBAL_STATE_LOCK_PATH):
                 _write_state(_queued(_read_state(state_path)), state_path)
             owner_token = uuid.uuid4().hex
-            while True:
-                with _locked(GLOBAL_STATE_LOCK_PATH):
-                    claimed = _claim(_read_state(state_path), owner_token, output_root, expected)
-                    if claimed is not None:
-                        _write_state(claimed, state_path)
-                        break
-                time.sleep(max(0.1, args.poll_seconds))
+            if termination.requested.is_set():
+                return_code = termination.return_code()
+                return return_code
+            if not _wait_for_claim(
+                state_path,
+                owner_token,
+                output_root,
+                expected,
+                poll_seconds=args.poll_seconds,
+                termination_requested=termination.requested,
+            ):
+                return_code = termination.return_code() if termination.requested.is_set() else 1
+                return return_code
+
+            if termination.requested.is_set():
+                return_code = termination.return_code()
+                return return_code
 
             command = [sys.executable, "-m", "experiments.exp266_fn_recovery_shadow.run_pipeline", "--stage", "all",
                        "--workers", str(FULL_RUN_WORKERS), "--output-root", str(output_root)]
             if args.dataset_limit is not None:
                 command.extend(["--dataset-limit", str(args.dataset_limit)])
             try:
+                if termination.requested.is_set():
+                    return_code = termination.return_code()
+                    return return_code
                 with log_path.open("a", encoding="utf-8") as log:
                     child = subprocess.Popen(command, cwd=REPO_ROOT, stdout=log, stderr=subprocess.STDOUT)
+                    termination.child = child
                     with _locked(GLOBAL_STATE_LOCK_PATH):
                         state = _read_state(state_path)
                         running = dict(state.get("running") or {})
@@ -213,16 +319,16 @@ def main(argv: list[str] | None = None) -> int:
                     return_code = child.wait()
             except OSError as exc:
                 return_code = 1
-                write_status(status_path, status="failed", stage="all", datasets_done=0,
-                             expected_datasets=expected, current_dataset=None, workers=FULL_RUN_WORKERS,
-                             output_root=output_root, stdout_log=log_path, started_unix=started, warnings=[],
-                             errors=[f"startup failed: {exc}"])
+                _write_failure_preserving_progress(
+                    status_path, output_root=output_root, stdout_log=log_path, expected=expected,
+                    started_unix=started, error=f"startup failed: {exc}",
+                )
             succeeded = return_code == 0 and completed_output_is_valid(output_root, args.dataset_limit)
             if not succeeded:
-                write_status(status_path, status="failed", stage="all", datasets_done=0, expected_datasets=expected,
-                             current_dataset=None, workers=FULL_RUN_WORKERS, output_root=output_root,
-                             stdout_log=log_path, started_unix=started, warnings=[],
-                             errors=["pipeline exited without complete outputs"])
+                _write_failure_preserving_progress(
+                    status_path, output_root=output_root, stdout_log=log_path, expected=expected,
+                    started_unix=started, error="pipeline exited without complete outputs",
+                )
             return 0 if succeeded else int(return_code)
     finally:
         _terminate_child(child)
@@ -233,8 +339,17 @@ def main(argv: list[str] | None = None) -> int:
                     reason="completed" if succeeded else "startup failure, termination, or incomplete output",
                     completed=succeeded,
                 )
+                if termination.requested.is_set():
+                    state = _dequeue(state)
                 _write_state(state, state_path)
-        signal.signal(signal.SIGTERM, previous_handler)
+        if termination.requested.is_set() and not succeeded:
+            _write_failure_preserving_progress(
+                status_path, output_root=output_root, stdout_log=log_path, expected=expected,
+                started_unix=started,
+                error=f"launcher terminated by signal {termination.signal_number}",
+            )
+        signal.signal(signal.SIGTERM, previous_sigterm)
+        signal.signal(signal.SIGINT, previous_sigint)
 
 
 if __name__ == "__main__":
