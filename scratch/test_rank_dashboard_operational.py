@@ -315,6 +315,28 @@ def test_exp266_stale_status_does_not_masquerade_as_running():
         assert dash.read_exp266_run_status(status_path, pid_checker=lambda _pid: False) == {}
 
 
+def test_exp266_fresh_heartbeat_with_live_pid_remains_running():
+    with tempfile.TemporaryDirectory() as tmp:
+        status_path = Path(tmp) / "status.json"
+        status_path.write_text(
+            json.dumps(
+                {
+                    "id": "experiment_266_outside_lane_fn_recovery_shadow",
+                    "status": "running",
+                    "pid": 123,
+                    "updated_unix": 99,
+                    "datasets_done": 7,
+                    "expected_datasets": 1117,
+                }
+            ),
+            encoding="utf-8",
+        )
+        status = dash.read_exp266_run_status(status_path, pid_checker=lambda _pid: True, now=100)
+
+    assert status["status"] == "running"
+    assert status["datasets_done"] == 7
+
+
 def test_exp266_completed_snapshot_loads_actual_summary_metrics():
     row = next(
         item
@@ -1217,6 +1239,7 @@ if __name__ == "__main__":
     test_dashboard_registers_new_queued_experiments()
     test_dashboard_registers_exp266_with_actual_summary_and_status()
     test_exp266_stale_status_does_not_masquerade_as_running()
+    test_exp266_fresh_heartbeat_with_live_pid_remains_running()
     test_exp266_completed_snapshot_loads_actual_summary_metrics()
     test_dashboard_server_supports_clean_restart()
     test_history_snapshot_uses_summary_without_loading_regular_detail_csv()

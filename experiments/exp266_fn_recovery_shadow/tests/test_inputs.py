@@ -170,8 +170,11 @@ class FrozenInputTests(unittest.TestCase):
                 "reconstruction",
                 recovery.datasets["ACSF1_normal_0"].available_groups,
             )
+            self.assertGreater(recovery.datasets["ACSF1_normal_0"].target_length, 0)
             self.assertTrue((Path(directory) / "00_contract_audit.json").is_file())
-            self.assertTrue((Path(directory) / "01_source_manifest.csv").is_file())
+            source_manifest = Path(directory) / "01_source_manifest.csv"
+            self.assertTrue(source_manifest.is_file())
+            self.assertIn("target_length", source_manifest.read_text(encoding="utf-8").splitlines()[0])
 
 
 if __name__ == "__main__":

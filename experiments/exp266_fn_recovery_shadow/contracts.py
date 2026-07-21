@@ -16,6 +16,7 @@ class FrozenDatasetInputs:
     evidence: Mapping[str, frozenset[int]]
     available_groups: frozenset[str]
     quality_flags: frozenset[int]
+    target_length: int = 0
 
 
 @dataclass(frozen=True)

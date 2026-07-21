@@ -295,18 +295,18 @@ def _select_mini_rows(rows: Collection[Mapping[str, object]], variant: str) -> d
     return selected
 
 
-def _database_metadata(population: Collection[str]) -> dict[str, tuple[int, int]]:
+def _database_metadata(population: Collection[str]) -> dict[str, tuple[int, int, int]]:
     try:
         with sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True) as connection:
             rows = connection.execute(
-                "SELECT name, train_normal_count, test_total_count FROM datasets ORDER BY name"
+                "SELECT name, train_normal_count, test_total_count, series_length FROM datasets ORDER BY name"
             ).fetchall()
     except sqlite3.Error as exc:
         raise InputContractError(f"cannot read frozen database: {DB_PATH}") from exc
-    metadata = {str(name): (n_train, n_test) for name, n_train, n_test in rows}
+    metadata = {str(name): (n_train, n_test, target_length) for name, n_train, n_test, target_length in rows}
     if len(metadata) != len(rows) or any(
-        type(n_train) is not int or type(n_test) is not int
-        for n_train, n_test in metadata.values()
+        type(n_train) is not int or type(n_test) is not int or type(target_length) is not int or target_length <= 0
+        for n_train, n_test, target_length in metadata.values()
     ):
         raise InputContractError("database metadata is malformed")
     missing = sorted(set(population) - set(metadata))
@@ -325,7 +325,7 @@ def _indices(row: Mapping[str, object], field: str, dataset: str, n_test: int) -
 
 
 def _validate_cache_contract(
-    population: Collection[str], metadata: Mapping[str, tuple[int, int]]
+    population: Collection[str], metadata: Mapping[str, tuple[int, int, int]]
 ) -> dict[str, dict[str, bool]]:
     available = {dataset: {} for dataset in population}
     for name, experiment, source, cache_root, config_hash, calibration in CACHE_CONTRACTS:
@@ -354,7 +354,7 @@ def _validate_cache_contract(
         if len(by_name) != len(rows) or set(by_name) != set(population):
             raise InputContractError(f"cache population mismatch: {name}")
         for dataset, row in by_name.items():
-            n_train, n_test = metadata[dataset]
+            n_train, n_test, _target_length = metadata[dataset]
             expected_cache = f"cache/{hashlib.sha256(dataset.encode('utf-8')).hexdigest()[:20]}.npz"
             if (
                 row.get("experiment") != str(experiment)
@@ -443,7 +443,7 @@ def validate_reconstruction_archive(
 
 
 def _load_reconstruction_hash_inventory(
-    population: Collection[str], metadata: Mapping[str, tuple[int, int]]
+    population: Collection[str], metadata: Mapping[str, tuple[int, int, int]]
 ) -> Mapping[str, str]:
     if sha256_file(RECON_ARCHIVE_HASH_INVENTORY) != FROZEN_RECON_ARCHIVE_HASH_INVENTORY_SHA256:
         raise InputContractError("frozen reconstruction archive inventory SHA256 mismatch")
@@ -469,7 +469,7 @@ def _load_reconstruction_hash_inventory(
 
 
 def _validate_reconstruction_cache(
-    population: Collection[str], metadata: Mapping[str, tuple[int, int]], available: dict[str, dict[str, bool]]
+    population: Collection[str], metadata: Mapping[str, tuple[int, int, int]], available: dict[str, dict[str, bool]]
 ) -> None:
     audit_path = RECON_CACHE_ROOT.parent / "audit.json"
     if sha256_file(audit_path) != FROZEN_AUDIT_HASHES["reconstruction"]:
@@ -480,7 +480,7 @@ def _validate_reconstruction_cache(
         raise InputContractError("frozen reconstruction availability contract mismatch")
     inventory = _load_reconstruction_hash_inventory(population, metadata)
     for dataset in population:
-        n_train, _ = metadata[dataset]
+        n_train, _n_test, _target_length = metadata[dataset]
         cache_path = RECON_CACHE_ROOT / f"{hashlib.sha256(dataset.encode('utf-8')).hexdigest()[:20]}.npz"
         should_be_available = n_train >= 100
         if should_be_available and not cache_path.is_file():
@@ -532,7 +532,7 @@ def _write_audit(output_root: Path, recovery: FrozenRecoveryInputs) -> None:
         json.dumps(audit, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     fields = [
-        "dataset", "n_train", "n_test", "hard_count", "shadow_count", "priority_count",
+        "dataset", "n_train", "n_test", "target_length", "hard_count", "shadow_count", "priority_count",
         "standard_count", "kernel_available", "statistical_available", "structural_available",
         "change_point_available", "reconstruction_available",
     ]
@@ -545,6 +545,7 @@ def _write_audit(output_root: Path, recovery: FrozenRecoveryInputs) -> None:
                 "dataset": dataset,
                 "n_train": item.n_train,
                 "n_test": item.n_test,
+                "target_length": item.target_length,
                 "hard_count": len(item.hard),
                 "shadow_count": len(item.shadow),
                 "priority_count": len(item.priority),
@@ -576,7 +577,7 @@ def load_frozen_inputs(*, output_root: Path = OUTPUT_ROOT) -> FrozenRecoveryInpu
     for dataset in population:
         baseline = exp253[dataset]
         integration = exp264[dataset]
-        n_train, n_test = metadata[dataset]
+        n_train, n_test, target_length = metadata[dataset]
         if integration.get("n_train") != n_train or integration.get("n_test") != n_test:
             raise InputContractError(f"Exp264 database metadata mismatch: dataset={dataset}")
         if baseline.get("n_test") != n_test:
@@ -609,6 +610,7 @@ def load_frozen_inputs(*, output_root: Path = OUTPUT_ROOT) -> FrozenRecoveryInpu
                 group for group, is_available in cache_available[dataset].items() if is_available
             ),
             quality_flags=_indices(integration, "quality_flag_indices", dataset, n_test),
+            target_length=target_length,
         )
     totals = {
         lane: sum(len(getattr(item, lane)) for item in datasets.values())

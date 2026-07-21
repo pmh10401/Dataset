@@ -4,7 +4,8 @@ import hashlib
 import json
 import os
 import tempfile
-from collections.abc import Collection, Mapping
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections.abc import Callable, Collection, Mapping
 from pathlib import Path
 
 from .config import (
@@ -378,23 +379,61 @@ def _validate_complete_population(recovery: FrozenRecoveryInputs) -> None:
         raise ValueError("full prediction requires exactly 1,117 unique datasets")
 
 
-def predict_all(output_root: Path, dataset_limit: int | None = None) -> Path:
+def ordered_dataset_inputs(
+    recovery: FrozenRecoveryInputs, dataset_limit: int | None
+) -> tuple[FrozenDatasetInputs, ...]:
+    population = recovery.population if dataset_limit is None else recovery.population[:dataset_limit]
+    return tuple(
+        sorted(
+            (recovery.datasets[dataset] for dataset in population),
+            key=lambda item: (item.n_train + item.n_test, item.target_length, item.dataset),
+        )
+    )
+
+
+def _route_prediction_row(
+    inputs: FrozenDatasetInputs, recovery: FrozenRecoveryInputs
+) -> Mapping[str, object]:
+    return _prediction_row(inputs, route_recovery(inputs), recovery)
+
+
+def predict_all(
+    output_root: Path,
+    dataset_limit: int | None = None,
+    *,
+    workers: int = FULL_RUN_WORKERS,
+    progress_callback: Callable[[str, int, int], None] | None = None,
+) -> Path:
     """Freeze label-free recovery predictions from the immutable Exp266 inputs."""
 
     if dataset_limit is not None and (
         type(dataset_limit) is not int or dataset_limit < 0 or dataset_limit >= EXPECTED_DATASETS
     ):
         raise ValueError("dataset_limit must be a non-negative partial integer or None")
+    if type(workers) is not int or not 1 <= workers <= FULL_RUN_WORKERS:
+        raise ValueError(f"workers must be between 1 and {FULL_RUN_WORKERS}")
 
     publication_root = _publication_root(output_root, dataset_limit)
     recovery = load_frozen_inputs(output_root=publication_root)
     if dataset_limit is None:
         _validate_complete_population(recovery)
-    population = recovery.population if dataset_limit is None else recovery.population[:dataset_limit]
-    rows = [
-        _prediction_row(recovery.datasets[dataset], route_recovery(recovery.datasets[dataset]), recovery)
-        for dataset in population
-    ]
+    ordered_inputs = ordered_dataset_inputs(recovery, dataset_limit)
+    rows_by_dataset: dict[str, Mapping[str, object]] = {}
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(
+                _route_prediction_row,
+                inputs,
+                recovery,
+            ): inputs.dataset
+            for inputs in ordered_inputs
+        }
+        for done, future in enumerate(as_completed(futures), start=1):
+            dataset = futures[future]
+            rows_by_dataset[dataset] = future.result()
+            if progress_callback is not None:
+                progress_callback(dataset, done, len(ordered_inputs))
+    rows = [rows_by_dataset[dataset] for dataset in sorted(rows_by_dataset)]
     return freeze_rows(
         publication_root,
         rows,
@@ -406,7 +445,7 @@ def predict_all(output_root: Path, dataset_limit: int | None = None) -> Path:
             "coverage": {
                 "expected_datasets": EXPECTED_DATASETS,
                 "frozen_population": len(recovery.population),
-                "predicted_datasets": len(population),
+                "predicted_datasets": len(ordered_inputs),
             },
             "deployment_eligible": False,
             "input_sha256": dict(sorted(recovery.input_sha256.items())),
