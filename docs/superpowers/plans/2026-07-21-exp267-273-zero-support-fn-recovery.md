@@ -456,9 +456,9 @@ git commit -m "feat: add resumable Exp268-270 source pipeline"
 - Test: `experiments/exp267_273_zero_support_fn_recovery/tests/test_qualification.py`
 
 **Interfaces:**
-- Produces: `audit_train_risk(...)`, `qualify_sources(...)`, and `collapse_correlated_families(...)`.
+- Produces: `audit_train_risk(...)`, `build_verified_qualification_evidence(...)`, `qualify_sources(...)`, and `collapse_correlated_families(...)`.
 
-- [ ] **Step 1: Write failing Wilson and evidence-collapse tests**
+- [x] **Step 1: Write failing Wilson and evidence-collapse tests**
 
 ```python
 def test_wilson_upper_bound_matches_known_case(self):
@@ -469,17 +469,17 @@ def test_variants_of_one_family_cannot_double_vote(self):
     self.assertEqual(votes[3], {"normal_forecast"})
 ```
 
-- [ ] **Step 2: Run the tests and verify failure**
+- [x] **Step 2: Run the tests and verify failure**
 
 ```bash
 python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_qualification -v
 ```
 
-- [ ] **Step 3: Implement query-excluded TRAIN pseudo-run risk**
+- [x] **Step 3: Implement query-excluded TRAIN pseudo-run risk**
 
 For each OOF query, remove its score from the calibration reference, compute the p-value, and count a normal candidate at each alpha. Report rate and one-sided 95% Wilson upper bound by source, variant, TRAIN tier, and dataset.
 
-- [ ] **Step 4: Implement post-freeze qualification**
+- [x] **Step 4: Implement post-freeze qualification**
 
 After verifying the source prediction hash, read TEST labels and calculate standalone, Hard-confirmation, frozen-review-priority, outside-lane, and zero-support-recovery views. Compute Spearman correlation only from aligned TRAIN OOF scores. The frozen correlation contract is absolute Spearman `>= 0.90` with at least `20` aligned finite TRAIN OOF scores. Variants sharing a registered family or evidence identity collapse regardless of observed correlation; distinct qualifying correlations collapse through connected components. Fewer than 20 aligned rows or a non-finite correlation means independence is unverified, so the source cannot add an independent vote or membership. This is TRAIN-only diagnostic information and cannot be retuned after TEST evaluation.
 
@@ -489,7 +489,12 @@ Wilson upper bound is at most 0.01, its output is reproducible, and its
 registered algorithm family is distinct. TEST TP, FP, precision, F1, and
 recovered-FN counts cannot change this manifest.
 
-- [ ] **Step 5: Run tests and commit**
+The implementation must derive risk and correlation evidence from hash-verified
+Task-7 caches, require a separate self-hashed two-run reproducibility proof,
+compare every new source with the four certified Exp266 TRAIN OOF groups, and
+reconstruct existing lanes through Exp266's pinned loader before label access.
+
+- [x] **Step 5: Run tests and commit**
 
 ```bash
 python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_qualification -v

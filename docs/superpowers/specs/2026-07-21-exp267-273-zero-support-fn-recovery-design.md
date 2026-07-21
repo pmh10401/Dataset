@@ -221,6 +221,15 @@ Exp272 source membership is frozen before TEST labels are read. A source may
 join Exp272 only from label-free evidence: complete required coverage, passing
 TRAIN-normal review-risk audit, deterministic reproducibility, and a distinct
 registered algorithm family supported by TRAIN OOF correlation diagnostics.
+Risk rows are cryptographically bound to the verified Task-7 cache, variant
+run contract, and TRAIN OOF vector. An eligible source with an abstention,
+non-finite OOF vector, length mismatch, or invalid row hash fails closed.
+Deterministic reproducibility must be supplied by a separately self-hashed
+two-run manifest; it is never inferred or hard-coded. New sources are also
+compared with the four hash-pinned Exp266 certified TRAIN OOF evidence groups,
+and a high-correlation or unverifiable-overlap result cannot add a new vote.
+Post-freeze metrics reconstruct the existing Hard and review lanes through the
+pinned Exp266 input loader rather than accepting caller-supplied lane indices.
 Exp271 TEST TP, FP, precision, F1, or recovered-FN count is report-only and
 cannot add or remove a source from Exp272.
 

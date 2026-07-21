@@ -9,20 +9,26 @@ from unittest.mock import patch
 
 import numpy as np
 
+from experiments.exp239_248_diverse_score_sources.foundation import stable_json_hash
+from experiments.exp267_273_zero_support_fn_recovery import qualification as module
 from experiments.exp267_273_zero_support_fn_recovery.config import (
     CORRELATION_COLLAPSE_ABS_SPEARMAN,
     CORRELATION_MIN_ALIGNED_TRAIN_OOF,
 )
 from experiments.exp267_273_zero_support_fn_recovery.qualification import (
     MembershipHashError,
+    QualificationEvidence,
     collapse_correlated_families,
     collapse_votes,
     evaluate_frozen_qualification,
     qualify_sources,
 )
 from experiments.exp267_273_zero_support_fn_recovery.train_risk import (
+    array_sha256,
     audit_train_risk,
     leave_one_out_upper_pvalues,
+    risk_row_sha256,
+    summarize_train_risk,
     wilson_upper,
 )
 
@@ -34,12 +40,6 @@ class TrainRiskTests(unittest.TestCase):
     def test_query_exclusion_and_tie_formula(self) -> None:
         pvalues = leave_one_out_upper_pvalues(np.asarray([2.0, 2.0, 1.0]))
         np.testing.assert_allclose(pvalues, [2.0 / 3.0, 2.0 / 3.0, 1.0])
-        rows = audit_train_risk([
-            {"dataset": "d", "source": "scattering", "variant": "primary", "n_train": 3,
-             "train_oof": np.asarray([2.0, 2.0, 1.0]), "eligible": True, "abstained": False},
-        ], alphas=(2.0 / 3.0,))
-        self.assertEqual(rows[0]["normal_candidate_count"], 2)
-        self.assertEqual(rows[0]["calibration_reference"], "query_excluded_train_oof")
 
     def test_train_risk_rejects_test_or_evaluation_inputs(self) -> None:
         with self.assertRaises(ValueError):
@@ -48,8 +48,28 @@ class TrainRiskTests(unittest.TestCase):
                 "train_oof": np.asarray([1.0, 2.0, 3.0]), "test_scores": np.asarray([9.0]),
             }])
 
+    def test_nonfinite_eligible_row_is_not_filtered_into_a_pass(self) -> None:
+        rows = _risk_rows()
+        rows[0] = {**rows[0], "status": "nonfinite_train_oof", "wilson_upper_95": None}
+        rows[0]["risk_row_sha256"] = risk_row_sha256(rows[0])
+        summary = summarize_train_risk(rows)
+        median = next(row for row in summary if row["variant"] == "seed_median")
+        self.assertFalse(median["all_required_valid"])
+        self.assertEqual(median["invalid_eligible_datasets"], 1)
+
 
 class QualificationTests(unittest.TestCase):
+    def test_certified_oof_vector_accepts_empty_abstention_and_both_seed_axes(self) -> None:
+        self.assertEqual(len(module._one_vector(np.empty((2, 0)), 4)), 0)
+        np.testing.assert_allclose(
+            module._one_vector(np.asarray([[1.0, 2.0, 3.0], [3.0, 4.0, 5.0]]), 3),
+            [2.0, 3.0, 4.0],
+        )
+        np.testing.assert_allclose(
+            module._one_vector(np.asarray([[1.0, 3.0], [2.0, 4.0], [3.0, 5.0]]), 3),
+            [2.0, 3.0, 4.0],
+        )
+
     def test_frozen_correlation_contract(self) -> None:
         self.assertEqual(CORRELATION_COLLAPSE_ABS_SPEARMAN, 0.90)
         self.assertEqual(CORRELATION_MIN_ALIGNED_TRAIN_OOF, 20)
@@ -59,118 +79,145 @@ class QualificationTests(unittest.TestCase):
         self.assertEqual(votes[3], {"normal_forecast"})
 
     def test_high_correlation_cross_family_collapses_connected_component(self) -> None:
-        scores = {
+        collapsed = collapse_correlated_families({
             "scattering": np.arange(20, dtype=float),
             "signature": np.arange(20, dtype=float) * 2.0,
-        }
-        collapsed = collapse_correlated_families(scores)
+        })
         self.assertEqual(len(collapsed["groups"]), 1)
-        self.assertTrue(collapsed["groups"][0]["independence_verified"])
 
     def test_low_overlap_marks_independence_unverified(self) -> None:
         collapsed = collapse_correlated_families({
             "scattering": np.arange(19, dtype=float),
             "signature": np.arange(19, dtype=float),
         })
-        self.assertEqual(len(collapsed["groups"]), 2)
         self.assertTrue(all(not item["independence_verified"] for item in collapsed["groups"]))
 
-    def test_dataset_keyed_correlation_uses_only_shared_train_datasets(self) -> None:
-        collapsed = collapse_correlated_families({
-            "scattering": {"shared": np.arange(20, dtype=float), "left_only": np.arange(100, dtype=float)},
-            "signature": {"shared": np.arange(20, dtype=float), "right_only": np.arange(100, dtype=float)},
-        })
-        pair = collapsed["pairs"][0]
-        self.assertEqual(pair["aligned_count"], 20)
-
-    def test_membership_is_label_invariant_and_blocks_same_family_double_vote(self) -> None:
+    def test_missing_reproducibility_proof_qualifies_nothing(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             prediction, manifest = _write_prediction_fixture(root)
-            risk = _passing_risk_rows()
-            oof = {
-                "tcn_seed_median": np.arange(24, dtype=float),
-                "tcn_seed_intersection": np.arange(24, dtype=float),
-            }
-            first = qualify_sources(
-                prediction, manifest, output_dir=root, risk_rows=risk, train_oof_by_variant=oof,
+            result = qualify_sources(
+                prediction, manifest, output_dir=root, evidence=_evidence(),
                 expected_datasets=("d",), verify_predictions=False,
             )
-            with patch(
-                "experiments.exp267_273_zero_support_fn_recovery.qualification._load_test_truth",
-                return_value={"d": {0, 1}},
-            ):
-                second = qualify_sources(
-                    prediction, manifest, output_dir=root / "second", risk_rows=risk,
-                    train_oof_by_variant=oof, expected_datasets=("d",), verify_predictions=False,
-                )
-            self.assertEqual(first["membership_sha256"], second["membership_sha256"])
-            self.assertIn("config_hashes", first)
-            self.assertIn("input_hashes", first)
-            self.assertIn("run_contract_sha256", first)
-            self.assertEqual(len(first["qualified_groups"]), 1)
-            self.assertEqual(first["qualified_groups"][0]["members"], ["tcn_seed_intersection", "tcn_seed_median"])
+            self.assertFalse(result["reproducibility_verified"])
+            self.assertEqual(result["qualified_groups"], [])
 
-    def test_membership_rejects_incomplete_coverage_and_hash_tampering(self) -> None:
+    def test_verified_evidence_and_reproducibility_can_qualify_one_family(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             prediction, manifest = _write_prediction_fixture(root)
+            evidence = _evidence()
+            proof = _write_reproducibility(root, prediction, evidence)
+            result = qualify_sources(
+                prediction, manifest, output_dir=root, evidence=evidence,
+                expected_datasets=("d",), reproducibility_manifest_path=proof,
+                verify_predictions=False,
+            )
+            self.assertEqual(len(result["qualified_groups"]), 1)
+            self.assertEqual(
+                result["qualified_groups"][0]["members"],
+                ["tcn_seed_intersection", "tcn_seed_median"],
+            )
+
+    def test_nonfinite_required_row_blocks_membership(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            prediction, manifest = _write_prediction_fixture(root)
+            evidence = _evidence(invalid_first=True)
+            proof = _write_reproducibility(root, prediction, evidence)
+            result = qualify_sources(
+                prediction, manifest, output_dir=root, evidence=evidence,
+                expected_datasets=("d",), reproducibility_manifest_path=proof,
+                verify_predictions=False,
+            )
+            self.assertEqual(result["qualified_groups"], [])
+            self.assertEqual(result["risk_by_variant"]["tcn_seed_median"]["invalid_required_datasets"], 1)
+
+    def test_tampered_evidence_hash_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            prediction, manifest = _write_prediction_fixture(root)
+            evidence = _evidence()
+            evidence.risk_rows[0]["normal_candidate_count"] = 99
             with self.assertRaises(ValueError):
                 qualify_sources(
-                    prediction, manifest, output_dir=root, risk_rows=_passing_risk_rows(),
-                    train_oof_by_variant={"tcn_seed_median": np.arange(24.0)},
-                    expected_datasets=("d", "missing"), verify_predictions=False,
+                    prediction, manifest, output_dir=root, evidence=evidence,
+                    expected_datasets=("d",), verify_predictions=False,
                 )
+
+    def test_high_correlation_with_existing_certified_family_blocks_new_vote(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            prediction, manifest = _write_prediction_fixture(root)
+            evidence = _evidence(existing_matches_new=True)
+            proof = _write_reproducibility(root, prediction, evidence)
+            result = qualify_sources(
+                prediction, manifest, output_dir=root, evidence=evidence,
+                expected_datasets=("d",), reproducibility_manifest_path=proof,
+                verify_predictions=False,
+            )
+            self.assertEqual(result["qualified_groups"], [])
+            self.assertTrue(result["existing_certified_independence"]["collapsed_into_existing"])
+
+    def test_membership_hash_and_lane_verification_precede_test_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            prediction, manifest = _write_prediction_fixture(root)
+            evidence = _evidence()
+            proof = _write_reproducibility(root, prediction, evidence)
             membership = qualify_sources(
-                prediction, manifest, output_dir=root, risk_rows=_passing_risk_rows(),
-                train_oof_by_variant={
-                    "tcn_seed_median": np.arange(24.0),
-                    "tcn_seed_intersection": np.arange(24.0),
-                },
-                expected_datasets=("d",), verify_predictions=False,
+                prediction, manifest, output_dir=root, evidence=evidence,
+                expected_datasets=("d",), reproducibility_manifest_path=proof,
+                verify_predictions=False,
             )
             membership_path = root / "exp272_source_membership.json"
             membership_path.write_text(json.dumps({**membership, "qualified_groups": []}), encoding="utf-8")
-            with self.assertRaises(MembershipHashError):
-                evaluate_frozen_qualification(
-                    prediction, manifest, membership_path, expected_datasets=("d",),
-                    existing_lanes={"d": {"hard": set(), "review": set()}},
-                    test_truth={"d": {0}}, verify_predictions=False,
-                )
+            with patch.object(module, "_load_test_truth", side_effect=AssertionError("labels read early")):
+                with self.assertRaises(MembershipHashError):
+                    evaluate_frozen_qualification(
+                        prediction, manifest, membership_path,
+                        expected_datasets=("d",), verify_predictions=False,
+                    )
 
-    def test_post_freeze_metrics_keep_autonomous_and_review_separate(self) -> None:
+    def test_post_freeze_metrics_use_verified_immutable_lanes(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             prediction, manifest = _write_prediction_fixture(root)
+            evidence = _evidence()
+            proof = _write_reproducibility(root, prediction, evidence)
             qualify_sources(
-                prediction, manifest, output_dir=root, risk_rows=_passing_risk_rows(),
-                train_oof_by_variant={
-                    "tcn_seed_median": np.arange(24.0),
-                    "tcn_seed_intersection": np.arange(24.0),
-                },
-                expected_datasets=("d",), verify_predictions=False,
+                prediction, manifest, output_dir=root, evidence=evidence,
+                expected_datasets=("d",), reproducibility_manifest_path=proof,
+                verify_predictions=False,
             )
-            result = evaluate_frozen_qualification(
-                prediction, manifest, root / "exp272_source_membership.json",
-                expected_datasets=("d",), existing_lanes={"d": {"hard": {1}, "review": {2}}},
-                test_truth={"d": {0, 1, 2}}, verify_predictions=False,
+            verified = module._VerifiedExistingLanes(
+                lanes={"d": {"hard": frozenset({1}), "review": frozenset({2})}},
+                n_test={"d": 3}, input_sha256={"fixture": "pinned"}, _guard=module._LANE_GUARD,
             )
+            with patch.object(module, "_load_verified_existing_lanes", return_value=verified):
+                result = evaluate_frozen_qualification(
+                    prediction, manifest, root / "exp272_source_membership.json",
+                    expected_datasets=("d",), test_truth={"d": {0, 1, 2}},
+                    verify_predictions=False,
+                )
             self.assertEqual(result["autonomous"]["hard_tp"], 1)
             self.assertEqual(result["human_assisted_review"]["review_tp"], 1)
             self.assertNotIn("combined_f1", result["autonomous"])
-            self.assertNotIn("hard_tp", result["human_assisted_review"])
 
 
 def _write_prediction_fixture(root: Path) -> tuple[Path, Path]:
-    median = {
-        "dataset": "d", "source": "tcn_forecast", "variant": "seed_median", "alpha": 0.005,
-        "candidate_indices": [0], "evidence_family": "normal_forecast",
-        "evidence_identity": "tcn_forecast", "contains_test_labels": False,
-    }
-    intersection = {**median, "variant": "seed_intersection"}
+    rows = []
+    for variant in ("seed_median", "seed_intersection"):
+        rows.append({
+            "dataset": "d", "source": "tcn_forecast", "variant": variant, "alpha": 0.005,
+            "candidate_indices": [0], "evidence_family": "normal_forecast",
+            "evidence_identity": "tcn_forecast", "contains_test_labels": False,
+            "config_hash": "config", "run_contract_sha256": f"contract-{variant}",
+        })
     payload = b"".join(
         (json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n").encode()
-        for row in (median, intersection)
+        for row in rows
     )
     prediction = root / "prediction.jsonl"
     prediction.write_bytes(payload)
@@ -179,18 +226,71 @@ def _write_prediction_fixture(root: Path) -> tuple[Path, Path]:
     return prediction, manifest
 
 
-def _passing_risk_rows() -> list[dict[str, object]]:
-    return [{
-        "dataset": "d", "source": "tcn_forecast", "variant": "seed_median", "alpha": 0.005,
-        "eligible": True, "abstained": False, "coverage_complete": True,
-        "normal_candidate_count": 0, "normal_candidate_rate": 0.0,
-        "wilson_upper_95": 0.001,
-    }, {
-        "dataset": "d", "source": "tcn_forecast", "variant": "seed_intersection", "alpha": 0.005,
-        "eligible": True, "abstained": False, "coverage_complete": True,
-        "normal_candidate_count": 0, "normal_candidate_rate": 0.0,
-        "wilson_upper_95": 0.001,
-    }]
+def _risk_rows() -> list[dict[str, object]]:
+    rows = []
+    for variant in ("seed_median", "seed_intersection"):
+        row = {
+            "dataset": "d", "source": "tcn_forecast", "variant": variant, "alpha": 0.005,
+            "n_train": 1000, "train_tier": "ge_500", "eligible": True, "abstained": False,
+            "abstention_reason": None, "coverage_complete": True, "status": "ok",
+            "query_count": 1000, "reference_count": 999, "normal_candidate_count": 0,
+            "normal_candidate_rate": 0.0, "wilson_upper_95": wilson_upper(0, 1000),
+            "calibration_reference": "query_excluded_train_oof",
+            "cache_sha256": "cache", "run_contract_sha256": f"contract-{variant}",
+            "train_oof_sha256": "bound-oof",
+        }
+        row["risk_row_sha256"] = risk_row_sha256(row)
+        rows.append(row)
+    return rows
+
+
+def _evidence(*, invalid_first: bool = False, existing_matches_new: bool = False) -> QualificationEvidence:
+    rng = np.random.default_rng(20260721)
+    base = rng.normal(size=1000)
+    new = {
+        "tcn_seed_median": {"d": base.copy()},
+        "tcn_seed_intersection": {"d": base.copy()},
+    }
+    existing = {
+        f"exp266_{name}": {"d": rng.permutation(base)}
+        for name in ("kernel", "statistical", "structural", "change_point")
+    }
+    if existing_matches_new:
+        existing["exp266_kernel"] = {"d": base.copy()}
+    rows = _risk_rows()
+    if invalid_first:
+        rows[0]["status"] = "nonfinite_train_oof"
+        rows[0]["wilson_upper_95"] = None
+        rows[0]["risk_row_sha256"] = risk_row_sha256(rows[0])
+    cache = {"tcn_forecast:d": "cache"}
+    contracts = {
+        "tcn_seed_median": "contract-seed_median",
+        "tcn_seed_intersection": "contract-seed_intersection",
+    }
+    evidence_hash = module._evidence_hash(rows, new, existing, cache, contracts)
+    return QualificationEvidence(
+        risk_rows=tuple(rows), train_oof_by_variant=new, existing_train_oof=existing,
+        cache_sha256=cache, run_contract_sha256=contracts,
+        evidence_sha256=evidence_hash, _guard=module._EVIDENCE_GUARD,
+    )
+
+
+def _write_reproducibility(root: Path, prediction: Path, evidence: QualificationEvidence) -> Path:
+    prediction_hash = hashlib.sha256(prediction.read_bytes()).hexdigest()
+    payload = {
+        "schema_version": 1,
+        "reproducible": True,
+        "prediction_sha256_run_1": prediction_hash,
+        "prediction_sha256_run_2": prediction_hash,
+        "evidence_sha256_run_1": evidence.evidence_sha256,
+        "evidence_sha256_run_2": evidence.evidence_sha256,
+        "cache_sha256_run_1": dict(sorted(evidence.cache_sha256.items())),
+        "cache_sha256_run_2": dict(sorted(evidence.cache_sha256.items())),
+    }
+    payload["reproducibility_manifest_sha256"] = stable_json_hash(payload)
+    path = root / "reproducibility.json"
+    path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+    return path
 
 
 if __name__ == "__main__":

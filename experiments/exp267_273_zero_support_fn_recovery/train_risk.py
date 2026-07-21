@@ -8,6 +8,8 @@ empirical upper-tail p-value.
 from __future__ import annotations
 
 import csv
+import hashlib
+import json
 import math
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
@@ -18,6 +20,27 @@ from typing import Any
 import numpy as np
 
 from .config import ALPHAS
+
+
+def array_sha256(values: np.ndarray) -> str:
+    """Hash numeric evidence with dtype and shape, not only raw bytes."""
+    array = np.ascontiguousarray(np.asarray(values))
+    digest = hashlib.sha256()
+    digest.update(str(array.dtype).encode("ascii"))
+    digest.update(json.dumps(list(array.shape), separators=(",", ":")).encode("ascii"))
+    digest.update(array.tobytes(order="C"))
+    return digest.hexdigest()
+
+
+def risk_row_sha256(row: Mapping[str, object]) -> str:
+    payload = {key: value for key, value in row.items() if key != "risk_row_sha256"}
+    normalized = {
+        key: (None if isinstance(value, float) and math.isnan(value) else value)
+        for key, value in payload.items()
+    }
+    return hashlib.sha256(
+        json.dumps(normalized, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    ).hexdigest()
 
 
 class TrainRiskError(ValueError):
@@ -103,9 +126,16 @@ def _risk_row(record: Mapping[str, object], alpha: float) -> dict[str, object]:
         "abstention_reason": record.get("abstention_reason"),
         "calibration_reference": "query_excluded_train_oof",
         "coverage_complete": bool(record.get("coverage_complete", True)),
+        "cache_sha256": record.get("cache_sha256"),
+        "run_contract_sha256": record.get("run_contract_sha256"),
+        "train_oof_sha256": record.get("train_oof_sha256"),
     }
+    if eligible and not abstained:
+        for field in ("cache_sha256", "run_contract_sha256", "train_oof_sha256"):
+            if not isinstance(base[field], str) or not base[field]:
+                raise TrainRiskError(f"eligible TRAIN-risk record is missing {field}")
     if abstained or not eligible:
-        return {
+        result = {
             **base,
             "status": "abstained",
             "query_count": 0,
@@ -114,9 +144,11 @@ def _risk_row(record: Mapping[str, object], alpha: float) -> dict[str, object]:
             "normal_candidate_rate": math.nan,
             "wilson_upper_95": math.nan,
         }
+        result["risk_row_sha256"] = risk_row_sha256(result)
+        return result
     scores = np.asarray(record.get("train_oof"), dtype=float).reshape(-1)
     if len(scores) < 2:
-        return {
+        result = {
             **base,
             "status": "insufficient_reference",
             "query_count": len(scores),
@@ -125,8 +157,10 @@ def _risk_row(record: Mapping[str, object], alpha: float) -> dict[str, object]:
             "normal_candidate_rate": math.nan,
             "wilson_upper_95": math.nan,
         }
+        result["risk_row_sha256"] = risk_row_sha256(result)
+        return result
     if not np.isfinite(scores).all():
-        return {
+        result = {
             **base,
             "status": "nonfinite_train_oof",
             "query_count": len(scores),
@@ -135,9 +169,35 @@ def _risk_row(record: Mapping[str, object], alpha: float) -> dict[str, object]:
             "normal_candidate_rate": math.nan,
             "wilson_upper_95": math.nan,
         }
-    pvalues = leave_one_out_upper_pvalues(scores)
+        result["risk_row_sha256"] = risk_row_sha256(result)
+        return result
+    if len(scores) != n_train:
+        result = {
+            **base,
+            "status": "train_oof_length_mismatch",
+            "query_count": len(scores),
+            "reference_count": max(0, len(scores) - 1),
+            "normal_candidate_count": 0,
+            "normal_candidate_rate": math.nan,
+            "wilson_upper_95": math.nan,
+        }
+        result["risk_row_sha256"] = risk_row_sha256(result)
+        return result
+    if array_sha256(scores) != base["train_oof_sha256"]:
+        raise TrainRiskError("TRAIN OOF hash does not match the verified record")
+    supplied_pvalues = record.get("query_excluded_pvalues")
+    if supplied_pvalues is None:
+        pvalues = leave_one_out_upper_pvalues(scores)
+    else:
+        pvalues = np.asarray(supplied_pvalues, dtype=float).reshape(-1)
+        if len(pvalues) != n_train or not np.isfinite(pvalues).all():
+            raise TrainRiskError("query-excluded p-values must be finite and match n_train")
+        if np.any((pvalues < 0.0) | (pvalues > 1.0)):
+            raise TrainRiskError("query-excluded p-values must lie in [0, 1]")
+        base["calibration_reference"] = "query_excluded_per_seed_intersection"
+        base["query_excluded_pvalues_sha256"] = array_sha256(pvalues)
     candidates = int(np.count_nonzero(pvalues <= float(alpha)))
-    return {
+    result = {
         **base,
         "status": "ok",
         "query_count": len(scores),
@@ -146,6 +206,8 @@ def _risk_row(record: Mapping[str, object], alpha: float) -> dict[str, object]:
         "normal_candidate_rate": candidates / len(scores),
         "wilson_upper_95": wilson_upper(candidates, len(scores)),
     }
+    result["risk_row_sha256"] = risk_row_sha256(result)
+    return result
 
 
 def audit_train_risk(
@@ -176,6 +238,11 @@ def summarize_train_risk(rows: Iterable[Mapping[str, object]]) -> list[dict[str,
     summary: list[dict[str, object]] = []
     for key, members in sorted(grouped.items()):
         valid = [row for row in members if row.get("status") == "ok"]
+        invalid_eligible = [
+            row for row in members
+            if bool(row.get("eligible", False)) and row.get("status") != "ok"
+        ]
+        hashes_valid = all(row.get("risk_row_sha256") == risk_row_sha256(row) for row in members)
         queries = sum(int(row["query_count"]) for row in valid)
         candidates = sum(int(row["normal_candidate_count"]) for row in valid)
         summary.append({
@@ -183,6 +250,9 @@ def summarize_train_risk(rows: Iterable[Mapping[str, object]]) -> list[dict[str,
             "datasets": len(members), "valid_datasets": len(valid),
             "abstained_datasets": sum(row.get("status") == "abstained" for row in members),
             "invalid_datasets": len(members) - len(valid) - sum(row.get("status") == "abstained" for row in members),
+            "invalid_eligible_datasets": len(invalid_eligible),
+            "all_rows_hash_valid": hashes_valid,
+            "all_required_valid": not invalid_eligible and hashes_valid,
             "normal_candidate_count": candidates, "query_count": queries,
             "normal_candidate_rate": (candidates / queries) if queries else math.nan,
             "wilson_upper_95": wilson_upper(candidates, queries) if queries else math.nan,
@@ -210,6 +280,7 @@ def write_train_risk_audit(output_dir: Path, rows: Iterable[Mapping[str, object]
 
 
 __all__ = [
-    "TrainRiskError", "audit_train_risk", "leave_one_out_upper_pvalues",
+    "TrainRiskError", "array_sha256", "audit_train_risk", "leave_one_out_upper_pvalues",
+    "risk_row_sha256",
     "summarize_train_risk", "train_tier", "wilson_upper", "write_train_risk_audit",
 ]
