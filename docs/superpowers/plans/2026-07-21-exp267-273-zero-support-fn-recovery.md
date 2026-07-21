@@ -481,7 +481,7 @@ For each OOF query, remove its score from the calibration reference, compute the
 
 - [ ] **Step 4: Implement post-freeze qualification**
 
-After verifying the source prediction hash, read TEST labels and calculate standalone, Hard-confirmation, frozen-review-priority, outside-lane, and zero-support-recovery views. Compute Spearman correlation only from aligned TRAIN OOF scores. Correlation is diagnostic; variants sharing a registered family are collapsed regardless of observed correlation.
+After verifying the source prediction hash, read TEST labels and calculate standalone, Hard-confirmation, frozen-review-priority, outside-lane, and zero-support-recovery views. Compute Spearman correlation only from aligned TRAIN OOF scores. The frozen correlation contract is absolute Spearman `>= 0.90` with at least `20` aligned finite TRAIN OOF scores. Variants sharing a registered family or evidence identity collapse regardless of observed correlation; distinct qualifying correlations collapse through connected components. Fewer than 20 aligned rows or a non-finite correlation means independence is unverified, so the source cannot add an independent vote or membership. This is TRAIN-only diagnostic information and cannot be retuned after TEST evaluation.
 
 Before reading TEST labels, write `exp272_source_membership.json`. Include a
 source only when its required coverage is complete, its TRAIN-normal review-risk

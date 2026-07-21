@@ -21,6 +21,10 @@ TCN_MAX_TRAIN_ELEMENTS = 5_000_000
 REVIEW_RISK_LIMIT = 0.01
 HARD_RISK_LIMIT = 0.005
 MIN_RETROSPECTIVE_PRECISION = 0.80
+# These two values define the frozen TRAIN-only independence diagnostic.  They
+# are not tuned after TEST evaluation and apply only to aligned TRAIN OOF scores.
+CORRELATION_COLLAPSE_ABS_SPEARMAN = 0.90
+CORRELATION_MIN_ALIGNED_TRAIN_OOF = 20
 
 DB_PATH = Path("/Users/minho/Documents/Dataset/univariate_ts.db")
 OUTPUT_ROOT = Path("/Users/minho/Documents/Dataset/exp267_273_zero_support_fn_recovery")

@@ -206,8 +206,16 @@ views are:
 5. recovered zero-support FN after prediction freeze,
 6. aligned TRAIN OOF source correlation.
 
-Highly correlated variants are collapsed into one evidence group. Variants of
-the same algorithm never receive multiple independent votes.
+Highly correlated variants are collapsed into one evidence group. The frozen
+TRAIN-only rule is `CORRELATION_COLLAPSE_ABS_SPEARMAN = 0.90` with at least
+`CORRELATION_MIN_ALIGNED_TRAIN_OOF = 20` aligned finite TRAIN OOF scores.
+Variants in the same registered family or evidence identity collapse
+unconditionally. Distinct registered families whose absolute aligned TRAIN OOF
+Spearman correlation is at least 0.90 collapse through connected components.
+When fewer than 20 scores align or the correlation is non-finite, independence
+is unverified and that source cannot add an independent vote or membership.
+The diagnostic uses only TRAIN OOF scores and its thresholds cannot change
+after TEST labels are read.
 
 Exp272 source membership is frozen before TEST labels are read. A source may
 join Exp272 only from label-free evidence: complete required coverage, passing
