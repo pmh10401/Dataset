@@ -10,13 +10,26 @@ import tempfile
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
-from .config import EXPECTED_LANE_TOTALS
+from .config import (
+    EXPECTED_DATASETS,
+    EXPECTED_LANE_TOTALS,
+    EXP253_PREDICTION,
+    FROZEN_PREDICTION_HASHES,
+    FROZEN_PREDICTION_MANIFEST_HASHES,
+)
+from .prediction import CheckpointError, verify_prediction_checkpoint
 
 
 RESULTS_FILENAME = "05_dataset_results.csv"
 SUMMARY_FILENAME = "06_global_summary.csv"
 OUTPUT_FILENAME = "10_independent_reaggregation.json"
 REVIEW_LANES = ("recovery_shadow", "recovery_priority", "data_quality_review")
+HUMAN_REVIEW_LANES = ("shadow", "priority", "standard", *REVIEW_LANES)
+COMBINED_METRIC_FORMULA = (
+    "user reviews Shadow, Priority, Standard, RecoveryShadow, RecoveryPriority, and "
+    "DataQualityReview; confirms TP and rejects review FP; combined TP is Hard TP plus "
+    "confirmed unique review TP, combined FP remains Hard FP"
+)
 
 
 def _atomic_text(path: Path, text: str) -> None:
@@ -96,26 +109,61 @@ def aggregate_csv(results_path: Path) -> dict[str, object]:
             "baseline_standard_count",
         )
     )
-    for lane in REVIEW_LANES:
+    for lane in HUMAN_REVIEW_LANES:
         count = total(f"{lane}_count")
         tp = total(f"{lane}_tp")
+        fp = total(f"{lane}_fp")
+        fn = total(f"{lane}_fn")
+        precision = tp / count if count else 0.0
+        recall = tp / total_anomalies if total_anomalies else 0.0
         result.update(
             {
                 f"{lane}_count": count,
                 f"{lane}_tp": tp,
-                f"{lane}_fp": total(f"{lane}_fp"),
-                f"{lane}_precision": tp / count if count else 0.0,
+                f"{lane}_fp": fp,
+                f"{lane}_fn": fn,
+                f"{lane}_precision": precision,
+                f"{lane}_recall": recall,
+                f"{lane}_f1": (
+                    2 * precision * recall / (precision + recall)
+                    if precision + recall
+                    else 0.0
+                ),
+                f"{lane}_mean_dataset_f1": _mean(
+                    float(row[f"{lane}_f1"]) for row in rows
+                ),
             }
         )
-    review_count = sum(int(result[f"{lane}_count"]) for lane in REVIEW_LANES)
+    review_count = sum(int(result[f"{lane}_count"]) for lane in HUMAN_REVIEW_LANES)
+    combined_tp = total("combined_tp")
+    combined_fp = total("combined_fp")
+    combined_fn = total("combined_fn")
+    combined_count = combined_tp + combined_fp
     result.update(
         {
             "human_assisted_review_count": review_count,
+            "recovery_review_count": total("recovery_review_count"),
+            "human_assisted_confirmed_tp": total("combined_review_confirmed_tp"),
+            "human_assisted_rejected_fp": total("combined_review_rejected_fp"),
             "recovered_unique_fn_count": total("recovered_unique_fn_count"),
             "datasets_with_added_candidates": sum(
-                integer(row, "human_assisted_review_count") > 0 for row in rows
+                integer(row, "recovery_review_count") > 0 for row in rows
             ),
             "review_request_rate": review_count / total_test_runs if total_test_runs else 0.0,
+            "combined_count": combined_count,
+            "combined_tp": combined_tp,
+            "combined_fp": combined_fp,
+            "combined_fn": combined_fn,
+            "combined_precision": combined_tp / combined_count if combined_count else 0.0,
+            "combined_recall": combined_tp / total_anomalies if total_anomalies else 0.0,
+            "mean_combined_f1": _mean(float(row["combined_f1"]) for row in rows),
+            "hard_parity_datasets": sum(
+                row.get("hard_parity_with_exp253") == "True" for row in rows
+            ),
+            "hard_parity_mismatches": sum(
+                row.get("hard_parity_with_exp253") != "True" for row in rows
+            ),
+            "combined_metric_formula": COMBINED_METRIC_FORMULA,
         }
     )
     prediction_hashes = {row.get("prediction_sha256", "") for row in rows}
@@ -154,9 +202,71 @@ def verify_summary(results_path: Path, summary_path: Path) -> dict[str, object]:
     }
 
 
-def _prediction_audit(output_root: Path) -> dict[str, object]:
+def _load_exp253_hard(
+    prediction_path: Path, *, require_pinned_source: bool
+) -> tuple[dict[str, set[int]], str]:
+    prediction_path = Path(prediction_path)
+    try:
+        payload = prediction_path.read_bytes()
+        rows = [json.loads(line) for line in payload.decode("utf-8").splitlines() if line]
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("cannot load pinned Exp253 frozen source") from exc
+    actual = hashlib.sha256(payload).hexdigest()
+    if require_pinned_source:
+        manifest_path = prediction_path.parent / "prediction_manifest.json"
+        try:
+            manifest_payload = manifest_path.read_bytes()
+            manifest = json.loads(manifest_payload)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError("cannot load pinned Exp253 prediction manifest") from exc
+        if (
+            prediction_path != EXP253_PREDICTION
+            or actual != FROZEN_PREDICTION_HASHES["exp253"]
+            or hashlib.sha256(manifest_payload).hexdigest()
+            != FROZEN_PREDICTION_MANIFEST_HASHES["exp253"]
+            or type(manifest) is not dict
+            or manifest.get("prediction_sha256") != actual
+            or manifest.get("datasets") != EXPECTED_DATASETS
+        ):
+            raise ValueError("pinned Exp253 prediction contract mismatch")
+    hard: dict[str, set[int]] = {}
+    for row in rows:
+        if type(row) is not dict:
+            raise ValueError("Exp253 frozen source row is invalid")
+        dataset = row.get("dataset")
+        values = row.get("final_hard_indices")
+        if type(dataset) is not str or not dataset or type(values) is not list:
+            raise ValueError("Exp253 frozen source row contract mismatch")
+        if dataset in hard or any(type(index) is not int for index in values):
+            raise ValueError("Exp253 frozen source population mismatch")
+        hard[dataset] = set(values)
+        if len(hard[dataset]) != len(values):
+            raise ValueError("Exp253 frozen source has duplicate Hard indices")
+    if require_pinned_source and len(hard) != EXPECTED_DATASETS:
+        raise ValueError("pinned Exp253 source is not complete")
+    return hard, actual
+
+
+def _prediction_audit(
+    output_root: Path,
+    *,
+    exp253_prediction_path: Path,
+    require_full_population: bool,
+) -> dict[str, object]:
     prediction = output_root / "03_frozen_predictions.jsonl"
     manifest_path = output_root / "04_prediction_manifest.json"
+    if require_full_population:
+        try:
+            strict_manifest = verify_prediction_checkpoint(output_root)
+        except CheckpointError as exc:
+            raise ValueError(f"strict checkpoint verification failed: {exc}") from exc
+        if (
+            strict_manifest.get("complete_population") is not True
+            or strict_manifest.get("smoke") is not False
+            or strict_manifest.get("rows") != EXPECTED_DATASETS
+            or strict_manifest.get("datasets") != EXPECTED_DATASETS
+        ):
+            raise ValueError("independent reaggregation requires complete 1,117 manifest fields")
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         payload = prediction.read_bytes()
@@ -168,10 +278,20 @@ def _prediction_audit(output_root: Path) -> dict[str, object]:
         raise ValueError("independent reaggregation prediction SHA256 mismatch")
     if any(type(row) is not dict for row in rows):
         raise ValueError("independent reaggregation prediction row is invalid")
+    if require_full_population and (
+        len(rows) != EXPECTED_DATASETS
+        or len({str(row.get("dataset", "")) for row in rows}) != EXPECTED_DATASETS
+    ):
+        raise ValueError("independent reaggregation requires exactly 1,117 unique rows")
+
+    exp253_hard, exp253_sha256 = _load_exp253_hard(
+        exp253_prediction_path, require_pinned_source=require_full_population
+    )
 
     result_rows = _read_csv(output_root / RESULTS_FILENAME)
     result_sizes = {row["dataset"]: int(row["total_test_runs"]) for row in result_rows}
     prediction_names = [str(row.get("dataset", "")) for row in rows]
+    parity_population_matches = set(prediction_names) == set(exp253_hard)
     expected_rows = manifest.get("rows", len(rows))
     if type(expected_rows) is not int:
         expected_rows = len(rows)
@@ -194,6 +314,8 @@ def _prediction_audit(output_root: Path) -> dict[str, object]:
     lane_overlaps = 0
     prediction_label_fields = 0
     prediction_evaluation_fields = 0
+    hard_parity_datasets = 0
+    hard_parity_mismatches = 0
     label_keys = {"y_test", "label", "labels", "test_labels", "anomaly_positions"}
     metric_keys = {"tp", "fp", "fn", "precision", "recall", "f1"}
 
@@ -231,6 +353,10 @@ def _prediction_audit(output_root: Path) -> dict[str, object]:
             index_errors += sum(index < 0 or index >= n_test for index in selected)
             lanes[lane] = selected
             lane_totals[lane] += len(selected)
+        if dataset in exp253_hard and lanes["hard"] == exp253_hard[dataset]:
+            hard_parity_datasets += 1
+        else:
+            hard_parity_mismatches += 1
         for field in ("quality_flag_indices",):
             values = row.get(field, [])
             if type(values) is not list:
@@ -289,12 +415,25 @@ def _prediction_audit(output_root: Path) -> dict[str, object]:
         "missing_datasets": missing_datasets,
         "index_errors": index_errors,
         "lane_overlaps": lane_overlaps,
+        "exp253_prediction_sha256": exp253_sha256,
+        "hard_parity_population_matches": parity_population_matches,
+        "hard_parity_datasets": hard_parity_datasets,
+        "hard_parity_mismatches": hard_parity_mismatches,
     }
 
 
-def write_independent_reaggregation(output_root: Path) -> dict[str, object]:
+def write_independent_reaggregation(
+    output_root: Path,
+    *,
+    exp253_prediction_path: Path = EXP253_PREDICTION,
+    require_full_population: bool = True,
+) -> dict[str, object]:
     output_root = Path(output_root)
-    audit = _prediction_audit(output_root)
+    audit = _prediction_audit(
+        output_root,
+        exp253_prediction_path=exp253_prediction_path,
+        require_full_population=require_full_population,
+    )
     actual = str(audit["actual_sha256"])
     expected = str(audit["expected_sha256"])
     verification = verify_summary(
@@ -311,6 +450,9 @@ def write_independent_reaggregation(output_root: Path) -> dict[str, object]:
         and int(audit["missing_datasets"]) == 0
         and int(audit["index_errors"]) == 0
         and int(audit["lane_overlaps"]) == 0
+        and bool(audit["hard_parity_population_matches"])
+        and int(audit["hard_parity_datasets"]) == int(recomputed["datasets"])
+        and int(audit["hard_parity_mismatches"]) == 0
     )
     payload = {
         "passed": bool(verification["passed"] and audit_passed),
@@ -336,6 +478,8 @@ def write_independent_reaggregation(output_root: Path) -> dict[str, object]:
             "baseline_hard_alerts": recomputed["baseline_hard_alerts"],
             "human_assisted_review_count": recomputed["human_assisted_review_count"],
         },
+        "combined_metric_scope": "human-assisted diagnostic; never an autonomous metric",
+        "combined_metric_formula": COMBINED_METRIC_FORMULA,
     }
     _atomic_text(
         output_root / OUTPUT_FILENAME,
@@ -364,6 +508,10 @@ def main() -> int:
     print(f"missing datasets={payload['missing_datasets']}")
     print(f"index errors={payload['index_errors']}")
     print(f"lane overlaps={payload['lane_overlaps']}")
+    print(
+        f"Hard parity={payload['hard_parity_datasets']}/{payload['recomputed_summary']['datasets']}, "
+        f"mismatches={payload['hard_parity_mismatches']}"
+    )
     print(f"independent reaggregation={'PASS' if payload['passed'] else 'FAIL'}")
     return 0 if payload["passed"] else 1
 

@@ -66,6 +66,22 @@ def write_frozen_fixture(root: Path) -> tuple[Path, Path]:
     return prediction, manifest
 
 
+def write_exp253_fixture(root: Path, hard_indices: list[int] | None = None) -> Path:
+    path = root / "exp253_frozen_predictions.jsonl"
+    path.write_text(
+        json.dumps(
+            {
+                "dataset": "demo",
+                "final_hard_indices": [0] if hard_indices is None else hard_indices,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def write_database(path: Path) -> None:
     connection = sqlite3.connect(path)
     connection.executescript(
@@ -93,6 +109,16 @@ def write_database(path: Path) -> None:
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_production_default_rejects_incomplete_checkpoint_before_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prediction, manifest = write_frozen_fixture(root)
+            with patch(
+                "experiments.exp266_fn_recovery_shadow.evaluation.sqlite3.connect"
+            ) as connect, self.assertRaisesRegex(ValueError, "complete|checkpoint|manifest"):
+                evaluate_predictions(prediction, manifest, database_path=root / "missing.db")
+            connect.assert_not_called()
+
     def test_evaluation_refuses_tampered_prediction_before_sqlite_access(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -128,7 +154,11 @@ class EvaluationTests(unittest.TestCase):
             write_database(database)
 
             rows, summary = evaluate_predictions(
-                prediction, manifest, database_path=database
+                prediction,
+                manifest,
+                database_path=database,
+                exp253_prediction_path=write_exp253_fixture(root),
+                require_full_population=False,
             )
 
             self.assertEqual(rows[0]["hard_alerts"], 1)
@@ -136,6 +166,18 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(rows[0]["recovery_shadow_tp"], 1)
             self.assertEqual(rows[0]["recovery_priority_fp"], 1)
             self.assertEqual(rows[0]["data_quality_review_tp"], 1)
+            self.assertEqual(rows[0]["shadow_count"], 1)
+            self.assertEqual(rows[0]["shadow_fp"], 1)
+            self.assertEqual(rows[0]["priority_count"], 0)
+            self.assertEqual(rows[0]["standard_count"], 0)
+            self.assertEqual(rows[0]["combined_review_requested_count"], 4)
+            self.assertEqual(rows[0]["recovery_review_count"], 3)
+            self.assertEqual(rows[0]["combined_review_confirmed_tp"], 2)
+            self.assertEqual(rows[0]["combined_review_rejected_fp"], 2)
+            self.assertEqual(rows[0]["combined_tp"], 3)
+            self.assertEqual(rows[0]["combined_fp"], rows[0]["hard_fp"])
+            self.assertEqual(rows[0]["combined_f1"], 1.0)
+            self.assertTrue(rows[0]["hard_parity_with_exp253"])
             self.assertEqual(summary["hard_alert_delta"], 0)
             self.assertEqual(summary["hard_alerts"], summary["baseline_hard_alerts"])
             self.assertEqual(summary["baseline_shadow_count"], 1)
@@ -144,8 +186,13 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(summary["baseline_union_count"], 2)
             self.assertEqual(summary["recovery_shadow_count"], 1)
             self.assertEqual(summary["recovered_unique_fn_count"], 1)
-            self.assertEqual(summary["human_assisted_review_count"], 3)
-            self.assertEqual(summary["review_request_rate"], 3 / 5)
+            self.assertEqual(summary["human_assisted_review_count"], 4)
+            self.assertEqual(summary["review_request_rate"], 4 / 5)
+            self.assertEqual(summary["mean_combined_f1"], 1.0)
+            self.assertEqual(summary["combined_fp"], summary["hard_fp"])
+            self.assertEqual(summary["hard_parity_datasets"], 1)
+            self.assertEqual(summary["hard_parity_mismatches"], 0)
+            self.assertIn("confirms TP", summary["combined_metric_formula"])
             self.assertTrue(summary["retrospective"])
             self.assertFalse(summary["deployment_eligible"])
 
@@ -157,6 +204,22 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(diagnostic["agreement_2_count"], "1")
             self.assertEqual(diagnostic["agreement_3_count"], "1")
             self.assertEqual(diagnostic["agreement_4_count"], "1")
+
+    def test_hard_parity_mismatch_fails_before_test_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prediction, manifest = write_frozen_fixture(root)
+            with patch(
+                "experiments.exp266_fn_recovery_shadow.evaluation.sqlite3.connect"
+            ) as connect, self.assertRaisesRegex(ValueError, "Hard parity"):
+                evaluate_predictions(
+                    prediction,
+                    manifest,
+                    database_path=root / "missing.db",
+                    exp253_prediction_path=write_exp253_fixture(root, [1]),
+                    require_full_population=False,
+                )
+            connect.assert_not_called()
 
     def test_recovery_review_never_changes_hard(self) -> None:
         summary = aggregate(
@@ -183,16 +246,52 @@ class EvaluationTests(unittest.TestCase):
             prediction, manifest_path = write_frozen_fixture(root)
             database = root / "labels.db"
             write_database(database)
-            evaluate_predictions(prediction, manifest_path, database_path=database)
+            exp253 = write_exp253_fixture(root)
+            evaluate_predictions(
+                prediction,
+                manifest_path,
+                database_path=database,
+                exp253_prediction_path=exp253,
+                require_full_population=False,
+            )
 
             prediction.write_text(prediction.read_text(encoding="utf-8") + "\n")
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             manifest["prediction_sha256"] = sha256_file(prediction)
             manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
-            result = write_independent_reaggregation(root)
+            result = write_independent_reaggregation(
+                root,
+                exp253_prediction_path=exp253,
+                require_full_population=False,
+            )
             self.assertFalse(result["passed"])
             self.assertFalse(result["evaluation_prediction_sha256_matches"])
+
+    def test_independent_reaggregation_rechecks_exact_exp253_hard_indices(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prediction, manifest = write_frozen_fixture(root)
+            database = root / "labels.db"
+            write_database(database)
+            exp253 = write_exp253_fixture(root)
+            evaluate_predictions(
+                prediction,
+                manifest,
+                database_path=database,
+                exp253_prediction_path=exp253,
+                require_full_population=False,
+            )
+
+            write_exp253_fixture(root, [1])
+            result = write_independent_reaggregation(
+                root,
+                exp253_prediction_path=exp253,
+                require_full_population=False,
+            )
+            self.assertFalse(result["passed"])
+            self.assertEqual(result["hard_parity_datasets"], 0)
+            self.assertEqual(result["hard_parity_mismatches"], 1)
 
     def test_independent_reaggregation_and_reports_detect_summary_tampering(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -200,13 +299,27 @@ class EvaluationTests(unittest.TestCase):
             prediction, manifest = write_frozen_fixture(root)
             database = root / "labels.db"
             write_database(database)
-            evaluate_predictions(prediction, manifest, database_path=database)
+            exp253 = write_exp253_fixture(root)
+            evaluate_predictions(
+                prediction,
+                manifest,
+                database_path=database,
+                exp253_prediction_path=exp253,
+                require_full_population=False,
+            )
+
+            with self.assertRaisesRegex(ValueError, "complete|manifest|checkpoint"):
+                write_independent_reaggregation(root, exp253_prediction_path=exp253)
 
             result = verify_summary(
                 root / "05_dataset_results.csv", root / "06_global_summary.csv"
             )
             self.assertTrue(result["passed"])
-            outputs = write_reports(root)
+            outputs = write_reports(
+                root,
+                exp253_prediction_path=exp253,
+                require_full_population=False,
+            )
             self.assertEqual(
                 {path.name for path in outputs},
                 {
@@ -229,6 +342,16 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(reaggregation["missing_datasets"], 0)
             self.assertEqual(reaggregation["index_errors"], 0)
             self.assertEqual(reaggregation["lane_overlaps"], 0)
+            self.assertEqual(reaggregation["hard_parity_datasets"], 1)
+            self.assertEqual(reaggregation["hard_parity_mismatches"], 0)
+            report = (root / "09_result_report.md").read_text(encoding="utf-8")
+            self.assertIn("missing reconstruction producer provenance", report)
+            self.assertIn("No threshold, policy, or source was selected from TEST results", report)
+            self.assertIn("confirms TP", report)
+            with (root / "MANIFEST.csv").open(newline="", encoding="utf-8") as handle:
+                manifest_row = next(csv.DictReader(handle))
+            self.assertIn("confirms TP", manifest_row["combined_metric_formula"])
+            self.assertEqual(manifest_row["no_test_policy_selection"], "True")
 
             summary_path = root / "06_global_summary.csv"
             with summary_path.open(newline="", encoding="utf-8") as handle:
