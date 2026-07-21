@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -81,6 +83,7 @@ class SourcePipelineTests(unittest.TestCase):
         dataset: str = "d1",
         source_factory= None,
         code_hash: str | None = None,
+        device: str = "cpu",
     ) -> dict[str, object]:
         from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import build_cache_unit
 
@@ -93,10 +96,45 @@ class SourcePipelineTests(unittest.TestCase):
                 "scattering",
                 dataset,
                 reset=reset,
+                device=device,
                 source_factory=source_factory or (lambda *_args, **_kwargs: _FakeSource()),
                 db_hash=None,
                 code_hash=code_hash,
             )
+
+    def _freeze(self) -> tuple[Path, Path]:
+        from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import freeze_source_predictions
+
+        return freeze_source_predictions(
+            self.root, sources=("scattering",), datasets=("d1",),
+            expected_dataset_count=1, bundle_loader=_bundle,
+        )
+
+    def _rewrite_prediction_and_manifest(
+        self,
+        prediction_path: Path,
+        manifest_path: Path,
+        rows: list[dict[str, object]],
+    ) -> None:
+        import hashlib
+
+        payload = b"".join(
+            json.dumps(row, sort_keys=True, separators=(",", ":"), allow_nan=False).encode() + b"\n"
+            for row in rows
+        )
+        prediction_path.write_bytes(payload)
+        manifest = json.loads(manifest_path.read_text())
+        manifest["prediction_sha256"] = hashlib.sha256(payload).hexdigest()
+        manifest["rows"] = len(rows)
+        manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
+
+    def _verify(self, prediction_path: Path, manifest_path: Path) -> bool:
+        from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import verify_prediction_hash
+
+        return verify_prediction_hash(
+            prediction_path, manifest_path, expected_datasets=("d1",),
+            expected_sources=("scattering",), cache_root=self.root, bundle_loader=_bundle,
+        )
 
     def test_valid_cache_is_reused_only_when_config_hash_matches(self) -> None:
         first = self._build()
@@ -121,18 +159,12 @@ class SourcePipelineTests(unittest.TestCase):
         )
 
         self._build()
-        prediction_path, manifest_path = freeze_source_predictions(
-            self.root,
-            sources=("scattering",),
-            datasets=("d1",),
-            expected_dataset_count=1,
-            bundle_loader=_bundle,
-        )
+        prediction_path, manifest_path = self._freeze()
         rows = [json.loads(line) for line in prediction_path.read_text().splitlines()]
         self.assertEqual([row["alpha"] for row in rows], [0.005, 0.01, 0.02, 0.05])
         forbidden = {"y_test", "labels", "tp", "fp", "fn", "f1", "precision", "metrics"}
         self.assertFalse(set().union(*(set(row) for row in rows)) & forbidden)
-        self.assertTrue(verify_prediction_hash(prediction_path, manifest_path))
+        self.assertTrue(self._verify(prediction_path, manifest_path))
 
     def test_prediction_hash_rejects_tampering(self) -> None:
         from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import (
@@ -141,16 +173,10 @@ class SourcePipelineTests(unittest.TestCase):
         )
 
         self._build()
-        prediction_path, manifest_path = freeze_source_predictions(
-            self.root,
-            sources=("scattering",),
-            datasets=("d1",),
-            expected_dataset_count=1,
-            bundle_loader=_bundle,
-        )
+        prediction_path, manifest_path = self._freeze()
         prediction_path.write_text(prediction_path.read_text() + "\n", encoding="utf-8")
         with self.assertRaises(ValueError):
-            verify_prediction_hash(prediction_path, manifest_path)
+            self._verify(prediction_path, manifest_path)
 
     def test_incomplete_atomic_cache_is_rebuilt_on_resume(self) -> None:
         from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import cache_paths
@@ -230,6 +256,138 @@ class SourcePipelineTests(unittest.TestCase):
                 self.root, sources=("scattering",), datasets=("d1",), expected_dataset_count=1117,
                 bundle_loader=_bundle,
             )
+
+    def test_freeze_rejects_duplicate_source_input(self) -> None:
+        from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import freeze_source_predictions
+
+        self._build()
+        with self.assertRaises(ValueError):
+            freeze_source_predictions(
+                self.root, sources=("scattering", "scattering"), datasets=("d1",),
+                expected_dataset_count=1, bundle_loader=_bundle,
+            )
+
+    def test_verify_rejects_duplicate_missing_and_extra_prediction_keys(self) -> None:
+        self._build()
+        prediction_path, manifest_path = self._freeze()
+        rows = [json.loads(line) for line in prediction_path.read_text().splitlines()]
+        self._rewrite_prediction_and_manifest(prediction_path, manifest_path, [rows[0], rows[0], *rows[2:]])
+        with self.assertRaises(ValueError):
+            self._verify(prediction_path, manifest_path)
+
+        prediction_path, manifest_path = self._freeze()
+        rows = [json.loads(line) for line in prediction_path.read_text().splitlines()]
+        self._rewrite_prediction_and_manifest(prediction_path, manifest_path, rows[:-1])
+        with self.assertRaises(ValueError):
+            self._verify(prediction_path, manifest_path)
+
+        prediction_path, manifest_path = self._freeze()
+        rows = [json.loads(line) for line in prediction_path.read_text().splitlines()]
+        rows[-1]["source"] = "unexpected_source"
+        self._rewrite_prediction_and_manifest(prediction_path, manifest_path, rows)
+        with self.assertRaises(ValueError):
+            self._verify(prediction_path, manifest_path)
+
+    def test_verify_rejects_wrong_alpha_and_out_of_range_index(self) -> None:
+        self._build()
+        prediction_path, manifest_path = self._freeze()
+        rows = [json.loads(line) for line in prediction_path.read_text().splitlines()]
+        rows[0]["alpha"] = 0.006
+        self._rewrite_prediction_and_manifest(prediction_path, manifest_path, rows)
+        with self.assertRaises(ValueError):
+            self._verify(prediction_path, manifest_path)
+
+        prediction_path, manifest_path = self._freeze()
+        rows = [json.loads(line) for line in prediction_path.read_text().splitlines()]
+        rows[0]["candidate_indices"] = [99]
+        self._rewrite_prediction_and_manifest(prediction_path, manifest_path, rows)
+        with self.assertRaises(ValueError):
+            self._verify(prediction_path, manifest_path)
+
+    def test_verify_rejects_joint_manifest_and_jsonl_candidate_tamper(self) -> None:
+        self._build()
+        prediction_path, manifest_path = self._freeze()
+        rows = [json.loads(line) for line in prediction_path.read_text().splitlines()]
+        rows[0]["candidate_indices"] = [0]
+        self._rewrite_prediction_and_manifest(prediction_path, manifest_path, rows)
+        with self.assertRaises(ValueError):
+            self._verify(prediction_path, manifest_path)
+
+    def test_verify_rejects_manifest_population_tamper(self) -> None:
+        self._build()
+        prediction_path, manifest_path = self._freeze()
+        manifest = json.loads(manifest_path.read_text())
+        manifest["dataset_list_sha256"] = "tampered"
+        manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
+        with self.assertRaises(ValueError):
+            self._verify(prediction_path, manifest_path)
+
+    def test_common_dependency_device_and_seed_changes_invalidate_cache_contract(self) -> None:
+        first = self._build()
+        from experiments.exp267_273_zero_support_fn_recovery import source_pipeline
+
+        original_hashes = source_pipeline._module_hashes("scattering")
+        changed_hashes = dict(original_hashes)
+        changed_hashes["experiments.exp239_248_diverse_score_sources.calibration"] = "changed"
+        with patch.object(source_pipeline, "_module_hashes", return_value=changed_hashes):
+            changed_dependency = self._build()
+        self.assertNotEqual(first["run_contract_sha256"], changed_dependency["run_contract_sha256"])
+
+        changed_device = self._build(device="mps")
+        self.assertNotEqual(first["run_contract_sha256"], changed_device["run_contract_sha256"])
+
+        with patch.object(source_pipeline, "SEED", 999):
+            changed_seed = self._build()
+        self.assertNotEqual(first["run_contract_sha256"], changed_seed["run_contract_sha256"])
+
+    def test_tcn_benchmark_contract_hash_changes(self) -> None:
+        from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import _run_contract
+
+        first = _run_contract(
+            "tcn_forecast", device="cpu", benchmark_record={"record": "one"}, db_sha256="db"
+        )
+        second = _run_contract(
+            "tcn_forecast", device="cpu", benchmark_record={"record": "two"}, db_sha256="db"
+        )
+        self.assertNotEqual(first["run_contract_sha256"], second["run_contract_sha256"])
+
+    def test_tcn_lock_rejects_second_process(self) -> None:
+        from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import tcn_exclusive_lock
+
+        with tcn_exclusive_lock(self.root):
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "experiments.exp267_273_zero_support_fn_recovery.tests.spawn_smoke_helper",
+                    "--try-tcn-lock",
+                    str(self.root),
+                ],
+                cwd=Path(__file__).parents[3],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=20,
+            )
+        self.assertEqual(json.loads(result.stdout), {"entered": False})
+
+    def test_spawn_worker_smoke_uses_two_processes(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "experiments.exp267_273_zero_support_fn_recovery.tests.spawn_smoke_helper",
+            ],
+            cwd=Path(__file__).parents[3],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        payload = json.loads(result.stdout)
+        self.assertEqual(len(payload["datasets"]), 2)
+        self.assertEqual(sorted(payload["datasets"]), sorted(payload["cached"]))
+        self.assertEqual(payload["contains_test_labels"], [False, False])
 
     def test_alpha_boundary_is_inclusive_and_deterministic(self) -> None:
         from experiments.exp267_273_zero_support_fn_recovery.source_pipeline import candidate_indices
