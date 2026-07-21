@@ -25,7 +25,8 @@ Human-assisted review candidates are excluded from every metric in this table.
 
 Unique recovered false negatives: **57**
 Datasets with added review candidates: **48**
-Review-request rate per TEST run: **0.004747**
+Total existing plus Exp266 review-request rate per TEST run: **0.004747**
+Exp266 incremental review-request rate per TEST run: **0.000465**
 
 ## Human-Assisted Combined Diagnostic
 
@@ -36,13 +37,22 @@ This combined view is human-assisted and never replaces Autonomous Hard.
 |---:|---:|---:|---:|---:|---:|---:|
 | 2703 | 2365 | 338 | 1553 | 0.874954 | 0.603624 | 0.723338 |
 
-Exact Exp253 Hard parity: **1117 datasets**, mismatches: **0**.
+
+## Immutable Lane Parity
+
+| Lane | Pinned source | Matching datasets | Mismatches | Index-map SHA-256 |
+|---|---|---:|---:|---|
+| Hard | Exp253 | 1117 | 0 | `3af05e308116ef3634a855baf002561e9b3edbea8bcb47d977a4972315c58f2e` |
+| Shadow | Exp264 | 1117 | 0 | `47b7448dd95527a670ebeb2c8ff63289a986c83a24a842165dfc3eb6b8b16bd3` |
+| Priority | Exp264 | 1117 | 0 | `30f2d5f69d2ff24a075a8503dda0b4f884c6789a1af196a791e541317b3125a7` |
+| Standard | Exp264 | 1117 | 0 | `a4778fd0f704a67fba4ac462b973f705f8729ad3fe78c4ad91b45f8a296b1a44` |
 
 ## Certified TRAIN-Normal Risk Audit
 
 The certified audit uses exactly four provenance-verified sources. The
 five-source reconstruction result remains an unapproved sensitivity diagnostic.
-Exact five-source blocker: **missing reconstruction producer provenance**.
+Exact five-source blocker: **Five-source combined TRAIN-risk approval is blocked until Exp257 has a producer-signed/pinned manifest tying the frozen archives to query-excluded fitting and exact seeds, or a separately preregistered regeneration is performed**.
+The TRAIN-risk table below applies only to the Exp266 incremental RecoveryShadow and RecoveryPriority lanes, never to existing review lanes.
 
 | Lane | False reviews | Rate | One-sided Wilson U95 | Target <= 0.01 |
 |---|---:|---:|---:|---|
@@ -57,4 +67,4 @@ remain human-assisted and review-only. No review result is added to Autonomous H
 All point matches are exact TEST instance-index matches with zero-denominator ratios
 recorded as 0.0.
 No threshold, policy, or source was selected from TEST results.
-Five-source blocker: missing reconstruction producer provenance.
+Five-source blocker: Five-source combined TRAIN-risk approval is blocked until Exp257 has a producer-signed/pinned manifest tying the frozen archives to query-excluded fitting and exact seeds, or a separately preregistered regeneration is performed.
