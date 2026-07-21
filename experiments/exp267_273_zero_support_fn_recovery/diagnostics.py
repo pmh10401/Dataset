@@ -346,6 +346,21 @@ def _read_exp266_csvs(
     }
 
 
+def verify_database_hash_against_summary(
+    database_path: Path, global_summary: Mapping[str, object]
+) -> str:
+    """Require the current DB bytes to match the frozen Exp266 DB contract."""
+
+    actual_sha256 = sha256_file(database_path)
+    expected_sha256 = global_summary.get("database_sha256")
+    if type(expected_sha256) is not str or actual_sha256 != expected_sha256:
+        raise ValueError(
+            "database SHA256 mismatch with frozen Exp266 global summary: "
+            f"expected={expected_sha256} actual={actual_sha256}"
+        )
+    return actual_sha256
+
+
 def parse_dataset_family(dataset: str) -> str:
     """Parse a family name for retrospective grouping only."""
 
@@ -553,7 +568,9 @@ def _write_exp267_outputs_with_database(
         raise ValueError("Exp266 global summary is not bound to frozen predictions")
     if any(row.get("prediction_sha256") != prediction_sha256 for row in result_rows):
         raise ValueError("Exp266 result rows are not bound to frozen predictions")
-    database_sha256 = sha256_file(database_path)
+    database_sha256 = verify_database_hash_against_summary(
+        database_path, global_summary
+    )
     audit = {
         "dependency_audit": dependency_report(),
         "population_contract": {
@@ -627,5 +644,6 @@ __all__ = [
     "load_test_truth",
     "parse_dataset_family",
     "summarize_zero_support_diagnostics",
+    "verify_database_hash_against_summary",
     "write_exp267_outputs",
 ]

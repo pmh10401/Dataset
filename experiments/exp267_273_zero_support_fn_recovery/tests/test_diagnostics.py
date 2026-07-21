@@ -9,15 +9,18 @@ from pathlib import Path
 from unittest.mock import patch
 
 from experiments.exp267_273_zero_support_fn_recovery import config
+from experiments.exp267_273_zero_support_fn_recovery import diagnostics as diagnostics_module
 from experiments.exp267_273_zero_support_fn_recovery.diagnostics import (
     PopulationContractError,
     _read_exp266_csvs,
     build_zero_support_diagnostics,
     diagnostic_row,
     parse_dataset_family,
+    verify_database_hash_against_summary,
     write_exp267_outputs,
 )
 from experiments.exp267_273_zero_support_fn_recovery.population import (
+    EXP266_OUTPUT_ROOT,
     load_frozen_population,
     read_frozen_prediction_rows,
     validate_population,
@@ -167,6 +170,36 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(sum(int(row["combined_fn"]) for row in family_rows), 1553)
         self.assertEqual(sum(int(row["zero_support_fn"]) for row in family_rows), 1405)
         self.assertEqual(sum(int(row["single_source_fn"]) for row in family_rows), 148)
+
+    def test_official_database_hash_must_match_frozen_exp266_summary(self) -> None:
+        actual_hash = hashlib.sha256(config.DB_PATH.read_bytes()).hexdigest()
+        self.assertEqual(
+            verify_database_hash_against_summary(
+                config.DB_PATH, {"database_sha256": actual_hash}
+            ),
+            actual_hash,
+        )
+        with self.assertRaisesRegex(ValueError, "database SHA256"):
+            verify_database_hash_against_summary(
+                config.DB_PATH, {"database_sha256": "0" * 64}
+            )
+
+    def test_database_hash_mismatch_fails_before_test_label_loading(self) -> None:
+        original = diagnostics_module._read_exp266_csvs(EXP266_OUTPUT_ROOT)
+        mismatched_summary = dict(original[1])
+        mismatched_summary["database_sha256"] = "0" * 64
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(
+                diagnostics_module,
+                "_read_exp266_csvs",
+                return_value=(original[0], mismatched_summary, original[2]),
+            ), patch.object(diagnostics_module, "load_test_truth") as load_labels:
+                with self.assertRaisesRegex(ValueError, "database SHA256"):
+                    diagnostics_module._write_exp267_outputs_with_database(
+                        output_root=Path(directory),
+                        database_path=config.DB_PATH,
+                    )
+            load_labels.assert_not_called()
 
 
 if __name__ == "__main__":
