@@ -12,6 +12,23 @@
 
 마스킹 복원 점수원은 `n_train < 100` 때문에만 명시적 미적격 처리가 가능하다. 이 feed가 없으면 상태는 **BLOCKED: prospective upstream feed unavailable**이다. 과거 1,117개 TEST 데이터셋을 신규 run처럼 재생하지 않는다.
 
+### 개발용 과거 재생
+
+신규 feed가 없는 개발 단계에서는 과거 1,117개 데이터셋을 `collection_mode="retrospective_replay"`, `policy_version="exp265-replay-v1"`로 별도 적재할 수 있다. 이 데이터는 화면의 **개발용 재생** 탭에만 표시하며 다음 원칙을 지킨다.
+
+- TEST 라벨과 TP/FP/F1 평가 필드를 적재하지 않는다.
+- Exp253 Hard lane과 과거 label-free 후보·점수원 합의만 보존한다.
+- 후보 파형은 해당 TEST instance의 `values_blob`에서 읽어 최대 64점 preview로 저장한다.
+- 신규 검증 100건 진행률과 prospective 보고서에서 제외한다.
+- 개발용 재생 결과로 운영 성능이나 prospective 검증 완료를 주장하지 않는다.
+
+로컬 재생 파일 생성 명령은 다음과 같다.
+
+```bash
+python3 scratch/build_exp265_replay_dataset.py \
+  --output "/Users/minho/Documents/Dataset/exp265_shadow_validation/replay/exp264_replay.jsonl"
+```
+
 ## 2. Supabase 마이그레이션
 
 Supabase CLI의 현재 공식 흐름을 사용한다.
@@ -25,7 +42,7 @@ supabase db push --linked
 supabase migration list --linked
 ```
 
-적용 파일은 `supabase/migrations/202607210001_shadow_validation.sql`이다. `--dry-run` 결과에 이 파일 외 예상하지 못한 migration이 있으면 중단한다.
+기본 schema는 `supabase/migrations/202607210001_shadow_validation.sql`, 개발용 재생 분리는 `supabase/migrations/202607210003_shadow_replay.sql`에 있다. `--dry-run` 결과에 이 파일들 외 예상하지 못한 migration이 있으면 중단한다.
 
 ## 3. RLS 확인
 

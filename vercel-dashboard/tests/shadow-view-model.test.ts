@@ -29,11 +29,15 @@ describe("shadow dashboard view model", () => {
   });
 
   it("distinguishes development readiness from prospective data collection", () => {
-    expect(collectionStatus(0)).toMatchObject({
+    expect(collectionStatus(0, "prospective_shadow")).toMatchObject({
       state: "waiting",
       title: "개발 준비 완료 · 신규 데이터 대기",
     });
-    expect(collectionStatus(37)).toMatchObject({ state: "collecting" });
-    expect(collectionStatus(100)).toMatchObject({ state: "complete" });
+    expect(collectionStatus(37, "prospective_shadow")).toMatchObject({ state: "collecting" });
+    expect(collectionStatus(100, "prospective_shadow")).toMatchObject({ state: "complete" });
+    expect(collectionStatus(1117, "retrospective_replay")).toMatchObject({
+      state: "replay",
+      title: "실험 데이터 1,117개",
+    });
   });
 });

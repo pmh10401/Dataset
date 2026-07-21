@@ -1,5 +1,6 @@
 import type { ConfidenceGrade, ShadowLane } from "./shadow";
 import type { CandidateVerdict } from "./shadow-metrics";
+import type { ShadowCollectionMode } from "./shadow-mode";
 
 export interface ShadowCandidateView {
   candidate_id: string;
@@ -45,7 +46,14 @@ export function progressLabel(runsCollected: number) {
   return `신규 run 검증 ${runsCollected}/100`;
 }
 
-export function collectionStatus(runsCollected: number) {
+export function collectionStatus(runsCollected: number, mode: ShadowCollectionMode = "prospective_shadow") {
+  if (mode === "retrospective_replay") {
+    return {
+      state: "replay" as const,
+      title: `실험 데이터 ${runsCollected.toLocaleString("ko-KR")}개`,
+      description: "과거 실험을 화면 개발용으로 재생한 자료이며 신규 운영 검증과 성능 지표에는 포함하지 않습니다.",
+    };
+  }
   if (runsCollected <= 0) {
     return {
       state: "waiting" as const,

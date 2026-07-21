@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createServerSupabaseClient } from "@/src/lib/supabase/server";
+import { parseShadowCollectionMode } from "@/src/lib/shadow-mode";
 
 const LANES = new Set(["Hard", "Shadow", "Priority", "Standard"]);
 const CONFIDENCE = new Set(["A", "B", "C"]);
@@ -17,12 +18,15 @@ export async function GET(request: NextRequest) {
   const confidence = params.get("confidence");
   const verdict = params.get("verdict");
   const missing = params.get("missing");
+  const mode = parseShadowCollectionMode(params.get("mode"));
+  if (!mode) return NextResponse.json({ error: "invalid collection mode" }, { status: 400 });
   if (lane && !LANES.has(lane)) return NextResponse.json({ error: "invalid lane filter" }, { status: 400 });
   if (confidence && !CONFIDENCE.has(confidence)) return NextResponse.json({ error: "invalid confidence filter" }, { status: 400 });
   if (verdict && !VERDICTS.has(verdict)) return NextResponse.json({ error: "invalid verdict filter" }, { status: 400 });
   if (missing && !["yes", "no"].includes(missing)) return NextResponse.json({ error: "invalid missing filter" }, { status: 400 });
 
-  let query = supabase.from("shadow_validation_runs").select("*", { count: "exact" }).order("observed_at", { ascending: false });
+  let query = supabase.from("shadow_validation_runs").select("*", { count: "exact" })
+    .eq("collection_mode", mode).order("observed_at", { ascending: false });
   if (missing) query = query.eq("has_missing", missing === "yes");
   const { data: runs, error: runError, count } = await query.range(offset, offset + limit - 1);
   if (runError) return NextResponse.json({ error: runError.message }, { status: 503 });
