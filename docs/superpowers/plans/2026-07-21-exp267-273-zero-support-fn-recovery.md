@@ -624,7 +624,7 @@ git commit -m "feat: add Exp273 promotion audit and evaluation"
 **Interfaces:**
 - Produces: CLI stages `audit`, `267`, `268`, `269`, `270a`, `270b`, `270c`, `271`, `272`, `273`, `evaluate`, and `all`.
 
-- [ ] **Step 1: Write failing CLI and status tests**
+- [x] **Step 1: Write failing CLI and status tests**
 
 ```python
 def test_status_has_dashboard_contract_fields(self):
@@ -637,17 +637,17 @@ def test_queue_order_is_sequential(self):
     self.assertEqual(EXP267_273_BATCH, EXPECTED_EXP267_273_BATCH)
 ```
 
-- [ ] **Step 2: Run the tests and verify failure**
+- [x] **Step 2: Run the tests and verify failure**
 
 ```bash
 python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_pipeline experiments.exp267_273_zero_support_fn_recovery.tests.test_dashboard -v
 ```
 
-- [ ] **Step 3: Implement the stage CLI and atomic heartbeat**
+- [x] **Step 3: Implement the stage CLI and atomic heartbeat**
 
 Every stage writes `status.json`, `rank_dashboard_external_live_run.json`, and `rank_experiments_dashboard_heartbeat.json` atomically. Status includes recent throughput and ETA when at least two dataset timestamps exist. A dashboard write failure is logged but cannot delete cache or prediction artifacts.
 
-- [ ] **Step 4: Register the sequential queue**
+- [x] **Step 4: Register the sequential queue**
 
 Register these IDs in order:
 
@@ -667,11 +667,11 @@ EXP267_273_BATCH = (
 
 The runner must launch one ID at a time and preserve failed status rather than marking it completed.
 
-- [ ] **Step 5: Add dashboard labels and artifact readers**
+- [x] **Step 5: Add dashboard labels and artifact readers**
 
 Display Hard and review metrics in separate columns. Show learner eligibility, abstention, current source, dataset progress, recent throughput, ETA, error count, and prediction hash. Do not label Exp273 as an activated Hard policy.
 
-- [ ] **Step 6: Run tests and commit**
+- [x] **Step 6: Run tests and commit**
 
 ```bash
 python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_pipeline experiments.exp267_273_zero_support_fn_recovery.tests.test_dashboard -v

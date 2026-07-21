@@ -2195,6 +2195,39 @@ EXPERIMENTS["experiment_266_outside_lane_fn_recovery_shadow"] = {
     "expected_datasets": 1117,
 }
 
+EXP267_273_ROOT = DATA_DIR / "exp267_273_zero_support_fn_recovery"
+_EXP267_273_DASHBOARD_ROWS = (
+    ("experiment_267_zero_support_fn_diagnostic", "Exp267 - 미탐 원인 진단", "진단 전용; Exp253 Hard 변경 없음", "후향적 FN 진단만 수행", "exp267/02_zero_support_fn_dataset.csv", "exp267/03_zero_support_fn_summary.csv"),
+    ("experiment_268_multiscale_scattering_deviation", "Exp268 - 다중 스케일 산란 점수", "Exp253 Hard 변경 없음", "새 TRAIN-only 점수원 후보", "source_cache/scattering/cache_manifest.csv", "source_cache/scattering/cache_manifest.csv"),
+    ("experiment_269_ordered_path_signature_deviation", "Exp269 - 순서 경로 서명 점수", "Exp253 Hard 변경 없음", "새 TRAIN-only 점수원 후보", "source_cache/signature/cache_manifest.csv", "source_cache/signature/cache_manifest.csv"),
+    ("experiment_270a_rff_normal_forecast", "Exp270a - RFF 정상 예측 오차", "Exp253 Hard 변경 없음", "새 TRAIN-only 점수원 후보", "source_cache/rff_forecast/cache_manifest.csv", "source_cache/rff_forecast/cache_manifest.csv"),
+    ("experiment_270b_causal_tcn_normal_forecast", "Exp270b - Causal TCN 정상 예측 오차", "Exp253 Hard 변경 없음", "새 TRAIN-only 점수원 후보", "source_cache/tcn_forecast/cache_manifest.csv", "source_cache/tcn_forecast/cache_manifest.csv"),
+    ("experiment_270c_forecast_risk_audit", "Exp270c - 새 점수원 TRAIN 위험 감사", "Exp253 Hard 변경 없음", "TRAIN 정상 오경보 위험을 감사", "exp270_train_risk_dataset.csv", "exp270_train_risk_summary.csv"),
+    ("experiment_271_new_source_qualification", "Exp271 - 새 점수원 자격 검증", "Exp253 Hard 변경 없음", "통과한 독립 근거만 검토 후보에 사용", "exp271_qualification_summary.csv", "exp271_qualification_summary.csv"),
+    ("experiment_272_recovery_review_selector", "Exp272 - 미탐 복구 검토 라우팅", "Exp253 Hard 변경 없음", "복구 Shadow/Priority/Data Quality는 모두 사람 검토 전용", "exp272_recovery_summary.csv", "exp272_recovery_summary.csv"),
+    ("experiment_273_autonomous_promotion_audit", "Exp273 - 자동 경보 승격 가능성 감사", "기존 Exp253 Hard만 자동 경보; 새 후보는 자동 승격하지 않음", "복구 후보의 향후 실험 자격을 후향적으로 감사", "exp273_dataset_results.csv", "exp273_dataset_results.csv"),
+)
+for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP267_273_DASHBOARD_ROWS:
+    EXPERIMENTS[_exp_id] = {
+        "label": _label,
+        "history_status": "planned_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_zero_support_fn_recovery",
+        "status_reason": "Retrospective TRAIN-only candidate research; autonomous Hard remains frozen",
+        "autonomous_metric_scope": _auto_scope,
+        "review_metric_scope": _review_scope,
+        "detail_csv": EXP267_273_ROOT / _detail,
+        "summary_csv": EXP267_273_ROOT / _summary,
+        "status_json": EXP267_273_ROOT / "status.json",
+        "stdout_log": EXP267_273_ROOT / "logs" / f"{_exp_id}.log",
+        "artifact_paths": [
+            EXP267_273_ROOT / "status.json",
+            EXP267_273_ROOT / _detail,
+            EXP267_273_ROOT / _summary,
+        ],
+        "expected_datasets": 1117,
+    }
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
@@ -5097,10 +5130,26 @@ def build_status(include_details=True):
             "length": "-",
             "train_size": "-",
         }
-    elapsed = elapsed_from_started(running.get("started_at")) if is_running else None
+    external_meta = []
+    if external_live_run:
+        if external_live_run.get("phase"):
+            external_meta.append(f"단계 {external_live_run['phase']}")
+        if external_live_run.get("learner_eligible") is not None:
+            external_meta.append(f"학습 가능 {external_live_run['learner_eligible']}")
+        if external_live_run.get("abstained") is not None:
+            external_meta.append(f"학습 보류 {external_live_run['abstained']}")
+        if external_live_run.get("prediction_sha256"):
+            external_meta.append(f"예측 hash {str(external_live_run['prediction_sha256'])[:12]}")
+    elapsed = (
+        as_float(external_live_run.get("elapsed_seconds"))
+        if external_live_run.get("status") == "running"
+        else elapsed_from_started(running.get("started_at")) if is_running else None
+    )
     eta = None
     if is_running and elapsed and done:
         eta = elapsed / done * max(0, expected - done)
+    if external_live_run.get("status") == "running" and as_float(external_live_run.get("eta_seconds")) is not None:
+        eta = as_float(external_live_run.get("eta_seconds"))
     operational_candidates = [
         row for row in summary if row.get("operational_tier") == "운영 기본 후보" and not row.get("operational_excluded")
     ]
@@ -5164,6 +5213,12 @@ def build_status(include_details=True):
     actual_active_label = paths["label"] if actual_active_id else "실행 중인 실험 없음"
     last_completed_id = paths["last_completed_id"]
     last_completed_info = experiment_info(last_completed_id) if last_completed_id else {}
+    throughput = throughput_snapshot(progress_events, done, expected, elapsed)
+    external_rate = as_float(external_live_run.get("recent_datasets_per_minute"))
+    if external_rate is not None:
+        throughput["recent_datasets_per_minute"] = external_rate
+        throughput["recent_eta_seconds"] = eta
+        throughput["eta_basis"] = "atomic experiment heartbeat"
     payload = {
         "running": is_running,
         "active_experiment": actual_active_id,
@@ -5184,6 +5239,9 @@ def build_status(include_details=True):
         "rows": safe_int(external_live_run.get("rows")) or len(rows),
         "current_dataset": current.get("name"),
         "current_meta": (
+            " · ".join(external_meta)
+            if external_meta
+            else
             "progress log fallback"
             if current and current.get("name", "").startswith("progress ")
             else f"length {current.get('length')} · train {current.get('train_size')}"
@@ -5195,7 +5253,7 @@ def build_status(include_details=True):
         "coverage": coverage_snapshot_from_counts(done, expected, errors),
         "error_summary": error_summary(errors),
         "warning_summary": warnings,
-        "throughput": throughput_snapshot(progress_events, done, expected, elapsed),
+        "throughput": throughput,
         "best": summary[0] if summary else None,
         "runtime_health": runtime_health_snapshot(heartbeat),
         "external_validation": external_for_items,

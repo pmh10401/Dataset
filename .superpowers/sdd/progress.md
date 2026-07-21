@@ -21,3 +21,6 @@ full Exp272 result freeze awaits Exp268-270 cache and Exp271 membership artifact
 Task 10: implementation complete (post-hash label boundary, autonomous/review
 metric separation, report-only promotion gates, CSV-only independent
 reaggregation; 118 package tests passed; full evaluation awaits Task 12 artifacts)
+Task 11: implementation complete (atomic dashboard heartbeat, exact Exp267-273
+sequential queue registration, Korean dashboard labels, live phase/rate/ETA and
+hash metadata, recovery-only Exp273 hypothetical audit; 123 package tests passed)

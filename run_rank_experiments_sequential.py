@@ -1197,7 +1197,35 @@ EXPERIMENTS = [
     ],
 ]
 
+EXP267_273_ROOT = DATA_DIR / "exp267_273_zero_support_fn_recovery"
+_EXP267_273_STAGE_ROWS = (
+    ("267", "experiment_267_zero_support_fn_diagnostic", "Exp267 · Zero-support FN diagnostic", "exp267/02_zero_support_fn_dataset.csv", "exp267/03_zero_support_fn_summary.csv"),
+    ("268", "experiment_268_multiscale_scattering_deviation", "Exp268 · Multiscale scattering deviation", "source_cache/scattering/cache_manifest.csv", "source_cache/scattering/cache_manifest.csv"),
+    ("269", "experiment_269_ordered_path_signature_deviation", "Exp269 · Ordered path-signature deviation", "source_cache/signature/cache_manifest.csv", "source_cache/signature/cache_manifest.csv"),
+    ("270a", "experiment_270a_rff_normal_forecast", "Exp270a · RFF normal forecasting", "source_cache/rff_forecast/cache_manifest.csv", "source_cache/rff_forecast/cache_manifest.csv"),
+    ("270b", "experiment_270b_causal_tcn_normal_forecast", "Exp270b · Causal TCN normal forecasting", "source_cache/tcn_forecast/cache_manifest.csv", "source_cache/tcn_forecast/cache_manifest.csv"),
+    ("270c", "experiment_270c_forecast_risk_audit", "Exp270c · Forecast TRAIN-risk audit", "exp270_train_risk_dataset.csv", "exp270_train_risk_summary.csv"),
+    ("271", "experiment_271_new_source_qualification", "Exp271 · TRAIN-only source qualification", "exp271_qualification_summary.csv", "exp271_qualification_summary.csv"),
+    ("272", "experiment_272_recovery_review_selector", "Exp272 · Recovery review selector", "exp272_recovery_summary.csv", "exp272_recovery_summary.csv"),
+    ("273", "experiment_273_autonomous_promotion_audit", "Exp273 · Hypothetical autonomous promotion audit", "exp273_dataset_results.csv", "exp273_dataset_results.csv"),
+)
+EXPERIMENTS.extend(
+    {
+        "id": exp_id,
+        "label": label,
+        "script": ROOT / "scratch/run_exp267_273_zero_support_fn_recovery.py",
+        "args": ["--stage", stage, "--workers", "7", "--output-root", str(EXP267_273_ROOT)],
+        "detail_csv": EXP267_273_ROOT / detail,
+        "summary_csv": EXP267_273_ROOT / summary,
+        "stdout_log": EXP267_273_ROOT / "logs" / f"{exp_id}.log",
+        "expected_datasets": 1117,
+        "archive_outputs": False,
+    }
+    for stage, exp_id, label, detail, summary in _EXP267_273_STAGE_ROWS
+)
+
 DEFAULT_QUEUE = ["experiment_26_rocket"]
+EXP267_273_BATCH = tuple(row[1] for row in _EXP267_273_STAGE_ROWS)
 EXP177_185_BATCH = [
     "experiment_177_train_oof_review_policy_freeze",
     "experiment_178_frozen_policy_review_prediction",
@@ -1451,7 +1479,7 @@ def summarize_csv(path):
         return {"rows": 0, "datasets": 0, "configs": {}}
     configs = {}
     for row in rows:
-        f1_key = "f1_evt" if "f1_evt" in row else ("f1" if "f1" in row else "validated_f1")
+        f1_key = "f1_evt" if "f1_evt" in row else ("hard_f1" if "hard_f1" in row else ("f1" if "f1" in row else "validated_f1"))
         group_name = row.get("config_name") or row.get("source_experiment") or "default"
         if "strategy" in row:
             group_name = f"{row['config_name']}::{row['strategy']}"
@@ -1618,6 +1646,8 @@ def run_experiment(exp, overlap_checked=False):
 
 
 def archive_existing_outputs(exp):
+    if not exp.get("archive_outputs", True):
+        return
     stamp = time.strftime("%Y%m%d_%H%M%S")
     for key in ["detail_csv", "summary_csv", "stdout_log"]:
         path = exp[key]
@@ -1836,6 +1866,24 @@ def queue_exp215_217_batch():
     log(f"QUEUE registered Exp215-217 batch ({len(EXP215_217_BATCH)} experiments)")
 
 
+def queue_exp267_273_batch():
+    state = reconcile_running_state(load_state())
+    completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP267_273_BATCH]
+    queue.extend(item for item in EXP267_273_BATCH if item not in completed)
+    state["queue"] = queue
+    state["exp267_273_batch"] = {
+        "registered_at": now(),
+        "registered_unix": time.time(),
+        "worker_count": 7,
+        "agent_monitoring": False,
+        "execution_mode": "sequential_one_stage_at_a_time",
+        "experiments": list(EXP267_273_BATCH),
+    }
+    save_state(state)
+    log(f"QUEUE registered Exp267-273 batch ({len(EXP267_273_BATCH)} experiments)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run rank experiments one at a time.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1849,6 +1897,7 @@ def main():
     sub.add_parser("queue-exp206-210")
     sub.add_parser("queue-exp211-214")
     sub.add_parser("queue-exp215-217")
+    sub.add_parser("queue-exp267-273")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -1881,6 +1930,8 @@ def main():
         queue_exp211_214_batch()
     elif args.command == "queue-exp215-217":
         queue_exp215_217_batch()
+    elif args.command == "queue-exp267-273":
+        queue_exp267_273_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

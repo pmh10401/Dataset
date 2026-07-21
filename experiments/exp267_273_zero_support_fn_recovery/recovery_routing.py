@@ -295,10 +295,17 @@ def build_and_freeze_verified_recovery_predictions(
     cache_root: Path,
     output_dir: Path,
     source_runtime: Mapping[str, Mapping[str, object]] | None = None,
+    expected_datasets: Iterable[str] | None = None,
 ) -> tuple[Path, Path]:
     """Build all 1,117 Exp272 rows from pinned existing and verified new evidence."""
     frozen, exp266_rows, input_hashes = _load_pinned_exp266()
-    expected = tuple(frozen.population)
+    expected = (
+        tuple(frozen.population)
+        if expected_datasets is None
+        else tuple(sorted(str(value) for value in expected_datasets))
+    )
+    if not set(expected).issubset(frozen.population):
+        raise ValueError("requested recovery population is outside frozen Exp266")
     from .source_pipeline import verify_prediction_hash
 
     verify_prediction_hash(

@@ -224,7 +224,7 @@ def load_certified_exp266_train_oof(
 
     expected = tuple(sorted(str(value) for value in expected_datasets))
     population, n_train, manifests, _ = certified._load_frozen_manifests()
-    if population != expected:
+    if not set(expected).issubset(population):
         raise ValueError("Exp266 certified TRAIN OOF population mismatch")
     reconstruction = certified._load_reconstruction_inventory(population, n_train)
     output: dict[str, dict[str, np.ndarray]] = {
@@ -233,7 +233,7 @@ def load_certified_exp266_train_oof(
         "exp266_structural": {},
         "exp266_change_point": {},
     }
-    for dataset in population:
+    for dataset in expected:
         arrays = certified._load_dataset_train_arrays(
             dataset, n_train[dataset], manifests, reconstruction,
         )
@@ -793,7 +793,7 @@ def _load_verified_existing_lanes(expected: tuple[str, ...]) -> _VerifiedExistin
 
     with tempfile.TemporaryDirectory(prefix="exp271-lane-audit-") as raw:
         frozen = load_frozen_inputs(output_root=Path(raw))
-    if frozen.population != expected:
+    if not set(expected).issubset(frozen.population):
         raise ValueError("frozen Exp266 lane population mismatch")
     lanes: dict[str, dict[str, frozenset[int]]] = {}
     n_test: dict[str, int] = {}
