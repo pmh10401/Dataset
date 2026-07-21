@@ -126,8 +126,13 @@ def _validate_row(row: Mapping[str, object]) -> None:
     _validate_boundary(row)
     dataset = row.get("dataset")
     n_test = row.get("n_test")
-    if not isinstance(dataset, str) or not dataset or type(n_test) is not int or n_test < 0:
-        raise ValueError("prediction row requires dataset and n_test")
+    n_train = row.get("n_train")
+    if (
+        not isinstance(dataset, str) or not dataset
+        or type(n_test) is not int or n_test < 0
+        or type(n_train) is not int or n_train < 0
+    ):
+        raise ValueError("prediction row requires dataset, n_train, and n_test")
     lanes: dict[str, set[int]] = {}
     for field in (*_BASELINE_FIELDS, *_RECOVERY_FIELDS):
         values = row.get(field)
@@ -393,7 +398,7 @@ def build_and_freeze_verified_recovery_predictions(
             "membership": str(membership["membership_sha256"]),
         }
         output_rows.append({
-            "dataset": dataset, "n_test": item.n_test,
+            "dataset": dataset, "n_train": item.n_train, "n_test": item.n_test,
             "hard_indices": list(routed.hard_indices),
             "shadow_indices": list(routed.shadow_indices),
             "priority_indices": list(routed.priority_indices),

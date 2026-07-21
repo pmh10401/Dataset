@@ -18,3 +18,6 @@ Exp266 certified OOF independence checks, pinned-lane post-freeze evaluation;
 Task 9: implementation complete (ordered review-only routing, one-source
 sensitivity, canonical prediction freeze, pinned Exp266 row/manifest audit;
 full Exp272 result freeze awaits Exp268-270 cache and Exp271 membership artifacts)
+Task 10: implementation complete (post-hash label boundary, autonomous/review
+metric separation, report-only promotion gates, CSV-only independent
+reaggregation; 118 package tests passed; full evaluation awaits Task 12 artifacts)

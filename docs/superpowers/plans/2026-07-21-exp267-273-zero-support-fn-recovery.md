@@ -568,7 +568,7 @@ git commit -m "feat: add Exp272 recovery review routing"
 **Interfaces:**
 - Produces: `evaluate_frozen_predictions(...)`, `audit_promotion(...) -> PromotionAudit`, and `reaggregate(...)`.
 
-- [ ] **Step 1: Write failing hash, metric-separation, and promotion-gate tests**
+- [x] **Step 1: Write failing hash, metric-separation, and promotion-gate tests**
 
 ```python
 def test_evaluation_rejects_tampered_prediction(self):
@@ -582,25 +582,25 @@ def test_promotion_requires_all_frozen_gates(self):
     self.assertTrue(audit.eligible_for_future_experiment)
 ```
 
-- [ ] **Step 2: Run the tests and verify failure**
+- [x] **Step 2: Run the tests and verify failure**
 
 ```bash
 python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_evaluation -v
 ```
 
-- [ ] **Step 3: Implement post-hash TEST evaluation**
+- [x] **Step 3: Implement post-hash TEST evaluation**
 
 Evaluation opens the SQLite label column only after verifying source and Exp272 prediction hashes. Report autonomous Hard metrics unchanged from Exp253, review metrics separately, and combined F1 only as human-assisted diagnostic. Calculate full-population and preregistered TRAIN/TEST-size diagnostic slices.
 
-- [ ] **Step 4: Implement the hypothetical promotion audit**
+- [x] **Step 4: Implement the hypothetical promotion audit**
 
 Evaluate the frozen at-least-two-independent-groups subset against `HARD_RISK_LIMIT=0.005`, incremental retrospective precision `>=0.80`, overall precision `>=0.80`, and invariance completion. Never write promoted indices into the autonomous Hard field.
 
-- [ ] **Step 5: Implement independent reaggregation**
+- [x] **Step 5: Implement independent reaggregation**
 
 Read result CSVs only, reconstruct every total and lane overlap count, and compare against saved summaries with exact integer equality and floating tolerance `1e-12`. Fail if the 1,117-dataset population, total anomalies, or Exp253 Hard parity differs.
 
-- [ ] **Step 6: Run tests and commit**
+- [x] **Step 6: Run tests and commit**
 
 ```bash
 python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_evaluation -v

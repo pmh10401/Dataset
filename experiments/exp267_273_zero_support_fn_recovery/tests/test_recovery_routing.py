@@ -73,7 +73,7 @@ class RecoveryRoutingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             rows = [{
-                "dataset": "d", "n_test": 8,
+                "dataset": "d", "n_train": 5, "n_test": 8,
                 "hard_indices": [0], "shadow_indices": [1], "priority_indices": [2],
                 "standard_indices": [3], "recovery_shadow_indices": [4],
                 "recovery_priority_indices": [5], "data_quality_review_indices": [7],
