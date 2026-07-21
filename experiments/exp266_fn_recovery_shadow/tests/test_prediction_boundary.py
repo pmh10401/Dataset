@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import inspect
 import json
 import unittest
@@ -9,7 +10,11 @@ from types import MappingProxyType
 from unittest.mock import patch
 
 from experiments.exp266_fn_recovery_shadow import prediction as prediction_module
-from experiments.exp266_fn_recovery_shadow.config import EVIDENCE_GROUPS, EXPECTED_DATASETS
+from experiments.exp266_fn_recovery_shadow.config import (
+    EVIDENCE_GROUPS,
+    EXPECTED_DATASETS,
+    FROZEN_PREDICTION_HASHES,
+)
 from experiments.exp266_fn_recovery_shadow.contracts import (
     FrozenDatasetInputs,
     FrozenRecoveryInputs,
@@ -75,9 +80,46 @@ def example_recovery_inputs(count: int) -> FrozenRecoveryInputs:
     return FrozenRecoveryInputs(
         population=population,
         datasets=MappingProxyType(datasets),
-        input_sha256=MappingProxyType({"exp253": "a" * 64}),
+        input_sha256=MappingProxyType(dict(FROZEN_PREDICTION_HASHES)),
         lane_totals=MappingProxyType({"hard": count}),
     )
+
+
+def smoke_manifest_extra(rows: int) -> dict[str, object]:
+    return {
+        "checkpoint": prediction_module.PREDICTION_FILENAME,
+        "complete_population": False,
+        "config": prediction_module._config_snapshot(),
+        "config_sha256": hashlib.sha256(
+            prediction_module._canonical_json(prediction_module._config_snapshot())
+        ).hexdigest(),
+        "coverage": {
+            "expected_datasets": EXPECTED_DATASETS,
+            "frozen_population": EXPECTED_DATASETS,
+            "predicted_datasets": rows,
+        },
+        "deployment_eligible": False,
+        "input_sha256": dict(FROZEN_PREDICTION_HASHES),
+        "lane_policy": {
+            "hard": {"autonomous": True, "unchanged": True},
+            "recovery_shadow": {
+                "deployment_eligible": False,
+                "human_assisted": True,
+                "review_only": True,
+            },
+            "recovery_priority": {
+                "deployment_eligible": False,
+                "human_assisted": True,
+                "review_only": True,
+            },
+            "data_quality_review": {
+                "deployment_eligible": False,
+                "human_assisted": True,
+                "review_only": True,
+            },
+        },
+        "smoke": True,
+    }
 
 
 class PredictionBoundaryTests(unittest.TestCase):
@@ -150,11 +192,8 @@ class PredictionBoundaryTests(unittest.TestCase):
             self.assertIs(smoke_manifest["complete_population"], False)
             self.assertIs(smoke_manifest["smoke"], True)
             self.assertIs(smoke_manifest["deployment_eligible"], False)
-            self.assertEqual(
-                full_manifest["lane_policy"]["Hard"],
-                {"autonomous": True, "unchanged": True},
-            )
-            for lane in ("RecoveryShadow", "RecoveryPriority", "DataQualityReview"):
+            self.assertEqual(full_manifest["lane_policy"]["hard"], {"autonomous": True, "unchanged": True})
+            for lane in ("recovery_shadow", "recovery_priority", "data_quality_review"):
                 self.assertEqual(
                     full_manifest["lane_policy"][lane],
                     {"deployment_eligible": False, "human_assisted": True, "review_only": True},
@@ -166,10 +205,18 @@ class PredictionBoundaryTests(unittest.TestCase):
         with TemporaryDirectory() as directory, self.assertRaisesRegex(ValueError, "1,117"):
             predict_all(Path(directory))
 
+    @patch("experiments.exp266_fn_recovery_shadow.prediction.load_frozen_inputs")
+    def test_predict_rejects_non_partial_smoke_limits(self, load_inputs) -> None:
+        load_inputs.return_value = example_recovery_inputs(EXPECTED_DATASETS)
+        with TemporaryDirectory() as directory:
+            for limit in (-1, True, "2", EXPECTED_DATASETS, EXPECTED_DATASETS + 1):
+                with self.subTest(limit=limit), self.assertRaises(ValueError):
+                    predict_all(Path(directory), dataset_limit=limit)
+
     def test_pending_checkpoint_is_rejected_until_recovered(self) -> None:
         with TemporaryDirectory() as directory:
-            root = Path(directory)
-            freeze_rows(root, [prediction_row("a")])
+            root = Path(directory) / "smoke" / "dataset_limit_1"
+            freeze_rows(root, [prediction_row("a")], manifest_extra=smoke_manifest_extra(1))
             manifest = json.loads(
                 (root / "04_prediction_manifest.json").read_text(encoding="utf-8")
             )
@@ -206,3 +253,45 @@ class PredictionBoundaryTests(unittest.TestCase):
 
             with self.assertRaises(prediction_module.CheckpointError):
                 prediction_module.verify_prediction_checkpoint(root)
+
+    def test_verifier_rejects_direct_freeze_without_prediction_contract(self) -> None:
+        with TemporaryDirectory() as directory, self.assertRaises(prediction_module.CheckpointError):
+            root = Path(directory)
+            freeze_rows(root, [prediction_row("a")])
+            prediction_module.verify_prediction_checkpoint(root)
+
+    @patch("experiments.exp266_fn_recovery_shadow.prediction.load_frozen_inputs")
+    def test_verifier_rejects_missing_or_inconsistent_manifest_contract(self, load_inputs) -> None:
+        load_inputs.return_value = example_recovery_inputs(EXPECTED_DATASETS)
+        mutations = {
+            "missing_coverage": lambda manifest: manifest.pop("coverage"),
+            "inconsistent_coverage": lambda manifest: manifest["coverage"].update(
+                {"predicted_datasets": EXPECTED_DATASETS - 1}
+            ),
+            "inconsistent_smoke": lambda manifest: manifest.update({"smoke": True}),
+            "deployment_eligible": lambda manifest: manifest.update({"deployment_eligible": True}),
+            "lane_policy": lambda manifest: manifest.update({"lane_policy": {}}),
+        }
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name, mutate in mutations.items():
+                with self.subTest(name=name):
+                    predict_all(root)
+                    manifest_path = root / "04_prediction_manifest.json"
+                    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                    mutate(manifest)
+                    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+                    with self.assertRaises(prediction_module.CheckpointError):
+                        prediction_module.verify_prediction_checkpoint(root)
+
+    @patch("experiments.exp266_fn_recovery_shadow.prediction.load_frozen_inputs")
+    def test_verifier_rejects_smoke_location_mismatch(self, load_inputs) -> None:
+        load_inputs.return_value = example_recovery_inputs(EXPECTED_DATASETS)
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            predict_all(root, dataset_limit=2)
+            smoke_root = root / "smoke" / "dataset_limit_2"
+            wrong_root = root / "smoke" / "wrong"
+            smoke_root.rename(wrong_root)
+            with self.assertRaises(prediction_module.CheckpointError):
+                prediction_module.verify_prediction_checkpoint(wrong_root)

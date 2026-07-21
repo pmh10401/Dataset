@@ -12,6 +12,7 @@ from .config import (
     EVIDENCE_GROUPS,
     EXPECTED_DATASETS,
     EXPERIMENT_ID,
+    FROZEN_PREDICTION_HASHES,
     FULL_RUN_WORKERS,
     MINIMUM_TRAIN,
     RISK_TARGET,
@@ -115,12 +116,7 @@ def verify_prediction_checkpoint(output_root: Path) -> dict[str, object]:
         raise CheckpointError("prediction manifest SHA256 mismatch")
     if manifest.get("generation") != actual_sha256:
         raise CheckpointError("prediction manifest generation mismatch")
-    if manifest.get("checkpoint") not in (None, PREDICTION_FILENAME):
-        raise CheckpointError("prediction manifest checkpoint mismatch")
-    if manifest.get("contains_test_labels") is not False:
-        raise CheckpointError("prediction manifest contains TEST labels")
-    if manifest.get("contains_evaluation_metrics") is not False:
-        raise CheckpointError("prediction manifest contains evaluation metrics")
+    _validate_prediction_manifest_contract(output_root, manifest, prediction_path)
     return manifest
 
 
@@ -162,6 +158,124 @@ def _config_snapshot() -> dict[str, object]:
         "risk_target": RISK_TARGET,
         "seed": SEED,
     }
+
+
+def _lane_policy() -> dict[str, dict[str, bool]]:
+    return {
+        "hard": {"autonomous": True, "unchanged": True},
+        "recovery_shadow": {
+            "deployment_eligible": False,
+            "human_assisted": True,
+            "review_only": True,
+        },
+        "recovery_priority": {
+            "deployment_eligible": False,
+            "human_assisted": True,
+            "review_only": True,
+        },
+        "data_quality_review": {
+            "deployment_eligible": False,
+            "human_assisted": True,
+            "review_only": True,
+        },
+    }
+
+
+def _read_prediction_rows(path: Path) -> list[Mapping[str, object]]:
+    try:
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CheckpointError("cannot parse frozen predictions") from exc
+    if any(type(row) is not dict for row in rows):
+        raise CheckpointError("frozen prediction row is not an object")
+    try:
+        for row in rows:
+            validate_prediction_boundary(row, "frozen prediction row")
+            _validate_serialized_prediction_row(row)
+    except InputContractError as exc:
+        raise CheckpointError("frozen prediction row violates boundary") from exc
+    return rows
+
+
+def _validate_prediction_manifest_contract(
+    output_root: Path,
+    manifest: Mapping[str, object],
+    prediction_path: Path,
+) -> None:
+    required = {
+        "checkpoint",
+        "complete_population",
+        "config",
+        "config_sha256",
+        "contains_evaluation_metrics",
+        "contains_test_labels",
+        "coverage",
+        "datasets",
+        "deployment_eligible",
+        "experiment_id",
+        "generation",
+        "input_sha256",
+        "lane_policy",
+        "prediction_sha256",
+        "retrospective",
+        "rows",
+        "smoke",
+    }
+    if required - set(manifest):
+        raise CheckpointError("prediction manifest contract fields are missing")
+    if (
+        manifest.get("experiment_id") != EXPERIMENT_ID
+        or manifest.get("checkpoint") != PREDICTION_FILENAME
+        or manifest.get("contains_test_labels") is not False
+        or manifest.get("contains_evaluation_metrics") is not False
+        or manifest.get("retrospective") is not True
+        or manifest.get("deployment_eligible") is not False
+    ):
+        raise CheckpointError("prediction manifest contract mismatch")
+    config = _config_snapshot()
+    if (
+        manifest.get("config") != config
+        or manifest.get("config_sha256") != hashlib.sha256(_canonical_json(config)).hexdigest()
+        or manifest.get("input_sha256") != dict(sorted(FROZEN_PREDICTION_HASHES.items()))
+        or manifest.get("lane_policy") != _lane_policy()
+    ):
+        raise CheckpointError("prediction manifest frozen contract mismatch")
+
+    rows = manifest.get("rows")
+    datasets = manifest.get("datasets")
+    if type(rows) is not int or type(datasets) is not int or rows < 0 or datasets < 0:
+        raise CheckpointError("prediction manifest coverage is invalid")
+    prediction_rows = _read_prediction_rows(prediction_path)
+    names = [row.get("dataset") for row in prediction_rows]
+    if (
+        len(prediction_rows) != rows
+        or any(type(name) is not str or not name for name in names)
+        or len(set(names)) != datasets
+        or rows != datasets
+    ):
+        raise CheckpointError("prediction manifest row coverage mismatch")
+
+    coverage = manifest.get("coverage")
+    if type(coverage) is not dict or coverage != {
+        "expected_datasets": EXPECTED_DATASETS,
+        "frozen_population": EXPECTED_DATASETS,
+        "predicted_datasets": rows,
+    }:
+        raise CheckpointError("prediction manifest coverage contract mismatch")
+    smoke = manifest.get("smoke")
+    complete_population = manifest.get("complete_population")
+    if type(smoke) is not bool or type(complete_population) is not bool or smoke == complete_population:
+        raise CheckpointError("prediction manifest smoke contract mismatch")
+    if complete_population:
+        if rows != EXPECTED_DATASETS or output_root.parent.name == "smoke":
+            raise CheckpointError("full prediction location or coverage mismatch")
+        return
+    if (
+        rows >= EXPECTED_DATASETS
+        or output_root.parent.name != "smoke"
+        or output_root.name != f"dataset_limit_{rows}"
+    ):
+        raise CheckpointError("smoke prediction location or coverage mismatch")
 
 
 def _sorted_indices(values: Collection[int]) -> list[int]:
@@ -264,32 +378,13 @@ def _validate_complete_population(recovery: FrozenRecoveryInputs) -> None:
         raise ValueError("full prediction requires exactly 1,117 unique datasets")
 
 
-def _lane_policy() -> dict[str, dict[str, bool]]:
-    return {
-        "Hard": {"autonomous": True, "unchanged": True},
-        "RecoveryShadow": {
-            "deployment_eligible": False,
-            "human_assisted": True,
-            "review_only": True,
-        },
-        "RecoveryPriority": {
-            "deployment_eligible": False,
-            "human_assisted": True,
-            "review_only": True,
-        },
-        "DataQualityReview": {
-            "deployment_eligible": False,
-            "human_assisted": True,
-            "review_only": True,
-        },
-    }
-
-
 def predict_all(output_root: Path, dataset_limit: int | None = None) -> Path:
     """Freeze label-free recovery predictions from the immutable Exp266 inputs."""
 
-    if dataset_limit is not None and (type(dataset_limit) is not int or dataset_limit < 0):
-        raise ValueError("dataset_limit must be a non-negative integer or None")
+    if dataset_limit is not None and (
+        type(dataset_limit) is not int or dataset_limit < 0 or dataset_limit >= EXPECTED_DATASETS
+    ):
+        raise ValueError("dataset_limit must be a non-negative partial integer or None")
 
     publication_root = _publication_root(output_root, dataset_limit)
     recovery = load_frozen_inputs(output_root=publication_root)
