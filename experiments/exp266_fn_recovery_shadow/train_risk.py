@@ -64,6 +64,54 @@ class TrainRiskContractError(ValueError):
 
 
 @dataclass(frozen=True)
+class PolicyRiskMetrics:
+    recovery_shadow_false_reviews: int
+    recovery_priority_false_reviews: int
+    combined_false_reviews: int
+    recovery_shadow_false_review_rate: float
+    recovery_priority_false_review_rate: float
+    combined_false_review_rate: float
+    recovery_shadow_wilson_upper_95: float
+    recovery_priority_wilson_upper_95: float
+    combined_wilson_upper_95: float
+    recovery_shadow_below_risk_target: bool
+    recovery_priority_below_risk_target: bool
+    combined_below_risk_target: bool
+
+
+@dataclass(frozen=True)
+class DatasetTrainRiskMetrics:
+    dataset: str
+    n_train: int
+    abstained: bool
+    abstention_reason: str
+    normal_runs: int
+    reconstruction_available: bool
+    sensitivity_available_source_count: int
+    certified: PolicyRiskMetrics
+    sensitivity: PolicyRiskMetrics | None
+
+
+_PROVENANCE_TOKEN_GUARD = object()
+
+
+class _ValidatedProvenance:
+    __slots__ = ("_guard",)
+
+    def __init__(self, guard: object) -> None:
+        if guard is not _PROVENANCE_TOKEN_GUARD:
+            raise TrainRiskContractError("invalid validated provenance token")
+        self._guard = guard
+
+
+def _is_validated_provenance(value: object) -> bool:
+    return (
+        isinstance(value, _ValidatedProvenance)
+        and getattr(value, "_guard", None) is _PROVENANCE_TOKEN_GUARD
+    )
+
+
+@dataclass(frozen=True)
 class TrainRiskRow:
     dataset: str
     n_train: int
@@ -91,7 +139,8 @@ class TrainRiskRow:
     recovery_priority_meets_risk_target: bool
     combined_meets_risk_target: bool
     five_source_sensitivity_calculated: bool
-    five_source_sensitivity_source_count: int | None
+    five_source_sensitivity_configured_source_count: int | None
+    five_source_sensitivity_available_source_count: int | None
     five_source_sensitivity_recovery_shadow_false_reviews: int | None
     five_source_sensitivity_recovery_priority_false_reviews: int | None
     five_source_sensitivity_combined_false_reviews: int | None
@@ -241,56 +290,67 @@ def _risk_values(false_reviews: int, normal_runs: int) -> tuple[float, float, bo
     return rate, upper, normal_runs > 0 and upper <= RISK_TARGET
 
 
-def audit_dataset_train_risk(
+def _policy_metrics(flags: Sequence[np.ndarray], normal_runs: int) -> PolicyRiskMetrics:
+    support = np.stack(flags, axis=0).sum(axis=0)
+    shadow = int(np.count_nonzero(support >= 3))
+    priority = int(np.count_nonzero(support == 2))
+    combined = shadow + priority
+    shadow_rate, shadow_upper, shadow_below = _risk_values(shadow, normal_runs)
+    priority_rate, priority_upper, priority_below = _risk_values(priority, normal_runs)
+    combined_rate, combined_upper, combined_below = _risk_values(combined, normal_runs)
+    return PolicyRiskMetrics(
+        recovery_shadow_false_reviews=shadow,
+        recovery_priority_false_reviews=priority,
+        combined_false_reviews=combined,
+        recovery_shadow_false_review_rate=shadow_rate,
+        recovery_priority_false_review_rate=priority_rate,
+        combined_false_review_rate=combined_rate,
+        recovery_shadow_wilson_upper_95=shadow_upper,
+        recovery_priority_wilson_upper_95=priority_upper,
+        combined_wilson_upper_95=combined_upper,
+        recovery_shadow_below_risk_target=shadow_below,
+        recovery_priority_below_risk_target=priority_below,
+        combined_below_risk_target=combined_below,
+    )
+
+
+def _abstained_policy_metrics() -> PolicyRiskMetrics:
+    return PolicyRiskMetrics(
+        recovery_shadow_false_reviews=0,
+        recovery_priority_false_reviews=0,
+        combined_false_reviews=0,
+        recovery_shadow_false_review_rate=0.0,
+        recovery_priority_false_review_rate=0.0,
+        combined_false_review_rate=0.0,
+        recovery_shadow_wilson_upper_95=1.0,
+        recovery_priority_wilson_upper_95=1.0,
+        combined_wilson_upper_95=1.0,
+        recovery_shadow_below_risk_target=False,
+        recovery_priority_below_risk_target=False,
+        combined_below_risk_target=False,
+    )
+
+
+def compute_train_risk_metrics(
     dataset: str, *, n_train: int, source_arrays: Mapping[str, np.ndarray]
-) -> TrainRiskRow:
+) -> DatasetTrainRiskMetrics:
+    """Compute TRAIN-risk metrics without making any provenance claim."""
+
     if type(dataset) is not str or not dataset:
         raise TrainRiskContractError("dataset name must be a non-empty string")
     if type(n_train) is not int or n_train < 0:
         raise TrainRiskContractError("n_train must be a non-negative integer")
     if n_train < MINIMUM_TRAIN:
-        return TrainRiskRow(
+        return DatasetTrainRiskMetrics(
             dataset=dataset,
             n_train=n_train,
             abstained=True,
             abstention_reason="n_train_below_5",
             normal_runs=0,
-            source_count=len(CERTIFIED_SOURCE_GROUPS),
-            certified_sources="|".join(CERTIFIED_SOURCE_GROUPS),
-            provenance_verified=True,
-            policy_risk_validated=False,
-            risk_target_pass=False,
-            reconstruction_available_but_provenance_unverified=False,
-            reconstruction_provenance_verified=False,
-            reconstruction_provenance_blocker="",
-            recovery_shadow_false_reviews=0,
-            recovery_priority_false_reviews=0,
-            combined_false_reviews=0,
-            recovery_shadow_false_review_rate=0.0,
-            recovery_priority_false_review_rate=0.0,
-            combined_false_review_rate=0.0,
-            recovery_shadow_wilson_upper_95=1.0,
-            recovery_priority_wilson_upper_95=1.0,
-            combined_wilson_upper_95=1.0,
-            recovery_shadow_meets_risk_target=False,
-            recovery_priority_meets_risk_target=False,
-            combined_meets_risk_target=False,
-            five_source_sensitivity_calculated=False,
-            five_source_sensitivity_source_count=None,
-            five_source_sensitivity_recovery_shadow_false_reviews=None,
-            five_source_sensitivity_recovery_priority_false_reviews=None,
-            five_source_sensitivity_combined_false_reviews=None,
-            five_source_sensitivity_recovery_shadow_false_review_rate=None,
-            five_source_sensitivity_recovery_priority_false_review_rate=None,
-            five_source_sensitivity_combined_false_review_rate=None,
-            five_source_sensitivity_recovery_shadow_wilson_upper_95=None,
-            five_source_sensitivity_recovery_priority_wilson_upper_95=None,
-            five_source_sensitivity_combined_wilson_upper_95=None,
-            five_source_sensitivity_provenance_verified=False,
-            five_source_sensitivity_policy_risk_validated=False,
-            five_source_sensitivity_risk_target_pass=None,
-            five_source_sensitivity_deployment_eligible=False,
-            five_source_sensitivity_approval_blocker=RECONSTRUCTION_PROVENANCE_BLOCKER,
+            reconstruction_available=False,
+            sensitivity_available_source_count=0,
+            certified=_abstained_policy_metrics(),
+            sensitivity=None,
         )
 
     _validate_array_lengths(dataset, n_train, source_arrays)
@@ -303,73 +363,125 @@ def audit_dataset_train_risk(
         loo_tail_pvalues(source_arrays["structural"]) <= ALPHA,
         loo_tail_pvalues(source_arrays["change_point"]) <= ALPHA,
     ]
-    support = np.stack(certified_flags, axis=0).sum(axis=0)
-    shadow = int(np.count_nonzero(support >= 3))
-    priority = int(np.count_nonzero(support == 2))
-    combined = shadow + priority
-    shadow_rate, shadow_upper, shadow_meets = _risk_values(shadow, n_train)
-    priority_rate, priority_upper, priority_meets = _risk_values(priority, n_train)
-    combined_rate, combined_upper, combined_meets = _risk_values(combined, n_train)
     reconstruction_available = n_train >= 100 and "reconstruction" in source_arrays
     sensitivity_flags = list(certified_flags)
     if reconstruction_available:
         sensitivity_flags.append(
             seed_intersection_flags(source_arrays["reconstruction"], ALPHA)
         )
-    sensitivity_support = np.stack(sensitivity_flags, axis=0).sum(axis=0)
-    sensitivity: dict[str, int | float] = {
-        "shadow": int(np.count_nonzero(sensitivity_support >= 3)),
-        "priority": int(np.count_nonzero(sensitivity_support == 2)),
-    }
-    sensitivity["combined"] = int(sensitivity["shadow"] + sensitivity["priority"])
-    for lane in ("shadow", "priority", "combined"):
-        rate, upper, _ = _risk_values(int(sensitivity[lane]), n_train)
-        sensitivity[f"{lane}_rate"] = rate
-        sensitivity[f"{lane}_upper"] = upper
-    return TrainRiskRow(
+    return DatasetTrainRiskMetrics(
         dataset=dataset,
         n_train=n_train,
         abstained=False,
         abstention_reason="",
         normal_runs=n_train,
+        reconstruction_available=reconstruction_available,
+        sensitivity_available_source_count=len(sensitivity_flags),
+        certified=_policy_metrics(certified_flags, n_train),
+        sensitivity=_policy_metrics(sensitivity_flags, n_train),
+    )
+
+
+def audit_dataset_train_risk(
+    dataset: str,
+    *,
+    n_train: int,
+    source_arrays: Mapping[str, np.ndarray],
+    _validated_provenance: object | None = None,
+) -> TrainRiskRow:
+    if _validated_provenance is not None and not _is_validated_provenance(
+        _validated_provenance
+    ):
+        raise TrainRiskContractError("invalid validated provenance token")
+    metrics = compute_train_risk_metrics(
+        dataset, n_train=n_train, source_arrays=source_arrays
+    )
+    provenance_verified = _is_validated_provenance(_validated_provenance)
+    policy_risk_validated = provenance_verified and not metrics.abstained
+    certified = metrics.certified
+    sensitivity = metrics.sensitivity
+    return TrainRiskRow(
+        dataset=metrics.dataset,
+        n_train=metrics.n_train,
+        abstained=metrics.abstained,
+        abstention_reason=metrics.abstention_reason,
+        normal_runs=metrics.normal_runs,
         source_count=len(CERTIFIED_SOURCE_GROUPS),
         certified_sources="|".join(CERTIFIED_SOURCE_GROUPS),
-        provenance_verified=True,
-        policy_risk_validated=True,
-        risk_target_pass=combined_meets,
-        reconstruction_available_but_provenance_unverified=reconstruction_available,
+        provenance_verified=provenance_verified,
+        policy_risk_validated=policy_risk_validated,
+        risk_target_pass=(
+            policy_risk_validated and certified.combined_below_risk_target
+        ),
+        reconstruction_available_but_provenance_unverified=(
+            metrics.reconstruction_available
+        ),
         reconstruction_provenance_verified=False,
         reconstruction_provenance_blocker=(
-            RECONSTRUCTION_PROVENANCE_BLOCKER if reconstruction_available else ""
+            RECONSTRUCTION_PROVENANCE_BLOCKER
+            if metrics.reconstruction_available
+            else ""
         ),
-        recovery_shadow_false_reviews=shadow,
-        recovery_priority_false_reviews=priority,
-        combined_false_reviews=combined,
-        recovery_shadow_false_review_rate=shadow_rate,
-        recovery_priority_false_review_rate=priority_rate,
-        combined_false_review_rate=combined_rate,
-        recovery_shadow_wilson_upper_95=shadow_upper,
-        recovery_priority_wilson_upper_95=priority_upper,
-        combined_wilson_upper_95=combined_upper,
-        recovery_shadow_meets_risk_target=shadow_meets,
-        recovery_priority_meets_risk_target=priority_meets,
-        combined_meets_risk_target=combined_meets,
-        five_source_sensitivity_calculated=True,
-        five_source_sensitivity_source_count=5,
-        five_source_sensitivity_recovery_shadow_false_reviews=sensitivity["shadow"],
-        five_source_sensitivity_recovery_priority_false_reviews=sensitivity["priority"],
-        five_source_sensitivity_combined_false_reviews=sensitivity["combined"],
-        five_source_sensitivity_recovery_shadow_false_review_rate=sensitivity["shadow_rate"],
-        five_source_sensitivity_recovery_priority_false_review_rate=sensitivity["priority_rate"],
-        five_source_sensitivity_combined_false_review_rate=sensitivity["combined_rate"],
-        five_source_sensitivity_recovery_shadow_wilson_upper_95=sensitivity["shadow_upper"],
-        five_source_sensitivity_recovery_priority_wilson_upper_95=sensitivity["priority_upper"],
-        five_source_sensitivity_combined_wilson_upper_95=sensitivity["combined_upper"],
+        recovery_shadow_false_reviews=certified.recovery_shadow_false_reviews,
+        recovery_priority_false_reviews=certified.recovery_priority_false_reviews,
+        combined_false_reviews=certified.combined_false_reviews,
+        recovery_shadow_false_review_rate=certified.recovery_shadow_false_review_rate,
+        recovery_priority_false_review_rate=certified.recovery_priority_false_review_rate,
+        combined_false_review_rate=certified.combined_false_review_rate,
+        recovery_shadow_wilson_upper_95=certified.recovery_shadow_wilson_upper_95,
+        recovery_priority_wilson_upper_95=certified.recovery_priority_wilson_upper_95,
+        combined_wilson_upper_95=certified.combined_wilson_upper_95,
+        recovery_shadow_meets_risk_target=(
+            policy_risk_validated and certified.recovery_shadow_below_risk_target
+        ),
+        recovery_priority_meets_risk_target=(
+            policy_risk_validated and certified.recovery_priority_below_risk_target
+        ),
+        combined_meets_risk_target=(
+            policy_risk_validated and certified.combined_below_risk_target
+        ),
+        five_source_sensitivity_calculated=sensitivity is not None,
+        five_source_sensitivity_configured_source_count=(
+            5 if sensitivity is not None else None
+        ),
+        five_source_sensitivity_available_source_count=(
+            metrics.sensitivity_available_source_count
+            if sensitivity is not None
+            else None
+        ),
+        five_source_sensitivity_recovery_shadow_false_reviews=(
+            sensitivity.recovery_shadow_false_reviews if sensitivity else None
+        ),
+        five_source_sensitivity_recovery_priority_false_reviews=(
+            sensitivity.recovery_priority_false_reviews if sensitivity else None
+        ),
+        five_source_sensitivity_combined_false_reviews=(
+            sensitivity.combined_false_reviews if sensitivity else None
+        ),
+        five_source_sensitivity_recovery_shadow_false_review_rate=(
+            sensitivity.recovery_shadow_false_review_rate if sensitivity else None
+        ),
+        five_source_sensitivity_recovery_priority_false_review_rate=(
+            sensitivity.recovery_priority_false_review_rate if sensitivity else None
+        ),
+        five_source_sensitivity_combined_false_review_rate=(
+            sensitivity.combined_false_review_rate if sensitivity else None
+        ),
+        five_source_sensitivity_recovery_shadow_wilson_upper_95=(
+            sensitivity.recovery_shadow_wilson_upper_95 if sensitivity else None
+        ),
+        five_source_sensitivity_recovery_priority_wilson_upper_95=(
+            sensitivity.recovery_priority_wilson_upper_95 if sensitivity else None
+        ),
+        five_source_sensitivity_combined_wilson_upper_95=(
+            sensitivity.combined_wilson_upper_95 if sensitivity else None
+        ),
         five_source_sensitivity_provenance_verified=False,
         five_source_sensitivity_policy_risk_validated=False,
         five_source_sensitivity_risk_target_pass=None,
         five_source_sensitivity_deployment_eligible=False,
         five_source_sensitivity_approval_blocker=RECONSTRUCTION_PROVENANCE_BLOCKER,
+        query_excluded_source_fitting=provenance_verified,
     )
 
 
@@ -384,7 +496,10 @@ def _read_json(path: Path, description: str) -> dict[str, object]:
 
 
 def _load_frozen_manifests() -> tuple[
-    tuple[str, ...], dict[str, int], dict[str, dict[str, dict[str, str]]]
+    tuple[str, ...],
+    dict[str, int],
+    dict[str, dict[str, dict[str, str]]],
+    _ValidatedProvenance,
 ]:
     manifests: dict[str, dict[str, dict[str, str]]] = {}
     calibration: dict[str, str] = {}
@@ -449,7 +564,12 @@ def _load_frozen_manifests() -> tuple[
             raise TrainRiskContractError(
                 f"TRAIN cache length mismatch across manifests: dataset={dataset}"
             )
-    return population, n_train_by_dataset, manifests
+    return (
+        population,
+        n_train_by_dataset,
+        manifests,
+        _ValidatedProvenance(_PROVENANCE_TOKEN_GUARD),
+    )
 
 
 def _load_reconstruction_inventory(
@@ -555,8 +675,33 @@ def _load_dataset_train_arrays(
 
 
 def write_train_risk_audit(
-    rows: Sequence[TrainRiskRow], output_root: Path = OUTPUT_ROOT
+    rows: Sequence[TrainRiskRow],
+    output_root: Path = OUTPUT_ROOT,
+    *,
+    _validated_provenance: object | None = None,
 ) -> Path:
+    if not _is_validated_provenance(_validated_provenance):
+        raise TrainRiskContractError("invalid validated provenance token")
+    if (
+        len(rows) != EXPECTED_DATASETS
+        or len({row.dataset for row in rows}) != EXPECTED_DATASETS
+    ):
+        raise TrainRiskContractError("TRAIN-risk audit must contain 1,117 unique datasets")
+    for row in rows:
+        if (
+            row.source_count != len(CERTIFIED_SOURCE_GROUPS)
+            or row.certified_sources != "|".join(CERTIFIED_SOURCE_GROUPS)
+            or not row.provenance_verified
+            or not row.query_excluded_source_fitting
+            or row.policy_risk_validated != (not row.abstained)
+            or row.five_source_sensitivity_provenance_verified
+            or row.five_source_sensitivity_policy_risk_validated
+            or row.five_source_sensitivity_risk_target_pass is not None
+            or row.five_source_sensitivity_deployment_eligible
+        ):
+            raise TrainRiskContractError(
+                f"uncertified or invalid TRAIN-risk row: dataset={row.dataset}"
+            )
     output_root = Path(output_root)
     output_root.mkdir(parents=True, exist_ok=True)
     path = output_root / "02_train_normal_risk_audit.csv"
@@ -577,7 +722,12 @@ def write_train_risk_audit(
 def audit_train_risk(*, output_root: Path = OUTPUT_ROOT) -> tuple[TrainRiskRow, ...]:
     """Audit Exp266's review policy using frozen TRAIN OOF cache arrays only."""
 
-    population, n_train_by_dataset, manifests = _load_frozen_manifests()
+    (
+        population,
+        n_train_by_dataset,
+        manifests,
+        validated_provenance,
+    ) = _load_frozen_manifests()
     reconstruction_inventory = _load_reconstruction_inventory(
         population, n_train_by_dataset
     )
@@ -593,11 +743,18 @@ def audit_train_risk(*, output_root: Path = OUTPUT_ROOT) -> tuple[TrainRiskRow, 
         )
         rows.append(
             audit_dataset_train_risk(
-                dataset, n_train=n_train, source_arrays=arrays
+                dataset,
+                n_train=n_train,
+                source_arrays=arrays,
+                _validated_provenance=validated_provenance,
             )
         )
     result = tuple(rows)
     if len(result) != EXPECTED_DATASETS or len({row.dataset for row in result}) != EXPECTED_DATASETS:
         raise TrainRiskContractError("TRAIN-risk audit must contain 1,117 unique datasets")
-    write_train_risk_audit(result, output_root)
+    write_train_risk_audit(
+        result,
+        output_root,
+        _validated_provenance=validated_provenance,
+    )
     return result

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -12,6 +13,7 @@ from experiments.exp266_fn_recovery_shadow.train_risk import (
     TrainRiskContractError,
     audit_dataset_train_risk,
     audit_train_risk,
+    compute_train_risk_metrics,
     loo_tail_pvalues,
     seed_intersection_flags,
     validate_query_excluded_provenance,
@@ -72,15 +74,21 @@ class TrainRiskTests(unittest.TestCase):
         self.assertEqual(flags.tolist(), [False, False, False])
 
     def test_combined_policy_counts_evidence_groups_once(self) -> None:
+        metrics = compute_train_risk_metrics(
+            "demo", n_train=200, source_arrays=policy_arrays()
+        )
         row = audit_dataset_train_risk(
             "demo", n_train=200, source_arrays=policy_arrays()
         )
 
+        self.assertEqual(metrics.certified.combined_false_reviews, 1)
+        self.assertEqual(metrics.sensitivity.combined_false_reviews, 2)
         self.assertFalse(row.abstained)
         self.assertEqual(row.source_count, 4)
-        self.assertTrue(row.provenance_verified)
-        self.assertTrue(row.policy_risk_validated)
-        self.assertTrue(row.query_excluded_source_fitting)
+        self.assertFalse(row.provenance_verified)
+        self.assertFalse(row.policy_risk_validated)
+        self.assertFalse(row.query_excluded_source_fitting)
+        self.assertFalse(row.risk_target_pass)
         self.assertTrue(row.reconstruction_available_but_provenance_unverified)
         self.assertEqual(row.recovery_shadow_false_reviews, 1)
         self.assertEqual(row.recovery_priority_false_reviews, 0)
@@ -89,7 +97,8 @@ class TrainRiskTests(unittest.TestCase):
         self.assertEqual(row.combined_false_review_rate, 0.005)
         self.assertFalse(row.combined_meets_risk_target)
         self.assertTrue(row.five_source_sensitivity_calculated)
-        self.assertEqual(row.five_source_sensitivity_source_count, 5)
+        self.assertEqual(row.five_source_sensitivity_configured_source_count, 5)
+        self.assertEqual(row.five_source_sensitivity_available_source_count, 5)
         self.assertFalse(row.five_source_sensitivity_provenance_verified)
         self.assertFalse(row.five_source_sensitivity_policy_risk_validated)
         self.assertEqual(row.five_source_sensitivity_combined_false_reviews, 2)
@@ -115,7 +124,8 @@ class TrainRiskTests(unittest.TestCase):
         self.assertEqual(row.source_count, 4)
         self.assertFalse(row.reconstruction_available_but_provenance_unverified)
         self.assertTrue(row.five_source_sensitivity_calculated)
-        self.assertEqual(row.five_source_sensitivity_source_count, 5)
+        self.assertEqual(row.five_source_sensitivity_configured_source_count, 5)
+        self.assertEqual(row.five_source_sensitivity_available_source_count, 4)
         self.assertEqual(
             row.five_source_sensitivity_combined_false_reviews,
             row.combined_false_reviews,
@@ -149,6 +159,15 @@ class TrainRiskTests(unittest.TestCase):
         ):
             validate_query_excluded_provenance(self_attested)
 
+    def test_forged_certification_token_is_rejected(self) -> None:
+        with self.assertRaisesRegex(TrainRiskContractError, "validated provenance token"):
+            audit_dataset_train_risk(
+                "demo",
+                n_train=200,
+                source_arrays=policy_arrays(),
+                _validated_provenance=object(),
+            )
+
     def test_one_sided_wilson_upper_bound_controls_the_risk_gate(self) -> None:
         expected_zero_of_100 = 1.6448536269514722**2 / (
             100 + 1.6448536269514722**2
@@ -157,61 +176,39 @@ class TrainRiskTests(unittest.TestCase):
         self.assertAlmostEqual(wilson_upper_bound(0, 100), expected_zero_of_100)
         self.assertGreater(wilson_upper_bound(2, 200), 0.01)
 
-    def test_csv_records_frozen_contract_and_mixed_fold_limitation(self) -> None:
+    def test_writer_rejects_caller_certified_rows(self) -> None:
         row = audit_dataset_train_risk(
             "demo", n_train=200, source_arrays=policy_arrays()
         )
+        falsely_certified = replace(
+            row,
+            provenance_verified=True,
+            policy_risk_validated=True,
+            query_excluded_source_fitting=True,
+        )
         with TemporaryDirectory() as directory:
-            path = write_train_risk_audit([row], Path(directory))
-
-            with path.open(newline="", encoding="utf-8") as handle:
-                written = list(csv.DictReader(handle))
-
-        self.assertEqual(path.name, "02_train_normal_risk_audit.csv")
-        self.assertEqual(written[0]["alpha"], "0.005")
-        self.assertEqual(written[0]["seed"], "20260721")
-        self.assertEqual(written[0]["risk_target"], "0.01")
-        self.assertEqual(written[0]["calibration_limitation"], CALIBRATION_LIMITATION)
-        self.assertEqual(written[0]["source_count"], "4")
-        self.assertEqual(
-            written[0]["certified_sources"],
-            "kernel|statistical|structural|change_point",
-        )
-        self.assertEqual(written[0]["provenance_verified"], "True")
-        self.assertEqual(written[0]["policy_risk_validated"], "True")
-        self.assertEqual(
-            written[0]["reconstruction_available_but_provenance_unverified"],
-            "True",
-        )
-        self.assertEqual(
-            written[0]["five_source_sensitivity_provenance_verified"], "False"
-        )
-        self.assertEqual(
-            written[0]["five_source_sensitivity_policy_risk_validated"], "False"
-        )
-        self.assertEqual(written[0]["five_source_sensitivity_risk_target_pass"], "")
-        self.assertEqual(
-            written[0]["five_source_sensitivity_deployment_eligible"], "False"
-        )
-        self.assertIn(
-            "blocked until",
-            written[0]["five_source_sensitivity_approval_blocker"],
-        )
-        self.assertEqual(written[0]["contains_test_values"], "False")
-        self.assertEqual(written[0]["contains_test_labels"], "False")
-        self.assertEqual(written[0]["contains_evaluation_metrics"], "False")
+            with self.assertRaisesRegex(
+                TrainRiskContractError, "validated provenance token"
+            ):
+                write_train_risk_audit([falsely_certified], Path(directory))
 
     def test_audits_complete_frozen_population_from_train_caches(self) -> None:
         with TemporaryDirectory() as directory:
-            rows = audit_train_risk(output_root=Path(directory))
+            output_root = Path(directory)
+            rows = audit_train_risk(output_root=output_root)
 
             self.assertEqual(len(rows), 1117)
             self.assertEqual(len({row.dataset for row in rows}), 1117)
             self.assertTrue(
-                (Path(directory) / "02_train_normal_risk_audit.csv").is_file()
+                (output_root / "02_train_normal_risk_audit.csv").is_file()
             )
             self.assertTrue(all(row.normal_runs in {0, row.n_train} for row in rows))
             self.assertTrue(all(row.source_count == 4 for row in rows))
+            self.assertTrue(all(row.provenance_verified for row in rows))
+            self.assertTrue(all(row.query_excluded_source_fitting for row in rows))
+            self.assertTrue(
+                all(row.policy_risk_validated == (not row.abstained) for row in rows)
+            )
             sensitivity = [
                 row
                 for row in rows
@@ -219,6 +216,25 @@ class TrainRiskTests(unittest.TestCase):
             ]
             self.assertEqual(len(sensitivity), 251)
             eligible = [row for row in rows if not row.abstained]
+            unavailable = [
+                row
+                for row in eligible
+                if not row.reconstruction_available_but_provenance_unverified
+            ]
+            self.assertEqual(len(unavailable), 704)
+            self.assertTrue(
+                all(
+                    row.five_source_sensitivity_configured_source_count == 5
+                    and row.five_source_sensitivity_available_source_count == 4
+                    for row in unavailable
+                )
+            )
+            self.assertTrue(
+                all(
+                    row.five_source_sensitivity_available_source_count == 5
+                    for row in sensitivity
+                )
+            )
             self.assertTrue(
                 all(row.five_source_sensitivity_calculated for row in eligible)
             )
@@ -231,6 +247,25 @@ class TrainRiskTests(unittest.TestCase):
                     for row in sensitivity
                 )
             )
+            with (output_root / "02_train_normal_risk_audit.csv").open(
+                newline="", encoding="utf-8"
+            ) as handle:
+                written = list(csv.DictReader(handle))
+            self.assertEqual(written[0]["alpha"], "0.005")
+            self.assertEqual(written[0]["seed"], "20260721")
+            self.assertEqual(written[0]["risk_target"], "0.01")
+            self.assertEqual(
+                written[0]["calibration_limitation"], CALIBRATION_LIMITATION
+            )
+            self.assertEqual(written[0]["source_count"], "4")
+            self.assertEqual(
+                written[0]["certified_sources"],
+                "kernel|statistical|structural|change_point",
+            )
+            self.assertEqual(written[0]["provenance_verified"], "True")
+            self.assertEqual(written[0]["contains_test_values"], "False")
+            self.assertEqual(written[0]["contains_test_labels"], "False")
+            self.assertEqual(written[0]["contains_evaluation_metrics"], "False")
 
 
 if __name__ == "__main__":
