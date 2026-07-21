@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+from pathlib import Path
+import sys
+
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from experiments.exp267_273_zero_support_fn_recovery.run_pipeline import main
 
 

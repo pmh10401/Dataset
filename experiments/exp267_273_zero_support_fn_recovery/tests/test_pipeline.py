@@ -3,6 +3,8 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+import subprocess
+import sys
 
 from experiments.exp267_273_zero_support_fn_recovery.reporting import build_status, publish_status
 from experiments.exp267_273_zero_support_fn_recovery.run_pipeline import STAGES
@@ -38,6 +40,15 @@ class PipelineStatusTests(unittest.TestCase):
             STAGES,
             ("audit", "267", "268", "269", "270a", "270b", "270c", "271", "272", "273", "evaluate", "all", "device-benchmark"),
         )
+
+    def test_direct_scratch_wrapper_can_import_package(self) -> None:
+        root = Path(__file__).resolve().parents[3]
+        result = subprocess.run(
+            [sys.executable, root / "scratch/run_exp267_273_zero_support_fn_recovery.py", "--help"],
+            cwd=Path(tempfile.gettempdir()), capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--stage", result.stdout)
 
 
 if __name__ == "__main__":

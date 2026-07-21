@@ -711,7 +711,7 @@ python3 -m experiments.exp267_273_zero_support_fn_recovery.run_pipeline \
 
 Expected: 10 datasets, zero silent errors, no labels or metrics in prediction JSONL, disjoint lanes, and matching independent reaggregation.
 
-- [ ] **Step 3: Run the frozen CPU/MPS benchmark**
+- [x] **Step 3: Run the frozen CPU/MPS benchmark**
 
 ```bash
 python3 -m experiments.exp267_273_zero_support_fn_recovery.run_pipeline \
@@ -721,7 +721,7 @@ python3 -m experiments.exp267_273_zero_support_fn_recovery.run_pipeline \
 
 Expected: a hash-recorded CPU or MPS decision before Exp270-B full execution.
 
-- [ ] **Step 4: Queue the full sequential batch**
+- [x] **Step 4: Queue the full sequential batch**
 
 ```bash
 python3 run_rank_experiments_sequential.py queue-exp267-273

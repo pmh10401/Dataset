@@ -27,3 +27,6 @@ hash metadata, recovery-only Exp273 hypothetical audit; 123 package tests passed
 Task 12: steps 1-2 complete (124 package tests passed; 10-dataset CPU smoke
 completed with 200 label-free source rows, 10 disjoint-lane prediction rows,
 zero forbidden evaluation fields, and a frozen prediction SHA256)
+Task 12: steps 3-4 running (CPU/MPS benchmark selected parity-verified MPS for
+exclusive TCN work; the nine full stages are registered and running sequentially
+with seven CPU workers for parallel-safe sources and live dashboard status)
