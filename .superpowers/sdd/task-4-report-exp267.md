@@ -115,3 +115,58 @@ Both commands completed successfully.
   channel, depth, or window selection on TEST outcomes.
 - `iisignature.sig` returns `float64`; this prioritizes stable, finite feature
   calculations over reduced feature-memory use.
+
+## Review Fix: Degenerate Short Windows
+
+### Files
+
+Updated only the Task 4 files:
+
+- `experiments/exp267_273_zero_support_fn_recovery/signature_source.py`
+- `experiments/exp267_273_zero_support_fn_recovery/tests/test_signature_source.py`
+- `.superpowers/sdd/task-4-report-exp267.md`
+
+### Change
+
+`signature_features()` now rejects traces shorter than four points. The source
+returns an explicit label-free abstention for a TRAIN-derived target length of
+2 or 3, with `abstention_reason="target_length_below_4"`, instead of allowing
+one-point half windows to become silently all-zero signatures. Length 4 remains
+valid and produces full/first-half/second-half windows of lengths 4, 2, and 2.
+
+### RED/GREEN Evidence
+
+The new focused cases initially failed: helper calls for lengths 2 and 3 did
+not raise, and source scoring returned eligible results rather than abstaining.
+
+After the fix:
+
+```bash
+python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_signature_source -v
+```
+
+```text
+Ran 9 tests in 0.048s
+OK
+```
+
+The added cases cover helper rejection for lengths 2 and 3, source abstention
+for both lengths, and a recorded `iisignature.sig` call shape sequence of
+`(batch, 4, 3)`, `(batch, 2, 3)`, `(batch, 2, 3)` for length 4.
+
+Package regression:
+
+```bash
+python3 -m unittest discover -s experiments/exp267_273_zero_support_fn_recovery/tests -v
+```
+
+```text
+Ran 41 tests in 8.109s
+OK
+```
+
+`py_compile` and scoped `git diff --check` also passed.
+
+### Commit
+
+`fix: abstain Exp269 degenerate path windows`

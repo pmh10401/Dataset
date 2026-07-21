@@ -21,6 +21,7 @@ _WINDOW_DEFINITIONS = (
     ("second_half", 0.5, 1.0),
 )
 _MINIMUM_TRAIN = 5
+_MINIMUM_TARGET_LENGTH = 4
 
 
 def signature_config() -> dict[str, object]:
@@ -33,6 +34,7 @@ def signature_config() -> dict[str, object]:
         "channel_order": _CHANNEL_ORDER,
         "windows": _WINDOW_NAMES,
         "window_definitions": _WINDOW_DEFINITIONS,
+        "minimum_target_length": _MINIMUM_TARGET_LENGTH,
         "expected_signature_length": expected_length,
         "iisignature_version": str(iisignature.__version__),
     }
@@ -42,8 +44,8 @@ def _ordered_paths(rows: np.ndarray) -> np.ndarray:
     values = np.asarray(rows, dtype=float)
     if values.ndim != 2:
         raise ValueError("signature rows must have shape (batch, time)")
-    if values.shape[1] < 2:
-        raise ValueError("signature rows must contain at least two time points")
+    if values.shape[1] < _MINIMUM_TARGET_LENGTH:
+        raise ValueError("signature rows must contain at least four time points")
     if not np.isfinite(values).all():
         raise ValueError("signature features require finite input rows")
 
@@ -95,6 +97,29 @@ class OrderedPathSignatureDeviation:
         feature_dimension = int(
             config["expected_signature_length"] * len(config["windows"])
         )
+        if target_length < _MINIMUM_TARGET_LENGTH:
+            return SourceScore(
+                source=self.name,
+                variant="primary",
+                train_oof=np.asarray([], dtype=float),
+                test_scores=np.asarray([], dtype=float),
+                eligible=False,
+                abstained=True,
+                abstention_reason="target_length_below_4",
+                provenance={
+                    "seed": int(seed),
+                    "n_train": len(bundle.train_normal),
+                    "n_test": len(bundle.test_values),
+                    "minimum_train": self.minimum_train,
+                    "minimum_target_length": _MINIMUM_TARGET_LENGTH,
+                    "cross_fitted": False,
+                    "self_reference_violations": 0,
+                    "signature": config,
+                    "signature_feature_dimension": feature_dimension,
+                    "iisignature_version": config["iisignature_version"],
+                    "contains_test_labels": False,
+                },
+            )
         result = feature_distance_result(
             source=self.name,
             bundle=bundle,
@@ -115,6 +140,7 @@ class OrderedPathSignatureDeviation:
                 "signature": config,
                 "signature_feature_dimension": feature_dimension,
                 "minimum_train": self.minimum_train,
+                "minimum_target_length": _MINIMUM_TARGET_LENGTH,
                 "iisignature_version": config["iisignature_version"],
                 "contains_test_labels": False,
             }

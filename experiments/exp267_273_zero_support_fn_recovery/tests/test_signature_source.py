@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 import iisignature
 import numpy as np
 
 from experiments.exp239_248_diverse_score_sources.contracts import DatasetBundle
+from experiments.exp267_273_zero_support_fn_recovery import (
+    signature_source as signature_module,
+)
 from experiments.exp267_273_zero_support_fn_recovery.signature_source import (
     OrderedPathSignatureDeviation,
     signature_features,
@@ -103,6 +107,55 @@ class OrderedPathSignatureSourceTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "target length"):
             OrderedPathSignatureDeviation().score(bundle, 17, Path("."))
+
+    def test_signature_features_reject_two_and_three_point_traces(self) -> None:
+        for target_length in (2, 3):
+            with self.subTest(target_length=target_length):
+                with self.assertRaisesRegex(ValueError, "at least four"):
+                    signature_features(np.ones((4, target_length), dtype=np.float32))
+
+    def test_score_abstains_for_two_and_three_point_traces(self) -> None:
+        for target_length in (2, 3):
+            with self.subTest(target_length=target_length):
+                rows = np.arange(8 * target_length, dtype=np.float32).reshape(
+                    8, target_length
+                )
+                bundle = DatasetBundle(
+                    dataset="short-demo",
+                    train_normal=rows,
+                    test_values=rows[:2],
+                    target_length=target_length,
+                )
+
+                result = OrderedPathSignatureDeviation().score(bundle, 17, Path("."))
+
+                self.assertTrue(result.abstained)
+                self.assertFalse(result.eligible)
+                self.assertEqual(result.abstention_reason, "target_length_below_4")
+                self.assertEqual(result.train_oof.shape, (0,))
+                self.assertEqual(result.test_scores.shape, (0,))
+                self.assertFalse(result.provenance["contains_test_labels"])
+
+    def test_four_point_trace_uses_only_nondegenerate_windows(self) -> None:
+        rows = np.arange(4 * 4, dtype=np.float32).reshape(4, 4)
+        original_signature = signature_module.iisignature.sig
+        observed_shapes = []
+
+        def record_signature(path: np.ndarray, depth: int) -> np.ndarray:
+            observed_shapes.append(path.shape)
+            return original_signature(path, depth)
+
+        with patch.object(
+            signature_module.iisignature, "sig", side_effect=record_signature
+        ):
+            features = signature_features(rows)
+
+        self.assertEqual(
+            observed_shapes,
+            [(4, 4, 3), (4, 2, 3), (4, 2, 3)],
+        )
+        self.assertEqual(features.shape, (4, iisignature.siglength(3, 3) * 3))
+        self.assertTrue(np.isfinite(features).all())
 
 
 if __name__ == "__main__":
