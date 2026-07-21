@@ -15,7 +15,8 @@
 - Repository evidence goes to `outputs/exp267_273_zero_support_fn_recovery/`.
 - Population accounting is exactly 1,117 unique datasets; no silent omission is allowed.
 - Primary alpha is `0.005`; `0.01`, `0.02`, and `0.05` are sensitivity outputs only.
-- `n_train < 5` is calibration abstention, `n_train >= 20` enables lightweight forecasting, and `n_train >= 100` enables Causal TCN forecasting. RFF forecasting additionally abstains before any scoring when its TRAIN-only residual-work estimate exceeds `RFF_MAX_TRAIN_RESIDUAL_VALUES = 10_000_000`; this is a preregistered resource-safety boundary, not a TEST-performance policy.
+- `n_train < 5` is calibration abstention, `n_train >= 20` enables lightweight forecasting, and `n_train >= 100` enables Causal TCN forecasting. RFF forecasting additionally abstains before any scoring when its TRAIN-only residual-work estimate exceeds `RFF_MAX_TRAIN_RESIDUAL_VALUES = 10_000_000`. Causal TCN additionally abstains before any TEST-value access or training when `n_train_normal * TRAIN target_length > TCN_MAX_TRAIN_ELEMENTS = 5_000_000`. Both are preregistered TRAIN-only resource-safety boundaries, not TEST-performance policies.
+- Pre-freeze DB metadata audit for the TCN boundary: among the 253 datasets with `n_train_normal >= 100`, 252 are within 5,000,000 TRAIN elements and one is over it (`18,378 * 4,000 = 73,512,000`). This is rationale for an explicit resource abstention, not a dataset-name routing rule.
 - TEST labels, anomaly positions, family names, dataset names, and TEST length never select features, thresholds, eligibility, candidates, budgets, epochs, or routes.
 - Existing Exp253 Hard and Exp266 review-lane indices are immutable through Exp272.
 - Tail replacement and TEST-length top-N budgets are forbidden.
@@ -379,7 +380,7 @@ python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_f
 
 - [ ] **Step 3: Implement the fixed causal network**
 
-Use four residual `Conv1d` blocks with 32 channels, kernel size 3, dilations `(1, 2, 4, 8)`, causal left padding, GELU, and dropout 0.1. Predict an eight-point future patch from the last causal hidden state. Use AdamW with learning rate `1e-3`, weight decay `1e-4`, batch size 32, maximum 20 epochs, patience 3, Huber loss, and seeds `20260721` and `20261721`.
+Use four residual `Conv1d` blocks with 32 channels, kernel size 3, dilations `(1, 2, 4, 8)`, causal left padding, GELU, and dropout 0.1. Predict an eight-point future patch from the last causal hidden state. Use AdamW with learning rate `1e-3`, weight decay `1e-4`, batch size 32, maximum 20 epochs, patience 3, Huber loss, and seeds `20260721` and `20261721`. Before TEST-value access, abstain when the TRAIN-only workload `n_train_normal * TRAIN target_length` exceeds the frozen `TCN_MAX_TRAIN_ELEMENTS = 5_000_000`. The boundary is a pre-evaluation resource-safety contract; it is not selected from TEST metrics.
 
 - [ ] **Step 4: Implement TRAIN-only cross-fitting and score variants**
 
@@ -387,7 +388,7 @@ Build deterministic five-fold OOF scores for TRAIN rows. Fit the final model on 
 
 - [ ] **Step 5: Add CPU/MPS smoke benchmark**
 
-Benchmark one fixed 100-row synthetic batch for three warm iterations and five timed iterations. Select MPS only when it is available, produces finite scores within `rtol=1e-4, atol=1e-5` of CPU, and median runtime is lower. Record the decision before full TEST prediction.
+Benchmark one fixed 100-row synthetic batch for three warm iterations and five timed iterations. Select MPS only when it is available, produces finite scores within `rtol=1e-4, atol=1e-5` of CPU, and median runtime is lower. Freeze the complete benchmark record and its canonical hash before full prediction; a direct MPS request without that passing record must remain CPU. Record a deterministic TRAIN-only estimated-batch/runtime report from this benchmark.
 
 - [ ] **Step 6: Run tests and commit**
 

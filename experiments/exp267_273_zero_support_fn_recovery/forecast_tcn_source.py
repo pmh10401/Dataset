@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 import hashlib
 import json
+import math
 from pathlib import Path
 import time
 from typing import Final
@@ -18,6 +19,7 @@ from experiments.exp239_248_diverse_score_sources.foundation import crossfit_pla
 from experiments.exp267_273_zero_support_fn_recovery.config import (
     SECOND_SEED,
     SEED,
+    TCN_MAX_TRAIN_ELEMENTS,
     TCN_MIN_TRAIN,
 )
 from experiments.exp267_273_zero_support_fn_recovery.contracts import SourceScore
@@ -159,6 +161,39 @@ def _device_available(device: str) -> bool:
     ) or (device == "cuda" and torch.cuda.is_available())
 
 
+def _canonical_hash(payload: Mapping[str, object]) -> str:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def benchmark_record_hash(record: Mapping[str, object]) -> str:
+    """Return the canonical hash persisted with a pipeline-frozen benchmark."""
+    return _canonical_hash(record)
+
+
+def _frozen_benchmark_record(
+    record: Mapping[str, object] | None,
+) -> dict[str, object] | None:
+    if record is None:
+        return None
+    # A JSON round-trip detaches the source from a caller-owned mutable record.
+    return json.loads(json.dumps(record, sort_keys=True, allow_nan=False))
+
+
+def _is_passing_mps_benchmark(record: Mapping[str, object] | None) -> bool:
+    if record is None:
+        return False
+    return bool(
+        record.get("selected_device") == "mps"
+        and record.get("mps_available") is True
+        and record.get("mps_finite") is True
+        and record.get("mps_close_to_cpu") is True
+        and record.get("mps_faster_than_cpu") is True
+        and isinstance(record.get("benchmark_config_hash"), str)
+        and bool(record["benchmark_config_hash"])
+    )
+
+
 def choose_device(requested: str, benchmark: Mapping[str, object] | None = None) -> str:
     """Choose only a frozen, benchmark-approved execution device.
 
@@ -170,10 +205,8 @@ def choose_device(requested: str, benchmark: Mapping[str, object] | None = None)
         raise ValueError("requested device must be one of: auto, cpu, mps")
     if choice == "cpu":
         return "cpu"
-    if benchmark is not None:
-        selected = str(benchmark.get("selected_device", "cpu"))
-        if selected == "mps" and _device_available("mps"):
-            return "mps"
+    if _is_passing_mps_benchmark(benchmark) and _device_available("mps"):
+        return "mps"
     return "cpu"
 
 
@@ -199,8 +232,7 @@ def _benchmark_payload() -> dict[str, object]:
 
 
 def _payload_hash(payload: Mapping[str, object]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()
+    return _canonical_hash(payload)
 
 
 def _synthetic_benchmark_batch() -> np.ndarray:
@@ -332,6 +364,8 @@ def tcn_compute_provenance(n_train: int, target_length: int) -> dict[str, object
     return {
         "n_train": int(n_train),
         "target_length": int(target_length),
+        "train_elements": int(n_train) * int(target_length),
+        "tcn_max_train_elements": TCN_MAX_TRAIN_ELEMENTS,
         "maximum_training_batch_rows": TCN_BATCH_SIZE,
         "estimated_batch_activation_bytes": estimate_tcn_batch_bytes(
             TCN_BATCH_SIZE, int(target_length)
@@ -339,6 +373,59 @@ def tcn_compute_provenance(n_train: int, target_length: int) -> dict[str, object
         "train_rows_sampled": False,
         "target_length_resampled": False,
         "training_row_coverage": "all TRAIN-normal rows in every fold and final fit",
+    }
+
+
+def tcn_runtime_estimate(
+    benchmark_record: Mapping[str, object] | None,
+    *,
+    selected_device: str,
+    n_train: int,
+    target_length: int,
+) -> dict[str, object]:
+    """Return a deterministic inference-only lower bound from frozen timing data."""
+    if benchmark_record is None:
+        return {"available": False, "reason": "no_frozen_benchmark_record"}
+    time_key = f"{selected_device}_median_seconds"
+    benchmark_seconds = benchmark_record.get(time_key)
+    rows = benchmark_record.get("synthetic_rows")
+    length = benchmark_record.get("synthetic_target_length")
+    if (
+        not isinstance(benchmark_seconds, (int, float))
+        or not np.isfinite(float(benchmark_seconds))
+        or float(benchmark_seconds) <= 0.0
+        or not isinstance(rows, int)
+        or not isinstance(length, int)
+        or rows < 1
+        or length <= TCN_PATCH_SIZE
+    ):
+        return {
+            "available": False,
+            "reason": "benchmark_record_missing_selected_device_timing",
+        }
+    positions = int(target_length) - TCN_PATCH_SIZE
+    benchmark_positions = int(length) - TCN_PATCH_SIZE
+    batch_rows = min(TCN_BATCH_SIZE, int(n_train))
+    per_batch = (
+        float(benchmark_seconds)
+        * (float(batch_rows) / float(rows))
+        * (float(positions) / float(benchmark_positions))
+    )
+    updates_per_fit = math.ceil(int(n_train) / TCN_BATCH_SIZE)
+    max_fit_count = 2 * (5 + 1)
+    max_update_count = max_fit_count * TCN_MAX_EPOCHS * updates_per_fit
+    return {
+        "available": True,
+        "selected_device": selected_device,
+        "benchmark_record_hash": benchmark_record_hash(benchmark_record),
+        "benchmark_median_seconds": float(benchmark_seconds),
+        "estimated_forward_seconds_per_batch": per_batch,
+        "max_fit_count": max_fit_count,
+        "max_epochs": TCN_MAX_EPOCHS,
+        "updates_per_fit": updates_per_fit,
+        "max_training_update_count": max_update_count,
+        "estimated_training_forward_lower_bound_seconds": per_batch * max_update_count,
+        "assumption": "linear batch/time scaling; inference-only lower bound; backward and IO excluded",
     }
 
 
@@ -484,8 +571,19 @@ class CausalTCNNormalForecast:
     name = TCN_SOURCE_NAME
     minimum_train = TCN_MIN_TRAIN
 
-    def __init__(self, *, device: str = "cpu") -> None:
-        self.device = choose_device(device)
+    def __init__(
+        self,
+        *,
+        device: str = "cpu",
+        benchmark_record: Mapping[str, object] | None = None,
+    ) -> None:
+        self.benchmark_record = _frozen_benchmark_record(benchmark_record)
+        self.benchmark_record_hash = (
+            benchmark_record_hash(self.benchmark_record)
+            if self.benchmark_record is not None
+            else None
+        )
+        self.device = choose_device(device, self.benchmark_record)
 
     def score(self, bundle: DatasetBundle, seed: int, artifact_dir: Path) -> SourceScore:
         del artifact_dir
@@ -522,6 +620,9 @@ class CausalTCNNormalForecast:
                 "loss": "Huber",
             },
             "device": self.device,
+            "selected_device": self.device,
+            "benchmark_record": self.benchmark_record,
+            "benchmark_record_hash": self.benchmark_record_hash,
             "evidence_family": TCN_EVIDENCE_FAMILY,
             "variants": ("seed_median", "seed_intersection"),
             "seed_intersection_rule": "both independently calibrated seed p-values",
@@ -562,11 +663,36 @@ class CausalTCNNormalForecast:
                     "self_reference_violations": 0,
                 },
             )
+        train_elements = int(len(train_rows)) * target_length
+        if train_elements > TCN_MAX_TRAIN_ELEMENTS:
+            return SourceScore(
+                source=self.name,
+                variant="seed_median",
+                train_oof=np.asarray([], dtype=float),
+                test_scores=np.asarray([], dtype=float),
+                eligible=False,
+                abstained=True,
+                abstention_reason="train_work_exceeds_5000000",
+                provenance={
+                    **common_provenance,
+                    "train_elements": train_elements,
+                    "tcn_max_train_elements": TCN_MAX_TRAIN_ELEMENTS,
+                    "compute_safety_boundary": "TRAIN normal row count times TRAIN target length",
+                    "cross_fitted": False,
+                    "self_reference_violations": 0,
+                },
+            )
 
         test_rows = _validate_rows(
             bundle.test_values, expected_length=target_length, name="TEST"
         )
         common_provenance["n_test"] = int(len(test_rows))
+        common_provenance["runtime_estimate"] = tcn_runtime_estimate(
+            self.benchmark_record,
+            selected_device=self.device,
+            n_train=len(train_rows),
+            target_length=target_length,
+        )
         seeds = (SEED, SECOND_SEED)
         per_seed = {
             current_seed: _score_one_seed(

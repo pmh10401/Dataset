@@ -115,3 +115,71 @@ label was produced or read.
 - Full-population TCN cost must be measured by the later sequential pipeline;
   this task intentionally does not introduce a post hoc compute eligibility
   rule.
+
+## P1 Follow-up: Frozen MPS Wiring And TRAIN-only Compute Guard
+
+### MPS Wiring
+
+`CausalTCNNormalForecast` now accepts `benchmark_record` at construction and
+calls `choose_device(requested, benchmark_record)`. A direct `device="mps"`
+request with no record, incomplete record, failed parity, non-finite result, or
+non-faster result stays on CPU. The complete record, its canonical SHA-256, and
+the final selected device are stored in every source provenance row. The source
+does not call `benchmark_device()`; Task 7 must freeze the single benchmark
+record once and pass it to all eligible dataset jobs.
+
+Real smoke evidence used a passing frozen record:
+
+```text
+benchmark selected device: mps
+source selected device: mps
+TRAIN OOF scores: 100 finite values
+TEST-value scores: 2 finite values
+```
+
+### Pre-registered Compute Guard
+
+`TCN_MAX_TRAIN_ELEMENTS = 5_000_000` is frozen in `config.py`. The workload is
+exactly `n_train_normal * TRAIN target_length`; it is checked from TRAIN rows
+before any TEST-value array conversion, validation, model fitting, or score
+calibration. Exceeding it returns:
+
+```text
+abstention_reason = train_work_exceeds_5000000
+```
+
+with both the observed TRAIN element count and the frozen threshold in
+provenance. It does not inspect a dataset name, family, TEST size, TEST label,
+or TEST metric. The frozen metadata audit rationale is that the eligible
+population has 252 of 253 `n_train >= 100` datasets at or below this boundary;
+the one larger workload is recorded as an explicit abstention rather than a
+silent omission.
+
+### Deterministic Runtime Estimate
+
+The frozen benchmark now supplies a linear, inference-only lower-bound report
+for each eligible source record. It includes per-batch timing, 12 maximum fits
+(two seeds times five OOF fits plus final fits), 20 maximum epochs, batch count,
+and the resulting forward-only lower bound. It explicitly excludes backward
+pass and IO, so it is a scheduling diagnostic rather than a completion-time
+promise.
+
+For the large `18,378 x 4,000` TRAIN shape with an MPS benchmark median of
+0.0015 seconds per synthetic 100-row, length-128 batch, the deterministic
+forward-only lower bound is 2,203.584 seconds for 138,000 maximum update
+steps. Actual full fit time will be higher because backward and data transfer
+are excluded.
+
+No checkpoint/resume hooks were added inside the source: a model checkpoint
+without the future cache/hash contract would be unsafe. Task 7's atomic
+per-dataset cache is the correct layer for restartability.
+
+### Follow-up Verification
+
+```text
+python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_contracts \
+  experiments.exp267_273_zero_support_fn_recovery.tests.test_forecast_tcn_source -v
+```
+
+Result: 24 tests passed, including passing/unverified MPS selection and a
+forbidden TEST-value object proving the compute guard exits before TEST access.

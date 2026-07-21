@@ -151,6 +151,62 @@ class CausalTCNNormalForecastTests(unittest.TestCase):
         self.assertEqual(first["selected_device"], "cpu")
         self.assertTrue((self.path / "tcn_device_benchmark.json").exists())
 
+    def test_direct_mps_request_without_passing_benchmark_remains_cpu(self) -> None:
+        from experiments.exp267_273_zero_support_fn_recovery.forecast_tcn_source import (
+            CausalTCNNormalForecast,
+            choose_device,
+        )
+
+        self.assertEqual(choose_device("mps"), "cpu")
+        self.assertEqual(choose_device("mps", {"selected_device": "mps"}), "cpu")
+        source = CausalTCNNormalForecast(device="mps")
+        self.assertEqual(source.device, "cpu")
+        self.assertIsNone(source.benchmark_record)
+
+    def test_passing_mps_benchmark_is_frozen_and_used_for_training_and_scoring(self) -> None:
+        from experiments.exp267_273_zero_support_fn_recovery import (
+            forecast_tcn_source as tcn_module,
+        )
+        from experiments.exp267_273_zero_support_fn_recovery.forecast_tcn_source import (
+            CausalTCNNormalForecast,
+            benchmark_record_hash,
+        )
+
+        record = {
+            "selected_device": "mps",
+            "mps_available": True,
+            "mps_finite": True,
+            "mps_close_to_cpu": True,
+            "mps_faster_than_cpu": True,
+            "benchmark_config_hash": "frozen-benchmark-config",
+            "mps_median_seconds": 0.01,
+            "synthetic_rows": 100,
+            "synthetic_target_length": 128,
+        }
+        fake = {
+            20260721: (np.linspace(0.0, 1.0, 100), np.asarray([0.1, 0.9]), (5,) * 6),
+            20261721: (np.linspace(0.2, 0.8, 100), np.asarray([0.3, 0.7]), (6,) * 6),
+        }
+        with patch.object(tcn_module, "_device_available", return_value=True), patch.object(
+            tcn_module,
+            "_score_one_seed",
+            side_effect=lambda **kwargs: fake[kwargs["seed"]],
+        ) as one_seed:
+            result = CausalTCNNormalForecast(
+                device="mps", benchmark_record=record
+            ).score(bundle(n_train=100, target_length=16), SEED, self.path)
+
+        self.assertTrue(all(call.kwargs["device"] == "mps" for call in one_seed.call_args_list))
+        self.assertEqual(result.provenance["selected_device"], "mps")
+        self.assertEqual(result.provenance["benchmark_record"], record)
+        self.assertEqual(
+            result.provenance["benchmark_record_hash"], benchmark_record_hash(record)
+        )
+        self.assertTrue(result.provenance["runtime_estimate"]["available"])
+        self.assertEqual(
+            result.provenance["runtime_estimate"]["selected_device"], "mps"
+        )
+
     def test_large_train_shape_uses_bounded_batch_provenance_without_sampling(self) -> None:
         from experiments.exp267_273_zero_support_fn_recovery.forecast_tcn_source import (
             TCN_BATCH_SIZE,
@@ -167,6 +223,36 @@ class CausalTCNNormalForecastTests(unittest.TestCase):
         self.assertFalse(provenance["target_length_resampled"])
         self.assertEqual(provenance["maximum_training_batch_rows"], 32)
         self.assertGreater(estimate_tcn_batch_bytes(32, 4_000), 0)
+
+    def test_train_only_compute_guard_abstains_before_test_access_or_training(self) -> None:
+        from experiments.exp267_273_zero_support_fn_recovery import (
+            forecast_tcn_source as tcn_module,
+        )
+        from experiments.exp267_273_zero_support_fn_recovery.forecast_tcn_source import (
+            CausalTCNNormalForecast,
+        )
+
+        class ForbiddenTestValues:
+            def __array__(self, *args, **kwargs):
+                raise AssertionError("TEST values must not be read by the TRAIN guard")
+
+        train = np.zeros((1_251, 4_000), dtype=np.float32)
+        oversized = DatasetBundle(
+            dataset="oversized-train-only-shape",
+            train_normal=train,
+            test_values=ForbiddenTestValues(),  # type: ignore[arg-type]
+            target_length=4_000,
+        )
+        with patch.object(tcn_module, "_score_one_seed") as one_seed:
+            result = CausalTCNNormalForecast().score(oversized, SEED, self.path)
+
+        one_seed.assert_not_called()
+        self.assertTrue(result.abstained)
+        self.assertFalse(result.eligible)
+        self.assertEqual(result.abstention_reason, "train_work_exceeds_5000000")
+        self.assertEqual(result.provenance["train_elements"], 5_004_000)
+        self.assertEqual(result.provenance["tcn_max_train_elements"], 5_000_000)
+        self.assertFalse(result.provenance["contains_test_labels"])
 
     def test_score_uses_no_test_labels_and_records_two_seed_scores(self) -> None:
         from experiments.exp267_273_zero_support_fn_recovery import (

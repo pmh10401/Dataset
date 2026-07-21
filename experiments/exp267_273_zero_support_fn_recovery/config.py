@@ -15,6 +15,9 @@ CALIBRATION_ABSTENTION_REASON = "n_train_below_5"
 RFF_MIN_TRAIN = 20
 RFF_MAX_TRAIN_RESIDUAL_VALUES = 10_000_000
 TCN_MIN_TRAIN = 100
+# Frozen TRAIN-only resource boundary for the two-seed five-fold TCN workload.
+# It is independent of TEST values, labels, score, or routing outcomes.
+TCN_MAX_TRAIN_ELEMENTS = 5_000_000
 REVIEW_RISK_LIMIT = 0.01
 HARD_RISK_LIMIT = 0.005
 MIN_RETROSPECTIVE_PRECISION = 0.80
