@@ -192,6 +192,13 @@ views are:
 Highly correlated variants are collapsed into one evidence group. Variants of
 the same algorithm never receive multiple independent votes.
 
+Exp272 source membership is frozen before TEST labels are read. A source may
+join Exp272 only from label-free evidence: complete required coverage, passing
+TRAIN-normal review-risk audit, deterministic reproducibility, and a distinct
+registered algorithm family supported by TRAIN OOF correlation diagnostics.
+Exp271 TEST TP, FP, precision, F1, or recovered-FN count is report-only and
+cannot add or remove a source from Exp272.
+
 ### Exp272: Recovery Review Selector
 
 Exp272 combines qualified new evidence with the existing certified groups.
