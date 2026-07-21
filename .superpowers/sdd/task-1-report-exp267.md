@@ -2,7 +2,9 @@
 
 ## Status
 
-DONE_WITH_CONCERNS
+DONE
+
+The original dependency concern was resolved in the reviewer-fix pass below.
 
 ## Implementation
 
@@ -151,3 +153,112 @@ because the brief restricts edits to the listed files and this report path.
 - This task freezes contracts only. Source algorithms, population loading,
   scoring, routing, evaluation, and promotion audit logic remain for later
   tasks.
+
+## Reviewer Fixes
+
+### Fix Scope
+
+The reviewer-requested Task 1 fixes were applied without changing any Exp253 or
+Exp266 artifact or implementing downstream algorithms:
+
+- Resolved the Python 3.14 dependency blocker. `kymatio==0.3.0` and
+  `iisignature==0.24` are installed; the latter was built with
+  `--no-build-isolation` and the macOS 26.5 SDK C++ include path. No algorithm
+  substitution was made, and no `BLOCKER_REPORT.md` is needed.
+- Added explicit calibration eligibility constants for `n_train < 5`
+  abstention: `MIN_TRAIN_FOR_CALIBRATION=5`, `CALIBRATION_MIN_TRAIN=5`, and
+  `CALIBRATION_ABSTENTION_REASON="n_train_below_5"`.
+- Made every `RecoveryLanes` field required. Construction now defensively
+  converts all index collections to sorted tuples, rejects duplicate or
+  negative indices, and rejects pairwise lane overlap.
+- Deeply freezes `SourceScore.provenance` mappings and nested sequences, and
+  defensively normalizes `FrozenSourcePrediction.candidate_indices` to a sorted
+  tuple.
+- Added focused tests for the exact DB path, installed dependency versions,
+  eligibility constants, deep read-only provenance, required lane fields,
+  index normalization, and overlap rejection.
+
+### Fix RED
+
+Command after adding the reviewer regression tests and before the production
+fixes:
+
+```bash
+python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_contracts -v
+```
+
+Result: exit 1 at the expected missing calibration contract import:
+
+```text
+ImportError: cannot import name 'CALIBRATION_ABSTENTION_REASON'
+Ran 1 test in 0.000s
+FAILED (errors=1)
+```
+
+After the implementation was added, the first fix run reached the intended
+immutability assertion and exposed an over-specific test expectation:
+
+```text
+ERROR: test_recovery_lanes_require_all_fields_and_normalize_indices
+dataclasses.FrozenInstanceError: cannot assign to field 'hard_indices'
+Ran 11 tests in 0.020s
+FAILED (errors=1)
+```
+
+The test was corrected to assert `dataclasses.FrozenInstanceError`, matching
+the frozen dataclass contract.
+
+### Fix GREEN
+
+Focused command:
+
+```bash
+python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_contracts -v
+```
+
+Result:
+
+```text
+Ran 11 tests in 0.023s
+OK
+```
+
+Compilation command:
+
+```bash
+python3 -m py_compile experiments/exp267_273_zero_support_fn_recovery/__init__.py experiments/exp267_273_zero_support_fn_recovery/config.py experiments/exp267_273_zero_support_fn_recovery/contracts.py experiments/exp267_273_zero_support_fn_recovery/dependencies.py experiments/exp267_273_zero_support_fn_recovery/tests/test_contracts.py
+```
+
+Result: exit 0.
+
+### Resolved Dependency Verification
+
+Command:
+
+```bash
+python3 - <<'PY'
+from experiments.exp267_273_zero_support_fn_recovery.dependencies import dependency_report
+print(dependency_report())
+PY
+```
+
+Result:
+
+```text
+{'kymatio': '0.3.0', 'iisignature': '0.24', 'torch': '2.13.0', 'mps_built': True, 'mps_available': True}
+```
+
+The focused dependency test independently compared the reported versions with
+`importlib.metadata.version(...)` and passed. Exact frozen policy verification
+also returned:
+
+```text
+db_path=/Users/minho/Documents/Dataset/univariate_ts.db
+calibration_min_train=5
+min_train_for_calibration=5
+calibration_abstention_reason=n_train_below_5
+```
+
+The dependency concern in the original report is resolved. The remaining
+concern is limited to later tasks consuming these structural contracts; no
+production source algorithm has been substituted or run by Task 1.
