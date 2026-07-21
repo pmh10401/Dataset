@@ -226,6 +226,23 @@ def _csv_dataset_names(path: Path) -> set[str] | None:
     return set(names)
 
 
+def _jsonl_dataset_names(path: Path) -> tuple[set[str], int] | None:
+    try:
+        rows = [
+            json.loads(line)
+            for line in Path(path).read_text(encoding="utf-8").splitlines()
+            if line
+        ]
+    except (OSError, json.JSONDecodeError):
+        return None
+    if any(type(row) is not dict for row in rows):
+        return None
+    names = [row.get("dataset") for row in rows]
+    if any(type(name) is not str or not name for name in names):
+        return None
+    return set(names), len(rows)
+
+
 def _full_population_matches(path: Path) -> bool:
     expected = _expected_dataset_names()
     names = _csv_dataset_names(path)
@@ -233,8 +250,6 @@ def _full_population_matches(path: Path) -> bool:
 
 
 def _stage_complete(stage: str, root: Path, dataset_limit: int | None) -> bool:
-    if dataset_limit is not None:
-        return False
     if stage == "audit":
         try:
             audit = json.loads((root / "00_contract_audit.json").read_text(encoding="utf-8"))
@@ -251,16 +266,25 @@ def _stage_complete(stage: str, root: Path, dataset_limit: int | None) -> bool:
             manifest = verify_prediction_checkpoint(root)
         except (OSError, ValueError):
             return False
-        try:
-            rows = [json.loads(line) for line in (root / "03_frozen_predictions.jsonl").read_text(encoding="utf-8").splitlines() if line]
-        except (OSError, json.JSONDecodeError):
+        prediction_population = _jsonl_dataset_names(root / "03_frozen_predictions.jsonl")
+        if prediction_population is None:
             return False
-        names = {row.get("dataset") for row in rows if isinstance(row, dict)}
+        names, row_count = prediction_population
+        expected_count = dataset_limit or EXPECTED_DATASETS
+        coverage = manifest.get("coverage")
+        if type(coverage) is not dict:
+            return False
         return (
-            manifest.get("datasets") == EXPECTED_DATASETS
-            and manifest.get("complete_population") is True
-            and len(rows) == EXPECTED_DATASETS
-            and names == _expected_dataset_names()
+            manifest.get("datasets") == expected_count
+            and manifest.get("rows") == expected_count
+            and manifest.get("complete_population") is (dataset_limit is None)
+            and manifest.get("smoke") is (dataset_limit is not None)
+            and coverage.get("expected_datasets") == EXPECTED_DATASETS
+            and coverage.get("frozen_population") == EXPECTED_DATASETS
+            and coverage.get("predicted_datasets") == expected_count
+            and row_count == expected_count
+            and len(names) == expected_count
+            and (dataset_limit is not None or names == _expected_dataset_names())
         )
     if stage == "risk":
         return _full_population_matches(root / "02_train_normal_risk_audit.csv")
@@ -271,10 +295,19 @@ def _stage_complete(stage: str, root: Path, dataset_limit: int | None) -> bool:
         try:
             with (root / "06_global_summary.csv").open(newline="", encoding="utf-8") as handle:
                 summary = next(csv.DictReader(handle))
+            prediction_population = _jsonl_dataset_names(root / "03_frozen_predictions.jsonl")
+            result_names = _csv_dataset_names(root / "05_dataset_results.csv")
+            diagnostic_names = _csv_dataset_names(root / "07_source_agreement_diagnostics.csv")
+            expected_count = dataset_limit or EXPECTED_DATASETS
+            if prediction_population is None or result_names is None or diagnostic_names is None:
+                return False
+            prediction_names, prediction_rows = prediction_population
             return (
-                int(summary["datasets"]) == EXPECTED_DATASETS
-                and _full_population_matches(root / "05_dataset_results.csv")
-                and _full_population_matches(root / "07_source_agreement_diagnostics.csv")
+                int(summary["datasets"]) == expected_count
+                and prediction_rows == expected_count
+                and len(prediction_names) == expected_count
+                and result_names == prediction_names
+                and diagnostic_names == prediction_names
                 and bool(verify_summary(root / "05_dataset_results.csv", root / "06_global_summary.csv")["passed"])
             )
         except (OSError, KeyError, StopIteration, ValueError, csv.Error):
@@ -287,11 +320,13 @@ def _stage_complete(stage: str, root: Path, dataset_limit: int | None) -> bool:
         except (OSError, json.JSONDecodeError, csv.Error):
             return False
         required = {
-            "00_contract_audit.json", "01_source_manifest.csv", "02_train_normal_risk_audit.csv",
+            "00_contract_audit.json", "01_source_manifest.csv",
             "03_frozen_predictions.jsonl", "04_prediction_manifest.json", "05_dataset_results.csv",
             "06_global_summary.csv", "07_source_agreement_diagnostics.csv", "08_invariance_report.md",
             "09_result_report.md", "10_independent_reaggregation.json",
         }
+        if dataset_limit is None:
+            required.add("02_train_normal_risk_audit.csv")
         manifest_files = {row.get("file") for row in manifest_rows}
         hashes_match = all(
             isinstance(row.get("sha256"), str)
@@ -312,9 +347,15 @@ def _stage_complete(stage: str, root: Path, dataset_limit: int | None) -> bool:
     raise ValueError(f"unknown stage: {stage}")
 
 
+def _stage_order(dataset_limit: int | None) -> tuple[str, ...]:
+    if dataset_limit is None:
+        return STAGE_ORDER
+    return tuple(stage for stage in STAGE_ORDER if stage != "risk")
+
+
 def first_incomplete_stage(output_root: Path, dataset_limit: int | None) -> str | None:
     root = publication_root(output_root, dataset_limit)
-    for stage in STAGE_ORDER:
+    for stage in _stage_order(dataset_limit):
         if not _stage_complete(stage, root, dataset_limit):
             return stage
     return None
@@ -354,7 +395,8 @@ def run_all(
     first = first_incomplete_stage(output_root, dataset_limit)
     if first is None:
         return ()
-    stages = STAGE_ORDER[STAGE_ORDER.index(first):]
+    stage_order = _stage_order(dataset_limit)
+    stages = stage_order[stage_order.index(first):]
     for stage in stages:
         if on_stage is not None:
             on_stage(stage)

@@ -292,7 +292,11 @@ def _prediction_audit(
     result_rows = _read_csv(output_root / RESULTS_FILENAME)
     result_sizes = {row["dataset"]: int(row["total_test_runs"]) for row in result_rows}
     prediction_names = [str(row.get("dataset", "")) for row in rows]
-    parity_population_matches = set(prediction_names) == set(exp253_hard)
+    parity_population_matches = (
+        set(prediction_names) == set(exp253_hard)
+        if require_full_population
+        else set(prediction_names) <= set(exp253_hard)
+    )
     expected_rows = manifest.get("rows", len(rows))
     if type(expected_rows) is not int:
         expected_rows = len(rows)

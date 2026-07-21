@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import csv
+import hashlib
 import json
 import tempfile
 import time
@@ -32,6 +34,125 @@ class PipelineTests(unittest.TestCase):
                 run_pipeline.run_all(output_root, dataset_limit=None, workers=7)
 
         self.assertEqual(calls, ["predict", "risk", "evaluate", "report"])
+
+    def test_run_all_smoke_skips_full_population_train_risk(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output_root = Path(temporary)
+            calls: list[str] = []
+            with patch.object(
+                run_pipeline,
+                "run_stage",
+                side_effect=lambda stage, *_args: calls.append(stage),
+            ), patch.object(run_pipeline, "first_incomplete_stage", return_value="audit"):
+                run_pipeline.run_all(output_root, dataset_limit=10, workers=2)
+
+        self.assertEqual(calls, ["audit", "predict", "evaluate", "report"])
+
+    def test_smoke_audit_completion_accepts_full_frozen_input_contract(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "00_contract_audit.json").write_text(
+                json.dumps(
+                    {
+                        "experiment_id": run_pipeline.EXPERIMENT_ID,
+                        "datasets": run_pipeline.EXPECTED_DATASETS,
+                        "lane_totals": run_pipeline.EXPECTED_LANE_TOTALS,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with patch.object(run_pipeline, "_full_population_matches", return_value=True):
+                complete = run_pipeline._stage_complete("audit", root, dataset_limit=10)
+
+        self.assertTrue(complete)
+
+    def test_smoke_completion_validates_partial_predict_evaluate_and_report_artifacts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "smoke" / "dataset_limit_10"
+            root.mkdir(parents=True)
+            names = [f"dataset-{index}" for index in range(10)]
+            (root / "03_frozen_predictions.jsonl").write_text(
+                "".join(json.dumps({"dataset": name}) + "\n" for name in names),
+                encoding="utf-8",
+            )
+            (root / "04_prediction_manifest.json").write_text("{}\n", encoding="utf-8")
+
+            for filename in (
+                "05_dataset_results.csv",
+                "07_source_agreement_diagnostics.csv",
+            ):
+                with (root / filename).open("w", newline="", encoding="utf-8") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=["dataset"])
+                    writer.writeheader()
+                    writer.writerows({"dataset": name} for name in names)
+            (root / "06_global_summary.csv").write_text(
+                "datasets\n10\n", encoding="utf-8"
+            )
+
+            for filename in (
+                "00_contract_audit.json",
+                "01_source_manifest.csv",
+                "08_invariance_report.md",
+                "09_result_report.md",
+            ):
+                (root / filename).write_text("smoke\n", encoding="utf-8")
+            (root / "10_independent_reaggregation.json").write_text(
+                json.dumps(
+                    {
+                        "passed": True,
+                        "missing_datasets": 0,
+                        "index_errors": 0,
+                        "lane_overlaps": 0,
+                        "hard_parity_mismatches": 0,
+                        "summary_verification": {"passed": True},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            manifest_files = (
+                "00_contract_audit.json",
+                "01_source_manifest.csv",
+                "03_frozen_predictions.jsonl",
+                "04_prediction_manifest.json",
+                "05_dataset_results.csv",
+                "06_global_summary.csv",
+                "07_source_agreement_diagnostics.csv",
+                "08_invariance_report.md",
+                "09_result_report.md",
+                "10_independent_reaggregation.json",
+            )
+            with (root / "MANIFEST.csv").open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=["file", "sha256"])
+                writer.writeheader()
+                for filename in manifest_files:
+                    writer.writerow(
+                        {
+                            "file": filename,
+                            "sha256": hashlib.sha256((root / filename).read_bytes()).hexdigest(),
+                        }
+                    )
+
+            prediction_manifest = {
+                "datasets": 10,
+                "rows": 10,
+                "complete_population": False,
+                "smoke": True,
+                "coverage": {
+                    "expected_datasets": run_pipeline.EXPECTED_DATASETS,
+                    "frozen_population": run_pipeline.EXPECTED_DATASETS,
+                    "predicted_datasets": 10,
+                },
+            }
+            with patch.object(
+                run_pipeline, "verify_prediction_checkpoint", return_value=prediction_manifest
+            ), patch.object(run_pipeline, "verify_summary", return_value={"passed": True}):
+                predict_complete = run_pipeline._stage_complete("predict", root, dataset_limit=10)
+                evaluate_complete = run_pipeline._stage_complete("evaluate", root, dataset_limit=10)
+                report_complete = run_pipeline._stage_complete("report", root, dataset_limit=10)
+
+        self.assertTrue(predict_complete)
+        self.assertTrue(evaluate_complete)
+        self.assertTrue(report_complete)
 
     def test_status_records_running_progress_and_failure(self):
         with tempfile.TemporaryDirectory() as temporary:

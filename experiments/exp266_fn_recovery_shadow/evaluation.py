@@ -174,9 +174,16 @@ def _require_hard_parity(
     prediction_rows: list[dict[str, object]],
     preflight: list[tuple[dict[str, object], dict[str, set[int]]]],
     exp253_hard: Mapping[str, set[int]],
+    *,
+    require_full_population: bool,
 ) -> int:
     prediction_names = {str(row["dataset"]) for row in prediction_rows}
-    if prediction_names != set(exp253_hard):
+    population_matches = (
+        prediction_names == set(exp253_hard)
+        if require_full_population
+        else prediction_names <= set(exp253_hard)
+    )
+    if not population_matches:
         raise ValueError("Hard parity population mismatch with Exp253")
     mismatches = [
         str(row["dataset"])
@@ -507,7 +514,12 @@ def evaluate_predictions(
     exp253_hard, exp253_sha256 = _load_exp253_hard(
         exp253_prediction_path, require_pinned_source=require_full_population
     )
-    hard_parity_datasets = _require_hard_parity(prediction_rows, preflight, exp253_hard)
+    hard_parity_datasets = _require_hard_parity(
+        prediction_rows,
+        preflight,
+        exp253_hard,
+        require_full_population=require_full_population,
+    )
 
     evaluated: list[dict[str, object]] = []
     diagnostics: list[dict[str, object]] = []

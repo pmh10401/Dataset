@@ -66,17 +66,20 @@ def write_frozen_fixture(root: Path) -> tuple[Path, Path]:
     return prediction, manifest
 
 
-def write_exp253_fixture(root: Path, hard_indices: list[int] | None = None) -> Path:
+def write_exp253_fixture(
+    root: Path, hard_indices: list[int] | None = None, *, include_extra: bool = False
+) -> Path:
     path = root / "exp253_frozen_predictions.jsonl"
+    rows = [
+        {
+            "dataset": "demo",
+            "final_hard_indices": [0] if hard_indices is None else hard_indices,
+        }
+    ]
+    if include_extra:
+        rows.append({"dataset": "outside-smoke", "final_hard_indices": [1]})
     path.write_text(
-        json.dumps(
-            {
-                "dataset": "demo",
-                "final_hard_indices": [0] if hard_indices is None else hard_indices,
-            },
-            sort_keys=True,
-        )
-        + "\n",
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows),
         encoding="utf-8",
     )
     return path
@@ -204,6 +207,32 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(diagnostic["agreement_2_count"], "1")
             self.assertEqual(diagnostic["agreement_3_count"], "1")
             self.assertEqual(diagnostic["agreement_4_count"], "1")
+
+    def test_smoke_evaluation_and_reaggregation_check_exp253_subset_parity(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prediction, manifest = write_frozen_fixture(root)
+            database = root / "labels.db"
+            write_database(database)
+            exp253 = write_exp253_fixture(root, include_extra=True)
+
+            rows, summary = evaluate_predictions(
+                prediction,
+                manifest,
+                database_path=database,
+                exp253_prediction_path=exp253,
+                require_full_population=False,
+            )
+            reaggregation = write_independent_reaggregation(
+                root,
+                exp253_prediction_path=exp253,
+                require_full_population=False,
+            )
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(summary["hard_parity_datasets"], 1)
+        self.assertTrue(reaggregation["passed"])
+        self.assertTrue(reaggregation["hard_parity_population_matches"])
 
     def test_hard_parity_mismatch_fails_before_test_labels(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
