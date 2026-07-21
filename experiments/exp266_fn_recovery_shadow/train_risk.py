@@ -32,13 +32,22 @@ CALIBRATION_LIMITATION = (
     "Leave-one-out calibration combines query-excluded OOF scores produced by "
     "different fold models."
 )
-_RECONSTRUCTION_CALIBRATION = "frozen_train_oof_by_seed"
+RECONSTRUCTION_PROVENANCE_BLOCKER = (
+    "Five-source combined TRAIN-risk approval is blocked until Exp257 has a "
+    "producer-signed/pinned manifest tying the frozen archives to query-excluded "
+    "fitting and exact seeds, or a separately preregistered regeneration is performed."
+)
+CERTIFIED_SOURCE_GROUPS = (
+    "kernel",
+    "statistical",
+    "structural",
+    "change_point",
+)
 _EXPECTED_CALIBRATION = {
     "kernel": "five_fold_transformer_crossfit",
     "statistical": "five_fold_oof",
     "structural": "five_fold_oof",
     "change_point": "five_fold_oof",
-    "reconstruction": _RECONSTRUCTION_CALIBRATION,
 }
 _TRAIN_KEYS = {
     "kernel_1024": "kernels_1024__train_by_seed",
@@ -61,8 +70,14 @@ class TrainRiskRow:
     abstained: bool
     abstention_reason: str
     normal_runs: int
-    available_groups: int
-    reconstruction_available: bool
+    source_count: int
+    certified_sources: str
+    provenance_verified: bool
+    policy_risk_validated: bool
+    risk_target_pass: bool
+    reconstruction_available_but_provenance_unverified: bool
+    reconstruction_provenance_verified: bool
+    reconstruction_provenance_blocker: str
     recovery_shadow_false_reviews: int
     recovery_priority_false_reviews: int
     combined_false_reviews: int
@@ -75,6 +90,22 @@ class TrainRiskRow:
     recovery_shadow_meets_risk_target: bool
     recovery_priority_meets_risk_target: bool
     combined_meets_risk_target: bool
+    five_source_sensitivity_calculated: bool
+    five_source_sensitivity_source_count: int | None
+    five_source_sensitivity_recovery_shadow_false_reviews: int | None
+    five_source_sensitivity_recovery_priority_false_reviews: int | None
+    five_source_sensitivity_combined_false_reviews: int | None
+    five_source_sensitivity_recovery_shadow_false_review_rate: float | None
+    five_source_sensitivity_recovery_priority_false_review_rate: float | None
+    five_source_sensitivity_combined_false_review_rate: float | None
+    five_source_sensitivity_recovery_shadow_wilson_upper_95: float | None
+    five_source_sensitivity_recovery_priority_wilson_upper_95: float | None
+    five_source_sensitivity_combined_wilson_upper_95: float | None
+    five_source_sensitivity_provenance_verified: bool
+    five_source_sensitivity_policy_risk_validated: bool
+    five_source_sensitivity_risk_target_pass: bool | None
+    five_source_sensitivity_deployment_eligible: bool
+    five_source_sensitivity_approval_blocker: str
     alpha: float = ALPHA
     seed: int = SEED
     risk_target: float = RISK_TARGET
@@ -82,6 +113,7 @@ class TrainRiskRow:
     calibration: str = "query_excluded_loo_empirical_tail_ge"
     calibration_limitation: str = CALIBRATION_LIMITATION
     query_excluded_source_fitting: bool = True
+    deployment_eligible: bool = False
     contains_test_values: bool = False
     contains_test_labels: bool = False
     contains_evaluation_metrics: bool = False
@@ -151,11 +183,13 @@ def wilson_upper_bound(
 def validate_query_excluded_provenance(
     calibration_by_source: Mapping[str, str],
 ) -> None:
-    required = set(_EXPECTED_CALIBRATION) - {"reconstruction"}
-    if not required <= set(calibration_by_source):
-        raise TrainRiskContractError("query-excluded source provenance is incomplete")
-    for source, mode in calibration_by_source.items():
-        if source not in _EXPECTED_CALIBRATION or mode != _EXPECTED_CALIBRATION[source]:
+    if set(calibration_by_source) != set(CERTIFIED_SOURCE_GROUPS):
+        raise TrainRiskContractError(
+            "certified source provenance must contain exactly kernel, statistical, "
+            "structural, and change_point"
+        )
+    for source in CERTIFIED_SOURCE_GROUPS:
+        if calibration_by_source[source] != _EXPECTED_CALIBRATION[source]:
             raise TrainRiskContractError(
                 f"query-excluded source provenance mismatch: {source}"
             )
@@ -176,10 +210,6 @@ def _validate_array_lengths(
         raise TrainRiskContractError(
             f"missing TRAIN source array: dataset={dataset} source={missing[0]}"
         )
-    if n_train >= 100 and "reconstruction" not in source_arrays:
-        raise TrainRiskContractError(
-            f"missing eligible reconstruction TRAIN array: dataset={dataset}"
-        )
     one_dimensional = ("statistical", "structural", "change_point")
     for source in one_dimensional:
         values = np.asarray(source_arrays[source])
@@ -193,7 +223,11 @@ def _validate_array_lengths(
             raise TrainRiskContractError(
                 f"TRAIN array length mismatch: dataset={dataset} source={source}"
             )
-    if n_train >= 100:
+    if "reconstruction" in source_arrays:
+        if n_train < 100:
+            raise TrainRiskContractError(
+                f"unexpected reconstruction TRAIN array: dataset={dataset}"
+            )
         values = np.asarray(source_arrays["reconstruction"])
         if values.ndim != 2 or values.shape[0] < 1 or values.shape[1] != n_train:
             raise TrainRiskContractError(
@@ -221,8 +255,14 @@ def audit_dataset_train_risk(
             abstained=True,
             abstention_reason="n_train_below_5",
             normal_runs=0,
-            available_groups=0,
-            reconstruction_available=False,
+            source_count=len(CERTIFIED_SOURCE_GROUPS),
+            certified_sources="|".join(CERTIFIED_SOURCE_GROUPS),
+            provenance_verified=True,
+            policy_risk_validated=False,
+            risk_target_pass=False,
+            reconstruction_available_but_provenance_unverified=False,
+            reconstruction_provenance_verified=False,
+            reconstruction_provenance_blocker="",
             recovery_shadow_false_reviews=0,
             recovery_priority_false_reviews=0,
             combined_false_reviews=0,
@@ -235,36 +275,73 @@ def audit_dataset_train_risk(
             recovery_shadow_meets_risk_target=False,
             recovery_priority_meets_risk_target=False,
             combined_meets_risk_target=False,
+            five_source_sensitivity_calculated=False,
+            five_source_sensitivity_source_count=None,
+            five_source_sensitivity_recovery_shadow_false_reviews=None,
+            five_source_sensitivity_recovery_priority_false_reviews=None,
+            five_source_sensitivity_combined_false_reviews=None,
+            five_source_sensitivity_recovery_shadow_false_review_rate=None,
+            five_source_sensitivity_recovery_priority_false_review_rate=None,
+            five_source_sensitivity_combined_false_review_rate=None,
+            five_source_sensitivity_recovery_shadow_wilson_upper_95=None,
+            five_source_sensitivity_recovery_priority_wilson_upper_95=None,
+            five_source_sensitivity_combined_wilson_upper_95=None,
+            five_source_sensitivity_provenance_verified=False,
+            five_source_sensitivity_policy_risk_validated=False,
+            five_source_sensitivity_risk_target_pass=None,
+            five_source_sensitivity_deployment_eligible=False,
+            five_source_sensitivity_approval_blocker=RECONSTRUCTION_PROVENANCE_BLOCKER,
         )
 
     _validate_array_lengths(dataset, n_train, source_arrays)
     kernel = seed_intersection_flags(source_arrays["kernel_1024"], ALPHA) | (
         seed_intersection_flags(source_arrays["kernel_4096"], ALPHA)
     )
-    flags = [
+    certified_flags = [
         kernel,
         loo_tail_pvalues(source_arrays["statistical"]) <= ALPHA,
         loo_tail_pvalues(source_arrays["structural"]) <= ALPHA,
         loo_tail_pvalues(source_arrays["change_point"]) <= ALPHA,
     ]
-    reconstruction_available = n_train >= 100
-    if reconstruction_available:
-        flags.append(seed_intersection_flags(source_arrays["reconstruction"], ALPHA))
-    support = np.stack(flags, axis=0).sum(axis=0)
+    support = np.stack(certified_flags, axis=0).sum(axis=0)
     shadow = int(np.count_nonzero(support >= 3))
     priority = int(np.count_nonzero(support == 2))
     combined = shadow + priority
     shadow_rate, shadow_upper, shadow_meets = _risk_values(shadow, n_train)
     priority_rate, priority_upper, priority_meets = _risk_values(priority, n_train)
     combined_rate, combined_upper, combined_meets = _risk_values(combined, n_train)
+    reconstruction_available = n_train >= 100 and "reconstruction" in source_arrays
+    sensitivity_flags = list(certified_flags)
+    if reconstruction_available:
+        sensitivity_flags.append(
+            seed_intersection_flags(source_arrays["reconstruction"], ALPHA)
+        )
+    sensitivity_support = np.stack(sensitivity_flags, axis=0).sum(axis=0)
+    sensitivity: dict[str, int | float] = {
+        "shadow": int(np.count_nonzero(sensitivity_support >= 3)),
+        "priority": int(np.count_nonzero(sensitivity_support == 2)),
+    }
+    sensitivity["combined"] = int(sensitivity["shadow"] + sensitivity["priority"])
+    for lane in ("shadow", "priority", "combined"):
+        rate, upper, _ = _risk_values(int(sensitivity[lane]), n_train)
+        sensitivity[f"{lane}_rate"] = rate
+        sensitivity[f"{lane}_upper"] = upper
     return TrainRiskRow(
         dataset=dataset,
         n_train=n_train,
         abstained=False,
         abstention_reason="",
         normal_runs=n_train,
-        available_groups=len(flags),
-        reconstruction_available=reconstruction_available,
+        source_count=len(CERTIFIED_SOURCE_GROUPS),
+        certified_sources="|".join(CERTIFIED_SOURCE_GROUPS),
+        provenance_verified=True,
+        policy_risk_validated=True,
+        risk_target_pass=combined_meets,
+        reconstruction_available_but_provenance_unverified=reconstruction_available,
+        reconstruction_provenance_verified=False,
+        reconstruction_provenance_blocker=(
+            RECONSTRUCTION_PROVENANCE_BLOCKER if reconstruction_available else ""
+        ),
         recovery_shadow_false_reviews=shadow,
         recovery_priority_false_reviews=priority,
         combined_false_reviews=combined,
@@ -277,6 +354,22 @@ def audit_dataset_train_risk(
         recovery_shadow_meets_risk_target=shadow_meets,
         recovery_priority_meets_risk_target=priority_meets,
         combined_meets_risk_target=combined_meets,
+        five_source_sensitivity_calculated=True,
+        five_source_sensitivity_source_count=5,
+        five_source_sensitivity_recovery_shadow_false_reviews=sensitivity["shadow"],
+        five_source_sensitivity_recovery_priority_false_reviews=sensitivity["priority"],
+        five_source_sensitivity_combined_false_reviews=sensitivity["combined"],
+        five_source_sensitivity_recovery_shadow_false_review_rate=sensitivity["shadow_rate"],
+        five_source_sensitivity_recovery_priority_false_review_rate=sensitivity["priority_rate"],
+        five_source_sensitivity_combined_false_review_rate=sensitivity["combined_rate"],
+        five_source_sensitivity_recovery_shadow_wilson_upper_95=sensitivity["shadow_upper"],
+        five_source_sensitivity_recovery_priority_wilson_upper_95=sensitivity["priority_upper"],
+        five_source_sensitivity_combined_wilson_upper_95=sensitivity["combined_upper"],
+        five_source_sensitivity_provenance_verified=False,
+        five_source_sensitivity_policy_risk_validated=False,
+        five_source_sensitivity_risk_target_pass=None,
+        five_source_sensitivity_deployment_eligible=False,
+        five_source_sensitivity_approval_blocker=RECONSTRUCTION_PROVENANCE_BLOCKER,
     )
 
 
@@ -391,10 +484,6 @@ def _load_reconstruction_inventory(
         != FROZEN_AUDIT_HASHES["reconstruction"]
     ):
         raise TrainRiskContractError("frozen reconstruction inventory contract mismatch")
-    validate_query_excluded_provenance(
-        {**{name: mode for name, mode in _EXPECTED_CALIBRATION.items() if name != "reconstruction"},
-         "reconstruction": _RECONSTRUCTION_CALIBRATION}
-    )
     return {str(name): str(digest) for name, digest in archives.items()}
 
 

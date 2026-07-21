@@ -77,13 +77,27 @@ class TrainRiskTests(unittest.TestCase):
         )
 
         self.assertFalse(row.abstained)
-        self.assertEqual(row.available_groups, 5)
+        self.assertEqual(row.source_count, 4)
+        self.assertTrue(row.provenance_verified)
+        self.assertTrue(row.policy_risk_validated)
+        self.assertTrue(row.query_excluded_source_fitting)
+        self.assertTrue(row.reconstruction_available_but_provenance_unverified)
         self.assertEqual(row.recovery_shadow_false_reviews, 1)
-        self.assertEqual(row.recovery_priority_false_reviews, 1)
-        self.assertEqual(row.combined_false_reviews, 2)
+        self.assertEqual(row.recovery_priority_false_reviews, 0)
+        self.assertEqual(row.combined_false_reviews, 1)
         self.assertEqual(row.normal_runs, 200)
-        self.assertEqual(row.combined_false_review_rate, 0.01)
+        self.assertEqual(row.combined_false_review_rate, 0.005)
         self.assertFalse(row.combined_meets_risk_target)
+        self.assertTrue(row.five_source_sensitivity_calculated)
+        self.assertEqual(row.five_source_sensitivity_source_count, 5)
+        self.assertFalse(row.five_source_sensitivity_provenance_verified)
+        self.assertFalse(row.five_source_sensitivity_policy_risk_validated)
+        self.assertEqual(row.five_source_sensitivity_combined_false_reviews, 2)
+        self.assertIsNone(row.five_source_sensitivity_risk_target_pass)
+        self.assertFalse(row.five_source_sensitivity_deployment_eligible)
+        self.assertIn(
+            "blocked until", row.five_source_sensitivity_approval_blocker
+        )
 
     def test_mismatched_train_array_lengths_fail_explicitly(self) -> None:
         arrays = policy_arrays()
@@ -98,7 +112,15 @@ class TrainRiskTests(unittest.TestCase):
 
         row = audit_dataset_train_risk("demo", n_train=99, source_arrays=arrays)
 
-        self.assertEqual(row.available_groups, 4)
+        self.assertEqual(row.source_count, 4)
+        self.assertFalse(row.reconstruction_available_but_provenance_unverified)
+        self.assertTrue(row.five_source_sensitivity_calculated)
+        self.assertEqual(row.five_source_sensitivity_source_count, 5)
+        self.assertEqual(
+            row.five_source_sensitivity_combined_false_reviews,
+            row.combined_false_reviews,
+        )
+        self.assertIsNotNone(row.five_source_sensitivity_combined_wilson_upper_95)
         self.assertFalse(row.abstained)
 
     def test_query_excluded_provenance_is_mandatory(self) -> None:
@@ -112,6 +134,20 @@ class TrainRiskTests(unittest.TestCase):
 
         with self.assertRaisesRegex(TrainRiskContractError, "query-excluded"):
             validate_query_excluded_provenance({**valid, "structural": "in_sample"})
+
+    def test_unverified_reconstruction_cannot_enter_certified_policy(self) -> None:
+        self_attested = {
+            "kernel": "five_fold_transformer_crossfit",
+            "statistical": "five_fold_oof",
+            "structural": "five_fold_oof",
+            "change_point": "five_fold_oof",
+            "reconstruction": "five_fold_oof",
+        }
+
+        with self.assertRaisesRegex(
+            TrainRiskContractError, "certified source provenance must contain exactly"
+        ):
+            validate_query_excluded_provenance(self_attested)
 
     def test_one_sided_wilson_upper_bound_controls_the_risk_gate(self) -> None:
         expected_zero_of_100 = 1.6448536269514722**2 / (
@@ -136,6 +172,31 @@ class TrainRiskTests(unittest.TestCase):
         self.assertEqual(written[0]["seed"], "20260721")
         self.assertEqual(written[0]["risk_target"], "0.01")
         self.assertEqual(written[0]["calibration_limitation"], CALIBRATION_LIMITATION)
+        self.assertEqual(written[0]["source_count"], "4")
+        self.assertEqual(
+            written[0]["certified_sources"],
+            "kernel|statistical|structural|change_point",
+        )
+        self.assertEqual(written[0]["provenance_verified"], "True")
+        self.assertEqual(written[0]["policy_risk_validated"], "True")
+        self.assertEqual(
+            written[0]["reconstruction_available_but_provenance_unverified"],
+            "True",
+        )
+        self.assertEqual(
+            written[0]["five_source_sensitivity_provenance_verified"], "False"
+        )
+        self.assertEqual(
+            written[0]["five_source_sensitivity_policy_risk_validated"], "False"
+        )
+        self.assertEqual(written[0]["five_source_sensitivity_risk_target_pass"], "")
+        self.assertEqual(
+            written[0]["five_source_sensitivity_deployment_eligible"], "False"
+        )
+        self.assertIn(
+            "blocked until",
+            written[0]["five_source_sensitivity_approval_blocker"],
+        )
         self.assertEqual(written[0]["contains_test_values"], "False")
         self.assertEqual(written[0]["contains_test_labels"], "False")
         self.assertEqual(written[0]["contains_evaluation_metrics"], "False")
@@ -150,6 +211,26 @@ class TrainRiskTests(unittest.TestCase):
                 (Path(directory) / "02_train_normal_risk_audit.csv").is_file()
             )
             self.assertTrue(all(row.normal_runs in {0, row.n_train} for row in rows))
+            self.assertTrue(all(row.source_count == 4 for row in rows))
+            sensitivity = [
+                row
+                for row in rows
+                if row.reconstruction_available_but_provenance_unverified
+            ]
+            self.assertEqual(len(sensitivity), 251)
+            eligible = [row for row in rows if not row.abstained]
+            self.assertTrue(
+                all(row.five_source_sensitivity_calculated for row in eligible)
+            )
+            self.assertTrue(
+                all(
+                    row.five_source_sensitivity_calculated
+                    and not row.five_source_sensitivity_provenance_verified
+                    and not row.five_source_sensitivity_policy_risk_validated
+                    and row.five_source_sensitivity_risk_target_pass is None
+                    for row in sensitivity
+                )
+            )
 
 
 if __name__ == "__main__":
