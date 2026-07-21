@@ -1,23 +1,26 @@
 from __future__ import annotations
 
 import csv
+import hashlib
+import io
 import json
 import sqlite3
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
+from . import config
 from .config import DB_PATH, OUTPUT_ROOT
 from .dependencies import dependency_report
 from .population import (
     EXPECTED_DATASETS,
     EXP266_OUTPUT_ROOT,
     PopulationContractError,
-    frozen_input_hashes,
     frozen_input_paths,
-    load_frozen_population,
+    population_from_prediction_rows,
     read_frozen_prediction_rows,
     validate_population,
+    sha256_file,
 )
 
 
@@ -319,13 +322,73 @@ def _read_exp266_csvs(
     root = Path(exp266_output_root)
     result_path = root / "05_dataset_results.csv"
     summary_path = root / "06_global_summary.csv"
-    with result_path.open(newline="", encoding="utf-8") as handle:
-        result_rows = list(csv.DictReader(handle))
-    with summary_path.open(newline="", encoding="utf-8") as handle:
-        summary_rows = list(csv.DictReader(handle))
+
+    def read_csv_bytes(path: Path) -> tuple[list[dict[str, str]], str]:
+        try:
+            payload = path.read_bytes()
+        except OSError as exc:
+            raise ValueError(f"cannot read Exp266 CSV: {path}") from exc
+        actual_sha256 = hashlib.sha256(payload).hexdigest()
+        try:
+            text = payload.decode("utf-8")
+            rows = list(csv.DictReader(io.StringIO(text, newline="")))
+        except (UnicodeDecodeError, csv.Error) as exc:
+            raise ValueError(f"invalid Exp266 CSV: {path}") from exc
+        return rows, actual_sha256
+
+    result_rows, result_sha256 = read_csv_bytes(result_path)
+    summary_rows, summary_sha256 = read_csv_bytes(summary_path)
     if len(summary_rows) != 1:
         raise ValueError("06_global_summary.csv must contain exactly one row")
-    return result_rows, summary_rows[0], frozen_input_hashes(root)
+    return result_rows, summary_rows[0], {
+        "05_dataset_results.csv": result_sha256,
+        "06_global_summary.csv": summary_sha256,
+    }
+
+
+def parse_dataset_family(dataset: str) -> str:
+    """Parse a family name for retrospective grouping only."""
+
+    if type(dataset) is not str or not dataset:
+        raise ValueError("dataset must be a non-empty string")
+    family, marker, suffix = dataset.rpartition("_normal_")
+    return family if marker and family and suffix else dataset
+
+
+def family_summary_rows(
+    diagnostics: Iterable[Mapping[str, object]],
+) -> list[dict[str, object]]:
+    """Aggregate FN diagnostics by parsed family without affecting routing."""
+
+    grouped: dict[str, dict[str, object]] = {}
+    for row in diagnostics:
+        family = parse_dataset_family(str(row["dataset"]))
+        current = grouped.setdefault(
+            family,
+            {
+                "family": family,
+                "datasets": set(),
+                "combined_fn": 0,
+                "zero_support_fn": 0,
+                "single_source_fn": 0,
+                "diagnostic_only": True,
+            },
+        )
+        current["datasets"].add(str(row["dataset"]))  # type: ignore[union-attr]
+        current["combined_fn"] += int(row["remaining_fn_count"])  # type: ignore[operator]
+        current["zero_support_fn"] += int(row["zero_support_fn_count"])  # type: ignore[operator]
+        current["single_source_fn"] += int(row["single_source_fn_count"])  # type: ignore[operator]
+    return [
+        {
+            "family": family,
+            "datasets": len(values["datasets"]),  # type: ignore[arg-type]
+            "combined_fn": values["combined_fn"],
+            "zero_support_fn": values["zero_support_fn"],
+            "single_source_fn": values["single_source_fn"],
+            "diagnostic_only": True,
+        }
+        for family, values in sorted(grouped.items())
+    ]
 
 
 def _write_csv(path: Path, rows: list[Mapping[str, object]], fieldnames: list[str]) -> None:
@@ -352,11 +415,13 @@ def _write_diagnostic_outputs(
     root.mkdir(parents=True, exist_ok=True)
     expanded: list[dict[str, object]] = []
     for row in diagnostics:
+        family = parse_dataset_family(str(row["dataset"]))
         for index in row["remaining_fn_indices"]:  # type: ignore[union-attr]
             sources = row["support_sources_by_index"][index]  # type: ignore[index]
             expanded.append(
                 {
                     "dataset": row["dataset"],
+                    "family": family,
                     "fn_index": index,
                     "support_count": row["support_count_by_index"][index],  # type: ignore[index]
                     "support_sources": ";".join(sources),
@@ -377,6 +442,7 @@ def _write_diagnostic_outputs(
         "train_tiers": root / "04_zero_support_fn_train_tiers.csv",
         "test_sizes": root / "05_zero_support_fn_test_size_diagnostic.csv",
         "report": root / "06_exp267_report.md",
+        "family_summary": root / "06_zero_support_fn_family_summary.csv",
     }
     paths["dependency_audit"].write_text(
         json.dumps(audit["dependency_audit"], indent=2, sort_keys=True) + "\n",
@@ -392,6 +458,18 @@ def _write_diagnostic_outputs(
     ])
     totals = summarize_zero_support_diagnostics(diagnostics)
     _write_csv(paths["summary"], [totals], list(totals))
+    _write_csv(
+        paths["family_summary"],
+        family_summary_rows(diagnostics),
+        [
+            "family",
+            "datasets",
+            "combined_fn",
+            "zero_support_fn",
+            "single_source_fn",
+            "diagnostic_only",
+        ],
+    )
 
     train_groups: dict[str, Counter[str]] = {}
     for row in expanded:
@@ -444,6 +522,7 @@ def _write_diagnostic_outputs(
                 "",
                 "Prediction hashes and input paths were written before TEST labels were read.",
                 "TEST-size and TRAIN-tier slices are diagnostic views only.",
+                "Family grouping is a retrospective diagnostic only and never controls routing.",
                 "",
             ]
         ),
@@ -452,22 +531,29 @@ def _write_diagnostic_outputs(
     return paths
 
 
-def write_exp267_outputs(
+def _write_exp267_outputs_with_database(
     *,
     output_root: Path = OUTPUT_ROOT,
     exp266_output_root: Path = EXP266_OUTPUT_ROOT,
-    database_path: Path = DB_PATH,
+    database_path: Path,
 ) -> dict[str, Path]:
-    """Run the read-only Exp267 freeze, then materialize its diagnostic outputs."""
+    """Private runner used by tests that need an isolated diagnostic database."""
 
     prediction_path, results_path, summary_path = frozen_input_paths(exp266_output_root)
     prediction_rows, prediction_sha256, manifest = read_frozen_prediction_rows(prediction_path)
-    population = load_frozen_population(prediction_path)
+    population = population_from_prediction_rows(
+        prediction_rows, expected=EXPECTED_DATASETS
+    )
     result_rows, global_summary, hashes = _read_exp266_csvs(exp266_output_root)
+    hashes = {
+        "03_frozen_predictions.jsonl": prediction_sha256,
+        **hashes,
+    }
     if global_summary.get("prediction_sha256") != prediction_sha256:
         raise ValueError("Exp266 global summary is not bound to frozen predictions")
     if any(row.get("prediction_sha256") != prediction_sha256 for row in result_rows):
         raise ValueError("Exp266 result rows are not bound to frozen predictions")
+    database_sha256 = sha256_file(database_path)
     audit = {
         "dependency_audit": dependency_report(),
         "population_contract": {
@@ -479,6 +565,8 @@ def write_exp267_outputs(
             "summary_path": str(summary_path),
             "input_sha256": hashes,
             "prediction_sha256": prediction_sha256,
+            "database_path": str(database_path),
+            "database_sha256": database_sha256,
             "prediction_manifest": manifest,
             "labels_loaded_after_audit": True,
         },
@@ -506,6 +594,28 @@ def write_exp267_outputs(
     return _write_diagnostic_outputs(root, diagnostics, audit)
 
 
+def write_exp267_outputs(
+    *,
+    output_root: Path = OUTPUT_ROOT,
+    exp266_output_root: Path = EXP266_OUTPUT_ROOT,
+    database_path: Path | None = None,
+) -> dict[str, Path]:
+    """Run Exp267 against the official immutable DB path only."""
+
+    official_db_path = Path(config.DB_PATH)
+    requested_db_path = official_db_path if database_path is None else Path(database_path)
+    if requested_db_path.resolve() != official_db_path.resolve():
+        raise ValueError(
+            "write_exp267_outputs requires the official DB_PATH; "
+            "use the private database test helper for isolated tests"
+        )
+    return _write_exp267_outputs_with_database(
+        output_root=output_root,
+        exp266_output_root=exp266_output_root,
+        database_path=official_db_path,
+    )
+
+
 __all__ = [
     "EXPECTED_COMBINED_FN",
     "EXPECTED_SINGLE_SOURCE_FN",
@@ -513,7 +623,9 @@ __all__ = [
     "PopulationContractError",
     "build_zero_support_diagnostics",
     "diagnostic_row",
+    "family_summary_rows",
     "load_test_truth",
+    "parse_dataset_family",
     "summarize_zero_support_diagnostics",
     "write_exp267_outputs",
 ]

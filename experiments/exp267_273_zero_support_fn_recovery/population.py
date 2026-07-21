@@ -100,7 +100,11 @@ def read_frozen_prediction_rows(
     """Read and verify Exp266 prediction JSONL without reading labels or metrics."""
 
     path = _prediction_path(prediction_path)
-    actual_sha256 = sha256_file(path)
+    try:
+        payload = path.read_bytes()
+    except OSError as exc:
+        raise PopulationContractError(f"cannot read input artifact: {path}") from exc
+    actual_sha256 = hashlib.sha256(payload).hexdigest()
     resolved_manifest = (
         Path(manifest_path)
         if manifest_path is not None
@@ -119,9 +123,9 @@ def read_frozen_prediction_rows(
         )
 
     try:
-        raw_lines = path.read_text(encoding="utf-8").splitlines()
+        raw_lines = payload.decode("utf-8").splitlines()
         rows = [json.loads(line) for line in raw_lines if line.strip()]
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise PopulationContractError("frozen prediction JSONL is invalid") from exc
     if not rows or any(type(row) is not dict for row in rows):
         raise PopulationContractError("frozen prediction must contain object rows")
@@ -138,6 +142,14 @@ def load_frozen_population(
     """Return the sorted, hash-verified Exp266 population."""
 
     rows, _, _ = read_frozen_prediction_rows(prediction_path)
+    return population_from_prediction_rows(rows, expected=expected)
+
+
+def population_from_prediction_rows(
+    rows: Iterable[Mapping[str, object]], *, expected: int = EXPECTED_DATASETS
+) -> tuple[str, ...]:
+    """Validate a population from already parsed, hash-verified prediction rows."""
+
     names = [row.get("dataset") for row in rows]
     if any(type(name) is not str for name in names):
         raise PopulationContractError("frozen prediction dataset field is invalid")
@@ -179,6 +191,7 @@ __all__ = [
     "frozen_input_hashes",
     "frozen_input_paths",
     "load_frozen_population",
+    "population_from_prediction_rows",
     "read_frozen_prediction_rows",
     "sha256_file",
     "validate_population",
