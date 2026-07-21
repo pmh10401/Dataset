@@ -2172,6 +2172,29 @@ EXPERIMENTS["experiment_264_full_missing_aware_posthoc_evaluation"] = {
     "expected_datasets": 1117,
 }
 
+EXP266_ROOT = DATA_DIR / "exp266_outside_lane_fn_recovery_shadow"
+EXPERIMENTS["experiment_266_outside_lane_fn_recovery_shadow"] = {
+    "label": "Exp266 - lane 밖 FN 복구 Shadow",
+    "history_status": "completed_research",
+    "comparison_eligible": False,
+    "scope": "retrospective_outside_lane_fn_recovery_shadow",
+    "status_reason": "Frozen label-free recovery routing; Hard alerts remain unchanged and review lanes are human-assisted only",
+    "autonomous_metric_scope": "Hard only; unchanged Exp253 baseline",
+    "review_metric_scope": "Shadow, Priority, Standard, RecoveryShadow, RecoveryPriority, and DataQualityReview are review-only",
+    "detail_csv": EXP266_ROOT / "05_dataset_results.csv",
+    "summary_csv": EXP266_ROOT / "06_global_summary.csv",
+    "status_json": EXP266_ROOT / "status.json",
+    "stdout_log": EXP266_ROOT / "full.log",
+    "artifact_paths": [
+        EXP266_ROOT / "04_prediction_manifest.json",
+        EXP266_ROOT / "10_independent_reaggregation.json",
+        EXP266_ROOT / "09_result_report.md",
+        EXP266_ROOT / "MANIFEST.csv",
+        EXP266_ROOT / "status.json",
+    ],
+    "expected_datasets": 1117,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
@@ -3265,6 +3288,27 @@ def read_explicit_run_status(path=None):
     return value
 
 
+def read_exp266_run_status(path=None, pid_checker=pid_is_alive, now=None):
+    """Read Exp266's local heartbeat without allowing stale state to look active."""
+
+    candidate = Path(path) if path is not None else EXP266_ROOT / "status.json"
+    try:
+        value = json.loads(candidate.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if value.get("id") != "experiment_266_outside_lane_fn_recovery_shadow":
+        return {}
+    if value.get("status") not in {"queued", "running", "completed", "failed"}:
+        return {}
+    if value.get("status") == "running":
+        updated = as_float(value.get("updated_unix"))
+        clock = time.time() if now is None else now
+        if updated is None or clock - updated > 120 or not pid_checker(value.get("pid")):
+            return {}
+    value["status_path"] = str(candidate)
+    return value
+
+
 def _exp151_152_checkpoint_progress(checkpoint_path):
     checkpoint_path = Path(checkpoint_path)
     if not checkpoint_path.exists():
@@ -3873,7 +3917,7 @@ def _normalize_historical_variant(row):
         "pool_policy": pool_policy,
         "source_config": row.get("source_config") or row.get("config_name"),
         "variant_name": row.get("variant") or row.get("method") or pool_policy,
-        "mean_f1": first_number(row, ["mean_hard_f1", "mean_f1", "f1_evt", "mean_f1_evt", "f1"]),
+        "mean_f1": first_number(row, ["hard_mean_dataset_f1", "mean_hard_f1", "mean_f1", "f1_evt", "mean_f1_evt", "f1"]),
         "mean_combined_f1": first_number(row, ["mean_combined_f1"]),
         "mean_fp": first_number(row, ["mean_hard_fp", "mean_fp"]),
         "alert_precision": first_number(row, ["hard_alert_precision", "hard_precision", "alert_precision"]),
@@ -3923,7 +3967,7 @@ def normalize_historical_metrics(summary_row, detail_rows, metadata=None):
         or (metadata.get("artifact_type") == "audit")
         or (summary_path.endswith((".md", ".json")) and "audit" in audit_text)
     )
-    mean_f1 = first_number(row, ["mean_hard_f1", "mean_f1", "f1_evt", "mean_f1_evt", "f1"])
+    mean_f1 = first_number(row, ["hard_mean_dataset_f1", "mean_hard_f1", "mean_f1", "f1_evt", "mean_f1_evt", "f1"])
     if mean_f1 is None:
         mean_f1 = _detail_mean(details, ["hard_f1", "mean_hard_f1", "f1"])
 
@@ -4977,6 +5021,9 @@ def build_status(include_details=True):
     explicit_run = read_explicit_run_status()
     if explicit_run.get("status") == "running":
         external_live_run = explicit_run
+    exp266_run = read_exp266_run_status()
+    if exp266_run.get("status") == "running":
+        external_live_run = exp266_run
     if external_live_run.get("status") == "running":
         running = external_live_run
     heartbeat = read_heartbeat()
@@ -5104,7 +5151,7 @@ def build_status(include_details=True):
     ]
     queue_ids = [running_id, *pending_queue]
     experiment_snapshot = experiment_queue_snapshot(state, default_expected, experiment_ids=queue_ids, heartbeat=heartbeat)
-    external_for_items = dict(explicit_run or external_live_run)
+    external_for_items = dict(explicit_run or external_live_run or exp266_run)
     if external_for_items.get("status") == "running":
         external_for_items["progress_percent"] = progress
         external_for_items["datasets_done"] = done

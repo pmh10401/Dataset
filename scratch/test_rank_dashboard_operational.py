@@ -1,3 +1,4 @@
+import json
 import sys
 import sqlite3
 import tempfile
@@ -289,6 +290,41 @@ def test_dashboard_registers_new_queued_experiments():
     assert dash.EXPERIMENTS["experiment_43_explanation_space_transforms"]["detail_csv"].name == "experiment_43_explanation_space_transforms_results.csv"
     assert dash.EXPERIMENTS["experiment_44_classical_embedding_baselines"]["summary_csv"].name == "experiment_44_classical_embedding_baselines_summary.csv"
     assert "experiment_153_157_train_only_improvements" in dash.EXPERIMENTS
+
+
+def test_dashboard_registers_exp266_with_actual_summary_and_status():
+    info = dash.EXPERIMENTS["experiment_266_outside_lane_fn_recovery_shadow"]
+    assert info["summary_csv"].name == "06_global_summary.csv"
+    assert info["status_json"].name == "status.json"
+
+
+def test_exp266_stale_status_does_not_masquerade_as_running():
+    with tempfile.TemporaryDirectory() as tmp:
+        status_path = Path(tmp) / "status.json"
+        status_path.write_text(
+            json.dumps(
+                {
+                    "id": "experiment_266_outside_lane_fn_recovery_shadow",
+                    "status": "running",
+                    "pid": 99999999,
+                    "updated_unix": 0,
+                }
+            ),
+            encoding="utf-8",
+        )
+        assert dash.read_exp266_run_status(status_path, pid_checker=lambda _pid: False) == {}
+
+
+def test_exp266_completed_snapshot_loads_actual_summary_metrics():
+    row = next(
+        item
+        for item in dash.completed_result_snapshot({})
+        if item["id"] == "experiment_266_outside_lane_fn_recovery_shadow"
+    )
+
+    assert row["history_status"] == "completed_research"
+    assert abs(row["mean_f1"] - 0.6086590828851381) < 1e-12
+    assert abs(row["mean_combined_f1"] - 0.7233383161168991) < 1e-12
 
 
 def test_process_tree_snapshot_aggregates_child_processes():
@@ -1179,6 +1215,9 @@ if __name__ == "__main__":
     test_resource_metric_uses_compact_font_class()
     test_experiment_compare_does_not_hide_lower_ranked_completed_runs()
     test_dashboard_registers_new_queued_experiments()
+    test_dashboard_registers_exp266_with_actual_summary_and_status()
+    test_exp266_stale_status_does_not_masquerade_as_running()
+    test_exp266_completed_snapshot_loads_actual_summary_metrics()
     test_dashboard_server_supports_clean_restart()
     test_history_snapshot_uses_summary_without_loading_regular_detail_csv()
     test_large_csv_is_not_retained_in_dashboard_cache()
