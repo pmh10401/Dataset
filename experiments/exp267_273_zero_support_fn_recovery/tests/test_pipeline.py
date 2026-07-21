@@ -5,9 +5,13 @@ import unittest
 from pathlib import Path
 import subprocess
 import sys
+import numpy as np
+import inspect
 
 from experiments.exp267_273_zero_support_fn_recovery.reporting import build_status, publish_status
 from experiments.exp267_273_zero_support_fn_recovery.run_pipeline import STAGES
+from experiments.exp267_273_zero_support_fn_recovery.run_pipeline import run_stage
+from experiments.exp267_273_zero_support_fn_recovery.run_pipeline import _normalize_prediction_result
 
 
 class PipelineStatusTests(unittest.TestCase):
@@ -49,6 +53,16 @@ class PipelineStatusTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("--stage", result.stdout)
+
+    def test_promotion_stage_runs_frozen_evaluation_prerequisite(self) -> None:
+        source = inspect.getsource(run_stage)
+        promotion_branch = source.split('elif stage == "273":', 1)[1].split('elif stage == "all":', 1)[0]
+        self.assertIn("_evaluate_stage(paths, datasets, runtime, root)", promotion_branch)
+
+    def test_prediction_boundary_normalizes_numpy_indices(self) -> None:
+        result = _normalize_prediction_result(((np.int64(3), np.int64(1)), "hash", False, 0.2))
+        self.assertEqual(result, ((3, 1), "hash", False, 0.2))
+        self.assertTrue(all(type(index) is int for index in result[0]))
 
 
 if __name__ == "__main__":

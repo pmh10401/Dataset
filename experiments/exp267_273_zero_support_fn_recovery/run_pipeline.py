@@ -20,7 +20,8 @@ from .promotion_audit import audit_promotion
 from .qualification import build_verified_qualification_evidence, qualify_sources
 from .recovery_routing import build_and_freeze_verified_recovery_predictions
 from .reporting import build_status, publish_status
-from .source_pipeline import cache_source, freeze_source_predictions
+from .source_pipeline import cache_source
+from . import source_pipeline as source_pipeline_module
 from .train_risk import write_train_risk_audit
 
 
@@ -89,6 +90,25 @@ def _paths(root: Path) -> dict[str, Path]:
     }
 
 
+def _normalize_prediction_result(result: tuple[object, str, bool, float | None]):
+    candidates, pvalue_hash, blocked, attainable = result
+    return tuple(int(index) for index in candidates), pvalue_hash, blocked, attainable
+
+
+def _freeze_source_predictions_compatible(*args, **kwargs):
+    """Normalize NumPy index scalars without changing the hash-bound score pipeline."""
+    original = source_pipeline_module._prediction_for_variant
+
+    def normalized(**call_kwargs):
+        return _normalize_prediction_result(original(**call_kwargs))
+
+    source_pipeline_module._prediction_for_variant = normalized
+    try:
+        return source_pipeline_module.freeze_source_predictions(*args, **kwargs)
+    finally:
+        source_pipeline_module._prediction_for_variant = original
+
+
 def _write_one_row_csv(path: Path, row: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -106,6 +126,19 @@ def _runtime(root: Path, requested: str) -> dict[str, dict[str, object]]:
     return {"tcn_forecast": {"device": selected, "benchmark_record": record}}
 
 
+def _evaluate_stage(
+    paths: dict[str, Path], datasets: tuple[str, ...], runtime: dict[str, dict[str, object]], root: Path,
+) -> None:
+    evaluate_frozen_predictions(
+        paths["recovery_prediction"], paths["recovery_manifest"],
+        expected_datasets=datasets, output_dir=root,
+        source_prediction_path=paths["source_prediction"],
+        source_prediction_manifest_path=paths["source_manifest"],
+        membership_path=paths["membership"], cache_root=paths["cache"],
+        source_runtime=runtime,
+    )
+
+
 def _freeze_reproducibility(root: Path, datasets: tuple[str, ...], runtime) -> Path:
     paths = _paths(root)
     first = build_verified_qualification_evidence(
@@ -115,7 +148,7 @@ def _freeze_reproducibility(root: Path, datasets: tuple[str, ...], runtime) -> P
         paths["cache"], expected_datasets=datasets, source_runtime=runtime,
     )
     first_hash = hashlib.sha256(paths["source_prediction"].read_bytes()).hexdigest()
-    temp_prediction, _ = freeze_source_predictions(
+    temp_prediction, _ = _freeze_source_predictions_compatible(
         paths["cache"], datasets=datasets, expected_dataset_count=len(datasets),
         output_dir=root / "reproducibility_read_2", source_runtime=runtime,
     )
@@ -185,7 +218,7 @@ def run_stage(
                 expected_dataset_count=len(datasets), progress=publisher.progress,
             )
         elif stage == "270c":
-            freeze_source_predictions(
+            _freeze_source_predictions_compatible(
                 paths["cache"], datasets=datasets, expected_dataset_count=len(datasets),
                 output_dir=paths["source_prediction"].parent, source_runtime=runtime,
             )
@@ -230,15 +263,9 @@ def run_stage(
                 "retrospective": True,
             })
         elif stage == "evaluate":
-            evaluate_frozen_predictions(
-                paths["recovery_prediction"], paths["recovery_manifest"],
-                expected_datasets=datasets, output_dir=root,
-                source_prediction_path=paths["source_prediction"],
-                source_prediction_manifest_path=paths["source_manifest"],
-                membership_path=paths["membership"], cache_root=paths["cache"],
-                source_runtime=runtime,
-            )
+            _evaluate_stage(paths, datasets, runtime, root)
         elif stage == "273":
+            _evaluate_stage(paths, datasets, runtime, root)
             summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
             autonomous = summary["autonomous"]
             membership = json.loads(paths["membership"].read_text(encoding="utf-8"))
