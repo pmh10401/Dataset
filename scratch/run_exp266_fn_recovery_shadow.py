@@ -145,6 +145,22 @@ def _terminate_child(child: object | None) -> None:
         getattr(child, "terminate")()
 
 
+def _terminate_and_wait(child: object | None) -> None:
+    """Stop a child that was spawned after launcher cancellation was requested."""
+
+    if child is None:
+        return
+    _terminate_child(child)
+    try:
+        getattr(child, "wait")(timeout=5)
+    except TypeError:
+        getattr(child, "wait")()
+    except subprocess.TimeoutExpired:
+        if getattr(child, "poll")() is None:
+            getattr(child, "kill")()
+        getattr(child, "wait")()
+
+
 class _TerminationController:
     """Record launcher termination before a child exists and forward it afterwards."""
 
@@ -306,9 +322,17 @@ def main(argv: list[str] | None = None) -> int:
                 with log_path.open("a", encoding="utf-8") as log:
                     child = subprocess.Popen(command, cwd=REPO_ROOT, stdout=log, stderr=subprocess.STDOUT)
                     termination.child = child
+                    if termination.requested.is_set():
+                        _terminate_and_wait(child)
+                        return_code = termination.return_code()
+                        return return_code
                     with _locked(GLOBAL_STATE_LOCK_PATH):
                         state = _read_state(state_path)
                         running = dict(state.get("running") or {})
+                        if termination.requested.is_set():
+                            _terminate_and_wait(child)
+                            return_code = termination.return_code()
+                            return return_code
                         if running.get("owner_token") != owner_token:
                             _terminate_child(child)
                             child.wait()
@@ -323,7 +347,11 @@ def main(argv: list[str] | None = None) -> int:
                     status_path, output_root=output_root, stdout_log=log_path, expected=expected,
                     started_unix=started, error=f"startup failed: {exc}",
                 )
-            succeeded = return_code == 0 and completed_output_is_valid(output_root, args.dataset_limit)
+            succeeded = (
+                not termination.requested.is_set()
+                and return_code == 0
+                and completed_output_is_valid(output_root, args.dataset_limit)
+            )
             if not succeeded:
                 _write_failure_preserving_progress(
                     status_path, output_root=output_root, stdout_log=log_path, expected=expected,

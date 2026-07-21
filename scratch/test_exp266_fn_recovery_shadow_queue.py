@@ -136,6 +136,57 @@ class QueueRunnerTests(unittest.TestCase):
         self.assertEqual(status["status"], "failed")
         self.assertTrue(status["errors"])
 
+    def test_signal_during_popen_terminates_child_before_running_state_is_published(self):
+        class SpawnedChild:
+            pid = 4321
+
+            def __init__(self):
+                self.terminated = False
+                self.waited = False
+
+            def poll(self):
+                return -signal.SIGTERM if self.terminated else None
+
+            def terminate(self):
+                self.terminated = True
+
+            def wait(self):
+                self.waited = True
+                return -signal.SIGTERM if self.terminated else 0
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            state_path = root / "state.json"
+            global_lock = root / "state.lock"
+            handlers: dict[int, object] = {}
+            child = SpawnedChild()
+
+            def spawn_during_signal(*_args, **_kwargs):
+                handler = handlers[signal.SIGTERM]
+                assert callable(handler)
+                handler(signal.SIGTERM, None)
+                return child
+
+            with patch.object(runner, "GLOBAL_STATE_LOCK_PATH", global_lock), \
+                 patch.object(runner.signal, "signal", side_effect=self._signal_installer(handlers)), \
+                 patch.object(runner.subprocess, "Popen", side_effect=spawn_during_signal), \
+                 patch.object(runner, "completed_output_is_valid", return_value=True):
+                result = runner.main([
+                    "--output-root", str(root / "outputs"),
+                    "--state-path", str(state_path),
+                    "--poll-seconds", "0.01",
+                ])
+
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            status = json.loads((root / "outputs" / "status.json").read_text(encoding="utf-8"))
+        self.assertEqual(result, 128 + signal.SIGTERM)
+        self.assertTrue(child.terminated)
+        self.assertTrue(child.waited)
+        self.assertIsNone(state["running"])
+        self.assertNotIn(runner.EXPERIMENT_ID, state["completed"])
+        self.assertEqual(state["history"][-1]["return_code"], 128 + signal.SIGTERM)
+        self.assertEqual(status["status"], "failed")
+
 
 if __name__ == "__main__":
     unittest.main()
