@@ -13,6 +13,7 @@ from experiments.exp266_fn_recovery_shadow import prediction as prediction_modul
 from experiments.exp266_fn_recovery_shadow.config import (
     EVIDENCE_GROUPS,
     EXPECTED_DATASETS,
+    FROZEN_DATABASE_SHA256,
     FROZEN_PREDICTION_HASHES,
 )
 from experiments.exp266_fn_recovery_shadow.contracts import (
@@ -98,6 +99,7 @@ def smoke_manifest_extra(rows: int) -> dict[str, object]:
             "frozen_population": EXPECTED_DATASETS,
             "predicted_datasets": rows,
         },
+        "database_sha256": FROZEN_DATABASE_SHA256,
         "deployment_eligible": False,
         "input_sha256": dict(FROZEN_PREDICTION_HASHES),
         "lane_policy": {
@@ -189,6 +191,10 @@ class PredictionBoundaryTests(unittest.TestCase):
             self.assertNotIn("n_test", full_row)
             self.assertIs(full_manifest["complete_population"], True)
             self.assertIs(full_manifest["smoke"], False)
+            self.assertEqual(full_manifest["database_sha256"], FROZEN_DATABASE_SHA256)
+            self.assertEqual(
+                full_manifest["config"]["database_sha256"], FROZEN_DATABASE_SHA256
+            )
             self.assertIs(smoke_manifest["complete_population"], False)
             self.assertIs(smoke_manifest["smoke"], True)
             self.assertIs(smoke_manifest["deployment_eligible"], False)

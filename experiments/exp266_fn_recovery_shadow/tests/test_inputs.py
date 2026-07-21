@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -10,6 +11,7 @@ import numpy as np
 from experiments.exp266_fn_recovery_shadow.config import (
     ALPHA,
     EVIDENCE_GROUPS,
+    FROZEN_DATABASE_SHA256,
     FULL_RUN_WORKERS,
     MINI_VARIANTS,
 )
@@ -172,6 +174,13 @@ class FrozenInputTests(unittest.TestCase):
             )
             self.assertGreater(recovery.datasets["ACSF1_normal_0"].target_length, 0)
             self.assertTrue((Path(directory) / "00_contract_audit.json").is_file())
+            audit = json.loads(
+                (Path(directory) / "00_contract_audit.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(audit["database_sha256"], FROZEN_DATABASE_SHA256)
+            self.assertEqual(
+                audit["immutable_hash_pins"]["database"], FROZEN_DATABASE_SHA256
+            )
             source_manifest = Path(directory) / "01_source_manifest.csv"
             self.assertTrue(source_manifest.is_file())
             self.assertIn("target_length", source_manifest.read_text(encoding="utf-8").splitlines()[0])

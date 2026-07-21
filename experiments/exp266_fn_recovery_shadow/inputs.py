@@ -23,6 +23,7 @@ from .config import (
     FROZEN_AUDIT_CONFIGS,
     FROZEN_CACHE_MANIFEST_HASHES,
     FROZEN_DATABASE_EXCLUSIONS,
+    FROZEN_DATABASE_SHA256,
     FROZEN_PREDICTION_HASHES,
     FROZEN_PREDICTION_AUDIT_HASHES,
     FROZEN_PREDICTION_MANIFEST_HASHES,
@@ -34,6 +35,7 @@ from .config import (
     FROZEN_RECON_ARCHIVE_HASH_INVENTORY_SHA256,
 )
 from .contracts import FrozenDatasetInputs, FrozenRecoveryInputs
+from .database import DatabaseContractError, verify_database_sha256
 
 
 class InputContractError(ValueError):
@@ -297,12 +299,21 @@ def _select_mini_rows(rows: Collection[Mapping[str, object]], variant: str) -> d
 
 def _database_metadata(population: Collection[str]) -> dict[str, tuple[int, int, int]]:
     try:
-        with sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True) as connection:
-            rows = connection.execute(
-                "SELECT name, train_normal_count, test_total_count, series_length FROM datasets ORDER BY name"
-            ).fetchall()
+        verify_database_sha256(DB_PATH, FROZEN_DATABASE_SHA256)
+    except DatabaseContractError as exc:
+        raise InputContractError(str(exc)) from exc
+    connection: sqlite3.Connection | None = None
+    try:
+        connection = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        connection.execute("PRAGMA query_only = ON")
+        rows = connection.execute(
+            "SELECT name, train_normal_count, test_total_count, series_length FROM datasets ORDER BY name"
+        ).fetchall()
     except sqlite3.Error as exc:
         raise InputContractError(f"cannot read frozen database: {DB_PATH}") from exc
+    finally:
+        if connection is not None:
+            connection.close()
     metadata = {str(name): (n_train, n_test, target_length) for name, n_train, n_test, target_length in rows}
     if len(metadata) != len(rows) or any(
         type(n_train) is not int or type(n_test) is not int or type(target_length) is not int or target_length <= 0
@@ -506,7 +517,9 @@ def _write_audit(output_root: Path, recovery: FrozenRecoveryInputs) -> None:
         "datasets": len(recovery.population),
         "lane_totals": dict(recovery.lane_totals),
         "input_sha256": dict(recovery.input_sha256),
+        "database_sha256": FROZEN_DATABASE_SHA256,
         "immutable_hash_pins": {
+            "database": FROZEN_DATABASE_SHA256,
             "prediction_artifacts": dict(FROZEN_PREDICTION_HASHES),
             "prediction_manifests": dict(FROZEN_PREDICTION_MANIFEST_HASHES),
             "prediction_audits": dict(FROZEN_PREDICTION_AUDIT_HASHES),

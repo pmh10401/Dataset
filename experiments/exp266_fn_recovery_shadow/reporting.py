@@ -3,16 +3,22 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
-import math
 import os
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
-from statistics import NormalDist
 
-from .config import EXPECTED_DATASETS, EXP253_PREDICTION, RISK_TARGET
+from .config import (
+    DB_PATH,
+    EXPECTED_DATASETS,
+    EXP253_PREDICTION,
+    EXP264_PREDICTION,
+    FROZEN_DATABASE_SHA256,
+)
 from .independent_reaggregate import COMBINED_METRIC_FORMULA, write_independent_reaggregation
+from .invariance import run_invariance_suite, write_invariance_report
 from .prediction import CheckpointError, verify_prediction_checkpoint
+from .train_risk import RECONSTRUCTION_PROVENANCE_BLOCKER, validate_train_risk_audit
 
 
 def _atomic_text(path: Path, text: str) -> None:
@@ -84,7 +90,9 @@ def _prediction_boundary(
     return actual, rows
 
 
-def _write_invariance_report(output_root: Path, prediction_sha256: str, rows: list[dict[str, object]]) -> Path:
+def _invariance_boundary_checks(
+    output_root: Path, prediction_sha256: str, rows: list[dict[str, object]]
+) -> list[tuple[str, bool]]:
     summary = _one_row(output_root / "06_global_summary.csv")
     with (output_root / "05_dataset_results.csv").open(newline="", encoding="utf-8") as handle:
         result_rows = list(csv.DictReader(handle))
@@ -108,80 +116,56 @@ def _write_invariance_report(output_root: Path, prediction_sha256: str, rows: li
         ("Frozen prediction contains no evaluation metrics", no_metric_fields),
         ("Autonomous Hard alert delta remains zero", summary.get("hard_alert_delta") == "0"),
         (
-            "Exact pinned Exp253 Hard parity covers every dataset",
-            summary.get("hard_parity_datasets") == summary.get("datasets")
-            and summary.get("hard_parity_mismatches") == "0",
+            "Exact pinned immutable-lane parity covers every dataset",
+            all(
+                summary.get(f"{lane}_parity_datasets") == summary.get("datasets")
+                and summary.get(f"{lane}_parity_mismatches") == "0"
+                and summary.get(f"{lane}_actual_indices_sha256")
+                == summary.get(f"{lane}_expected_indices_sha256")
+                for lane in ("hard", "shadow", "priority", "standard")
+            ),
         ),
         ("Repeat read preserves the frozen prediction hash", _sha256(output_root / "03_frozen_predictions.jsonl") == prediction_sha256),
     ]
     if not all(passed for _, passed in checks):
         failed = [name for name, passed in checks if not passed]
         raise ValueError(f"invariance report check failed: {failed}")
+    return checks
+
+
+def _risk_summary(
+    output_root: Path, *, required: bool
+) -> dict[str, object] | None:
+    path = output_root / "02_train_normal_risk_audit.csv"
+    if not path.exists():
+        if required:
+            raise ValueError("reporting requires the strict TRAIN-risk audit")
+        return None
+    return validate_train_risk_audit(output_root)
+
+
+def _write_smoke_invariance_report(
+    output_root: Path,
+    prediction_sha256: str,
+    boundary_checks: list[tuple[str, bool]],
+) -> Path:
     lines = [
-        "# Exp266 Invariance Report",
-        "",
-        "All checks are retrospective boundary checks. TEST labels were read only after the",
-        "frozen prediction SHA-256 was verified, and no prediction artifact was rewritten.",
+        "# Exp266 Smoke Invariance Boundary Report",
         "",
         f"Prediction SHA-256: `{prediction_sha256}`",
         "",
         "| Check | Status |",
         "|---|---|",
-        *[f"| {name} | {'PASS' if passed else 'FAIL'} |" for name, passed in checks],
+        *[
+            f"| {name} | {'PASS' if passed else 'FAIL'} |"
+            for name, passed in boundary_checks
+        ],
         "",
-        "Exact matching uses dataset TEST `instance_index`; adjacent indices are not merged.",
-        "Undefined precision, recall, and F1 denominators are emitted as `0.0`.",
-        "",
-        "Label permutation, anomaly-position mutation, display-name remapping, TEST-length",
-        "mutation, input-row permutation, and rerun hash checks remain Task 7 execution checks.",
+        "The six full-population mutation checks are generated only by the full report stage.",
     ]
     path = output_root / "08_invariance_report.md"
     _atomic_text(path, "\n".join(lines) + "\n")
     return path
-
-
-def _wilson_upper(false_reviews: int, normal_runs: int, confidence: float = 0.95) -> float:
-    if normal_runs <= 0:
-        return 1.0
-    z = NormalDist().inv_cdf(confidence)
-    proportion = false_reviews / normal_runs
-    denominator = 1.0 + z**2 / normal_runs
-    center = proportion + z**2 / (2.0 * normal_runs)
-    spread = z * math.sqrt(
-        proportion * (1.0 - proportion) / normal_runs + z**2 / (4.0 * normal_runs**2)
-    )
-    return (center + spread) / denominator
-
-
-def _risk_summary(output_root: Path) -> dict[str, object] | None:
-    path = output_root / "02_train_normal_risk_audit.csv"
-    if not path.exists():
-        return None
-    with path.open(newline="", encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle))
-    eligible = [row for row in rows if row.get("abstained") == "False"]
-    normal_runs = sum(int(row["normal_runs"]) for row in eligible)
-    output: dict[str, object] = {
-        "datasets": len(rows),
-        "eligible": len(eligible),
-        "abstained": len(rows) - len(eligible),
-        "normal_runs": normal_runs,
-    }
-    for lane in ("recovery_shadow", "recovery_priority", "combined"):
-        false_reviews = sum(int(row[f"{lane}_false_reviews"]) for row in eligible)
-        upper = _wilson_upper(false_reviews, normal_runs)
-        output[f"{lane}_false_reviews"] = false_reviews
-        output[f"{lane}_false_review_rate"] = false_reviews / normal_runs if normal_runs else 0.0
-        output[f"{lane}_wilson_upper_95"] = upper
-        output[f"{lane}_meets_risk_target"] = upper <= RISK_TARGET
-    output.update(
-        {
-            "certified_source_count": 4,
-            "five_source_sensitivity_approved": False,
-            "five_source_sensitivity_blocker": "missing reconstruction producer provenance",
-        }
-    )
-    return output
 
 
 def _write_result_report(output_root: Path, risk: dict[str, object] | None) -> Path:
@@ -224,7 +208,10 @@ def _write_result_report(output_root: Path, risk: dict[str, object] | None) -> P
             "",
             f"Unique recovered false negatives: **{row['recovered_unique_fn_count']}**",
             f"Datasets with added review candidates: **{row['datasets_with_added_candidates']}**",
-            f"Review-request rate per TEST run: **{float(row['review_request_rate']):.6f}**",
+            "Total existing plus Exp266 review-request rate per TEST run: "
+            f"**{float(row['total_existing_plus_exp266_review_request_rate']):.6f}**",
+            "Exp266 incremental review-request rate per TEST run: "
+            f"**{float(row['exp266_incremental_review_request_rate']):.6f}**",
             "",
             "## Human-Assisted Combined Diagnostic",
             "",
@@ -237,10 +224,24 @@ def _write_result_report(output_root: Path, risk: dict[str, object] | None) -> P
             f"{row['combined_fn']} | {float(row['combined_precision']):.6f} | "
             f"{float(row['combined_recall']):.6f} | {float(row['mean_combined_f1']):.6f} |",
             "",
-            f"Exact Exp253 Hard parity: **{row['hard_parity_datasets']} datasets**, "
-            f"mismatches: **{row['hard_parity_mismatches']}**.",
+            "",
+            "## Immutable Lane Parity",
+            "",
+            "| Lane | Pinned source | Matching datasets | Mismatches | Index-map SHA-256 |",
+            "|---|---|---:|---:|---|",
         ]
     )
+    for lane, source in (
+        ("hard", "Exp253"),
+        ("shadow", "Exp264"),
+        ("priority", "Exp264"),
+        ("standard", "Exp264"),
+    ):
+        lines.append(
+            f"| {lane.title()} | {source} | {row[f'{lane}_parity_datasets']} | "
+            f"{row[f'{lane}_parity_mismatches']} | "
+            f"`{row[f'{lane}_actual_indices_sha256']}` |"
+        )
     if risk is not None:
         lines.extend(
             [
@@ -249,7 +250,11 @@ def _write_result_report(output_root: Path, risk: dict[str, object] | None) -> P
                 "",
             "The certified audit uses exactly four provenance-verified sources. The",
             "five-source reconstruction result remains an unapproved sensitivity diagnostic.",
-            "Exact five-source blocker: **missing reconstruction producer provenance**.",
+            "Exact five-source blocker: **"
+            + str(risk["five_source_sensitivity_blocker"]).rstrip(".")
+            + "**.",
+            "The TRAIN-risk table below applies only to the Exp266 incremental "
+            "RecoveryShadow and RecoveryPriority lanes, never to existing review lanes.",
                 "",
                 "| Lane | False reviews | Rate | One-sided Wilson U95 | Target <= 0.01 |",
                 "|---|---:|---:|---:|---|",
@@ -276,7 +281,13 @@ def _write_result_report(output_root: Path, risk: dict[str, object] | None) -> P
             "All point matches are exact TEST instance-index matches with zero-denominator ratios",
             "recorded as 0.0.",
             "No threshold, policy, or source was selected from TEST results.",
-            "Five-source blocker: missing reconstruction producer provenance.",
+            (
+                "Five-source blocker: "
+                + str(risk["five_source_sensitivity_blocker"]).rstrip(".")
+                + "."
+                if risk is not None
+                else "Five-source risk was not evaluated in this smoke report."
+            ),
         ]
     )
     path = output_root / "09_result_report.md"
@@ -289,6 +300,7 @@ def _write_manifest(output_root: Path) -> Path:
         "00_contract_audit.json",
         "01_source_manifest.csv",
         "02_train_normal_risk_audit.csv",
+        "02_train_normal_risk_audit_manifest.json",
         "03_frozen_predictions.jsonl",
         "04_prediction_manifest.json",
         "05_dataset_results.csv",
@@ -311,14 +323,18 @@ def _write_manifest(output_root: Path) -> Path:
                     "role": role,
                     "retrospective": True,
                     "deployment_eligible": False,
+                    "database_sha256": FROZEN_DATABASE_SHA256,
                     "autonomous_scope": "Hard only; exact pinned Exp253 parity required",
+                    "immutable_review_lane_scope": (
+                        "Shadow, Priority, and Standard require exact pinned Exp264 parity"
+                    ),
                     "human_assisted_scope": (
                         "Shadow, Priority, Standard, RecoveryShadow, RecoveryPriority, and "
                         "DataQualityReview; review only"
                     ),
                     "combined_metric_formula": COMBINED_METRIC_FORMULA,
                     "no_test_policy_selection": True,
-                    "five_source_blocker": "missing reconstruction producer provenance",
+                    "five_source_blocker": RECONSTRUCTION_PROVENANCE_BLOCKER,
                 }
             )
     from io import StringIO
@@ -336,6 +352,9 @@ def write_reports(
     output_root: Path,
     *,
     exp253_prediction_path: Path = EXP253_PREDICTION,
+    exp264_prediction_path: Path = EXP264_PREDICTION,
+    database_path: Path = DB_PATH,
+    expected_database_sha256: str = FROZEN_DATABASE_SHA256,
     require_full_population: bool = True,
     progress_callback: Callable[[str, int, int], None] | None = None,
 ) -> tuple[Path, Path, Path, Path]:
@@ -343,16 +362,32 @@ def write_reports(
     prediction_sha256, rows = _prediction_boundary(
         output_root, require_full_population=require_full_population
     )
+    risk = _risk_summary(output_root, required=require_full_population)
     reaggregation = write_independent_reaggregation(
         output_root,
         exp253_prediction_path=exp253_prediction_path,
+        exp264_prediction_path=exp264_prediction_path,
+        database_path=database_path,
+        expected_database_sha256=expected_database_sha256,
         require_full_population=require_full_population,
         progress_callback=progress_callback,
     )
     if not reaggregation["passed"]:
         raise ValueError("independent reaggregation failed")
-    invariance_path = _write_invariance_report(output_root, prediction_sha256, rows)
-    result_path = _write_result_report(output_root, _risk_summary(output_root))
+    boundary_checks = _invariance_boundary_checks(output_root, prediction_sha256, rows)
+    if require_full_population:
+        evidence = run_invariance_suite(
+            baseline_root=output_root,
+            source_database=database_path,
+        )
+        invariance_path = write_invariance_report(
+            output_root, prediction_sha256, boundary_checks, evidence
+        )
+    else:
+        invariance_path = _write_smoke_invariance_report(
+            output_root, prediction_sha256, boundary_checks
+        )
+    result_path = _write_result_report(output_root, risk)
     reaggregation_path = output_root / "10_independent_reaggregation.json"
     manifest_path = _write_manifest(output_root)
     if _sha256(output_root / "03_frozen_predictions.jsonl") != prediction_sha256:

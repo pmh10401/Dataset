@@ -13,6 +13,7 @@ from .config import (
     EVIDENCE_GROUPS,
     EXPECTED_DATASETS,
     EXPERIMENT_ID,
+    FROZEN_DATABASE_SHA256,
     FROZEN_PREDICTION_HASHES,
     FULL_RUN_WORKERS,
     MINIMUM_TRAIN,
@@ -151,6 +152,7 @@ def recover_prediction_checkpoint(output_root: Path) -> dict[str, object]:
 def _config_snapshot() -> dict[str, object]:
     return {
         "alpha": ALPHA,
+        "database_sha256": FROZEN_DATABASE_SHA256,
         "evidence_groups": list(EVIDENCE_GROUPS),
         "expected_datasets": EXPECTED_DATASETS,
         "experiment_id": EXPERIMENT_ID,
@@ -211,6 +213,7 @@ def _validate_prediction_manifest_contract(
         "contains_evaluation_metrics",
         "contains_test_labels",
         "coverage",
+        "database_sha256",
         "datasets",
         "deployment_eligible",
         "experiment_id",
@@ -231,6 +234,7 @@ def _validate_prediction_manifest_contract(
         or manifest.get("contains_evaluation_metrics") is not False
         or manifest.get("retrospective") is not True
         or manifest.get("deployment_eligible") is not False
+        or manifest.get("database_sha256") != FROZEN_DATABASE_SHA256
     ):
         raise CheckpointError("prediction manifest contract mismatch")
     config = _config_snapshot()
@@ -447,6 +451,7 @@ def predict_all(
                 "frozen_population": len(recovery.population),
                 "predicted_datasets": len(ordered_inputs),
             },
+            "database_sha256": FROZEN_DATABASE_SHA256,
             "deployment_eligible": False,
             "input_sha256": dict(sorted(recovery.input_sha256.items())),
             "lane_policy": _lane_policy(),

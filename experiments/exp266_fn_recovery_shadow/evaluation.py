@@ -15,9 +15,12 @@ from .config import (
     EVIDENCE_GROUPS,
     EXPECTED_DATASETS,
     EXP253_PREDICTION,
+    EXP264_PREDICTION,
+    FROZEN_DATABASE_SHA256,
     FROZEN_PREDICTION_HASHES,
     FROZEN_PREDICTION_MANIFEST_HASHES,
 )
+from .database import DatabaseContractError, verify_database_sha256
 from .prediction import CheckpointError, verify_prediction_checkpoint
 
 
@@ -170,29 +173,112 @@ def _load_exp253_hard(
     return hard_by_dataset, actual_sha256
 
 
-def _require_hard_parity(
+def _load_exp264_lanes(
+    prediction_path: Path, *, require_pinned_source: bool
+) -> tuple[dict[str, dict[str, set[int]]], str]:
+    prediction_path = Path(prediction_path)
+    try:
+        payload = prediction_path.read_bytes()
+        rows = [json.loads(line) for line in payload.decode("utf-8").splitlines() if line]
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("cannot load pinned Exp264 frozen source") from exc
+    actual_sha256 = hashlib.sha256(payload).hexdigest()
+    if require_pinned_source:
+        manifest_path = prediction_path.parent / "prediction_manifest.json"
+        try:
+            manifest_payload = manifest_path.read_bytes()
+            manifest = json.loads(manifest_payload)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError("cannot load pinned Exp264 prediction manifest") from exc
+        if (
+            prediction_path != EXP264_PREDICTION
+            or actual_sha256 != FROZEN_PREDICTION_HASHES["exp264"]
+            or hashlib.sha256(manifest_payload).hexdigest()
+            != FROZEN_PREDICTION_MANIFEST_HASHES["exp264"]
+            or type(manifest) is not dict
+            or manifest.get("prediction_sha256") != actual_sha256
+            or manifest.get("datasets") != EXPECTED_DATASETS
+        ):
+            raise ValueError("pinned Exp264 prediction manifest mismatch")
+    mappings = {lane: {} for lane in ("shadow", "priority", "standard")}
+    fields = {
+        "shadow": "promoted_indices",
+        "priority": "final_priority_indices",
+        "standard": "final_standard_indices",
+    }
+    for row in rows:
+        if type(row) is not dict:
+            raise ValueError("Exp264 frozen source contains a non-object row")
+        dataset = row.get("dataset")
+        if type(dataset) is not str or not dataset:
+            raise ValueError("Exp264 frozen source row contract mismatch")
+        for lane, field in fields.items():
+            values = row.get(field)
+            if type(values) is not list or any(type(index) is not int for index in values):
+                raise ValueError("Exp264 frozen source row contract mismatch")
+            selected = set(values)
+            if dataset in mappings[lane] or len(selected) != len(values):
+                raise ValueError("Exp264 frozen source population mismatch")
+            mappings[lane][dataset] = selected
+    if require_pinned_source and any(
+        len(mapping) != EXPECTED_DATASETS for mapping in mappings.values()
+    ):
+        raise ValueError("pinned Exp264 source is not the complete 1,117-dataset population")
+    return mappings, actual_sha256
+
+
+def _index_mapping_sha256(mapping: Mapping[str, set[int]]) -> str:
+    payload = [
+        {"dataset": dataset, "indices": sorted(mapping[dataset])}
+        for dataset in sorted(mapping)
+    ]
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+def _require_immutable_lane_parity(
     prediction_rows: list[dict[str, object]],
     preflight: list[tuple[dict[str, object], dict[str, set[int]]]],
     exp253_hard: Mapping[str, set[int]],
+    exp264_lanes: Mapping[str, Mapping[str, set[int]]],
     *,
     require_full_population: bool,
-) -> int:
+) -> dict[str, object]:
     prediction_names = {str(row["dataset"]) for row in prediction_rows}
-    population_matches = (
-        prediction_names == set(exp253_hard)
-        if require_full_population
-        else prediction_names <= set(exp253_hard)
-    )
-    if not population_matches:
-        raise ValueError("Hard parity population mismatch with Exp253")
-    mismatches = [
-        str(row["dataset"])
-        for row, lanes in preflight
-        if lanes["hard"] != exp253_hard[str(row["dataset"])]
-    ]
-    if mismatches:
-        raise ValueError(f"Hard parity mismatch with Exp253: datasets={mismatches[:5]}")
-    return len(prediction_rows)
+    expected_by_lane: dict[str, Mapping[str, set[int]]] = {
+        "hard": exp253_hard,
+        **dict(exp264_lanes),
+    }
+    result: dict[str, object] = {}
+    for lane in BASELINE_LANES:
+        expected = expected_by_lane[lane]
+        population_matches = (
+            prediction_names == set(expected)
+            if require_full_population
+            else prediction_names <= set(expected)
+        )
+        if not population_matches:
+            raise ValueError(f"{lane.title()} parity population mismatch")
+        actual_mapping = {
+            str(row["dataset"]): lanes[lane] for row, lanes in preflight
+        }
+        expected_subset = {dataset: expected[dataset] for dataset in prediction_names}
+        mismatches = [
+            dataset
+            for dataset in sorted(prediction_names)
+            if actual_mapping[dataset] != expected_subset[dataset]
+        ]
+        if mismatches:
+            source = "Exp253" if lane == "hard" else "Exp264"
+            raise ValueError(
+                f"{lane.title()} parity mismatch with {source}: datasets={mismatches[:5]}"
+            )
+        result[f"{lane}_parity_datasets"] = len(prediction_rows)
+        result[f"{lane}_parity_mismatches"] = 0
+        result[f"{lane}_actual_indices_sha256"] = _index_mapping_sha256(actual_mapping)
+        result[f"{lane}_expected_indices_sha256"] = _index_mapping_sha256(expected_subset)
+    return result
 
 
 def _indices(row: Mapping[str, object], lane: str) -> set[int]:
@@ -334,6 +420,7 @@ def aggregate(rows: Iterable[Mapping[str, object]]) -> dict[str, object]:
             }
         )
     review_count = sum(int(summary[f"{lane}_count"]) for lane in HUMAN_REVIEW_LANES)
+    exp266_incremental_review_count = total("recovery_review_count")
     combined_tp = total("combined_tp")
     combined_fp = total("combined_fp")
     combined_fn = total("combined_fn")
@@ -341,14 +428,21 @@ def aggregate(rows: Iterable[Mapping[str, object]]) -> dict[str, object]:
     summary.update(
         {
             "human_assisted_review_count": review_count,
-            "recovery_review_count": total("recovery_review_count"),
+            "recovery_review_count": exp266_incremental_review_count,
             "human_assisted_confirmed_tp": total("combined_review_confirmed_tp"),
             "human_assisted_rejected_fp": total("combined_review_rejected_fp"),
             "recovered_unique_fn_count": total("recovered_unique_fn_count"),
             "datasets_with_added_candidates": sum(
                 int(int(row.get("recovery_review_count", 0)) > 0) for row in rows
             ),
-            "review_request_rate": review_count / total_test_runs if total_test_runs else 0.0,
+            "total_existing_plus_exp266_review_request_rate": (
+                review_count / total_test_runs if total_test_runs else 0.0
+            ),
+            "exp266_incremental_review_request_rate": (
+                exp266_incremental_review_count / total_test_runs
+                if total_test_runs
+                else 0.0
+            ),
             "combined_count": combined_count,
             "combined_tp": combined_tp,
             "combined_fp": combined_fp,
@@ -372,6 +466,13 @@ def aggregate(rows: Iterable[Mapping[str, object]]) -> dict[str, object]:
             "zero_denominator_policy": "0.0",
         }
     )
+    for lane, field in (
+        ("shadow", "shadow_parity_with_exp264"),
+        ("priority", "priority_parity_with_exp264"),
+        ("standard", "standard_parity_with_exp264"),
+    ):
+        summary[f"{lane}_parity_datasets"] = total(field)
+        summary[f"{lane}_parity_mismatches"] = len(rows) - total(field)
     return summary
 
 
@@ -461,8 +562,16 @@ def _evaluate_row(
             "combined_review_confirmed_tp": len(confirmed_review),
             "combined_review_rejected_fp": len(rejected_review),
             "recovered_unique_fn_count": len(recovered),
-            "review_request_rate": len(review) / len(labels) if labels else 0.0,
+            "total_existing_plus_exp266_review_request_rate": (
+                len(review) / len(labels) if labels else 0.0
+            ),
+            "exp266_incremental_review_request_rate": (
+                len(recovery_review) / len(labels) if labels else 0.0
+            ),
             "hard_parity_with_exp253": True,
+            "shadow_parity_with_exp264": True,
+            "priority_parity_with_exp264": True,
+            "standard_parity_with_exp264": True,
             "combined_metric_formula": COMBINED_METRIC_FORMULA,
             "retrospective": True,
             "deployment_eligible": False,
@@ -483,6 +592,8 @@ def evaluate_predictions(
     *,
     database_path: Path = DB_PATH,
     exp253_prediction_path: Path = EXP253_PREDICTION,
+    exp264_prediction_path: Path = EXP264_PREDICTION,
+    expected_database_sha256: str = FROZEN_DATABASE_SHA256,
     require_full_population: bool = True,
     progress_callback: Callable[[str, int, int], None] | None = None,
 ) -> tuple[list[dict[str, object]], dict[str, object]]:
@@ -514,12 +625,22 @@ def evaluate_predictions(
     exp253_hard, exp253_sha256 = _load_exp253_hard(
         exp253_prediction_path, require_pinned_source=require_full_population
     )
-    hard_parity_datasets = _require_hard_parity(
+    exp264_lanes, exp264_sha256 = _load_exp264_lanes(
+        exp264_prediction_path, require_pinned_source=require_full_population
+    )
+    parity = _require_immutable_lane_parity(
         prediction_rows,
         preflight,
         exp253_hard,
+        exp264_lanes,
         require_full_population=require_full_population,
     )
+    try:
+        database_sha256 = verify_database_sha256(
+            database_path, expected_database_sha256
+        )
+    except DatabaseContractError as exc:
+        raise ValueError(str(exc)) from exc
 
     evaluated: list[dict[str, object]] = []
     diagnostics: list[dict[str, object]] = []
@@ -539,8 +660,9 @@ def evaluate_predictions(
     summary = aggregate(evaluated)
     summary["prediction_sha256"] = prediction_sha256
     summary["exp253_prediction_sha256"] = exp253_sha256
-    summary["hard_parity_datasets"] = hard_parity_datasets
-    summary["hard_parity_mismatches"] = 0
+    summary["exp264_prediction_sha256"] = exp264_sha256
+    summary["database_sha256"] = database_sha256
+    summary.update(parity)
     _atomic_text(output_root / RESULTS_FILENAME, _csv_text(evaluated))
     _atomic_text(output_root / SUMMARY_FILENAME, _csv_text([summary]))
     _atomic_text(output_root / DIAGNOSTICS_FILENAME, _csv_text(diagnostics))

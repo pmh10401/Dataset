@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import csv
+import hashlib
+import json
 import unittest
 from dataclasses import replace
 from pathlib import Path
@@ -16,6 +18,7 @@ from experiments.exp266_fn_recovery_shadow.train_risk import (
     compute_train_risk_metrics,
     loo_tail_pvalues,
     seed_intersection_flags,
+    validate_train_risk_audit,
     validate_query_excluded_provenance,
     wilson_upper_bound,
     write_train_risk_audit,
@@ -202,6 +205,9 @@ class TrainRiskTests(unittest.TestCase):
             self.assertTrue(
                 (output_root / "02_train_normal_risk_audit.csv").is_file()
             )
+            self.assertTrue(
+                (output_root / "02_train_normal_risk_audit_manifest.json").is_file()
+            )
             self.assertTrue(all(row.normal_runs in {0, row.n_train} for row in rows))
             self.assertTrue(all(row.source_count == 4 for row in rows))
             self.assertTrue(all(row.provenance_verified for row in rows))
@@ -266,6 +272,35 @@ class TrainRiskTests(unittest.TestCase):
             self.assertEqual(written[0]["contains_test_values"], "False")
             self.assertEqual(written[0]["contains_test_labels"], "False")
             self.assertEqual(written[0]["contains_evaluation_metrics"], "False")
+            validation = validate_train_risk_audit(output_root)
+            self.assertTrue(validation["passed"])
+            self.assertEqual(validation["datasets"], 1117)
+            self.assertEqual(validation["certified_source_count"], 4)
+            self.assertEqual(validation["eligible"], 955)
+            self.assertEqual(validation["abstained"], 162)
+
+    def test_validator_rejects_name_complete_stale_risk_csv(self) -> None:
+        with TemporaryDirectory() as directory:
+            output_root = Path(directory)
+            audit_train_risk(output_root=output_root)
+            csv_path = output_root / "02_train_normal_risk_audit.csv"
+            manifest_path = output_root / "02_train_normal_risk_audit_manifest.json"
+            with csv_path.open(newline="", encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle))
+            rows[0]["source_count"] = "5"
+            with csv_path.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+                writer.writeheader()
+                writer.writerows(rows)
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["audit_sha256"] = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+            manifest_path.write_text(
+                json.dumps(manifest, sort_keys=True, indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(TrainRiskContractError, "source_count"):
+                validate_train_risk_audit(output_root)
 
 
 if __name__ == "__main__":

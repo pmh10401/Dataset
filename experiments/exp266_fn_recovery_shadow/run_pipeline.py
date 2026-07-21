@@ -13,13 +13,14 @@ import traceback
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
-from .config import EXPECTED_DATASETS, EXPECTED_LANE_TOTALS, EXPERIMENT_ID, FROZEN_DATABASE_EXCLUSIONS, FULL_RUN_WORKERS, OUTPUT_ROOT, DB_PATH
+from .config import EXPECTED_DATASETS, EXPECTED_LANE_TOTALS, EXPERIMENT_ID, FROZEN_DATABASE_EXCLUSIONS, FROZEN_DATABASE_SHA256, FULL_RUN_WORKERS, OUTPUT_ROOT, DB_PATH
+from .database import DatabaseContractError, verify_database_sha256
 from .evaluation import evaluate_predictions
 from .independent_reaggregate import verify_summary
 from .inputs import load_frozen_inputs
 from .prediction import predict_all, verify_prediction_checkpoint
 from .reporting import write_reports
-from .train_risk import audit_train_risk
+from .train_risk import TrainRiskContractError, audit_train_risk, validate_train_risk_audit
 
 
 STAGE_ORDER = ("audit", "predict", "risk", "evaluate", "report")
@@ -38,6 +39,7 @@ def output_paths(output_root: Path) -> dict[str, str]:
         "audit": str(root / "00_contract_audit.json"),
         "source_manifest": str(root / "01_source_manifest.csv"),
         "risk_audit": str(root / "02_train_normal_risk_audit.csv"),
+        "risk_audit_manifest": str(root / "02_train_normal_risk_audit_manifest.json"),
         "predictions": str(root / "03_frozen_predictions.jsonl"),
         "prediction_manifest": str(root / "04_prediction_manifest.json"),
         "results": str(root / "05_dataset_results.csv"),
@@ -206,11 +208,17 @@ class StatusHeartbeat:
 
 
 def _expected_dataset_names() -> set[str]:
+    connection: sqlite3.Connection | None = None
     try:
-        with sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True) as connection:
-            names = {str(row[0]) for row in connection.execute("SELECT name FROM datasets")}
-    except sqlite3.Error:
+        verify_database_sha256(DB_PATH, FROZEN_DATABASE_SHA256)
+        connection = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        connection.execute("PRAGMA query_only = ON")
+        names = {str(row[0]) for row in connection.execute("SELECT name FROM datasets")}
+    except (sqlite3.Error, DatabaseContractError):
         return set()
+    finally:
+        if connection is not None:
+            connection.close()
     return names - set(FROZEN_DATABASE_EXCLUSIONS)
 
 
@@ -259,6 +267,7 @@ def _stage_complete(stage: str, root: Path, dataset_limit: int | None) -> bool:
             audit.get("experiment_id") == EXPERIMENT_ID
             and audit.get("datasets") == EXPECTED_DATASETS
             and audit.get("lane_totals") == EXPECTED_LANE_TOTALS
+            and audit.get("database_sha256") == FROZEN_DATABASE_SHA256
             and _full_population_matches(root / "01_source_manifest.csv")
         )
     if stage == "predict":
@@ -287,7 +296,10 @@ def _stage_complete(stage: str, root: Path, dataset_limit: int | None) -> bool:
             and (dataset_limit is not None or names == _expected_dataset_names())
         )
     if stage == "risk":
-        return _full_population_matches(root / "02_train_normal_risk_audit.csv")
+        try:
+            return validate_train_risk_audit(root).get("passed") is True
+        except (OSError, ValueError, TrainRiskContractError):
+            return False
     if stage == "evaluate":
         required = ("05_dataset_results.csv", "06_global_summary.csv", "07_source_agreement_diagnostics.csv")
         if not all((root / name).is_file() for name in required):
@@ -327,6 +339,12 @@ def _stage_complete(stage: str, root: Path, dataset_limit: int | None) -> bool:
         }
         if dataset_limit is None:
             required.add("02_train_normal_risk_audit.csv")
+            required.add("02_train_normal_risk_audit_manifest.json")
+            try:
+                if validate_train_risk_audit(root).get("passed") is not True:
+                    return False
+            except (OSError, ValueError, TrainRiskContractError):
+                return False
         manifest_files = {row.get("file") for row in manifest_rows}
         hashes_match = all(
             isinstance(row.get("sha256"), str)
@@ -342,6 +360,9 @@ def _stage_complete(stage: str, root: Path, dataset_limit: int | None) -> bool:
             and reaggregation.get("index_errors") == 0
             and reaggregation.get("lane_overlaps") == 0
             and reaggregation.get("hard_parity_mismatches") == 0
+            and reaggregation.get("shadow_parity_mismatches") == 0
+            and reaggregation.get("priority_parity_mismatches") == 0
+            and reaggregation.get("standard_parity_mismatches") == 0
             and reaggregation.get("summary_verification", {}).get("passed") is True
         )
     raise ValueError(f"unknown stage: {stage}")

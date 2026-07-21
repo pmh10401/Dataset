@@ -57,6 +57,7 @@ class PipelineTests(unittest.TestCase):
                         "experiment_id": run_pipeline.EXPERIMENT_ID,
                         "datasets": run_pipeline.EXPECTED_DATASETS,
                         "lane_totals": run_pipeline.EXPECTED_LANE_TOTALS,
+                        "database_sha256": run_pipeline.FROZEN_DATABASE_SHA256,
                     }
                 ),
                 encoding="utf-8",
@@ -104,6 +105,9 @@ class PipelineTests(unittest.TestCase):
                         "index_errors": 0,
                         "lane_overlaps": 0,
                         "hard_parity_mismatches": 0,
+                        "shadow_parity_mismatches": 0,
+                        "priority_parity_mismatches": 0,
+                        "standard_parity_mismatches": 0,
                         "summary_verification": {"passed": True},
                     }
                 ),
@@ -318,6 +322,18 @@ class PipelineTests(unittest.TestCase):
             (root / "status.json").write_text('{"error_count": 1, "errors": ["boom"]}\n', encoding="utf-8")
             with patch.object(run_pipeline, "first_incomplete_stage", return_value=None):
                 self.assertFalse(run_pipeline.completed_output_is_valid(root, None))
+
+    def test_risk_stage_uses_strict_validator_instead_of_dataset_names_only(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with patch.object(
+                run_pipeline,
+                "validate_train_risk_audit",
+                side_effect=ValueError("stale risk audit"),
+            ) as validate:
+                self.assertFalse(run_pipeline._stage_complete("risk", root, None))
+
+        validate.assert_called_once_with(root)
 
 
 class PredictionWorkerTests(unittest.TestCase):

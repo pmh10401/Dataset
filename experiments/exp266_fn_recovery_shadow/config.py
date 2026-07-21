@@ -13,6 +13,7 @@ MINIMUM_TRAIN = 5
 FULL_RUN_WORKERS = 7
 
 DB_PATH = Path("/Users/minho/Documents/Dataset/univariate_ts.db")
+FROZEN_DATABASE_SHA256 = "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
 OUTPUT_ROOT = Path("/Users/minho/Documents/Dataset/exp266_outside_lane_fn_recovery_shadow")
 EXP253_PREDICTION = Path(
     "/Users/minho/Documents/Dataset/exp253_guarded_standard_to_hard_expansion/"
@@ -101,6 +102,22 @@ EXPECTED_LANE_TOTALS = {
     "standard": 806,
     "union": 3092,
 }
+EXPECTED_TRAIN_RISK_AGGREGATES = {
+    "datasets": 1117,
+    "eligible": 955,
+    "abstained": 162,
+    "normal_runs": 146796,
+    "reconstruction_available": 251,
+    "recovery_shadow_false_reviews": 84,
+    "recovery_priority_false_reviews": 160,
+    "combined_false_reviews": 244,
+    "five_source_sensitivity_recovery_shadow_false_reviews": 110,
+    "five_source_sensitivity_recovery_priority_false_reviews": 176,
+    "five_source_sensitivity_combined_false_reviews": 286,
+}
+FROZEN_TRAIN_RISK_AUDIT_SHA256 = (
+    "ae96262ce0e6d9f7c2f742c37d259f270487a64e95afe68dc112895547af9ddd"
+)
 CACHE_CONTRACTS = (
     (
         "kernel",
