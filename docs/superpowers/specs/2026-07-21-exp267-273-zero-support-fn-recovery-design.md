@@ -63,7 +63,13 @@ evaluation. It is not selected by comparing Exp270 TEST metrics.
 Current retrospective workload context, reported only to explain potential
 impact, is:
 
-- 251 datasets have `n_train >= 100`,
+- The current DB metadata audit has 253 rows with `n_train >= 100`: 252 are at
+  or below `TCN_MAX_TRAIN_ELEMENTS = 5,000,000`, and one exceeds it
+  (`18,378 * 4,000 = 73,512,000`) and is an explicit TRAIN-only resource
+  abstention. This is not a dataset-name policy.
+- The frozen 1,117-dataset Exp266 population is a different snapshot: its DB
+  join contains 251 rows with `n_train >= 100`, and all 251 are within the
+  5,000,000-element guard. These counts must remain distinct in reports.
 - these datasets contain 1,283 of the 1,553 remaining combined FN,
 - learner ineligibility is always recorded as `learner_abstained`, never as a
   negative vote or empty successful result.
@@ -166,15 +172,17 @@ Eligibility: `n_train >= 100`.
   Exp247/257 masked reconstruction.
 - Architecture, patch size, dilation schedule, loss, epochs, optimizer, and two
   seeds are frozen before full TEST evaluation.
-- TRAIN-normal validation controls early stopping with a frozen maximum epoch;
-  no TEST metric controls training.
+- Fit TRAIN loss controls early stopping with patience 3 and a frozen maximum
+  of 20 epochs; no held-out validation split or TEST metric controls training.
 - Score is a preregistered robust aggregate of future-patch residuals.
 - Seed median and seed intersection are both reported; neither is selected from
   TEST performance.
 
-MPS is used only if a smoke benchmark shows lower runtime than CPU while
-preserving the numerical and reproducibility contract. Only one MPS job may run
-at a time.
+MPS is used only if one frozen benchmark record has the current architecture
+configuration hash, all required fields, a valid canonical record hash, finite
+CPU/MPS outputs within the frozen tolerance, and lower MPS median runtime. An
+unverified, stale, incomplete, or tampered record falls back to CPU. Only one
+MPS job may run at a time.
 
 ### Exp270-C: Forecasting Risk And Stability Audit
 

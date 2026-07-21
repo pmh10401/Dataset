@@ -44,6 +44,7 @@ _BENCHMARK_TIMED_ITERATIONS: Final = 5
 _BENCHMARK_RTOL: Final = 1e-4
 _BENCHMARK_ATOL: Final = 1e-5
 _MINIMUM_TARGET_LENGTH: Final = TCN_PATCH_SIZE + 1
+_BENCHMARK_RECORD_HASH_FIELD: Final = "benchmark_record_sha256"
 
 
 class _CausalConv1d(nn.Module):
@@ -167,8 +168,10 @@ def _canonical_hash(payload: Mapping[str, object]) -> str:
 
 
 def benchmark_record_hash(record: Mapping[str, object]) -> str:
-    """Return the canonical hash persisted with a pipeline-frozen benchmark."""
-    return _canonical_hash(record)
+    """Hash a benchmark record while excluding its self-referential hash field."""
+    return _canonical_hash(
+        {key: value for key, value in record.items() if key != _BENCHMARK_RECORD_HASH_FIELD}
+    )
 
 
 def _frozen_benchmark_record(
@@ -181,17 +184,8 @@ def _frozen_benchmark_record(
 
 
 def _is_passing_mps_benchmark(record: Mapping[str, object] | None) -> bool:
-    if record is None:
-        return False
-    return bool(
-        record.get("selected_device") == "mps"
-        and record.get("mps_available") is True
-        and record.get("mps_finite") is True
-        and record.get("mps_close_to_cpu") is True
-        and record.get("mps_faster_than_cpu") is True
-        and isinstance(record.get("benchmark_config_hash"), str)
-        and bool(record["benchmark_config_hash"])
-    )
+    valid, _ = _benchmark_record_validation(record)
+    return bool(valid and record is not None and record.get("selected_device") == "mps")
 
 
 def choose_device(requested: str, benchmark: Mapping[str, object] | None = None) -> str:
@@ -233,6 +227,69 @@ def _benchmark_payload() -> dict[str, object]:
 
 def _payload_hash(payload: Mapping[str, object]) -> str:
     return _canonical_hash(payload)
+
+
+def _benchmark_record_validation(
+    record: Mapping[str, object] | None,
+) -> tuple[bool, str]:
+    """Verify current config, required fields, and canonical record integrity."""
+    if record is None:
+        return False, "missing_benchmark_record"
+    try:
+        normalized = json.loads(json.dumps(record, sort_keys=True, allow_nan=False))
+    except (TypeError, ValueError):
+        return False, "benchmark_record_not_canonical_json"
+    if not isinstance(normalized, dict):
+        return False, "benchmark_record_not_mapping"
+
+    expected_payload = json.loads(json.dumps(_benchmark_payload(), sort_keys=True))
+    for field, expected in expected_payload.items():
+        if normalized.get(field) != expected:
+            return False, f"benchmark_payload_mismatch:{field}"
+    if normalized.get("benchmark_config_hash") != _payload_hash(_benchmark_payload()):
+        return False, "stale_or_tampered_benchmark_config_hash"
+
+    required = (
+        "benchmark_config_hash",
+        _BENCHMARK_RECORD_HASH_FIELD,
+        "requested_device",
+        "cpu_median_seconds",
+        "mps_available",
+        "mps_finite",
+        "mps_close_to_cpu",
+        "mps_faster_than_cpu",
+        "selected_device",
+        "selection_reason",
+    )
+    missing = tuple(field for field in required if field not in normalized)
+    if missing:
+        return False, f"missing_benchmark_fields:{','.join(missing)}"
+    if normalized["requested_device"] not in {"auto", "cpu", "mps"}:
+        return False, "invalid_requested_device"
+    if normalized["selected_device"] not in {"cpu", "mps"}:
+        return False, "invalid_selected_device"
+    if not isinstance(normalized["selection_reason"], str) or not normalized["selection_reason"]:
+        return False, "invalid_selection_reason"
+    if not isinstance(normalized["cpu_median_seconds"], (int, float)) or not np.isfinite(
+        float(normalized["cpu_median_seconds"])
+    ) or float(normalized["cpu_median_seconds"]) <= 0.0:
+        return False, "invalid_cpu_benchmark_timing"
+    for field in ("mps_available", "mps_finite", "mps_close_to_cpu", "mps_faster_than_cpu"):
+        if type(normalized[field]) is not bool:
+            return False, f"invalid_boolean:{field}"
+    stored_hash = normalized[_BENCHMARK_RECORD_HASH_FIELD]
+    if not isinstance(stored_hash, str) or stored_hash != benchmark_record_hash(normalized):
+        return False, "tampered_benchmark_record_hash"
+    if normalized["selected_device"] == "mps":
+        if not all(
+            normalized[field]
+            for field in ("mps_available", "mps_finite", "mps_close_to_cpu", "mps_faster_than_cpu")
+        ):
+            return False, "mps_selected_without_passing_checks"
+        mps_seconds = normalized.get("mps_median_seconds")
+        if not isinstance(mps_seconds, (int, float)) or not np.isfinite(float(mps_seconds)) or float(mps_seconds) <= 0.0:
+            return False, "invalid_mps_benchmark_timing"
+    return True, "verified"
 
 
 def _synthetic_benchmark_batch() -> np.ndarray:
@@ -290,7 +347,8 @@ def benchmark_device(
     payload_hash = _payload_hash(payload)
     if path.exists() and not force:
         cached = json.loads(path.read_text(encoding="utf-8"))
-        if cached.get("benchmark_config_hash") == payload_hash:
+        valid, _ = _benchmark_record_validation(cached)
+        if valid:
             return cached
 
     cpu = _benchmark_device_once("cpu")
@@ -338,6 +396,12 @@ def benchmark_device(
         except Exception as exc:  # benchmark failures are frozen as CPU decisions.
             record["mps_error"] = f"{type(exc).__name__}: {exc}"
     normalized_record = json.loads(json.dumps(record, sort_keys=True))
+    normalized_record[_BENCHMARK_RECORD_HASH_FIELD] = benchmark_record_hash(
+        normalized_record
+    )
+    valid, reason = _benchmark_record_validation(normalized_record)
+    if not valid:
+        raise RuntimeError(f"failed to create a valid TCN benchmark record: {reason}")
     path.write_text(
         json.dumps(normalized_record, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -360,7 +424,7 @@ def estimate_tcn_batch_bytes(batch_rows: int, target_length: int) -> int:
 
 
 def tcn_compute_provenance(n_train: int, target_length: int) -> dict[str, object]:
-    """Record the fixed batch-memory contract without changing TRAIN coverage."""
+    """Record the fixed batch-memory contract before execution eligibility is known."""
     return {
         "n_train": int(n_train),
         "target_length": int(target_length),
@@ -372,7 +436,6 @@ def tcn_compute_provenance(n_train: int, target_length: int) -> dict[str, object
         ),
         "train_rows_sampled": False,
         "target_length_resampled": False,
-        "training_row_coverage": "all TRAIN-normal rows in every fold and final fit",
     }
 
 
@@ -384,8 +447,11 @@ def tcn_runtime_estimate(
     target_length: int,
 ) -> dict[str, object]:
     """Return a deterministic inference-only lower bound from frozen timing data."""
-    if benchmark_record is None:
-        return {"available": False, "reason": "no_frozen_benchmark_record"}
+    valid, reason = _benchmark_record_validation(benchmark_record)
+    if not valid:
+        return {"available": False, "reason": reason}
+    if benchmark_record is None:  # Defensive narrowing for static readers.
+        return {"available": False, "reason": "missing_benchmark_record"}
     time_key = f"{selected_device}_median_seconds"
     benchmark_seconds = benchmark_record.get(time_key)
     rows = benchmark_record.get("synthetic_rows")
@@ -417,7 +483,7 @@ def tcn_runtime_estimate(
     return {
         "available": True,
         "selected_device": selected_device,
-        "benchmark_record_hash": benchmark_record_hash(benchmark_record),
+        "benchmark_record_hash": benchmark_record[_BENCHMARK_RECORD_HASH_FIELD],
         "benchmark_median_seconds": float(benchmark_seconds),
         "estimated_forward_seconds_per_batch": per_batch,
         "max_fit_count": max_fit_count,
@@ -578,7 +644,15 @@ class CausalTCNNormalForecast:
         benchmark_record: Mapping[str, object] | None = None,
     ) -> None:
         self.benchmark_record = _frozen_benchmark_record(benchmark_record)
+        self.benchmark_record_verified, self.benchmark_verification_reason = (
+            _benchmark_record_validation(self.benchmark_record)
+        )
         self.benchmark_record_hash = (
+            self.benchmark_record.get(_BENCHMARK_RECORD_HASH_FIELD)
+            if self.benchmark_record is not None
+            else None
+        )
+        self.benchmark_record_computed_hash = (
             benchmark_record_hash(self.benchmark_record)
             if self.benchmark_record is not None
             else None
@@ -618,11 +692,16 @@ class CausalTCNNormalForecast:
                 "maximum_epochs": TCN_MAX_EPOCHS,
                 "patience": TCN_PATIENCE,
                 "loss": "Huber",
+                "early_stopping_metric": "fit_train_huber_loss",
+                "held_out_validation": False,
             },
             "device": self.device,
             "selected_device": self.device,
             "benchmark_record": self.benchmark_record,
             "benchmark_record_hash": self.benchmark_record_hash,
+            "benchmark_record_computed_hash": self.benchmark_record_computed_hash,
+            "benchmark_record_verified": self.benchmark_record_verified,
+            "benchmark_verification_reason": self.benchmark_verification_reason,
             "evidence_family": TCN_EVIDENCE_FAMILY,
             "variants": ("seed_median", "seed_intersection"),
             "seed_intersection_rule": "both independently calibrated seed p-values",
@@ -644,6 +723,9 @@ class CausalTCNNormalForecast:
                 abstention_reason="target_length_below_9",
                 provenance={
                     **common_provenance,
+                    "training_row_coverage": "none: target-length eligibility abstention",
+                    "training_executed": False,
+                    "benchmark_executed_by_source": False,
                     "cross_fitted": False,
                     "self_reference_violations": 0,
                 },
@@ -659,6 +741,9 @@ class CausalTCNNormalForecast:
                 abstention_reason=f"n_train_below_{self.minimum_train}",
                 provenance={
                     **common_provenance,
+                    "training_row_coverage": "none: n_train eligibility abstention",
+                    "training_executed": False,
+                    "benchmark_executed_by_source": False,
                     "cross_fitted": False,
                     "self_reference_violations": 0,
                 },
@@ -678,6 +763,9 @@ class CausalTCNNormalForecast:
                     "train_elements": train_elements,
                     "tcn_max_train_elements": TCN_MAX_TRAIN_ELEMENTS,
                     "compute_safety_boundary": "TRAIN normal row count times TRAIN target length",
+                    "training_row_coverage": "none: compute safety abstention",
+                    "training_executed": False,
+                    "benchmark_executed_by_source": False,
                     "cross_fitted": False,
                     "self_reference_violations": 0,
                 },
@@ -722,6 +810,9 @@ class CausalTCNNormalForecast:
             provenance={
                 **common_provenance,
                 "cross_fitted": True,
+                "training_executed": True,
+                "benchmark_executed_by_source": False,
+                "training_row_coverage": "all TRAIN-normal rows in every fold and final fit",
                 "global_fold_count": len(folds),
                 "self_reference_violations": int(sum(overlap_counts)),
                 "outer_fit_query_overlap_counts": overlap_counts,

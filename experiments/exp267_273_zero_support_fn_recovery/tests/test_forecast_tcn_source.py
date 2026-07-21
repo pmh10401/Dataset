@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import copy
 from pathlib import Path
 from unittest.mock import patch
 
@@ -41,6 +42,29 @@ class CausalTCNNormalForecastTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temp.cleanup()
+
+    @staticmethod
+    def _current_passing_mps_record() -> dict[str, object]:
+        from experiments.exp267_273_zero_support_fn_recovery import (
+            forecast_tcn_source as tcn_module,
+        )
+
+        payload = tcn_module._benchmark_payload()
+        record: dict[str, object] = {
+            **payload,
+            "benchmark_config_hash": tcn_module._payload_hash(payload),
+            "requested_device": "mps",
+            "cpu_median_seconds": 0.02,
+            "mps_available": True,
+            "mps_finite": True,
+            "mps_close_to_cpu": True,
+            "mps_faster_than_cpu": True,
+            "mps_median_seconds": 0.01,
+            "selected_device": "mps",
+            "selection_reason": "MPS is finite, CPU-parity verified, and faster",
+        }
+        record["benchmark_record_sha256"] = tcn_module.benchmark_record_hash(record)
+        return record
 
     def test_tcn_abstains_below_100_train_rows(self) -> None:
         from experiments.exp267_273_zero_support_fn_recovery.forecast_tcn_source import (
@@ -163,6 +187,27 @@ class CausalTCNNormalForecastTests(unittest.TestCase):
         self.assertEqual(source.device, "cpu")
         self.assertIsNone(source.benchmark_record)
 
+    def test_benchmark_verification_rejects_stale_missing_and_tampered_records(self) -> None:
+        from experiments.exp267_273_zero_support_fn_recovery import (
+            forecast_tcn_source as tcn_module,
+        )
+
+        valid = self._current_passing_mps_record()
+        stale = copy.deepcopy(valid)
+        stale["benchmark_config_hash"] = "stale-config"
+        missing = copy.deepcopy(valid)
+        del missing["mps_finite"]
+        tampered_content = copy.deepcopy(valid)
+        tampered_content["mps_median_seconds"] = 0.009
+        tampered_hash = copy.deepcopy(valid)
+        tampered_hash["benchmark_record_sha256"] = "0" * 64
+
+        with patch.object(tcn_module, "_device_available", return_value=True):
+            self.assertEqual(tcn_module.choose_device("mps", valid), "mps")
+            for record in (stale, missing, tampered_content, tampered_hash):
+                with self.subTest(record=record):
+                    self.assertEqual(tcn_module.choose_device("mps", record), "cpu")
+
     def test_passing_mps_benchmark_is_frozen_and_used_for_training_and_scoring(self) -> None:
         from experiments.exp267_273_zero_support_fn_recovery import (
             forecast_tcn_source as tcn_module,
@@ -172,17 +217,7 @@ class CausalTCNNormalForecastTests(unittest.TestCase):
             benchmark_record_hash,
         )
 
-        record = {
-            "selected_device": "mps",
-            "mps_available": True,
-            "mps_finite": True,
-            "mps_close_to_cpu": True,
-            "mps_faster_than_cpu": True,
-            "benchmark_config_hash": "frozen-benchmark-config",
-            "mps_median_seconds": 0.01,
-            "synthetic_rows": 100,
-            "synthetic_target_length": 128,
-        }
+        record = self._current_passing_mps_record()
         fake = {
             20260721: (np.linspace(0.0, 1.0, 100), np.asarray([0.1, 0.9]), (5,) * 6),
             20261721: (np.linspace(0.2, 0.8, 100), np.asarray([0.3, 0.7]), (6,) * 6),
@@ -252,6 +287,12 @@ class CausalTCNNormalForecastTests(unittest.TestCase):
         self.assertEqual(result.abstention_reason, "train_work_exceeds_5000000")
         self.assertEqual(result.provenance["train_elements"], 5_004_000)
         self.assertEqual(result.provenance["tcn_max_train_elements"], 5_000_000)
+        self.assertEqual(
+            result.provenance["training_row_coverage"],
+            "none: compute safety abstention",
+        )
+        self.assertFalse(result.provenance["training_executed"])
+        self.assertFalse(result.provenance["cross_fitted"])
         self.assertFalse(result.provenance["contains_test_labels"])
 
     def test_score_uses_no_test_labels_and_records_two_seed_scores(self) -> None:

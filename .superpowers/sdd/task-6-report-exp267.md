@@ -24,7 +24,8 @@ failed with nine `ModuleNotFoundError` / import failures because
 - An eight-point future patch is produced from every causal hidden location;
   the final location is therefore a forecast from the final causal hidden state.
 - Training uses AdamW (`lr=0.001`, `weight_decay=0.0001`), batch size 32,
-  Huber loss, at most 20 epochs, and patience 3.
+  Huber loss, at most 20 epochs, and patience 3 on fit TRAIN loss only. It
+  uses no held-out validation split.
 - The two frozen seeds are `20260721` and `20261721`.
 - Every eligible source makes deterministic five-fold TRAIN-only OOF scores,
   then refits on all TRAIN-normal rows for TEST-value scoring.
@@ -43,7 +44,10 @@ it is available, finite, numerically close to CPU (`rtol=1e-4`, `atol=1e-5`),
 and has a lower median runtime. The JSON decision is cacheable at
 `tcn_device_benchmark.json`; source scoring never reruns that benchmark per
 dataset. The later pipeline must run and freeze this decision before full TCN
-prediction.
+prediction. Reuse requires the current benchmark payload hash, every required
+record field, and a canonical `benchmark_record_sha256` computed over the
+record excluding that self-hash field. A stale, incomplete, or tampered record
+falls back to CPU.
 
 Local smoke benchmark:
 
@@ -76,10 +80,10 @@ final fit.
 This does **not** make the total full-population training time constant. A
 large dataset such as 18,378 TRAIN rows by length 4,000 still requires two
 seeds times five OOF fits plus two final fits, each capped at 20 epochs. No
-arbitrary runtime cap was added because none is frozen in the plan. Before a
-full queue run, Task 7/12 must use the one-active-run policy, record elapsed
-time per dataset, and treat a real measured long-run stall as a blocker rather
-than silently sampling or changing the TCN.
+workload is silently sampled or reduced: the frozen 5,000,000 TRAIN-element
+resource-safety boundary abstains before TEST-value access, benchmark use, or
+training. Before a full queue run, Task 7/12 must still use the one-active-run
+policy and record elapsed time per dataset for workloads within that boundary.
 
 ## GREEN Evidence
 
@@ -89,7 +93,8 @@ Focused test command:
 python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_forecast_tcn_source -v
 ```
 
-Result: 10 tests passed.
+Result: 14 focused tests passed, including valid/current, stale-config,
+missing-field, modified-content, and modified-hash benchmark records.
 
 Package verification:
 
@@ -99,7 +104,8 @@ python3 -m unittest discover -s experiments/exp267_273_zero_support_fn_recovery/
 git diff --check
 ```
 
-Result: 66 tests passed; compilation and whitespace checks passed.
+Result: 70 package tests passed after the final provenance and benchmark
+hardening changes; compilation and whitespace checks passed.
 
 An additional real TRAIN-only smoke fit with 100 rows, target length 16, and
 two TEST-value rows completed with 100 finite OOF scores, two finite TEST
@@ -113,8 +119,8 @@ label was produced or read.
 - The output is retrospective research infrastructure. It is neither an
   autonomous policy activation nor prospective/deployment validation.
 - Full-population TCN cost must be measured by the later sequential pipeline;
-  this task intentionally does not introduce a post hoc compute eligibility
-  rule.
+  the only compute eligibility rule is the preregistered TRAIN-only
+  `TCN_MAX_TRAIN_ELEMENTS = 5_000_000` boundary.
 
 ## P1 Follow-up: Frozen MPS Wiring And TRAIN-only Compute Guard
 
@@ -123,8 +129,10 @@ label was produced or read.
 `CausalTCNNormalForecast` now accepts `benchmark_record` at construction and
 calls `choose_device(requested, benchmark_record)`. A direct `device="mps"`
 request with no record, incomplete record, failed parity, non-finite result, or
-non-faster result stays on CPU. The complete record, its canonical SHA-256, and
-the final selected device are stored in every source provenance row. The source
+non-faster result stays on CPU. Reuse also rejects a stale configuration hash,
+missing required field, modified content, or invalid self-hash. The complete
+record, supplied and recomputed canonical SHA-256 values, validation result,
+and final selected device are stored in every source provenance row. The source
 does not call `benchmark_device()`; Task 7 must freeze the single benchmark
 record once and pass it to all eligible dataset jobs.
 
@@ -149,11 +157,13 @@ abstention_reason = train_work_exceeds_5000000
 ```
 
 with both the observed TRAIN element count and the frozen threshold in
-provenance. It does not inspect a dataset name, family, TEST size, TEST label,
-or TEST metric. The frozen metadata audit rationale is that the eligible
-population has 252 of 253 `n_train >= 100` datasets at or below this boundary;
-the one larger workload is recorded as an explicit abstention rather than a
-silent omission.
+provenance, including `training_row_coverage = "none: compute safety
+abstention"`, `training_executed = false`, and `cross_fitted = false`. It does
+not inspect a dataset name, family, TEST size, TEST label, or TEST metric. The
+current DB metadata audit has 253 rows with `n_train >= 100`: 252 are at or
+below this boundary and one is over it. The frozen 1,117-dataset Exp266
+population is a separate snapshot with 251 such rows, all within the boundary;
+the two counts are not interchangeable.
 
 ### Deterministic Runtime Estimate
 
@@ -181,5 +191,13 @@ python3 -m unittest experiments.exp267_273_zero_support_fn_recovery.tests.test_c
   experiments.exp267_273_zero_support_fn_recovery.tests.test_forecast_tcn_source -v
 ```
 
-Result: 24 tests passed, including passing/unverified MPS selection and a
+Result: 25 tests passed, including passing/unverified MPS selection and a
 forbidden TEST-value object proving the compute guard exits before TEST access.
+
+### Final Verification Update
+
+The final focused contract plus source run passed 25 tests. A targeted cache
+tamper smoke changed a stored CPU timing without updating its self-hash; the
+record was rejected, regenerated, and revalidated before reuse. The compute
+guard test confirms the explicit guard provenance reports no TRAIN row/fold
+coverage, no training execution, and no cross-fitting.
