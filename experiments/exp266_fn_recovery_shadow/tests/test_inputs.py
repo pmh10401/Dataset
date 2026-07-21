@@ -79,6 +79,18 @@ class FrozenInputTests(unittest.TestCase):
             ):
                 validate_prediction_boundary({"dataset": "demo", field: []}, "unit")
 
+    def test_prediction_boundary_rejects_true_anomaly_position_presence_flags(self) -> None:
+        for field in (
+            "has_anomaly_positions",
+            "anomalyPositionsPresent",
+            "contains-test-anomaly-index",
+            "has_anomalies_indexes",
+        ):
+            with self.subTest(field=field), self.assertRaisesRegex(
+                InputContractError, "anomaly-position presence flag"
+            ):
+                validate_prediction_boundary({"dataset": "demo", field: True}, "unit")
+
     def test_mini_selection_uses_frozen_alpha_constant(self) -> None:
         rows = [
             {
@@ -99,6 +111,36 @@ class FrozenInputTests(unittest.TestCase):
 
             with self.assertRaisesRegex(InputContractError, "reconstruction archive missing key"):
                 validate_reconstruction_archive(path, "demo", n_train=3, n_test=2)
+
+    def test_reconstruction_archive_rejects_forbidden_key_and_wrong_hash(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "cache.npz"
+            np.savez(
+                path,
+                mask_025__train_oof=np.ones(3),
+                mask_025__test_scores=np.ones(2),
+                mask_025__train_by_seed=np.ones((1, 3)),
+                mask_025__test_by_seed=np.ones((1, 2)),
+                n_test=np.array([2]),
+                anomaly_positions=np.array([1]),
+            )
+
+            with self.assertRaisesRegex(InputContractError, "forbidden cache field"):
+                validate_reconstruction_archive(path, "demo", n_train=3, n_test=2)
+
+            path = Path(directory) / "clean-cache.npz"
+            np.savez(
+                path,
+                mask_025__train_oof=np.ones(3),
+                mask_025__test_scores=np.ones(2),
+                mask_025__train_by_seed=np.ones((1, 3)),
+                mask_025__test_by_seed=np.ones((1, 2)),
+                n_test=np.array([2]),
+            )
+            with self.assertRaisesRegex(InputContractError, "reconstruction archive SHA256 mismatch"):
+                validate_reconstruction_archive(
+                    path, "demo", n_train=3, n_test=2, expected_sha256="0" * 64
+                )
 
     def test_cache_archive_boundary_rejects_test_labels(self) -> None:
         with TemporaryDirectory() as directory:

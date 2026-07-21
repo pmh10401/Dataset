@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import re
 import sqlite3
 from collections.abc import Collection, Mapping
 from pathlib import Path
@@ -28,7 +29,9 @@ from .config import (
     MINI_VARIANTS,
     MINIROCKET_PREDICTION,
     OUTPUT_ROOT,
+    RECON_ARCHIVE_HASH_INVENTORY,
     RECON_CACHE_ROOT,
+    FROZEN_RECON_ARCHIVE_HASH_INVENTORY_SHA256,
 )
 from .contracts import FrozenDatasetInputs, FrozenRecoveryInputs
 
@@ -70,15 +73,33 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def _normalized_field_name(value: object) -> str:
+    text = re.sub(r"(?<!^)(?=[A-Z])", "_", str(value))
+    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+
+
+def _is_anomaly_position_presence_flag(normalized: str) -> bool:
+    parts = set(normalized.split("_"))
+    return (
+        bool({"anomaly", "anomalies"} & parts)
+        and bool({"position", "positions", "pos", "index", "indices", "indexes"} & parts)
+        and bool({"has", "contains", "present", "available"} & parts)
+    )
+
+
 def validate_prediction_boundary(value: object, source: str, path: str = "root") -> None:
     """Reject labels, anomaly positions, and evaluation data before routing."""
 
     if isinstance(value, Mapping):
         for key, child in value.items():
-            normalized = str(key).lower().replace("-", "_")
+            normalized = _normalized_field_name(key)
             if normalized in FORBIDDEN_PREDICTION_FIELDS:
                 raise InputContractError(
                     f"forbidden prediction field: {source} {path}.{key}"
+                )
+            if _is_anomaly_position_presence_flag(normalized) and child is not False:
+                raise InputContractError(
+                    f"anomaly-position presence flag must be false: {source} {path}.{key}"
                 )
             if normalized in {"contains_test_labels", "contains_evaluation_metrics"} and child is not False:
                 raise InputContractError(
@@ -96,8 +117,11 @@ def validate_cache_archive_boundary(path: Path, source: str, dataset: str) -> No
     try:
         with np.load(path, allow_pickle=False) as archive:
             for key in archive.files:
-                normalized = key.lower().replace("-", "_")
-                if normalized in FORBIDDEN_PREDICTION_FIELDS:
+                normalized = _normalized_field_name(key)
+                if (
+                    normalized in FORBIDDEN_PREDICTION_FIELDS
+                    or _is_anomaly_position_presence_flag(normalized)
+                ):
                     raise InputContractError(
                         f"forbidden cache field: {source} dataset={dataset} key={key}"
                     )
@@ -367,8 +391,16 @@ def _validate_cache_contract(
 
 
 def validate_reconstruction_archive(
-    path: Path, dataset: str, *, n_train: int, n_test: int
+    path: Path,
+    dataset: str,
+    *,
+    n_train: int,
+    n_test: int,
+    expected_sha256: str | None = None,
 ) -> None:
+    validate_cache_archive_boundary(path, "reconstruction", dataset)
+    if expected_sha256 is not None and sha256_file(path) != expected_sha256:
+        raise InputContractError(f"reconstruction archive SHA256 mismatch: dataset={dataset}")
     required = {
         "mask_025__train_oof",
         "mask_025__test_scores",
@@ -410,6 +442,32 @@ def validate_reconstruction_archive(
         raise InputContractError(f"reconstruction archive is not finite numeric data: dataset={dataset}")
 
 
+def _load_reconstruction_hash_inventory(
+    population: Collection[str], metadata: Mapping[str, tuple[int, int]]
+) -> Mapping[str, str]:
+    if sha256_file(RECON_ARCHIVE_HASH_INVENTORY) != FROZEN_RECON_ARCHIVE_HASH_INVENTORY_SHA256:
+        raise InputContractError("frozen reconstruction archive inventory SHA256 mismatch")
+    inventory = _read_json(RECON_ARCHIVE_HASH_INVENTORY, "reconstruction archive inventory")
+    archives = inventory.get("archives")
+    expected_names = {
+        f"{hashlib.sha256(dataset.encode('utf-8')).hexdigest()[:20]}.npz"
+        for dataset in population
+        if metadata[dataset][0] >= 100
+    }
+    if (
+        set(inventory) != {"algorithm", "archives", "cache_root", "source_audit_sha256", "version"}
+        or inventory.get("algorithm") != "sha256"
+        or inventory.get("version") != 1
+        or inventory.get("cache_root") != str(RECON_CACHE_ROOT)
+        or inventory.get("source_audit_sha256") != FROZEN_AUDIT_HASHES["reconstruction"]
+        or type(archives) is not dict
+        or set(archives) != expected_names
+        or any(type(value) is not str or len(value) != 64 for value in archives.values())
+    ):
+        raise InputContractError("frozen reconstruction archive inventory contract mismatch")
+    return MappingProxyType(dict(archives))
+
+
 def _validate_reconstruction_cache(
     population: Collection[str], metadata: Mapping[str, tuple[int, int]], available: dict[str, dict[str, bool]]
 ) -> None:
@@ -420,6 +478,7 @@ def _validate_reconstruction_cache(
     validate_prediction_boundary(audit, "reconstruction audit")
     if audit.get("population_rule") != "train_normal_count >= 100" or audit.get("datasets") != 251:
         raise InputContractError("frozen reconstruction availability contract mismatch")
+    inventory = _load_reconstruction_hash_inventory(population, metadata)
     for dataset in population:
         n_train, _ = metadata[dataset]
         cache_path = RECON_CACHE_ROOT / f"{hashlib.sha256(dataset.encode('utf-8')).hexdigest()[:20]}.npz"
@@ -429,7 +488,13 @@ def _validate_reconstruction_cache(
         if not should_be_available and cache_path.exists():
             raise InputContractError(f"unexpected reconstruction cache: dataset={dataset}")
         if should_be_available:
-            validate_reconstruction_archive(cache_path, dataset, n_train=n_train, n_test=metadata[dataset][1])
+            validate_reconstruction_archive(
+                cache_path,
+                dataset,
+                n_train=n_train,
+                n_test=metadata[dataset][1],
+                expected_sha256=inventory[cache_path.name],
+            )
         available[dataset]["reconstruction"] = should_be_available
 
 
@@ -447,6 +512,7 @@ def _write_audit(output_root: Path, recovery: FrozenRecoveryInputs) -> None:
             "prediction_audits": dict(FROZEN_PREDICTION_AUDIT_HASHES),
             "cache_manifests": dict(FROZEN_CACHE_MANIFEST_HASHES),
             "cache_audits": dict(FROZEN_AUDIT_HASHES),
+            "reconstruction_archive_inventory": FROZEN_RECON_ARCHIVE_HASH_INVENTORY_SHA256,
         },
         "source_paths": {
             "exp253": str(EXP253_PREDICTION),

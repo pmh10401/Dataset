@@ -31,6 +31,12 @@ STAT_CACHE_ROOT = Path("/Users/minho/Documents/Dataset/exp252_sktime_statistical
 STRUCT_CACHE_ROOT = Path("/Users/minho/Documents/Dataset/exp254_sktime_structural_features/cache")
 CHANGE_CACHE_ROOT = Path("/Users/minho/Documents/Dataset/exp255_change_point_features/cache")
 RECON_CACHE_ROOT = Path("/Users/minho/Documents/Dataset/exp257_mask_ratio_timeseries_sweep/cache")
+RECON_ARCHIVE_HASH_INVENTORY = Path(__file__).with_name(
+    "reconstruction_archive_hash_inventory.json"
+)
+FROZEN_RECON_ARCHIVE_HASH_INVENTORY_SHA256 = (
+    "7efe6c80346175bed8d88d340db50524c9fffbd30794896db77809580117745f"
+)
 
 FROZEN_DATABASE_EXCLUSIONS = frozenset({"CornellWhaleChallenge", "Wafer_normal_1"})
 FROZEN_PREDICTION_HASHES = {
