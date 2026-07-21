@@ -103,7 +103,8 @@ Both commands completed successfully.
 
 - No production or test code imports TEST labels or evaluation data.
 - All input and output feature values are checked for finiteness.
-- A trace must provide at least two points so both half windows are valid.
+- A trace must provide at least four points so the full, first-half, and
+  second-half windows each contain at least two samples.
 - Score abstention uses the shared `n_train_below_5` contract and preserves
   label-free provenance.
 - The staged commit is restricted to the two Task 4 code/test files and this
