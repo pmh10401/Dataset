@@ -38,7 +38,16 @@ def _windows(rows: np.ndarray, context: int, horizon: int, cap: int = 4096) -> t
     if not xs:
         raise ValueError("target length cannot produce prediction windows")
     if len(xs) > int(cap):
-        chosen = np.linspace(0, len(xs) - 1, int(cap), dtype=int)
+        owner_values = np.asarray(owners, dtype=int)
+        mandatory = np.flatnonzero(np.r_[True, owner_values[1:] != owner_values[:-1]])
+        effective_cap = max(int(cap), len(mandatory))
+        remaining = np.setdiff1d(np.arange(len(xs), dtype=int), mandatory, assume_unique=True)
+        extra_count = min(len(remaining), effective_cap - len(mandatory))
+        extra = (
+            remaining[np.linspace(0, len(remaining) - 1, extra_count, dtype=int)]
+            if extra_count else np.asarray([], dtype=int)
+        )
+        chosen = np.sort(np.concatenate([mandatory, extra]))
         xs = [xs[index] for index in chosen]; ys = [ys[index] for index in chosen]; owners = [owners[index] for index in chosen]
     return np.asarray(xs, dtype=np.float32), np.asarray(ys, dtype=np.float32), np.asarray(owners, dtype=int)
 
