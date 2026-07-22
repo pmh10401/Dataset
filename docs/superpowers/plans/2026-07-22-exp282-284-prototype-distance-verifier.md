@@ -4,7 +4,7 @@
 
 **Goal:** Add and evaluate a TRAIN-only prototype-distance verifier using Mahalanobis, correlation, and spectral Wasserstein evidence.
 
-**Architecture:** `experiments/exp282_284_prototype_distance_verifier/` owns fixed feature extraction, deterministic medoids, leave-one-out calibration, label-free prediction freeze, and hash-gated evaluation. The existing sequential runner and dashboard execute Exp282 cache, Exp283 prediction, and Exp284 evaluation one stage at a time.
+**Architecture:** `experiments/exp282_284_prototype_distance_verifier/` owns fixed feature extraction, deterministic medoids, five-fold cross-fitted calibration, label-free prediction freeze, and hash-gated evaluation. The existing sequential runner and dashboard execute Exp282 cache, Exp283 prediction, and Exp284 evaluation one stage at a time.
 
 **Tech Stack:** Python 3.14, NumPy, SciPy, scikit-learn LedoitWolf, SQLite read-only loader, JSONL/CSV/SHA256, unittest.
 
@@ -12,7 +12,7 @@
 
 - Population is all 1,117 datasets; candidate universe is frozen Exp272 Shadow plus Priority.
 - Exp253 Hard remains unchanged.
-- `alpha=0.05`, medoid-count rules, condition limit `1e8`, and three variants are frozen before evaluation.
+- `alpha=0.05`, five folds with seed `20260722`, medoid-count rules, condition limit `1e8`, and three variants are frozen before evaluation.
 - Mahalanobis variants are one evidence family and cannot cast duplicate votes.
 - No TEST label, position, family, TEST-order, or TEST-length policy input.
 - `n_train < 20` is explicit calibration abstention.
@@ -25,7 +25,7 @@
 
 - [ ] Test fixed feature dimensionality, deterministic medoids, finite diagonal and shrinkage distances, and Mahalanobis fallback recording.
 - [ ] Implement fixed feature extraction, robust scaling, farthest-first medoids, correlation distance, and spectral Wasserstein distance.
-- [ ] Implement leave-one-out normal references and empirical p-values.
+- [ ] Implement self-excluding five-fold normal references and empirical p-values.
 - [ ] Run focused tests and commit.
 
 ### Task 2: Exp282 cache and Exp283 prediction freeze
