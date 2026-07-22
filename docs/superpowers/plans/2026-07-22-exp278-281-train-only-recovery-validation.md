@@ -13,7 +13,7 @@
 - Use all 1,117 datasets; do not silently exclude failures.
 - Keep Exp253 autonomous Hard alerts immutable.
 - Do not use TEST labels, anomaly positions, family names, TEST length, or TEST order in prediction policy.
-- Freeze `alpha=0.005`, resample seeds `20260722..20260726`, resample fraction `0.80`, risk targets `0.005/0.01/0.02`, and Exp281 variants before evaluation.
+- Freeze `alpha=0.005`, full-reference-size bootstrap seeds `20260722..20260726`, risk targets `0.005/0.01/0.02`, and Exp281 variants before evaluation.
 - Do not merge adjacent TEST indices because each index is a separate series instance.
 - Keep every new candidate review-only and retrospective.
 
@@ -46,7 +46,7 @@
 - Consumes: verified source cache arrays and Exp272 candidate support.
 - Produces: `run_calibration_stability(output_root: Path) -> tuple[Path, Path]`.
 
-- [ ] Write deterministic tests for five 80% TRAIN OOF subsamples and identical-seed output hashes.
+- [ ] Write deterministic tests for five full-size TRAIN OOF bootstrap samples and identical-seed output hashes.
 - [ ] Run the focused test and verify failure before implementation.
 - [ ] Implement empirical p-value recurrence per source group without TEST labels.
 - [ ] Write `exp279_candidate_stability.csv` and `exp279_summary.csv` with explicit `calibration_reference_stability` terminology.

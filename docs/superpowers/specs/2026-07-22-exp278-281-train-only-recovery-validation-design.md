@@ -38,9 +38,12 @@ This stage is label-free and diagnostic. It does not select a risk target.
 
 Model fold outputs are not available for every source, so this experiment must
 not claim model-fold stability. It measures calibration-reference stability.
-For each source, create five deterministic 80% subsamples of TRAIN OOF scores
-using seeds `20260722..20260726`. Recalculate empirical p-values and record the
-fraction of replicates in which each candidate remains below `alpha=0.005`.
+For each source, create five deterministic full-reference-size bootstrap
+samples with replacement from TRAIN OOF scores using seeds
+`20260722..20260726`. Recalculate empirical p-values and record the fraction of
+replicates in which each candidate remains below `alpha=0.005`. Full-size
+bootstrap preserves the original conformal resolution; an 80% subsample is
+prohibited because it can make `alpha=0.005` unattainable when `n < 199`.
 
 For TCN, the existing two independently trained seed score vectors are also
 checked. The final stability score is the mean available source-group
