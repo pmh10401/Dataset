@@ -35,6 +35,11 @@
 TEST 전체 평균, 표준편차 또는 TEST 길이는 calibration과 budget 결정에 사용하지 않는다.
 각 prediction manifest에는 실제 적용한 전처리 계약과 코드 hash를 기록한다.
 
+이 평가 DB에서 하나의 `candidate_index`는 시계열 내부의 시간점이 아니라 TEST 배열의
+한 instance, 즉 하나의 가상 run trace 위치를 뜻한다. Exp309-315는 각 run 내부의
+부분구간 진단을 점수 근거로 저장할 수 있지만, 최종 후보와 TP/FP 평가는 run instance
+단위로 수행한다.
+
 ## 4. 실험 구성
 
 ### Exp309: 다중 구간 Discord
