@@ -52,6 +52,7 @@ def route_dataset(
         "experiment_id": "experiment_291_final_operational_routing_freeze",
         "dataset": dataset,
         "n_test": int(exp290["n_test"]),
+        "source_baseline_hard_indices": sorted(baseline_hard),
         **{name: sorted(values) for name, values in lanes.items()},
         "default_review_indices": sorted(default_review),
         "contains_test_labels": False,
