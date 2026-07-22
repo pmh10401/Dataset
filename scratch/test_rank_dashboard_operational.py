@@ -1,3 +1,4 @@
+import json
 import sys
 import sqlite3
 import tempfile
@@ -6,6 +7,449 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import serve_rank_dashboard as dash
+
+
+def test_exp289_is_registered_for_sequential_dashboard_execution():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_289_recovery_priority_label_consistency_audit"
+    runner_item = next(item for item in runner.EXPERIMENTS if item["id"] == experiment_id)
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["detail_csv"].name == "exp289_candidate_label_consistency.csv"
+    assert dashboard_item["history_status"] == "diagnostic_only"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_label_consistency_diagnostic"
+    assert dashboard_item["status_json"].name == "status.json"
+
+
+def test_exp290_is_registered_as_autonomous_exact_normal_guard():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_290_train_raw_exact_normal_guard"
+    runner_item = next(item for item in runner.EXPERIMENTS if item["id"] == experiment_id)
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["detail_csv"].name == "exp290_results.csv"
+    assert dashboard_item["history_status"] == "planned_research"
+    assert dashboard_item["scope"] == "retrospective_autonomous_hard_guard"
+    assert dashboard_item["autonomous_metric_scope"] == "Exp253 Hard with TRAIN raw exact normal guard"
+
+
+def test_exp291_is_registered_as_final_operational_routing_freeze():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_291_final_operational_routing_freeze"
+    runner_item = next(item for item in runner.EXPERIMENTS if item["id"] == experiment_id)
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["summary_csv"].name == "exp291_summary.csv"
+    assert dashboard_item["scope"] == "retrospective_final_operational_routing"
+    assert dashboard_item["autonomous_metric_scope"] == "Exp290 guarded Hard"
+    assert dashboard_item["review_metric_scope"].startswith("Exp272 approved")
+
+
+def test_exp292_is_registered_as_review_only_evidence_tiering():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_292_standard_review_evidence_tiering"
+    runner_item = next(item for item in runner.EXPERIMENTS if item["id"] == experiment_id)
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["summary_csv"].name == "exp292_summary.csv"
+    assert dashboard_item["scope"] == "retrospective_review_only_evidence_tiering"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["autonomous_metric_scope"] == "Exp291 Hard unchanged"
+    assert "P1/P2/P3" in dashboard_item["review_metric_scope"]
+
+
+def test_exp293_294_are_registered_as_train_only_moe_review_experiments():
+    import run_rank_experiments_sequential as runner
+
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    audit = dash.EXPERIMENTS["experiment_293_train_only_moe_expert_audit"]
+    router = dash.EXPERIMENTS["experiment_294_frozen_sparse_moe_review_router"]
+    assert by_id["experiment_293_train_only_moe_expert_audit"]["expected_datasets"] == 1117
+    assert by_id["experiment_294_frozen_sparse_moe_review_router"]["summary_csv"].name == "exp294_summary.csv"
+    assert audit["comparison_eligible"] is False
+    assert audit["scope"] == "train_only_expert_reliability_audit"
+    assert router["comparison_eligible"] is False
+    assert router["scope"] == "retrospective_review_only_sparse_moe"
+    assert router["autonomous_metric_scope"] == "Exp291 Hard unchanged"
+
+
+def test_exp295_is_registered_as_hard_confidence_annotation_only():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_295_moe_hard_alert_confidence_tiering"
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    runner_item = by_id[experiment_id]
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["summary_csv"].name == "exp295_summary.csv"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_hard_confidence_annotation"
+    assert dashboard_item["autonomous_metric_scope"] == "Exp291 Hard unchanged"
+    assert "승격" in dashboard_item["review_metric_scope"]
+
+
+def test_exp302_is_registered_as_retrospective_expansion_frontier():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_302_moe_automatic_alert_expansion_frontier"
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    runner_item = by_id[experiment_id]
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["summary_csv"].name == "exp302_summary.csv"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_automatic_expansion_frontier"
+    assert "운영 자동 경보 변경 없음" in dashboard_item["autonomous_metric_scope"]
+    assert "80%" in dashboard_item["status_reason"]
+
+
+def test_exp303_is_registered_as_expanded_train_only_gate_frontier():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_303_expanded_train_only_gates"
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    runner_item = by_id[experiment_id]
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["summary_csv"].name == "exp303_summary.csv"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_expanded_train_only_gates"
+    assert "운영 자동 경보 변경 없음" in dashboard_item["autonomous_metric_scope"]
+    assert "새 독립 점수원" in dashboard_item["status_reason"]
+
+
+def test_exp304_is_registered_as_reconstruction_common_support_research():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_304_reconstruction_fifth_source_common_support"
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    runner_item = by_id[experiment_id]
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 251
+    assert runner_item["summary_csv"].name == "exp304_summary.csv"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_reconstruction_common_support"
+    assert "251" in dashboard_item["status_reason"]
+    assert "provenance" in dashboard_item["status_reason"]
+
+
+def test_exp305_is_registered_as_wavelet_reconstruction_cross_confirmation():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_305_wavelet_reconstruction_cross_confirmation"
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    runner_item = by_id[experiment_id]
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 251
+    assert runner_item["summary_csv"].name == "exp305_summary.csv"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_wavelet_reconstruction_common_support"
+    assert "운영 자동 경보 변경 없음" in dashboard_item["autonomous_metric_scope"]
+    assert "Wavelet" in dashboard_item["status_reason"]
+
+
+def test_exp306_and_exp307_are_registered_as_component_and_review_research():
+    import run_rank_experiments_sequential as runner
+
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    exp306 = "experiment_306_componentized_operational_routing"
+    exp307 = "experiment_307_expanded_six_expert_moe"
+    assert by_id[exp306]["expected_datasets"] == 1117
+    assert by_id[exp307]["expected_datasets"] == 1117
+    assert by_id[exp306]["summary_csv"].name == "exp306_summary.csv"
+    assert by_id[exp307]["summary_csv"].name == "exp307_summary.csv"
+    assert dash.EXPERIMENTS[exp306]["comparison_eligible"] is False
+    assert dash.EXPERIMENTS[exp307]["comparison_eligible"] is False
+    assert "Shadow" in dash.EXPERIMENTS[exp306]["review_metric_scope"]
+    assert "6개" in dash.EXPERIMENTS[exp307]["status_reason"]
+
+
+def test_exp309_through_316_are_registered_as_research_shadow_queue():
+    import run_rank_experiments_sequential as runner
+
+    runner_by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    expected_ids = {
+        309: "experiment_309_multiscale_patch_discord",
+        310: "experiment_310_multiwindow_change_point",
+        311: "experiment_311_wavelet_phase_coherence",
+        312: "experiment_312_nonlearning_evidence_fusion",
+        313: "experiment_313_predictive_residual",
+        314: "experiment_314_contrastive_normal_memory",
+        315: "experiment_315_deep_svdd_normal_boundary",
+        316: "experiment_316_full_fn_recovery_fusion",
+    }
+    for number, experiment_id in expected_ids.items():
+        assert runner_by_id[experiment_id]["expected_datasets"] == 1117
+        assert runner_by_id[experiment_id]["summary_csv"].name == f"exp{number}_summary.csv"
+        info = dash.EXPERIMENTS[experiment_id]
+        assert info["comparison_eligible"] is False
+        assert info["history_status"] == "diagnostic_only"
+        assert "자동 경보 변경 없음" in info["autonomous_metric_scope"]
+        assert "Shadow" in info["review_metric_scope"]
+
+
+def test_active_experiment_status_file_overrides_stale_shared_heartbeat():
+    with tempfile.TemporaryDirectory() as tmp:
+        status_path = Path(tmp) / "status.json"
+        status_path.write_text(json.dumps({
+            "id": "experiment_test",
+            "experiment_id": "experiment_test",
+            "status": "running",
+            "done": 37,
+            "expected": 100,
+            "progress_percent": 37.0,
+            "current_dataset": "Dataset37",
+            "updated_unix": 1000.0,
+        }))
+        actual = dash.read_experiment_status(
+            "experiment_test", {"status_json": status_path}, now=1005.0,
+        )
+        assert actual["done"] == 37
+        assert actual["progress_percent"] == 37.0
+        assert actual["current_dataset"] == "Dataset37"
+        assert actual["age_seconds"] == 5.0
+
+
+def test_active_experiment_status_rejects_stale_running_file():
+    with tempfile.TemporaryDirectory() as tmp:
+        status_path = Path(tmp) / "status.json"
+        status_path.write_text(json.dumps({
+            "id": "experiment_test",
+            "status": "running",
+            "updated_unix": 1000.0,
+        }))
+        actual = dash.read_experiment_status(
+            "experiment_test", {"status_json": status_path}, now=1201.0,
+        )
+        assert actual == {}
+
+
+def test_exp296_is_registered_as_cross_gate_confidence_consensus_only():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_296_cross_gate_hard_confidence_consensus"
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    runner_item = by_id[experiment_id]
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["summary_csv"].name == "exp296_summary.csv"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_cross_gate_confidence_consensus"
+    assert dashboard_item["autonomous_metric_scope"] == "Exp291 Hard unchanged"
+    assert "억제" in dashboard_item["review_metric_scope"]
+
+
+def test_exp297_is_registered_as_bootstrap_confidence_stability_only():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_297_bootstrap_confidence_stability"
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    runner_item = by_id[experiment_id]
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["summary_csv"].name == "exp297_summary.csv"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_train_bootstrap_confidence_stability"
+    assert dashboard_item["autonomous_metric_scope"] == "Exp291 Hard unchanged"
+
+
+def test_exp298_is_registered_as_current_hard_rebase_shadow_only():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_298_exp201_current_hard_rebase"
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    runner_item = by_id[experiment_id]
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 251
+    assert runner_item["summary_csv"].name == "exp298_summary.csv"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_large_candidate_rebase"
+    assert dashboard_item["autonomous_metric_scope"] == "Exp292 automatic Hard unchanged"
+
+
+def test_exp299_is_registered_as_multirocket_capacity_consensus_shadow_only():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_299_multirocket_capacity_consensus"
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    runner_item = by_id[experiment_id]
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 251
+    assert runner_item["summary_csv"].name == "exp299_summary.csv"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_multirocket_capacity_consensus"
+    assert dashboard_item["autonomous_metric_scope"] == "Exp292 automatic Hard unchanged"
+
+
+def test_exp300_is_registered_as_independent_evidence_consensus_shadow_only():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_300_independent_evidence_consensus"
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    runner_item = by_id[experiment_id]
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 251
+    assert runner_item["summary_csv"].name == "exp300_summary.csv"
+
+
+def test_exp301_is_registered_as_train_risk_stability_shadow_routing():
+    import run_rank_experiments_sequential as runner
+    import serve_rank_dashboard as dashboard
+
+    runner_item = next(item for item in runner.EXPERIMENTS if item["id"] == "experiment_301_train_risk_stability_routing")
+    dashboard_item = dashboard.EXPERIMENTS["experiment_301_train_risk_stability_routing"]
+    assert runner_item["summary_csv"].name == "exp301_summary.csv"
+    assert dashboard_item["summary_csv"].name == "exp301_summary.csv"
+    runner_source = (Path(__file__).resolve().parents[1] / "run_rank_experiments_sequential.py").read_text(encoding="utf-8")
+    assert 'sub.add_parser("queue-exp301")' in runner_source
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_train_risk_stability_routing"
+    assert "Exp292 automatic Hard unchanged" in dashboard_item["autonomous_metric_scope"]
+
+
+def test_hard_confidence_snapshot_combines_prediction_stability_and_evaluation_precision():
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        alerts = root / "alerts.csv"
+        alerts.write_text(
+            "dataset,candidate_index,consensus_tier,bootstrap_eligible,stability_rate\n"
+            "A,3,unanimous_high,True,1.0\n"
+            "B,7,unanimous_high,True,0.5\n"
+            "C,9,no_selected_support,False,\n",
+            encoding="utf-8",
+        )
+        summary = root / "summary.csv"
+        summary.write_text(
+            "scope,consensus_tier,hard_count,hard_tp,hard_fp,hard_precision,eligible_alerts,abstained_alerts,median_stability_rate\n"
+            "all_1117,unanimous_high,2,2,0,1.0,2,0,0.75\n"
+            "all_1117,no_selected_support,1,0,1,0.0,0,1,\n",
+            encoding="utf-8",
+        )
+
+        snapshot = dash.hard_confidence_snapshot(alerts_path=alerts, summary_path=summary)
+
+        self_high = snapshot["tiers"]["unanimous_high"]
+        assert snapshot["available"] is True
+        assert snapshot["total_alerts"] == 3
+        assert self_high["count"] == 2
+        assert self_high["precision"] == 1.0
+        assert self_high["median_stability_rate"] == 0.75
+        assert snapshot["eligible_alerts"] == 2
+        assert snapshot["abstained_alerts"] == 1
+        assert len(snapshot["alerts"]) == 3
+
+
+def test_dashboard_contains_hard_confidence_panel_and_filter():
+    assert "자동 경보 신뢰도" in dash.INDEX_HTML
+    assert 'id="hardConfidenceRows"' in dash.INDEX_HTML
+    assert 'id="hardConfidenceTierFilter"' in dash.INDEX_HTML
+    assert "hard_confidence" in dash.INDEX_HTML
+
+
+def test_rows_for_experiment_accepts_explicit_internal_experiment_alias():
+    rows = [
+        {"experiment_id": "internal_experiment_name", "alpha": "0.005"},
+        {"experiment_id": "internal_experiment_name", "alpha": "0.01"},
+    ]
+
+    selected = dash._rows_for_experiment(
+        rows,
+        "dashboard_catalog_alias",
+        artifact_experiment_id="internal_experiment_name",
+    )
+
+    assert selected == rows
+
+
+def test_rows_for_experiment_rejects_missing_alias_in_shared_artifact():
+    rows = [
+        {"experiment_id": "experiment_a", "alpha": "0.005"},
+        {"experiment_id": "experiment_b", "alpha": "0.005"},
+    ]
+
+    assert dash._rows_for_experiment(rows, "dashboard_catalog_alias") == []
+
+
+def test_historical_artifact_prefers_worktree_then_source_repo_fallback():
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        worktree = base / "worktree"
+        source = base / "source"
+        relative = Path("outputs/demo/summary.csv")
+        source_path = source / relative
+        source_path.parent.mkdir(parents=True)
+        source_path.write_text("source\n", encoding="utf-8")
+
+        assert dash.resolve_historical_artifact(
+            relative, root=worktree, fallback_root=source
+        ) == source_path
+
+        worktree_path = worktree / relative
+        worktree_path.parent.mkdir(parents=True)
+        worktree_path.write_text("worktree\n", encoding="utf-8")
+        assert dash.resolve_historical_artifact(
+            relative, root=worktree, fallback_root=source
+        ) == worktree_path
+
+
+def test_historical_artifact_keeps_missing_worktree_path_visible():
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        relative = Path("outputs/missing.csv")
+
+        resolved = dash.resolve_historical_artifact(
+            relative, root=base / "worktree", fallback_root=base / "source"
+        )
+
+        assert resolved == base / "worktree" / relative
+
+
+def test_completed_budget_validation_is_not_shown_as_planned():
+    items = dash.unified_experiment_items(
+        {"completed": [], "queue": [], "history": [], "running": {}},
+        validation_plan=dash.VALIDATION_PLAN,
+    )
+    by_id = {item["id"]: item for item in items}
+
+    for experiment_id in (
+        "experiment_143_test_length_budget_binding_audit",
+        "experiment_144_train_threshold_only_no_budget",
+        "experiment_146_fixed_k_workload_sensitivity",
+        "experiment_147_policy_level_train_only_no_budget",
+    ):
+        assert by_id[experiment_id]["status"] == "completed"
+    assert by_id["experiment_145_train_normal_count_budget"]["status"] == "blocked"
+    assert by_id["experiment_148_policy_level_train_only_train_budget"]["status"] == "blocked"
+
+
+def test_progress_parser_accepts_spaces_around_slash():
+    events = dash.parse_progress_events(
+        ["Progress: [5 / 251] rows=5 dataset=Demo errors=0"]
+    )
+    assert len(events) == 1
+    assert events[0]["done"] == 5
+    assert events[0]["expected"] == 251
+
+
+def test_dashboard_catalog_includes_exp201_205_shadow_batch():
+    expected = [
+        "experiment_201_frozen_large_size_baseline",
+        "experiment_202_alternative_3of3_train_risk_rescue",
+        "experiment_203_current_alternative_cross_confirmation",
+        "experiment_204_size_stratified_shadow_router",
+        "experiment_205_independent_large_zero_f1_frontier",
+    ]
+    for experiment_id in expected:
+        item = dash.EXPERIMENTS[experiment_id]
+        assert item["expected_datasets"] == 251
+        assert item["comparison_eligible"] is False
+        assert item["scope"] == "retrospective_shadow_hard_diagnostic"
+        assert item["autonomous_metric_scope"] == "unchanged_exp137_hard_alert"
 
 
 def test_summarize_by_config_includes_operational_metrics():
@@ -264,6 +708,63 @@ def test_dashboard_registers_new_queued_experiments():
     assert dash.EXPERIMENTS["experiment_43_explanation_space_transforms"]["detail_csv"].name == "experiment_43_explanation_space_transforms_results.csv"
     assert dash.EXPERIMENTS["experiment_44_classical_embedding_baselines"]["summary_csv"].name == "experiment_44_classical_embedding_baselines_summary.csv"
     assert "experiment_153_157_train_only_improvements" in dash.EXPERIMENTS
+
+
+def test_dashboard_registers_exp266_with_actual_summary_and_status():
+    info = dash.EXPERIMENTS["experiment_266_outside_lane_fn_recovery_shadow"]
+    assert info["summary_csv"].name == "06_global_summary.csv"
+    assert info["status_json"].name == "status.json"
+
+
+def test_exp266_stale_status_does_not_masquerade_as_running():
+    with tempfile.TemporaryDirectory() as tmp:
+        status_path = Path(tmp) / "status.json"
+        status_path.write_text(
+            json.dumps(
+                {
+                    "id": "experiment_266_outside_lane_fn_recovery_shadow",
+                    "status": "running",
+                    "pid": 99999999,
+                    "updated_unix": 0,
+                }
+            ),
+            encoding="utf-8",
+        )
+        assert dash.read_exp266_run_status(status_path, pid_checker=lambda _pid: False) == {}
+
+
+def test_exp266_fresh_heartbeat_with_live_pid_remains_running():
+    with tempfile.TemporaryDirectory() as tmp:
+        status_path = Path(tmp) / "status.json"
+        status_path.write_text(
+            json.dumps(
+                {
+                    "id": "experiment_266_outside_lane_fn_recovery_shadow",
+                    "status": "running",
+                    "pid": 123,
+                    "updated_unix": 99,
+                    "datasets_done": 7,
+                    "expected_datasets": 1117,
+                }
+            ),
+            encoding="utf-8",
+        )
+        status = dash.read_exp266_run_status(status_path, pid_checker=lambda _pid: True, now=100)
+
+    assert status["status"] == "running"
+    assert status["datasets_done"] == 7
+
+
+def test_exp266_completed_snapshot_loads_actual_summary_metrics():
+    row = next(
+        item
+        for item in dash.completed_result_snapshot({})
+        if item["id"] == "experiment_266_outside_lane_fn_recovery_shadow"
+    )
+
+    assert row["history_status"] == "completed_research"
+    assert abs(row["mean_f1"] - 0.6086590828851381) < 1e-12
+    assert abs(row["mean_combined_f1"] - 0.7233383161168991) < 1e-12
 
 
 def test_process_tree_snapshot_aggregates_child_processes():
@@ -617,8 +1118,8 @@ def test_history_metric_text_rejects_unavailable_values_before_number_conversion
     assert "historyMetricText(variant, 'mean_f1', fmt, item)" in html
 
 
-def test_historical_catalog_covers_exp138_through_exp170():
-    for number in range(138, 171):
+def test_historical_catalog_covers_exp138_through_exp174():
+    for number in range(138, 175):
         assert any(exp_id.startswith(f"experiment_{number}") for exp_id in dash.HISTORICAL_EXPERIMENT_META)
 
 
@@ -708,6 +1209,46 @@ def test_exp169_170_are_registered_as_unselected_research_results():
     assert all(row["variant_name"] == row["pool_policy"] for row in normalized["variants"])
 
 
+def test_exp171_172_are_registered_as_frozen_review_policy_results():
+    exp171_id = "experiment_171_train_normal_risk_policy_freeze"
+    exp172_id = "experiment_172_frozen_train_risk_policy_review"
+
+    for exp_id in (exp171_id, exp172_id):
+        assert exp_id in dash.EXPERIMENTS
+        assert exp_id in dash.HISTORICAL_EXPERIMENT_META
+        assert dash.EXPERIMENTS[exp_id]["comparison_eligible"] is False
+        assert dash.EXPERIMENTS[exp_id]["expected_datasets"] == 316
+
+    exp171 = dash.EXPERIMENTS[exp171_id]
+    assert exp171["scope"] == "train_oob_risk_policy_freeze"
+    assert exp171["autonomous_metric_scope"] == "not_evaluated"
+
+    exp172 = dash.EXPERIMENTS[exp172_id]
+    assert exp172["scope"] == "retrospective_frozen_human_review_policy"
+    assert exp172["autonomous_metric_scope"] == "not_evaluated"
+    assert exp172["review_metric_scope"] == "retrospective_research_review_candidate"
+
+
+def test_exp173_174_are_registered_as_balanced_frozen_review_results():
+    exp173_id = "experiment_173_balanced_train_selector_freeze"
+    exp174_id = "experiment_174_balanced_frozen_review"
+
+    for exp_id in (exp173_id, exp174_id):
+        assert exp_id in dash.EXPERIMENTS
+        assert exp_id in dash.HISTORICAL_EXPERIMENT_META
+        assert dash.EXPERIMENTS[exp_id]["comparison_eligible"] is False
+        assert dash.EXPERIMENTS[exp_id]["expected_datasets"] == 316
+
+    exp173 = dash.EXPERIMENTS[exp173_id]
+    assert exp173["scope"] == "train_oob_balanced_policy_freeze"
+    assert exp173["autonomous_metric_scope"] == "not_evaluated"
+
+    exp174 = dash.EXPERIMENTS[exp174_id]
+    assert exp174["scope"] == "retrospective_balanced_frozen_review_policy"
+    assert exp174["autonomous_metric_scope"] == "not_evaluated"
+    assert exp174["review_metric_scope"] == "retrospective_research_review_candidate"
+
+
 def test_experiment_catalog_includes_exp33_reconstruction_artifacts():
     info = dash.EXPERIMENTS["experiment_33_evalset_reconstruction"]
 
@@ -794,6 +1335,66 @@ def test_experiment_history_status_uses_artifact_presence_for_research_rows():
 
     assert complete == {"history_status": "completed_research", "status_reason": "audit"}
     assert missing == {"history_status": "not_run", "status_reason": "result artifact missing"}
+
+
+def test_direct_completed_status_is_visible_without_sequential_queue_state():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        detail = root / "results.csv"
+        status_path = root / "status.json"
+        detail.write_text("dataset\nA\n", encoding="utf-8")
+        status_path.write_text(
+            json.dumps(
+                {
+                    "id": "experiment_direct",
+                    "status": "completed",
+                    "updated_at": "2026-07-22 16:48:04",
+                    "updated_unix": 1784706484.0,
+                    "elapsed_seconds": 12.0,
+                }
+            ),
+            encoding="utf-8",
+        )
+        info = {
+            "history_status": "diagnostic_only",
+            "detail_csv": detail,
+            "status_json": status_path,
+        }
+
+        direct = dash.completed_artifact_status("experiment_direct", info)
+        reconciled = dash.experiment_history_status("experiment_direct", info, {})
+
+    assert direct["status"] == "completed"
+    assert direct["updated_unix"] == 1784706484.0
+    assert reconciled == {
+        "history_status": "completed_research",
+        "status_reason": "direct run status recorded successful completion",
+    }
+
+
+def test_latest_completed_experiment_prefers_newer_direct_run():
+    catalog = {
+        "experiment_old": {},
+        "experiment_new": {
+            "history_status": "diagnostic_only",
+            "_completed_artifact_status": {
+                "status": "completed",
+                "updated_unix": 1784706484.0,
+            },
+        },
+    }
+    state = {
+        "completed": ["experiment_old"],
+        "history": [
+            {
+                "id": "experiment_old",
+                "finished_at": "2026-07-22 16:12:06",
+                "return_code": 0,
+            }
+        ],
+    }
+
+    assert dash.latest_completed_experiment_id(state, catalog=catalog) == "experiment_new"
 
 
 def test_hard_schema_never_uses_combined_f1_as_autonomous_f1():
@@ -1098,6 +1699,20 @@ def test_build_status_marks_detected_exp153_157_as_running_history():
 
 
 if __name__ == "__main__":
+    test_exp289_is_registered_for_sequential_dashboard_execution()
+    test_exp290_is_registered_as_autonomous_exact_normal_guard()
+    test_exp291_is_registered_as_final_operational_routing_freeze()
+    test_exp292_is_registered_as_review_only_evidence_tiering()
+    test_exp293_294_are_registered_as_train_only_moe_review_experiments()
+    test_exp306_and_exp307_are_registered_as_component_and_review_research()
+    test_exp309_through_316_are_registered_as_research_shadow_queue()
+    test_active_experiment_status_file_overrides_stale_shared_heartbeat()
+    test_active_experiment_status_rejects_stale_running_file()
+    test_rows_for_experiment_accepts_explicit_internal_experiment_alias()
+    test_rows_for_experiment_rejects_missing_alias_in_shared_artifact()
+    test_historical_artifact_prefers_worktree_then_source_repo_fallback()
+    test_historical_artifact_keeps_missing_worktree_path_visible()
+    test_completed_budget_validation_is_not_shown_as_planned()
     test_summarize_by_config_includes_operational_metrics()
     test_parse_log_error_summary_groups_reasons_and_families()
     test_coverage_snapshot_reports_done_and_error_gap()
@@ -1114,6 +1729,10 @@ if __name__ == "__main__":
     test_resource_metric_uses_compact_font_class()
     test_experiment_compare_does_not_hide_lower_ranked_completed_runs()
     test_dashboard_registers_new_queued_experiments()
+    test_dashboard_registers_exp266_with_actual_summary_and_status()
+    test_exp266_stale_status_does_not_masquerade_as_running()
+    test_exp266_fresh_heartbeat_with_live_pid_remains_running()
+    test_exp266_completed_snapshot_loads_actual_summary_metrics()
     test_dashboard_server_supports_clean_restart()
     test_history_snapshot_uses_summary_without_loading_regular_detail_csv()
     test_large_csv_is_not_retained_in_dashboard_cache()
@@ -1123,16 +1742,20 @@ if __name__ == "__main__":
     test_completed_snapshot_exposes_operational_columns()
     test_history_ui_has_status_filter_and_separate_review_metrics()
     test_history_metric_text_rejects_unavailable_values_before_number_conversion()
-    test_historical_catalog_covers_exp138_through_exp170()
+    test_historical_catalog_covers_exp138_through_exp174()
     test_normalize_runtime_state_hides_dead_running_pid_and_stale_queue_item()
     test_exp164_is_audit_only_and_exp165_is_registered_for_live_queue()
     test_exp167_168_are_registered_as_non_operational_research_results()
     test_exp169_170_are_registered_as_unselected_research_results()
+    test_exp171_172_are_registered_as_frozen_review_policy_results()
+    test_exp173_174_are_registered_as_balanced_frozen_review_results()
     test_experiment_catalog_includes_exp33_reconstruction_artifacts()
     test_history_artifact_path_rejects_unknown_ids_and_paths_outside_allowed_roots()
     test_historical_catalog_records_have_explicit_status_contracts()
     test_experiment_history_status_reconciles_state_before_artifacts()
     test_experiment_history_status_uses_artifact_presence_for_research_rows()
+    test_direct_completed_status_is_visible_without_sequential_queue_state()
+    test_latest_completed_experiment_prefers_newer_direct_run()
     test_hard_schema_never_uses_combined_f1_as_autonomous_f1()
     test_audit_schema_reports_reason_instead_of_fabricated_f1()
     test_alpha_variants_remain_ordered_and_selected_alpha_stays_none()

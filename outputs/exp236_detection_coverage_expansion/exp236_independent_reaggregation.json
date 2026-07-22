@@ -1,0 +1,26 @@
+{
+  "errors": [],
+  "independent_summary": {
+    "datasets": 1117,
+    "hard_alerts": 2116,
+    "hard_fn": 2129,
+    "hard_fp": 327,
+    "hard_precision": 0.8454631379962193,
+    "hard_recall": 0.45661051556916793,
+    "hard_tp": 1789,
+    "mean_hard_f1": 0.6041325824878045,
+    "new_hard_fp": 13,
+    "new_hard_tp": 98,
+    "new_standard_review_fp": 109,
+    "new_standard_review_tp": 219,
+    "priority_review_candidates": 9,
+    "priority_review_fp": 1,
+    "priority_review_precision": 0.8888888888888888,
+    "priority_review_tp": 8,
+    "standard_review_candidates": 967,
+    "standard_review_fp": 456,
+    "standard_review_precision": 0.5284384694932782,
+    "standard_review_tp": 511
+  },
+  "passed": true
+}

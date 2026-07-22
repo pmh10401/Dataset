@@ -1,0 +1,34 @@
+{
+  "all_checks_passed": true,
+  "cause_count_sum": 2107,
+  "cause_counts": {
+    "already_in_priority_review": 7,
+    "already_in_standard_review": 254,
+    "representation_blind": 668,
+    "score_visible_policy_miss": 746,
+    "single_source_only": 432
+  },
+  "checks": {
+    "alpha_summary_matches": true,
+    "anomaly_identity": true,
+    "cause_categories_known": true,
+    "cause_sum_matches": true,
+    "cause_summary_matches": true,
+    "completion_summary_matches": true,
+    "dataset_fn_matches_anomaly_rows": true,
+    "expected_anomalies": true,
+    "expected_datasets": true,
+    "expected_hard_misses": true,
+    "manifest_hashes_match_non_circular_files": true,
+    "missed_indices_unique": true,
+    "rank_summary_matches": true
+  },
+  "dataset_hard_fn_sum": 2107,
+  "datasets": 639,
+  "hard_fp": 262,
+  "hard_misses": 2107,
+  "hard_tp": 1333,
+  "true_anomalies": 3440,
+  "unique_missed_indices": 2107,
+  "unknown_cause_categories": []
+}

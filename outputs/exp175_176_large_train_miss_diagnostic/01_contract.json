@@ -1,0 +1,38 @@
+{
+  "alphas": [
+    0.005,
+    0.01,
+    0.02,
+    0.05
+  ],
+  "autonomous_policy_changed": false,
+  "eligible_rule": "train_normal_count >= 20",
+  "end_to_end_train_only_provenance_validated": false,
+  "evaluation_reads_test_labels_after_frozen_hash": true,
+  "expected_anomalies": 3440,
+  "expected_datasets": 639,
+  "expected_hard_misses": 2107,
+  "experiment_ids": [
+    "experiment_175_large_train_miss_structure_diagnostic",
+    "experiment_176_budget_vs_representation_diagnostic"
+  ],
+  "prediction_reads_test_labels": false,
+  "prospective_validated": false,
+  "rank_depths": [
+    1,
+    2,
+    3,
+    5,
+    8,
+    10
+  ],
+  "retrospective": true,
+  "source_configuration_provenance_limit": "inherited source configurations include historically TEST-informed choices",
+  "source_names": [
+    "temporal_random_kernel",
+    "spectral_image",
+    "texture_image",
+    "interval_statistical"
+  ],
+  "test_metric_policy_selection": false
+}

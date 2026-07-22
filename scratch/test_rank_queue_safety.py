@@ -149,6 +149,51 @@ def test_queue_catalog_includes_exp169_170_artifacts():
     assert exp170["summary_csv"].name == "09_exp170_global_summary.csv"
 
 
+def test_queue_catalog_includes_exp171_172_artifacts():
+    by_id = {experiment["id"]: experiment for experiment in queue.EXPERIMENTS}
+    exp171 = by_id["experiment_171_train_normal_risk_policy_freeze"]
+    exp172 = by_id["experiment_172_frozen_train_risk_policy_review"]
+
+    assert exp171["expected_datasets"] == 316
+    assert exp171["detail_csv"].name == "02_exp171_policy_candidates.csv"
+    assert exp171["args"] == ["--phase", "audit"]
+    assert exp172["expected_datasets"] == 316
+    assert exp172["detail_csv"].name == "06_exp172_dataset_metrics.csv"
+    assert exp172["summary_csv"].name == "07_exp172_global_summary.csv"
+    assert exp172["args"] == ["--phase", "predict-evaluate"]
+
+
+def test_queue_catalog_includes_exp173_174_artifacts():
+    by_id = {experiment["id"]: experiment for experiment in queue.EXPERIMENTS}
+    exp173 = by_id["experiment_173_balanced_train_selector_freeze"]
+    exp174 = by_id["experiment_174_balanced_frozen_review"]
+
+    assert exp173["expected_datasets"] == 316
+    assert exp173["detail_csv"].name == "02_exp173_policy_candidates.csv"
+    assert exp173["args"] == ["--phase", "audit"]
+    assert exp174["expected_datasets"] == 316
+    assert exp174["detail_csv"].name == "06_exp174_dataset_metrics.csv"
+    assert exp174["summary_csv"].name == "07_exp174_global_summary.csv"
+    assert exp174["args"] == ["--phase", "predict-evaluate"]
+
+
+def test_queue_catalog_and_batch_include_exp201_205_in_order():
+    expected = [
+        "experiment_201_frozen_large_size_baseline",
+        "experiment_202_alternative_3of3_train_risk_rescue",
+        "experiment_203_current_alternative_cross_confirmation",
+        "experiment_204_size_stratified_shadow_router",
+        "experiment_205_independent_large_zero_f1_frontier",
+    ]
+    assert queue.EXP201_205_BATCH == expected
+    by_id = {experiment["id"]: experiment for experiment in queue.EXPERIMENTS}
+    for stage, experiment_id in zip(range(201, 206), expected, strict=True):
+        item = by_id[experiment_id]
+        assert item["expected_datasets"] == 251
+        assert item["args"] == ["--stage", str(stage)]
+        assert item["stdout_log"].name == f"exp{stage}_stdout.log"
+
+
 if __name__ == "__main__":
     test_reconcile_running_state_clears_dead_pid_without_touching_queue()
     test_reconcile_running_state_keeps_live_pid()
@@ -157,4 +202,7 @@ if __name__ == "__main__":
     test_queue_creates_output_directories_before_opening_logs()
     test_queue_catalog_includes_exp167_168_artifacts()
     test_queue_catalog_includes_exp169_170_artifacts()
+    test_queue_catalog_includes_exp171_172_artifacts()
+    test_queue_catalog_includes_exp173_174_artifacts()
+    test_queue_catalog_and_batch_include_exp201_205_in_order()
     print("rank queue safety tests passed")

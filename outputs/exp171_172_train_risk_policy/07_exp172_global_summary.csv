@@ -1,0 +1,2 @@
+pool_policy,alpha,source_config,datasets,review_candidates,tp,fp,micro_precision,mean_recall,mean_f1,zero_f1_datasets,candidate_zero_datasets,mean_candidates_per_dataset,autonomous_metric_scope,review_metric_scope,policy_selected_from_test_metrics,retrospective
+global_balanced_pool,0.02,spectral+interval,316,40,30,10,0.75,0.0949367088607595,0.08966244725738397,286,284,0.12658227848101267,not_evaluated,retrospective_research_review_candidate,0,1

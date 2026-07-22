@@ -1,0 +1,21 @@
+{
+  "cause_counts": {
+    "already_in_priority_review": 7,
+    "already_in_standard_review": 254,
+    "representation_blind": 668,
+    "score_visible_policy_miss": 746,
+    "single_source_only": 432
+  },
+  "datasets": 639,
+  "experiment_ids": [
+    "experiment_175_large_train_miss_structure_diagnostic",
+    "experiment_176_budget_vs_representation_diagnostic"
+  ],
+  "hard_fp": 262,
+  "hard_misses": 2107,
+  "hard_tp": 1333,
+  "prospective_validated": false,
+  "retrospective": true,
+  "test_metrics_used_for_policy_selection": false,
+  "true_anomalies": 3440
+}

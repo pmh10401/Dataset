@@ -1,0 +1,10 @@
+PickupGestureWiimoteZ_normal_8
+ShakeGestureWiimoteZ_normal_5
+PickupGestureWiimoteZ_normal_7
+GestureMidAirD3_normal_18
+GestureMidAirD1_normal_9
+GestureMidAirD2_normal_24
+ProximalPhalanxTW_normal_3
+ShakeGestureWiimoteZ_normal_3
+Phoneme_normal_39
+FiftyWords_normal_49

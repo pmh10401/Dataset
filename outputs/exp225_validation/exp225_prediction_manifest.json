@@ -1,0 +1,18 @@
+{
+  "contains_evaluation_metrics": false,
+  "contains_test_labels": false,
+  "created_at": "2026-07-16T15:10:20Z",
+  "dataset_count": 251,
+  "experiment_id": "experiment_225_fixed_dictionary_independent_confirmation_review",
+  "input_hashes": {
+    "canonical_score_manifest": "36810c14a5cca10d9758aa55144bcd785e1bae4d12278039cac83af2b96901ce",
+    "exp153_score_manifest": "bf73796c046a6102fce53d3b6fc606afa1ed0a5161ebb6e92d94698ab56a68a0",
+    "exp219_prediction_manifest": "4a22e5abb24a510026b2a1cb93a3979dc98aa25f90661636069c50cfa9bf0d46",
+    "exp219_predictions": "621bf7f5c84e367c96b933882c9dc1fd187b2c234d67b9b0a91af4cc11807a8e",
+    "exp224_policy": "218f3bc31d3fb05b02d53c08e839597a7f0f81aadd4d42d23e7d8d446c817e0b",
+    "exp224_raw_replay_report": "90592a31cf1bc6d343c164b4a555d665d46fdfb3fbe84742bc892a610f2b737e"
+  },
+  "prediction_file": "exp225_frozen_predictions.jsonl",
+  "prediction_rows": 251,
+  "prediction_sha256": "e52e790d6be00035ef466761fa9aa8caa93fcf0c8afeaff5bdbaa49a7bd8c496"
+}

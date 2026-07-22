@@ -1,0 +1,322 @@
+{
+  "schema": "exp238_independent_reaggregation_v1",
+  "prediction_rows": 4468,
+  "dataset_count": 1117,
+  "alphas": {
+    "0.005": {
+      "datasets": 1117,
+      "abstained_datasets": 162,
+      "metrics": {
+        "hard": {
+          "count": 2116,
+          "tp": 1789,
+          "fp": 327,
+          "precision": 0.8454631379962193
+        },
+        "confidence_a": {
+          "count": 307,
+          "tp": 296,
+          "fp": 11,
+          "precision": 0.9641693811074918
+        },
+        "confidence_b": {
+          "count": 538,
+          "tp": 477,
+          "fp": 61,
+          "precision": 0.8866171003717472
+        },
+        "confidence_c": {
+          "count": 1271,
+          "tp": 1016,
+          "fp": 255,
+          "precision": 0.7993705743509048
+        },
+        "review_priority_1": {
+          "count": 14,
+          "tp": 11,
+          "fp": 3,
+          "precision": 0.7857142857142857
+        },
+        "review_priority_2": {
+          "count": 144,
+          "tp": 99,
+          "fp": 45,
+          "precision": 0.6875
+        },
+        "review_priority_3": {
+          "count": 809,
+          "tp": 401,
+          "fp": 408,
+          "precision": 0.4956736711990111
+        },
+        "rocket_256": {
+          "count": 1123,
+          "tp": 923,
+          "fp": 200,
+          "precision": 0.8219056099732859
+        },
+        "rocket_512": {
+          "count": 1148,
+          "tp": 916,
+          "fp": 232,
+          "precision": 0.7979094076655052
+        },
+        "rocket_1024": {
+          "count": 1162,
+          "tp": 948,
+          "fp": 214,
+          "precision": 0.8158347676419966
+        },
+        "rocket_256_seed2": {
+          "count": 1152,
+          "tp": 928,
+          "fp": 224,
+          "precision": 0.8055555555555556
+        },
+        "rocket_stable": {
+          "count": 928,
+          "tp": 806,
+          "fp": 122,
+          "precision": 0.8685344827586207
+        }
+      }
+    },
+    "0.01": {
+      "datasets": 1117,
+      "abstained_datasets": 162,
+      "metrics": {
+        "hard": {
+          "count": 2116,
+          "tp": 1789,
+          "fp": 327,
+          "precision": 0.8454631379962193
+        },
+        "confidence_a": {
+          "count": 464,
+          "tp": 428,
+          "fp": 36,
+          "precision": 0.9224137931034483
+        },
+        "confidence_b": {
+          "count": 694,
+          "tp": 594,
+          "fp": 100,
+          "precision": 0.8559077809798271
+        },
+        "confidence_c": {
+          "count": 958,
+          "tp": 767,
+          "fp": 191,
+          "precision": 0.8006263048016702
+        },
+        "review_priority_1": {
+          "count": 26,
+          "tp": 19,
+          "fp": 7,
+          "precision": 0.7307692307692307
+        },
+        "review_priority_2": {
+          "count": 221,
+          "tp": 152,
+          "fp": 69,
+          "precision": 0.6877828054298643
+        },
+        "review_priority_3": {
+          "count": 720,
+          "tp": 340,
+          "fp": 380,
+          "precision": 0.4722222222222222
+        },
+        "rocket_256": {
+          "count": 1751,
+          "tp": 1288,
+          "fp": 463,
+          "precision": 0.7355796687607081
+        },
+        "rocket_512": {
+          "count": 1807,
+          "tp": 1308,
+          "fp": 499,
+          "precision": 0.7238516878804648
+        },
+        "rocket_1024": {
+          "count": 1766,
+          "tp": 1297,
+          "fp": 469,
+          "precision": 0.7344280860702151
+        },
+        "rocket_256_seed2": {
+          "count": 1770,
+          "tp": 1274,
+          "fp": 496,
+          "precision": 0.7197740112994351
+        },
+        "rocket_stable": {
+          "count": 1419,
+          "tp": 1134,
+          "fp": 285,
+          "precision": 0.7991543340380549
+        }
+      }
+    },
+    "0.02": {
+      "datasets": 1117,
+      "abstained_datasets": 162,
+      "metrics": {
+        "hard": {
+          "count": 2116,
+          "tp": 1789,
+          "fp": 327,
+          "precision": 0.8454631379962193
+        },
+        "confidence_a": {
+          "count": 719,
+          "tp": 637,
+          "fp": 82,
+          "precision": 0.885952712100139
+        },
+        "confidence_b": {
+          "count": 773,
+          "tp": 646,
+          "fp": 127,
+          "precision": 0.8357050452781372
+        },
+        "confidence_c": {
+          "count": 624,
+          "tp": 506,
+          "fp": 118,
+          "precision": 0.8108974358974359
+        },
+        "review_priority_1": {
+          "count": 57,
+          "tp": 40,
+          "fp": 17,
+          "precision": 0.7017543859649122
+        },
+        "review_priority_2": {
+          "count": 307,
+          "tp": 201,
+          "fp": 106,
+          "precision": 0.6547231270358306
+        },
+        "review_priority_3": {
+          "count": 603,
+          "tp": 270,
+          "fp": 333,
+          "precision": 0.44776119402985076
+        },
+        "rocket_256": {
+          "count": 2742,
+          "tp": 1757,
+          "fp": 985,
+          "precision": 0.6407731582786287
+        },
+        "rocket_512": {
+          "count": 2787,
+          "tp": 1759,
+          "fp": 1028,
+          "precision": 0.6311445999282382
+        },
+        "rocket_1024": {
+          "count": 2753,
+          "tp": 1760,
+          "fp": 993,
+          "precision": 0.6393025790047221
+        },
+        "rocket_256_seed2": {
+          "count": 2699,
+          "tp": 1726,
+          "fp": 973,
+          "precision": 0.6394961096702483
+        },
+        "rocket_stable": {
+          "count": 2160,
+          "tp": 1569,
+          "fp": 591,
+          "precision": 0.7263888888888889
+        }
+      }
+    },
+    "0.05": {
+      "datasets": 1117,
+      "abstained_datasets": 162,
+      "metrics": {
+        "hard": {
+          "count": 2116,
+          "tp": 1789,
+          "fp": 327,
+          "precision": 0.8454631379962193
+        },
+        "confidence_a": {
+          "count": 990,
+          "tp": 854,
+          "fp": 136,
+          "precision": 0.8626262626262626
+        },
+        "confidence_b": {
+          "count": 695,
+          "tp": 565,
+          "fp": 130,
+          "precision": 0.8129496402877698
+        },
+        "confidence_c": {
+          "count": 431,
+          "tp": 370,
+          "fp": 61,
+          "precision": 0.8584686774941995
+        },
+        "review_priority_1": {
+          "count": 140,
+          "tp": 98,
+          "fp": 42,
+          "precision": 0.7
+        },
+        "review_priority_2": {
+          "count": 448,
+          "tp": 267,
+          "fp": 181,
+          "precision": 0.5959821428571429
+        },
+        "review_priority_3": {
+          "count": 379,
+          "tp": 146,
+          "fp": 233,
+          "precision": 0.38522427440633245
+        },
+        "rocket_256": {
+          "count": 4946,
+          "tp": 2262,
+          "fp": 2684,
+          "precision": 0.457339264051759
+        },
+        "rocket_512": {
+          "count": 5030,
+          "tp": 2274,
+          "fp": 2756,
+          "precision": 0.45208747514910536
+        },
+        "rocket_1024": {
+          "count": 4949,
+          "tp": 2245,
+          "fp": 2704,
+          "precision": 0.4536269953525965
+        },
+        "rocket_256_seed2": {
+          "count": 4912,
+          "tp": 2252,
+          "fp": 2660,
+          "precision": 0.4584690553745928
+        },
+        "rocket_stable": {
+          "count": 3614,
+          "tp": 2065,
+          "fp": 1549,
+          "precision": 0.5713890426120642
+        }
+      }
+    }
+  },
+  "partition_or_range_violations": [],
+  "summary_mismatches": [],
+  "passed": true
+}

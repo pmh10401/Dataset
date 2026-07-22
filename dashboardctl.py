@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import signal
@@ -11,7 +12,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 
 ROOT = Path(__file__).resolve().parent
@@ -22,11 +23,55 @@ SERVER_SCRIPT = ROOT / "serve_rank_dashboard.py"
 PORT = int(os.environ.get("RANK_DASHBOARD_PORT", "8765"))
 
 
-def read_pid():
+def read_pid_metadata(path=PID_PATH):
     try:
-        return int(PID_PATH.read_text().strip())
-    except (OSError, ValueError):
-        return None
+        raw = Path(path).read_text(encoding="utf-8").strip()
+    except OSError:
+        return {}
+    if not raw:
+        return {}
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        try:
+            return {"pid": int(raw), "legacy": True}
+        except ValueError:
+            return {}
+    if isinstance(value, int):
+        return {"pid": value, "legacy": True}
+    if not isinstance(value, dict):
+        return {}
+    try:
+        value["pid"] = int(value["pid"])
+    except (KeyError, TypeError, ValueError):
+        return {}
+    return value
+
+
+def read_pid():
+    return read_pid_metadata().get("pid")
+
+
+def health_url(port=PORT):
+    return f"http://127.0.0.1:{int(port)}/api/healthz"
+
+
+def health_matches_process(payload, pid):
+    try:
+        return int((payload or {}).get("server", {}).get("pid")) == int(pid)
+    except (TypeError, ValueError):
+        return False
+
+
+def request_json(url, timeout=10):
+    request = Request(url)
+    user = os.environ.get("RANK_DASHBOARD_USER")
+    password = os.environ.get("RANK_DASHBOARD_PASSWORD")
+    if user and password:
+        token = base64.b64encode(f"{user}:{password}".encode()).decode()
+        request.add_header("Authorization", f"Basic {token}")
+    with urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read())
 
 
 def command_for_pid(pid):
@@ -44,18 +89,54 @@ def dashboard_pid():
     return pid if "serve_rank_dashboard.py" in command else None
 
 
+def port_listener_pid(port=PORT):
+    try:
+        output = subprocess.check_output(
+            ["lsof", "-nP", f"-iTCP:{int(port)}", "-sTCP:LISTEN", "-t"], text=True
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    try:
+        return int(output.splitlines()[0]) if output else None
+    except ValueError:
+        return None
+
+
+def listener_dashboard_pid(port=PORT):
+    """Return the dashboard listener PID only when the port owner is this dashboard."""
+
+    pid = port_listener_pid(port)
+    if pid and "serve_rank_dashboard.py" in command_for_pid(pid):
+        return pid
+    return None
+
+
+def controlled_dashboard_pid():
+    """Prefer the recorded PID, but recover safely from a stale PID file."""
+
+    return dashboard_pid() or listener_dashboard_pid(PORT)
+
+
 def status():
-    pid = dashboard_pid()
+    pid = controlled_dashboard_pid()
     payload = {"pid": pid, "port": PORT, "reachable": False}
     try:
-        with urlopen(f"http://127.0.0.1:{PORT}/api/status", timeout=10) as response:
-            body = json.loads(response.read())
+        body = request_json(f"http://127.0.0.1:{PORT}/api/status")
+        health = request_json(health_url(PORT))
+        health_pid = (health.get("server") or {}).get("pid")
+        listener_pid = port_listener_pid(PORT)
+        pid_matches = bool(health_pid) and (pid is None or health_matches_process(health, pid))
+        listener_matches = listener_pid is None or int(listener_pid) == int(health_pid)
         payload.update(
             {
-                "reachable": True,
+                "reachable": pid_matches and listener_matches,
                 "running": body.get("running"),
                 "active_experiment": body.get("active_experiment"),
+                "last_completed_experiment": body.get("last_completed_experiment"),
                 "runtime_health": body.get("runtime_health"),
+                "server": health.get("server"),
+                "listener_pid": listener_pid,
+                "pid_mismatch": not (pid_matches and listener_matches),
             }
         )
     except Exception as exc:
@@ -65,26 +146,39 @@ def status():
 
 
 def stop():
-    pid = dashboard_pid()
+    pid = controlled_dashboard_pid()
     if not pid:
         print("dashboard not running")
         return 0
     os.kill(pid, signal.SIGTERM)
     for _ in range(30):
-        if not dashboard_pid():
+        if not controlled_dashboard_pid():
             break
         time.sleep(0.1)
-    if dashboard_pid():
+    if controlled_dashboard_pid():
         raise SystemExit(f"dashboard pid {pid} did not stop")
+    listener = port_listener_pid(PORT)
+    if listener:
+        raise SystemExit(f"dashboard port {PORT} is still owned by pid {listener}")
     print(f"dashboard stopped pid={pid}")
     return 0
 
 
 def start():
-    pid = dashboard_pid()
+    pid = controlled_dashboard_pid()
     if pid:
-        print(f"dashboard already running pid={pid}")
-        return 0
+        try:
+            health = request_json(health_url(PORT))
+        except Exception as exc:
+            raise SystemExit(f"dashboard pid {pid} exists but health check failed: {exc}")
+        if health_matches_process(health, pid):
+            print(f"dashboard already running pid={pid}")
+            return 0
+        raise SystemExit(f"dashboard PID/health mismatch for pid {pid}")
+    listener = port_listener_pid(PORT)
+    if listener:
+        command = command_for_pid(listener)
+        raise SystemExit(f"port {PORT} is already in use by pid {listener}: {command}")
     deadline = time.time() + 15
     while time.time() < deadline:
         with LOG_PATH.open("a") as log_file:
@@ -96,10 +190,15 @@ def start():
                 start_new_session=True,
             )
         for _ in range(10):
-            pid = dashboard_pid()
+            pid = controlled_dashboard_pid()
             if pid:
-                print(f"dashboard started pid={pid} port={PORT}")
-                return 0
+                try:
+                    health = request_json(health_url(PORT), timeout=1)
+                except Exception:
+                    health = {}
+                if health_matches_process(health, pid):
+                    print(f"dashboard started pid={pid} port={PORT}")
+                    return 0
             if process.poll() is not None:
                 break
             time.sleep(0.1)

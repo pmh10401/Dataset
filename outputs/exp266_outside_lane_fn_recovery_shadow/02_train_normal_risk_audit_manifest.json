@@ -1,0 +1,32 @@
+{
+  "audit_file": "02_train_normal_risk_audit.csv",
+  "audit_sha256": "ae96262ce0e6d9f7c2f742c37d259f270487a64e95afe68dc112895547af9ddd",
+  "certified_source_count": 4,
+  "certified_sources": [
+    "kernel",
+    "statistical",
+    "structural",
+    "change_point"
+  ],
+  "contract_version": 1,
+  "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+  "dataset_sha256": "8fae687cd48b0f080ff43992ad5fa3ac4112038514cb0f823fc3ee09f76eb121",
+  "datasets": 1117,
+  "expected_aggregates": {
+    "abstained": 162,
+    "combined_false_reviews": 244,
+    "datasets": 1117,
+    "eligible": 955,
+    "five_source_sensitivity_combined_false_reviews": 286,
+    "five_source_sensitivity_recovery_priority_false_reviews": 176,
+    "five_source_sensitivity_recovery_shadow_false_reviews": 110,
+    "normal_runs": 146796,
+    "reconstruction_available": 251,
+    "recovery_priority_false_reviews": 160,
+    "recovery_shadow_false_reviews": 84
+  },
+  "five_source_sensitivity_approval_blocker": "Five-source combined TRAIN-risk approval is blocked until Exp257 has a producer-signed/pinned manifest tying the frozen archives to query-excluded fitting and exact seeds, or a separately preregistered regeneration is performed.",
+  "five_source_sensitivity_deployment_eligible": false,
+  "five_source_sensitivity_policy_risk_validated": false,
+  "five_source_sensitivity_provenance_verified": false
+}
