@@ -20,6 +20,9 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parent
+SOURCE_REPO_ROOT = Path(
+    os.environ.get("TIMESERIES_SOURCE_REPO_ROOT", "/Users/minho/Documents/timesries project")
+)
 DATA_DIR = Path("/Users/minho/Documents/Dataset")
 DB_PATH = DATA_DIR / "univariate_ts.db"
 DETAIL_PATH = DATA_DIR / "rank_ensemble_threshold_calibration.csv"
@@ -49,6 +52,15 @@ VALIDATION_PLAN = [
     {"id": "experiment_147_policy_level_train_only_no_budget", "label": "Exp147 · B2 + threshold-only", "status": "planned", "runner_id": "experiment_144_train_threshold_only_no_budget"},
     {"id": "experiment_148_policy_level_train_only_train_budget", "label": "Exp148 · B2 + TRAIN-normal budget", "status": "blocked", "blocked_reason": "Exp145 run-grain blocker에 의존"},
 ]
+
+
+def resolve_historical_artifact(relative, *, root=ROOT, fallback_root=SOURCE_REPO_ROOT):
+    relative_path = Path(relative)
+    primary = Path(root) / relative_path
+    if primary.exists():
+        return primary
+    fallback = Path(fallback_root) / relative_path
+    return fallback if fallback.exists() else primary
 
 
 def sha256_file(path):
@@ -1585,8 +1597,8 @@ HISTORICAL_EXPERIMENT_META = {
         "scope": "retrospective_counterfactual",
         "status_reason": "routing implementation defect corrected by Exp151/152",
         "selected_alpha": None,
-        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/virtual_run_conformal/03_exp149_current_source_results.csv",
-        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/virtual_run_conformal/04_exp149_current_source_summary.csv",
+        "detail_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/virtual_run_conformal/03_exp149_current_source_results.csv"),
+        "summary_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/virtual_run_conformal/04_exp149_current_source_summary.csv"),
     },
     "experiment_150_virtual_run_conformal_policy": {
         "label": "Exp150 - virtual-run conformal B2 source",
@@ -1595,8 +1607,8 @@ HISTORICAL_EXPERIMENT_META = {
         "scope": "retrospective_counterfactual",
         "status_reason": "routing implementation defect corrected by Exp151/152",
         "selected_alpha": None,
-        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/virtual_run_conformal/06_exp150_b2_source_results.csv",
-        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/virtual_run_conformal/07_exp150_b2_source_summary.csv",
+        "detail_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/virtual_run_conformal/06_exp150_b2_source_results.csv"),
+        "summary_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/virtual_run_conformal/07_exp150_b2_source_summary.csv"),
     },
     "experiment_151_virtual_run_conformal_policy_v2": {
         "label": "Exp151 - corrected virtual-run conformal current source",

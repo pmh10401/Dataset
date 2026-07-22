@@ -73,6 +73,40 @@ def test_rows_for_experiment_rejects_missing_alias_in_shared_artifact():
     assert dash._rows_for_experiment(rows, "dashboard_catalog_alias") == []
 
 
+def test_historical_artifact_prefers_worktree_then_source_repo_fallback():
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        worktree = base / "worktree"
+        source = base / "source"
+        relative = Path("outputs/demo/summary.csv")
+        source_path = source / relative
+        source_path.parent.mkdir(parents=True)
+        source_path.write_text("source\n", encoding="utf-8")
+
+        assert dash.resolve_historical_artifact(
+            relative, root=worktree, fallback_root=source
+        ) == source_path
+
+        worktree_path = worktree / relative
+        worktree_path.parent.mkdir(parents=True)
+        worktree_path.write_text("worktree\n", encoding="utf-8")
+        assert dash.resolve_historical_artifact(
+            relative, root=worktree, fallback_root=source
+        ) == worktree_path
+
+
+def test_historical_artifact_keeps_missing_worktree_path_visible():
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        relative = Path("outputs/missing.csv")
+
+        resolved = dash.resolve_historical_artifact(
+            relative, root=base / "worktree", fallback_root=base / "source"
+        )
+
+        assert resolved == base / "worktree" / relative
+
+
 def test_progress_parser_accepts_spaces_around_slash():
     events = dash.parse_progress_events(
         ["Progress: [5 / 251] rows=5 dataset=Demo errors=0"]
@@ -1290,6 +1324,8 @@ if __name__ == "__main__":
     test_exp291_is_registered_as_final_operational_routing_freeze()
     test_rows_for_experiment_accepts_explicit_internal_experiment_alias()
     test_rows_for_experiment_rejects_missing_alias_in_shared_artifact()
+    test_historical_artifact_prefers_worktree_then_source_repo_fallback()
+    test_historical_artifact_keeps_missing_worktree_path_visible()
     test_summarize_by_config_includes_operational_metrics()
     test_parse_log_error_summary_groups_reasons_and_families()
     test_coverage_snapshot_reports_done_and_error_gap()
