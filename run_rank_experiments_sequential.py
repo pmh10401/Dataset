@@ -1314,6 +1314,11 @@ EXPERIMENTS.append({"id": "experiment_288_recovery_priority_counterexample_audit
     "script": ROOT / "scratch/run_exp288_recovery_priority_counterexample.py", "args": ["--output-root", str(EXP288_ROOT)],
     "detail_csv": EXP288_ROOT / "exp288_counterexample_results.csv", "summary_csv": EXP288_ROOT / "exp288_summary.csv",
     "stdout_log": EXP288_ROOT / "logs" / "experiment_288_recovery_priority_counterexample_audit.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP289_ROOT = DATA_DIR / "exp289_recovery_priority_label_consistency_audit"
+EXPERIMENTS.append({"id": "experiment_289_recovery_priority_label_consistency_audit", "label": "Exp289 · Recovery Priority label consistency audit",
+    "script": ROOT / "scratch/run_exp289_label_consistency_audit.py", "args": ["--output-root", str(EXP289_ROOT)],
+    "detail_csv": EXP289_ROOT / "exp289_candidate_label_consistency.csv", "summary_csv": EXP289_ROOT / "exp289_tier_summary.csv",
+    "stdout_log": EXP289_ROOT / "logs" / "experiment_289_recovery_priority_label_consistency_audit.log", "expected_datasets": 1117, "archive_outputs": False})
 EXP177_185_BATCH = [
     "experiment_177_train_oof_review_policy_freeze",
     "experiment_178_frozen_policy_review_prediction",
@@ -2070,6 +2075,7 @@ def main():
     sub.add_parser("queue-exp282-284")
     sub.add_parser("queue-exp285-287")
     sub.add_parser("queue-exp288")
+    sub.add_parser("queue-exp289")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -2116,6 +2122,8 @@ def main():
         queue_exp285_287_batch()
     elif args.command == "queue-exp288":
         queue_experiment("experiment_288_recovery_priority_counterexample_audit")
+    elif args.command == "queue-exp289":
+        queue_experiment("experiment_289_recovery_priority_label_consistency_audit")
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

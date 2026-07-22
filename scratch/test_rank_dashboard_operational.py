@@ -9,6 +9,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import serve_rank_dashboard as dash
 
 
+def test_exp289_is_registered_for_sequential_dashboard_execution():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_289_recovery_priority_label_consistency_audit"
+    runner_item = next(item for item in runner.EXPERIMENTS if item["id"] == experiment_id)
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["detail_csv"].name == "exp289_candidate_label_consistency.csv"
+    assert dashboard_item["history_status"] == "diagnostic_only"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["scope"] == "retrospective_label_consistency_diagnostic"
+    assert dashboard_item["status_json"].name == "status.json"
+
+
 def test_progress_parser_accepts_spaces_around_slash():
     events = dash.parse_progress_events(
         ["Progress: [5 / 251] rows=5 dataset=Demo errors=0"]
@@ -1221,6 +1235,7 @@ def test_build_status_marks_detected_exp153_157_as_running_history():
 
 
 if __name__ == "__main__":
+    test_exp289_is_registered_for_sequential_dashboard_execution()
     test_summarize_by_config_includes_operational_metrics()
     test_parse_log_error_summary_groups_reasons_and_families()
     test_coverage_snapshot_reports_done_and_error_gap()

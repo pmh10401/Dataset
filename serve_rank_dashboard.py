@@ -2343,6 +2343,17 @@ EXPERIMENTS["experiment_288_recovery_priority_counterexample_audit"] = {
     "expected_datasets": 1117,
 }
 
+EXP289_ROOT = DATA_DIR / "exp289_recovery_priority_label_consistency_audit"
+EXPERIMENTS["experiment_289_recovery_priority_label_consistency_audit"] = {
+    "label": "Exp289 - Recovery Priority 라벨 정합성 감사", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_label_consistency_diagnostic", "status_reason": "Reads TEST labels for duplicate/conflict diagnosis only; no prediction policy",
+    "autonomous_metric_scope": "Exp253 Hard 변경 없음", "review_metric_scope": "Recovery Priority 동일·근접 파형 라벨 충돌 감사",
+    "detail_csv": EXP289_ROOT / "exp289_candidate_label_consistency.csv", "summary_csv": EXP289_ROOT / "exp289_tier_summary.csv",
+    "status_json": EXP289_ROOT / "status.json", "stdout_log": EXP289_ROOT / "logs" / "experiment_289_recovery_priority_label_consistency_audit.log",
+    "artifact_paths": [EXP289_ROOT / "status.json", EXP289_ROOT / "exp289_candidate_label_consistency.csv", EXP289_ROOT / "exp289_tier_summary.csv", EXP289_ROOT / "exp289_exact_cross_label_conflicts.csv"],
+    "expected_datasets": 1117,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
