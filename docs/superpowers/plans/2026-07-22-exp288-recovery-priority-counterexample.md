@@ -10,16 +10,26 @@
 
 ### Task 1: Counterexample metrics
 
-- Implement deterministic nearest-normal correlation matching and fixed category assignment.
-- Test constant traces, category boundaries, and finite feature metrics.
+- [x] Implement deterministic nearest-normal correlation matching and fixed category assignment.
+- [x] Test constant traces, category boundaries, and finite feature metrics.
 
 ### Task 2: Retrospective audit
 
-- Verify Exp286 SHA256 before reading labels.
-- Reproduce exactly 11 TP and 32 FP in the frozen Recovery Priority subset.
-- Save all comparisons and ten representative waveform pairs.
+- [x] Verify Exp286 SHA256 before reading labels.
+- [x] Reproduce exactly 11 TP and 32 FP in the frozen Recovery Priority subset.
+- [x] Save all comparisons and ten representative waveform pairs.
 
 ### Task 3: Dashboard and report
 
-- Register Exp288 as retrospective diagnostic with Hard unchanged.
-- Run sequentially, independently verify counts, and write `RESULT_REPORT.md`.
+- [x] Register Exp288 as retrospective diagnostic with Hard unchanged.
+- [x] Run sequentially, independently verify counts, and write `RESULT_REPORT.md`.
+
+## Execution Result
+
+- Completed: 2026-07-22 10:21:06 KST
+- Coverage: 1,117 / 1,117 datasets
+- Errors: 0
+- Frozen candidates: 43 = 11 TP + 32 FP
+- FP normal-shape matches: 23 / 32 (71.875%)
+- Hard policy changed: no
+- Decision: diagnostic only; no distance-based exclusion rule promoted
