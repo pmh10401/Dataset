@@ -8,6 +8,11 @@
 
 **Tech Stack:** Python 3.14, NumPy, scikit-learn StandardScaler/LogisticRegression, existing DB loader, JSONL/CSV/SHA256, unittest.
 
+**Execution status (2026-07-22):** Completed on all 1,117 datasets. The best
+frozen result was 33.33% precision, so Exp287 was rejected for Hard expansion
+and default review routing. Full results are stored in
+`/Users/minho/Documents/Dataset/exp285_287_synthetic_shape_verifier/RESULT_REPORT.md`.
+
 ## Global Constraints
 
 - Fixed seed `20260722`, four exact transforms, maximum 512 TRAIN bases, five folds.
