@@ -72,3 +72,24 @@ def list_datasets_small_to_large(path: Path = DB_PATH, limit: int | None = None)
         connection.close()
     names = [str(row[0]) for row in rows]
     return names[: int(limit)] if limit is not None else names
+
+
+def select_frozen_evaluation_universe(
+    ordered_database_datasets: list[str],
+    frozen_datasets: set[str],
+    *,
+    expected: int,
+) -> tuple[list[str], list[str]]:
+    if len(frozen_datasets) != int(expected):
+        raise ValueError(
+            f"frozen evaluation universe mismatch: {len(frozen_datasets)}/{expected}"
+        )
+    database_set = set(ordered_database_datasets)
+    missing = sorted(frozen_datasets - database_set)
+    if missing:
+        raise ValueError(f"frozen evaluation datasets missing from database: {missing}")
+    selected = [name for name in ordered_database_datasets if name in frozen_datasets]
+    excluded = [name for name in ordered_database_datasets if name not in frozen_datasets]
+    if len(selected) != int(expected):
+        raise ValueError(f"selected evaluation universe mismatch: {len(selected)}/{expected}")
+    return selected, excluded

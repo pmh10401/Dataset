@@ -25,7 +25,11 @@ from .evidence_fusion import (
     fuse_indices,
 )
 from .evaluation import evaluate_experiment
-from .foundation import list_datasets_small_to_large, load_preprocessed_bundle
+from .foundation import (
+    list_datasets_small_to_large,
+    load_preprocessed_bundle,
+    select_frozen_evaluation_universe,
+)
 from .contrastive_memory import score_contrastive_memory
 from .predictive_residual import score_predictive_residual
 from .wavelet_phase import score_wavelet_phase
@@ -42,6 +46,15 @@ NEURAL_SOURCE_FUNCTIONS = {
     314: ("contrastive_normal_memory", score_contrastive_memory),
     315: ("deep_svdd_normal_boundary", score_deep_svdd),
 }
+
+
+def _frozen_evaluation_datasets(limit: int | None) -> tuple[list[str], list[str]]:
+    frozen_rows = verify_prediction_rows(EXP291_PREDICTION, EXP291_MANIFEST)
+    frozen_names = {str(row["dataset"]) for row in frozen_rows}
+    datasets, excluded = select_frozen_evaluation_universe(
+        list_datasets_small_to_large(), frozen_names, expected=EXPECTED_DATASETS,
+    )
+    return (datasets[: int(limit)] if limit is not None else datasets), excluded
 
 
 def _atomic_json(path: Path, payload: dict[str, object]) -> None:
@@ -154,7 +167,7 @@ def run_prediction(
         )
     if int(experiment) not in SOURCE_FUNCTIONS:
         raise NotImplementedError(f"prediction is not implemented yet for Exp{experiment}")
-    datasets = list_datasets_small_to_large(limit=dataset_limit)
+    datasets, excluded_database_datasets = _frozen_evaluation_datasets(dataset_limit)
     expected = len(datasets)
     started = time.time()
     experiment_id = EXPERIMENT_IDS[int(experiment)]
@@ -192,6 +205,9 @@ def run_prediction(
             "seed": SEED,
             "alphas": list(ALPHAS),
             "database_path": str(DB_PATH),
+            "evaluation_universe": "Exp291 frozen 1,117-dataset population",
+            "evaluation_universe_prediction_sha256": sha256_file(EXP291_PREDICTION),
+            "database_datasets_outside_evaluation_universe": excluded_database_datasets,
             "preprocessing_contract": preprocessing_contract(),
             "candidate_grain": "test_instance_virtual_run",
             "automatic_policy_changed": False,
@@ -207,7 +223,7 @@ def run_prediction(
 def run_neural_prediction(
     experiment: int, root: Path, *, dataset_limit: int | None, device: str,
 ) -> dict[str, object]:
-    datasets = list_datasets_small_to_large(limit=dataset_limit)
+    datasets, excluded_database_datasets = _frozen_evaluation_datasets(dataset_limit)
     expected = len(datasets); started = time.time(); experiment_id = EXPERIMENT_IDS[int(experiment)]
     root.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, object]] = []; errors: list[str] = []
@@ -235,6 +251,9 @@ def run_neural_prediction(
         metadata={
             "datasets": expected, "dataset_limit": dataset_limit, "seed": SEED,
             "alphas": list(ALPHAS), "requested_device": device,
+            "evaluation_universe": "Exp291 frozen 1,117-dataset population",
+            "evaluation_universe_prediction_sha256": sha256_file(EXP291_PREDICTION),
+            "database_datasets_outside_evaluation_universe": excluded_database_datasets,
             "preprocessing_contract": preprocessing_contract(),
             "calibration_method": "three_way_train_validation_calibration_split",
             "automatic_policy_changed": False, "research_shadow_only": True,
