@@ -1309,6 +1309,11 @@ EXPERIMENTS.extend({"id": exp_id, "label": label, "script": ROOT / "scratch/run_
     "summary_csv": EXP285_287_ROOT / summary, "stdout_log": EXP285_287_ROOT / "logs" / f"{exp_id}.log",
     "expected_datasets": 1117, "archive_outputs": False} for stage, exp_id, label, detail, summary in _EXP285_287_STAGE_ROWS)
 EXP285_287_BATCH = tuple(row[1] for row in _EXP285_287_STAGE_ROWS)
+EXP288_ROOT = DATA_DIR / "exp288_recovery_priority_counterexample"
+EXPERIMENTS.append({"id": "experiment_288_recovery_priority_counterexample_audit", "label": "Exp288 · Recovery Priority FP counterexample audit",
+    "script": ROOT / "scratch/run_exp288_recovery_priority_counterexample.py", "args": ["--output-root", str(EXP288_ROOT)],
+    "detail_csv": EXP288_ROOT / "exp288_counterexample_results.csv", "summary_csv": EXP288_ROOT / "exp288_summary.csv",
+    "stdout_log": EXP288_ROOT / "logs" / "experiment_288_recovery_priority_counterexample_audit.log", "expected_datasets": 1117, "archive_outputs": False})
 EXP177_185_BATCH = [
     "experiment_177_train_oof_review_policy_freeze",
     "experiment_178_frozen_policy_review_prediction",
@@ -2064,6 +2069,7 @@ def main():
     sub.add_parser("queue-exp278-281")
     sub.add_parser("queue-exp282-284")
     sub.add_parser("queue-exp285-287")
+    sub.add_parser("queue-exp288")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -2108,6 +2114,8 @@ def main():
         queue_exp282_284_batch()
     elif args.command == "queue-exp285-287":
         queue_exp285_287_batch()
+    elif args.command == "queue-exp288":
+        queue_experiment("experiment_288_recovery_priority_counterexample_audit")
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

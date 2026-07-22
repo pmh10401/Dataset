@@ -2332,6 +2332,17 @@ for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP285_28
         "stdout_log": EXP285_287_ROOT / "logs" / f"{_exp_id}.log", "artifact_paths": [EXP285_287_ROOT / "status.json", EXP285_287_ROOT / _detail, EXP285_287_ROOT / _summary],
         "expected_datasets": 1117}
 
+EXP288_ROOT = DATA_DIR / "exp288_recovery_priority_counterexample"
+EXPERIMENTS["experiment_288_recovery_priority_counterexample_audit"] = {
+    "label": "Exp288 - Recovery Priority FP 반례 진단", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_fp_counterexample_diagnostic", "status_reason": "Reads TEST labels for diagnosis only; no prediction policy",
+    "autonomous_metric_scope": "Exp253 Hard 변경 없음", "review_metric_scope": "Recovery Priority TP/FP 후향 파형 비교",
+    "detail_csv": EXP288_ROOT / "exp288_counterexample_results.csv", "summary_csv": EXP288_ROOT / "exp288_summary.csv",
+    "status_json": EXP288_ROOT / "status.json", "stdout_log": EXP288_ROOT / "logs" / "experiment_288_recovery_priority_counterexample_audit.log",
+    "artifact_paths": [EXP288_ROOT / "status.json", EXP288_ROOT / "exp288_counterexample_results.csv", EXP288_ROOT / "exp288_summary.csv"],
+    "expected_datasets": 1117,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
