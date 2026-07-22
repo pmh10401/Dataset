@@ -1319,6 +1319,11 @@ EXPERIMENTS.append({"id": "experiment_289_recovery_priority_label_consistency_au
     "script": ROOT / "scratch/run_exp289_label_consistency_audit.py", "args": ["--output-root", str(EXP289_ROOT)],
     "detail_csv": EXP289_ROOT / "exp289_candidate_label_consistency.csv", "summary_csv": EXP289_ROOT / "exp289_tier_summary.csv",
     "stdout_log": EXP289_ROOT / "logs" / "experiment_289_recovery_priority_label_consistency_audit.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP290_ROOT = DATA_DIR / "exp290_train_raw_exact_normal_guard"
+EXPERIMENTS.append({"id": "experiment_290_train_raw_exact_normal_guard", "label": "Exp290 · TRAIN raw exact normal guard",
+    "script": ROOT / "scratch/run_exp290_train_raw_exact_normal_guard.py", "args": ["--phase", "all", "--output-root", str(EXP290_ROOT)],
+    "detail_csv": EXP290_ROOT / "exp290_results.csv", "summary_csv": EXP290_ROOT / "exp290_summary.csv",
+    "stdout_log": EXP290_ROOT / "logs" / "experiment_290_train_raw_exact_normal_guard.log", "expected_datasets": 1117, "archive_outputs": False})
 EXP177_185_BATCH = [
     "experiment_177_train_oof_review_policy_freeze",
     "experiment_178_frozen_policy_review_prediction",
@@ -2076,6 +2081,7 @@ def main():
     sub.add_parser("queue-exp285-287")
     sub.add_parser("queue-exp288")
     sub.add_parser("queue-exp289")
+    sub.add_parser("queue-exp290")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -2124,6 +2130,8 @@ def main():
         queue_experiment("experiment_288_recovery_priority_counterexample_audit")
     elif args.command == "queue-exp289":
         queue_experiment("experiment_289_recovery_priority_label_consistency_audit")
+    elif args.command == "queue-exp290":
+        queue_experiment("experiment_290_train_raw_exact_normal_guard")
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

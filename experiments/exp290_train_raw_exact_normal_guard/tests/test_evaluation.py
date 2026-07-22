@@ -63,6 +63,10 @@ class FrozenPredictionTest(unittest.TestCase):
         self.assertEqual(summary["train_raw_exact_normal_tp"], 0)
         self.assertEqual(summary["train_raw_exact_normal_fp"], 1)
         self.assertEqual(evaluated[0]["guarded_hard_f1"], 1.0)
+        self.assertEqual(summary["hard_alert_precision"], summary["guarded_hard_precision"])
+        self.assertEqual(summary["hard_mean_dataset_f1"], summary["guarded_hard_mean_f1"])
+        self.assertEqual(summary["hard_tp"], summary["guarded_hard_tp"])
+        self.assertEqual(summary["hard_fp"], summary["guarded_hard_fp"])
 
 
 if __name__ == "__main__":

@@ -2354,6 +2354,17 @@ EXPERIMENTS["experiment_289_recovery_priority_label_consistency_audit"] = {
     "expected_datasets": 1117,
 }
 
+EXP290_ROOT = DATA_DIR / "exp290_train_raw_exact_normal_guard"
+EXPERIMENTS["experiment_290_train_raw_exact_normal_guard"] = {
+    "label": "Exp290 - TRAIN raw exact 자동 정상 guard", "history_status": "planned_research", "comparison_eligible": False,
+    "scope": "retrospective_autonomous_hard_guard", "status_reason": "Byte-exact TRAIN-normal guard; frozen prediction evaluated retrospectively",
+    "autonomous_metric_scope": "Exp253 Hard with TRAIN raw exact normal guard", "review_metric_scope": "검토 lane 변경 없음",
+    "detail_csv": EXP290_ROOT / "exp290_results.csv", "summary_csv": EXP290_ROOT / "exp290_summary.csv",
+    "status_json": EXP290_ROOT / "status.json", "stdout_log": EXP290_ROOT / "logs" / "experiment_290_train_raw_exact_normal_guard.log",
+    "artifact_paths": [EXP290_ROOT / "status.json", EXP290_ROOT / "exp290_results.csv", EXP290_ROOT / "exp290_summary.csv", EXP290_ROOT / "exp290_removed_exact_matches.csv"],
+    "expected_datasets": 1117,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",

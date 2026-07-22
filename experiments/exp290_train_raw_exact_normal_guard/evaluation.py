@@ -76,6 +76,17 @@ def evaluate_rows(
     summary["tp_reduction"] = int(summary["baseline_hard_tp"]) - int(summary["guarded_hard_tp"])
     summary["precision_change"] = float(summary["guarded_hard_precision"]) - float(summary["baseline_hard_precision"])
     summary["mean_f1_change"] = float(summary["guarded_hard_mean_f1"]) - float(summary["baseline_hard_mean_f1"])
+    summary.update(
+        {
+            "hard_alert_count": summary["guarded_hard_count"],
+            "hard_tp": summary["guarded_hard_tp"],
+            "hard_fp": summary["guarded_hard_fp"],
+            "hard_fn": summary["guarded_hard_fn"],
+            "hard_alert_precision": summary["guarded_hard_precision"],
+            "hard_recall": summary["guarded_hard_recall"],
+            "hard_mean_dataset_f1": summary["guarded_hard_mean_f1"],
+        }
+    )
     return evaluated, summary
 
 

@@ -23,6 +23,19 @@ def test_exp289_is_registered_for_sequential_dashboard_execution():
     assert dashboard_item["status_json"].name == "status.json"
 
 
+def test_exp290_is_registered_as_autonomous_exact_normal_guard():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_290_train_raw_exact_normal_guard"
+    runner_item = next(item for item in runner.EXPERIMENTS if item["id"] == experiment_id)
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["detail_csv"].name == "exp290_results.csv"
+    assert dashboard_item["history_status"] == "planned_research"
+    assert dashboard_item["scope"] == "retrospective_autonomous_hard_guard"
+    assert dashboard_item["autonomous_metric_scope"] == "Exp253 Hard with TRAIN raw exact normal guard"
+
+
 def test_progress_parser_accepts_spaces_around_slash():
     events = dash.parse_progress_events(
         ["Progress: [5 / 251] rows=5 dataset=Demo errors=0"]
@@ -1236,6 +1249,7 @@ def test_build_status_marks_detected_exp153_157_as_running_history():
 
 if __name__ == "__main__":
     test_exp289_is_registered_for_sequential_dashboard_execution()
+    test_exp290_is_registered_as_autonomous_exact_normal_guard()
     test_summarize_by_config_includes_operational_metrics()
     test_parse_log_error_summary_groups_reasons_and_families()
     test_coverage_snapshot_reports_done_and_error_gap()
