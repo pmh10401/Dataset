@@ -2318,6 +2318,20 @@ for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP282_28
         "expected_datasets": 1117,
     }
 
+EXP285_287_ROOT = DATA_DIR / "exp285_287_synthetic_shape_verifier"
+_EXP285_287_DASHBOARD_ROWS = (
+    ("experiment_285_synthetic_shape_generation_audit", "Exp285 - 합성 이상 생성 감사", "Exp253 Hard 변경 없음", "TRAIN 정상에서 고정된 4종 이상 형태 생성", "exp285_generation_audit.csv", "exp285_summary.csv"),
+    ("experiment_286_synthetic_shape_prediction", "Exp286 - 합성 형태 검증 예측", "Exp253 Hard 변경 없음", "TRAIN cross-fit 합성 형태 점수 동결", "exp286_summary.csv", "exp286_summary.csv"),
+    ("experiment_287_synthetic_shape_evaluation", "Exp287 - 합성 형태 검증 평가", "Exp253 Hard 변경 없음", "동결된 검토 후보의 후향 평가", "exp287_dataset_results.csv", "exp287_summary.csv"),
+)
+for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP285_287_DASHBOARD_ROWS:
+    EXPERIMENTS[_exp_id] = {"label": _label, "history_status": "planned_research", "comparison_eligible": False,
+        "scope": "retrospective_synthetic_shape_verifier", "status_reason": "Review-only synthetic validation; autonomous Hard remains frozen",
+        "autonomous_metric_scope": _auto_scope, "review_metric_scope": _review_scope, "detail_csv": EXP285_287_ROOT / _detail,
+        "summary_csv": EXP285_287_ROOT / _summary, "status_json": EXP285_287_ROOT / "status.json",
+        "stdout_log": EXP285_287_ROOT / "logs" / f"{_exp_id}.log", "artifact_paths": [EXP285_287_ROOT / "status.json", EXP285_287_ROOT / _detail, EXP285_287_ROOT / _summary],
+        "expected_datasets": 1117}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",

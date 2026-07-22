@@ -1298,6 +1298,17 @@ EXPERIMENTS.extend({
     "stdout_log": EXP282_284_ROOT / "logs" / f"{exp_id}.log", "expected_datasets": 1117, "archive_outputs": False,
 } for stage, exp_id, label, detail, summary in _EXP282_284_STAGE_ROWS)
 EXP282_284_BATCH = tuple(row[1] for row in _EXP282_284_STAGE_ROWS)
+EXP285_287_ROOT = DATA_DIR / "exp285_287_synthetic_shape_verifier"
+_EXP285_287_STAGE_ROWS = (
+    ("285", "experiment_285_synthetic_shape_generation_audit", "Exp285 · Synthetic shape generation audit", "exp285_generation_audit.csv", "exp285_summary.csv"),
+    ("286", "experiment_286_synthetic_shape_prediction", "Exp286 · Synthetic shape prediction", "exp286_summary.csv", "exp286_summary.csv"),
+    ("287", "experiment_287_synthetic_shape_evaluation", "Exp287 · Synthetic shape evaluation", "exp287_dataset_results.csv", "exp287_summary.csv"),
+)
+EXPERIMENTS.extend({"id": exp_id, "label": label, "script": ROOT / "scratch/run_exp285_287_synthetic_shape_verifier.py",
+    "args": ["--stage", stage, "--output-root", str(EXP285_287_ROOT)], "detail_csv": EXP285_287_ROOT / detail,
+    "summary_csv": EXP285_287_ROOT / summary, "stdout_log": EXP285_287_ROOT / "logs" / f"{exp_id}.log",
+    "expected_datasets": 1117, "archive_outputs": False} for stage, exp_id, label, detail, summary in _EXP285_287_STAGE_ROWS)
+EXP285_287_BATCH = tuple(row[1] for row in _EXP285_287_STAGE_ROWS)
 EXP177_185_BATCH = [
     "experiment_177_train_oof_review_policy_freeze",
     "experiment_178_frozen_policy_review_prediction",
@@ -2024,6 +2035,16 @@ def queue_exp282_284_batch():
     save_state(state); log(f"QUEUE registered Exp282-284 batch ({len(EXP282_284_BATCH)} experiments)")
 
 
+def queue_exp285_287_batch():
+    state = reconcile_running_state(load_state()); completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP285_287_BATCH]
+    queue.extend(item for item in EXP285_287_BATCH if item not in completed); state["queue"] = queue
+    state["exp285_287_batch"] = {"registered_at": now(), "registered_unix": time.time(), "worker_count": 1,
+        "agent_monitoring": False, "execution_mode": "sequential_one_stage_at_a_time", "experiments": list(EXP285_287_BATCH),
+        "autonomous_policy_changed": False, "review_only": True}
+    save_state(state); log(f"QUEUE registered Exp285-287 batch ({len(EXP285_287_BATCH)} experiments)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run rank experiments one at a time.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -2042,6 +2063,7 @@ def main():
     sub.add_parser("queue-exp276-277")
     sub.add_parser("queue-exp278-281")
     sub.add_parser("queue-exp282-284")
+    sub.add_parser("queue-exp285-287")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -2084,6 +2106,8 @@ def main():
         queue_exp278_281_batch()
     elif args.command == "queue-exp282-284":
         queue_exp282_284_batch()
+    elif args.command == "queue-exp285-287":
+        queue_exp285_287_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 
