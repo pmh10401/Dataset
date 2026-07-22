@@ -2228,6 +2228,32 @@ for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP267_27
         "expected_datasets": 1117,
     }
 
+EXP274_275_ROOT = DATA_DIR / "exp274_275_large_fn_recovery"
+_EXP274_275_DASHBOARD_ROWS = (
+    ("experiment_274_large_train_multisource_fn_recovery", "Exp274 - 큰 TRAIN 다중 근거 FN 복구", "Exp253 Hard 변경 없음", "Forecast·Wavelet·Matrix Profile 교차 확인 후보는 검토 전용", "exp274_summary.csv", "exp274_summary.csv"),
+    ("experiment_275_recovery_shadow_precision_guard", "Exp275 - Recovery Shadow 정밀도 guard", "Exp253 Hard 변경 없음", "구조 점수원 확인으로 Recovery Shadow를 후향 평가", "exp275_dataset_results.csv", "exp275_summary.csv"),
+)
+for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP274_275_DASHBOARD_ROWS:
+    EXPERIMENTS[_exp_id] = {
+        "label": _label,
+        "history_status": "planned_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_large_train_fn_recovery",
+        "status_reason": "Review-only retrospective counterfactual; autonomous Hard remains frozen",
+        "autonomous_metric_scope": _auto_scope,
+        "review_metric_scope": _review_scope,
+        "detail_csv": EXP274_275_ROOT / _detail,
+        "summary_csv": EXP274_275_ROOT / _summary,
+        "status_json": EXP274_275_ROOT / "status.json",
+        "stdout_log": EXP274_275_ROOT / "logs" / f"{_exp_id}.log",
+        "artifact_paths": [
+            EXP274_275_ROOT / "status.json",
+            EXP274_275_ROOT / _detail,
+            EXP274_275_ROOT / _summary,
+        ],
+        "expected_datasets": 1117,
+    }
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
