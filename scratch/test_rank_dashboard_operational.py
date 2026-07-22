@@ -107,6 +107,24 @@ def test_historical_artifact_keeps_missing_worktree_path_visible():
         assert resolved == base / "worktree" / relative
 
 
+def test_completed_budget_validation_is_not_shown_as_planned():
+    items = dash.unified_experiment_items(
+        {"completed": [], "queue": [], "history": [], "running": {}},
+        validation_plan=dash.VALIDATION_PLAN,
+    )
+    by_id = {item["id"]: item for item in items}
+
+    for experiment_id in (
+        "experiment_143_test_length_budget_binding_audit",
+        "experiment_144_train_threshold_only_no_budget",
+        "experiment_146_fixed_k_workload_sensitivity",
+        "experiment_147_policy_level_train_only_no_budget",
+    ):
+        assert by_id[experiment_id]["status"] == "completed"
+    assert by_id["experiment_145_train_normal_count_budget"]["status"] == "blocked"
+    assert by_id["experiment_148_policy_level_train_only_train_budget"]["status"] == "blocked"
+
+
 def test_progress_parser_accepts_spaces_around_slash():
     events = dash.parse_progress_events(
         ["Progress: [5 / 251] rows=5 dataset=Demo errors=0"]
@@ -1326,6 +1344,7 @@ if __name__ == "__main__":
     test_rows_for_experiment_rejects_missing_alias_in_shared_artifact()
     test_historical_artifact_prefers_worktree_then_source_repo_fallback()
     test_historical_artifact_keeps_missing_worktree_path_visible()
+    test_completed_budget_validation_is_not_shown_as_planned()
     test_summarize_by_config_includes_operational_metrics()
     test_parse_log_error_summary_groups_reasons_and_families()
     test_coverage_snapshot_reports_done_and_error_gap()

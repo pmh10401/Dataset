@@ -1546,8 +1546,8 @@ HISTORICAL_EXPERIMENT_META = {
         "comparison_eligible": False,
         "scope": "retrospective_audit",
         "status_reason": "completed binding audit; diagnostic evidence rather than a standalone model comparison",
-        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/34_test_length_budget_binding_dataset.csv",
-        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/36_test_length_budget_binding_summary.md",
+        "detail_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/34_test_length_budget_binding_dataset.csv"),
+        "summary_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/36_test_length_budget_binding_summary.md"),
     },
     "experiment_144_train_threshold_only_no_budget": {
         "label": "Exp144 - TRAIN-threshold-only no budget",
@@ -1555,8 +1555,8 @@ HISTORICAL_EXPERIMENT_META = {
         "comparison_eligible": False,
         "scope": "retrospective_counterfactual_threshold_sensitivity",
         "status_reason": "completed threshold-only sensitivity; retrospective research evidence",
-        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/38_c0_threshold_only_results.csv",
-        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/39_c0_threshold_only_summary.md",
+        "detail_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/38_c0_threshold_only_results.csv"),
+        "summary_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/39_c0_threshold_only_summary.md"),
     },
     "experiment_145_train_normal_count_budget": {
         "label": "Exp145 - TRAIN-normal conformal budget",
@@ -1571,8 +1571,8 @@ HISTORICAL_EXPERIMENT_META = {
         "comparison_eligible": False,
         "scope": "retrospective_counterfactual_workload_sensitivity",
         "status_reason": "completed fixed-K sensitivity; no operational winner selected",
-        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/51_fixed_k_sensitivity_metrics.csv",
-        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/52_fixed_k_workload_frontier.md",
+        "detail_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/51_fixed_k_sensitivity_metrics.csv"),
+        "summary_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/52_fixed_k_workload_frontier.md"),
     },
     "experiment_147_policy_level_train_only_no_budget": {
         "label": "Exp147 - B2 plus threshold-only",
@@ -1580,8 +1580,8 @@ HISTORICAL_EXPERIMENT_META = {
         "comparison_eligible": False,
         "scope": "retrospective_counterfactual_policy_sensitivity",
         "status_reason": "completed D1a no-budget policy replay; retrospective research evidence",
-        "detail_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/54_d1a_policy_train_only_no_budget_results.csv",
-        "summary_csv": ROOT / "outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/55_d1a_policy_train_only_no_budget_summary.md",
+        "detail_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/54_d1a_policy_train_only_no_budget_results.csv"),
+        "summary_csv": resolve_historical_artifact("outputs/exp137_policy_train_only_validation/budget_full_7w_optimized/55_d1a_policy_train_only_no_budget_summary.md"),
     },
     "experiment_148_policy_level_train_only_train_budget": {
         "label": "Exp148 - B2 plus TRAIN-normal budget",
@@ -3954,7 +3954,11 @@ def history_artifact_path(exp_id, kind):
         return None
     try:
         path = Path(raw_path).resolve(strict=True)
-        allowed_roots = (DATA_DIR.resolve(strict=True), ROOT.resolve(strict=True))
+        allowed_roots = (
+            DATA_DIR.resolve(strict=True),
+            ROOT.resolve(strict=True),
+            SOURCE_REPO_ROOT.resolve(strict=True),
+        )
     except OSError:
         return None
     if not path.is_file() or not any(path.is_relative_to(root) for root in allowed_roots):
