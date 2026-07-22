@@ -2280,6 +2280,26 @@ for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP276_27
         "expected_datasets": 1117,
     }
 
+EXP278_281_ROOT = DATA_DIR / "exp278_281_train_only_recovery"
+_EXP278_281_DASHBOARD_ROWS = (
+    ("experiment_278_train_risk_resolution_audit", "Exp278 - TRAIN 위험 해상도 감사", "Exp253 Hard 변경 없음", "TRAIN 표본으로 표현 가능한 위험 상한 진단", "exp278_risk_resolution_dataset.csv", "exp278_summary.csv"),
+    ("experiment_279_train_calibration_stability", "Exp279 - TRAIN 보정 안정성", "Exp253 Hard 변경 없음", "TRAIN OOF bootstrap 반복 검출 안정성", "exp279_candidate_stability.csv", "exp279_summary.csv"),
+    ("experiment_280_event_merge_applicability_audit", "Exp280 - 이벤트 병합 적용성 감사", "Exp253 Hard 변경 없음", "각 index가 별도 run이므로 인접 index 병합 금지 검증", "exp280_event_applicability.csv", "exp280_summary.csv"),
+    ("experiment_281_train_only_two_stage_verifier", "Exp281 - TRAIN-only 2단계 검증", "Exp253 Hard 변경 없음", "고정 위험·안정성 guard의 검토 전용 후향 평가", "exp281_dataset_results.csv", "exp281_summary.csv"),
+)
+for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP278_281_DASHBOARD_ROWS:
+    EXPERIMENTS[_exp_id] = {
+        "label": _label, "history_status": "planned_research", "comparison_eligible": False,
+        "scope": "retrospective_train_only_recovery_validation",
+        "status_reason": "Review-only retrospective validation; autonomous Hard remains frozen",
+        "autonomous_metric_scope": _auto_scope, "review_metric_scope": _review_scope,
+        "detail_csv": EXP278_281_ROOT / _detail, "summary_csv": EXP278_281_ROOT / _summary,
+        "status_json": EXP278_281_ROOT / "status.json",
+        "stdout_log": EXP278_281_ROOT / "logs" / f"{_exp_id}.log",
+        "artifact_paths": [EXP278_281_ROOT / "status.json", EXP278_281_ROOT / _detail, EXP278_281_ROOT / _summary],
+        "expected_datasets": 1117,
+    }
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
