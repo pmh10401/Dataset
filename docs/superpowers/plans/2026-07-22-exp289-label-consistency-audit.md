@@ -30,11 +30,11 @@
 - Produces: `compare_pair(left_raw, right_raw, left_aligned, right_aligned) -> PairComparison`
 - Produces: `duplicate_tier(comparison) -> str`
 
-- [ ] Write tests for raw exact, aligned exact, normalized equivalent, near duplicate, distinct, and constant rows.
-- [ ] Run tests and verify they fail because the comparison module is missing.
-- [ ] Implement fixed metrics and classification constants.
-- [ ] Run tests and verify all comparison tests pass.
-- [ ] Commit the comparison engine and tests.
+- [x] Write tests for raw exact, aligned exact, normalized equivalent, near duplicate, distinct, and constant rows.
+- [x] Run tests and verify they fail because the comparison module is missing.
+- [x] Implement fixed metrics and classification constants.
+- [x] Run tests and verify all comparison tests pass.
+- [x] Commit the comparison engine and tests.
 
 ### Task 2: Retrospective audit pipeline
 
@@ -48,11 +48,11 @@
 - Consumes: verified Exp286 prediction rows and read-only SQLite values/labels.
 - Produces: candidate detail, summary, dataset summary, exact conflict, representative case, and status artifacts.
 
-- [ ] Write tests that require exactly 43 frozen candidates, reject index errors, and aggregate mutually exclusive duplicate tiers.
-- [ ] Run tests and verify the expected failures.
-- [ ] Implement candidate matching, dataset-wide exact conflict hashing, summaries, and representative waveform export.
-- [ ] Verify prediction before label access and mark every artifact retrospective-only.
-- [ ] Run all Exp289 tests and commit the audit pipeline.
+- [x] Write tests that require exactly 43 frozen candidates, reject index errors, and aggregate mutually exclusive duplicate tiers.
+- [x] Run tests and verify the expected failures.
+- [x] Implement candidate matching, dataset-wide exact conflict hashing, summaries, and representative waveform export.
+- [x] Verify prediction before label access and mark every artifact retrospective-only.
+- [x] Run all Exp289 tests and commit the audit pipeline.
 
 ### Task 3: Sequential dashboard execution
 
@@ -64,10 +64,10 @@
 **Interfaces:**
 - Produces: one queue entry and live status for `experiment_289_recovery_priority_label_consistency_audit`.
 
-- [ ] Add a failing runner/dashboard registration test.
-- [ ] Register Exp289 with its fixed output root and diagnostic metric scope.
-- [ ] Run dashboard tests and verify the registration passes.
-- [ ] Commit runner and dashboard integration.
+- [x] Add a failing runner/dashboard registration test.
+- [x] Register Exp289 with its fixed output root and diagnostic metric scope.
+- [x] Run the focused dashboard registration test and verify it passes.
+- [x] Commit runner and dashboard integration.
 
 ### Task 4: Official run and report
 
@@ -79,7 +79,23 @@
 - Consumes: official Exp289 CSV results.
 - Produces: verified diagnosis and next-step decision with Hard unchanged.
 
-- [ ] Queue and execute Exp289 once through the sequential runner.
-- [ ] Independently verify 1,117 coverage, 43 candidates, zero errors, tier totals, and output hashes.
-- [ ] Write the report without promoting a TEST-informed rule.
-- [ ] Update plan status, run `git diff --check`, and commit the execution record.
+- [x] Queue and execute Exp289 once through the sequential runner.
+- [x] Independently verify 1,117 coverage, 43 candidates, zero errors, tier totals, and output hashes.
+- [x] Write the report without promoting a TEST-informed rule.
+- [x] Update plan status, run `git diff --check`, and commit the execution record.
+
+## Execution Result
+
+- Completed: 2026-07-22 10:38:01 KST
+- Coverage: 1,117 / 1,117 datasets
+- Frozen population: 43 candidates across 27 datasets = 11 TP + 32 FP
+- TRAIN raw exact: TP 0, FP 20
+- Opposite TEST-label exact or near duplicate: 0
+- Dataset-wide TEST normal/anomaly exact conflict groups: 0
+- Errors: 0
+- Hard policy changed: no
+- Decision: preregister a separate TRAIN exact-match review guard; do not modify Hard alerts from this retrospective result
+
+## Known Test Gap
+
+The focused Exp289 dashboard registration test passed. The legacy full dashboard script still fails in `test_catalog_audit_only_snapshot_reports_audit_reason` because the current Exp149 artifact exposes a different variant count than the test's fixed expectation; this pre-existing artifact-dependent failure was not modified by Exp289.
