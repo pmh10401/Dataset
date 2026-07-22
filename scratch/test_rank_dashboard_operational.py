@@ -63,6 +63,21 @@ def test_exp292_is_registered_as_review_only_evidence_tiering():
     assert "P1/P2/P3" in dashboard_item["review_metric_scope"]
 
 
+def test_exp293_294_are_registered_as_train_only_moe_review_experiments():
+    import run_rank_experiments_sequential as runner
+
+    by_id = {item["id"]: item for item in runner.EXPERIMENTS}
+    audit = dash.EXPERIMENTS["experiment_293_train_only_moe_expert_audit"]
+    router = dash.EXPERIMENTS["experiment_294_frozen_sparse_moe_review_router"]
+    assert by_id["experiment_293_train_only_moe_expert_audit"]["expected_datasets"] == 1117
+    assert by_id["experiment_294_frozen_sparse_moe_review_router"]["summary_csv"].name == "exp294_summary.csv"
+    assert audit["comparison_eligible"] is False
+    assert audit["scope"] == "train_only_expert_reliability_audit"
+    assert router["comparison_eligible"] is False
+    assert router["scope"] == "retrospective_review_only_sparse_moe"
+    assert router["autonomous_metric_scope"] == "Exp291 Hard unchanged"
+
+
 def test_rows_for_experiment_accepts_explicit_internal_experiment_alias():
     rows = [
         {"experiment_id": "internal_experiment_name", "alpha": "0.005"},
@@ -1354,6 +1369,8 @@ if __name__ == "__main__":
     test_exp289_is_registered_for_sequential_dashboard_execution()
     test_exp290_is_registered_as_autonomous_exact_normal_guard()
     test_exp291_is_registered_as_final_operational_routing_freeze()
+    test_exp292_is_registered_as_review_only_evidence_tiering()
+    test_exp293_294_are_registered_as_train_only_moe_review_experiments()
     test_rows_for_experiment_accepts_explicit_internal_experiment_alias()
     test_rows_for_experiment_rejects_missing_alias_in_shared_artifact()
     test_historical_artifact_prefers_worktree_then_source_repo_fallback()

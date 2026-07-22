@@ -1334,6 +1334,16 @@ EXPERIMENTS.append({"id": "experiment_292_standard_review_evidence_tiering", "la
     "script": ROOT / "scratch/run_exp292_standard_review_evidence_tiering.py", "args": ["--phase", "all", "--output-root", str(EXP292_ROOT)],
     "detail_csv": EXP292_ROOT / "exp292_results.csv", "summary_csv": EXP292_ROOT / "exp292_summary.csv",
     "stdout_log": EXP292_ROOT / "logs" / "experiment_292_standard_review_evidence_tiering.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP293_ROOT = DATA_DIR / "exp293_train_only_moe_expert_audit"
+EXPERIMENTS.append({"id": "experiment_293_train_only_moe_expert_audit", "label": "Exp293 · TRAIN-only MoE expert audit",
+    "script": ROOT / "scratch/run_exp293_294_train_only_moe_lite.py", "args": ["--stage", "293", "--output-root", str(EXP293_ROOT)],
+    "detail_csv": EXP293_ROOT / "exp293_expert_audit.csv", "summary_csv": EXP293_ROOT / "exp293_summary.csv",
+    "stdout_log": EXP293_ROOT / "logs" / "experiment_293_train_only_moe_expert_audit.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP294_ROOT = DATA_DIR / "exp294_frozen_sparse_moe_review_router"
+EXPERIMENTS.append({"id": "experiment_294_frozen_sparse_moe_review_router", "label": "Exp294 · Frozen sparse MoE review router",
+    "script": ROOT / "scratch/run_exp293_294_train_only_moe_lite.py", "args": ["--stage", "294-all", "--output-root", str(EXP294_ROOT)],
+    "detail_csv": EXP294_ROOT / "exp294_results.csv", "summary_csv": EXP294_ROOT / "exp294_summary.csv",
+    "stdout_log": EXP294_ROOT / "logs" / "experiment_294_frozen_sparse_moe_review_router.log", "expected_datasets": 1117, "archive_outputs": False})
 EXP177_185_BATCH = [
     "experiment_177_train_oof_review_policy_freeze",
     "experiment_178_frozen_policy_review_prediction",
@@ -2094,6 +2104,7 @@ def main():
     sub.add_parser("queue-exp290")
     sub.add_parser("queue-exp291")
     sub.add_parser("queue-exp292")
+    sub.add_parser("queue-exp293-294")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -2148,6 +2159,9 @@ def main():
         queue_experiment("experiment_291_final_operational_routing_freeze")
     elif args.command == "queue-exp292":
         queue_experiment("experiment_292_standard_review_evidence_tiering")
+    elif args.command == "queue-exp293-294":
+        queue_experiment("experiment_293_train_only_moe_expert_audit")
+        queue_experiment("experiment_294_frozen_sparse_moe_review_router")
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

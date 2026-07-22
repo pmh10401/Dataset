@@ -2402,6 +2402,28 @@ EXPERIMENTS["experiment_292_standard_review_evidence_tiering"] = {
     "expected_datasets": 1117,
 }
 
+EXP293_ROOT = DATA_DIR / "exp293_train_only_moe_expert_audit"
+EXPERIMENTS["experiment_293_train_only_moe_expert_audit"] = {
+    "label": "Exp293 - TRAIN-only MoE expert 감사", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "train_only_expert_reliability_audit", "status_reason": "TRAIN OOF risk, stability and calibration audit; no TEST values or labels",
+    "autonomous_metric_scope": "Exp291 Hard unchanged", "review_metric_scope": "MoE Gate input audit only",
+    "detail_csv": EXP293_ROOT / "exp293_expert_audit.csv", "summary_csv": EXP293_ROOT / "exp293_summary.csv",
+    "status_json": EXP293_ROOT / "status.json", "stdout_log": EXP293_ROOT / "logs" / "experiment_293_train_only_moe_expert_audit.log",
+    "artifact_paths": [EXP293_ROOT / "status.json", EXP293_ROOT / "exp293_expert_audit.csv", EXP293_ROOT / "exp293_summary.csv", EXP293_ROOT / "exp293_frozen_gate_choices.jsonl"],
+    "expected_datasets": 1117,
+}
+
+EXP294_ROOT = DATA_DIR / "exp294_frozen_sparse_moe_review_router"
+EXPERIMENTS["experiment_294_frozen_sparse_moe_review_router"] = {
+    "label": "Exp294 - 동결 Sparse MoE 검토 router", "history_status": "planned_research", "comparison_eligible": False,
+    "scope": "retrospective_review_only_sparse_moe", "status_reason": "Three preregistered TRAIN-only Gate sensitivities; no policy selected from TEST metrics",
+    "autonomous_metric_scope": "Exp291 Hard unchanged", "review_metric_scope": "MoE-ranked Standard review; human-assisted only",
+    "detail_csv": EXP294_ROOT / "exp294_results.csv", "summary_csv": EXP294_ROOT / "exp294_summary.csv",
+    "status_json": EXP294_ROOT / "status.json", "stdout_log": EXP294_ROOT / "logs" / "experiment_294_frozen_sparse_moe_review_router.log",
+    "artifact_paths": [EXP294_ROOT / "status.json", EXP294_ROOT / "exp294_results.csv", EXP294_ROOT / "exp294_summary.csv", EXP294_ROOT / "exp294_frozen_predictions.jsonl"],
+    "expected_datasets": 1117,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
