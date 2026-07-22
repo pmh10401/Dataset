@@ -11,6 +11,13 @@ NONLEARNING_GROUPS = {
     "wavelet_phase_coherence": "frequency",
 }
 
+FULL_SOURCE_GROUPS = {
+    **NONLEARNING_GROUPS,
+    "predictive_residual": "prediction",
+    "contrastive_normal_memory": "representation",
+    "deep_svdd_normal_boundary": "representation",
+}
+
 
 def independent_group_count(
     support: Set[str], groups: Mapping[str, str | Set[str]],
@@ -49,3 +56,16 @@ def fused_evidence_arrays(
         "bonferroni_p": bonferroni.tolist(),
         "mean_e": np.mean(np.vstack(evalues), axis=0).tolist(),
     }
+
+
+def close_normal_guard_indices(
+    pvalues_by_source: Mapping[str, np.ndarray], *, minimum_sources: int = 3,
+    normal_p: float = 0.5, normal_fraction: float = 0.8,
+) -> set[int]:
+    if not pvalues_by_source:
+        return set()
+    matrix = np.vstack([np.asarray(values, dtype=float) for values in pvalues_by_source.values()])
+    if len(matrix) < int(minimum_sources):
+        return set()
+    required = int(np.ceil(len(matrix) * float(normal_fraction)))
+    return set(np.flatnonzero(np.count_nonzero(matrix >= float(normal_p), axis=0) >= required).astype(int).tolist())
