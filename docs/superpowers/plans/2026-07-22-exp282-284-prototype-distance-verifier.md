@@ -8,6 +8,11 @@
 
 **Tech Stack:** Python 3.14, NumPy, SciPy, scikit-learn LedoitWolf, SQLite read-only loader, JSONL/CSV/SHA256, unittest.
 
+**Execution status (2026-07-22):** Completed for all 1,117 datasets. The best
+frozen Exp284 sensitivity variant reached 44.83% precision and was rejected for
+Hard expansion and default review routing. Results are recorded at
+`/Users/minho/Documents/Dataset/exp282_284_prototype_distance_verifier/RESULT_REPORT.md`.
+
 ## Global Constraints
 
 - Population is all 1,117 datasets; candidate universe is frozen Exp272 Shadow plus Priority.
