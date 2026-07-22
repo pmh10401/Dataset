@@ -2365,6 +2365,17 @@ EXPERIMENTS["experiment_290_train_raw_exact_normal_guard"] = {
     "expected_datasets": 1117,
 }
 
+EXP291_ROOT = DATA_DIR / "exp291_final_operational_routing_freeze"
+EXPERIMENTS["experiment_291_final_operational_routing_freeze"] = {
+    "label": "Exp291 - 최종 운영 routing freeze", "history_status": "planned_research", "comparison_eligible": True,
+    "scope": "retrospective_final_operational_routing", "status_reason": "Exp290 autonomous Hard plus approved Exp272 review lanes; Recovery Priority research-only",
+    "autonomous_metric_scope": "Exp290 guarded Hard", "review_metric_scope": "Exp272 approved review lanes; human-assisted only",
+    "detail_csv": EXP291_ROOT / "exp291_results.csv", "summary_csv": EXP291_ROOT / "exp291_summary.csv",
+    "status_json": EXP291_ROOT / "status.json", "stdout_log": EXP291_ROOT / "logs" / "experiment_291_final_operational_routing_freeze.log",
+    "artifact_paths": [EXP291_ROOT / "status.json", EXP291_ROOT / "exp291_results.csv", EXP291_ROOT / "exp291_summary.csv", EXP291_ROOT / "exp291_frozen_operational_routing.jsonl"],
+    "expected_datasets": 1117,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",

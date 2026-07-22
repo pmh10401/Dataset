@@ -1324,6 +1324,11 @@ EXPERIMENTS.append({"id": "experiment_290_train_raw_exact_normal_guard", "label"
     "script": ROOT / "scratch/run_exp290_train_raw_exact_normal_guard.py", "args": ["--phase", "all", "--output-root", str(EXP290_ROOT)],
     "detail_csv": EXP290_ROOT / "exp290_results.csv", "summary_csv": EXP290_ROOT / "exp290_summary.csv",
     "stdout_log": EXP290_ROOT / "logs" / "experiment_290_train_raw_exact_normal_guard.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP291_ROOT = DATA_DIR / "exp291_final_operational_routing_freeze"
+EXPERIMENTS.append({"id": "experiment_291_final_operational_routing_freeze", "label": "Exp291 · Final operational routing freeze",
+    "script": ROOT / "scratch/run_exp291_final_operational_routing_freeze.py", "args": ["--phase", "all", "--output-root", str(EXP291_ROOT)],
+    "detail_csv": EXP291_ROOT / "exp291_results.csv", "summary_csv": EXP291_ROOT / "exp291_summary.csv",
+    "stdout_log": EXP291_ROOT / "logs" / "experiment_291_final_operational_routing_freeze.log", "expected_datasets": 1117, "archive_outputs": False})
 EXP177_185_BATCH = [
     "experiment_177_train_oof_review_policy_freeze",
     "experiment_178_frozen_policy_review_prediction",
@@ -2082,6 +2087,7 @@ def main():
     sub.add_parser("queue-exp288")
     sub.add_parser("queue-exp289")
     sub.add_parser("queue-exp290")
+    sub.add_parser("queue-exp291")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -2132,6 +2138,8 @@ def main():
         queue_experiment("experiment_289_recovery_priority_label_consistency_audit")
     elif args.command == "queue-exp290":
         queue_experiment("experiment_290_train_raw_exact_normal_guard")
+    elif args.command == "queue-exp291":
+        queue_experiment("experiment_291_final_operational_routing_freeze")
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

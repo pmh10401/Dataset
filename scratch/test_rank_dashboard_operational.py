@@ -36,6 +36,19 @@ def test_exp290_is_registered_as_autonomous_exact_normal_guard():
     assert dashboard_item["autonomous_metric_scope"] == "Exp253 Hard with TRAIN raw exact normal guard"
 
 
+def test_exp291_is_registered_as_final_operational_routing_freeze():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_291_final_operational_routing_freeze"
+    runner_item = next(item for item in runner.EXPERIMENTS if item["id"] == experiment_id)
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["summary_csv"].name == "exp291_summary.csv"
+    assert dashboard_item["scope"] == "retrospective_final_operational_routing"
+    assert dashboard_item["autonomous_metric_scope"] == "Exp290 guarded Hard"
+    assert dashboard_item["review_metric_scope"].startswith("Exp272 approved")
+
+
 def test_progress_parser_accepts_spaces_around_slash():
     events = dash.parse_progress_events(
         ["Progress: [5 / 251] rows=5 dataset=Demo errors=0"]
@@ -1250,6 +1263,7 @@ def test_build_status_marks_detected_exp153_157_as_running_history():
 if __name__ == "__main__":
     test_exp289_is_registered_for_sequential_dashboard_execution()
     test_exp290_is_registered_as_autonomous_exact_normal_guard()
+    test_exp291_is_registered_as_final_operational_routing_freeze()
     test_summarize_by_config_includes_operational_metrics()
     test_parse_log_error_summary_groups_reasons_and_families()
     test_coverage_snapshot_reports_done_and_error_gap()
