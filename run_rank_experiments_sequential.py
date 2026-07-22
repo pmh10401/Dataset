@@ -1329,6 +1329,11 @@ EXPERIMENTS.append({"id": "experiment_291_final_operational_routing_freeze", "la
     "script": ROOT / "scratch/run_exp291_final_operational_routing_freeze.py", "args": ["--phase", "all", "--output-root", str(EXP291_ROOT)],
     "detail_csv": EXP291_ROOT / "exp291_results.csv", "summary_csv": EXP291_ROOT / "exp291_summary.csv",
     "stdout_log": EXP291_ROOT / "logs" / "experiment_291_final_operational_routing_freeze.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP292_ROOT = DATA_DIR / "exp292_standard_review_evidence_tiering"
+EXPERIMENTS.append({"id": "experiment_292_standard_review_evidence_tiering", "label": "Exp292 · Standard review evidence tiering",
+    "script": ROOT / "scratch/run_exp292_standard_review_evidence_tiering.py", "args": ["--phase", "all", "--output-root", str(EXP292_ROOT)],
+    "detail_csv": EXP292_ROOT / "exp292_results.csv", "summary_csv": EXP292_ROOT / "exp292_summary.csv",
+    "stdout_log": EXP292_ROOT / "logs" / "experiment_292_standard_review_evidence_tiering.log", "expected_datasets": 1117, "archive_outputs": False})
 EXP177_185_BATCH = [
     "experiment_177_train_oof_review_policy_freeze",
     "experiment_178_frozen_policy_review_prediction",
@@ -2088,6 +2093,7 @@ def main():
     sub.add_parser("queue-exp289")
     sub.add_parser("queue-exp290")
     sub.add_parser("queue-exp291")
+    sub.add_parser("queue-exp292")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -2140,6 +2146,8 @@ def main():
         queue_experiment("experiment_290_train_raw_exact_normal_guard")
     elif args.command == "queue-exp291":
         queue_experiment("experiment_291_final_operational_routing_freeze")
+    elif args.command == "queue-exp292":
+        queue_experiment("experiment_292_standard_review_evidence_tiering")
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

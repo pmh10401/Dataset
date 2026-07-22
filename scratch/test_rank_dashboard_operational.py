@@ -49,6 +49,20 @@ def test_exp291_is_registered_as_final_operational_routing_freeze():
     assert dashboard_item["review_metric_scope"].startswith("Exp272 approved")
 
 
+def test_exp292_is_registered_as_review_only_evidence_tiering():
+    import run_rank_experiments_sequential as runner
+
+    experiment_id = "experiment_292_standard_review_evidence_tiering"
+    runner_item = next(item for item in runner.EXPERIMENTS if item["id"] == experiment_id)
+    dashboard_item = dash.EXPERIMENTS[experiment_id]
+    assert runner_item["expected_datasets"] == 1117
+    assert runner_item["summary_csv"].name == "exp292_summary.csv"
+    assert dashboard_item["scope"] == "retrospective_review_only_evidence_tiering"
+    assert dashboard_item["comparison_eligible"] is False
+    assert dashboard_item["autonomous_metric_scope"] == "Exp291 Hard unchanged"
+    assert "P1/P2/P3" in dashboard_item["review_metric_scope"]
+
+
 def test_rows_for_experiment_accepts_explicit_internal_experiment_alias():
     rows = [
         {"experiment_id": "internal_experiment_name", "alpha": "0.005"},

@@ -2391,6 +2391,17 @@ EXPERIMENTS["experiment_291_final_operational_routing_freeze"] = {
     "expected_datasets": 1117,
 }
 
+EXP292_ROOT = DATA_DIR / "exp292_standard_review_evidence_tiering"
+EXPERIMENTS["experiment_292_standard_review_evidence_tiering"] = {
+    "label": "Exp292 - 일반 검토 근거 등급화", "history_status": "planned_research", "comparison_eligible": False,
+    "scope": "retrospective_review_only_evidence_tiering", "status_reason": "Frozen label-free source agreement ranks Exp291 Standard review only",
+    "autonomous_metric_scope": "Exp291 Hard unchanged", "review_metric_scope": "Standard review P1/P2/P3 evidence ordering; human-assisted only",
+    "detail_csv": EXP292_ROOT / "exp292_results.csv", "summary_csv": EXP292_ROOT / "exp292_summary.csv",
+    "status_json": EXP292_ROOT / "status.json", "stdout_log": EXP292_ROOT / "logs" / "experiment_292_standard_review_evidence_tiering.log",
+    "artifact_paths": [EXP292_ROOT / "status.json", EXP292_ROOT / "exp292_results.csv", EXP292_ROOT / "exp292_summary.csv", EXP292_ROOT / "exp292_frozen_review_tiers.jsonl", EXP292_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 1117,
+}
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
