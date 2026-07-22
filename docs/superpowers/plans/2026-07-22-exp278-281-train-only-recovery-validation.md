@@ -8,6 +8,12 @@
 
 **Tech Stack:** Python 3.14, NumPy, SQLite read-only evaluation, CSV/JSONL/SHA256 contracts, unittest, existing rank dashboard.
 
+**Execution status (2026-07-22):** Completed for all 1,117 datasets. Exp278-280
+audits passed their contracts. Exp281's best frozen sensitivity precision was
+21.74%, so it was rejected for autonomous Hard expansion and default review
+routing. Full results are stored in
+`/Users/minho/Documents/Dataset/exp278_281_train_only_recovery/RESULT_REPORT.md`.
+
 ## Global Constraints
 
 - Use all 1,117 datasets; do not silently exclude failures.
