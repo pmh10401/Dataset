@@ -2254,6 +2254,32 @@ for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP274_27
         "expected_datasets": 1117,
     }
 
+EXP276_277_ROOT = DATA_DIR / "exp276_277_shadow_confidence"
+_EXP276_277_DASHBOARD_ROWS = (
+    ("experiment_276_recovery_shadow_confidence_freeze", "Exp276 - 복구 후보 신뢰도 동결", "Exp253 Hard 변경 없음", "Recovery Shadow의 TRAIN-only 연속 신뢰도만 동결", "exp276_summary.csv", "exp276_summary.csv"),
+    ("experiment_277_recovery_shadow_confidence_evaluation", "Exp277 - 복구 후보 신뢰도 평가", "Exp253 Hard 변경 없음", "고정 guard와 신뢰도 순위를 후향 평가; 검토 전용", "exp277_dataset_results.csv", "exp277_summary.csv"),
+)
+for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP276_277_DASHBOARD_ROWS:
+    EXPERIMENTS[_exp_id] = {
+        "label": _label,
+        "history_status": "planned_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_recovery_shadow_confidence",
+        "status_reason": "Review-only retrospective confidence audit; autonomous Hard remains frozen",
+        "autonomous_metric_scope": _auto_scope,
+        "review_metric_scope": _review_scope,
+        "detail_csv": EXP276_277_ROOT / _detail,
+        "summary_csv": EXP276_277_ROOT / _summary,
+        "status_json": EXP276_277_ROOT / "status.json",
+        "stdout_log": EXP276_277_ROOT / "logs" / f"{_exp_id}.log",
+        "artifact_paths": [
+            EXP276_277_ROOT / "status.json",
+            EXP276_277_ROOT / _detail,
+            EXP276_277_ROOT / _summary,
+        ],
+        "expected_datasets": 1117,
+    }
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
