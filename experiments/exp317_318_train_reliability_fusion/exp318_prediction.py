@@ -93,6 +93,7 @@ def _load_reliability(root: Path) -> tuple[dict[tuple[str, str, float], dict[str
 def run_exp318_prediction(
     output_root: Path, reliability_root: Path, dataset_limit: int | None = None, *,
     source_roots: dict[str, Path] | None = None,
+    progress_callback=None,
 ) -> dict[str, object]:
     sources, source_hashes, frozen_datasets = load_verified_sources(source_roots)
     reliability, reliability_manifest = _load_reliability(reliability_root)
@@ -112,7 +113,7 @@ def run_exp318_prediction(
         datasets = datasets[: int(dataset_limit)]
 
     outputs: list[dict[str, object]] = []
-    for dataset in datasets:
+    for position, dataset in enumerate(datasets, start=1):
         hard = set(map(int, exp291[dataset]["automatic_hard_indices"]))
         exact_normal = set(map(int, exp290[dataset]["train_raw_exact_normal_indices"]))
         row: dict[str, object] = {
@@ -173,6 +174,8 @@ def run_exp318_prediction(
             for share, selected in selected_by_share.items():
                 row[f"alpha_{alpha_key}_share_{_share_key(share)}_indices"] = sorted(selected)
         outputs.append(row)
+        if progress_callback is not None:
+            progress_callback(position, len(datasets), dataset)
 
     root = Path(output_root)
     root.mkdir(parents=True, exist_ok=True)

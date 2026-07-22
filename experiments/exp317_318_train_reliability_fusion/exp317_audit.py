@@ -89,17 +89,20 @@ def _summarize(rows: list[dict[str, object]]) -> list[dict[str, object]]:
 def run_exp317_audit(
     output_root: Path, dataset_limit: int | None = None, *,
     source_roots: dict[str, Path] | None = None,
+    progress_callback=None,
 ) -> dict[str, object]:
     sources, source_hashes, frozen_datasets = load_verified_sources(source_roots)
     datasets = sorted(frozen_datasets)
     if dataset_limit is not None:
         datasets = datasets[: int(dataset_limit)]
     rows = []
-    for dataset in datasets:
+    for position, dataset in enumerate(datasets, start=1):
         for source in sorted(sources):
             train_scores = sources[source][dataset].get("train_oof_scores", [])
             for alpha in ALPHAS:
                 rows.append(audit_one_source(dataset, source, alpha, train_scores))
+        if progress_callback is not None:
+            progress_callback(position, len(datasets), dataset)
     root = Path(output_root); root.mkdir(parents=True, exist_ok=True)
     manifest = freeze_jsonl(
         rows,
