@@ -4,6 +4,7 @@ import numpy as np
 
 from .config import CHANGE_WINDOW_FRACTIONS
 from .contracts import ScoreArtifact
+from .foundation import crossfit_plan
 
 
 def _windows(length: int) -> tuple[int, ...]:
@@ -31,20 +32,26 @@ def _raw_features(series: np.ndarray, windows: tuple[int, ...]) -> tuple[np.ndar
 
 
 def score_change_point(train_normal: np.ndarray, test_values: np.ndarray, seed: int) -> ScoreArtifact:
-    del seed
     train = np.asarray(train_normal, dtype=np.float32)
     test = np.asarray(test_values, dtype=np.float32)
+    if len(train) < 2:
+        return ScoreArtifact(np.asarray([]), np.zeros(len(test)), {"candidate_grain": "test_instance_virtual_run"}, False, "n_train<2")
     windows = _windows(train.shape[1])
     train_features = np.vstack([_raw_features(row, windows)[0] for row in train])
     test_pairs = [_raw_features(row, windows) for row in test]
     test_features = np.vstack([pair[0] for pair in test_pairs])
+    train_scores = np.zeros(len(train), dtype=np.float64)
+    for fit, query in crossfit_plan(len(train), seed=seed):
+        fold_center = np.median(train_features[fit], axis=0)
+        fold_scale = np.median(np.abs(train_features[fit] - fold_center), axis=0) * 1.4826
+        fold_scale = np.where(fold_scale > 1e-8, fold_scale, 1.0)
+        train_scores[query] = ((train_features[query] - fold_center) / fold_scale).max(axis=1)
     center = np.median(train_features, axis=0)
     scale = np.median(np.abs(train_features - center), axis=0) * 1.4826
     scale = np.where(scale > 1e-8, scale, 1.0)
-    train_z = (train_features - center) / scale
     test_z = (test_features - center) / scale
     return ScoreArtifact(
-        train_z.max(axis=1), test_z.max(axis=1),
+        train_scores, test_z.max(axis=1),
         {
             "candidate_grain": "test_instance_virtual_run",
             "window_lengths": list(windows),

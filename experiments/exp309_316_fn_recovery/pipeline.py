@@ -449,28 +449,38 @@ def main() -> None:
     parser.add_argument("--source-root-315", type=Path)
     args = parser.parse_args()
     root = args.output_root or OUTPUT_ROOTS[args.experiment]
-    if args.phase in ("predict", "all"):
-        source_roots = None
-        if args.experiment == 312 and all((args.source_root_309, args.source_root_310, args.source_root_311)):
-            source_roots = {309: args.source_root_309, 310: args.source_root_310, 311: args.source_root_311}
-        if args.experiment == 316 and all((
-            args.source_root_309, args.source_root_310, args.source_root_311,
-            args.source_root_313, args.source_root_314, args.source_root_315,
-        )):
-            source_roots = {
-                309: args.source_root_309, 310: args.source_root_310,
-                311: args.source_root_311, 313: args.source_root_313,
-                314: args.source_root_314, 315: args.source_root_315,
-            }
-        run_prediction(
-            args.experiment, root, dataset_limit=args.dataset_limit,
-            workers=args.workers, source_roots=source_roots, device=args.device,
+    overall_started = time.time()
+    try:
+        if args.phase in ("predict", "all"):
+            source_roots = None
+            if args.experiment == 312 and all((args.source_root_309, args.source_root_310, args.source_root_311)):
+                source_roots = {309: args.source_root_309, 310: args.source_root_310, 311: args.source_root_311}
+            if args.experiment == 316 and all((
+                args.source_root_309, args.source_root_310, args.source_root_311,
+                args.source_root_313, args.source_root_314, args.source_root_315,
+            )):
+                source_roots = {
+                    309: args.source_root_309, 310: args.source_root_310,
+                    311: args.source_root_311, 313: args.source_root_313,
+                    314: args.source_root_314, 315: args.source_root_315,
+                }
+            run_prediction(
+                args.experiment, root, dataset_limit=args.dataset_limit,
+                workers=args.workers, source_roots=source_roots, device=args.device,
+            )
+        if args.phase in ("evaluate", "all"):
+            prediction_manifest = json.loads((root / f"exp{args.experiment}_prediction_manifest.json").read_text(encoding="utf-8"))
+            expected = int(prediction_manifest.get("datasets") or prediction_manifest.get("rows") or 0)
+            _publish_status(root, EXPERIMENT_IDS[args.experiment], "running", "evaluate", 0, expected, overall_started)
+            evaluate_experiment(args.experiment, root)
+            _publish_status(root, EXPERIMENT_IDS[args.experiment], "completed", "evaluate", expected, expected, overall_started)
+    except Exception as exc:
+        _publish_status(
+            root, EXPERIMENT_IDS[args.experiment], "failed", args.phase, 0,
+            int(args.dataset_limit or EXPECTED_DATASETS), overall_started,
+            errors=[f"{type(exc).__name__}: {exc}"],
         )
-    if args.phase in ("evaluate", "all"):
-        started = time.time()
-        _publish_status(root, EXPERIMENT_IDS[args.experiment], "running", "evaluate", 0, 1, started)
-        evaluate_experiment(args.experiment, root)
-        _publish_status(root, EXPERIMENT_IDS[args.experiment], "completed", "evaluate", 1, 1, started)
+        raise
 
 
 if __name__ == "__main__":

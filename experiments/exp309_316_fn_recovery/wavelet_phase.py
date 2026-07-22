@@ -5,6 +5,7 @@ import pywt
 
 from .config import WAVELET_SCALES
 from .contracts import ScoreArtifact
+from .foundation import crossfit_plan
 
 
 def _features(series: np.ndarray, scales: tuple[int, ...]) -> np.ndarray:
@@ -28,21 +29,27 @@ def _features(series: np.ndarray, scales: tuple[int, ...]) -> np.ndarray:
 
 
 def score_wavelet_phase(train_normal: np.ndarray, test_values: np.ndarray, seed: int) -> ScoreArtifact:
-    del seed
     train = np.asarray(train_normal, dtype=np.float32)
     test = np.asarray(test_values, dtype=np.float32)
+    if len(train) < 2:
+        return ScoreArtifact(np.asarray([]), np.zeros(len(test)), {"candidate_grain": "test_instance_virtual_run"}, False, "n_train<2")
     scales = tuple(scale for scale in WAVELET_SCALES if scale < train.shape[1])
     if len(scales) < 2:
         return ScoreArtifact(np.asarray([]), np.zeros(len(test)), {"scales": list(scales)}, False, "target_length_too_short")
     train_features = np.vstack([_features(row, scales) for row in train])
     test_features = np.vstack([_features(row, scales) for row in test])
+    train_scores = np.zeros(len(train), dtype=np.float64)
+    for fit, query in crossfit_plan(len(train), seed=seed):
+        fold_center = np.median(train_features[fit], axis=0)
+        fold_spread = np.median(np.abs(train_features[fit] - fold_center), axis=0) * 1.4826
+        fold_spread = np.where(fold_spread > 1e-8, fold_spread, 1.0)
+        train_scores[query] = np.abs((train_features[query] - fold_center) / fold_spread).max(axis=1)
     center = np.median(train_features, axis=0)
     spread = np.median(np.abs(train_features - center), axis=0) * 1.4826
     spread = np.where(spread > 1e-8, spread, 1.0)
-    train_z = np.abs((train_features - center) / spread)
     test_z = np.abs((test_features - center) / spread)
     return ScoreArtifact(
-        train_z.max(axis=1), test_z.max(axis=1),
+        train_scores, test_z.max(axis=1),
         {
             "candidate_grain": "test_instance_virtual_run",
             "scales": list(scales),
