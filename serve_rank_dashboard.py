@@ -2300,6 +2300,24 @@ for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP278_28
         "expected_datasets": 1117,
     }
 
+EXP282_284_ROOT = DATA_DIR / "exp282_284_prototype_distance_verifier"
+_EXP282_284_DASHBOARD_ROWS = (
+    ("experiment_282_prototype_distance_cache", "Exp282 - 정상 prototype 거리 캐시", "Exp253 Hard 변경 없음", "Mahalanobis·형태·주파수 TRAIN-only 거리", "exp282_summary.csv", "exp282_summary.csv"),
+    ("experiment_283_prototype_distance_prediction", "Exp283 - 거리 기반 후보 동결", "Exp253 Hard 변경 없음", "세 독립 거리 근거군의 검토 후보", "exp283_summary.csv", "exp283_summary.csv"),
+    ("experiment_284_prototype_distance_evaluation", "Exp284 - 거리 기반 2차 검증 평가", "Exp253 Hard 변경 없음", "동결된 검토 후보의 후향 평가", "exp284_dataset_results.csv", "exp284_summary.csv"),
+)
+for _exp_id, _label, _auto_scope, _review_scope, _detail, _summary in _EXP282_284_DASHBOARD_ROWS:
+    EXPERIMENTS[_exp_id] = {
+        "label": _label, "history_status": "planned_research", "comparison_eligible": False,
+        "scope": "retrospective_prototype_distance_verifier",
+        "status_reason": "Review-only distance validation; autonomous Hard remains frozen",
+        "autonomous_metric_scope": _auto_scope, "review_metric_scope": _review_scope,
+        "detail_csv": EXP282_284_ROOT / _detail, "summary_csv": EXP282_284_ROOT / _summary,
+        "status_json": EXP282_284_ROOT / "status.json", "stdout_log": EXP282_284_ROOT / "logs" / f"{_exp_id}.log",
+        "artifact_paths": [EXP282_284_ROOT / "status.json", EXP282_284_ROOT / _detail, EXP282_284_ROOT / _summary],
+        "expected_datasets": 1117,
+    }
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
