@@ -1,5 +1,6 @@
 import importlib.util
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -76,6 +77,20 @@ class SupabaseSessionTests(unittest.TestCase):
         session = MODULE.SupabaseSession("https://example.supabase.co", "publishable", "a@example.com", "password")
         session.update_tokens({"access_token": "access", "refresh_token": "refresh", "expires_in": 3600})
         self.assertEqual(session.current_access_token(), "access")
+
+
+class StatusSourceTests(unittest.TestCase):
+    def test_direct_source_does_not_require_local_http_dashboard(self):
+        expected = {"running": False, "queue_items": []}
+        with mock.patch.object(MODULE, "build_direct_status", return_value=expected) as builder:
+            self.assertEqual(MODULE.read_status(None), expected)
+        builder.assert_called_once_with()
+
+    def test_explicit_source_url_remains_available_for_diagnostics(self):
+        expected = {"running": True}
+        with mock.patch.object(MODULE, "fetch_local_status", return_value=expected) as fetcher:
+            self.assertEqual(MODULE.read_status("http://example.test/status", "u", "p"), expected)
+        fetcher.assert_called_once_with("http://example.test/status", "u", "p")
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import socket
+import importlib.util
 import time
 import urllib.error
 import urllib.request
@@ -18,7 +19,8 @@ from pathlib import Path
 
 SCHEMA_VERSION = 1
 MAX_PAYLOAD_BYTES = 256 * 1024
-DEFAULT_SOURCE_URL = "http://127.0.0.1:8765/api/status"
+DEFAULT_SOURCE_URL = None
+REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_HEARTBEAT = Path("/Users/minho/Documents/Dataset/vercel_dashboard_exporter_heartbeat.json")
 QUEUE_FIELDS = {
     "id", "experiment_id", "label", "status", "phase", "scope", "source",
@@ -166,6 +168,23 @@ def fetch_local_status(url, username=None, password=None, timeout=10):
         return json.load(response)
 
 
+def build_direct_status():
+    """Read experiment state directly without running the local web dashboard."""
+    module_path = REPO_ROOT / "serve_rank_dashboard.py"
+    spec = importlib.util.spec_from_file_location("rank_dashboard_status_source", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load dashboard status source: {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.build_status(include_details=True)
+
+
+def read_status(source_url=None, username=None, password=None):
+    if source_url:
+        return fetch_local_status(source_url, username, password)
+    return build_direct_status()
+
+
 def push_snapshot(url, token, supabase_access_token, snapshot, timeout=15):
     payload = json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")).encode()
     if len(payload) > MAX_PAYLOAD_BYTES:
@@ -193,7 +212,7 @@ def write_heartbeat(path, **payload):
 
 
 def run_once(args, supabase_session):
-    status = fetch_local_status(args.source_url, args.local_user, args.local_password)
+    status = read_status(args.source_url, args.local_user, args.local_password)
     snapshot = sanitize_status(status, args.source_instance_id)
     result = push_snapshot(
         args.target_url,
@@ -215,7 +234,11 @@ def run_once(args, supabase_session):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source-url", default=DEFAULT_SOURCE_URL)
+    parser.add_argument(
+        "--source-url",
+        default=os.environ.get("DASHBOARD_SOURCE_URL", DEFAULT_SOURCE_URL),
+        help="Optional diagnostic HTTP source. Omit to read experiment state directly.",
+    )
     parser.add_argument("--target-url", default=os.environ.get("DASHBOARD_INGEST_URL"))
     parser.add_argument("--ingest-token", default=os.environ.get("DASHBOARD_INGEST_TOKEN"))
     parser.add_argument("--supabase-url", default=os.environ.get("NEXT_PUBLIC_SUPABASE_URL", os.environ.get("SUPABASE_URL")))

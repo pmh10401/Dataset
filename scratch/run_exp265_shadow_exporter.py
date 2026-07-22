@@ -6,8 +6,14 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from experiments.exp265_shadow_validation.config import SPOOL_PATH
 from experiments.exp265_shadow_validation.contracts import validate_run_input

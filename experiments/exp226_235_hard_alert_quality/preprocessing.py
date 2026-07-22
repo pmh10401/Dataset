@@ -7,6 +7,23 @@ import numpy as np
 from experiments.exp226_235_hard_alert_quality.contracts import DatasetBundle
 
 
+PREPROCESSING_ORDER = (
+    "missing_repair",
+    "train_length_alignment",
+    "normalization",
+)
+
+
+def preprocessing_contract() -> dict[str, object]:
+    return {
+        "order": list(PREPROCESSING_ORDER),
+        "missing_repair_grid": "original_series",
+        "target_length_source": "train_normal_only",
+        "normalization_after_alignment": True,
+        "test_wide_normalization": False,
+    }
+
+
 def sanitize_series(values: np.ndarray) -> np.ndarray:
     series = np.asarray(values, dtype=np.float32).reshape(-1)
     if len(series) == 0:

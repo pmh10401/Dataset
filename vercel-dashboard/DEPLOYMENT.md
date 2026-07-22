@@ -25,8 +25,9 @@
 
 ## 3. Mac exporter
 
-로컬 대시보드 자격 증명, Supabase 로그인 정보, Supabase URL/publishable key와 Vercel
-수집 주소를 환경 변수로 설정한 뒤 먼저 한 번만 전송한다.
+Supabase 로그인 정보, Supabase URL/publishable key와 Vercel 수집 주소를 환경 변수로
+설정한 뒤 먼저 한 번만 전송한다. exporter는 실험 상태 파일과 실행 프로세스를 직접
+읽으므로 로컬 대시보드 서버를 실행하지 않는다.
 
 ```bash
 python3 scratch/push_vercel_dashboard_snapshot.py --once
@@ -34,6 +35,9 @@ python3 scratch/push_vercel_dashboard_snapshot.py --once
 
 성공 후 `--once`를 빼고 10초 반복 모드로 실행한다. exporter heartbeat는
 `/Users/minho/Documents/Dataset/vercel_dashboard_exporter_heartbeat.json`에 기록된다.
+
+`--source-url`은 진단 호환용 옵션이다. 운영에서는 지정하지 않으며
+`http://127.0.0.1:8765`를 상태 원본으로 사용하지 않는다.
 
 ## 4. 검증
 
@@ -47,7 +51,7 @@ python3 scratch/push_vercel_dashboard_snapshot.py --once
   `401`을 반환하는지 확인한다.
 - `shadow_validation_*` 네 테이블에 RLS가 활성화되고 익명 조회가 차단되는지 확인한다.
 
-새 대시보드 검증이 끝날 때까지 기존 Cloudflare 터널은 유지한다.
+운영 상태 확인 화면은 Vercel 배포본만 사용한다.
 
 ## 5. 신규 데이터가 없는 개발 단계
 

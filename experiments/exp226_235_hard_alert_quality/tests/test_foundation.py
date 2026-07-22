@@ -8,13 +8,24 @@ import numpy as np
 from experiments.exp226_235_hard_alert_quality.contracts import DatasetBundle
 from experiments.exp226_235_hard_alert_quality.database import load_values_bundle
 from experiments.exp226_235_hard_alert_quality.preprocessing import (
+    PREPROCESSING_ORDER,
     align_bundle,
+    preprocessing_contract,
     sanitize_series,
     train_target_length,
 )
 
 
 class FoundationContractTests(unittest.TestCase):
+    def test_preprocessing_order_is_missing_then_align_then_normalize(self) -> None:
+        self.assertEqual(
+            PREPROCESSING_ORDER,
+            ("missing_repair", "train_length_alignment", "normalization"),
+        )
+        contract = preprocessing_contract()
+        self.assertEqual(contract["target_length_source"], "train_normal_only")
+        self.assertFalse(contract["test_wide_normalization"])
+
     def test_prediction_bundle_has_no_label_field(self) -> None:
         self.assertNotIn("y_test", DatasetBundle.__dataclass_fields__)
         self.assertNotIn("labels", DatasetBundle.__dataclass_fields__)

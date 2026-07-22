@@ -19,6 +19,16 @@ LOG_PATH = DATA_DIR / "rank_experiments_sequential.log"
 QUEUE_LOCK_PATH = DATA_DIR / "rank_experiments_sequential.lock"
 HEARTBEAT_PATH = DATA_DIR / "rank_experiments_dashboard_heartbeat.json"
 
+
+def build_child_environment(base_env=None, *, worker_count="7"):
+    """Build a stable import environment for every repository experiment entrypoint."""
+    child_env = dict(os.environ if base_env is None else base_env)
+    existing = [item for item in child_env.get("PYTHONPATH", "").split(os.pathsep) if item]
+    root = str(ROOT)
+    child_env["PYTHONPATH"] = os.pathsep.join([root, *[item for item in existing if item != root]])
+    child_env["RANK_EXPERIMENT_WORKERS"] = str(worker_count)
+    return child_env
+
 EXPERIMENTS = [
     {
         "id": "rank_v1_train_evt",
@@ -1344,6 +1354,193 @@ EXPERIMENTS.append({"id": "experiment_294_frozen_sparse_moe_review_router", "lab
     "script": ROOT / "scratch/run_exp293_294_train_only_moe_lite.py", "args": ["--stage", "294-all", "--output-root", str(EXP294_ROOT)],
     "detail_csv": EXP294_ROOT / "exp294_results.csv", "summary_csv": EXP294_ROOT / "exp294_summary.csv",
     "stdout_log": EXP294_ROOT / "logs" / "experiment_294_frozen_sparse_moe_review_router.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP295_ROOT = DATA_DIR / "exp295_moe_hard_alert_confidence_tiering"
+EXPERIMENTS.append({"id": "experiment_295_moe_hard_alert_confidence_tiering", "label": "Exp295 · MoE Hard alert confidence tiering",
+    "script": ROOT / "scratch/run_exp295_moe_hard_confidence_tiering.py", "args": ["--phase", "all", "--output-root", str(EXP295_ROOT)],
+    "detail_csv": EXP295_ROOT / "exp295_results.csv", "summary_csv": EXP295_ROOT / "exp295_summary.csv",
+    "stdout_log": EXP295_ROOT / "logs" / "experiment_295_moe_hard_alert_confidence_tiering.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP296_ROOT = DATA_DIR / "exp296_cross_gate_hard_confidence_consensus"
+EXPERIMENTS.append({"id": "experiment_296_cross_gate_hard_confidence_consensus", "label": "Exp296 · Cross-Gate Hard confidence consensus",
+    "script": ROOT / "scratch/run_exp296_cross_gate_hard_confidence_consensus.py", "args": ["--phase", "all", "--output-root", str(EXP296_ROOT)],
+    "detail_csv": EXP296_ROOT / "exp296_results.csv", "summary_csv": EXP296_ROOT / "exp296_summary.csv",
+    "stdout_log": EXP296_ROOT / "logs" / "experiment_296_cross_gate_hard_confidence_consensus.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP297_ROOT = DATA_DIR / "exp297_bootstrap_confidence_stability"
+EXPERIMENTS.append({"id": "experiment_297_bootstrap_confidence_stability", "label": "Exp297 · TRAIN-bootstrap confidence stability",
+    "script": ROOT / "scratch/run_exp297_bootstrap_confidence_stability.py", "args": ["--phase", "all", "--output-root", str(EXP297_ROOT)],
+    "detail_csv": EXP297_ROOT / "exp297_results.csv", "summary_csv": EXP297_ROOT / "exp297_summary.csv",
+    "stdout_log": EXP297_ROOT / "logs" / "experiment_297_bootstrap_confidence_stability.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP298_ROOT = DATA_DIR / "exp298_exp201_current_hard_rebase"
+EXPERIMENTS.append({"id": "experiment_298_exp201_current_hard_rebase", "label": "Exp298 · Exp201 candidates rebased on current Hard",
+    "script": ROOT / "scratch/run_exp298_exp201_current_hard_rebase.py", "args": ["--phase", "all", "--output-root", str(EXP298_ROOT)],
+    "detail_csv": EXP298_ROOT / "exp298_results.csv", "summary_csv": EXP298_ROOT / "exp298_summary.csv",
+    "stdout_log": EXP298_ROOT / "logs" / "experiment_298_exp201_current_hard_rebase.log", "expected_datasets": 251, "archive_outputs": False})
+EXP299_ROOT = DATA_DIR / "exp299_multirocket_capacity_consensus"
+EXPERIMENTS.append({"id": "experiment_299_multirocket_capacity_consensus", "label": "Exp299 · MultiROCKET capacity consensus",
+    "script": ROOT / "scratch/run_exp299_multirocket_capacity_consensus.py", "args": ["--phase", "all", "--output-root", str(EXP299_ROOT)],
+    "detail_csv": EXP299_ROOT / "exp299_results.csv", "summary_csv": EXP299_ROOT / "exp299_summary.csv",
+    "stdout_log": EXP299_ROOT / "logs" / "experiment_299_multirocket_capacity_consensus.log", "expected_datasets": 251, "archive_outputs": False})
+EXP300_ROOT = DATA_DIR / "exp300_independent_evidence_consensus"
+EXPERIMENTS.append({"id": "experiment_300_independent_evidence_consensus", "label": "Exp300 · Independent evidence consensus",
+    "script": ROOT / "scratch/run_exp300_independent_evidence_consensus.py", "args": ["--phase", "all", "--output-root", str(EXP300_ROOT)],
+    "detail_csv": EXP300_ROOT / "exp300_results.csv", "summary_csv": EXP300_ROOT / "exp300_summary.csv",
+    "stdout_log": EXP300_ROOT / "logs" / "experiment_300_independent_evidence_consensus.log", "expected_datasets": 251, "archive_outputs": False})
+EXP301_ROOT = DATA_DIR / "exp301_train_risk_stability_routing"
+EXPERIMENTS.append({"id": "experiment_301_train_risk_stability_routing", "label": "Exp301 · TRAIN risk and stability routing",
+    "script": ROOT / "scratch/run_exp301_train_risk_stability_routing.py", "args": ["--phase", "all", "--output-root", str(EXP301_ROOT)],
+    "detail_csv": EXP301_ROOT / "exp301_results.csv", "summary_csv": EXP301_ROOT / "exp301_summary.csv",
+    "stdout_log": EXP301_ROOT / "logs" / "experiment_301_train_risk_stability_routing.log", "expected_datasets": 251, "archive_outputs": False})
+EXP302_ROOT = DATA_DIR / "exp302_moe_automatic_alert_expansion_frontier"
+EXPERIMENTS.append({"id": "experiment_302_moe_automatic_alert_expansion_frontier", "label": "Exp302 · MoE automatic alert expansion frontier",
+    "script": ROOT / "scratch/run_exp302_moe_automatic_alert_expansion_frontier.py", "args": ["--phase", "all", "--output-root", str(EXP302_ROOT)],
+    "detail_csv": EXP302_ROOT / "exp302_results.csv", "summary_csv": EXP302_ROOT / "exp302_summary.csv",
+    "stdout_log": EXP302_ROOT / "logs" / "experiment_302_moe_automatic_alert_expansion_frontier.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP303_ROOT = DATA_DIR / "exp303_expanded_train_only_gates"
+EXPERIMENTS.append({"id": "experiment_303_expanded_train_only_gates", "label": "Exp303 · Expanded TRAIN-only Gates",
+    "script": ROOT / "scratch/run_exp303_expanded_train_only_gates.py", "args": ["--phase", "all", "--output-root", str(EXP303_ROOT)],
+    "detail_csv": EXP303_ROOT / "exp303_results.csv", "summary_csv": EXP303_ROOT / "exp303_summary.csv",
+    "stdout_log": EXP303_ROOT / "logs" / "experiment_303_expanded_train_only_gates.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP304_ROOT = DATA_DIR / "exp304_reconstruction_fifth_source_common_support"
+EXPERIMENTS.append({"id": "experiment_304_reconstruction_fifth_source_common_support", "label": "Exp304 · Reconstruction fifth-source common support",
+    "script": ROOT / "scratch/run_exp304_reconstruction_fifth_source_common_support.py", "args": ["--phase", "all", "--output-root", str(EXP304_ROOT)],
+    "detail_csv": EXP304_ROOT / "exp304_results.csv", "summary_csv": EXP304_ROOT / "exp304_summary.csv",
+    "stdout_log": EXP304_ROOT / "logs" / "experiment_304_reconstruction_fifth_source_common_support.log", "expected_datasets": 251, "archive_outputs": False})
+EXP305_ROOT = DATA_DIR / "exp305_wavelet_reconstruction_cross_confirmation"
+EXPERIMENTS.append({"id": "experiment_305_wavelet_reconstruction_cross_confirmation", "label": "Exp305 · Wavelet-reconstruction cross-confirmation",
+    "script": ROOT / "scratch/run_exp305_wavelet_reconstruction_cross_confirmation.py", "args": ["--phase", "all", "--output-root", str(EXP305_ROOT)],
+    "detail_csv": EXP305_ROOT / "exp305_results.csv", "summary_csv": EXP305_ROOT / "exp305_summary.csv",
+    "stdout_log": EXP305_ROOT / "logs" / "experiment_305_wavelet_reconstruction_cross_confirmation.log", "expected_datasets": 251, "archive_outputs": False})
+EXP306_ROOT = DATA_DIR / "exp306_componentized_operational_routing"
+EXPERIMENTS.append({"id": "experiment_306_componentized_operational_routing", "label": "Exp306 · Componentized operational routing",
+    "script": ROOT / "scratch/run_exp306_componentized_operational_routing.py", "args": ["--phase", "all", "--output-root", str(EXP306_ROOT)],
+    "detail_csv": EXP306_ROOT / "exp306_results.csv", "summary_csv": EXP306_ROOT / "exp306_summary.csv",
+    "stdout_log": EXP306_ROOT / "logs" / "experiment_306_componentized_operational_routing.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP307_ROOT = DATA_DIR / "exp307_expanded_six_expert_moe"
+EXPERIMENTS.append({"id": "experiment_307_expanded_six_expert_moe", "label": "Exp307 · Expanded six-expert MoE",
+    "script": ROOT / "scratch/run_exp307_expanded_six_expert_moe.py", "args": ["--phase", "all", "--output-root", str(EXP307_ROOT)],
+    "detail_csv": EXP307_ROOT / "exp307_results.csv", "summary_csv": EXP307_ROOT / "exp307_summary.csv",
+    "stdout_log": EXP307_ROOT / "logs" / "experiment_307_expanded_six_expert_moe.log", "expected_datasets": 1117, "archive_outputs": False})
+EXP309_316_META = {
+    309: ("experiment_309_multiscale_patch_discord", "Multi-scale patch discord"),
+    310: ("experiment_310_multiwindow_change_point", "Multi-window change point"),
+    311: ("experiment_311_wavelet_phase_coherence", "Wavelet phase coherence"),
+    312: ("experiment_312_nonlearning_evidence_fusion", "Non-learning evidence fusion"),
+    313: ("experiment_313_predictive_residual", "Predictive residual"),
+    314: ("experiment_314_contrastive_normal_memory", "Contrastive normal memory"),
+    315: ("experiment_315_deep_svdd_normal_boundary", "Deep SVDD normal boundary"),
+    316: ("experiment_316_full_fn_recovery_fusion", "Full FN recovery fusion"),
+}
+for _number, (_experiment_id, _label) in EXP309_316_META.items():
+    _output_root = DATA_DIR / _experiment_id.replace("experiment_", "exp", 1)
+    _args = ["--experiment", str(_number), "--phase", "all", "--output-root", str(_output_root)]
+    if _number in (309, 310, 311):
+        _args.extend(["--workers", "7", "--device", "cpu"])
+    elif _number in (313, 314, 315):
+        _args.extend(["--workers", "1", "--device", "auto"])
+    else:
+        _args.extend(["--workers", "1", "--device", "cpu"])
+    EXPERIMENTS.append({
+        "id": _experiment_id, "label": f"Exp{_number} · {_label}",
+        "script": ROOT / "scratch/run_exp309_316_pipeline.py", "args": _args,
+        "detail_csv": _output_root / f"exp{_number}_results.csv",
+        "summary_csv": _output_root / f"exp{_number}_summary.csv",
+        "stdout_log": _output_root / "logs" / f"{_experiment_id}.log",
+        "expected_datasets": 1117, "archive_outputs": False,
+    })
+EXP309_316_BATCH = [experiment_id for experiment_id, _label in EXP309_316_META.values()]
+EXP317_318_META = {
+    317: ("experiment_317_train_normal_source_reliability_audit", "TRAIN-normal source reliability audit"),
+    318: ("experiment_318_train_reliability_weighted_fusion", "Reliability-weighted FN recovery fusion"),
+}
+for _number, (_experiment_id, _label) in EXP317_318_META.items():
+    _output_root = DATA_DIR / _experiment_id.replace("experiment_", "exp", 1)
+    EXPERIMENTS.append({
+        "id": _experiment_id, "label": f"Exp{_number} · {_label}",
+        "script": ROOT / "scratch/run_exp317_318_train_reliability_fusion.py",
+        "args": ["--experiment", str(_number), "--output-root", str(_output_root)],
+        "detail_csv": _output_root / ("exp317_reliability_audit.csv" if _number == 317 else "exp318_results.csv"),
+        "summary_csv": _output_root / f"exp{_number}_summary.csv",
+        "stdout_log": _output_root / "logs" / f"{_experiment_id}.log",
+        "expected_datasets": 1117, "archive_outputs": False,
+    })
+EXP317_318_BATCH = [experiment_id for experiment_id, _label in EXP317_318_META.values()]
+EXP319_321_META = {
+    319: ("experiment_319_candidate_level_train_reliability", "Candidate-level TRAIN reliability"),
+    320: ("experiment_320_existing_review_reliability_ranking", "Existing review reliability ranking"),
+    321: ("experiment_321_frozen_dual_lane_architecture", "Frozen dual-lane architecture"),
+}
+for _number, (_experiment_id, _label) in EXP319_321_META.items():
+    _output_root = DATA_DIR / _experiment_id.replace("experiment_", "exp", 1)
+    EXPERIMENTS.append({
+        "id": _experiment_id, "label": f"Exp{_number} · {_label}",
+        "script": ROOT / "scratch/run_exp319_321_candidate_reliability_architecture.py",
+        "args": ["--experiment", str(_number), "--phase", "all", "--output-root", str(_output_root)],
+        "detail_csv": _output_root / f"exp{_number}_results.csv",
+        "summary_csv": _output_root / f"exp{_number}_summary.csv",
+        "stdout_log": _output_root / "logs" / f"{_experiment_id}.log",
+        "expected_datasets": 1117, "archive_outputs": False,
+    })
+EXP319_321_BATCH = [experiment_id for experiment_id, _label in EXP319_321_META.values()]
+EXP322_324_META = {
+    322: ("experiment_322_exp291_weight_lineage_audit", "Exp291 weight lineage audit"),
+    323: ("experiment_323_exp116_reliability_selection_replay", "Exp116 reliability selection replay"),
+    324: ("experiment_324_exp291_reliability_route_parity", "Exp291 reliability route parity"),
+}
+for _number, (_experiment_id, _label) in EXP322_324_META.items():
+    _output_root = DATA_DIR / _experiment_id.replace("experiment_", "exp", 1)
+    EXPERIMENTS.append({
+        "id": _experiment_id, "label": f"Exp{_number} · {_label}",
+        "script": ROOT / "scratch/run_exp322_324_exp291_reliability_weighting.py",
+        "args": ["--experiment", str(_number), "--output-root", str(_output_root)],
+        "detail_csv": _output_root / f"exp{_number}_results.csv",
+        "summary_csv": _output_root / f"exp{_number}_summary.csv",
+        "stdout_log": _output_root / "logs" / f"{_experiment_id}.log",
+        "expected_datasets": 1117 if _number != 322 else 6, "archive_outputs": False,
+    })
+EXP322_324_BATCH = [experiment_id for experiment_id, _label in EXP322_324_META.values()]
+EXP325_327_META = {
+    325: ("experiment_325_full_source_train_reliability_cache", "Five-source TRAIN reliability cache"),
+    326: ("experiment_326_full_source_reliability_exp93_replay", "Five-source reliability Exp93 replay"),
+    327: ("experiment_327_exp291_upstream_reliability_impact_audit", "Exp291 upstream reliability impact audit"),
+}
+for _number, (_experiment_id, _label) in EXP325_327_META.items():
+    _output_root = DATA_DIR / _experiment_id.replace("experiment_", "exp", 1)
+    EXPERIMENTS.append({
+        "id": _experiment_id, "label": f"Exp{_number} · {_label}",
+        "script": ROOT / "scratch/run_exp325_327_full_source_reliability.py",
+        "args": ["--experiment", str(_number), "--workers", "7", "--output-root", str(_output_root)],
+        "detail_csv": _output_root / f"exp{_number}_results.csv",
+        "summary_csv": _output_root / f"exp{_number}_summary.csv",
+        "stdout_log": _output_root / "logs" / f"{_experiment_id}.log",
+        "expected_datasets": 1117, "archive_outputs": False,
+    })
+EXP325_327_BATCH = [experiment_id for experiment_id, _label in EXP325_327_META.values()]
+EXP328_ID = "experiment_328_large_fn_reachability_audit"
+EXP328_ROOT = DATA_DIR / "exp328_large_fn_reachability_audit"
+EXPERIMENTS.append({
+    "id": EXP328_ID, "label": "Exp328 · Large-dataset FN reachability audit",
+    "script": ROOT / "scratch/run_exp328_large_fn_reachability.py",
+    "args": ["--phase", "all", "--workers", "7", "--output-root", str(EXP328_ROOT)],
+    "detail_csv": EXP328_ROOT / "exp328_results.csv",
+    "summary_csv": EXP328_ROOT / "exp328_summary.csv",
+    "stdout_log": EXP328_ROOT / "logs" / f"{EXP328_ID}.log",
+    "expected_datasets": 251, "archive_outputs": False,
+})
+EXP329_330_META = {
+    329: ("experiment_329_large_candidate_train_verifier", "Large candidate TRAIN-only verifier"),
+    330: ("experiment_330_large_learned_normal_representation", "Large learned normal representation"),
+}
+for _number, (_experiment_id, _label) in EXP329_330_META.items():
+    _output_root = DATA_DIR / ("exp329_large_candidate_train_verifier" if _number == 329 else "exp330_large_learned_normal_representation")
+    EXPERIMENTS.append({
+        "id": _experiment_id, "label": f"Exp{_number} · {_label}",
+        "script": ROOT / "scratch/run_exp329_330_large_dataset_improvements.py",
+        "args": ["--experiment", str(_number), "--phase", "all", "--workers", "7", "--output-root", str(_output_root)],
+        "detail_csv": _output_root / f"exp{_number}_results.csv",
+        "summary_csv": _output_root / f"exp{_number}_summary.csv",
+        "stdout_log": _output_root / "logs" / f"{_experiment_id}.log",
+        "expected_datasets": 251, "archive_outputs": False,
+    })
+EXP329_330_BATCH = [experiment_id for experiment_id, _label in EXP329_330_META.values()]
 EXP177_185_BATCH = [
     "experiment_177_train_oof_review_policy_freeze",
     "experiment_178_frozen_policy_review_prediction",
@@ -1695,7 +1892,7 @@ def run_experiment(exp, overlap_checked=False):
     start = time.time()
     with exp["stdout_log"].open("w") as stdout_log:
         batch_meta = state.get("exp186_200_batch") or state.get("exp177_185_batch") or {}
-        child_env = {**os.environ, "RANK_EXPERIMENT_WORKERS": worker_count}
+        child_env = build_child_environment(worker_count=worker_count)
         if (exp["id"] in EXP177_185_BATCH or exp["id"] in EXP186_200_BATCH) and batch_meta.get("hard_deadline_unix"):
             child_env["EXP177_185_BATCH_DEADLINE_UNIX"] = str(batch_meta["hard_deadline_unix"])
         process = subprocess.Popen(
@@ -2080,6 +2277,84 @@ def queue_exp285_287_batch():
     save_state(state); log(f"QUEUE registered Exp285-287 batch ({len(EXP285_287_BATCH)} experiments)")
 
 
+def queue_exp309_316_batch():
+    state = reconcile_running_state(load_state()); completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP309_316_BATCH]
+    queue.extend(item for item in EXP309_316_BATCH if item not in completed); state["queue"] = queue
+    state["exp309_316_batch"] = {
+        "registered_at": now(), "registered_unix": time.time(), "worker_count": 7,
+        "agent_monitoring": False, "execution_mode": "sequential_one_experiment_at_a_time",
+        "experiments": list(EXP309_316_BATCH), "automatic_policy_changed": False,
+        "research_shadow_only": True,
+    }
+    save_state(state); log(f"QUEUE registered Exp309-316 batch ({len(EXP309_316_BATCH)} experiments)")
+
+
+def queue_exp317_318_batch():
+    state = reconcile_running_state(load_state()); completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP317_318_BATCH]
+    queue.extend(item for item in EXP317_318_BATCH if item not in completed); state["queue"] = queue
+    state["exp317_318_batch"] = {
+        "registered_at": now(), "registered_unix": time.time(), "worker_count": 1,
+        "agent_monitoring": False, "execution_mode": "sequential_one_experiment_at_a_time",
+        "experiments": list(EXP317_318_BATCH), "automatic_policy_changed": False,
+        "research_shadow_only": True,
+    }
+    save_state(state); log("QUEUE registered Exp317-318 batch (2 experiments)")
+
+
+def queue_exp319_321_batch():
+    state = reconcile_running_state(load_state()); completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP319_321_BATCH]
+    queue.extend(item for item in EXP319_321_BATCH if item not in completed); state["queue"] = queue
+    state["exp319_321_batch"] = {
+        "registered_at": now(), "registered_unix": time.time(), "worker_count": 1,
+        "agent_monitoring": False, "execution_mode": "sequential_one_experiment_at_a_time",
+        "experiments": list(EXP319_321_BATCH), "automatic_policy_changed": False,
+        "research_shadow_only": True,
+    }
+    save_state(state); log("QUEUE registered Exp319-321 batch (3 experiments)")
+
+
+def queue_exp322_324_batch():
+    state = reconcile_running_state(load_state()); completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP322_324_BATCH]
+    queue.extend(item for item in EXP322_324_BATCH if item not in completed); state["queue"] = queue
+    state["exp322_324_batch"] = {
+        "registered_at": now(), "registered_unix": time.time(), "worker_count": 1,
+        "agent_monitoring": False, "execution_mode": "sequential_one_experiment_at_a_time",
+        "experiments": list(EXP322_324_BATCH), "automatic_policy_changed": False,
+        "partial_three_source_scope": True,
+    }
+    save_state(state); log("QUEUE registered Exp322-324 batch (3 experiments)")
+
+
+def queue_exp325_327_batch():
+    state = reconcile_running_state(load_state()); completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP325_327_BATCH]
+    queue.extend(item for item in EXP325_327_BATCH if item not in completed); state["queue"] = queue
+    state["exp325_327_batch"] = {
+        "registered_at": now(), "registered_unix": time.time(), "worker_count": 7,
+        "agent_monitoring": False, "execution_mode": "sequential_one_experiment_at_a_time",
+        "experiments": list(EXP325_327_BATCH), "automatic_policy_changed": False,
+        "research_shadow_only": True, "all_five_source_weighting": True,
+    }
+    save_state(state); log("QUEUE registered Exp325-327 batch (3 experiments)")
+
+
+def queue_exp329_330_batch():
+    state = reconcile_running_state(load_state()); completed = set(state.get("completed", []))
+    queue = [item for item in state.get("queue", []) if item not in EXP329_330_BATCH]
+    queue.extend(item for item in EXP329_330_BATCH if item not in completed); state["queue"] = queue
+    state["exp329_330_batch"] = {
+        "registered_at": now(), "registered_unix": time.time(), "worker_count": 7,
+        "agent_monitoring": False, "execution_mode": "sequential_one_experiment_at_a_time",
+        "experiments": list(EXP329_330_BATCH), "automatic_policy_changed": False,
+        "research_shadow_only": True,
+    }
+    save_state(state); log("QUEUE registered Exp329-330 batch (2 experiments)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run rank experiments one at a time.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -2105,6 +2380,26 @@ def main():
     sub.add_parser("queue-exp291")
     sub.add_parser("queue-exp292")
     sub.add_parser("queue-exp293-294")
+    sub.add_parser("queue-exp295")
+    sub.add_parser("queue-exp296")
+    sub.add_parser("queue-exp297")
+    sub.add_parser("queue-exp298")
+    sub.add_parser("queue-exp299")
+    sub.add_parser("queue-exp300")
+    sub.add_parser("queue-exp301")
+    sub.add_parser("queue-exp302")
+    sub.add_parser("queue-exp303")
+    sub.add_parser("queue-exp304")
+    sub.add_parser("queue-exp305")
+    sub.add_parser("queue-exp306")
+    sub.add_parser("queue-exp307")
+    sub.add_parser("queue-exp309-316")
+    sub.add_parser("queue-exp317-318")
+    sub.add_parser("queue-exp319-321")
+    sub.add_parser("queue-exp322-324")
+    sub.add_parser("queue-exp325-327")
+    sub.add_parser("queue-exp328")
+    sub.add_parser("queue-exp329-330")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -2162,6 +2457,46 @@ def main():
     elif args.command == "queue-exp293-294":
         queue_experiment("experiment_293_train_only_moe_expert_audit")
         queue_experiment("experiment_294_frozen_sparse_moe_review_router")
+    elif args.command == "queue-exp295":
+        queue_experiment("experiment_295_moe_hard_alert_confidence_tiering")
+    elif args.command == "queue-exp296":
+        queue_experiment("experiment_296_cross_gate_hard_confidence_consensus")
+    elif args.command == "queue-exp297":
+        queue_experiment("experiment_297_bootstrap_confidence_stability")
+    elif args.command == "queue-exp298":
+        queue_experiment("experiment_298_exp201_current_hard_rebase")
+    elif args.command == "queue-exp299":
+        queue_experiment("experiment_299_multirocket_capacity_consensus")
+    elif args.command == "queue-exp300":
+        queue_experiment("experiment_300_independent_evidence_consensus")
+    elif args.command == "queue-exp301":
+        queue_experiment("experiment_301_train_risk_stability_routing")
+    elif args.command == "queue-exp302":
+        queue_experiment("experiment_302_moe_automatic_alert_expansion_frontier")
+    elif args.command == "queue-exp303":
+        queue_experiment("experiment_303_expanded_train_only_gates")
+    elif args.command == "queue-exp304":
+        queue_experiment("experiment_304_reconstruction_fifth_source_common_support")
+    elif args.command == "queue-exp305":
+        queue_experiment("experiment_305_wavelet_reconstruction_cross_confirmation")
+    elif args.command == "queue-exp306":
+        queue_experiment("experiment_306_componentized_operational_routing")
+    elif args.command == "queue-exp307":
+        queue_experiment("experiment_307_expanded_six_expert_moe")
+    elif args.command == "queue-exp309-316":
+        queue_exp309_316_batch()
+    elif args.command == "queue-exp317-318":
+        queue_exp317_318_batch()
+    elif args.command == "queue-exp319-321":
+        queue_exp319_321_batch()
+    elif args.command == "queue-exp322-324":
+        queue_exp322_324_batch()
+    elif args.command == "queue-exp325-327":
+        queue_exp325_327_batch()
+    elif args.command == "queue-exp328":
+        queue_experiment(EXP328_ID)
+    elif args.command == "queue-exp329-330":
+        queue_exp329_330_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

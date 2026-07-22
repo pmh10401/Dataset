@@ -9,6 +9,7 @@ import re
 import signal
 import shlex
 import sqlite3
+import statistics
 import subprocess
 import time
 from collections import defaultdict
@@ -2424,6 +2425,303 @@ EXPERIMENTS["experiment_294_frozen_sparse_moe_review_router"] = {
     "expected_datasets": 1117,
 }
 
+EXP295_ROOT = DATA_DIR / "exp295_moe_hard_alert_confidence_tiering"
+EXPERIMENTS["experiment_295_moe_hard_alert_confidence_tiering"] = {
+    "label": "Exp295 - MoE 자동 경보 신뢰도 등급", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_hard_confidence_annotation", "status_reason": "기존 Exp291 자동 경보는 유지하고 TRAIN-only MoE 근거로 신뢰도만 표시",
+    "autonomous_metric_scope": "Exp291 Hard unchanged", "review_metric_scope": "검토 후보 승격·경보 강등 없음",
+    "detail_csv": EXP295_ROOT / "exp295_results.csv", "summary_csv": EXP295_ROOT / "exp295_summary.csv",
+    "status_json": EXP295_ROOT / "status.json", "stdout_log": EXP295_ROOT / "logs" / "experiment_295_moe_hard_alert_confidence_tiering.log",
+    "artifact_paths": [EXP295_ROOT / "status.json", EXP295_ROOT / "exp295_results.csv", EXP295_ROOT / "exp295_summary.csv", EXP295_ROOT / "exp295_frozen_predictions.jsonl", EXP295_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 1117,
+}
+
+EXP296_ROOT = DATA_DIR / "exp296_cross_gate_hard_confidence_consensus"
+EXPERIMENTS["experiment_296_cross_gate_hard_confidence_consensus"] = {
+    "label": "Exp296 - Cross-Gate 자동 경보 신뢰도 합의", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_cross_gate_confidence_consensus", "status_reason": "Exp295 세 Gate의 합의를 하나의 설명용 등급으로 통합; 운영 정책 선택 아님",
+    "autonomous_metric_scope": "Exp291 Hard unchanged", "review_metric_scope": "검토 후보 승격·Hard 경보 억제 없음",
+    "detail_csv": EXP296_ROOT / "exp296_results.csv", "summary_csv": EXP296_ROOT / "exp296_summary.csv",
+    "status_json": EXP296_ROOT / "status.json", "stdout_log": EXP296_ROOT / "logs" / "experiment_296_cross_gate_hard_confidence_consensus.log",
+    "artifact_paths": [EXP296_ROOT / "status.json", EXP296_ROOT / "exp296_results.csv", EXP296_ROOT / "exp296_summary.csv", EXP296_ROOT / "exp296_frozen_predictions.jsonl", EXP296_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 1117,
+}
+
+EXP297_ROOT = DATA_DIR / "exp297_bootstrap_confidence_stability"
+EXPERIMENTS["experiment_297_bootstrap_confidence_stability"] = {
+    "label": "Exp297 - TRAIN bootstrap 신뢰도 안정성", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_train_bootstrap_confidence_stability", "status_reason": "Exp296 등급의 TRAIN OOF 재표본화 안정성; 운영 억제 정책 아님",
+    "autonomous_metric_scope": "Exp291 Hard unchanged", "review_metric_scope": "검토 후보 승격·Hard 경보 억제 없음",
+    "detail_csv": EXP297_ROOT / "exp297_results.csv", "summary_csv": EXP297_ROOT / "exp297_summary.csv",
+    "status_json": EXP297_ROOT / "status.json", "stdout_log": EXP297_ROOT / "logs" / "experiment_297_bootstrap_confidence_stability.log",
+    "artifact_paths": [EXP297_ROOT / "status.json", EXP297_ROOT / "exp297_results.csv", EXP297_ROOT / "exp297_summary.csv", EXP297_ROOT / "exp297_alert_confidence.csv", EXP297_ROOT / "exp297_frozen_predictions.jsonl", EXP297_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 1117,
+}
+
+EXP298_ROOT = DATA_DIR / "exp298_exp201_current_hard_rebase"
+EXPERIMENTS["experiment_298_exp201_current_hard_rebase"] = {
+    "label": "Exp298 - 현재 Hard 기준 Exp201 후보 재검증", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_large_candidate_rebase", "status_reason": "과거 Exp201 큰 데이터 후보를 현재 Exp292 Hard에 재기준화; 자동 경보 변경 없음",
+    "autonomous_metric_scope": "Exp292 automatic Hard unchanged", "review_metric_scope": "잔여 후보의 후향 shadow 진단; 자동 승격 없음",
+    "detail_csv": EXP298_ROOT / "exp298_results.csv", "summary_csv": EXP298_ROOT / "exp298_summary.csv",
+    "status_json": EXP298_ROOT / "status.json", "stdout_log": EXP298_ROOT / "logs" / "experiment_298_exp201_current_hard_rebase.log",
+    "artifact_paths": [EXP298_ROOT / "status.json", EXP298_ROOT / "exp298_results.csv", EXP298_ROOT / "exp298_summary.csv", EXP298_ROOT / "exp298_frozen_predictions.jsonl", EXP298_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 251,
+}
+
+EXP299_ROOT = DATA_DIR / "exp299_multirocket_capacity_consensus"
+EXPERIMENTS["experiment_299_multirocket_capacity_consensus"] = {
+    "label": "Exp299 - MultiROCKET 용량 블록 합의", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_multirocket_capacity_consensus", "status_reason": "공식 MultiROCKET 512/1024 커널 블록의 잔여 후보 교집합 검증; 자동 경보 변경 없음",
+    "autonomous_metric_scope": "Exp292 automatic Hard unchanged", "review_metric_scope": "큰 데이터셋 용량 블록 합의 후향 shadow 진단",
+    "detail_csv": EXP299_ROOT / "exp299_results.csv", "summary_csv": EXP299_ROOT / "exp299_summary.csv",
+    "status_json": EXP299_ROOT / "status.json", "stdout_log": EXP299_ROOT / "logs" / "experiment_299_multirocket_capacity_consensus.log",
+    "artifact_paths": [EXP299_ROOT / "status.json", EXP299_ROOT / "exp299_results.csv", EXP299_ROOT / "exp299_summary.csv", EXP299_ROOT / "exp299_frozen_predictions.jsonl", EXP299_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 251,
+}
+
+EXP300_ROOT = DATA_DIR / "exp300_independent_evidence_consensus"
+EXPERIMENTS["experiment_300_independent_evidence_consensus"] = {
+    "label": "Exp300 - 독립 점수원 합의", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_independent_evidence_consensus", "status_reason": "MultiROCKET·구조·변화점 2-of-3/3-of-3 합의 검증; 자동 경보 변경 없음",
+    "autonomous_metric_scope": "Exp292 automatic Hard unchanged", "review_metric_scope": "큰 데이터셋 독립 근거 합의 후향 shadow 진단",
+    "detail_csv": EXP300_ROOT / "exp300_results.csv", "summary_csv": EXP300_ROOT / "exp300_summary.csv",
+    "status_json": EXP300_ROOT / "status.json", "stdout_log": EXP300_ROOT / "logs" / "experiment_300_independent_evidence_consensus.log",
+    "artifact_paths": [EXP300_ROOT / "status.json", EXP300_ROOT / "exp300_results.csv", EXP300_ROOT / "exp300_summary.csv", EXP300_ROOT / "exp300_frozen_predictions.jsonl", EXP300_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 251,
+}
+
+EXP301_ROOT = DATA_DIR / "exp301_train_risk_stability_routing"
+EXPERIMENTS["experiment_301_train_risk_stability_routing"] = {
+    "label": "Exp301 - TRAIN 위험도·안정성 라우팅", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_train_risk_stability_routing", "status_reason": "TRAIN 정상 오경보 위험과 재표본화 안정성 검증; 기존 자동 경보 변경 없음",
+    "autonomous_metric_scope": "Exp292 automatic Hard unchanged; alpha .01 qualification is shadow only",
+    "review_metric_scope": "alpha .02 3-of-3 priority; alpha .005 2-of-3 general review",
+    "detail_csv": EXP301_ROOT / "exp301_results.csv", "summary_csv": EXP301_ROOT / "exp301_summary.csv",
+    "status_json": EXP301_ROOT / "status.json", "stdout_log": EXP301_ROOT / "logs" / "experiment_301_train_risk_stability_routing.log",
+    "artifact_paths": [EXP301_ROOT / "status.json", EXP301_ROOT / "exp301_results.csv", EXP301_ROOT / "exp301_summary.csv", EXP301_ROOT / "exp301_frozen_predictions.jsonl", EXP301_ROOT / "exp301_train_risk_audit.csv", EXP301_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 251,
+}
+
+EXP302_ROOT = DATA_DIR / "exp302_moe_automatic_alert_expansion_frontier"
+EXPERIMENTS["experiment_302_moe_automatic_alert_expansion_frontier"] = {
+    "label": "Exp302 - MoE 자동 경보 확장 곡선", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_automatic_expansion_frontier", "status_reason": "80% 합격선 없이 네 가지 고정 MoE 근거 규칙의 탐지·오탐·경보량을 비교",
+    "autonomous_metric_scope": "후향 확장 진단; 운영 자동 경보 변경 없음", "review_metric_scope": "동결 Standard 후보의 counterfactual 승격",
+    "detail_csv": EXP302_ROOT / "exp302_results.csv", "summary_csv": EXP302_ROOT / "exp302_summary.csv",
+    "status_json": EXP302_ROOT / "status.json", "stdout_log": EXP302_ROOT / "logs" / "experiment_302_moe_automatic_alert_expansion_frontier.log",
+    "artifact_paths": [EXP302_ROOT / "status.json", EXP302_ROOT / "exp302_results.csv", EXP302_ROOT / "exp302_summary.csv", EXP302_ROOT / "exp302_frozen_predictions.jsonl", EXP302_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 1117,
+}
+
+EXP303_ROOT = DATA_DIR / "exp303_expanded_train_only_gates"
+EXPERIMENTS["experiment_303_expanded_train_only_gates"] = {
+    "label": "Exp303 - 확장 TRAIN-only Gate", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_expanded_train_only_gates", "status_reason": "전체 4개 전문가 합의와 다양성·보정 Gate 비교; Gate는 새 독립 점수원이 아님",
+    "autonomous_metric_scope": "후향 Gate 확장 진단; 운영 자동 경보 변경 없음", "review_metric_scope": "동결 Standard 후보의 counterfactual 승격",
+    "detail_csv": EXP303_ROOT / "exp303_results.csv", "summary_csv": EXP303_ROOT / "exp303_summary.csv",
+    "status_json": EXP303_ROOT / "status.json", "stdout_log": EXP303_ROOT / "logs" / "experiment_303_expanded_train_only_gates.log",
+    "artifact_paths": [EXP303_ROOT / "status.json", EXP303_ROOT / "exp303_results.csv", EXP303_ROOT / "exp303_summary.csv", EXP303_ROOT / "exp303_gate_choices.csv", EXP303_ROOT / "exp303_frozen_predictions.jsonl", EXP303_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 1117,
+}
+
+EXP304_ROOT = DATA_DIR / "exp304_reconstruction_fifth_source_common_support"
+EXPERIMENTS["experiment_304_reconstruction_fifth_source_common_support"] = {
+    "label": "Exp304 - 재구성 다섯 번째 점수원", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_reconstruction_common_support", "status_reason": "Exp257 coverage가 있는 251개 common-support 연구 진단; generator provenance 미완료",
+    "autonomous_metric_scope": "251개 후향 counterfactual; 운영 자동 경보 변경 없음", "review_metric_scope": "연구용 재구성 점수의 Standard 후보 근거",
+    "detail_csv": EXP304_ROOT / "exp304_results.csv", "summary_csv": EXP304_ROOT / "exp304_summary.csv",
+    "status_json": EXP304_ROOT / "status.json", "stdout_log": EXP304_ROOT / "logs" / "experiment_304_reconstruction_fifth_source_common_support.log",
+    "artifact_paths": [EXP304_ROOT / "status.json", EXP304_ROOT / "exp304_results.csv", EXP304_ROOT / "exp304_summary.csv", EXP304_ROOT / "exp304_frozen_predictions.jsonl", EXP304_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 251,
+}
+
+EXP305_ROOT = DATA_DIR / "exp305_wavelet_reconstruction_cross_confirmation"
+EXPERIMENTS["experiment_305_wavelet_reconstruction_cross_confirmation"] = {
+    "label": "Exp305 - Wavelet·재구성 교차 확인", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_wavelet_reconstruction_common_support", "status_reason": "Exp304 251개 공통 모집단에서 재구성 단독 후보를 full-coverage Wavelet 점수로 교차 확인",
+    "autonomous_metric_scope": "251개 후향 counterfactual; 운영 자동 경보 변경 없음", "review_metric_scope": "일반 검토 후보의 Wavelet·재구성 독립 합의",
+    "detail_csv": EXP305_ROOT / "exp305_results.csv", "summary_csv": EXP305_ROOT / "exp305_summary.csv",
+    "status_json": EXP305_ROOT / "status.json", "stdout_log": EXP305_ROOT / "logs" / "experiment_305_wavelet_reconstruction_cross_confirmation.log",
+    "artifact_paths": [EXP305_ROOT / "status.json", EXP305_ROOT / "exp305_results.csv", EXP305_ROOT / "exp305_summary.csv", EXP305_ROOT / "exp305_frozen_predictions.jsonl", EXP305_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 251,
+}
+
+EXP306_ROOT = DATA_DIR / "exp306_componentized_operational_routing"
+EXPERIMENTS["experiment_306_componentized_operational_routing"] = {
+    "label": "Exp306 - 운영 코어·연구 확장 분리", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_componentized_routing", "status_reason": "Exp291 경보를 Exp137 코어와 Exp236·253 연구 확장으로 분해; 기존 결과 불변",
+    "autonomous_metric_scope": "Guard 적용 Exp137 코어 후보; 운영 정책 미변경", "review_metric_scope": "Exp236·253 연구 확장 Shadow",
+    "detail_csv": EXP306_ROOT / "exp306_results.csv", "summary_csv": EXP306_ROOT / "exp306_summary.csv",
+    "status_json": EXP306_ROOT / "status.json", "stdout_log": EXP306_ROOT / "logs" / "experiment_306_componentized_operational_routing.log",
+    "artifact_paths": [EXP306_ROOT / "status.json", EXP306_ROOT / "exp306_results.csv", EXP306_ROOT / "exp306_summary.csv", EXP306_ROOT / "exp306_frozen_predictions.jsonl", EXP306_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 1117,
+}
+
+EXP307_ROOT = DATA_DIR / "exp307_expanded_six_expert_moe"
+EXPERIMENTS["experiment_307_expanded_six_expert_moe"] = {
+    "label": "Exp307 - 6개 전문가 MoE", "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_six_expert_moe_review", "status_reason": "기존 4개 전문가에 순서 패턴·마스킹 문맥을 추가한 6개 전문가 방법군 MoE",
+    "autonomous_metric_scope": "Exp306 코어·기존 벤치마크 경보 불변", "review_metric_scope": "806개 일반 검토 순위와 연구 Shadow",
+    "detail_csv": EXP307_ROOT / "exp307_results.csv", "summary_csv": EXP307_ROOT / "exp307_summary.csv",
+    "status_json": EXP307_ROOT / "status.json", "stdout_log": EXP307_ROOT / "logs" / "experiment_307_expanded_six_expert_moe.log",
+    "artifact_paths": [EXP307_ROOT / "status.json", EXP307_ROOT / "exp307_results.csv", EXP307_ROOT / "exp307_summary.csv", EXP307_ROOT / "exp307_expert_summary.csv", EXP307_ROOT / "exp307_frozen_predictions.jsonl", EXP307_ROOT / "RESULT_REPORT.md"],
+    "expected_datasets": 1117,
+}
+
+EXP309_316_META = {
+    309: ("experiment_309_multiscale_patch_discord", "다중 구간 Discord", "국소 파형 이상을 TRAIN 정상 patch memory와 비교"),
+    310: ("experiment_310_multiwindow_change_point", "다중 윈도 변화점", "여러 시간 범위의 level shift와 drift를 TRAIN 기준으로 탐지"),
+    311: ("experiment_311_wavelet_phase_coherence", "Wavelet 위상·일관성", "주기와 위상 붕괴를 TRAIN 정상 Wavelet 특징으로 탐지"),
+    312: ("experiment_312_nonlearning_evidence_fusion", "비학습 독립 근거 융합", "Exp309~311의 2개 이상 독립 방법군 합의"),
+    313: ("experiment_313_predictive_residual", "예측 잔차", "TRAIN 정상 패턴으로 다음 구간을 예측하고 잔차를 측정"),
+    314: ("experiment_314_contrastive_normal_memory", "대조학습 정상 Memory", "TRAIN 정상 자기지도 표현과의 거리를 측정"),
+    315: ("experiment_315_deep_svdd_normal_boundary", "Deep SVDD 정상 경계", "TRAIN 정상 표현의 hypersphere 바깥 거리를 측정"),
+    316: ("experiment_316_full_fn_recovery_fusion", "전체 FN 복구 융합", "비학습·학습 점수원을 독립 방법군으로 결합"),
+}
+for _number, (_experiment_id, _label, _reason) in EXP309_316_META.items():
+    _root = DATA_DIR / _experiment_id.replace("experiment_", "exp", 1)
+    EXPERIMENTS[_experiment_id] = {
+        "label": f"Exp{_number} - {_label}",
+        "history_status": "diagnostic_only", "comparison_eligible": False,
+        "scope": "retrospective_fn_recovery_research_shadow",
+        "status_reason": _reason,
+        "autonomous_metric_scope": "Exp291 자동 경보 변경 없음",
+        "review_metric_scope": "신규 FN 후보 research Shadow; 자동 경보 아님",
+        "detail_csv": _root / f"exp{_number}_results.csv",
+        "summary_csv": _root / f"exp{_number}_summary.csv",
+        "status_json": _root / "status.json",
+        "stdout_log": _root / "logs" / f"{_experiment_id}.log",
+        "artifact_paths": [
+            _root / "status.json", _root / f"exp{_number}_results.csv",
+            _root / f"exp{_number}_summary.csv",
+            _root / f"exp{_number}_frozen_predictions.jsonl",
+            _root / "RESULT_REPORT.md",
+        ],
+        "expected_datasets": 1117,
+    }
+
+EXP317_318_META = {
+    317: ("experiment_317_train_normal_source_reliability_audit", "TRAIN 정상 신뢰도 감사", "TEST 라벨 없이 각 점수원의 정상 오경보 위험을 Wilson 상한으로 계산"),
+    318: ("experiment_318_train_reliability_weighted_fusion", "신뢰도 가중 FN 복구 융합", "독립 방법군의 TRAIN 신뢰도 가중 합의로 검토 Shadow 후보 생성"),
+}
+for _number, (_experiment_id, _label, _reason) in EXP317_318_META.items():
+    _root = DATA_DIR / _experiment_id.replace("experiment_", "exp", 1)
+    EXPERIMENTS[_experiment_id] = {
+        "label": f"Exp{_number} - {_label}",
+        "history_status": "diagnostic_only", "comparison_eligible": False,
+        "scope": "retrospective_train_reliability_fn_recovery_shadow",
+        "status_reason": _reason,
+        "autonomous_metric_scope": "Exp291 자동 경보 변경 없음",
+        "review_metric_scope": "TRAIN 신뢰도 기반 연구 Shadow; 자동 경보 아님",
+        "detail_csv": _root / ("exp317_reliability_audit.csv" if _number == 317 else "exp318_results.csv"),
+        "summary_csv": _root / f"exp{_number}_summary.csv",
+        "status_json": _root / "status.json",
+        "stdout_log": _root / "logs" / f"{_experiment_id}.log",
+        "artifact_paths": [
+            _root / "status.json",
+            _root / ("exp317_reliability_audit.csv" if _number == 317 else "exp318_results.csv"),
+            _root / f"exp{_number}_summary.csv",
+            _root / ("exp317_frozen_reliability.jsonl" if _number == 317 else "exp318_frozen_predictions.jsonl"),
+            _root / "RESULT_REPORT.md",
+        ],
+        "expected_datasets": 1117,
+    }
+
+EXP319_321_META = {
+    319: ("experiment_319_candidate_level_train_reliability", "후보별 TRAIN 신뢰도", "점수원 신뢰도에 분할 안정성과 threshold 초과 여유를 후보별로 결합"),
+    320: ("experiment_320_existing_review_reliability_ranking", "기존 검토 우선순위", "기존 일반 검토 집합을 유지하고 후보별 신뢰도로 순서만 변경"),
+    321: ("experiment_321_frozen_dual_lane_architecture", "동결 이중 Lane 구조", "Exp291 자동 경보·기존 검토·연구 Shadow를 분리한 후향 구조 시뮬레이션"),
+}
+for _number, (_experiment_id, _label, _reason) in EXP319_321_META.items():
+    _root = DATA_DIR / _experiment_id.replace("experiment_", "exp", 1)
+    EXPERIMENTS[_experiment_id] = {
+        "label": f"Exp{_number} - {_label}", "history_status": "diagnostic_only",
+        "comparison_eligible": False, "scope": "retrospective_candidate_reliability_architecture",
+        "status_reason": _reason, "autonomous_metric_scope": "Exp291 자동 경보 변경 없음",
+        "review_metric_scope": "기존 검토 순위 또는 연구 Shadow; 자동 경보 아님",
+        "detail_csv": _root / f"exp{_number}_results.csv",
+        "summary_csv": _root / f"exp{_number}_summary.csv",
+        "status_json": _root / "status.json",
+        "stdout_log": _root / "logs" / f"{_experiment_id}.log",
+        "artifact_paths": [_root / "status.json", _root / f"exp{_number}_results.csv", _root / f"exp{_number}_summary.csv", _root / f"exp{_number}_frozen_predictions.jsonl", _root / "RESULT_REPORT.md"],
+        "expected_datasets": 1117,
+    }
+
+EXP322_324_META = {
+    322: ("experiment_322_exp291_weight_lineage_audit", "Exp291 가중치 계보 감사", "최종 routing과 상위 고정 가중치·gate·합의 규칙을 분리"),
+    323: ("experiment_323_exp116_reliability_selection_replay", "TRAIN 신뢰도 선택 재검증", "세 핵심 점수원의 Exp116 TRAIN 신뢰도 가중 선택 인덱스 재검증"),
+    324: ("experiment_324_exp291_reliability_route_parity", "Exp291 lane 영향 검증", "신뢰도 가중 선택이 Exp291 lane을 바꾸는지 전체 parity 확인"),
+}
+for _number, (_experiment_id, _label, _reason) in EXP322_324_META.items():
+    _root = DATA_DIR / _experiment_id.replace("experiment_", "exp", 1)
+    EXPERIMENTS[_experiment_id] = {
+        "label": f"Exp{_number} - {_label}", "history_status": "diagnostic_only",
+        "comparison_eligible": False, "scope": "retrospective_exp291_reliability_weight_lineage",
+        "status_reason": _reason, "autonomous_metric_scope": "Exp291 자동 경보 변경 없음",
+        "review_metric_scope": "가중치 계보 및 선택 parity 감사",
+        "detail_csv": _root / f"exp{_number}_results.csv", "summary_csv": _root / f"exp{_number}_summary.csv",
+        "status_json": _root / "status.json", "stdout_log": _root / "logs" / f"{_experiment_id}.log",
+        "artifact_paths": [_root / "status.json", _root / f"exp{_number}_results.csv", _root / f"exp{_number}_summary.csv"],
+        "expected_datasets": 6 if _number == 322 else 1117,
+    }
+
+EXP325_327_META = {
+    325: ("experiment_325_full_source_train_reliability_cache", "다섯 점수원 TRAIN 신뢰도", "기존 Exp93 점수원별 TRAIN 정상 오경보 신뢰도와 순위 생성"),
+    326: ("experiment_326_full_source_reliability_exp93_replay", "신뢰도 가중 Exp93 재검증", "고정 가중치와 두 TRAIN-only 가중식을 같은 후보 풀에서 비교"),
+    327: ("experiment_327_exp291_upstream_reliability_impact_audit", "Exp291 상위 후보 영향 감사", "변경된 상위 후보와 현재 Exp291 lane의 관계를 후향 평가"),
+}
+for _number, (_experiment_id, _label, _reason) in EXP325_327_META.items():
+    _root = DATA_DIR / _experiment_id.replace("experiment_", "exp", 1)
+    EXPERIMENTS[_experiment_id] = {
+        "label": f"Exp{_number} - {_label}", "history_status": "diagnostic_only",
+        "comparison_eligible": False, "scope": "retrospective_full_source_reliability_weighting",
+        "status_reason": _reason, "autonomous_metric_scope": "Exp291 자동 경보는 변경하지 않음",
+        "review_metric_scope": "상위 Exp93 후보의 반사실적 가중치 비교",
+        "detail_csv": _root / f"exp{_number}_results.csv", "summary_csv": _root / f"exp{_number}_summary.csv",
+        "status_json": _root / "status.json", "stdout_log": _root / "logs" / f"{_experiment_id}.log",
+        "artifact_paths": [_root / "status.json", _root / f"exp{_number}_results.csv", _root / f"exp{_number}_summary.csv"],
+        "expected_datasets": 1117,
+    }
+
+EXP328_ID = "experiment_328_large_fn_reachability_audit"
+EXP328_ROOT = DATA_DIR / "exp328_large_fn_reachability_audit"
+EXPERIMENTS[EXP328_ID] = {
+    "label": "Exp328 - 큰 데이터셋 FN 도달 가능성 감사",
+    "history_status": "diagnostic_only", "comparison_eligible": False,
+    "scope": "retrospective_large_dataset_fn_reachability",
+    "status_reason": "TRAIN 정상 100개 이상 데이터셋에서 FN이 사라지는 단계를 분류",
+    "autonomous_metric_scope": "Exp291 자동 경보 변경 없음",
+    "review_metric_scope": "FN 원인 분류를 위한 후향 진단",
+    "detail_csv": EXP328_ROOT / "exp328_results.csv",
+    "summary_csv": EXP328_ROOT / "exp328_summary.csv",
+    "status_json": EXP328_ROOT / "status.json",
+    "stdout_log": EXP328_ROOT / "logs" / f"{EXP328_ID}.log",
+    "artifact_paths": [EXP328_ROOT / "status.json", EXP328_ROOT / "exp328_results.csv", EXP328_ROOT / "exp328_summary.csv", EXP328_ROOT / "exp328_fn_detail.csv"],
+    "expected_datasets": 251,
+}
+EXP329_330_META = {
+    329: ("experiment_329_large_candidate_train_verifier", "큰 데이터셋 후보 2차 검증", "기존 검토·다중 근거 후보를 고정 규칙으로 Shadow 검증"),
+    330: ("experiment_330_large_learned_normal_representation", "큰 데이터셋 학습형 정상 표현", "다중 해상도 PCA/KNN 정상 표현으로 기존 top-64 밖 FN 도달 가능성 평가"),
+}
+for _number, (_experiment_id, _label, _reason) in EXP329_330_META.items():
+    _root = DATA_DIR / ("exp329_large_candidate_train_verifier" if _number == 329 else "exp330_large_learned_normal_representation")
+    EXPERIMENTS[_experiment_id] = {
+        "label": f"Exp{_number} - {_label}",
+        "history_status": "planned_research",
+        "comparison_eligible": False,
+        "scope": "retrospective_large_dataset_fn_improvement",
+        "status_reason": _reason,
+        "autonomous_metric_scope": "Exp291 자동 경보 변경 없음",
+        "review_metric_scope": "후향 Shadow 민감도 평가",
+        "detail_csv": _root / f"exp{_number}_results.csv",
+        "summary_csv": _root / f"exp{_number}_summary.csv",
+        "status_json": _root / "status.json",
+        "stdout_log": _root / "logs" / f"{_experiment_id}.log",
+        "artifact_paths": [_root / "status.json", _root / f"exp{_number}_results.csv", _root / f"exp{_number}_summary.csv"],
+        "expected_datasets": 251,
+    }
+
 EXCLUDED_OPERATIONAL_EXPERIMENTS = {
     "experiment_70_zero_mode_family_repair_selector": "배제: family zero-mode policy is derived from prior labeled failure diagnostics",
     "experiment_85_exp84_hard_specialist_selector": "배제: best gain-family selector uses prior benchmark family gains",
@@ -2832,6 +3130,40 @@ INDEX_HTML = r"""<!doctype html>
       </div>
     </section>
 
+    <section class="panel" style="margin-top:16px">
+      <div class="panel-head">
+        <div>
+          <h2>자동 경보 신뢰도</h2>
+          <span class="hint">모든 항목은 기존 자동 경보입니다. 신뢰도는 설명용이며 경보 억제에 사용하지 않습니다.</span>
+        </div>
+        <div class="toolbar">
+          <select id="hardConfidenceTierFilter" aria-label="자동 경보 신뢰도 필터">
+            <option value="all">전체 등급</option>
+            <option value="unanimous_high">세 Gate 모두 강한 지지</option>
+            <option value="unanimous_supported">세 Gate 모두 지지</option>
+            <option value="partial_supported">일부 Gate 지지</option>
+            <option value="no_selected_support">선택 전문가 지지 없음</option>
+          </select>
+          <span class="pill" id="hardConfidenceInfo">Exp297 대기</span>
+        </div>
+      </div>
+      <div class="detail-box">
+        <div class="mini-grid">
+          <div class="mini-stat"><div class="k">세 Gate 강한 지지</div><div class="v" id="hardTierUnanimousHigh">-</div></div>
+          <div class="mini-stat"><div class="k">세 Gate 지지</div><div class="v" id="hardTierUnanimousSupported">-</div></div>
+          <div class="mini-stat"><div class="k">일부 Gate 지지</div><div class="v" id="hardTierPartialSupported">-</div></div>
+          <div class="mini-stat"><div class="k">선택 전문가 지지 없음</div><div class="v" id="hardTierNoSupport">-</div></div>
+        </div>
+        <div class="hint" id="hardConfidenceStability">TRAIN bootstrap 안정성 계산 대기</div>
+      </div>
+      <div class="table-wrap" style="max-height:300px">
+        <table>
+          <thead><tr><th>dataset</th><th>index</th><th>신뢰도</th><th>TRAIN bootstrap 일치율</th></tr></thead>
+          <tbody id="hardConfidenceRows"></tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="grid two">
       <div class="panel">
         <div class="panel-head">
@@ -2986,6 +3318,7 @@ INDEX_HTML = r"""<!doctype html>
     const fmtSigned = v => Number.isFinite(Number(v)) ? `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(3)}` : '-';
     let selectedStrategy = null;
     let metricGlossaryById = {};
+    let hardConfidenceTierFilter = 'all';
     function setText(id, value) { document.getElementById(id).textContent = value; }
     function appendCells(row, values) {
       values.forEach(value => {
@@ -3099,6 +3432,50 @@ INDEX_HTML = r"""<!doctype html>
         row.family || '-',
         `FP ${row.total_fp ?? '-'} · zero ${row.zero_f1_count ?? '-'} · F1 ${fmt(row.mean_f1)}`
       ]);
+    }
+    function renderHardConfidence(snapshot) {
+      const data = snapshot || {};
+      const tiers = data.tiers || {};
+      const tierText = tier => {
+        const row = tiers[tier];
+        if (!row) return '-';
+        return `${row.count ?? 0} · ${fmtPrecision(row.precision)}`;
+      };
+      setText('hardTierUnanimousHigh', tierText('unanimous_high'));
+      setText('hardTierUnanimousSupported', tierText('unanimous_supported'));
+      setText('hardTierPartialSupported', tierText('partial_supported'));
+      setText('hardTierNoSupport', tierText('no_selected_support'));
+      setText(
+        'hardConfidenceInfo',
+        data.available ? `${data.total_alerts ?? 0} Hard alerts` : 'Exp297 대기'
+      );
+      setText(
+        'hardConfidenceStability',
+        data.available
+          ? `TRAIN bootstrap 중앙 일치율 ${fmtPrecision(data.median_stability_rate)} · 계산 가능 ${data.eligible_alerts ?? 0}건 · 표본 부족 ${data.abstained_alerts ?? 0}건`
+          : (data.note || 'TRAIN bootstrap 안정성 계산 대기')
+      );
+      const body = document.getElementById('hardConfidenceRows');
+      body.innerHTML = '';
+      const rows = (data.alerts || []).filter(row =>
+        hardConfidenceTierFilter === 'all' || row.consensus_tier === hardConfidenceTierFilter
+      );
+      if (!rows.length) {
+        const tr = document.createElement('tr');
+        appendCells(tr, ['표시할 경보 없음', '-', '-', '-']);
+        body.appendChild(tr);
+        return;
+      }
+      rows.forEach(row => {
+        const tr = document.createElement('tr');
+        appendCells(tr, [
+          row.dataset || '-',
+          row.candidate_index ?? '-',
+          {text: row.tier_label || row.consensus_tier || '-', className: 'tier'},
+          row.bootstrap_eligible ? fmtPrecision(row.stability_rate) : '표본 부족',
+        ]);
+        body.appendChild(tr);
+      });
     }
     function runtime(seconds) {
       if (!Number.isFinite(seconds) || seconds < 0) return '-';
@@ -3215,6 +3592,10 @@ INDEX_HTML = r"""<!doctype html>
     document.getElementById('copyGptHandoff').addEventListener('click', () => copyGptHandoff().catch(error => setText('gptExportStatus', error.message)));
     document.getElementById('downloadGptJson').addEventListener('click', () => downloadGptJson().catch(error => setText('gptExportStatus', error.message)));
     document.getElementById('historyStatusFilter').addEventListener('change', event => { historyStatusFilter = event.target.value; refresh(); });
+    document.getElementById('hardConfidenceTierFilter').addEventListener('change', event => {
+      hardConfidenceTierFilter = event.target.value;
+      renderHardConfidence((detailCache || {}).hard_confidence || {});
+    });
     async function refresh() {
       if (refreshInFlight) return;
       refreshInFlight = true;
@@ -3284,6 +3665,7 @@ INDEX_HTML = r"""<!doctype html>
         setText('contextCandidateMeaning', context.candidate_index_meaning || '-');
         setText('contextProductionMapping', context.production_run_mapping_verified ? 'verified' : 'not verified');
         setText('datasetContextSummary', context.purpose || 'database grain and purpose');
+        renderHardConfidence(data.hard_confidence || {});
 
         const tbody = document.getElementById('strategyRows');
         tbody.innerHTML = '';
@@ -3427,6 +3809,98 @@ def read_csv_rows(path):
     return rows
 
 
+HARD_CONFIDENCE_TIER_LABELS = {
+    "unanimous_high": "세 Gate 모두 강한 지지",
+    "unanimous_supported": "세 Gate 모두 지지",
+    "partial_supported": "일부 Gate 지지",
+    "no_selected_support": "선택 전문가 지지 없음",
+}
+
+
+def hard_confidence_snapshot(
+    alerts_path=None,
+    summary_path=None,
+    *,
+    alert_limit=200,
+):
+    alerts_path = Path(alerts_path or (DATA_DIR / "exp297_bootstrap_confidence_stability" / "exp297_alert_confidence.csv"))
+    summary_path = Path(summary_path or (DATA_DIR / "exp297_bootstrap_confidence_stability" / "exp297_summary.csv"))
+    alert_rows = read_csv_rows(alerts_path)
+    summary_rows = [row for row in read_csv_rows(summary_path) if row.get("scope") == "all_1117"]
+    if not alert_rows:
+        return {
+            "available": False,
+            "total_alerts": 0,
+            "eligible_alerts": 0,
+            "abstained_alerts": 0,
+            "tiers": {},
+            "alerts": [],
+            "note": "Exp297 frozen confidence artifact is not available yet",
+        }
+
+    summary_by_tier = {row.get("consensus_tier"): row for row in summary_rows}
+    tier_rows = defaultdict(list)
+    eligible_rates = []
+    eligible_alerts = 0
+    for row in alert_rows:
+        tier_rows[row.get("consensus_tier")].append(row)
+        eligible = str(row.get("bootstrap_eligible", "")).lower() == "true"
+        if eligible:
+            eligible_alerts += 1
+            rate = as_float(row.get("stability_rate"))
+            if rate is not None:
+                eligible_rates.append(rate)
+
+    tiers = {}
+    for tier, label in HARD_CONFIDENCE_TIER_LABELS.items():
+        values = tier_rows.get(tier, [])
+        rates = [as_float(row.get("stability_rate")) for row in values]
+        rates = [value for value in rates if value is not None]
+        summary = summary_by_tier.get(tier, {})
+        tiers[tier] = {
+            "label": label,
+            "count": len(values),
+            "tp": safe_int(summary.get("hard_tp")),
+            "fp": safe_int(summary.get("hard_fp")),
+            "precision": as_float(summary.get("hard_precision")),
+            "median_stability_rate": (
+                as_float(summary.get("median_stability_rate"))
+                if summary else (float(statistics.median(rates)) if rates else None)
+            ),
+        }
+
+    compact = []
+    per_tier_limit = max(1, int(alert_limit) // max(1, len(HARD_CONFIDENCE_TIER_LABELS)))
+    for tier in HARD_CONFIDENCE_TIER_LABELS:
+        values = sorted(
+            tier_rows.get(tier, []),
+            key=lambda item: (item.get("dataset", ""), safe_int(item.get("candidate_index")) or 0),
+        )[:per_tier_limit]
+        for row in values:
+            compact.append({
+                "dataset": row.get("dataset"),
+                "candidate_index": safe_int(row.get("candidate_index")),
+                "consensus_tier": tier,
+                "tier_label": HARD_CONFIDENCE_TIER_LABELS.get(tier, tier),
+                "bootstrap_eligible": str(row.get("bootstrap_eligible", "")).lower() == "true",
+                "stability_rate": as_float(row.get("stability_rate")),
+            })
+    return {
+        "available": True,
+        "total_alerts": len(alert_rows),
+        "eligible_alerts": eligible_alerts,
+        "abstained_alerts": len(alert_rows) - eligible_alerts,
+        "median_stability_rate": float(statistics.median(eligible_rates)) if eligible_rates else None,
+        "tiers": tiers,
+        "alerts": compact,
+        "alerts_returned": len(compact),
+        "truncated": len(compact) < len(alert_rows),
+        "automatic_hard_unchanged": True,
+        "suppression_policy_active": False,
+        "retrospective": True,
+    }
+
+
 def read_state():
     if not STATE_PATH.exists():
         return {}
@@ -3479,8 +3953,41 @@ def read_heartbeat():
     except (OSError, json.JSONDecodeError):
         return {}
     updated = as_float(value.get("updated_unix"))
+    if updated is None:
+        updated = as_float(value.get("updated_at_unix"))
     if updated is not None:
         value["age_seconds"] = max(0.0, time.time() - updated)
+    return value
+
+
+def read_experiment_status(exp_id, info=None, *, now=None, max_age_seconds=120):
+    """Read the active experiment's atomic status file when it is fresh."""
+
+    if not exp_id:
+        return {}
+    info = info or experiment_info(exp_id)
+    candidate = info.get("status_json") if info else None
+    if not candidate:
+        return {}
+    try:
+        value = json.loads(Path(candidate).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    recorded_id = value.get("experiment_id") or value.get("id")
+    if recorded_id != exp_id or value.get("status") not in {"running", "completed", "failed"}:
+        return {}
+    updated = as_float(value.get("updated_unix"))
+    if updated is None:
+        updated = as_float(value.get("updated_at_unix"))
+    clock = time.time() if now is None else float(now)
+    if value.get("status") == "running" and (
+        updated is None or clock - updated > float(max_age_seconds)
+    ):
+        return {}
+    value["id"] = exp_id
+    value["experiment_id"] = exp_id
+    value["age_seconds"] = max(0.0, clock - updated) if updated is not None else None
+    value["status_path"] = str(Path(candidate))
     return value
 
 
@@ -4046,6 +4553,15 @@ def experiment_history_status(exp_id, info, state):
             "status_reason": (info or {}).get("status_reason"),
         }
 
+    direct_status = completed_artifact_status(exp_id, info)
+    if direct_status:
+        return {
+            "history_status": (
+                "completed_valid" if configured == "completed_valid" else "completed_research"
+            ),
+            "status_reason": "direct run status recorded successful completion",
+        }
+
     detail = (info or {}).get("detail_csv")
     if detail and Path(detail).exists():
         return {
@@ -4055,18 +4571,70 @@ def experiment_history_status(exp_id, info, state):
     return {"history_status": "not_run", "status_reason": "result artifact missing"}
 
 
+def completed_artifact_status(exp_id, info):
+    """Return a verified direct-run completion record for one experiment."""
+
+    info = info or {}
+    injected = info.get("_completed_artifact_status")
+    if isinstance(injected, dict):
+        return dict(injected) if injected.get("status") == "completed" else {}
+    status_path = info.get("status_json")
+    detail_path = info.get("detail_csv")
+    if not status_path or not detail_path or not Path(detail_path).exists():
+        return {}
+    try:
+        value = json.loads(Path(status_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    recorded_id = value.get("id") or value.get("experiment_id")
+    if recorded_id != exp_id or value.get("status") != "completed":
+        return {}
+    return value
+
+
+def _finished_at_unix(value):
+    if not value:
+        return None
+    try:
+        return time.mktime(time.strptime(str(value), "%Y-%m-%d %H:%M:%S"))
+    except (TypeError, ValueError):
+        return None
+
+
+def latest_completed_experiment_id(state, catalog=None):
+    """Choose the newest successful queue or direct-run experiment."""
+
+    state = state or {}
+    if catalog is None:
+        ids = set(EXPERIMENTS) | set(HISTORICAL_EXPERIMENT_META)
+        catalog = {exp_id: experiment_info(exp_id) for exp_id in ids}
+    candidates = []
+    for index, exp_id in enumerate(state.get("completed") or []):
+        candidates.append((float(index), exp_id))
+    for row in state.get("history") or []:
+        if not isinstance(row, dict) or row.get("return_code") not in (None, 0):
+            continue
+        finished = _finished_at_unix(row.get("finished_at"))
+        if row.get("id") and finished is not None:
+            candidates.append((finished, row["id"]))
+    for exp_id, info in catalog.items():
+        direct = completed_artifact_status(exp_id, info)
+        updated = as_float(direct.get("updated_unix")) if direct else None
+        if updated is None and direct:
+            updated = _finished_at_unix(direct.get("updated_at"))
+        if updated is not None:
+            candidates.append((updated, exp_id))
+    return max(candidates, default=(None, None))[1]
+
+
 def expected_for_experiment(info, fallback):
     return int(info.get("expected_datasets") or fallback)
 
 
 def active_paths(state):
     running = state.get("running") or {}
-    history = state.get("history") or []
-    latest_history_id = history[-1].get("id") if history and isinstance(history[-1], dict) else None
-    completed = state.get("completed") or []
-    latest_completed_id = completed[-1] if completed else None
     active_id = running.get("id") or None
-    last_completed_id = latest_history_id or latest_completed_id
+    last_completed_id = latest_completed_experiment_id(state)
     exp_id = active_id or last_completed_id or "rank_threshold_calibration"
     info = experiment_info(exp_id)
     return {
@@ -4430,6 +4998,7 @@ def completed_result_snapshot(state):
     rows = []
     for exp_id in experiment_ids:
         info = experiment_info(exp_id)
+        direct_status = completed_artifact_status(exp_id, info)
         historical_catalog = exp_id in HISTORICAL_EXPERIMENT_META
         hist = history.get(exp_id) or {}
         status = experiment_history_status(exp_id, info, state)
@@ -4583,8 +5152,14 @@ def completed_result_snapshot(state):
                 "exclusion_reason": EXCLUDED_OPERATIONAL_EXPERIMENTS.get(exp_id),
                 "datasets": int(datasets) if datasets is not None else None,
                 "rows": detail_row_count,
-                "elapsed_minutes": hist.get("elapsed_minutes"),
-                "finished_at": hist.get("finished_at"),
+                "elapsed_minutes": (
+                    hist.get("elapsed_minutes")
+                    if hist.get("elapsed_minutes") is not None
+                    else as_float(direct_status.get("elapsed_seconds")) / 60.0
+                    if as_float(direct_status.get("elapsed_seconds")) is not None
+                    else None
+                ),
+                "finished_at": hist.get("finished_at") or direct_status.get("updated_at"),
                 "summary_csv": str(info.get("summary_csv")),
                 "artifact_links": history_artifact_links(exp_id, info),
             }
@@ -5276,6 +5851,9 @@ def build_status(include_details=True):
     if external_live_run.get("status") == "running":
         running = external_live_run
     heartbeat = read_heartbeat()
+    active_status = read_experiment_status(running.get("id"))
+    if active_status.get("status") == "running":
+        heartbeat = active_status
     paths = active_paths(state)
     if external_live_run:
         paths = {
@@ -5309,9 +5887,11 @@ def build_status(include_details=True):
     progress_latest = progress_events[-1] if progress_events else None
     done = csv_done
     heartbeat_matches = bool(running and heartbeat.get("experiment_id") == running.get("id") and heartbeat.get("status") == "running")
-    if heartbeat_matches and heartbeat.get("done") is not None:
-        done = safe_int(heartbeat.get("done")) or done
-        expected = safe_int(heartbeat.get("expected")) or expected
+    heartbeat_done = heartbeat.get("done", heartbeat.get("datasets_done"))
+    heartbeat_expected = heartbeat.get("expected", heartbeat.get("datasets_total"))
+    if heartbeat_matches and heartbeat_done is not None:
+        done = safe_int(heartbeat_done) or done
+        expected = safe_int(heartbeat_expected) or expected
     elif external_live_run.get("status") == "running" and external_live_run.get("datasets_done") is not None:
         done = safe_int(external_live_run.get("datasets_done")) or done
         expected = safe_int(external_live_run.get("expected_datasets")) or expected
@@ -5380,8 +5960,11 @@ def build_status(include_details=True):
         )[0]
     history_state = {**state, "running": running if is_running else None}
     experiment_history = completed_result_snapshot(history_state) if include_details else []
-    legacy_completed_ids = set(state.get("completed") or [])
-    completed_results = [row for row in experiment_history if row.get("id") in legacy_completed_ids]
+    completed_results = [
+        row
+        for row in experiment_history
+        if row.get("history_status") in {"completed_valid", "completed_research"}
+    ]
     if include_details:
         primary_completed = next(
             (
@@ -5417,12 +6000,31 @@ def build_status(include_details=True):
     queue_ids = [running_id, *pending_queue]
     experiment_snapshot = experiment_queue_snapshot(state, default_expected, experiment_ids=queue_ids, heartbeat=heartbeat)
     external_for_items = dict(explicit_run or external_live_run or exp266_run)
+    if not external_for_items and heartbeat_matches:
+        external_for_items = {
+            **heartbeat,
+            "id": running_id,
+            "label": experiment_info(running_id).get("label", running_id),
+        }
     if external_for_items.get("status") == "running":
         external_for_items["progress_percent"] = progress
         external_for_items["datasets_done"] = done
         external_for_items["expected_datasets"] = expected
-        external_for_items["rows"] = safe_int(external_live_run.get("rows")) or len(rows)
+        external_for_items["rows"] = safe_int(external_for_items.get("rows")) or len(rows)
     unified = unified_experiment_items(state, external_for_items, VALIDATION_PLAN)
+    if heartbeat_matches:
+        for item in unified:
+            if item.get("id") != running_id:
+                continue
+            item.update({
+                "status": "running",
+                "datasets_done": done,
+                "expected_datasets": expected,
+                "progress_percent": progress,
+                "current_dataset": heartbeat.get("current_dataset"),
+                "phase": heartbeat.get("phase"),
+                "updated_unix": heartbeat.get("updated_unix"),
+            })
     queue_items = [row for row in unified if row.get("status") in {"running", "queued", "planned", "blocked", "failed"}]
     dataset_context = dataset_context_snapshot()
     actual_active_id = paths["active_id"] if is_running else None
@@ -5430,7 +6032,7 @@ def build_status(include_details=True):
     last_completed_id = paths["last_completed_id"]
     last_completed_info = experiment_info(last_completed_id) if last_completed_id else {}
     throughput = throughput_snapshot(progress_events, done, expected, elapsed)
-    external_rate = as_float(external_live_run.get("recent_datasets_per_minute"))
+    external_rate = as_float(external_for_items.get("recent_datasets_per_minute"))
     if external_rate is not None:
         throughput["recent_datasets_per_minute"] = external_rate
         throughput["recent_eta_seconds"] = eta
@@ -5490,6 +6092,7 @@ def build_status(include_details=True):
                 ),
                 "strategy_details": strategy_detail_snapshot(rows, summary),
                 "operational_best": operational_best,
+                "hard_confidence": hard_confidence_snapshot(),
             }
         )
     return payload
