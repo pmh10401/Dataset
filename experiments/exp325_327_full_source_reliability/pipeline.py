@@ -80,7 +80,7 @@ def _load_record_without_labels(dataset: str) -> dict:
     }
 
 
-def _score_bundle(record: dict) -> dict[str, dict]:
+def _score_bundle(record: dict, *, max_top: int = MAX_TOP) -> dict[str, dict]:
     target = int(record["metadata_len"] or round(record["actual_len_median"]))
     target = max(8, target)
     x_train = align_series_lengths(record["train_series"], target)
@@ -105,9 +105,12 @@ def _score_bundle(record: dict) -> dict[str, dict]:
     for name, (train_scores, test_scores) in bundles.items():
         threshold, _, _ = count_cap_threshold(train_scores, 0.015)
         exceed_count, _ = train_false_positive_stats(train_scores, threshold)
-        order = np.argsort(-np.asarray(test_scores), kind="stable")[:MAX_TOP].astype(int).tolist()
+        test_values = np.asarray(test_scores)
+        order = np.argsort(-test_values, kind="stable")[:max_top].astype(int).tolist()
         output[name] = {
-            "order": order, "threshold": float(threshold),
+            "order": order,
+            "candidate_indices": np.flatnonzero(test_values > threshold).astype(int).tolist(),
+            "threshold": float(threshold),
             **wilson_reliability(int(exceed_count), len(train_scores)),
         }
     return output
