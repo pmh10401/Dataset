@@ -49,6 +49,30 @@ def test_exp291_is_registered_as_final_operational_routing_freeze():
     assert dashboard_item["review_metric_scope"].startswith("Exp272 approved")
 
 
+def test_rows_for_experiment_accepts_explicit_internal_experiment_alias():
+    rows = [
+        {"experiment_id": "internal_experiment_name", "alpha": "0.005"},
+        {"experiment_id": "internal_experiment_name", "alpha": "0.01"},
+    ]
+
+    selected = dash._rows_for_experiment(
+        rows,
+        "dashboard_catalog_alias",
+        artifact_experiment_id="internal_experiment_name",
+    )
+
+    assert selected == rows
+
+
+def test_rows_for_experiment_rejects_missing_alias_in_shared_artifact():
+    rows = [
+        {"experiment_id": "experiment_a", "alpha": "0.005"},
+        {"experiment_id": "experiment_b", "alpha": "0.005"},
+    ]
+
+    assert dash._rows_for_experiment(rows, "dashboard_catalog_alias") == []
+
+
 def test_progress_parser_accepts_spaces_around_slash():
     events = dash.parse_progress_events(
         ["Progress: [5 / 251] rows=5 dataset=Demo errors=0"]
@@ -1264,6 +1288,8 @@ if __name__ == "__main__":
     test_exp289_is_registered_for_sequential_dashboard_execution()
     test_exp290_is_registered_as_autonomous_exact_normal_guard()
     test_exp291_is_registered_as_final_operational_routing_freeze()
+    test_rows_for_experiment_accepts_explicit_internal_experiment_alias()
+    test_rows_for_experiment_rejects_missing_alias_in_shared_artifact()
     test_summarize_by_config_includes_operational_metrics()
     test_parse_log_error_summary_groups_reasons_and_families()
     test_coverage_snapshot_reports_done_and_error_gap()

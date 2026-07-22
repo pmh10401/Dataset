@@ -1627,6 +1627,7 @@ HISTORICAL_EXPERIMENT_META = {
         "scope": "retrospective_train_normal_calibration_audit",
         "status_reason": "TRAIN-normal audit only; no operating alpha selected",
         "selected_alpha": None,
+        "artifact_experiment_id": "experiment_153_train_normal_calibration_validity_audit",
         "detail_csv": ROOT / "outputs/exp153_157_train_only_improvements/02_exp153_dataset_audit.csv",
         "summary_csv": ROOT / "outputs/exp153_157_train_only_improvements/03_exp153_summary.csv",
     },
@@ -1637,6 +1638,7 @@ HISTORICAL_EXPERIMENT_META = {
         "scope": "retrospective_train_only_pooling_sensitivity",
         "status_reason": "all pooled variants retained; no primary variant selected",
         "selected_alpha": None,
+        "artifact_experiment_id": "experiment_154_small_sample_pooled_conformal",
         "detail_csv": ROOT / "outputs/exp153_157_train_only_improvements/07_exp154_results.csv",
         "summary_csv": ROOT / "outputs/exp153_157_train_only_improvements/08_exp154_summary.csv",
     },
@@ -1647,6 +1649,7 @@ HISTORICAL_EXPERIMENT_META = {
         "scope": "retrospective_train_only_fusion_sensitivity",
         "status_reason": "all fusion variants retained; no primary variant selected",
         "selected_alpha": None,
+        "artifact_experiment_id": "experiment_155_source_independence_continuous_fusion",
         "detail_csv": ROOT / "outputs/exp153_157_train_only_improvements/13_exp155_results.csv",
         "summary_csv": ROOT / "outputs/exp153_157_train_only_improvements/14_exp155_summary.csv",
     },
@@ -4312,11 +4315,14 @@ def experiment_sort_key(exp_id):
     return (1, 0, "", exp_id)
 
 
-def _rows_for_experiment(rows, exp_id):
+def _rows_for_experiment(rows, exp_id, artifact_experiment_id=None):
     tagged = [row for row in rows if str(row.get("experiment_id") or "").strip()]
     if not tagged:
         return rows
-    return [row for row in tagged if str(row.get("experiment_id")).strip() == exp_id]
+    accepted = {str(exp_id)}
+    if artifact_experiment_id:
+        accepted.add(str(artifact_experiment_id))
+    return [row for row in tagged if str(row.get("experiment_id")).strip() in accepted]
 
 
 def best_summary_row(exp_id, info, history, summary_rows=None):
@@ -4381,9 +4387,22 @@ def completed_result_snapshot(state):
         history_status = status["history_status"]
         comparison_eligible = bool(info.get("comparison_eligible", history_status == "completed_valid"))
         summary_meta = hist.get("summary") if isinstance(hist.get("summary"), dict) else {}
-        summary_rows = _rows_for_experiment(read_csv_rows(info.get("summary_csv")), exp_id) if info.get("summary_csv") else []
+        artifact_experiment_id = info.get("artifact_experiment_id")
+        summary_rows = (
+            _rows_for_experiment(
+                read_csv_rows(info.get("summary_csv")),
+                exp_id,
+                artifact_experiment_id=artifact_experiment_id,
+            )
+            if info.get("summary_csv")
+            else []
+        )
         variant_rows = (
-            _rows_for_experiment(read_csv_rows(info.get("alpha_sensitivity_csv")), exp_id)
+            _rows_for_experiment(
+                read_csv_rows(info.get("alpha_sensitivity_csv")),
+                exp_id,
+                artifact_experiment_id=artifact_experiment_id,
+            )
             if info.get("alpha_sensitivity_csv")
             else []
         )
