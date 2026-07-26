@@ -20,6 +20,11 @@ from experiments.exp381_385.alternative_score_core import (
     evaluate_rule,
     generate_rule_specs,
 )
+from experiments.exp381_385.source_dependence_core import (
+    collapse_correlated_sources,
+    rankdata_average,
+    spearman_correlation,
+)
 
 
 class CoverageContractTests(unittest.TestCase):
@@ -214,6 +219,37 @@ class AlternativeScoreTests(unittest.TestCase):
         self.assertEqual(result.indices, (3,))
         self.assertFalse(result.resolution_blocked)
         self.assertFalse(result.fully_observable)
+
+
+class SourceDependenceTests(unittest.TestCase):
+    def test_rankdata_uses_average_tie_ranks(self) -> None:
+        ranks = rankdata_average(np.array([10.0, 20.0, 20.0, 40.0]))
+        np.testing.assert_allclose(ranks, [1.0, 2.5, 2.5, 4.0])
+
+    def test_spearman_handles_ties_and_constant_arrays(self) -> None:
+        value = spearman_correlation(
+            np.array([1.0, 2.0, 2.0, 4.0]),
+            np.array([10.0, 20.0, 20.0, 40.0]),
+        )
+        self.assertAlmostEqual(value or 0.0, 1.0)
+        self.assertIsNone(
+            spearman_correlation(np.ones(4), np.arange(4, dtype=float))
+        )
+
+    def test_family_collapse_is_deterministic_and_transitive(self) -> None:
+        sources = ("a", "b", "c", "d")
+        correlations = {
+            ("a", "b"): 0.90,
+            ("b", "c"): 0.91,
+            ("a", "c"): 0.20,
+            ("c", "d"): 0.10,
+        }
+        families = collapse_correlated_sources(sources, correlations, 0.85)
+        self.assertEqual(families, (("a", "b", "c"), ("d",)))
+
+    def test_missing_pair_does_not_collapse_sources(self) -> None:
+        families = collapse_correlated_sources(("a", "b"), {}, 0.70)
+        self.assertEqual(families, (("a",), ("b",)))
 
 
 if __name__ == "__main__":
