@@ -14,6 +14,12 @@ from experiments.exp381_385.coverage_audit_core import (
     audit_exp162_cache,
     train_size_bin,
 )
+from experiments.exp381_385.alternative_score_core import (
+    ALTERNATIVE_SOURCES,
+    calibrate_local_empirical,
+    evaluate_rule,
+    generate_rule_specs,
+)
 
 
 class CoverageContractTests(unittest.TestCase):
@@ -159,6 +165,55 @@ class CacheAuditTests(unittest.TestCase):
         self.assertFalse(result.complete)
         self.assertEqual(result.duplicate_datasets, ("dataset_a",))
         self.assertEqual(result.missing_datasets, ("dataset_b",))
+
+
+class AlternativeScoreTests(unittest.TestCase):
+    def test_local_tail_is_strict_and_resolution_aware(self) -> None:
+        blocked = calibrate_local_empirical(
+            np.arange(5, dtype=float),
+            np.array([100.0]),
+            0.05,
+        )
+        self.assertEqual(blocked.status, "resolution_blocked")
+        self.assertEqual(blocked.indices, ())
+
+        result = calibrate_local_empirical(
+            np.arange(19, dtype=float),
+            np.array([18.0, 19.0]),
+            0.05,
+        )
+        self.assertEqual(result.status, "attainable")
+        self.assertEqual(result.indices, (1,))
+        self.assertEqual(result.threshold, 18.0)
+
+    def test_local_tail_abstains_below_five(self) -> None:
+        result = calibrate_local_empirical(
+            np.arange(4, dtype=float),
+            np.array([100.0]),
+            0.05,
+        )
+        self.assertEqual(result.status, "calibration_abstained")
+        self.assertEqual(result.indices, ())
+
+    def test_three_sources_generate_all_twelve_rules(self) -> None:
+        rules = generate_rule_specs(ALTERNATIVE_SOURCES)
+        self.assertEqual(len(rules), 12)
+        self.assertEqual(len({rule.rule_id for rule in rules}), 12)
+
+    def test_missing_source_is_not_a_negative_vote(self) -> None:
+        rule = next(
+            rule
+            for rule in generate_rule_specs(ALTERNATIVE_SOURCES)
+            if len(rule.sources) == 2 and rule.k == 1
+        )
+        result = evaluate_rule(
+            rule,
+            source_indices={rule.sources[0]: (3,), rule.sources[1]: ()},
+            source_available={rule.sources[0]: True, rule.sources[1]: False},
+        )
+        self.assertEqual(result.indices, (3,))
+        self.assertFalse(result.resolution_blocked)
+        self.assertFalse(result.fully_observable)
 
 
 if __name__ == "__main__":
