@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, ClipboardCheck, Clock3, Cpu, Database, LogOut, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardCheck, Clock3, Cpu, Database, LogOut, RefreshCw, Settings } from "lucide-react";
 
 import { isSnapshotStale, type Snapshot } from "@/src/lib/snapshot";
 import { createBrowserSupabaseClient } from "@/src/lib/supabase/browser";
@@ -75,6 +75,7 @@ export default function Dashboard() {
         <div className="top-actions">
           <span className={`connection ${stale ? "stale" : "fresh"}`}>{stale ? "업데이트 지연" : message}</span>
           <Link className="icon-button" href="/shadow" title="신규 run 검증"><ClipboardCheck size={18} /></Link>
+          <Link className="icon-button" href="/settings/alpha" title="Alpha 설정"><Settings size={18} /></Link>
           <button className="icon-button" onClick={load} title="새로고침"><RefreshCw size={18} /></button>
           <button className="icon-button" onClick={logout} title="로그아웃"><LogOut size={18} /></button>
         </div>
