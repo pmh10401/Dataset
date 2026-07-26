@@ -17,6 +17,7 @@ Exp373-376에서 검증한 기준 자동 경보와 네 독립 근거군을 사�
 
 - 기준 자동 경보: Exp358 frozen baseline
 - 독립 근거: Exp357 frozen TRAIN-only evidence
+- 기존 검토 및 Shadow lane: Exp359 frozen predictions
 - 데이터셋: 1,117개
 - 근거 alpha: 기존 manifest에 기록된 고정값
 - seed: 기존 manifest에 기록된 고정값
@@ -56,6 +57,20 @@ Exp373-376에서 검증한 기준 자동 경보와 네 독립 근거군을 사�
 새 독립 피처가 추가되면 같은 생성기가 새 피처 단독 규칙과 기존
 독립 피처를 포함한 모든 부분집합 및 합의 규칙을 자동으로 생성한다.
 
+### 4.1 피처 가용성과 해상도 제한
+
+Exp357에서는 TRAIN 표본 수가 작아 conformal 해상도가 제한된 피처가
+있다. 피처가 생성되지 않은 상태를 정상 또는 반대 투표로 해석하지 않는다.
+
+- `T`, `S`, `N`: 원본 evidence의 `available` 값을 그대로 사용
+- `D`: 세 차분 근거 중 최소 두 개가 사용 가능할 때만 사용 가능
+- `k-of-m`: 선택한 피처 중 최소 `k`개가 사용 가능할 때 후보 생성 가능
+- 사용 가능한 피처가 `k`개 미만이면 `resolution_blocked`로 기록
+
+각 dataset/rule에는 선택 피처 수, 사용 가능 피처 수, 사용 불가 이유와
+`resolution_blocked`를 저장한다. 전체 모집단 결과와 모든 선택 피처가
+사용 가능한 common-support 결과를 함께 보고한다.
+
 ## 5. 파이프라인 적용 구조
 
 각 조합 규칙 `R`과 기준 자동 경보 `H`를 네 구조로 비교한다.
@@ -75,12 +90,13 @@ Exp373-376에서 검증한 기준 자동 경보와 네 독립 근거군을 사�
 ### 5.3 기준 경보 재확인 등급
 
 - 추가 확인된 기준 경보: `H ∩ R`
-- 단독 기준 경보: `H - R`
+- 추가 확인 근거가 없는 기준 경보: `H - R`
 - 목적: 기준 경보를 제거하지 않고 추가 근거 유무로 신뢰도와 검토
   우선순위를 표시
 
 피처가 특정 데이터셋에서 생성되지 않았다는 사실은 반대 근거가 아니다.
 따라서 추가 근거가 없는 기준 경보를 자동 정상으로 내리지 않는다.
+보고서에서도 이를 `unconfirmed` 또는 `negative`라고 표현하지 않는다.
 
 ### 5.4 조합 단독 대체 민감도
 
@@ -99,7 +115,8 @@ Exp373-376에서 검증한 기준 자동 경보와 네 독립 근거군을 사�
 ### Exp378: 검토 및 중복 구조
 
 - 각 규칙의 기준 경보 밖 신규 후보를 계산한다.
-- 기존 일반 검토 및 우선 검토와의 중복을 계산한다.
+- Exp359의 `review_union_indices`, `standard_review_indices`,
+  `priority_review_indices`, Shadow 세부 lane과의 중복을 계산한다.
 - 신규 검토 후보의 TP, FP, precision, workload를 별도 보고한다.
 
 ### Exp379: 기준 경보 결합 구조
@@ -122,6 +139,8 @@ Exp373-376에서 검증한 기준 자동 경보와 네 독립 근거군을 사�
 - zero-F1 데이터셋 변화
 - 후보가 특정 데이터셋에 집중되는 정도
 - 기준과 후보 index의 exact 및 tolerance 일치
+- 규칙별 full-population 및 common-support 차이
+- resolution-blocked 데이터셋 수
 
 Pareto frontier는 보고만 하며 배포 정책을 선택하지 않는다.
 
@@ -161,6 +180,7 @@ Prediction 단계는 다음 정보만 사용한다.
 - 동결된 TRAIN-only 근거 index
 - 기준 자동 경보 index
 - exact-normal guard index
+- Exp359 동결 검토 lane index
 - 사전등록된 피처 목록과 조합 규칙
 
 Prediction 단계는 다음을 읽지 않는다.
@@ -185,6 +205,7 @@ label을 읽는다.
 - dataset macro mean F1
 - zero-F1 데이터셋 수
 - 후보 0개 데이터셋 수
+- fully-observable 및 resolution-blocked 데이터셋 수
 - 데이터셋별 후보 수 mean, median, p90, p95, max
 - 기준 대비 추가·제거·유지 후보
 - exact-index Jaccard
@@ -206,6 +227,7 @@ label을 읽는다.
 다음 조건에서는 전체 평가를 성공 처리하지 않는다.
 
 - Exp357 또는 Exp358 입력 hash 불일치
+- Exp359 입력 hash 불일치
 - 1,117개 데이터셋 coverage 불일치
 - 중복 dataset row
 - index 범위 오류
@@ -221,12 +243,13 @@ label을 읽는다.
 1. 부분집합 15개와 규칙 32개 생성
 2. 규칙명과 순서 결정성
 3. `k-of-m` index 계산
-4. exact-normal guard
-5. 검토·확장·재확인·대체 집합 연산
-6. 피처 부재를 반대 근거로 사용하지 않음
-7. prediction 금지 필드
-8. hash tamper 감지
-9. 동일 입력과 seed의 출력 hash 재현
+4. 피처 가용성과 `resolution_blocked` 판정
+5. exact-normal guard
+6. 검토·확장·재확인·대체 집합 연산
+7. 피처 부재를 반대 근거로 사용하지 않음
+8. prediction 금지 필드
+9. hash tamper 감지
+10. 동일 입력과 seed의 출력 hash 재현
 
 10개 데이터셋 smoke test가 통과한 뒤에만 1,117개 전체 실험을 순차
 큐에 등록한다.
