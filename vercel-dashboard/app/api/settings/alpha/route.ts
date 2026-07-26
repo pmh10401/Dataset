@@ -24,7 +24,7 @@ export async function GET() {
       .maybeSingle(),
     supabase
       .from("operational_alpha_settings")
-      .select("source_id,desired_alpha,effective_alpha,status,version,reason,requested_at,applied_at")
+      .select("source_id,desired_alpha,effective_alpha,status,version,reason,requested_at,applied_at,last_error")
       .eq("source_id", DEFAULT_ALPHA_SOURCE_ID)
       .maybeSingle(),
     supabase

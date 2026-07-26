@@ -54,6 +54,10 @@ application.
 
 ## Scope Boundary
 
-This first phase implements the settings UI, authenticated persistence, audit
-history, and truthful pending status. Detector polling and applied-status
-acknowledgement are a separate second phase.
+The first phase implements the settings UI, authenticated persistence, audit
+history, and truthful pending status. The second phase adds version-aware Mac
+polling, atomic local configuration, and applied/failed acknowledgement.
+
+The acknowledged Alpha is a confidence-label setting only. It must not change
+the automatic Hard alert candidate set. A detector consumer reads the local
+acknowledged file through `operational.alpha_setting.load_effective_alpha`.

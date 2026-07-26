@@ -10,6 +10,7 @@ import json
 import os
 import socket
 import importlib.util
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -21,6 +22,16 @@ SCHEMA_VERSION = 1
 MAX_PAYLOAD_BYTES = 256 * 1024
 DEFAULT_SOURCE_URL = None
 REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from operational.alpha_setting import (  # noqa: E402
+    DEFAULT_ALPHA_CONFIG_PATH,
+    DEFAULT_ALPHA_SOURCE_ID,
+    OperationalAlphaClient,
+    apply_pending_alpha_setting,
+)
+
 DEFAULT_HEARTBEAT = Path("/Users/minho/Documents/Dataset/vercel_dashboard_exporter_heartbeat.json")
 QUEUE_FIELDS = {
     "id", "experiment_id", "label", "status", "phase", "scope", "source",
@@ -211,13 +222,45 @@ def write_heartbeat(path, **payload):
     temporary.replace(target)
 
 
+def sync_operational_alpha(
+    access_token,
+    source_id,
+    config_path,
+    supabase_url,
+    publishable_key,
+):
+    client = OperationalAlphaClient(supabase_url, publishable_key)
+    return apply_pending_alpha_setting(
+        client,
+        access_token,
+        source_id=source_id,
+        config_path=config_path,
+    )
+
+
 def run_once(args, supabase_session):
     status = read_status(args.source_url, args.local_user, args.local_password)
     snapshot = sanitize_status(status, args.source_instance_id)
+    access_token = supabase_session.current_access_token()
+    alpha_setting = {"status": "skipped"}
+    if not args.skip_alpha_sync:
+        try:
+            alpha_setting = sync_operational_alpha(
+                access_token,
+                args.alpha_source_id,
+                args.alpha_config,
+                args.supabase_url,
+                args.supabase_publishable_key,
+            )
+        except Exception as error:
+            alpha_setting = {
+                "status": "sync_error",
+                "error": str(error)[:500],
+            }
     result = push_snapshot(
         args.target_url,
         args.ingest_token,
-        supabase_session.current_access_token(),
+        access_token,
         snapshot,
     )
     write_heartbeat(
@@ -227,6 +270,7 @@ def run_once(args, supabase_session):
         active_experiment=snapshot["active_experiment"],
         progress_percent=snapshot["progress_percent"],
         target_url=args.target_url,
+        alpha_setting=alpha_setting,
         response=result,
     )
     return result
@@ -249,6 +293,16 @@ def main():
     parser.add_argument("--local-password", default=os.environ.get("RANK_DASHBOARD_PASSWORD"))
     parser.add_argument("--source-instance-id", default=os.environ.get("DASHBOARD_SOURCE_INSTANCE_ID", default_source_id()))
     parser.add_argument("--heartbeat", type=Path, default=DEFAULT_HEARTBEAT)
+    parser.add_argument(
+        "--alpha-source-id",
+        default=os.environ.get("DASHBOARD_ALPHA_SOURCE_ID", DEFAULT_ALPHA_SOURCE_ID),
+    )
+    parser.add_argument(
+        "--alpha-config",
+        type=Path,
+        default=Path(os.environ.get("DASHBOARD_ALPHA_CONFIG", DEFAULT_ALPHA_CONFIG_PATH)),
+    )
+    parser.add_argument("--skip-alpha-sync", action="store_true")
     parser.add_argument("--interval", type=float, default=10.0)
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()

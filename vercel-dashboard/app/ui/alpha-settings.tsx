@@ -42,8 +42,8 @@ export default function AlphaSettings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true);
     const response = await fetch("/api/settings/alpha", { cache: "no-store" });
     if (!response.ok) {
       setMessage("설정 정보를 불러오지 못했습니다.");
@@ -58,6 +58,8 @@ export default function AlphaSettings() {
 
   useEffect(() => {
     load();
+    const timer = window.setInterval(() => load(true), 10000);
+    return () => window.clearInterval(timer);
   }, [load]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -113,6 +115,9 @@ export default function AlphaSettings() {
         <div><span>상태</span><strong className={`setting-status ${setting?.status ?? "none"}`}>{statusLabel(setting?.status)}</strong></div>
         <div><span>마지막 요청</span><strong>{formatDate(setting?.requested_at)}</strong></div>
       </section>
+      {setting?.status === "failed" && setting.last_error && (
+        <p className="setting-failure">적용 실패 원인: {setting.last_error}</p>
+      )}
 
       {loading ? <section className="settings-loading">설정 정보를 확인하고 있습니다.</section> : (
         <div className="settings-layout">

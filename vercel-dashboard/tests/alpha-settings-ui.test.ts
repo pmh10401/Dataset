@@ -26,4 +26,9 @@ describe("alpha settings UI structure", () => {
     expect(settings).toContain('type="checkbox"');
     expect(settings).toContain("변경 내용을 확인했습니다");
   });
+
+  it("refreshes pending application state without a page reload", () => {
+    expect(settings).toContain("window.setInterval");
+    expect(settings).toContain("last_error");
+  });
 });

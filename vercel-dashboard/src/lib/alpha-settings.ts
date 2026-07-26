@@ -39,6 +39,7 @@ export type AlphaSetting = {
   reason: string;
   requested_at: string;
   applied_at: string | null;
+  last_error: string | null;
 };
 
 export type AlphaSettingEvent = {

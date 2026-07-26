@@ -88,3 +88,13 @@
 - [x] Start the local dev server on an unused port.
 - [x] Verify desktop and mobile layouts with Playwright screenshots.
 - [x] Confirm the existing dashboard and Shadow routes still build and remain covered by the full test suite.
+
+## Phase 2: Mac Application Acknowledgement
+
+- [x] Add a version-aware acknowledgement RPC and immutable audit event.
+- [x] Add an atomic local Alpha configuration writer and strict loader.
+- [x] Reuse the authenticated dashboard exporter session for polling.
+- [x] Keep dashboard status export alive when Alpha synchronization fails.
+- [x] Refresh desired/effective application state in the UI.
+- [ ] Apply both Alpha migrations to the remote Supabase project.
+- [ ] Deploy the committed dashboard branch and verify the live workflow.

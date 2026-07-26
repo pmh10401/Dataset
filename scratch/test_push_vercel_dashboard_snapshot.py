@@ -1,4 +1,5 @@
 import importlib.util
+import types
 import unittest
 from unittest import mock
 from pathlib import Path
@@ -91,6 +92,81 @@ class StatusSourceTests(unittest.TestCase):
         with mock.patch.object(MODULE, "fetch_local_status", return_value=expected) as fetcher:
             self.assertEqual(MODULE.read_status("http://example.test/status", "u", "p"), expected)
         fetcher.assert_called_once_with("http://example.test/status", "u", "p")
+
+
+class AlphaSettingIntegrationTests(unittest.TestCase):
+    def test_snapshot_export_continues_and_records_alpha_sync_result(self):
+        args = types.SimpleNamespace(
+            source_url=None,
+            local_user=None,
+            local_password=None,
+            source_instance_id="test-mac",
+            target_url="https://dashboard.example/api/ingest",
+            ingest_token="ingest",
+            heartbeat=Path("/tmp/unused-heartbeat.json"),
+            skip_alpha_sync=False,
+            alpha_source_id="macbook-air",
+            alpha_config=Path("/tmp/alpha.json"),
+            supabase_url="https://example.supabase.co",
+            supabase_publishable_key="publishable",
+        )
+        session = mock.Mock()
+        session.current_access_token.return_value = "access"
+        with (
+            mock.patch.object(MODULE, "read_status", return_value={
+                "running": False,
+                "queue_items": [],
+                "completed_results": [],
+            }),
+            mock.patch.object(MODULE, "push_snapshot", return_value={"ok": True}),
+            mock.patch.object(MODULE, "sync_operational_alpha", return_value={
+                "status": "applied",
+                "effective_alpha": 0.005,
+            }) as sync,
+            mock.patch.object(MODULE, "write_heartbeat") as heartbeat,
+        ):
+            result = MODULE.run_once(args, session)
+        self.assertEqual(result, {"ok": True})
+        sync.assert_called_once_with(
+            "access",
+            "macbook-air",
+            Path("/tmp/alpha.json"),
+            "https://example.supabase.co",
+            "publishable",
+        )
+        heartbeat.assert_called_once()
+        self.assertEqual(heartbeat.call_args.kwargs["alpha_setting"]["status"], "applied")
+
+    def test_alpha_sync_error_does_not_stop_snapshot_export(self):
+        args = types.SimpleNamespace(
+            source_url=None,
+            local_user=None,
+            local_password=None,
+            source_instance_id="test-mac",
+            target_url="https://dashboard.example/api/ingest",
+            ingest_token="ingest",
+            heartbeat=Path("/tmp/unused-heartbeat.json"),
+            skip_alpha_sync=False,
+            alpha_source_id="macbook-air",
+            alpha_config=Path("/tmp/alpha.json"),
+            supabase_url="https://example.supabase.co",
+            supabase_publishable_key="publishable",
+        )
+        session = mock.Mock()
+        session.current_access_token.return_value = "access"
+        with (
+            mock.patch.object(MODULE, "read_status", return_value={
+                "running": False,
+                "queue_items": [],
+                "completed_results": [],
+            }),
+            mock.patch.object(MODULE, "push_snapshot", return_value={"ok": True}),
+            mock.patch.object(MODULE, "sync_operational_alpha", side_effect=OSError("offline")),
+            mock.patch.object(MODULE, "write_heartbeat") as heartbeat,
+        ):
+            result = MODULE.run_once(args, session)
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(heartbeat.call_args.kwargs["alpha_setting"]["status"], "sync_error")
 
 
 if __name__ == "__main__":
