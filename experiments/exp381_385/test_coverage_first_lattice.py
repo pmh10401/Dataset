@@ -25,6 +25,12 @@ from experiments.exp381_385.source_dependence_core import (
     rankdata_average,
     spearman_correlation,
 )
+from experiments.exp381_385.exhaustive_lattice_core import (
+    SEVEN_SOURCES,
+    leave_one_out_tail_candidates,
+    wilson_upper_bound,
+)
+from experiments.exp381_385.pipeline_structure_core import build_pipeline_lanes
 
 
 class CoverageContractTests(unittest.TestCase):
@@ -250,6 +256,44 @@ class SourceDependenceTests(unittest.TestCase):
     def test_missing_pair_does_not_collapse_sources(self) -> None:
         families = collapse_correlated_sources(("a", "b"), {}, 0.70)
         self.assertEqual(families, (("a",), ("b",)))
+
+
+class ExhaustiveLatticeTests(unittest.TestCase):
+    def test_seven_sources_generate_448_rules(self) -> None:
+        rules = generate_rule_specs(SEVEN_SOURCES)
+        self.assertEqual(len(rules), 448)
+        self.assertEqual(len({rule.rule_id for rule in rules}), 448)
+
+    def test_leave_one_out_tail_candidates_use_train_only_ranks(self) -> None:
+        scores = np.arange(200, dtype=float)
+        self.assertEqual(leave_one_out_tail_candidates(scores, 0.005), (199,))
+        self.assertEqual(leave_one_out_tail_candidates(scores[:199], 0.005), ())
+
+    def test_leave_one_out_ties_are_not_promoted(self) -> None:
+        scores = np.concatenate([np.arange(198, dtype=float), [999.0, 999.0]])
+        self.assertEqual(leave_one_out_tail_candidates(scores, 0.005), ())
+
+    def test_wilson_upper_bound_is_bounded(self) -> None:
+        self.assertAlmostEqual(wilson_upper_bound(0, 100), 0.0369934982, places=8)
+        self.assertGreaterEqual(wilson_upper_bound(5, 100), 0.05)
+        self.assertLessEqual(wilson_upper_bound(5, 100), 1.0)
+
+
+class PipelineStructureTests(unittest.TestCase):
+    def test_pipeline_lanes_preserve_baseline_and_exact_normal_guard(self) -> None:
+        lanes = build_pipeline_lanes(
+            rule_indices=(1, 2, 3, 9),
+            baseline_hard_indices=(1, 7),
+            exact_normal_indices=(9,),
+            existing_review_indices=(4, 7),
+        )
+        self.assertEqual(lanes.baseline_hard, (1, 7))
+        self.assertEqual(lanes.review_additions, (2, 3))
+        self.assertEqual(lanes.review_union, (2, 3, 4))
+        self.assertEqual(lanes.hard_expansion, (1, 2, 3, 7))
+        self.assertEqual(lanes.baseline_confirmed, (1,))
+        self.assertEqual(lanes.baseline_unconfirmed, (7,))
+        self.assertEqual(lanes.replacement, (1, 2, 3))
 
 
 if __name__ == "__main__":
