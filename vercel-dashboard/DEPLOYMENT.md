@@ -9,6 +9,7 @@
    - `supabase/migrations/202607210002_shadow_feedback_indexes.sql`
    - `supabase/migrations/202607270001_operational_alpha_settings.sql`
    - `supabase/migrations/202607270002_operational_alpha_acknowledgement.sql`
+   - `supabase/migrations/202607270003_operational_alpha_function_permissions.sql`
 3. Auth에 이메일/암호 사용자를 만든다.
 4. 사용자 UUID를 `public.dashboard_members`에 추가하고 exporter 사용자에만 쓰기 권한을 준다.
 5. Security Advisor에서 RLS와 공개 권한 경고가 없는지 확인한다.

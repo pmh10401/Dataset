@@ -6,6 +6,10 @@ const migration = readFileSync(
   join(process.cwd(), "supabase/migrations/202607270002_operational_alpha_acknowledgement.sql"),
   "utf8",
 );
+const permissionsMigration = readFileSync(
+  join(process.cwd(), "supabase/migrations/202607270003_operational_alpha_function_permissions.sql"),
+  "utf8",
+);
 
 describe("operational alpha acknowledgement migration", () => {
   it("adds a protected, version-aware acknowledgement function", () => {
@@ -23,5 +27,12 @@ describe("operational alpha acknowledgement migration", () => {
     expect(migration).toMatch(/insert into public\.operational_alpha_setting_events/i);
     expect(migration).toMatch(/revoke all on function public\.acknowledge_operational_alpha_change/i);
     expect(migration).toMatch(/grant execute on function public\.acknowledge_operational_alpha_change/i);
+  });
+
+  it("explicitly removes Supabase anon execution defaults", () => {
+    expect(permissionsMigration).toMatch(/request_operational_alpha_change[\s\S]*from public, anon/i);
+    expect(permissionsMigration).toMatch(/acknowledge_operational_alpha_change[\s\S]*from public, anon/i);
+    expect(permissionsMigration).toMatch(/request_operational_alpha_change[\s\S]*to authenticated/i);
+    expect(permissionsMigration).toMatch(/acknowledge_operational_alpha_change[\s\S]*to authenticated/i);
   });
 });

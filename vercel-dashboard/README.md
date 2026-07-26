@@ -15,6 +15,7 @@ key만 노출하며 `DASHBOARD_INGEST_TOKEN`은 Vercel 수집 route에서만 사
    - `supabase/migrations/202607200001_dashboard_schema.sql`
    - `supabase/migrations/202607270001_operational_alpha_settings.sql`
    - `supabase/migrations/202607270002_operational_alpha_acknowledgement.sql`
+   - `supabase/migrations/202607270003_operational_alpha_function_permissions.sql`
 2. Auth에서 이메일/암호 사용자를 만든다.
 3. 해당 사용자의 UUID를 `dashboard_members`에 추가한다. Alpha 변경 요청 권한이 필요한 운영자와 exporter만 `can_write=true`로 설정한다.
 4. Vercel 환경 변수를 등록한 뒤 `vercel-dashboard`를 배포한다.
