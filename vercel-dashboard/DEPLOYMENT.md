@@ -7,6 +7,9 @@
    - `supabase/migrations/202607200001_dashboard_schema.sql`
    - `supabase/migrations/202607210001_shadow_validation.sql`
    - `supabase/migrations/202607210002_shadow_feedback_indexes.sql`
+   - `supabase/migrations/202607270001_operational_alpha_settings.sql`
+   - `supabase/migrations/202607270002_operational_alpha_acknowledgement.sql`
+   - `supabase/migrations/202607270003_operational_alpha_function_permissions.sql`
 3. Auth에 이메일/암호 사용자를 만든다.
 4. 사용자 UUID를 `public.dashboard_members`에 추가하고 exporter 사용자에만 쓰기 권한을 준다.
 5. Security Advisor에서 RLS와 공개 권한 경고가 없는지 확인한다.
@@ -35,6 +38,9 @@ python3 scratch/push_vercel_dashboard_snapshot.py --once
 
 성공 후 `--once`를 빼고 10초 반복 모드로 실행한다. exporter heartbeat는
 `/Users/minho/Documents/Dataset/vercel_dashboard_exporter_heartbeat.json`에 기록된다.
+같은 반복 과정에서 Alpha 변경 요청을 확인하며, 적용된 설정은
+`/Users/minho/Documents/Dataset/operational_alpha_setting.json`에 기록된다.
+다른 Mac 식별자를 사용할 때만 `DASHBOARD_ALPHA_SOURCE_ID`를 설정한다.
 
 `--source-url`은 진단 호환용 옵션이다. 운영에서는 지정하지 않으며
 `http://127.0.0.1:8765`를 상태 원본으로 사용하지 않는다.
@@ -50,6 +56,9 @@ python3 scratch/push_vercel_dashboard_snapshot.py --once
 - 비로그인 `POST /api/shadow/ingest`가 로그인 화면으로 이동하지 않고 API 자체 인증의
   `401`을 반환하는지 확인한다.
 - `shadow_validation_*` 네 테이블에 RLS가 활성화되고 익명 조회가 차단되는지 확인한다.
+- Alpha 요청 직후 `pending`, Mac exporter 확인 후 `applied`로 바뀌는지 확인한다.
+- 잘못된 버전 또는 Alpha 확인 응답이 거부되는지 확인한다.
+- Alpha 설정을 바꿔도 자동 경보 후보 index와 수가 변하지 않는지 확인한다.
 
 운영 상태 확인 화면은 Vercel 배포본만 사용한다.
 
