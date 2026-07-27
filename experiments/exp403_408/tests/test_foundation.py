@@ -3,7 +3,6 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 import numpy as np
 
@@ -17,6 +16,7 @@ from experiments.exp403_408.artifact_io import (
 from experiments.exp403_408.foundation import (
     crossfit_plan,
     load_dataset_input,
+    load_frozen_lanes,
     validate_frozen_universe,
 )
 
@@ -67,15 +67,28 @@ class FoundationTests(unittest.TestCase):
         self.assertEqual(seen, set(range(20)))
         self.assertEqual(plan, crossfit_plan(20, seed=20260727))
 
-    def test_dataset_loader_attaches_verified_frozen_lanes(self) -> None:
-        lanes = {"toy": {"hard": frozenset({1}), "standard": frozenset({2}), "priority": frozenset({3})}}
+    def test_dataset_loader_rejects_unverified_lane_injection(self) -> None:
+        raw_lanes = {
+            "toy": {"hard": frozenset({1}), "standard": frozenset({2}), "priority": frozenset({3})}
+        }
 
-        with patch("experiments.exp403_408.foundation.load_frozen_lanes", return_value=lanes):
-            bundle = load_dataset_input("toy", loader=fake_values_loader)
+        with self.assertRaisesRegex(TypeError, "FrozenLaneUniverse"):
+            load_dataset_input(
+                "toy", loader=fake_values_loader, frozen_lane_universe=raw_lanes
+            )
 
-        self.assertEqual(bundle.hard_indices, frozenset({1}))
-        self.assertEqual(bundle.standard_indices, frozenset({2}))
-        self.assertEqual(bundle.priority_indices, frozenset({3}))
+    def test_dataset_loader_attaches_verified_frozen_lane_universe(self) -> None:
+        universe = load_frozen_lanes()
+        dataset = "ACSF1_normal_0"
+
+        bundle = load_dataset_input(
+            dataset, loader=fake_values_loader, frozen_lane_universe=universe
+        )
+        expected = universe.lane_for(dataset)
+
+        self.assertEqual(bundle.hard_indices, expected["hard"])
+        self.assertEqual(bundle.standard_indices, expected["standard"])
+        self.assertEqual(bundle.priority_indices, expected["priority"])
 
     def test_frozen_lane_totals_must_match(self) -> None:
         with self.assertRaisesRegex(ValueError, "Hard"):

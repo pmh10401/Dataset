@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import json
 from pathlib import Path
 import sqlite3
+from types import MappingProxyType
 from typing import Any
 
 import numpy as np
@@ -66,6 +67,30 @@ class _CrossfitFold(Fold):
 
 ValuesLoader = Callable[[str, Path], DatasetBundle]
 FrozenLaneMap = dict[str, dict[str, frozenset[int]]]
+_FROZEN_LANE_UNIVERSE_PROOF = object()
+
+
+class FrozenLaneUniverse:
+    """Immutable lanes created only after the full Exp291/Exp292 validation gate."""
+
+    __slots__ = ("_lanes",)
+
+    def __init__(
+        self, lanes: Mapping[str, Mapping[str, Iterable[int]]], *, _proof: object
+    ) -> None:
+        if _proof is not _FROZEN_LANE_UNIVERSE_PROOF:
+            raise TypeError("FrozenLaneUniverse instances must come from load_frozen_lanes")
+        self._lanes = MappingProxyType({
+            str(dataset): MappingProxyType({
+                "hard": frozenset(int(index) for index in lane.get("hard", ())),
+                "standard": frozenset(int(index) for index in lane.get("standard", ())),
+                "priority": frozenset(int(index) for index in lane.get("priority", ())),
+            })
+            for dataset, lane in lanes.items()
+        })
+
+    def lane_for(self, dataset: str) -> Mapping[str, frozenset[int]]:
+        return self._lanes.get(str(dataset), MappingProxyType({}))
 
 
 def load_dataset_input(
@@ -73,7 +98,7 @@ def load_dataset_input(
     *,
     db_path: Path = DB_PATH,
     loader: ValuesLoader = load_values_bundle,
-    frozen_lanes: Mapping[str, Mapping[str, Iterable[int]]] | None = None,
+    frozen_lane_universe: FrozenLaneUniverse | None = None,
 ) -> DatasetInput:
     """Load only values, apply the frozen preprocessing order, and attach lanes."""
     contract = preprocessing_contract()
@@ -85,8 +110,10 @@ def load_dataset_input(
     test = _z_normalize_per_run(np.asarray(aligned.test_values, dtype=np.float32))
     if not np.isfinite(train).all() or not np.isfinite(test).all():
         raise ValueError(f"non-finite preprocessed values: dataset={dataset}")
-    lanes = load_frozen_lanes() if frozen_lanes is None else frozen_lanes
-    lane = lanes.get(str(dataset), {})
+    universe = load_frozen_lanes() if frozen_lane_universe is None else frozen_lane_universe
+    if not isinstance(universe, FrozenLaneUniverse):
+        raise TypeError("frozen_lane_universe must be a verified FrozenLaneUniverse")
+    lane = universe.lane_for(str(dataset))
     return _PreprocessedDatasetInput(
         dataset=str(dataset),
         train_normal=train,
@@ -154,7 +181,7 @@ def load_frozen_lanes(
     exp291_manifest_path: Path = EXP291_MANIFEST_PATH,
     exp292_prediction_path: Path = EXP292_PREDICTION_PATH,
     exp292_manifest_path: Path = EXP292_MANIFEST_PATH,
-) -> FrozenLaneMap:
+) -> FrozenLaneUniverse:
     """Load matching Exp291/292 lane snapshots only after hash validation."""
     exp291 = _load_verified_frozen_rows(
         exp291_prediction_path, exp291_manifest_path, EXP291_SHA256, "Exp291"
@@ -167,7 +194,7 @@ def load_frozen_lanes(
     lanes = _lane_map(exp291)
     if lanes != _lane_map(exp292):
         raise ValueError("Exp291/Exp292 frozen lane mismatch")
-    return lanes
+    return FrozenLaneUniverse(lanes, _proof=_FROZEN_LANE_UNIVERSE_PROOF)
 
 
 def validate_frozen_universe(rows: Sequence[Mapping[str, object]]) -> None:
