@@ -2700,6 +2700,33 @@ EXPERIMENTS[EXP328_ID] = {
     "artifact_paths": [EXP328_ROOT / "status.json", EXP328_ROOT / "exp328_results.csv", EXP328_ROOT / "exp328_summary.csv", EXP328_ROOT / "exp328_fn_detail.csv"],
     "expected_datasets": 251,
 }
+
+EXP400_402_ROOT = DATA_DIR / "exp400_402_exp397_shadow_validation"
+EXPERIMENTS["experiment_400_402_exp397_shadow_validation"] = {
+    "label": "Exp400-402 - Exp397 검토 순위 Shadow 검증",
+    "history_status": "retrospective_shadow_replay",
+    "comparison_eligible": False,
+    "scope": "retrospective_shadow_replay",
+    "status_reason": "과거 1,117개 데이터셋으로 검토 순위와 Shadow 원장 준비 상태를 검증; 실제 운영 검증 아님",
+    "autonomous_metric_scope": "Exp291 자동 경보 2,218건 변경 없음",
+    "review_metric_scope": "Exp292 Standard 806건의 human-assisted 검토 순위",
+    "detail_csv": EXP400_402_ROOT / "exp401_dataset_top1.csv",
+    "summary_csv": EXP400_402_ROOT / "exp401_precision_at_k.csv",
+    "status_json": EXP400_402_ROOT / "status.json",
+    "stdout_log": EXP400_402_ROOT / "exp400_402_stdout.log",
+    "artifact_paths": [
+        EXP400_402_ROOT / "status.json",
+        EXP400_402_ROOT / "exp400_prediction_manifest.json",
+        EXP400_402_ROOT / "exp401_evaluation_manifest.json",
+        EXP400_402_ROOT / "exp402_readiness_report.json",
+        EXP400_402_ROOT / "EXP402_READINESS_REPORT.md",
+    ],
+    "expected_datasets": 1117,
+    "automatic_policy_changed": False,
+    "retrospective": True,
+    "prospective": False,
+}
+
 EXP329_330_META = {
     329: ("experiment_329_large_candidate_train_verifier", "큰 데이터셋 후보 2차 검증", "기존 검토·다중 근거 후보를 고정 규칙으로 Shadow 검증"),
     330: ("experiment_330_large_learned_normal_representation", "큰 데이터셋 학습형 정상 표현", "다중 해상도 PCA/KNN 정상 표현으로 기존 top-64 밖 FN 도달 가능성 평가"),

@@ -1317,6 +1317,43 @@ EXPERIMENTS = [
         "expected_datasets": 1117,
         "archive_outputs": False,
     },
+    {
+        "id": "experiment_400_402_exp397_shadow_validation",
+        "label": "Exp400-402 · Exp397 retrospective Shadow validation",
+        "script": ROOT / "scratch" / "run_exp400_402_shadow_validation.py",
+        "args": [
+            "--stage",
+            "all",
+            "--output-dir",
+            str(DATA_DIR / "exp400_402_exp397_shadow_validation"),
+        ],
+        "detail_csv": (
+            DATA_DIR
+            / "exp400_402_exp397_shadow_validation"
+            / "exp401_dataset_top1.csv"
+        ),
+        "summary_csv": (
+            DATA_DIR
+            / "exp400_402_exp397_shadow_validation"
+            / "exp401_precision_at_k.csv"
+        ),
+        "status_json": (
+            DATA_DIR
+            / "exp400_402_exp397_shadow_validation"
+            / "status.json"
+        ),
+        "stdout_log": (
+            DATA_DIR
+            / "exp400_402_exp397_shadow_validation"
+            / "exp400_402_stdout.log"
+        ),
+        "expected_datasets": 1117,
+        "archive_outputs": False,
+        "automatic_policy_changed": False,
+        "review_only": True,
+        "retrospective": True,
+        "prospective": False,
+    },
 ]
 
 EXP267_273_ROOT = DATA_DIR / "exp267_273_zero_support_fn_recovery"
