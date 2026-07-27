@@ -259,6 +259,70 @@ class FeatureRegistryTests(unittest.TestCase):
 
         self.assertTrue(block.available)
 
+    def test_cache_archive_label_or_metric_member_is_explicitly_unavailable(self) -> None:
+        for member in (
+            "test_labels",
+            "test_accuracy",
+            "test_auc",
+            "candidate_tp",
+            "candidate_fp",
+            "candidate_f1_score",
+        ):
+            with self.subTest(member=member), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                archive = self._cache_archive(root)
+                archive.parent.mkdir()
+                np.savez_compressed(
+                    archive,
+                    train=np.asarray([0.1, 0.2, 0.3]),
+                    test=np.asarray([0.4, 0.5]),
+                    **{member: np.asarray([1.0])},
+                )
+                self._write_cache_metadata(root, archive)
+                source = FeatureSource(
+                    name="distance",
+                    group="normal_space_distance",
+                    kind="cache",
+                    root=root,
+                    train_key="train",
+                    test_key="test",
+                )
+
+                (block,) = load_feature_blocks("toy", self.bundle, sources=(source,))
+
+            self.assertFalse(block.available)
+            self.assertEqual(block.reason, "source_label_derived")
+            self.assertIsNone(block.train_oof)
+            self.assertIsNone(block.test_values)
+
+    def test_corrupt_cache_archive_is_explicitly_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = self._cache_archive(root)
+            archive.parent.mkdir()
+            np.savez_compressed(
+                archive,
+                train=np.asarray([0.1, 0.2, 0.3]),
+                test=np.asarray([0.4, 0.5]),
+            )
+            archive.write_bytes(archive.read_bytes()[:-20])
+            self._write_cache_metadata(root, archive)
+            source = FeatureSource(
+                name="distance",
+                group="normal_space_distance",
+                kind="cache",
+                root=root,
+                train_key="train",
+                test_key="test",
+            )
+
+            (block,) = load_feature_blocks("toy", self.bundle, sources=(source,))
+
+        self.assertFalse(block.available)
+        self.assertEqual(block.reason, "source_artifact_invalid")
+        self.assertIsNone(block.train_oof)
+        self.assertIsNone(block.test_values)
+
     def test_grammar_adapter_verifies_manifest_seed_not_prediction_row(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -305,6 +369,20 @@ class FeatureRegistryTests(unittest.TestCase):
     def _cache_archive(self, root: Path) -> Path:
         stem = hashlib.sha256(b"toy").hexdigest()[:20]
         return root / "cache" / f"{stem}.npz"
+
+    def _write_cache_metadata(self, root: Path, archive: Path) -> None:
+        archive.with_suffix(".json").write_text(
+            json.dumps(
+                {
+                    "dataset": "toy",
+                    "n_train": 3,
+                    "n_test": 2,
+                    "contains_test_labels": False,
+                    "cache_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+                }
+            ),
+            encoding="utf-8",
+        )
 
 
 if __name__ == "__main__":

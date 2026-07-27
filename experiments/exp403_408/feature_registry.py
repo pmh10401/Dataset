@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 
 from .artifact_io import sha256_file
-from .contracts import SEED, DatasetInput, FeatureBlock
+from .contracts import SEED, DatasetInput, FeatureBlock, _is_forbidden_key
 
 
 DATA_ROOT = Path("/Users/minho/Documents/Dataset")
@@ -244,11 +244,22 @@ def _load_cache_source(
         raise _UnavailableSource("source_hash_mismatch")
     if metadata.get("abstained") is True:
         raise _UnavailableSource("source_abstained")
-    with np.load(archive_path, allow_pickle=False) as archive:
-        if source.train_key not in archive or source.test_key not in archive:
-            raise _UnavailableSource("source_feature_missing")
-        train = _reduce(np.asarray(archive[source.train_key]), source.reduction)
-        test = _reduce(np.asarray(archive[source.test_key]), source.reduction)
+    try:
+        with archive_path.open("rb") as handle:
+            with np.load(handle, allow_pickle=False) as archive:
+                if any(
+                    _is_forbidden_key(member) or _is_label_derived_key(member)
+                    for member in archive.files
+                ):
+                    raise _UnavailableSource("source_label_derived")
+                if source.train_key not in archive or source.test_key not in archive:
+                    raise _UnavailableSource("source_feature_missing")
+                train = _reduce(np.asarray(archive[source.train_key]), source.reduction)
+                test = _reduce(np.asarray(archive[source.test_key]), source.reduction)
+    except _UnavailableSource:
+        raise
+    except Exception as error:
+        raise _UnavailableSource("source_artifact_invalid") from error
     return _available(source, expected_hash, train, test, bundle)
 
 
