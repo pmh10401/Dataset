@@ -371,6 +371,8 @@ def _resample_rows(values: np.ndarray, width: int) -> np.ndarray:
 
 
 def _segment_means(values: np.ndarray, segments: int) -> np.ndarray:
+    if values.shape[1] < int(segments):
+        return _resample_rows(values, int(segments))
     return np.asarray([
         [float(np.mean(part)) for part in np.array_split(row, int(segments))]
         for row in values

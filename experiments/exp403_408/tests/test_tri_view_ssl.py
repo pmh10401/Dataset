@@ -63,6 +63,12 @@ class TriViewSSLTests(unittest.TestCase):
         self.assertEqual({value.shape for value in views.values()}, {(8, 64)})
         self.assertTrue(all(np.isfinite(value).all() for value in views.values()))
 
+    def test_shorter_than_band_count_runs_still_produce_finite_views(self) -> None:
+        views = build_tri_views(train_rows(8, length=15))
+
+        self.assertEqual({value.shape for value in views.values()}, {(8, 64)})
+        self.assertTrue(all(np.isfinite(value).all() for value in views.values()))
+
     def test_n_train_49_abstains_from_learned_model(self) -> None:
         result = score_tri_view(train_rows(49), test_rows(), config(), device="cpu")
 
