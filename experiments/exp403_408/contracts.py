@@ -136,6 +136,13 @@ class DemotionEvaluation:
     false_positive_fraction: float = 0.0
     baseline_true_positive_retention: float = 0.0
     train_stability: float = 0.0
+    false_positive_fraction_wilson_interval: tuple[float, float] = (0.0, 0.0)
+    false_positive_fraction_bootstrap_interval: tuple[float, float] = (0.0, 0.0)
+    baseline_true_positive_retention_bootstrap_interval: tuple[float, float] = (0.0, 0.0)
+    dataset_concentration: float = 0.0
+    lineage_concentration: float = 0.0
+    lane_parity: bool = False
+    passes_research_gate: bool = False
     operational_policy_changed: bool = False
 
 
