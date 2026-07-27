@@ -1205,6 +1205,28 @@ EXPERIMENTS = [
             ("218", "experiment_218_true_bootstrap_consensus_normal_prototypes", "Exp218 · True Bootstrap-Consensus Normal Prototypes", 251),
         )
     ],
+        "id": "experiment_391_fn_zero_reachability_audit",
+        "script": (
+            ROOT
+            / "experiments/exp391_fn_reachability"
+            / "run_experiment_391_fn_reachability_audit.py"
+        ),
+        "detail_csv": (
+            DATA_DIR
+            / "exp391_fn_zero_reachability_audit"
+            / "exp391_dataset_audit.csv"
+        ),
+        "summary_csv": (
+            DATA_DIR
+            / "exp391_fn_zero_reachability_audit"
+            / "exp391_rule_summary.csv"
+        ),
+        "stdout_log": (
+            DATA_DIR
+            / "exp391_fn_zero_reachability_audit"
+            / "exp391_stdout.log"
+        ),
+    },
 ]
 
 EXP267_273_ROOT = DATA_DIR / "exp267_273_zero_support_fn_recovery"

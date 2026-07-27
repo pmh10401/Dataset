@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import unittest
+import json
+import tempfile
+from pathlib import Path
 
 from experiments.exp391_fn_reachability.fn_reachability_core import (
+    ALPHAS,
+    VOTE_THRESHOLDS,
+    aggregate_recovery_rows,
     build_vote_candidates,
     classify_baseline,
     evaluate_recovery,
+    load_verified_jsonl,
 )
 
 
@@ -63,6 +70,90 @@ class RecoveryEvaluationTests(unittest.TestCase):
         self.assertEqual(result["review_overlap_count"], 1)
         self.assertEqual(result["review_recovered_fn"], 1)
         self.assertEqual(result["novel_recovered_fn"], 1)
+
+
+class FrozenInputTests(unittest.TestCase):
+    def test_uses_preregistered_alpha_and_vote_grids(self):
+        self.assertEqual(ALPHAS, (0.005, 0.01, 0.02, 0.05, 0.1, 0.2))
+        self.assertEqual(VOTE_THRESHOLDS, (1, 2, 3))
+
+    def test_rejects_jsonl_when_manifest_hash_does_not_match(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prediction = root / "prediction.jsonl"
+            manifest = root / "manifest.json"
+            prediction.write_text('{"dataset":"A"}\n', encoding="utf-8")
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "prediction_sha256": "0" * 64,
+                        "rows": 1,
+                        "contains_test_labels": False,
+                        "contains_evaluation_metrics": False,
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "SHA256"):
+                load_verified_jsonl(prediction, manifest)
+
+
+class RecoveryAggregationTests(unittest.TestCase):
+    def test_aggregates_fixed_rule_without_selecting_it(self):
+        rows = [
+            {
+                "dataset": "A",
+                "alpha": 0.01,
+                "vote_threshold": 2,
+                "population": "zero_f1",
+                "baseline_fn": 3,
+                "candidate_count": 2,
+                "recovered_fn": 1,
+                "added_fp": 1,
+                "review_overlap_count": 1,
+                "review_recovered_fn": 1,
+                "novel_recovered_fn": 0,
+            },
+            {
+                "dataset": "B",
+                "alpha": 0.01,
+                "vote_threshold": 2,
+                "population": "zero_f1",
+                "baseline_fn": 2,
+                "candidate_count": 1,
+                "recovered_fn": 1,
+                "added_fp": 0,
+                "review_overlap_count": 0,
+                "review_recovered_fn": 0,
+                "novel_recovered_fn": 1,
+            },
+        ]
+
+        summary = aggregate_recovery_rows(rows)
+
+        self.assertEqual(summary["datasets"], 2)
+        self.assertEqual(summary["baseline_fn"], 5)
+        self.assertEqual(summary["candidate_count"], 3)
+        self.assertEqual(summary["recovered_fn"], 2)
+        self.assertEqual(summary["added_fp"], 1)
+        self.assertEqual(summary["candidate_precision"], 2 / 3)
+        self.assertEqual(summary["fn_recovery_rate"], 2 / 5)
+        self.assertFalse(summary["selected_for_deployment"])
+        self.assertFalse(summary["test_metrics_select_policy"])
+
+
+class QueueRegistrationTests(unittest.TestCase):
+    def test_exp391_has_an_explicit_queue_entry(self):
+        from run_rank_experiments_sequential import get_experiment
+
+        experiment = get_experiment("experiment_391_fn_zero_reachability_audit")
+
+        self.assertEqual(
+            experiment["script"].name,
+            "run_experiment_391_fn_reachability_audit.py",
+        )
+        self.assertEqual(experiment["summary_csv"].name, "exp391_rule_summary.csv")
 
 
 if __name__ == "__main__":

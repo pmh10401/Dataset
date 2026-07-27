@@ -2,6 +2,47 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
+import hashlib
+import json
+from pathlib import Path
+
+
+ALPHAS = (0.005, 0.01, 0.02, 0.05, 0.1, 0.2)
+VOTE_THRESHOLDS = (1, 2, 3)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def load_verified_jsonl(
+    prediction_path: Path,
+    manifest_path: Path,
+) -> tuple[list[dict], dict]:
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    if manifest.get("contains_test_labels") is not False:
+        raise ValueError("frozen prediction manifest contains TEST labels")
+    if manifest.get("contains_evaluation_metrics") is not False:
+        raise ValueError("frozen prediction manifest contains evaluation metrics")
+    if sha256_file(prediction_path) != manifest.get("prediction_sha256"):
+        raise ValueError("frozen prediction SHA256 mismatch")
+    rows = [
+        json.loads(line)
+        for line in Path(prediction_path).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    if len(rows) != int(manifest.get("rows", -1)):
+        raise ValueError("frozen prediction row count mismatch")
+    datasets = [row.get("dataset") for row in rows]
+    if any(not isinstance(dataset, str) or not dataset for dataset in datasets):
+        raise ValueError("frozen prediction has an invalid dataset")
+    if len(set(datasets)) != len(datasets):
+        raise ValueError("frozen prediction contains duplicate datasets")
+    return rows, manifest
 
 
 def _validated_indices(
@@ -99,4 +140,45 @@ def evaluate_recovery(
         "review_overlap_count": len(review_overlap),
         "review_recovered_fn": len(review_recovered),
         "novel_recovered_fn": len(recovered - review),
+    }
+
+
+def aggregate_recovery_rows(rows: Sequence[Mapping[str, object]]) -> dict:
+    if not rows:
+        raise ValueError("cannot aggregate empty recovery rows")
+    fixed_keys = ("alpha", "vote_threshold", "population")
+    for key in fixed_keys:
+        values = {row.get(key) for row in rows}
+        if len(values) != 1:
+            raise ValueError(f"recovery rows mix multiple {key} values")
+    totals = {
+        key: sum(int(row[key]) for row in rows)
+        for key in (
+            "baseline_fn",
+            "candidate_count",
+            "recovered_fn",
+            "added_fp",
+            "review_overlap_count",
+            "review_recovered_fn",
+            "novel_recovered_fn",
+        )
+    }
+    candidate_count = totals["candidate_count"]
+    baseline_fn = totals["baseline_fn"]
+    return {
+        "alpha": rows[0]["alpha"],
+        "vote_threshold": rows[0]["vote_threshold"],
+        "population": rows[0]["population"],
+        "datasets": len({str(row["dataset"]) for row in rows}),
+        **totals,
+        "candidate_precision": (
+            totals["recovered_fn"] / candidate_count if candidate_count else 0.0
+        ),
+        "fn_recovery_rate": (
+            totals["recovered_fn"] / baseline_fn if baseline_fn else 0.0
+        ),
+        "selected_for_deployment": False,
+        "test_metrics_select_policy": False,
+        "retrospective_counterfactual": True,
+        "prospective_validated": False,
     }
