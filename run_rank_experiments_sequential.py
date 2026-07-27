@@ -1982,6 +1982,11 @@ def run_experiment(exp, overlap_checked=False):
         raise SystemExit(return_code)
 
 
+def ensure_output_directories(exp):
+    for key in ("detail_csv", "summary_csv", "stdout_log"):
+        exp[key].parent.mkdir(parents=True, exist_ok=True)
+
+
 def archive_existing_outputs(exp):
     if not exp.get("archive_outputs", True):
         return

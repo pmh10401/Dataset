@@ -155,6 +155,23 @@ class QueueRegistrationTests(unittest.TestCase):
         )
         self.assertEqual(experiment["summary_csv"].name, "exp391_rule_summary.csv")
 
+    def test_runner_creates_all_output_directories_before_opening_logs(self):
+        from run_rank_experiments_sequential import ensure_output_directories
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            experiment = {
+                "detail_csv": root / "nested" / "detail.csv",
+                "summary_csv": root / "nested" / "summary.csv",
+                "stdout_log": root / "nested" / "logs" / "stdout.log",
+            }
+
+            ensure_output_directories(experiment)
+
+            self.assertTrue(experiment["detail_csv"].parent.is_dir())
+            self.assertTrue(experiment["summary_csv"].parent.is_dir())
+            self.assertTrue(experiment["stdout_log"].parent.is_dir())
+
 
 if __name__ == "__main__":
     unittest.main()
