@@ -39,6 +39,7 @@ from .foundation import FrozenLaneUniverse
 FEATURE_MANIFEST_NAME = "exp403_feature_manifest.csv"
 HARD_CONFIDENCE_NAME = "exp404_hard_confidence.jsonl"
 PREDICTION_MANIFEST_NAME = "exp404_prediction_manifest.json"
+PROVENANCE_CONTRACT_SCHEMA = "exp403_404_expected_provenance/v1"
 _CONFIDENCE_GRADES = frozenset({"high", "medium", "recheck", "abstain"})
 
 
@@ -90,18 +91,22 @@ _EXPECTED_PROVENANCE_PROOF = object()
 class ExpectedProvenance:
     """Immutable source-artifact contract supplied independently of a manifest."""
 
-    __slots__ = ("_payload",)
+    __slots__ = ("_contract_sha256", "_payload")
 
     def __init__(
         self,
         payload: Mapping[str, Mapping[str, Mapping[str, str]]],
         *,
+        contract_sha256: str,
         _proof: object,
     ) -> None:
         if _proof is not _EXPECTED_PROVENANCE_PROOF:
             raise TypeError("ExpectedProvenance instances must come from from_paths")
         if set(payload) != set(_PROVENANCE_CATEGORIES):
             raise ValueError("expected provenance contract mismatch")
+        if not _is_sha256(contract_sha256):
+            raise ValueError("expected provenance contract SHA256 is invalid")
+        self._contract_sha256 = str(contract_sha256)
         self._payload = MappingProxyType({
             category: MappingProxyType({
                 str(name): MappingProxyType({
@@ -113,26 +118,9 @@ class ExpectedProvenance:
             for category, artifacts in payload.items()
         })
 
-    @classmethod
-    def from_paths(
-        cls,
-        *,
-        feature_artifacts: Mapping[str, Path] | None = None,
-        input_artifacts: Mapping[str, Path] | None = None,
-        baseline_artifacts: Mapping[str, Path] | None = None,
-        config_artifacts: Mapping[str, Path] | None = None,
-        code_artifacts: Mapping[str, Path] | None = None,
-    ) -> "ExpectedProvenance":
-        return cls(
-            _freeze_provenance(
-                feature_artifacts=feature_artifacts or {},
-                input_artifacts=input_artifacts or {},
-                baseline_artifacts=baseline_artifacts or {},
-                config_artifacts=config_artifacts or {},
-                code_artifacts=code_artifacts or {},
-            ),
-            _proof=_EXPECTED_PROVENANCE_PROOF,
-        )
+    @property
+    def contract_sha256(self) -> str:
+        return self._contract_sha256
 
     def manifest_payload(self) -> dict[str, dict[str, dict[str, str]]]:
         return {
@@ -141,6 +129,53 @@ class ExpectedProvenance:
             }
             for category, artifacts in self._payload.items()
         }
+
+
+def freeze_provenance_contract(
+    path: Path,
+    *,
+    feature_artifacts: Mapping[str, Path] | None = None,
+    input_artifacts: Mapping[str, Path] | None = None,
+    baseline_artifacts: Mapping[str, Path] | None = None,
+    config_artifacts: Mapping[str, Path] | None = None,
+    code_artifacts: Mapping[str, Path] | None = None,
+) -> str:
+    """Freeze actual source hashes into a canonical provenance contract file."""
+    payload = {
+        "schema": PROVENANCE_CONTRACT_SCHEMA,
+        "provenance": _freeze_provenance(
+            feature_artifacts=feature_artifacts or {},
+            input_artifacts=input_artifacts or {},
+            baseline_artifacts=baseline_artifacts or {},
+            config_artifacts=config_artifacts or {},
+            code_artifacts=code_artifacts or {},
+        ),
+    }
+    return write_json_atomic(Path(path), payload)
+
+
+def load_expected_provenance(
+    path: Path, *, expected_sha256: str
+) -> ExpectedProvenance:
+    """Load a provenance contract only when its external SHA256 matches."""
+    contract_path = Path(path)
+    contract_sha256 = verify_sha256(contract_path, expected_sha256)
+    try:
+        payload = json.loads(contract_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("cannot read expected provenance contract") from error
+    if not isinstance(payload, Mapping) or set(payload) != {"schema", "provenance"}:
+        raise ValueError("expected provenance contract fields are invalid")
+    if payload.get("schema") != PROVENANCE_CONTRACT_SCHEMA:
+        raise ValueError("expected provenance contract schema mismatch")
+    provenance = _validate_provenance_payload(
+        _mapping(payload.get("provenance"), "expected provenance")
+    )
+    return ExpectedProvenance(
+        provenance,
+        contract_sha256=contract_sha256,
+        _proof=_EXPECTED_PROVENANCE_PROOF,
+    )
 
 
 def find_forbidden_fields(value: object, path: str = "prediction") -> tuple[str, ...]:
@@ -264,6 +299,7 @@ def write_prediction(
         "frozen_hard_lanes": frozen_lanes,
         "frozen_hard_lanes_sha256": sha256_bytes(canonical_json_bytes(frozen_lanes)),
         "provenance": provenance,
+        "provenance_contract_sha256": expected_provenance.contract_sha256,
         "artifact_hashes": artifact_hashes,
         "rows": len(serialized_rows),
         "datasets": len({row["dataset"] for row in serialized_rows}),
@@ -312,6 +348,8 @@ def verify_prediction(
     if manifest.get("frozen_hard_lanes_sha256") != sha256_bytes(canonical_json_bytes(frozen_lanes)):
         raise ValueError("prediction frozen Hard lane SHA256 mismatch")
     provenance = _expected_provenance_payload(expected_provenance)
+    if manifest.get("provenance_contract_sha256") != expected_provenance.contract_sha256:
+        raise ValueError("prediction expected provenance contract SHA256 mismatch")
     if manifest.get("provenance") != provenance:
         raise ValueError("prediction expected provenance mismatch")
     _verify_manifest_hashes(output, config, provenance, expected_hashes)
@@ -509,9 +547,19 @@ def _freeze_provenance_category(
 
 
 def _verify_provenance(value: Mapping[str, object]) -> dict[str, dict[str, dict[str, str]]]:
+    verified = _validate_provenance_payload(value)
+    for category, entries in verified.items():
+        for name, details in entries.items():
+            verify_sha256(Path(details["path"]), details["sha256"])
+    return verified
+
+
+def _validate_provenance_payload(
+    value: Mapping[str, object],
+) -> dict[str, dict[str, dict[str, str]]]:
     if set(value) != set(_PROVENANCE_CATEGORIES):
         raise ValueError("prediction provenance contract mismatch")
-    verified: dict[str, dict[str, dict[str, str]]] = {}
+    normalized: dict[str, dict[str, dict[str, str]]] = {}
     for category in _PROVENANCE_CATEGORIES:
         entries = _mapping(value[category], category)
         if not entries:
@@ -519,12 +567,11 @@ def _verify_provenance(value: Mapping[str, object]) -> dict[str, dict[str, dict[
         checked: dict[str, dict[str, str]] = {}
         for name, entry in entries.items():
             details = _mapping(entry, f"{category}.{name}")
-            if set(details) != {"path", "sha256"} or not isinstance(details["path"], str) or not isinstance(details["sha256"], str):
+            if set(details) != {"path", "sha256"} or not isinstance(details["path"], str) or not isinstance(details["sha256"], str) or not _is_sha256(details["sha256"]):
                 raise ValueError(f"{category} provenance entry is invalid")
-            path = Path(details["path"])
-            checked[name] = {"path": str(path), "sha256": verify_sha256(path, details["sha256"])}
-        verified[category] = dict(sorted(checked.items()))
-    return verified
+            checked[name] = {"path": str(Path(details["path"])), "sha256": details["sha256"]}
+        normalized[category] = dict(sorted(checked.items()))
+    return normalized
 
 
 def _validate_manifest_fields(manifest: Mapping[str, object]) -> None:
@@ -536,6 +583,7 @@ def _validate_manifest_fields(manifest: Mapping[str, object]) -> None:
         "frozen_hard_lanes",
         "frozen_hard_lanes_sha256",
         "provenance",
+        "provenance_contract_sha256",
         "artifact_hashes",
         "rows",
         "datasets",
@@ -558,3 +606,7 @@ def _config_provenance_sha256(
 
 def _provenance_sha256(provenance: Mapping[str, object]) -> str:
     return sha256_bytes(canonical_json_bytes(provenance))
+
+
+def _is_sha256(value: object) -> bool:
+    return isinstance(value, str) and bool(re.fullmatch(r"[0-9a-f]{64}", value))

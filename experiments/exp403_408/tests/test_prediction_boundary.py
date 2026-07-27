@@ -25,6 +25,8 @@ from experiments.exp403_408.prediction import (
     HARD_CONFIDENCE_NAME,
     PREDICTION_MANIFEST_NAME,
     find_forbidden_fields,
+    freeze_provenance_contract,
+    load_expected_provenance,
     predict_dataset,
     verify_prediction,
     write_prediction,
@@ -60,7 +62,7 @@ def valid_rows(universe: FrozenLaneUniverse) -> list[PredictionRow]:
     ]
 
 
-def artifact_provenance(root: Path) -> ExpectedProvenance:
+def provenance_contract(root: Path) -> tuple[Path, str]:
     sources = root / "sources"
     sources.mkdir(exist_ok=True)
     artifacts = {
@@ -73,7 +75,13 @@ def artifact_provenance(root: Path) -> ExpectedProvenance:
     for category in artifacts.values():
         for artifact in category.values():
             artifact.write_text(artifact.name, encoding="utf-8")
-    return ExpectedProvenance.from_paths(**artifacts)
+    contract_path = root / "trusted" / "exp404_provenance_contract.json"
+    return contract_path, freeze_provenance_contract(contract_path, **artifacts)
+
+
+def artifact_provenance(root: Path) -> ExpectedProvenance:
+    contract_path, contract_sha256 = provenance_contract(root)
+    return load_expected_provenance(contract_path, expected_sha256=contract_sha256)
 
 
 class PredictionBoundaryTests(unittest.TestCase):
@@ -208,17 +216,18 @@ class PredictionBoundaryTests(unittest.TestCase):
     def test_requires_non_empty_actual_artifact_provenance(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(ValueError, "provenance"):
-                write_prediction(
-                    self.rows,
-                    Path(directory) / "output",
-                    config=config(),
-                    frozen_lane_universe=self.universe,
-                    expected_provenance=ExpectedProvenance.from_paths(),
-                )
+                freeze_provenance_contract(Path(directory) / "trusted" / "contract.json")
 
     def test_rejects_caller_constructed_provenance_payload(self) -> None:
         with self.assertRaisesRegex(TypeError, "ExpectedProvenance"):
             ExpectedProvenance({})
+
+    def test_rejects_contract_sha256_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            contract_path, _ = provenance_contract(Path(directory))
+
+            with self.assertRaisesRegex(ValueError, "SHA256"):
+                load_expected_provenance(contract_path, expected_sha256="0" * 64)
 
     def test_modified_provenance_artifact_stops_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -296,7 +305,10 @@ class PredictionBoundaryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             output = root / "output"
-            provenance = artifact_provenance(root)
+            contract_path, contract_sha256 = provenance_contract(root)
+            provenance = load_expected_provenance(
+                contract_path, expected_sha256=contract_sha256
+            )
             write_prediction(
                 self.rows, output, config=config(), frozen_lane_universe=self.universe, expected_provenance=provenance
             )
@@ -310,8 +322,16 @@ class PredictionBoundaryTests(unittest.TestCase):
             )
             manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
 
+            later_process_provenance = load_expected_provenance(
+                contract_path, expected_sha256=contract_sha256
+            )
+
             with self.assertRaisesRegex(ValueError, "expected provenance"):
-                verify_prediction(output, frozen_lane_universe=self.universe, expected_provenance=provenance)
+                verify_prediction(
+                    output,
+                    frozen_lane_universe=self.universe,
+                    expected_provenance=later_process_provenance,
+                )
 
 
 if __name__ == "__main__":
