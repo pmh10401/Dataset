@@ -62,11 +62,20 @@ class FeatureBlock:
 
 
 @dataclass(frozen=True)
-class StabilityAudit:
-    excluded: Mapping[str, str] = field(default_factory=dict)
-    correlation_components: tuple[tuple[str, ...], ...] = ()
-    correlation_threshold: float = 0.90
-    representatives: tuple[str, ...] = ()
+class FeatureStability:
+    """TRAIN OOF measurements used to retain one stable feature per component."""
+
+    feature_name: str
+    group: str
+    finite_rate: float
+    non_finite_rate: float
+    median: float
+    mad: float
+    robust_variance: float
+    fold_center_drift: float
+    bootstrap_rank_stability: float
+    coverage: float
+    empirical_p_values: tuple[float, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -80,6 +89,16 @@ class FeatureGroupSummary:
     exceedance_count: int = 0
     top_two_gap: float = 0.0
     stability: float = 0.0
+
+
+@dataclass(frozen=True)
+class StabilityAudit:
+    excluded: Mapping[str, str] = field(default_factory=dict)
+    correlation_components: tuple[tuple[str, ...], ...] = ()
+    correlation_threshold: float = 0.90
+    representatives: tuple[str, ...] = ()
+    feature_stability: Mapping[str, FeatureStability] = field(default_factory=dict)
+    group_summaries: Mapping[str, FeatureGroupSummary] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

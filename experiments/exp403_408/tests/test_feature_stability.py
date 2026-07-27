@@ -4,17 +4,22 @@ import hashlib
 import json
 import tempfile
 import unittest
+from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
 
-from experiments.exp403_408.contracts import DatasetInput
+from experiments.exp403_408.contracts import DatasetInput, FeatureBlock, Fold
 from experiments.exp403_408.feature_registry import (
     FEATURE_GROUPS,
     FeatureSource,
     load_feature_blocks,
     missing_feature_block,
     registry_for_names,
+)
+from experiments.exp403_408.feature_stability import (
+    audit_feature_stability,
+    build_group_summary,
 )
 
 
@@ -383,6 +388,109 @@ class FeatureRegistryTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
+
+
+class FeatureStabilityTests(unittest.TestCase):
+    def test_constant_and_nonfinite_features_are_excluded(self) -> None:
+        audit = audit_feature_stability(self._blocks_with_constant_and_nan(), self._folds())
+
+        self.assertEqual(audit.excluded["constant"], "near_zero_train_variance")
+        self.assertEqual(audit.excluded["nan"], "non_finite_train_oof")
+
+    def test_correlated_features_collapse_by_train_oof_only(self) -> None:
+        audit = audit_feature_stability(self._highly_correlated_blocks(), self._folds())
+
+        self.assertEqual(audit.correlation_components, (("first", "second"),))
+        self.assertEqual(audit.correlation_threshold, 0.90)
+        self.assertEqual(audit.representatives, ("first", "third"))
+
+    def test_unavailable_stale_source_does_not_set_train_oof_row_count(self) -> None:
+        stale = FeatureBlock(
+            name="stale",
+            group="normal_space_distance",
+            train_oof=np.asarray([1.0]),
+            test_values=np.asarray([1.0]),
+            source_hash="sha256:stale",
+            available=False,
+            reason="source_artifact_missing",
+        )
+        audit = audit_feature_stability((stale, self._block("usable", np.arange(8))), self._folds())
+
+        self.assertEqual(audit.excluded["stale"], "source_artifact_missing")
+        self.assertEqual(audit.representatives, ("usable",))
+
+    def test_group_summary_uses_train_oof_not_test_values(self) -> None:
+        blocks = self._highly_correlated_blocks()
+        altered_test_values = tuple(
+            FeatureBlock(
+                name=block.name,
+                group=block.group,
+                train_oof=block.train_oof,
+                test_values=np.asarray(block.test_values) * -1000.0,
+                source_hash=block.source_hash,
+            )
+            for block in blocks
+        )
+
+        original = build_group_summary(audit_feature_stability(blocks, self._folds()))
+        altered = build_group_summary(
+            audit_feature_stability(altered_test_values, self._folds())
+        )
+
+        self.assertEqual(self._stable_hash(original), self._stable_hash(altered))
+
+    def test_row_order_does_not_change_group_summary(self) -> None:
+        rows = np.asarray([0.0, 3.0, 1.0, 5.0, 2.0, 7.0, 4.0, 6.0])
+
+        original = build_group_summary(self._audit_for(rows))
+        reversed_rows = build_group_summary(self._audit_for(rows[::-1]))
+
+        self.assertEqual(self._stable_hash(original), self._stable_hash(reversed_rows))
+
+    def _blocks_with_constant_and_nan(self) -> tuple[FeatureBlock, ...]:
+        return (
+            self._block("constant", [1.0] * 8),
+            self._block("nan", [0.0, 1.0, np.nan, 3.0, 4.0, 5.0, 6.0, 7.0]),
+            self._block("usable", np.arange(8, dtype=float)),
+        )
+
+    def _highly_correlated_blocks(self) -> tuple[FeatureBlock, ...]:
+        values = np.arange(8, dtype=float)
+        return (
+            self._block("first", values),
+            self._block("second", values * 2.0 + 3.0),
+            self._block("third", [0.0, 1.0, 4.0, 2.0, 7.0, 3.0, 6.0, 5.0]),
+        )
+
+    def _audit_for(self, rows: np.ndarray):
+        return audit_feature_stability(
+            (
+                self._block("primary", rows),
+                self._block("secondary", rows**2 + 0.25),
+            ),
+            self._folds(),
+        )
+
+    def _folds(self) -> tuple[Fold, ...]:
+        return (
+            Fold(train_indices=(2, 3, 4, 5, 6, 7), validation_indices=(0, 1)),
+            Fold(train_indices=(0, 1, 4, 5, 6, 7), validation_indices=(2, 3)),
+            Fold(train_indices=(0, 1, 2, 3, 6, 7), validation_indices=(4, 5)),
+            Fold(train_indices=(0, 1, 2, 3, 4, 5), validation_indices=(6, 7)),
+        )
+
+    def _block(self, name: str, train_oof: object) -> FeatureBlock:
+        return FeatureBlock(
+            name=name,
+            group="normal_space_distance",
+            train_oof=np.asarray(train_oof, dtype=float),
+            test_values=np.asarray([9.0, 10.0]),
+            source_hash=f"sha256:{name}",
+        )
+
+    def _stable_hash(self, value: object) -> str:
+        payload = json.dumps(asdict(value), sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 if __name__ == "__main__":
