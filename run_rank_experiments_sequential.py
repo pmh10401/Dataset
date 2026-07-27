@@ -1251,6 +1251,40 @@ EXPERIMENTS = [
             / "exp392_stdout.log"
         ),
     },
+    {
+        "id": "experiment_393_396_normal_process_grammar",
+        "label": "Exp393-396 · Normal Process Grammar review evidence",
+        "script": (
+            ROOT
+            / "experiments/exp393_396"
+            / "run_experiment_393_396_pipeline.py"
+        ),
+        "args": [
+            "--stage",
+            "all",
+            "--workers",
+            "7",
+            "--output-dir",
+            str(DATA_DIR / "exp393_396_normal_process_grammar"),
+        ],
+        "detail_csv": (
+            DATA_DIR
+            / "exp393_396_normal_process_grammar"
+            / "exp396_review_integration.csv"
+        ),
+        "summary_csv": (
+            DATA_DIR
+            / "exp393_396_normal_process_grammar"
+            / "exp396_summary.csv"
+        ),
+        "stdout_log": (
+            DATA_DIR
+            / "exp393_396_normal_process_grammar"
+            / "exp393_396_stdout.log"
+        ),
+        "expected_datasets": 1117,
+        "archive_outputs": False,
+    },
 ]
 
 EXP267_273_ROOT = DATA_DIR / "exp267_273_zero_support_fn_recovery"
