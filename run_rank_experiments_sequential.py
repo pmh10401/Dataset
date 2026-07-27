@@ -1285,6 +1285,38 @@ EXPERIMENTS = [
         "expected_datasets": 1117,
         "archive_outputs": False,
     },
+    {
+        "id": "experiment_397_399_review_ranking",
+        "label": "Exp397-399 · Frozen standard-review ranking",
+        "script": (
+            ROOT
+            / "experiments/exp397_399"
+            / "run_experiment_397_399_pipeline.py"
+        ),
+        "args": [
+            "--stage",
+            "all",
+            "--output-dir",
+            str(DATA_DIR / "exp397_399_review_ranking"),
+        ],
+        "detail_csv": (
+            DATA_DIR
+            / "exp397_399_review_ranking"
+            / "exp398_dataset_diagnostics.csv"
+        ),
+        "summary_csv": (
+            DATA_DIR
+            / "exp397_399_review_ranking"
+            / "exp399_workload_summary.csv"
+        ),
+        "stdout_log": (
+            DATA_DIR
+            / "exp397_399_review_ranking"
+            / "exp397_399_stdout.log"
+        ),
+        "expected_datasets": 1117,
+        "archive_outputs": False,
+    },
 ]
 
 EXP267_273_ROOT = DATA_DIR / "exp267_273_zero_support_fn_recovery"
