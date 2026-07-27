@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
+from experiments.exp403_408.artifact_io import write_jsonl_atomic
 from experiments.exp403_408.contracts import ALPHAS, FrozenConfig, PredictionRow
 from experiments.exp403_408.foundation import FrozenLaneUniverse, load_frozen_lanes
 from experiments.exp403_408.prediction import (
+    HARD_CONFIDENCE_NAME,
+    PREDICTION_MANIFEST_NAME,
     freeze_provenance_contract,
     load_expected_provenance,
     write_prediction,
@@ -65,6 +69,24 @@ def provenance_contract(root: Path) -> tuple[Path, str]:
             artifact.write_text(artifact.name, encoding="utf-8")
     path = root / "trusted" / "exp404_provenance_contract.json"
     return path, freeze_provenance_contract(path, **artifacts)
+
+
+def rewrite_prediction_rows(output: Path, rows: list[dict[str, object]]) -> None:
+    prediction_path = output / HARD_CONFIDENCE_NAME
+    manifest_path = output / PREDICTION_MANIFEST_NAME
+    prediction_sha256 = write_jsonl_atomic(prediction_path, rows)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["artifact_hashes"]["prediction"] = prediction_sha256
+    manifest["rows"] = len(rows)
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+
+
+def expected_identities(
+    prediction: list[dict[str, object]],
+) -> frozenset[tuple[str, int]]:
+    return frozenset(
+        (str(row["dataset"]), int(row["candidate_index"])) for row in prediction
+    )
 
 
 class EvaluationTests(unittest.TestCase):
@@ -143,6 +165,46 @@ class EvaluationTests(unittest.TestCase):
         self.assertFalse(demotion_gate(.81, .989, .991).passes_research_gate)
         self.assertFalse(demotion_gate(.81, .995, .989).passes_research_gate)
 
+    def test_omitted_or_substituted_frozen_lane_stops_before_labels(self) -> None:
+        for mutation in ("omit", "substitute"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                contract_path, contract_sha256 = provenance_contract(root)
+                provenance = load_expected_provenance(
+                    contract_path, expected_sha256=contract_sha256
+                )
+                output = root / "prediction"
+                write_prediction(
+                    valid_rows(self.universe),
+                    output,
+                    config=FrozenConfig(),
+                    frozen_lane_universe=self.universe,
+                    expected_provenance=provenance,
+                )
+                rows = [
+                    json.loads(line)
+                    for line in output.joinpath(HARD_CONFIDENCE_NAME)
+                    .read_text(encoding="utf-8")
+                    .splitlines()
+                ]
+                if mutation == "omit":
+                    rows.pop()
+                else:
+                    rows[-1]["candidate_index"] = int(rows[-1]["candidate_index"]) + 100_000
+                rewrite_prediction_rows(output, rows)
+                loader = LabelLoaderSpy()
+
+                with self.assertRaisesRegex(ValueError, "frozen Hard.*coverage"):
+                    evaluate_exp405(
+                        output,
+                        loader,
+                        frozen_lane_universe=self.universe,
+                        provenance_contract_path=contract_path,
+                        expected_provenance_sha256=contract_sha256,
+                    )
+
+                self.assertEqual(loader.calls, 0)
+
     def test_counterfactual_reports_intervals_concentration_and_lane_parity(
         self,
     ) -> None:
@@ -171,7 +233,11 @@ class EvaluationTests(unittest.TestCase):
             ),
         }
 
-        result = evaluate_hard_confidence(prediction, labels)
+        result = evaluate_hard_confidence(
+            prediction,
+            labels,
+            expected_hard_identities=expected_identities(prediction),
+        )
 
         self.assertEqual(result.recheck_count, 2)
         self.assertEqual((result.false_positive_count, result.true_positive_count), (1, 1))
@@ -209,7 +275,72 @@ class EvaluationTests(unittest.TestCase):
         }
 
         with self.assertRaisesRegex(ValueError, "label index"):
-            evaluate_hard_confidence(prediction, labels)
+            evaluate_hard_confidence(
+                prediction,
+                labels,
+                expected_hard_identities=expected_identities(prediction),
+            )
+
+    def test_counterfactual_rejects_missing_expected_hard_identity(self) -> None:
+        prediction = [
+            {
+                "dataset": "alpha_normal_0",
+                "candidate_index": 0,
+                "confidence_by_alpha": {str(alpha): "recheck" for alpha in ALPHAS},
+            }
+        ]
+        labels = {
+            "alpha_normal_0": EvaluationLabels(("normal",), 0.99, "alpha"),
+        }
+
+        with self.assertRaisesRegex(ValueError, "frozen Hard.*coverage"):
+            evaluate_hard_confidence(
+                prediction,
+                labels,
+                expected_hard_identities=frozenset(
+                    {("alpha_normal_0", 0), ("alpha_normal_0", 1)}
+                ),
+            )
+
+    def test_counterfactual_rejects_invalid_binary_labels(self) -> None:
+        prediction = [
+            {
+                "dataset": "alpha_normal_0",
+                "candidate_index": 0,
+                "confidence_by_alpha": {str(alpha): "recheck" for alpha in ALPHAS},
+            }
+        ]
+        expected = expected_identities(prediction)
+        for invalid in (None, "", float("nan"), float("inf"), "unknown", 2, -1):
+            with self.subTest(invalid=repr(invalid)), self.assertRaisesRegex(
+                ValueError, "TEST label"
+            ):
+                evaluate_hard_confidence(
+                    prediction,
+                    {"alpha_normal_0": EvaluationLabels((invalid,), 0.99, "alpha")},
+                    expected_hard_identities=expected,
+                )
+
+    def test_counterfactual_rejects_missing_label_dataset(self) -> None:
+        prediction = [
+            {
+                "dataset": "alpha_normal_0",
+                "candidate_index": 0,
+                "confidence_by_alpha": {str(alpha): "recheck" for alpha in ALPHAS},
+            },
+            {
+                "dataset": "beta_normal_0",
+                "candidate_index": 0,
+                "confidence_by_alpha": {str(alpha): "recheck" for alpha in ALPHAS},
+            },
+        ]
+
+        with self.assertRaisesRegex(ValueError, "dataset coverage"):
+            evaluate_hard_confidence(
+                prediction,
+                {"alpha_normal_0": EvaluationLabels(("normal",), 0.99, "alpha")},
+                expected_hard_identities=expected_identities(prediction),
+            )
 
 
 if __name__ == "__main__":
