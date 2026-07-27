@@ -149,6 +149,7 @@ class DemotionEvaluation:
 @dataclass(frozen=True)
 class LearnedSourceScores:
     scores_by_alpha: Mapping[str, Sequence[float]] = field(default_factory=dict)
+    raw_test_scores: tuple[float, ...] = ()
     available: bool = False
     abstention_reason: str = ""
 

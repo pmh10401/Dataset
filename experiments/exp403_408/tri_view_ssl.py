@@ -16,7 +16,13 @@ import numpy as np
 import torch
 from torch import nn
 
-from .contracts import ALPHAS, FrozenConfig, LearnedSourceScores, train_eligibility
+from .contracts import (
+    ALPHAS,
+    FrozenConfig,
+    LearnedSourceScores,
+    ShadowSourcePrediction,
+    train_eligibility,
+)
 from .foundation import crossfit_plan
 
 
@@ -119,26 +125,43 @@ def score_tri_view(
     return mps
 
 
-def shadow_candidate_indices(
-    scores: LearnedSourceScores, frozen_hard: Sequence[int] | frozenset[int]
-) -> dict[str, tuple[int, ...]]:
-    """Return review-only candidates outside the immutable Hard set.
+def shadow_predictions(
+    dataset: str,
+    scores: LearnedSourceScores,
+    frozen_hard: Sequence[int] | frozenset[int],
+) -> dict[str, tuple[ShadowSourcePrediction, ...]]:
+    """Return review-only Shadow records outside the immutable Hard set.
 
     Standard and Priority lanes are intentionally absent from this API.  This
-    helper does not mutate any frozen lane and its output is only the Exp406
-    ``self_supervised_shadow`` candidate evidence.
+    helper does not mutate any frozen lane. Every returned record explicitly
+    carries the ``self_supervised_shadow`` source marker.
     """
     hard = frozenset(int(index) for index in frozen_hard)
     if not scores.available:
         return {str(alpha): () for alpha in ALPHAS}
-    result: dict[str, tuple[int, ...]] = {}
+    p_values_by_alpha = {
+        str(alpha): np.asarray(scores.scores_by_alpha.get(str(alpha), ()), dtype=float)
+        for alpha in ALPHAS
+    }
+    expected_count = len(scores.raw_test_scores)
+    if expected_count == 0 or not np.isfinite(np.asarray(scores.raw_test_scores, dtype=float)).all():
+        raise ValueError("learned raw test scores are invalid")
+    if any(values.ndim != 1 or len(values) != expected_count or not np.isfinite(values).all() for values in p_values_by_alpha.values()):
+        raise ValueError("learned score alpha coverage is invalid")
+    result: dict[str, tuple[ShadowSourcePrediction, ...]] = {}
     for alpha in ALPHAS:
         key = str(alpha)
-        values = np.asarray(scores.scores_by_alpha.get(key, ()), dtype=float)
-        if values.ndim != 1 or not np.isfinite(values).all():
-            raise ValueError("learned score alpha coverage is invalid")
+        values = p_values_by_alpha[key]
         result[key] = tuple(
-            int(index)
+            ShadowSourcePrediction(
+                dataset=str(dataset),
+                candidate_index=int(index),
+                scores_by_alpha={
+                    other_key: float(other_values[index])
+                    for other_key, other_values in p_values_by_alpha.items()
+                },
+                source="self_supervised_shadow",
+            )
             for index, value in enumerate(values)
             if index not in hard and float(value) <= float(alpha)
         )
@@ -167,6 +190,7 @@ def _score_on_device(
     p_values = _empirical_p_values(oof_scores, test_scores)
     return LearnedSourceScores(
         scores_by_alpha={str(alpha): tuple(float(value) for value in p_values) for alpha in ALPHAS},
+        raw_test_scores=tuple(float(value) for value in test_scores),
         available=True,
     )
 
@@ -338,16 +362,20 @@ def _empirical_p_values(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
 def _require_mps_parity(cpu: LearnedSourceScores, mps: LearnedSourceScores) -> None:
     if cpu.available != mps.available or cpu.abstention_reason != mps.abstention_reason:
         raise ValueError("MPS parity mismatch")
-    for alpha in ALPHAS:
-        key = str(alpha)
-        cpu_values = np.asarray(cpu.scores_by_alpha.get(key, ()), dtype=float)
-        mps_values = np.asarray(mps.scores_by_alpha.get(key, ()), dtype=float)
-        if cpu_values.shape != mps_values.shape:
-            raise ValueError("MPS score shape mismatch")
-        if not np.array_equal(np.argsort(cpu_values, kind="stable"), np.argsort(mps_values, kind="stable")):
-            raise ValueError("MPS candidate rank mismatch")
-        if not np.allclose(cpu_values, mps_values, rtol=0.0, atol=MPS_SCORE_TOLERANCE):
-            raise ValueError("MPS score tolerance mismatch")
+    if not cpu.available:
+        return
+    cpu_raw = np.asarray(cpu.raw_test_scores, dtype=float)
+    mps_raw = np.asarray(mps.raw_test_scores, dtype=float)
+    if cpu_raw.ndim != 1 or mps_raw.ndim != 1 or cpu_raw.shape != mps_raw.shape:
+        raise ValueError("MPS raw score shape mismatch")
+    if not np.isfinite(cpu_raw).all() or not np.isfinite(mps_raw).all():
+        raise ValueError("MPS raw scores must be finite")
+    if not np.array_equal(
+        np.argsort(-cpu_raw, kind="stable"), np.argsort(-mps_raw, kind="stable")
+    ):
+        raise ValueError("MPS raw candidate rank mismatch")
+    if float(np.max(np.abs(cpu_raw - mps_raw), initial=0.0)) > MPS_SCORE_TOLERANCE:
+        raise ValueError("MPS raw score tolerance mismatch")
 
 
 def _validate_config(config: FrozenConfig) -> None:

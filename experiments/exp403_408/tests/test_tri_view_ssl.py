@@ -6,11 +6,17 @@ import unittest
 import numpy as np
 import torch
 
-from experiments.exp403_408.contracts import ALPHAS, FrozenConfig, SEED
+from experiments.exp403_408.contracts import (
+    ALPHAS,
+    FrozenConfig,
+    LearnedSourceScores,
+    SEED,
+)
 from experiments.exp403_408.tri_view_ssl import (
+    _require_mps_parity,
     build_tri_views,
     score_tri_view,
-    shadow_candidate_indices,
+    shadow_predictions,
 )
 
 
@@ -39,6 +45,14 @@ def run_hash(seed: int = SEED) -> str:
     result = score_tri_view(train_rows(50), test_rows(), config(seed), device="cpu")
     payload = repr(sorted((key, tuple(values)) for key, values in result.scores_by_alpha.items()))
     return hashlib.sha256(payload.encode("ascii")).hexdigest()
+
+
+def learned_scores(*, raw_test_scores: tuple[float, ...]) -> LearnedSourceScores:
+    return LearnedSourceScores(
+        scores_by_alpha={str(alpha): (0.5, 0.5) for alpha in ALPHAS},
+        raw_test_scores=raw_test_scores,
+        available=True,
+    )
 
 
 class TriViewSSLTests(unittest.TestCase):
@@ -71,28 +85,52 @@ class TriViewSSLTests(unittest.TestCase):
                 baseline.scores_by_alpha[key], extended.scores_by_alpha[key][:2]
             )
 
-    def test_shadow_selection_excludes_frozen_hard_without_mutating_it(self) -> None:
+    def test_shadow_predictions_exclude_frozen_hard_and_carry_provenance(self) -> None:
         result = score_tri_view(train_rows(50), test_rows(), config(), device="cpu")
         frozen_hard = frozenset({0})
 
-        candidates = shadow_candidate_indices(result, frozen_hard)
+        candidates = shadow_predictions("toy", result, frozen_hard)
 
         self.assertEqual(frozen_hard, frozenset({0}))
         self.assertEqual(set(candidates), {str(alpha) for alpha in ALPHAS})
-        self.assertTrue(all(0 not in values for values in candidates.values()))
+        self.assertTrue(any(candidates.values()))
+        self.assertTrue(all(
+            prediction.candidate_index != 0
+            and prediction.dataset == "toy"
+            and prediction.source == "self_supervised_shadow"
+            for values in candidates.values()
+            for prediction in values
+        ))
+
+    def test_mps_rejects_quantized_p_value_match_when_raw_ranks_differ(self) -> None:
+        cpu = learned_scores(raw_test_scores=(0.9, 0.8))
+        mps = learned_scores(raw_test_scores=(0.8, 0.9))
+
+        with self.assertRaisesRegex(ValueError, "raw candidate rank"):
+            _require_mps_parity(cpu, mps)
+
+    def test_mps_rejects_quantized_p_value_match_when_raw_delta_exceeds_tolerance(self) -> None:
+        cpu = learned_scores(raw_test_scores=(0.9, 0.8))
+        mps = learned_scores(raw_test_scores=(0.90002, 0.8))
+
+        with self.assertRaisesRegex(ValueError, "raw score tolerance"):
+            _require_mps_parity(cpu, mps)
 
     @unittest.skipUnless(torch.backends.mps.is_available(), "MPS unavailable")
     def test_mps_requires_cpu_score_and_rank_parity(self) -> None:
         cpu = score_tri_view(train_rows(50), test_rows(), config(), device="cpu")
         mps = score_tri_view(train_rows(50), test_rows(), config(), device="mps")
 
-        for alpha in ALPHAS:
-            key = str(alpha)
-            self.assertTrue(np.allclose(cpu.scores_by_alpha[key], mps.scores_by_alpha[key], atol=1e-5, rtol=0.0))
-            self.assertTrue(np.array_equal(
-                np.argsort(cpu.scores_by_alpha[key], kind="stable"),
-                np.argsort(mps.scores_by_alpha[key], kind="stable"),
-            ))
+        self.assertEqual(len(cpu.raw_test_scores), len(test_rows()))
+        self.assertTrue(np.isfinite(cpu.raw_test_scores).all())
+        self.assertTrue(np.array_equal(
+            np.argsort(-np.asarray(cpu.raw_test_scores), kind="stable"),
+            np.argsort(-np.asarray(mps.raw_test_scores), kind="stable"),
+        ))
+        self.assertLessEqual(
+            np.max(np.abs(np.asarray(cpu.raw_test_scores) - np.asarray(mps.raw_test_scores))),
+            1e-5,
+        )
 
 
 if __name__ == "__main__":
