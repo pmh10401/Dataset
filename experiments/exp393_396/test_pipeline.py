@@ -10,7 +10,11 @@ from experiments.exp393_396.artifact_io import (
     write_prediction_artifact,
 )
 from experiments.exp393_396.contracts import GrammarConfig
-from experiments.exp393_396.run_experiment_393_396_pipeline import predict_dataset
+from experiments.exp393_396.reporting import audit_prediction_row
+from experiments.exp393_396.run_experiment_393_396_pipeline import (
+    predict_dataset,
+    run_audit,
+)
 
 
 class PredictionPipelineTests(unittest.TestCase):
@@ -87,6 +91,37 @@ class PredictionPipelineTests(unittest.TestCase):
 
         self.assertEqual([row["dataset"] for row in loaded], ["A", "B"])
         self.assertEqual(parsed_manifest["rows"], 2)
+
+
+class CalibrationAuditTests(unittest.TestCase):
+    def test_audit_reports_train_count_abstention(self):
+        row = audit_prediction_row(
+            {
+                "dataset": "tiny",
+                "n_train_normal": 4,
+                "n_test": 10,
+                "abstained": True,
+                "abstention_reason": "n_train_lt_5",
+                "train_oof_scores": {},
+            },
+            GrammarConfig(),
+        )
+
+        self.assertTrue(row["abstained"])
+        self.assertEqual(row["abstention_reason"], "n_train_lt_5")
+
+    def test_audit_rejects_modified_prediction(self):
+        rows = [{"dataset": "A", "n_train_normal": 4, "n_test": 1}]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            prediction, _ = write_prediction_artifact(root, rows, GrammarConfig())
+            prediction.write_text(
+                prediction.read_text(encoding="utf-8") + "{}\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "SHA256"):
+                run_audit(root)
 
 
 if __name__ == "__main__":

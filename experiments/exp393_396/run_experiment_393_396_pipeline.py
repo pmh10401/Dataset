@@ -11,6 +11,9 @@ import numpy as np
 
 from experiments.exp393_396.artifact_io import (
     DATA_ROOT,
+    PREDICTION_MANIFEST_NAME,
+    PREDICTION_NAME,
+    load_verified_prediction,
     load_prediction_inputs,
     write_prediction_artifact,
 )
@@ -25,6 +28,12 @@ from experiments.exp393_396.grammar_core import (
 from experiments.exp393_396.preprocessing import (
     prepare_dataset,
     segment_descriptors,
+)
+from experiments.exp393_396.reporting import (
+    aggregate_calibration_rows,
+    audit_prediction_row,
+    render_calibration_report,
+    write_csv,
 )
 
 
@@ -234,14 +243,58 @@ def run_predict(
     }
 
 
+def run_audit(output_root: Path) -> dict[str, Any]:
+    output_root = Path(output_root)
+    prediction_path = output_root / PREDICTION_NAME
+    manifest_path = output_root / PREDICTION_MANIFEST_NAME
+    rows, manifest = load_verified_prediction(prediction_path, manifest_path)
+    config = GrammarConfig()
+    if manifest.get("config") != asdict(config):
+        raise ValueError("prediction config does not match frozen GrammarConfig")
+    audit_rows = [audit_prediction_row(row, config) for row in rows]
+    summary_rows = aggregate_calibration_rows(audit_rows, config)
+    write_csv(output_root / "exp394_calibration_dataset.csv", audit_rows)
+    write_csv(output_root / "exp394_alpha_summary.csv", summary_rows)
+    correlation_rows = [
+        {
+            "existing_source": "all",
+            "status": "unavailable",
+            "reason": "frozen existing evidence artifacts contain indices, not raw TRAIN OOF vectors",
+            "contains_test_labels": False,
+        }
+    ]
+    write_csv(output_root / "exp394_existing_source_correlation.csv", correlation_rows)
+    (output_root / "exp394_calibration_report.md").write_text(
+        render_calibration_report(audit_rows, summary_rows),
+        encoding="utf-8",
+    )
+    _write_status(
+        output_root,
+        phase="audit",
+        completed=len(rows),
+        total=len(rows),
+        current_dataset="",
+        status="completed",
+    )
+    return {
+        "datasets": len(rows),
+        "abstained": sum(bool(row.get("abstained")) for row in audit_rows),
+        "summary_rows": len(summary_rows),
+        "contains_test_labels": False,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--stage", choices=("predict",), default="predict")
+    parser.add_argument("--stage", choices=("predict", "audit"), default="predict")
     parser.add_argument("--dataset-limit", type=int)
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_ROOT)
     args = parser.parse_args()
-    result = run_predict(args.output_dir, args.dataset_limit)
+    if args.stage == "predict":
+        result = run_predict(args.output_dir, args.dataset_limit)
+    else:
+        result = run_audit(args.output_dir)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
