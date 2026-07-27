@@ -70,9 +70,22 @@ CANDIDATE_FIELDS = frozenset(
 )
 
 
+def _canonical_value(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {
+            str(key): _canonical_value(child)
+            for key, child in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_canonical_value(child) for child in value]
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value
+
+
 def canonical_json(value: object) -> str:
     return json.dumps(
-        value,
+        _canonical_value(value),
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
