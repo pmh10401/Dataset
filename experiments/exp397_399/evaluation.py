@@ -64,7 +64,13 @@ def run_evaluation(output_root: Path) -> dict[str, Any]:
         output_root / PREDICTION_NAME,
         output_root / MANIFEST_NAME,
     )
-    dataset_names = {str(row["dataset"]) for row in prediction_rows}
+    dataset_names = set(
+        map(
+            str,
+            prediction_manifest.get("dataset_names")
+            or {str(row["dataset"]) for row in prediction_rows},
+        )
+    )
     labels_map = load_test_labels(dataset_names)
 
     evaluated_rows: list[dict[str, Any]] = []
@@ -201,4 +207,3 @@ def run_evaluation(output_root: Path) -> dict[str, Any]:
         encoding="utf-8",
     )
     return manifest
-
