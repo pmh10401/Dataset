@@ -3,6 +3,7 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
@@ -45,6 +46,17 @@ def frozen_rows(*, hard_count: int) -> list[dict[str, object]]:
 
 
 class FoundationTests(unittest.TestCase):
+    def test_verified_universe_filter_excludes_unfrozen_aliases_without_reordering(self) -> None:
+        from experiments.exp403_408.foundation import _filter_verified_dataset_universe
+
+        universe = MagicMock(hard_lanes=lambda: {"small": frozenset(), "large": frozenset()})
+        with patch("experiments.exp403_408.foundation.EXPECTED_DATASETS", 2):
+            result = _filter_verified_dataset_universe(
+                ["stale_alias", "small", "unfrozen", "large"], universe
+            )
+
+        self.assertEqual(result, ["small", "large"])
+
     def test_dataset_loader_preserves_preprocessing_order(self) -> None:
         bundle = load_dataset_input("toy", loader=fake_values_loader)
 

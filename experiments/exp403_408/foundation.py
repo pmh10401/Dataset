@@ -132,7 +132,7 @@ def load_dataset_input(
 
 
 def list_datasets_small_to_large(db_path: Path = DB_PATH) -> list[str]:
-    """Return dataset keys ordered by TEST population using a read-only connection."""
+    """Return verified frozen dataset keys ordered by TEST population."""
     resolved = Path(db_path).resolve(strict=True)
     connection = sqlite3.connect(f"file:{resolved}?mode=ro", uri=True)
     try:
@@ -147,7 +147,22 @@ def list_datasets_small_to_large(db_path: Path = DB_PATH) -> list[str]:
         ).fetchall()
     finally:
         connection.close()
-    return [str(row[0]) for row in rows]
+    return _filter_verified_dataset_universe(
+        [str(row[0]) for row in rows], load_frozen_lanes()
+    )
+
+
+def _filter_verified_dataset_universe(
+    ordered_datasets: Sequence[str], universe: FrozenLaneUniverse
+) -> list[str]:
+    """Keep only the hash-verified frozen universe without changing its order."""
+    frozen = set(universe.hard_lanes())
+    filtered = [str(dataset) for dataset in ordered_datasets if str(dataset) in frozen]
+    if len(filtered) != EXPECTED_DATASETS or set(filtered) != frozen:
+        raise ValueError(
+            f"verified dataset universe mismatch: {len(filtered)}/{EXPECTED_DATASETS}"
+        )
+    return filtered
 
 
 def crossfit_plan(
