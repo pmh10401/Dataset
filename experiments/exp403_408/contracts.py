@@ -152,6 +152,7 @@ class LearnedSourceScores:
     raw_test_scores: tuple[float, ...] = ()
     available: bool = False
     abstention_reason: str = ""
+    model_name: str = ""
 
 
 @dataclass(frozen=True)
