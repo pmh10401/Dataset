@@ -89,3 +89,27 @@ python3 scratch/run_exp403_408_feature_ml_validation.py \
 - full input hash는 dataset별로 streaming 처리한다. CPU stage는 stale dataset을
   hash 직후 worker에 제출하고 parent만 checkpoint/status를 기록한다. 따라서
   전체 hash 사전계산 때문에 checkpoint가 지연되지 않는다.
+
+## Task 13 Fix Round 1 사후 메타데이터 (2026-07-27)
+
+- final representative smoke run ID는 `5c61c5c193604deb94a104e37b40f694`이다.
+  지정 smoke output만 reset했고, 각 data stage checkpoint/audit/consensus는 정확히
+  20개이며 TRAIN tier는 abstain/robust_distance/classical_committee/learned_methods
+  각각 5개다. error는 0, cross-stage dataset ID/n_train/eligibility parity와
+  independent reaggregation은 모두 통과했다.
+- smoke reset entrypoint wrapper는 지정 output의 `checkpoints/`와 `status.json`만
+  삭제한다. immutable publication은 유지되며, stale checkpoint가 남지 않는
+  regression으로 검증했다.
+- representative selector는 normal TRAIN row만 읽는 canonical SQLite query를 쓴다.
+  TEST value/metadata/query/order에 의존하지 않는다.
+- full consensus valid all-source-abstention은 `162`개이며 모든 FeatureBlock,
+  SSL, synthetic status/reason을 기록한다. consensus SHA256은
+  `c4016db7a3c17d130b5bd8796e0139325cb63b0645bfe3f0ca7b96c825339d23`이다.
+- frozen MPS benchmark artifact는 `task13_exp406_mps_benchmark.json` (SHA256
+  `81d606ac6210f3b2edf03ec29a688b65623390d4e036336bc938e5ab8f417249`)이다.
+  `CricketX_normal_1`, seed `20260727`에서 rank는 모두 일치하고 최대 raw-score
+  delta는 `2.384185791015625e-07`이다. CPU mean `0.666162s`, MPS mean
+  `2.181010s`이므로 parity는 통과했지만 MPS가 느려 CPU를 유지했다. full manifest는
+  benchmark hash와 정확한 full/report command를 기록한다.
+- final full report refresh run ID는 `95a8449547124c0f9a97feca9aac725a`이며
+  verified full upstream checkpoint만 읽어 완료했다.

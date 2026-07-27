@@ -16,6 +16,7 @@ from experiments.exp403_408.artifact_io import (
 )
 from experiments.exp403_408.foundation import (
     crossfit_plan,
+    list_datasets_by_train_normal_count,
     load_dataset_input,
     load_frozen_lanes,
     validate_frozen_universe,
@@ -46,6 +47,27 @@ def frozen_rows(*, hard_count: int) -> list[dict[str, object]]:
 
 
 class FoundationTests(unittest.TestCase):
+    def test_train_normal_dataset_listing_never_queries_test_rows(self) -> None:
+        connection = MagicMock()
+        connection.execute.return_value.fetchall.return_value = [("small", 3), ("large", 50)]
+        universe = MagicMock(hard_lanes=lambda: {"small": frozenset(), "large": frozenset()})
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "frozen.sqlite"
+            path.touch()
+            with (
+                patch("experiments.exp403_408.foundation.sqlite3.connect", return_value=connection),
+                patch("experiments.exp403_408.foundation.load_frozen_lanes", return_value=universe),
+                patch("experiments.exp403_408.foundation.EXPECTED_DATASETS", 2),
+            ):
+                result = list_datasets_by_train_normal_count(path)
+
+        query = str(connection.execute.call_args.args[0]).upper()
+        self.assertEqual(result, ["small", "large"])
+        self.assertIn("I.SPLIT = 'TRAIN'", query)
+        self.assertIn("I.LABEL = '0'", query)
+        self.assertNotIn("TEST", query)
+        connection.close.assert_called_once()
+
     def test_verified_universe_filter_excludes_unfrozen_aliases_without_reordering(self) -> None:
         from experiments.exp403_408.foundation import _filter_verified_dataset_universe
 

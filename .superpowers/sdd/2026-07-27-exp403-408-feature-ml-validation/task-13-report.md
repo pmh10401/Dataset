@@ -147,3 +147,42 @@ All frozen lanes were preserved; Exp406-408 candidates remain review-only.
 Only the designated smoke output was reset for representative reruns. The
 interrupted designated full output was reset before each corrected 1,117-dataset
 run; no prior experiment output directory was modified.
+
+## Fix Round 1 Closure
+
+- Final report refresh run ID: `95a8449547124c0f9a97feca9aac725a`; it reused
+  verified full upstream publications and did not rerun a learned full stage.
+- Final representative smoke run ID: `5c61c5c193604deb94a104e37b40f694`;
+  elapsed wall time from run-bound timestamps was `70.028s`. It has exactly
+  20 checkpoints in every data stage, 0 errors, and tier coverage abstain /
+  robust-distance / classical-committee / learned-methods = `5 / 5 / 5 / 5`.
+- The selector uses canonical normal-TRAIN SQLite counts only. It neither
+  queries TEST rows nor retains a TEST-derived input ordering. Every smoke
+  checkpoint agrees on dataset ID, `n_train`, and eligibility.
+- Final smoke hashes: Exp404 prediction
+  `b5b55a9cb63fc2d7f557d613d5d2608a7b264cf0f715b59e6f4a31dbc5568ec5`;
+  Exp408 consensus
+  `f4fb4317d547b0d9162d3687f8fd7680a288aa8acbfb3d57dae80bfef94db633`.
+- Full consensus regeneration hash:
+  `c4016db7a3c17d130b5bd8796e0139325cb63b0645bfe3f0ca7b96c825339d23`.
+  It contains `162` valid all-source-abstention rows, each with every
+  FeatureBlock, SSL, and synthetic status/reason recorded.
+- Frozen MPS benchmark artifact:
+  `task13_exp406_mps_benchmark.json`, SHA256
+  `81d606ac6210f3b2edf03ec29a688b65623390d4e036336bc938e5ab8f417249`.
+  `CricketX_normal_1` (`n_train=52`, `n_test=50`, seed `20260727`) recorded
+  CPU `1.017256s`, `0.315069s` and MPS `2.408724s`, `1.953296s`; all ranks
+  matched, maximum raw-score delta was `2.384185791015625e-07`, and all four
+  published score hashes were
+  `200d69cf62e2a0282d1a7e4099ac79af3dce4d012f230748bad46e3abbcbe6d8`.
+  CPU mean was `0.666162s` versus MPS mean `2.181010s`, so CPU was retained
+  because parity passed but MPS was slower.
+- The manifest records the exact historical full command
+  `python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --workers 7 --device auto --reset-checkpoint --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation`
+  and the report command
+  `python3 scratch/run_exp403_408_feature_ml_validation.py --stage report --workers 7 --device auto --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation`.
+- `bbeea9a405a3cb013ba50fb4f8878567279416bf` added the TRAIN-only selector,
+  consensus accounting, and worker policy. `41e0b19209fcc1c7a2bc0dbb07548599c226e2f3`
+  fixed completed learned-source classification. The reset cleanup wrapper now
+  deletes only checkpoint/status state in the explicitly supplied output; it is
+  outside the pipeline file frozen by the full prediction contract.

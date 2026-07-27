@@ -154,6 +154,25 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(first_coverage, second_coverage)
 
+    def test_representative_selection_uses_only_canonical_train_counts(self) -> None:
+        from experiments.exp403_408.pipeline import select_representative_smoke_datasets
+
+        names = ("a", "b", "c", "d", "e", "f", "g", "h")
+        train_counts = {"a": 3, "b": 4, "c": 5, "d": 19, "e": 20, "f": 49, "g": 50, "h": 70}
+        baseline = select_representative_smoke_datasets(
+            names, 8, train_count_for_dataset=train_counts.__getitem__
+        )
+        mutated_test_values = {name: 1000 - index for index, name in enumerate(reversed(names))}
+
+        def train_only(dataset: str) -> int:
+            return train_counts[dataset]
+
+        self.assertEqual(
+            select_representative_smoke_datasets(tuple(reversed(names)), 8, train_count_for_dataset=train_only),
+            baseline,
+        )
+        self.assertNotEqual(tuple(mutated_test_values), names)
+
     def test_representative_smoke_marks_only_absent_train_tier_unavailable(self) -> None:
         from experiments.exp403_408.pipeline import select_representative_smoke_datasets
 
@@ -209,6 +228,24 @@ class PipelineTests(unittest.TestCase):
             device="cpu",
             representative_smoke=False,
         )
+
+    def test_reset_checkpoint_state_removes_only_checkpoint_state(self) -> None:
+        from scratch.task13_checkpoint_reset import reset_checkpoint_state
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            stale = output / "checkpoints" / "audit-features" / "stale.json"
+            stale.parent.mkdir(parents=True)
+            stale.write_text("stale\n", encoding="utf-8")
+            (output / "status.json").write_text("{}\n", encoding="utf-8")
+            publication = output / "immutable-publication.json"
+            publication.write_text("keep\n", encoding="utf-8")
+
+            reset_checkpoint_state(output)
+
+            self.assertFalse((output / "checkpoints").exists())
+            self.assertFalse((output / "status.json").exists())
+            self.assertEqual(publication.read_text(encoding="utf-8"), "keep\n")
 
     def _evaluation_hash_fixture(self, pipeline, output: Path) -> dict[str, Path]:
         prediction = output / "exp404_hard_confidence.jsonl"
@@ -913,6 +950,34 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("## Code provenance closure", markdown)
         self.assertIn("Platform", markdown)
         self.assertIn("Forbidden claims", markdown)
+
+    def test_manifest_uses_frozen_task13_execution_metadata_when_present(self) -> None:
+        from experiments.exp403_408.reporting import MPS_BENCHMARK_NAME, MANIFEST_JSON, write_reports
+        from experiments.exp403_408.tests.test_evaluation import reporting_fixture
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = reporting_fixture(Path(tmp))
+            benchmark = {
+                "schema": "exp403_408_task13_mps_benchmark/v1",
+                "full_command": "python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --workers 7 --device auto --reset-checkpoint --output-dir /tmp/full",
+                "report_command": "python3 scratch/run_exp403_408_feature_ml_validation.py --stage report --workers 7 --device auto --output-dir /tmp/full",
+                "decision": {"selected_device": "cpu", "reason": "parity passed but MPS slower"},
+                "benchmark_command": "python3 scratch/benchmark_exp403_408_mps_parity.py --dataset toy",
+                "runs": [
+                    {"run": "cpu-1", "device": "cpu", "runtime_seconds": 1.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                    {"run": "cpu-2", "device": "cpu", "runtime_seconds": 1.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                    {"run": "mps-1", "device": "mps", "runtime_seconds": 2.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                    {"run": "mps-2", "device": "mps", "runtime_seconds": 2.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                ],
+            }
+            (output / MPS_BENCHMARK_NAME).write_text(json.dumps(benchmark, sort_keys=True), encoding="utf-8")
+            write_reports(output, command="generic report command")
+            manifest = json.loads((output / MANIFEST_JSON).read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["command"], benchmark["report_command"])
+        self.assertEqual(manifest["commands"], [benchmark["full_command"], benchmark["report_command"]])
+        self.assertEqual(manifest["acceleration"]["decision"], "CPU retained because parity passed but MPS slower")
+        self.assertIn(MPS_BENCHMARK_NAME, manifest["artifact_sha256"])
 
     def test_transitive_code_provenance_covers_exp226_and_changes_with_preprocessing(self) -> None:
         from experiments.exp403_408.reporting import execution_code_provenance

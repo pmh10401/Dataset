@@ -19,6 +19,7 @@ from .independent_reaggregate import IndependentReaggregation, independent_reagg
 REPORT_NAME = "EXP403_408_RESULT_REPORT_KO.md"
 MANIFEST_JSON = "MANIFEST.json"
 MANIFEST_MARKDOWN = "MANIFEST.md"
+MPS_BENCHMARK_NAME = "task13_exp406_mps_benchmark.json"
 _MUTABLE_OR_SELF_REFERENTIAL = frozenset({"status.json", MANIFEST_JSON, MANIFEST_MARKDOWN})
 _IMMUTABLE_ARTIFACT_ALLOWLIST = frozenset({
     "exp403_feature_audit.jsonl", "exp403_feature_manifest.csv",
@@ -30,7 +31,7 @@ _IMMUTABLE_ARTIFACT_ALLOWLIST = frozenset({
     "exp408_variant_candidate_evaluation.csv", "exp403_408_frozen_test_labels.csv",
     "exp403_408_evaluation_input_manifest.json",
     "exp403_408_evaluation_publication_manifest.json", "exp403_408_results.csv",
-    "exp403_408_summary.csv", REPORT_NAME,
+    "exp403_408_summary.csv", MPS_BENCHMARK_NAME, REPORT_NAME,
 })
 @dataclass(frozen=True)
 class ReportArtifacts:
@@ -223,13 +224,34 @@ def _manifest(output: Path, *, command: str, reaggregation: IndependentReaggrega
     provenance_hashes = _provenance_hashes(output)
     publication_hashes = _publication_hashes(output)
     external = _evaluation_external_hashes(output)
+    task13 = _task13_execution_metadata(output)
+    commands = [
+        str(task13["full_command"]), str(task13["report_command"]),
+    ] if task13 is not None else [
+        f"python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --output-dir {output}",
+        command,
+    ]
+    acceleration = {
+        "device": "cpu",
+        "mlx_used": False,
+        "parity": "not applicable",
+        "fallback": "frozen CPU reference path",
+    }
+    if task13 is not None:
+        decision = _mapping(task13["decision"])
+        acceleration = {
+            "device": str(decision["selected_device"]),
+            "mlx_used": False,
+            "parity": "passed",
+            "fallback": "CPU retained because parity passed but MPS slower",
+            "decision": "CPU retained because parity passed but MPS slower",
+            "benchmark_artifact": MPS_BENCHMARK_NAME,
+            "benchmark_sha256": files[MPS_BENCHMARK_NAME],
+        }
     return {
         "schema": "exp403_408_reporting_manifest/v1",
-        "command": command,
-        "commands": [
-            f"python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --output-dir {output}",
-            command,
-        ],
+        "command": commands[-1],
+        "commands": commands,
         "seed": SEED,
         "retrospective_only": True,
         "deployment_eligible": False,
@@ -266,7 +288,8 @@ def _manifest(output: Path, *, command: str, reaggregation: IndependentReaggrega
             "platform": platform.platform(),
             "packages": _package_versions(),
         },
-        "acceleration": {"device": "cpu", "mlx_used": False, "parity": "not applicable", "fallback": "frozen CPU reference path"},
+        "task13_execution": task13,
+        "acceleration": acceleration,
     }
 
 
@@ -294,6 +317,20 @@ def _manifest_markdown(manifest: Mapping[str, object]) -> str:
         "",
     ]
     lines.extend(f"- `{command}`" for command in manifest["commands"])
+    task13 = manifest.get("task13_execution")
+    if isinstance(task13, Mapping):
+        benchmark = _mapping(task13)
+        lines.extend(("", "## Task 13 MPS Benchmark", ""))
+        lines.append(f"- Artifact: `{MPS_BENCHMARK_NAME}`")
+        lines.append(f"- Benchmark command: `{benchmark['benchmark_command']}`")
+        lines.append(f"- Decision: `CPU retained because parity passed but MPS slower`")
+        for run in benchmark["runs"]:
+            detail = _mapping(run)
+            lines.append(
+                f"- {detail['run']}: `{detail['device']}` `{detail['runtime_seconds']}`s "
+                f"hash `{detail['prediction_sha256']}` rank `{detail['rank_match']}` "
+                f"max_delta `{detail['max_raw_score_delta']}`"
+            )
     lines.extend(("", "## Code provenance closure", ""))
     lines.append(f"- Method: `{code_provenance['method']}`")
     lines.append(f"- Closure SHA-256: `{code_provenance['closure_sha256']}`")
@@ -386,6 +423,34 @@ def _evaluation_external_hashes(output: Path) -> dict[str, object]:
             "artifacts": list(snapshot.get("artifacts", [])),
         },
     }
+
+
+def _task13_execution_metadata(output: Path) -> dict[str, object] | None:
+    """Load the immutable Task 13 benchmark only when it satisfies its contract."""
+    path = output / MPS_BENCHMARK_NAME
+    if not path.is_file():
+        return None
+    payload = _mapping(json.loads(path.read_text(encoding="utf-8")))
+    if payload.get("schema") != "exp403_408_task13_mps_benchmark/v1":
+        raise ValueError("Task 13 MPS benchmark schema is invalid")
+    for key in ("benchmark_command", "full_command", "report_command"):
+        if not isinstance(payload.get(key), str) or not str(payload[key]).strip():
+            raise ValueError(f"Task 13 MPS benchmark {key} is invalid")
+    decision = _mapping(payload.get("decision"))
+    if decision.get("selected_device") != "cpu" or decision.get("reason") != "parity passed but MPS slower":
+        raise ValueError("Task 13 MPS benchmark decision is invalid")
+    runs = payload.get("runs")
+    if not isinstance(runs, list) or len(runs) != 4:
+        raise ValueError("Task 13 MPS benchmark requires four runs")
+    expected_devices = ("cpu", "cpu", "mps", "mps")
+    for detail, device in zip(runs, expected_devices, strict=True):
+        row = _mapping(detail)
+        if row.get("device") != device:
+            raise ValueError("Task 13 MPS benchmark device order is invalid")
+        for key in ("run", "prediction_sha256", "rank_match", "max_raw_score_delta", "runtime_seconds"):
+            if key not in row:
+                raise ValueError(f"Task 13 MPS benchmark run field is missing: {key}")
+    return dict(payload)
 
 
 def _interval_text(value: object) -> str:
