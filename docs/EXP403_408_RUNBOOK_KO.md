@@ -77,3 +77,6 @@ python3 scratch/run_exp403_408_feature_ml_validation.py \
   canonical path를 유지했다.
 - full sequential run은 verified frozen universe 1,117 dataset으로 시작했다.
   실행 중인 상태와 최종 검증 값은 Task 13 report에 기록한다.
+- full input hash는 dataset별로 streaming 처리한다. CPU stage는 stale dataset을
+  hash 직후 worker에 제출하고 parent만 checkpoint/status를 기록한다. 따라서
+  전체 hash 사전계산 때문에 checkpoint가 지연되지 않는다.

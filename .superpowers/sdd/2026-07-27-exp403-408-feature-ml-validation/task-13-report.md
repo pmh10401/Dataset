@@ -4,8 +4,9 @@
 
 Full sequential validation is live, not complete. The only active Exp403-408
 process writes to `/Users/minho/Documents/Dataset/exp403_408_feature_ml_validation`.
-At the recorded live checkpoint it is in `audit-features`, `0/1117`, with
-`errors=0`, run ID `62221a6ecbee44a49eff518064875050`.
+The first full attempt was cleanly terminated at `0/1117` after it exposed the
+global input-hash prepass. The replacement run is in `audit-features`,
+`66/1117`, with `errors=0`, run ID `e981729ac1ef4e92897ed9110628b6d7`.
 
 No conclusion is drawn from the unfinished full run.
 
@@ -19,6 +20,8 @@ No conclusion is drawn from the unfinished full run.
   until source loading completes.
 - `54627c48aabbf56e39e6fb6eaa3a9f558676ddce` - restrict the database order to
   the hash-verified frozen 1,117-dataset universe.
+- `d302d460abcaa7de3b9c8970a1ce3b8ea93ff83b` - stream per-dataset input hash,
+  resume validation, and processing instead of blocking on a global prepass.
 
 Valid all-source abstentions preserve frozen Hard, Standard, and Priority,
 record source status/reason, and emit zero Shadow candidates for all five
@@ -29,6 +32,13 @@ The interrupted first full launch exposed two database-only aliases outside the
 verified universe: `CornellWhaleChallenge` and `Wafer_normal_1`. The final
 selector preserves the existing small-to-large order while excluding them; no
 frozen constants changed.
+
+The hash-streaming remediation retains the exact content/config/code/upstream
+hash binding. Serial and learned stages now hash, resume-validate, and write
+one dataset before moving on. CPU parallel stages submit each stale dataset as
+soon as its hash is available while the parent remains the sole checkpoint and
+status writer. The regression suite proves worker processing begins before all
+slow hash calls finish; resume skips and one-dataset invalidation remain exact.
 
 ## Commands And Tests
 
@@ -104,5 +114,5 @@ explicit no-missing-row abstentions; Hard/Standard/Priority totals
 repeat sorted-prediction hash match.
 
 Only the designated smoke output was reset for representative reruns. The
-interrupted designated full output was reset before the corrected 1,117-dataset
+interrupted designated full output was reset before each corrected 1,117-dataset
 run; no prior experiment output directory was modified.
