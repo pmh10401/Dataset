@@ -83,7 +83,7 @@ class PipelineTests(unittest.TestCase):
             patch.object(pipeline, "_read_stage_checkpoint", return_value={"outcome": "abstained", "abstention_reason": "stage_error"}),
             patch.object(pipeline, "load_feature_blocks", return_value=()),
         ):
-            with self.assertRaisesRegex(ValueError, "no real source"):
+            with self.assertRaisesRegex(ValueError, "source contract invalid"):
                 pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
 
     def test_representative_smoke_checkpoints_share_identity_train_size_and_eligibility(self) -> None:
@@ -95,7 +95,7 @@ class PipelineTests(unittest.TestCase):
         selected, coverage = pipeline.select_representative_smoke_datasets(
             datasets, 20, train_count_for_dataset=train_counts.__getitem__
         )
-        self.assertEqual(selected, datasets)
+        self.assertEqual(set(selected), set(datasets))
         self.assertTrue(all(coverage[tier] for tier in coverage))
 
         with tempfile.TemporaryDirectory() as directory:
@@ -144,6 +144,15 @@ class PipelineTests(unittest.TestCase):
             coverage,
             {"abstain": 2, "robust_distance": 2, "classical_committee": 2, "learned_methods": 2},
         )
+
+    def test_representative_selection_ignores_input_test_order(self) -> None:
+        from experiments.exp403_408.pipeline import select_representative_smoke_datasets
+
+        counts = {"z": 3, "a": 4, "m": 5, "q": 19, "b": 20, "x": 49, "c": 50, "y": 70}
+        first, first_coverage = select_representative_smoke_datasets(tuple(counts), 8, train_count_for_dataset=counts.__getitem__)
+        second, second_coverage = select_representative_smoke_datasets(tuple(reversed(tuple(counts))), 8, train_count_for_dataset=counts.__getitem__)
+        self.assertEqual(first, second)
+        self.assertEqual(first_coverage, second_coverage)
 
     def test_representative_smoke_marks_only_absent_train_tier_unavailable(self) -> None:
         from experiments.exp403_408.pipeline import select_representative_smoke_datasets
@@ -342,7 +351,8 @@ class PipelineTests(unittest.TestCase):
         from experiments.exp403_408.pipeline import stage_worker_count
 
         self.assertEqual(stage_worker_count("classical-predict", 99), 7)
-        self.assertEqual(stage_worker_count("classical-predict", 1), 7)
+        self.assertEqual(stage_worker_count("classical-predict", 1), 1)
+        self.assertEqual(stage_worker_count("classical-predict", 2), 2)
         self.assertEqual(stage_worker_count("ssl-predict", 7), 1)
 
     def test_changed_input_identity_invalidates_a_checkpoint(self) -> None:
@@ -727,13 +737,13 @@ class PipelineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with (
                 patch.object(pipeline, "load_dataset_input", return_value=MagicMock()),
-                patch.object(pipeline, "_consensus_sources", return_value=(MagicMock(),)),
+                patch.object(pipeline, "_consensus_sources", return_value=((MagicMock(),), ())),
                 patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock()),
                 patch.object(pipeline, "build_consensus", return_value={"real": "task10"}) as build,
             ):
                 result = pipeline._consensus_evaluate("toy", Path(tmp))
 
-        self.assertEqual(result["consensus"], {"real": "task10"})
+        self.assertEqual(result["consensus"], {"real": "task10", "source_statuses": ()})
         build.assert_called_once()
 
     def test_report_emits_registered_result_and_summary_artifacts(self) -> None:

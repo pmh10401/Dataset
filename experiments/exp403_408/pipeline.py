@@ -27,7 +27,7 @@ from .contracts import ALPHAS, FrozenConfig, ShadowSourcePrediction, StabilityAu
 from .evaluation import EvaluationLabels, evaluate_exp405
 from .feature_registry import load_feature_blocks
 from .feature_stability import audit_feature_stability, build_group_summary
-from .foundation import DB_PATH, EXP291_MANIFEST_PATH, EXP291_PREDICTION_PATH, EXP292_MANIFEST_PATH, EXP292_PREDICTION_PATH, crossfit_plan, list_datasets_small_to_large, load_dataset_input, load_frozen_lanes
+from .foundation import DB_PATH, EXP291_MANIFEST_PATH, EXP291_PREDICTION_PATH, EXP292_MANIFEST_PATH, EXP292_PREDICTION_PATH, crossfit_plan, list_datasets_by_train_normal_count, list_datasets_small_to_large, load_dataset_input, load_frozen_lanes
 from .prediction import freeze_provenance_contract, load_expected_provenance, predict_dataset, verify_prediction, write_prediction
 from .independent_reaggregate import independent_reaggregate
 from .reporting import validate_final_reports, write_reports
@@ -145,39 +145,44 @@ def select_representative_smoke_datasets(
     """Choose a deterministic TRAIN-count-only smoke sample from ordered inputs."""
     if limit < 1:
         raise ValueError("representative smoke limit must be positive")
-    ordered = tuple(str(dataset) for dataset in datasets)
+    ordered = tuple(sorted({str(dataset) for dataset in datasets}))
     tiers: dict[str, list[str]] = {name: [] for name, _low, _high in _SMOKE_TIERS}
     for dataset in ordered:
         count = int(train_count_for_dataset(dataset))
         for name, low, high in _SMOKE_TIERS:
             if count >= low and (high is None or count <= high):
-                tiers[name].append(dataset)
+                tiers[name].append((count, dataset))
                 break
         else:
             raise ValueError("TRAIN count cannot be negative")
 
+    for values in tiers.values():
+        values.sort(key=lambda item: (item[0], item[1]))
     selected: set[str] = set()
     positions = {name: 0 for name in tiers}
     for name, _low, _high in _SMOKE_TIERS:
         if len(selected) >= limit:
             break
         if tiers[name]:
-            selected.add(tiers[name][0])
+            selected.add(tiers[name][0][1])
             positions[name] = 1
     while len(selected) < limit:
         added = False
         for name, _low, _high in _SMOKE_TIERS:
             position = positions[name]
             if position < len(tiers[name]):
-                selected.add(tiers[name][position])
+                selected.add(tiers[name][position][1])
                 positions[name] = position + 1
                 added = True
                 if len(selected) >= limit:
                     break
         if not added:
             break
-    result = tuple(dataset for dataset in ordered if dataset in selected)
-    coverage = {name: sum(dataset in selected for dataset in values) for name, values in tiers.items()}
+    result = tuple(dataset for _count, dataset in sorted(
+        (item for values in tiers.values() for item in values if item[1] in selected),
+        key=lambda item: (next(index for index, spec in enumerate(_SMOKE_TIERS) if item[0] >= spec[1] and (spec[2] is None or item[0] <= spec[2])), item[0], item[1]),
+    ))
+    coverage = {name: sum(dataset in selected for _count, dataset in values) for name, values in tiers.items()}
     return result, coverage
 
 
@@ -211,10 +216,11 @@ def run_pipeline(
         if limit < 1:
             raise ValueError("limit must be positive")
         if representative_smoke:
+            datasets = list_datasets_by_train_normal_count()
             datasets, _coverage = select_representative_smoke_datasets(
                 datasets,
                 limit,
-                train_count_for_dataset=lambda dataset: len(load_dataset_input(dataset).train_normal),
+                train_count_for_dataset=_train_normal_count,
             )
         else:
             datasets = datasets[:limit]
@@ -466,7 +472,7 @@ def stage_worker_count(stage: str, requested_workers: int) -> int:
     if stage in LEARNED_STAGES:
         return 1
     if stage in CPU_CLASSICAL_STAGES:
-        return 7
+        return min(7, max(1, int(requested_workers)))
     return 1
 
 
@@ -554,11 +560,8 @@ def _synthetic_predict(dataset: str) -> Mapping[str, object]:
 def _consensus_evaluate(dataset: str, output: Path) -> Mapping[str, object]:
     bundle = load_dataset_input(dataset)
     identity = _dataset_identity(dataset, bundle)
-    sources = _consensus_sources(dataset, bundle, output)
+    sources, statuses = _consensus_sources(dataset, bundle, output)
     if not sources:
-        ssl = _read_stage_checkpoint(output, "ssl-predict", dataset)
-        synthetic = _read_stage_checkpoint(output, "synthetic-predict", dataset)
-        statuses = (_source_status("tri_view", ssl), _source_status("synthetic", synthetic))
         if not all(status["status"] == "abstained" for status in statuses):
             raise ValueError(f"Exp408 has no real source for dataset={dataset}")
         lane = load_frozen_lanes().lane_for(dataset)
@@ -583,7 +586,9 @@ def _consensus_evaluate(dataset: str, output: Path) -> Mapping[str, object]:
             },
         }
     result = build_consensus(load_frozen_lanes(), sources)
-    return {**identity, "outcome": "completed", "consensus": _json_value(result)}
+    payload = _json_value(result)
+    payload["source_statuses"] = statuses
+    return {**identity, "outcome": "completed", "consensus": payload}
 
 
 def _source_status(name: str, checkpoint: Mapping[str, object]) -> dict[str, str]:
@@ -593,6 +598,30 @@ def _source_status(name: str, checkpoint: Mapping[str, object]) -> dict[str, str
     if outcome != "abstained" or not valid_reason or checkpoint.get("error"):
         return {"source": name, "status": "invalid", "reason": reason}
     return {"source": name, "status": "abstained", "reason": reason}
+
+
+def _feature_status(block: object) -> dict[str, str]:
+    name = str(getattr(block, "name"))
+    if bool(getattr(block, "available", False)):
+        return {"source": name, "status": "available", "reason": ""}
+    reason = str(getattr(block, "reason", ""))
+    if not reason.startswith("source_"):
+        return {"source": name, "status": "invalid", "reason": reason}
+    return {"source": name, "status": "abstained", "reason": reason}
+
+
+def _train_normal_count(dataset: str) -> int:
+    """Count canonical normal TRAIN rows without loading TEST data."""
+    import sqlite3
+    connection = sqlite3.connect(f"file:{DB_PATH.resolve(strict=True)}?mode=ro", uri=True)
+    try:
+        row = connection.execute(
+            """SELECT COUNT(i.id) FROM datasets d JOIN instances i ON i.dataset_id=d.id
+               WHERE d.name=? AND i.split='TRAIN' AND i.label='0'""", (str(dataset),)
+        ).fetchone()
+    finally:
+        connection.close()
+    return int(row[0])
 
 
 def _dataset_identity(dataset: str, bundle: object) -> dict[str, object]:
@@ -870,10 +899,11 @@ def _publish_classical_prediction(output: Path, datasets: Sequence[str]) -> None
     )
 
 
-def _consensus_sources(dataset: str, bundle: object, output: Path) -> tuple[ConsensusSource, ...]:
+def _consensus_sources(dataset: str, bundle: object, output: Path) -> tuple[tuple[ConsensusSource, ...], tuple[dict[str, str], ...]]:
     ssl = _read_stage_checkpoint(output, "ssl-predict", dataset)
     synthetic = _read_stage_checkpoint(output, "synthetic-predict", dataset)
     sources: list[ConsensusSource] = []
+    statuses: list[dict[str, str]] = [_source_status("tri_view", ssl), _source_status("synthetic", synthetic)]
     if ssl.get("outcome") == "completed" and ssl.get("train_oof_scores"):
         sources.append(
             ConsensusSource(
@@ -900,6 +930,7 @@ def _consensus_sources(dataset: str, bundle: object, output: Path) -> tuple[Cons
                 )
             )
     for block in load_feature_blocks(dataset, bundle):
+        statuses.append(_feature_status(block))
         if not block.available:
             continue
         train = np.asarray(block.train_oof, dtype=float)
@@ -914,7 +945,9 @@ def _consensus_sources(dataset: str, bundle: object, output: Path) -> tuple[Cons
                 dataset=dataset,
             )
         )
-    return tuple(sources)
+    if any(status["status"] == "invalid" for status in statuses):
+        raise ValueError(f"Exp408 source contract invalid for dataset={dataset}")
+    return tuple(sources), tuple(statuses)
 
 
 def _existing_shadow_predictions(dataset: str, train: np.ndarray, test: np.ndarray, hard: object, source: str) -> dict[str, tuple[ShadowSourcePrediction, ...]]:

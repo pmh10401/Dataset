@@ -152,6 +152,26 @@ def list_datasets_small_to_large(db_path: Path = DB_PATH) -> list[str]:
     )
 
 
+def list_datasets_by_train_normal_count(db_path: Path = DB_PATH) -> list[str]:
+    """Return the frozen universe ordered only by normal TRAIN population."""
+    resolved = Path(db_path).resolve(strict=True)
+    connection = sqlite3.connect(f"file:{resolved}?mode=ro", uri=True)
+    try:
+        rows = connection.execute(
+            """
+            SELECT d.name, COUNT(i.id) AS n_train
+            FROM datasets AS d
+            JOIN instances AS i ON i.dataset_id = d.id
+              AND i.split = 'TRAIN' AND i.label = '0'
+            GROUP BY d.id, d.name
+            ORDER BY n_train ASC, d.name ASC
+            """
+        ).fetchall()
+    finally:
+        connection.close()
+    return _filter_verified_dataset_universe([str(row[0]) for row in rows], load_frozen_lanes())
+
+
 def _filter_verified_dataset_universe(
     ordered_datasets: Sequence[str], universe: FrozenLaneUniverse
 ) -> list[str]:
