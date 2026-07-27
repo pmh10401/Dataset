@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 import subprocess
@@ -17,6 +18,13 @@ import numpy as np
 
 def process_safe_smoke_processor(dataset: str) -> dict[str, object]:
     return {"dataset": dataset, "kind": "multiprocess-smoke"}
+
+
+def process_safe_hash_stream_processor(dataset: str) -> dict[str, object]:
+    marker = os.environ.get("EXP403_408_HASH_STREAM_MARKER")
+    if marker and dataset == "one":
+        Path(marker).write_text("started\n", encoding="utf-8")
+    return {"dataset": dataset, "kind": "hash-stream-smoke"}
 
 
 class PipelineTests(unittest.TestCase):
@@ -557,6 +565,68 @@ class PipelineTests(unittest.TestCase):
 
         self.assertEqual(result.recomputed_datasets, 1)
         self.assertEqual(result.completed, 1)
+
+    def test_parallel_stage_starts_worker_before_all_hashes_finish(self) -> None:
+        from experiments.exp403_408.pipeline import run_stage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            marker = output / "worker-started"
+            hashed: list[str] = []
+
+            def slow_hash(dataset: str) -> str:
+                hashed.append(dataset)
+                if dataset == "two":
+                    deadline = time.monotonic() + 2.0
+                    while not marker.exists() and time.monotonic() < deadline:
+                        time.sleep(0.01)
+                    self.assertTrue(marker.exists(), "worker did not start during hash streaming")
+                return f"hash-{dataset}"
+
+            with patch.dict(os.environ, {"EXP403_408_HASH_STREAM_MARKER": str(marker)}):
+                result = run_stage(
+                    "audit-features",
+                    ("one", "two", "three"),
+                    output,
+                    processor=process_safe_hash_stream_processor,
+                    workers=2,
+                    input_hash_for_dataset=slow_hash,
+                )
+
+        self.assertEqual(hashed, ["one", "two", "three"])
+        self.assertEqual(result.completed, 3)
+        self.assertEqual(result.recomputed_datasets, 3)
+
+    def test_streamed_hash_resume_and_invalidation_remain_exact(self) -> None:
+        from experiments.exp403_408.pipeline import run_stage
+
+        hashes = {"one": "v1", "two": "v1"}
+        calls: list[str] = []
+
+        def processor(dataset: str) -> dict[str, object]:
+            calls.append(dataset)
+            return {"dataset": dataset, "kind": "streamed-resume"}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            run_stage(
+                "report", ("one", "two"), output,
+                processor=processor, input_hash_for_dataset=hashes.__getitem__,
+            )
+            calls.clear()
+            resumed = run_stage(
+                "report", ("one", "two"), output,
+                processor=processor, input_hash_for_dataset=hashes.__getitem__, resume=True,
+            )
+            hashes["one"] = "v2"
+            invalidated = run_stage(
+                "report", ("one", "two"), output,
+                processor=processor, input_hash_for_dataset=hashes.__getitem__, resume=True,
+            )
+
+        self.assertEqual(resumed.recomputed_datasets, 0)
+        self.assertEqual(invalidated.recomputed_datasets, 1)
+        self.assertEqual(calls, ["one"])
 
     def test_non_prefix_resume_reports_actual_last_processed_dataset(self) -> None:
         from experiments.exp403_408.pipeline import read_status, run_stage

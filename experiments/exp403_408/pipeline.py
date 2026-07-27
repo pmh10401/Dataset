@@ -305,9 +305,6 @@ def run_stage(
     recomputed = 0
     last_hash = ""
     last_processed_dataset: str | None = None
-    pending: list[str] = []
-    input_hashes: dict[str, str] = {}
-
     _write_status(
         output,
         stage=stage,
@@ -323,111 +320,124 @@ def run_stage(
         run_id=active_run_id,
         run_started_unix=active_run_started_unix,
     )
-    for dataset in ordered:
-        checkpoint = checkpoint_dir / f"{_safe_name(dataset)}.json"
-        try:
-            input_hash = (
-                input_hash_for_dataset(dataset)
-                if input_hash_for_dataset is not None
-                else _checkpoint_input_hash(stage, dataset, device)
-            )
-            input_hashes[dataset] = input_hash
-            if resume and _checkpoint_is_valid(checkpoint, input_hash):
-                completed += 1
-                existing = _read_checkpoint(checkpoint)
-                errors += _is_execution_error(existing)
-                last_hash = str(existing["checkpoint_sha256"])
-                continue
-        except Exception as error:
-            checkpoint_data = _error_checkpoint(
-                stage,
-                dataset,
-                device,
-                _hash_failure_input_hash(stage, dataset, device, error),
-                error,
-            )
-            last_hash = _write_checkpoint(checkpoint, checkpoint_data)
-            completed += 1
-            recomputed += 1
-            errors += 1
-            last_processed_dataset = dataset
-            _write_status(
-                output,
-                stage=stage,
-                current_dataset=dataset,
-                completed=completed,
-                total=total,
-                errors=errors,
-                device=device,
-                checkpoint_sha256=last_hash,
-                newly_processed=recomputed,
-                started=started,
-                status="running",
-                run_id=active_run_id,
-                run_started_unix=active_run_started_unix,
-            )
-            continue
-        pending.append(dataset)
+    def write_progress(dataset: str) -> None:
+        _write_status(
+            output,
+            stage=stage,
+            current_dataset=dataset,
+            completed=completed,
+            total=total,
+            errors=errors,
+            device=device,
+            checkpoint_sha256=last_hash,
+            newly_processed=recomputed,
+            started=started,
+            status="running",
+            run_id=active_run_id,
+            run_started_unix=active_run_started_unix,
+        )
 
-    _write_status(
-        output,
-        stage=stage,
-        current_dataset=pending[0] if pending else ordered[-1],
-        completed=completed,
-        total=total,
-        errors=errors,
-        device=device,
-        checkpoint_sha256=last_hash,
-        newly_processed=recomputed,
-        started=started,
-        status="running",
-        run_id=active_run_id,
-        run_started_unix=active_run_started_unix,
-    )
+    def write_result(dataset: str, checkpoint: Mapping[str, object]) -> None:
+        nonlocal completed, recomputed, errors, last_hash, last_processed_dataset
+        last_hash = _write_checkpoint(
+            checkpoint_dir / f"{_safe_name(dataset)}.json", checkpoint
+        )
+        completed += 1
+        recomputed += 1
+        last_processed_dataset = dataset
+        errors += _is_execution_error(checkpoint)
+        write_progress(dataset)
 
-    if workers > 1 and len(pending) > 1 and stop_after is None:
-        # Parent process serializes checkpoints and status.  Workers only run
-        # CPU-only dataset processors, which keeps writes and progress atomic.
+    def input_hash(dataset: str) -> str:
+        return (
+            input_hash_for_dataset(dataset)
+            if input_hash_for_dataset is not None
+            else _checkpoint_input_hash(stage, dataset, device)
+        )
+
+    def record_hash_failure(dataset: str, error: Exception) -> None:
+        checkpoint = _error_checkpoint(
+            stage,
+            dataset,
+            device,
+            _hash_failure_input_hash(stage, dataset, device, error),
+            error,
+        )
+        write_result(dataset, checkpoint)
+
+    def record_resume(dataset: str, checkpoint: Mapping[str, object]) -> None:
+        nonlocal completed, errors, last_hash
+        completed += 1
+        errors += _is_execution_error(checkpoint)
+        last_hash = str(checkpoint["checkpoint_sha256"])
+        write_progress(dataset)
+
+    if workers > 1 and len(ordered) > 1 and stop_after is None:
+        # Submit in canonical order as hashes become available.  The parent
+        # alone owns atomic checkpoint and status writes while workers process
+        # stale datasets concurrently with subsequent hash calculations.
         with ProcessPoolExecutor(max_workers=min(7, int(workers))) as executor:
-            futures = {executor.submit(_run_processor, processor, dataset): dataset for dataset in pending}
-            for future in as_completed(futures):
-                dataset = futures[future]
-                checkpoint = _checkpoint_from_future(
-                    stage, dataset, device, input_hashes[dataset], future
+            futures: dict[object, tuple[str, str]] = {}
+
+            def drain_finished() -> None:
+                for future in tuple(future for future in futures if future.done()):
+                    dataset, value_hash = futures.pop(future)
+                    write_result(
+                        dataset,
+                        _checkpoint_from_future(stage, dataset, device, value_hash, future),
+                    )
+
+            for dataset in ordered:
+                checkpoint_path = checkpoint_dir / f"{_safe_name(dataset)}.json"
+                try:
+                    value_hash = input_hash(dataset)
+                    if resume and _checkpoint_is_valid(checkpoint_path, value_hash):
+                        record_resume(dataset, _read_checkpoint(checkpoint_path))
+                    else:
+                        future = executor.submit(_run_processor, processor, dataset)
+                        futures[future] = (dataset, value_hash)
+                except Exception as error:
+                    record_hash_failure(dataset, error)
+                drain_finished()
+            for future in as_completed(tuple(futures)):
+                dataset, value_hash = futures.pop(future)
+                write_result(
+                    dataset,
+                    _checkpoint_from_future(stage, dataset, device, value_hash, future),
                 )
-                last_hash = _write_checkpoint(checkpoint_dir / f"{_safe_name(dataset)}.json", checkpoint)
-                completed += 1
-                recomputed += 1
-                last_processed_dataset = dataset
-                errors += _is_execution_error(checkpoint)
-                _write_status(output, stage=stage, current_dataset=dataset, completed=completed, total=total, errors=errors, device=device, checkpoint_sha256=last_hash, newly_processed=recomputed, started=started, status="running", run_id=active_run_id, run_started_unix=active_run_started_unix)
     else:
-        for dataset in pending:
+        for dataset in ordered:
             if stop_after is not None and recomputed >= stop_after:
                 break
-            checkpoint = _checkpoint_from_call_with_heartbeat(
-                stage,
+            checkpoint_path = checkpoint_dir / f"{_safe_name(dataset)}.json"
+            try:
+                value_hash = input_hash(dataset)
+                if resume and _checkpoint_is_valid(checkpoint_path, value_hash):
+                    record_resume(dataset, _read_checkpoint(checkpoint_path))
+                    continue
+            except Exception as error:
+                record_hash_failure(dataset, error)
+                continue
+            write_result(
                 dataset,
-                device,
-                input_hashes[dataset],
-                processor,
-                output=output,
-                completed=completed,
-                total=total,
-                errors=errors,
-                checkpoint_sha256=last_hash,
-                newly_processed=recomputed,
-                started=started,
-                run_id=active_run_id,
-                run_started_unix=active_run_started_unix,
-                heartbeat_interval_seconds=heartbeat_interval_seconds,
+                _checkpoint_from_call_with_heartbeat(
+                    stage,
+                    dataset,
+                    device,
+                    value_hash,
+                    processor,
+                    output=output,
+                    completed=completed,
+                    total=total,
+                    errors=errors,
+                    checkpoint_sha256=last_hash,
+                    newly_processed=recomputed,
+                    started=started,
+                    run_id=active_run_id,
+                    run_started_unix=active_run_started_unix,
+                    heartbeat_interval_seconds=heartbeat_interval_seconds,
+                ),
             )
-            last_hash = _write_checkpoint(checkpoint_dir / f"{_safe_name(dataset)}.json", checkpoint)
-            completed += 1
-            recomputed += 1
-            last_processed_dataset = dataset
-            errors += _is_execution_error(checkpoint)
-            _write_status(output, stage=stage, current_dataset=dataset, completed=completed, total=total, errors=errors, device=device, checkpoint_sha256=last_hash, newly_processed=recomputed, started=started, status="running", run_id=active_run_id, run_started_unix=active_run_started_unix)
 
     final_status = "completed" if completed == total else "running"
     _write_status(output, stage=stage, current_dataset=last_processed_dataset or ordered[-1], completed=completed, total=total, errors=errors, device=device, checkpoint_sha256=last_hash, newly_processed=recomputed, started=started, status=final_status, run_id=active_run_id, run_started_unix=active_run_started_unix)
