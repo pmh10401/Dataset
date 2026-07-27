@@ -23,7 +23,7 @@ import numpy as np
 
 from .artifact_io import canonical_json_bytes, sha256_file, write_csv_atomic, write_json_atomic, write_jsonl_atomic
 from .consensus import ConsensusSource, build_consensus
-from .contracts import ALPHAS, FrozenConfig, ShadowSourcePrediction
+from .contracts import ALPHAS, FrozenConfig, ShadowSourcePrediction, train_eligibility
 from .evaluation import EvaluationLabels, evaluate_exp405
 from .feature_registry import load_feature_blocks
 from .feature_stability import audit_feature_stability, build_group_summary
@@ -71,6 +71,13 @@ REPORT_ROW_STAGES = (
     "ssl-predict",
     "synthetic-predict",
     "consensus-evaluate",
+)
+_CONSENSUS_VARIANTS = (
+    "tri_view_only",
+    "synthetic_only",
+    "tri_view_and_synthetic",
+    "one_new_plus_existing_independent",
+    "two_new_plus_existing_independent",
 )
 
 
@@ -252,6 +259,8 @@ def run_pipeline(
     if stage == "all" or stage == "report":
         try:
             _require_final_outputs(Path(output_dir))
+            if stage == "all":
+                _validate_cross_stage_identity(Path(output_dir), datasets)
             validate_final_reports(Path(output_dir))
         except Exception as error:
             _write_failed_status(Path(output_dir), "report", error)
@@ -456,9 +465,8 @@ def _audit_features(dataset: str) -> Mapping[str, object]:
     blocks = load_feature_blocks(dataset, bundle)
     audit = audit_feature_stability(blocks, crossfit_plan(len(bundle.train_normal)))
     return {
-        "dataset": dataset,
+        **_dataset_identity(dataset, bundle),
         "outcome": "completed",
-        "train_size": int(len(bundle.train_normal)),
         "audit": _json_value(audit),
         "group_summary": _json_value(build_group_summary(audit)),
     }
@@ -466,15 +474,16 @@ def _audit_features(dataset: str) -> Mapping[str, object]:
 
 def _classical_predict(dataset: str) -> Mapping[str, object]:
     bundle = load_dataset_input(dataset)
+    identity = _dataset_identity(dataset, bundle)
     if not bundle.hard_indices:
         return {
-            "dataset": dataset,
+            **identity,
             "outcome": "completed",
             "result_kind": "no_frozen_hard_candidates",
             "prediction_rows": [],
         }
     rows = predict_dataset(bundle, FrozenConfig(target_length=bundle.target_length))
-    return {"dataset": dataset, "outcome": "completed", "prediction_rows": _json_value(rows)}
+    return {**identity, "outcome": "completed", "prediction_rows": _json_value(rows)}
 
 
 def _ssl_predict(dataset: str) -> Mapping[str, object]:
@@ -489,7 +498,7 @@ def _ssl_predict(dataset: str) -> Mapping[str, object]:
         scores = _calibrate_raw_scores(raw)
         raw_oof = raw.train_oof_scores
     return {
-        "dataset": dataset,
+        **_dataset_identity(dataset, bundle),
         "outcome": "completed" if scores.available else "abstained",
         "abstention_reason": scores.abstention_reason,
         "scores": _json_value(scores),
@@ -513,7 +522,7 @@ def _synthetic_predict(dataset: str) -> Mapping[str, object]:
         if score.available
     }
     return {
-        "dataset": dataset,
+        **_dataset_identity(dataset, bundle),
         "outcome": "completed" if all(score.available for score in scores) else "abstained",
         "abstention_reason": next((score.abstention_reason for score in scores if not score.available), ""),
         "scores": _json_value(scores),
@@ -524,9 +533,55 @@ def _synthetic_predict(dataset: str) -> Mapping[str, object]:
 
 def _consensus_evaluate(dataset: str, output: Path) -> Mapping[str, object]:
     bundle = load_dataset_input(dataset)
+    identity = _dataset_identity(dataset, bundle)
     sources = _consensus_sources(dataset, bundle, output)
+    if not sources:
+        ssl = _read_stage_checkpoint(output, "ssl-predict", dataset)
+        synthetic = _read_stage_checkpoint(output, "synthetic-predict", dataset)
+        statuses = (_source_status("tri_view", ssl), _source_status("synthetic", synthetic))
+        if not all(status["status"] == "abstained" for status in statuses):
+            raise ValueError(f"Exp408 has no real source for dataset={dataset}")
+        lane = load_frozen_lanes().lane_for(dataset)
+        if set(lane) != {"hard", "standard", "priority"}:
+            raise ValueError(f"dataset is outside the verified frozen lanes: {dataset}")
+        empty_candidates = {
+            variant: {str(alpha): () for alpha in ALPHAS}
+            for variant in _CONSENSUS_VARIANTS
+        }
+        return {
+            **identity,
+            "outcome": "completed",
+            "consensus": {
+                "dataset": dataset,
+                "hard_indices": sorted(lane["hard"]),
+                "standard_indices": sorted(lane["standard"]),
+                "priority_indices": sorted(lane["priority"]),
+                "components": [],
+                "candidates_by_variant": empty_candidates,
+                "abstention_reason": "all_eligible_sources_abstained",
+                "source_statuses": statuses,
+            },
+        }
     result = build_consensus(load_frozen_lanes(), sources)
-    return {"dataset": dataset, "outcome": "completed", "consensus": _json_value(result)}
+    return {**identity, "outcome": "completed", "consensus": _json_value(result)}
+
+
+def _source_status(name: str, checkpoint: Mapping[str, object]) -> dict[str, str]:
+    outcome = str(checkpoint.get("outcome", ""))
+    reason = str(checkpoint.get("abstention_reason", ""))
+    valid_reason = reason == "n_train_below_50" or reason.startswith("calibration_")
+    if outcome != "abstained" or not valid_reason or checkpoint.get("error"):
+        return {"source": name, "status": "invalid", "reason": reason}
+    return {"source": name, "status": "abstained", "reason": reason}
+
+
+def _dataset_identity(dataset: str, bundle: object) -> dict[str, object]:
+    train_size = int(len(getattr(bundle, "train_normal")))
+    return {
+        "dataset": str(dataset),
+        "train_size": train_size,
+        "eligibility": train_eligibility(train_size).level,
+    }
 
 
 def _classical_evaluate(
@@ -960,6 +1015,26 @@ def _require_final_outputs(output: Path, *, require_report: bool = True) -> None
 
 def _read_stage_checkpoint(output: Path, stage: str, dataset: str) -> dict[str, object]:
     return _read_checkpoint(output / "checkpoints" / stage / f"{_safe_name(dataset)}.json")
+
+
+def _validate_cross_stage_identity(output: Path, datasets: Sequence[str]) -> None:
+    """Require one canonical dataset identity across all per-dataset stages."""
+    stages = ("audit-features", "classical-predict", "ssl-predict", "synthetic-predict", "consensus-evaluate")
+    for dataset in datasets:
+        expected: tuple[str, int, str] | None = None
+        for stage in stages:
+            checkpoint = _read_stage_checkpoint(output, stage, dataset)
+            actual = (
+                str(checkpoint.get("dataset", "")),
+                int(checkpoint.get("train_size", -1)),
+                str(checkpoint.get("eligibility", "")),
+            )
+            if actual[0] != dataset or actual[1] < 0 or not actual[2]:
+                raise ValueError(f"{stage} checkpoint identity is invalid: {dataset}")
+            if expected is None:
+                expected = actual
+            elif actual != expected:
+                raise ValueError(f"cross-stage dataset identity mismatch: {dataset}")
 
 
 def _read_json(path: Path) -> dict[str, object]:

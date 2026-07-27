@@ -20,6 +20,82 @@ def process_safe_smoke_processor(dataset: str) -> dict[str, object]:
 
 
 class PipelineTests(unittest.TestCase):
+    def test_consensus_all_source_abstentions_preserve_lanes_and_emit_empty_variants(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        lane = {"hard": frozenset({1}), "standard": frozenset({2}), "priority": frozenset({3})}
+        checkpoints = iter((
+            {"outcome": "abstained", "abstention_reason": "n_train_below_50"},
+            {"outcome": "abstained", "abstention_reason": "calibration_insufficient_oof"},
+        ))
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=MagicMock()),
+            patch.object(pipeline, "_consensus_sources", return_value=()),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=checkpoints),
+            patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock(lane_for=lambda _dataset: lane)),
+        ):
+            result = pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+        consensus = result["consensus"]
+        self.assertEqual(consensus["hard_indices"], [1])
+        self.assertEqual(consensus["standard_indices"], [2])
+        self.assertEqual(consensus["priority_indices"], [3])
+        self.assertEqual(consensus["abstention_reason"], "all_eligible_sources_abstained")
+        self.assertEqual(
+            consensus["source_statuses"],
+            (
+                {"source": "tri_view", "status": "abstained", "reason": "n_train_below_50"},
+                {"source": "synthetic", "status": "abstained", "reason": "calibration_insufficient_oof"},
+            ),
+        )
+        self.assertTrue(all(not candidates for values in consensus["candidates_by_variant"].values() for candidates in values.values()))
+
+    def test_consensus_missing_or_corrupt_source_remains_error(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=MagicMock()),
+            patch.object(pipeline, "_consensus_sources", return_value=()),
+            patch.object(pipeline, "_read_stage_checkpoint", return_value={"outcome": "abstained", "abstention_reason": "stage_error"}),
+        ):
+            with self.assertRaisesRegex(ValueError, "no real source"):
+                pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+    def test_representative_smoke_checkpoints_share_identity_train_size_and_eligibility(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        counts = (3, 4, 5, 19, 20, 49, 50, 70) * 3
+        datasets = tuple(f"representative-{index:02d}" for index in range(20))
+        train_counts = {dataset: counts[index] for index, dataset in enumerate(datasets)}
+        selected, coverage = pipeline.select_representative_smoke_datasets(
+            datasets, 20, train_count_for_dataset=train_counts.__getitem__
+        )
+        self.assertEqual(selected, datasets)
+        self.assertTrue(all(coverage[tier] for tier in coverage))
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            for dataset in selected:
+                train_size = train_counts[dataset]
+                eligibility = pipeline.train_eligibility(train_size).level
+                for stage in (
+                    "audit-features", "classical-predict", "ssl-predict",
+                    "synthetic-predict", "consensus-evaluate",
+                ):
+                    pipeline._write_checkpoint(
+                        output / "checkpoints" / stage / f"{pipeline._safe_name(dataset)}.json",
+                        {
+                            "stage": stage,
+                            "dataset": dataset,
+                            "device": "cpu",
+                            "input_sha256": "test",
+                            "outcome": "completed",
+                            "train_size": train_size,
+                            "eligibility": eligibility,
+                        },
+                    )
+            pipeline._validate_cross_stage_identity(output, selected)
+
     def test_representative_smoke_selection_is_deterministic_and_train_only(self) -> None:
         from experiments.exp403_408.pipeline import select_representative_smoke_datasets
 
