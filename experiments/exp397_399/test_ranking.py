@@ -64,6 +64,23 @@ class RankingTests(unittest.TestCase):
         self.assertEqual(ranked[0]["effective_tier"], 2)
         self.assertEqual(ranked[0]["grammar_support_count"], 3)
 
+    def test_additive_grammar_promotion_changes_cross_tier_order(self):
+        rows = [
+            candidate("A", 0, tier=1, composite_p=0.9),
+            candidate(
+                "A",
+                1,
+                tier=2,
+                composite_p=0.001,
+                transition_p=0.001,
+            ),
+        ]
+
+        ranked = rank_candidates(rows, "additive_grammar_family", 0.005)
+
+        self.assertEqual([row["candidate_index"] for row in ranked], [1, 0])
+        self.assertEqual([row["effective_tier"] for row in ranked], [1, 1])
+
     def test_grammar_only_ignores_exp292_tier(self):
         rows = [
             candidate("A", 0, tier=1, composite_p=0.8),

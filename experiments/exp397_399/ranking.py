@@ -64,10 +64,11 @@ def rank_candidates(
     elif variant == "additive_grammar_family":
         key = lambda row: (
             int(row["effective_tier"]),
-            int(row["exp292_tier"]),
+            -int(bool(row["grammar_evidence"])),
             -int(row["grammar_support_count"]),
             float(row["composite_p_value"]),
             float(row["primitive_min_p_value"]),
+            int(row["exp292_tier"]),
             *stable_tail(row),
         )
     else:
@@ -84,4 +85,3 @@ def rank_candidates(
         row["rank"] = rank
         row["variant"] = variant
     return ordered
-
