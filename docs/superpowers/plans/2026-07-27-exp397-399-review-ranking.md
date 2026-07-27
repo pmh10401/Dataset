@@ -204,7 +204,7 @@ For each variant, alpha, and K, write:
     "tp_at_k": tp,
     "fp_at_k": fp,
     "precision_at_k": tp / reviewed,
-    "review_tp_capture_rate": tp / 391,
+    "review_tp_capture_rate": tp / total_standard_review_tp,
     "precision_lift_vs_exp292": precision - baseline_precision,
 }
 ```
