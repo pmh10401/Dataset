@@ -652,9 +652,32 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("feature_registry.py", "\n".join(updated["code_sha256"]))
         self.assertIn("run_exp403_408_feature_ml_validation.py", "\n".join(updated["code_sha256"]))
         self.assertIn("run_rank_experiments_sequential.py", "\n".join(updated["code_sha256"]))
+        self.assertEqual(updated["code_provenance"]["method"], "ast_recursive_repository_local_import_closure/v1")
+        self.assertIn("preprocessing.py", "\n".join(updated["code_provenance"]["files"]))
         self.assertIn("## Commands", markdown)
+        self.assertIn("## Code provenance closure", markdown)
         self.assertIn("Platform", markdown)
         self.assertIn("Forbidden claims", markdown)
+
+    def test_transitive_code_provenance_covers_exp226_and_changes_with_preprocessing(self) -> None:
+        from experiments.exp403_408.reporting import execution_code_provenance
+
+        repository = Path(__file__).resolve().parents[3]
+        preprocessing = repository / "experiments" / "exp226_235_hard_alert_quality" / "preprocessing.py"
+        original = preprocessing.read_text(encoding="utf-8")
+        before = execution_code_provenance()
+        try:
+            preprocessing.write_text(original + "\n# provenance regression mutation\n", encoding="utf-8")
+            changed = execution_code_provenance()
+        finally:
+            preprocessing.write_text(original, encoding="utf-8")
+
+        self.assertIn(str(preprocessing.resolve()), before["files"])
+        self.assertIn(
+            str((repository / "experiments" / "exp226_235_hard_alert_quality" / "config.py").resolve()),
+            before["files"],
+        )
+        self.assertNotEqual(before["closure_sha256"], changed["closure_sha256"])
 
     def test_runbook_commands_reference_the_real_entrypoint(self) -> None:
         repository = Path(__file__).resolve().parents[3]

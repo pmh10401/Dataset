@@ -116,3 +116,40 @@ Exp403-408 queue and dashboard registration: PASS
 This remains retrospective-only. No deployment or prospective validation is
 claimed, Exp405 does not change automatic Hard, and Exp406-408 remain
 human-assisted review-only Shadow outputs.
+
+---
+
+# Task 12 Fix Round 3: Transitive Local Code Provenance
+
+## Delivered
+
+- Replaced the hand-maintained execution-code list with deterministic static
+  AST resolution of repository-local `import` and `from ... import ...` edges.
+  All Exp403-408 module roots plus the wrapper, queue runner, and dashboard
+  entrypoints are traversed recursively.
+- Only repository-local `.py` files are included. Standard-library and
+  site-package modules remain excluded and package versions remain separately
+  recorded in the runtime manifest.
+- `MANIFEST.json` now records method
+  `ast_recursive_repository_local_import_closure/v1`, explicit roots, every
+  reachable local file SHA256, and a canonical closure SHA256. `MANIFEST.md`
+  renders the same closure method, roots, composite, and per-file hashes.
+- The closure includes the Exp226 adapters/config/contracts/database/
+  preprocessing chain reached from Exp403-408 foundation code, along with any
+  further statically imported repository-local module.
+
+## TDD and Verification
+
+```text
+RED
+python3 -m unittest \
+  experiments.exp403_408.tests.test_pipeline.PipelineTests.test_transitive_code_provenance_covers_exp226_and_changes_with_preprocessing -v
+ImportError: cannot import name 'execution_code_provenance'
+
+GREEN
+Ran 1 test - OK
+```
+
+The regression temporarily changes the real local Exp226 `preprocessing.py`,
+restores it in `finally`, and proves both its inclusion and closure-hash
+change. Full regression evidence is recorded in the task response.

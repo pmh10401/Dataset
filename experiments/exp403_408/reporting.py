@@ -12,6 +12,7 @@ import platform
 from typing import Any
 
 from .contracts import SEED
+from .code_provenance import local_code_closure
 from .independent_reaggregate import IndependentReaggregation, independent_reaggregate
 
 
@@ -31,14 +32,6 @@ _IMMUTABLE_ARTIFACT_ALLOWLIST = frozenset({
     "exp403_408_evaluation_publication_manifest.json", "exp403_408_results.csv",
     "exp403_408_summary.csv", REPORT_NAME,
 })
-_EXECUTION_MODULES = (
-    "contracts.py", "foundation.py", "feature_registry.py", "feature_stability.py",
-    "classical_committee.py", "prediction.py", "evaluation.py", "tri_view_ssl.py",
-    "synthetic_anomaly.py", "consensus.py", "pipeline.py",
-    "independent_reaggregate.py", "reporting.py", "artifact_io.py",
-)
-
-
 @dataclass(frozen=True)
 class ReportArtifacts:
     report: Path
@@ -226,7 +219,7 @@ def _manifest(output: Path, *, command: str, reaggregation: IndependentReaggrega
         for name in sorted(_IMMUTABLE_ARTIFACT_ALLOWLIST)
         if (output / name).is_file()
     }
-    code_paths = _execution_code_paths()
+    code_provenance = execution_code_provenance()
     provenance_hashes = _provenance_hashes(output)
     publication_hashes = _publication_hashes(output)
     external = _evaluation_external_hashes(output)
@@ -259,7 +252,8 @@ def _manifest(output: Path, *, command: str, reaggregation: IndependentReaggrega
             "float_tolerance": 1e-12,
             "comparison_count": len(reaggregation.comparisons),
         },
-        "code_sha256": {str(path.resolve()): _sha256(path) for path in code_paths},
+        "code_provenance": code_provenance,
+        "code_sha256": code_provenance["files"],
         "prediction_sha256": _prediction_sha256(output),
         "input_sha256": provenance_hashes,
         "external_sha256": external["external_sha256"],
@@ -279,6 +273,7 @@ def _manifest(output: Path, *, command: str, reaggregation: IndependentReaggrega
 def _manifest_markdown(manifest: Mapping[str, object]) -> str:
     files = _mapping(manifest["artifact_sha256"])
     code = _mapping(manifest["code_sha256"])
+    code_provenance = _mapping(manifest["code_provenance"])
     lines = [
         "# Exp403-408 실행 매니페스트",
         "",
@@ -299,6 +294,10 @@ def _manifest_markdown(manifest: Mapping[str, object]) -> str:
         "",
     ]
     lines.extend(f"- `{command}`" for command in manifest["commands"])
+    lines.extend(("", "## Code provenance closure", ""))
+    lines.append(f"- Method: `{code_provenance['method']}`")
+    lines.append(f"- Closure SHA-256: `{code_provenance['closure_sha256']}`")
+    lines.extend(f"- Root: `{path}`" for path in code_provenance["roots"])
     lines.extend(("", "## Code SHA-256", ""))
     lines.extend(f"- `{path}`: `{digest}`" for path, digest in sorted(code.items()))
     lines.extend(("", "## 핵심 입력/발행 SHA-256", ""))
@@ -354,19 +353,20 @@ def _publication_hashes(output: Path) -> dict[str, str]:
     return {name: _sha256(output / name) for name in names if (output / name).is_file()}
 
 
-def _execution_code_paths() -> tuple[Path, ...]:
+def execution_code_provenance() -> dict[str, object]:
+    """Return the deterministic local-import closure for all execution roots."""
     repository = Path(__file__).resolve().parents[2]
-    paths = [Path(__file__).with_name(name) for name in _EXECUTION_MODULES]
-    paths.extend((
+    roots = sorted(Path(__file__).parent.glob("*.py"), key=str)
+    roots.extend((
         repository / "experiments" / "exp393_396" / "artifact_io.py",
         repository / "scratch" / "run_exp403_408_feature_ml_validation.py",
         repository / "run_rank_experiments_sequential.py",
         repository / "serve_rank_dashboard.py",
     ))
-    missing = [str(path) for path in paths if not path.is_file()]
+    missing = [str(path) for path in roots if not path.is_file()]
     if missing:
         raise ValueError("execution module hash source is missing: " + ", ".join(missing))
-    return tuple(paths)
+    return local_code_closure(repository, roots)
 
 
 def _evaluation_external_hashes(output: Path) -> dict[str, object]:
