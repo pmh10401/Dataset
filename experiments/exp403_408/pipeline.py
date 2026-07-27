@@ -594,6 +594,8 @@ def _consensus_evaluate(dataset: str, output: Path) -> Mapping[str, object]:
 def _source_status(name: str, checkpoint: Mapping[str, object]) -> dict[str, str]:
     outcome = str(checkpoint.get("outcome", ""))
     reason = str(checkpoint.get("abstention_reason", ""))
+    if outcome == "completed" and not checkpoint.get("error"):
+        return {"source": name, "status": "available", "reason": ""}
     valid_reason = reason == "n_train_below_50" or reason.startswith("calibration_")
     if outcome != "abstained" or not valid_reason or checkpoint.get("error"):
         return {"source": name, "status": "invalid", "reason": reason}
