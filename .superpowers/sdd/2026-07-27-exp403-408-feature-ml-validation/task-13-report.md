@@ -1,188 +1,97 @@
-# Task 13 Report: Smoke, Parity, and Sequential Full Validation
+# Task 13 Report: Final Validation Evidence
 
 ## Status
 
-Full sequential validation completed with run ID
-`164d917e86bb4aeaa04b1f7a6bb5d326`, using the designated full output only.
-Every data-bearing stage completed all `1,117` datasets with `errors=0`; the
-aggregate report also completed. The process exited normally.
+Task 13 completed. The frozen full all-stage publication was retained; the
+current code reran the designated 20-case representative smoke and republished
+only the full classical evaluation/provenance, Exp408 consensus, and report
+from verified upstream checkpoints. No audit, classical prediction, SSL, or
+synthetic full stage was rerun during the final repair.
 
-## Implementation Fixes And Commits
+The final source contract accounts for exactly 13 expected sources per dataset:
+9 registered FeatureBlocks, tri-view SSL, and 3 synthetic models. Explicit
+historical-coverage abstentions are recorded but never vote. Integrity failures
+(invalid/corrupt payloads, hash or identity mismatch, forbidden/label-derived
+content, malformed candidates, or unrecognized states) fail the stage closed.
 
-- `f864ac2a27881486a27687fd7747c8a5aba342b9` - smoke CLI, scoped validation,
-  serialization, and representative selection hardening.
-- `ea6e005d67bf02a76c1b5d69f3f9d28b8d646e37` - Exp408 structured
-  all-source-abstention artifact and cross-stage identity metadata/regressions.
-- `b6647da019847984bac0128f581010000b5c780c` - defer no-source classification
-  until source loading completes.
-- `54627c48aabbf56e39e6fb6eaa3a9f558676ddce` - restrict the database order to
-  the hash-verified frozen 1,117-dataset universe.
-- `d302d460abcaa7de3b9c8970a1ce3b8ea93ff83b` - stream per-dataset input hash,
-  resume validation, and processing instead of blocking on a global prepass.
-- `fca9a1d88445799126ee615a0f7c8bcba3b78628` - record a valid audit abstention
-  below two TRAIN rows instead of invoking cross-fit.
-- `30e533a86b2cbd208746890af4588996dbc1a635` - support 15-point runs in the
-  fixed 16-band Exp406 views without creating an empty-band NaN.
-
-Valid all-source abstentions preserve frozen Hard, Standard, and Priority,
-record source status/reason, and emit zero Shadow candidates for all five
-variants at every alpha. `stage_error`, missing, and corrupt sources remain
-errors.
-
-The interrupted first full launch exposed two database-only aliases outside the
-verified universe: `CornellWhaleChallenge` and `Wafer_normal_1`. The final
-selector preserves the existing small-to-large order while excluding them; no
-frozen constants changed.
-
-The hash-streaming remediation retains the exact content/config/code/upstream
-hash binding. Serial and learned stages now hash, resume-validate, and write
-one dataset before moving on. CPU parallel stages submit each stale dataset as
-soon as its hash is available while the parent remains the sole checkpoint and
-status writer. The regression suite proves worker processing begins before all
-slow hash calls finish; resume skips and one-dataset invalidation remain exact.
-
-## Commands And Tests
-
-Completed after the final implementation fix:
+## Canonical Commands And Tests
 
 ```bash
 python3 -m py_compile experiments/exp403_408/*.py scratch/run_exp403_408_feature_ml_validation.py
-python3 -m unittest discover -s experiments/exp403_408/tests -p 'test_*.py' -v
-python3 -m unittest discover -s experiments/exp400_402 -p 'test_*.py' -v
-git diff --check
+python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --dataset-limit 20 --representative-smoke --workers 2 --device cpu --reset-checkpoint --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation_smoke
+python3 scratch/run_exp403_408_feature_ml_validation.py --stage classical-evaluate --workers 7 --device auto --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation
+python3 scratch/run_exp403_408_feature_ml_validation.py --stage consensus-evaluate --workers 7 --device auto --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation
+python3 scratch/run_exp403_408_feature_ml_validation.py --stage report --workers 7 --device auto --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation
 ```
 
-Compilation, queue registration, and diff checks passed. Final Exp403-408:
-`148` tests passed in `28.024s`; Exp400-402: `18` tests passed. The queue test
-reported `Exp403-408 queue and dashboard registration: PASS`.
-
-Representative smoke command:
+The original full all-stage command was:
 
 ```bash
-python3 scratch/run_exp403_408_feature_ml_validation.py \
-  --stage all --dataset-limit 20 --representative-smoke --workers 2 \
-  --device cpu --reset-checkpoint \
-  --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation_smoke
+python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --workers 7 --device auto --reset-checkpoint --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation
 ```
 
-Smoke runtime: `84.606s` from run-bound status timestamps.
+The final regression commands, queue check, independent verification, and
+`git diff --check` were run after this metadata refresh.
 
-Current full command:
+## Final Evidence
 
-```bash
-python3 scratch/run_exp403_408_feature_ml_validation.py \
-  --stage all --workers 7 --device auto --reset-checkpoint \
-  --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation
-```
+| Evidence | Smoke (current code) | Full publication (current consensus/report) |
+| --- | ---: | ---: |
+| Dataset coverage | 20 | 1,117 |
+| Audit/classical/SSL/synthetic/consensus checkpoints | 20 each | 1,117 each |
+| Stage errors | 0 | 0 |
+| Eligibility tiers (abstain/robust/classical/learned) | 5 / 5 / 5 / 5 | 162 / 316 / 138 / 501 |
+| SSL and synthetic learned abstentions | 15 each | 616 each |
+| Learned completed datasets | 5 each source | 501 each source |
+| Source-status coverage | 13 per dataset | 13 per dataset |
+| Valid all-source abstention consensus rows | 5 | 162 |
+| Hard / Standard / Priority | 17 / 3 / 0 scoped | 2,218 / 806 / 31 frozen |
+| Forbidden prediction fields | 0 | 0 |
+| Independent reaggregation mismatches | 0 | 0 |
+| Prediction SHA256 | `b5b55a9cb63fc2d7f557d613d5d2608a7b264cf0f715b59e6f4a31dbc5568ec5` | `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70` |
+| Consensus SHA256 | `82e416a31953b3163c12806a78f958ef8791b4a88458dfc06a324afd1448cbae` | `588b246a7aae3a2cc00fd684731657c816f7a680d22e6899f35b43715b7760da` |
 
-## Representative Smoke Results
+The final-code smoke run ID was `7d16ab1d3b4e459db47ca65925647cb4` and completed in
+`70.247s` from run-bound timestamps. Its selector read only canonical
+normal-TRAIN dataset names and counts; it did not query TEST rows, metadata,
+blobs, or a TEST-derived order. Cross-stage dataset identity, `n_train`, and
+eligibility matched for every selected dataset.
 
-- Coverage: `20`; TRAIN tiers: abstain `5`, robust-distance `5`,
-  classical-committee `5`, learned-methods `5`.
-- Cross-stage `dataset`/`n_train`/eligibility checkpoint parity passed for
-  all 20 datasets.
-- Stage errors: `0`. Valid all-source abstention artifacts: `5`; every
-  variant/alpha candidate list is empty for each.
-- Scoped lane totals preserved: Hard `17`, Standard `3`, Priority `0`.
-  Report validation and forbidden-prediction-field validation passed.
-- Independent reaggregation mismatch count: `0`.
-- Exp404 prediction SHA256:
-  `f32bec225f85931c1db8f11e666115b8a0239165ce459a46918d5d72325232d9`.
-- Exp408 consensus SHA256:
-  `1287681b0ae04a1050854b7b9d19435733e7b3c94725aeb563e8ae2bace1a22d`.
+The full consensus regeneration run ID was `9e98049f3ee84980933e954d5e8b506b`.
+It completed its 1,117 checkpointed records in `1104.025s`, with no errors.
+Its `561` `source_train_count_mismatch` statuses are explicit historical
+coverage abstentions, not available evidence and not integrity exceptions.
+The remaining full source-status counts were 2,464 learned
+`n_train_below_50` abstentions, 1,426 explicit `source_abstained` FeatureBlock
+statuses, and 10,070 available source statuses.
 
-## CPU/MPS Exp406 Benchmark
+The read-only sorted prediction verification was repeated twice and matched the
+full manifest hash exactly both times. Frozen lanes were unchanged; Exp406-408
+remain review-only and no prediction publication includes TEST labels or
+evaluation metrics.
 
-Dataset `CricketX_normal_1`: `n_train=52`, `n_test=50`, same frozen
-config and seed. The raw values were captured inside the accepted MPS parity
-path.
+## MPS Decision
 
-| Run | Runtime (s) | Published prediction SHA256 | Raw rank match | Max raw difference |
-| --- | ---: | --- | --- | ---: |
-| CPU 1 | 0.875889 | `22ccb5a12ba1703a6bfbea43de0ec1ca92d431fa7b7d309049b2571d5542eb6c` | yes | 0 |
-| CPU 2 | 0.275877 | `22ccb5a12ba1703a6bfbea43de0ec1ca92d431fa7b7d309049b2571d5542eb6c` | yes | 0 |
-| MPS 1 | 2.840222 | `22ccb5a12ba1703a6bfbea43de0ec1ca92d431fa7b7d309049b2571d5542eb6c` | yes | `2.384185791015625e-07` |
-| MPS 2 | 1.937345 | `22ccb5a12ba1703a6bfbea43de0ec1ca92d431fa7b7d309049b2571d5542eb6c` | yes | `2.384185791015625e-07` |
+`task13_exp406_mps_benchmark.json` is the frozen four-run evidence artifact,
+SHA256 `81d606ac6210f3b2edf03ec29a688b65623390d4e036336bc938e5ab8f417249`.
+It covers `CricketX_normal_1` (`n_train=52`, `n_test=50`, seed `20260727`):
 
-The rank and `<= 1e-5` gates passed. MPS was not selected for the full
-publication run because its accepted path was slower and publication is
-CPU-canonical; `--device auto` resolves to CPU.
+| Device runs | Mean runtime (s) | Prediction hash | Rank / max delta |
+| --- | ---: | --- | --- |
+| CPU 1, CPU 2 | 0.6661622920073569 | `200d69cf62e2a0282d1a7e4099ac79af3dce4d012f230748bad46e3abbcbe6d8` | exact / 0 |
+| MPS 1, MPS 2 | 2.1810099170543253 | same | exact / `2.384185791015625e-07` |
 
-## Full Sequential Results
+The manifest validator requires exactly two finite positive CPU and two MPS
+runtimes, one shared prediction hash, exact rank parity, finite delta no larger
+than `1e-5`, recomputed means, and the measured-speed-consistent decision.
+Parity passed, but MPS was slower; CPU remains selected.
 
-Command:
+## Implementation And Limits
 
-```bash
-python3 scratch/run_exp403_408_feature_ml_validation.py \
-  --stage all --workers 7 --device auto --reset-checkpoint \
-  --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation
-```
+This closure is committed after the final checks. The changes add the TRAIN-only
+representative selection trace test, source-state fail-closed regressions,
+cross-stage smoke identity coverage, benchmark semantic validation, and an
+aggregate provenance republish before evaluation when code provenance changes.
 
-Wall runtime from `/usr/bin/time -p`: `6832.25s`. Stage status timing was
-approximately audit `580s`, classical `368s`, SSL `1055s`, synthetic `3726s`,
-consensus `1077s`, and report `19s`.
-
-| Invariant | Result |
-| --- | ---: |
-| Dataset/checkpoint coverage per data stage | `1117/1117` |
-| Audit JSONL / consensus JSONL rows | `1117 / 1117` |
-| Stage errors | `0` |
-| SSL abstentions | `616` (`n_train_below_50`) |
-| Synthetic abstentions | `616` (`n_train_below_50`) |
-| Completed learned datasets per source | `501` |
-| Frozen Hard / Standard / Priority | `2218 / 806 / 31` |
-| Forbidden prediction fields | `0` |
-| Independent reaggregation mismatches | `0` |
-| Result CSV rows | `5585` |
-
-The read-only `verify_prediction` regeneration was run twice. Both verified
-row sequences and manifests were identical, and the canonical sorted Exp404
-prediction SHA256 exactly matched the manifest on both reads:
-
-`437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70`.
-
-No test labels or evaluation metrics appeared in the prediction publication.
-All frozen lanes were preserved; Exp406-408 candidates remain review-only.
-
-Only the designated smoke output was reset for representative reruns. The
-interrupted designated full output was reset before each corrected 1,117-dataset
-run; no prior experiment output directory was modified.
-
-## Fix Round 1 Closure
-
-- Final report refresh run ID: `95a8449547124c0f9a97feca9aac725a`; it reused
-  verified full upstream publications and did not rerun a learned full stage.
-- Final representative smoke run ID: `5c61c5c193604deb94a104e37b40f694`;
-  elapsed wall time from run-bound timestamps was `70.028s`. It has exactly
-  20 checkpoints in every data stage, 0 errors, and tier coverage abstain /
-  robust-distance / classical-committee / learned-methods = `5 / 5 / 5 / 5`.
-- The selector uses canonical normal-TRAIN SQLite counts only. It neither
-  queries TEST rows nor retains a TEST-derived input ordering. Every smoke
-  checkpoint agrees on dataset ID, `n_train`, and eligibility.
-- Final smoke hashes: Exp404 prediction
-  `b5b55a9cb63fc2d7f557d613d5d2608a7b264cf0f715b59e6f4a31dbc5568ec5`;
-  Exp408 consensus
-  `f4fb4317d547b0d9162d3687f8fd7680a288aa8acbfb3d57dae80bfef94db633`.
-- Full consensus regeneration hash:
-  `c4016db7a3c17d130b5bd8796e0139325cb63b0645bfe3f0ca7b96c825339d23`.
-  It contains `162` valid all-source-abstention rows, each with every
-  FeatureBlock, SSL, and synthetic status/reason recorded.
-- Frozen MPS benchmark artifact:
-  `task13_exp406_mps_benchmark.json`, SHA256
-  `81d606ac6210f3b2edf03ec29a688b65623390d4e036336bc938e5ab8f417249`.
-  `CricketX_normal_1` (`n_train=52`, `n_test=50`, seed `20260727`) recorded
-  CPU `1.017256s`, `0.315069s` and MPS `2.408724s`, `1.953296s`; all ranks
-  matched, maximum raw-score delta was `2.384185791015625e-07`, and all four
-  published score hashes were
-  `200d69cf62e2a0282d1a7e4099ac79af3dce4d012f230748bad46e3abbcbe6d8`.
-  CPU mean was `0.666162s` versus MPS mean `2.181010s`, so CPU was retained
-  because parity passed but MPS was slower.
-- The manifest records the exact historical full command
-  `python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --workers 7 --device auto --reset-checkpoint --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation`
-  and the report command
-  `python3 scratch/run_exp403_408_feature_ml_validation.py --stage report --workers 7 --device auto --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation`.
-- `bbeea9a405a3cb013ba50fb4f8878567279416bf` added the TRAIN-only selector,
-  consensus accounting, and worker policy. `41e0b19209fcc1c7a2bc0dbb07548599c226e2f3`
-  fixed completed learned-source classification. The reset cleanup wrapper now
-  deletes only checkpoint/status state in the explicitly supplied output; it is
-  outside the pipeline file frozen by the full prediction contract.
+The result is retrospective only. It does not claim prospective validation,
+deployment validation, or an automatic lane-policy change.

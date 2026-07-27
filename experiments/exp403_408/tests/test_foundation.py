@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import sqlite3
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -48,25 +49,49 @@ def frozen_rows(*, hard_count: int) -> list[dict[str, object]]:
 
 class FoundationTests(unittest.TestCase):
     def test_train_normal_dataset_listing_never_queries_test_rows(self) -> None:
-        connection = MagicMock()
-        connection.execute.return_value.fetchall.return_value = [("small", 3), ("large", 50)]
         universe = MagicMock(hard_lanes=lambda: {"small": frozenset(), "large": frozenset()})
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "frozen.sqlite"
-            path.touch()
+            real_connect = sqlite3.connect
+            with real_connect(path) as connection:
+                connection.executescript("""
+                    CREATE TABLE datasets (id INTEGER PRIMARY KEY, name TEXT NOT NULL);
+                    CREATE TABLE instances (id INTEGER PRIMARY KEY, dataset_id INTEGER NOT NULL, split TEXT NOT NULL, label TEXT NOT NULL);
+                    INSERT INTO datasets VALUES (1, 'small'), (2, 'large');
+                """)
+                connection.executemany(
+                    "INSERT INTO instances (dataset_id, split, label) VALUES (?, ?, ?)",
+                    [(1, "TRAIN", "0")] * 3 + [(2, "TRAIN", "0")] * 50,
+                )
+            queries: list[str] = []
+
+            class ConnectionSpy:
+                def __init__(self, wrapped: sqlite3.Connection) -> None:
+                    self.wrapped = wrapped
+
+                def execute(self, query: str, *args: object) -> sqlite3.Cursor:
+                    queries.append(query)
+                    return self.wrapped.execute(query, *args)
+
+                def close(self) -> None:
+                    self.wrapped.close()
+
             with (
-                patch("experiments.exp403_408.foundation.sqlite3.connect", return_value=connection),
+                patch("experiments.exp403_408.foundation.sqlite3.connect", side_effect=lambda *_args, **_kwargs: ConnectionSpy(real_connect(path))),
                 patch("experiments.exp403_408.foundation.load_frozen_lanes", return_value=universe),
                 patch("experiments.exp403_408.foundation.EXPECTED_DATASETS", 2),
             ):
                 result = list_datasets_by_train_normal_count(path)
 
-        query = str(connection.execute.call_args.args[0]).upper()
+        self.assertEqual(len(queries), 1)
+        query = queries[0].upper()
         self.assertEqual(result, ["small", "large"])
         self.assertIn("I.SPLIT = 'TRAIN'", query)
         self.assertIn("I.LABEL = '0'", query)
         self.assertNotIn("TEST", query)
-        connection.close.assert_called_once()
+        self.assertNotIn("BLOB", query)
+        self.assertNotIn("POPULATION", query)
+        self.assertNotIn("TEST_VALUES", query)
 
     def test_verified_universe_filter_excludes_unfrozen_aliases_without_reordering(self) -> None:
         from experiments.exp403_408.foundation import _filter_verified_dataset_universe

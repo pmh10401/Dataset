@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import hashlib
 from importlib import metadata
 import json
+import math
 from pathlib import Path
 import platform
 from typing import Any
@@ -436,13 +437,12 @@ def _task13_execution_metadata(output: Path) -> dict[str, object] | None:
     for key in ("benchmark_command", "full_command", "report_command"):
         if not isinstance(payload.get(key), str) or not str(payload[key]).strip():
             raise ValueError(f"Task 13 MPS benchmark {key} is invalid")
-    decision = _mapping(payload.get("decision"))
-    if decision.get("selected_device") != "cpu" or decision.get("reason") != "parity passed but MPS slower":
-        raise ValueError("Task 13 MPS benchmark decision is invalid")
     runs = payload.get("runs")
     if not isinstance(runs, list) or len(runs) != 4:
         raise ValueError("Task 13 MPS benchmark requires four runs")
     expected_devices = ("cpu", "cpu", "mps", "mps")
+    prediction_hashes: set[str] = set()
+    runtimes: dict[str, list[float]] = {"cpu": [], "mps": []}
     for detail, device in zip(runs, expected_devices, strict=True):
         row = _mapping(detail)
         if row.get("device") != device:
@@ -450,7 +450,47 @@ def _task13_execution_metadata(output: Path) -> dict[str, object] | None:
         for key in ("run", "prediction_sha256", "rank_match", "max_raw_score_delta", "runtime_seconds"):
             if key not in row:
                 raise ValueError(f"Task 13 MPS benchmark run field is missing: {key}")
+        if row.get("rank_match") is not True:
+            raise ValueError("Task 13 MPS benchmark rank parity is invalid")
+        digest = row.get("prediction_sha256")
+        if not isinstance(digest, str) or len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+            raise ValueError("Task 13 MPS benchmark prediction hash is invalid")
+        prediction_hashes.add(digest)
+        runtime = _finite_positive(row.get("runtime_seconds"), "runtime")
+        delta = _finite_nonnegative(row.get("max_raw_score_delta"), "max delta")
+        if delta > 1e-5:
+            raise ValueError("Task 13 MPS benchmark raw-score delta is invalid")
+        runtimes[device].append(runtime)
+    if len(prediction_hashes) != 1:
+        raise ValueError("Task 13 MPS benchmark prediction hashes differ")
+    cpu_mean = sum(runtimes["cpu"]) / 2.0
+    mps_mean = sum(runtimes["mps"]) / 2.0
+    decision = _mapping(payload.get("decision"))
+    if decision.get("selected_device") != "cpu" or decision.get("reason") != "parity passed but MPS slower" or not mps_mean > cpu_mean:
+        raise ValueError("Task 13 MPS benchmark decision is invalid")
+    if _finite_positive(decision.get("cpu_mean_runtime_seconds"), "CPU mean") != cpu_mean or _finite_positive(decision.get("mps_mean_runtime_seconds"), "MPS mean") != mps_mean:
+        raise ValueError("Task 13 MPS benchmark decision means are invalid")
     return dict(payload)
+
+
+def _finite_positive(value: object, name: str) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"Task 13 MPS benchmark {name} is invalid") from error
+    if not math.isfinite(number) or number <= 0.0:
+        raise ValueError(f"Task 13 MPS benchmark {name} is invalid")
+    return number
+
+
+def _finite_nonnegative(value: object, name: str) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"Task 13 MPS benchmark {name} is invalid") from error
+    if not math.isfinite(number) or number < 0.0:
+        raise ValueError(f"Task 13 MPS benchmark {name} is invalid")
+    return number
 
 
 def _interval_text(value: object) -> str:

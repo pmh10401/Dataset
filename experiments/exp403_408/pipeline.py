@@ -12,6 +12,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, fields, is_dataclass
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import threading
@@ -25,13 +26,13 @@ from .artifact_io import canonical_json_bytes, sha256_file, write_csv_atomic, wr
 from .consensus import ConsensusSource, build_consensus
 from .contracts import ALPHAS, FrozenConfig, ShadowSourcePrediction, StabilityAudit, train_eligibility
 from .evaluation import EvaluationLabels, evaluate_exp405
-from .feature_registry import load_feature_blocks
+from .feature_registry import FEATURE_SOURCES, load_feature_blocks
 from .feature_stability import audit_feature_stability, build_group_summary
 from .foundation import DB_PATH, EXP291_MANIFEST_PATH, EXP291_PREDICTION_PATH, EXP292_MANIFEST_PATH, EXP292_PREDICTION_PATH, crossfit_plan, list_datasets_by_train_normal_count, list_datasets_small_to_large, load_dataset_input, load_frozen_lanes
 from .prediction import freeze_provenance_contract, load_expected_provenance, predict_dataset, verify_prediction, write_prediction
 from .independent_reaggregate import independent_reaggregate
 from .reporting import validate_final_reports, write_reports
-from .synthetic_anomaly import SyntheticAnomalyConfig, _crossfit_normal_scores, score_synthetic_models, synthetic_shadow_predictions
+from .synthetic_anomaly import MODEL_NAMES, SyntheticAnomalyConfig, _crossfit_normal_scores, score_synthetic_models, synthetic_shadow_predictions
 from .tri_view_ssl import _calibrate_raw_scores, _produce_raw_scores, score_tri_view, shadow_predictions
 from experiments.exp393_396.artifact_io import load_test_labels
 
@@ -79,6 +80,17 @@ _CONSENSUS_VARIANTS = (
     "one_new_plus_existing_independent",
     "two_new_plus_existing_independent",
 )
+_FEATURE_EXPLICIT_UNAVAILABLE_REASONS = frozenset((
+    "source_artifact_missing",
+    "source_not_loaded",
+    "source_abstained",
+    "source_dataset_missing",
+    "source_train_count_mismatch",
+))
+_LEARNED_EXPLICIT_ABSTENTION_REASONS = frozenset((
+    "n_train_below_50",
+    "calibration_insufficient_oof",
+))
 
 
 @dataclass(frozen=True)
@@ -211,19 +223,21 @@ def run_pipeline(
     selected = STAGES if stage == "all" else (stage,)
     if any(name not in STAGES for name in selected):
         raise ValueError(f"unknown stage: {stage}")
-    datasets = list_datasets_small_to_large()
-    if limit is not None:
+    if limit is not None and representative_smoke:
         if limit < 1:
             raise ValueError("limit must be positive")
-        if representative_smoke:
-            datasets = list_datasets_by_train_normal_count()
-            datasets, _coverage = select_representative_smoke_datasets(
-                datasets,
-                limit,
-                train_count_for_dataset=_train_normal_count,
-            )
-        else:
-            datasets = datasets[:limit]
+        datasets = list_datasets_by_train_normal_count()
+        datasets, _coverage = select_representative_smoke_datasets(
+            datasets,
+            limit,
+            train_count_for_dataset=_train_normal_count,
+        )
+    else:
+        datasets = list_datasets_small_to_large()
+    if limit is not None and not representative_smoke:
+        if limit < 1:
+            raise ValueError("limit must be positive")
+        datasets = datasets[:limit]
     if not datasets:
         raise ValueError("dataset source returned no datasets")
 
@@ -607,7 +621,7 @@ def _feature_status(block: object) -> dict[str, str]:
     if bool(getattr(block, "available", False)):
         return {"source": name, "status": "available", "reason": ""}
     reason = str(getattr(block, "reason", ""))
-    if not reason.startswith("source_"):
+    if reason not in _FEATURE_EXPLICIT_UNAVAILABLE_REASONS:
         return {"source": name, "status": "invalid", "reason": reason}
     return {"source": name, "status": "abstained", "reason": reason}
 
@@ -638,6 +652,11 @@ def _dataset_identity(dataset: str, bundle: object) -> dict[str, object]:
 def _classical_evaluate(
     output: Path, dataset_scope: Sequence[str] | None = None
 ) -> Mapping[str, object]:
+    # The aggregate runner supplies the exact checkpoint scope.  Rebind an
+    # unchanged prediction publication before evaluation when code provenance
+    # changes, without rerunning classical per-dataset scoring.
+    if dataset_scope is not None:
+        _publish_classical_prediction(output, dataset_scope)
     manifest = _read_json(output / "exp404_prediction_manifest.json")
     contract_path = output / "exp403_404_provenance_contract.json"
     evaluation = evaluate_exp405(
@@ -902,53 +921,41 @@ def _publish_classical_prediction(output: Path, datasets: Sequence[str]) -> None
 
 
 def _consensus_sources(dataset: str, bundle: object, output: Path) -> tuple[tuple[ConsensusSource, ...], tuple[dict[str, str], ...]]:
+    """Load every registered source once and fail closed on contract violations."""
     ssl = _read_stage_checkpoint(output, "ssl-predict", dataset)
     synthetic = _read_stage_checkpoint(output, "synthetic-predict", dataset)
     sources: list[ConsensusSource] = []
-    statuses: list[dict[str, str]] = [_source_status("tri_view", ssl), _source_status("synthetic", synthetic)]
-    if ssl.get("outcome") == "completed" and ssl.get("train_oof_scores"):
-        sources.append(
-            ConsensusSource(
-                name="tri_view",
-                lineage="tri_view_encoder",
-                kind="tri_view",
-                train_oof_scores=tuple(float(value) for value in ssl["train_oof_scores"]),
-                shadow_predictions=_shadow_mapping(ssl["shadow_predictions"]),
-                dataset=dataset,
-            )
-        )
-    for score in synthetic.get("scores", []):
-        name = str(score.get("model_name", ""))
-        oof = (synthetic.get("train_oof_by_model") or {}).get(name)
-        if name and oof:
-            sources.append(
-                ConsensusSource(
-                    name=f"synthetic_{name}",
-                    lineage="synthetic_anomaly",
-                    kind="synthetic",
-                    train_oof_scores=tuple(float(value) for value in oof),
-                    shadow_predictions=_shadow_mapping((synthetic.get("shadow_predictions") or {}).get(name, {})),
-                    dataset=dataset,
-                )
-            )
-    for block in load_feature_blocks(dataset, bundle):
-        statuses.append(_feature_status(block))
-        if not block.available:
+    ssl_source, ssl_status = _validated_ssl_source(dataset, bundle, ssl)
+    statuses: list[dict[str, str]] = [ssl_status]
+    if ssl_source is not None:
+        sources.append(ssl_source)
+    synthetic_sources, synthetic_statuses = _validated_synthetic_sources(dataset, bundle, synthetic)
+    sources.extend(synthetic_sources)
+    statuses.extend(synthetic_statuses)
+    expected_names = {source.name for source in FEATURE_SOURCES}
+    expected_groups = {source.name: source.group for source in FEATURE_SOURCES}
+    blocks = tuple(load_feature_blocks(dataset, bundle))
+    by_name = {str(getattr(block, "name", "")): block for block in blocks}
+    if len(by_name) != len(blocks) or set(by_name) != expected_names:
+        raise ValueError(f"Exp408 source contract invalid for dataset={dataset}: feature registry coverage")
+    for name in sorted(expected_names):
+        block = by_name[name]
+        status = _feature_status(block)
+        statuses.append(status)
+        if status["status"] == "abstained":
             continue
-        train = np.asarray(block.train_oof, dtype=float)
-        test = np.asarray(block.test_values, dtype=float)
-        sources.append(
-            ConsensusSource(
-                name=block.name,
-                lineage=block.group,
-                kind="existing",
-                train_oof_scores=tuple(float(value) for value in train),
-                shadow_predictions=_existing_shadow_predictions(dataset, train, test, bundle.hard_indices, block.name),
-                dataset=dataset,
-            )
-        )
-    if any(status["status"] == "invalid" for status in statuses):
-        raise ValueError(f"Exp408 source contract invalid for dataset={dataset}")
+        if status["status"] != "available":
+            raise ValueError(f"Exp408 source contract invalid for dataset={dataset}: {name}")
+        if str(getattr(block, "group", "")) != expected_groups[name] or not _sha256_text(getattr(block, "source_hash", "")):
+            raise ValueError("Exp408 existing source identity is invalid")
+        train = np.asarray(getattr(block, "train_oof", None), dtype=float)
+        test = np.asarray(getattr(block, "test_values", None), dtype=float)
+        if train.ndim != 1 or test.ndim != 1 or len(train) != len(bundle.train_normal) or len(test) != len(bundle.test_values) or not np.isfinite(train).all() or not np.isfinite(test).all():
+            raise ValueError("Exp408 existing source scores are invalid")
+        sources.append(ConsensusSource(name, expected_groups[name], "existing", tuple(float(value) for value in train), _existing_shadow_predictions(dataset, train, test, bundle.hard_indices, name), dataset))
+    expected_statuses = expected_names | {"tri_view"} | {f"synthetic_{name}" for name in MODEL_NAMES}
+    if len(statuses) != len(expected_statuses) or {status["source"] for status in statuses} != expected_statuses:
+        raise ValueError(f"Exp408 source contract invalid for dataset={dataset}: source status coverage")
     return tuple(sources), tuple(statuses)
 
 
@@ -972,19 +979,141 @@ def _existing_shadow_predictions(dataset: str, train: np.ndarray, test: np.ndarr
     }
 
 
-def _shadow_mapping(value: Mapping[str, object]) -> dict[str, tuple[ShadowSourcePrediction, ...]]:
-    return {
-        str(alpha): tuple(
-            ShadowSourcePrediction(
-                dataset=str(row["dataset"]),
-                candidate_index=int(row["candidate_index"]),
-                scores_by_alpha={str(key): float(score) for key, score in row["scores_by_alpha"].items()},
-                source=str(row["source"]),
-            )
-            for row in value.get(str(alpha), [])
-        )
-        for alpha in ALPHAS
-    }
+def _validated_ssl_source(dataset: str, bundle: object, checkpoint: Mapping[str, object]) -> tuple[ConsensusSource | None, dict[str, str]]:
+    _validate_learned_checkpoint_identity(checkpoint, "ssl-predict", dataset, bundle)
+    if checkpoint.get("outcome") == "abstained":
+        reason = _validated_learned_abstention(checkpoint, None)
+        return None, {"source": "tri_view", "status": "abstained", "reason": reason}
+    if checkpoint.get("outcome") != "completed" or checkpoint.get("error"):
+        raise ValueError("Exp408 learned source contract invalid: tri_view outcome")
+    score = _validated_learned_score(checkpoint.get("scores"), "", len(bundle.test_values))
+    train = _finite_vector(checkpoint.get("train_oof_scores"), len(bundle.train_normal), "tri_view TRAIN OOF")
+    shadows = _validated_shadow_mapping(checkpoint.get("shadow_predictions"), dataset, len(bundle.test_values), bundle.hard_indices, score["scores_by_alpha"], "self_supervised_shadow")
+    return ConsensusSource("tri_view", "tri_view_encoder", "tri_view", train, shadows, dataset), {"source": "tri_view", "status": "available", "reason": ""}
+
+
+def _validated_synthetic_sources(dataset: str, bundle: object, checkpoint: Mapping[str, object]) -> tuple[tuple[ConsensusSource, ...], tuple[dict[str, str], ...]]:
+    _validate_learned_checkpoint_identity(checkpoint, "synthetic-predict", dataset, bundle)
+    if checkpoint.get("outcome") == "abstained":
+        reason = _validated_learned_abstention(checkpoint, MODEL_NAMES)
+        return (), tuple({"source": f"synthetic_{name}", "status": "abstained", "reason": reason} for name in MODEL_NAMES)
+    if checkpoint.get("outcome") != "completed" or checkpoint.get("error"):
+        raise ValueError("Exp408 learned source contract invalid: synthetic outcome")
+    scores = checkpoint.get("scores")
+    oof_by_model = checkpoint.get("train_oof_by_model")
+    shadow_by_model = checkpoint.get("shadow_predictions")
+    if not isinstance(scores, list) or not isinstance(oof_by_model, Mapping) or not isinstance(shadow_by_model, Mapping):
+        raise ValueError("Exp408 learned source contract invalid: synthetic payload")
+    by_model = {str(item.get("model_name", "")): item for item in scores if isinstance(item, Mapping)}
+    if len(by_model) != len(scores) or set(by_model) != set(MODEL_NAMES) or set(oof_by_model) != set(MODEL_NAMES) or set(shadow_by_model) != set(MODEL_NAMES):
+        raise ValueError("Exp408 learned source contract invalid: synthetic model coverage")
+    sources: list[ConsensusSource] = []
+    statuses: list[dict[str, str]] = []
+    for name in MODEL_NAMES:
+        score = _validated_learned_score(by_model[name], name, len(bundle.test_values))
+        train = _finite_vector(oof_by_model[name], len(bundle.train_normal), f"synthetic {name} TRAIN OOF")
+        shadows = _validated_shadow_mapping(shadow_by_model[name], dataset, len(bundle.test_values), bundle.hard_indices, score["scores_by_alpha"], "synthetic_anomaly_shadow")
+        sources.append(ConsensusSource(f"synthetic_{name}", "synthetic_anomaly", "synthetic", train, shadows, dataset))
+        statuses.append({"source": f"synthetic_{name}", "status": "available", "reason": ""})
+    return tuple(sources), tuple(statuses)
+
+
+def _validate_learned_checkpoint_identity(checkpoint: Mapping[str, object], stage: str, dataset: str, bundle: object) -> None:
+    if not isinstance(checkpoint, Mapping) or checkpoint.get("stage") != stage or checkpoint.get("dataset") != dataset:
+        raise ValueError("Exp408 learned source contract invalid: checkpoint identity")
+    if int(checkpoint.get("train_size", -1)) != len(bundle.train_normal) or checkpoint.get("eligibility") != train_eligibility(len(bundle.train_normal)).level:
+        raise ValueError("Exp408 learned source contract invalid: TRAIN identity")
+
+
+def _validated_learned_abstention(checkpoint: Mapping[str, object], synthetic_models: Sequence[str] | None) -> str:
+    reason = str(checkpoint.get("abstention_reason", ""))
+    if reason not in _LEARNED_EXPLICIT_ABSTENTION_REASONS or checkpoint.get("error"):
+        raise ValueError("Exp408 learned source contract invalid: abstention reason")
+    if synthetic_models is None:
+        shadows = checkpoint.get("shadow_predictions")
+        if not _is_explicit_abstained_score(checkpoint.get("scores"), "", reason) or checkpoint.get("train_oof_scores") != [] or not _empty_shadow_mapping(shadows):
+            raise ValueError("Exp408 learned source contract invalid: tri_view abstention payload")
+    else:
+        scores = checkpoint.get("scores")
+        shadows = checkpoint.get("shadow_predictions")
+        if not isinstance(scores, list) or not isinstance(shadows, Mapping) or checkpoint.get("train_oof_by_model") != {}:
+            raise ValueError("Exp408 learned source contract invalid: synthetic abstention payload")
+        by_model = {str(item.get("model_name", "")): item for item in scores if isinstance(item, Mapping)}
+        if len(by_model) != len(scores) or set(by_model) != set(synthetic_models) or set(shadows) != set(synthetic_models):
+            raise ValueError("Exp408 learned source contract invalid: synthetic abstention models")
+        if any(not _is_explicit_abstained_score(by_model[name], name, reason) or not _empty_shadow_mapping(shadows[name]) for name in synthetic_models):
+            raise ValueError("Exp408 learned source contract invalid: synthetic abstention content")
+    return reason
+
+
+def _is_explicit_abstained_score(value: object, model_name: str, reason: str) -> bool:
+    return isinstance(value, Mapping) and value.get("available") is False and value.get("model_name") == model_name and value.get("abstention_reason") == reason and value.get("raw_test_scores") == [] and value.get("scores_by_alpha") == {}
+
+
+def _empty_shadow_mapping(value: object) -> bool:
+    return isinstance(value, Mapping) and set(value) == {str(alpha) for alpha in ALPHAS} and all(value[str(alpha)] == [] for alpha in ALPHAS)
+
+
+def _validated_learned_score(value: object, model_name: str, n_test: int) -> dict[str, object]:
+    if not isinstance(value, Mapping) or value.get("available") is not True or value.get("model_name") != model_name or value.get("abstention_reason") not in {"", None}:
+        raise ValueError("Exp408 learned source contract invalid: score identity")
+    raw = _finite_vector(value.get("raw_test_scores"), n_test, "learned raw scores")
+    alpha_scores = value.get("scores_by_alpha")
+    if not isinstance(alpha_scores, Mapping) or set(alpha_scores) != {str(alpha) for alpha in ALPHAS}:
+        raise ValueError("Exp408 learned source contract invalid: alpha coverage")
+    normalized = {str(alpha): tuple(_finite_probability(number) for number in _finite_vector(alpha_scores[str(alpha)], n_test, "learned p-values")) for alpha in ALPHAS}
+    return {"raw_test_scores": raw, "scores_by_alpha": normalized}
+
+
+def _validated_shadow_mapping(value: object, dataset: str, n_test: int, hard: object, scores_by_alpha: Mapping[str, Sequence[float]], marker: str) -> dict[str, tuple[ShadowSourcePrediction, ...]]:
+    if not isinstance(value, Mapping) or set(value) != {str(alpha) for alpha in ALPHAS}:
+        raise ValueError("Exp408 learned source contract invalid: Shadow alpha coverage")
+    hard_indices = frozenset(int(index) for index in hard)
+    result: dict[str, tuple[ShadowSourcePrediction, ...]] = {}
+    for alpha in ALPHAS:
+        key = str(alpha)
+        rows = value[key]
+        if not isinstance(rows, list):
+            raise ValueError("Exp408 learned source contract invalid: Shadow rows")
+        expected_indices = [index for index, number in enumerate(scores_by_alpha[key]) if index not in hard_indices and number <= alpha]
+        parsed: list[ShadowSourcePrediction] = []
+        for row in rows:
+            if not isinstance(row, Mapping) or set(row) != {"dataset", "candidate_index", "scores_by_alpha", "source"} or row.get("dataset") != dataset or row.get("source") != marker:
+                raise ValueError("Exp408 learned source contract invalid: Shadow identity")
+            index = row.get("candidate_index")
+            if isinstance(index, bool) or not isinstance(index, int) or index < 0 or index >= n_test:
+                raise ValueError("Exp408 learned source contract invalid: Shadow index")
+            values = row.get("scores_by_alpha")
+            if not isinstance(values, Mapping) or set(values) != {str(other) for other in ALPHAS}:
+                raise ValueError("Exp408 learned source contract invalid: Shadow scores")
+            normalized = {str(other): _finite_probability(values[str(other)]) for other in ALPHAS}
+            if any(normalized[str(other)] != scores_by_alpha[str(other)][index] for other in ALPHAS):
+                raise ValueError("Exp408 learned source contract invalid: Shadow score mismatch")
+            parsed.append(ShadowSourcePrediction(dataset, index, normalized, marker))
+        if [row.candidate_index for row in parsed] != expected_indices:
+            raise ValueError("Exp408 learned source contract invalid: Shadow candidate mismatch")
+        result[key] = tuple(parsed)
+    return result
+
+
+def _finite_vector(value: object, expected_size: int, name: str) -> tuple[float, ...]:
+    if not isinstance(value, (list, tuple)) or len(value) != expected_size:
+        raise ValueError(f"Exp408 learned source contract invalid: {name} count")
+    parsed = tuple(float(number) for number in value)
+    if not all(math.isfinite(number) for number in parsed):
+        raise ValueError(f"Exp408 learned source contract invalid: {name} finiteness")
+    return parsed
+
+
+def _finite_probability(value: object) -> float:
+    number = float(value)
+    if not math.isfinite(number) or not 0.0 <= number <= 1.0:
+        raise ValueError("Exp408 learned source contract invalid: p-value")
+    return number
+
+
+def _sha256_text(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(character in "0123456789abcdef" for character in value)
 
 
 def _evaluation_labels(output: Path) -> Callable[[set[str]], Mapping[str, EvaluationLabels]]:

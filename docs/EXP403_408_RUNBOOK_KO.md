@@ -113,3 +113,29 @@ python3 scratch/run_exp403_408_feature_ml_validation.py \
   benchmark hash와 정확한 full/report command를 기록한다.
 - final full report refresh run ID는 `95a8449547124c0f9a97feca9aac725a`이며
   verified full upstream checkpoint만 읽어 완료했다.
+
+## Task 13 Fix Round 2 사후 메타데이터 (2026-07-28)
+
+- final-code representative smoke run ID는 `7d16ab1d3b4e459db47ca65925647cb4`이다.
+  지정 smoke output만 reset했고 `70.247s`에 완료했다. 20개 checkpoint는 모든 data
+  stage에 존재하고 error는 0이며 TRAIN tier abstain/robust_distance/
+  classical_committee/learned_methods는 정확히 `5/5/5/5`다. 각 dataset은 모든
+  checkpoint에서 dataset ID, `n_train`, eligibility가 일치한다.
+- selector는 canonical normal-TRAIN dataset 이름과 count만 읽는다. DB trace
+  regression은 TEST table/column/value/blob/population 접근과 TEST-derived order를
+  모두 금지한다.
+- Exp408 consensus는 dataset마다 정확히 13개 source status(등록 FeatureBlock 9,
+  tri-view 1, synthetic model 3)를 기록한다. `source_train_count_mismatch`는
+  preregistered historical-coverage incompatibility의 explicit abstention이며 vote하지
+  않는다. corrupt payload, hash/identity mismatch, forbidden/label-derived content,
+  malformed candidate 또는 unrecognized state는 fail-closed stage error다.
+- full consensus regeneration run ID는 `9e98049f3ee84980933e954d5e8b506b`이며
+  verified upstream checkpoint만 읽어 `1104.025s`에 1,117/1,117, error 0으로
+  완료했다. 새 consensus SHA256은
+  `588b246a7aae3a2cc00fd684731657c816f7a680d22e6899f35b43715b7760da`다.
+  561개의 `source_train_count_mismatch` status는 모두 explicit coverage abstention이다.
+- MPS artifact semantic validator는 정확히 CPU 2회/MPS 2회, positive finite runtime,
+  shared prediction hash, rank parity, delta `<=1e-5`, recomputed mean, measured-speed
+  decision을 요구한다. artifact SHA256은
+  `81d606ac6210f3b2edf03ec29a688b65623390d4e036336bc938e5ab8f417249`이며 parity는
+  통과했지만 MPS가 느려 CPU를 유지한다.

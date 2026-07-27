@@ -28,6 +28,46 @@ def process_safe_hash_stream_processor(dataset: str) -> dict[str, object]:
 
 
 class PipelineTests(unittest.TestCase):
+    @staticmethod
+    def _abstained_checkpoints(
+        pipeline: object,
+        *,
+        dataset: str = "Phoneme_normal_26",
+        n_train: int = 4,
+        reason: str = "n_train_below_50",
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        alphas = getattr(pipeline, "ALPHAS")
+        eligibility = getattr(pipeline, "train_eligibility")(n_train).level
+        empty_shadows = {str(alpha): [] for alpha in alphas}
+        ssl = {
+            "stage": "ssl-predict", "dataset": dataset, "train_size": n_train,
+            "eligibility": eligibility, "outcome": "abstained", "abstention_reason": reason,
+            "scores": {"available": False, "model_name": "", "abstention_reason": reason, "raw_test_scores": [], "scores_by_alpha": {}},
+            "train_oof_scores": [], "shadow_predictions": empty_shadows,
+        }
+        models = getattr(pipeline, "MODEL_NAMES")
+        synthetic = {
+            "stage": "synthetic-predict", "dataset": dataset, "train_size": n_train,
+            "eligibility": eligibility, "outcome": "abstained", "abstention_reason": reason,
+            "scores": [{"available": False, "model_name": name, "abstention_reason": reason, "raw_test_scores": [], "scores_by_alpha": {}} for name in models],
+            "train_oof_by_model": {},
+            "shadow_predictions": {name: {str(alpha): [] for alpha in alphas} for name in models},
+        }
+        return ssl, synthetic
+
+    @staticmethod
+    def _unavailable_blocks(reason: str = "source_train_count_mismatch") -> tuple[object, ...]:
+        from experiments.exp403_408.feature_registry import FEATURE_SOURCES
+
+        blocks = []
+        for source in FEATURE_SOURCES:
+            block = MagicMock()
+            block.name = source.name
+            block.available = False
+            block.reason = reason
+            blocks.append(block)
+        return tuple(blocks)
+
     def test_audit_n_train_one_completes_without_crossfit_or_feature_loading(self) -> None:
         from experiments.exp403_408 import pipeline
 
@@ -49,14 +89,12 @@ class PipelineTests(unittest.TestCase):
         from experiments.exp403_408 import pipeline
 
         lane = {"hard": frozenset({1}), "standard": frozenset({2}), "priority": frozenset({3})}
-        source_checkpoints = (
-            {"outcome": "abstained", "abstention_reason": "n_train_below_50"},
-            {"outcome": "abstained", "abstention_reason": "calibration_insufficient_oof"},
-        )
+        bundle = MagicMock(dataset="Phoneme_normal_26", train_normal=np.zeros((4, 8)), test_values=np.zeros((2, 8)), hard_indices=frozenset())
+        source_checkpoints = self._abstained_checkpoints(pipeline)
         with (
-            patch.object(pipeline, "load_dataset_input", return_value=MagicMock()),
-            patch.object(pipeline, "_read_stage_checkpoint", side_effect=source_checkpoints * 2),
-            patch.object(pipeline, "load_feature_blocks", return_value=()),
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=source_checkpoints),
+            patch.object(pipeline, "load_feature_blocks", return_value=self._unavailable_blocks()),
             patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock(lane_for=lambda _dataset: lane)),
         ):
             result = pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
@@ -66,25 +104,82 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(consensus["standard_indices"], [2])
         self.assertEqual(consensus["priority_indices"], [3])
         self.assertEqual(consensus["abstention_reason"], "all_eligible_sources_abstained")
+        self.assertEqual(len(consensus["source_statuses"]), 13)
+        self.assertTrue(all(status["status"] == "abstained" for status in consensus["source_statuses"]))
         self.assertEqual(
-            consensus["source_statuses"],
-            (
-                {"source": "tri_view", "status": "abstained", "reason": "n_train_below_50"},
-                {"source": "synthetic", "status": "abstained", "reason": "calibration_insufficient_oof"},
-            ),
+            {status["reason"] for status in consensus["source_statuses"]},
+            {"n_train_below_50", "source_train_count_mismatch"},
         )
         self.assertTrue(all(not candidates for values in consensus["candidates_by_variant"].values() for candidates in values.values()))
 
     def test_consensus_missing_or_corrupt_source_remains_error(self) -> None:
         from experiments.exp403_408 import pipeline
 
+        ssl, synthetic = self._abstained_checkpoints(pipeline, reason="n_train_below_50")
+        ssl["abstention_reason"] = "stage_error"
+        bundle = MagicMock(dataset="Phoneme_normal_26", train_normal=np.zeros((4, 8)), test_values=np.zeros((2, 8)), hard_indices=frozenset())
         with (
-            patch.object(pipeline, "load_dataset_input", return_value=MagicMock()),
-            patch.object(pipeline, "_read_stage_checkpoint", return_value={"outcome": "abstained", "abstention_reason": "stage_error"}),
-            patch.object(pipeline, "load_feature_blocks", return_value=()),
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=(ssl, synthetic)),
+            patch.object(pipeline, "load_feature_blocks", return_value=self._unavailable_blocks()),
         ):
             with self.assertRaisesRegex(ValueError, "source contract invalid"):
                 pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+    def test_consensus_rejects_unrecognized_feature_unavailability_reason(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        blocks = list(self._unavailable_blocks())
+        next(block for block in blocks if block.name == "rocket256").reason = "source_hash_mismatch"
+        checkpoints = self._abstained_checkpoints(pipeline)
+        bundle = MagicMock(dataset="Phoneme_normal_26", train_normal=np.zeros((4, 8)), test_values=np.zeros((2, 8)), hard_indices=frozenset())
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=checkpoints),
+            patch.object(pipeline, "load_feature_blocks", return_value=tuple(blocks)),
+        ):
+            with self.assertRaisesRegex(ValueError, "source contract invalid"):
+                pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+    def test_consensus_rejects_malformed_completed_learned_payload(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        bundle = MagicMock(dataset="Phoneme_normal_26", train_normal=np.zeros((50, 8)), test_values=np.zeros((2, 8)), hard_indices=frozenset())
+        malformed_ssl = {
+            "stage": "ssl-predict", "dataset": "Phoneme_normal_26", "train_size": 50,
+            "eligibility": "learned_methods", "outcome": "completed", "scores": {},
+            "train_oof_scores": (), "shadow_predictions": {},
+        }
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=(malformed_ssl, {"outcome": "abstained", "abstention_reason": "n_train_below_50"})),
+            patch.object(pipeline, "load_feature_blocks", return_value=()),
+        ):
+            with self.assertRaisesRegex(ValueError, "learned source contract"):
+                pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+    def test_consensus_statuses_cover_every_registered_feature_and_learned_model(self) -> None:
+        from experiments.exp403_408 import pipeline
+        from experiments.exp403_408.feature_registry import FEATURE_SOURCES
+        from experiments.exp403_408.synthetic_anomaly import MODEL_NAMES
+
+        bundle = MagicMock(dataset="Phoneme_normal_26", train_normal=np.zeros((4, 8)), test_values=np.zeros((2, 8)), hard_indices=frozenset())
+        blocks = self._unavailable_blocks()
+        checkpoint, synthetic = self._abstained_checkpoints(pipeline)
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=(checkpoint, synthetic)),
+            patch.object(pipeline, "load_feature_blocks", return_value=blocks),
+            patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock(lane_for=lambda _dataset: {"hard": frozenset(), "standard": frozenset(), "priority": frozenset()})),
+        ):
+            result = pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+        statuses = result["consensus"]["source_statuses"]
+        self.assertEqual(
+            {status["source"] for status in statuses},
+            {source.name for source in FEATURE_SOURCES} | {"tri_view"} | {f"synthetic_{name}" for name in MODEL_NAMES},
+        )
+        self.assertTrue(all(status["status"] == "abstained" for status in statuses))
 
     def test_representative_smoke_checkpoints_share_identity_train_size_and_eligibility(self) -> None:
         from experiments.exp403_408 import pipeline
@@ -172,6 +267,19 @@ class PipelineTests(unittest.TestCase):
             baseline,
         )
         self.assertNotEqual(tuple(mutated_test_values), names)
+
+    def test_representative_run_never_calls_test_population_selector(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        result = pipeline.StageResult("audit-features", 2, 2, 2, 0, Path("/tmp"))
+        with (
+            patch.object(pipeline, "list_datasets_small_to_large", side_effect=AssertionError("TEST population access")),
+            patch.object(pipeline, "list_datasets_by_train_normal_count", return_value=["small", "large"]),
+            patch.object(pipeline, "_train_normal_count", side_effect=[3, 50]),
+            patch.object(pipeline, "run_stage", return_value=result),
+            patch.object(pipeline, "_finalize_stage"),
+        ):
+            pipeline.run_pipeline(stage="audit-features", output_dir=Path("/tmp"), limit=2, representative_smoke=True)
 
     def test_representative_smoke_marks_only_absent_train_tier_unavailable(self) -> None:
         from experiments.exp403_408.pipeline import select_representative_smoke_datasets
@@ -763,10 +871,12 @@ class PipelineTests(unittest.TestCase):
                 patch.object(pipeline, "evaluate_exp405", return_value={"hash_gated": True}),
                 patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock()),
                 patch.object(pipeline, "_evaluation_labels", return_value=MagicMock()),
+                patch.object(pipeline, "_publish_classical_prediction") as publish,
             ):
-                result = pipeline._classical_evaluate(output)
+                result = pipeline._classical_evaluate(output, ["toy"])
 
         self.assertEqual(result["outcome"], "completed")
+        publish.assert_called_once_with(output, ["toy"])
 
     def test_consensus_stage_invokes_task10(self) -> None:
         import experiments.exp403_408.pipeline as pipeline
@@ -961,7 +1071,7 @@ class PipelineTests(unittest.TestCase):
                 "schema": "exp403_408_task13_mps_benchmark/v1",
                 "full_command": "python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --workers 7 --device auto --reset-checkpoint --output-dir /tmp/full",
                 "report_command": "python3 scratch/run_exp403_408_feature_ml_validation.py --stage report --workers 7 --device auto --output-dir /tmp/full",
-                "decision": {"selected_device": "cpu", "reason": "parity passed but MPS slower"},
+                "decision": {"selected_device": "cpu", "reason": "parity passed but MPS slower", "cpu_mean_runtime_seconds": 1.0, "mps_mean_runtime_seconds": 2.0},
                 "benchmark_command": "python3 scratch/benchmark_exp403_408_mps_parity.py --dataset toy",
                 "runs": [
                     {"run": "cpu-1", "device": "cpu", "runtime_seconds": 1.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
@@ -978,6 +1088,39 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(manifest["commands"], [benchmark["full_command"], benchmark["report_command"]])
         self.assertEqual(manifest["acceleration"]["decision"], "CPU retained because parity passed but MPS slower")
         self.assertIn(MPS_BENCHMARK_NAME, manifest["artifact_sha256"])
+
+    def test_manifest_rejects_malformed_or_inconsistent_mps_benchmark(self) -> None:
+        from experiments.exp403_408.reporting import _task13_execution_metadata
+
+        valid = {
+            "schema": "exp403_408_task13_mps_benchmark/v1", "benchmark_command": "benchmark",
+            "full_command": "full", "report_command": "report",
+            "decision": {"selected_device": "cpu", "reason": "parity passed but MPS slower", "cpu_mean_runtime_seconds": 1.5, "mps_mean_runtime_seconds": 3.5},
+            "runs": [
+                {"run": "cpu-1", "device": "cpu", "runtime_seconds": 1.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                {"run": "cpu-2", "device": "cpu", "runtime_seconds": 2.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                {"run": "mps-1", "device": "mps", "runtime_seconds": 3.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 1e-6},
+                {"run": "mps-2", "device": "mps", "runtime_seconds": 4.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 1e-6},
+            ],
+        }
+        cases = {
+            "run-count": lambda value: value["runs"].pop(),
+            "nonfinite-runtime": lambda value: value["runs"].__setitem__(0, {**value["runs"][0], "runtime_seconds": float("nan")}),
+            "hash-mismatch": lambda value: value["runs"].__setitem__(2, {**value["runs"][2], "prediction_sha256": "b" * 64}),
+            "rank-mismatch": lambda value: value["runs"].__setitem__(2, {**value["runs"][2], "rank_match": False}),
+            "delta-too-large": lambda value: value["runs"].__setitem__(2, {**value["runs"][2], "max_raw_score_delta": 1e-4}),
+            "mean-mismatch": lambda value: value["decision"].__setitem__("cpu_mean_runtime_seconds", 9.0),
+            "decision-mismatch": lambda value: value["decision"].__setitem__("selected_device", "mps"),
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "task13_exp406_mps_benchmark.json"
+            for name, mutate in cases.items():
+                with self.subTest(name=name):
+                    payload = json.loads(json.dumps(valid))
+                    mutate(payload)
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                    with self.assertRaises(ValueError):
+                        _task13_execution_metadata(Path(tmp))
 
     def test_transitive_code_provenance_covers_exp226_and_changes_with_preprocessing(self) -> None:
         from experiments.exp403_408.reporting import execution_code_provenance
