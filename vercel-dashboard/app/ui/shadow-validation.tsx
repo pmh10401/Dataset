@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, ArrowLeft, Check, CircleHelp, Clock3, Database, Eye, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, Check, CircleHelp, Clock3, Database, Eye, ListFilter, RefreshCw, ShieldCheck, X } from "lucide-react";
 
 import type { ShadowLane } from "@/src/lib/shadow";
 import type { ShadowReport } from "@/src/lib/shadow-metrics";
@@ -41,7 +41,7 @@ function Waveform({ preview, markerIndex }: { preview: Preview; markerIndex?: nu
   </svg>;
 }
 
-export default function ShadowValidation() {
+export default function ShadowValidation({ onOpenRanking }: { onOpenRanking?: () => void }) {
   const [report, setReport] = useState<ShadowReport | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
   const [collectionMode, setCollectionMode] = useState<ShadowCollectionMode>("retrospective_replay");
@@ -115,7 +115,7 @@ export default function ShadowValidation() {
   return <main className="dashboard-shell shadow-validation">
     <header className="topbar">
       <div><span className="eyebrow">EXP265 {collectionMode === "prospective_shadow" ? "PROSPECTIVE SHADOW" : "RETROSPECTIVE REPLAY"}</span><h1>{mode.title}</h1></div>
-      <div className="top-actions"><span className="connection fresh">{message}</span><button className="icon-button" onClick={load} title="새로고침"><RefreshCw size={18} /></button><Link className="icon-button" href="/" title="실험 대시보드"><ArrowLeft size={18} /></Link></div>
+      <div className="top-actions"><span className="connection fresh">{message}</span>{onOpenRanking ? <button className="icon-button" onClick={onOpenRanking} title="Exp397 순위 비교"><ListFilter size={18} /></button> : null}<button className="icon-button" onClick={load} title="새로고침"><RefreshCw size={18} /></button><Link className="icon-button" href="/" title="실험 대시보드"><ArrowLeft size={18} /></Link></div>
     </header>
     <div className="shadow-mode-switch" role="group" aria-label="데이터 구분"><button className={collectionMode === "retrospective_replay" ? "active" : ""} onClick={() => setCollectionMode("retrospective_replay")}>개발용 재생</button><button className={collectionMode === "prospective_shadow" ? "active" : ""} onClick={() => setCollectionMode("prospective_shadow")}>신규 검증</button></div>
     <section className="shadow-summary">
