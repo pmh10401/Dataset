@@ -127,6 +127,26 @@ class CalibrationAuditTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "SHA256"):
                 run_audit(root)
 
+    def test_audit_accepts_canonical_config_hash(self):
+        rows = [
+            {
+                "dataset": "A",
+                "n_train_normal": 4,
+                "n_test": 1,
+                "effective_state_count": 0,
+                "abstained": True,
+                "abstention_reason": "n_train_lt_5",
+                "train_oof_scores": {},
+            }
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_prediction_artifact(root, rows, GrammarConfig())
+
+            result = run_audit(root)
+
+        self.assertEqual(result["datasets"], 1)
+
 
 class LockedEvaluationTests(unittest.TestCase):
     def test_candidate_metrics_separate_hard_fn_review_overlap_and_new_fp(self):

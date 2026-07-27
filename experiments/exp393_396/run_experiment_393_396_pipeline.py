@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from dataclasses import asdict, dataclass
 import csv
 import hashlib
 import json
 from pathlib import Path
+import sys
 import time
 from typing import Any, Sequence
 
 import numpy as np
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from experiments.exp393_396.artifact_io import (
     DATA_ROOT,
@@ -19,9 +24,10 @@ from experiments.exp393_396.artifact_io import (
     load_test_labels,
     load_verified_prediction,
     load_prediction_inputs,
+    prediction_dataset_count,
     write_prediction_artifact,
 )
-from experiments.exp393_396.contracts import GrammarConfig
+from experiments.exp393_396.contracts import GrammarConfig, config_sha256
 from experiments.exp393_396.grammar_core import (
     candidate_indices,
     conformal_p_value,
@@ -228,30 +234,55 @@ def _write_status(
 def run_predict(
     output_root: Path,
     dataset_limit: int | None = None,
+    workers: int = 1,
 ) -> dict[str, Any]:
     config = GrammarConfig()
     inputs = load_prediction_inputs(dataset_limit)
+    total = prediction_dataset_count(dataset_limit)
     rows: list[dict[str, Any]] = []
     _write_status(
         output_root,
         phase="predict",
         completed=0,
-        total=len(inputs),
+        total=total,
         current_dataset="",
         status="running",
     )
-    for index, item in enumerate(inputs, start=1):
-        row = predict_dataset(item["train"], item["test"], config)
+    def accept(item: dict[str, Any], row: dict[str, Any]) -> None:
         row["dataset"] = item["dataset"]
         rows.append(row)
         _write_status(
             output_root,
             phase="predict",
-            completed=index,
-            total=len(inputs),
+            completed=len(rows),
+            total=total,
             current_dataset=item["dataset"],
             status="running",
         )
+
+    worker_count = max(1, int(workers))
+    if worker_count == 1:
+        for item in inputs:
+            accept(item, predict_dataset(item["train"], item["test"], config))
+    else:
+        with ProcessPoolExecutor(max_workers=worker_count) as executor:
+            pending: dict[Any, dict[str, Any]] = {}
+            for item in inputs:
+                future = executor.submit(
+                    predict_dataset,
+                    item["train"],
+                    item["test"],
+                    config,
+                )
+                pending[future] = {"dataset": item["dataset"]}
+                if len(pending) >= worker_count * 2:
+                    completed, _ = wait(pending, return_when=FIRST_COMPLETED)
+                    for finished in completed:
+                        accept(pending.pop(finished), finished.result())
+            while pending:
+                completed, _ = wait(pending, return_when=FIRST_COMPLETED)
+                for finished in completed:
+                    accept(pending.pop(finished), finished.result())
     prediction_path, manifest_path = write_prediction_artifact(
         output_root,
         rows,
@@ -260,8 +291,8 @@ def run_predict(
     _write_status(
         output_root,
         phase="predict",
-        completed=len(inputs),
-        total=len(inputs),
+        completed=total,
+        total=total,
         current_dataset="",
         status="completed",
     )
@@ -280,7 +311,7 @@ def run_audit(output_root: Path) -> dict[str, Any]:
     manifest_path = output_root / PREDICTION_MANIFEST_NAME
     rows, manifest = load_verified_prediction(prediction_path, manifest_path)
     config = GrammarConfig()
-    if manifest.get("config") != asdict(config):
+    if manifest.get("config_sha256") != config_sha256(config):
         raise ValueError("prediction config does not match frozen GrammarConfig")
     audit_rows = [audit_prediction_row(row, config) for row in rows]
     summary_rows = aggregate_calibration_rows(audit_rows, config)
@@ -830,7 +861,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--stage",
-        choices=("predict", "audit", "evaluate", "integrate"),
+        choices=("predict", "audit", "evaluate", "integrate", "all"),
         default="predict",
     )
     parser.add_argument("--dataset-limit", type=int)
@@ -838,13 +869,29 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_ROOT)
     args = parser.parse_args()
     if args.stage == "predict":
-        result = run_predict(args.output_dir, args.dataset_limit)
+        result = run_predict(args.output_dir, args.dataset_limit, args.workers)
     elif args.stage == "audit":
         result = run_audit(args.output_dir)
     elif args.stage == "evaluate":
         result = run_evaluate(args.output_dir)
-    else:
+    elif args.stage == "integrate":
         result = run_integrate(args.output_dir)
+    else:
+        result = {
+            "predict": run_predict(
+                args.output_dir,
+                args.dataset_limit,
+                args.workers,
+            ),
+            "audit": run_audit(args.output_dir),
+            "evaluate": run_evaluate(args.output_dir),
+            "integrate": run_integrate(args.output_dir),
+        }
+        from experiments.exp393_396.independent_reaggregate_exp393_396 import (
+            reaggregate,
+        )
+
+        result["independent_reaggregate"] = reaggregate(args.output_dir)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

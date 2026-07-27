@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import sqlite3
-from typing import Any
+from typing import Any, Iterator
 
 import numpy as np
 
@@ -45,17 +45,23 @@ def _json_value(value: Any) -> Any:
 
 def load_prediction_inputs(
     dataset_limit: int | None = None,
-) -> list[dict[str, Any]]:
+) -> Iterator[dict[str, Any]]:
     uri = f"file:{DB_PATH}?mode=ro"
     connection = sqlite3.connect(uri, uri=True)
     try:
-        query = "SELECT id, name FROM datasets ORDER BY name"
+        query = """
+            SELECT id, name
+            FROM datasets
+            ORDER BY
+                (train_total_count + test_total_count),
+                COALESCE(series_length, 0),
+                name
+        """
         parameters: tuple[int, ...] = ()
         if dataset_limit is not None:
             query += " LIMIT ?"
             parameters = (int(dataset_limit),)
         datasets = connection.execute(query, parameters).fetchall()
-        result: list[dict[str, Any]] = []
         for dataset_id, dataset_name in datasets:
             train_rows = connection.execute(
                 """
@@ -75,20 +81,27 @@ def load_prediction_inputs(
                 """,
                 (dataset_id,),
             ).fetchall()
-            result.append(
-                {
-                    "dataset": str(dataset_name),
-                    "train": [
-                        np.frombuffer(row[0], dtype=np.float32).astype(float)
-                        for row in train_rows
-                    ],
-                    "test": [
-                        np.frombuffer(row[0], dtype=np.float32).astype(float)
-                        for row in test_rows
-                    ],
-                }
-            )
-        return result
+            yield {
+                "dataset": str(dataset_name),
+                "train": [
+                    np.frombuffer(row[0], dtype=np.float32).astype(float)
+                    for row in train_rows
+                ],
+                "test": [
+                    np.frombuffer(row[0], dtype=np.float32).astype(float)
+                    for row in test_rows
+                ],
+            }
+    finally:
+        connection.close()
+
+
+def prediction_dataset_count(dataset_limit: int | None = None) -> int:
+    uri = f"file:{DB_PATH}?mode=ro"
+    connection = sqlite3.connect(uri, uri=True)
+    try:
+        count = int(connection.execute("SELECT COUNT(*) FROM datasets").fetchone()[0])
+        return min(count, int(dataset_limit)) if dataset_limit is not None else count
     finally:
         connection.close()
 
