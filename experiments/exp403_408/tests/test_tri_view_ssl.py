@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import torch
@@ -9,10 +10,10 @@ import torch
 from experiments.exp403_408.contracts import (
     ALPHAS,
     FrozenConfig,
-    LearnedSourceScores,
     SEED,
 )
 from experiments.exp403_408.tri_view_ssl import (
+    RawTriViewScores,
     _require_mps_parity,
     build_tri_views,
     score_tri_view,
@@ -47,11 +48,10 @@ def run_hash(seed: int = SEED) -> str:
     return hashlib.sha256(payload.encode("ascii")).hexdigest()
 
 
-def learned_scores(*, raw_test_scores: tuple[float, ...]) -> LearnedSourceScores:
-    return LearnedSourceScores(
-        scores_by_alpha={str(alpha): (0.5, 0.5) for alpha in ALPHAS},
-        raw_test_scores=raw_test_scores,
-        available=True,
+def raw_scores(*, test_scores: tuple[float, ...]) -> RawTriViewScores:
+    return RawTriViewScores(
+        train_oof_scores=tuple(float(index) for index in range(50)),
+        test_scores=test_scores,
     )
 
 
@@ -103,18 +103,46 @@ class TriViewSSLTests(unittest.TestCase):
         ))
 
     def test_mps_rejects_quantized_p_value_match_when_raw_ranks_differ(self) -> None:
-        cpu = learned_scores(raw_test_scores=(0.9, 0.8))
-        mps = learned_scores(raw_test_scores=(0.8, 0.9))
+        cpu = raw_scores(test_scores=(0.9, 0.8))
+        mps = raw_scores(test_scores=(0.8, 0.9))
 
         with self.assertRaisesRegex(ValueError, "raw candidate rank"):
             _require_mps_parity(cpu, mps)
 
     def test_mps_rejects_quantized_p_value_match_when_raw_delta_exceeds_tolerance(self) -> None:
-        cpu = learned_scores(raw_test_scores=(0.9, 0.8))
-        mps = learned_scores(raw_test_scores=(0.90002, 0.8))
+        cpu = raw_scores(test_scores=(0.9, 0.8))
+        mps = raw_scores(test_scores=(0.90002, 0.8))
 
         with self.assertRaisesRegex(ValueError, "raw score tolerance"):
             _require_mps_parity(cpu, mps)
+
+    def test_mps_raw_parity_failure_stops_before_calibration(self) -> None:
+        cpu = raw_scores(test_scores=(0.9, 0.8))
+        mps = raw_scores(test_scores=(0.8, 0.9))
+        with (
+            patch("experiments.exp403_408.tri_view_ssl.torch.backends.mps.is_available", return_value=True),
+            patch("experiments.exp403_408.tri_view_ssl._produce_raw_scores", side_effect=(cpu, mps)) as produce,
+            patch("experiments.exp403_408.tri_view_ssl._calibrate_raw_scores") as calibrate,
+        ):
+            with self.assertRaisesRegex(ValueError, "raw candidate rank"):
+                score_tri_view(train_rows(50), test_rows(), config(), device="mps")
+
+        self.assertEqual(produce.call_count, 2)
+        calibrate.assert_not_called()
+
+    def test_mps_calibrates_only_the_accepted_cpu_raw_scores(self) -> None:
+        cpu = raw_scores(test_scores=(0.9, 0.8))
+        mps = raw_scores(test_scores=(0.9, 0.8))
+        expected = score_tri_view(train_rows(50), test_rows(), config(), device="cpu")
+        with (
+            patch("experiments.exp403_408.tri_view_ssl.torch.backends.mps.is_available", return_value=True),
+            patch("experiments.exp403_408.tri_view_ssl._produce_raw_scores", side_effect=(cpu, mps)),
+            patch("experiments.exp403_408.tri_view_ssl._calibrate_raw_scores", return_value=expected) as calibrate,
+        ):
+            result = score_tri_view(train_rows(50), test_rows(), config(), device="mps")
+
+        self.assertIs(result, expected)
+        calibrate.assert_called_once_with(cpu)
 
     @unittest.skipUnless(torch.backends.mps.is_available(), "MPS unavailable")
     def test_mps_requires_cpu_score_and_rank_parity(self) -> None:

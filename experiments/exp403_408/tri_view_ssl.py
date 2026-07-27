@@ -9,6 +9,7 @@ review-only Shadow list.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 import copy
 import math
 
@@ -33,6 +34,14 @@ MAX_EPOCHS = 20
 PATIENCE = 10
 BATCH_SIZE = 32
 MPS_SCORE_TOLERANCE = 1e-5
+
+
+@dataclass(frozen=True)
+class RawTriViewScores:
+    """Uncalibrated TRAIN OOF and TEST anomaly scores from one device."""
+
+    train_oof_scores: tuple[float, ...]
+    test_scores: tuple[float, ...]
 
 
 class TriViewEncoder(nn.Module):
@@ -99,8 +108,8 @@ def score_tri_view(
 ) -> LearnedSourceScores:
     """Fit and calibrate Exp406 with TRAIN-only OOF evidence.
 
-    CPU is canonical.  MPS is returned only after the same input and seed meet
-    the frozen score-tolerance and candidate-rank parity checks against CPU.
+    CPU is canonical. MPS is used only for a raw-score parity smoke before the
+    CPU raw scores are empirically calibrated and returned.
     """
     _validate_config(config)
     train_values = _runs_matrix(train, name="train")
@@ -114,15 +123,17 @@ def score_tri_view(
 
     requested = str(device).lower()
     if requested == "cpu":
-        return _score_on_device(train_values, test_values, config, "cpu")
+        return _calibrate_raw_scores(
+            _produce_raw_scores(train_values, test_values, config, "cpu")
+        )
     if requested != "mps":
         raise ValueError("device must be cpu or mps")
     if not torch.backends.mps.is_available():
         raise ValueError("MPS is unavailable")
-    cpu = _score_on_device(train_values, test_values, config, "cpu")
-    mps = _score_on_device(train_values, test_values, config, "mps")
-    _require_mps_parity(cpu, mps)
-    return mps
+    cpu_raw = _produce_raw_scores(train_values, test_values, config, "cpu")
+    mps_raw = _produce_raw_scores(train_values, test_values, config, "mps")
+    _require_mps_parity(cpu_raw, mps_raw)
+    return _calibrate_raw_scores(cpu_raw)
 
 
 def shadow_predictions(
@@ -168,9 +179,9 @@ def shadow_predictions(
     return result
 
 
-def _score_on_device(
+def _produce_raw_scores(
     train: np.ndarray, test: np.ndarray, config: FrozenConfig, device: str
-) -> LearnedSourceScores:
+) -> RawTriViewScores:
     prototype = np.median(train, axis=0)
     oof_scores = np.empty(len(train), dtype=float)
     for fold_number, fold in enumerate(crossfit_plan(len(train), seed=int(config.seed))):
@@ -187,6 +198,25 @@ def _score_on_device(
     test_views = build_tri_views(test, prototype=prototype)
     final_model = _fit_encoder(train_views, seed=int(config.seed), device=device)
     test_scores = _anomaly_scores(final_model, train_views, test_views, device=device)
+    return RawTriViewScores(
+        train_oof_scores=tuple(float(value) for value in oof_scores),
+        test_scores=tuple(float(value) for value in test_scores),
+    )
+
+
+def _calibrate_raw_scores(raw: RawTriViewScores) -> LearnedSourceScores:
+    """Convert an accepted device's raw scores to frozen empirical p-values."""
+    oof_scores = np.asarray(raw.train_oof_scores, dtype=float)
+    test_scores = np.asarray(raw.test_scores, dtype=float)
+    if (
+        oof_scores.ndim != 1
+        or test_scores.ndim != 1
+        or len(oof_scores) == 0
+        or len(test_scores) == 0
+        or not np.isfinite(oof_scores).all()
+        or not np.isfinite(test_scores).all()
+    ):
+        raise ValueError("raw self-supervised scores are invalid for calibration")
     p_values = _empirical_p_values(oof_scores, test_scores)
     return LearnedSourceScores(
         scores_by_alpha={str(alpha): tuple(float(value) for value in p_values) for alpha in ALPHAS},
@@ -359,13 +389,10 @@ def _empirical_p_values(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
     ], dtype=float)
 
 
-def _require_mps_parity(cpu: LearnedSourceScores, mps: LearnedSourceScores) -> None:
-    if cpu.available != mps.available or cpu.abstention_reason != mps.abstention_reason:
-        raise ValueError("MPS parity mismatch")
-    if not cpu.available:
-        return
-    cpu_raw = np.asarray(cpu.raw_test_scores, dtype=float)
-    mps_raw = np.asarray(mps.raw_test_scores, dtype=float)
+def _require_mps_parity(cpu: RawTriViewScores, mps: RawTriViewScores) -> None:
+    """Reject MPS before calibration when raw candidates are not CPU-identical."""
+    cpu_raw = np.asarray(cpu.test_scores, dtype=float)
+    mps_raw = np.asarray(mps.test_scores, dtype=float)
     if cpu_raw.ndim != 1 or mps_raw.ndim != 1 or cpu_raw.shape != mps_raw.shape:
         raise ValueError("MPS raw score shape mismatch")
     if not np.isfinite(cpu_raw).all() or not np.isfinite(mps_raw).all():
