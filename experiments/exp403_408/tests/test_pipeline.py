@@ -24,14 +24,14 @@ class PipelineTests(unittest.TestCase):
         from experiments.exp403_408 import pipeline
 
         lane = {"hard": frozenset({1}), "standard": frozenset({2}), "priority": frozenset({3})}
-        checkpoints = iter((
+        source_checkpoints = (
             {"outcome": "abstained", "abstention_reason": "n_train_below_50"},
             {"outcome": "abstained", "abstention_reason": "calibration_insufficient_oof"},
-        ))
+        )
         with (
             patch.object(pipeline, "load_dataset_input", return_value=MagicMock()),
-            patch.object(pipeline, "_consensus_sources", return_value=()),
-            patch.object(pipeline, "_read_stage_checkpoint", side_effect=checkpoints),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=source_checkpoints * 2),
+            patch.object(pipeline, "load_feature_blocks", return_value=()),
             patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock(lane_for=lambda _dataset: lane)),
         ):
             result = pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
@@ -55,8 +55,8 @@ class PipelineTests(unittest.TestCase):
 
         with (
             patch.object(pipeline, "load_dataset_input", return_value=MagicMock()),
-            patch.object(pipeline, "_consensus_sources", return_value=()),
             patch.object(pipeline, "_read_stage_checkpoint", return_value={"outcome": "abstained", "abstention_reason": "stage_error"}),
+            patch.object(pipeline, "load_feature_blocks", return_value=()),
         ):
             with self.assertRaisesRegex(ValueError, "no real source"):
                 pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))

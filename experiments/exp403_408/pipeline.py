@@ -894,8 +894,6 @@ def _consensus_sources(dataset: str, bundle: object, output: Path) -> tuple[Cons
                 dataset=dataset,
             )
         )
-    if not sources:
-        raise ValueError(f"Exp408 has no real source for dataset={dataset}")
     return tuple(sources)
 
 
