@@ -119,6 +119,28 @@ def code_sha256() -> str:
     return digest.hexdigest()
 
 
+def _update_candidate_hasher(
+    hasher: object,
+    dataset: str,
+    indices: Sequence[int] | set[int],
+) -> None:
+    for index in sorted(indices):
+        hasher.update(f"{dataset}\t{index}\n".encode("utf-8"))
+
+
+def candidate_signature_sha256(
+    candidates_by_dataset: dict[str, set[int]],
+) -> str:
+    hasher = hashlib.sha256()
+    for dataset in sorted(candidates_by_dataset):
+        _update_candidate_hasher(
+            hasher,
+            dataset,
+            candidates_by_dataset[dataset],
+        )
+    return hasher.hexdigest()
+
+
 def write_status(
     output_root: Path,
     *,
@@ -568,7 +590,7 @@ def render_report(
         ),
         key=lambda row: str(row["sources"]),
     )
-    preregistration = sorted(
+    preregistration_all = sorted(
         (
             row
             for row in all_rows
@@ -576,6 +598,11 @@ def render_report(
         ),
         key=lambda row: str(row["observation_id"]),
     )
+    preregistration = [
+        row
+        for row in preregistration_all
+        if row["observation_id"] == row["equivalence_class_representative"]
+    ]
     total_fn = sum(int(row["baseline_fn"]) for row in dataset_metadata)
     large_fn = sum(
         int(row["baseline_fn"])
@@ -606,7 +633,8 @@ def render_report(
         f"- research_signal: {labels['research_signal']:,}개",
         (
             "- preregistration_candidate: "
-            f"{labels['preregistration_candidate']:,}개"
+            f"{labels['preregistration_candidate']:,}개 관측 / "
+            f"{len(preregistration):,}개 고유 후보 패턴"
         ),
         "",
         "## Alpha 0.005 단일 근거 진단",
@@ -632,9 +660,28 @@ def render_report(
         ]
     )
     if preregistration:
-        lines.extend(
-            f"- `{row['observation_id']}`" for row in preregistration
-        )
+        for row in preregistration:
+            novel_fp = int(row["added_fp"]) - int(row["review_overlap_fp"])
+            novel_count = int(row["novel_recovered_fn"]) + novel_fp
+            lines.extend(
+                [
+                f"- `{row['observation_id']}` "
+                    f"(동일 후보를 만드는 규칙 {row['equivalent_rule_count']}개)",
+                    (
+                        f"  - 기존 검토와 겹침: "
+                        f"{int(row['review_overlap_count']):,}건, TP "
+                        f"{int(row['review_recovered_fn']):,}, FP "
+                        f"{int(row['review_overlap_fp']):,}, 정밀도 "
+                        f"{100.0 * float(row['review_overlap_precision']):.2f}%"
+                    ),
+                    (
+                        f"  - 기존 검토 밖: {novel_count:,}건, TP "
+                        f"{int(row['novel_recovered_fn']):,}, FP {novel_fp:,}, "
+                        f"정밀도 "
+                        f"{100.0 * int(row['novel_recovered_fn']) / novel_count if novel_count else 0.0:.2f}%"
+                    ),
+                ]
+            )
     else:
         lines.append("- 고정 기준을 모두 충족한 관측 없음")
     lines.extend(
@@ -695,6 +742,7 @@ def evaluate(output_root: Path) -> dict:
         name: np.zeros((n_observations, n_datasets), dtype=np.int32)
         for name in metric_names
     }
+    candidate_hashers = [hashlib.sha256() for _ in range(n_observations)]
     baseline_fn = np.zeros(n_datasets, dtype=np.int32)
     eligible_tp = np.zeros(n_datasets, dtype=np.int32)
     eligible_fp = np.zeros(n_datasets, dtype=np.int32)
@@ -801,6 +849,11 @@ def evaluate(output_root: Path) -> dict:
                         hard=hard,
                         review=review,
                     )
+                    _update_candidate_hasher(
+                        candidate_hashers[matrix_index],
+                        dataset,
+                        source_sets[source],
+                    )
                     for metric_name, value in zip(metric_names, metrics):
                         metric_arrays[metric_name][matrix_index, dataset_index] = value
                 source_sets_by_alpha[alpha] = source_sets
@@ -825,6 +878,11 @@ def evaluate(output_root: Path) -> dict:
                         truth=truth,
                         hard=hard,
                         review=review,
+                    )
+                    _update_candidate_hasher(
+                        candidate_hashers[matrix_index],
+                        dataset,
+                        candidates,
                     )
                     for metric_name, value in zip(metric_names, metrics):
                         metric_arrays[metric_name][matrix_index, dataset_index] = value
@@ -910,6 +968,19 @@ def evaluate(output_root: Path) -> dict:
         )
         for observation in catalog
     ]
+    for index, row in enumerate(summaries):
+        row["candidate_signature_sha256"] = candidate_hashers[index].hexdigest()
+    signature_groups: dict[str, list[str]] = defaultdict(list)
+    for row in summaries:
+        signature_groups[str(row["candidate_signature_sha256"])].append(
+            str(row["observation_id"])
+        )
+    for row in summaries:
+        equivalent_ids = sorted(
+            signature_groups[str(row["candidate_signature_sha256"])]
+        )
+        row["equivalent_rule_count"] = len(equivalent_ids)
+        row["equivalence_class_representative"] = equivalent_ids[0]
     source_rows = [
         row for row in summaries if row["observation_type"] == "source"
     ]
@@ -1137,6 +1208,13 @@ def evaluate(output_root: Path) -> dict:
         "bootstrap_iterations": bootstrap_iterations,
         "research_label_counts": dict(
             Counter(str(row["research_label"]) for row in summaries)
+        ),
+        "preregistration_candidate_unique_signatures": len(
+            {
+                row["candidate_signature_sha256"]
+                for row in summaries
+                if row["research_label"] == "preregistration_candidate"
+            }
         ),
         "prepare_prediction_sha256": prepare_manifest["prediction_sha256"],
         "outputs": {

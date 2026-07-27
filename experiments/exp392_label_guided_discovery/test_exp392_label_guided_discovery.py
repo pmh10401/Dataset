@@ -20,6 +20,7 @@ from experiments.exp392_label_guided_discovery.run_experiment_392_label_guided_s
     build_observation_catalog,
     build_prepare_manifest,
     build_prepare_row,
+    candidate_signature_sha256,
     load_prepared_rows,
 )
 
@@ -210,6 +211,20 @@ class EvaluationCatalogTests(unittest.TestCase):
             "atleast2__ewma__frequency__topology__alpha_0p005",
             ids,
         )
+
+    def test_candidate_signature_is_order_independent_and_dataset_aware(self):
+        first = candidate_signature_sha256(
+            {"B": {2, 1}, "A": {0}},
+        )
+        second = candidate_signature_sha256(
+            {"A": {0}, "B": {1, 2}},
+        )
+        different = candidate_signature_sha256(
+            {"A": {0, 1}, "B": {2}},
+        )
+
+        self.assertEqual(first, second)
+        self.assertNotEqual(first, different)
 
 
 class StabilityTests(unittest.TestCase):
