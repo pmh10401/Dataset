@@ -75,8 +75,17 @@ python3 scratch/run_exp403_408_feature_ml_validation.py \
   MPS 2회 실행했다. raw rank는 모두 일치했고 최대 raw-score 차이는
   `2.384185791015625e-07` (`<= 1e-5`)이었다. publication full run은 frozen CPU
   canonical path를 유지했다.
-- full sequential run은 verified frozen universe 1,117 dataset으로 시작했다.
-  실행 중인 상태와 최종 검증 값은 Task 13 report에 기록한다.
+- full sequential run은 verified frozen universe 1,117 dataset으로 완료했다.
+  모든 data stage checkpoint와 audit/consensus JSONL은 각각 1,117개이고 stage
+  error는 0이다. Exp406/407은 `n_train_below_50` explicit abstention을 각각
+  616개 기록했고, learned completed dataset은 source별 501개다.
+- final frozen lane total은 Hard `2218`, Standard `806`, Priority `31`이다.
+  forbidden prediction field는 0개, independent reaggregation mismatch는 0개다.
+  read-only sorted Exp404 prediction SHA256 재검증은
+  `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70`로
+  manifest와 두 번 모두 정확히 일치했다.
+- full command의 `/usr/bin/time -p` wall runtime은 `6832.25s`였다. MPS parity
+  조건은 통과했지만 CPU보다 느려 full publication은 CPU canonical path를 유지했다.
 - full input hash는 dataset별로 streaming 처리한다. CPU stage는 stale dataset을
   hash 직후 worker에 제출하고 parent만 checkpoint/status를 기록한다. 따라서
   전체 hash 사전계산 때문에 checkpoint가 지연되지 않는다.

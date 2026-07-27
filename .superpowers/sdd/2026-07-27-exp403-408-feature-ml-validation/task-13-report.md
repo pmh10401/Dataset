@@ -2,13 +2,10 @@
 
 ## Status
 
-Full sequential validation is live, not complete. The only active Exp403-408
-process writes to `/Users/minho/Documents/Dataset/exp403_408_feature_ml_validation`.
-The first full attempt was cleanly terminated at `0/1117` after it exposed the
-global input-hash prepass. The replacement run is in `audit-features`,
-`66/1117`, with `errors=0`, run ID `e981729ac1ef4e92897ed9110628b6d7`.
-
-No conclusion is drawn from the unfinished full run.
+Full sequential validation completed with run ID
+`164d917e86bb4aeaa04b1f7a6bb5d326`, using the designated full output only.
+Every data-bearing stage completed all `1,117` datasets with `errors=0`; the
+aggregate report also completed. The process exited normally.
 
 ## Implementation Fixes And Commits
 
@@ -22,6 +19,10 @@ No conclusion is drawn from the unfinished full run.
   the hash-verified frozen 1,117-dataset universe.
 - `d302d460abcaa7de3b9c8970a1ce3b8ea93ff83b` - stream per-dataset input hash,
   resume validation, and processing instead of blocking on a global prepass.
+- `fca9a1d88445799126ee615a0f7c8bcba3b78628` - record a valid audit abstention
+  below two TRAIN rows instead of invoking cross-fit.
+- `30e533a86b2cbd208746890af4588996dbc1a635` - support 15-point runs in the
+  fixed 16-band Exp406 views without creating an empty-band NaN.
 
 Valid all-source abstentions preserve frozen Hard, Standard, and Priority,
 record source status/reason, and emit zero Shadow candidates for all five
@@ -51,8 +52,9 @@ python3 -m unittest discover -s experiments/exp400_402 -p 'test_*.py' -v
 git diff --check
 ```
 
-Compilation and diff checks passed. Exp403-408: `144` tests passed in
-`26.020s`. Exp400-402: `18` tests passed in `0.050s`.
+Compilation, queue registration, and diff checks passed. Final Exp403-408:
+`148` tests passed in `28.024s`; Exp400-402: `18` tests passed. The queue test
+reported `Exp403-408 queue and dashboard registration: PASS`.
 
 Representative smoke command:
 
@@ -106,12 +108,41 @@ The rank and `<= 1e-5` gates passed. MPS was not selected for the full
 publication run because its accepted path was slower and publication is
 CPU-canonical; `--device auto` resolves to CPU.
 
-## Full Verification Pending
+## Full Sequential Results
 
-The final checks await the live run: exact 1,117 coverage; zero errors or
-explicit no-missing-row abstentions; Hard/Standard/Priority totals
-`2218/806/31`; zero forbidden fields; independent mismatch `0`; and exact
-repeat sorted-prediction hash match.
+Command:
+
+```bash
+python3 scratch/run_exp403_408_feature_ml_validation.py \
+  --stage all --workers 7 --device auto --reset-checkpoint \
+  --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation
+```
+
+Wall runtime from `/usr/bin/time -p`: `6832.25s`. Stage status timing was
+approximately audit `580s`, classical `368s`, SSL `1055s`, synthetic `3726s`,
+consensus `1077s`, and report `19s`.
+
+| Invariant | Result |
+| --- | ---: |
+| Dataset/checkpoint coverage per data stage | `1117/1117` |
+| Audit JSONL / consensus JSONL rows | `1117 / 1117` |
+| Stage errors | `0` |
+| SSL abstentions | `616` (`n_train_below_50`) |
+| Synthetic abstentions | `616` (`n_train_below_50`) |
+| Completed learned datasets per source | `501` |
+| Frozen Hard / Standard / Priority | `2218 / 806 / 31` |
+| Forbidden prediction fields | `0` |
+| Independent reaggregation mismatches | `0` |
+| Result CSV rows | `5585` |
+
+The read-only `verify_prediction` regeneration was run twice. Both verified
+row sequences and manifests were identical, and the canonical sorted Exp404
+prediction SHA256 exactly matched the manifest on both reads:
+
+`437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70`.
+
+No test labels or evaluation metrics appeared in the prediction publication.
+All frozen lanes were preserved; Exp406-408 candidates remain review-only.
 
 Only the designated smoke output was reset for representative reruns. The
 interrupted designated full output was reset before each corrected 1,117-dataset
