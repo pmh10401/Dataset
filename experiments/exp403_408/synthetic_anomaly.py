@@ -47,6 +47,9 @@ MODEL_NAMES = (
     "small_mlp",
 )
 FEATURE_WIDTH = 64
+MAD_SCALE_FACTOR = 1.4826
+# Zero or near-zero MAD gets this frozen floor; variance is never consulted.
+MAD_DEGENERATE_SCALE = 1e-8
 
 
 @dataclass(frozen=True)
@@ -106,7 +109,7 @@ def generate_synthetic_anomalies(
     rng = np.random.default_rng(int(seed))
     median = float(np.median(values))
     mad = float(np.median(np.abs(values - median)))
-    scale = max(1.4826 * mad, float(np.std(values)), 1e-8)
+    scale = max(MAD_SCALE_FACTOR * mad, MAD_DEGENERATE_SCALE)
     generated: dict[str, np.ndarray] = {}
     for name in SYNTHETIC_PERTURBATION_TYPES:
         rows = [

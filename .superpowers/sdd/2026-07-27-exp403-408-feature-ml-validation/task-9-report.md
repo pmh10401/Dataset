@@ -94,3 +94,48 @@ the MLX parity gate; no MLX/MPS-heavy full run was launched.
 - The MLP uses its frozen 25-epoch default (12 in bounded tests); changing it,
   any perturbation parameter, or model list requires a new frozen config and
   reproducibility review.
+
+---
+
+## Fix Round 1: MAD-only Perturbation Scale
+
+### Root Cause
+
+The original perturbation scale used `max(1.4826 * TRAIN_MAD, TRAIN_std,
+1e-8)`. The standard-deviation fallback allowed high-variance TRAIN data to
+change Exp407 perturbation magnitudes even when the permitted TRAIN median and
+MAD were unchanged.
+
+### Changes
+
+- Removed `np.std` from perturbation magnitude derivation.
+- Defined `MAD_SCALE_FACTOR = 1.4826` and the fixed
+  `MAD_DEGENERATE_SCALE = 1e-8` fallback. The frozen scale is now
+  `max(MAD_SCALE_FACTOR * TRAIN_MAD, MAD_DEGENERATE_SCALE)`.
+- Documented that the fixed floor covers zero and near-zero MAD without
+  consulting variance or any other TRAIN statistic.
+- Added a low-MAD/high-variance regression: an all-zero TRAIN matrix and the
+  same matrix with a single value changed to `10_000` have the same median and
+  MAD; their deterministic drift deltas must be identical.
+
+### TDD And Verification
+
+```text
+python3 -m unittest experiments.exp403_408.tests.test_synthetic_anomaly.SyntheticAnomalyTests.test_mad_degenerate_fallback_ignores_high_train_variance -v
+RED: AssertionError: False is not true
+
+GREEN: Ran 1 test in 0.002s - OK
+
+python3 -m unittest experiments.exp403_408.tests.test_synthetic_anomaly -v
+Ran 9 tests - OK
+
+python3 -m unittest discover -s experiments/exp403_408/tests -q
+Ran 91 tests - OK
+```
+
+### Concern
+
+The fixed `1e-8` floor intentionally makes all MAD-degenerate datasets share
+the same minimum perturbation magnitude. It prevents an outlier-only variance
+change from changing the frozen synthetic source, but it is a protocol choice
+that must remain frozen for comparisons.

@@ -81,6 +81,23 @@ class SyntheticAnomalyTests(unittest.TestCase):
         self.assertEqual(first.sha256, second.sha256)
         self.assertTrue(np.array_equal(first.values, second.values))
 
+    def test_mad_degenerate_fallback_ignores_high_train_variance(self) -> None:
+        low_mad = np.zeros((8, 64), dtype=float)
+        high_variance = low_mad.copy()
+        high_variance[0, 0] = 10_000.0
+        self.assertEqual(float(np.median(low_mad)), float(np.median(high_variance)))
+        self.assertEqual(
+            float(np.median(np.abs(low_mad - np.median(low_mad)))),
+            float(np.median(np.abs(high_variance - np.median(high_variance)))),
+        )
+
+        low_generated = generate_synthetic_anomalies(low_mad, config(), SEED)
+        high_generated = generate_synthetic_anomalies(high_variance, config(), SEED)
+        low_drift = low_generated.by_type["drift"] - low_mad
+        high_drift = high_generated.by_type["drift"] - high_variance
+
+        self.assertTrue(np.array_equal(low_drift, high_drift))
+
     def test_n_train_49_abstains_from_all_synthetic_models(self) -> None:
         result = score_synthetic_models(train50()[:49], test2(), config())
 
