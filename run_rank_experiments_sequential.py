@@ -1205,6 +1205,7 @@ EXPERIMENTS = [
             ("218", "experiment_218_true_bootstrap_consensus_normal_prototypes", "Exp218 · True Bootstrap-Consensus Normal Prototypes", 251),
         )
     ],
+    {
         "id": "experiment_391_fn_zero_reachability_audit",
         "script": (
             ROOT
@@ -1225,6 +1226,29 @@ EXPERIMENTS = [
             DATA_DIR
             / "exp391_fn_zero_reachability_audit"
             / "exp391_stdout.log"
+        ),
+    },
+    {
+        "id": "experiment_392_label_guided_score_discovery_audit",
+        "script": (
+            ROOT
+            / "experiments/exp392_label_guided_discovery"
+            / "run_experiment_392_label_guided_score_discovery_audit.py"
+        ),
+        "detail_csv": (
+            DATA_DIR
+            / "exp392_label_guided_score_discovery_audit"
+            / "exp392_individual_source_summary.csv"
+        ),
+        "summary_csv": (
+            DATA_DIR
+            / "exp392_label_guided_score_discovery_audit"
+            / "exp392_pair_triple_summary.csv"
+        ),
+        "stdout_log": (
+            DATA_DIR
+            / "exp392_label_guided_score_discovery_audit"
+            / "exp392_stdout.log"
         ),
     },
 ]
@@ -1811,12 +1835,39 @@ def remove_from_queue(exp_id):
 def summarize_csv(path):
     if not path.exists():
         return None
-    rows = list(csv.DictReader(path.open()))
+    with path.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
     if not rows:
         return {"rows": 0, "datasets": 0, "configs": {}}
+    dataset_names = {
+        row.get("dataset_name") or row.get("dataset")
+        for row in rows
+        if row.get("dataset_name") or row.get("dataset")
+    }
+    dataset_count = len(dataset_names)
+    if not dataset_count:
+        declared_counts = []
+        for row in rows:
+            value = row.get("datasets_total") or row.get("datasets")
+            try:
+                declared_counts.append(int(float(value)))
+            except (TypeError, ValueError):
+                continue
+        if declared_counts:
+            dataset_count = max(declared_counts)
+    supported_f1_keys = ("f1_evt", "hard_f1", "f1", "validated_f1")
+    f1_key = next(
+        (key for key in supported_f1_keys if key in rows[0]),
+        None,
+    )
+    if f1_key is None:
+        return {
+            "rows": len(rows),
+            "datasets": dataset_count,
+            "configs": {},
+        }
     configs = {}
     for row in rows:
-        f1_key = "f1_evt" if "f1_evt" in row else ("hard_f1" if "hard_f1" in row else ("f1" if "f1" in row else "validated_f1"))
         group_name = row.get("config_name") or row.get("source_experiment") or "default"
         if "strategy" in row:
             group_name = f"{row['config_name']}::{row['strategy']}"
@@ -1828,13 +1879,7 @@ def summarize_csv(path):
             configs.setdefault(group_name, []).append(0.0)
     return {
         "rows": len(rows),
-        "datasets": len(
-            {
-                row.get("dataset_name") or row.get("dataset")
-                for row in rows
-                if row.get("dataset_name") or row.get("dataset")
-            }
-        ),
+        "datasets": dataset_count,
         "configs": {
             name: {
                 "mean_f1_evt": sum(values) / len(values),

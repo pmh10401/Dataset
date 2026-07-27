@@ -278,5 +278,43 @@ class StabilityTests(unittest.TestCase):
         )
 
 
+class QueueRegistrationTests(unittest.TestCase):
+    def test_exp392_has_explicit_queue_entry(self):
+        from run_rank_experiments_sequential import get_experiment
+
+        experiment = get_experiment(
+            "experiment_392_label_guided_score_discovery_audit"
+        )
+
+        self.assertEqual(
+            experiment["script"].name,
+            "run_experiment_392_label_guided_score_discovery_audit.py",
+        )
+        self.assertEqual(
+            experiment["detail_csv"].name,
+            "exp392_individual_source_summary.csv",
+        )
+        self.assertEqual(
+            experiment["summary_csv"].name,
+            "exp392_pair_triple_summary.csv",
+        )
+
+    def test_runner_summarizes_audit_without_fake_f1(self):
+        from run_rank_experiments_sequential import summarize_csv
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "audit.csv"
+            path.write_text(
+                "observation_id,datasets_total,recovered_fn\n"
+                "source_a,1117,10\n",
+                encoding="utf-8",
+            )
+
+            summary = summarize_csv(path)
+
+        self.assertEqual(summary["datasets"], 1117)
+        self.assertEqual(summary["configs"], {})
+
+
 if __name__ == "__main__":
     unittest.main()

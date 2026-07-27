@@ -1156,7 +1156,7 @@ def evaluate(output_root: Path) -> dict:
     )
     write_status(
         output_root,
-        status="evaluated",
+        status="completed",
         phase="evaluate_completed",
         done=n_datasets,
         total=n_datasets,
