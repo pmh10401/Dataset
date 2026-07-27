@@ -44,6 +44,12 @@ class PipelineTests(unittest.TestCase):
             )
             self.assertFalse(readiness["prospective_upstream_available"])
             self.assertFalse(readiness["prospective_validation_completed"])
+            manifest = json.loads(
+                (root / "MANIFEST.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["scope"], "retrospective_shadow_replay")
+            self.assertFalse(manifest["prospective_validation_completed"])
+            self.assertTrue(manifest["files"])
 
 
 if __name__ == "__main__":

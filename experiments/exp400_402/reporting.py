@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import csv
 import json
+import platform
+import subprocess
 from pathlib import Path
 
 from experiments.exp400_402 import EXP402_ID
@@ -159,9 +161,94 @@ def write_reports(output_root: Path) -> dict[str, object]:
         "\n".join(claims) + "\n",
         encoding="utf-8",
     )
+    repository_root = Path(__file__).resolve().parents[2]
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repository_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        commit = "unavailable"
+    files = []
+    for path in sorted(output_root.iterdir(), key=lambda item: item.name):
+        if (
+            not path.is_file()
+            or path.name in {"MANIFEST.json", "MANIFEST.md", "status.json"}
+            or path.name.endswith(("-shm", "-wal"))
+            or path.suffix == ".log"
+        ):
+            continue
+        files.append(
+            {
+                "file": path.name,
+                "sha256": sha256_file(path),
+            }
+        )
+    execution_manifest: dict[str, object] = {
+        "experiment_ids": [
+            "experiment_400_exp397_shadow_prediction",
+            "experiment_401_exp397_shadow_replay_evaluation",
+            "experiment_402_exp397_shadow_readiness",
+        ],
+        "scope": "retrospective_shadow_replay",
+        "autonomous_policy_changed": False,
+        "human_assisted_review_metric": True,
+        "prospective_validation_completed": False,
+        "deployment_validated": False,
+        "test_metrics_select_policy": False,
+        "git_commit": commit,
+        "python_version": platform.python_version(),
+        "execution_command": (
+            "python3 scratch/run_exp400_402_shadow_validation.py "
+            "--stage all --output-dir "
+            "/Users/minho/Documents/Dataset/exp400_402_exp397_shadow_validation"
+        ),
+        "input_hashes": prediction_manifest["input_hashes"],
+        "prediction_sha256": prediction_manifest["prediction_sha256"],
+        "files": files,
+        "known_limitations": [
+            "No newly arriving run data is available.",
+            "Results reuse the historical 1,117-dataset TEST benchmark.",
+            "No alpha or workload is selected from TEST metrics.",
+        ],
+    }
+    (output_root / "MANIFEST.json").write_text(
+        json.dumps(
+            execution_manifest,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    manifest_lines = [
+        "# Exp400-402 MANIFEST",
+        "",
+        f"- Git commit: `{commit}`",
+        f"- Python: `{execution_manifest['python_version']}`",
+        "- Scope: retrospective Shadow replay",
+        "- Prospective validation completed: no",
+        "- Automatic policy changed: no",
+        "",
+        "| File | SHA256 |",
+        "|---|---|",
+        *[
+            f"| {item['file']} | `{item['sha256']}` |"
+            for item in files
+        ],
+    ]
+    (output_root / "MANIFEST.md").write_text(
+        "\n".join(manifest_lines) + "\n",
+        encoding="utf-8",
+    )
     return {
         "prediction": prediction_manifest,
         "evaluation": evaluation_manifest,
         "consistency": consistency,
         "readiness": readiness,
+        "manifest": execution_manifest,
     }
