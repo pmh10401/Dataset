@@ -527,6 +527,20 @@ class EvaluationTests(unittest.TestCase):
             1,
         )
 
+    def test_exp408_reaggregation_exposes_overlap_and_paired_bootstrap_diagnostics(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            report = independent_reaggregate(reporting_fixture(Path(directory)))
+
+        row = report.metrics["exp408"]["tri_view_and_synthetic"]["0.005"]
+        bootstrap = row["paired_dataset_bootstrap"]
+        self.assertEqual(row["standard_overlap"], 1)
+        self.assertEqual(row["priority_overlap"], 0)
+        self.assertEqual(row["review_outside_existing"], 0)
+        self.assertEqual(set(bootstrap), {
+            "tp", "fp", "precision", "fn_recovered", "zero_f1_difference",
+        })
+        self.assertEqual(len(bootstrap["precision"]), 2)
+
     def test_independent_reaggregation_rejects_float_difference_above_tolerance(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output = reporting_fixture(Path(directory))

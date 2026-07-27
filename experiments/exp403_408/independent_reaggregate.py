@@ -390,6 +390,7 @@ def _reaggregate_exp408(
     zero_after: dict[tuple[str, str], set[str]] = defaultdict(set)
     concentration_counts: dict[tuple[str, str], Counter[str]] = defaultdict(Counter)
     lineage_counts: dict[tuple[str, str], Counter[str]] = defaultdict(Counter)
+    paired_bootstrap_rows: dict[tuple[str, str], list[tuple[int, int, int, int, int, int]]] = defaultdict(list)
     comparisons: dict[str, Mapping[str, object]] = {}
     covered: set[str] = set()
     for row in rows:
@@ -447,6 +448,14 @@ def _reaggregate_exp408(
         if not comparison["matched"]:
             raise ValueError(f"independent reaggregation mismatch: exp408.{dataset}.{variant}.{alpha}.precision")
         metric_key = (variant, alpha)
+        paired_bootstrap_rows[metric_key].append((
+            tp,
+            fp,
+            candidate_count,
+            tp,
+            int(baseline_hard_tp == 0),
+            int(baseline_hard_tp + tp == 0),
+        ))
         for name in _EXP408_INTEGERS:
             totals[metric_key][name] += _integer(row.get(name), f"Exp408 {name}")
         totals[metric_key]["baseline_hard_tp"] += baseline_hard_tp
@@ -469,6 +478,7 @@ def _reaggregate_exp408(
             "precision": values["tp"] / candidate_count if candidate_count else 0.0,
             "zero_f1_before": len(zero_before[(variant, alpha)]),
             "zero_f1_after": len(zero_after[(variant, alpha)]),
+            "paired_dataset_bootstrap": _exp408_paired_bootstrap(paired_bootstrap_rows[(variant, alpha)]),
         }
         workload[variant][alpha] = candidate_count
         concentration[variant][alpha] = {
@@ -585,6 +595,33 @@ def _percentile_interval(values: Sequence[float], point: float) -> tuple[float, 
     if not values:
         return (point, point)
     return (float(np.quantile(values, 0.025)), float(np.quantile(values, 0.975)))
+
+
+def _exp408_paired_bootstrap(
+    rows: Sequence[tuple[int, int, int, int, int, int]],
+) -> Mapping[str, tuple[float, float]]:
+    """Resample complete datasets to preserve each variant's paired outcomes."""
+    if not rows:
+        raise ValueError("Exp408 paired bootstrap requires dataset rows")
+    generator = np.random.default_rng(_BOOTSTRAP_SEED)
+    values: dict[str, list[float]] = {
+        "tp": [], "fp": [], "precision": [], "fn_recovered": [],
+        "zero_f1_difference": [],
+    }
+    for _ in range(_BOOTSTRAP_ITERATIONS):
+        sampled = [rows[index] for index in generator.integers(0, len(rows), size=len(rows))]
+        tp = sum(row[0] for row in sampled)
+        fp = sum(row[1] for row in sampled)
+        candidate_count = sum(row[2] for row in sampled)
+        values["tp"].append(float(tp))
+        values["fp"].append(float(fp))
+        values["precision"].append(tp / candidate_count if candidate_count else 0.0)
+        values["fn_recovered"].append(float(sum(row[3] for row in sampled)))
+        values["zero_f1_difference"].append(float(sum(row[4] - row[5] for row in sampled)))
+    return MappingProxyType({
+        name: _percentile_interval(samples, 0.0)
+        for name, samples in values.items()
+    })
 
 
 def _load_audit(path: Path) -> dict[str, int]:

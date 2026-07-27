@@ -19,6 +19,24 @@ REPORT_NAME = "EXP403_408_RESULT_REPORT_KO.md"
 MANIFEST_JSON = "MANIFEST.json"
 MANIFEST_MARKDOWN = "MANIFEST.md"
 _MUTABLE_OR_SELF_REFERENTIAL = frozenset({"status.json", MANIFEST_JSON, MANIFEST_MARKDOWN})
+_IMMUTABLE_ARTIFACT_ALLOWLIST = frozenset({
+    "exp403_feature_audit.jsonl", "exp403_feature_manifest.csv",
+    "exp403_404_frozen_config.json", "exp403_404_provenance_contract.json",
+    "exp404_prediction_manifest.json", "exp404_hard_confidence.jsonl",
+    "exp405_demotion_evaluation.json", "exp405_demotion_dataset_metrics.csv",
+    "exp405_demotion_candidate_evaluation.csv", "exp408_consensus_results.jsonl",
+    "exp408_consensus_summary.csv", "exp408_variant_metrics.csv",
+    "exp408_variant_candidate_evaluation.csv", "exp403_408_frozen_test_labels.csv",
+    "exp403_408_evaluation_input_manifest.json",
+    "exp403_408_evaluation_publication_manifest.json", "exp403_408_results.csv",
+    "exp403_408_summary.csv", REPORT_NAME,
+})
+_EXECUTION_MODULES = (
+    "contracts.py", "foundation.py", "feature_registry.py", "feature_stability.py",
+    "classical_committee.py", "prediction.py", "evaluation.py", "tri_view_ssl.py",
+    "synthetic_anomaly.py", "consensus.py", "pipeline.py",
+    "independent_reaggregate.py", "reporting.py", "artifact_io.py",
+)
 
 
 @dataclass(frozen=True)
@@ -145,13 +163,31 @@ def _report_text(metrics: Mapping[str, object]) -> str:
                 f"{float(row['precision']):.12f} | {row['fn_recovered']} | {row['standard_overlap']} | "
                 f"{row['priority_overlap']} | {row['review_outside_existing']} |"
             )
-    lines.extend(("", "## Exp408 동결 Variant", "", "| Variant | Alpha | 후보 | TP | FP | 정밀도 | FN 회수 | Zero-F1 전 | Zero-F1 후 |", "|---|---:|---:|---:|---:|---:|---:|---:|---:|"))
+    lines.extend((
+        "", "## Exp408 동결 Variant", "",
+        "| Variant | Alpha | 후보 | TP | FP | 정밀도 | FN 회수 | Zero-F1 전 | Zero-F1 후 | Standard overlap | Priority overlap | 기존 외 후보 |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ))
     for variant, alpha_values in sorted(variants.items()):
         for alpha, value in sorted(_mapping(alpha_values).items()):
             row = _mapping(value)
             lines.append(
                 f"| {variant} | {alpha} | {row['candidate_count']} | {row['tp']} | {row['fp']} | "
-                f"{float(row['precision']):.12f} | {row['fn_recovered']} | {row['zero_f1_before']} | {row['zero_f1_after']} |"
+                f"{float(row['precision']):.12f} | {row['fn_recovered']} | {row['zero_f1_before']} | {row['zero_f1_after']} | "
+                f"{row['standard_overlap']} | {row['priority_overlap']} | {row['review_outside_existing']} |"
+            )
+    lines.extend((
+        "", "## Exp408 paired bootstrap (dataset)", "",
+        "| Variant | Alpha | TP 95% | FP 95% | 정밀도 95% | FN 회수 95% | Zero-F1 차이 95% |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ))
+    for variant, alpha_values in sorted(variants.items()):
+        for alpha, value in sorted(_mapping(alpha_values).items()):
+            bootstrap = _mapping(_mapping(value)["paired_dataset_bootstrap"])
+            lines.append(
+                f"| {variant} | {alpha} | {_interval_text(bootstrap['tp'])} | {_interval_text(bootstrap['fp'])} | "
+                f"{_interval_text(bootstrap['precision'])} | {_interval_text(bootstrap['fn_recovered'])} | "
+                f"{_interval_text(bootstrap['zero_f1_difference'])} |"
             )
     lines.extend((
         "",
@@ -186,24 +222,19 @@ def _report_text(metrics: Mapping[str, object]) -> str:
 
 def _manifest(output: Path, *, command: str, reaggregation: IndependentReaggregation) -> dict[str, object]:
     files = {
-        path.name: _sha256(path)
-        for path in sorted(output.iterdir())
-        if path.is_file() and path.name not in _MUTABLE_OR_SELF_REFERENTIAL
+        name: _sha256(output / name)
+        for name in sorted(_IMMUTABLE_ARTIFACT_ALLOWLIST)
+        if (output / name).is_file()
     }
-    code_paths = tuple(
-        Path(__file__).with_name(name)
-        for name in (
-            "reporting.py", "independent_reaggregate.py", "pipeline.py", "evaluation.py",
-            "prediction.py", "consensus.py", "foundation.py", "contracts.py", "artifact_io.py",
-        )
-    )
+    code_paths = _execution_code_paths()
     provenance_hashes = _provenance_hashes(output)
     publication_hashes = _publication_hashes(output)
+    external = _evaluation_external_hashes(output)
     return {
         "schema": "exp403_408_reporting_manifest/v1",
         "command": command,
         "commands": [
-            "python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --output-dir <output-dir>",
+            f"python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --output-dir {output}",
             command,
         ],
         "seed": SEED,
@@ -231,7 +262,9 @@ def _manifest(output: Path, *, command: str, reaggregation: IndependentReaggrega
         "code_sha256": {str(path.resolve()): _sha256(path) for path in code_paths},
         "prediction_sha256": _prediction_sha256(output),
         "input_sha256": provenance_hashes,
-        "database_sha256": provenance_hashes.get("dataset_db", "not-published"),
+        "external_sha256": external["external_sha256"],
+        "database_snapshot": external["database_snapshot"],
+        "database_sha256": _mapping(external["database_snapshot"]).get("composite_sha256", "not-published"),
         "publication_sha256": publication_hashes,
         "artifact_sha256": files,
         "runtime": {
@@ -255,17 +288,27 @@ def _manifest_markdown(manifest: Mapping[str, object]) -> str:
         "- Autonomous: automatic Hard 변경 없음",
         "- Human-assisted: Exp406-408 Shadow review-only",
         f"- Python: `{_mapping(manifest['runtime'])['python_version']}`",
+        f"- Platform: `{_mapping(manifest['runtime'])['platform']}`",
         f"- Device: `{_mapping(manifest['acceleration'])['device']}`",
+        f"- Acceleration parity/fallback: `{_mapping(manifest['acceleration'])['parity']}` / `{_mapping(manifest['acceleration'])['fallback']}`",
         f"- Float tolerance: `{_mapping(manifest['independent_reaggregation'])['float_tolerance']}`",
         f"- Prediction SHA-256: `{manifest['prediction_sha256']}`",
         f"- Database SHA-256: `{manifest['database_sha256']}`",
         "",
-        "## Code SHA-256",
+        "## Commands",
         "",
     ]
+    lines.extend(f"- `{command}`" for command in manifest["commands"])
+    lines.extend(("", "## Code SHA-256", ""))
     lines.extend(f"- `{path}`: `{digest}`" for path, digest in sorted(code.items()))
     lines.extend(("", "## 핵심 입력/발행 SHA-256", ""))
     lines.extend(f"- `{name}`: `{digest}`" for name, digest in sorted(_mapping(manifest["input_sha256"]).items()))
+    lines.extend(f"- external `{name}`: `{digest}`" for name, digest in sorted(_mapping(manifest["external_sha256"]).items()))
+    snapshot = _mapping(manifest["database_snapshot"])
+    lines.append(f"- database snapshot composite: `{snapshot.get('composite_sha256', 'not-published')}`")
+    for item in snapshot.get("artifacts", []):
+        detail = _mapping(item)
+        lines.append(f"- database snapshot `{detail['path']}`: `{detail['sha256']}`")
     lines.extend(f"- `{name}`: `{digest}`" for name, digest in sorted(_mapping(manifest["publication_sha256"]).items()))
     lines.extend(("", "## Artifact SHA-256", "", "| File | SHA-256 |", "|---|---|"))
     lines.extend(f"| {path} | `{digest}` |" for path, digest in sorted(files.items()))
@@ -273,6 +316,8 @@ def _manifest_markdown(manifest: Mapping[str, object]) -> str:
     lines.extend(f"- `{name}`: `{version}`" for name, version in sorted(_mapping(_mapping(manifest['runtime'])['packages']).items()))
     lines.extend(("", "## Limitations", ""))
     lines.extend(f"- {item}" for item in manifest["known_limitations"])
+    lines.extend(("", "## Forbidden claims", ""))
+    lines.extend(f"- {item}" for item in manifest["claims_forbidden"])
     return "\n".join(lines) + "\n"
 
 
@@ -307,6 +352,40 @@ def _publication_hashes(output: Path) -> dict[str, str]:
         "exp403_408_evaluation_publication_manifest.json", REPORT_NAME,
     )
     return {name: _sha256(output / name) for name in names if (output / name).is_file()}
+
+
+def _execution_code_paths() -> tuple[Path, ...]:
+    repository = Path(__file__).resolve().parents[2]
+    paths = [Path(__file__).with_name(name) for name in _EXECUTION_MODULES]
+    paths.extend((
+        repository / "experiments" / "exp393_396" / "artifact_io.py",
+        repository / "scratch" / "run_exp403_408_feature_ml_validation.py",
+        repository / "run_rank_experiments_sequential.py",
+        repository / "serve_rank_dashboard.py",
+    ))
+    missing = [str(path) for path in paths if not path.is_file()]
+    if missing:
+        raise ValueError("execution module hash source is missing: " + ", ".join(missing))
+    return tuple(paths)
+
+
+def _evaluation_external_hashes(output: Path) -> dict[str, object]:
+    path = output / "exp403_408_evaluation_input_manifest.json"
+    if not path.is_file():
+        return {
+            "external_sha256": {},
+            "database_snapshot": {"composite_sha256": "not-published", "artifacts": []},
+        }
+    payload = _mapping(json.loads(path.read_text(encoding="utf-8")))
+    external = _mapping(payload.get("external_sha256", {}))
+    snapshot = _mapping(payload.get("database_snapshot", {}))
+    return {
+        "external_sha256": dict(external),
+        "database_snapshot": {
+            "composite_sha256": str(snapshot.get("composite_sha256", "not-published")),
+            "artifacts": list(snapshot.get("artifacts", [])),
+        },
+    }
 
 
 def _interval_text(value: object) -> str:

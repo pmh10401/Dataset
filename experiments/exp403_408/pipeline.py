@@ -910,13 +910,16 @@ def _write_evaluation_input_manifest(output: Path) -> None:
     if missing:
         raise ValueError("cannot freeze evaluation inputs: " + ", ".join(missing))
     prediction_manifest = _read_json(output / "exp404_prediction_manifest.json")
+    database_snapshot = _database_snapshot_manifest(_database_snapshot_paths(DB_PATH))
+    external_paths = (*_database_snapshot_paths(DB_PATH), *_frozen_lane_input_paths())
     write_json_atomic(
         output / EVALUATION_INPUT_MANIFEST,
         {
             "schema": "exp403_408_evaluation_input/v1",
             "provenance_contract_sha256": prediction_manifest.get("provenance_contract_sha256"),
             "artifact_sha256": {path.name: sha256_file(path) for path in paths},
-            "external_sha256": {str(path): sha256_file(path) for path in (*_database_snapshot_paths(DB_PATH), *_frozen_lane_input_paths())},
+            "external_sha256": {str(path): sha256_file(path) for path in external_paths},
+            "database_snapshot": database_snapshot,
         },
     )
 
@@ -931,6 +934,8 @@ def _verify_evaluation_input_manifest(output: Path) -> None:
     for path in (*_database_snapshot_paths(DB_PATH), *_frozen_lane_input_paths()):
         if external.get(str(path)) != sha256_file(path):
             raise ValueError(f"evaluation input SHA256 mismatch: {path}")
+    if manifest.get("database_snapshot") != _database_snapshot_manifest(_database_snapshot_paths(DB_PATH)):
+        raise ValueError("evaluation input database snapshot composite mismatch")
     prediction_manifest = _read_json(output / "exp404_prediction_manifest.json")
     expected_sha = str(manifest.get("provenance_contract_sha256", ""))
     if expected_sha != prediction_manifest.get("provenance_contract_sha256"):
@@ -1144,6 +1149,17 @@ def _database_snapshot_paths(database: Path) -> tuple[Path, ...]:
         path,
         *(candidate for candidate in (path.with_name(f"{path.name}-wal"), path.with_name(f"{path.name}-shm")) if candidate.is_file()),
     )
+
+
+def _database_snapshot_manifest(paths: Sequence[Path]) -> dict[str, object]:
+    artifacts = [
+        {"path": str(path), "sha256": sha256_file(path)}
+        for path in paths
+    ]
+    return {
+        "artifacts": artifacts,
+        "composite_sha256": hashlib.sha256(canonical_json_bytes(artifacts)).hexdigest(),
+    }
 
 
 def _provenance_references(contract: Mapping[str, object]) -> tuple[Path, ...]:

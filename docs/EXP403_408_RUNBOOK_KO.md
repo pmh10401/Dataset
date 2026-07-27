@@ -21,15 +21,16 @@ python3 scratch/run_exp403_408_feature_ml_validation.py \
   --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation
 ```
 
-1. `consensus-evaluate` 완료 시 prediction/provenance/audit/consensus/DB/lane 해시를
-   `exp403_408_evaluation_input_manifest.json`으로 동결한다.
+1. `consensus-evaluate` 완료 시 prediction/provenance/audit/consensus와 report 직전
+   DB+WAL+SHM/lane 해시를 `exp403_408_evaluation_input_manifest.json`으로 동결한다.
 2. `report` stage는 이 manifest와 외부 pinned prediction/provenance를 검증한 뒤에만
-   TEST label DB를 읽는다.
-3. `report` stage가 `exp405_demotion_dataset_metrics.csv`와
-   `exp408_variant_metrics.csv`를 포함한 평가 산출물을 확인한다.
-4. 독립 재집계가 prediction SHA256, Hard lane parity, CSV/JSONL coverage,
+   TEST label DB를 읽고, 그 뒤에 `exp405_demotion_dataset_metrics.csv`,
+   `exp405_demotion_candidate_evaluation.csv`, `exp408_variant_metrics.csv`,
+   `exp408_variant_candidate_evaluation.csv` 평가 CSV를 생성하고 publication manifest로 동결한다.
+3. 독립 재집계는 동결된 평가 CSV와 frozen label publication을 다시 읽어 prediction
+   SHA256, Hard lane parity, CSV/JSONL coverage,
    정수 exact match, float 1e-12 tolerance를 통과해야 한다.
-5. 그 다음에만 Korean result report와 `MANIFEST.json`/`MANIFEST.md`를 발행한다.
+4. 그 다음에만 Korean result report와 `MANIFEST.json`/`MANIFEST.md`를 발행한다.
 
 ## 해석 규칙
 

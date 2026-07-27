@@ -236,6 +236,27 @@ class PipelineTests(unittest.TestCase):
         self.assertNotEqual(prediction_changed, provenance_changed)
         self.assertNotEqual(provenance_changed, database_changed)
 
+    def test_database_snapshot_composite_binds_db_wal_and_shm(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            database = Path(tmp) / "labels.sqlite"
+            wal = database.with_name("labels.sqlite-wal")
+            shm = database.with_name("labels.sqlite-shm")
+            database.write_text("db-v1\n", encoding="utf-8")
+            wal.write_text("wal-v1\n", encoding="utf-8")
+            shm.write_text("shm-v1\n", encoding="utf-8")
+            first = pipeline._database_snapshot_manifest(
+                pipeline._database_snapshot_paths(database)
+            )
+            wal.write_text("wal-v2\n", encoding="utf-8")
+            changed = pipeline._database_snapshot_manifest(
+                pipeline._database_snapshot_paths(database)
+            )
+
+        self.assertEqual(len(first["artifacts"]), 3)
+        self.assertNotEqual(first["composite_sha256"], changed["composite_sha256"])
+
     def test_report_resume_excludes_own_checkpoint_and_invalidates_upstream(self) -> None:
         import experiments.exp403_408.pipeline as pipeline
 
@@ -515,6 +536,8 @@ class PipelineTests(unittest.TestCase):
 
             self.assertIn("자동 경보는 변경하지 않음", text)
             self.assertIn("human-assisted", text)
+            self.assertIn("## Exp408 동결 Variant\n\n| Variant | Alpha | 후보 | TP | FP | 정밀도 | FN 회수 | Zero-F1 전 | Zero-F1 후 | Standard overlap", text)
+            self.assertIn("Exp408 paired bootstrap", text)
             self.assertNotIn("배포 검증 완료", text)
             self.assertTrue(artifacts.manifest_json.is_file())
             self.assertTrue(artifacts.manifest_markdown.is_file())
@@ -609,6 +632,30 @@ class PipelineTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "incomplete"):
                 validate_final_reports(output)
 
+    def test_manifest_allowlist_ignores_changing_stdout_and_renders_execution_context(self) -> None:
+        from experiments.exp403_408.reporting import MANIFEST_JSON, write_reports
+        from experiments.exp403_408.tests.test_evaluation import reporting_fixture
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = reporting_fixture(Path(tmp))
+            first = write_reports(output, command="python3 scratch/run_exp403_408_feature_ml_validation.py --stage report")
+            initial = json.loads((output / MANIFEST_JSON).read_text(encoding="utf-8"))
+            stdout = output / "live.stdout.log"
+            stdout.write_text("first line\n", encoding="utf-8")
+            stdout.write_text("second line\n", encoding="utf-8")
+            second = write_reports(output, command="python3 scratch/run_exp403_408_feature_ml_validation.py --stage report")
+            updated = json.loads((output / MANIFEST_JSON).read_text(encoding="utf-8"))
+            markdown = second.manifest_markdown.read_text(encoding="utf-8")
+
+        self.assertNotIn(stdout.name, updated["artifact_sha256"])
+        self.assertEqual(initial["artifact_sha256"], updated["artifact_sha256"])
+        self.assertIn("feature_registry.py", "\n".join(updated["code_sha256"]))
+        self.assertIn("run_exp403_408_feature_ml_validation.py", "\n".join(updated["code_sha256"]))
+        self.assertIn("run_rank_experiments_sequential.py", "\n".join(updated["code_sha256"]))
+        self.assertIn("## Commands", markdown)
+        self.assertIn("Platform", markdown)
+        self.assertIn("Forbidden claims", markdown)
+
     def test_runbook_commands_reference_the_real_entrypoint(self) -> None:
         repository = Path(__file__).resolve().parents[3]
         runbook = (repository / "docs" / "EXP403_408_RUNBOOK_KO.md").read_text(encoding="utf-8")
@@ -616,6 +663,8 @@ class PipelineTests(unittest.TestCase):
 
         self.assertIn("--stage all", runbook)
         self.assertIn("--stage report", runbook)
+        self.assertIn("검증한 뒤에만", runbook)
+        self.assertIn("평가 CSV를 생성", runbook)
         help_result = subprocess.run(
             ["python3", str(script), "--help"],
             cwd=repository,

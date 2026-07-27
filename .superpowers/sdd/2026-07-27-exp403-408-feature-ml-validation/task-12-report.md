@@ -65,3 +65,54 @@ prospective or deployment validation is claimed.
 - The bootstrap is independently reconstructed with the frozen seed and 2,000
   paired dataset resamples. Changing that protocol requires a new frozen
   publication rather than a report-only rerun.
+
+---
+
+# Task 12 Fix Round 2: Exp408 Diagnostics and Immutable Manifest Boundary
+
+## Delivered
+
+- The independent Exp408 reconstruction now emits per-variant, per-alpha
+  dataset-paired bootstrap 95% intervals for TP, FP, precision, FN recovery,
+  and the Zero-F1 before-minus-after difference. The Korean report renders
+  those diagnostics and the independently reconstructed Standard overlap,
+  Priority overlap, and outside-existing review workload for every variant.
+- The evaluation input manifest now records the verified database snapshot as
+  ordered DB/WAL/SHM artifact hashes plus a canonical composite SHA256. The
+  report manifest exposes that snapshot alongside current external DB, lane,
+  provenance, input, prediction, evaluation, consensus, and report hashes.
+- `MANIFEST.json` code hashes now cover the full execution path: contracts,
+  foundation, feature registry/stability, classical committee, prediction,
+  evaluation and label loading, learned/synthetic sources, consensus,
+  pipeline, independent auditor, reporting, wrapper, queue runner, and
+  dashboard integration.
+- Artifact inventory changed from an output-directory scan to a fixed immutable
+  allowlist. Logs, stdout, status, checkpoints, temporary files, and manifest
+  self-references cannot enter the inventory.
+- The Korean runbook now states the true order: verify frozen prediction and
+  provenance, then generate/freeze evaluation CSVs, then independently audit
+  them before publishing reports.
+
+## Focused Verification
+
+```text
+python3 -m unittest \
+  experiments.exp403_408.tests.test_evaluation.EvaluationTests.test_exp408_reaggregation_exposes_overlap_and_paired_bootstrap_diagnostics \
+  experiments.exp403_408.tests.test_pipeline.PipelineTests.test_report_separates_autonomous_and_human_assisted_metrics \
+  experiments.exp403_408.tests.test_pipeline.PipelineTests.test_manifest_allowlist_ignores_changing_stdout_and_renders_execution_context \
+  experiments.exp403_408.tests.test_pipeline.PipelineTests.test_runbook_commands_reference_the_real_entrypoint -v
+Ran 4 tests - OK
+
+python3 -m unittest \
+  experiments.exp403_408.tests.test_pipeline.PipelineTests.test_database_snapshot_composite_binds_db_wal_and_shm -v
+Ran 1 test - OK
+
+python3 scratch/test_exp403_408_queue.py
+Exp403-408 queue and dashboard registration: PASS
+```
+
+## Scope Boundary
+
+This remains retrospective-only. No deployment or prospective validation is
+claimed, Exp405 does not change automatic Hard, and Exp406-408 remain
+human-assisted review-only Shadow outputs.
