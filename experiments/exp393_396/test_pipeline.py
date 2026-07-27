@@ -7,7 +7,9 @@ import unittest
 import numpy as np
 
 from experiments.exp393_396.artifact_io import (
+    load_contract_dataset_names,
     load_verified_prediction,
+    prediction_dataset_count,
     write_prediction_artifact,
 )
 from experiments.exp393_396.contracts import GrammarConfig
@@ -22,6 +24,14 @@ from experiments.exp393_396.run_experiment_393_396_pipeline import (
 
 
 class PredictionPipelineTests(unittest.TestCase):
+    def test_prediction_population_is_frozen_to_exp389_contract(self):
+        names = load_contract_dataset_names()
+
+        self.assertEqual(len(names), 1117)
+        self.assertEqual(prediction_dataset_count(), 1117)
+        self.assertNotIn("CornellWhaleChallenge", names)
+        self.assertNotIn("Wafer_normal_1", names)
+
     def test_prediction_row_contains_no_labels_or_metrics(self):
         train = [
             np.sin(np.linspace(0.0, np.pi, 64) + offset)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import csv
 import hashlib
 import json
 from pathlib import Path
@@ -21,6 +22,24 @@ DB_PATH = DATA_ROOT / "univariate_ts.db"
 PREDICTION_NAME = "exp393_predictions.jsonl"
 PREDICTION_MANIFEST_NAME = "exp393_prediction_manifest.json"
 EXP389_ROOT = DATA_ROOT / "exp389_390_dual_confidence_tiers"
+EXP389_DETAIL = EXP389_ROOT / "exp389_detail.csv"
+
+
+def load_contract_dataset_names() -> frozenset[str]:
+    if not EXP389_DETAIL.exists():
+        raise FileNotFoundError(
+            f"Frozen Exp389 dataset contract is missing: {EXP389_DETAIL}"
+        )
+    with EXP389_DETAIL.open(newline="", encoding="utf-8") as handle:
+        rows = csv.DictReader(handle)
+        names = {
+            str(row.get("dataset") or row.get("dataset_name") or "").strip()
+            for row in rows
+        }
+    names.discard("")
+    if not names:
+        raise ValueError(f"Frozen Exp389 dataset contract is empty: {EXP389_DETAIL}")
+    return frozenset(names)
 
 
 def sha256_file(path: Path) -> str:
@@ -46,6 +65,7 @@ def _json_value(value: Any) -> Any:
 def load_prediction_inputs(
     dataset_limit: int | None = None,
 ) -> Iterator[dict[str, Any]]:
+    contract_names = load_contract_dataset_names()
     uri = f"file:{DB_PATH}?mode=ro"
     connection = sqlite3.connect(uri, uri=True)
     try:
@@ -57,11 +77,19 @@ def load_prediction_inputs(
                 COALESCE(series_length, 0),
                 name
         """
-        parameters: tuple[int, ...] = ()
+        datasets = [
+            row
+            for row in connection.execute(query).fetchall()
+            if str(row[1]) in contract_names
+        ]
         if dataset_limit is not None:
-            query += " LIMIT ?"
-            parameters = (int(dataset_limit),)
-        datasets = connection.execute(query, parameters).fetchall()
+            datasets = datasets[: int(dataset_limit)]
+        missing = contract_names - {str(row[1]) for row in datasets}
+        if dataset_limit is None and missing:
+            raise ValueError(
+                "Frozen dataset contract is not fully covered by the database: "
+                + ", ".join(sorted(missing))
+            )
         for dataset_id, dataset_name in datasets:
             train_rows = connection.execute(
                 """
@@ -97,13 +125,8 @@ def load_prediction_inputs(
 
 
 def prediction_dataset_count(dataset_limit: int | None = None) -> int:
-    uri = f"file:{DB_PATH}?mode=ro"
-    connection = sqlite3.connect(uri, uri=True)
-    try:
-        count = int(connection.execute("SELECT COUNT(*) FROM datasets").fetchone()[0])
-        return min(count, int(dataset_limit)) if dataset_limit is not None else count
-    finally:
-        connection.close()
+    count = len(load_contract_dataset_names())
+    return min(count, int(dataset_limit)) if dataset_limit is not None else count
 
 
 def write_prediction_artifact(
