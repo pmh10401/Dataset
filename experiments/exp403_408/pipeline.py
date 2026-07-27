@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import dataclass, fields, is_dataclass
 import hashlib
 import json
 import os
@@ -121,6 +121,59 @@ def run_smoke(
     )
 
 
+_SMOKE_TIERS = (
+    ("abstain", 0, 4),
+    ("robust_distance", 5, 19),
+    ("classical_committee", 20, 49),
+    ("learned_methods", 50, None),
+)
+
+
+def select_representative_smoke_datasets(
+    datasets: Sequence[str],
+    limit: int,
+    *,
+    train_count_for_dataset: Callable[[str], int],
+) -> tuple[tuple[str, ...], dict[str, int]]:
+    """Choose a deterministic TRAIN-count-only smoke sample from ordered inputs."""
+    if limit < 1:
+        raise ValueError("representative smoke limit must be positive")
+    ordered = tuple(str(dataset) for dataset in datasets)
+    tiers: dict[str, list[str]] = {name: [] for name, _low, _high in _SMOKE_TIERS}
+    for dataset in ordered:
+        count = int(train_count_for_dataset(dataset))
+        for name, low, high in _SMOKE_TIERS:
+            if count >= low and (high is None or count <= high):
+                tiers[name].append(dataset)
+                break
+        else:
+            raise ValueError("TRAIN count cannot be negative")
+
+    selected: set[str] = set()
+    positions = {name: 0 for name in tiers}
+    for name, _low, _high in _SMOKE_TIERS:
+        if len(selected) >= limit:
+            break
+        if tiers[name]:
+            selected.add(tiers[name][0])
+            positions[name] = 1
+    while len(selected) < limit:
+        added = False
+        for name, _low, _high in _SMOKE_TIERS:
+            position = positions[name]
+            if position < len(tiers[name]):
+                selected.add(tiers[name][position])
+                positions[name] = position + 1
+                added = True
+                if len(selected) >= limit:
+                    break
+        if not added:
+            break
+    result = tuple(dataset for dataset in ordered if dataset in selected)
+    coverage = {name: sum(dataset in selected for dataset in values) for name, values in tiers.items()}
+    return result, coverage
+
+
 def run_pipeline(
     *,
     stage: str,
@@ -129,6 +182,8 @@ def run_pipeline(
     resume: bool = True,
     stop_after: int | None = None,
     workers: int = 7,
+    device: str = "cpu",
+    representative_smoke: bool = False,
 ) -> tuple[StageResult, ...]:
     """Run one requested stage or all stages in frozen order.
 
@@ -136,6 +191,11 @@ def run_pipeline(
     stages deliberately use one outer process because their modules already
     train each model serially and must never acquire nested model parallelism.
     """
+    requested_device = str(device).lower()
+    if requested_device not in {"auto", "cpu"}:
+        raise ValueError(
+            "Exp403-408 publication is CPU-canonical; run the separate Exp406 parity benchmark for MPS"
+        )
     selected = STAGES if stage == "all" else (stage,)
     if any(name not in STAGES for name in selected):
         raise ValueError(f"unknown stage: {stage}")
@@ -143,7 +203,14 @@ def run_pipeline(
     if limit is not None:
         if limit < 1:
             raise ValueError("limit must be positive")
-        datasets = datasets[:limit]
+        if representative_smoke:
+            datasets, _coverage = select_representative_smoke_datasets(
+                datasets,
+                limit,
+                train_count_for_dataset=lambda dataset: len(load_dataset_input(dataset).train_normal),
+            )
+        else:
+            datasets = datasets[:limit]
     if not datasets:
         raise ValueError("dataset source returned no datasets")
 
@@ -164,7 +231,7 @@ def run_pipeline(
                 stage_name,
                 stage_datasets,
                 Path(output_dir),
-                processor=_processor_for(stage_name, Path(output_dir)),
+                processor=_processor_for(stage_name, Path(output_dir), datasets),
                 stop_after=stop_after,
                 resume=stage_resume,
                 workers=stage_workers,
@@ -358,15 +425,17 @@ def run_stage(
     return StageResult(stage, completed, total, recomputed, errors, output)
 
 
-def _processor_for(stage: str, output: Path) -> Processor:
+def _processor_for(
+    stage: str, output: Path, dataset_scope: Sequence[str] | None = None
+) -> Processor:
     processors: dict[str, Processor] = {
         "audit-features": _audit_features,
         "classical-predict": _classical_predict,
-        "classical-evaluate": lambda _dataset: _classical_evaluate(output),
+        "classical-evaluate": lambda _dataset: _classical_evaluate(output, dataset_scope),
         "ssl-predict": _ssl_predict,
         "synthetic-predict": _synthetic_predict,
         "consensus-evaluate": lambda dataset: _consensus_evaluate(dataset, output),
-        "report": lambda _dataset: _write_report(output),
+        "report": lambda _dataset: _write_report(output, dataset_scope),
     }
     return processors[stage]
 
@@ -460,7 +529,9 @@ def _consensus_evaluate(dataset: str, output: Path) -> Mapping[str, object]:
     return {"dataset": dataset, "outcome": "completed", "consensus": _json_value(result)}
 
 
-def _classical_evaluate(output: Path) -> Mapping[str, object]:
+def _classical_evaluate(
+    output: Path, dataset_scope: Sequence[str] | None = None
+) -> Mapping[str, object]:
     manifest = _read_json(output / "exp404_prediction_manifest.json")
     contract_path = output / "exp403_404_provenance_contract.json"
     evaluation = evaluate_exp405(
@@ -469,13 +540,19 @@ def _classical_evaluate(output: Path) -> Mapping[str, object]:
         frozen_lane_universe=load_frozen_lanes(),
         provenance_contract_path=contract_path,
         expected_provenance_sha256=str(manifest["provenance_contract_sha256"]),
+        dataset_scope=dataset_scope,
     )
     write_json_atomic(output / EVALUATION_ARTIFACT, _json_value(evaluation))
     return {"dataset": "__aggregate__", "outcome": "completed", "evaluation": _json_value(evaluation)}
 
 
-def _write_report(output: Path) -> Mapping[str, object]:
-    _write_published_evaluation_tables(output)
+def _write_report(
+    output: Path, dataset_scope: Sequence[str] | None = None
+) -> Mapping[str, object]:
+    if dataset_scope is None:
+        _write_published_evaluation_tables(output)
+    else:
+        _write_published_evaluation_tables(output, dataset_scope)
     _require_final_outputs(output, require_report=False)
     result_rows = _report_rows(output)
     write_csv_atomic(
@@ -505,9 +582,11 @@ def _write_report(output: Path) -> Mapping[str, object]:
     return {"dataset": "__aggregate__", "outcome": "completed", "result_rows": len(result_rows)}
 
 
-def _write_published_evaluation_tables(output: Path) -> None:
+def _write_published_evaluation_tables(
+    output: Path, dataset_scope: Sequence[str] | None = None
+) -> None:
     """Freeze official label-based detail rows before the read-only audit runs."""
-    _verify_evaluation_input_manifest(output)
+    _verify_evaluation_input_manifest(output, dataset_scope)
     prediction = _read_jsonl_artifact(output / "exp404_hard_confidence.jsonl")
     consensus_rows = _read_jsonl_artifact(output / CONSENSUS_ARTIFACT)
     audit_rows = _read_jsonl_artifact(output / AUDIT_ARTIFACT)
@@ -674,7 +753,7 @@ def _finalize_stage(stage: str, output: Path, datasets: Sequence[str]) -> None:
             fieldnames=("dataset", "variant", "candidate_count"),
             rows=summary_rows,
         )
-        _write_evaluation_input_manifest(output)
+        _write_evaluation_input_manifest(output, datasets)
 
 
 def _publish_classical_prediction(output: Path, datasets: Sequence[str]) -> None:
@@ -712,6 +791,7 @@ def _publish_classical_prediction(output: Path, datasets: Sequence[str]) -> None
         config=config,
         frozen_lane_universe=load_frozen_lanes(),
         expected_provenance=expected_provenance,
+        dataset_scope=datasets,
     )
 
 
@@ -904,7 +984,9 @@ def _evaluation_input_artifacts(output: Path) -> tuple[Path, ...]:
     )
 
 
-def _write_evaluation_input_manifest(output: Path) -> None:
+def _write_evaluation_input_manifest(
+    output: Path, dataset_scope: Sequence[str] | None = None
+) -> None:
     paths = _evaluation_input_artifacts(output)
     missing = [str(path) for path in paths if not path.is_file()]
     if missing:
@@ -920,11 +1002,14 @@ def _write_evaluation_input_manifest(output: Path) -> None:
             "artifact_sha256": {path.name: sha256_file(path) for path in paths},
             "external_sha256": {str(path): sha256_file(path) for path in external_paths},
             "database_snapshot": database_snapshot,
+            "dataset_scope": sorted(dataset_scope) if dataset_scope is not None else None,
         },
     )
 
 
-def _verify_evaluation_input_manifest(output: Path) -> None:
+def _verify_evaluation_input_manifest(
+    output: Path, dataset_scope: Sequence[str] | None = None
+) -> None:
     manifest = _read_json(output / EVALUATION_INPUT_MANIFEST)
     hashes = _mapping_object(manifest.get("artifact_sha256"), "evaluation input artifact_sha256")
     for path in _evaluation_input_artifacts(output):
@@ -936,12 +1021,20 @@ def _verify_evaluation_input_manifest(output: Path) -> None:
             raise ValueError(f"evaluation input SHA256 mismatch: {path}")
     if manifest.get("database_snapshot") != _database_snapshot_manifest(_database_snapshot_paths(DB_PATH)):
         raise ValueError("evaluation input database snapshot composite mismatch")
+    expected_scope = sorted(dataset_scope) if dataset_scope is not None else None
+    if manifest.get("dataset_scope") != expected_scope:
+        raise ValueError("evaluation input dataset scope mismatch")
     prediction_manifest = _read_json(output / "exp404_prediction_manifest.json")
     expected_sha = str(manifest.get("provenance_contract_sha256", ""))
     if expected_sha != prediction_manifest.get("provenance_contract_sha256"):
         raise ValueError("evaluation input externally pinned provenance mismatch")
     expected = load_expected_provenance(output / "exp403_404_provenance_contract.json", expected_sha256=expected_sha)
-    verify_prediction(output, frozen_lane_universe=load_frozen_lanes(), expected_provenance=expected)
+    verify_prediction(
+        output,
+        frozen_lane_universe=load_frozen_lanes(),
+        expected_provenance=expected,
+        dataset_scope=dataset_scope,
+    )
 
 
 def _write_evaluation_publication_manifest(output: Path) -> None:
@@ -1434,7 +1527,10 @@ def _safe_name(dataset: str) -> str:
 
 def _json_value(value: Any) -> Any:
     if is_dataclass(value):
-        return _json_value(asdict(value))
+        return {
+            field.name: _json_value(getattr(value, field.name))
+            for field in fields(value)
+        }
     if isinstance(value, Mapping):
         return {str(key): _json_value(child) for key, child in value.items()}
     if isinstance(value, (list, tuple, set, frozenset)):
@@ -1448,12 +1544,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run Exp403-408 feature/ML validation")
     parser.add_argument("--stage", choices=(*STAGES, "all"), default="all")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
-    parser.add_argument("--limit", type=int)
+    parser.add_argument("--dataset-limit", "--limit", dest="limit", type=int)
     parser.add_argument("--no-resume", action="store_true")
+    parser.add_argument("--reset-checkpoint", action="store_true")
     parser.add_argument("--stop-after", type=int)
     parser.add_argument("--workers", type=int, default=int(os.environ.get("RANK_EXPERIMENT_WORKERS", "7")))
+    parser.add_argument("--device", choices=("auto", "cpu"), default="cpu")
+    parser.add_argument("--representative-smoke", action="store_true")
     args = parser.parse_args(argv)
-    run_pipeline(stage=args.stage, output_dir=args.output_dir, limit=args.limit, resume=not args.no_resume, stop_after=args.stop_after, workers=args.workers)
+    run_pipeline(
+        stage=args.stage,
+        output_dir=args.output_dir,
+        limit=args.limit,
+        resume=not (args.no_resume or args.reset_checkpoint),
+        stop_after=args.stop_after,
+        workers=args.workers,
+        device=args.device,
+        representative_smoke=args.representative_smoke,
+    )
     return 0
 
 

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 import tempfile
 import threading
 import time
+from types import MappingProxyType
 import unittest
 from contextlib import ExitStack
 from unittest.mock import MagicMock, patch
@@ -18,6 +20,86 @@ def process_safe_smoke_processor(dataset: str) -> dict[str, object]:
 
 
 class PipelineTests(unittest.TestCase):
+    def test_representative_smoke_selection_is_deterministic_and_train_only(self) -> None:
+        from experiments.exp403_408.pipeline import select_representative_smoke_datasets
+
+        names = (
+            "small-a", "small-b", "robust-a", "robust-b", "committee-a",
+            "committee-b", "learned-a", "learned-b",
+        )
+        train_counts = {
+            "small-a": 3, "small-b": 4,
+            "robust-a": 5, "robust-b": 19,
+            "committee-a": 20, "committee-b": 49,
+            "learned-a": 50, "learned-b": 70,
+        }
+
+        selected, coverage = select_representative_smoke_datasets(
+            names, 8, train_count_for_dataset=train_counts.__getitem__
+        )
+
+        self.assertEqual(selected, names)
+        self.assertEqual(
+            coverage,
+            {"abstain": 2, "robust_distance": 2, "classical_committee": 2, "learned_methods": 2},
+        )
+
+    def test_representative_smoke_marks_only_absent_train_tier_unavailable(self) -> None:
+        from experiments.exp403_408.pipeline import select_representative_smoke_datasets
+
+        selected, coverage = select_representative_smoke_datasets(
+            ("robust", "learned"),
+            20,
+            train_count_for_dataset={"robust": 8, "learned": 55}.__getitem__,
+        )
+
+        self.assertEqual(selected, ("robust", "learned"))
+        self.assertEqual(
+            coverage,
+            {"abstain": 0, "robust_distance": 1, "classical_committee": 0, "learned_methods": 1},
+        )
+
+    def test_json_value_serializes_dataclass_mappingproxy_without_pickle(self) -> None:
+        from experiments.exp403_408.pipeline import _json_value
+
+        @dataclass(frozen=True)
+        class Payload:
+            values: object
+
+        self.assertEqual(
+            _json_value(Payload(MappingProxyType({"shadow": (1, 2)}))),
+            {"values": {"shadow": [1, 2]}},
+        )
+
+    def test_task13_cli_accepts_required_smoke_flags(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "smoke"
+            with patch.object(pipeline, "run_pipeline") as run_pipeline:
+                result = pipeline.main(
+                    [
+                        "--stage", "all",
+                        "--dataset-limit", "20",
+                        "--workers", "2",
+                        "--device", "cpu",
+                        "--reset-checkpoint",
+                        "--output-dir", str(output),
+                    ]
+                )
+
+        self.assertEqual(result, 0)
+        run_pipeline.assert_called_once_with(
+            stage="all",
+            output_dir=output,
+            limit=20,
+            resume=False,
+            stop_after=None,
+            workers=2,
+            device="cpu",
+            representative_smoke=False,
+        )
+
     def _evaluation_hash_fixture(self, pipeline, output: Path) -> dict[str, Path]:
         prediction = output / "exp404_hard_confidence.jsonl"
         feature_manifest = output / "exp403_feature_manifest.csv"

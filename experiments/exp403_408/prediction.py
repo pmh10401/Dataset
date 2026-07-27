@@ -250,13 +250,14 @@ def write_prediction(
     config: FrozenConfig,
     frozen_lane_universe: FrozenLaneUniverse,
     expected_provenance: ExpectedProvenance,
+    dataset_scope: Collection[str] | None = None,
 ) -> dict[str, object]:
     """Atomically freeze sorted Exp403/404 prediction artifacts and hashes."""
     _validate_config(config)
     output = Path(output)
     ordered = _validated_rows(rows)
     serialized_rows = [_row_mapping(row) for row in ordered]
-    frozen_lanes = _verified_hard_lanes(frozen_lane_universe)
+    frozen_lanes = _verified_hard_lanes(frozen_lane_universe, dataset_scope=dataset_scope)
     _validate_lane_coverage(serialized_rows, frozen_lanes)
     provenance = _expected_provenance_payload(expected_provenance)
     feature_rows = [
@@ -317,6 +318,7 @@ def verify_prediction(
     *,
     frozen_lane_universe: FrozenLaneUniverse,
     expected_provenance: ExpectedProvenance,
+    dataset_scope: Collection[str] | None = None,
 ) -> tuple[list[dict[str, object]], dict[str, object]]:
     """Load only a complete, hash-bound label-free prediction publication."""
     output = Path(output)
@@ -342,7 +344,7 @@ def verify_prediction(
         "config", "input", "feature", "prediction", "code", "baseline", "feature_manifest"
     }:
         raise ValueError("prediction manifest hash contract mismatch")
-    frozen_lanes = _verified_hard_lanes(frozen_lane_universe)
+    frozen_lanes = _verified_hard_lanes(frozen_lane_universe, dataset_scope=dataset_scope)
     if manifest.get("frozen_hard_lanes") != frozen_lanes:
         raise ValueError("prediction frozen Hard lane universe mismatch")
     if manifest.get("frozen_hard_lanes_sha256") != sha256_bytes(canonical_json_bytes(frozen_lanes)):
@@ -487,7 +489,11 @@ def _normalize_frozen_hard_lanes(
     return dict(sorted(normalized.items()))
 
 
-def _verified_hard_lanes(universe: FrozenLaneUniverse) -> dict[str, list[int]]:
+def _verified_hard_lanes(
+    universe: FrozenLaneUniverse,
+    *,
+    dataset_scope: Collection[str] | None = None,
+) -> dict[str, list[int]]:
     if not isinstance(universe, FrozenLaneUniverse):
         raise TypeError("frozen_lane_universe must be a verified FrozenLaneUniverse")
     lanes = _normalize_frozen_hard_lanes(universe.hard_lanes())
@@ -495,7 +501,15 @@ def _verified_hard_lanes(universe: FrozenLaneUniverse) -> dict[str, list[int]]:
         raise ValueError("frozen Hard lane dataset coverage mismatch")
     if sum(len(indices) for indices in lanes.values()) != EXPECTED_HARD:
         raise ValueError("frozen Hard lane total mismatch")
-    return lanes
+    if dataset_scope is None:
+        return lanes
+    selected = tuple(sorted({str(dataset) for dataset in dataset_scope}))
+    if not selected or any(not dataset for dataset in selected):
+        raise ValueError("prediction dataset scope is invalid")
+    unknown = set(selected) - set(lanes)
+    if unknown:
+        raise ValueError("prediction dataset scope is outside the frozen lane universe")
+    return {dataset: lanes[dataset] for dataset in selected}
 
 
 def _validate_lane_coverage(

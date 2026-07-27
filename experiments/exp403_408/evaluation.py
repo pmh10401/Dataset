@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 import math
 from numbers import Integral, Real
@@ -68,6 +68,7 @@ def evaluate_exp405(
     frozen_lane_universe: FrozenLaneUniverse,
     provenance_contract_path: Path,
     expected_provenance_sha256: str,
+    dataset_scope: Collection[str] | None = None,
 ) -> DemotionEvaluation:
     """Verify frozen prediction and external trust anchor before loading labels."""
     expected_provenance = load_expected_provenance(
@@ -78,8 +79,11 @@ def evaluate_exp405(
         Path(prediction_output),
         frozen_lane_universe=frozen_lane_universe,
         expected_provenance=expected_provenance,
+        dataset_scope=dataset_scope,
     )
-    expected_hard_identities = _frozen_hard_identities(frozen_lane_universe)
+    expected_hard_identities = _frozen_hard_identities(
+        frozen_lane_universe, dataset_scope=dataset_scope
+    )
     verified_rows = _validated_prediction_rows(rows)
     _validate_lane_parity(verified_rows, expected_hard_identities)
     labels = label_loader({str(row["dataset"]) for row in rows})
@@ -259,12 +263,23 @@ def _resolve_expected_hard_identities(
 
 def _frozen_hard_identities(
     frozen_lane_universe: FrozenLaneUniverse,
+    *,
+    dataset_scope: Collection[str] | None = None,
 ) -> frozenset[tuple[str, int]]:
     if not isinstance(frozen_lane_universe, FrozenLaneUniverse):
         raise TypeError("frozen_lane_universe must be a verified FrozenLaneUniverse")
+    lanes = frozen_lane_universe.hard_lanes()
+    if dataset_scope is not None:
+        selected = {str(dataset) for dataset in dataset_scope}
+        if not selected or any(not dataset for dataset in selected):
+            raise ValueError("evaluation dataset scope is invalid")
+        unknown = selected - set(lanes)
+        if unknown:
+            raise ValueError("evaluation dataset scope is outside the frozen lane universe")
+        lanes = {dataset: lanes[dataset] for dataset in selected}
     return frozenset(
         (str(dataset), int(candidate_index))
-        for dataset, candidate_indices in frozen_lane_universe.hard_lanes().items()
+        for dataset, candidate_indices in lanes.items()
         for candidate_index in candidate_indices
     )
 

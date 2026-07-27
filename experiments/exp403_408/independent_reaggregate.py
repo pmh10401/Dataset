@@ -238,8 +238,10 @@ def _reaggregate_exp405(
         "recheck_false_positive_count", "recheck_true_positive_count",
     }
     _require_columns(rows, required, path.name)
-    candidate_rows = _read_candidate_csv(candidate_path)
-    _require_columns(candidate_rows, {"dataset", "candidate_index", "is_recheck", "is_true_anomaly"}, candidate_path.name)
+    candidate_rows = _read_candidate_csv(
+        candidate_path,
+        {"dataset", "candidate_index", "is_recheck", "is_true_anomaly"},
+    )
     prediction_by_identity = {
         (str(row["dataset"]), _integer(row["candidate_index"], "prediction candidate index")): row
         for row in prediction
@@ -365,8 +367,10 @@ def _reaggregate_exp408(
                 candidate_sets[(dataset, str(variant), str(alpha))] = indices
     if {(dataset, index) for dataset, lanes in lane_sets.items() for index in lanes["hard"]} != expected_hard:
         raise ValueError("Exp408 frozen Hard lane parity mismatch")
-    candidate_rows = _read_candidate_csv(candidate_path)
-    _require_columns(candidate_rows, {"dataset", "variant", "alpha", "candidate_index", "is_true_anomaly"}, candidate_path.name)
+    candidate_rows = _read_candidate_csv(
+        candidate_path,
+        {"dataset", "variant", "alpha", "candidate_index", "is_true_anomaly"},
+    )
     candidate_outcomes: dict[tuple[str, str, str], dict[int, int]] = defaultdict(dict)
     for row in candidate_rows:
         key = (
@@ -668,10 +672,16 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
     return rows
 
 
-def _read_candidate_csv(path: Path) -> list[dict[str, str]]:
+def _read_candidate_csv(
+    path: Path, required: set[str]
+) -> list[dict[str, str]]:
     try:
-        return _read_csv(path)
-    except ValueError as error:
+        with Path(path).open(newline="", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            if reader.fieldnames is None or not required <= set(reader.fieldnames):
+                raise ValueError("candidate evaluation columns are incomplete")
+            return list(reader)
+    except (OSError, ValueError) as error:
         raise ValueError(f"candidate evaluation artifact is invalid: {path}") from error
 
 

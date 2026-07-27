@@ -119,6 +119,35 @@ class PredictionBoundaryTests(unittest.TestCase):
                     expected_provenance=provenance,
                 )
 
+    def test_scoped_smoke_prediction_uses_verified_subset_of_full_lanes(self) -> None:
+        scope = tuple(sorted(self.universe.hard_lanes())[:20])
+        scoped_rows = [row for row in self.rows if row.dataset in scope]
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "output"
+            provenance = artifact_provenance(root)
+            manifest = write_prediction(
+                scoped_rows,
+                output,
+                config=config(),
+                frozen_lane_universe=self.universe,
+                expected_provenance=provenance,
+                dataset_scope=scope,
+            )
+            rows, _ = verify_prediction(
+                output,
+                frozen_lane_universe=self.universe,
+                expected_provenance=provenance,
+                dataset_scope=scope,
+            )
+
+        self.assertEqual(
+            {row["dataset"] for row in rows},
+            {dataset for dataset in scope if self.universe.hard_lanes()[dataset]},
+        )
+        self.assertEqual(set(manifest["frozen_hard_lanes"]), set(scope))
+
     def test_rejects_empty_or_subset_caller_lane_maps(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             for lane_map in ({}, {"ACSF1_normal_0": {0}}):

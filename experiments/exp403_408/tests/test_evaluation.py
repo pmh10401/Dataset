@@ -23,7 +23,10 @@ from experiments.exp403_408.evaluation import (
     evaluate_exp405,
     evaluate_hard_confidence,
 )
-from experiments.exp403_408.independent_reaggregate import independent_reaggregate
+from experiments.exp403_408.independent_reaggregate import (
+    _read_candidate_csv,
+    independent_reaggregate,
+)
 
 
 def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
@@ -263,6 +266,21 @@ def expected_identities(
 
 
 class EvaluationTests(unittest.TestCase):
+    def test_independent_reader_allows_header_only_shadow_candidate_csv(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "exp408_variant_candidate_evaluation.csv"
+            path.write_text(
+                "dataset,variant,alpha,candidate_index,is_true_anomaly\n",
+                encoding="utf-8",
+            )
+
+            rows = _read_candidate_csv(
+                path,
+                {"dataset", "variant", "alpha", "candidate_index", "is_true_anomaly"},
+            )
+
+        self.assertEqual(rows, [])
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.universe = load_frozen_lanes()
