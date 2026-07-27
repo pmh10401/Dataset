@@ -6193,7 +6193,7 @@ def build_atomic_status_only(state, running, info, status, include_details):
     eta = as_float(status.get("eta_seconds"))
     atomic_coverage = coverage_snapshot_from_counts(done, expected, atomic_error_events)
     atomic_coverage["error_datasets"] = atomic_errors
-    atomic_coverage["remaining_or_missing"] = max(0, expected - done - atomic_errors)
+    atomic_coverage["remaining_or_missing"] = max(0, expected - done)
     queue_items = experiment_queue_snapshot(
         state, expected, experiment_ids=[running.get("id")], heartbeat=status
     )

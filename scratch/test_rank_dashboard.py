@@ -196,18 +196,27 @@ def main() -> int:
         }
         dashboard.read_experiment_status = lambda *_args, **_kwargs: {
             "status": "running", "run_id": "run-errors", "stage": "ssl-predict",
-            "current_dataset": "Dataset-9", "completed": 7, "total": 1117,
-            "errors": 3, "device": "cpu", "checkpoint_sha256": "c" * 64,
+            "current_dataset": "Dataset-9", "completed": 5, "total": 10,
+            "errors": 2, "device": "cpu", "checkpoint_sha256": "c" * 64,
         }
         dashboard.system_resource_snapshot = lambda: {}
         dashboard.process_tree_snapshot = lambda _pid: {}
         errors_visible = dashboard.build_status(include_details=False)
+        dashboard.read_experiment_status = lambda *_args, **_kwargs: {
+            "status": "completed", "run_id": "run-errors", "stage": "report",
+            "current_dataset": "Dataset-10", "completed": 10, "total": 10,
+            "errors": 3, "device": "cpu", "checkpoint_sha256": "d" * 64,
+        }
+        completed_with_errors = dashboard.build_status(include_details=False)
     finally:
         for name, value in original.items():
             setattr(dashboard, name, value)
 
-    assert errors_visible["error_summary"]["total_errors"] == 3
-    assert errors_visible["coverage"]["error_datasets"] == 3
+    assert errors_visible["error_summary"]["total_errors"] == 2
+    assert errors_visible["coverage"]["error_datasets"] == 2
+    assert errors_visible["coverage"]["datasets_done"] + errors_visible["coverage"]["remaining_or_missing"] == 10
+    assert completed_with_errors["coverage"]["error_datasets"] == 3
+    assert completed_with_errors["coverage"]["datasets_done"] + completed_with_errors["coverage"]["remaining_or_missing"] == 10
     print("Exp403-408 dashboard status contract: PASS")
     return 0
 

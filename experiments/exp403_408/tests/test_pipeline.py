@@ -235,7 +235,7 @@ class PipelineTests(unittest.TestCase):
         self.assertNotEqual(prediction_changed, provenance_changed)
         self.assertNotEqual(provenance_changed, database_changed)
 
-    def test_report_hash_invalidates_any_checkpoint_content(self) -> None:
+    def test_report_resume_excludes_own_checkpoint_and_invalidates_upstream(self) -> None:
         import experiments.exp403_408.pipeline as pipeline
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -249,14 +249,34 @@ class PipelineTests(unittest.TestCase):
                 pipeline.CONSENSUS_SUMMARY,
             ):
                 (output / name).write_text("{}\n", encoding="utf-8")
-            checkpoint = output / "checkpoints" / "audit-features" / "toy.json"
-            checkpoint.parent.mkdir(parents=True)
-            checkpoint.write_text('{"checkpoint":"v1"}\n', encoding="utf-8")
-            initial = pipeline._stage_input_hash("report", "__aggregate__", output, "cpu")
-            checkpoint.write_text('{"checkpoint":"v2"}\n', encoding="utf-8")
-            changed = pipeline._stage_input_hash("report", "__aggregate__", output, "cpu")
+            upstream = output / "checkpoints" / "audit-features" / "toy.json"
+            upstream.parent.mkdir(parents=True)
+            upstream.write_text('{"checkpoint":"v1"}\n', encoding="utf-8")
+            report_hash = lambda _dataset: pipeline._stage_input_hash(
+                "report", "__aggregate__", output, "cpu"
+            )
+            first = pipeline.run_stage(
+                "report", ["__aggregate__"], output,
+                processor=process_safe_smoke_processor,
+                input_hash_for_dataset=report_hash,
+            )
+            resumed = pipeline.run_stage(
+                "report", ["__aggregate__"], output,
+                processor=process_safe_smoke_processor,
+                input_hash_for_dataset=report_hash,
+                resume=True,
+            )
+            upstream.write_text('{"checkpoint":"v2"}\n', encoding="utf-8")
+            invalidated = pipeline.run_stage(
+                "report", ["__aggregate__"], output,
+                processor=process_safe_smoke_processor,
+                input_hash_for_dataset=report_hash,
+                resume=True,
+            )
 
-        self.assertNotEqual(initial, changed)
+        self.assertEqual(first.recomputed_datasets, 1)
+        self.assertEqual(resumed.recomputed_datasets, 0)
+        self.assertEqual(invalidated.recomputed_datasets, 1)
 
     def test_input_hash_failure_is_checkpointed_and_stage_continues(self) -> None:
         from experiments.exp403_408.pipeline import read_status, run_stage

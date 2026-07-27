@@ -56,6 +56,13 @@ CONSENSUS_SUMMARY = "exp408_consensus_summary.csv"
 RESULT_ARTIFACT = "exp403_408_results.csv"
 SUMMARY_ARTIFACT = "exp403_408_summary.csv"
 STATUS_HEARTBEAT_SECONDS = 30.0
+REPORT_ROW_STAGES = (
+    "audit-features",
+    "classical-predict",
+    "ssl-predict",
+    "synthetic-predict",
+    "consensus-evaluate",
+)
 
 
 @dataclass(frozen=True)
@@ -652,7 +659,7 @@ def _lineage(dataset: str) -> str:
 
 def _report_rows(output: Path) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
-    for stage in ("audit-features", "classical-predict", "ssl-predict", "synthetic-predict", "consensus-evaluate"):
+    for stage in REPORT_ROW_STAGES:
         for path in sorted((output / "checkpoints" / stage).glob("*.json")):
             row = _read_checkpoint(path)
             rows.append({
@@ -796,7 +803,11 @@ def _aggregate_dependencies(stage: str, output: Path) -> tuple[Path, ...]:
             output / EVALUATION_ARTIFACT,
             output / CONSENSUS_ARTIFACT,
             output / CONSENSUS_SUMMARY,
-            *_checkpoint_files(output / "checkpoints"),
+            *(
+                checkpoint
+                for report_stage in REPORT_ROW_STAGES
+                for checkpoint in _checkpoint_files(output / "checkpoints" / report_stage)
+            ),
         )
     else:
         raise ValueError(f"unknown aggregate stage: {stage}")
