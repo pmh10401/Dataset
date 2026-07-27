@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+import tempfile
+from pathlib import Path
 
 from experiments.exp392_label_guided_discovery.discovery_core import (
     CombinationRule,
@@ -8,6 +10,11 @@ from experiments.exp392_label_guided_discovery.discovery_core import (
     candidate_indices_for_rule,
     enumerate_combination_rules,
     evaluate_candidate_set,
+)
+from experiments.exp392_label_guided_discovery.run_experiment_392_label_guided_score_discovery_audit import (
+    build_prepare_manifest,
+    build_prepare_row,
+    load_prepared_rows,
 )
 
 
@@ -88,6 +95,93 @@ class MultipleComparisonTests(unittest.TestCase):
         self.assertAlmostEqual(adjusted[2], 0.05333333333333334)
         self.assertAlmostEqual(adjusted[3], 0.2)
         self.assertTrue(all(0.0 <= value <= 1.0 for value in adjusted))
+
+
+class PreparePhaseTests(unittest.TestCase):
+    def setUp(self):
+        self.hard_row = {
+            "dataset": "Demo_normal_0",
+            "n_test": 5,
+            "automatic_hard_indices": [1],
+            "standard_review_indices": [2],
+            "priority_review_indices": [3],
+            "automatic_normal_exact_indices": [0],
+            "quality_conflict_indices": [4],
+        }
+        self.evidence_by_alpha = {
+            0.005: {
+                "Demo_normal_0": {
+                    "evidence": {
+                        "ewma": {
+                            "available": True,
+                            "indices": [2, 4],
+                            "resolution_blocked": False,
+                        },
+                        "frequency": {
+                            "available": False,
+                            "indices": [],
+                            "resolution_blocked": True,
+                        },
+                    }
+                }
+            }
+        }
+        self.coverage_row = {"n_train_normal": "20"}
+
+    def test_prepare_row_contains_no_labels_or_metrics(self):
+        row = build_prepare_row(
+            self.hard_row,
+            self.evidence_by_alpha,
+            self.coverage_row,
+            alphas=(0.005,),
+            sources=("ewma", "frequency"),
+        )
+
+        forbidden = {
+            "y_test",
+            "label",
+            "is_anomaly",
+            "tp",
+            "fp",
+            "fn",
+            "f1",
+        }
+        self.assertTrue(forbidden.isdisjoint(row))
+        self.assertFalse(row["contains_test_labels"])
+        self.assertFalse(row["contains_evaluation_metrics"])
+        self.assertEqual(row["evidence_by_alpha"]["0p005"]["ewma"]["indices"], [2, 4])
+
+    def test_prepare_manifest_disallows_policy_selection(self):
+        manifest = build_prepare_manifest(
+            rows=[{"dataset": "Demo_normal_0"}],
+            prediction_sha256="abc",
+            input_records=[],
+            code_sha256="def",
+        )
+
+        self.assertFalse(manifest["test_metrics_select_policy"])
+        self.assertFalse(manifest["eligible_for_deployment"])
+        self.assertFalse(manifest["contains_test_labels"])
+        self.assertFalse(manifest["contains_evaluation_metrics"])
+
+    def test_prepared_rows_reject_tampered_hash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            matrix = root / "exp392_frozen_candidate_matrix.jsonl"
+            matrix.write_text('{"dataset":"Demo_normal_0"}\n', encoding="utf-8")
+            manifest = build_prepare_manifest(
+                rows=[{"dataset": "Demo_normal_0"}],
+                prediction_sha256="not-the-real-hash",
+                input_records=[],
+                code_sha256="def",
+            )
+            (root / "exp392_prepare_manifest.json").write_text(
+                __import__("json").dumps(manifest),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "SHA256"):
+                load_prepared_rows(root)
 
 
 if __name__ == "__main__":
