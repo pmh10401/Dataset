@@ -14,6 +14,9 @@ from experiments.exp391_fn_reachability.fn_reachability_core import (
     evaluate_recovery,
     load_verified_jsonl,
 )
+from experiments.exp391_fn_reachability.run_experiment_391_fn_reachability_audit import (
+    render_report,
+)
 
 
 class BaselineClassificationTests(unittest.TestCase):
@@ -59,7 +62,7 @@ class RecoveryEvaluationTests(unittest.TestCase):
         result = evaluate_recovery(
             candidate_indices={1, 2, 4},
             hard_indices={0},
-            review_indices={1, 3},
+            review_indices={1, 2, 3},
             labels=["0", "1", "0", "1", "1"],
         )
 
@@ -67,8 +70,10 @@ class RecoveryEvaluationTests(unittest.TestCase):
         self.assertEqual(result["recovered_fn"], 2)
         self.assertEqual(result["added_fp"], 1)
         self.assertEqual(result["candidate_precision"], 2 / 3)
-        self.assertEqual(result["review_overlap_count"], 1)
+        self.assertEqual(result["review_overlap_count"], 2)
         self.assertEqual(result["review_recovered_fn"], 1)
+        self.assertEqual(result["review_overlap_fp"], 1)
+        self.assertEqual(result["review_overlap_precision"], 0.5)
         self.assertEqual(result["novel_recovered_fn"], 1)
 
 
@@ -113,6 +118,7 @@ class RecoveryAggregationTests(unittest.TestCase):
                 "added_fp": 1,
                 "review_overlap_count": 1,
                 "review_recovered_fn": 1,
+                "review_overlap_fp": 0,
                 "novel_recovered_fn": 0,
             },
             {
@@ -126,6 +132,7 @@ class RecoveryAggregationTests(unittest.TestCase):
                 "added_fp": 0,
                 "review_overlap_count": 0,
                 "review_recovered_fn": 0,
+                "review_overlap_fp": 0,
                 "novel_recovered_fn": 1,
             },
         ]
@@ -139,8 +146,50 @@ class RecoveryAggregationTests(unittest.TestCase):
         self.assertEqual(summary["added_fp"], 1)
         self.assertEqual(summary["candidate_precision"], 2 / 3)
         self.assertEqual(summary["fn_recovery_rate"], 2 / 5)
+        self.assertEqual(summary["review_overlap_precision"], 1.0)
         self.assertFalse(summary["selected_for_deployment"])
         self.assertFalse(summary["test_metrics_select_policy"])
+
+
+class ReportTests(unittest.TestCase):
+    def test_report_uses_fixed_diagnostic_rows_without_selecting_best(self):
+        baseline = {
+            "hard_count": 10,
+            "hard_tp": 7,
+            "hard_fp": 3,
+            "hard_fn": 5,
+            "zero_f1_datasets": 2,
+            "zero_no_hard_datasets": 1,
+            "zero_wrong_hard_datasets": 1,
+        }
+        dataset_rows = [
+            {"n_test": 150, "hard_fn": 4, "baseline_category": "zero_no_hard"},
+            {"n_test": 20, "hard_fn": 1, "baseline_category": "hard_has_tp"},
+        ]
+        rule_summary = [
+            {
+                "population": "zero_f1_test_ge_100",
+                "alpha": 0.005,
+                "vote_threshold": votes,
+                "candidate_count": 4 - votes,
+                "recovered_fn": 1,
+                "added_fp": 3 - votes,
+                "candidate_precision": 1 / (4 - votes),
+            }
+            for votes in (1, 2, 3)
+        ]
+
+        report = render_report(
+            baseline,
+            dataset_rows,
+            rule_summary,
+            source_summary=[],
+        )
+
+        self.assertIn("사전 고정 진단표", report)
+        self.assertIn("큰 데이터셋 FN 비중", report)
+        self.assertNotIn("가장 높은", report)
+        self.assertNotIn("최적", report)
 
 
 class QueueRegistrationTests(unittest.TestCase):

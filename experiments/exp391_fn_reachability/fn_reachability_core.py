@@ -130,6 +130,7 @@ def evaluate_recovery(
     added_fp = candidates - truth
     review_overlap = candidates & review
     review_recovered = recovered & review
+    review_overlap_fp = review_overlap - truth
     return {
         "candidate_count": len(candidates),
         "recovered_fn": len(recovered),
@@ -139,6 +140,10 @@ def evaluate_recovery(
         ),
         "review_overlap_count": len(review_overlap),
         "review_recovered_fn": len(review_recovered),
+        "review_overlap_fp": len(review_overlap_fp),
+        "review_overlap_precision": (
+            len(review_recovered) / len(review_overlap) if review_overlap else 0.0
+        ),
         "novel_recovered_fn": len(recovered - review),
     }
 
@@ -160,6 +165,7 @@ def aggregate_recovery_rows(rows: Sequence[Mapping[str, object]]) -> dict:
             "added_fp",
             "review_overlap_count",
             "review_recovered_fn",
+            "review_overlap_fp",
             "novel_recovered_fn",
         )
     }
@@ -176,6 +182,11 @@ def aggregate_recovery_rows(rows: Sequence[Mapping[str, object]]) -> dict:
         ),
         "fn_recovery_rate": (
             totals["recovered_fn"] / baseline_fn if baseline_fn else 0.0
+        ),
+        "review_overlap_precision": (
+            totals["review_recovered_fn"] / totals["review_overlap_count"]
+            if totals["review_overlap_count"]
+            else 0.0
         ),
         "selected_for_deployment": False,
         "test_metrics_select_policy": False,

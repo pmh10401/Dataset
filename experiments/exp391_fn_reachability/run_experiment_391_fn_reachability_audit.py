@@ -272,6 +272,15 @@ def aggregate_source_rows(source_rows: list[dict]) -> list[dict]:
                 "review_recovered_fn": sum(
                     int(row["review_recovered_fn"]) for row in rows
                 ),
+                "review_overlap_fp": sum(
+                    int(row["review_overlap_fp"]) for row in rows
+                ),
+                "review_overlap_precision": (
+                    sum(int(row["review_recovered_fn"]) for row in rows)
+                    / sum(int(row["review_overlap_count"]) for row in rows)
+                    if sum(int(row["review_overlap_count"]) for row in rows)
+                    else 0.0
+                ),
                 "novel_recovered_fn": sum(
                     int(row["novel_recovered_fn"]) for row in rows
                 ),
@@ -307,32 +316,39 @@ def verify_full_baseline(dataset_rows: list[dict]) -> dict:
 
 def render_report(
     baseline: dict,
+    dataset_rows: list[dict],
     rule_summary: list[dict],
     source_summary: list[dict],
 ) -> str:
-    zero_large = [
-        row
-        for row in rule_summary
-        if row["population"] == "zero_f1_test_ge_100"
-    ]
-    source_zero = [
-        row for row in source_summary if row["population"] == "zero_f1"
-    ]
-    best_rule = max(
-        zero_large,
-        key=lambda row: (
-            float(row["candidate_precision"]),
-            int(row["recovered_fn"]),
+    fixed_rows = sorted(
+        (
+            row
+            for row in rule_summary
+            if row["population"] == "zero_f1_test_ge_100"
+            and float(row["alpha"]) == 0.005
+            and int(row["vote_threshold"]) in (1, 2, 3)
         ),
-        default=None,
+        key=lambda row: int(row["vote_threshold"]),
     )
-    best_source = max(
-        source_zero,
-        key=lambda row: (
-            float(row["candidate_precision"]),
-            int(row["recovered_fn"]),
+    large_rows = [row for row in dataset_rows if int(row["n_test"]) >= 100]
+    small_rows = [row for row in dataset_rows if int(row["n_test"]) < 100]
+    large_fn = sum(int(row["hard_fn"]) for row in large_rows)
+    small_fn = sum(int(row["hard_fn"]) for row in small_rows)
+    large_zero = sum(
+        str(row["baseline_category"]).startswith("zero_") for row in large_rows
+    )
+    small_zero = sum(
+        str(row["baseline_category"]).startswith("zero_") for row in small_rows
+    )
+    ewma_signal = next(
+        (
+            row
+            for row in source_summary
+            if row["population"] == "zero_f1"
+            and row["source"] == "ewma"
+            and float(row["alpha"]) == 0.005
         ),
-        default=None,
+        None,
     )
     lines = [
         "# Exp391 FN/Zero-F1 회수 가능성 감사 결과",
@@ -350,38 +366,65 @@ def render_report(
         "- 여섯 Alpha와 1/2/3표 합의를 모두 보고하며 하나를 선택하지 않았다.",
         "- TEST 라벨은 동결 입력 해시 검증 후 사후 평가에만 사용했다.",
         "- 모든 결과는 retrospective counterfactual이며 prospective 검증이 아니다.",
+        "",
+        "## FN 집중 구간",
+        "",
+        (
+            f"- 큰 데이터셋(TEST 100 이상): {len(large_rows):,}개, FN "
+            f"{large_fn:,}건, Zero-F1 {large_zero:,}개"
+        ),
+        (
+            f"- 작은 데이터셋(TEST 100 미만): {len(small_rows):,}개, FN "
+            f"{small_fn:,}건, Zero-F1 {small_zero:,}개"
+        ),
+        (
+            f"- 큰 데이터셋 FN 비중: "
+            f"{100.0 * large_fn / baseline['hard_fn']:.2f}%"
+        ),
     ]
-    if best_rule:
+    if fixed_rows:
         lines.extend(
             [
                 "",
-                "## 큰 Zero-F1 데이터셋의 참고 상한",
+                "## 큰 Zero-F1 데이터셋 사전 고정 진단표",
                 "",
-                (
-                    f"- Alpha {float(best_rule['alpha']):.3f}, "
-                    f"{best_rule['vote_threshold']}표 진단: 후보 "
-                    f"{best_rule['candidate_count']:,}건, FN 회수 "
-                    f"{best_rule['recovered_fn']:,}건, 추가 FP "
-                    f"{best_rule['added_fp']:,}건, 정밀도 "
-                    f"{100.0 * float(best_rule['candidate_precision']):.2f}%"
-                ),
-                "- 위 행은 TEST 결과에서 고른 운영 규칙이 아니라 진단 표의 한 행이다.",
+                "| Alpha | 동의 수 | 후보 | FN 회수 | 추가 FP | 후보 정밀도 |",
+                "|---:|---:|---:|---:|---:|---:|",
             ]
         )
-    if best_source:
+        lines.extend(
+            (
+                f"| {float(row['alpha']):.3f} | "
+                f"{int(row['vote_threshold'])} | "
+                f"{int(row['candidate_count']):,} | "
+                f"{int(row['recovered_fn']):,} | "
+                f"{int(row['added_fp']):,} | "
+                f"{100.0 * float(row['candidate_precision']):.2f}% |"
+            )
+            for row in fixed_rows
+        )
+        lines.append(
+            "- 세 행은 사전 고정된 진단 조합이며, TEST 결과로 하나를 선택하지 않는다."
+        )
+    if ewma_signal:
         lines.extend(
             [
                 "",
-                "## 단일 근거 진단",
+                "## 단일 근거 연구 신호",
                 "",
                 (
-                    f"- 가장 높은 사후 정밀도 행: {best_source['source']} / "
-                    f"Alpha {float(best_source['alpha']):.3f}, 후보 "
-                    f"{best_source['candidate_count']:,}건, FN 회수 "
-                    f"{best_source['recovered_fn']:,}건, 추가 FP "
-                    f"{best_source['added_fp']:,}건"
+                    f"- EWMA / Alpha 0.005의 Zero-F1 사후 진단: 후보 "
+                    f"{ewma_signal['candidate_count']:,}건, FN 회수 "
+                    f"{ewma_signal['recovered_fn']:,}건, 추가 FP "
+                    f"{ewma_signal['added_fp']:,}건"
                 ),
-                "- 이 비교 역시 다음 정책 선택에 직접 사용할 수 없다.",
+                "- 소수 데이터셋에 집중된 사후 관찰이므로 자동 경보 규칙으로 선택하지 않는다.",
+                "",
+                "## 운영 결론",
+                "",
+                "- 새 근거를 자동 경보에 직접 추가하기에는 추가 FP가 너무 많다.",
+                "- 기존 검토 후보 안에서 근거를 사용해 검토 순서를 개선할 가능성은 별도로 검증한다.",
+                "- Exp391은 기존 자동 경보, 일반 검토, 우선 검토 결과를 변경하지 않았다.",
             ]
         )
     return "\n".join(lines) + "\n"
@@ -543,7 +586,7 @@ def run(output_root: Path, dataset_limit: int | None = None) -> dict:
     write_csv(outputs["source_summary"], source_summary)
     write_csv(outputs["high_fn"], high_fn_rows)
     outputs["report"].write_text(
-        render_report(baseline, rule_summary, source_summary),
+        render_report(baseline, dataset_rows, rule_summary, source_summary),
         encoding="utf-8",
     )
     manifest = {
