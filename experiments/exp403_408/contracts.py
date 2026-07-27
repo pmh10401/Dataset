@@ -10,6 +10,9 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from decimal import Decimal
+from numbers import Real
+import re
 from typing import Any
 
 
@@ -163,13 +166,37 @@ _FORBIDDEN_SUFFIXES = (
     "_precision",
     "_recall",
 )
+_TEST_EVALUATION_TERMS = frozenset(
+    {
+        "label",
+        "labels",
+        "accuracy",
+        "auc",
+        "precision",
+        "recall",
+        "f1",
+        "loss",
+        "metric",
+        "metrics",
+    }
+)
+_ALLOWED_TEST_DECLARATIONS = frozenset({"contains_test_labels"})
+
+
+def _is_forbidden_key(key: object) -> bool:
+    lowered = str(key).lower()
+    if lowered in _ALLOWED_TEST_DECLARATIONS:
+        return False
+    if lowered in _FORBIDDEN_EXACT or lowered.endswith(_FORBIDDEN_SUFFIXES):
+        return True
+    tokens = set(re.findall(r"[a-z0-9]+", lowered))
+    return "test" in tokens and bool(tokens & _TEST_EVALUATION_TERMS)
 
 
 def _scan_forbidden(value: object, path: str = "prediction") -> None:
     if isinstance(value, Mapping):
         for key, child in value.items():
-            lowered = str(key).lower()
-            if lowered in _FORBIDDEN_EXACT or lowered.endswith(_FORBIDDEN_SUFFIXES):
+            if _is_forbidden_key(key):
                 raise ValueError(f"forbidden prediction field: {path}.{key}")
             _scan_forbidden(child, f"{path}.{key}")
     elif isinstance(value, (list, tuple)):
@@ -178,7 +205,7 @@ def _scan_forbidden(value: object, path: str = "prediction") -> None:
 
 
 def _finite_number(value: object, path: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    if isinstance(value, bool) or not isinstance(value, (Real, Decimal)):
         raise ValueError(f"{path} must be finite")
     result = float(value)
     if not math.isfinite(result):
@@ -193,7 +220,7 @@ def _scan_finite_numbers(value: object, path: str = "prediction") -> None:
     elif isinstance(value, (list, tuple)):
         for index, child in enumerate(value):
             _scan_finite_numbers(child, f"{path}[{index}]")
-    elif isinstance(value, (int, float)) and not isinstance(value, bool):
+    elif isinstance(value, (Real, Decimal)) and not isinstance(value, bool):
         _finite_number(value, path)
 
 

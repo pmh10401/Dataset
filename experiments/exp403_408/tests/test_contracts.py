@@ -1,5 +1,8 @@
 import math
 import unittest
+from decimal import Decimal
+
+import numpy as np
 
 from experiments.exp403_408.contracts import (
     ALPHAS,
@@ -50,6 +53,16 @@ class ContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "forbidden"):
             validate_prediction_row(row)
 
+    def test_prediction_rejects_nested_test_label_and_metrics(self):
+        for field in ("test_label", "test_accuracy", "test_auc"):
+            row = valid_prediction_row()
+            row["diagnostics"] = {field: 0.5}
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, "forbidden"):
+                validate_prediction_row(row)
+
+    def test_prediction_allows_contains_test_labels_declaration(self):
+        validate_prediction_row(valid_prediction_row())
+
     def test_prediction_requires_all_four_alphas(self):
         row = valid_prediction_row()
         del row["scores_by_alpha"]["0.05"]
@@ -65,6 +78,18 @@ class ContractTests(unittest.TestCase):
     def test_prediction_rejects_nonfinite_nested_numbers(self):
         row = valid_prediction_row()
         row["diagnostics"] = {"score_spread": math.nan}
+        with self.assertRaisesRegex(ValueError, "finite"):
+            validate_prediction_row(row)
+
+    def test_prediction_rejects_nonfinite_decimal(self):
+        row = valid_prediction_row()
+        row["diagnostics"] = {"score_spread": Decimal("NaN")}
+        with self.assertRaisesRegex(ValueError, "finite"):
+            validate_prediction_row(row)
+
+    def test_prediction_rejects_nonfinite_numpy_scalar(self):
+        row = valid_prediction_row()
+        row["diagnostics"] = {"score_spread": np.float32(np.nan)}
         with self.assertRaisesRegex(ValueError, "finite"):
             validate_prediction_row(row)
 
