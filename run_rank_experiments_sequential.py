@@ -8,6 +8,7 @@ import signal
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 
@@ -2070,7 +2071,15 @@ def run_experiment(exp, overlap_checked=False):
     archive_existing_outputs(exp)
 
     state = load_state()
-    state["running"] = {"id": exp["id"], "started_at": now(), "pid": os.getpid()}
+    run_id = uuid.uuid4().hex
+    run_started_unix = time.time()
+    state["running"] = {
+        "id": exp["id"],
+        "run_id": run_id,
+        "run_started_unix": run_started_unix,
+        "started_at": now(),
+        "pid": os.getpid(),
+    }
     save_state(state)
     write_heartbeat(
         {
@@ -2091,6 +2100,9 @@ def run_experiment(exp, overlap_checked=False):
     with exp["stdout_log"].open("w") as stdout_log:
         batch_meta = state.get("exp186_200_batch") or state.get("exp177_185_batch") or {}
         child_env = build_child_environment(worker_count=worker_count)
+        if exp["id"] == "experiment_403_408_feature_ml_validation":
+            child_env["EXP403_408_RUN_ID"] = run_id
+            child_env["EXP403_408_RUN_STARTED_UNIX"] = str(run_started_unix)
         if (exp["id"] in EXP177_185_BATCH or exp["id"] in EXP186_200_BATCH) and batch_meta.get("hard_deadline_unix"):
             child_env["EXP177_185_BATCH_DEADLINE_UNIX"] = str(batch_meta["hard_deadline_unix"])
         process = subprocess.Popen(

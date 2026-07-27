@@ -4013,7 +4013,7 @@ def read_heartbeat():
     return value
 
 
-def read_experiment_status(exp_id, info=None, *, now=None, max_age_seconds=120):
+def read_experiment_status(exp_id, info=None, *, now=None, max_age_seconds=120, expected_run_id=None, expected_run_started_unix=None):
     """Read only the active experiment's fresh atomic status file."""
 
     if not exp_id:
@@ -4028,6 +4028,10 @@ def read_experiment_status(exp_id, info=None, *, now=None, max_age_seconds=120):
         return {}
     recorded_id = value.get("experiment_id") or value.get("id")
     if recorded_id != exp_id or value.get("status") not in {"running", "completed", "failed"}:
+        return {}
+    if expected_run_id is not None and value.get("run_id") != expected_run_id:
+        return {}
+    if expected_run_started_unix is not None and as_float(value.get("run_started_unix")) != float(expected_run_started_unix):
         return {}
     updated = as_float(value.get("updated_unix"))
     if updated is None:
@@ -5904,11 +5908,15 @@ def build_status(include_details=True):
     if external_live_run.get("status") == "running":
         running = external_live_run
     heartbeat = read_heartbeat()
-    active_status = read_experiment_status(running.get("id"))
+    active_status = read_experiment_status(
+        running.get("id"),
+        expected_run_id=running.get("run_id"),
+        expected_run_started_unix=running.get("run_started_unix"),
+    )
     if active_status.get("status") == "running":
         heartbeat = active_status
     active_info = experiment_info(running.get("id"))
-    if active_info.get("live_status_only") and active_status:
+    if active_info.get("live_status_only"):
         return build_atomic_status_only(state, running, active_info, active_status, include_details)
     paths = active_paths(state)
     if external_live_run:
@@ -6156,18 +6164,41 @@ def build_status(include_details=True):
 
 def build_atomic_status_only(state, running, info, status, include_details):
     """Build Exp403-408 live data solely from its atomic status payload."""
+    status = dict(status or {})
+    unavailable = not status
+    if unavailable:
+        status = {
+            "status": "running",
+            "run_id": running.get("run_id"),
+            "stage": "status_unavailable",
+            "current_dataset": "",
+            "completed": 0,
+            "total": expected_for_experiment(info, EXPECTED_DATASETS),
+            "errors": 0,
+        }
     done = safe_int(status.get("completed")) or 0
     expected = safe_int(status.get("total")) or expected_for_experiment(info, EXPECTED_DATASETS)
     progress = as_float(status.get("progress_percent"))
     progress = progress if progress is not None else (done / expected * 100 if expected else 0.0)
     atomic_errors = safe_int(status.get("errors")) or 0
+    atomic_error_events = [
+        {
+            "dataset_name": status.get("current_dataset") or f"atomic-error-{index + 1}",
+            "reason": status.get("last_error") or "stage_error",
+            "family": status.get("stage") or "unknown_stage",
+        }
+        for index in range(atomic_errors)
+    ]
     throughput_value = as_float(status.get("throughput_per_minute"))
     eta = as_float(status.get("eta_seconds"))
+    atomic_coverage = coverage_snapshot_from_counts(done, expected, atomic_error_events)
+    atomic_coverage["error_datasets"] = atomic_errors
+    atomic_coverage["remaining_or_missing"] = max(0, expected - done - atomic_errors)
     queue_items = experiment_queue_snapshot(
         state, expected, experiment_ids=[running.get("id")], heartbeat=status
     )
     payload = {
-        "running": status.get("status") == "running",
+        "running": bool(running.get("id")),
         "active_experiment": running.get("id"),
         "active_label": info.get("label", running.get("id")),
         "last_completed_experiment": None,
@@ -6188,8 +6219,8 @@ def build_atomic_status_only(state, running, info, status, include_details):
         "current_meta": str(status.get("stage") or ""),
         "recent_datasets": [],
         "summary": [],
-        "coverage": coverage_snapshot_from_counts(done, expected, []),
-        "error_summary": error_summary([]),
+        "coverage": atomic_coverage,
+        "error_summary": error_summary(atomic_error_events),
         "warning_summary": [],
         "throughput": {
             "recent_datasets_per_minute": throughput_value,
@@ -6208,6 +6239,7 @@ def build_atomic_status_only(state, running, info, status, include_details):
         "device": status.get("device"),
         "checkpoint_sha256": status.get("checkpoint_sha256"),
         "throughput_per_minute": throughput_value,
+        "status_unavailable": unavailable,
         "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "server": server_instance_metadata(),
     }
@@ -6243,7 +6275,12 @@ def experiment_queue_snapshot(state, expected, experiment_ids=None, heartbeat=No
         if not info:
             continue
         if info.get("live_status_only"):
-            live = read_experiment_status(exp_id, info)
+            live = read_experiment_status(
+                exp_id,
+                info,
+                expected_run_id=(running.get("run_id") if exp_id == running_id else None),
+                expected_run_started_unix=(running.get("run_started_unix") if exp_id == running_id else None),
+            )
             status = str(live.get("status")) if live else "pending"
             if not live:
                 if exp_id == running_id:

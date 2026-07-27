@@ -3,7 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import tempfile
+import threading
+import time
 import unittest
+from contextlib import ExitStack
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -14,6 +17,67 @@ def process_safe_smoke_processor(dataset: str) -> dict[str, object]:
 
 
 class PipelineTests(unittest.TestCase):
+    def _evaluation_hash_fixture(self, pipeline, output: Path) -> dict[str, Path]:
+        prediction = output / "exp404_hard_confidence.jsonl"
+        feature_manifest = output / "exp403_feature_manifest.csv"
+        contract = output / "exp403_404_provenance_contract.json"
+        provenance_file = output / "referenced-provenance.bin"
+        database = output / "labels.sqlite"
+        exp291 = output / "exp291.jsonl"
+        exp291_manifest = output / "exp291_manifest.json"
+        exp292 = output / "exp292.jsonl"
+        exp292_manifest = output / "exp292_manifest.json"
+        for path, contents in (
+            (prediction, "prediction-v1\n"),
+            (feature_manifest, "feature-v1\n"),
+            (provenance_file, "provenance-v1\n"),
+            (database, "database-v1\n"),
+            (exp291, "exp291-v1\n"),
+            (exp291_manifest, "exp291-manifest-v1\n"),
+            (exp292, "exp292-v1\n"),
+            (exp292_manifest, "exp292-manifest-v1\n"),
+        ):
+            path.write_text(contents, encoding="utf-8")
+        contract.write_text(
+            json.dumps({
+                "schema": "fixture",
+                "provenance": {
+                    "feature_artifacts": {},
+                    "input_artifacts": {"fixture": {"path": str(provenance_file)}},
+                    "baseline_artifacts": {},
+                    "config_artifacts": {},
+                    "code_artifacts": {},
+                },
+            }),
+            encoding="utf-8",
+        )
+        (output / "exp404_prediction_manifest.json").write_text(
+            json.dumps({
+                "hard_confidence_file": prediction.name,
+                "feature_manifest_file": feature_manifest.name,
+                "provenance_contract_sha256": "a" * 64,
+            }),
+            encoding="utf-8",
+        )
+        return {
+            "prediction": prediction,
+            "provenance": provenance_file,
+            "database": database,
+            "exp291": exp291,
+            "exp291_manifest": exp291_manifest,
+            "exp292": exp292,
+            "exp292_manifest": exp292_manifest,
+        }
+
+    def _evaluation_hash_patches(self, pipeline, fixture: dict[str, Path]) -> ExitStack:
+        stack = ExitStack()
+        stack.enter_context(patch.object(pipeline, "DB_PATH", fixture["database"]))
+        stack.enter_context(patch.object(pipeline, "EXP291_PREDICTION_PATH", fixture["exp291"]))
+        stack.enter_context(patch.object(pipeline, "EXP291_MANIFEST_PATH", fixture["exp291_manifest"]))
+        stack.enter_context(patch.object(pipeline, "EXP292_PREDICTION_PATH", fixture["exp292"]))
+        stack.enter_context(patch.object(pipeline, "EXP292_MANIFEST_PATH", fixture["exp292_manifest"]))
+        return stack
+
     def test_resume_skips_completed_dataset_hashes(self) -> None:
         from experiments.exp403_408.pipeline import run_smoke
 
@@ -152,6 +216,109 @@ class PipelineTests(unittest.TestCase):
         self.assertNotEqual(original, values_changed)
         self.assertNotEqual(original, upstream_changed)
 
+    def test_evaluation_hash_invalidates_prediction_and_referenced_provenance(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            fixture = self._evaluation_hash_fixture(pipeline, output)
+            with self._evaluation_hash_patches(pipeline, fixture):
+                initial = pipeline._stage_input_hash("classical-evaluate", "__aggregate__", output, "cpu")
+                fixture["prediction"].write_text("prediction-v2\n", encoding="utf-8")
+                prediction_changed = pipeline._stage_input_hash("classical-evaluate", "__aggregate__", output, "cpu")
+                fixture["provenance"].write_text("provenance-v2\n", encoding="utf-8")
+                provenance_changed = pipeline._stage_input_hash("classical-evaluate", "__aggregate__", output, "cpu")
+                fixture["database"].write_text("database-v2\n", encoding="utf-8")
+                database_changed = pipeline._stage_input_hash("classical-evaluate", "__aggregate__", output, "cpu")
+
+        self.assertNotEqual(initial, prediction_changed)
+        self.assertNotEqual(prediction_changed, provenance_changed)
+        self.assertNotEqual(provenance_changed, database_changed)
+
+    def test_report_hash_invalidates_any_checkpoint_content(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            for name in (
+                pipeline.AUDIT_ARTIFACT,
+                "exp404_prediction_manifest.json",
+                "exp404_hard_confidence.jsonl",
+                pipeline.EVALUATION_ARTIFACT,
+                pipeline.CONSENSUS_ARTIFACT,
+                pipeline.CONSENSUS_SUMMARY,
+            ):
+                (output / name).write_text("{}\n", encoding="utf-8")
+            checkpoint = output / "checkpoints" / "audit-features" / "toy.json"
+            checkpoint.parent.mkdir(parents=True)
+            checkpoint.write_text('{"checkpoint":"v1"}\n', encoding="utf-8")
+            initial = pipeline._stage_input_hash("report", "__aggregate__", output, "cpu")
+            checkpoint.write_text('{"checkpoint":"v2"}\n', encoding="utf-8")
+            changed = pipeline._stage_input_hash("report", "__aggregate__", output, "cpu")
+
+        self.assertNotEqual(initial, changed)
+
+    def test_input_hash_failure_is_checkpointed_and_stage_continues(self) -> None:
+        from experiments.exp403_408.pipeline import read_status, run_stage
+
+        def hash_for(dataset: str) -> str:
+            if dataset == "bad":
+                raise ValueError("fixture hash failure")
+            return f"hash-{dataset}"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            result = run_stage(
+                "audit-features", ["bad", "good"], output,
+                processor=process_safe_smoke_processor,
+                input_hash_for_dataset=hash_for,
+            )
+            bad = next((output / "checkpoints" / "audit-features").glob("bad-*.json"))
+            checkpoint = json.loads(bad.read_text(encoding="utf-8"))
+            status = read_status(output)
+
+        self.assertEqual(result.completed, 2)
+        self.assertEqual(result.errors, 1)
+        self.assertEqual(checkpoint["outcome"], "abstained")
+        self.assertEqual(checkpoint["abstention_reason"], "stage_error")
+        self.assertIn("fixture hash failure", checkpoint["error"])
+        self.assertEqual(status["current_dataset"], "good")
+
+    def test_learned_stage_heartbeats_are_run_bound_while_processor_runs(self) -> None:
+        from experiments.exp403_408.pipeline import read_status, run_stage
+
+        entered = threading.Event()
+        release = threading.Event()
+
+        def slow_processor(dataset: str) -> dict[str, object]:
+            entered.set()
+            release.wait(timeout=2.0)
+            return {"dataset": dataset}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            worker = threading.Thread(
+                target=run_stage,
+                kwargs={
+                    "stage": "ssl-predict", "datasets": ["slow"], "output_dir": output,
+                    "processor": slow_processor, "run_id": "run-fixture",
+                    "run_started_unix": 123.0,
+                    "heartbeat_interval_seconds": 0.01,
+                },
+            )
+            worker.start()
+            self.assertTrue(entered.wait(timeout=1.0))
+            first = read_status(output)
+            time.sleep(0.04)
+            second = read_status(output)
+            release.set()
+            worker.join(timeout=2.0)
+
+        self.assertEqual(first["run_id"], "run-fixture")
+        self.assertEqual(first["run_started_unix"], 123.0)
+        self.assertEqual(first["current_dataset"], "slow")
+        self.assertGreater(second["updated_unix"], first["updated_unix"])
+
     def test_resume_rate_uses_only_this_invocations_new_work(self) -> None:
         from experiments.exp403_408.pipeline import read_status, run_stage
 
@@ -162,7 +329,7 @@ class PipelineTests(unittest.TestCase):
                 processor=process_safe_smoke_processor,
                 stop_after=1,
             )
-            with patch("experiments.exp403_408.pipeline.time.monotonic", side_effect=(10.0, 14.0, 14.0, 14.0)):
+            with patch("experiments.exp403_408.pipeline.time.monotonic", side_effect=(10.0, 14.0, 14.0, 14.0, 14.0)):
                 run_stage(
                     "report", ["one", "two"], output,
                     processor=process_safe_smoke_processor,

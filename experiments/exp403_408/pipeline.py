@@ -14,8 +14,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import threading
 import time
 from typing import Any
+import uuid
 
 import numpy as np
 
@@ -25,7 +27,7 @@ from .contracts import ALPHAS, FrozenConfig, ShadowSourcePrediction
 from .evaluation import EvaluationLabels, evaluate_exp405
 from .feature_registry import load_feature_blocks
 from .feature_stability import audit_feature_stability, build_group_summary
-from .foundation import DB_PATH, EXP291_PREDICTION_PATH, EXP292_PREDICTION_PATH, crossfit_plan, list_datasets_small_to_large, load_dataset_input, load_frozen_lanes
+from .foundation import DB_PATH, EXP291_MANIFEST_PATH, EXP291_PREDICTION_PATH, EXP292_MANIFEST_PATH, EXP292_PREDICTION_PATH, crossfit_plan, list_datasets_small_to_large, load_dataset_input, load_frozen_lanes
 from .prediction import freeze_provenance_contract, load_expected_provenance, predict_dataset, write_prediction
 from .synthetic_anomaly import SyntheticAnomalyConfig, _crossfit_normal_scores, score_synthetic_models, synthetic_shadow_predictions
 from .tri_view_ssl import _calibrate_raw_scores, _produce_raw_scores, score_tri_view, shadow_predictions
@@ -53,6 +55,7 @@ CONSENSUS_ARTIFACT = "exp408_consensus_results.jsonl"
 CONSENSUS_SUMMARY = "exp408_consensus_summary.csv"
 RESULT_ARTIFACT = "exp403_408_results.csv"
 SUMMARY_ARTIFACT = "exp403_408_summary.csv"
+STATUS_HEARTBEAT_SECONDS = 30.0
 
 
 @dataclass(frozen=True)
@@ -128,6 +131,8 @@ def run_pipeline(
     if not datasets:
         raise ValueError("dataset source returned no datasets")
 
+    run_id = os.environ.get("EXP403_408_RUN_ID") or uuid.uuid4().hex
+    run_started_unix = float(os.environ.get("EXP403_408_RUN_STARTED_UNIX", time.time()))
     results: list[StageResult] = []
     for stage_name in selected:
         stage_datasets = ("__aggregate__",) if stage_name in AGGREGATE_STAGES else datasets
@@ -142,6 +147,8 @@ def run_pipeline(
                 resume=resume,
                 workers=stage_workers,
                 device="cpu",
+                run_id=run_id,
+                run_started_unix=run_started_unix,
                 input_hash_for_dataset=lambda dataset, name=stage_name: _stage_input_hash(
                     name, dataset, Path(output_dir), "cpu"
                 ),
@@ -173,6 +180,9 @@ def run_stage(
     workers: int = 1,
     device: str = "cpu",
     input_hash_for_dataset: InputHash | None = None,
+    run_id: str | None = None,
+    run_started_unix: float | None = None,
+    heartbeat_interval_seconds: float = STATUS_HEARTBEAT_SECONDS,
 ) -> StageResult:
     """Execute one stage with atomic per-dataset result or abstention records."""
     if stage not in STAGES:
@@ -182,11 +192,15 @@ def run_stage(
         raise ValueError("stage requires at least one dataset")
     if stop_after is not None and stop_after < 0:
         raise ValueError("stop_after must be non-negative")
+    if heartbeat_interval_seconds <= 0.0:
+        raise ValueError("heartbeat_interval_seconds must be positive")
     output = Path(output_dir)
     checkpoint_dir = output / "checkpoints" / stage
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     total = len(ordered)
     started = time.monotonic()
+    active_run_id = str(run_id or uuid.uuid4().hex)
+    active_run_started_unix = float(run_started_unix if run_started_unix is not None else time.time())
     completed = 0
     errors = 0
     recomputed = 0
@@ -194,19 +208,65 @@ def run_stage(
     last_processed_dataset: str | None = None
     pending: list[str] = []
     input_hashes: dict[str, str] = {}
+
+    _write_status(
+        output,
+        stage=stage,
+        current_dataset=ordered[0],
+        completed=completed,
+        total=total,
+        errors=errors,
+        device=device,
+        checkpoint_sha256=last_hash,
+        newly_processed=recomputed,
+        started=started,
+        status="running",
+        run_id=active_run_id,
+        run_started_unix=active_run_started_unix,
+    )
     for dataset in ordered:
         checkpoint = checkpoint_dir / f"{_safe_name(dataset)}.json"
-        input_hash = (
-            input_hash_for_dataset(dataset)
-            if input_hash_for_dataset is not None
-            else _checkpoint_input_hash(stage, dataset, device)
-        )
-        input_hashes[dataset] = input_hash
-        if resume and _checkpoint_is_valid(checkpoint, input_hash):
+        try:
+            input_hash = (
+                input_hash_for_dataset(dataset)
+                if input_hash_for_dataset is not None
+                else _checkpoint_input_hash(stage, dataset, device)
+            )
+            input_hashes[dataset] = input_hash
+            if resume and _checkpoint_is_valid(checkpoint, input_hash):
+                completed += 1
+                existing = _read_checkpoint(checkpoint)
+                errors += _is_execution_error(existing)
+                last_hash = str(existing["checkpoint_sha256"])
+                continue
+        except Exception as error:
+            checkpoint_data = _error_checkpoint(
+                stage,
+                dataset,
+                device,
+                _hash_failure_input_hash(stage, dataset, device, error),
+                error,
+            )
+            last_hash = _write_checkpoint(checkpoint, checkpoint_data)
             completed += 1
-            existing = _read_checkpoint(checkpoint)
-            errors += _is_execution_error(existing)
-            last_hash = str(existing["checkpoint_sha256"])
+            recomputed += 1
+            errors += 1
+            last_processed_dataset = dataset
+            _write_status(
+                output,
+                stage=stage,
+                current_dataset=dataset,
+                completed=completed,
+                total=total,
+                errors=errors,
+                device=device,
+                checkpoint_sha256=last_hash,
+                newly_processed=recomputed,
+                started=started,
+                status="running",
+                run_id=active_run_id,
+                run_started_unix=active_run_started_unix,
+            )
             continue
         pending.append(dataset)
 
@@ -222,6 +282,8 @@ def run_stage(
         newly_processed=recomputed,
         started=started,
         status="running",
+        run_id=active_run_id,
+        run_started_unix=active_run_started_unix,
     )
 
     if workers > 1 and len(pending) > 1 and stop_after is None:
@@ -239,23 +301,37 @@ def run_stage(
                 recomputed += 1
                 last_processed_dataset = dataset
                 errors += _is_execution_error(checkpoint)
-                _write_status(output, stage=stage, current_dataset=dataset, completed=completed, total=total, errors=errors, device=device, checkpoint_sha256=last_hash, newly_processed=recomputed, started=started, status="running")
+                _write_status(output, stage=stage, current_dataset=dataset, completed=completed, total=total, errors=errors, device=device, checkpoint_sha256=last_hash, newly_processed=recomputed, started=started, status="running", run_id=active_run_id, run_started_unix=active_run_started_unix)
     else:
         for dataset in pending:
             if stop_after is not None and recomputed >= stop_after:
                 break
-            checkpoint = _checkpoint_from_call(
-                stage, dataset, device, input_hashes[dataset], processor
+            checkpoint = _checkpoint_from_call_with_heartbeat(
+                stage,
+                dataset,
+                device,
+                input_hashes[dataset],
+                processor,
+                output=output,
+                completed=completed,
+                total=total,
+                errors=errors,
+                checkpoint_sha256=last_hash,
+                newly_processed=recomputed,
+                started=started,
+                run_id=active_run_id,
+                run_started_unix=active_run_started_unix,
+                heartbeat_interval_seconds=heartbeat_interval_seconds,
             )
             last_hash = _write_checkpoint(checkpoint_dir / f"{_safe_name(dataset)}.json", checkpoint)
             completed += 1
             recomputed += 1
             last_processed_dataset = dataset
             errors += _is_execution_error(checkpoint)
-            _write_status(output, stage=stage, current_dataset=dataset, completed=completed, total=total, errors=errors, device=device, checkpoint_sha256=last_hash, newly_processed=recomputed, started=started, status="running")
+            _write_status(output, stage=stage, current_dataset=dataset, completed=completed, total=total, errors=errors, device=device, checkpoint_sha256=last_hash, newly_processed=recomputed, started=started, status="running", run_id=active_run_id, run_started_unix=active_run_started_unix)
 
     final_status = "completed" if completed == total else "running"
-    _write_status(output, stage=stage, current_dataset=last_processed_dataset or ordered[-1], completed=completed, total=total, errors=errors, device=device, checkpoint_sha256=last_hash, newly_processed=recomputed, started=started, status=final_status)
+    _write_status(output, stage=stage, current_dataset=last_processed_dataset or ordered[-1], completed=completed, total=total, errors=errors, device=device, checkpoint_sha256=last_hash, newly_processed=recomputed, started=started, status=final_status, run_id=active_run_id, run_started_unix=active_run_started_unix)
     return StageResult(stage, completed, total, recomputed, errors, output)
 
 
@@ -635,6 +711,8 @@ def _stage_input_hash(stage: str, dataset: str, output: Path, device: str) -> st
         "synthetic": Path(score_synthetic_models.__code__.co_filename),
         "consensus": Path(build_consensus.__code__.co_filename),
         "evaluation": Path(evaluate_exp405.__code__.co_filename),
+        "frozen_lanes": Path(load_frozen_lanes.__code__.co_filename),
+        "labels": Path(load_test_labels.__code__.co_filename),
     }
     payload: dict[str, object] = {
         "stage": stage,
@@ -643,10 +721,9 @@ def _stage_input_hash(stage: str, dataset: str, output: Path, device: str) -> st
         "code_sha256": {name: sha256_file(path) for name, path in sorted(code_paths.items())},
     }
     if stage in AGGREGATE_STAGES:
-        payload["aggregate_artifacts"] = {
-            path.name: sha256_file(path)
-            for path in _aggregate_dependencies(stage, output)
-        }
+        payload["aggregate_artifacts"] = _content_hashes(
+            _aggregate_dependencies(stage, output)
+        )
     else:
         bundle = load_dataset_input(dataset)
         payload["frozen_config"] = _json_value(
@@ -664,6 +741,10 @@ def _stage_input_hash(stage: str, dataset: str, output: Path, device: str) -> st
                 block.name: block.source_hash
                 for block in load_feature_blocks(dataset, bundle)
             }
+        if stage == "consensus-evaluate":
+            payload["frozen_lane_artifacts"] = _content_hashes(
+                _frozen_lane_input_paths()
+            )
         dependencies = _dataset_stage_dependencies(stage)
         payload["upstream_checkpoints"] = {
             dependency: _read_stage_checkpoint(output, dependency, dataset)["checkpoint_sha256"]
@@ -694,24 +775,92 @@ def _dataset_stage_dependencies(stage: str) -> tuple[str, ...]:
 
 
 def _aggregate_dependencies(stage: str, output: Path) -> tuple[Path, ...]:
-    dependencies = {
-        "classical-evaluate": (
+    if stage == "classical-evaluate":
+        manifest = _read_json(output / "exp404_prediction_manifest.json")
+        contract = _read_json(output / "exp403_404_provenance_contract.json")
+        paths = (
             output / "exp404_prediction_manifest.json",
+            output / str(manifest.get("hard_confidence_file", "")),
+            output / str(manifest.get("feature_manifest_file", "")),
             output / "exp403_404_provenance_contract.json",
-        ),
-        "report": (
+            *_database_snapshot_paths(DB_PATH),
+            *_frozen_lane_input_paths(),
+            *_provenance_references(contract),
+            *_checkpoint_files(output / "checkpoints" / "audit-features"),
+        )
+    elif stage == "report":
+        paths = (
             output / AUDIT_ARTIFACT,
             output / "exp404_prediction_manifest.json",
+            output / "exp404_hard_confidence.jsonl",
             output / EVALUATION_ARTIFACT,
             output / CONSENSUS_ARTIFACT,
             output / CONSENSUS_SUMMARY,
-        ),
-    }
-    paths = dependencies[stage]
+            *_checkpoint_files(output / "checkpoints"),
+        )
+    else:
+        raise ValueError(f"unknown aggregate stage: {stage}")
+    paths = _unique_paths(paths)
     missing = [str(path) for path in paths if not path.is_file()]
     if missing:
         raise ValueError(f"{stage} requires missing artifacts: {', '.join(missing)}")
     return paths
+
+
+def _frozen_lane_input_paths() -> tuple[Path, ...]:
+    return (
+        EXP291_PREDICTION_PATH,
+        EXP291_MANIFEST_PATH,
+        EXP292_PREDICTION_PATH,
+        EXP292_MANIFEST_PATH,
+    )
+
+
+def _database_snapshot_paths(database: Path) -> tuple[Path, ...]:
+    path = Path(database)
+    return (
+        path,
+        *(candidate for candidate in (path.with_name(f"{path.name}-wal"), path.with_name(f"{path.name}-shm")) if candidate.is_file()),
+    )
+
+
+def _provenance_references(contract: Mapping[str, object]) -> tuple[Path, ...]:
+    provenance = contract.get("provenance")
+    if not isinstance(provenance, Mapping):
+        raise ValueError("provenance contract is missing provenance entries")
+    paths: list[Path] = []
+    for category in sorted(provenance):
+        entries = provenance[category]
+        if not isinstance(entries, Mapping):
+            raise ValueError("provenance contract category is invalid")
+        for name in sorted(entries):
+            details = entries[name]
+            if not isinstance(details, Mapping) or not isinstance(details.get("path"), str):
+                raise ValueError("provenance contract artifact path is invalid")
+            paths.append(Path(str(details["path"])))
+    return tuple(paths)
+
+
+def _checkpoint_files(directory: Path) -> tuple[Path, ...]:
+    root = Path(directory)
+    if not root.is_dir():
+        return ()
+    return tuple(sorted((path for path in root.rglob("*") if path.is_file()), key=str))
+
+
+def _unique_paths(paths: Iterable[Path]) -> tuple[Path, ...]:
+    unique: dict[str, Path] = {}
+    for path in paths:
+        resolved = Path(path).resolve()
+        unique[str(resolved)] = resolved
+    return tuple(unique[key] for key in sorted(unique))
+
+
+def _content_hashes(paths: Iterable[Path]) -> dict[str, str]:
+    return {
+        str(path): sha256_file(path)
+        for path in _unique_paths(paths)
+    }
 
 
 def _write_failed_status(output: Path, stage: str, error: Exception) -> None:
@@ -724,6 +873,8 @@ def _write_failed_status(output: Path, stage: str, error: Exception) -> None:
         {
             "id": EXPERIMENT_ID,
             "experiment_id": EXPERIMENT_ID,
+            "run_id": status.get("run_id", uuid.uuid4().hex),
+            "run_started_unix": float(status.get("run_started_unix", time.time())),
             "status": "failed",
             "stage": stage,
             "current_dataset": status.get("current_dataset", ""),
@@ -738,6 +889,7 @@ def _write_failed_status(output: Path, stage: str, error: Exception) -> None:
             "errors": int(status.get("errors", 0)) + 1,
             "device": status.get("device", "cpu"),
             "checkpoint_sha256": status.get("checkpoint_sha256", ""),
+            "status_checkpoint_sha256": status.get("checkpoint_sha256", ""),
             "elapsed_seconds": float(status.get("elapsed_seconds", 0.0)),
             "last_error": f"{type(error).__name__}: {error}",
             "updated_unix": time.time(),
@@ -747,6 +899,57 @@ def _write_failed_status(output: Path, stage: str, error: Exception) -> None:
 
 def _run_processor(processor: Processor, dataset: str) -> Mapping[str, object]:
     return processor(dataset)
+
+
+def _checkpoint_from_call_with_heartbeat(
+    stage: str,
+    dataset: str,
+    device: str,
+    input_hash: str,
+    processor: Processor,
+    *,
+    output: Path,
+    completed: int,
+    total: int,
+    errors: int,
+    checkpoint_sha256: str,
+    newly_processed: int,
+    started: float,
+    run_id: str,
+    run_started_unix: float,
+    heartbeat_interval_seconds: float,
+) -> dict[str, object]:
+    """Keep atomic live status fresh while one learned dataset is executing."""
+    if stage not in LEARNED_STAGES:
+        return _checkpoint_from_call(stage, dataset, device, input_hash, processor)
+
+    stopped = threading.Event()
+
+    def heartbeat() -> None:
+        while not stopped.wait(heartbeat_interval_seconds):
+            _write_status(
+                output,
+                stage=stage,
+                current_dataset=dataset,
+                completed=completed,
+                total=total,
+                errors=errors,
+                device=device,
+                checkpoint_sha256=checkpoint_sha256,
+                newly_processed=newly_processed,
+                started=started,
+                status="running",
+                run_id=run_id,
+                run_started_unix=run_started_unix,
+            )
+
+    thread = threading.Thread(target=heartbeat, name=f"exp403-heartbeat-{dataset}", daemon=True)
+    thread.start()
+    try:
+        return _checkpoint_from_call(stage, dataset, device, input_hash, processor)
+    finally:
+        stopped.set()
+        thread.join(timeout=heartbeat_interval_seconds + 1.0)
 
 
 def _checkpoint_from_call(
@@ -798,6 +1001,21 @@ def _error_checkpoint(
     }
 
 
+def _hash_failure_input_hash(
+    stage: str, dataset: str, device: str, error: Exception
+) -> str:
+    return hashlib.sha256(
+        canonical_json_bytes(
+            {
+                "stage": stage,
+                "dataset": dataset,
+                "device": device,
+                "input_hash_failure": f"{type(error).__name__}: {error}",
+            }
+        )
+    ).hexdigest()
+
+
 def _is_execution_error(checkpoint: Mapping[str, object]) -> int:
     return int(checkpoint.get("abstention_reason") == "stage_error")
 
@@ -834,7 +1052,7 @@ def _read_checkpoint(path: Path) -> dict[str, object]:
     return value
 
 
-def _write_status(output: Path, *, stage: str, current_dataset: str, completed: int, total: int, errors: int, device: str, checkpoint_sha256: str, newly_processed: int, started: float, status: str) -> None:
+def _write_status(output: Path, *, stage: str, current_dataset: str, completed: int, total: int, errors: int, device: str, checkpoint_sha256: str, newly_processed: int, started: float, status: str, run_id: str, run_started_unix: float) -> None:
     elapsed = max(0.0, time.monotonic() - started)
     throughput = newly_processed / elapsed * 60.0 if elapsed > 0.0 else 0.0
     remaining = max(0, total - completed)
@@ -844,6 +1062,8 @@ def _write_status(output: Path, *, stage: str, current_dataset: str, completed: 
         {
             "id": EXPERIMENT_ID,
             "experiment_id": EXPERIMENT_ID,
+            "run_id": run_id,
+            "run_started_unix": run_started_unix,
             "status": status,
             "stage": stage,
             "current_dataset": current_dataset,
@@ -858,6 +1078,7 @@ def _write_status(output: Path, *, stage: str, current_dataset: str, completed: 
             "errors": errors,
             "device": device,
             "checkpoint_sha256": checkpoint_sha256,
+            "status_checkpoint_sha256": checkpoint_sha256,
             "elapsed_seconds": elapsed,
             "updated_unix": time.time(),
         },
