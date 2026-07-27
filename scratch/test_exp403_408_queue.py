@@ -46,6 +46,11 @@ def main() -> int:
     assert saved["exp403_408_batch"]["classical_outer_workers"] == 7
     assert saved["exp403_408_batch"]["learned_model_processes"] == 1
 
+    ps_output = "PID PPID STAT ELAPSED COMMAND\n900 1 S 00:01 /opt/homebrew/bin/python3 " + (
+        f"{ROOT / 'scratch' / 'run_exp403_408_feature_ml_validation.py'} --stage all\n"
+    )
+    assert runner.active_rank_processes(ps_output=ps_output)
+
     completed = subprocess.run(
         [sys.executable, str(ROOT / "scratch" / "run_exp403_408_feature_ml_validation.py"), "--help"],
         cwd=ROOT,

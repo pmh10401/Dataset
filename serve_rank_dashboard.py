@@ -2736,13 +2736,15 @@ EXPERIMENTS["experiment_403_408_feature_ml_validation"] = {
     "status_reason": "기존 Hard/Standard/Priority는 유지하고 TRAIN-only 신뢰도와 Shadow 후보를 후향 검증",
     "autonomous_metric_scope": "Exp291 Hard 2,218건 변경 없음",
     "review_metric_scope": "Exp406-408 research Shadow와 Exp405 retrospective counterfactual",
-    "detail_csv": EXP403_408_ROOT / "exp408_consensus_summary.csv",
+    "detail_csv": EXP403_408_ROOT / "exp403_408_results.csv",
     "summary_csv": EXP403_408_ROOT / "exp403_408_summary.csv",
     "status_json": EXP403_408_ROOT / "status.json",
     "stdout_log": EXP403_408_ROOT / "exp403_408_stdout.log",
     "artifact_paths": [
         EXP403_408_ROOT / "status.json",
         EXP403_408_ROOT / "checkpoints",
+        EXP403_408_ROOT / "exp403_408_results.csv",
+        EXP403_408_ROOT / "exp403_408_summary.csv",
     ],
     "expected_datasets": 1117,
     "automatic_policy_changed": False,
@@ -5905,6 +5907,9 @@ def build_status(include_details=True):
     active_status = read_experiment_status(running.get("id"))
     if active_status.get("status") == "running":
         heartbeat = active_status
+    active_info = experiment_info(running.get("id"))
+    if active_info.get("live_status_only") and active_status:
+        return build_atomic_status_only(state, running, active_info, active_status, include_details)
     paths = active_paths(state)
     if external_live_run:
         paths = {
@@ -6144,6 +6149,78 @@ def build_status(include_details=True):
                 "strategy_details": strategy_detail_snapshot(rows, summary),
                 "operational_best": operational_best,
                 "hard_confidence": hard_confidence_snapshot(),
+            }
+        )
+    return payload
+
+
+def build_atomic_status_only(state, running, info, status, include_details):
+    """Build Exp403-408 live data solely from its atomic status payload."""
+    done = safe_int(status.get("completed")) or 0
+    expected = safe_int(status.get("total")) or expected_for_experiment(info, EXPECTED_DATASETS)
+    progress = as_float(status.get("progress_percent"))
+    progress = progress if progress is not None else (done / expected * 100 if expected else 0.0)
+    atomic_errors = safe_int(status.get("errors")) or 0
+    throughput_value = as_float(status.get("throughput_per_minute"))
+    eta = as_float(status.get("eta_seconds"))
+    queue_items = experiment_queue_snapshot(
+        state, expected, experiment_ids=[running.get("id")], heartbeat=status
+    )
+    payload = {
+        "running": status.get("status") == "running",
+        "active_experiment": running.get("id"),
+        "active_label": info.get("label", running.get("id")),
+        "last_completed_experiment": None,
+        "last_completed_label": None,
+        "running_state": running,
+        "process": process_tree_snapshot(running.get("child_pid") or running.get("pid")),
+        "system": system_resource_snapshot(),
+        "queue": list(state.get("queue") or []),
+        "queue_items": queue_items,
+        "unified_experiments": [],
+        "dataset_context": {},
+        "catalog_count": len(set(EXPERIMENTS) | set(HISTORICAL_EXPERIMENT_META)),
+        "datasets_done": done,
+        "expected_datasets": expected,
+        "progress_percent": progress,
+        "rows": None,
+        "current_dataset": status.get("current_dataset"),
+        "current_meta": str(status.get("stage") or ""),
+        "recent_datasets": [],
+        "summary": [],
+        "coverage": coverage_snapshot_from_counts(done, expected, []),
+        "error_summary": error_summary([]),
+        "warning_summary": [],
+        "throughput": {
+            "recent_datasets_per_minute": throughput_value,
+            "average_datasets_per_minute": throughput_value,
+            "recent_eta_seconds": eta,
+            "eta_basis": "atomic status.json",
+        },
+        "best": None,
+        "runtime_health": runtime_health_snapshot(status),
+        "external_validation": [],
+        "log_tail": "",
+        "elapsed_seconds": as_float(status.get("elapsed_seconds")),
+        "eta_seconds": eta,
+        "stage": status.get("stage"),
+        "errors": atomic_errors,
+        "device": status.get("device"),
+        "checkpoint_sha256": status.get("checkpoint_sha256"),
+        "throughput_per_minute": throughput_value,
+        "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "server": server_instance_metadata(),
+    }
+    if include_details:
+        payload.update(
+            {
+                "metric_glossary": metric_glossary_snapshot(),
+                "experiment_history": [],
+                "completed_results": [],
+                "experiment_compare": [],
+                "strategy_details": [],
+                "operational_best": None,
+                "hard_confidence": {},
             }
         )
     return payload

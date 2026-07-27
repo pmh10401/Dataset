@@ -89,6 +89,45 @@ def main() -> int:
 
     assert rows[0]["datasets_done"] == 7
     assert rows[0]["progress_percent"] == 0.6267
+
+    original = {
+        "read_state": dashboard.read_state,
+        "read_csv_rows": dashboard.read_csv_rows,
+        "parse_log_tail": dashboard.parse_log_tail,
+        "read_experiment_status": dashboard.read_experiment_status,
+        "system_resource_snapshot": dashboard.system_resource_snapshot,
+        "process_tree_snapshot": dashboard.process_tree_snapshot,
+    }
+    try:
+        dashboard.read_state = lambda: {
+            "completed": [], "queue": [experiment_id], "history": [],
+            "running": {"id": experiment_id, "pid": 1},
+        }
+        dashboard.read_csv_rows = lambda _path: (_ for _ in ()).throw(
+            AssertionError("atomic live view must not open CSV")
+        )
+        dashboard.parse_log_tail = lambda _path: (_ for _ in ()).throw(
+            AssertionError("atomic live view must not open stdout")
+        )
+        dashboard.read_experiment_status = lambda *_args, **_kwargs: {
+            "status": "running", "stage": "consensus-evaluate", "current_dataset": "Dataset-7",
+            "completed": 7, "total": 1117, "progress_percent": 0.6267,
+            "eta_seconds": 120.0, "throughput_per_minute": 3.5,
+            "errors": 2, "device": "cpu", "checkpoint_sha256": "b" * 64,
+        }
+        dashboard.system_resource_snapshot = lambda: {}
+        dashboard.process_tree_snapshot = lambda _pid: {}
+        payload = dashboard.build_status(include_details=False)
+    finally:
+        for name, value in original.items():
+            setattr(dashboard, name, value)
+
+    assert payload["stage"] == "consensus-evaluate"
+    assert payload["errors"] == 2
+    assert payload["device"] == "cpu"
+    assert payload["checkpoint_sha256"] == "b" * 64
+    assert payload["eta_seconds"] == 120.0
+    assert payload["throughput_per_minute"] == 3.5
     print("Exp403-408 dashboard status contract: PASS")
     return 0
 

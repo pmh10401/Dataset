@@ -1366,7 +1366,7 @@ EXPERIMENTS = [
             "--workers",
             "7",
         ],
-        "detail_csv": DATA_DIR / "exp403_408_feature_ml_validation" / "exp408_consensus_summary.csv",
+        "detail_csv": DATA_DIR / "exp403_408_feature_ml_validation" / "exp403_408_results.csv",
         "summary_csv": DATA_DIR / "exp403_408_feature_ml_validation" / "exp403_408_summary.csv",
         "status_json": DATA_DIR / "exp403_408_feature_ml_validation" / "status.json",
         "stdout_log": DATA_DIR / "exp403_408_feature_ml_validation" / "exp403_408_stdout.log",
@@ -1800,19 +1800,24 @@ def save_state(state):
     STATE_PATH.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
 
 
-def python_processes():
-    out = subprocess.run(
-        ["ps", "-axo", "pid,ppid,stat,etime,command"],
-        check=True,
-        text=True,
-        capture_output=True,
-    ).stdout.splitlines()
+def python_processes(ps_output=None):
+    out = (
+        subprocess.run(
+            ["ps", "-axo", "pid,ppid,stat,etime,command"],
+            check=True,
+            text=True,
+            capture_output=True,
+        ).stdout
+        if ps_output is None
+        else str(ps_output)
+    ).splitlines()
     matches = []
     for line in out[1:]:
         if (
             "run_rank_ensemble_calibration" in line
             or "run_rank_ensemble_threshold_calibration" in line
             or "run_experiment_" in line
+            or "run_exp403_408_feature_ml_validation.py" in line
             or "run_rank_experiments_sequential.py" in line
         ):
             if str(os.getpid()) not in line:
@@ -1820,10 +1825,10 @@ def python_processes():
     return matches
 
 
-def active_rank_processes():
+def active_rank_processes(ps_output=None):
     experiment_scripts = {exp["script"].name for exp in EXPERIMENTS}
     matches = []
-    for line in python_processes():
+    for line in python_processes(ps_output=ps_output):
         if "python" not in line:
             continue
         command = line.split(None, 4)[-1] if len(line.split(None, 4)) >= 5 else line
