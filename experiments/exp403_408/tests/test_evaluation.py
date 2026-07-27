@@ -74,7 +74,13 @@ def reporting_fixture(output: Path) -> Path:
                 "false_positive_fraction": 1.0,
                 "baseline_true_positive_retention": 1.0,
                 "train_stability": 0.99,
+                "false_positive_fraction_wilson_interval": [0.20654931437723745, 1.0],
+                "false_positive_fraction_bootstrap_interval": [1.0, 1.0],
+                "baseline_true_positive_retention_bootstrap_interval": [1.0, 1.0],
+                "dataset_concentration": 1.0,
+                "lineage_concentration": 1.0,
                 "lane_parity": True,
+                "passes_research_gate": True,
                 "operational_policy_changed": False,
             },
             sort_keys=True,
@@ -138,7 +144,7 @@ def reporting_fixture(output: Path) -> Path:
         rows.extend(
             (
                 f"alpha_normal_0,alpha,20,{variant},0.005,1,1,0,1.0,1,1,0,1,0,0,0,1,1\n",
-                f"beta_normal_0,beta,50,{variant},0.005,0,0,0,0.0,0,0,0,0,0,0,1,0,1\n",
+                f"beta_normal_0,beta,50,{variant},0.005,0,0,0,0.0,0,0,0,0,0,0,1,0,0\n",
             )
         )
     (output / "exp408_variant_metrics.csv").write_text(header + "".join(rows), encoding="utf-8")
@@ -149,7 +155,46 @@ def reporting_fixture(output: Path) -> Path:
         ),
         encoding="utf-8",
     )
+    (output / "exp403_408_frozen_test_labels.csv").write_text(
+        "dataset,candidate_index,is_true_anomaly\n"
+        "alpha_normal_0,0,0\nalpha_normal_0,1,0\nalpha_normal_0,2,1\nalpha_normal_0,3,0\n"
+        "beta_normal_0,0,0\nbeta_normal_0,1,1\nbeta_normal_0,2,0\nbeta_normal_0,3,0\n",
+        encoding="utf-8",
+    )
+    frozen = (
+        "exp404_prediction_manifest.json", "exp404_hard_confidence.jsonl",
+        "exp405_demotion_evaluation.json", "exp405_demotion_dataset_metrics.csv",
+        "exp405_demotion_candidate_evaluation.csv", "exp403_feature_audit.jsonl",
+        "exp408_consensus_results.jsonl", "exp408_variant_metrics.csv",
+        "exp408_variant_candidate_evaluation.csv", "exp403_408_frozen_test_labels.csv",
+    )
+    hashes = {name: sha256((output / name).read_bytes()).hexdigest() for name in frozen}
+    (output / "exp403_408_evaluation_input_manifest.json").write_text(
+        json.dumps({"artifact_sha256": hashes, "provenance_contract_sha256": "fixture-pinned"}, sort_keys=True),
+        encoding="utf-8",
+    )
+    hashes["exp403_408_evaluation_input_manifest.json"] = sha256(
+        (output / "exp403_408_evaluation_input_manifest.json").read_bytes()
+    ).hexdigest()
+    (output / "exp403_408_evaluation_publication_manifest.json").write_text(
+        json.dumps({"artifact_sha256": hashes}, sort_keys=True), encoding="utf-8"
+    )
     return output
+
+
+def refresh_evaluation_hashes(output: Path, *names: str) -> None:
+    """Simulate a forged official publication whose manifests were rehashed."""
+    input_path = output / "exp403_408_evaluation_input_manifest.json"
+    input_manifest = json.loads(input_path.read_text(encoding="utf-8"))
+    for name in names:
+        input_manifest["artifact_sha256"][name] = sha256((output / name).read_bytes()).hexdigest()
+    input_path.write_text(json.dumps(input_manifest, sort_keys=True), encoding="utf-8")
+    publication_path = output / "exp403_408_evaluation_publication_manifest.json"
+    publication_manifest = json.loads(publication_path.read_text(encoding="utf-8"))
+    for name in names:
+        publication_manifest["artifact_sha256"][name] = sha256((output / name).read_bytes()).hexdigest()
+    publication_manifest["artifact_sha256"][input_path.name] = sha256(input_path.read_bytes()).hexdigest()
+    publication_path.write_text(json.dumps(publication_manifest, sort_keys=True), encoding="utf-8")
 
 
 class LabelLoaderSpy:
@@ -490,7 +535,7 @@ class EvaluationTests(unittest.TestCase):
             payload["train_stability"] = 0.99 + 1.1e-12
             path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
 
-            with self.assertRaisesRegex(ValueError, "independent reaggregation mismatch"):
+            with self.assertRaisesRegex(ValueError, "SHA256|independent reaggregation mismatch"):
                 independent_reaggregate(output)
 
     def test_independent_reaggregation_requires_candidate_level_evaluation_rows(self) -> None:
@@ -498,7 +543,36 @@ class EvaluationTests(unittest.TestCase):
             output = reporting_fixture(Path(directory))
             (output / "exp408_variant_candidate_evaluation.csv").unlink()
 
-            with self.assertRaisesRegex(ValueError, "candidate evaluation"):
+            with self.assertRaisesRegex(ValueError, "candidate evaluation|frozen artifact"):
+                independent_reaggregate(output)
+
+    def test_independent_reaggregation_rejects_altered_baseline_fn_and_consensus_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = reporting_fixture(Path(directory))
+            path = output / "exp408_variant_metrics.csv"
+            text = path.read_text(encoding="utf-8").replace(",0,1,1\n", ",0,1,0\n", 1)
+            path.write_text(text, encoding="utf-8")
+            refresh_evaluation_hashes(output, path.name)
+            with self.assertRaisesRegex(ValueError, "baseline_hard_fn"):
+                independent_reaggregate(output)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = reporting_fixture(Path(directory))
+            (output / "exp408_consensus_results.jsonl").write_text("{}\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "SHA256"):
+                independent_reaggregate(output)
+
+    def test_independent_reaggregation_rejects_rehashed_exp408_tp_integer(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = reporting_fixture(Path(directory))
+            path = output / "exp408_variant_metrics.csv"
+            path.write_text(
+                path.read_text(encoding="utf-8").replace(",1,1,0,1.0,1,1,0", ",1,0,0,1.0,1,1,0", 1),
+                encoding="utf-8",
+            )
+            refresh_evaluation_hashes(output, path.name)
+
+            with self.assertRaisesRegex(ValueError, r"\.tp"):
                 independent_reaggregate(output)
 
 

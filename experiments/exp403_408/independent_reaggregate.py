@@ -18,6 +18,8 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
+import numpy as np
+
 
 FLOAT_TOLERANCE = 1e-12
 PREDICTION_MANIFEST = "exp404_prediction_manifest.json"
@@ -29,6 +31,9 @@ AUDIT_ROWS = "exp403_feature_audit.jsonl"
 CONSENSUS_ROWS = "exp408_consensus_results.jsonl"
 EXP408_ROWS = "exp408_variant_metrics.csv"
 EXP408_CANDIDATE_ROWS = "exp408_variant_candidate_evaluation.csv"
+FROZEN_LABELS = "exp403_408_frozen_test_labels.csv"
+INPUT_MANIFEST = "exp403_408_evaluation_input_manifest.json"
+PUBLICATION_MANIFEST = "exp403_408_evaluation_publication_manifest.json"
 
 _EXP405_INTEGERS = (
     "recheck_count",
@@ -39,6 +44,13 @@ _EXP405_FLOATS = (
     "false_positive_fraction",
     "baseline_true_positive_retention",
     "train_stability",
+    "dataset_concentration",
+    "lineage_concentration",
+)
+_EXP405_INTERVALS = (
+    "false_positive_fraction_wilson_interval",
+    "false_positive_fraction_bootstrap_interval",
+    "baseline_true_positive_retention_bootstrap_interval",
 )
 _EXP408_INTEGERS = (
     "candidate_count",
@@ -51,6 +63,9 @@ _EXP408_INTEGERS = (
     "priority_overlap",
     "review_outside_existing",
 )
+_BOOTSTRAP_ITERATIONS = 2_000
+_WILSON_Z_95 = 1.959963984540054
+_BOOTSTRAP_SEED = 20260727
 
 
 @dataclass(frozen=True)
@@ -62,6 +77,57 @@ class IndependentReaggregation:
     mismatch_count: int
 
 
+def _verify_frozen_publications(output: Path) -> Mapping[str, Mapping[int, int]]:
+    """Verify every consumed immutable publication before parsing its values."""
+    input_manifest = _read_object(output / INPUT_MANIFEST)
+    publication_manifest = _read_object(output / PUBLICATION_MANIFEST)
+    input_hashes = _artifact_hashes(input_manifest, INPUT_MANIFEST)
+    publication_hashes = _artifact_hashes(publication_manifest, PUBLICATION_MANIFEST)
+    required = {
+        PREDICTION_MANIFEST, PREDICTION_ROWS, EXP405_EVALUATION, EXP405_ROWS,
+        EXP405_CANDIDATE_ROWS, AUDIT_ROWS, CONSENSUS_ROWS, EXP408_ROWS,
+        EXP408_CANDIDATE_ROWS, FROZEN_LABELS,
+    }
+    observed = {**input_hashes, **publication_hashes}
+    missing = required - set(observed)
+    if missing:
+        raise ValueError("frozen publication hashes are incomplete: " + ", ".join(sorted(missing)))
+    for name, expected in observed.items():
+        if name in {INPUT_MANIFEST, PUBLICATION_MANIFEST}:
+            continue
+        if _sha256(output / name) != expected:
+            raise ValueError(f"frozen publication SHA256 mismatch: {name}")
+    if publication_hashes.get(INPUT_MANIFEST) != _sha256(output / INPUT_MANIFEST):
+        raise ValueError("frozen publication SHA256 mismatch: evaluation input manifest")
+    return _load_frozen_labels(output / FROZEN_LABELS)
+
+
+def _artifact_hashes(manifest: Mapping[str, object], name: str) -> dict[str, str]:
+    values = _mapping(manifest.get("artifact_sha256"), f"{name} artifact_sha256")
+    result: dict[str, str] = {}
+    for artifact, digest in values.items():
+        if not isinstance(digest, str) or len(digest) != 64:
+            raise ValueError(f"{name} artifact SHA256 is invalid")
+        result[str(artifact)] = digest
+    return result
+
+
+def _load_frozen_labels(path: Path) -> Mapping[str, Mapping[int, int]]:
+    rows = _read_csv(path)
+    _require_columns(rows, {"dataset", "candidate_index", "is_true_anomaly"}, path.name)
+    result: dict[str, dict[int, int]] = defaultdict(dict)
+    for row in rows:
+        dataset = _text(row.get("dataset"), "frozen label dataset")
+        index = _integer(row.get("candidate_index"), "frozen label index")
+        value = _binary_integer(row.get("is_true_anomaly"), "frozen label value")
+        if index in result[dataset]:
+            raise ValueError("frozen labels contain duplicate indices")
+        result[dataset][index] = value
+    if not result:
+        raise ValueError("frozen labels are empty")
+    return MappingProxyType({dataset: MappingProxyType(values) for dataset, values in result.items()})
+
+
 def independent_reaggregate(output_dir: Path) -> IndependentReaggregation:
     """Reaggregate frozen publications and reject any metric disagreement.
 
@@ -70,19 +136,20 @@ def independent_reaggregate(output_dir: Path) -> IndependentReaggregation:
     consulted here.
     """
     output = Path(output_dir)
+    labels = _verify_frozen_publications(output)
     manifest = _read_object(output / PREDICTION_MANIFEST)
     prediction = _load_prediction(output, manifest)
     audit = _load_audit(output / AUDIT_ROWS)
     exp405, exp405_comparisons = _reaggregate_exp405(
-        prediction, audit, _read_object(output / EXP405_EVALUATION), output / EXP405_ROWS,
+        prediction, audit, labels, _read_object(output / EXP405_EVALUATION), output / EXP405_ROWS,
         output / EXP405_CANDIDATE_ROWS,
     )
     exp408, exp408_comparisons = _reaggregate_exp408(
-        prediction, audit, output / CONSENSUS_ROWS, output / EXP408_ROWS,
+        prediction, audit, labels, output / CONSENSUS_ROWS, output / EXP408_ROWS,
         output / EXP408_CANDIDATE_ROWS,
     )
     metrics: dict[str, object] = {
-        "exp404": _exp404_metrics(prediction),
+        "exp404": _exp404_metrics(prediction, labels),
         "exp405": exp405,
         "exp406": exp408["exp406"],
         "exp407": exp408["exp407"],
@@ -137,7 +204,7 @@ def _load_prediction(output: Path, manifest: Mapping[str, object]) -> tuple[dict
     return tuple(rows)
 
 
-def _exp404_metrics(prediction: Sequence[Mapping[str, object]]) -> dict[str, object]:
+def _exp404_metrics(prediction: Sequence[Mapping[str, object]], labels: Mapping[str, Mapping[int, int]]) -> dict[str, object]:
     grade_counts: dict[str, dict[str, int]] = defaultdict(lambda: Counter())
     recheck_count = 0
     for row in prediction:
@@ -149,6 +216,9 @@ def _exp404_metrics(prediction: Sequence[Mapping[str, object]]) -> dict[str, obj
     return {
         "hard_candidate_count": len(prediction),
         "recheck_count": recheck_count,
+        "hard_tp": sum(labels[str(row["dataset"])][_integer(row["candidate_index"], "prediction candidate index")] for row in prediction),
+        "hard_fp": len(prediction) - sum(labels[str(row["dataset"])][_integer(row["candidate_index"], "prediction candidate index")] for row in prediction),
+        "hard_fn": sum(sum(values.values()) for values in labels.values()) - sum(labels[str(row["dataset"])][_integer(row["candidate_index"], "prediction candidate index")] for row in prediction),
         "grade_counts": {alpha: dict(sorted(counts.items())) for alpha, counts in sorted(grade_counts.items())},
         "frozen_lane_parity": True,
     }
@@ -157,6 +227,7 @@ def _exp404_metrics(prediction: Sequence[Mapping[str, object]]) -> dict[str, obj
 def _reaggregate_exp405(
     prediction: Sequence[Mapping[str, object]],
     audit: Mapping[str, int],
+    labels: Mapping[str, Mapping[int, int]],
     official: Mapping[str, object],
     path: Path,
     candidate_path: Path,
@@ -184,12 +255,17 @@ def _reaggregate_exp405(
         if _binary_integer(row.get("is_recheck"), "Exp405 is_recheck") != expected_recheck:
             raise ValueError("Exp405 candidate evaluation recheck status mismatch")
         _binary_integer(row.get("is_true_anomaly"), "Exp405 is_true_anomaly")
+        if labels.get(identity[0], {}).get(identity[1]) != _binary_integer(row.get("is_true_anomaly"), "Exp405 is_true_anomaly"):
+            raise ValueError("Exp405 candidate evaluation differs from frozen labels")
         seen.add(identity)
         candidate_by_dataset[identity[0]].append(row)
     if seen != set(prediction_by_identity):
         raise ValueError("Exp405 candidate evaluation coverage is incomplete")
     recheck = fp = tp = baseline_tp = 0
     stability_weighted = 0.0
+    dataset_counts: Counter[str] = Counter()
+    lineage_counts: Counter[str] = Counter()
+    bootstrap_rows: list[tuple[int, int, int, int]] = []
     for row in rows:
         dataset = _text(row.get("dataset"), "Exp405 dataset")
         if dataset not in audit:
@@ -220,18 +296,38 @@ def _reaggregate_exp405(
             raise ValueError(f"Exp405 candidate evaluation mismatch: {dataset}/baseline_hard_tp")
         baseline_tp += actual_baseline_tp
         stability_weighted += row_stability * row_recheck
+        if row_recheck:
+            dataset_counts[dataset] += row_recheck
+            lineage_counts[_text(row.get("lineage"), "Exp405 lineage")] += row_recheck
+        bootstrap_rows.append((row_recheck, row_fp, row_tp, actual_baseline_tp))
+    fp_fraction = fp / recheck if recheck else 0.0
+    tp_retention = (baseline_tp - tp) / baseline_tp if baseline_tp else 1.0
+    stability = stability_weighted / recheck if recheck else 0.0
+    fp_bootstrap, retention_bootstrap = _paired_bootstrap(
+        bootstrap_rows,
+        point_fp_fraction=fp_fraction,
+        point_tp_retention=tp_retention,
+    )
     result: dict[str, object] = {
         "recheck_count": recheck,
         "false_positive_count": fp,
         "true_positive_count": tp,
-        "false_positive_fraction": fp / recheck if recheck else 0.0,
-        "baseline_true_positive_retention": (baseline_tp - tp) / baseline_tp if baseline_tp else 1.0,
-        "train_stability": stability_weighted / recheck if recheck else 0.0,
+        "false_positive_fraction": fp_fraction,
+        "baseline_true_positive_retention": tp_retention,
+        "train_stability": stability,
+        "false_positive_fraction_wilson_interval": _wilson_interval(fp, recheck),
+        "false_positive_fraction_bootstrap_interval": fp_bootstrap,
+        "baseline_true_positive_retention_bootstrap_interval": retention_bootstrap,
+        "dataset_concentration": _hhi(dataset_counts),
+        "lineage_concentration": _hhi(lineage_counts),
+        "passes_research_gate": fp_fraction >= .80 and tp_retention >= .99 and stability >= .99,
         "lane_parity": True,
         "operational_policy_changed": False,
     }
     comparisons = _comparisons("exp405", official, result, (*_EXP405_INTEGERS, *_EXP405_FLOATS))
-    for name in ("lane_parity", "operational_policy_changed"):
+    for name in _EXP405_INTERVALS:
+        comparisons[f"exp405.{name}"] = _interval_comparison(official.get(name), result[name])
+    for name in ("lane_parity", "passes_research_gate", "operational_policy_changed"):
         comparisons[f"exp405.{name}"] = _boolean_comparison(official.get(name), bool(result[name]))
     return result, comparisons
 
@@ -239,6 +335,7 @@ def _reaggregate_exp405(
 def _reaggregate_exp408(
     prediction: Sequence[Mapping[str, object]],
     audit: Mapping[str, int],
+    labels: Mapping[str, Mapping[int, int]],
     consensus_path: Path,
     metrics_path: Path,
     candidate_path: Path,
@@ -312,21 +409,32 @@ def _reaggregate_exp408(
         outcomes = candidate_outcomes.get(key, {})
         if set(outcomes) != actual_candidates:
             raise ValueError(f"Exp408 candidate evaluation coverage is invalid: {dataset}/{variant}/{alpha}")
+        if dataset not in labels or not actual_candidates <= set(labels[dataset]):
+            raise ValueError(f"Exp408 frozen label coverage is invalid: {dataset}")
         standard_overlap = len(actual_candidates & lane_sets[dataset]["standard"])
         priority_overlap = len(actual_candidates & lane_sets[dataset]["priority"])
         outside_existing = len(actual_candidates - lane_sets[dataset]["standard"] - lane_sets[dataset]["priority"])
-        tp = sum(outcomes.values())
+        if any(outcomes[index] != labels[dataset][index] for index in actual_candidates):
+            raise ValueError(f"Exp408 candidate evaluation differs from frozen labels: {dataset}/{variant}/{alpha}")
+        tp = sum(labels[dataset][index] for index in actual_candidates)
         fp = candidate_count - tp
-        baseline_hard_tp = _integer(row.get("baseline_hard_tp"), "Exp408 baseline Hard TP")
+        if not lane_sets[dataset]["hard"] <= set(labels[dataset]):
+            raise ValueError(f"Exp408 frozen Hard label coverage is invalid: {dataset}")
+        baseline_hard_tp = sum(labels[dataset][index] for index in lane_sets[dataset]["hard"])
+        baseline_hard_fn = sum(labels[dataset].values()) - baseline_hard_tp
         expected = {
             "candidate_count": candidate_count,
+            "tp": tp,
+            "fp": fp,
             "fn_recovered": tp,
             "zero_f1_before": int(baseline_hard_tp == 0),
             "zero_f1_after": int(baseline_hard_tp + tp == 0),
             "standard_overlap": standard_overlap,
             "priority_overlap": priority_overlap,
             "review_outside_existing": outside_existing,
+            "baseline_hard_tp": baseline_hard_tp,
             "baseline_hard_fp": len(lane_sets[dataset]["hard"]) - baseline_hard_tp,
+            "baseline_hard_fn": baseline_hard_fn,
         }
         for name, independent in expected.items():
             comparison = _comparison(row.get(name), independent, integer=True)
@@ -416,6 +524,67 @@ def _boolean_comparison(official: object, independent: bool) -> Mapping[str, obj
     if not isinstance(official, bool):
         raise ValueError("official boolean metric must be a boolean")
     return MappingProxyType({"official": official, "independent": independent, "matched": official is independent})
+
+
+def _interval_comparison(official: object, independent: object) -> Mapping[str, object]:
+    observed = _interval(official, "official interval")
+    expected = _interval(independent, "independent interval")
+    return MappingProxyType({
+        "official": observed,
+        "independent": expected,
+        "matched": all(abs(left - right) <= FLOAT_TOLERANCE for left, right in zip(observed, expected)),
+    })
+
+
+def _interval(value: object, name: str) -> tuple[float, float]:
+    values = _sequence(value, name)
+    if len(values) != 2:
+        raise ValueError(f"{name} must contain two values")
+    lower, upper = (_float(item, name) for item in values)
+    if lower > upper:
+        raise ValueError(f"{name} bounds are invalid")
+    return (lower, upper)
+
+
+def _wilson_interval(successes: int, total: int) -> tuple[float, float]:
+    if total <= 0:
+        return (0.0, 0.0)
+    proportion = successes / total
+    z_squared = _WILSON_Z_95**2
+    denominator = 1.0 + z_squared / total
+    center = (proportion + z_squared / (2.0 * total)) / denominator
+    radius = _WILSON_Z_95 * math.sqrt(
+        proportion * (1.0 - proportion) / total + z_squared / (4.0 * total**2)
+    ) / denominator
+    return (max(0.0, center - radius), min(1.0, center + radius))
+
+
+def _paired_bootstrap(
+    rows: Sequence[tuple[int, int, int, int]],
+    *,
+    point_fp_fraction: float,
+    point_tp_retention: float,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    if not rows:
+        return ((point_fp_fraction, point_fp_fraction), (point_tp_retention, point_tp_retention))
+    generator = np.random.default_rng(_BOOTSTRAP_SEED)
+    fp_fractions: list[float] = []
+    retentions: list[float] = []
+    for _ in range(_BOOTSTRAP_ITERATIONS):
+        sampled = [rows[index] for index in generator.integers(0, len(rows), size=len(rows))]
+        recheck = sum(row[0] for row in sampled)
+        if recheck:
+            fp_fractions.append(sum(row[1] for row in sampled) / recheck)
+        baseline_tp = sum(row[3] for row in sampled)
+        if baseline_tp:
+            retentions.append((baseline_tp - sum(row[2] for row in sampled)) / baseline_tp)
+    return (_percentile_interval(fp_fractions, point_fp_fraction), _percentile_interval(retentions, point_tp_retention))
+
+
+def _percentile_interval(values: Sequence[float], point: float) -> tuple[float, float]:
+    if not values:
+        return (point, point)
+    return (float(np.quantile(values, 0.025)), float(np.quantile(values, 0.975)))
 
 
 def _load_audit(path: Path) -> dict[str, int]:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import threading
 import time
@@ -488,6 +489,9 @@ class PipelineTests(unittest.TestCase):
                 (output / pipeline.EXP405_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
                 (output / pipeline.EXP408_VARIANT_METRICS).write_text("fixture\n", encoding="utf-8")
                 (output / pipeline.EXP408_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.FROZEN_LABELS_ARTIFACT).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EVALUATION_INPUT_MANIFEST).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EVALUATION_PUBLICATION_MANIFEST).write_text("fixture\n", encoding="utf-8")
 
             with (
                 patch.object(pipeline, "_write_published_evaluation_tables", side_effect=write_tables),
@@ -534,6 +538,9 @@ class PipelineTests(unittest.TestCase):
                 (output / pipeline.EXP405_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
                 (output / pipeline.EXP408_VARIANT_METRICS).write_text("fixture\n", encoding="utf-8")
                 (output / pipeline.EXP408_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.FROZEN_LABELS_ARTIFACT).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EVALUATION_INPUT_MANIFEST).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EVALUATION_PUBLICATION_MANIFEST).write_text("fixture\n", encoding="utf-8")
 
             with (
                 patch.object(pipeline, "_write_published_evaluation_tables", side_effect=write_tables_side_effect) as write_tables,
@@ -542,6 +549,81 @@ class PipelineTests(unittest.TestCase):
                 pipeline._write_report(output)
 
         write_tables.assert_called_once_with(output)
+
+    def test_report_hash_failure_stops_before_label_db_access(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.object(pipeline, "_verify_evaluation_input_manifest", side_effect=ValueError("SHA256 mismatch")),
+                patch.object(pipeline, "load_test_labels") as labels,
+            ):
+                with self.assertRaisesRegex(ValueError, "SHA256"):
+                    pipeline._write_published_evaluation_tables(Path(tmp))
+        labels.assert_not_called()
+
+    def test_report_resume_regenerates_when_final_output_is_missing_or_corrupt(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        for failure in ("report missing", "report SHA256 mismatch"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as tmp:
+                output = Path(tmp)
+                completed = pipeline.StageResult(
+                    stage="report", completed=1, total=1, recomputed_datasets=1,
+                    errors=0, output_dir=output,
+                )
+                with (
+                    patch.object(pipeline, "list_datasets_small_to_large", return_value=["toy"]),
+                    patch.object(pipeline, "validate_final_reports", side_effect=[ValueError(failure), None]),
+                    patch.object(pipeline, "run_stage", return_value=completed) as run_stage,
+                    patch.object(pipeline, "_finalize_stage"),
+                    patch.object(pipeline, "_require_final_outputs"),
+                ):
+                    pipeline.run_pipeline(stage="report", output_dir=output, resume=True)
+
+                self.assertFalse(run_stage.call_args.kwargs["resume"])
+
+    def test_final_manifest_ignores_status_but_rejects_deleted_or_corrupt_report(self) -> None:
+        from experiments.exp403_408.reporting import (
+            MANIFEST_JSON,
+            REPORT_NAME,
+            validate_final_reports,
+            write_reports,
+        )
+        from experiments.exp403_408.tests.test_evaluation import reporting_fixture
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = reporting_fixture(Path(tmp))
+            write_reports(output, command="python3 scratch/run_exp403_408_feature_ml_validation.py --stage report")
+            manifest_before = (output / MANIFEST_JSON).read_bytes()
+            (output / "status.json").write_text('{"status":"completed"}\n', encoding="utf-8")
+            validate_final_reports(output)
+            manifest = json.loads((output / MANIFEST_JSON).read_text(encoding="utf-8"))
+            self.assertNotIn("status.json", manifest["artifact_sha256"])
+            self.assertEqual(manifest_before, (output / MANIFEST_JSON).read_bytes())
+            (output / REPORT_NAME).unlink()
+            with self.assertRaisesRegex(ValueError, "report artifact|incomplete"):
+                validate_final_reports(output)
+            write_reports(output, command="python3 scratch/run_exp403_408_feature_ml_validation.py --stage report")
+            (output / "MANIFEST.md").write_text("corrupt\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "incomplete"):
+                validate_final_reports(output)
+
+    def test_runbook_commands_reference_the_real_entrypoint(self) -> None:
+        repository = Path(__file__).resolve().parents[3]
+        runbook = (repository / "docs" / "EXP403_408_RUNBOOK_KO.md").read_text(encoding="utf-8")
+        script = repository / "scratch" / "run_exp403_408_feature_ml_validation.py"
+
+        self.assertIn("--stage all", runbook)
+        self.assertIn("--stage report", runbook)
+        help_result = subprocess.run(
+            ["python3", str(script), "--help"],
+            cwd=repository,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(help_result.returncode, 0, help_result.stderr)
 
     def test_all_marks_status_failed_when_registered_outputs_are_absent(self) -> None:
         import experiments.exp403_408.pipeline as pipeline

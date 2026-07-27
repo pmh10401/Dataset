@@ -7,12 +7,29 @@ Exp403-408은 동결된 automatic Hard를 유지한 채, Exp405의 반사실적 
 
 ## 실행 순서
 
-1. 모든 prediction과 evaluation publication을 동결한다.
-2. `report` stage가 `exp405_demotion_dataset_metrics.csv`와
+```bash
+python3 scratch/run_exp403_408_feature_ml_validation.py \
+  --stage all \
+  --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation
+```
+
+재개 시에도 같은 명령을 사용한다. `report`만 다시 발행하려면 다음을 사용한다.
+
+```bash
+python3 scratch/run_exp403_408_feature_ml_validation.py \
+  --stage report \
+  --output-dir /Users/minho/Documents/Dataset/exp403_408_feature_ml_validation
+```
+
+1. `consensus-evaluate` 완료 시 prediction/provenance/audit/consensus/DB/lane 해시를
+   `exp403_408_evaluation_input_manifest.json`으로 동결한다.
+2. `report` stage는 이 manifest와 외부 pinned prediction/provenance를 검증한 뒤에만
+   TEST label DB를 읽는다.
+3. `report` stage가 `exp405_demotion_dataset_metrics.csv`와
    `exp408_variant_metrics.csv`를 포함한 평가 산출물을 확인한다.
-3. 독립 재집계가 prediction SHA256, Hard lane parity, CSV/JSONL coverage,
+4. 독립 재집계가 prediction SHA256, Hard lane parity, CSV/JSONL coverage,
    정수 exact match, float 1e-12 tolerance를 통과해야 한다.
-4. 그 다음에만 Korean result report와 `MANIFEST.json`/`MANIFEST.md`를 발행한다.
+5. 그 다음에만 Korean result report와 `MANIFEST.json`/`MANIFEST.md`를 발행한다.
 
 ## 해석 규칙
 
@@ -29,9 +46,11 @@ Exp403-408은 동결된 automatic Hard를 유지한 채, Exp405의 반사실적 
 - `exp404_prediction_manifest.json`, `exp404_hard_confidence.jsonl`
 - `exp405_demotion_evaluation.json`, `exp405_demotion_dataset_metrics.csv`,
   `exp405_demotion_candidate_evaluation.csv`
-- `exp403_feature_audit.jsonl`
+- `exp403_feature_audit.jsonl`, `exp403_408_frozen_test_labels.csv`
 - `exp408_consensus_results.jsonl`, `exp408_variant_metrics.csv`,
   `exp408_variant_candidate_evaluation.csv`
+- `exp403_408_evaluation_input_manifest.json`,
+  `exp403_408_evaluation_publication_manifest.json`
 - `EXP403_408_RESULT_REPORT_KO.md`, `MANIFEST.json`, `MANIFEST.md`
 
 ## 중단 조건

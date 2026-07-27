@@ -28,9 +28,9 @@ from .evaluation import EvaluationLabels, evaluate_exp405
 from .feature_registry import load_feature_blocks
 from .feature_stability import audit_feature_stability, build_group_summary
 from .foundation import DB_PATH, EXP291_MANIFEST_PATH, EXP291_PREDICTION_PATH, EXP292_MANIFEST_PATH, EXP292_PREDICTION_PATH, crossfit_plan, list_datasets_small_to_large, load_dataset_input, load_frozen_lanes
-from .prediction import freeze_provenance_contract, load_expected_provenance, predict_dataset, write_prediction
+from .prediction import freeze_provenance_contract, load_expected_provenance, predict_dataset, verify_prediction, write_prediction
 from .independent_reaggregate import independent_reaggregate
-from .reporting import write_reports
+from .reporting import validate_final_reports, write_reports
 from .synthetic_anomaly import SyntheticAnomalyConfig, _crossfit_normal_scores, score_synthetic_models, synthetic_shadow_predictions
 from .tri_view_ssl import _calibrate_raw_scores, _produce_raw_scores, score_tri_view, shadow_predictions
 from experiments.exp393_396.artifact_io import load_test_labels
@@ -59,6 +59,9 @@ EXP405_DATASET_METRICS = "exp405_demotion_dataset_metrics.csv"
 EXP405_CANDIDATE_METRICS = "exp405_demotion_candidate_evaluation.csv"
 EXP408_VARIANT_METRICS = "exp408_variant_metrics.csv"
 EXP408_CANDIDATE_METRICS = "exp408_variant_candidate_evaluation.csv"
+FROZEN_LABELS_ARTIFACT = "exp403_408_frozen_test_labels.csv"
+EVALUATION_INPUT_MANIFEST = "exp403_408_evaluation_input_manifest.json"
+EVALUATION_PUBLICATION_MANIFEST = "exp403_408_evaluation_publication_manifest.json"
 RESULT_ARTIFACT = "exp403_408_results.csv"
 SUMMARY_ARTIFACT = "exp403_408_summary.csv"
 STATUS_HEARTBEAT_SECONDS = 30.0
@@ -150,6 +153,12 @@ def run_pipeline(
     for stage_name in selected:
         stage_datasets = ("__aggregate__",) if stage_name in AGGREGATE_STAGES else datasets
         stage_workers = 1 if stage_name in AGGREGATE_STAGES else stage_worker_count(stage_name, workers)
+        stage_resume = resume
+        if stage_name == "report" and resume:
+            try:
+                validate_final_reports(Path(output_dir))
+            except (OSError, ValueError, json.JSONDecodeError):
+                stage_resume = False
         try:
             result = run_stage(
                 stage_name,
@@ -157,7 +166,7 @@ def run_pipeline(
                 Path(output_dir),
                 processor=_processor_for(stage_name, Path(output_dir)),
                 stop_after=stop_after,
-                resume=resume,
+                resume=stage_resume,
                 workers=stage_workers,
                 device="cpu",
                 run_id=run_id,
@@ -173,9 +182,10 @@ def run_pipeline(
             _write_failed_status(Path(output_dir), stage_name, error)
             raise
         results.append(result)
-    if stage == "all":
+    if stage == "all" or stage == "report":
         try:
             _require_final_outputs(Path(output_dir))
+            validate_final_reports(Path(output_dir))
         except Exception as error:
             _write_failed_status(Path(output_dir), "report", error)
             raise
@@ -483,6 +493,9 @@ def _write_report(output: Path) -> Mapping[str, object]:
         {"artifact": CONSENSUS_SUMMARY, "sha256": sha256_file(output / CONSENSUS_SUMMARY)},
         {"artifact": EXP408_VARIANT_METRICS, "sha256": sha256_file(output / EXP408_VARIANT_METRICS)},
         {"artifact": EXP408_CANDIDATE_METRICS, "sha256": sha256_file(output / EXP408_CANDIDATE_METRICS)},
+        {"artifact": FROZEN_LABELS_ARTIFACT, "sha256": sha256_file(output / FROZEN_LABELS_ARTIFACT)},
+        {"artifact": EVALUATION_INPUT_MANIFEST, "sha256": sha256_file(output / EVALUATION_INPUT_MANIFEST)},
+        {"artifact": EVALUATION_PUBLICATION_MANIFEST, "sha256": sha256_file(output / EVALUATION_PUBLICATION_MANIFEST)},
     ]
     write_csv_atomic(output / SUMMARY_ARTIFACT, fieldnames=("artifact", "sha256"), rows=summary_rows)
     write_reports(
@@ -494,6 +507,7 @@ def _write_report(output: Path) -> Mapping[str, object]:
 
 def _write_published_evaluation_tables(output: Path) -> None:
     """Freeze official label-based detail rows before the read-only audit runs."""
+    _verify_evaluation_input_manifest(output)
     prediction = _read_jsonl_artifact(output / "exp404_hard_confidence.jsonl")
     consensus_rows = _read_jsonl_artifact(output / CONSENSUS_ARTIFACT)
     audit_rows = _read_jsonl_artifact(output / AUDIT_ARTIFACT)
@@ -505,6 +519,12 @@ def _write_published_evaluation_tables(output: Path) -> None:
     labels = load_test_labels(datasets)
     if set(labels) != datasets:
         raise ValueError("published Exp403-408 labels are incomplete")
+    frozen_labels = [
+        {"dataset": dataset, "candidate_index": index, "is_true_anomaly": int(_label_is_anomaly(value))}
+        for dataset in sorted(labels)
+        for index, value in enumerate(labels[dataset])
+    ]
+    write_csv_atomic(output / FROZEN_LABELS_ARTIFACT, fieldnames=("dataset", "candidate_index", "is_true_anomaly"), rows=frozen_labels)
     by_dataset: dict[str, list[Mapping[str, object]]] = {}
     for row in prediction:
         by_dataset.setdefault(str(row["dataset"]), []).append(row)
@@ -624,6 +644,7 @@ def _write_published_evaluation_tables(output: Path) -> None:
         fieldnames=("dataset", "variant", "alpha", "candidate_index", "is_true_anomaly"),
         rows=exp408_candidate_rows,
     )
+    _write_evaluation_publication_manifest(output)
 
 
 def _finalize_stage(stage: str, output: Path, datasets: Sequence[str]) -> None:
@@ -653,6 +674,7 @@ def _finalize_stage(stage: str, output: Path, datasets: Sequence[str]) -> None:
             fieldnames=("dataset", "variant", "candidate_count"),
             rows=summary_rows,
         )
+        _write_evaluation_input_manifest(output)
 
 
 def _publish_classical_prediction(output: Path, datasets: Sequence[str]) -> None:
@@ -844,6 +866,9 @@ def _require_final_outputs(output: Path, *, require_report: bool = True) -> None
             output / EXP405_CANDIDATE_METRICS,
             output / EXP408_VARIANT_METRICS,
             output / EXP408_CANDIDATE_METRICS,
+            output / FROZEN_LABELS_ARTIFACT,
+            output / EVALUATION_INPUT_MANIFEST,
+            output / EVALUATION_PUBLICATION_MANIFEST,
             output / "EXP403_408_RESULT_REPORT_KO.md",
             output / "MANIFEST.json",
             output / "MANIFEST.md",
@@ -865,6 +890,65 @@ def _read_json(path: Path) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ValueError(f"JSON artifact must be an object: {path}")
     return value
+
+
+def _evaluation_input_artifacts(output: Path) -> tuple[Path, ...]:
+    return (
+        output / AUDIT_ARTIFACT,
+        output / "exp404_prediction_manifest.json",
+        output / "exp404_hard_confidence.jsonl",
+        output / "exp403_404_provenance_contract.json",
+        output / EVALUATION_ARTIFACT,
+        output / CONSENSUS_ARTIFACT,
+        output / CONSENSUS_SUMMARY,
+    )
+
+
+def _write_evaluation_input_manifest(output: Path) -> None:
+    paths = _evaluation_input_artifacts(output)
+    missing = [str(path) for path in paths if not path.is_file()]
+    if missing:
+        raise ValueError("cannot freeze evaluation inputs: " + ", ".join(missing))
+    prediction_manifest = _read_json(output / "exp404_prediction_manifest.json")
+    write_json_atomic(
+        output / EVALUATION_INPUT_MANIFEST,
+        {
+            "schema": "exp403_408_evaluation_input/v1",
+            "provenance_contract_sha256": prediction_manifest.get("provenance_contract_sha256"),
+            "artifact_sha256": {path.name: sha256_file(path) for path in paths},
+            "external_sha256": {str(path): sha256_file(path) for path in (*_database_snapshot_paths(DB_PATH), *_frozen_lane_input_paths())},
+        },
+    )
+
+
+def _verify_evaluation_input_manifest(output: Path) -> None:
+    manifest = _read_json(output / EVALUATION_INPUT_MANIFEST)
+    hashes = _mapping_object(manifest.get("artifact_sha256"), "evaluation input artifact_sha256")
+    for path in _evaluation_input_artifacts(output):
+        if hashes.get(path.name) != sha256_file(path):
+            raise ValueError(f"evaluation input SHA256 mismatch: {path.name}")
+    external = _mapping_object(manifest.get("external_sha256"), "evaluation input external_sha256")
+    for path in (*_database_snapshot_paths(DB_PATH), *_frozen_lane_input_paths()):
+        if external.get(str(path)) != sha256_file(path):
+            raise ValueError(f"evaluation input SHA256 mismatch: {path}")
+    prediction_manifest = _read_json(output / "exp404_prediction_manifest.json")
+    expected_sha = str(manifest.get("provenance_contract_sha256", ""))
+    if expected_sha != prediction_manifest.get("provenance_contract_sha256"):
+        raise ValueError("evaluation input externally pinned provenance mismatch")
+    expected = load_expected_provenance(output / "exp403_404_provenance_contract.json", expected_sha256=expected_sha)
+    verify_prediction(output, frozen_lane_universe=load_frozen_lanes(), expected_provenance=expected)
+
+
+def _write_evaluation_publication_manifest(output: Path) -> None:
+    names = (
+        EVALUATION_INPUT_MANIFEST, EXP405_DATASET_METRICS, EXP405_CANDIDATE_METRICS,
+        EXP408_VARIANT_METRICS, EXP408_CANDIDATE_METRICS, FROZEN_LABELS_ARTIFACT,
+        EVALUATION_ARTIFACT,
+    )
+    write_json_atomic(
+        output / EVALUATION_PUBLICATION_MANIFEST,
+        {"schema": "exp403_408_evaluation_publication/v1", "artifact_sha256": {name: sha256_file(output / name) for name in names}},
+    )
 
 
 def _read_jsonl_artifact(path: Path) -> list[dict[str, object]]:
