@@ -142,8 +142,11 @@ TRAIN 전환 놀라움의 95번째 percentile을 넘는 전환이 발생한 뒤 
 
 ## 6. TRAIN 정상 calibration
 
-각 TRAIN 정상 instance를 한 번씩 pseudo-test로 두고, 해당 instance를
-제외한 TRAIN 데이터만으로 상태 prototype과 calibration reference를 만든다.
+각 TRAIN 정상 instance를 한 번씩 pseudo-test로 두고, 해당 instance가
+포함된 fold 전체를 제외한 TRAIN 데이터만으로 상태 prototype과 calibration
+reference를 만든다. fold는 instance index modulo 5로 결정하는 최대 5개의
+결정적 cross-fit fold를 사용한다. 따라서 모든 TRAIN instance는 정확히 한
+번 pseudo-test가 되지만 상태 모델 fitting은 데이터셋당 최대 5회만 수행한다.
 
 - `n_train >= 5`: instance 단위 cross-fitting을 수행한다.
 - `n_train < 5`: 이번 실험에서는 calibration abstention으로 처리한다.

@@ -238,18 +238,25 @@ def crossfit_train_scores(
         "dwell": np.empty(count, dtype=float),
         "recovery": np.empty(count, dtype=float),
     }
-    for held_out in range(count):
-        fit_indices = [index for index in range(count) if index != held_out]
+    fold_count = min(5, count)
+    for fold in range(fold_count):
+        held_out_indices = [
+            index for index in range(count) if index % fold_count == fold
+        ]
+        fit_indices = [
+            index for index in range(count) if index % fold_count != fold
+        ]
         if fit_observer is not None:
             fit_observer(fit_indices)
         model = fit_grammar_model(
             [descriptor_sequences[index] for index in fit_indices],
             config,
         )
-        score = score_trace(model, descriptor_sequences[held_out])
-        raw["transition"][held_out] = score.transition
-        raw["dwell"][held_out] = score.dwell
-        raw["recovery"][held_out] = score.recovery
+        for held_out in held_out_indices:
+            score = score_trace(model, descriptor_sequences[held_out])
+            raw["transition"][held_out] = score.transition
+            raw["dwell"][held_out] = score.dwell
+            raw["recovery"][held_out] = score.recovery
 
     percentiles = np.column_stack(
         [

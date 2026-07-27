@@ -221,9 +221,13 @@ def candidate_indices(p_values: Sequence[float], alpha: float) -> list[int]:
     return [index for index, value in enumerate(p_values) if value <= alpha]
 ```
 
-For each component, convert TEST scores to conformal p-values from its
-cross-fitted TRAIN-normal reference. The composite is the equal-weight mean of
-the three TRAIN OOF percentile scores, followed by its own conformal p-value.
+Use deterministic five-fold cross-fitting defined by
+`fold = instance_index % min(5, n_train)`. Every TRAIN instance is scored once
+by a model that excludes its entire fold, while model fitting occurs at most
+five times per dataset. For each component, convert TEST scores to conformal
+p-values from its cross-fitted TRAIN-normal reference. The composite is the
+equal-weight mean of the three TRAIN OOF percentile scores, followed by its own
+conformal p-value.
 
 - [ ] **Step 5: Run grammar tests**
 

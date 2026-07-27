@@ -67,6 +67,32 @@ class GrammarScoreTests(unittest.TestCase):
         self.assertEqual(result["transition"].shape, (5,))
         self.assertEqual(result["composite"].shape, (5,))
 
+    def test_crossfit_uses_at_most_five_deterministic_fits(self):
+        sequences = [
+            np.column_stack(
+                [
+                    np.linspace(0.0, 1.0, 12) + index,
+                    np.zeros((12, 5)),
+                ]
+            )
+            for index in range(10)
+        ]
+        calls = []
+
+        crossfit_train_scores(
+            sequences,
+            GrammarConfig(state_count=3),
+            fit_observer=lambda indices: calls.append(tuple(indices)),
+        )
+
+        self.assertEqual(len(calls), 5)
+        self.assertTrue(all(len(indices) == 8 for indices in calls))
+        excluded = [
+            set(range(10)) - set(fit_indices)
+            for fit_indices in calls
+        ]
+        self.assertEqual(set().union(*excluded), set(range(10)))
+
     def test_state_fitting_is_deterministic(self):
         sequences = [
             np.column_stack(
