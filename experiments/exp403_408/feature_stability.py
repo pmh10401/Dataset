@@ -48,6 +48,7 @@ def audit_feature_stability(
             continue
         if expected_rows is None:
             expected_rows = len(values)
+            _validate_folds(folds, expected_rows)
         if expected_rows is not None and len(values) != expected_rows:
             excluded[block.name] = "train_oof_length_mismatch"
             continue
@@ -82,12 +83,11 @@ def audit_feature_stability(
         values_by_name[block.name] = values
 
     if stability:
-        canonical_folds = _canonical_bootstrap_folds(values_by_name, folds)
         stability = {
             name: replace(
                 metric,
                 bootstrap_rank_stability=_bootstrap_rank_stability(
-                    values_by_name[name], canonical_folds, seed
+                    values_by_name[name], folds, seed
                 ),
             )
             for name, metric in stability.items()
@@ -165,6 +165,7 @@ def _train_oof_values(block: FeatureBlock) -> np.ndarray | None:
 def _validate_folds(folds: Sequence[Fold], n_rows: int) -> None:
     if not folds:
         raise ValueError("at least one TRAIN fold is required")
+    validation_indices: list[int] = []
     for fold in folds:
         validation = tuple(int(index) for index in fold.validation_indices)
         if not validation:
@@ -173,43 +174,12 @@ def _validate_folds(folds: Sequence[Fold], n_rows: int) -> None:
             raise ValueError("TRAIN fold fit and validation rows overlap")
         if any(index < 0 or index >= n_rows for index in (*fold.train_indices, *validation)):
             raise ValueError("TRAIN fold index outside OOF vector")
-
-
-def _canonical_bootstrap_folds(
-    values_by_name: Mapping[str, np.ndarray], folds: Sequence[Fold]
-) -> tuple[Fold, ...]:
-    """Rebuild fold partitions in a TRAIN-only canonical row order."""
-    n_rows = len(next(iter(values_by_name.values())))
-    _validate_folds(folds, n_rows)
-    validation_sizes = tuple(len(fold.validation_indices) for fold in folds)
-    if sum(validation_sizes) != n_rows:
-        raise ValueError("TRAIN fold validation rows must cover every OOF row")
-
-    rank_matrix = np.vstack(
-        [_average_ranks(values_by_name[name]) for name in sorted(values_by_name)]
-    )
-    consensus = np.mean(rank_matrix, axis=0)
-    profiles = tuple(
-        tuple(sorted(float(rank) for rank in rank_matrix[:, row]))
-        for row in range(n_rows)
-    )
-    canonical_order = np.asarray(
-        sorted(range(n_rows), key=lambda row: (float(consensus[row]), profiles[row])),
-        dtype=int,
-    )
-    start = 0
-    result: list[Fold] = []
-    for size in validation_sizes:
-        validation = canonical_order[start : start + size]
-        fit = np.concatenate((canonical_order[:start], canonical_order[start + size :]))
-        result.append(
-            Fold(
-                train_indices=tuple(int(index) for index in fit),
-                validation_indices=tuple(int(index) for index in validation),
-            )
-        )
-        start += size
-    return tuple(result)
+        validation_indices.extend(validation)
+    if len(validation_indices) != len(set(validation_indices)):
+        raise ValueError("duplicate validation row in TRAIN OOF folds")
+    omitted = sorted(set(range(n_rows)) - set(validation_indices))
+    if omitted:
+        raise ValueError("omitted validation row in TRAIN OOF folds")
 
 
 def _fold_center_drift(values: np.ndarray, folds: Sequence[Fold], median: float, mad: float) -> float:

@@ -419,6 +419,59 @@ class FeatureStabilityTests(unittest.TestCase):
         self.assertEqual(audit.correlation_components, (("alpha_unstable", "zeta_stable"),))
         self.assertEqual(audit.representatives, ("zeta_stable",))
 
+    def test_fold_validation_coverage_rejects_duplicate_and_omitted_rows(self) -> None:
+        duplicate = (
+            Fold(train_indices=(2, 3, 4, 5, 6, 7), validation_indices=(0, 1)),
+            Fold(train_indices=(0, 3, 4, 5, 6, 7), validation_indices=(1, 2)),
+            Fold(train_indices=(0, 1, 2, 5, 6, 7), validation_indices=(3, 4)),
+            Fold(train_indices=(0, 1, 2, 3, 4, 7), validation_indices=(5, 6)),
+        )
+        omitted = (
+            Fold(train_indices=(2, 3, 4, 5, 6, 7), validation_indices=(0, 1)),
+            Fold(train_indices=(0, 1, 4, 5, 6, 7), validation_indices=(2, 3)),
+            Fold(train_indices=(0, 1, 2, 3, 6, 7), validation_indices=(4, 5)),
+            Fold(train_indices=(0, 1, 2, 3, 4, 5, 7), validation_indices=(6,)),
+        )
+
+        with self.assertRaisesRegex(ValueError, "duplicate validation"):
+            audit_feature_stability((self._block("score", np.arange(8)),), duplicate)
+        with self.assertRaisesRegex(ValueError, "omitted validation"):
+            audit_feature_stability((self._block("score", np.arange(8)),), omitted)
+
+    def test_fold_validation_rejects_out_of_range_and_fit_query_overlap(self) -> None:
+        out_of_range = (
+            Fold(train_indices=(2, 3, 4, 5, 6, 7), validation_indices=(0, 1)),
+            Fold(train_indices=(0, 1, 4, 5, 6, 7), validation_indices=(2, 3)),
+            Fold(train_indices=(0, 1, 2, 3, 6, 7), validation_indices=(4, 5)),
+            Fold(train_indices=(0, 1, 2, 3, 4, 5), validation_indices=(6, 8)),
+        )
+        overlap = (
+            Fold(train_indices=(0, 2, 3, 4, 5, 6, 7), validation_indices=(0, 1)),
+            Fold(train_indices=(0, 1, 4, 5, 6, 7), validation_indices=(2, 3)),
+            Fold(train_indices=(0, 1, 2, 3, 6, 7), validation_indices=(4, 5)),
+            Fold(train_indices=(0, 1, 2, 3, 4, 5), validation_indices=(6, 7)),
+        )
+
+        with self.assertRaisesRegex(ValueError, "outside"):
+            audit_feature_stability((self._block("score", np.arange(8)),), out_of_range)
+        with self.assertRaisesRegex(ValueError, "overlap"):
+            audit_feature_stability((self._block("score", np.arange(8)),), overlap)
+
+    def test_supplied_fold_assignment_controls_stability_deterministically(self) -> None:
+        blocks = (self._block("score", np.arange(8)),)
+        contiguous = audit_feature_stability(blocks, self._folds())
+        repeated = audit_feature_stability(blocks, self._folds())
+        paired = audit_feature_stability(blocks, self._paired_folds())
+
+        self.assertEqual(
+            contiguous.feature_stability["score"].bootstrap_rank_stability,
+            repeated.feature_stability["score"].bootstrap_rank_stability,
+        )
+        self.assertNotEqual(
+            contiguous.feature_stability["score"].bootstrap_rank_stability,
+            paired.feature_stability["score"].bootstrap_rank_stability,
+        )
+
     def test_unavailable_stale_source_does_not_set_train_oof_row_count(self) -> None:
         stale = FeatureBlock(
             name="stale",
@@ -458,7 +511,9 @@ class FeatureStabilityTests(unittest.TestCase):
         rows = np.asarray([0.0, 3.0, 1.0, 5.0, 2.0, 7.0, 4.0, 6.0])
 
         original = build_group_summary(self._audit_for(rows))
-        reversed_rows = build_group_summary(self._audit_for(rows[::-1]))
+        reversed_rows = build_group_summary(
+            self._audit_for(rows[::-1], self._folds_for_reversed_rows())
+        )
 
         self.assertEqual(self._stable_hash(original), self._stable_hash(reversed_rows))
 
@@ -467,7 +522,9 @@ class FeatureStabilityTests(unittest.TestCase):
 
         self.assertEqual(
             self._stable_hash(self._audit_for(rows)),
-            self._stable_hash(self._audit_for(rows[::-1])),
+            self._stable_hash(
+                self._audit_for(rows[::-1], self._folds_for_reversed_rows())
+            ),
         )
 
     def test_group_summary_consistently_summarizes_negative_log10_p_values(self) -> None:
@@ -519,13 +576,13 @@ class FeatureStabilityTests(unittest.TestCase):
             self._block("zeta_stable", [0.0, 1.0, 2.0, 4.0, 3.0, 6.0, 7.0, 5.0]),
         )
 
-    def _audit_for(self, rows: np.ndarray):
+    def _audit_for(self, rows: np.ndarray, folds: tuple[Fold, ...] | None = None):
         return audit_feature_stability(
             (
                 self._block("primary", rows),
                 self._block("secondary", rows**2 + 0.25),
             ),
-            self._folds(),
+            self._folds() if folds is None else folds,
         )
 
     def _folds(self) -> tuple[Fold, ...]:
@@ -534,6 +591,23 @@ class FeatureStabilityTests(unittest.TestCase):
             Fold(train_indices=(0, 1, 4, 5, 6, 7), validation_indices=(2, 3)),
             Fold(train_indices=(0, 1, 2, 3, 6, 7), validation_indices=(4, 5)),
             Fold(train_indices=(0, 1, 2, 3, 4, 5), validation_indices=(6, 7)),
+        )
+
+    def _paired_folds(self) -> tuple[Fold, ...]:
+        return (
+            Fold(train_indices=(1, 2, 3, 4, 5, 6), validation_indices=(0, 7)),
+            Fold(train_indices=(0, 2, 3, 4, 5, 7), validation_indices=(1, 6)),
+            Fold(train_indices=(0, 1, 3, 4, 6, 7), validation_indices=(2, 5)),
+            Fold(train_indices=(0, 1, 2, 5, 6, 7), validation_indices=(3, 4)),
+        )
+
+    def _folds_for_reversed_rows(self) -> tuple[Fold, ...]:
+        return tuple(
+            Fold(
+                train_indices=tuple(7 - index for index in fold.train_indices),
+                validation_indices=tuple(7 - index for index in fold.validation_indices),
+            )
+            for fold in self._folds()
         )
 
     def _block(self, name: str, train_oof: object) -> FeatureBlock:
