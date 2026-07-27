@@ -92,6 +92,12 @@ class FrozenLaneUniverse:
     def lane_for(self, dataset: str) -> Mapping[str, frozenset[int]]:
         return self._lanes.get(str(dataset), MappingProxyType({}))
 
+    def hard_lanes(self) -> Mapping[str, frozenset[int]]:
+        """Return the complete verified Exp291/292 Hard-lane snapshot."""
+        return MappingProxyType({
+            dataset: lane["hard"] for dataset, lane in self._lanes.items()
+        })
+
 
 def load_dataset_input(
     dataset: str,

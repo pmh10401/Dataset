@@ -9,9 +9,18 @@ from pathlib import Path
 
 import numpy as np
 
-from experiments.exp403_408.contracts import ALPHAS, DatasetInput, FrozenConfig, PredictionRow
+from experiments.exp403_408.contracts import (
+    ALPHAS,
+    EXPECTED_DATASETS,
+    EXPECTED_HARD,
+    DatasetInput,
+    FrozenConfig,
+    PredictionRow,
+)
 from experiments.exp403_408.artifact_io import canonical_json_bytes, sha256_bytes, sha256_file
+from experiments.exp403_408.foundation import FrozenLaneUniverse, load_frozen_lanes
 from experiments.exp403_408.prediction import (
+    ExpectedProvenance,
     FEATURE_MANIFEST_NAME,
     HARD_CONFIDENCE_NAME,
     PREDICTION_MANIFEST_NAME,
@@ -36,33 +45,24 @@ def config() -> FrozenConfig:
     return FrozenConfig(target_length=2)
 
 
-def valid_rows() -> list[PredictionRow]:
+def valid_rows(universe: FrozenLaneUniverse) -> list[PredictionRow]:
     return [
         PredictionRow(
-            dataset="zeta",
-            candidate_index=2,
+            dataset=dataset,
+            candidate_index=index,
             scores_by_alpha={str(alpha): 0.5 for alpha in ALPHAS},
             confidence_by_alpha={str(alpha): "recheck" for alpha in ALPHAS},
             eligibility="abstain",
             abstention_reason="insufficient_train_normal",
-        ),
-        PredictionRow(
-            dataset="alpha",
-            candidate_index=1,
-            scores_by_alpha={str(alpha): 0.25 for alpha in ALPHAS},
-            confidence_by_alpha={str(alpha): "high" for alpha in ALPHAS},
-            eligibility="classical_committee",
-        ),
+        )
+        for dataset, indices in universe.hard_lanes().items()
+        for index in indices
     ]
 
 
-def frozen_hard_lanes() -> dict[str, tuple[int, ...]]:
-    return {"alpha": (1,), "zeta": (2,)}
-
-
-def artifact_provenance(root: Path) -> dict[str, dict[str, Path]]:
+def artifact_provenance(root: Path) -> ExpectedProvenance:
     sources = root / "sources"
-    sources.mkdir()
+    sources.mkdir(exist_ok=True)
     artifacts = {
         "feature_artifacts": {"exp403_features": sources / "exp403_features.npz"},
         "input_artifacts": {"exp291_lanes": sources / "exp291_lanes.jsonl"},
@@ -73,10 +73,15 @@ def artifact_provenance(root: Path) -> dict[str, dict[str, Path]]:
     for category in artifacts.values():
         for artifact in category.values():
             artifact.write_text(artifact.name, encoding="utf-8")
-    return artifacts
+    return ExpectedProvenance.from_paths(**artifacts)
 
 
 class PredictionBoundaryTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.universe = load_frozen_lanes()
+        cls.rows = valid_rows(cls.universe)
+
     def test_predict_dataset_signature_has_no_y_test(self) -> None:
         self.assertNotIn("y_test", inspect.signature(predict_dataset).parameters)
 
@@ -95,47 +100,74 @@ class PredictionBoundaryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "output"
             provenance = artifact_provenance(Path(directory))
-            incomplete = valid_rows()[:-1]
+            incomplete = self.rows[:-1]
 
             with self.assertRaisesRegex(ValueError, "frozen Hard.*coverage"):
                 write_prediction(
                     incomplete,
                     output,
                     config=config(),
-                    frozen_hard_lanes=frozen_hard_lanes(),
-                    **provenance,
+                    frozen_lane_universe=self.universe,
+                    expected_provenance=provenance,
                 )
+
+    def test_rejects_empty_or_subset_caller_lane_maps(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            for lane_map in ({}, {"ACSF1_normal_0": {0}}):
+                with self.subTest(lane_map=lane_map), self.assertRaisesRegex(TypeError, "FrozenLaneUniverse"):
+                    write_prediction(
+                        self.rows,
+                        Path(directory) / "output",
+                        config=config(),
+                        frozen_lane_universe=lane_map,
+                        expected_provenance=artifact_provenance(Path(directory)),
+                    )
+
+    def test_verified_universe_requires_full_dataset_and_hard_coverage(self) -> None:
+        lanes = self.universe.hard_lanes()
+
+        self.assertEqual(len(lanes), EXPECTED_DATASETS)
+        self.assertEqual(sum(len(indices) for indices in lanes.values()), EXPECTED_HARD)
 
     def test_modified_prediction_hash_stops_evaluation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             output = root / "output"
+            provenance = artifact_provenance(root)
             write_prediction(
-                valid_rows(),
+                self.rows,
                 output,
                 config=config(),
-                frozen_hard_lanes=frozen_hard_lanes(),
-                **artifact_provenance(root),
+                frozen_lane_universe=self.universe,
+                expected_provenance=provenance,
             )
             output.joinpath(HARD_CONFIDENCE_NAME).write_text("modified", encoding="utf-8")
 
             with self.assertRaisesRegex(ValueError, "SHA256"):
-                verify_prediction(output)
+                verify_prediction(
+                    output,
+                    frozen_lane_universe=self.universe,
+                    expected_provenance=provenance,
+                )
 
     def test_writes_canonical_artifacts_and_manifest_hashes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             output = root / "output"
             manifest = write_prediction(
-                valid_rows(),
+                self.rows,
                 output,
                 config=config(),
-                frozen_hard_lanes=frozen_hard_lanes(),
-                **artifact_provenance(root),
+                frozen_lane_universe=self.universe,
+                expected_provenance=artifact_provenance(root),
             )
-            rows, verified_manifest = verify_prediction(output)
+            rows, verified_manifest = verify_prediction(
+                output,
+                frozen_lane_universe=self.universe,
+                expected_provenance=artifact_provenance(root),
+            )
 
-            self.assertEqual([row["dataset"] for row in rows], ["alpha", "zeta"])
+            self.assertEqual(len(rows), EXPECTED_HARD)
             self.assertEqual(
                 manifest["artifact_hashes"],
                 verified_manifest["artifact_hashes"],
@@ -153,7 +185,7 @@ class PredictionBoundaryTests(unittest.TestCase):
             )
             self.assertEqual(
                 [json.loads(line)["dataset"] for line in output.joinpath(HARD_CONFIDENCE_NAME).read_text(encoding="utf-8").splitlines()],
-                ["alpha", "zeta"],
+                [row["dataset"] for row in rows],
             )
 
     def test_rejects_nested_recommendation_and_evaluation_fields(self) -> None:
@@ -161,32 +193,32 @@ class PredictionBoundaryTests(unittest.TestCase):
             with self.subTest(key=key), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 output = root / "output"
-                row = dataclasses.asdict(valid_rows()[0])
+                row = dataclasses.asdict(self.rows[0])
                 row["nested"] = {key: "review"}
 
                 with self.assertRaisesRegex(ValueError, "forbidden"):
                     write_prediction(
-                        [row, valid_rows()[1]],
+                        [row, *self.rows[1:]],
                         output,
                         config=config(),
-                        frozen_hard_lanes=frozen_hard_lanes(),
-                        **artifact_provenance(root),
+                        frozen_lane_universe=self.universe,
+                        expected_provenance=artifact_provenance(root),
                     )
 
     def test_requires_non_empty_actual_artifact_provenance(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(ValueError, "provenance"):
                 write_prediction(
-                    valid_rows(),
+                    self.rows,
                     Path(directory) / "output",
                     config=config(),
-                    frozen_hard_lanes=frozen_hard_lanes(),
-                    feature_artifacts={},
-                    input_artifacts={},
-                    baseline_artifacts={},
-                    config_artifacts={},
-                    code_artifacts={},
+                    frozen_lane_universe=self.universe,
+                    expected_provenance=ExpectedProvenance.from_paths(),
                 )
+
+    def test_rejects_caller_constructed_provenance_payload(self) -> None:
+        with self.assertRaisesRegex(TypeError, "ExpectedProvenance"):
+            ExpectedProvenance({})
 
     def test_modified_provenance_artifact_stops_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -194,23 +226,23 @@ class PredictionBoundaryTests(unittest.TestCase):
             output = root / "output"
             provenance = artifact_provenance(root)
             write_prediction(
-                valid_rows(),
+                self.rows,
                 output,
                 config=config(),
-                frozen_hard_lanes=frozen_hard_lanes(),
-                **provenance,
+                frozen_lane_universe=self.universe,
+                expected_provenance=provenance,
             )
-            provenance["feature_artifacts"]["exp403_features"].write_text("modified", encoding="utf-8")
+            root.joinpath("sources", "exp403_features.npz").write_text("modified", encoding="utf-8")
 
             with self.assertRaisesRegex(ValueError, "SHA256"):
-                verify_prediction(output)
+                verify_prediction(output, frozen_lane_universe=self.universe, expected_provenance=provenance)
 
     def test_verified_prediction_rejects_rehashed_nested_recommendation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             output = root / "output"
             write_prediction(
-                valid_rows(), output, config=config(), frozen_hard_lanes=frozen_hard_lanes(), **artifact_provenance(root)
+                self.rows, output, config=config(), frozen_lane_universe=self.universe, expected_provenance=artifact_provenance(root)
             )
             prediction_path = output / HARD_CONFIDENCE_NAME
             rows = [json.loads(line) for line in prediction_path.read_text(encoding="utf-8").splitlines()]
@@ -225,14 +257,14 @@ class PredictionBoundaryTests(unittest.TestCase):
             manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
 
             with self.assertRaisesRegex(ValueError, "forbidden"):
-                verify_prediction(output)
+                verify_prediction(output, frozen_lane_universe=self.universe, expected_provenance=artifact_provenance(root))
 
     def test_verified_prediction_rejects_forged_frozen_hard_lane_coverage(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             output = root / "output"
             write_prediction(
-                valid_rows(), output, config=config(), frozen_hard_lanes=frozen_hard_lanes(), **artifact_provenance(root)
+                self.rows, output, config=config(), frozen_lane_universe=self.universe, expected_provenance=artifact_provenance(root)
             )
             manifest_path = output / PREDICTION_MANIFEST_NAME
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -242,15 +274,15 @@ class PredictionBoundaryTests(unittest.TestCase):
             )
             manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
 
-            with self.assertRaisesRegex(ValueError, "frozen Hard.*coverage"):
-                verify_prediction(output)
+            with self.assertRaisesRegex(ValueError, "frozen Hard.*universe"):
+                verify_prediction(output, frozen_lane_universe=self.universe, expected_provenance=artifact_provenance(root))
 
     def test_manifest_config_is_hash_bound_to_config_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             output = root / "output"
             write_prediction(
-                valid_rows(), output, config=config(), frozen_hard_lanes=frozen_hard_lanes(), **artifact_provenance(root)
+                self.rows, output, config=config(), frozen_lane_universe=self.universe, expected_provenance=artifact_provenance(root)
             )
             manifest_path = output / PREDICTION_MANIFEST_NAME
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -258,7 +290,28 @@ class PredictionBoundaryTests(unittest.TestCase):
             manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
 
             with self.assertRaisesRegex(ValueError, "config SHA256"):
-                verify_prediction(output)
+                verify_prediction(output, frozen_lane_universe=self.universe, expected_provenance=artifact_provenance(root))
+
+    def test_source_tamper_and_manifest_rehash_cannot_replace_expected_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "output"
+            provenance = artifact_provenance(root)
+            write_prediction(
+                self.rows, output, config=config(), frozen_lane_universe=self.universe, expected_provenance=provenance
+            )
+            source = root / "sources" / "exp403_features.npz"
+            source.write_text("modified", encoding="utf-8")
+            manifest_path = output / PREDICTION_MANIFEST_NAME
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["provenance"]["feature_artifacts"]["exp403_features"]["sha256"] = sha256_file(source)
+            manifest["artifact_hashes"]["feature"] = sha256_bytes(
+                canonical_json_bytes(manifest["provenance"]["feature_artifacts"])
+            )
+            manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "expected provenance"):
+                verify_prediction(output, frozen_lane_universe=self.universe, expected_provenance=provenance)
 
 
 if __name__ == "__main__":

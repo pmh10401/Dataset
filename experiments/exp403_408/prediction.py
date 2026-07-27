@@ -7,6 +7,7 @@ from dataclasses import asdict, is_dataclass
 import json
 from pathlib import Path
 import re
+from types import MappingProxyType
 
 import numpy as np
 
@@ -23,6 +24,8 @@ from .classical_committee import grade_frozen_hard, score_classical_committee
 from .contracts import (
     ALPHA_KEYS,
     ALPHAS,
+    EXPECTED_DATASETS,
+    EXPECTED_HARD,
     DatasetInput,
     FrozenConfig,
     PredictionRow,
@@ -30,6 +33,7 @@ from .contracts import (
     train_eligibility,
     validate_prediction_row,
 )
+from .foundation import FrozenLaneUniverse
 
 
 FEATURE_MANIFEST_NAME = "exp403_feature_manifest.csv"
@@ -80,6 +84,63 @@ _PROVENANCE_CATEGORIES = (
     "config_artifacts",
     "code_artifacts",
 )
+_EXPECTED_PROVENANCE_PROOF = object()
+
+
+class ExpectedProvenance:
+    """Immutable source-artifact contract supplied independently of a manifest."""
+
+    __slots__ = ("_payload",)
+
+    def __init__(
+        self,
+        payload: Mapping[str, Mapping[str, Mapping[str, str]]],
+        *,
+        _proof: object,
+    ) -> None:
+        if _proof is not _EXPECTED_PROVENANCE_PROOF:
+            raise TypeError("ExpectedProvenance instances must come from from_paths")
+        if set(payload) != set(_PROVENANCE_CATEGORIES):
+            raise ValueError("expected provenance contract mismatch")
+        self._payload = MappingProxyType({
+            category: MappingProxyType({
+                str(name): MappingProxyType({
+                    "path": str(details["path"]),
+                    "sha256": str(details["sha256"]),
+                })
+                for name, details in artifacts.items()
+            })
+            for category, artifacts in payload.items()
+        })
+
+    @classmethod
+    def from_paths(
+        cls,
+        *,
+        feature_artifacts: Mapping[str, Path] | None = None,
+        input_artifacts: Mapping[str, Path] | None = None,
+        baseline_artifacts: Mapping[str, Path] | None = None,
+        config_artifacts: Mapping[str, Path] | None = None,
+        code_artifacts: Mapping[str, Path] | None = None,
+    ) -> "ExpectedProvenance":
+        return cls(
+            _freeze_provenance(
+                feature_artifacts=feature_artifacts or {},
+                input_artifacts=input_artifacts or {},
+                baseline_artifacts=baseline_artifacts or {},
+                config_artifacts=config_artifacts or {},
+                code_artifacts=code_artifacts or {},
+            ),
+            _proof=_EXPECTED_PROVENANCE_PROOF,
+        )
+
+    def manifest_payload(self) -> dict[str, dict[str, dict[str, str]]]:
+        return {
+            category: {
+                name: dict(details) for name, details in artifacts.items()
+            }
+            for category, artifacts in self._payload.items()
+        }
 
 
 def find_forbidden_fields(value: object, path: str = "prediction") -> tuple[str, ...]:
@@ -152,27 +213,17 @@ def write_prediction(
     output: Path,
     *,
     config: FrozenConfig,
-    frozen_hard_lanes: Mapping[str, Collection[int]],
-    feature_artifacts: Mapping[str, Path],
-    input_artifacts: Mapping[str, Path],
-    baseline_artifacts: Mapping[str, Path],
-    config_artifacts: Mapping[str, Path],
-    code_artifacts: Mapping[str, Path],
+    frozen_lane_universe: FrozenLaneUniverse,
+    expected_provenance: ExpectedProvenance,
 ) -> dict[str, object]:
     """Atomically freeze sorted Exp403/404 prediction artifacts and hashes."""
     _validate_config(config)
     output = Path(output)
     ordered = _validated_rows(rows)
     serialized_rows = [_row_mapping(row) for row in ordered]
-    frozen_lanes = _normalize_frozen_hard_lanes(frozen_hard_lanes)
+    frozen_lanes = _verified_hard_lanes(frozen_lane_universe)
     _validate_lane_coverage(serialized_rows, frozen_lanes)
-    provenance = _freeze_provenance(
-        feature_artifacts=feature_artifacts,
-        input_artifacts=input_artifacts,
-        baseline_artifacts=baseline_artifacts,
-        config_artifacts=config_artifacts,
-        code_artifacts=code_artifacts,
-    )
+    provenance = _expected_provenance_payload(expected_provenance)
     feature_rows = [
         {
             "dataset": row["dataset"],
@@ -225,7 +276,12 @@ def write_prediction(
     return manifest
 
 
-def verify_prediction(output: Path) -> tuple[list[dict[str, object]], dict[str, object]]:
+def verify_prediction(
+    output: Path,
+    *,
+    frozen_lane_universe: FrozenLaneUniverse,
+    expected_provenance: ExpectedProvenance,
+) -> tuple[list[dict[str, object]], dict[str, object]]:
     """Load only a complete, hash-bound label-free prediction publication."""
     output = Path(output)
     manifest_path = output / PREDICTION_MANIFEST_NAME
@@ -250,15 +306,20 @@ def verify_prediction(output: Path) -> tuple[list[dict[str, object]], dict[str, 
         "config", "input", "feature", "prediction", "code", "baseline", "feature_manifest"
     }:
         raise ValueError("prediction manifest hash contract mismatch")
-    _verify_manifest_hashes(output, config, manifest, expected_hashes)
+    frozen_lanes = _verified_hard_lanes(frozen_lane_universe)
+    if manifest.get("frozen_hard_lanes") != frozen_lanes:
+        raise ValueError("prediction frozen Hard lane universe mismatch")
+    if manifest.get("frozen_hard_lanes_sha256") != sha256_bytes(canonical_json_bytes(frozen_lanes)):
+        raise ValueError("prediction frozen Hard lane SHA256 mismatch")
+    provenance = _expected_provenance_payload(expected_provenance)
+    if manifest.get("provenance") != provenance:
+        raise ValueError("prediction expected provenance mismatch")
+    _verify_manifest_hashes(output, config, provenance, expected_hashes)
     rows = _read_rows(output / HARD_CONFIDENCE_NAME)
     if rows != sorted(rows, key=lambda row: (str(row["dataset"]), int(row["candidate_index"]))):
         raise ValueError("prediction rows are not canonically sorted")
     if len(rows) != manifest.get("rows") or len({row["dataset"] for row in rows}) != manifest.get("datasets"):
         raise ValueError("prediction manifest coverage mismatch")
-    frozen_lanes = _normalize_frozen_hard_lanes(_mapping(manifest.get("frozen_hard_lanes"), "frozen Hard lanes"))
-    if manifest.get("frozen_hard_lanes_sha256") != sha256_bytes(canonical_json_bytes(frozen_lanes)):
-        raise ValueError("prediction frozen Hard lane SHA256 mismatch")
     _validate_lane_coverage(rows, frozen_lanes)
     return rows, manifest
 
@@ -324,10 +385,10 @@ def _config_from_manifest(manifest: Mapping[str, object]) -> FrozenConfig:
 def _verify_manifest_hashes(
     output: Path,
     config: FrozenConfig,
-    manifest: Mapping[str, object],
+    provenance: Mapping[str, object],
     expected: Mapping[str, object],
 ) -> None:
-    provenance = _verify_provenance(_mapping(manifest.get("provenance"), "provenance"))
+    provenance = _verify_provenance(provenance)
     feature_sha256 = verify_sha256(
         output / FEATURE_MANIFEST_NAME, str(expected.get("feature_manifest"))
     )
@@ -388,6 +449,17 @@ def _normalize_frozen_hard_lanes(
     return dict(sorted(normalized.items()))
 
 
+def _verified_hard_lanes(universe: FrozenLaneUniverse) -> dict[str, list[int]]:
+    if not isinstance(universe, FrozenLaneUniverse):
+        raise TypeError("frozen_lane_universe must be a verified FrozenLaneUniverse")
+    lanes = _normalize_frozen_hard_lanes(universe.hard_lanes())
+    if len(lanes) != EXPECTED_DATASETS:
+        raise ValueError("frozen Hard lane dataset coverage mismatch")
+    if sum(len(indices) for indices in lanes.values()) != EXPECTED_HARD:
+        raise ValueError("frozen Hard lane total mismatch")
+    return lanes
+
+
 def _validate_lane_coverage(
     rows: Sequence[Mapping[str, object]], lanes: Mapping[str, Sequence[int]]
 ) -> None:
@@ -410,6 +482,14 @@ def _freeze_provenance(**sources: Mapping[str, Path]) -> dict[str, dict[str, dic
     }
     frozen["code_artifacts"] = dict(sorted(frozen["code_artifacts"].items()))
     return frozen
+
+
+def _expected_provenance_payload(
+    expected: ExpectedProvenance,
+) -> dict[str, dict[str, dict[str, str]]]:
+    if not isinstance(expected, ExpectedProvenance):
+        raise TypeError("expected_provenance must be an ExpectedProvenance")
+    return expected.manifest_payload()
 
 
 def _freeze_provenance_category(
