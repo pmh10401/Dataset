@@ -12,6 +12,7 @@ from experiments.exp392_label_guided_discovery.discovery_core import (
     evaluate_candidate_set,
 )
 from experiments.exp392_label_guided_discovery.run_experiment_392_label_guided_score_discovery_audit import (
+    build_observation_catalog,
     build_prepare_manifest,
     build_prepare_row,
     load_prepared_rows,
@@ -182,6 +183,28 @@ class PreparePhaseTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "SHA256"):
                 load_prepared_rows(root)
+
+
+class EvaluationCatalogTests(unittest.TestCase):
+    def test_catalog_contains_all_sources_pairs_and_triples(self):
+        catalog = build_observation_catalog()
+
+        self.assertEqual(len(catalog), 1998)
+        ids = [row["observation_id"] for row in catalog]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(
+            sum(row["observation_type"] == "source" for row in catalog),
+            54,
+        )
+        self.assertEqual(
+            sum(row["observation_type"] == "combination" for row in catalog),
+            1944,
+        )
+        self.assertIn("source__ewma__alpha_0p005", ids)
+        self.assertIn(
+            "atleast2__ewma__frequency__topology__alpha_0p005",
+            ids,
+        )
 
 
 if __name__ == "__main__":

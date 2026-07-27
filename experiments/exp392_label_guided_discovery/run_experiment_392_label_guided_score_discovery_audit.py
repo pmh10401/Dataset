@@ -1,21 +1,34 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import gzip
 import hashlib
 import json
 import sys
+from collections import Counter
+from collections import defaultdict
+from itertools import combinations
 from pathlib import Path
 from typing import Sequence
+
+import numpy as np
+from scipy.stats import fisher_exact
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from experiments.exp391_fn_reachability.fn_reachability_core import ALPHAS, sha256_file
 from experiments.exp391_fn_reachability.run_experiment_391_fn_reachability_audit import (
+    classify_baseline,
     load_coverage,
     load_frozen_inputs,
+    load_test_labels,
 )
 from experiments.exp392_label_guided_discovery.discovery_core import (
+    benjamini_hochberg,
+    candidate_indices_for_rule,
+    enumerate_combination_rules,
     alpha_slug,
     validated_indices,
 )
@@ -45,6 +58,38 @@ SAFETY_FLAGS = {
     "retrospective_counterfactual": True,
     "prospective_validated": False,
 }
+
+
+def build_observation_catalog() -> list[dict]:
+    catalog: list[dict] = []
+    for alpha in ALPHAS:
+        for source in SOURCES:
+            catalog.append(
+                {
+                    "observation_id": (
+                        f"source__{source}__alpha_{alpha_slug(alpha)}"
+                    ),
+                    "observation_type": "source",
+                    "alpha": alpha,
+                    "operator": "source",
+                    "sources": (source,),
+                    "minimum_votes": 1,
+                    "rule": None,
+                }
+            )
+        for rule in enumerate_combination_rules(SOURCES, alpha=alpha):
+            catalog.append(
+                {
+                    "observation_id": rule.rule_id,
+                    "observation_type": "combination",
+                    "alpha": alpha,
+                    "operator": rule.operator,
+                    "sources": rule.sources,
+                    "minimum_votes": rule.minimum_votes,
+                    "rule": rule,
+                }
+            )
+    return sorted(catalog, key=lambda row: str(row["observation_id"]))
 
 
 def canonical_json(value: object) -> str:
@@ -292,6 +337,559 @@ def load_prepared_rows(output_root: Path) -> tuple[list[dict], dict]:
     return rows, manifest
 
 
+def write_csv(path: Path, rows: Sequence[dict]) -> None:
+    if not rows:
+        raise ValueError(f"cannot write empty CSV: {path}")
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _candidate_metrics(
+    candidates: set[int],
+    *,
+    truth: set[int],
+    hard: set[int],
+    review: set[int],
+) -> tuple[int, int, int, int, int, int, int]:
+    missed = truth - hard
+    recovered = candidates & missed
+    added_fp = candidates - truth
+    review_overlap = candidates & review
+    review_tp = recovered & review
+    review_fp = review_overlap - truth
+    novel_tp = recovered - review
+    return (
+        len(candidates),
+        len(recovered),
+        len(added_fp),
+        len(review_overlap),
+        len(review_tp),
+        len(review_fp),
+        len(novel_tp),
+    )
+
+
+def _direct_rule_candidates(
+    operator: str,
+    sources: Sequence[str],
+    source_sets: dict[str, set[int]],
+) -> set[int]:
+    sets = [source_sets[source] for source in sources]
+    if operator == "union":
+        return set().union(*sets)
+    if operator == "intersection":
+        return set.intersection(*sets)
+    if operator == "atleast2":
+        votes: Counter[int] = Counter()
+        for values in sets:
+            votes.update(values)
+        return {index for index, count in votes.items() if count >= 2}
+    raise ValueError(f"unsupported operator: {operator}")
+
+
+def _lineage(dataset: str) -> str:
+    return dataset.rsplit("_normal_", 1)[0]
+
+
+def _baseline_lane(
+    index: int,
+    *,
+    hard: set[int],
+    standard: set[int],
+    priority: set[int],
+    exact: set[int],
+) -> str:
+    if index in hard:
+        return "hard"
+    if index in priority:
+        return "priority_review"
+    if index in standard:
+        return "standard_review"
+    if index in exact:
+        return "automatic_normal_exact"
+    return "none"
+
+
+def _summary_row(
+    observation: dict,
+    *,
+    available: np.ndarray,
+    baseline_fn: np.ndarray,
+    metric_arrays: dict[str, np.ndarray],
+) -> dict:
+    index = int(observation["matrix_index"])
+    candidate_count = int(metric_arrays["candidate_count"][index].sum())
+    recovered_fn = int(metric_arrays["recovered_fn"][index].sum())
+    added_fp = int(metric_arrays["added_fp"][index].sum())
+    review_overlap_count = int(
+        metric_arrays["review_overlap_count"][index].sum()
+    )
+    review_recovered_fn = int(
+        metric_arrays["review_recovered_fn"][index].sum()
+    )
+    review_overlap_fp = int(
+        metric_arrays["review_overlap_fp"][index].sum()
+    )
+    return {
+        "observation_id": observation["observation_id"],
+        "observation_type": observation["observation_type"],
+        "alpha": observation["alpha"],
+        "operator": observation["operator"],
+        "sources": "|".join(observation["sources"]),
+        "minimum_votes": observation["minimum_votes"],
+        "datasets_total": int(available.shape[1]),
+        "datasets_available": int(available[index].sum()),
+        "baseline_fn": int(baseline_fn.sum()),
+        "candidate_count": candidate_count,
+        "recovered_fn": recovered_fn,
+        "added_fp": added_fp,
+        "candidate_precision": (
+            recovered_fn / candidate_count if candidate_count else 0.0
+        ),
+        "fn_recovery_rate": (
+            recovered_fn / int(baseline_fn.sum()) if baseline_fn.sum() else 0.0
+        ),
+        "review_overlap_count": review_overlap_count,
+        "review_recovered_fn": review_recovered_fn,
+        "review_overlap_fp": review_overlap_fp,
+        "review_overlap_precision": (
+            review_recovered_fn / review_overlap_count
+            if review_overlap_count
+            else 0.0
+        ),
+        "novel_recovered_fn": int(
+            metric_arrays["novel_recovered_fn"][index].sum()
+        ),
+        "tp_contributing_datasets": int(
+            np.count_nonzero(metric_arrays["recovered_fn"][index])
+        ),
+        "fp_contributing_datasets": int(
+            np.count_nonzero(metric_arrays["added_fp"][index])
+        ),
+        **SAFETY_FLAGS,
+    }
+
+
+def evaluate(output_root: Path) -> dict:
+    write_status(
+        output_root,
+        status="running",
+        phase="evaluate_verify_frozen_prediction",
+        done=0,
+        total=EXPECTED_DATASETS,
+    )
+    prepared_rows, prepare_manifest = load_prepared_rows(output_root)
+
+    # TEST labels become reachable only after the frozen prepare hash and
+    # dataset-list hash have both passed in load_prepared_rows().
+    labels_by_dataset = load_test_labels(
+        {str(row["dataset"]) for row in prepared_rows}
+    )
+    catalog = build_observation_catalog()
+    for index, observation in enumerate(catalog):
+        observation["matrix_index"] = index
+    observation_by_source = {
+        (float(row["alpha"]), str(row["sources"][0])): row
+        for row in catalog
+        if row["observation_type"] == "source"
+    }
+    combinations_by_alpha: dict[float, list[dict]] = defaultdict(list)
+    for row in catalog:
+        if row["observation_type"] == "combination":
+            combinations_by_alpha[float(row["alpha"])].append(row)
+
+    n_observations = len(catalog)
+    n_datasets = len(prepared_rows)
+    available = np.zeros((n_observations, n_datasets), dtype=np.uint8)
+    metric_names = (
+        "candidate_count",
+        "recovered_fn",
+        "added_fp",
+        "review_overlap_count",
+        "review_recovered_fn",
+        "review_overlap_fp",
+        "novel_recovered_fn",
+    )
+    metric_arrays = {
+        name: np.zeros((n_observations, n_datasets), dtype=np.int32)
+        for name in metric_names
+    }
+    baseline_fn = np.zeros(n_datasets, dtype=np.int32)
+    eligible_tp = np.zeros(n_datasets, dtype=np.int32)
+    eligible_fp = np.zeros(n_datasets, dtype=np.int32)
+    dataset_metadata: list[dict] = []
+    complementarity: dict[tuple[float, str, str], dict[str, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )
+
+    candidate_path = output_root / "exp392_candidate_level_evaluation.csv.gz"
+    evidence_columns = [
+        f"ev_{source}_alpha_{alpha_slug(alpha)}"
+        for alpha in ALPHAS
+        for source in SOURCES
+    ]
+    candidate_fields = [
+        "dataset",
+        "lineage",
+        "index",
+        "true_label",
+        "baseline_lane",
+        "evidence_count",
+        *evidence_columns,
+        "label_guided_discovery",
+        "eligible_for_deployment",
+    ]
+    with gzip.open(candidate_path, "wt", newline="", encoding="utf-8") as handle:
+        candidate_writer = csv.DictWriter(handle, fieldnames=candidate_fields)
+        candidate_writer.writeheader()
+        for dataset_index, prepared in enumerate(prepared_rows):
+            dataset = str(prepared["dataset"])
+            n_test = int(prepared["n_test"])
+            labels = labels_by_dataset[dataset]
+            if len(labels) != n_test:
+                raise ValueError(f"TEST label length mismatch: {dataset}")
+            truth = {
+                index for index, label in enumerate(labels) if str(label) == "1"
+            }
+            hard = validated_indices(
+                prepared["baseline_hard_indices"],
+                n_test=n_test,
+                label=f"{dataset} Hard",
+            )
+            standard = validated_indices(
+                prepared["standard_review_indices"],
+                n_test=n_test,
+                label=f"{dataset} Standard review",
+            )
+            priority = validated_indices(
+                prepared["priority_review_indices"],
+                n_test=n_test,
+                label=f"{dataset} Priority review",
+            )
+            exact = validated_indices(
+                prepared["automatic_normal_exact_indices"],
+                n_test=n_test,
+                label=f"{dataset} exact-normal",
+            )
+            review = standard | priority
+            excluded = hard | exact
+            baseline_fn[dataset_index] = len(truth - hard)
+            eligible_truth = truth - excluded
+            eligible_normal = set(range(n_test)) - truth - excluded
+            eligible_tp[dataset_index] = len(eligible_truth)
+            eligible_fp[dataset_index] = len(eligible_normal)
+            dataset_metadata.append(
+                {
+                    "dataset": dataset,
+                    "lineage": _lineage(dataset),
+                    "n_train_normal": int(prepared["n_train_normal"]),
+                    "n_test": n_test,
+                    "baseline_category": classify_baseline(hard, labels),
+                    "baseline_fn": int(baseline_fn[dataset_index]),
+                    "eligible_tp": len(eligible_truth),
+                    "eligible_fp": len(eligible_normal),
+                }
+            )
+
+            source_sets_by_alpha: dict[float, dict[str, set[int]]] = {}
+            source_available_by_alpha: dict[float, dict[str, bool]] = {}
+            for alpha in ALPHAS:
+                alpha_payload = prepared["evidence_by_alpha"][alpha_slug(alpha)]
+                source_sets: dict[str, set[int]] = {}
+                source_available: dict[str, bool] = {}
+                for source in SOURCES:
+                    payload = alpha_payload[source]
+                    is_available = payload["available"] is True
+                    source_available[source] = is_available
+                    source_sets[source] = (
+                        validated_indices(
+                            payload["indices"],
+                            n_test=n_test,
+                            label=f"{dataset} {source} Alpha {alpha}",
+                        )
+                        - excluded
+                        if is_available
+                        else set()
+                    )
+                    observation = observation_by_source[(alpha, source)]
+                    matrix_index = int(observation["matrix_index"])
+                    available[matrix_index, dataset_index] = int(is_available)
+                    metrics = _candidate_metrics(
+                        source_sets[source],
+                        truth=truth,
+                        hard=hard,
+                        review=review,
+                    )
+                    for metric_name, value in zip(metric_names, metrics):
+                        metric_arrays[metric_name][matrix_index, dataset_index] = value
+                source_sets_by_alpha[alpha] = source_sets
+                source_available_by_alpha[alpha] = source_available
+
+                for observation in combinations_by_alpha[alpha]:
+                    matrix_index = int(observation["matrix_index"])
+                    sources = tuple(observation["sources"])
+                    is_available = all(source_available[source] for source in sources)
+                    available[matrix_index, dataset_index] = int(is_available)
+                    candidates = (
+                        _direct_rule_candidates(
+                            str(observation["operator"]),
+                            sources,
+                            source_sets,
+                        )
+                        if is_available
+                        else set()
+                    )
+                    metrics = _candidate_metrics(
+                        candidates,
+                        truth=truth,
+                        hard=hard,
+                        review=review,
+                    )
+                    for metric_name, value in zip(metric_names, metrics):
+                        metric_arrays[metric_name][matrix_index, dataset_index] = value
+
+                for source_a, source_b in combinations(SOURCES, 2):
+                    if not (
+                        source_available[source_a] and source_available[source_b]
+                    ):
+                        continue
+                    key = (alpha, source_a, source_b)
+                    totals = complementarity[key]
+                    values_a = source_sets[source_a]
+                    values_b = source_sets[source_b]
+                    tp_a = values_a & eligible_truth
+                    tp_b = values_b & eligible_truth
+                    fp_a = values_a - truth
+                    fp_b = values_b - truth
+                    totals["datasets_available"] += 1
+                    totals["candidate_intersection"] += len(values_a & values_b)
+                    totals["candidate_union"] += len(values_a | values_b)
+                    totals["tp_intersection"] += len(tp_a & tp_b)
+                    totals["tp_union"] += len(tp_a | tp_b)
+                    totals["fp_intersection"] += len(fp_a & fp_b)
+                    totals["fp_union"] += len(fp_a | fp_b)
+                    totals["unique_tp_a"] += len(tp_a - tp_b)
+                    totals["unique_tp_b"] += len(tp_b - tp_a)
+                    totals["shared_tp"] += len(tp_a & tp_b)
+                    totals["unique_fp_a"] += len(fp_a - fp_b)
+                    totals["unique_fp_b"] += len(fp_b - fp_a)
+
+            for index in range(n_test):
+                evidence_values = {}
+                evidence_count = 0
+                for alpha in ALPHAS:
+                    for source in SOURCES:
+                        present = int(index in source_sets_by_alpha[alpha][source])
+                        evidence_values[
+                            f"ev_{source}_alpha_{alpha_slug(alpha)}"
+                        ] = present
+                        evidence_count += present
+                candidate_writer.writerow(
+                    {
+                        "dataset": dataset,
+                        "lineage": _lineage(dataset),
+                        "index": index,
+                        "true_label": labels[index],
+                        "baseline_lane": _baseline_lane(
+                            index,
+                            hard=hard,
+                            standard=standard,
+                            priority=priority,
+                            exact=exact,
+                        ),
+                        "evidence_count": evidence_count,
+                        **evidence_values,
+                        "label_guided_discovery": True,
+                        "eligible_for_deployment": False,
+                    }
+                )
+            if (
+                (dataset_index + 1) % 25 == 0
+                or dataset_index + 1 == n_datasets
+            ):
+                write_status(
+                    output_root,
+                    status="running",
+                    phase="evaluate",
+                    done=dataset_index + 1,
+                    total=n_datasets,
+                )
+                print(
+                    f"Evaluate: [{dataset_index + 1}/{n_datasets}] "
+                    f"dataset={dataset} errors=0",
+                    flush=True,
+                )
+
+    summaries = [
+        _summary_row(
+            observation,
+            available=available,
+            baseline_fn=baseline_fn,
+            metric_arrays=metric_arrays,
+        )
+        for observation in catalog
+    ]
+    source_rows = [
+        row for row in summaries if row["observation_type"] == "source"
+    ]
+    combination_rows = [
+        row for row in summaries if row["observation_type"] == "combination"
+    ]
+
+    source_p_values: list[float] = []
+    association_rows: list[dict] = []
+    for row in source_rows:
+        matrix_index = next(
+            int(item["matrix_index"])
+            for item in catalog
+            if item["observation_id"] == row["observation_id"]
+        )
+        support = available[matrix_index].astype(bool)
+        candidate_tp = int(metric_arrays["recovered_fn"][matrix_index].sum())
+        candidate_fp = int(metric_arrays["added_fp"][matrix_index].sum())
+        noncandidate_tp = int(eligible_tp[support].sum()) - candidate_tp
+        noncandidate_fp = int(eligible_fp[support].sum()) - candidate_fp
+        odds_ratio, p_value = fisher_exact(
+            [
+                [candidate_tp, candidate_fp],
+                [noncandidate_tp, noncandidate_fp],
+            ],
+            alternative="greater",
+        )
+        source_p_values.append(float(p_value))
+        association_rows.append(
+            {
+                "observation_id": row["observation_id"],
+                "alpha": row["alpha"],
+                "source": row["sources"],
+                "candidate_tp": candidate_tp,
+                "candidate_fp": candidate_fp,
+                "noncandidate_tp": noncandidate_tp,
+                "noncandidate_fp": noncandidate_fp,
+                "odds_ratio": float(odds_ratio),
+                "p_value": float(p_value),
+                **SAFETY_FLAGS,
+            }
+        )
+    for row, adjusted in zip(
+        association_rows,
+        benjamini_hochberg(source_p_values),
+    ):
+        row["bh_adjusted_p_value"] = adjusted
+        row["statistical_significance_selects_policy"] = False
+
+    complementarity_rows = []
+    for alpha in ALPHAS:
+        for source_a, source_b in combinations(SOURCES, 2):
+            totals = complementarity[(alpha, source_a, source_b)]
+            complementarity_rows.append(
+                {
+                    "alpha": alpha,
+                    "source_a": source_a,
+                    "source_b": source_b,
+                    "datasets_available": totals["datasets_available"],
+                    "candidate_intersection": totals["candidate_intersection"],
+                    "candidate_union": totals["candidate_union"],
+                    "candidate_jaccard": (
+                        totals["candidate_intersection"]
+                        / totals["candidate_union"]
+                        if totals["candidate_union"]
+                        else 0.0
+                    ),
+                    "tp_intersection": totals["tp_intersection"],
+                    "tp_union": totals["tp_union"],
+                    "tp_jaccard": (
+                        totals["tp_intersection"] / totals["tp_union"]
+                        if totals["tp_union"]
+                        else 0.0
+                    ),
+                    "fp_intersection": totals["fp_intersection"],
+                    "fp_union": totals["fp_union"],
+                    "fp_jaccard": (
+                        totals["fp_intersection"] / totals["fp_union"]
+                        if totals["fp_union"]
+                        else 0.0
+                    ),
+                    "unique_tp_a": totals["unique_tp_a"],
+                    "unique_tp_b": totals["unique_tp_b"],
+                    "shared_tp": totals["shared_tp"],
+                    "unique_fp_a": totals["unique_fp_a"],
+                    "unique_fp_b": totals["unique_fp_b"],
+                    **SAFETY_FLAGS,
+                }
+            )
+
+    source_path = output_root / "exp392_individual_source_summary.csv"
+    combination_path = output_root / "exp392_pair_triple_summary.csv"
+    complementarity_path = output_root / "exp392_source_complementarity.csv"
+    association_path = output_root / "exp392_source_association.csv"
+    metadata_path = output_root / "exp392_dataset_metadata.csv"
+    matrix_path = output_root / "exp392_dataset_observation_metrics.npz"
+    write_csv(source_path, source_rows)
+    write_csv(combination_path, combination_rows)
+    write_csv(complementarity_path, complementarity_rows)
+    write_csv(association_path, association_rows)
+    write_csv(metadata_path, dataset_metadata)
+    np.savez_compressed(
+        matrix_path,
+        observation_ids=np.array(
+            [row["observation_id"] for row in catalog],
+            dtype=str,
+        ),
+        dataset_names=np.array(
+            [row["dataset"] for row in dataset_metadata],
+            dtype=str,
+        ),
+        available=available,
+        baseline_fn=baseline_fn,
+        eligible_tp=eligible_tp,
+        eligible_fp=eligible_fp,
+        **metric_arrays,
+    )
+    output_paths = [
+        source_path,
+        combination_path,
+        complementarity_path,
+        association_path,
+        metadata_path,
+        matrix_path,
+        candidate_path,
+    ]
+    manifest = {
+        "experiment_id": EXPERIMENT_ID,
+        "phase": "evaluate",
+        "datasets": n_datasets,
+        "observations": n_observations,
+        "individual_sources": len(source_rows),
+        "combination_rules": len(combination_rows),
+        "prepare_prediction_sha256": prepare_manifest["prediction_sha256"],
+        "outputs": {
+            path.name: sha256_file(path)
+            for path in output_paths
+        },
+        "contains_test_labels": True,
+        "contains_evaluation_metrics": True,
+        "labels_used_after_frozen_prediction_verification": True,
+        "automatic_hard_lane_changed": False,
+        "review_lanes_changed": False,
+        **SAFETY_FLAGS,
+    }
+    (output_root / "exp392_evaluation_manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    write_status(
+        output_root,
+        status="evaluated",
+        phase="evaluate_completed",
+        done=n_datasets,
+        total=n_datasets,
+    )
+    return manifest
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -305,7 +903,7 @@ def main() -> None:
     if args.phase in {"prepare", "all"}:
         prepare(args.output_dir, args.dataset_limit)
     if args.phase in {"evaluate", "all"}:
-        raise SystemExit("evaluate phase is not implemented yet")
+        evaluate(args.output_dir)
 
 
 if __name__ == "__main__":
