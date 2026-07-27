@@ -1,4 +1,5 @@
 import json
+import inspect
 from pathlib import Path
 import tempfile
 import unittest
@@ -12,8 +13,10 @@ from experiments.exp393_396.artifact_io import (
 from experiments.exp393_396.contracts import GrammarConfig
 from experiments.exp393_396.reporting import audit_prediction_row
 from experiments.exp393_396.run_experiment_393_396_pipeline import (
+    evaluate_candidate_set,
     predict_dataset,
     run_audit,
+    run_evaluate,
 )
 
 
@@ -122,6 +125,33 @@ class CalibrationAuditTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "SHA256"):
                 run_audit(root)
+
+
+class LockedEvaluationTests(unittest.TestCase):
+    def test_candidate_metrics_separate_hard_fn_review_overlap_and_new_fp(self):
+        result, details = evaluate_candidate_set(
+            candidates={1, 2, 3, 4},
+            hard={0},
+            standard={2},
+            priority={4},
+            labels=["1", "1", "1", "0", "0"],
+            n_test=5,
+        )
+
+        self.assertEqual(result["candidate_count"], 4)
+        self.assertEqual(result["recovered_hard_fn"], 2)
+        self.assertEqual(result["added_fp"], 2)
+        self.assertEqual(result["review_overlap_count"], 2)
+        self.assertEqual(result["review_recovered_fn"], 1)
+        self.assertEqual(len(details), 4)
+
+    def test_evaluation_source_verifies_prediction_before_loading_labels(self):
+        source = inspect.getsource(run_evaluate)
+
+        self.assertLess(
+            source.index("load_verified_prediction"),
+            source.index("load_test_labels"),
+        )
 
 
 if __name__ == "__main__":
