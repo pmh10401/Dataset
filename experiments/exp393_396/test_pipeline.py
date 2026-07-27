@@ -14,6 +14,7 @@ from experiments.exp393_396.contracts import GrammarConfig
 from experiments.exp393_396.reporting import audit_prediction_row
 from experiments.exp393_396.run_experiment_393_396_pipeline import (
     evaluate_candidate_set,
+    integrate_review,
     predict_dataset,
     run_audit,
     run_evaluate,
@@ -152,6 +153,33 @@ class LockedEvaluationTests(unittest.TestCase):
             source.index("load_verified_prediction"),
             source.index("load_test_labels"),
         )
+
+
+class ReviewIntegrationTests(unittest.TestCase):
+    def test_new_candidates_enter_standard_review_only(self):
+        result = integrate_review(
+            baseline_hard={0},
+            baseline_standard={1},
+            baseline_priority={2},
+            npgs_candidates={3},
+        )
+
+        self.assertEqual(result.hard, frozenset({0}))
+        self.assertEqual(result.priority, frozenset({2}))
+        self.assertEqual(result.standard, frozenset({1, 3}))
+
+    def test_existing_lane_precedence_removes_all_overlap(self):
+        result = integrate_review(
+            baseline_hard={0},
+            baseline_standard={1},
+            baseline_priority={2},
+            npgs_candidates={0, 1, 2, 3},
+        )
+
+        self.assertFalse(result.hard & result.standard)
+        self.assertFalse(result.hard & result.priority)
+        self.assertFalse(result.standard & result.priority)
+        self.assertEqual(result.added_standard, frozenset({3}))
 
 
 if __name__ == "__main__":
