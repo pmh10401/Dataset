@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import replace
-import hashlib
 import math
 
 import numpy as np
@@ -20,6 +19,7 @@ from .contracts import ALPHAS, SEED, FeatureBlock, FeatureGroupSummary, FeatureS
 CORRELATION_THRESHOLD = 0.90
 NEAR_ZERO_ROBUST_VARIANCE = 1e-12
 BOOTSTRAP_REPLICATES = 128
+ROBUST_WINSOR_FRACTION = 0.20
 
 
 def audit_feature_stability(
@@ -66,7 +66,6 @@ def audit_feature_stability(
         if expected_rows is None:
             raise AssertionError("available feature did not establish TRAIN OOF rows")
 
-        _validate_folds(folds, expected_rows)
         stability[block.name] = FeatureStability(
             feature_name=block.name,
             group=block.group,
@@ -76,11 +75,23 @@ def audit_feature_stability(
             mad=mad,
             robust_variance=robust_variance,
             fold_center_drift=_fold_center_drift(values, folds, median, mad),
-            bootstrap_rank_stability=_bootstrap_rank_stability(values, block.name, seed),
+            bootstrap_rank_stability=0.0,
             coverage=finite_rate,
             empirical_p_values=_empirical_p_values(values),
         )
         values_by_name[block.name] = values
+
+    if stability:
+        canonical_folds = _canonical_bootstrap_folds(values_by_name, folds)
+        stability = {
+            name: replace(
+                metric,
+                bootstrap_rank_stability=_bootstrap_rank_stability(
+                    values_by_name[name], canonical_folds, seed
+                ),
+            )
+            for name, metric in stability.items()
+        }
 
     components = _correlation_components(values_by_name)
     representatives = _representatives(stability, components)
@@ -130,11 +141,13 @@ def build_group_summary(
     return FeatureGroupSummary(
         group=summary_group,
         feature_names=feature_names,
-        minimum=float(np.min(p_values)),
-        median=float(np.median(p_values)),
-        robust_mean=float(np.median(evidence)),
+        minimum=float(np.min(evidence)),
+        median=float(np.median(evidence)),
+        robust_mean=_winsorized_mean(evidence),
         maximum=float(np.max(evidence)),
-        exceedance_count=int(np.count_nonzero(p_values <= ALPHAS[-1])),
+        exceedance_count=int(
+            np.count_nonzero(evidence >= -math.log10(ALPHAS[-1]))
+        ),
         top_two_gap=top_two_gap,
         stability=float(np.median([metric.bootstrap_rank_stability for metric in metrics])),
     )
@@ -162,6 +175,43 @@ def _validate_folds(folds: Sequence[Fold], n_rows: int) -> None:
             raise ValueError("TRAIN fold index outside OOF vector")
 
 
+def _canonical_bootstrap_folds(
+    values_by_name: Mapping[str, np.ndarray], folds: Sequence[Fold]
+) -> tuple[Fold, ...]:
+    """Rebuild fold partitions in a TRAIN-only canonical row order."""
+    n_rows = len(next(iter(values_by_name.values())))
+    _validate_folds(folds, n_rows)
+    validation_sizes = tuple(len(fold.validation_indices) for fold in folds)
+    if sum(validation_sizes) != n_rows:
+        raise ValueError("TRAIN fold validation rows must cover every OOF row")
+
+    rank_matrix = np.vstack(
+        [_average_ranks(values_by_name[name]) for name in sorted(values_by_name)]
+    )
+    consensus = np.mean(rank_matrix, axis=0)
+    profiles = tuple(
+        tuple(sorted(float(rank) for rank in rank_matrix[:, row]))
+        for row in range(n_rows)
+    )
+    canonical_order = np.asarray(
+        sorted(range(n_rows), key=lambda row: (float(consensus[row]), profiles[row])),
+        dtype=int,
+    )
+    start = 0
+    result: list[Fold] = []
+    for size in validation_sizes:
+        validation = canonical_order[start : start + size]
+        fit = np.concatenate((canonical_order[:start], canonical_order[start + size :]))
+        result.append(
+            Fold(
+                train_indices=tuple(int(index) for index in fit),
+                validation_indices=tuple(int(index) for index in validation),
+            )
+        )
+        start += size
+    return tuple(result)
+
+
 def _fold_center_drift(values: np.ndarray, folds: Sequence[Fold], median: float, mad: float) -> float:
     scale = max(1.4826 * mad, np.finfo(float).eps)
     centers = np.asarray(
@@ -171,26 +221,39 @@ def _fold_center_drift(values: np.ndarray, folds: Sequence[Fold], median: float,
     return float(np.median(np.abs(centers - median)) / scale)
 
 
-def _bootstrap_rank_stability(values: np.ndarray, feature_name: str, seed: int) -> float:
-    ordered = np.sort(values, kind="mergesort")
-    n_rows = len(ordered)
-    feature_seed = int.from_bytes(
-        hashlib.sha256(f"{seed}:{feature_name}".encode("utf-8")).digest()[:8], "big"
-    )
-    rng = np.random.default_rng(feature_seed)
-    baseline_ranks = _average_ranks(ordered)
-    stability: list[float] = []
-    for _ in range(BOOTSTRAP_REPLICATES):
-        sample = rng.integers(0, n_rows, size=n_rows)
-        stability.append(_spearman(baseline_ranks[sample], _average_ranks(ordered[sample])))
-    return float(np.median(stability))
+def _bootstrap_rank_stability(
+    values: np.ndarray, folds: Sequence[Fold], seed: int
+) -> float:
+    """Measure held-out empirical-rank calibration under TRAIN bootstraps."""
+    rng = np.random.default_rng(seed)
+    full_p_values = _empirical_tail_p_values(values, values)
+    deviations: list[float] = []
+    for fold in folds:
+        fit = values[np.asarray(fold.train_indices, dtype=int)]
+        query_indices = np.asarray(fold.validation_indices, dtype=int)
+        query = values[query_indices]
+        for _ in range(BOOTSTRAP_REPLICATES):
+            bootstrap_fit = fit[rng.integers(0, len(fit), size=len(fit))]
+            bootstrap_p_values = _empirical_tail_p_values(bootstrap_fit, query)
+            deviations.extend(np.abs(bootstrap_p_values - full_p_values[query_indices]))
+    return float(np.clip(1.0 - np.mean(deviations), 0.0, 1.0))
 
 
 def _empirical_p_values(values: np.ndarray) -> tuple[float, ...]:
-    ordered = np.sort(values, kind="mergesort")
-    n_rows = len(ordered)
-    left = np.searchsorted(ordered, values, side="left")
-    return tuple(sorted(float((n_rows - index) / n_rows) for index in left))
+    return tuple(sorted(float(value) for value in _empirical_tail_p_values(values, values)))
+
+
+def _empirical_tail_p_values(reference: np.ndarray, query: np.ndarray) -> np.ndarray:
+    return np.mean(reference[:, None] >= query[None, :], axis=0, dtype=float)
+
+
+def _winsorized_mean(values: np.ndarray) -> float:
+    ordered = np.sort(values)
+    limit = int(math.floor(ROBUST_WINSOR_FRACTION * len(ordered)))
+    if limit == 0:
+        return float(np.mean(ordered))
+    clipped = np.clip(ordered, ordered[limit], ordered[-limit - 1])
+    return float(np.mean(clipped))
 
 
 def _correlation_components(values_by_name: Mapping[str, np.ndarray]) -> tuple[tuple[str, ...], ...]:

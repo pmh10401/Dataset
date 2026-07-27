@@ -9,7 +9,13 @@ from pathlib import Path
 
 import numpy as np
 
-from experiments.exp403_408.contracts import DatasetInput, FeatureBlock, Fold
+from experiments.exp403_408.contracts import (
+    DatasetInput,
+    FeatureBlock,
+    FeatureStability,
+    Fold,
+    StabilityAudit,
+)
 from experiments.exp403_408.feature_registry import (
     FEATURE_GROUPS,
     FeatureSource,
@@ -404,6 +410,15 @@ class FeatureStabilityTests(unittest.TestCase):
         self.assertEqual(audit.correlation_threshold, 0.90)
         self.assertEqual(audit.representatives, ("first", "third"))
 
+    def test_bootstrap_stability_selects_more_stable_correlated_representative(self) -> None:
+        audit = audit_feature_stability(self._stability_selection_blocks(), self._folds())
+
+        alpha = audit.feature_stability["alpha_unstable"]
+        zeta = audit.feature_stability["zeta_stable"]
+        self.assertGreater(zeta.bootstrap_rank_stability, alpha.bootstrap_rank_stability)
+        self.assertEqual(audit.correlation_components, (("alpha_unstable", "zeta_stable"),))
+        self.assertEqual(audit.representatives, ("zeta_stable",))
+
     def test_unavailable_stale_source_does_not_set_train_oof_row_count(self) -> None:
         stale = FeatureBlock(
             name="stale",
@@ -447,6 +462,42 @@ class FeatureStabilityTests(unittest.TestCase):
 
         self.assertEqual(self._stable_hash(original), self._stable_hash(reversed_rows))
 
+    def test_row_order_does_not_change_stability_audit_hash(self) -> None:
+        rows = np.asarray([0.0, 3.0, 1.0, 5.0, 2.0, 7.0, 4.0, 6.0])
+
+        self.assertEqual(
+            self._stable_hash(self._audit_for(rows)),
+            self._stable_hash(self._audit_for(rows[::-1])),
+        )
+
+    def test_group_summary_consistently_summarizes_negative_log10_p_values(self) -> None:
+        metric = FeatureStability(
+            feature_name="score",
+            group="normal_space_distance",
+            finite_rate=1.0,
+            non_finite_rate=0.0,
+            median=0.0,
+            mad=1.0,
+            robust_variance=1.0,
+            fold_center_drift=0.0,
+            bootstrap_rank_stability=0.75,
+            coverage=1.0,
+            empirical_p_values=(0.01, 0.1, 0.1, 0.5, 1.0),
+        )
+        audit = StabilityAudit(
+            representatives=("score",),
+            feature_stability={"score": metric},
+        )
+
+        summary = build_group_summary(audit)
+
+        self.assertAlmostEqual(summary.minimum, 0.0)
+        self.assertAlmostEqual(summary.median, 1.0)
+        self.assertAlmostEqual(summary.robust_mean, 0.7204119983)
+        self.assertAlmostEqual(summary.maximum, 2.0)
+        self.assertEqual(summary.exceedance_count, 1)
+        self.assertAlmostEqual(summary.top_two_gap, 1.0)
+
     def _blocks_with_constant_and_nan(self) -> tuple[FeatureBlock, ...]:
         return (
             self._block("constant", [1.0] * 8),
@@ -460,6 +511,12 @@ class FeatureStabilityTests(unittest.TestCase):
             self._block("first", values),
             self._block("second", values * 2.0 + 3.0),
             self._block("third", [0.0, 1.0, 4.0, 2.0, 7.0, 3.0, 6.0, 5.0]),
+        )
+
+    def _stability_selection_blocks(self) -> tuple[FeatureBlock, ...]:
+        return (
+            self._block("alpha_unstable", np.arange(8, dtype=float)),
+            self._block("zeta_stable", [0.0, 1.0, 2.0, 4.0, 3.0, 6.0, 7.0, 5.0]),
         )
 
     def _audit_for(self, rows: np.ndarray):
