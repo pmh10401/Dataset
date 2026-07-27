@@ -85,3 +85,59 @@ consensus algorithm.
   pipeline task must supply hash-verified Exp406/407 publications and actual
   feature-lineage metadata across all 1,117 datasets before retrospective
   evaluation/reporting.
+
+---
+
+## Fix Round 1: Immutable Provenance And Correlation Boundaries
+
+### Root Cause
+
+- `ConsensusSource.name` was copied into test Shadow records but was not
+  validated against the source marker already frozen by Exp406 or Exp407. A
+  caller could therefore label synthetic evidence as self-supervised evidence
+  or invent an existing-source marker.
+- The correlation fixture discarded its requested value and always supplied
+  perfectly correlated scores, so it did not prove the preregistered `.90`
+  collapse boundary.
+
+### Changes
+
+- Added `expected_source_marker(kind, name)`, a frozen identity registry:
+  `tri_view` maps only to `self_supervised_shadow`, the registered synthetic
+  source identities map only to `synthetic_anomaly_shadow`, and existing
+  sources must use one of the feature-registry source names as their exact
+  marker.
+- Validates every `ShadowSourcePrediction.source` against that registry and
+  rejects both marker mismatches and unknown kind/name combinations before
+  source independence is calculated.
+- Retains immutable marker tuples in `IndependenceComponent.source_markers`
+  and `ConsensusCandidate.supporting_source_markers` so review-only output
+  carries the original evidence provenance.
+- Replaced the placeholder correlation fixture with rank permutations having
+  observed Spearman values of approximately `.90075` and `.89925`. Tests now
+  prove same-lineage collapse below `.90`, distinct-source collapse at or
+  above `.90`, distinct-source separation below `.90`, and the 19-row
+  unverified/no-vote boundary.
+
+### TDD And Verification
+
+```text
+python3 -m unittest experiments.exp403_408.tests.test_consensus -v
+RED: ImportError: cannot import name 'expected_source_marker'
+
+python3 -m unittest experiments.exp403_408.tests.test_consensus.ConsensusTests.test_rejects_mismatched_frozen_shadow_source_marker -v
+RED: expected mismatch test had no structured record to validate
+
+python3 -m unittest experiments.exp403_408.tests.test_consensus -v
+GREEN: Ran 8 tests in 0.058s - OK
+
+python3 -m unittest discover -s experiments/exp403_408/tests -v
+GREEN: Ran 99 tests in 18.024s - OK
+```
+
+### Remaining Concern
+
+Existing-source markers are intentionally frozen to the current
+`FEATURE_SOURCES` registry. Adding an existing evidence source requires an
+explicit registry change and a new provenance review rather than a caller
+supplied label.

@@ -15,6 +15,7 @@ from typing import Hashable
 import numpy as np
 
 from .contracts import ALPHA_KEYS, ShadowSourcePrediction
+from .feature_registry import FEATURE_SOURCES
 from .foundation import FrozenLaneUniverse
 
 
@@ -30,6 +31,18 @@ TRI_VIEW_KIND = "tri_view"
 SYNTHETIC_KIND = "synthetic"
 EXISTING_KIND = "existing"
 _VALID_KINDS = frozenset((TRI_VIEW_KIND, SYNTHETIC_KIND, EXISTING_KIND))
+_TRI_VIEW_SOURCE_NAMES = frozenset(("tri_view",))
+_SYNTHETIC_SOURCE_NAMES = frozenset(
+    (
+        "synthetic",
+        "synthetic_logistic_regression",
+        "synthetic_hist_gradient_boosting",
+        "synthetic_small_mlp",
+    )
+)
+_REGISTERED_EXISTING_SOURCE_MARKERS = frozenset(
+    source.name for source in FEATURE_SOURCES
+)
 
 
 @dataclass(frozen=True)
@@ -56,6 +69,7 @@ class IndependenceComponent:
     """One evidence vote after lineage and OOF-correlation collapse."""
 
     source_names: tuple[str, ...]
+    source_markers: tuple[str, ...]
     lineages: tuple[str, ...]
     kinds: tuple[str, ...]
     status: str
@@ -70,6 +84,7 @@ class ConsensusCandidate:
     variant: str
     alpha: str
     supporting_components: tuple[tuple[str, ...], ...]
+    supporting_source_markers: tuple[tuple[str, ...], ...]
 
 
 @dataclass(frozen=True)
@@ -125,14 +140,21 @@ def build_independence_components(
 
     components: list[IndependenceComponent] = []
     for group_indices in grouped.values():
-        grouped_sources = tuple(
-            source
-            for group_index in group_indices
-            for source in lineage_groups[group_index]
-        )
+        grouped_sources = tuple(sorted(
+            (
+                source
+                for group_index in group_indices
+                for source in lineage_groups[group_index]
+            ),
+            key=lambda source: source.name,
+        ))
         components.append(
             IndependenceComponent(
-                source_names=tuple(sorted(source.name for source in grouped_sources)),
+                source_names=tuple(source.name for source in grouped_sources),
+                source_markers=tuple(
+                    expected_source_marker(source.kind, source.name)
+                    for source in grouped_sources
+                ),
                 lineages=tuple(sorted({source.lineage for source in grouped_sources})),
                 kinds=tuple(sorted({source.kind for source in grouped_sources})),
                 status=(
@@ -175,12 +197,16 @@ def build_consensus(
         )
         for component in components
     }
+    component_markers = {
+        component.source_names: component.source_markers for component in components
+    }
     packages = {
         variant: _variant_candidates(
             variant,
             dataset=dataset,
             components=components,
             component_candidates=component_candidates,
+            component_markers=component_markers,
         )
         for variant in VARIANTS
     }
@@ -204,12 +230,24 @@ def _normalize_sources(sources: Sequence[ConsensusSource]) -> tuple[ConsensusSou
             raise ValueError("source name and lineage must be non-empty")
         if source.kind not in _VALID_KINDS:
             raise ValueError(f"unknown Exp408 source kind: {source.kind}")
+        expected_source_marker(source.kind, source.name)
         if source.name in names:
             raise ValueError(f"duplicate Exp408 source name: {source.name}")
         names.add(source.name)
         _oof_mapping(source.train_oof_scores)
-        _validate_shadow_predictions(source.shadow_predictions)
+        _validate_shadow_predictions(source)
     return normalized
+
+
+def expected_source_marker(kind: str, name: str) -> str:
+    """Return the one frozen structured-record marker for a source identity."""
+    if kind == TRI_VIEW_KIND and name in _TRI_VIEW_SOURCE_NAMES:
+        return "self_supervised_shadow"
+    if kind == SYNTHETIC_KIND and name in _SYNTHETIC_SOURCE_NAMES:
+        return "synthetic_anomaly_shadow"
+    if kind == EXISTING_KIND and name in _REGISTERED_EXISTING_SOURCE_MARKERS:
+        return name
+    raise ValueError(f"unregistered Exp408 source kind/name: {kind}/{name}")
 
 
 def _validate_independence_parameters(threshold: float, minimum_rows: int) -> int:
@@ -295,9 +333,9 @@ def _union(parent: list[int], left: int, right: int) -> None:
         parent[right_root] = left_root
 
 
-def _validate_shadow_predictions(
-    predictions: Mapping[str, Sequence[ShadowSourcePrediction]],
-) -> None:
+def _validate_shadow_predictions(source: ConsensusSource) -> None:
+    predictions = source.shadow_predictions
+    expected_marker = expected_source_marker(source.kind, source.name)
     if set(predictions) != set(ALPHA_KEYS):
         raise ValueError("Shadow predictions must contain exactly the frozen alpha keys")
     for alpha, rows in predictions.items():
@@ -308,6 +346,11 @@ def _validate_shadow_predictions(
                 raise TypeError("Exp408 requires structured ShadowSourcePrediction rows")
             if set(row.scores_by_alpha) != set(ALPHA_KEYS):
                 raise ValueError("Shadow scores must contain exactly the frozen alpha keys")
+            if row.source != expected_marker:
+                raise ValueError(
+                    "Shadow source marker does not match the frozen "
+                    f"{source.kind}/{source.name} identity"
+                )
             if not row.dataset or int(row.candidate_index) < 0:
                 raise ValueError("Shadow prediction identity is invalid")
             if any(not np.isfinite(float(value)) for value in row.scores_by_alpha.values()):
@@ -350,6 +393,7 @@ def _variant_candidates(
     dataset: str,
     components: Sequence[IndependenceComponent],
     component_candidates: Mapping[tuple[str, ...], Mapping[str, frozenset[int]]],
+    component_markers: Mapping[tuple[str, ...], tuple[str, ...]],
 ) -> Mapping[str, tuple[ConsensusCandidate, ...]]:
     output: dict[str, tuple[ConsensusCandidate, ...]] = {}
     for alpha in ALPHA_KEYS:
@@ -363,6 +407,9 @@ def _variant_candidates(
                 variant=variant,
                 alpha=alpha,
                 supporting_components=support,
+                supporting_source_markers=tuple(
+                    component_markers[component] for component in support
+                ),
             )
             for index, support in sorted(candidate_support.items())
         )
