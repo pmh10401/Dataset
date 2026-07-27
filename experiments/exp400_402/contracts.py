@@ -63,6 +63,7 @@ CANDIDATE_FIELDS = frozenset(
         "exp292_tier",
         "exp292_rank",
         "tier_preserving_rank",
+        "control_rank",
         "grammar_support_count",
         "p_values",
     }
@@ -162,6 +163,15 @@ def _validate_candidate(
         "tier_preserving_rank alpha",
         minimum=1,
     )
+    control_rank = raw["control_rank"]
+    if type(control_rank) is not dict or set(control_rank) != set(CONTROL_VARIANTS):
+        raise ValueError("control_rank must contain both research controls")
+    for variant in CONTROL_VARIANTS:
+        _alpha_integer_map(
+            control_rank[variant],
+            f"control_rank.{variant} alpha",
+            minimum=1,
+        )
     support = _alpha_integer_map(
         raw["grammar_support_count"],
         "grammar_support_count alpha",

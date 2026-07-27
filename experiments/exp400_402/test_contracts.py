@@ -20,6 +20,16 @@ def valid_candidate(index: int = 2) -> dict[str, object]:
             str(alpha): position
             for alpha, position in zip(ALPHAS, (3, 2, 1, 4), strict=True)
         },
+        "control_rank": {
+            "additive_grammar_family": {
+                str(alpha): position
+                for alpha, position in zip(ALPHAS, (4, 3, 2, 1), strict=True)
+            },
+            "grammar_only_control": {
+                str(alpha): position
+                for alpha, position in zip(ALPHAS, (2, 3, 4, 1), strict=True)
+            },
+        },
         "grammar_support_count": {str(alpha): 1 for alpha in ALPHAS},
         "p_values": {
             "transition": 0.002,

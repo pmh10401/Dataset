@@ -153,6 +153,15 @@ def build_shadow_predictions(
                     alpha: int(row["rank"])
                     for alpha, row in tier_rows.items()
                 },
+                "control_rank": {
+                    variant: {
+                        str(alpha): int(
+                            ranking[(dataset, index, variant, float(alpha))]["rank"]
+                        )
+                        for alpha in ALPHAS
+                    }
+                    for variant in CONTROL_VARIANTS
+                },
                 "grammar_support_count": {
                     alpha: int(row["grammar_support_count"])
                     for alpha, row in tier_rows.items()
