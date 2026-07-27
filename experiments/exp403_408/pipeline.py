@@ -23,7 +23,7 @@ import numpy as np
 
 from .artifact_io import canonical_json_bytes, sha256_file, write_csv_atomic, write_json_atomic, write_jsonl_atomic
 from .consensus import ConsensusSource, build_consensus
-from .contracts import ALPHAS, FrozenConfig, ShadowSourcePrediction, train_eligibility
+from .contracts import ALPHAS, FrozenConfig, ShadowSourcePrediction, StabilityAudit, train_eligibility
 from .evaluation import EvaluationLabels, evaluate_exp405
 from .feature_registry import load_feature_blocks
 from .feature_stability import audit_feature_stability, build_group_summary
@@ -472,10 +472,20 @@ def stage_worker_count(stage: str, requested_workers: int) -> int:
 
 def _audit_features(dataset: str) -> Mapping[str, object]:
     bundle = load_dataset_input(dataset)
+    identity = _dataset_identity(dataset, bundle)
+    if identity["train_size"] < 2:
+        audit = StabilityAudit()
+        return {
+            **identity,
+            "outcome": "completed",
+            "result_kind": "n_train_below_2_no_crossfit_audit",
+            "audit": _json_value(audit),
+            "group_summary": _json_value(build_group_summary(audit)),
+        }
     blocks = load_feature_blocks(dataset, bundle)
     audit = audit_feature_stability(blocks, crossfit_plan(len(bundle.train_normal)))
     return {
-        **_dataset_identity(dataset, bundle),
+        **identity,
         "outcome": "completed",
         "audit": _json_value(audit),
         "group_summary": _json_value(build_group_summary(audit)),

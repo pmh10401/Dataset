@@ -28,6 +28,23 @@ def process_safe_hash_stream_processor(dataset: str) -> dict[str, object]:
 
 
 class PipelineTests(unittest.TestCase):
+    def test_audit_n_train_one_completes_without_crossfit_or_feature_loading(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        bundle = MagicMock(train_normal=np.zeros((1, 8)), test_values=np.zeros((1, 8)))
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "load_feature_blocks") as load_features,
+        ):
+            result = pipeline._audit_features("Phoneme_normal_39")
+
+        self.assertEqual(result["dataset"], "Phoneme_normal_39")
+        self.assertEqual(result["train_size"], 1)
+        self.assertEqual(result["eligibility"], "abstain")
+        self.assertEqual(result["outcome"], "completed")
+        self.assertEqual(result["result_kind"], "n_train_below_2_no_crossfit_audit")
+        load_features.assert_not_called()
+
     def test_consensus_all_source_abstentions_preserve_lanes_and_emit_empty_variants(self) -> None:
         from experiments.exp403_408 import pipeline
 
