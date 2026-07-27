@@ -1354,6 +1354,29 @@ EXPERIMENTS = [
         "retrospective": True,
         "prospective": False,
     },
+    {
+        "id": "experiment_403_408_feature_ml_validation",
+        "label": "Exp403-408 · TRAIN-only feature/ML validation",
+        "script": ROOT / "scratch" / "run_exp403_408_feature_ml_validation.py",
+        "args": [
+            "--stage",
+            "all",
+            "--output-dir",
+            str(DATA_DIR / "exp403_408_feature_ml_validation"),
+            "--workers",
+            "7",
+        ],
+        "detail_csv": DATA_DIR / "exp403_408_feature_ml_validation" / "exp408_consensus_summary.csv",
+        "summary_csv": DATA_DIR / "exp403_408_feature_ml_validation" / "exp403_408_summary.csv",
+        "status_json": DATA_DIR / "exp403_408_feature_ml_validation" / "status.json",
+        "stdout_log": DATA_DIR / "exp403_408_feature_ml_validation" / "exp403_408_stdout.log",
+        "expected_datasets": 1117,
+        "archive_outputs": False,
+        "automatic_policy_changed": False,
+        "review_only": True,
+        "retrospective": True,
+        "prospective": False,
+    },
 ]
 
 EXP267_273_ROOT = DATA_DIR / "exp267_273_zero_support_fn_recovery"
@@ -2530,6 +2553,29 @@ def queue_exp329_330_batch():
     save_state(state); log("QUEUE registered Exp329-330 batch (2 experiments)")
 
 
+def queue_exp403_408_batch():
+    experiment_id = "experiment_403_408_feature_ml_validation"
+    state = reconcile_running_state(load_state())
+    completed = set(state.get("completed", []))
+    state["queue"] = [item for item in state.get("queue", []) if item != experiment_id]
+    if experiment_id not in completed:
+        state["queue"].append(experiment_id)
+    state["exp403_408_batch"] = {
+        "registered_at": now(),
+        "registered_unix": time.time(),
+        "worker_count": 7,
+        "agent_monitoring": False,
+        "execution_mode": "sequential_one_experiment_at_a_time",
+        "experiments": [experiment_id],
+        "automatic_policy_changed": False,
+        "research_shadow_only": True,
+        "classical_outer_workers": 7,
+        "learned_model_processes": 1,
+    }
+    save_state(state)
+    log("QUEUE registered Exp403-408 batch (1 experiment)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run rank experiments one at a time.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -2575,6 +2621,7 @@ def main():
     sub.add_parser("queue-exp325-327")
     sub.add_parser("queue-exp328")
     sub.add_parser("queue-exp329-330")
+    sub.add_parser("queue-exp403-408")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -2672,6 +2719,8 @@ def main():
         queue_experiment(EXP328_ID)
     elif args.command == "queue-exp329-330":
         queue_exp329_330_batch()
+    elif args.command == "queue-exp403-408":
+        queue_exp403_408_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

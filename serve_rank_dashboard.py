@@ -2727,6 +2727,30 @@ EXPERIMENTS["experiment_400_402_exp397_shadow_validation"] = {
     "prospective": False,
 }
 
+EXP403_408_ROOT = DATA_DIR / "exp403_408_feature_ml_validation"
+EXPERIMENTS["experiment_403_408_feature_ml_validation"] = {
+    "label": "Exp403-408 - TRAIN-only feature/ML validation",
+    "history_status": "retrospective_shadow_replay",
+    "comparison_eligible": False,
+    "scope": "train_only_feature_ml_validation",
+    "status_reason": "기존 Hard/Standard/Priority는 유지하고 TRAIN-only 신뢰도와 Shadow 후보를 후향 검증",
+    "autonomous_metric_scope": "Exp291 Hard 2,218건 변경 없음",
+    "review_metric_scope": "Exp406-408 research Shadow와 Exp405 retrospective counterfactual",
+    "detail_csv": EXP403_408_ROOT / "exp408_consensus_summary.csv",
+    "summary_csv": EXP403_408_ROOT / "exp403_408_summary.csv",
+    "status_json": EXP403_408_ROOT / "status.json",
+    "stdout_log": EXP403_408_ROOT / "exp403_408_stdout.log",
+    "artifact_paths": [
+        EXP403_408_ROOT / "status.json",
+        EXP403_408_ROOT / "checkpoints",
+    ],
+    "expected_datasets": 1117,
+    "automatic_policy_changed": False,
+    "retrospective": True,
+    "prospective": False,
+    "live_status_only": True,
+}
+
 EXP329_330_META = {
     329: ("experiment_329_large_candidate_train_verifier", "큰 데이터셋 후보 2차 검증", "기존 검토·다중 근거 후보를 고정 규칙으로 Shadow 검증"),
     330: ("experiment_330_large_learned_normal_representation", "큰 데이터셋 학습형 정상 표현", "다중 해상도 PCA/KNN 정상 표현으로 기존 top-64 밖 FN 도달 가능성 평가"),
@@ -3988,7 +4012,7 @@ def read_heartbeat():
 
 
 def read_experiment_status(exp_id, info=None, *, now=None, max_age_seconds=120):
-    """Read the active experiment's atomic status file when it is fresh."""
+    """Read only the active experiment's fresh atomic status file."""
 
     if not exp_id:
         return {}
@@ -6140,6 +6164,34 @@ def experiment_queue_snapshot(state, expected, experiment_ids=None, heartbeat=No
     for exp_id in ordered:
         info = experiment_info(exp_id)
         if not info:
+            continue
+        if info.get("live_status_only"):
+            live = read_experiment_status(exp_id, info)
+            status = str(live.get("status")) if live else "pending"
+            if not live:
+                if exp_id == running_id:
+                    status = "running"
+                elif exp_id in completed:
+                    status = "completed"
+                elif exp_id in queued:
+                    status = "queued"
+            item_expected = safe_int(live.get("total")) if live else None
+            item_expected = item_expected if item_expected is not None else expected_for_experiment(info, expected)
+            done = safe_int(live.get("completed")) if live else 0
+            done = done if done is not None else 0
+            if status == "queued" and not live:
+                done = 0
+            rows.append(
+                {
+                    "id": exp_id,
+                    "label": info.get("label", exp_id),
+                    "status": status,
+                    "datasets_done": done,
+                    "expected_datasets": item_expected,
+                    "progress_percent": as_float(live.get("progress_percent")) if live else 0.0,
+                    "rows": None,
+                }
+            )
             continue
         detail_rows = read_csv_rows(info["detail_csv"])
         item_expected = expected_for_experiment(info, expected)
