@@ -10,7 +10,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.svm import OneClassSVM
 
-from .contracts import ALPHAS, SEED, CommitteeScores, TrainEligibility
+from .contracts import ALPHAS, SEED, CommitteeScores, TrainEligibility, train_eligibility
 from .foundation import crossfit_plan
 
 
@@ -42,6 +42,8 @@ def score_classical_committee(
         raise ValueError("TRAIN and TEST feature dimensions must match")
     if not len(train) or not len(test):
         raise ValueError("non-empty TRAIN and TEST feature matrices required")
+    if eligibility != train_eligibility(len(train)):
+        raise ValueError("eligibility must match the TRAIN row count")
     if not eligibility.robust_distance or len(train) < 5:
         return CommitteeScores()
 
@@ -87,11 +89,18 @@ def grade_frozen_hard(
     *, frozen_hard: Iterable[int], committee: CommitteeScores
 ) -> CommitteeScores:
     """Attach the original Hard indices without altering the frozen lane."""
+    hard_indices = frozenset(int(index) for index in frozen_hard)
+    confidence_by_alpha = committee.confidence_by_alpha
+    if not committee.available_models and not confidence_by_alpha:
+        confidence_by_alpha = {
+            str(alpha): tuple("abstain" for _ in sorted(hard_indices))
+            for alpha in ALPHAS
+        }
     return CommitteeScores(
         scores_by_alpha=committee.scores_by_alpha,
         available_models=committee.available_models,
-        confidence_by_alpha=committee.confidence_by_alpha,
-        hard_indices=frozenset(int(index) for index in frozen_hard),
+        confidence_by_alpha=confidence_by_alpha,
+        hard_indices=hard_indices,
     )
 
 

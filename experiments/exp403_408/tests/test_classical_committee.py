@@ -8,7 +8,12 @@ from experiments.exp403_408.classical_committee import (
     grade_frozen_hard,
     score_classical_committee,
 )
-from experiments.exp403_408.contracts import CommitteeScores, SEED, train_eligibility
+from experiments.exp403_408.contracts import (
+    CommitteeScores,
+    SEED,
+    TrainEligibility,
+    train_eligibility,
+)
 
 
 class SpyLOF:
@@ -38,6 +43,11 @@ def train5() -> np.ndarray:
 
 def train20() -> np.ndarray:
     return np.column_stack((np.arange(20, dtype=float), np.arange(20, dtype=float) ** 2))
+
+
+def train_rows(n_rows: int) -> np.ndarray:
+    values = np.arange(n_rows, dtype=float)
+    return np.column_stack((values, values ** 2))
 
 
 def test2() -> np.ndarray:
@@ -98,14 +108,37 @@ class ClassicalCommitteeTests(unittest.TestCase):
         self.assertEqual(result.hard_indices, frozenset({1, 4}))
         self.assertEqual(result.scores_by_alpha, committee.scores_by_alpha)
 
-    def test_abstained_train_has_no_models_or_numeric_scores(self) -> None:
-        result = score_classical_committee(
+    def test_abstained_train_has_no_models_but_grades_every_frozen_hard(self) -> None:
+        committee = score_classical_committee(
             train5()[:4], test2(), train_eligibility(4), SEED
         )
+        result = grade_frozen_hard(frozen_hard={4, 1}, committee=committee)
 
         self.assertEqual(result.available_models, ())
         self.assertEqual(result.scores_by_alpha, {})
-        self.assertEqual(result.confidence_by_alpha, {})
+        self.assertEqual(
+            result.confidence_by_alpha,
+            {
+                "0.005": ("abstain", "abstain"),
+                "0.01": ("abstain", "abstain"),
+                "0.02": ("abstain", "abstain"),
+                "0.05": ("abstain", "abstain"),
+            },
+        )
+        self.assertEqual(result.hard_indices, frozenset({1, 4}))
+
+    def test_rejects_forged_eligibility_for_every_train_boundary(self) -> None:
+        forged_cases = (
+            (4, train_eligibility(5)),
+            (5, TrainEligibility("robust_distance", True, True, False)),
+            (19, TrainEligibility("robust_distance", True, True, False)),
+            (20, train_eligibility(5)),
+            (50, train_eligibility(20)),
+        )
+
+        for n_train, forged in forged_cases:
+            with self.subTest(n_train=n_train), self.assertRaisesRegex(ValueError, "eligibility"):
+                score_classical_committee(train_rows(n_train), test2(), forged, SEED)
 
 
 if __name__ == "__main__":
