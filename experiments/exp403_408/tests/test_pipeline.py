@@ -483,11 +483,65 @@ class PipelineTests(unittest.TestCase):
                 pipeline.CONSENSUS_SUMMARY,
             ):
                 (output / name).write_text("{}\n", encoding="utf-8")
-            result = pipeline._write_report(output)
+            def write_tables(_output: Path) -> None:
+                (output / pipeline.EXP405_DATASET_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP405_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP408_VARIANT_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP408_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
+
+            with (
+                patch.object(pipeline, "_write_published_evaluation_tables", side_effect=write_tables),
+                patch.object(pipeline, "write_reports") as write_reports,
+            ):
+                result = pipeline._write_report(output)
 
             self.assertEqual(result["outcome"], "completed")
             self.assertGreater((output / pipeline.RESULT_ARTIFACT).stat().st_size, 0)
             self.assertGreater((output / pipeline.SUMMARY_ARTIFACT).stat().st_size, 0)
+            write_reports.assert_called_once()
+
+    def test_report_separates_autonomous_and_human_assisted_metrics(self) -> None:
+        from experiments.exp403_408.reporting import build_report, write_reports
+        from experiments.exp403_408.tests.test_evaluation import reporting_fixture
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = reporting_fixture(Path(tmp))
+            text = build_report(output)
+            artifacts = write_reports(output, command="python3 scratch/run_exp403_408_feature_ml_validation.py --stage report")
+
+            self.assertIn("자동 경보는 변경하지 않음", text)
+            self.assertIn("human-assisted", text)
+            self.assertNotIn("배포 검증 완료", text)
+            self.assertTrue(artifacts.manifest_json.is_file())
+            self.assertTrue(artifacts.manifest_markdown.is_file())
+
+    def test_report_freezes_official_evaluation_rows_before_independent_report(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            for name in (
+                pipeline.AUDIT_ARTIFACT,
+                "exp404_prediction_manifest.json",
+                "exp404_hard_confidence.jsonl",
+                pipeline.EVALUATION_ARTIFACT,
+                pipeline.CONSENSUS_ARTIFACT,
+                pipeline.CONSENSUS_SUMMARY,
+            ):
+                (output / name).write_text("{}\n", encoding="utf-8")
+            def write_tables_side_effect(_output: Path) -> None:
+                (output / pipeline.EXP405_DATASET_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP405_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP408_VARIANT_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP408_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
+
+            with (
+                patch.object(pipeline, "_write_published_evaluation_tables", side_effect=write_tables_side_effect) as write_tables,
+                patch.object(pipeline, "write_reports"),
+            ):
+                pipeline._write_report(output)
+
+        write_tables.assert_called_once_with(output)
 
     def test_all_marks_status_failed_when_registered_outputs_are_absent(self) -> None:
         import experiments.exp403_408.pipeline as pipeline

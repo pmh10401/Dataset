@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from hashlib import sha256
 from pathlib import Path
 
 from experiments.exp403_408.artifact_io import write_jsonl_atomic
@@ -22,6 +23,133 @@ from experiments.exp403_408.evaluation import (
     evaluate_exp405,
     evaluate_hard_confidence,
 )
+from experiments.exp403_408.independent_reaggregate import independent_reaggregate
+
+
+def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
+    path.write_text(
+        "".join(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+
+
+def reporting_fixture(output: Path) -> Path:
+    """Create only frozen publications consumed by the independent auditor."""
+    output.mkdir(parents=True, exist_ok=True)
+    prediction_rows = [
+        {
+            "dataset": "alpha_normal_0",
+            "candidate_index": 0,
+            "confidence_by_alpha": {str(alpha): "recheck" for alpha in ALPHAS},
+        },
+        {
+            "dataset": "beta_normal_0",
+            "candidate_index": 1,
+            "confidence_by_alpha": {str(alpha): "high" for alpha in ALPHAS},
+        },
+    ]
+    prediction_path = output / HARD_CONFIDENCE_NAME
+    _write_jsonl(prediction_path, prediction_rows)
+    prediction_sha256 = sha256(prediction_path.read_bytes()).hexdigest()
+    (output / PREDICTION_MANIFEST_NAME).write_text(
+        json.dumps(
+            {
+                "hard_confidence_file": HARD_CONFIDENCE_NAME,
+                "artifact_hashes": {"prediction": prediction_sha256},
+                "frozen_hard_lanes": {
+                    "alpha_normal_0": [0],
+                    "beta_normal_0": [1],
+                },
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    (output / "exp405_demotion_evaluation.json").write_text(
+        json.dumps(
+            {
+                "recheck_count": 1,
+                "false_positive_count": 1,
+                "true_positive_count": 0,
+                "false_positive_fraction": 1.0,
+                "baseline_true_positive_retention": 1.0,
+                "train_stability": 0.99,
+                "lane_parity": True,
+                "operational_policy_changed": False,
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    (output / "exp405_demotion_dataset_metrics.csv").write_text(
+        "dataset,lineage,train_stability,baseline_hard_tp,recheck_count,recheck_false_positive_count,recheck_true_positive_count\n"
+        "alpha_normal_0,alpha,0.99,0,1,1,0\n"
+        "beta_normal_0,beta,0.95,1,0,0,0\n",
+        encoding="utf-8",
+    )
+    (output / "exp405_demotion_candidate_evaluation.csv").write_text(
+        "dataset,candidate_index,is_recheck,is_true_anomaly\n"
+        "alpha_normal_0,0,1,0\n"
+        "beta_normal_0,1,0,1\n",
+        encoding="utf-8",
+    )
+    audit_rows = [
+        {"dataset": "alpha_normal_0", "train_size": 20},
+        {"dataset": "beta_normal_0", "train_size": 50},
+    ]
+    _write_jsonl(output / "exp403_feature_audit.jsonl", audit_rows)
+    candidates = {
+        "tri_view_only": {"0.005": [{"candidate_index": 2}]},
+        "synthetic_only": {"0.005": [{"candidate_index": 2}]},
+        "tri_view_and_synthetic": {"0.005": [{"candidate_index": 2}]},
+        "one_new_plus_existing_independent": {"0.005": [{"candidate_index": 2}]},
+        "two_new_plus_existing_independent": {"0.005": [{"candidate_index": 2}]},
+    }
+    consensus_rows = [
+        {
+            "dataset": "alpha_normal_0",
+            "consensus": {
+                "hard_indices": [0],
+                "standard_indices": [2],
+                "priority_indices": [3],
+                "candidates_by_variant": candidates,
+            },
+        },
+        {
+            "dataset": "beta_normal_0",
+            "consensus": {
+                "hard_indices": [1],
+                "standard_indices": [],
+                "priority_indices": [3],
+                "candidates_by_variant": {
+                    name: {"0.005": []} for name in candidates
+                },
+            },
+        },
+    ]
+    _write_jsonl(output / "exp408_consensus_results.jsonl", consensus_rows)
+    header = (
+        "dataset,lineage,train_size,variant,alpha,candidate_count,tp,fp,precision,"
+        "fn_recovered,zero_f1_before,zero_f1_after,standard_overlap,priority_overlap,"
+        "review_outside_existing,baseline_hard_tp,baseline_hard_fp,baseline_hard_fn\n"
+    )
+    rows = []
+    for variant in candidates:
+        rows.extend(
+            (
+                f"alpha_normal_0,alpha,20,{variant},0.005,1,1,0,1.0,1,1,0,1,0,0,0,1,1\n",
+                f"beta_normal_0,beta,50,{variant},0.005,0,0,0,0.0,0,0,0,0,0,0,1,0,1\n",
+            )
+        )
+    (output / "exp408_variant_metrics.csv").write_text(header + "".join(rows), encoding="utf-8")
+    (output / "exp408_variant_candidate_evaluation.csv").write_text(
+        "dataset,variant,alpha,candidate_index,is_true_anomaly\n"
+        + "".join(
+            f"alpha_normal_0,{variant},0.005,2,1\n" for variant in candidates
+        ),
+        encoding="utf-8",
+    )
+    return output
 
 
 class LabelLoaderSpy:
@@ -341,6 +469,37 @@ class EvaluationTests(unittest.TestCase):
                 {"alpha_normal_0": EvaluationLabels(("normal",), 0.99, "alpha")},
                 expected_hard_identities=expected_identities(prediction),
             )
+
+    def test_independent_reaggregation_matches_frozen_official_metrics(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            report = independent_reaggregate(reporting_fixture(Path(directory)))
+
+        self.assertEqual(report.mismatch_count, 0)
+        self.assertEqual(report.metrics["exp404"]["recheck_count"], 1)
+        self.assertEqual(report.metrics["exp405"]["false_positive_count"], 1)
+        self.assertEqual(
+            report.metrics["exp408"]["tri_view_and_synthetic"]["0.005"]["fn_recovered"],
+            1,
+        )
+
+    def test_independent_reaggregation_rejects_float_difference_above_tolerance(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = reporting_fixture(Path(directory))
+            path = output / "exp405_demotion_evaluation.json"
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["train_stability"] = 0.99 + 1.1e-12
+            path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "independent reaggregation mismatch"):
+                independent_reaggregate(output)
+
+    def test_independent_reaggregation_requires_candidate_level_evaluation_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = reporting_fixture(Path(directory))
+            (output / "exp408_variant_candidate_evaluation.csv").unlink()
+
+            with self.assertRaisesRegex(ValueError, "candidate evaluation"):
+                independent_reaggregate(output)
 
 
 if __name__ == "__main__":

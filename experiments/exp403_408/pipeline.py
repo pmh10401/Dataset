@@ -29,6 +29,8 @@ from .feature_registry import load_feature_blocks
 from .feature_stability import audit_feature_stability, build_group_summary
 from .foundation import DB_PATH, EXP291_MANIFEST_PATH, EXP291_PREDICTION_PATH, EXP292_MANIFEST_PATH, EXP292_PREDICTION_PATH, crossfit_plan, list_datasets_small_to_large, load_dataset_input, load_frozen_lanes
 from .prediction import freeze_provenance_contract, load_expected_provenance, predict_dataset, write_prediction
+from .independent_reaggregate import independent_reaggregate
+from .reporting import write_reports
 from .synthetic_anomaly import SyntheticAnomalyConfig, _crossfit_normal_scores, score_synthetic_models, synthetic_shadow_predictions
 from .tri_view_ssl import _calibrate_raw_scores, _produce_raw_scores, score_tri_view, shadow_predictions
 from experiments.exp393_396.artifact_io import load_test_labels
@@ -53,6 +55,10 @@ AUDIT_ARTIFACT = "exp403_feature_audit.jsonl"
 EVALUATION_ARTIFACT = "exp405_demotion_evaluation.json"
 CONSENSUS_ARTIFACT = "exp408_consensus_results.jsonl"
 CONSENSUS_SUMMARY = "exp408_consensus_summary.csv"
+EXP405_DATASET_METRICS = "exp405_demotion_dataset_metrics.csv"
+EXP405_CANDIDATE_METRICS = "exp405_demotion_candidate_evaluation.csv"
+EXP408_VARIANT_METRICS = "exp408_variant_metrics.csv"
+EXP408_CANDIDATE_METRICS = "exp408_variant_candidate_evaluation.csv"
 RESULT_ARTIFACT = "exp403_408_results.csv"
 SUMMARY_ARTIFACT = "exp403_408_summary.csv"
 STATUS_HEARTBEAT_SECONDS = 30.0
@@ -373,6 +379,7 @@ def _audit_features(dataset: str) -> Mapping[str, object]:
     return {
         "dataset": dataset,
         "outcome": "completed",
+        "train_size": int(len(bundle.train_normal)),
         "audit": _json_value(audit),
         "group_summary": _json_value(build_group_summary(audit)),
     }
@@ -458,6 +465,7 @@ def _classical_evaluate(output: Path) -> Mapping[str, object]:
 
 
 def _write_report(output: Path) -> Mapping[str, object]:
+    _write_published_evaluation_tables(output)
     _require_final_outputs(output, require_report=False)
     result_rows = _report_rows(output)
     write_csv_atomic(
@@ -469,11 +477,153 @@ def _write_report(output: Path) -> Mapping[str, object]:
         {"artifact": AUDIT_ARTIFACT, "sha256": sha256_file(output / AUDIT_ARTIFACT)},
         {"artifact": "exp404_prediction_manifest.json", "sha256": sha256_file(output / "exp404_prediction_manifest.json")},
         {"artifact": EVALUATION_ARTIFACT, "sha256": sha256_file(output / EVALUATION_ARTIFACT)},
+        {"artifact": EXP405_DATASET_METRICS, "sha256": sha256_file(output / EXP405_DATASET_METRICS)},
+        {"artifact": EXP405_CANDIDATE_METRICS, "sha256": sha256_file(output / EXP405_CANDIDATE_METRICS)},
         {"artifact": CONSENSUS_ARTIFACT, "sha256": sha256_file(output / CONSENSUS_ARTIFACT)},
         {"artifact": CONSENSUS_SUMMARY, "sha256": sha256_file(output / CONSENSUS_SUMMARY)},
+        {"artifact": EXP408_VARIANT_METRICS, "sha256": sha256_file(output / EXP408_VARIANT_METRICS)},
+        {"artifact": EXP408_CANDIDATE_METRICS, "sha256": sha256_file(output / EXP408_CANDIDATE_METRICS)},
     ]
     write_csv_atomic(output / SUMMARY_ARTIFACT, fieldnames=("artifact", "sha256"), rows=summary_rows)
+    write_reports(
+        output,
+        command=f"python3 scratch/run_exp403_408_feature_ml_validation.py --stage report --output-dir {output}",
+    )
     return {"dataset": "__aggregate__", "outcome": "completed", "result_rows": len(result_rows)}
+
+
+def _write_published_evaluation_tables(output: Path) -> None:
+    """Freeze official label-based detail rows before the read-only audit runs."""
+    prediction = _read_jsonl_artifact(output / "exp404_hard_confidence.jsonl")
+    consensus_rows = _read_jsonl_artifact(output / CONSENSUS_ARTIFACT)
+    audit_rows = _read_jsonl_artifact(output / AUDIT_ARTIFACT)
+    audit_by_dataset = {str(row["dataset"]): row for row in audit_rows}
+    prediction_datasets = {str(row["dataset"]) for row in prediction}
+    datasets = {str(row["dataset"]) for row in consensus_rows}
+    if not prediction_datasets <= datasets or datasets != set(audit_by_dataset):
+        raise ValueError("published Exp403-408 evaluation dataset coverage differs")
+    labels = load_test_labels(datasets)
+    if set(labels) != datasets:
+        raise ValueError("published Exp403-408 labels are incomplete")
+    by_dataset: dict[str, list[Mapping[str, object]]] = {}
+    for row in prediction:
+        by_dataset.setdefault(str(row["dataset"]), []).append(row)
+    exp405_rows = []
+    exp405_candidate_rows = []
+    for dataset in sorted(prediction_datasets):
+        rows = by_dataset[dataset]
+        values = labels[dataset]
+        _validate_label_indices(rows, values, dataset)
+        recheck = [
+            row for row in rows
+            if all(value == "recheck" for value in dict(row["confidence_by_alpha"]).values())
+        ]
+        exp405_candidate_rows.extend(
+            {
+                "dataset": dataset,
+                "candidate_index": int(row["candidate_index"]),
+                "is_recheck": int(all(value == "recheck" for value in dict(row["confidence_by_alpha"]).values())),
+                "is_true_anomaly": int(_label_is_anomaly(values[int(row["candidate_index"])])),
+            }
+            for row in rows
+        )
+        exp405_rows.append(
+            {
+                "dataset": dataset,
+                "lineage": _lineage(dataset),
+                "train_stability": _dataset_train_stability(output, dataset),
+                "baseline_hard_tp": sum(_label_is_anomaly(values[int(row["candidate_index"])]) for row in rows),
+                "recheck_count": len(recheck),
+                "recheck_false_positive_count": sum(not _label_is_anomaly(values[int(row["candidate_index"])]) for row in recheck),
+                "recheck_true_positive_count": sum(_label_is_anomaly(values[int(row["candidate_index"])]) for row in recheck),
+            }
+        )
+    write_csv_atomic(
+        output / EXP405_DATASET_METRICS,
+        fieldnames=(
+            "dataset", "lineage", "train_stability", "baseline_hard_tp", "recheck_count",
+            "recheck_false_positive_count", "recheck_true_positive_count",
+        ),
+        rows=exp405_rows,
+    )
+    write_csv_atomic(
+        output / EXP405_CANDIDATE_METRICS,
+        fieldnames=("dataset", "candidate_index", "is_recheck", "is_true_anomaly"),
+        rows=exp405_candidate_rows,
+    )
+    consensus_by_dataset = {str(row["dataset"]): _mapping_object(row.get("consensus"), "published consensus") for row in consensus_rows}
+    exp408_rows = []
+    exp408_candidate_rows = []
+    for dataset in sorted(datasets):
+        payload = consensus_by_dataset[dataset]
+        values = labels[dataset]
+        hard = _published_indices(payload.get("hard_indices"), "published Hard indices")
+        standard = _published_indices(payload.get("standard_indices"), "published Standard indices")
+        priority = _published_indices(payload.get("priority_indices"), "published Priority indices")
+        if hard != {int(row["candidate_index"]) for row in by_dataset.get(dataset, [])}:
+            raise ValueError(f"published Exp408 Hard parity mismatch: {dataset}")
+        _validate_index_set(hard | standard | priority, values, dataset)
+        baseline_tp = sum(_label_is_anomaly(values[index]) for index in hard)
+        baseline_fp = len(hard) - baseline_tp
+        baseline_fn = sum(_label_is_anomaly(value) for value in values) - baseline_tp
+        variants = _mapping_object(payload.get("candidates_by_variant"), "published consensus variants")
+        for variant, alpha_rows in variants.items():
+            for alpha, candidates in _mapping_object(alpha_rows, "published consensus alpha rows").items():
+                indices = {
+                    int(_mapping_object(candidate, "published consensus candidate")["candidate_index"])
+                    for candidate in _sequence_object(candidates, "published consensus candidate list")
+                }
+                if len(indices) != len(_sequence_object(candidates, "published consensus candidate list")) or indices & hard:
+                    raise ValueError(f"published Exp408 Shadow candidates are invalid: {dataset}")
+                _validate_index_set(indices, values, dataset)
+                tp = sum(_label_is_anomaly(values[index]) for index in indices)
+                fp = len(indices) - tp
+                exp408_candidate_rows.extend(
+                    {
+                        "dataset": dataset,
+                        "variant": str(variant),
+                        "alpha": str(alpha),
+                        "candidate_index": index,
+                        "is_true_anomaly": int(_label_is_anomaly(values[index])),
+                    }
+                    for index in sorted(indices)
+                )
+                exp408_rows.append(
+                    {
+                        "dataset": dataset,
+                        "lineage": _lineage(dataset),
+                        "train_size": int(audit_by_dataset[dataset]["train_size"]),
+                        "variant": str(variant),
+                        "alpha": str(alpha),
+                        "candidate_count": len(indices),
+                        "tp": tp,
+                        "fp": fp,
+                        "precision": tp / len(indices) if indices else 0.0,
+                        "fn_recovered": tp,
+                        "zero_f1_before": int(baseline_tp == 0),
+                        "zero_f1_after": int(baseline_tp + tp == 0),
+                        "standard_overlap": len(indices & standard),
+                        "priority_overlap": len(indices & priority),
+                        "review_outside_existing": len(indices - standard - priority),
+                        "baseline_hard_tp": baseline_tp,
+                        "baseline_hard_fp": baseline_fp,
+                        "baseline_hard_fn": baseline_fn,
+                    }
+                )
+    write_csv_atomic(
+        output / EXP408_VARIANT_METRICS,
+        fieldnames=(
+            "dataset", "lineage", "train_size", "variant", "alpha", "candidate_count", "tp", "fp",
+            "precision", "fn_recovered", "zero_f1_before", "zero_f1_after", "standard_overlap",
+            "priority_overlap", "review_outside_existing", "baseline_hard_tp", "baseline_hard_fp", "baseline_hard_fn",
+        ),
+        rows=exp408_rows,
+    )
+    write_csv_atomic(
+        output / EXP408_CANDIDATE_METRICS,
+        fieldnames=("dataset", "variant", "alpha", "candidate_index", "is_true_anomaly"),
+        rows=exp408_candidate_rows,
+    )
 
 
 def _finalize_stage(stage: str, output: Path, datasets: Sequence[str]) -> None:
@@ -687,7 +837,17 @@ def _require_final_outputs(output: Path, *, require_report: bool = True) -> None
         output / CONSENSUS_SUMMARY,
     ]
     if require_report:
-        paths.extend((output / RESULT_ARTIFACT, output / SUMMARY_ARTIFACT))
+        paths.extend((
+            output / RESULT_ARTIFACT,
+            output / SUMMARY_ARTIFACT,
+            output / EXP405_DATASET_METRICS,
+            output / EXP405_CANDIDATE_METRICS,
+            output / EXP408_VARIANT_METRICS,
+            output / EXP408_CANDIDATE_METRICS,
+            output / "EXP403_408_RESULT_REPORT_KO.md",
+            output / "MANIFEST.json",
+            output / "MANIFEST.md",
+        ))
     missing = [str(path) for path in paths if not path.is_file() or path.stat().st_size == 0]
     if missing:
         raise ValueError(f"required Exp403-408 outputs are missing: {', '.join(missing)}")
@@ -707,6 +867,70 @@ def _read_json(path: Path) -> dict[str, object]:
     return value
 
 
+def _read_jsonl_artifact(path: Path) -> list[dict[str, object]]:
+    try:
+        rows = [
+            json.loads(line)
+            for line in Path(path).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"cannot read required JSONL artifact: {path}") from error
+    if not rows or not all(isinstance(row, dict) for row in rows):
+        raise ValueError(f"JSONL artifact is invalid: {path}")
+    return rows
+
+
+def _mapping_object(value: object, name: str) -> Mapping[str, object]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{name} must be an object")
+    return {str(key): child for key, child in value.items()}
+
+
+def _sequence_object(value: object, name: str) -> Sequence[object]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise ValueError(f"{name} must be a sequence")
+    return value
+
+
+def _published_indices(value: object, name: str) -> set[int]:
+    indices: set[int] = set()
+    for raw in _sequence_object(value, name):
+        if isinstance(raw, bool):
+            raise ValueError(f"{name} must contain integer indices")
+        try:
+            index = int(raw)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"{name} must contain integer indices") from error
+        if index < 0 or str(raw).strip() not in {str(index), f"+{index}"}:
+            raise ValueError(f"{name} must contain non-negative integer indices")
+        indices.add(index)
+    return indices
+
+
+def _validate_label_indices(rows: Sequence[Mapping[str, object]], labels: Sequence[object], dataset: str) -> None:
+    _validate_index_set({int(row["candidate_index"]) for row in rows}, labels, dataset)
+
+
+def _validate_index_set(indices: set[int], labels: Sequence[object], dataset: str) -> None:
+    if not labels or any(index < 0 or index >= len(labels) for index in indices):
+        raise ValueError(f"published evaluation index is outside TEST labels: {dataset}")
+    for value in labels:
+        _label_is_anomaly(value)
+
+
+def _label_is_anomaly(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and not isinstance(value, bool) and float(value) in {0.0, 1.0}:
+        return bool(int(value))
+    if isinstance(value, str):
+        parsed = {"normal": False, "false": False, "0": False, "0.0": False, "anomaly": True, "true": True, "1": True, "1.0": True}.get(value.strip().lower())
+        if parsed is not None:
+            return parsed
+    raise ValueError("published evaluation TEST label is invalid")
+
+
 def _stage_input_hash(stage: str, dataset: str, output: Path, device: str) -> str:
     """Bind resume to real values, code, frozen config, and stage prerequisites."""
     code_paths = {
@@ -718,6 +942,8 @@ def _stage_input_hash(stage: str, dataset: str, output: Path, device: str) -> st
         "synthetic": Path(score_synthetic_models.__code__.co_filename),
         "consensus": Path(build_consensus.__code__.co_filename),
         "evaluation": Path(evaluate_exp405.__code__.co_filename),
+        "reporting": Path(write_reports.__code__.co_filename),
+        "independent_reaggregation": Path(independent_reaggregate.__code__.co_filename),
         "frozen_lanes": Path(load_frozen_lanes.__code__.co_filename),
         "labels": Path(load_test_labels.__code__.co_filename),
     }
@@ -803,6 +1029,7 @@ def _aggregate_dependencies(stage: str, output: Path) -> tuple[Path, ...]:
             output / EVALUATION_ARTIFACT,
             output / CONSENSUS_ARTIFACT,
             output / CONSENSUS_SUMMARY,
+            *_database_snapshot_paths(DB_PATH),
             *(
                 checkpoint
                 for report_stage in REPORT_ROW_STAGES
