@@ -63,3 +63,17 @@ python3 scratch/run_exp403_408_feature_ml_validation.py \
 - 모든 float metric의 차이가 `1e-12` 초과
 - CSV/JSONL의 dataset, variant, alpha, candidate coverage 누락
 - Exp405 production 변경 또는 Exp406-408 prospective 검증을 암시하는 주장
+
+## Task 13 사후 실행 메타데이터 (2026-07-27)
+
+- representative smoke는 `/Users/minho/Documents/Dataset/exp403_408_feature_ml_validation_smoke`에서
+  20개 dataset으로 완료했다. TRAIN eligibility coverage는 abstain/robust_distance/
+  classical_committee/learned_methods 각각 5개였고 stage error는 0이었다.
+- smoke의 Exp408 all-source abstention은 5개였으며, 각 artifact는 Hard/Standard/
+  Priority를 보존하고 5개 variant의 모든 alpha 후보를 0개로 기록했다.
+- Exp406 CPU/MPS parity smoke는 `CricketX_normal_1` (`n_train=52`)에서 CPU 2회,
+  MPS 2회 실행했다. raw rank는 모두 일치했고 최대 raw-score 차이는
+  `2.384185791015625e-07` (`<= 1e-5`)이었다. publication full run은 frozen CPU
+  canonical path를 유지했다.
+- full sequential run은 verified frozen universe 1,117 dataset으로 시작했다.
+  실행 중인 상태와 최종 검증 값은 Task 13 report에 기록한다.
