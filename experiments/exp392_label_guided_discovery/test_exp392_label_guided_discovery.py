@@ -4,10 +4,15 @@ import unittest
 import tempfile
 from pathlib import Path
 
+import numpy as np
+
 from experiments.exp392_label_guided_discovery.discovery_core import (
     CombinationRule,
+    assign_research_label,
     benjamini_hochberg,
+    bootstrap_intervals,
     candidate_indices_for_rule,
+    concentration_diagnostics,
     enumerate_combination_rules,
     evaluate_candidate_set,
 )
@@ -204,6 +209,72 @@ class EvaluationCatalogTests(unittest.TestCase):
         self.assertIn(
             "atleast2__ewma__frequency__topology__alpha_0p005",
             ids,
+        )
+
+
+class StabilityTests(unittest.TestCase):
+    def test_bootstrap_is_reproducible(self):
+        recovered = np.array([[1, 0, 2], [0, 1, 0]], dtype=np.int32)
+        added_fp = np.array([[0, 1, 1], [1, 0, 1]], dtype=np.int32)
+
+        first = bootstrap_intervals(
+            recovered,
+            added_fp,
+            seed=20260727,
+            iterations=200,
+        )
+        second = bootstrap_intervals(
+            recovered,
+            added_fp,
+            seed=20260727,
+            iterations=200,
+        )
+
+        for key in first:
+            np.testing.assert_array_equal(first[key], second[key])
+
+    def test_concentration_flags_single_lineage_signal(self):
+        recovered = np.array([[3, 2, 0], [1, 1, 1]], dtype=np.int32)
+
+        result = concentration_diagnostics(
+            recovered,
+            lineages=("A", "A", "B"),
+        )
+
+        self.assertEqual(result["tp_contributing_lineages"].tolist(), [1, 2])
+        self.assertEqual(result["top_lineage_tp_share"].tolist(), [1.0, 2 / 3])
+        self.assertEqual(result["concentrated_signal"].tolist(), [True, False])
+
+    def test_research_label_uses_only_preregistered_descriptive_thresholds(self):
+        self.assertEqual(
+            assign_research_label(
+                recovered_fn=0,
+                candidate_precision=1.0,
+                tp_contributing_lineages=10,
+                top_lineage_tp_share=0.1,
+                precision_ci_low=0.9,
+            ),
+            "unsupported",
+        )
+        self.assertEqual(
+            assign_research_label(
+                recovered_fn=12,
+                candidate_precision=0.6,
+                tp_contributing_lineages=6,
+                top_lineage_tp_share=0.5,
+                precision_ci_low=0.4,
+            ),
+            "preregistration_candidate",
+        )
+        self.assertEqual(
+            assign_research_label(
+                recovered_fn=8,
+                candidate_precision=0.6,
+                tp_contributing_lineages=4,
+                top_lineage_tp_share=0.5,
+                precision_ci_low=0.4,
+            ),
+            "research_signal",
         )
 
 

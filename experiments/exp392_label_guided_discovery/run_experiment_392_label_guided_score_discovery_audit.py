@@ -26,8 +26,11 @@ from experiments.exp391_fn_reachability.run_experiment_391_fn_reachability_audit
     load_test_labels,
 )
 from experiments.exp392_label_guided_discovery.discovery_core import (
+    assign_research_label,
     benjamini_hochberg,
+    bootstrap_intervals,
     candidate_indices_for_rule,
+    concentration_diagnostics,
     enumerate_combination_rules,
     alpha_slug,
     validated_indices,
@@ -472,6 +475,182 @@ def _summary_row(
     }
 
 
+def _population_masks(dataset_metadata: Sequence[dict]) -> dict[str, np.ndarray]:
+    n_test = np.array([int(row["n_test"]) for row in dataset_metadata])
+    n_train = np.array(
+        [int(row["n_train_normal"]) for row in dataset_metadata]
+    )
+    category = np.array(
+        [str(row["baseline_category"]) for row in dataset_metadata]
+    )
+    return {
+        "all": np.ones(len(dataset_metadata), dtype=bool),
+        "test_lt_100": n_test < 100,
+        "test_ge_100": n_test >= 100,
+        "zero_f1": np.char.startswith(category.astype(str), "zero_"),
+        "zero_no_hard": category == "zero_no_hard",
+        "zero_wrong_hard": category == "zero_wrong_hard",
+        "train_lt_5": n_train < 5,
+        "train_5_19": (n_train >= 5) & (n_train < 20),
+        "train_20_49": (n_train >= 20) & (n_train < 50),
+        "train_ge_50": n_train >= 50,
+    }
+
+
+def build_stability_rows(
+    catalog: Sequence[dict],
+    dataset_metadata: Sequence[dict],
+    available: np.ndarray,
+    baseline_fn: np.ndarray,
+    metric_arrays: dict[str, np.ndarray],
+) -> list[dict]:
+    rows: list[dict] = []
+    for population, mask in _population_masks(dataset_metadata).items():
+        for observation in catalog:
+            index = int(observation["matrix_index"])
+            candidates = int(metric_arrays["candidate_count"][index, mask].sum())
+            recovered = int(metric_arrays["recovered_fn"][index, mask].sum())
+            added_fp = int(metric_arrays["added_fp"][index, mask].sum())
+            review_count = int(
+                metric_arrays["review_overlap_count"][index, mask].sum()
+            )
+            review_tp = int(
+                metric_arrays["review_recovered_fn"][index, mask].sum()
+            )
+            rows.append(
+                {
+                    "population": population,
+                    "observation_id": observation["observation_id"],
+                    "observation_type": observation["observation_type"],
+                    "alpha": observation["alpha"],
+                    "operator": observation["operator"],
+                    "sources": "|".join(observation["sources"]),
+                    "datasets": int(mask.sum()),
+                    "datasets_available": int(available[index, mask].sum()),
+                    "baseline_fn": int(baseline_fn[mask].sum()),
+                    "candidate_count": candidates,
+                    "recovered_fn": recovered,
+                    "added_fp": added_fp,
+                    "candidate_precision": (
+                        recovered / candidates if candidates else 0.0
+                    ),
+                    "fn_recovery_rate": (
+                        recovered / int(baseline_fn[mask].sum())
+                        if baseline_fn[mask].sum()
+                        else 0.0
+                    ),
+                    "review_overlap_count": review_count,
+                    "review_recovered_fn": review_tp,
+                    "review_overlap_precision": (
+                        review_tp / review_count if review_count else 0.0
+                    ),
+                    "novel_recovered_fn": int(
+                        metric_arrays["novel_recovered_fn"][index, mask].sum()
+                    ),
+                    **SAFETY_FLAGS,
+                }
+            )
+    return rows
+
+
+def render_report(
+    source_rows: Sequence[dict],
+    combination_rows: Sequence[dict],
+    dataset_metadata: Sequence[dict],
+) -> str:
+    all_rows = list(source_rows) + list(combination_rows)
+    labels = Counter(str(row["research_label"]) for row in all_rows)
+    fixed_source_rows = sorted(
+        (
+            row
+            for row in source_rows
+            if abs(float(row["alpha"]) - 0.005) < 1e-12
+        ),
+        key=lambda row: str(row["sources"]),
+    )
+    preregistration = sorted(
+        (
+            row
+            for row in all_rows
+            if row["research_label"] == "preregistration_candidate"
+        ),
+        key=lambda row: str(row["observation_id"]),
+    )
+    total_fn = sum(int(row["baseline_fn"]) for row in dataset_metadata)
+    large_fn = sum(
+        int(row["baseline_fn"])
+        for row in dataset_metadata
+        if int(row["n_test"]) >= 100
+    )
+    lines = [
+        "# Exp392 정답 기반 점수원 역 탐색 결과",
+        "",
+        "## 해석 경계",
+        "",
+        "- 이 실험은 TEST 정답을 사용하는 후향 연구 감사다.",
+        "- 자동 경보, 일반 검토, 우선 검토, exact-normal lane은 변경하지 않았다.",
+        "- TEST 결과로 Alpha, 점수원 또는 조합을 운영 정책으로 선택하지 않았다.",
+        "- 아래 연구 분류는 별도 사전등록 필요성을 표시할 뿐 배포 자격이 아니다.",
+        "",
+        "## 분석 범위",
+        "",
+        f"- 데이터셋: {len(dataset_metadata):,}개",
+        f"- 기준 FN: {total_fn:,}건",
+        f"- TEST 100 이상 데이터셋 FN: {large_fn:,}건",
+        f"- 단일 근거 관측: {len(source_rows):,}개",
+        f"- 2·3개 근거 조합 관측: {len(combination_rows):,}개",
+        "",
+        "## 고정 연구 분류",
+        "",
+        f"- unsupported: {labels['unsupported']:,}개",
+        f"- research_signal: {labels['research_signal']:,}개",
+        (
+            "- preregistration_candidate: "
+            f"{labels['preregistration_candidate']:,}개"
+        ),
+        "",
+        "## Alpha 0.005 단일 근거 진단",
+        "",
+        "| 근거 | 후보 | FN 회수 | 추가 FP | 정밀도 | TP 계보 | 연구 분류 |",
+        "|---|---:|---:|---:|---:|---:|---|",
+    ]
+    lines.extend(
+        (
+            f"| {row['sources']} | {int(row['candidate_count']):,} | "
+            f"{int(row['recovered_fn']):,} | {int(row['added_fp']):,} | "
+            f"{100.0 * float(row['candidate_precision']):.2f}% | "
+            f"{int(row['tp_contributing_lineages']):,} | "
+            f"{row['research_label']} |"
+        )
+        for row in fixed_source_rows
+    )
+    lines.extend(
+        [
+            "",
+            "## 사전등록 후보",
+            "",
+        ]
+    )
+    if preregistration:
+        lines.extend(
+            f"- `{row['observation_id']}`" for row in preregistration
+        )
+    else:
+        lines.append("- 고정 기준을 모두 충족한 관측 없음")
+    lines.extend(
+        [
+            "",
+            "## 운영 결론",
+            "",
+            "- Exp392 결과만으로 자동 경보를 확대하지 않는다.",
+            "- 특정 계보 집중 신호는 일반화 근거로 사용하지 않는다.",
+            "- 후속 실험은 최대 한 개 가설만 새 번호로 사전등록한다.",
+            "- 신규 잠금 데이터 또는 prospective Shadow 검증 전에는 배포하지 않는다.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
 def evaluate(output_root: Path) -> dict:
     write_status(
         output_root,
@@ -737,6 +916,74 @@ def evaluate(output_root: Path) -> dict:
     combination_rows = [
         row for row in summaries if row["observation_type"] == "combination"
     ]
+    bootstrap_seed = 20260727
+    bootstrap_iterations = 2000
+    bootstrap = bootstrap_intervals(
+        metric_arrays["recovered_fn"],
+        metric_arrays["added_fp"],
+        seed=bootstrap_seed,
+        iterations=bootstrap_iterations,
+    )
+    concentration = concentration_diagnostics(
+        metric_arrays["recovered_fn"],
+        lineages=tuple(str(row["lineage"]) for row in dataset_metadata),
+    )
+    concentration_rows: list[dict] = []
+    for index, row in enumerate(summaries):
+        for field, values in bootstrap.items():
+            row[field] = float(values[index])
+        row["bootstrap_seed"] = bootstrap_seed
+        row["bootstrap_iterations"] = bootstrap_iterations
+        row["tp_contributing_lineages"] = int(
+            concentration["tp_contributing_lineages"][index]
+        )
+        row["top_lineage_tp_share"] = float(
+            concentration["top_lineage_tp_share"][index]
+        )
+        row["concentrated_signal"] = bool(
+            concentration["concentrated_signal"][index]
+        )
+        row["leave_one_lineage_out_min_recovered_fn"] = int(
+            concentration["leave_one_lineage_out_min_recovered_fn"][index]
+        )
+        row["leave_one_lineage_out_max_recovered_fn"] = int(
+            concentration["leave_one_lineage_out_max_recovered_fn"][index]
+        )
+        row["research_label"] = assign_research_label(
+            recovered_fn=int(row["recovered_fn"]),
+            candidate_precision=float(row["candidate_precision"]),
+            tp_contributing_lineages=int(row["tp_contributing_lineages"]),
+            top_lineage_tp_share=float(row["top_lineage_tp_share"]),
+            precision_ci_low=float(row["precision_ci_low"]),
+        )
+        row["research_label_selects_policy"] = False
+        concentration_rows.append(
+            {
+                "observation_id": row["observation_id"],
+                "observation_type": row["observation_type"],
+                "alpha": row["alpha"],
+                "sources": row["sources"],
+                "recovered_fn": row["recovered_fn"],
+                "tp_contributing_lineages": row["tp_contributing_lineages"],
+                "top_lineage_tp_share": row["top_lineage_tp_share"],
+                "concentrated_signal": row["concentrated_signal"],
+                "leave_one_lineage_out_min_recovered_fn": row[
+                    "leave_one_lineage_out_min_recovered_fn"
+                ],
+                "leave_one_lineage_out_max_recovered_fn": row[
+                    "leave_one_lineage_out_max_recovered_fn"
+                ],
+                "research_label": row["research_label"],
+                **SAFETY_FLAGS,
+            }
+        )
+    stability_rows = build_stability_rows(
+        catalog,
+        dataset_metadata,
+        available,
+        baseline_fn,
+        metric_arrays,
+    )
 
     source_p_values: list[float] = []
     association_rows: list[dict] = []
@@ -826,12 +1073,29 @@ def evaluate(output_root: Path) -> dict:
     complementarity_path = output_root / "exp392_source_complementarity.csv"
     association_path = output_root / "exp392_source_association.csv"
     metadata_path = output_root / "exp392_dataset_metadata.csv"
+    stability_path = output_root / "exp392_stability_summary.csv"
+    concentration_path = output_root / "exp392_concentration_diagnostics.csv"
+    high_fn_path = output_root / "exp392_high_fn_datasets.csv"
+    report_path = output_root / "EXP392_RESULTS_KO.md"
     matrix_path = output_root / "exp392_dataset_observation_metrics.npz"
     write_csv(source_path, source_rows)
     write_csv(combination_path, combination_rows)
     write_csv(complementarity_path, complementarity_rows)
     write_csv(association_path, association_rows)
     write_csv(metadata_path, dataset_metadata)
+    write_csv(stability_path, stability_rows)
+    write_csv(concentration_path, concentration_rows)
+    write_csv(
+        high_fn_path,
+        sorted(
+            dataset_metadata,
+            key=lambda row: (-int(row["baseline_fn"]), str(row["dataset"])),
+        ),
+    )
+    report_path.write_text(
+        render_report(source_rows, combination_rows, dataset_metadata),
+        encoding="utf-8",
+    )
     np.savez_compressed(
         matrix_path,
         observation_ids=np.array(
@@ -854,6 +1118,10 @@ def evaluate(output_root: Path) -> dict:
         complementarity_path,
         association_path,
         metadata_path,
+        stability_path,
+        concentration_path,
+        high_fn_path,
+        report_path,
         matrix_path,
         candidate_path,
     ]
@@ -864,6 +1132,12 @@ def evaluate(output_root: Path) -> dict:
         "observations": n_observations,
         "individual_sources": len(source_rows),
         "combination_rules": len(combination_rows),
+        "stability_rows": len(stability_rows),
+        "bootstrap_seed": bootstrap_seed,
+        "bootstrap_iterations": bootstrap_iterations,
+        "research_label_counts": dict(
+            Counter(str(row["research_label"]) for row in summaries)
+        ),
         "prepare_prediction_sha256": prepare_manifest["prediction_sha256"],
         "outputs": {
             path.name: sha256_file(path)
