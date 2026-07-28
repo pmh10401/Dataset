@@ -33,6 +33,7 @@ from experiments.exp414_missing_aware_near_repeat.repair import (
 )
 from experiments.exp414_missing_aware_near_repeat.runner import (
     _build_smoke_prepared,
+    _finalize_outputs,
     _run_checkpointed_stream,
     aggregate_subgroups,
     missing_support_abstention,
@@ -346,6 +347,54 @@ class StreamExecutionTests(unittest.TestCase):
 
 
 class EntryPointTests(unittest.TestCase):
+    def test_finalization_seam_renders_and_atomically_publishes(self) -> None:
+        prepared = _clean("Alpha_normal_0")
+        qualification = qualify_prepared_dataset(
+            prepared,
+            accelerated=False,
+        )
+        subgroups = aggregate_subgroups(
+            (qualification,),
+            (prepared.repair_audit,),
+        )
+        verified: list[bool] = []
+        with TemporaryDirectory() as raw:
+            output = Path(raw) / "publication"
+
+            hashes = _finalize_outputs(
+                records=(
+                    {
+                        "qualification": qualification,
+                        "execution_source": "exp414_computed",
+                        "repair_status": "ready",
+                        "backend_audit": DatasetBackendAudit(
+                            backend="numpy_cpu",
+                            sampled_pairs=(),
+                            max_abs_error=0.0,
+                            fallback_reason=None,
+                        ),
+                    },
+                ),
+                repair_audits=(prepared.repair_audit,),
+                aggregate=subgroups["all"],
+                subgroups=subgroups,
+                backend_assessment={
+                    "canonical_backend": "adaptive_numpy_numba_cpu",
+                },
+                provenance={
+                    "mode": "fixture",
+                    "test_values_used": False,
+                    "test_labels_used": False,
+                },
+                full_qualification_executed=False,
+                output_dir=output,
+                pre_publish_verify=lambda: verified.append(True),
+            )
+
+            self.assertEqual(len(hashes), 8)
+            self.assertEqual(len(tuple(output.iterdir())), 9)
+            self.assertEqual(verified, [True])
+
     def test_smoke_covers_every_missingness_regime_before_finalization(
         self,
     ) -> None:

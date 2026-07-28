@@ -775,7 +775,7 @@ def _finalize_outputs(
     output_dir: Path,
     pre_publish_verify: Callable[[], None] | None,
 ) -> Mapping[str, str]:
-    """Task 5 connection seam for rendering and atomic publication."""
+    """Render and atomically publish the complete Exp414 artifact set."""
     try:
         from .publication import publish_payloads
         from .reporting import render_payloads
