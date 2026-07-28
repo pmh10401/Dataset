@@ -128,3 +128,247 @@ precision과 mean dataset F1은
 retrospective 결과다. 반도체 현장 또는 prospective 성능이 아니며,
 Standard·Priority의 사람이 확인한 결과를 합친 human-assisted 성능도
 아니다.
+
+## 6. Exp403-409가 제공한 증거
+
+Exp403-408은 하나의 새 모델로 기존 운영 정책을 교체하는 실험이 아니다.
+기존 feature의 안정성, 자동 Hard의 confidence와 하향 가능성, 새로운
+Shadow score, 독립 근거의 합의를 순서대로 분리해 검증한 묶음이다.
+
+| 실험 | 질문 | 현재 결론 |
+|---|---|---|
+| Exp403 | 9개 FeatureBlock이 정상 TRAIN에서 안정적인가? | feature별 결측·상수·중복·fold 안정성을 감사해 이후 근거의 품질을 확인하되, 그 자체를 새 routing 정책으로 사용하지 않음 |
+| Exp404 | 기존 automatic Hard에 TRAIN-only confidence를 붙일 수 있는가? | 정상성 confidence 위원회의 등급을 보조 진단으로 사용하며 기존 Hard를 자동 변경하지 않음 |
+| Exp405 | 낮은 confidence Hard를 안전하게 하향할 수 있는가? | 재확인 473개 중 실제 TP 395, FP 78이어서 TP 손실이 지나치게 큼; 자동 demotion gate 실패 |
+| Exp406 | tri-view self-supervised 표현이 놓친 이상 후보를 찾는가? | 시간·주파수·잔차 표현의 새 근거지만 human-assisted review-only Shadow |
+| Exp407 | 정상 TRAIN으로 만든 합성 이상이 놓친 이상 후보를 찾는가? | 합성 교란 기반의 보조 근거지만 human-assisted review-only Shadow |
+| Exp408 | 서로 독립적인 근거의 합의가 후보 품질을 보장하는가? | 가장 엄격한 변형도 62개 중 TP 29, FP 33으로 자동 경보 승격 근거가 부족함 |
+| Exp409 | 고정 계약을 label-blind하게 재실행할 준비가 되었는가? | representative smoke에서 label isolation, lane 불변성, budget, provenance를 확인했지만 성능은 평가하지 않음 |
+
+Exp405의 결과는 “재확인”을 곧 “오경보”로 간주할 수 없음을 보여 준다.
+473개 중 395개가 실제 TP이므로 이를 자동으로 내리면 false alarm 78개를
+줄이는 대신 이미 맞힌 이상을 대량으로 잃는다. Exp405는 실제 lane 변경이
+아닌 counterfactual 진단으로 남는다.
+
+Exp408의 가장 엄격한 변형은
+`two_new_plus_existing_independent`, alpha `0.005`다. 사후 평가에서 후보
+62개 중 TP 29, FP 33, retrospective precision 46.77%였다. 이 평가는
+동결 prediction이 끝난 뒤 연구 분석을 위해 정답과 비교한 것이며 TEST
+정답이 prediction 입력으로 들어간 것은 아니다. 동시에 이 결과를 보고
+variant나 alpha를 다시 고르는 것도 허용되지 않는다. 해당 후보는 계속
+review-only다.
+
+Exp409 smoke는 8개 대표 데이터셋에서 같은 고정 variant와 alpha를
+실행했고 후보는 0개였다. 보고서의 성능 상태는 `not_evaluated`,
+`prospective_validated: false`, `deployment_eligible: false`,
+`operational_policy_changed: false`다. 즉 Exp409가 입증한 것은 실행
+준비성과 실패 폐쇄(fail-closed) 거버넌스이지 이상 탐지 성능이 아니다.
+
+이 해석의 직접 근거는
+[Exp403-408 설계](superpowers/specs/2026-07-27-exp403-408-feature-ml-validation-design.md),
+[Exp408 구현 보고](../.superpowers/sdd/2026-07-27-exp403-408-feature-ml-validation/task-10-report.md),
+[독립 재집계 보고](/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/EXP403_408_RESULT_REPORT_KO.md),
+[Exp409 설계](superpowers/specs/2026-07-28-exp409-prospective-readiness-design.md),
+[Exp409 smoke 보고](/Users/mac/Documents/Dataset/exp409_prospective_readiness_smoke/EXP409_READINESS_REPORT_KO.md)다.
+
+## 7. 반복 실험에서 확정된 교훈
+
+### 후보를 넓히는 것 자체는 개선이 아니다
+
+global replacement와 여러 source의 단순 union은 놓친 이상을 추가로 찾을
+수 있지만 정상 후보도 훨씬 빠르게 늘리는 경우가 반복되었다. 따라서 새
+후보의 개수나 TP만 보지 않고 FP, review workload, 기존 lane과의 중복을
+함께 평가해야 한다.
+
+### model-hard에는 새로운 score 표현이 필요하다
+
+model-hard 데이터셋은 현재 score 공간에서 이상 샘플이 정상보다 위로
+올라오지 않는 문제다. 순서가 잘못된 상태에서 threshold만 이동하면 이상
+대신 정상 경보가 늘어난다. 이런 집합에는 시간·주파수·형상 등 다른
+representation이 필요하며, 그 표현도 TEST 성능으로 선택해서는 안 된다.
+
+### 작은 TRAIN은 calibration의 해상도를 제한한다
+
+TRAIN 샘플이 매우 적으면 empirical 또는 conformal p-value가 취할 수 있는
+값 자체가 거칠다. 예를 들어 정상 TRAIN이 몇 개뿐이면 작은 alpha를 정밀하게
+구분할 근거가 없다. 낮은 p-value가 계산됐다는 사실만으로 높은 confidence를
+주지 않고 작은 TRAIN을 별도 불확실성으로 표시해야 한다.
+
+### review도 무제한 자원이 아니다
+
+review-only는 자동 경보보다 안전하지만 비용이 0이라는 뜻은 아니다.
+사람에게 수천 개 후보를 넘기면 중요한 후보를 놓치거나 검토가 중단될 수
+있다. review budget은 성능 점수를 보고 상위 후보를 고르는 장치가 아니라,
+예산을 넘으면 공개를 중단하는 운영 gate로 사용한다.
+
+### family별 과거 TEST 성능은 routing 입력이 아니다
+
+특정 family에서 어떤 source가 과거 TEST에서 좋았다는 사실을 이용해 새
+prediction source를 고르면 TEST 정답이 간접적으로 설정에 반영된다.
+family는 grouped evaluation과 error analysis에는 사용할 수 있지만 과거
+family별 TEST 성능 기반 자동 routing에는 사용할 수 없다.
+
+### tail replacement는 금지한다
+
+과거 tail replacement는 현재 합성 평가셋에서 이상이 뒤쪽에 놓이는 배열
+특성을 이용한다. 이는 실제 설비에서도 유지된다고 보장할 수 없는 TEST
+layout 정보이므로 배포 가능한 탐지 규칙이 아니라 leakage에 가깝다.
+[프로젝트 작업 기록](task.md)도 Exp91/92 tail replacement를 운영 사용에
+부적합한 것으로 명시한다.
+
+### 파일 존재와 재현 가능한 checkpoint는 다르다
+
+checkpoint 파일이 남아 있어도 입력 artifact, 코드, 설정의 hash 계보를
+다시 확인할 수 없다면 안전하게 이어 실행할 수 없다.
+[Exp403-408 checkpoint provenance 감사](EXP403_408_CHECKPOINT_PROVENANCE_AUDIT_KO.md)는
+기존 data-stage checkpoint의 입력 hash를 현재 파일로 재현하지 못했으므로
+직접 resume하지 말고 필요한 stage를 새 output에서 재실행하도록 결론냈다.
+
+## 8. 성능 주장과 해석의 경계
+
+서로 다른 종류의 성능을 한 숫자로 합치지 않는다.
+
+| 구분 | 의미 | 현재 허용되는 표현 |
+|---|---|---|
+| Autonomous | 정답을 본 사람의 개입 없이 생성·실행되는 경보 | 동결 Hard의 retrospective 자동 결과 |
+| Retrospective | 현재 동결 TEST의 정답으로 사후 평가 | 벤치마크 안의 비교와 실패 진단 |
+| Human-assisted | review 후보를 사람이 완벽히 판별한다고 가정한 상한·보조 지표 | `mean_combined_f1`처럼 사람 개입을 명시한 결과 |
+
+이 구분에 따라 다음 경계를 지킨다.
+
+1. `mean_combined_f1`은 autonomous 성능이 아니다.
+2. Standard, Priority와 Shadow 후보는 자동 경보로 승격하지 않는다.
+3. 현재 벤치마크 결과는 반도체 설비 현장 성능이 아니다.
+4. Exp409 smoke는 prospective 성능 검증이 아니다.
+5. retrospective TEST-label 분석은 동결 결과를 설명할 수는 있지만 다음
+   prediction 설정을 선택하는 입력이 될 수 없다.
+
+## 9. 앞으로의 연구 방향
+
+신규 실데이터가 영구적으로 없는 상황에서는 현재 데이터 안에서 학습·선택과
+평가의 독립성을 더 엄격하게 만드는 것이 현실적인 방향이다.
+
+| 방법 | 쉬운 예 | 줄이려는 위험 |
+|---|---|---|
+| family-grouped validation | `ShapesAll` 계열을 쪼개 학습·평가 양쪽에 넣지 않고 family 전체를 한쪽 fold에 둠 | family 유사성 누수와 큰 family의 과대대표 |
+| nested validation | 안쪽 fold에서 alpha·threshold를 고르고 바깥 fold는 최종 평가에만 사용 | TEST를 본 뒤 설정을 재선택하는 과적합 |
+| overlap-aware reporting | 정상 중복이 높은 집합과 낮은 집합의 결과를 따로 보고 전체 평균과 함께 제시 | TRAIN/TEST 정확 중복이 만드는 낙관적 해석 |
+| uncertainty-aware reporting | 이상 1개인 데이터셋과 충분한 이상이 있는 데이터셋을 분리하고 신뢰구간·민감도를 제시 | 작은 분모에 의한 F1 급변 |
+
+예를 들어 ShapesAll의 여러 one-vs-all 데이터셋을 무작위로 나누면 매우
+비슷한 원자료 계열이 개발 fold와 평가 fold 양쪽에 들어갈 수 있다.
+family-grouped validation은 ShapesAll 전체를 같은 fold에 두어 “본 적 없는
+family에 얼마나 버티는가”를 더 엄격하게 본다.
+
+nested validation에서는 안쪽 fold만 사용해 여러 alpha 중 하나를 고른다.
+선택이 끝난 뒤 바깥 fold를 딱 한 번 평가한다. 바깥 결과가 마음에 들지
+않는다고 alpha를 다시 고르면 바깥 fold도 사실상 TRAIN이 되므로 새 실험과
+사전등록 없이 변경하지 않는다.
+
+이 네 방법은 신규 데이터에 대한 진정한 prospective validation을
+대체하지 않는다. 추가 데이터를 얻을 수 없는 조건에서 family 반복,
+정상 중복, 설정 선택 과적합, 작은 표본의 불확실성을 숨기지 않는 엄격한
+retrospective 연구 방식이다.
+
+## 10. 후속 작업의 불변 원칙
+
+- prediction 단계에서 TEST label과 실제 이상 위치를 사용하지 않는다.
+- 과거 family별 TEST 성능으로 source나 routing을 선택하지 않는다.
+- feature, score, calibration, alpha와 threshold는 정상 TRAIN 근거로
+  결정한다.
+- `mean_combined_f1`은 human-assisted 지표로만 취급한다.
+- Standard, Priority review와 Shadow 후보를 automatic Hard로 승격하지
+  않는다.
+- tail replacement를 사용하지 않는다.
+- TEST 결과를 본 뒤 alpha, threshold, source, review budget을 재선택하지
+  않는다.
+- 새 개선은 새 실험 번호와 사전등록으로 분리한다.
+- 기존 Hard, Standard, Priority lane과 동결 artifact를 새 실험이 조용히
+  덮어쓰지 못하게 한다.
+
+## 11. 근거 문서 지도
+
+처음 프로젝트를 이어받는 사람은 모든 문서를 시간순으로 읽기보다 목적에
+맞는 최소 묶음부터 읽는 편이 안전하다.
+
+### 복원과 현재 상태
+
+- [Exp403-408 handoff](HANDOFF_20260728_EXP403_408_KO.md)
+- [다른 Mac 재개 프롬프트](RESUME_PROMPT_OTHER_PC_KO.md)
+- [Exp403-408 checkpoint provenance 감사](EXP403_408_CHECKPOINT_PROVENANCE_AUDIT_KO.md)
+
+### 데이터 품질과 평가 난이도
+
+- [이상치 검증 난이도 보고서](anomaly_validation_difficulty_report_20260707.md)
+- [실험 일관성 감사](experiment_consistency_audit_20260707.md)
+- [과거 데이터 구조 감사 기록](archive/task_history_20260709_before_compaction.md)
+
+### 역사적 연구 결과와 해석 변화
+
+- [초기 README](../README.md)
+- [실험 39-50 결과 분석](experiment_39_50_results_analysis_20260707.md)
+- [model-hard 대응 연구](model_hard_response_research_20260707.md)
+- [Exp381-385 결과](EXP381_385_RESULTS_KO.md)
+
+### Exp403-408 설계·실행·결과
+
+- [설계 명세](superpowers/specs/2026-07-27-exp403-408-feature-ml-validation-design.md)
+- [실행 runbook](EXP403_408_RUNBOOK_KO.md)
+- [Exp407 구현 보고](../.superpowers/sdd/2026-07-27-exp403-408-feature-ml-validation/task-9-report.md)
+- [Exp408 구현 보고](../.superpowers/sdd/2026-07-27-exp403-408-feature-ml-validation/task-10-report.md)
+- [독립 재집계 구현 보고](../.superpowers/sdd/2026-07-27-exp403-408-feature-ml-validation/task-12-report.md)
+- [최종 검증 보고](../.superpowers/sdd/2026-07-27-exp403-408-feature-ml-validation/task-13-report.md)
+
+현재 Mac의 전체 결과 보고서는
+`/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/EXP403_408_RESULT_REPORT_KO.md`에
+있다. 이 절대 경로는 다른 컴퓨터에서는 달라질 수 있다.
+
+### Exp409 설계·실행·준비성
+
+- [사전등록](EXP409_PREREGISTRATION_KO.md)
+- [실행 runbook](EXP409_RUNBOOK_KO.md)
+- [설계 명세](superpowers/specs/2026-07-28-exp409-prospective-readiness-design.md)
+
+현재 Mac의 representative smoke 보고서는
+`/Users/mac/Documents/Dataset/exp409_prospective_readiness_smoke/EXP409_READINESS_REPORT_KO.md`에
+있다. 이 보고서는 성능표가 아니라 준비성 검증 기록이다.
+
+### 새 실험 작성 규칙
+
+- 먼저 현재 문서의 [후속 작업의 불변 원칙](#10-후속-작업의-불변-원칙)을
+  확인한다.
+- 새 가설은 기존 동결 결과를 수정하지 않고 새 실험 번호로 분리한다.
+- prediction 입력, 고정 parameter grid, gate, claim boundary를 실행 전에
+  사전등록한다.
+- 구현 명령과 실패 폐쇄 조건은 별도의 runbook으로 남긴다.
+
+## 12. 알려진 문서 결손과 충돌 처리
+
+`docs/EXP403_408_PREREGISTRATION_KO.md`는 handoff에서 먼저 읽을 문서로
+참조되지만 현재 working tree와 확인 가능한 전체 Git 이력에는 없다. 이
+문서를 임의로 복원하거나 존재하는 근거처럼 인용하지 않는다. Exp403-408에
+대해서는 현재 남아 있는 설계 명세, runbook, 구현 보고, 동결 결과로 확인
+가능한 범위만 사용한다.
+
+초기 [README](../README.md)의 947개 데이터셋은 초기 VAE 연구 단계의
+역사적 모집단이다. 현재 비교 기준은 1,117개 동결 모집단이다. 두 숫자를
+하나가 틀린 것으로 합치지 않고 각각 당시 범위와 현재 범위로 구분한다.
+
+Exp409 설계의 “genuinely new data가 도착할 때”라는 전제도 당시 준비성
+설계의 역사적 가정으로 보존한다. 그러나 신규 반도체 실데이터가 영구적으로
+없다는 현재의 확정 조건 때문에 이는 실행 가능한 다음 연구 계획이 아니다.
+Exp409 산출물은 governance smoke로는 재사용할 수 있지만 prospective 성능
+증거로는 사용할 수 없다.
+
+문서나 수치가 충돌할 때는 다음 순서로 확인한다.
+
+1. 동결된 결과 artifact와 독립 감사 보고서
+2. 해당 실험의 사전등록 문서와 실행 runbook
+3. handoff와 재개 문서
+4. 과거 시점의 종합 보고서
+5. 초기 README
+
+다만 사전등록은 “무엇을 하기로 했는가”, 결과 보고서는 “실제로 무엇이
+나왔는가”에 대한 근거다. 결과로 과거 계획을 바꾸거나, 계획으로 실제 결과를
+덮지 않는다. 확인할 원문이 없으면 기억으로 보완하지 않고 “미확인” 또는
+“문서 결손”으로 표시한다.
