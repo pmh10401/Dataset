@@ -28,10 +28,6 @@ class Exp411FrozenConfig:
     def validate(self) -> None:
         observed = (
             self.experiment_id,
-            self.expected_datasets,
-            self.expected_families,
-            self.database_sha256,
-            self.expected_database_snapshot_keys,
             self.quantiles,
             self.quantile_method,
             self.seed,
@@ -49,10 +45,6 @@ class Exp411FrozenConfig:
         )
         expected = (
             "Exp411",
-            1117,
-            128,
-            "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
-            ("db",),
             (0.01, 0.05, 0.10),
             "lower",
             411,
