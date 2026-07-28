@@ -7,11 +7,12 @@
 ## 1. 배경
 
 Exp411은 정상 TRAIN과 TRAIN-only 합성 교란만으로 near-repeat 정상 규칙의
-자격을 심사하도록 사전등록되었다. 1,117개 전체 실행은 186개 dataset을
-완료한 뒤 `DodgerLoopDay_normal_1`의 비유한 정상 TRAIN 값 때문에
-fail-closed로 중단되었다. 최종 Exp411 산출물은 게시되지 않았고 기존
-Hard 2,218, Standard 806, Priority 31, exact-normal 35와 기존 prediction은
-변경되지 않았다.
+자격을 심사하도록 사전등록되었다. 1,117개 전체 실행은 187개의 검증 가능한
+dataset record를 쓴 뒤 `DodgerLoopDay_normal_1`의 비유한 정상 TRAIN 값
+때문에 fail-closed로 중단되었다. `progress.json`은 마지막 record 이후
+갱신되기 전 중단되어 186개로 남아 있다. 최종 Exp411 산출물은 게시되지
+않았고 기존 Hard 2,218, Standard 806, Priority 31, exact-normal 35와 기존
+prediction은 변경되지 않았다.
 
 읽기 전용 TRAIN 전수 검사에서는 동결 DB와 모집단에서 다음 입력 품질
 상태가 확인되었다.
@@ -182,9 +183,10 @@ dataset만 새로 계산하며 전체 실행을 실패시키지 않는다. 그�
 않은 record를 사용하거나 migration 검증 자체가 불완전하면 fail-closed로
 종료한다.
 
-기존 Exp411 완료분 186개는 모두 결측 최초 실패 지점 이전의 dataset이다.
-실제 이전 가능 개수는 구현된 검증기가 결정하며 186개를 성공 조건으로
-가정하지 않는다.
+기존 Exp411의 검증 가능한 dataset record 187개는 모두 결측 최초 실패
+지점 이전의 dataset이다. 실제 이전 가능 개수는 구현된 검증기가 결정하며
+187개를 성공 조건으로 가정하지 않는다. stale `progress.json`의 186이라는
+값은 migration coverage 근거로 사용하지 않는다.
 
 ## 10. Backend와 실행 계약
 
