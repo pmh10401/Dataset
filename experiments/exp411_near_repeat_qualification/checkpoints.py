@@ -85,6 +85,19 @@ class CheckpointStore:
             }
         )
 
+    def load_dataset_record(self, dataset: str) -> Mapping[str, object]:
+        name = str(dataset)
+        if name not in self.expected_datasets:
+            raise ValueError(
+                "Exp411 checkpoint dataset is outside the universe"
+            )
+        records = self._load_records()
+        if name not in records:
+            raise ValueError(
+                f"Exp411 checkpoint dataset is not completed: {name}"
+            )
+        return MappingProxyType(dict(records[name]))
+
     def write_dataset(
         self,
         row: DatasetQualification,

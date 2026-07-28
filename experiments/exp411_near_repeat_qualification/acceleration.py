@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass
 from hashlib import sha256
 import math
 import os
+from pathlib import Path
 import platform
 
 import numpy as np
@@ -48,6 +49,16 @@ _NESTED_THREAD_VARIABLES = (
     "VECLIB_MAXIMUM_THREADS",
     "NUMEXPR_NUM_THREADS",
 )
+
+
+def acceleration_contract_sha256() -> str:
+    source_sha256 = sha256(Path(__file__).read_bytes()).hexdigest()
+    material = (
+        source_sha256
+        + "\n"
+        + repr(sorted(ACCELERATION_POLICY.to_payload().items()))
+    ).encode("utf-8")
+    return sha256(material).hexdigest()
 
 
 def configure_runtime(
@@ -390,6 +401,7 @@ def _compiled_pair_distances(numba: object) -> object:
 __all__ = [
     "ACCELERATION_POLICY",
     "AccelerationPolicy",
+    "acceleration_contract_sha256",
     "audit_dataset_pairs",
     "boundary_safe_minimum",
     "boundary_safe_threshold",

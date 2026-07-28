@@ -10,7 +10,11 @@ import sqlite3
 from time import perf_counter
 from urllib.parse import quote
 
-from .acceleration import ACCELERATION_POLICY, configure_runtime
+from .acceleration import (
+    ACCELERATION_POLICY,
+    acceleration_contract_sha256,
+    configure_runtime,
+)
 from .config import FROZEN_CONFIG
 from .inputs import (
     _load_one_dataset,
@@ -173,6 +177,7 @@ def run_fixed_train_benchmark(db_path: Path) -> Mapping[str, object]:
         "benchmark_datasets": rows,
         "runtime": runtime,
         "database_snapshot": dict(before),
+        "acceleration_contract_sha256": acceleration_contract_sha256(),
     }
     require_acceleration_adoption(report)
     return report

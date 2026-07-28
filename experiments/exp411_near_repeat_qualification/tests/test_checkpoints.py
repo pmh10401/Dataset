@@ -99,6 +99,35 @@ class CheckpointTests(unittest.TestCase):
                 (),
             )
 
+    def test_resume_metadata_exposes_train_hash_and_backend_audit(self) -> None:
+        with TemporaryDirectory() as raw:
+            store = CheckpointStore(
+                Path(raw) / "checkpoint",
+                _provenance(),
+                ("Alpha_normal_0",),
+            )
+            store.write_dataset(_row(), _audit(), "7" * 64, 1.25)
+
+            record = store.load_dataset_record("Alpha_normal_0")
+
+            self.assertEqual(
+                record["dataset_train_identity_sha256"],
+                "7" * 64,
+            )
+            self.assertEqual(record["backend_audit"], _audit())
+            self.assertEqual(record["qualification"], _row())
+
+    def test_resume_metadata_rejects_unknown_dataset(self) -> None:
+        with TemporaryDirectory() as raw:
+            store = CheckpointStore(
+                Path(raw) / "checkpoint",
+                _provenance(),
+                ("Alpha_normal_0",),
+            )
+
+            with self.assertRaisesRegex(ValueError, "outside"):
+                store.load_dataset_record("Beta_normal_0")
+
     def test_provenance_drift_is_rejected_without_changing_checkpoint(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw) / "checkpoint"

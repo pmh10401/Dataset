@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import asdict
 from hashlib import sha256
 import json
@@ -21,6 +21,9 @@ from .backends import (
     probe_backends,
     reset_numba_benchmark_state,
 )
+from .acceleration import acceleration_contract_sha256
+from .benchmark import require_acceleration_adoption
+from .checkpoints import CheckpointProvenance, CheckpointStore
 from .config import FROZEN_CONFIG, Exp411FrozenConfig
 from .contracts import TrainRun
 from .inputs import database_snapshot, iter_train_runs
@@ -31,6 +34,87 @@ from .reporting import render_payloads
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def dataset_train_identity_sha256(runs: tuple[TrainRun, ...]) -> str:
+    if not runs:
+        raise ValueError("Exp411 TRAIN identity input is empty")
+    payload = [
+        {
+            "dataset": run.dataset,
+            "instance_index": int(run.instance_index),
+            "values_sha256": run.values_sha256,
+        }
+        for run in runs
+    ]
+    if (
+        len({row["instance_index"] for row in payload}) != len(payload)
+        or any(len(str(row["values_sha256"])) != 64 for row in payload)
+    ):
+        raise ValueError("Exp411 TRAIN identity input is invalid")
+    return sha256(canonical_json_bytes(payload)).hexdigest()
+
+
+def load_benchmark_report(path: Path) -> Mapping[str, object]:
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("Exp411 benchmark report is invalid") from error
+    if not isinstance(payload, dict):
+        raise ValueError("Exp411 benchmark report is invalid")
+    require_acceleration_adoption(payload)
+    if (
+        payload.get("acceleration_contract_sha256")
+        != acceleration_contract_sha256()
+    ):
+        raise ValueError("Exp411 benchmark acceleration contract mismatch")
+    return payload
+
+
+def _run_checkpointed_stream(
+    stream: Iterable[tuple[str, tuple[TrainRun, ...]]],
+    store: CheckpointStore,
+    *,
+    config: Exp411FrozenConfig,
+) -> list[object]:
+    completed = store.load_completed()
+    rows = []
+    observed: set[str] = set()
+    for dataset, runs in stream:
+        if dataset in observed:
+            raise ValueError(f"Exp411 streamed dataset is duplicated: {dataset}")
+        observed.add(dataset)
+        train_identity = dataset_train_identity_sha256(runs)
+        if dataset in completed:
+            record = store.load_dataset_record(dataset)
+            if record["dataset_train_identity_sha256"] != train_identity:
+                raise ValueError(
+                    f"Exp411 checkpoint TRAIN identity mismatch: {dataset}"
+                )
+            rows.append(record["qualification"])
+            continue
+        store.write_progress(current_dataset=dataset)
+        audits = []
+        started = perf_counter()
+        row = qualify_dataset(
+            dataset=dataset,
+            family=_family_from_dataset(dataset),
+            runs=runs,
+            accelerated=True,
+            backend_audit=audits,
+            config=config,
+        )
+        if len(audits) != 1:
+            raise ValueError("Exp411 dataset backend audit coverage is invalid")
+        store.write_dataset(
+            row,
+            audits[0],
+            train_identity,
+            perf_counter() - started,
+        )
+        rows.append(row)
+    store.write_progress(current_dataset=None)
+    return rows
 
 
 def load_population_manifest(
@@ -115,6 +199,9 @@ def run_full_qualification(
     db_path: Path,
     population_manifest: Path,
     output_dir: Path,
+    *,
+    checkpoint_dir: Path,
+    benchmark_report: Path,
 ) -> Mapping[str, str]:
     """Run the real 1,117-dataset qualification only after external approval."""
     FROZEN_CONFIG.validate()
@@ -124,6 +211,7 @@ def run_full_qualification(
     if output.exists():
         raise FileExistsError("Exp411 output directory must not exist")
     starting_commit = _require_clean_git()
+    benchmark_values = load_benchmark_report(benchmark_report)
     smoke_rows, baseline_seconds, baseline_trace_hash = _build_smoke_rows(
         "numpy_cpu"
     )
@@ -139,26 +227,55 @@ def run_full_qualification(
     )
     datasets = load_population_manifest(population_manifest, config=FROZEN_CONFIG)
     pinned_snapshot = database_snapshot(db_path)
-    rows = []
-    for dataset, runs in iter_train_runs(
-        db_path,
-        datasets,
-        config=FROZEN_CONFIG,
+    if dict(benchmark_values.get("database_snapshot", {})) != dict(
+        pinned_snapshot
     ):
-        rows.append(qualify_dataset(
-            dataset=dataset,
-            family=_family_from_dataset(dataset),
-            runs=runs,
+        raise ValueError("Exp411 benchmark database snapshot mismatch")
+    checkpoint_provenance = CheckpointProvenance(
+        git_commit=starting_commit,
+        database_snapshot=dict(pinned_snapshot),
+        population_manifest_sha256=sha256_file(population_manifest),
+        frozen_config_sha256=sha256(
+            canonical_json_bytes(FROZEN_CONFIG.to_payload())
+        ).hexdigest(),
+        perturbation_contract_sha256=sha256(
+            canonical_json_bytes(perturbation_contract_provenance())
+        ).hexdigest(),
+        acceleration_contract_sha256=acceleration_contract_sha256(),
+    )
+    store = CheckpointStore(
+        checkpoint_dir,
+        checkpoint_provenance,
+        datasets,
+    )
+    _run_checkpointed_stream(
+        iter_train_runs(
+            db_path,
+            datasets,
             config=FROZEN_CONFIG,
-        ))
+        ),
+        store,
+        config=FROZEN_CONFIG,
+    )
+    rows = store.require_complete(FROZEN_CONFIG.expected_families)
     aggregate = aggregate_qualification(rows, config=FROZEN_CONFIG)
     if _require_clean_git() != starting_commit:
         raise ValueError("Exp411 Git commit changed during full qualification")
+    backend = {
+        **backend,
+        "canonical_backend": "adaptive_numpy_numba_cpu",
+        "accelerated_backend_adopted": True,
+        "fallback_reason": None,
+        "fixed_train_benchmark_sha256": sha256_file(benchmark_report),
+        "acceleration_contract_sha256": acceleration_contract_sha256(),
+    }
     provenance = {
         "mode": "full_qualification",
         "git_commit": starting_commit,
         "database_snapshot": dict(pinned_snapshot),
         "population_manifest_sha256": sha256_file(population_manifest),
+        "checkpoint_provenance": checkpoint_provenance.to_payload(),
+        "fixed_train_benchmark_sha256": sha256_file(benchmark_report),
         "python_version": platform.python_version(),
         "numpy_version": np.__version__,
         "perturbation_contract": perturbation_contract_provenance(),
@@ -180,6 +297,7 @@ def run_full_qualification(
             db_path,
             pinned_snapshot,
             starting_commit,
+            store,
         ),
     )
 
@@ -375,14 +493,19 @@ def _require_full_state(
     db_path: Path,
     expected_snapshot: Mapping[str, str],
     expected_commit: str,
+    checkpoint_store: CheckpointStore | None = None,
 ) -> None:
     if dict(database_snapshot(db_path)) != dict(expected_snapshot):
         raise ValueError("Exp411 SQLite snapshot changed before publication")
     if _require_clean_git() != expected_commit:
         raise ValueError("Exp411 Git commit changed before publication")
+    if checkpoint_store is not None:
+        checkpoint_store.require_complete(FROZEN_CONFIG.expected_families)
 
 
 __all__ = [
+    "dataset_train_identity_sha256",
+    "load_benchmark_report",
     "load_population_manifest",
     "run_full_qualification",
     "run_representative_smoke",
