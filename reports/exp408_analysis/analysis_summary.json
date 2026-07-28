@@ -1,0 +1,67 @@
+{
+  "generated_at": "2026-07-28T09:57:22.710633+09:00",
+  "quality_checks": [
+    {
+      "check": "variant metric grid",
+      "observed": 22340,
+      "expected": 22340,
+      "status": "PASS"
+    },
+    {
+      "check": "metric grain duplicates",
+      "observed": 0,
+      "expected": 0,
+      "status": "PASS"
+    },
+    {
+      "check": "metric null cells",
+      "observed": 0,
+      "expected": 0,
+      "status": "PASS"
+    },
+    {
+      "check": "candidate grain duplicates",
+      "observed": 0,
+      "expected": 0,
+      "status": "PASS"
+    },
+    {
+      "check": "consensus summary grid",
+      "observed": 5585,
+      "expected": 5585,
+      "status": "PASS"
+    },
+    {
+      "check": "candidate arithmetic violations",
+      "observed": 0,
+      "expected": 0,
+      "status": "PASS"
+    },
+    {
+      "check": "candidate-to-metric reconciliation",
+      "observed": 0,
+      "expected": 0,
+      "status": "PASS"
+    }
+  ],
+  "eligibility": {
+    "robust_distance": 316,
+    "classical_committee": 138,
+    "learned_methods": 501,
+    "abstain": 162
+  },
+  "source_abstention_reasons": {
+    "n_train_below_50": 2464,
+    "source_abstained": 1426,
+    "source_train_count_mismatch": 561
+  },
+  "top10_strict_candidate_share": 0.4482758620689655,
+  "strict_alpha_0_01": {
+    "datasets": 1117,
+    "strict_candidates": 174,
+    "strict_precision": 0.4425287356321839,
+    "strict_tp": 77,
+    "zero_f1_recovered": 2,
+    "available_source_rate": 0.6934784105777839
+  }
+}
