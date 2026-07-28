@@ -49,6 +49,15 @@ class RunnerTests(unittest.TestCase):
             backend["baseline_tag_sha256"],
             backend["canonical_tag_sha256"],
         )
+        self.assertIn("query_identity", backend["trace_contract"])
+        self.assertIn("numba_cold_stage_seconds", backend["timing"])
+        self.assertIn("numba_warm_stage_seconds", backend["timing"])
+        for assessment in backend["assessments"].values():
+            if "candidate_trace_sha256" in assessment:
+                self.assertEqual(
+                    assessment["candidate_trace_sha256"],
+                    backend["baseline_tag_sha256"],
+                )
         self.assertEqual(
             set(summary["provenance"]["smoke_coverage"]["identity_regimes"]),
             {"abstain_lt5", "logo_5_19", "five_fold_20_plus"},

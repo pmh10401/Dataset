@@ -33,8 +33,9 @@ git status --short --branch
 ```
 
 NumPy CPU는 정본과 fallback이다. Numba CPU JIT와 PyTorch CPU는 동일
-32-dataset stage에서 수치·tag·선택 quantile parity와 최소 1.1배 속도
-gate를 평가하며 Numba cold/warm 시간을 따로 기록한다. 전체 population
+32-dataset stage에서 수치·query identity/index별 tag·선택 quantile parity와
+최소 1.1배 속도 gate를 평가하며 Numba 전체 stage cold/warm 시간을 따로
+기록한다. 이 평가는 실제 DB를 열기 전에 끝나야 한다. 전체 population
 parity가 동결되기 전에는 가속 backend를 채택하지 않는다. PyTorch MPS가
 unavailable이면 이유를 기록하고 CPU를 사용한다. 사용자 결정에 따라 MLX는
 제외하며 설치·import·benchmark하지 않는다.
@@ -152,7 +153,7 @@ budget을 바꾸어 재선택하지 않는다. `no_qualified_near_rule`은 유�
 대표 smoke, manifest hash 검증이 모두 통과하고 사용자가 이 전체 실행을
 별도로 명시 승인했을 때만 실행한다. output은 미리 존재하면 안 된다.
 loader는 dataset 하나씩 처리하고 해제하며, self-excluded 거리는 bounded
-chunk 행렬로 계산한다.
+block의 직접 elementwise 차분으로 계산한다.
 
 ```bash
 .venv/bin/python scratch/run_exp411_near_repeat_qualification.py \

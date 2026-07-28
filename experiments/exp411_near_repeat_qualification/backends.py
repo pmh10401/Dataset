@@ -59,6 +59,11 @@ def _numba_kernel() -> object:
     return _NUMBA_KERNEL
 
 
+def reset_numba_benchmark_state() -> None:
+    global _NUMBA_KERNEL
+    _NUMBA_KERNEL = None
+
+
 def pairwise_rms(
     fit: object,
     query: object,
@@ -249,4 +254,5 @@ __all__ = [
     "assess_backend",
     "pairwise_rms",
     "probe_backends",
+    "reset_numba_benchmark_state",
 ]

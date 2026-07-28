@@ -44,21 +44,24 @@ def cpu_pairwise_rms(
         or int(chunk_rows) < 1
     ):
         raise ValueError("Exp411 RMS inputs must be finite compatible matrices")
-    output = np.empty(len(query_values), dtype=np.float64)
-    fit_norm = np.einsum("ij,ij->i", fit_values, fit_values)
+    output = np.full(len(query_values), np.inf, dtype=np.float64)
     width = fit_values.shape[1]
     for start in range(0, len(query_values), int(chunk_rows)):
         query_chunk = query_values[start : start + int(chunk_rows)]
-        query_norm = np.einsum("ij,ij->i", query_chunk, query_chunk)
-        squared = (
-            query_norm[:, None]
-            + fit_norm[None, :]
-            - 2.0 * (query_chunk @ fit_values.T)
+        fit_block_rows = max(
+            1,
+            min(
+                len(fit_values),
+                1_000_000 // max(1, len(query_chunk) * width),
+            ),
         )
-        np.maximum(squared, 0.0, out=squared)
-        output[start : start + len(query_chunk)] = np.sqrt(
-            squared.min(axis=1) / width
-        )
+        best = np.full(len(query_chunk), np.inf, dtype=np.float64)
+        for fit_start in range(0, len(fit_values), fit_block_rows):
+            fit_chunk = fit_values[fit_start : fit_start + fit_block_rows]
+            delta = query_chunk[:, None, :] - fit_chunk[None, :, :]
+            squared = np.mean(delta * delta, axis=2)
+            best = np.minimum(best, squared.min(axis=1))
+        output[start : start + len(query_chunk)] = np.sqrt(best)
     return output
 
 
@@ -76,23 +79,27 @@ def cpu_self_excluded_rms(
         or int(chunk_rows) < 1
     ):
         raise ValueError("Exp411 self-excluded RMS inputs are invalid")
-    output = np.empty(len(values), dtype=np.float64)
-    fit_norm = np.einsum("ij,ij->i", values, values)
+    output = np.full(len(values), np.inf, dtype=np.float64)
     width = values.shape[1]
     for start in range(0, len(values), int(chunk_rows)):
         query = values[start : start + int(chunk_rows)]
-        query_norm = np.einsum("ij,ij->i", query, query)
-        squared = (
-            query_norm[:, None]
-            + fit_norm[None, :]
-            - 2.0 * (query @ values.T)
+        fit_block_rows = max(
+            1,
+            min(
+                len(values),
+                1_000_000 // max(1, len(query) * width),
+            ),
         )
-        np.maximum(squared, 0.0, out=squared)
-        local = np.arange(len(query))
-        squared[local, start + local] = np.inf
-        output[start : start + len(query)] = np.sqrt(
-            squared.min(axis=1) / width
-        )
+        best = np.full(len(query), np.inf, dtype=np.float64)
+        query_indices = np.arange(start, start + len(query))
+        for fit_start in range(0, len(values), fit_block_rows):
+            fit = values[fit_start : fit_start + fit_block_rows]
+            delta = query[:, None, :] - fit[None, :, :]
+            squared = np.mean(delta * delta, axis=2)
+            fit_indices = np.arange(fit_start, fit_start + len(fit))
+            squared[query_indices[:, None] == fit_indices[None, :]] = np.inf
+            best = np.minimum(best, squared.min(axis=1))
+        output[start : start + len(query)] = np.sqrt(best)
     return output
 
 

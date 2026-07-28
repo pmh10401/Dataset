@@ -19,6 +19,23 @@ class DistanceTests(unittest.TestCase):
             np.asarray([np.sqrt(12.5), np.sqrt(0.5), np.sqrt(0.5)]),
             atol=1e-12,
         )
+
+    def test_chunked_rms_preserves_small_delta_at_large_offset(self) -> None:
+        fit = np.asarray([[1e9, 1e9]])
+        query = np.asarray([[1e9 + 0.5, 1e9 + 0.5]])
+        np.testing.assert_allclose(
+            cpu_pairwise_rms(fit, query, chunk_rows=1),
+            np.asarray([0.5]),
+            atol=1e-12,
+        )
+        rows = np.asarray(
+            [[1e9, 1e9], [1e9 + 0.5, 1e9 + 0.5]]
+        )
+        np.testing.assert_allclose(
+            cpu_self_excluded_rms(rows, chunk_rows=1),
+            np.asarray([0.5, 0.5]),
+            atol=1e-12,
+        )
     def test_views_have_expected_widths_and_finite_values(self) -> None:
         rows = np.asarray([[0.0, 1.0, 2.0, 3.0], [0.0, 1.1, 2.0, 3.0]])
         views = view_matrices(rows)

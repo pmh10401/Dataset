@@ -77,7 +77,8 @@ group으로 묶는다. 같은 group은 fit과 query로 갈라지지 않는다.
 view는 사용할 수 없다. query 거리는 같은 길이의 다른 fit identity
 group까지의 최소 거리다. reference도 자기 identity group 전체를 제외한
 동일 계산으로 만든다. 전체 거리 tensor를 반복 생성하지 않고 결정론적
-chunked squared-distance 행렬로 같은 수학적 최솟값을 계산한다.
+bounded block에서 원래의 elementwise 차분 제곱을 직접 계산한다. 큰
+offset에서 상쇄 오차를 만드는 Gram 항등식은 사용하지 않는다.
 
 quantile은 결과를 보기 전에 `0.01`, `0.05`, `0.10`으로 고정하고
 `method="lower"`를 쓴다. `near_qXX`는 다음을 모두 만족해야 한다.
@@ -114,8 +115,9 @@ frequency_warp / phase_order`를 held-out 정상 TRAIN query에 적용한다.
 ## 6. Backend 결정
 
 NumPy CPU가 정본이자 항상 가능한 fallback이다. Numba CPU JIT와 PyTorch
-CPU는 32-dataset 동일 입력 stage의 거리·tag·선택 quantile parity와
-end-to-end 시간을 평가한다. Numba는 cold/warm 시간을 따로 기록한다.
+CPU는 32-dataset 동일 입력 stage의 거리·query identity/index별 tag·선택
+quantile parity와 end-to-end 시간을 평가한다. Numba는 첫 전체 stage의
+cold 시간과 두 번째 전체 stage의 warm 시간을 따로 기록한다.
 PyTorch MPS는 build와 device 가용성을 probe하고, 사용할 수 없으면 이유를
 기록한 뒤 CPU로 닫힌다. 전체 population parity가 동결되기 전에는 가속
 후보가 smoke speed gate를 통과해도 NumPy CPU를 정본으로 유지한다.

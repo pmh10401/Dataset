@@ -15,7 +15,12 @@ import numpy as np
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes, sha256_file
 
-from .backends import assess_backend, pairwise_rms, probe_backends
+from .backends import (
+    assess_backend,
+    pairwise_rms,
+    probe_backends,
+    reset_numba_benchmark_state,
+)
 from .config import FROZEN_CONFIG, Exp411FrozenConfig
 from .contracts import TrainRun
 from .inputs import database_snapshot, iter_train_runs
@@ -62,7 +67,7 @@ def run_representative_smoke(output_dir: Path) -> Mapping[str, str]:
         raise FileNotFoundError("Exp411 output parent does not exist")
     if output.exists():
         raise FileExistsError("Exp411 output directory must not exist")
-    rows, baseline_seconds = _build_smoke_rows("numpy_cpu")
+    rows, baseline_seconds, baseline_trace_hash = _build_smoke_rows("numpy_cpu")
     aggregate = aggregate_qualification(
         rows,
         bootstrap_iterations=20,
@@ -85,7 +90,11 @@ def run_representative_smoke(output_dir: Path) -> Mapping[str, str]:
             ],
         },
     }
-    backend = _build_backend_assessment(rows, aggregate, baseline_seconds)
+    backend = _build_backend_assessment(
+        aggregate,
+        baseline_seconds,
+        baseline_trace_hash,
+    )
     payloads = render_payloads(
         rows,
         aggregate,
@@ -109,7 +118,25 @@ def run_full_qualification(
 ) -> Mapping[str, str]:
     """Run the real 1,117-dataset qualification only after external approval."""
     FROZEN_CONFIG.validate()
+    output = Path(output_dir)
+    if not output.parent.is_dir():
+        raise FileNotFoundError("Exp411 output parent does not exist")
+    if output.exists():
+        raise FileExistsError("Exp411 output directory must not exist")
     starting_commit = _require_clean_git()
+    smoke_rows, baseline_seconds, baseline_trace_hash = _build_smoke_rows(
+        "numpy_cpu"
+    )
+    smoke_aggregate = aggregate_qualification(
+        smoke_rows,
+        bootstrap_iterations=20,
+        config=FROZEN_CONFIG,
+    )
+    backend = _build_backend_assessment(
+        smoke_aggregate,
+        baseline_seconds,
+        baseline_trace_hash,
+    )
     datasets = load_population_manifest(population_manifest, config=FROZEN_CONFIG)
     pinned_snapshot = database_snapshot(db_path)
     rows = []
@@ -136,17 +163,6 @@ def run_full_qualification(
         "numpy_version": np.__version__,
         "perturbation_contract": perturbation_contract_provenance(),
     }
-    smoke_rows, baseline_seconds = _build_smoke_rows("numpy_cpu")
-    smoke_aggregate = aggregate_qualification(
-        smoke_rows,
-        bootstrap_iterations=20,
-        config=FROZEN_CONFIG,
-    )
-    backend = _build_backend_assessment(
-        smoke_rows,
-        smoke_aggregate,
-        baseline_seconds,
-    )
     payloads = render_payloads(
         rows,
         aggregate,
@@ -157,7 +173,7 @@ def run_full_qualification(
     )
     return publish_payloads(
         payloads,
-        Path(output_dir),
+        output,
         provenance,
         config=FROZEN_CONFIG,
         pre_publish_verify=lambda: _require_full_state(
@@ -184,7 +200,8 @@ def _smoke_specifications() -> tuple[tuple[str, str, int, int], ...]:
 
 def _build_smoke_rows(
     backend: str,
-) -> tuple[list[object], float]:
+) -> tuple[list[object], float, str]:
+    trace: list[dict[str, object]] = []
     started = perf_counter()
     rows = [
         qualify_dataset(
@@ -192,12 +209,13 @@ def _build_smoke_rows(
             family=family,
             runs=_synthetic_runs(dataset, dataset_index, identity_count),
             backend=backend,
+            parity_trace=trace,
             config=FROZEN_CONFIG,
         )
         for dataset, family, dataset_index, identity_count
         in _smoke_specifications()
     ]
-    return rows, perf_counter() - started
+    return rows, perf_counter() - started, _trace_hash(trace)
 
 
 def _synthetic_runs(
@@ -227,51 +245,47 @@ def _synthetic_runs(
 
 
 def _build_backend_assessment(
-    baseline_rows: list[object],
     baseline_aggregate: Mapping[str, object],
     baseline_seconds: float,
+    baseline_trace_hash: str,
 ) -> dict[str, object]:
-    baseline_hash = _tag_hash(baseline_rows)
     rng = np.random.default_rng(411)
     fit = rng.normal(size=(64, 96))
     query = rng.normal(size=(32, 96))
     expected_distances = pairwise_rms(fit, query, backend="numpy_cpu")
     assessments: dict[str, object] = {}
     timing: dict[str, object] = {"numpy_cpu_stage_seconds": baseline_seconds}
-    numba_cold_started = perf_counter()
-    try:
-        pairwise_rms(fit, query, backend="numba_cpu")
-        timing["numba_cold_seconds"] = perf_counter() - numba_cold_started
-    except Exception:
-        pass
-    probes = probe_backends()
     for name in ("numba_cpu", "torch_cpu"):
-        probe = probes[name]
-        if not getattr(probe, "available", False):
+        if name == "numba_cpu":
+            reset_numba_benchmark_state()
+        try:
+            candidate_rows, candidate_seconds, candidate_trace_hash = (
+                _build_smoke_rows(name)
+            )
+        except Exception as error:
             assessments[name] = {
                 "status": "unavailable",
-                "reason": getattr(probe, "reason", None),
+                "reason": f"{type(error).__name__}: {error}",
             }
             continue
-        if name == "numba_cpu":
-            warm_started = perf_counter()
-            observed_distances = pairwise_rms(fit, query, backend=name)
-            warm_seconds = perf_counter() - warm_started
-            timing["numba_warm_seconds"] = warm_seconds
-        else:
-            observed_distances = pairwise_rms(fit, query, backend=name)
-        candidate_rows, candidate_seconds = _build_smoke_rows(name)
         candidate_aggregate = aggregate_qualification(
             candidate_rows,
             bootstrap_iterations=20,
             config=FROZEN_CONFIG,
         )
+        if name == "numba_cpu":
+            timing["numba_cold_stage_seconds"] = candidate_seconds
+            _, warm_seconds, warm_trace_hash = _build_smoke_rows(name)
+            timing["numba_warm_stage_seconds"] = warm_seconds
+            if warm_trace_hash != candidate_trace_hash:
+                raise ValueError("Exp411 Numba cold/warm tag trace mismatch")
+        observed_distances = pairwise_rms(fit, query, backend=name)
         assessment = assess_backend(
             name=name,
             max_abs_error=float(
                 np.max(np.abs(expected_distances - observed_distances))
             ),
-            tag_identity=_tag_hash(candidate_rows) == baseline_hash,
+            tag_identity=candidate_trace_hash == baseline_trace_hash,
             selected_quantile_identity=(
                 candidate_aggregate["selected_quantile"]
                 == baseline_aggregate["selected_quantile"]
@@ -282,7 +296,9 @@ def _build_backend_assessment(
         assessments[name] = {
             **asdict(assessment),
             "stage_scope": "32-dataset representative synthetic qualification",
+            "candidate_trace_sha256": candidate_trace_hash,
         }
+    probes = probe_backends()
     return {
         "canonical_backend": "numpy_cpu",
         "accelerated_backend_adopted": False,
@@ -290,8 +306,12 @@ def _build_backend_assessment(
             "full-population accelerated tag parity is not established; "
             "NumPy CPU remains fail-closed canonical"
         ),
-        "baseline_tag_sha256": baseline_hash,
-        "canonical_tag_sha256": baseline_hash,
+        "baseline_tag_sha256": baseline_trace_hash,
+        "canonical_tag_sha256": baseline_trace_hash,
+        "trace_contract": (
+            "dataset/query_instance/query_identity/quantile/kind/subtype/"
+            "candidate_index/tag"
+        ),
         "selected_quantile_identity": True,
         "timing": timing,
         "assessments": assessments,
@@ -303,12 +323,10 @@ def _build_backend_assessment(
     }
 
 
-def _tag_hash(rows: list[object]) -> str:
-    payload = [
-        asdict(row) if hasattr(row, "__dataclass_fields__") else row
-        for row in rows
-    ]
-    return sha256(canonical_json_bytes(payload)).hexdigest()
+def _trace_hash(trace: list[dict[str, object]]) -> str:
+    if not trace:
+        raise ValueError("Exp411 backend parity trace is empty")
+    return sha256(canonical_json_bytes(trace)).hexdigest()
 
 
 def _family_from_dataset(dataset: str) -> str:

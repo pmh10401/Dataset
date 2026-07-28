@@ -83,10 +83,12 @@ class QualificationTests(unittest.TestCase):
             )
             for index in range(6)
         )
+        trace: list[dict[str, object]] = []
         result = qualify_dataset(
             dataset="Alpha_normal_0",
             family="Alpha",
             runs=runs,
+            parity_trace=trace,
         )
         self.assertEqual(result.normal_total, 6)
         self.assertEqual(result.normal_abstained, 0)
@@ -97,6 +99,15 @@ class QualificationTests(unittest.TestCase):
                 sum(result.perturbation_total[key].values()),
                 42,
             )
+        normal_trace = [row for row in trace if row["kind"] == "normal"]
+        self.assertEqual(len(normal_trace), 18)
+        self.assertEqual(
+            {row["query_instance_index"] for row in normal_trace},
+            set(range(6)),
+        )
+        self.assertTrue(
+            all(len(str(row["query_identity_sha256"])) == 64 for row in trace)
+        )
 
     def test_aggregate_selects_only_train_safe_quantile(self) -> None:
         types = perturbation_types()

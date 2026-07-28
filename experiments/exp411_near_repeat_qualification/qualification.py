@@ -60,6 +60,7 @@ def qualify_dataset(
     family: str,
     runs: Sequence[TrainRun],
     backend: str = "numpy_cpu",
+    parity_trace: list[dict[str, object]] | None = None,
     config: Exp411FrozenConfig = FROZEN_CONFIG,
 ) -> DatasetQualification:
     config.validate_research_parameters()
@@ -83,6 +84,18 @@ def qualify_dataset(
     folds = group_crossfit_plan(ordered_runs, seed=config.seed)
     if not folds:
         normal_abstained = len(ordered_runs)
+        for run in ordered_runs:
+            for quantile in config.quantiles:
+                _append_trace(
+                    parity_trace,
+                    dataset=dataset,
+                    query=run,
+                    quantile=quantile,
+                    kind="normal",
+                    subtype=None,
+                    candidate_index=run.instance_index,
+                    tag="abstain",
+                )
 
     for fold_number, fold in enumerate(folds):
         fit_by_length: dict[int, list[int]] = defaultdict(list)
@@ -100,6 +113,18 @@ def qualify_dataset(
             )
             if len(representative_indices) < config.minimum_same_length_fit_groups:
                 normal_abstained += len(query_indices)
+                for query_index in query_indices:
+                    for quantile in config.quantiles:
+                        _append_trace(
+                            parity_trace,
+                            dataset=dataset,
+                            query=ordered_runs[query_index],
+                            quantile=quantile,
+                            kind="normal",
+                            subtype=None,
+                            candidate_index=ordered_runs[query_index].instance_index,
+                            tag="abstain",
+                        )
                 continue
             fit_values = np.asarray(
                 [ordered_runs[index].values for index in representative_indices],
@@ -112,6 +137,18 @@ def qualify_dataset(
             )
             if len(prepared) < 2 or "raw_rms" not in prepared:
                 normal_abstained += len(query_indices)
+                for query_index in query_indices:
+                    for quantile in config.quantiles:
+                        _append_trace(
+                            parity_trace,
+                            dataset=dataset,
+                            query=ordered_runs[query_index],
+                            quantile=quantile,
+                            kind="normal",
+                            subtype=None,
+                            candidate_index=ordered_runs[query_index].instance_index,
+                            tag="abstain",
+                        )
                 continue
             fit_hashes = {
                 ordered_runs[index].values_sha256
@@ -154,6 +191,16 @@ def qualify_dataset(
                         exact=(query_run.values_sha256 in fit_hashes,),
                     )[0]
                     normal_near[key] += int(normal_tag == "near")
+                    _append_trace(
+                        parity_trace,
+                        dataset=dataset,
+                        query=query_run,
+                        quantile=quantile,
+                        kind="normal",
+                        subtype=None,
+                        candidate_index=query_run.instance_index,
+                        tag=normal_tag,
+                    )
                     for name in types:
                         values = synthetic.by_type[name]
                         tags = tag_queries(
@@ -161,6 +208,17 @@ def qualify_dataset(
                             thresholds,
                             exact=(False,) * len(values),
                         )
+                        for synthetic_index, tag in enumerate(tags):
+                            _append_trace(
+                                parity_trace,
+                                dataset=dataset,
+                                query=query_run,
+                                quantile=quantile,
+                                kind="synthetic",
+                                subtype=name,
+                                candidate_index=synthetic_index,
+                                tag=tag,
+                            )
                         accepted = sum(tag == "near" for tag in tags)
                         perturbation_total[key][name] += len(values)
                         perturbation_near[key][name] += accepted
@@ -178,6 +236,33 @@ def qualify_dataset(
         synthetic_near=synthetic_near,
         perturbation_total=perturbation_total,
         perturbation_near=perturbation_near,
+    )
+
+
+def _append_trace(
+    trace: list[dict[str, object]] | None,
+    *,
+    dataset: str,
+    query: TrainRun,
+    quantile: float,
+    kind: str,
+    subtype: str | None,
+    candidate_index: int,
+    tag: str,
+) -> None:
+    if trace is None:
+        return
+    trace.append(
+        {
+            "dataset": str(dataset),
+            "query_instance_index": int(query.instance_index),
+            "query_identity_sha256": str(query.values_sha256),
+            "quantile": _quantile_key(quantile),
+            "kind": str(kind),
+            "subtype": subtype,
+            "candidate_index": int(candidate_index),
+            "tag": str(tag),
+        }
     )
 
 
