@@ -128,6 +128,39 @@ class AccelerationTests(TestCase):
 
         self.assertAlmostEqual(observed, math.sqrt(0.5), places=12)
 
+    def test_quantile_boundary_reorders_all_near_tied_candidates(self) -> None:
+        points = []
+        for pair_index in range(15):
+            base = pair_index * 10.0
+            gap = 1.0 + pair_index * 3e-7
+            points.extend((base, base + gap))
+        rows = np.asarray(points, dtype=np.float64).reshape(-1, 1)
+        accelerated_reference = np.asarray(
+            [
+                1.0,
+                1.0,
+                1.0000009,
+                1.0000009,
+                1.0,
+                1.0,
+                *[
+                    1.0 + pair_index * 3e-7
+                    for pair_index in range(3, 15)
+                    for _ in range(2)
+                ],
+            ],
+            dtype=np.float64,
+        )
+
+        observed = boundary_safe_threshold(
+            rows,
+            accelerated_reference,
+            0.10,
+            tolerance=1e-6,
+        )
+
+        self.assertAlmostEqual(observed, 1.0000003, places=12)
+
     def test_query_boundary_is_recomputed_but_nonboundary_is_preserved(self) -> None:
         fit = np.asarray([[0.0, 0.0]], dtype=np.float64)
         query = np.asarray([[3.0, 4.0], [6.0, 8.0]], dtype=np.float64)

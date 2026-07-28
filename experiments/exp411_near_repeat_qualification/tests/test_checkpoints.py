@@ -222,6 +222,27 @@ class CheckpointTests(unittest.TestCase):
 
             self.assertEqual(checkpoint.read_bytes(), before)
 
+    def test_boolean_counter_is_rejected_instead_of_coerced(self) -> None:
+        with TemporaryDirectory() as raw:
+            store = CheckpointStore(
+                Path(raw) / "checkpoint",
+                _provenance(),
+                ("Alpha_normal_0",),
+            )
+            malformed = replace(
+                _row(),
+                normal_total=True,
+                normal_near={"0.01": 0, "0.05": 0, "0.10": 0},
+            )
+
+            with self.assertRaisesRegex(ValueError, "counter"):
+                store.write_dataset(
+                    malformed,
+                    _audit(),
+                    "7" * 64,
+                    1.25,
+                )
+
     def test_progress_reports_only_completion_count_and_current_dataset(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw) / "checkpoint"

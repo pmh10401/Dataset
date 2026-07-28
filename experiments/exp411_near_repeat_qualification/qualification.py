@@ -479,6 +479,7 @@ def _precompute_fold_view_state(
         }
         context: dict[str, object] = {
             "raw_values": raw_values,
+            "digests": digests,
             "digest_to_position": digest_to_position,
             "folds": {},
         }
@@ -492,11 +493,18 @@ def _precompute_fold_view_state(
             fit_hashes = {
                 runs[index].values_sha256 for index in fit_representatives
             }
+            query_indices = tuple(
+                index
+                for index in fold.query_indices
+                if len(runs[index].values) == length
+            )
             context["folds"][fold_number] = {
                 "eligible": (
                     len(fit_representatives)
                     >= config.minimum_same_length_fit_groups
+                    and bool(query_indices)
                 ),
+                "query_indices": query_indices,
                 "fit_positions": tuple(
                     digest_to_position[runs[index].values_sha256]
                     for index in fit_representatives
@@ -505,12 +513,22 @@ def _precompute_fold_view_state(
                 "views": {},
             }
         if len(raw_values) >= 2:
-            raw_audit = audit_dataset_pairs(raw_values, digests, policy)
-            audits.append(raw_audit)
-            force_numpy = raw_audit.fallback_reason is not None
-        else:
-            force_numpy = True
+            for view_name in VIEW_NAMES:
+                audits.append(
+                    audit_dataset_pairs(
+                        _one_view_matrix(raw_values, view_name),
+                        digests,
+                        policy,
+                    )
+                )
+        contexts[length] = context
 
+    force_numpy = any(
+        audit.fallback_reason is not None for audit in audits
+    )
+    for length, context in sorted(contexts.items()):
+        raw_values = np.asarray(context["raw_values"], dtype=np.float64)
+        digest_to_position = context["digest_to_position"]
         for view_name in VIEW_NAMES:
             view_values = _one_view_matrix(raw_values, view_name)
             usable_folds = []
@@ -561,11 +579,7 @@ def _precompute_fold_view_state(
                     )
                     for quantile in config.quantiles
                 }
-                query_indices = [
-                    index
-                    for index in folds[fold_number].query_indices
-                    if len(runs[index].values) == length
-                ]
+                query_indices = fold_state["query_indices"]
                 query_positions = np.asarray(
                     [
                         digest_to_position[runs[index].values_sha256]
@@ -605,7 +619,6 @@ def _precompute_fold_view_state(
                 }
             del pairwise
             del view_values
-        contexts[length] = context
     return contexts, tuple(audits)
 
 

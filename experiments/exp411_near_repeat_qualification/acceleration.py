@@ -52,11 +52,28 @@ _NESTED_THREAD_VARIABLES = (
 
 
 def acceleration_contract_sha256() -> str:
-    source_sha256 = sha256(Path(__file__).read_bytes()).hexdigest()
-    material = (
-        source_sha256
-        + "\n"
-        + repr(sorted(ACCELERATION_POLICY.to_payload().items()))
+    package = Path(__file__).resolve().parent
+    source_names = (
+        "acceleration.py",
+        "benchmark.py",
+        "checkpoints.py",
+        "config.py",
+        "distances.py",
+        "folds.py",
+        "inputs.py",
+        "perturbations.py",
+        "qualification.py",
+        "runner.py",
+    )
+    source_hashes = tuple(
+        (name, sha256((package / name).read_bytes()).hexdigest())
+        for name in source_names
+    )
+    material = repr(
+        {
+            "policy": sorted(ACCELERATION_POLICY.to_payload().items()),
+            "source_sha256": source_hashes,
+        }
     ).encode("utf-8")
     return sha256(material).hexdigest()
 
@@ -190,27 +207,34 @@ def boundary_safe_threshold(
     *,
     tolerance: float,
 ) -> float:
-    del tolerance
     values = _finite_matrix(fit, minimum_rows=2)
     distances = np.asarray(reference, dtype=np.float64).reshape(-1)
     if (
         len(distances) != len(values)
         or not np.isfinite(distances).all()
         or not 0.0 < float(quantile) < 1.0
+        or not math.isfinite(float(tolerance))
+        or float(tolerance) < 0.0
     ):
         raise ValueError("Exp411 acceleration threshold inputs are invalid")
-    rank = int(math.floor(float(quantile) * (len(distances) - 1)))
-    query_index = int(np.argsort(distances, kind="stable")[rank])
-    fit_without_query = np.concatenate(
-        (values[:query_index], values[query_index + 1 :]),
-        axis=0,
+    accelerated_threshold = float(
+        np.quantile(distances, quantile, method="lower")
     )
-    return float(
-        cpu_pairwise_rms(
+    corrected = distances.copy()
+    boundary = np.flatnonzero(
+        np.abs(distances - accelerated_threshold)
+        <= 2.0 * float(tolerance)
+    )
+    for query_index in boundary:
+        fit_without_query = np.concatenate(
+            (values[:query_index], values[query_index + 1 :]),
+            axis=0,
+        )
+        corrected[query_index] = cpu_pairwise_rms(
             fit_without_query,
             values[query_index : query_index + 1],
         )[0]
-    )
+    return float(np.quantile(corrected, quantile, method="lower"))
 
 
 def boundary_safe_minimum(
@@ -324,6 +348,15 @@ _MINIMUM_RMS_KERNEL: object | None = None
 _PAIR_DISTANCES_KERNEL: object | None = None
 
 
+def reset_acceleration_benchmark_state() -> None:
+    global _FULL_PAIRWISE_KERNEL
+    global _MINIMUM_RMS_KERNEL
+    global _PAIR_DISTANCES_KERNEL
+    _FULL_PAIRWISE_KERNEL = None
+    _MINIMUM_RMS_KERNEL = None
+    _PAIR_DISTANCES_KERNEL = None
+
+
 def _compiled_full_pairwise(numba: object) -> object:
     global _FULL_PAIRWISE_KERNEL
     if _FULL_PAIRWISE_KERNEL is None:
@@ -409,4 +442,5 @@ __all__ = [
     "configure_runtime",
     "full_pairwise_rms",
     "minimum_rms",
+    "reset_acceleration_benchmark_state",
 ]

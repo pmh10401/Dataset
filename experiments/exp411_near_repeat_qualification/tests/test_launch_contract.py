@@ -29,6 +29,7 @@ class LaunchContractTests(unittest.TestCase):
         ):
             self.assertIn(expected, result.stdout)
         self.assertNotIn("submitted", result.stdout.lower())
+        self.assertIn("-l com.openai.exp411.full ", result.stdout)
 
     def test_unknown_launcher_argument_fails_without_submission(self) -> None:
         result = subprocess.run(

@@ -292,9 +292,9 @@ def _qualification_from_payload(value: object) -> DatasetQualification:
         keys,
         types,
     )
-    identity_group_count = int(value["identity_group_count"])
-    normal_total = int(value["normal_total"])
-    normal_abstained = int(value["normal_abstained"])
+    identity_group_count = _strict_counter(value["identity_group_count"])
+    normal_total = _strict_counter(value["normal_total"])
+    normal_abstained = _strict_counter(value["normal_abstained"])
     if (
         identity_group_count < 1
         or normal_total < 1
@@ -387,10 +387,16 @@ def _integer_mapping(
 ) -> dict[str, int]:
     if not isinstance(value, dict) or set(value) != set(expected_keys):
         raise ValueError("Exp411 checkpoint counter mapping is invalid")
-    result = {key: int(value[key]) for key in expected_keys}
-    if any(number < 0 for number in result.values()):
-        raise ValueError("Exp411 checkpoint counter is negative")
-    return result
+    return {
+        key: _strict_counter(value[key])
+        for key in expected_keys
+    }
+
+
+def _strict_counter(value: object) -> int:
+    if type(value) is not int or value < 0:
+        raise ValueError("Exp411 checkpoint counter is invalid")
+    return value
 
 
 def _nested_integer_mapping(

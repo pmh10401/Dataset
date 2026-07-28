@@ -22,6 +22,8 @@ from experiments.exp411_near_repeat_qualification.qualification import (
     qualify_dataset,
 )
 from experiments.exp411_near_repeat_qualification.runner import (
+    _require_immutable_file,
+    _require_runtime_contract,
     _run_checkpointed_stream,
     dataset_train_identity_sha256,
     load_benchmark_report,
@@ -31,6 +33,32 @@ from experiments.exp411_near_repeat_qualification.runner import (
 
 
 class RunnerTests(unittest.TestCase):
+    def test_prepublication_file_hash_rejects_mutation(self) -> None:
+        with TemporaryDirectory() as raw:
+            path = Path(raw) / "input.json"
+            path.write_bytes(b"original")
+            expected = sha256(path.read_bytes()).hexdigest()
+            _require_immutable_file(path, expected, "input")
+            path.write_bytes(b"changed")
+
+            with self.assertRaisesRegex(ValueError, "input"):
+                _require_immutable_file(path, expected, "input")
+
+    def test_full_runtime_contract_rejects_wrong_thread_state(self) -> None:
+        _require_runtime_contract({
+            "numba_threads": 12,
+            "nested_threads": 1,
+        })
+        for invalid in (
+            {"numba_threads": 11, "nested_threads": 1},
+            {"numba_threads": 12, "nested_threads": 2},
+        ):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(
+                ValueError,
+                "runtime",
+            ):
+                _require_runtime_contract(invalid)
+
     @staticmethod
     def _runs(dataset: str, offset: int = 0) -> tuple[TrainRun, ...]:
         return tuple(
@@ -229,6 +257,52 @@ class RunnerTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "contract"):
                 load_benchmark_report(path)
 
+    def test_benchmark_report_loader_rejects_foreign_git_commit(self) -> None:
+        row = {
+            "numpy_seconds": 4.0,
+            "numba_cold_seconds": 2.0,
+            "numba_warm_seconds": 1.5,
+            "warm_speedup": 2.6666666666666665,
+            "max_abs_error": 1e-12,
+            "tag_identity": True,
+            "selected_quantile_identity": True,
+        }
+        with TemporaryDirectory() as raw:
+            path = Path(raw) / "benchmark.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "benchmark_datasets": {
+                            "small": {
+                                "dataset": "ACSF1_normal_0",
+                                **row,
+                            },
+                            "medium": {
+                                "dataset": "HandOutlines_normal_0",
+                                **row,
+                            },
+                            "large": {
+                                "dataset": "StarLightCurves_normal_3",
+                                **row,
+                            },
+                        },
+                        "runtime": {
+                            "numba_threads": 12,
+                            "nested_threads": 1,
+                        },
+                        "acceleration_contract_sha256": (
+                            acceleration_contract_sha256()
+                        ),
+                        "git_commit": "f" * 40,
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "commit"):
+                load_benchmark_report(path, expected_commit="1" * 40)
+
     def test_representative_smoke_publishes_complete_manifest(self) -> None:
         with TemporaryDirectory() as raw:
             output = Path(raw) / "smoke"
@@ -268,6 +342,8 @@ class RunnerTests(unittest.TestCase):
             backend["baseline_tag_sha256"],
             backend["canonical_tag_sha256"],
         )
+        self.assertTrue(backend["accelerated_path_trace_identity"])
+        self.assertTrue(backend["accelerated_path_selected_quantile_identity"])
         self.assertIn("query_identity", backend["trace_contract"])
         self.assertIn("numba_cold_stage_seconds", backend["timing"])
         self.assertIn("numba_warm_stage_seconds", backend["timing"])

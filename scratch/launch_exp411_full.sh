@@ -28,7 +28,7 @@ benchmark_report="/Users/mac/Documents/Dataset/exp411_acceleration_benchmark.jso
 output_dir="/Users/mac/Documents/Dataset/exp411_near_repeat_qualification"
 stdout_log="/private/tmp/exp411-full.stdout.log"
 stderr_log="/private/tmp/exp411-full.stderr.log"
-job_label="com.openai.exp411.full.$(date +%Y%m%d%H%M%S)"
+job_label="com.openai.exp411.full"
 
 command=(
   launchctl submit
@@ -80,6 +80,32 @@ if [[ -n "$(git -C "$repo" status --porcelain)" ]]; then
   echo "worktree must be clean before full execution" >&2
   exit 1
 fi
+current_commit="$(git -C "$repo" rev-parse HEAD)"
+database_sha256="$(shasum -a 256 "$db_path" | awk '{print $1}')"
+if [[ "$database_sha256" != "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c" ]]; then
+  echo "database SHA256 mismatch" >&2
+  exit 1
+fi
+if [[ "$(sqlite3 "$db_path" "PRAGMA quick_check;")" != "ok" ]]; then
+  echo "database quick_check failed" >&2
+  exit 1
+fi
+"$python_path" - "$benchmark_report" "$current_commit" <<'PY'
+from pathlib import Path
+import sys
+from experiments.exp411_near_repeat_qualification.runner import (
+    load_benchmark_report,
+)
+load_benchmark_report(Path(sys.argv[1]), expected_commit=sys.argv[2])
+PY
+"$python_path" - "$population_manifest" <<'PY'
+from pathlib import Path
+import sys
+from experiments.exp411_near_repeat_qualification.runner import (
+    load_population_manifest,
+)
+load_population_manifest(Path(sys.argv[1]))
+PY
 
 "${command[@]}"
 echo "Submitted $job_label"

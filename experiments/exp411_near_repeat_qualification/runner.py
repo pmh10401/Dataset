@@ -21,7 +21,7 @@ from .backends import (
     probe_backends,
     reset_numba_benchmark_state,
 )
-from .acceleration import acceleration_contract_sha256
+from .acceleration import acceleration_contract_sha256, configure_runtime
 from .benchmark import require_acceleration_adoption
 from .checkpoints import CheckpointProvenance, CheckpointStore
 from .config import FROZEN_CONFIG, Exp411FrozenConfig
@@ -55,7 +55,11 @@ def dataset_train_identity_sha256(runs: tuple[TrainRun, ...]) -> str:
     return sha256(canonical_json_bytes(payload)).hexdigest()
 
 
-def load_benchmark_report(path: Path) -> Mapping[str, object]:
+def load_benchmark_report(
+    path: Path,
+    *,
+    expected_commit: str | None = None,
+) -> Mapping[str, object]:
     try:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -68,7 +72,20 @@ def load_benchmark_report(path: Path) -> Mapping[str, object]:
         != acceleration_contract_sha256()
     ):
         raise ValueError("Exp411 benchmark acceleration contract mismatch")
+    if (
+        expected_commit is not None
+        and payload.get("git_commit") != expected_commit
+    ):
+        raise ValueError("Exp411 benchmark Git commit mismatch")
     return payload
+
+
+def _require_runtime_contract(runtime: Mapping[str, object]) -> None:
+    if (
+        runtime.get("numba_threads") != 12
+        or runtime.get("nested_threads") != 1
+    ):
+        raise ValueError("Exp411 full runtime thread contract is invalid")
 
 
 def _run_checkpointed_stream(
@@ -205,13 +222,19 @@ def run_full_qualification(
 ) -> Mapping[str, str]:
     """Run the real 1,117-dataset qualification only after external approval."""
     FROZEN_CONFIG.validate()
+    runtime = configure_runtime()
+    _require_runtime_contract(runtime)
     output = Path(output_dir)
     if not output.parent.is_dir():
         raise FileNotFoundError("Exp411 output parent does not exist")
     if output.exists():
         raise FileExistsError("Exp411 output directory must not exist")
     starting_commit = _require_clean_git()
-    benchmark_values = load_benchmark_report(benchmark_report)
+    benchmark_values = load_benchmark_report(
+        benchmark_report,
+        expected_commit=starting_commit,
+    )
+    benchmark_report_sha256 = sha256_file(benchmark_report)
     smoke_rows, baseline_seconds, baseline_trace_hash = _build_smoke_rows(
         "numpy_cpu"
     )
@@ -226,6 +249,7 @@ def run_full_qualification(
         baseline_trace_hash,
     )
     datasets = load_population_manifest(population_manifest, config=FROZEN_CONFIG)
+    population_manifest_sha256 = sha256_file(population_manifest)
     pinned_snapshot = database_snapshot(db_path)
     if dict(benchmark_values.get("database_snapshot", {})) != dict(
         pinned_snapshot
@@ -298,6 +322,10 @@ def run_full_qualification(
             pinned_snapshot,
             starting_commit,
             store,
+            population_manifest=population_manifest,
+            population_manifest_sha256=population_manifest_sha256,
+            benchmark_report=benchmark_report,
+            benchmark_report_sha256=benchmark_report_sha256,
         ),
     )
 
@@ -318,6 +346,8 @@ def _smoke_specifications() -> tuple[tuple[str, str, int, int], ...]:
 
 def _build_smoke_rows(
     backend: str,
+    *,
+    accelerated: bool = False,
 ) -> tuple[list[object], float, str]:
     trace: list[dict[str, object]] = []
     started = perf_counter()
@@ -327,6 +357,7 @@ def _build_smoke_rows(
             family=family,
             runs=_synthetic_runs(dataset, dataset_index, identity_count),
             backend=backend,
+            accelerated=accelerated,
             parity_trace=trace,
             config=FROZEN_CONFIG,
         )
@@ -420,6 +451,24 @@ def _build_backend_assessment(
             ),
         }
     probes = probe_backends()
+    accelerated_rows, accelerated_seconds, accelerated_trace_hash = (
+        _build_smoke_rows("numpy_cpu", accelerated=True)
+    )
+    accelerated_aggregate = aggregate_qualification(
+        accelerated_rows,
+        bootstrap_iterations=20,
+        config=FROZEN_CONFIG,
+    )
+    accelerated_trace_identity = (
+        accelerated_trace_hash == baseline_trace_hash
+    )
+    accelerated_quantile_identity = (
+        accelerated_aggregate["selected_quantile"]
+        == baseline_aggregate["selected_quantile"]
+    )
+    if not accelerated_trace_identity or not accelerated_quantile_identity:
+        raise ValueError("Exp411 accelerated representative smoke parity failed")
+    timing["accelerated_path_stage_seconds"] = accelerated_seconds
     return {
         "canonical_backend": "numpy_cpu",
         "accelerated_backend_adopted": False,
@@ -434,6 +483,11 @@ def _build_backend_assessment(
             "candidate_index/tag"
         ),
         "selected_quantile_identity": True,
+        "accelerated_path_trace_identity": accelerated_trace_identity,
+        "accelerated_path_selected_quantile_identity": (
+            accelerated_quantile_identity
+        ),
+        "accelerated_path_trace_sha256": accelerated_trace_hash,
         "timing": timing,
         "assessments": assessments,
         "probes": {
@@ -494,6 +548,11 @@ def _require_full_state(
     expected_snapshot: Mapping[str, str],
     expected_commit: str,
     checkpoint_store: CheckpointStore | None = None,
+    *,
+    population_manifest: Path | None = None,
+    population_manifest_sha256: str | None = None,
+    benchmark_report: Path | None = None,
+    benchmark_report_sha256: str | None = None,
 ) -> None:
     if dict(database_snapshot(db_path)) != dict(expected_snapshot):
         raise ValueError("Exp411 SQLite snapshot changed before publication")
@@ -501,6 +560,31 @@ def _require_full_state(
         raise ValueError("Exp411 Git commit changed before publication")
     if checkpoint_store is not None:
         checkpoint_store.require_complete(FROZEN_CONFIG.expected_families)
+    if population_manifest is not None and population_manifest_sha256 is not None:
+        _require_immutable_file(
+            population_manifest,
+            population_manifest_sha256,
+            "population manifest",
+        )
+    if benchmark_report is not None and benchmark_report_sha256 is not None:
+        _require_immutable_file(
+            benchmark_report,
+            benchmark_report_sha256,
+            "benchmark report",
+        )
+        load_benchmark_report(
+            benchmark_report,
+            expected_commit=expected_commit,
+        )
+
+
+def _require_immutable_file(
+    path: Path,
+    expected_sha256: str,
+    name: str,
+) -> None:
+    if sha256_file(path) != str(expected_sha256):
+        raise ValueError(f"Exp411 {name} changed before publication")
 
 
 __all__ = [

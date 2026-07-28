@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 import resource
 import sqlite3
+import subprocess
 from time import perf_counter
 from urllib.parse import quote
 
@@ -14,6 +15,7 @@ from .acceleration import (
     ACCELERATION_POLICY,
     acceleration_contract_sha256,
     configure_runtime,
+    reset_acceleration_benchmark_state,
 )
 from .config import FROZEN_CONFIG
 from .inputs import (
@@ -77,6 +79,7 @@ def require_acceleration_adoption(report: Mapping[str, object]) -> None:
 
 def run_fixed_train_benchmark(db_path: Path) -> Mapping[str, object]:
     FROZEN_CONFIG.validate()
+    git_commit = _require_clean_git_commit()
     runtime = dict(configure_runtime())
     before = database_snapshot(db_path)
     if (
@@ -121,6 +124,7 @@ def run_fixed_train_benchmark(db_path: Path) -> Mapping[str, object]:
 
         cold_trace: list[dict[str, object]] = []
         cold_audits = []
+        reset_acceleration_benchmark_state()
         started = perf_counter()
         cold = qualify_dataset(
             dataset=dataset,
@@ -170,7 +174,10 @@ def run_fixed_train_benchmark(db_path: Path) -> Mapping[str, object]:
                 and baseline_trace == cold_trace == warm_trace
             ),
             "selected_quantile_identity": baseline_selected == warm_selected,
-            "peak_rss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss),
+            "process_peak_rss_bytes": int(
+                resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            ),
+            "peak_rss_scope": "cumulative_process_high_water",
         }
     report = {
         "schema_version": _SCHEMA_VERSION,
@@ -178,6 +185,7 @@ def run_fixed_train_benchmark(db_path: Path) -> Mapping[str, object]:
         "runtime": runtime,
         "database_snapshot": dict(before),
         "acceleration_contract_sha256": acceleration_contract_sha256(),
+        "git_commit": git_commit,
     }
     require_acceleration_adoption(report)
     return report
@@ -188,6 +196,27 @@ def _family_from_dataset(dataset: str) -> str:
     if marker != "_normal_" or not family or not suffix.isdecimal():
         raise ValueError("Exp411 benchmark dataset identity is invalid")
     return family
+
+
+def _require_clean_git_commit() -> str:
+    repository = Path(__file__).resolve().parents[2]
+    status = subprocess.run(
+        ["git", "-C", str(repository), "status", "--porcelain"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if status.returncode != 0 or status.stdout.strip():
+        raise ValueError("Exp411 benchmark requires a clean Git worktree")
+    commit = subprocess.run(
+        ["git", "-C", str(repository), "rev-parse", "HEAD"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if commit.returncode != 0 or len(commit.stdout.strip()) != 40:
+        raise ValueError("Exp411 benchmark cannot resolve Git commit")
+    return commit.stdout.strip()
 
 
 __all__ = [

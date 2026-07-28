@@ -4,6 +4,7 @@ from unittest.mock import patch
 import numpy as np
 
 from experiments.exp411_near_repeat_qualification.acceleration import (
+    AccelerationPolicy,
     full_pairwise_rms,
     minimum_rms,
 )
@@ -12,15 +13,20 @@ from experiments.exp411_near_repeat_qualification.contracts import (
     DatasetQualification,
     TrainRun,
 )
+from experiments.exp411_near_repeat_qualification.config import FROZEN_CONFIG
 from experiments.exp411_near_repeat_qualification.perturbations import (
     perturbation_provenance,
     perturbation_types,
 )
 from experiments.exp411_near_repeat_qualification.qualification import (
     _batched_synthetic_distances,
+    _precompute_fold_view_state,
     aggregate_qualification,
     qualify_dataset,
     select_quantile,
+)
+from experiments.exp411_near_repeat_qualification.folds import (
+    group_crossfit_plan,
 )
 
 
@@ -188,6 +194,94 @@ class QualificationTests(unittest.TestCase):
             )
 
         self.assertEqual(matrix_spy.call_count, 3)
+
+    def test_any_length_audit_failure_forces_all_views_to_numpy(self) -> None:
+        runs = tuple(
+            TrainRun(
+                dataset="Alpha_normal_0",
+                instance_index=index,
+                values=tuple(
+                    float(index + column * 0.1)
+                    for column in range(4 + int(index >= 10))
+                ),
+                values_sha256=f"{index:064x}",
+            )
+            for index in range(20)
+        )
+        passing = DatasetBackendAudit(
+            backend="numba_cpu",
+            sampled_pairs=((0, 1),),
+            max_abs_error=0.0,
+            fallback_reason=None,
+        )
+        failing = DatasetBackendAudit(
+            backend="numpy_cpu",
+            sampled_pairs=((0, 1),),
+            max_abs_error=2e-6,
+            fallback_reason="pair_audit_tolerance_exceeded",
+        )
+
+        with patch(
+            "experiments.exp411_near_repeat_qualification.qualification."
+            "audit_dataset_pairs",
+            side_effect=(
+                passing,
+                passing,
+                passing,
+                passing,
+                passing,
+                failing,
+            ),
+        ), patch(
+            "experiments.exp411_near_repeat_qualification.qualification."
+            "full_pairwise_rms",
+            wraps=full_pairwise_rms,
+        ) as matrix_spy:
+            _precompute_fold_view_state(
+                runs,
+                group_crossfit_plan(runs, seed=411),
+                policy=AccelerationPolicy(numpy_cost_max=1),
+                config=FROZEN_CONFIG,
+            )
+
+        self.assertGreater(matrix_spy.call_count, 0)
+        self.assertEqual(
+            {call.kwargs["backend"] for call in matrix_spy.call_args_list},
+            {"numpy_cpu"},
+        )
+
+    def test_mixed_length_logo_skips_fold_length_without_queries(self) -> None:
+        runs = tuple(
+            TrainRun(
+                dataset="Alpha_normal_0",
+                instance_index=index,
+                values=tuple(
+                    float(index + column * column * 0.1)
+                    for column in range(4 + int(index == 6))
+                ),
+                values_sha256=f"{index:064x}",
+            )
+            for index in range(7)
+        )
+        baseline_trace: list[dict[str, object]] = []
+        accelerated_trace: list[dict[str, object]] = []
+
+        baseline = qualify_dataset(
+            dataset="Alpha_normal_0",
+            family="Alpha",
+            runs=runs,
+            parity_trace=baseline_trace,
+        )
+        accelerated = qualify_dataset(
+            dataset="Alpha_normal_0",
+            family="Alpha",
+            runs=runs,
+            accelerated=True,
+            parity_trace=accelerated_trace,
+        )
+
+        self.assertEqual(accelerated, baseline)
+        self.assertEqual(accelerated_trace, baseline_trace)
 
     def test_synthetic_batch_matches_unbatched_query_order(self) -> None:
         fit = np.asarray(
