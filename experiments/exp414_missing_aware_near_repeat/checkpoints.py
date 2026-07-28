@@ -21,6 +21,8 @@ from experiments.exp411_near_repeat_qualification.perturbations import (
     perturbation_types,
 )
 
+from .config import FROZEN_CONFIG
+
 
 _SCHEMA_VERSION = 1
 _ROOT_FILE = "checkpoint_provenance.json"
@@ -155,6 +157,16 @@ class Exp414CheckpointStore:
             raise ValueError("Exp414 checkpoint elapsed time is invalid")
         qualification = _qualification_to_payload(row)
         backend_audit = _audit_to_payload(audit)
+        require_backend_audit_contract(
+            row,
+            audit,
+            repair_status=(
+                "ready"
+                if repaired_train_identity_sha256 is not None
+                else "missing_support_abstain"
+            ),
+            execution_source=execution_source,
+        )
         body: dict[str, object] = {
             "schema_version": _SCHEMA_VERSION,
             "dataset": row.dataset,
@@ -201,12 +213,16 @@ class Exp414CheckpointStore:
         self,
         expected_families: int,
     ) -> tuple[DatasetQualification, ...]:
+        if type(expected_families) is not int or expected_families <= 0:
+            raise ValueError(
+                "Exp414 checkpoint expected family count is invalid"
+            )
         completed = self.load_completed()
         if set(completed) != set(self.expected_datasets):
             raise ValueError("Exp414 checkpoint dataset coverage is incomplete")
         rows = tuple(completed[dataset] for dataset in self.expected_datasets)
         families = {row.family for row in rows}
-        if len(families) != int(expected_families):
+        if len(families) != expected_families:
             raise ValueError("Exp414 checkpoint family coverage is invalid")
         return rows
 
@@ -221,6 +237,12 @@ class Exp414CheckpointStore:
             observed = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as error:
             raise ValueError("Exp414 checkpoint provenance is invalid") from error
+        if (
+            not isinstance(observed, dict)
+            or type(observed.get("schema_version")) is not int
+            or observed["schema_version"] != _SCHEMA_VERSION
+        ):
+            raise ValueError("Exp414 checkpoint root version is invalid")
         if observed != dict(expected_payload):
             raise ValueError("Exp414 checkpoint provenance mismatch")
 
@@ -299,7 +321,10 @@ def _load_record(path: Path) -> dict[str, object]:
         or sha256(canonical_json_bytes(payload)).hexdigest() != digest
     ):
         raise ValueError("Exp414 dataset checkpoint payload hash mismatch")
-    if payload["schema_version"] != _SCHEMA_VERSION:
+    if (
+        type(payload["schema_version"]) is not int
+        or payload["schema_version"] != _SCHEMA_VERSION
+    ):
         raise ValueError("Exp414 dataset checkpoint version is invalid")
     dataset = str(payload["dataset"])
     _validate_hex_digest(
@@ -319,6 +344,16 @@ def _load_record(path: Path) -> dict[str, object]:
     if qualification.dataset != dataset:
         raise ValueError("Exp414 dataset checkpoint identity mismatch")
     audit = _audit_from_payload(payload["backend_audit"])
+    require_backend_audit_contract(
+        qualification,
+        audit,
+        repair_status=(
+            "ready"
+            if repaired_digest is not None
+            else "missing_support_abstain"
+        ),
+        execution_source=str(payload["execution_source"]),
+    )
     return {
         **payload,
         "qualification": qualification,
@@ -461,6 +496,61 @@ def _audit_from_payload(value: object) -> DatasetBackendAudit:
     )
 
 
+def require_backend_audit_contract(
+    qualification: DatasetQualification,
+    audit: DatasetBackendAudit,
+    *,
+    repair_status: str,
+    execution_source: str,
+) -> None:
+    """Require a publishable ready audit or the one abstention sentinel."""
+    if (
+        not isinstance(qualification, DatasetQualification)
+        or not isinstance(audit, DatasetBackendAudit)
+    ):
+        raise ValueError("Exp414 checkpoint backend audit is invalid")
+    maximum_error = float(audit.max_abs_error)
+    if not math.isfinite(maximum_error) or maximum_error < 0.0:
+        raise ValueError("Exp414 checkpoint backend audit values are invalid")
+    if repair_status == "ready":
+        if maximum_error > FROZEN_CONFIG.distance_tolerance:
+            raise ValueError(
+                "Exp414 ready backend audit exceeds distance tolerance"
+            )
+        if audit.fallback_reason is not None:
+            raise ValueError(
+                "Exp414 ready backend audit fallback is not permitted"
+            )
+        return
+    if repair_status != "missing_support_abstain":
+        raise ValueError("Exp414 checkpoint repair status is invalid")
+    exact_sentinel = (
+        execution_source == "exp414_computed"
+        and audit.backend == "numpy_cpu"
+        and audit.sampled_pairs == ()
+        and maximum_error == 0.0
+        and audit.fallback_reason == "missing_support_abstain"
+        and qualification.normal_abstained == qualification.normal_total
+        and all(value == 0 for value in qualification.normal_near.values())
+        and all(value == 0 for value in qualification.synthetic_total.values())
+        and all(value == 0 for value in qualification.synthetic_near.values())
+        and all(
+            value == 0
+            for rows in qualification.perturbation_total.values()
+            for value in rows.values()
+        )
+        and all(
+            value == 0
+            for rows in qualification.perturbation_near.values()
+            for value in rows.values()
+        )
+    )
+    if not exact_sentinel:
+        raise ValueError(
+            "Exp414 missing-support backend sentinel is invalid"
+        )
+
+
 def _integer_mapping(
     value: object,
     expected_keys: Sequence[str],
@@ -573,4 +663,5 @@ def _fsync_directory(path: Path) -> None:
 __all__ = [
     "Exp414CheckpointProvenance",
     "Exp414CheckpointStore",
+    "require_backend_audit_contract",
 ]

@@ -380,6 +380,11 @@ class EntryPointTests(unittest.TestCase):
                 subgroups=subgroups,
                 backend_assessment={
                     "canonical_backend": "adaptive_numpy_numba_cpu",
+                    "dataset_count": 1,
+                    "distance_tolerance": FROZEN_CONFIG.distance_tolerance,
+                    "worst_max_abs_error": 0.0,
+                    "backend_counts": {"numpy_cpu": 1},
+                    "fallback_reason_counts": {"none": 1},
                 },
                 provenance={
                     "mode": "fixture",
@@ -443,7 +448,62 @@ class EntryPointTests(unittest.TestCase):
                     "all_missing",
                 ),
             )
+            assessment = captured["backend_assessment"]
+            self.assertEqual(assessment["dataset_count"], 5)
+            self.assertEqual(
+                assessment["distance_tolerance"],
+                FROZEN_CONFIG.distance_tolerance,
+            )
+            self.assertLessEqual(
+                assessment["worst_max_abs_error"],
+                FROZEN_CONFIG.distance_tolerance,
+            )
+            self.assertEqual(sum(assessment["backend_counts"].values()), 5)
+            self.assertEqual(
+                assessment["fallback_reason_counts"],
+                {"missing_support_abstain": 1, "none": 4},
+            )
             self.assertFalse(output.exists())
+
+    def test_smoke_backend_gate_failure_never_creates_output(self) -> None:
+        real_qualify = qualify_dataset
+        invalid_audits = (
+            (
+                FROZEN_CONFIG.distance_tolerance * 1.000001,
+                None,
+                "tolerance",
+            ),
+            (
+                0.0,
+                "pair_audit_tolerance_exceeded",
+                "fallback",
+            ),
+        )
+
+        for maximum_error, fallback, message in invalid_audits:
+            with self.subTest(message=message), TemporaryDirectory() as raw:
+                output = Path(raw) / "publication"
+
+                def invalidate_accelerated_audit(**values: object):
+                    row = real_qualify(**values)
+                    audits = values.get("backend_audit")
+                    if values.get("accelerated") and audits:
+                        audits[-1] = replace(
+                            audits[-1],
+                            max_abs_error=maximum_error,
+                            fallback_reason=fallback,
+                        )
+                    return row
+
+                with patch(
+                    "experiments.exp414_missing_aware_near_repeat.runner."
+                    "qualify_dataset",
+                    side_effect=invalidate_accelerated_audit,
+                ):
+                    with self.assertRaisesRegex(ValueError, message):
+                        run_representative_smoke(output)
+
+                self.assertFalse(output.exists())
 
     def test_smoke_rejects_candidate_trace_mutation_with_equal_counts(
         self,

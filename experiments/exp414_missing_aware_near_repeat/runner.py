@@ -37,7 +37,11 @@ from experiments.exp411_near_repeat_qualification.runner import (
     dataset_train_identity_sha256,
 )
 
-from .checkpoints import Exp414CheckpointProvenance, Exp414CheckpointStore
+from .checkpoints import (
+    Exp414CheckpointProvenance,
+    Exp414CheckpointStore,
+    require_backend_audit_contract,
+)
 from .config import FROZEN_CONFIG, Exp414FrozenConfig
 from .contracts import DatasetRepairAudit, MissingInventory, PreparedDataset
 from .inputs import iter_prepared_train_datasets, scan_missing_inventory
@@ -299,6 +303,12 @@ def _run_checkpointed_stream(
                 raise ValueError(
                     "Exp414 dataset backend audit coverage is invalid"
                 )
+            require_backend_audit_contract(
+                result,
+                backend_audits[0],
+                repair_status="ready",
+                execution_source="exp414_computed",
+            )
             target_store.write_dataset(
                 result,
                 backend_audits[0],
@@ -385,6 +395,12 @@ def run_representative_smoke(output_dir: Path) -> Mapping[str, str]:
                 raise ValueError(
                     "Exp414 smoke backend audit coverage is invalid"
                 )
+            require_backend_audit_contract(
+                observed,
+                audits[0],
+                repair_status="ready",
+                execution_source="exp414_computed",
+            )
             backend_audits.append(audits[0])
     cpu_values = tuple(cpu_rows)
     accelerated_values = tuple(accelerated_rows)
@@ -422,14 +438,20 @@ def run_representative_smoke(output_dir: Path) -> Mapping[str, str]:
         repair_audits=repair_audits,
         aggregate=aggregate,
         subgroups=subgroups,
-        backend_assessment={
-            "canonical_backend": "adaptive_numpy_numba_cpu",
-            "qualification_identity": True,
-            "tag_identity": True,
-            "parity_trace_sha256": parity_trace_sha256,
-            "dataset_audits": tuple(asdict(value) for value in backend_audits),
-            "mlx_status": "excluded_by_user_decision",
-        },
+        backend_assessment=_build_backend_assessment(
+            records,
+            extra={
+                "canonical_backend": "adaptive_numpy_numba_cpu",
+                "qualification_identity": True,
+                "tag_identity": True,
+                "parity_trace_sha256": parity_trace_sha256,
+                "dataset_audits": tuple(
+                    asdict(value)
+                    for value in backend_audits
+                ),
+                "mlx_status": "excluded_by_user_decision",
+            },
+        ),
         provenance=provenance,
         full_qualification_executed=False,
         output_dir=output,
@@ -563,12 +585,15 @@ def run_full_qualification(
         repair_audits=repair_audits,
         aggregate=aggregate,
         subgroups=subgroups,
-        backend_assessment={
-            "canonical_backend": "adaptive_numpy_numba_cpu",
-            "accelerated_backend_adopted": True,
-            "benchmark_report_sha256": benchmark_sha256,
-            "mlx_status": "excluded_by_user_decision",
-        },
+        backend_assessment=_build_backend_assessment(
+            records,
+            extra={
+                "canonical_backend": "adaptive_numpy_numba_cpu",
+                "accelerated_backend_adopted": True,
+                "benchmark_report_sha256": benchmark_sha256,
+                "mlx_status": "excluded_by_user_decision",
+            },
+        ),
         provenance=publication_provenance,
         full_qualification_executed=True,
         output_dir=output,
@@ -905,6 +930,80 @@ def _require_record_identity(
         raise ValueError(
             f"Exp414 checkpoint TRAIN identity mismatch: {dataset}"
         )
+    qualification = record.get("qualification")
+    backend_audit = record.get("backend_audit")
+    execution_source = record.get("execution_source")
+    if (
+        not isinstance(qualification, DatasetQualification)
+        or not isinstance(backend_audit, DatasetBackendAudit)
+        or not isinstance(execution_source, str)
+    ):
+        raise ValueError("Exp414 checkpoint backend record is invalid")
+    require_backend_audit_contract(
+        qualification,
+        backend_audit,
+        repair_status=(
+            "ready"
+            if repaired_digest is not None
+            else "missing_support_abstain"
+        ),
+        execution_source=execution_source,
+    )
+
+
+def _build_backend_assessment(
+    records: Sequence[Mapping[str, object]],
+    *,
+    extra: Mapping[str, object],
+) -> dict[str, object]:
+    if not records:
+        raise ValueError("Exp414 backend assessment coverage is empty")
+    backend_counts: dict[str, int] = {}
+    fallback_counts: dict[str, int] = {}
+    worst_error = 0.0
+    observed: set[str] = set()
+    for record in records:
+        qualification = record.get("qualification")
+        audit = record.get("backend_audit")
+        execution_source = record.get("execution_source")
+        repair_status = record.get("repair_status")
+        if repair_status is None:
+            repair_status = (
+                "ready"
+                if record.get("repaired_train_identity_sha256") is not None
+                else "missing_support_abstain"
+            )
+        if (
+            not isinstance(qualification, DatasetQualification)
+            or not isinstance(audit, DatasetBackendAudit)
+            or not isinstance(execution_source, str)
+            or not isinstance(repair_status, str)
+            or qualification.dataset in observed
+        ):
+            raise ValueError("Exp414 backend assessment record is invalid")
+        require_backend_audit_contract(
+            qualification,
+            audit,
+            repair_status=repair_status,
+            execution_source=execution_source,
+        )
+        observed.add(qualification.dataset)
+        backend_counts[audit.backend] = backend_counts.get(audit.backend, 0) + 1
+        fallback = (
+            "none"
+            if audit.fallback_reason is None
+            else audit.fallback_reason
+        )
+        fallback_counts[fallback] = fallback_counts.get(fallback, 0) + 1
+        worst_error = max(worst_error, float(audit.max_abs_error))
+    return {
+        **dict(extra),
+        "dataset_count": len(records),
+        "distance_tolerance": FROZEN_CONFIG.distance_tolerance,
+        "worst_max_abs_error": worst_error,
+        "backend_counts": dict(sorted(backend_counts.items())),
+        "fallback_reason_counts": dict(sorted(fallback_counts.items())),
+    }
 
 
 def _family_from_dataset(dataset: str) -> str:

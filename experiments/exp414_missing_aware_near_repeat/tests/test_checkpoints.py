@@ -20,6 +20,7 @@ from experiments.exp414_missing_aware_near_repeat.checkpoints import (
     Exp414CheckpointProvenance,
     Exp414CheckpointStore,
 )
+from experiments.exp414_missing_aware_near_repeat.config import FROZEN_CONFIG
 
 
 def _row(dataset: str = "Alpha_normal_0") -> DatasetQualification:
@@ -59,6 +60,30 @@ def _audit() -> DatasetBackendAudit:
     )
 
 
+def _abstained_row(
+    dataset: str = "Alpha_normal_0",
+) -> DatasetQualification:
+    types = perturbation_types()
+    return DatasetQualification(
+        dataset=dataset,
+        family=dataset.split("_normal_", 1)[0],
+        identity_group_count=6,
+        normal_total=6,
+        normal_abstained=6,
+        normal_near={"0.01": 0, "0.05": 0, "0.10": 0},
+        synthetic_total={"0.01": 0, "0.05": 0, "0.10": 0},
+        synthetic_near={"0.01": 0, "0.05": 0, "0.10": 0},
+        perturbation_total={
+            key: {name: 0 for name in types}
+            for key in ("0.01", "0.05", "0.10")
+        },
+        perturbation_near={
+            key: {name: 0 for name in types}
+            for key in ("0.01", "0.05", "0.10")
+        },
+    )
+
+
 def _provenance() -> Exp414CheckpointProvenance:
     return Exp414CheckpointProvenance(
         git_commit="1" * 40,
@@ -78,13 +103,15 @@ def _write(
     store: Exp414CheckpointStore,
     row: DatasetQualification,
     *,
+    audit: DatasetBackendAudit | None = None,
+    repaired_train_identity_sha256: str | None = "1" * 64,
     execution_source: str = "exp414_computed",
 ) -> None:
     store.write_dataset(
         row,
-        _audit(),
+        audit or _audit(),
         raw_train_identity_sha256="1" * 64,
-        repaired_train_identity_sha256="1" * 64,
+        repaired_train_identity_sha256=repaired_train_identity_sha256,
         repair_audit_sha256="2" * 64,
         execution_source=execution_source,
         elapsed_seconds=0.25,
@@ -92,6 +119,127 @@ def _write(
 
 
 class Exp414CheckpointTests(unittest.TestCase):
+    def test_ready_write_rejects_over_tolerance_backend_audit_without_record(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw) / "checkpoint"
+            store = Exp414CheckpointStore(
+                root,
+                _provenance(),
+                ("Alpha_normal_0",),
+            )
+            invalid = replace(
+                _audit(),
+                max_abs_error=FROZEN_CONFIG.distance_tolerance * 1.000001,
+            )
+
+            with self.assertRaisesRegex(ValueError, "tolerance"):
+                _write(store, _row(), audit=invalid)
+
+            self.assertEqual(tuple((root / "datasets").iterdir()), ())
+
+    def test_ready_write_rejects_backend_fallback_without_record(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw) / "checkpoint"
+            store = Exp414CheckpointStore(
+                root,
+                _provenance(),
+                ("Alpha_normal_0",),
+            )
+            invalid = replace(
+                _audit(),
+                fallback_reason="pair_audit_tolerance_exceeded",
+            )
+
+            with self.assertRaisesRegex(ValueError, "fallback"):
+                _write(store, _row(), audit=invalid)
+
+            self.assertEqual(tuple((root / "datasets").iterdir()), ())
+
+    def test_resumed_ready_record_revalidates_backend_gate(self) -> None:
+        for field, value, message in (
+            (
+                "max_abs_error",
+                FROZEN_CONFIG.distance_tolerance * 1.000001,
+                "tolerance",
+            ),
+            (
+                "fallback_reason",
+                "pair_audit_tolerance_exceeded",
+                "fallback",
+            ),
+        ):
+            with self.subTest(field=field), TemporaryDirectory() as raw:
+                root = Path(raw) / "checkpoint"
+                store = Exp414CheckpointStore(
+                    root,
+                    _provenance(),
+                    ("Alpha_normal_0",),
+                )
+                _write(store, _row())
+                path = next((root / "datasets").glob("*.json"))
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                payload["backend_audit"][field] = value
+                payload.pop("payload_sha256")
+                payload["payload_sha256"] = sha256(
+                    canonical_json_bytes(payload)
+                ).hexdigest()
+                path.write_bytes(canonical_json_bytes(payload) + b"\n")
+
+                with self.assertRaisesRegex(ValueError, message):
+                    store.load_dataset_record("Alpha_normal_0")
+
+    def test_missing_support_abstention_accepts_only_exact_backend_sentinel(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw) / "checkpoint"
+            store = Exp414CheckpointStore(
+                root,
+                _provenance(),
+                ("Alpha_normal_0",),
+            )
+            sentinel = DatasetBackendAudit(
+                backend="numpy_cpu",
+                sampled_pairs=(),
+                max_abs_error=0.0,
+                fallback_reason="missing_support_abstain",
+            )
+
+            _write(
+                store,
+                _abstained_row(),
+                audit=sentinel,
+                repaired_train_identity_sha256=None,
+            )
+
+            self.assertEqual(
+                store.load_dataset_record("Alpha_normal_0")[
+                    "backend_audit"
+                ],
+                sentinel,
+            )
+
+    def test_missing_support_abstention_rejects_non_sentinel_audit(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw) / "checkpoint"
+            store = Exp414CheckpointStore(
+                root,
+                _provenance(),
+                ("Alpha_normal_0",),
+            )
+
+            with self.assertRaisesRegex(ValueError, "missing-support"):
+                _write(
+                    store,
+                    _abstained_row(),
+                    audit=replace(_audit(), backend="numpy_cpu"),
+                    repaired_train_identity_sha256=None,
+                )
+
+            self.assertEqual(tuple((root / "datasets").iterdir()), ())
+
     def test_two_dataset_store_round_trips_record_and_counts_valid_records(self) -> None:
         with TemporaryDirectory() as raw:
             store = Exp414CheckpointStore(
@@ -184,6 +332,47 @@ class Exp414CheckpointTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "counter"):
                 _write(store, malformed)
+
+    def test_boolean_root_schema_version_is_rejected(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw) / "checkpoint"
+            Exp414CheckpointStore(
+                root,
+                _provenance(),
+                ("Alpha_normal_0",),
+            )
+            path = root / "checkpoint_provenance.json"
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["schema_version"] = True
+            path.write_bytes(canonical_json_bytes(payload) + b"\n")
+
+            with self.assertRaisesRegex(ValueError, "version"):
+                Exp414CheckpointStore(
+                    root,
+                    _provenance(),
+                    ("Alpha_normal_0",),
+                )
+
+    def test_boolean_dataset_schema_version_is_rejected(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw) / "checkpoint"
+            store = Exp414CheckpointStore(
+                root,
+                _provenance(),
+                ("Alpha_normal_0",),
+            )
+            _write(store, _row())
+            path = next((root / "datasets").glob("*.json"))
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            payload["schema_version"] = True
+            payload.pop("payload_sha256")
+            payload["payload_sha256"] = sha256(
+                canonical_json_bytes(payload)
+            ).hexdigest()
+            path.write_bytes(canonical_json_bytes(payload) + b"\n")
+
+            with self.assertRaisesRegex(ValueError, "version"):
+                store.load_dataset_record("Alpha_normal_0")
 
     def test_wrong_root_provenance_is_rejected_without_mutation(self) -> None:
         with TemporaryDirectory() as raw:
@@ -320,6 +509,24 @@ class Exp414CheckpointTests(unittest.TestCase):
                 tuple(row.dataset for row in store.require_complete(2)),
                 ("Alpha_normal_0", "Beta_normal_0"),
             )
+
+    def test_require_complete_rejects_non_positive_or_non_exact_integer_first(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as raw:
+            store = Exp414CheckpointStore(
+                Path(raw) / "checkpoint",
+                _provenance(),
+                ("Alpha_normal_0",),
+            )
+
+            for value in (True, 1.0, "1", 0, -1):
+                with self.subTest(value=value):
+                    with self.assertRaisesRegex(
+                        ValueError,
+                        "expected family count",
+                    ):
+                        store.require_complete(value)
 
 
 if __name__ == "__main__":

@@ -204,7 +204,14 @@ def _fixture() -> tuple[object, ...]:
         audits,
         aggregate,
         subgroups,
-        {"canonical_backend": "adaptive_numpy_numba_cpu"},
+        {
+            "canonical_backend": "adaptive_numpy_numba_cpu",
+            "dataset_count": 2,
+            "distance_tolerance": 1e-6,
+            "worst_max_abs_error": 1e-8,
+            "backend_counts": {"numba_cpu": 2},
+            "fallback_reason_counts": {"none": 2},
+        },
         {
             "mode": "fixture",
             "test_values_used": False,
@@ -327,6 +334,33 @@ class ReportingTests(unittest.TestCase):
             if name != "all":
                 self.assertFalse(row["selection_authority"])
 
+        backend = json.loads(payloads["exp414_backend_assessment.json"])
+        self.assertEqual(
+            set(
+                key
+                for key in backend
+                if key
+                in {
+                    "dataset_count",
+                    "distance_tolerance",
+                    "worst_max_abs_error",
+                    "backend_counts",
+                    "fallback_reason_counts",
+                }
+            ),
+            {
+                "dataset_count",
+                "distance_tolerance",
+                "worst_max_abs_error",
+                "backend_counts",
+                "fallback_reason_counts",
+            },
+        )
+        self.assertEqual(backend["dataset_count"], 2)
+        self.assertEqual(backend["backend_counts"], {"numba_cpu": 2})
+        self.assertEqual(backend["fallback_reason_counts"], {"none": 2})
+        self.assertEqual(backend["worst_max_abs_error"], 1e-8)
+
         report = payloads["EXP414_RESULT_REPORT_KO.md"].decode("utf-8")
         self.assertIn("TRAIN-only", report)
         self.assertIn("결측", report)
@@ -335,8 +369,8 @@ class ReportingTests(unittest.TestCase):
     def test_json_outputs_reject_nonfinite_values(self) -> None:
         values = list(_fixture())
         values[4] = {
-            "canonical_backend": "adaptive_numpy_numba_cpu",
-            "max_abs_error": math.nan,
+            **values[4],
+            "worst_max_abs_error": math.nan,
         }
 
         with self.assertRaisesRegex(ValueError, "finite|JSON"):
@@ -344,6 +378,33 @@ class ReportingTests(unittest.TestCase):
                 *values,
                 full_qualification_executed=False,
             )
+
+    def test_ready_record_backend_gate_is_rechecked_before_rendering(
+        self,
+    ) -> None:
+        for maximum_error, fallback, message in (
+            (1.000001e-6, None, "tolerance"),
+            (0.0, "pair_audit_tolerance_exceeded", "fallback"),
+        ):
+            with self.subTest(message=message):
+                values = list(_fixture())
+                records = list(values[0])
+                records[0] = {
+                    **records[0],
+                    "backend_audit": DatasetBackendAudit(
+                        backend="numba_cpu",
+                        sampled_pairs=((0, 1),),
+                        max_abs_error=maximum_error,
+                        fallback_reason=fallback,
+                    ),
+                }
+                values[0] = tuple(records)
+
+                with self.assertRaisesRegex(ValueError, message):
+                    render_payloads(
+                        *values,
+                        full_qualification_executed=True,
+                    )
 
 
 if __name__ == "__main__":

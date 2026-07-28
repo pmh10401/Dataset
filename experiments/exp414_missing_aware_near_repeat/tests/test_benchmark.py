@@ -28,7 +28,7 @@ _CONTRACTS = {
         "e8044e79b3be6737a7ab3ffc8df9ff3cbbce52c9cef80ba6ba5050d36d208746"
     ),
     "execution_contract_sha256": (
-        "5e61eb193ded2e3ab06f35e09977218ba5a93e7fc3d39f07b1f05ef823dd57c0"
+        "f7e1ea03a7a160d672d91b0dc062303c04a221848f2b6365717b08dca0d36340"
     ),
 }
 

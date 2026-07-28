@@ -94,6 +94,14 @@ backend = json.loads(
 )
 assert backend["qualification_identity"] is True
 assert backend["tag_identity"] is True
+assert backend["dataset_count"] == 5
+assert backend["distance_tolerance"] == 1e-6
+assert backend["worst_max_abs_error"] <= 1e-6
+assert sum(backend["backend_counts"].values()) == 5
+assert backend["fallback_reason_counts"] == {
+    "missing_support_abstain": 1,
+    "none": 4,
+}
 assert provenance["smoke_coverage"] == [
     "clean",
     "internal_gap",
@@ -103,6 +111,15 @@ assert provenance["smoke_coverage"] == [
 ]
 PY
 ```
+
+`exp414_backend_assessment.json`은 모든 dataset record에서 다시 계산한
+`dataset_count`, `distance_tolerance`, `worst_max_abs_error`,
+`backend_counts`, `fallback_reason_counts`를 공통 필드로 기록한다.
+`ready` record는 유한 최대 오차가 `1e-6` 이하여야 하며 fallback은
+반드시 null이어야 한다. 예외는 dataset 전체가 abstain한 경우의 정확한
+`numpy_cpu / empty sampled_pairs / 0.0 / missing_support_abstain` sentinel
+하나뿐이다. 이 gate는 신규 계산, checkpoint resume, Exp411 migration과
+최종 rendering에서 모두 다시 검증한다.
 
 ## 5. clean-commit acceleration benchmark
 

@@ -14,6 +14,7 @@ from experiments.exp411_near_repeat_qualification.contracts import (
     DatasetQualification,
 )
 
+from .checkpoints import require_backend_audit_contract
 from .config import FROZEN_CONFIG, Exp414FrozenConfig
 from .contracts import DatasetRepairAudit
 
@@ -129,6 +130,11 @@ def render_payloads(
         )
         for record in ordered_records
     )
+    _require_backend_assessment(
+        ordered_records,
+        backend_assessment,
+        config,
+    )
     repair_rows = _repair_rows(ordered_audits)
     quantile_rows = _quantile_rows(subgroups, config)
     plain_subgroups = _plain(subgroups)
@@ -207,9 +213,13 @@ def _dataset_row(
     recorded_status = record.get("repair_status")
     if recorded_status is not None and recorded_status != repair_status:
         raise ValueError("Exp414 reporting repair status mismatch")
+    require_backend_audit_contract(
+        qualification,
+        backend_audit,
+        repair_status=repair_status,
+        execution_source=str(source),
+    )
     maximum_error = float(backend_audit.max_abs_error)
-    if not math.isfinite(maximum_error) or maximum_error < 0.0:
-        raise ValueError("Exp414 reporting backend error must be finite")
     values = asdict(qualification)
     return {
         "dataset": values["dataset"],
@@ -233,6 +243,44 @@ def _dataset_row(
         "backend_max_abs_error": maximum_error,
         "backend_fallback_reason": backend_audit.fallback_reason,
     }
+
+
+def _require_backend_assessment(
+    records: Sequence[Mapping[str, object]],
+    assessment: Mapping[str, object],
+    config: Exp414FrozenConfig,
+) -> None:
+    if not isinstance(assessment, Mapping):
+        raise ValueError("Exp414 backend assessment is invalid")
+    backend_counts: dict[str, int] = {}
+    fallback_counts: dict[str, int] = {}
+    worst_error = 0.0
+    for record in records:
+        audit = record.get("backend_audit")
+        if not isinstance(audit, DatasetBackendAudit):
+            raise ValueError("Exp414 backend assessment record is invalid")
+        backend_counts[audit.backend] = backend_counts.get(audit.backend, 0) + 1
+        fallback = (
+            "none"
+            if audit.fallback_reason is None
+            else audit.fallback_reason
+        )
+        fallback_counts[fallback] = fallback_counts.get(fallback, 0) + 1
+        worst_error = max(worst_error, float(audit.max_abs_error))
+    observed_worst = float(assessment.get("worst_max_abs_error", math.nan))
+    if not math.isfinite(observed_worst):
+        raise ValueError("Exp414 backend assessment worst error must be finite")
+    if (
+        type(assessment.get("dataset_count")) is not int
+        or assessment["dataset_count"] != len(records)
+        or assessment.get("distance_tolerance") != config.distance_tolerance
+        or observed_worst != worst_error
+        or assessment.get("backend_counts")
+        != dict(sorted(backend_counts.items()))
+        or assessment.get("fallback_reason_counts")
+        != dict(sorted(fallback_counts.items()))
+    ):
+        raise ValueError("Exp414 backend assessment coverage is invalid")
 
 
 def _repair_rows(

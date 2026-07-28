@@ -25,7 +25,10 @@ from experiments.exp411_near_repeat_qualification.runner import (
     dataset_train_identity_sha256,
 )
 
-from .checkpoints import Exp414CheckpointStore
+from .checkpoints import (
+    Exp414CheckpointStore,
+    require_backend_audit_contract,
+)
 from .config import FROZEN_CONFIG
 from .contracts import PreparedDataset
 
@@ -34,6 +37,15 @@ EXP411_MIGRATION_REPRESENTATIVES = (
     "ACSF1_normal_0",
     "CBF_normal_2",
     "DistalPhalanxTW_normal_8",
+)
+_EXP411_FROZEN_CONFIG_SHA256 = (
+    "e4deeaf657e63dc1280e09c88a933cdb8ae0d103a25fe98b7bd894df50b1e588"
+)
+_EXP411_PERTURBATION_CONTRACT_SHA256 = (
+    "6bc750fff507189ec190a04749be2f99f4fb766cba76d70804bf7cc713f1aeff"
+)
+_EXP411_ACCELERATION_CONTRACT_SHA256 = (
+    "4e5a793684b576b465bfcf2606b58d99a67671a7c4fbc6a348bf4bb9f52e9d79"
 )
 
 _SOURCE_ROOT_KEYS = {
@@ -106,7 +118,7 @@ def open_exp411_checkpoint(
     _require_pinned_provenance(provenance)
     requested = tuple(str(dataset) for dataset in datasets)
     store = CheckpointStore(source_root, provenance, requested)
-    store.load_completed()
+    _require_source_records(store)
     return store
 
 
@@ -133,6 +145,7 @@ def verify_migration_representatives(
                 f"Exp411 migration representative is not clean: {dataset}"
             )
         record = validated.load_dataset_record(dataset)
+        _require_source_record_backend(record)
         raw_digest = prepared.repair_audit.raw_train_identity_sha256
         repaired_digest = (
             prepared.repair_audit.repaired_train_identity_sha256
@@ -189,6 +202,7 @@ def migrate_if_eligible(
     if prepared.dataset not in completed:
         return False
     record = validated.load_dataset_record(prepared.dataset)
+    _require_source_record_backend(record)
     raw_digest = prepared.repair_audit.raw_train_identity_sha256
     repaired_digest = prepared.repair_audit.repaired_train_identity_sha256
     if (
@@ -237,6 +251,37 @@ def _require_pinned_provenance(provenance: CheckpointProvenance) -> None:
         != FROZEN_CONFIG.population_manifest_sha256
     ):
         raise ValueError("Exp411 migration source population manifest mismatch")
+    if provenance.frozen_config_sha256 != _EXP411_FROZEN_CONFIG_SHA256:
+        raise ValueError("Exp411 migration source frozen config mismatch")
+    if (
+        provenance.perturbation_contract_sha256
+        != _EXP411_PERTURBATION_CONTRACT_SHA256
+    ):
+        raise ValueError(
+            "Exp411 migration source perturbation contract mismatch"
+        )
+    if (
+        provenance.acceleration_contract_sha256
+        != _EXP411_ACCELERATION_CONTRACT_SHA256
+    ):
+        raise ValueError(
+            "Exp411 migration source acceleration contract mismatch"
+        )
+
+
+def _require_source_records(source: CheckpointStore) -> None:
+    records = source._load_records()
+    for record in records.values():
+        _require_source_record_backend(record)
+
+
+def _require_source_record_backend(record: Mapping[str, object]) -> None:
+    require_backend_audit_contract(
+        record["qualification"],
+        record["backend_audit"],
+        repair_status="ready",
+        execution_source="migrated_exp411_verified",
+    )
 
 
 def _require_representative_evidence(

@@ -50,6 +50,15 @@ REPRESENTATIVES = (
     "DistalPhalanxTW_normal_8",
 )
 TARGET = "Alpha_normal_0"
+EXP411_FROZEN_CONFIG_SHA256 = (
+    "e4deeaf657e63dc1280e09c88a933cdb8ae0d103a25fe98b7bd894df50b1e588"
+)
+EXP411_PERTURBATION_CONTRACT_SHA256 = (
+    "6bc750fff507189ec190a04749be2f99f4fb766cba76d70804bf7cc713f1aeff"
+)
+EXP411_ACCELERATION_CONTRACT_SHA256 = (
+    "4e5a793684b576b465bfcf2606b58d99a67671a7c4fbc6a348bf4bb9f52e9d79"
+)
 
 
 def _prepared(
@@ -107,14 +116,19 @@ def _backend_audit() -> DatasetBackendAudit:
 def _source_provenance(
     *,
     git_commit: str = FROZEN_CONFIG.exp411_source_commit,
+    frozen_config_sha256: str = EXP411_FROZEN_CONFIG_SHA256,
+    perturbation_contract_sha256: str = (
+        EXP411_PERTURBATION_CONTRACT_SHA256
+    ),
+    acceleration_contract_sha256: str = EXP411_ACCELERATION_CONTRACT_SHA256,
 ) -> CheckpointProvenance:
     return CheckpointProvenance(
         git_commit=git_commit,
         database_snapshot={"db": FROZEN_CONFIG.database_sha256},
         population_manifest_sha256=FROZEN_CONFIG.population_manifest_sha256,
-        frozen_config_sha256="1" * 64,
-        perturbation_contract_sha256="2" * 64,
-        acceleration_contract_sha256="3" * 64,
+        frozen_config_sha256=frozen_config_sha256,
+        perturbation_contract_sha256=perturbation_contract_sha256,
+        acceleration_contract_sha256=acceleration_contract_sha256,
     )
 
 
@@ -142,6 +156,7 @@ def _build_source(
     provenance: CheckpointProvenance | None = None,
     qualification_overrides: dict[str, DatasetQualification] | None = None,
     identity_overrides: dict[str, str] | None = None,
+    backend_audit_overrides: dict[str, DatasetBackendAudit] | None = None,
 ) -> tuple[Path, tuple[str, ...]]:
     datasets = tuple(sorted(prepared_by_dataset))
     root = parent / "exp411"
@@ -154,7 +169,7 @@ def _build_source(
         prepared = prepared_by_dataset[dataset]
         store.write_dataset(
             (qualification_overrides or {}).get(dataset, _qualification(prepared)),
-            _backend_audit(),
+            (backend_audit_overrides or {}).get(dataset, _backend_audit()),
             (identity_overrides or {}).get(
                 dataset,
                 dataset_train_identity_sha256(prepared.runs),
@@ -329,6 +344,96 @@ class Exp411MigrationTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "Git commit"):
                 open_exp411_checkpoint(root, datasets)
+
+    def test_each_exp411_contract_digest_mutation_fails_source_open(
+        self,
+    ) -> None:
+        prepared = {
+            dataset: _prepared(dataset)
+            for dataset in REPRESENTATIVES
+        }
+        mutations = (
+            ("frozen_config_sha256", "frozen config"),
+            ("perturbation_contract_sha256", "perturbation contract"),
+            ("acceleration_contract_sha256", "acceleration contract"),
+        )
+        for field, message in mutations:
+            with self.subTest(field=field), TemporaryDirectory() as raw:
+                parent = Path(raw)
+                provenance = replace(
+                    _source_provenance(),
+                    **{field: "f" * 64},
+                )
+                root, datasets = _build_source(
+                    parent,
+                    prepared,
+                    provenance=provenance,
+                )
+
+                with self.assertRaisesRegex(ValueError, message):
+                    open_exp411_checkpoint(root, datasets)
+
+    def test_each_exp411_contract_digest_is_checked_again_on_revalidation(
+        self,
+    ) -> None:
+        prepared = {
+            dataset: _prepared(dataset)
+            for dataset in REPRESENTATIVES
+        }
+        mutations = (
+            ("frozen_config_sha256", "frozen config"),
+            ("perturbation_contract_sha256", "perturbation contract"),
+            ("acceleration_contract_sha256", "acceleration contract"),
+        )
+        for field, message in mutations:
+            with self.subTest(field=field), TemporaryDirectory() as raw:
+                parent = Path(raw)
+                root, datasets = _build_source(parent, prepared)
+                source = open_exp411_checkpoint(root, datasets)
+                source.provenance = replace(
+                    source.provenance,
+                    **{field: "f" * 64},
+                )
+
+                with self.assertRaisesRegex(ValueError, message):
+                    verify_migration_representatives(source, prepared)
+
+    def test_source_backend_audit_must_pass_ready_record_gate(self) -> None:
+        prepared = {
+            dataset: _prepared(dataset)
+            for dataset in REPRESENTATIVES
+        }
+        invalid_audits = (
+            (
+                replace(
+                    _backend_audit(),
+                    max_abs_error=(
+                        EXP411_FROZEN_CONFIG.distance_tolerance * 1.000001
+                    ),
+                ),
+                "tolerance",
+            ),
+            (
+                replace(
+                    _backend_audit(),
+                    fallback_reason="pair_audit_tolerance_exceeded",
+                ),
+                "fallback",
+            ),
+        )
+        for audit, message in invalid_audits:
+            with self.subTest(message=message), TemporaryDirectory() as raw:
+                parent = Path(raw)
+                root, datasets = _build_source(
+                    parent,
+                    prepared,
+                    backend_audit_overrides={
+                        REPRESENTATIVES[0]: audit,
+                    },
+                )
+
+                with self.assertRaisesRegex(ValueError, message):
+                    open_exp411_checkpoint(root, datasets)
 
     def test_stale_progress_is_ignored_and_valid_records_are_counted(self) -> None:
         prepared = {
