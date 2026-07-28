@@ -1,3 +1,4 @@
+from contextlib import closing
 from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
@@ -21,7 +22,7 @@ def _digest(path: Path) -> str:
 
 
 def write_profile_db(path: Path) -> None:
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection:
         connection.executescript(
             """
             CREATE TABLE datasets (
@@ -61,6 +62,7 @@ def write_profile_db(path: Path) -> None:
             """,
             rows,
         )
+        connection.commit()
 
 
 class DatasetProfileTests(unittest.TestCase):
