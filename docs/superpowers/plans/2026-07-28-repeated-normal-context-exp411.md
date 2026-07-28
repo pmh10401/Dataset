@@ -57,62 +57,12 @@
 **Files:**
 - Create: `docs/REPEATED_NORMAL_INTERPRETATION_KO.md`
 - Modify: `docs/PROJECT_RESEARCH_CONTEXT_KO.md`
-- Create: `experiments/exp411_near_repeat_qualification/__init__.py`
-- Create: `experiments/exp411_near_repeat_qualification/tests/__init__.py`
-- Create: `experiments/exp411_near_repeat_qualification/tests/test_documentation_contract.py`
 
 **Interfaces:**
 - Consumes: Exp290/291 설계 수치, Exp410 local result report, umbrella design.
 - Produces: 후속 사전등록과 코드가 인용할 공식 decision record.
 
-- [ ] **Step 1: 문서 계약 실패 테스트를 작성한다**
-
-```python
-from pathlib import Path
-import unittest
-
-
-ROOT = Path(__file__).resolve().parents[3]
-
-
-class DocumentationContractTests(unittest.TestCase):
-    def test_context_defines_repeated_normal_as_intended_operation(self) -> None:
-        context = (ROOT / "docs/PROJECT_RESEARCH_CONTEXT_KO.md").read_text("utf-8")
-        required = (
-            "의도적 repeated-normal 운전 조건",
-            "automatic normal exact",
-            "35개 모두 FP",
-            "TP 손실 0",
-            "repeatability-aware reporting",
-            "clean-balanced",
-            "Exp410",
-        )
-        for phrase in required:
-            self.assertIn(phrase, context)
-
-    def test_decision_record_preserves_claim_boundary(self) -> None:
-        record = (ROOT / "docs/REPEATED_NORMAL_INTERPRETATION_KO.md").read_text("utf-8")
-        for phrase in (
-            "실제 동일 wafer run이라는 뜻이 아니다",
-            "prospective 성능을 증명하지 않는다",
-            "Exp290",
-            "Exp411",
-        ):
-            self.assertIn(phrase, record)
-```
-
-- [ ] **Step 2: 테스트가 현재 문구와 파일 부재 때문에 실패하는지 확인한다**
-
-Run:
-
-```bash
-.venv/bin/python -m unittest \
-  experiments.exp411_near_repeat_qualification.tests.test_documentation_contract -v
-```
-
-Expected: `REPEATED_NORMAL_INTERPRETATION_KO.md` 부재 또는 필수 문구 누락으로 FAIL.
-
-- [ ] **Step 3: 공식 맥락 문서와 decision record를 작성한다**
+- [ ] **Step 1: 공식 맥락 문서와 decision record를 작성한다**
 
 `docs/PROJECT_RESEARCH_CONTEXT_KO.md`에서 다음 의미를 정확히 반영한다.
 
@@ -129,33 +79,35 @@ equipment/recipe/sensor/step 상태가 반복되는 의도적 repeated-normal �
 사실을 추가한다. Exp410의 high-overlap 성능은 긍정적 관찰이지만 family
 구성 차이 때문에 overlap 단독 인과 효과로 부르지 않는다.
 
-- [ ] **Step 4: 문서 계약 테스트와 링크 검사를 통과시킨다**
+- [ ] **Step 2: 문서 의미·링크·상세 결과 비공개 경계를 검사한다**
 
 Run:
 
 ```bash
-.venv/bin/python -m unittest \
-  experiments.exp411_near_repeat_qualification.tests.test_documentation_contract -v
 rg -n "Exp290|Exp291|Exp410|repeated-normal|repeatability-aware|clean-balanced" \
+  docs/PROJECT_RESEARCH_CONTEXT_KO.md docs/REPEATED_NORMAL_INTERPRETATION_KO.md
+! rg -n "0\\.649358068823|0\\.415837057662" \
   docs/PROJECT_RESEARCH_CONTEXT_KO.md docs/REPEATED_NORMAL_INTERPRETATION_KO.md
 ```
 
-Expected: 2 tests PASS, 두 문서 모두 근거와 해석 경계를 포함.
+Expected: 두 문서 모두 근거와 해석 경계를 포함하고 Exp410 상세 파생 metric은
+공식 문서에 없음.
 
-- [ ] **Step 5: 문서 정정을 커밋한다**
+- [ ] **Step 3: 문서 정정을 커밋한다**
 
 ```bash
 git add docs/PROJECT_RESEARCH_CONTEXT_KO.md \
   docs/REPEATED_NORMAL_INTERPRETATION_KO.md \
-  experiments/exp411_near_repeat_qualification/__init__.py \
-  experiments/exp411_near_repeat_qualification/tests/__init__.py \
-  experiments/exp411_near_repeat_qualification/tests/test_documentation_contract.py
+  docs/superpowers/specs/2026-07-28-repeated-normal-interpretation-exp411-413-design.md \
+  docs/superpowers/plans/2026-07-28-repeated-normal-context-exp411.md
 git commit -m "docs: clarify repeated-normal operating intent"
 ```
 
 ### Task 2: 동결 config, 계약, identity-group fold를 구현한다
 
 **Files:**
+- Create: `experiments/exp411_near_repeat_qualification/__init__.py`
+- Create: `experiments/exp411_near_repeat_qualification/tests/__init__.py`
 - Create: `experiments/exp411_near_repeat_qualification/config.py`
 - Create: `experiments/exp411_near_repeat_qualification/contracts.py`
 - Create: `experiments/exp411_near_repeat_qualification/folds.py`
@@ -275,6 +227,8 @@ Expected: 4 tests PASS.
 
 ```bash
 git add experiments/exp411_near_repeat_qualification/config.py \
+  experiments/exp411_near_repeat_qualification/__init__.py \
+  experiments/exp411_near_repeat_qualification/tests/__init__.py \
   experiments/exp411_near_repeat_qualification/contracts.py \
   experiments/exp411_near_repeat_qualification/folds.py \
   experiments/exp411_near_repeat_qualification/tests/test_folds.py
@@ -845,44 +799,12 @@ git commit -m "feat: publish Exp411 qualification atomically"
 **Files:**
 - Create: `docs/EXP411_PREREGISTRATION_KO.md`
 - Create: `docs/EXP411_RUNBOOK_KO.md`
-- Modify: `experiments/exp411_near_repeat_qualification/tests/test_documentation_contract.py`
 
 **Interfaces:**
 - Consumes: Tasks 1-7의 실제 CLI, config, output contract.
 - Produces: 재현 가능한 실행 계약과 full-run 승인 경계.
 
-- [ ] **Step 1: 사전등록·runbook 계약 테스트를 추가한다**
-
-```python
-def test_exp411_docs_freeze_execution_boundary(self) -> None:
-    prereg = (ROOT / "docs/EXP411_PREREGISTRATION_KO.md").read_text("utf-8")
-    runbook = (ROOT / "docs/EXP411_RUNBOOK_KO.md").read_text("utf-8")
-    for phrase in (
-        "TEST split을 읽지 않는다",
-        "no_qualified_near_rule",
-        "0.01",
-        "0.05",
-        "0.10",
-        "사용자의 별도 명시적 승인",
-    ):
-        self.assertIn(phrase, prereg)
-    self.assertIn(".venv/bin/python", runbook)
-    self.assertIn("--representative-smoke", runbook)
-    self.assertIn("--full-qualification", runbook)
-```
-
-- [ ] **Step 2: 문서 부재로 테스트가 실패하는지 확인한다**
-
-Run:
-
-```bash
-.venv/bin/python -m unittest \
-  experiments.exp411_near_repeat_qualification.tests.test_documentation_contract -v
-```
-
-Expected: Exp411 문서 부재로 FAIL.
-
-- [ ] **Step 3: 사전등록과 runbook을 실제 구현에 맞춰 작성한다**
+- [ ] **Step 1: 사전등록과 runbook을 실제 구현에 맞춰 작성한다**
 
 사전등록은 umbrella design의 Exp411 계약을 수치 그대로 복사하고,
 Exp412/413 및 정책 변경이 범위 밖임을 명시한다. Runbook 환경 확인은 다음
@@ -898,7 +820,21 @@ Exp412/413 및 정책 변경이 범위 밖임을 명시한다. Runbook 환경 �
 full 명령은 문서화하되 사용자 승인 전 실행하지 않는다고 바로 위에
 경고한다.
 
-- [ ] **Step 4: Exp411과 관련 회귀 테스트 전체를 실행한다**
+- [ ] **Step 2: 사전등록·runbook의 실행 경계와 환경 명령을 검사한다**
+
+Run:
+
+```bash
+rg -n "TEST split을 읽지 않는다|no_qualified_near_rule|0\\.01|0\\.05|0\\.10|사용자의 별도 명시적 승인" \
+  docs/EXP411_PREREGISTRATION_KO.md
+rg -n "\\.venv/bin/python|--representative-smoke|--full-qualification|Numba|PyTorch|MLX.*제외" \
+  docs/EXP411_RUNBOOK_KO.md
+```
+
+Expected: 사전등록의 고정값과 실행 승인 경계, runbook의 두 실행 mode와
+backend 결정이 모두 확인됨.
+
+- [ ] **Step 3: Exp411과 관련 회귀 테스트 전체를 실행한다**
 
 Run:
 
@@ -918,7 +854,7 @@ git diff --check
 Expected: Exp411 tests 0 failures, Exp407 synthetic 9 tests PASS, Exp410
 20 tests PASS, compileall exit 0, whitespace error 0.
 
-- [ ] **Step 5: 금지 필드와 정책 불변성을 독립 검사한다**
+- [ ] **Step 4: 금지 필드와 정책 불변성을 독립 검사한다**
 
 Run:
 
@@ -934,15 +870,14 @@ Expected: 첫 명령은 구조 테스트의 forbidden literal 이외 production
 module에서 0건, 두 번째 명령은 동결 수치와 승인 gate를 모두 찾고, 변경은
 계획된 Exp411/docs 파일뿐.
 
-- [ ] **Step 6: 문서와 최종 검증을 커밋한다**
+- [ ] **Step 5: 문서와 최종 검증을 커밋한다**
 
 ```bash
-git add docs/EXP411_PREREGISTRATION_KO.md docs/EXP411_RUNBOOK_KO.md \
-  experiments/exp411_near_repeat_qualification/tests/test_documentation_contract.py
+git add docs/EXP411_PREREGISTRATION_KO.md docs/EXP411_RUNBOOK_KO.md
 git commit -m "docs: preregister Exp411 near-repeat qualification"
 ```
 
-- [ ] **Step 7: full 실행 없이 최종 상태를 확인한다**
+- [ ] **Step 6: full 실행 없이 최종 상태를 확인한다**
 
 Run:
 
