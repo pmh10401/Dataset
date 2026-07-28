@@ -17,6 +17,7 @@ __pycache__/
 .venv*/
 venv/
 env/
+.worktrees/
 
 # Regenerable experiment runtime artifacts
 outputs/**/cache/

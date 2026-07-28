@@ -31,6 +31,7 @@ from .feature_stability import audit_feature_stability, build_group_summary
 from .foundation import DB_PATH, EXP291_MANIFEST_PATH, EXP291_PREDICTION_PATH, EXP292_MANIFEST_PATH, EXP292_PREDICTION_PATH, crossfit_plan, list_datasets_by_train_normal_count, list_datasets_small_to_large, load_dataset_input, load_frozen_lanes
 from .prediction import freeze_provenance_contract, load_expected_provenance, predict_dataset, verify_prediction, write_prediction
 from .independent_reaggregate import independent_reaggregate
+from .paths import DEFAULT_OUTPUT_DIR
 from .reporting import validate_final_reports, write_reports
 from .synthetic_anomaly import MODEL_NAMES, SyntheticAnomalyConfig, _crossfit_normal_scores, score_synthetic_models, synthetic_shadow_predictions
 from .tri_view_ssl import _calibrate_raw_scores, _produce_raw_scores, score_tri_view, shadow_predictions
@@ -38,7 +39,6 @@ from experiments.exp393_396.artifact_io import load_test_labels
 
 
 EXPERIMENT_ID = "experiment_403_408_feature_ml_validation"
-DEFAULT_OUTPUT_DIR = Path("/Users/minho/Documents/Dataset/exp403_408_feature_ml_validation")
 STAGES = (
     "audit-features",
     "classical-predict",
