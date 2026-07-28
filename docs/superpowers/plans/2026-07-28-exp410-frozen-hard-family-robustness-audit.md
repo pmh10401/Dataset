@@ -109,6 +109,7 @@ class ConfigContractTests(unittest.TestCase):
 
     def test_family_parser_accepts_only_frozen_normal_dataset_shape(self) -> None:
         self.assertEqual(family_from_dataset("ShapesAll_normal_59"), "ShapesAll")
+        self.assertEqual(family_from_dataset("ECG200_normal_-1"), "ECG200")
         for invalid in ("", "ShapesAll", "_normal_0", "ShapesAll_normal_", "ShapesAll_normal_x"):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 family_from_dataset(invalid)
@@ -176,8 +177,11 @@ def family_from_dataset(dataset: str) -> str:
     if not isinstance(dataset, str) or dataset.count("_normal_") != 1:
         raise ValueError("Exp410 dataset must contain one _normal_ marker")
     family, suffix = dataset.split("_normal_", 1)
-    if not family or not suffix.isdecimal():
-        raise ValueError("Exp410 dataset family and numeric class suffix are required")
+    signed_decimal = suffix.isdecimal() or (
+        suffix.startswith("-") and suffix[1:].isdecimal()
+    )
+    if not family or not signed_decimal:
+        raise ValueError("Exp410 dataset family and signed numeric class suffix are required")
     return family
 ```
 

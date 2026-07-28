@@ -121,8 +121,10 @@ The audit does not consume:
 
 The canonical family is the exact prefix before `_normal_` in the dataset
 identifier. Every one of the 1,117 datasets must contain that marker, have a
-nonempty prefix and suffix, and map to exactly one family. The current pinned
-population must produce exactly 128 distinct families.
+nonempty prefix and signed decimal class suffix, and map to exactly one family.
+The signed form is required because the pinned universe contains five
+`_normal_-1` dataset identifiers. The current pinned population must produce
+exactly 128 distinct families.
 
 The implementation reuses the semantic rule already present in the
 Exp403-408 `_lineage` helper but implements and tests an Exp410-owned

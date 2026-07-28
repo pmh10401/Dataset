@@ -54,8 +54,9 @@ Exp406-408 review-only 후보, checkpoint, TEST 기반 source ranking,
 ## 3. 데이터셋·family 계약
 
 family는 데이터셋 식별자의 유일한 `_normal_` 앞부분이다. 앞부분은
-비어 있지 않고 suffix는 10진 정수여야 한다. 현재 1,117개 데이터셋은
-정확히 128개 family로 매핑되어야 한다.
+비어 있지 않고 suffix는 부호 있는 10진 정수여야 한다. 동결 universe에는
+`_normal_-1` 식별자 5개가 존재한다. 현재 1,117개 데이터셋은 정확히
+128개 family로 매핑되어야 한다.
 
 각 데이터셋에서 frozen TEST label과 Hard index로 Hard 수, TP, FP, FN,
 precision, recall, F1을 독립 재계산한다. 중복 identity, 범위 밖 index,

@@ -62,6 +62,9 @@ def family_from_dataset(dataset: str) -> str:
     if not isinstance(dataset, str) or dataset.count("_normal_") != 1:
         raise ValueError("Exp410 dataset must contain one _normal_ marker")
     family, suffix = dataset.split("_normal_", 1)
-    if not family or not suffix.isdecimal():
-        raise ValueError("Exp410 dataset family and numeric class suffix are required")
+    signed_decimal = suffix.isdecimal() or (
+        suffix.startswith("-") and suffix[1:].isdecimal()
+    )
+    if not family or not signed_decimal:
+        raise ValueError("Exp410 dataset family and signed numeric class suffix are required")
     return family

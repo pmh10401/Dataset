@@ -22,6 +22,7 @@ class ConfigContractTests(unittest.TestCase):
 
     def test_family_parser_accepts_only_frozen_normal_dataset_shape(self) -> None:
         self.assertEqual(family_from_dataset("ShapesAll_normal_59"), "ShapesAll")
+        self.assertEqual(family_from_dataset("ECG200_normal_-1"), "ECG200")
         for invalid in ("", "ShapesAll", "_normal_0", "ShapesAll_normal_", "ShapesAll_normal_x"):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 family_from_dataset(invalid)
