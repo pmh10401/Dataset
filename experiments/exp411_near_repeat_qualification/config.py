@@ -9,6 +9,9 @@ class Exp411FrozenConfig:
     database_sha256: str = (
         "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
     )
+    population_manifest_sha256: str = (
+        "41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8"
+    )
     expected_database_snapshot_keys: tuple[str, ...] = ("db",)
     quantiles: tuple[float, ...] = (0.01, 0.05, 0.10)
     quantile_method: str = "lower"
