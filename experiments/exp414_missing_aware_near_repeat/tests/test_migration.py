@@ -18,6 +18,7 @@ from experiments.exp411_near_repeat_qualification.config import (
 from experiments.exp411_near_repeat_qualification.contracts import (
     DatasetBackendAudit,
     DatasetQualification,
+    TrainRun,
 )
 from experiments.exp411_near_repeat_qualification.qualification import (
     qualify_dataset,
@@ -117,7 +118,9 @@ def _source_provenance(
     )
 
 
-def _target_provenance() -> Exp414CheckpointProvenance:
+def _target_provenance(
+    migration_source_sha256: str = "7" * 64,
+) -> Exp414CheckpointProvenance:
     return Exp414CheckpointProvenance(
         git_commit="a" * 40,
         database_snapshot={"db": FROZEN_CONFIG.database_sha256},
@@ -128,7 +131,7 @@ def _target_provenance() -> Exp414CheckpointProvenance:
         missing_repair_contract_sha256="4" * 64,
         missing_inventory_sha256="5" * 64,
         qualification_contract_sha256="6" * 64,
-        exp411_migration_source_sha256="7" * 64,
+        exp411_migration_source_sha256=migration_source_sha256,
     )
 
 
@@ -161,10 +164,38 @@ def _build_source(
     return root, datasets
 
 
-def _target(parent: Path, datasets: tuple[str, ...]) -> Exp414CheckpointStore:
+def _migration_source_digest(
+    source: CheckpointStore,
+    evidence: dict[str, str] | object,
+) -> str:
+    return sha256(
+        canonical_json_bytes(
+            {
+                "schema_version": 1,
+                "source_checkpoint_provenance": source.provenance.to_payload(),
+                "source_expected_datasets": list(source.expected_datasets),
+                "representative_payload_sha256": dict(evidence),
+            }
+        )
+    ).hexdigest()
+
+
+def _target(
+    parent: Path,
+    datasets: tuple[str, ...],
+    source: CheckpointStore,
+    evidence: object,
+    *,
+    migration_source_sha256: str | None = None,
+) -> Exp414CheckpointStore:
+    source_digest = (
+        _migration_source_digest(source, evidence)
+        if migration_source_sha256 is None
+        else migration_source_sha256
+    )
     return Exp414CheckpointStore(
         parent / "exp414",
-        _target_provenance(),
+        _target_provenance(source_digest),
         datasets,
     )
 
@@ -180,7 +211,7 @@ class Exp411MigrationTests(unittest.TestCase):
             root, datasets = _build_source(parent, prepared)
             source = open_exp411_checkpoint(root, datasets)
             evidence = verify_migration_representatives(source, prepared)
-            target = _target(parent, datasets)
+            target = _target(parent, datasets, source, evidence)
 
             migrated = migrate_if_eligible(
                 prepared[TARGET],
@@ -219,7 +250,7 @@ class Exp411MigrationTests(unittest.TestCase):
             )
             source = open_exp411_checkpoint(root, datasets)
             evidence = verify_migration_representatives(source, prepared)
-            target = _target(parent, datasets)
+            target = _target(parent, datasets, source, evidence)
 
             self.assertFalse(
                 migrate_if_eligible(repaired, source, target, evidence)
@@ -240,7 +271,7 @@ class Exp411MigrationTests(unittest.TestCase):
             )
             source = open_exp411_checkpoint(root, datasets)
             evidence = verify_migration_representatives(source, prepared)
-            target = _target(parent, datasets)
+            target = _target(parent, datasets, source, evidence)
 
             self.assertFalse(
                 migrate_if_eligible(
@@ -266,7 +297,12 @@ class Exp411MigrationTests(unittest.TestCase):
             root, source_datasets = _build_source(parent, source_prepared)
             source = open_exp411_checkpoint(root, source_datasets)
             evidence = verify_migration_representatives(source, prepared)
-            target = _target(parent, tuple(sorted(prepared)))
+            target = _target(
+                parent,
+                tuple(sorted(prepared)),
+                source,
+                evidence,
+            )
 
             self.assertFalse(
                 migrate_if_eligible(
@@ -357,16 +393,25 @@ class Exp411MigrationTests(unittest.TestCase):
                 qualification_overrides={REPRESENTATIVES[0]: mismatch},
             )
             source = open_exp411_checkpoint(root, datasets)
-            target = _target(parent, datasets)
 
             with self.assertRaisesRegex(ValueError, "representative qualification"):
                 verify_migration_representatives(source, prepared)
+            forged_evidence = {
+                dataset: source.load_dataset_record(dataset)["payload_sha256"]
+                for dataset in REPRESENTATIVES
+            }
+            target = _target(
+                parent,
+                datasets,
+                source,
+                forged_evidence,
+            )
             with self.assertRaisesRegex(ValueError, "representative evidence"):
                 migrate_if_eligible(
                     prepared[TARGET],
                     source,
                     target,
-                    {},
+                    forged_evidence,
                 )
             self.assertFalse(target.has_dataset(TARGET))
 
@@ -393,6 +438,68 @@ class Exp411MigrationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "not clean"):
                 verify_migration_representatives(source, prepared)
 
+    def test_changed_values_with_old_hash_are_not_migrated(self) -> None:
+        prepared = {
+            dataset: _prepared(dataset)
+            for dataset in (*REPRESENTATIVES, TARGET)
+        }
+        with TemporaryDirectory() as raw:
+            parent = Path(raw)
+            root, datasets = _build_source(parent, prepared)
+            source = open_exp411_checkpoint(root, datasets)
+            evidence = verify_migration_representatives(source, prepared)
+            target = _target(parent, datasets, source, evidence)
+            original = prepared[TARGET]
+            first = original.runs[0]
+            forged_run = TrainRun(
+                dataset=first.dataset,
+                instance_index=first.instance_index,
+                values=tuple(value + 100.0 for value in first.values),
+                values_sha256=first.values_sha256,
+            )
+            forged = PreparedDataset(
+                dataset=original.dataset,
+                runs=(forged_run, *original.runs[1:]),
+                repair_audit=original.repair_audit,
+            )
+
+            self.assertFalse(
+                migrate_if_eligible(
+                    forged,
+                    source,
+                    target,
+                    evidence,
+                )
+            )
+            self.assertFalse(target.has_dataset(TARGET))
+
+    def test_target_migration_source_digest_must_match_verified_evidence(self) -> None:
+        prepared = {
+            dataset: _prepared(dataset)
+            for dataset in (*REPRESENTATIVES, TARGET)
+        }
+        with TemporaryDirectory() as raw:
+            parent = Path(raw)
+            root, datasets = _build_source(parent, prepared)
+            source = open_exp411_checkpoint(root, datasets)
+            evidence = verify_migration_representatives(source, prepared)
+            target = _target(
+                parent,
+                datasets,
+                source,
+                evidence,
+                migration_source_sha256="f" * 64,
+            )
+
+            with self.assertRaisesRegex(ValueError, "source binding"):
+                migrate_if_eligible(
+                    prepared[TARGET],
+                    source,
+                    target,
+                    evidence,
+                )
+            self.assertFalse(target.has_dataset(TARGET))
+
     def test_source_record_corruption_raises_instead_of_recomputing(self) -> None:
         prepared = {
             dataset: _prepared(dataset)
@@ -403,7 +510,7 @@ class Exp411MigrationTests(unittest.TestCase):
             root, datasets = _build_source(parent, prepared)
             source = open_exp411_checkpoint(root, datasets)
             evidence = verify_migration_representatives(source, prepared)
-            target = _target(parent, datasets)
+            target = _target(parent, datasets, source, evidence)
             path = root / "datasets" / (
                 sha256(TARGET.encode("utf-8")).hexdigest() + ".json"
             )

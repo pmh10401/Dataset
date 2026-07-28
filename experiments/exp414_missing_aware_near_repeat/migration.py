@@ -7,7 +7,8 @@ from dataclasses import asdict
 from hashlib import sha256
 import json
 from pathlib import Path
-from types import MappingProxyType
+
+import numpy as np
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp411_near_repeat_qualification.checkpoints import (
@@ -48,6 +49,33 @@ _SOURCE_PROVENANCE_KEYS = {
     "perturbation_contract_sha256",
     "acceleration_contract_sha256",
 }
+_EVIDENCE_SEAL = object()
+
+
+class _VerifiedRepresentativeEvidence(Mapping[str, str]):
+    __slots__ = ("_values", "_migration_source_sha256", "_seal")
+
+    def __init__(
+        self,
+        values: Mapping[str, str],
+        migration_source_sha256: str,
+        *,
+        seal: object,
+    ) -> None:
+        if seal is not _EVIDENCE_SEAL:
+            raise TypeError("Exp411 migration evidence cannot be constructed")
+        self._values = dict(values)
+        self._migration_source_sha256 = migration_source_sha256
+        self._seal = seal
+
+    def __getitem__(self, key: str) -> str:
+        return self._values[key]
+
+    def __iter__(self):
+        return iter(self._values)
+
+    def __len__(self) -> int:
+        return len(self._values)
 
 
 def open_exp411_checkpoint(
@@ -131,7 +159,11 @@ def verify_migration_representatives(
                 f"{dataset}"
             )
         evidence[dataset] = str(record["payload_sha256"])
-    return MappingProxyType(evidence)
+    return _VerifiedRepresentativeEvidence(
+        evidence,
+        _canonical_migration_source_sha256(validated, evidence),
+        seal=_EVIDENCE_SEAL,
+    )
 
 
 def migrate_if_eligible(
@@ -142,7 +174,15 @@ def migrate_if_eligible(
 ) -> bool:
     """Copy one clean, identity-matching Exp411 record into Exp414."""
     validated = _revalidate_source(source)
-    _require_representative_evidence(validated, representative_evidence)
+    source_digest = _require_representative_evidence(
+        validated,
+        representative_evidence,
+    )
+    if (
+        target.provenance.exp411_migration_source_sha256
+        != source_digest
+    ):
+        raise ValueError("Exp414 checkpoint migration source binding mismatch")
     if not _is_clean(prepared):
         return False
     completed = validated.load_completed()
@@ -202,9 +242,10 @@ def _require_pinned_provenance(provenance: CheckpointProvenance) -> None:
 def _require_representative_evidence(
     source: CheckpointStore,
     evidence: Mapping[str, str],
-) -> None:
+) -> str:
     if (
-        not isinstance(evidence, Mapping)
+        type(evidence) is not _VerifiedRepresentativeEvidence
+        or evidence._seal is not _EVIDENCE_SEAL
         or tuple(evidence) != EXP411_MIGRATION_REPRESENTATIVES
     ):
         raise ValueError("Exp411 migration representative evidence is invalid")
@@ -214,11 +255,60 @@ def _require_representative_evidence(
             raise ValueError(
                 "Exp411 migration representative evidence is invalid"
             )
+    source_digest = _canonical_migration_source_sha256(source, evidence)
+    if evidence._migration_source_sha256 != source_digest:
+        raise ValueError("Exp411 migration representative evidence is invalid")
+    return source_digest
+
+
+def _canonical_migration_source_sha256(
+    source: CheckpointStore,
+    evidence: Mapping[str, str],
+) -> str:
+    payload = {
+        "schema_version": 1,
+        "source_checkpoint_provenance": source.provenance.to_payload(),
+        "source_expected_datasets": list(source.expected_datasets),
+        "representative_payload_sha256": dict(evidence),
+    }
+    return sha256(canonical_json_bytes(payload)).hexdigest()
 
 
 def _is_clean(prepared: PreparedDataset) -> bool:
     audit = prepared.repair_audit
     repaired_digest = audit.repaired_train_identity_sha256
+    audit_by_index = {
+        row.instance_index: row
+        for row in audit.runs
+    }
+    if (
+        len(audit_by_index) != len(audit.runs)
+        or {run.instance_index for run in prepared.runs}
+        != set(audit_by_index)
+    ):
+        return False
+    for run in prepared.runs:
+        row = audit_by_index[run.instance_index]
+        try:
+            values = np.asarray(run.values, dtype="<f4")
+        except (TypeError, ValueError):
+            return False
+        actual_digest = sha256(values.tobytes()).hexdigest()
+        if (
+            values.ndim != 1
+            or not np.isfinite(values).all()
+            or row.dataset != prepared.dataset
+            or row.length != len(values)
+            or row.nan_count != 0
+            or row.posinf_count != 0
+            or row.neginf_count != 0
+            or row.repair_method != "unchanged"
+            or run.dataset != prepared.dataset
+            or run.values_sha256 != actual_digest
+            or row.raw_values_sha256 != actual_digest
+            or row.repaired_values_sha256 != actual_digest
+        ):
+            return False
     try:
         prepared_identity = dataset_train_identity_sha256(
             tuple(
@@ -235,8 +325,6 @@ def _is_clean(prepared: PreparedDataset) -> bool:
         and audit.status == "ready"
         and bool(audit.runs)
         and len(prepared.runs) == len(audit.runs)
-        and all(row.dataset == prepared.dataset for row in audit.runs)
-        and all(row.repair_method == "unchanged" for row in audit.runs)
         and repaired_digest is not None
         and audit.raw_train_identity_sha256 == repaired_digest
         and prepared_identity == repaired_digest

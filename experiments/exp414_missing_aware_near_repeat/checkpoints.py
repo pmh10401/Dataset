@@ -548,9 +548,15 @@ def _atomic_write(
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
-        if path.exists() and not replace_existing:
-            raise FileExistsError(f"Exp414 checkpoint path exists: {path}")
-        os.replace(temporary, path)
+        if replace_existing:
+            os.replace(temporary, path)
+        else:
+            try:
+                os.link(temporary, path)
+            except FileExistsError as error:
+                raise ValueError(
+                    f"Exp414 checkpoint already exists: {path}"
+                ) from error
     finally:
         if temporary.exists():
             temporary.unlink()

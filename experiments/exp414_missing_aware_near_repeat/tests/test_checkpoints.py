@@ -1,9 +1,12 @@
 from dataclasses import replace
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import threading
 import unittest
+from unittest.mock import patch
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp411_near_repeat_qualification.contracts import (
@@ -241,6 +244,62 @@ class Exp414CheckpointTests(unittest.TestCase):
                 _write(store, replace(_row(), normal_near={"0.01": 0, "0.05": 0, "0.10": 0}))
 
             self.assertEqual(path.read_bytes(), before)
+            self.assertEqual(tuple((root / "datasets").glob("*.tmp")), ())
+
+    def test_concurrent_duplicate_writes_publish_once_without_clobbering(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw) / "checkpoint"
+            store = Exp414CheckpointStore(
+                root,
+                _provenance(),
+                ("Alpha_normal_0", "Beta_normal_0"),
+            )
+            rows = (
+                _row(),
+                replace(
+                    _row(),
+                    normal_near={"0.01": 0, "0.05": 0, "0.10": 0},
+                ),
+            )
+            start = threading.Barrier(2)
+            replace_boundary = threading.Barrier(2)
+            original_replace = os.replace
+            completed: list[int] = []
+            errors: list[BaseException] = []
+
+            def race_at_publish(source: object, destination: object) -> None:
+                replace_boundary.wait(timeout=5.0)
+                original_replace(source, destination)
+
+            def write(index: int) -> None:
+                try:
+                    start.wait(timeout=5.0)
+                    _write(store, rows[index])
+                    completed.append(index)
+                except BaseException as error:
+                    errors.append(error)
+
+            with patch(
+                "experiments.exp414_missing_aware_near_repeat.checkpoints.os.replace",
+                side_effect=race_at_publish,
+            ):
+                threads = tuple(
+                    threading.Thread(target=write, args=(index,))
+                    for index in range(2)
+                )
+                for thread in threads:
+                    thread.start()
+                for thread in threads:
+                    thread.join(timeout=10.0)
+
+            self.assertTrue(all(not thread.is_alive() for thread in threads))
+            self.assertEqual(len(completed), 1)
+            self.assertEqual(len(errors), 1)
+            self.assertIsInstance(errors[0], ValueError)
+            self.assertEqual(
+                store.load_dataset_record("Alpha_normal_0")["qualification"],
+                rows[completed[0]],
+            )
             self.assertEqual(tuple((root / "datasets").glob("*.tmp")), ())
 
     def test_require_complete_requires_exact_dataset_and_family_coverage(self) -> None:
