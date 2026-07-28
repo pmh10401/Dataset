@@ -287,18 +287,22 @@ Exp413은 `promotion_research_worthy` 또는 `rejected`만 판정한다.
 실제 자동 정상 lane 변경은 Exp414의 별도 사전등록, 구현 계획, 독립 검토와
 사용자 실행 승인이 필요하다.
 
-## 8. PyTorch·MLX·MPS 설계
+## 8. Numba·PyTorch·MPS 설계와 MLX 제외 결정
 
 모든 실험은 CPU 정본 fallback을 먼저 제공한다.
+
+사용자의 2026-07-28 명시적 결정에 따라 Exp411 이후 이 연구 흐름에서는
+MLX를 구현, 설치, benchmark 또는 정본 후보로 고려하지 않는다. manifest의
+가속 평가에는 `mlx_status: excluded_by_user_decision`만 기록한다.
 
 ### Exp411
 
 동일 길이 waveform의 batched RMS와 `rfft` 거리 행렬은 tensor 적합성이
 있다. NumPy CPU를 기준 구현으로 만들고 다음 경로를 benchmark한다.
 
+- Numba CPU JIT
 - PyTorch CPU
 - PyTorch MPS
-- MLX가 설치된 경우 MLX/Metal
 
 가속 경로는 동일 input·fold·seed에서 모든 exact/near/abstain tag와 선택
 quantile이 CPU와 완전히 같아야 한다. 거리 수치의 최대 절대차는
@@ -315,10 +319,11 @@ fail closed한다.
 CSV/JSON 검증, grouped 집계, bootstrap이 지배 작업이므로 CPU/NumPy가
 정본이다. GPU 사용을 강제하지 않는다.
 
-비CPU 경로가 정본이 되려면 device transfer, compile, synchronization을
-포함한 동일 stage benchmark에서 CPU보다 최소 `1.1x` 빨라야 한다.
-PyTorch, MLX, macOS, device 및 backend version과 benchmark 결과를
-manifest에 기록한다. 한 번에 하나의 MPS/MLX heavy process만 실행한다.
+가속 경로가 정본이 되려면 Numba JIT compile 또는 device transfer,
+compile, synchronization을 포함한 동일 stage benchmark에서 NumPy
+CPU보다 최소 `1.1x` 빨라야 한다. Numba, llvmlite, PyTorch, macOS, device
+및 backend version과 benchmark 결과를 manifest에 기록한다. 한 번에
+하나의 MPS heavy process만 실행한다.
 
 ## 9. 공통 불변 원칙
 
@@ -371,5 +376,6 @@ manifest SHA256과 실제 선택 quantile은 직전 실험 결과가 동결된 �
   주장을 하지 않는다.
 - clean-balanced를 보조 스트레스·하한 검증으로 명시한다.
 - Exp411-413 각각의 쉬운 목적, 입력 경계, gate와 정책 불변성이 문서화된다.
-- PyTorch·MLX·MPS 적합성, parity, 속도 gate와 CPU fallback이 명시된다.
+- Numba·PyTorch·MPS 적합성, parity, 속도 gate, NumPy CPU fallback과
+  사용자의 MLX 제외 결정이 명시된다.
 - Exp410과 이전 실험의 사전등록·결과 artifact는 변경되지 않는다.
