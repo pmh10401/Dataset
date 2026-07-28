@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from hashlib import sha256
 import os
 from pathlib import Path
@@ -21,6 +21,8 @@ def publish_audit(
     output_dir: Path,
     provenance: Mapping[str, object],
     config: Exp410FrozenConfig = FROZEN_CONFIG,
+    *,
+    pre_publish_verify: Callable[[], None] | None = None,
 ) -> Mapping[str, str]:
     """Publish a complete audit directory or leave no output directory."""
     output = Path(output_dir)
@@ -62,6 +64,8 @@ def publish_audit(
         expected_names = set(payloads) | {MANIFEST_FILE}
         if {path.name for path in staging.iterdir()} != expected_names:
             raise ValueError("Exp410 staged artifact coverage mismatch")
+        if pre_publish_verify is not None:
+            pre_publish_verify()
         if output.exists():
             raise FileExistsError("Exp410 output directory appeared during staging")
         os.replace(staging, output)

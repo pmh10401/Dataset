@@ -14,8 +14,12 @@ class Exp410FrozenConfig:
     expected_dataset_macro_f1: float = 0.6089825086931719
     display_dataset_macro_f1: str = "0.608983"
     prediction_sha256: str = "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"
+    prediction_manifest_sha256: str = "41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8"
     frozen_labels_sha256: str = "b483ba00cee6f74dc6e2db1e4c9bafea4237a3be7ba60d7f45dc32aa29e4f3f4"
+    evaluation_input_manifest_sha256: str = "13f303c6422b77e10ad7eb4dbbf7ed3506849f4b972ad85ccb2cfc2bf935f6de"
+    evaluation_publication_manifest_sha256: str = "f0439be9ca751e9849dbd321a8673dafe64d4424b27e6f69282a43c1e9bdef10"
     database_sha256: str = "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
+    expected_database_snapshot_keys: tuple[str, ...] = ("db",)
     exp291_sha256: str = "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848"
     exp292_sha256: str = "f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b"
     family_weight_caps: tuple[int | None, ...] = (1, 3, 5, 10, None)
@@ -34,3 +38,26 @@ class Exp410FrozenConfig:
 
 
 FROZEN_CONFIG = Exp410FrozenConfig()
+
+
+def require_frozen_research_parameters(config: Exp410FrozenConfig) -> None:
+    observed = (
+        config.family_weight_caps,
+        config.bootstrap_iterations,
+        config.bootstrap_seed,
+        config.float_tolerance,
+        config.robustness_margin,
+        config.severe_margin,
+        config.expected_database_snapshot_keys,
+    )
+    expected = (
+        (1, 3, 5, 10, None),
+        2000,
+        410,
+        1e-12,
+        -0.05,
+        -0.10,
+        ("db",),
+    )
+    if observed != expected:
+        raise ValueError("Exp410 preregistered research parameters changed")

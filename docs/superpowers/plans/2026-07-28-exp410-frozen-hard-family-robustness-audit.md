@@ -16,7 +16,11 @@
 - Frozen Hard is exactly 2,218 alerts with TP/FP/FN `1,915 / 303 / 2,003`.
 - Exact dataset-macro mean F1 is `0.6089825086931719`; the 6-decimal display is `0.608983`.
 - Prediction SHA256 is `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70`.
+- Prediction manifest SHA256 is `41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8`.
 - Frozen label SHA256 is `b483ba00cee6f74dc6e2db1e4c9bafea4237a3be7ba60d7f45dc32aa29e4f3f4`.
+- Evaluation input/publication manifest SHA256 values are
+  `13f303c6422b77e10ad7eb4dbbf7ed3506849f4b972ad85ccb2cfc2bf935f6de`
+  and `f0439be9ca751e9849dbd321a8673dafe64d4424b27e6f69282a43c1e9bdef10`.
 - Database SHA256 is `8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c`.
 - Exp291/292 lane SHA256 values are `73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848` and `f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b`.
 - Bootstrap resamples families, never individual datasets; iterations are `2,000` and seed is `410`.
@@ -148,8 +152,12 @@ class Exp410FrozenConfig:
     expected_dataset_macro_f1: float = 0.6089825086931719
     display_dataset_macro_f1: str = "0.608983"
     prediction_sha256: str = "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"
+    prediction_manifest_sha256: str = "41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8"
     frozen_labels_sha256: str = "b483ba00cee6f74dc6e2db1e4c9bafea4237a3be7ba60d7f45dc32aa29e4f3f4"
+    evaluation_input_manifest_sha256: str = "13f303c6422b77e10ad7eb4dbbf7ed3506849f4b972ad85ccb2cfc2bf935f6de"
+    evaluation_publication_manifest_sha256: str = "f0439be9ca751e9849dbd321a8673dafe64d4424b27e6f69282a43c1e9bdef10"
     database_sha256: str = "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
+    expected_database_snapshot_keys: tuple[str, ...] = ("db",)
     exp291_sha256: str = "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848"
     exp292_sha256: str = "f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b"
     family_weight_caps: tuple[int | None, ...] = (1, 3, 5, 10, None)
@@ -364,7 +372,8 @@ In `inputs.py`:
 
 - define the exact filenames from the design;
 - verify SHA256 before parsing;
-- verify both evaluation manifests bind every consumed publication;
+- verify the three pinned manifest trust roots before parsing;
+- verify every local artifact hash recorded by both evaluation manifests;
 - load the label CSV into contiguous `tuple[int, ...]` values per dataset;
 - load Hard identities from Exp404 JSONL and reject duplicates;
 - verify Exp291/292 SHA256 and lane parity;
@@ -503,12 +512,15 @@ Expected: FAIL because `profiles.py` does not exist.
 - [ ] **Step 3: Implement snapshot and integrity verification**
 
 `database_snapshot` returns sorted SHA256 entries for the DB and existing
-`-wal`/`-shm` siblings. Open SQLite with URI `file:<quoted-path>?mode=ro`;
-execute `PRAGMA quick_check` and require the single result `ok`. Do not set
-`immutable=1`, because the reader must observe a valid existing WAL rather
-than silently ignore it.
+`-wal`/`-shm` siblings. Reject any WAL/SHM not included in the frozen snapshot
+contract before opening SQLite. Open the main DB with URI
+`file:<quoted-path>?mode=ro`; execute `PRAGMA quick_check` and require the
+single result `ok`. Do not set `immutable=1`; read-only mode plus the pinned,
+sidecar-free snapshot is the canonical boundary.
 
-Take one snapshot before opening and one after closing. Reject any difference.
+Pin a preflight snapshot, compare it before opening and after closing, carry
+the same snapshot into provenance, and compare it again immediately before
+atomic publication rename. Reject any difference.
 For the real configured DB, require the DB entry to equal
 `FROZEN_CONFIG.database_sha256`. Fixture configurations use
 `dataclasses.replace` with the fixture DB hash.
@@ -518,10 +530,10 @@ For the real configured DB, require the DB entry to equal
 For each sorted dataset:
 
 1. query its numeric dataset id;
-2. stream normal TRAIN `values_blob` rows and build a set of
+2. stream TRAIN label `"0"` `values_blob` rows and build a set of
    `hashlib.sha256(blob).digest()` values;
 3. stream TEST `label, values_blob` rows in `instance_index` order;
-4. count anomalies directly from the instance label;
+4. decode TEST label `"0"` as normal and `"1"` as anomaly, rejecting others;
 5. hash only normal TEST blobs and count membership in the TRAIN hash set;
 6. release the per-dataset hash set before the next dataset.
 
@@ -576,7 +588,6 @@ class AggregationTests(unittest.TestCase):
             expected_datasets=5,
             expected_families=3,
             expected_family_size_buckets=(2, 1, 0, 0),
-            bootstrap_iterations=50,
         )
         result = aggregate_family_robustness(metrics, profiles, config=config)
         sensitivity = {row["cap"]: row["mean_f1"] for row in result.weight_sensitivity}
@@ -593,7 +604,6 @@ class AggregationTests(unittest.TestCase):
             expected_datasets=5,
             expected_families=3,
             expected_family_size_buckets=(2, 1, 0, 0),
-            bootstrap_iterations=50,
         )
         one = aggregate_family_robustness(metrics, profiles, config=config)
         two = aggregate_family_robustness(metrics, profiles, config=config)
@@ -869,12 +879,13 @@ class RunnerCliTests(unittest.TestCase):
             self.assertFalse(summary["operational_policy_changed"])
             self.assertIn("MANIFEST.json", hashes)
 
-    def test_full_runner_is_not_called_by_smoke(self) -> None:
+    def test_smoke_scans_only_the_synthetic_database(self) -> None:
         with TemporaryDirectory() as raw, patch(
-            "experiments.exp410_family_robustness.runner.scan_dataset_profiles",
-            side_effect=AssertionError("real profile scan forbidden in smoke"),
-        ):
+            "experiments.exp410_family_robustness.runner.profile_module.scan_dataset_profiles",
+            wraps=profile_module.scan_dataset_profiles,
+        ) as scanner:
             run_smoke(Path(raw) / "smoke")
+            self.assertEqual(Path(scanner.call_args.args[0]).name, "fixture.db")
 ```
 
 - [ ] **Step 2: Run runner/CLI tests and verify RED**

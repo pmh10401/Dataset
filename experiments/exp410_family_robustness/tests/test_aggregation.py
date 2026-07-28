@@ -38,7 +38,6 @@ def fixture_config():
         expected_datasets=5,
         expected_families=3,
         expected_family_size_buckets=(2, 1, 0, 0),
-        bootstrap_iterations=50,
     )
 
 
@@ -118,6 +117,24 @@ class AggregationTests(unittest.TestCase):
                 "reason": "source_artifact_unavailable",
             },
         )
+
+    def test_changed_research_parameters_fail_closed(self) -> None:
+        metrics, profiles = aggregation_fixture()
+        changed = (
+            replace(fixture_config(), family_weight_caps=(1, 2, 5, 10, None)),
+            replace(fixture_config(), bootstrap_iterations=1999),
+            replace(fixture_config(), bootstrap_seed=411),
+            replace(fixture_config(), float_tolerance=1e-9),
+            replace(fixture_config(), robustness_margin=-0.04),
+            replace(fixture_config(), severe_margin=-0.09),
+            replace(fixture_config(), expected_database_snapshot_keys=("db", "wal")),
+        )
+        for config in changed:
+            with self.subTest(config=config), self.assertRaisesRegex(
+                ValueError,
+                "research parameters changed",
+            ):
+                aggregate_family_robustness(metrics, profiles, config=config)
 
 
 if __name__ == "__main__":

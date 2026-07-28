@@ -40,6 +40,8 @@ def scan_dataset_profiles(
     db_path: Path,
     datasets: Sequence[str],
     config: Exp410FrozenConfig = FROZEN_CONFIG,
+    *,
+    expected_snapshot: Mapping[str, str] | None = None,
 ) -> tuple[DatasetProfile, ...]:
     """Stream exact TRAIN/TEST profiles without materializing the database."""
     requested = tuple(str(dataset) for dataset in datasets)
@@ -53,6 +55,10 @@ def scan_dataset_profiles(
     ordered = tuple(sorted(requested))
 
     before = database_snapshot(db_path)
+    if tuple(before) != config.expected_database_snapshot_keys:
+        raise ValueError("Exp410 SQLite snapshot artifact set is not pinned")
+    if expected_snapshot is not None and dict(before) != dict(expected_snapshot):
+        raise ValueError("Exp410 SQLite preflight snapshot mismatch")
     if before.get("db") != config.database_sha256:
         raise ValueError("Exp410 SQLite database SHA256 mismatch")
 
@@ -102,7 +108,7 @@ def _scan_one(connection: sqlite3.Connection, dataset: str) -> DatasetProfile:
         (dataset_id,),
     )
     for label, blob in train_rows:
-        if label != "normal":
+        if label != "0":
             raise ValueError(f"Exp410 SQLite TRAIN label is invalid: {dataset}")
         train_count += 1
         train_hashes.add(_blob_digest(blob, dataset))
@@ -124,9 +130,9 @@ def _scan_one(connection: sqlite3.Connection, dataset: str) -> DatasetProfile:
     )
     for label, blob in test_rows:
         test_total += 1
-        if label == "anomaly":
+        if label == "1":
             test_anomaly += 1
-        elif label == "normal":
+        elif label == "0":
             test_normal += 1
             exact_overlap += int(_blob_digest(blob, dataset) in train_hashes)
         else:

@@ -1,7 +1,7 @@
 # Exp410 동결 Hard Family 견고성 감사 사전등록
 
-작성일: 2026-07-28  
-상태: 구현 및 결과 확인 전 동결  
+작성일: 2026-07-28
+상태: 구현 및 결과 확인 전 동결
 실험 모드: `read-only retrospective family robustness audit`
 
 ## 1. 목적
@@ -29,8 +29,12 @@ validation 또는 배포 성능을 대신하지 않는다.
 | 데이터셋 macro F1 정확값 | `0.6089825086931719` |
 | 데이터셋 macro F1 6자리 표시 | `0.608983` |
 | prediction SHA256 | `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70` |
+| prediction manifest SHA256 | `41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8` |
 | frozen label SHA256 | `b483ba00cee6f74dc6e2db1e4c9bafea4237a3be7ba60d7f45dc32aa29e4f3f4` |
+| evaluation input manifest SHA256 | `13f303c6422b77e10ad7eb4dbbf7ed3506849f4b972ad85ccb2cfc2bf935f6de` |
+| evaluation publication manifest SHA256 | `f0439be9ca751e9849dbd321a8673dafe64d4424b27e6f69282a43c1e9bdef10` |
 | DB SHA256 | `8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c` |
+| 허용 DB snapshot artifact | main DB `db`만 허용, unpinned WAL/SHM 거부 |
 | Exp291 lane SHA256 | `73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848` |
 | Exp292 lane SHA256 | `f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b` |
 | 부동소수점 허용오차 | `1e-12` |
@@ -45,7 +49,9 @@ validation 또는 배포 성능을 대신하지 않는다.
 `exp403_408_evaluation_input_manifest.json`,
 `exp403_408_evaluation_publication_manifest.json`, 읽기 전용 SQLite DB,
 Exp410 설정과 코드만 소비한다. 모든 고정 SHA256과 두 evaluation
-manifest의 결합을 값을 파싱하기 전에 검증한다.
+manifest 자체의 고정 trust-root SHA256을 값을 파싱하기 전에 검증한다.
+그다음 두 manifest의 `artifact_sha256`에 기록된 모든 로컬 artifact를
+검증한다.
 
 Exp406-408 review-only 후보, checkpoint, TEST 기반 source ranking,
 과거 family별 TEST 성능, 존재하지 않는 난이도 원본을 입력으로 사용하지
@@ -147,7 +153,8 @@ bootstrap은 데이터셋이 아니라 128개 family를 복원추출한다. 한 
 - 게시 시점 Git worktree가 dirty임
 - 고정 SHA256 또는 manifest artifact hash 불일치
 - SQLite `PRAGMA quick_check` 결과가 `ok`가 아님
-- 실행 전후 DB/WAL/SHM identity 변화
+- unpinned DB WAL/SHM sidecar 출현
+- preflight, scan 전후, 원자적 rename 직전 DB snapshot identity 변화
 - 데이터셋 1,117개, family 128개 또는 family bucket
   `1 / 74 / 39 / 14` 불일치
 - Hard 2,218개 또는 TP/FP/FN `1,915 / 303 / 2,003` 불일치

@@ -57,6 +57,7 @@ def run_smoke(output_dir: Path) -> Mapping[str, str]:
         prefix=".exp410-synthetic-fixture.",
     ) as raw:
         fixture = _write_synthetic_fixture(Path(raw))
+        pinned_database_snapshot = database_snapshot(fixture.db_path)
         inputs = load_verified_inputs(
             fixture.input_dir,
             fixture.exp291_path,
@@ -68,6 +69,7 @@ def run_smoke(output_dir: Path) -> Mapping[str, str]:
             fixture.db_path,
             fixture.datasets,
             config=fixture.config,
+            expected_snapshot=pinned_database_snapshot,
         )
         result = aggregate_family_robustness(
             metrics,
@@ -85,16 +87,20 @@ def run_smoke(output_dir: Path) -> Mapping[str, str]:
         )
         provenance = _build_provenance(
             inputs=dict(inputs.input_sha256),
-            db_path=fixture.db_path,
             config=fixture.config,
             mode="representative_smoke",
             git_commit=_git_commit(allow_dirty=True),
+            database_snapshot_value=pinned_database_snapshot,
         )
         return publish_audit(
             result,
             output,
             provenance,
             config=fixture.config,
+            pre_publish_verify=lambda: _require_database_snapshot(
+                fixture.db_path,
+                pinned_database_snapshot,
+            ),
         )
 
 
@@ -106,6 +112,11 @@ def run_full_audit(
     """Run the real read-only audit after an external explicit authorization."""
     starting_commit = _require_clean_git()
     database = Path(db_path)
+    pinned_database_snapshot = database_snapshot(database)
+    _validate_pinned_database_snapshot(
+        pinned_database_snapshot,
+        FROZEN_CONFIG,
+    )
     data_root = database.parent
     exp291_path = (
         data_root
@@ -129,6 +140,7 @@ def run_full_audit(
         database,
         datasets,
         config=FROZEN_CONFIG,
+        expected_snapshot=pinned_database_snapshot,
     )
     result = aggregate_family_robustness(
         metrics,
@@ -140,16 +152,21 @@ def run_full_audit(
         raise ValueError("Exp410 Git commit changed during full audit")
     provenance = _build_provenance(
         inputs=dict(inputs.input_sha256),
-        db_path=database,
         config=FROZEN_CONFIG,
         mode="full_audit",
         git_commit=starting_commit,
+        database_snapshot_value=pinned_database_snapshot,
     )
     return publish_audit(
         result,
         Path(output_dir),
         provenance,
         config=FROZEN_CONFIG,
+        pre_publish_verify=lambda: _require_full_execution_state(
+            database,
+            pinned_database_snapshot,
+            starting_commit,
+        ),
     )
 
 
@@ -205,7 +222,7 @@ def _write_synthetic_fixture(root: Path) -> _SyntheticFixture:
                 """
                 INSERT INTO instances(
                     dataset_id, split, instance_index, label, values_blob
-                ) VALUES (?, 'TRAIN', ?, 'normal', ?)
+                ) VALUES (?, 'TRAIN', ?, '0', ?)
                 """,
                 (
                     (dataset_id, index, blob)
@@ -233,7 +250,7 @@ def _write_synthetic_fixture(root: Path) -> _SyntheticFixture:
                     (
                         dataset_id,
                         index,
-                        "anomaly" if label else "normal",
+                        "1" if label else "0",
                         test_blobs[index],
                     )
                     for index, label in enumerate(labels)
@@ -315,7 +332,12 @@ def _write_synthetic_fixture(root: Path) -> _SyntheticFixture:
         expected_dataset_macro_f1=mean_f1,
         display_dataset_macro_f1=f"{mean_f1:.6f}",
         prediction_sha256=sha256_file(prediction_path),
+        prediction_manifest_sha256=sha256_file(prediction_manifest_path),
         frozen_labels_sha256=sha256_file(labels_path),
+        evaluation_input_manifest_sha256=sha256_file(input_manifest_path),
+        evaluation_publication_manifest_sha256=sha256_file(
+            input_dir / "exp403_408_evaluation_publication_manifest.json"
+        ),
         database_sha256=sha256_file(db_path),
         exp291_sha256=sha256_file(exp291_path),
         exp292_sha256=sha256_file(exp292_path),
@@ -393,10 +415,10 @@ def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
 def _build_provenance(
     *,
     inputs: Mapping[str, str],
-    db_path: Path,
     config: Exp410FrozenConfig,
     mode: str,
     git_commit: str,
+    database_snapshot_value: Mapping[str, str],
 ) -> dict[str, object]:
     code_hashes = {
         path.name: sha256_file(path)
@@ -411,7 +433,7 @@ def _build_provenance(
     return {
         "inputs": {
             **dict(sorted(inputs.items())),
-            "database_snapshot": dict(database_snapshot(db_path)),
+            "database_snapshot": dict(sorted(database_snapshot_value.items())),
         },
         "code": {
             "git_commit": git_commit,
@@ -466,6 +488,34 @@ def _require_clean_git() -> str:
     if status.stdout.strip():
         raise ValueError("Exp410 full audit requires a clean Git worktree")
     return _git_commit(allow_dirty=False)
+
+
+def _validate_pinned_database_snapshot(
+    snapshot: Mapping[str, str],
+    config: Exp410FrozenConfig,
+) -> None:
+    if tuple(snapshot) != config.expected_database_snapshot_keys:
+        raise ValueError("Exp410 SQLite snapshot artifact set is not pinned")
+    if snapshot.get("db") != config.database_sha256:
+        raise ValueError("Exp410 SQLite database SHA256 mismatch")
+
+
+def _require_database_snapshot(
+    db_path: Path,
+    expected: Mapping[str, str],
+) -> None:
+    if dict(database_snapshot(db_path)) != dict(expected):
+        raise ValueError("Exp410 SQLite snapshot changed before publication")
+
+
+def _require_full_execution_state(
+    db_path: Path,
+    expected_snapshot: Mapping[str, str],
+    expected_commit: str,
+) -> None:
+    _require_database_snapshot(db_path, expected_snapshot)
+    if _require_clean_git() != expected_commit:
+        raise ValueError("Exp410 Git commit changed before publication")
 
 
 def _git_commit(*, allow_dirty: bool) -> str:

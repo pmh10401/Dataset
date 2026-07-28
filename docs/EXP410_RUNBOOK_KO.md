@@ -19,8 +19,16 @@ Exp410은 기존 Exp403-408 Hard 2,218개를 변경하지 않는 읽기 전용 �
 
 저장소의 기존 가상환경과 portable data root를 사용한다.
 
+먼저 `git worktree list`에서 Exp410 브랜치를 checkout한 경로를 확인한다.
+디렉터리 이름만 보고 추정하지 말고 branch와 commit을 검증한다.
+현재 이 Mac에서는 아래 경로가 Exp410 브랜치에 연결되어 있다.
+
 ```bash
+git -C "/Users/mac/Documents/Time Series" worktree list
 cd "/Users/mac/Documents/Time Series/.worktrees/exp409-prospective-readiness"
+test "$(git branch --show-current)" = \
+  "codex/exp410-frozen-hard-family-robustness-audit"
+git rev-parse HEAD
 source "/Users/mac/Documents/Time Series/.venv/bin/activate"
 export TIMESERIES_DATA_ROOT="/Users/mac/Documents/Dataset"
 ```
@@ -136,9 +144,10 @@ summary에서 `smoke`, `full_audit_executed`는 각각 `true`, `false`여야
 ## 6. 즉시 중단 조건
 
 - Git worktree가 dirty이거나 실행 중 commit이 바뀜
-- input/manifest/DB/Exp291/292 SHA256 불일치
+- pinned manifest root/input artifact/DB/Exp291/292 SHA256 불일치
 - Hard identity 또는 Exp291/292 lane parity 불일치
-- SQLite `PRAGMA quick_check` 실패 또는 DB/WAL/SHM snapshot 변화
+- SQLite `PRAGMA quick_check` 실패, unpinned WAL/SHM 출현 또는
+  preflight/scan/원자적 rename 직전 snapshot 변화
 - dataset/family/bucket/Hard/TP/FP/FN/F1 고정값 불일치
 - 잘못된 dataset 이름, label, index, overlap 또는 bootstrap 계약
 - 기존 output 경로, 부분 artifact, staging hash 불일치

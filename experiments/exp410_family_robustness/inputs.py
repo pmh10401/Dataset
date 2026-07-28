@@ -44,11 +44,29 @@ def load_verified_inputs(
         INPUT_MANIFEST: publication / INPUT_MANIFEST,
         PUBLICATION_MANIFEST: publication / PUBLICATION_MANIFEST,
     }
+    observed_prediction_manifest = _require_sha256(
+        paths[PREDICTION_MANIFEST],
+        config.prediction_manifest_sha256,
+    )
+    observed_input_manifest = _require_sha256(
+        paths[INPUT_MANIFEST],
+        config.evaluation_input_manifest_sha256,
+    )
+    observed_publication_manifest = _require_sha256(
+        paths[PUBLICATION_MANIFEST],
+        config.evaluation_publication_manifest_sha256,
+    )
     input_manifest = _read_json(paths[INPUT_MANIFEST])
     publication_manifest = _read_json(paths[PUBLICATION_MANIFEST])
     input_hashes = _artifact_hashes(input_manifest, INPUT_MANIFEST)
     publication_hashes = _artifact_hashes(publication_manifest, PUBLICATION_MANIFEST)
 
+    _verify_manifest_artifacts(publication, input_hashes, INPUT_MANIFEST)
+    _verify_manifest_artifacts(
+        publication,
+        publication_hashes,
+        PUBLICATION_MANIFEST,
+    )
     _require_bound_hash(input_hashes, paths[PREDICTION_MANIFEST], INPUT_MANIFEST)
     _require_bound_hash(input_hashes, paths[PREDICTION_ROWS], INPUT_MANIFEST)
     _require_bound_hash(publication_hashes, paths[FROZEN_LABELS], PUBLICATION_MANIFEST)
@@ -112,9 +130,9 @@ def load_verified_inputs(
                 FROZEN_LABELS: observed_labels,
                 "exp291_frozen_lanes": observed_exp291,
                 "exp292_frozen_lanes": observed_exp292,
-                PREDICTION_MANIFEST: sha256_file(paths[PREDICTION_MANIFEST]),
-                INPUT_MANIFEST: sha256_file(paths[INPUT_MANIFEST]),
-                PUBLICATION_MANIFEST: sha256_file(paths[PUBLICATION_MANIFEST]),
+                PREDICTION_MANIFEST: observed_prediction_manifest,
+                INPUT_MANIFEST: observed_input_manifest,
+                PUBLICATION_MANIFEST: observed_publication_manifest,
             }
         ),
     )
@@ -298,6 +316,18 @@ def _require_bound_hash(
     if expected is None:
         raise ValueError(f"{manifest_name} does not bind required artifact: {path.name}")
     _require_sha256(path, expected)
+
+
+def _verify_manifest_artifacts(
+    publication: Path,
+    hashes: Mapping[str, str],
+    manifest_name: str,
+) -> None:
+    for name, expected in hashes.items():
+        artifact = Path(name)
+        if artifact.name != name:
+            raise ValueError(f"{manifest_name} contains a nonlocal artifact path")
+        _require_sha256(publication / artifact, expected)
 
 
 def _require_sha256(path: Path, expected: str) -> str:

@@ -9,7 +9,11 @@ from io import StringIO
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
-from .config import FROZEN_CONFIG, Exp410FrozenConfig
+from .config import (
+    FROZEN_CONFIG,
+    Exp410FrozenConfig,
+    require_frozen_research_parameters,
+)
 from .contracts import AuditResult
 
 
@@ -44,6 +48,7 @@ def render_payloads(
     config: Exp410FrozenConfig = FROZEN_CONFIG,
 ) -> Mapping[str, bytes]:
     """Render all eight non-manifest artifacts in canonical order."""
+    require_frozen_research_parameters(config)
     _validate_summary(result.summary, config)
     _validate_provenance(provenance)
 

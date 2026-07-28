@@ -17,6 +17,19 @@ class ConfigContractTests(unittest.TestCase):
         self.assertEqual(FROZEN_CONFIG.family_weight_caps, (1, 3, 5, 10, None))
         self.assertEqual(FROZEN_CONFIG.bootstrap_iterations, 2000)
         self.assertEqual(FROZEN_CONFIG.bootstrap_seed, 410)
+        self.assertEqual(
+            FROZEN_CONFIG.prediction_manifest_sha256,
+            "41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8",
+        )
+        self.assertEqual(
+            FROZEN_CONFIG.evaluation_input_manifest_sha256,
+            "13f303c6422b77e10ad7eb4dbbf7ed3506849f4b972ad85ccb2cfc2bf935f6de",
+        )
+        self.assertEqual(
+            FROZEN_CONFIG.evaluation_publication_manifest_sha256,
+            "f0439be9ca751e9849dbd321a8673dafe64d4424b27e6f69282a43c1e9bdef10",
+        )
+        self.assertEqual(FROZEN_CONFIG.expected_database_snapshot_keys, ("db",))
         self.assertFalse(FROZEN_CONFIG.operational_policy_changed)
         self.assertFalse(FROZEN_CONFIG.deployment_eligible)
 

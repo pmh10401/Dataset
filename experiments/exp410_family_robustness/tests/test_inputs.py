@@ -19,6 +19,8 @@ from experiments.exp410_family_robustness.inputs import (
 class FrozenFixture:
     input_dir: Path
     labels_path: Path
+    bound_artifact_path: Path
+    publication_manifest_path: Path
     exp291_path: Path
     exp292_path: Path
     config: Exp410FrozenConfig
@@ -98,17 +100,23 @@ def write_frozen_fixture(root: Path) -> FrozenFixture:
     _write_jsonl(exp292_path, lane_rows)
 
     input_manifest_path = input_dir / "exp403_408_evaluation_input_manifest.json"
+    bound_artifact_path = input_dir / "exp403_feature_audit.jsonl"
+    bound_artifact_path.write_text('{"fixture":true}\n', encoding="utf-8")
     _write_json(
         input_manifest_path,
         {
             "artifact_sha256": {
+                bound_artifact_path.name: _digest(bound_artifact_path),
                 prediction_manifest_path.name: _digest(prediction_manifest_path),
                 prediction_path.name: _digest(prediction_path),
             }
         },
     )
+    publication_manifest_path = (
+        input_dir / "exp403_408_evaluation_publication_manifest.json"
+    )
     _write_json(
-        input_dir / "exp403_408_evaluation_publication_manifest.json",
+        publication_manifest_path,
         {
             "artifact_sha256": {
                 input_manifest_path.name: _digest(input_manifest_path),
@@ -120,6 +128,8 @@ def write_frozen_fixture(root: Path) -> FrozenFixture:
     return FrozenFixture(
         input_dir=input_dir,
         labels_path=labels_path,
+        bound_artifact_path=bound_artifact_path,
+        publication_manifest_path=publication_manifest_path,
         exp291_path=exp291_path,
         exp292_path=exp292_path,
         config=replace(
@@ -133,7 +143,12 @@ def write_frozen_fixture(root: Path) -> FrozenFixture:
             expected_dataset_macro_f1=1.0 / 3.0,
             display_dataset_macro_f1="0.333333",
             prediction_sha256=_digest(prediction_path),
+            prediction_manifest_sha256=_digest(prediction_manifest_path),
             frozen_labels_sha256=_digest(labels_path),
+            evaluation_input_manifest_sha256=_digest(input_manifest_path),
+            evaluation_publication_manifest_sha256=_digest(
+                publication_manifest_path
+            ),
             exp291_sha256=_digest(exp291_path),
             exp292_sha256=_digest(exp292_path),
         ),
@@ -165,6 +180,37 @@ class FrozenInputTests(unittest.TestCase):
             fixture = write_frozen_fixture(Path(raw))
             fixture.labels_path.write_text(
                 fixture.labels_path.read_text(encoding="utf-8").replace(",1\n", ",0\n", 1),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "SHA256"):
+                load_verified_inputs(
+                    fixture.input_dir,
+                    fixture.exp291_path,
+                    fixture.exp292_path,
+                    config=fixture.config,
+                )
+
+    def test_loader_rejects_unpinned_publication_manifest_change(self) -> None:
+        with TemporaryDirectory() as raw:
+            fixture = write_frozen_fixture(Path(raw))
+            payload = json.loads(
+                fixture.publication_manifest_path.read_text(encoding="utf-8")
+            )
+            payload["untrusted"] = True
+            _write_json(fixture.publication_manifest_path, payload)
+            with self.assertRaisesRegex(ValueError, "SHA256"):
+                load_verified_inputs(
+                    fixture.input_dir,
+                    fixture.exp291_path,
+                    fixture.exp292_path,
+                    config=fixture.config,
+                )
+
+    def test_loader_verifies_every_manifest_bound_artifact(self) -> None:
+        with TemporaryDirectory() as raw:
+            fixture = write_frozen_fixture(Path(raw))
+            fixture.bound_artifact_path.write_text(
+                '{"fixture":false}\n',
                 encoding="utf-8",
             )
             with self.assertRaisesRegex(ValueError, "SHA256"):

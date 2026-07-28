@@ -8,7 +8,11 @@ import math
 
 import numpy as np
 
-from .config import FROZEN_CONFIG, Exp410FrozenConfig
+from .config import (
+    FROZEN_CONFIG,
+    Exp410FrozenConfig,
+    require_frozen_research_parameters,
+)
 from .contracts import (
     AuditResult,
     DatasetMetric,
@@ -34,6 +38,7 @@ def aggregate_family_robustness(
     config: Exp410FrozenConfig = FROZEN_CONFIG,
 ) -> AuditResult:
     """Compute every preregistered family-balanced diagnostic."""
+    require_frozen_research_parameters(config)
     metric_rows, profile_by_dataset = _validated_inputs(metrics, profiles, config)
     grouped: dict[str, list[DatasetMetric]] = defaultdict(list)
     for row in metric_rows:

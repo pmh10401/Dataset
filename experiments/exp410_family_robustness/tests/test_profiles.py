@@ -10,7 +10,10 @@ from unittest.mock import patch
 import numpy as np
 
 from experiments.exp410_family_robustness.config import FROZEN_CONFIG
-from experiments.exp410_family_robustness.profiles import scan_dataset_profiles
+from experiments.exp410_family_robustness.profiles import (
+    database_snapshot,
+    scan_dataset_profiles,
+)
 
 
 def _blob(values: tuple[float, ...]) -> bytes:
@@ -45,14 +48,14 @@ def write_profile_db(path: Path) -> None:
             ((1, "Alpha_normal_0"), (2, "Beta_normal_0")),
         )
         rows = (
-            (1, "TRAIN", 0, "normal", _blob((1.0, 2.0))),
-            (1, "TRAIN", 1, "normal", _blob((3.0, 4.0))),
-            (1, "TEST", 0, "normal", _blob((1.0, 2.0))),
-            (1, "TEST", 1, "normal", _blob((5.0, 6.0))),
-            (1, "TEST", 2, "anomaly", _blob((3.0, 4.0))),
-            (2, "TRAIN", 0, "normal", _blob((7.0, 8.0))),
-            (2, "TEST", 0, "normal", _blob((7.0, 8.0))),
-            (2, "TEST", 1, "anomaly", _blob((9.0, 10.0))),
+            (1, "TRAIN", 0, "0", _blob((1.0, 2.0))),
+            (1, "TRAIN", 1, "0", _blob((3.0, 4.0))),
+            (1, "TEST", 0, "0", _blob((1.0, 2.0))),
+            (1, "TEST", 1, "0", _blob((5.0, 6.0))),
+            (1, "TEST", 2, "1", _blob((3.0, 4.0))),
+            (2, "TRAIN", 0, "0", _blob((7.0, 8.0))),
+            (2, "TEST", 0, "0", _blob((7.0, 8.0))),
+            (2, "TEST", 1, "1", _blob((9.0, 10.0))),
         )
         connection.executemany(
             """
@@ -107,6 +110,44 @@ class DatasetProfileTests(unittest.TestCase):
                             database_sha256="a" * 64,
                         ),
                     )
+
+    def test_scan_requires_the_pinned_preflight_snapshot(self) -> None:
+        with TemporaryDirectory() as raw:
+            path = Path(raw) / "fixture.db"
+            write_profile_db(path)
+            config = replace(
+                FROZEN_CONFIG,
+                expected_datasets=2,
+                expected_families=2,
+                database_sha256=_digest(path),
+            )
+            pinned = dict(database_snapshot(path))
+            pinned["db"] = "0" * 64
+            with self.assertRaisesRegex(ValueError, "preflight snapshot mismatch"):
+                scan_dataset_profiles(
+                    path,
+                    ("Alpha_normal_0", "Beta_normal_0"),
+                    config=config,
+                    expected_snapshot=pinned,
+                )
+
+    def test_scan_rejects_unpinned_wal_sidecar(self) -> None:
+        with TemporaryDirectory() as raw:
+            path = Path(raw) / "fixture.db"
+            write_profile_db(path)
+            Path(f"{path}-wal").write_bytes(b"unpinned-wal")
+            config = replace(
+                FROZEN_CONFIG,
+                expected_datasets=2,
+                expected_families=2,
+                database_sha256=_digest(path),
+            )
+            with self.assertRaisesRegex(ValueError, "snapshot artifact set"):
+                scan_dataset_profiles(
+                    path,
+                    ("Alpha_normal_0", "Beta_normal_0"),
+                    config=config,
+                )
 
 
 if __name__ == "__main__":

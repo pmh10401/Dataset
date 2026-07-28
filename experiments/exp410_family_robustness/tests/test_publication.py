@@ -96,6 +96,25 @@ class PublicationTests(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertEqual(tuple(Path(raw).iterdir()), ())
 
+    def test_pre_publish_verifier_blocks_atomic_rename(self) -> None:
+        result, config = publication_fixture()
+        with TemporaryDirectory() as raw:
+            output = Path(raw) / "changed"
+
+            def reject_changed_state() -> None:
+                raise ValueError("execution state changed")
+
+            with self.assertRaisesRegex(ValueError, "execution state changed"):
+                publish_audit(
+                    result,
+                    output,
+                    provenance_fixture(),
+                    config=config,
+                    pre_publish_verify=reject_changed_state,
+                )
+            self.assertFalse(output.exists())
+            self.assertEqual(tuple(Path(raw).iterdir()), ())
+
 
 if __name__ == "__main__":
     unittest.main()

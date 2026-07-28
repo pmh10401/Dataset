@@ -68,7 +68,10 @@ experiment number and preregistration.
 | Dataset-macro mean F1 exact | `0.6089825086931719` |
 | Dataset-macro mean F1 display (6 decimals) | `0.608983` |
 | Prediction SHA256 | `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70` |
+| Prediction manifest SHA256 | `41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8` |
 | Frozen label SHA256 | `b483ba00cee6f74dc6e2db1e4c9bafea4237a3be7ba60d7f45dc32aa29e4f3f4` |
+| Evaluation input manifest SHA256 | `13f303c6422b77e10ad7eb4dbbf7ed3506849f4b972ad85ccb2cfc2bf935f6de` |
+| Evaluation publication manifest SHA256 | `f0439be9ca751e9849dbd321a8673dafe64d4424b27e6f69282a43c1e9bdef10` |
 | Database SHA256 | `8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c` |
 | Exp291 lane SHA256 | `73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848` |
 | Exp292 lane SHA256 | `f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b` |
@@ -103,10 +106,12 @@ The current publications provide:
 - labels for all 1,117 datasets;
 - Hard alerts in 888 datasets.
 
-Before parsing values, Exp410 verifies every pinned SHA256 and the artifact
-hashes recorded by both evaluation manifests. It also verifies
-`PRAGMA quick_check`, records the DB/WAL/SHM snapshot when present, and checks
-that the snapshot does not change between preflight and publication.
+Before parsing values, Exp410 verifies the pinned SHA256 trust roots for the
+prediction, evaluation-input, and evaluation-publication manifests. It then
+verifies every local artifact hash recorded by both evaluation manifests. It
+also verifies `PRAGMA quick_check`, rejects unpinned WAL/SHM sidecars, and
+checks that the pinned main-DB snapshot does not change from preflight through
+the scan and the atomic publication rename boundary.
 
 The audit does not consume:
 
@@ -135,8 +140,8 @@ one-vs-all data.
 The SQLite profile scan reads:
 
 - dataset identity;
-- TRAIN rows with label `normal`;
-- TEST rows and their instance label;
+- TRAIN rows with production-schema label `"0"` (normal);
+- TEST rows with production-schema label `"0"` (normal) or `"1"` (anomaly);
 - each instance `values_blob`.
 
 For each dataset it computes:
@@ -345,7 +350,8 @@ Exp410 publishes no audit result when any of the following occurs:
 - Git worktree is dirty at publication;
 - a pinned SHA256 or manifest artifact hash differs;
 - SQLite `PRAGMA quick_check` is not `ok`;
-- DB/WAL/SHM identity changes during the run;
+- an unpinned DB WAL/SHM sidecar exists or the pinned DB identity changes
+  between preflight, scan, and the pre-rename publication check;
 - dataset population differs from 1,117;
 - family population differs from 128;
 - family-size bucket counts differ from `1 / 74 / 39 / 14`;

@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
+from experiments.exp410_family_robustness import profiles as profile_module
 from experiments.exp410_family_robustness.runner import run_smoke
 
 
@@ -40,12 +41,20 @@ class RunnerCliTests(unittest.TestCase):
             self.assertFalse(summary["operational_policy_changed"])
             self.assertIn("MANIFEST.json", hashes)
 
-    def test_full_runner_is_not_called_by_smoke(self) -> None:
+    def test_smoke_scans_only_the_synthetic_database(self) -> None:
         with TemporaryDirectory() as raw, patch(
-            "experiments.exp410_family_robustness.runner.scan_dataset_profiles",
-            side_effect=AssertionError("real profile scan forbidden in smoke"),
-        ):
+            "experiments.exp410_family_robustness.runner.profile_module.scan_dataset_profiles",
+            wraps=profile_module.scan_dataset_profiles,
+        ) as scanner:
             run_smoke(Path(raw) / "smoke")
+            scanner.assert_called_once()
+            scanned_path = Path(scanner.call_args.args[0])
+            self.assertEqual(scanned_path.name, "fixture.db")
+            self.assertTrue(scanned_path.is_relative_to(Path(raw)))
+            self.assertNotEqual(
+                scanned_path,
+                Path("/Users/mac/Documents/Dataset/univariate_ts.db"),
+            )
 
 
 if __name__ == "__main__":
