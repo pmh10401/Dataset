@@ -69,6 +69,11 @@ class PortablePathTests(unittest.TestCase):
             result["output_dir"],
             f"{root}/exp403_408_feature_ml_validation",
         )
+        handoff = (
+            REPOSITORY / "docs" / "HANDOFF_20260728_EXP403_408_KO.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("TIMESERIES_DATA_ROOT", handoff)
+        self.assertIn(root, handoff)
 
 
 if __name__ == "__main__":
