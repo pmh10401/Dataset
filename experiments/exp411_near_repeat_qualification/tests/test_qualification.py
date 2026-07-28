@@ -1,6 +1,14 @@
 import unittest
+from unittest.mock import patch
 
+import numpy as np
+
+from experiments.exp411_near_repeat_qualification.acceleration import (
+    full_pairwise_rms,
+    minimum_rms,
+)
 from experiments.exp411_near_repeat_qualification.contracts import (
+    DatasetBackendAudit,
     DatasetQualification,
     TrainRun,
 )
@@ -9,6 +17,7 @@ from experiments.exp411_near_repeat_qualification.perturbations import (
     perturbation_types,
 )
 from experiments.exp411_near_repeat_qualification.qualification import (
+    _batched_synthetic_distances,
     aggregate_qualification,
     qualify_dataset,
     select_quantile,
@@ -107,6 +116,111 @@ class QualificationTests(unittest.TestCase):
         )
         self.assertTrue(
             all(len(str(row["query_identity_sha256"])) == 64 for row in trace)
+        )
+
+    def test_accelerated_qualification_matches_numpy_counts_and_trace(self) -> None:
+        runs = tuple(
+            TrainRun(
+                dataset="Alpha_normal_0",
+                instance_index=index,
+                values=(
+                    0.0,
+                    float(index) * 0.1,
+                    float(index * index) * 0.02,
+                    float(index) * 0.3 + float(index * index) * 0.01,
+                ),
+                values_sha256=f"{index:064x}",
+            )
+            for index in range(6)
+        )
+        baseline_trace: list[dict[str, object]] = []
+        accelerated_trace: list[dict[str, object]] = []
+        audits: list[DatasetBackendAudit] = []
+
+        baseline = qualify_dataset(
+            dataset="Alpha_normal_0",
+            family="Alpha",
+            runs=runs,
+            backend="numpy_cpu",
+            parity_trace=baseline_trace,
+        )
+        accelerated = qualify_dataset(
+            dataset="Alpha_normal_0",
+            family="Alpha",
+            runs=runs,
+            accelerated=True,
+            backend_audit=audits,
+            parity_trace=accelerated_trace,
+        )
+
+        self.assertEqual(accelerated, baseline)
+        self.assertEqual(accelerated_trace, baseline_trace)
+        self.assertEqual(len(audits), 1)
+        self.assertLessEqual(audits[0].max_abs_error, 1e-6)
+
+    def test_five_fold_reuses_one_full_matrix_per_usable_view(self) -> None:
+        runs = tuple(
+            TrainRun(
+                dataset="Alpha_normal_0",
+                instance_index=index,
+                values=tuple(
+                    float(
+                        np.sin((index + 1) * (column + 1) * 0.13)
+                        + index * column * 0.001
+                    )
+                    for column in range(8)
+                ),
+                values_sha256=f"{index:064x}",
+            )
+            for index in range(20)
+        )
+
+        with patch(
+            "experiments.exp411_near_repeat_qualification.qualification."
+            "full_pairwise_rms",
+            wraps=full_pairwise_rms,
+        ) as matrix_spy:
+            qualify_dataset(
+                dataset="Alpha_normal_0",
+                family="Alpha",
+                runs=runs,
+                accelerated=True,
+            )
+
+        self.assertEqual(matrix_spy.call_count, 3)
+
+    def test_synthetic_batch_matches_unbatched_query_order(self) -> None:
+        fit = np.asarray(
+            [[0.0, 0.0], [3.0, 4.0], [8.0, 6.0]],
+            dtype=np.float64,
+        )
+        query = np.asarray(
+            [[0.0, 4.0], [6.0, 8.0], [2.0, 2.0], [9.0, 9.0]],
+            dtype=np.float64,
+        )
+        expected = np.concatenate(
+            [
+                minimum_rms(
+                    fit,
+                    query[index : index + 1],
+                    backend="numpy_cpu",
+                )
+                for index in range(len(query))
+            ]
+        )
+
+        observed = _batched_synthetic_distances(
+            fit,
+            query,
+            backend="numba_cpu",
+            batch_rows=3,
+        )
+
+        np.testing.assert_allclose(
+            observed,
+            expected,
+            rtol=0.0,
+            atol=1e-6,
         )
 
     def test_aggregate_selects_only_train_safe_quantile(self) -> None:

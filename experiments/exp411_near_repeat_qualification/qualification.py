@@ -7,9 +7,19 @@ import math
 
 import numpy as np
 
+from .acceleration import (
+    ACCELERATION_POLICY,
+    AccelerationPolicy,
+    audit_dataset_pairs,
+    boundary_safe_minimum,
+    boundary_safe_threshold,
+    choose_backend,
+    full_pairwise_rms,
+    minimum_rms,
+)
 from .backends import pairwise_rms
 from .config import FROZEN_CONFIG, Exp411FrozenConfig
-from .contracts import DatasetQualification, TrainRun
+from .contracts import DatasetBackendAudit, DatasetQualification, TrainRun
 from .distances import (
     VIEW_NAMES,
     calibrate_thresholds,
@@ -60,6 +70,8 @@ def qualify_dataset(
     family: str,
     runs: Sequence[TrainRun],
     backend: str = "numpy_cpu",
+    accelerated: bool = False,
+    backend_audit: list[DatasetBackendAudit] | None = None,
     parity_trace: list[dict[str, object]] | None = None,
     config: Exp411FrozenConfig = FROZEN_CONFIG,
 ) -> DatasetQualification:
@@ -67,6 +79,15 @@ def qualify_dataset(
     ordered_runs = tuple(runs)
     if any(run.dataset != dataset for run in ordered_runs):
         raise ValueError("Exp411 dataset qualification received a foreign run")
+    if accelerated:
+        return _qualify_dataset_accelerated(
+            dataset=dataset,
+            family=family,
+            runs=ordered_runs,
+            backend_audit=backend_audit,
+            parity_trace=parity_trace,
+            config=config,
+        )
     keys = tuple(_quantile_key(value) for value in config.quantiles)
     types = perturbation_types()
     normal_near = {key: 0 for key in keys}
@@ -239,6 +260,468 @@ def qualify_dataset(
     )
 
 
+def _qualify_dataset_accelerated(
+    *,
+    dataset: str,
+    family: str,
+    runs: Sequence[TrainRun],
+    backend_audit: list[DatasetBackendAudit] | None,
+    parity_trace: list[dict[str, object]] | None,
+    config: Exp411FrozenConfig,
+    policy: AccelerationPolicy = ACCELERATION_POLICY,
+) -> DatasetQualification:
+    policy.validate()
+    keys = tuple(_quantile_key(value) for value in config.quantiles)
+    types = perturbation_types()
+    normal_near = {key: 0 for key in keys}
+    synthetic_total = {key: 0 for key in keys}
+    synthetic_near = {key: 0 for key in keys}
+    perturbation_total = {
+        key: {name: 0 for name in types}
+        for key in keys
+    }
+    perturbation_near = {
+        key: {name: 0 for name in types}
+        for key in keys
+    }
+    normal_abstained = 0
+    folds = group_crossfit_plan(runs, seed=config.seed)
+    if not folds:
+        if backend_audit is not None:
+            backend_audit.append(
+                DatasetBackendAudit(
+                    backend="numpy_cpu",
+                    sampled_pairs=(),
+                    max_abs_error=0.0,
+                    fallback_reason=None,
+                )
+            )
+        for run in runs:
+            for quantile in config.quantiles:
+                _append_trace(
+                    parity_trace,
+                    dataset=dataset,
+                    query=run,
+                    quantile=quantile,
+                    kind="normal",
+                    subtype=None,
+                    candidate_index=run.instance_index,
+                    tag="abstain",
+                )
+        return DatasetQualification(
+            dataset=str(dataset),
+            family=str(family),
+            identity_group_count=len({run.values_sha256 for run in runs}),
+            normal_total=len(runs),
+            normal_abstained=len(runs),
+            normal_near=normal_near,
+            synthetic_total=synthetic_total,
+            synthetic_near=synthetic_near,
+            perturbation_total=perturbation_total,
+            perturbation_near=perturbation_near,
+        )
+
+    length_contexts, audits = _precompute_fold_view_state(
+        runs,
+        folds,
+        policy=policy,
+        config=config,
+    )
+    if backend_audit is not None:
+        backend_audit.append(_combine_backend_audits(audits))
+
+    for fold_number, fold in enumerate(folds):
+        query_by_length: dict[int, list[int]] = defaultdict(list)
+        for index in fold.query_indices:
+            query_by_length[len(runs[index].values)].append(index)
+        for length, query_indices in sorted(query_by_length.items()):
+            context = length_contexts[length]
+            fold_state = context["folds"][fold_number]
+            views = fold_state["views"]
+            if (
+                len(views) < 2
+                or "raw_rms" not in views
+                or not fold_state["eligible"]
+            ):
+                normal_abstained += len(query_indices)
+                for query_index in query_indices:
+                    for quantile in config.quantiles:
+                        _append_trace(
+                            parity_trace,
+                            dataset=dataset,
+                            query=runs[query_index],
+                            quantile=quantile,
+                            kind="normal",
+                            subtype=None,
+                            candidate_index=runs[query_index].instance_index,
+                            tag="abstain",
+                        )
+                continue
+
+            synthetics = [
+                generate_train_only_perturbations(
+                    np.asarray([runs[query_index].values], dtype=np.float64),
+                    target_length=length,
+                    seed=_derived_seed(
+                        dataset,
+                        fold_number,
+                        runs[query_index].values_sha256,
+                    ),
+                )
+                for query_index in query_indices
+            ]
+            synthetic_distances = _synthetic_distances_for_fold(
+                context,
+                fold_state,
+                synthetics,
+                types=types,
+                policy=policy,
+            )
+            fit_hashes = fold_state["fit_hashes"]
+            for query_position, query_index in enumerate(query_indices):
+                query_run = runs[query_index]
+                normal_distances = {
+                    name: np.asarray(
+                        [values["normal"][query_index]],
+                        dtype=np.float64,
+                    )
+                    for name, values in views.items()
+                }
+                for quantile in config.quantiles:
+                    key = _quantile_key(quantile)
+                    thresholds = {
+                        name: values["thresholds"][key]
+                        for name, values in views.items()
+                    }
+                    normal_tag = tag_queries(
+                        normal_distances,
+                        thresholds,
+                        exact=(query_run.values_sha256 in fit_hashes,),
+                    )[0]
+                    normal_near[key] += int(normal_tag == "near")
+                    _append_trace(
+                        parity_trace,
+                        dataset=dataset,
+                        query=query_run,
+                        quantile=quantile,
+                        kind="normal",
+                        subtype=None,
+                        candidate_index=query_run.instance_index,
+                        tag=normal_tag,
+                    )
+                    for name in types:
+                        values = synthetics[query_position].by_type[name]
+                        distances = {
+                            view_name: synthetic_distances[name][view_name][
+                                query_position
+                            ]
+                            for view_name in views
+                        }
+                        tags = tag_queries(
+                            distances,
+                            thresholds,
+                            exact=(False,) * len(values),
+                        )
+                        for synthetic_index, tag in enumerate(tags):
+                            _append_trace(
+                                parity_trace,
+                                dataset=dataset,
+                                query=query_run,
+                                quantile=quantile,
+                                kind="synthetic",
+                                subtype=name,
+                                candidate_index=synthetic_index,
+                                tag=tag,
+                            )
+                        accepted = sum(tag == "near" for tag in tags)
+                        perturbation_total[key][name] += len(values)
+                        perturbation_near[key][name] += accepted
+                        synthetic_total[key] += len(values)
+                        synthetic_near[key] += accepted
+
+    return DatasetQualification(
+        dataset=str(dataset),
+        family=str(family),
+        identity_group_count=len({run.values_sha256 for run in runs}),
+        normal_total=len(runs),
+        normal_abstained=normal_abstained,
+        normal_near=normal_near,
+        synthetic_total=synthetic_total,
+        synthetic_near=synthetic_near,
+        perturbation_total=perturbation_total,
+        perturbation_near=perturbation_near,
+    )
+
+
+def _precompute_fold_view_state(
+    runs: Sequence[TrainRun],
+    folds: Sequence[object],
+    *,
+    policy: AccelerationPolicy,
+    config: Exp411FrozenConfig,
+) -> tuple[dict[int, dict[str, object]], tuple[DatasetBackendAudit, ...]]:
+    all_by_length: dict[int, list[int]] = defaultdict(list)
+    for index, run in enumerate(runs):
+        all_by_length[len(run.values)].append(index)
+    contexts: dict[int, dict[str, object]] = {}
+    audits: list[DatasetBackendAudit] = []
+    for length, indices in sorted(all_by_length.items()):
+        representative_indices = _identity_representatives(runs, indices)
+        raw_values = np.asarray(
+            [runs[index].values for index in representative_indices],
+            dtype=np.float64,
+        )
+        digests = tuple(
+            runs[index].values_sha256 for index in representative_indices
+        )
+        digest_to_position = {
+            digest: position for position, digest in enumerate(digests)
+        }
+        context: dict[str, object] = {
+            "raw_values": raw_values,
+            "digest_to_position": digest_to_position,
+            "folds": {},
+        }
+        for fold_number, fold in enumerate(folds):
+            fit_indices = [
+                index
+                for index in fold.fit_indices
+                if len(runs[index].values) == length
+            ]
+            fit_representatives = _identity_representatives(runs, fit_indices)
+            fit_hashes = {
+                runs[index].values_sha256 for index in fit_representatives
+            }
+            context["folds"][fold_number] = {
+                "eligible": (
+                    len(fit_representatives)
+                    >= config.minimum_same_length_fit_groups
+                ),
+                "fit_positions": tuple(
+                    digest_to_position[runs[index].values_sha256]
+                    for index in fit_representatives
+                ),
+                "fit_hashes": fit_hashes,
+                "views": {},
+            }
+        if len(raw_values) >= 2:
+            raw_audit = audit_dataset_pairs(raw_values, digests, policy)
+            audits.append(raw_audit)
+            force_numpy = raw_audit.fallback_reason is not None
+        else:
+            force_numpy = True
+
+        for view_name in VIEW_NAMES:
+            view_values = _one_view_matrix(raw_values, view_name)
+            usable_folds = []
+            for fold_number, fold_state in context["folds"].items():
+                if not fold_state["eligible"]:
+                    continue
+                fit_positions = np.asarray(
+                    fold_state["fit_positions"],
+                    dtype=np.int64,
+                )
+                fit_view = view_values[fit_positions]
+                median = float(np.median(fit_view))
+                mad = float(np.median(np.abs(fit_view - median)))
+                if math.isfinite(mad) and mad > config.mad_floor:
+                    usable_folds.append((fold_number, fit_positions, mad))
+            if not usable_folds:
+                continue
+            selected_backend = (
+                "numpy_cpu"
+                if force_numpy
+                else choose_backend(
+                    len(view_values) * len(view_values),
+                    view_values.shape[1],
+                    policy,
+                )
+            )
+            pairwise = full_pairwise_rms(
+                view_values,
+                backend=selected_backend,
+            )
+            for fold_number, fit_positions, mad in usable_folds:
+                fold_state = context["folds"][fold_number]
+                fit_scaled = np.ascontiguousarray(
+                    view_values[fit_positions] / mad,
+                    dtype=np.float64,
+                )
+                fit_pairwise = (
+                    pairwise[np.ix_(fit_positions, fit_positions)] / mad
+                )
+                np.fill_diagonal(fit_pairwise, np.inf)
+                reference = np.min(fit_pairwise, axis=1)
+                thresholds = {
+                    _quantile_key(quantile): boundary_safe_threshold(
+                        fit_scaled,
+                        reference,
+                        quantile,
+                        tolerance=policy.distance_tolerance,
+                    )
+                    for quantile in config.quantiles
+                }
+                query_indices = [
+                    index
+                    for index in folds[fold_number].query_indices
+                    if len(runs[index].values) == length
+                ]
+                query_positions = np.asarray(
+                    [
+                        digest_to_position[runs[index].values_sha256]
+                        for index in query_indices
+                    ],
+                    dtype=np.int64,
+                )
+                normal = (
+                    np.min(
+                        pairwise[np.ix_(query_positions, fit_positions)],
+                        axis=1,
+                    )
+                    / mad
+                )
+                normal = boundary_safe_minimum(
+                    fit_scaled,
+                    np.ascontiguousarray(
+                        view_values[query_positions] / mad,
+                        dtype=np.float64,
+                    ),
+                    normal,
+                    tuple(thresholds.values()),
+                    tolerance=policy.distance_tolerance,
+                )
+                fold_state["views"][view_name] = {
+                    "scale": mad,
+                    "thresholds": thresholds,
+                    "normal": {
+                        query_index: float(distance)
+                        for query_index, distance in zip(
+                            query_indices,
+                            normal,
+                            strict=True,
+                        )
+                    },
+                    "backend": selected_backend,
+                }
+            del pairwise
+            del view_values
+        contexts[length] = context
+    return contexts, tuple(audits)
+
+
+def _synthetic_distances_for_fold(
+    context: Mapping[str, object],
+    fold_state: Mapping[str, object],
+    synthetics: Sequence[object],
+    *,
+    types: Sequence[str],
+    policy: AccelerationPolicy,
+) -> dict[str, dict[str, list[np.ndarray]]]:
+    raw_values = np.asarray(context["raw_values"], dtype=np.float64)
+    fit_positions = np.asarray(fold_state["fit_positions"], dtype=np.int64)
+    result: dict[str, dict[str, list[np.ndarray]]] = {
+        name: {} for name in types
+    }
+    for view_name, view_state in fold_state["views"].items():
+        scale = float(view_state["scale"])
+        fit_view = np.ascontiguousarray(
+            _one_view_matrix(raw_values[fit_positions], view_name) / scale,
+            dtype=np.float64,
+        )
+        thresholds = tuple(view_state["thresholds"].values())
+        for perturbation_name in types:
+            sizes = tuple(
+                len(synthetic.by_type[perturbation_name])
+                for synthetic in synthetics
+            )
+            joined = np.concatenate(
+                [
+                    np.asarray(
+                        synthetic.by_type[perturbation_name],
+                        dtype=np.float64,
+                    )
+                    for synthetic in synthetics
+                ],
+                axis=0,
+            )
+            query_view = np.ascontiguousarray(
+                _one_view_matrix(joined, view_name) / scale,
+                dtype=np.float64,
+            )
+            backend = (
+                "numpy_cpu"
+                if view_state["backend"] == "numpy_cpu"
+                else choose_backend(
+                    len(fit_view) * len(query_view),
+                    fit_view.shape[1],
+                    policy,
+                )
+            )
+            observed = _batched_synthetic_distances(
+                fit_view,
+                query_view,
+                backend=backend,
+                batch_rows=policy.synthetic_batch_rows,
+            )
+            observed = boundary_safe_minimum(
+                fit_view,
+                query_view,
+                observed,
+                thresholds,
+                tolerance=policy.distance_tolerance,
+            )
+            split: list[np.ndarray] = []
+            start = 0
+            for size in sizes:
+                split.append(observed[start : start + size])
+                start += size
+            result[perturbation_name][view_name] = split
+    return result
+
+
+def _combine_backend_audits(
+    audits: Sequence[DatasetBackendAudit],
+) -> DatasetBackendAudit:
+    if not audits:
+        return DatasetBackendAudit(
+            backend="numpy_cpu",
+            sampled_pairs=(),
+            max_abs_error=0.0,
+            fallback_reason=None,
+        )
+    worst = max(audits, key=lambda value: value.max_abs_error)
+    fallback = next(
+        (
+            value.fallback_reason
+            for value in audits
+            if value.fallback_reason is not None
+        ),
+        None,
+    )
+    return DatasetBackendAudit(
+        backend=(
+            "numpy_cpu"
+            if fallback is not None
+            or all(value.backend == "numpy_cpu" for value in audits)
+            else "numba_cpu"
+        ),
+        sampled_pairs=worst.sampled_pairs,
+        max_abs_error=max(value.max_abs_error for value in audits),
+        fallback_reason=fallback,
+    )
+
+
+def _one_view_matrix(rows: np.ndarray, name: str) -> np.ndarray:
+    values = np.asarray(rows, dtype=np.float64)
+    if name == "raw_rms":
+        return values
+    if name == "diff_rms":
+        return np.diff(values, axis=1)
+    if name == "spectrum_rms":
+        return np.abs(np.fft.rfft(values, axis=1))[:, 1:]
+    raise ValueError(f"unknown Exp411 distance view: {name}")
+
+
 def _append_trace(
     trace: list[dict[str, object]] | None,
     *,
@@ -321,6 +804,36 @@ def _query_distances(
         )
         for name, values in prepared.items()
     }
+
+
+def _batched_synthetic_distances(
+    fit: np.ndarray,
+    query: np.ndarray,
+    *,
+    backend: str,
+    batch_rows: int,
+) -> np.ndarray:
+    fit_values = np.ascontiguousarray(fit, dtype=np.float64)
+    query_values = np.ascontiguousarray(query, dtype=np.float64)
+    if (
+        fit_values.ndim != 2
+        or query_values.ndim != 2
+        or fit_values.shape[0] == 0
+        or query_values.shape[0] == 0
+        or fit_values.shape[1] != query_values.shape[1]
+        or int(batch_rows) < 1
+    ):
+        raise ValueError("Exp411 synthetic distance batch is invalid")
+    output = []
+    for start in range(0, len(query_values), int(batch_rows)):
+        output.append(
+            minimum_rms(
+                fit_values,
+                query_values[start : start + int(batch_rows)],
+                backend=backend,
+            )
+        )
+    return np.concatenate(output)
 
 
 def _derived_seed(dataset: str, fold: int, identity: str) -> int:
