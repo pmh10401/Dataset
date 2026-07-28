@@ -231,7 +231,6 @@ def _build_backend_assessment(
     baseline_aggregate: Mapping[str, object],
     baseline_seconds: float,
 ) -> dict[str, object]:
-    probes = probe_backends()
     baseline_hash = _tag_hash(baseline_rows)
     rng = np.random.default_rng(411)
     fit = rng.normal(size=(64, 96))
@@ -239,6 +238,13 @@ def _build_backend_assessment(
     expected_distances = pairwise_rms(fit, query, backend="numpy_cpu")
     assessments: dict[str, object] = {}
     timing: dict[str, object] = {"numpy_cpu_stage_seconds": baseline_seconds}
+    numba_cold_started = perf_counter()
+    try:
+        pairwise_rms(fit, query, backend="numba_cpu")
+        timing["numba_cold_seconds"] = perf_counter() - numba_cold_started
+    except Exception:
+        pass
+    probes = probe_backends()
     for name in ("numba_cpu", "torch_cpu"):
         probe = probes[name]
         if not getattr(probe, "available", False):
@@ -248,13 +254,9 @@ def _build_backend_assessment(
             }
             continue
         if name == "numba_cpu":
-            cold_started = perf_counter()
-            pairwise_rms(fit, query, backend=name)
-            cold_seconds = perf_counter() - cold_started
             warm_started = perf_counter()
             observed_distances = pairwise_rms(fit, query, backend=name)
             warm_seconds = perf_counter() - warm_started
-            timing["numba_cold_seconds"] = cold_seconds
             timing["numba_warm_seconds"] = warm_seconds
         else:
             observed_distances = pairwise_rms(fit, query, backend=name)
