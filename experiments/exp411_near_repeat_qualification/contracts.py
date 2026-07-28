@@ -29,3 +29,11 @@ class DatasetQualification:
     synthetic_near: Mapping[str, int]
     perturbation_total: Mapping[str, Mapping[str, int]]
     perturbation_near: Mapping[str, Mapping[str, int]]
+
+
+@dataclass(frozen=True)
+class DatasetBackendAudit:
+    backend: str
+    sampled_pairs: tuple[tuple[int, int], ...]
+    max_abs_error: float
+    fallback_reason: str | None
