@@ -12,7 +12,6 @@ from typing import Any
 
 import numpy as np
 
-from experiments.exp226_235_hard_alert_quality.config import DB_PATH
 from experiments.exp226_235_hard_alert_quality.contracts import DatasetBundle
 from experiments.exp226_235_hard_alert_quality.database import load_values_bundle
 from experiments.exp226_235_hard_alert_quality.preprocessing import (
@@ -31,22 +30,17 @@ from .contracts import (
     DatasetInput,
     Fold,
 )
-
-
-DATA_ROOT = Path("/Users/minho/Documents/Dataset")
-EXP291_PREDICTION_PATH = (
-    DATA_ROOT
-    / "exp291_final_operational_routing_freeze"
-    / "exp291_frozen_operational_routing.jsonl"
+from .paths import (
+    DATA_ROOT,
+    DB_PATH,
+    EXP291_MANIFEST_PATH,
+    EXP291_PREDICTION_PATH,
+    EXP292_MANIFEST_PATH,
+    EXP292_PREDICTION_PATH,
 )
-EXP291_MANIFEST_PATH = EXP291_PREDICTION_PATH.with_name("exp291_prediction_manifest.json")
+
+
 EXP291_SHA256 = "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848"
-EXP292_PREDICTION_PATH = (
-    DATA_ROOT
-    / "exp292_standard_review_evidence_tiering"
-    / "exp292_frozen_review_tiers.jsonl"
-)
-EXP292_MANIFEST_PATH = EXP292_PREDICTION_PATH.with_name("exp292_prediction_manifest.json")
 EXP292_SHA256 = "f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b"
 
 

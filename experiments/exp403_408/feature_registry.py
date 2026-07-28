@@ -14,9 +14,9 @@ import numpy as np
 
 from .artifact_io import sha256_file
 from .contracts import SEED, DatasetInput, FeatureBlock, _is_forbidden_key
+from .paths import DATA_ROOT
 
 
-DATA_ROOT = Path("/Users/minho/Documents/Dataset")
 FEATURE_GROUPS = {
     "temporal_random_kernel",
     "normal_space_distance",
