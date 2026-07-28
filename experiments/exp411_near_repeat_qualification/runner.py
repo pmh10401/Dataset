@@ -255,7 +255,7 @@ def _build_backend_assessment(
     expected_distances = pairwise_rms(fit, query, backend="numpy_cpu")
     assessments: dict[str, object] = {}
     timing: dict[str, object] = {"numpy_cpu_stage_seconds": baseline_seconds}
-    for name in ("numba_cpu", "torch_cpu"):
+    for name in ("numba_cpu", "torch_cpu", "torch_mps"):
         if name == "numba_cpu":
             reset_numba_benchmark_state()
         try:
@@ -297,6 +297,9 @@ def _build_backend_assessment(
             **asdict(assessment),
             "stage_scope": "32-dataset representative synthetic qualification",
             "candidate_trace_sha256": candidate_trace_hash,
+            "timing_includes_device_transfer_and_synchronization": (
+                name == "torch_mps"
+            ),
         }
     probes = probe_backends()
     return {

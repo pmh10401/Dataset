@@ -46,6 +46,10 @@ class RunnerTests(unittest.TestCase):
         )
         self.assertIn("assessments", backend)
         self.assertEqual(
+            set(backend["assessments"]),
+            {"numba_cpu", "torch_cpu", "torch_mps"},
+        )
+        self.assertEqual(
             backend["baseline_tag_sha256"],
             backend["canonical_tag_sha256"],
         )
