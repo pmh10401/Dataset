@@ -10,6 +10,7 @@ import numpy as np
 
 from experiments.exp411_near_repeat_qualification.config import FROZEN_CONFIG
 from experiments.exp411_near_repeat_qualification.inputs import (
+    iter_train_runs,
     load_train_runs,
     trace_sql_contract,
 )
@@ -85,6 +86,23 @@ class InputTests(unittest.TestCase):
             [0, 1],
         )
         self.assertEqual(rows["Alpha_normal_0"][0].values, (0.0, 1.0, 2.0))
+
+    def test_streaming_loader_yields_one_dataset_record(self) -> None:
+        with TemporaryDirectory() as raw:
+            path = Path(raw) / "fixture.db"
+            _write_db(path)
+            config = replace(
+                FROZEN_CONFIG,
+                expected_datasets=1,
+                expected_families=1,
+                database_sha256=_digest(path),
+            )
+            streamed = tuple(
+                iter_train_runs(path, ("Alpha_normal_0",), config=config)
+            )
+        self.assertEqual(len(streamed), 1)
+        self.assertEqual(streamed[0][0], "Alpha_normal_0")
+        self.assertEqual(len(streamed[0][1]), 2)
 
     def test_loader_rejects_wal_sidecar(self) -> None:
         with TemporaryDirectory() as raw:

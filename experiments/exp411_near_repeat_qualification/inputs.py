@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from hashlib import sha256
 from pathlib import Path
 import sqlite3
@@ -48,7 +48,18 @@ def load_train_runs(
     *,
     config: Exp411FrozenConfig = FROZEN_CONFIG,
 ) -> Mapping[str, tuple[TrainRun, ...]]:
-    config.validate()
+    return MappingProxyType(
+        dict(iter_train_runs(db_path, datasets, config=config))
+    )
+
+
+def iter_train_runs(
+    db_path: Path,
+    datasets: Sequence[str],
+    *,
+    config: Exp411FrozenConfig = FROZEN_CONFIG,
+) -> Iterator[tuple[str, tuple[TrainRun, ...]]]:
+    config.validate_research_parameters()
     requested = tuple(str(dataset) for dataset in datasets)
     if (
         len(requested) != config.expected_datasets
@@ -74,10 +85,8 @@ def load_train_runs(
     try:
         if connection.execute("PRAGMA quick_check;").fetchall() != [("ok",)]:
             raise ValueError("Exp411 SQLite PRAGMA quick_check failed")
-        result = {
-            dataset: _load_one_dataset(connection, dataset)
-            for dataset in sorted(requested)
-        }
+        for dataset in sorted(requested):
+            yield dataset, _load_one_dataset(connection, dataset)
         trace_sql_contract(trace)
     except sqlite3.Error as error:
         raise ValueError("Exp411 SQLite TRAIN query failed") from error
@@ -87,7 +96,6 @@ def load_train_runs(
     after = database_snapshot(db_path)
     if dict(before) != dict(after):
         raise ValueError("Exp411 SQLite snapshot changed during TRAIN scan")
-    return MappingProxyType(result)
 
 
 def _load_one_dataset(
@@ -160,6 +168,7 @@ def _family_from_dataset(dataset: str) -> str:
 
 __all__ = [
     "database_snapshot",
+    "iter_train_runs",
     "load_train_runs",
     "trace_sql_contract",
 ]

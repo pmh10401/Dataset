@@ -1,7 +1,7 @@
 # Exp411 TRAIN-only Near-Repeat 자격 심사 사전등록
 
-작성일: 2026-07-28  
-상태: 전체 실행 및 결과 확인 전 동결  
+작성일: 2026-07-28
+상태: 전체 실행 및 결과 확인 전 동결
 실험 모드: `TRAIN-only near-repeat qualification`
 
 ## 1. 목적과 운영 맥락
@@ -32,6 +32,8 @@ Hard/Standard/Priority 변경과 자동 정상 lane 승격은 범위 밖이다.
 | 데이터셋 universe | Exp404 manifest의 `frozen_hard_lanes` key |
 | prediction manifest SHA256 | `41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8` |
 | DB SHA256 | `8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c` |
+| Exp407 perturbation source SHA256 | `03f93e4e38fbce11e5a7b9a62354c1b8b43df5dec6444141e92d3944bada25a3` |
+| perturbation config contract SHA256 | `aadbbe42ae66479135e4c740def20b7a0d289090b2e298a5ae978552a9c65fc3` |
 | 허용 DB snapshot | main DB `db`만 허용, WAL/SHM 거부 |
 | 현재 동결 lane | Hard 2,218 / Standard 806 / Priority 31 |
 | 현재 exact-normal | 35 |
@@ -74,7 +76,8 @@ group으로 묶는다. 같은 group은 fit과 query로 갈라지지 않는다.
 각 view는 fit TRAIN 전체 값의 MAD로 나눈다. MAD가 `1e-12` 이하이면 그
 view는 사용할 수 없다. query 거리는 같은 길이의 다른 fit identity
 group까지의 최소 거리다. reference도 자기 identity group 전체를 제외한
-동일 계산으로 만든다.
+동일 계산으로 만든다. 전체 거리 tensor를 반복 생성하지 않고 결정론적
+chunked squared-distance 행렬로 같은 수학적 최솟값을 계산한다.
 
 quantile은 결과를 보기 전에 `0.01`, `0.05`, `0.10`으로 고정하고
 `method="lower"`를 쓴다. `near_qXX`는 다음을 모두 만족해야 한다.
@@ -111,8 +114,11 @@ frequency_warp / phase_order`를 held-out 정상 TRAIN query에 적용한다.
 ## 6. Backend 결정
 
 NumPy CPU가 정본이자 항상 가능한 fallback이다. Numba CPU JIT와 PyTorch
-CPU를 parity 후보로 평가한다. PyTorch MPS는 build와 device 가용성을
-probe하고, 사용할 수 없으면 이유를 기록한 뒤 CPU로 닫힌다.
+CPU는 32-dataset 동일 입력 stage의 거리·tag·선택 quantile parity와
+end-to-end 시간을 평가한다. Numba는 cold/warm 시간을 따로 기록한다.
+PyTorch MPS는 build와 device 가용성을 probe하고, 사용할 수 없으면 이유를
+기록한 뒤 CPU로 닫힌다. 전체 population parity가 동결되기 전에는 가속
+후보가 smoke speed gate를 통과해도 NumPy CPU를 정본으로 유지한다.
 
 가속 backend는 같은 입력에서 최대 절대 오차 `<= 1e-6`, tag identity와
 선택 quantile identity를 모두 만족하고 transfer·compile·synchronization을
@@ -163,6 +169,8 @@ budget을 재선택하지 않는다. 새 개선은 새 실험 번호와 사전�
 
 단위 테스트와 대표 smoke는 32개 합성 dataset만 사용한다. 실제 DB의
 1,117개 전체 Exp411 자격 심사는 테스트나 smoke의 일부가 아니다.
+전체 loader는 dataset 하나씩 yield하고 qualification 직후 waveform을
+해제하여 1,117개 원본을 동시에 메모리에 보유하지 않는다.
 
 모든 단위·회귀 테스트와 대표 smoke가 통과한 뒤에도 사용자의 별도 명시적 승인이
 있어야만 존재하지 않는 새 출력 디렉터리로 전체 실행한다.

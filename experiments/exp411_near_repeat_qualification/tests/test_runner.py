@@ -1,4 +1,5 @@
 from dataclasses import replace
+import csv
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -23,10 +24,39 @@ class RunnerTests(unittest.TestCase):
             summary = json.loads(
                 (output / "exp411_summary.json").read_text(encoding="utf-8")
             )
+            backend = json.loads(
+                (output / "exp411_backend_assessment.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            with (output / "exp411_dataset_qualification.csv").open(
+                encoding="utf-8",
+                newline="",
+            ) as handle:
+                dataset_rows = tuple(csv.DictReader(handle))
         self.assertFalse(summary["full_qualification_executed"])
         self.assertFalse(summary["operational_policy_changed"])
         self.assertFalse(summary["exp412_prediction_created"])
         self.assertEqual(summary["dataset_count"], 32)
+        self.assertEqual(summary["family_count"], 4)
+        self.assertIn("perturbation_contract", manifest["provenance"])
+        self.assertEqual(
+            backend["canonical_backend"],
+            "numpy_cpu",
+        )
+        self.assertIn("assessments", backend)
+        self.assertEqual(
+            backend["baseline_tag_sha256"],
+            backend["canonical_tag_sha256"],
+        )
+        self.assertEqual(
+            set(summary["provenance"]["smoke_coverage"]["identity_regimes"]),
+            {"abstain_lt5", "logo_5_19", "five_fold_20_plus"},
+        )
+        self.assertEqual(
+            {int(row["identity_group_count"]) for row in dataset_rows},
+            {4, 6, 20},
+        )
         self.assertEqual(set(hashes), set(manifest["artifact_sha256"]))
         self.assertEqual(len(hashes), 7)
 

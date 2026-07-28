@@ -61,7 +61,9 @@ def publish_payloads(
             pre_publish_verify()
         if output.exists():
             raise FileExistsError("Exp411 output directory appeared during staging")
+        _fsync_directory(staging)
         os.replace(staging, output)
+        _fsync_directory(output.parent)
         return dict(sorted(artifact_hashes.items()))
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
@@ -73,6 +75,14 @@ def _write_payload(path: Path, payload: bytes) -> None:
         handle.write(payload)
         handle.flush()
         os.fsync(handle.fileno())
+
+
+def _fsync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def _plain(value: object) -> object:

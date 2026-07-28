@@ -10,7 +10,13 @@ import numpy as np
 from .backends import pairwise_rms
 from .config import FROZEN_CONFIG, Exp411FrozenConfig
 from .contracts import DatasetQualification, TrainRun
-from .distances import VIEW_NAMES, calibrate_thresholds, tag_queries, view_matrices
+from .distances import (
+    VIEW_NAMES,
+    calibrate_thresholds,
+    cpu_self_excluded_rms,
+    tag_queries,
+    view_matrices,
+)
 from .folds import group_crossfit_plan
 from .perturbations import (
     generate_train_only_perturbations,
@@ -56,7 +62,7 @@ def qualify_dataset(
     backend: str = "numpy_cpu",
     config: Exp411FrozenConfig = FROZEN_CONFIG,
 ) -> DatasetQualification:
-    config.validate()
+    config.validate_research_parameters()
     ordered_runs = tuple(runs)
     if any(run.dataset != dataset for run in ordered_runs):
         raise ValueError("Exp411 dataset qualification received a foreign run")
@@ -199,17 +205,7 @@ def _prepare_fit_views(
         if not math.isfinite(mad) or mad <= config.mad_floor:
             continue
         scaled = np.ascontiguousarray(matrix / mad, dtype=np.float64)
-        reference = np.asarray(
-            [
-                pairwise_rms(
-                    np.delete(scaled, index, axis=0),
-                    scaled[index : index + 1],
-                    backend=backend,
-                )[0]
-                for index in range(len(scaled))
-            ],
-            dtype=np.float64,
-        )
+        reference = cpu_self_excluded_rms(scaled)
         result[name] = {
             "fit": scaled,
             "scale": mad,

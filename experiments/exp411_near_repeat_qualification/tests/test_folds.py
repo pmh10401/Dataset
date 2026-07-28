@@ -47,6 +47,8 @@ class GroupFoldTests(unittest.TestCase):
     def test_frozen_parameters_reject_drift(self) -> None:
         with self.assertRaisesRegex(ValueError, "frozen"):
             replace(FROZEN_CONFIG, quantiles=(0.02, 0.05, 0.10)).validate()
+        with self.assertRaisesRegex(ValueError, "frozen"):
+            replace(FROZEN_CONFIG, expected_datasets=1).validate()
 
 
 if __name__ == "__main__":

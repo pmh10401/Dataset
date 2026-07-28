@@ -32,10 +32,12 @@ git status --short --branch
   "from experiments.exp411_near_repeat_qualification.backends import probe_backends; print(probe_backends())"
 ```
 
-NumPy CPU는 정본과 fallback이다. Numba CPU JIT와 PyTorch CPU는 수치·tag
-parity와 최소 1.1배 속도 gate를 만족할 때만 정본 후보가 된다. PyTorch
-MPS가 unavailable이면 이유를 기록하고 CPU를 사용한다. 사용자 결정에 따라
-MLX는 제외하며 설치·import·benchmark하지 않는다.
+NumPy CPU는 정본과 fallback이다. Numba CPU JIT와 PyTorch CPU는 동일
+32-dataset stage에서 수치·tag·선택 quantile parity와 최소 1.1배 속도
+gate를 평가하며 Numba cold/warm 시간을 따로 기록한다. 전체 population
+parity가 동결되기 전에는 가속 backend를 채택하지 않는다. PyTorch MPS가
+unavailable이면 이유를 기록하고 CPU를 사용한다. 사용자 결정에 따라 MLX는
+제외하며 설치·import·benchmark하지 않는다.
 
 ## 3. 단위·회귀 테스트
 
@@ -68,10 +70,11 @@ exp411_smoke_parent=$(mktemp -d "/private/tmp/exp411-smoke-parent.XXXXXX")
   --output-dir "$exp411_smoke_parent/publication"
 ```
 
-smoke는 family 크기 표식 `1 / 3 / 7 / 21`을 포함한 32개 합성 dataset과
-dataset마다 서로 다른 정상 identity 6개를 사용한다. 실행·fold·거리·합성
-교란·집계·backend probe·원자적 게시 연결을 검사할 뿐 최종 연구 결과로
-해석하지 않는다.
+smoke는 실제 family 크기 `1 / 3 / 7 / 21`로 합계 32개 합성 dataset을
+구성한다. dataset별 identity group은 4, 6, 20개를 순환하여 `<5` abstain,
+5-19 LOGO, 20+ deterministic 5-fold 경로를 모두 지난다. 실행·fold·거리·
+합성 교란·집계·backend assessment·원자적 게시 연결을 검사할 뿐 최종 연구
+결과로 해석하지 않는다.
 
 ## 5. Artifact와 manifest 검증
 
@@ -148,6 +151,8 @@ budget을 바꾸어 재선택하지 않는다. `no_qualified_near_rule`은 유�
 이 문서에 명령이 있다는 사실은 실행 승인이 아니다. 단위·회귀 테스트,
 대표 smoke, manifest hash 검증이 모두 통과하고 사용자가 이 전체 실행을
 별도로 명시 승인했을 때만 실행한다. output은 미리 존재하면 안 된다.
+loader는 dataset 하나씩 처리하고 해제하며, self-excluded 거리는 bounded
+chunk 행렬로 계산한다.
 
 ```bash
 .venv/bin/python scratch/run_exp411_near_repeat_qualification.py \

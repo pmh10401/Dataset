@@ -4,10 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 import math
 
-import numba
 import numpy as np
-import torch
-from numba import njit
 
 from .config import FROZEN_CONFIG
 from .distances import cpu_pairwise_rms
@@ -34,21 +31,32 @@ class BackendAssessment:
     canonical_eligible: bool
 
 
-@njit(cache=False)
-def _numba_pairwise_rms(fit: np.ndarray, query: np.ndarray) -> np.ndarray:
-    output = np.empty(query.shape[0], dtype=np.float64)
-    for query_index in range(query.shape[0]):
-        best = np.inf
-        for fit_index in range(fit.shape[0]):
-            total = 0.0
-            for column in range(fit.shape[1]):
-                delta = query[query_index, column] - fit[fit_index, column]
-                total += delta * delta
-            distance = math.sqrt(total / fit.shape[1])
-            if distance < best:
-                best = distance
-        output[query_index] = best
-    return output
+_NUMBA_KERNEL: object | None = None
+
+
+def _numba_kernel() -> object:
+    global _NUMBA_KERNEL
+    if _NUMBA_KERNEL is None:
+        import numba
+
+        @numba.njit(cache=False)
+        def kernel(fit: np.ndarray, query: np.ndarray) -> np.ndarray:
+            output = np.empty(query.shape[0], dtype=np.float64)
+            for query_index in range(query.shape[0]):
+                best = np.inf
+                for fit_index in range(fit.shape[0]):
+                    total = 0.0
+                    for column in range(fit.shape[1]):
+                        delta = query[query_index, column] - fit[fit_index, column]
+                        total += delta * delta
+                    distance = math.sqrt(total / fit.shape[1])
+                    if distance < best:
+                        best = distance
+                output[query_index] = best
+            return output
+
+        _NUMBA_KERNEL = kernel
+    return _NUMBA_KERNEL
 
 
 def pairwise_rms(
@@ -73,8 +81,9 @@ def pairwise_rms(
     if backend == "numpy_cpu":
         return cpu_pairwise_rms(fit_values, query_values)
     if backend == "numba_cpu":
+        kernel = _numba_kernel()
         return np.asarray(
-            _numba_pairwise_rms(fit_values, query_values),
+            kernel(fit_values, query_values),  # type: ignore[operator]
             dtype=np.float64,
         )
     if backend == "torch_cpu":
@@ -90,6 +99,8 @@ def _torch_pairwise_rms(
     *,
     device: str,
 ) -> np.ndarray:
+    import torch
+
     dtype = torch.float32 if device == "mps" else torch.float64
     fit_tensor = torch.as_tensor(fit, dtype=dtype, device=device)
     query_tensor = torch.as_tensor(query, dtype=dtype, device=device)
@@ -132,6 +143,8 @@ def _safe_probe(
 
 
 def _probe_numba_cpu() -> BackendProbe:
+    import numba
+
     values = pairwise_rms(
         np.asarray([[0.0, 0.0], [3.0, 4.0]]),
         np.asarray([[4.0, 4.0]]),
@@ -149,6 +162,8 @@ def _probe_numba_cpu() -> BackendProbe:
 
 
 def _probe_torch_cpu() -> BackendProbe:
+    import torch
+
     values = pairwise_rms(
         np.asarray([[0.0, 0.0]]),
         np.asarray([[0.0, 0.0]]),
@@ -166,6 +181,8 @@ def _probe_torch_cpu() -> BackendProbe:
 
 
 def _probe_torch_mps() -> BackendProbe:
+    import torch
+
     if not torch.backends.mps.is_built():
         raise RuntimeError("PyTorch was not built with MPS")
     if not torch.backends.mps.is_available():

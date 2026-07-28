@@ -24,7 +24,12 @@ def view_matrices(rows: object) -> dict[str, np.ndarray]:
     }
 
 
-def cpu_pairwise_rms(fit: object, query: object) -> np.ndarray:
+def cpu_pairwise_rms(
+    fit: object,
+    query: object,
+    *,
+    chunk_rows: int = 256,
+) -> np.ndarray:
     fit_values = np.asarray(fit, dtype=np.float64)
     query_values = np.asarray(query, dtype=np.float64)
     if (
@@ -36,10 +41,59 @@ def cpu_pairwise_rms(fit: object, query: object) -> np.ndarray:
         or fit_values.shape[1] != query_values.shape[1]
         or not np.isfinite(fit_values).all()
         or not np.isfinite(query_values).all()
+        or int(chunk_rows) < 1
     ):
         raise ValueError("Exp411 RMS inputs must be finite compatible matrices")
-    delta = query_values[:, None, :] - fit_values[None, :, :]
-    return np.sqrt(np.mean(delta * delta, axis=2)).min(axis=1)
+    output = np.empty(len(query_values), dtype=np.float64)
+    fit_norm = np.einsum("ij,ij->i", fit_values, fit_values)
+    width = fit_values.shape[1]
+    for start in range(0, len(query_values), int(chunk_rows)):
+        query_chunk = query_values[start : start + int(chunk_rows)]
+        query_norm = np.einsum("ij,ij->i", query_chunk, query_chunk)
+        squared = (
+            query_norm[:, None]
+            + fit_norm[None, :]
+            - 2.0 * (query_chunk @ fit_values.T)
+        )
+        np.maximum(squared, 0.0, out=squared)
+        output[start : start + len(query_chunk)] = np.sqrt(
+            squared.min(axis=1) / width
+        )
+    return output
+
+
+def cpu_self_excluded_rms(
+    rows: object,
+    *,
+    chunk_rows: int = 256,
+) -> np.ndarray:
+    values = np.asarray(rows, dtype=np.float64)
+    if (
+        values.ndim != 2
+        or values.shape[0] < 2
+        or values.shape[1] == 0
+        or not np.isfinite(values).all()
+        or int(chunk_rows) < 1
+    ):
+        raise ValueError("Exp411 self-excluded RMS inputs are invalid")
+    output = np.empty(len(values), dtype=np.float64)
+    fit_norm = np.einsum("ij,ij->i", values, values)
+    width = values.shape[1]
+    for start in range(0, len(values), int(chunk_rows)):
+        query = values[start : start + int(chunk_rows)]
+        query_norm = np.einsum("ij,ij->i", query, query)
+        squared = (
+            query_norm[:, None]
+            + fit_norm[None, :]
+            - 2.0 * (query @ values.T)
+        )
+        np.maximum(squared, 0.0, out=squared)
+        local = np.arange(len(query))
+        squared[local, start + local] = np.inf
+        output[start : start + len(query)] = np.sqrt(
+            squared.min(axis=1) / width
+        )
+    return output
 
 
 def calibrate_thresholds(
@@ -101,6 +155,7 @@ __all__ = [
     "VIEW_NAMES",
     "calibrate_thresholds",
     "cpu_pairwise_rms",
+    "cpu_self_excluded_rms",
     "tag_queries",
     "view_matrices",
 ]

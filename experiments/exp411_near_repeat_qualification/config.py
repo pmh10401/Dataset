@@ -12,6 +12,12 @@ class Exp411FrozenConfig:
     population_manifest_sha256: str = (
         "41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8"
     )
+    perturbation_source_sha256: str = (
+        "03f93e4e38fbce11e5a7b9a62354c1b8b43df5dec6444141e92d3944bada25a3"
+    )
+    perturbation_config_contract_sha256: str = (
+        "aadbbe42ae66479135e4c740def20b7a0d289090b2e298a5ae978552a9c65fc3"
+    )
     expected_database_snapshot_keys: tuple[str, ...] = ("db",)
     quantiles: tuple[float, ...] = (0.01, 0.05, 0.10)
     quantile_method: str = "lower"
@@ -29,6 +35,10 @@ class Exp411FrozenConfig:
     bootstrap_upper_max: float = 0.005
 
     def validate(self) -> None:
+        if self != Exp411FrozenConfig():
+            raise ValueError("Exp411 frozen config changed")
+
+    def validate_research_parameters(self) -> None:
         observed = (
             self.experiment_id,
             self.quantiles,

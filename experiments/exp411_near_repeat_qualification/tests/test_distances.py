@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 
 from experiments.exp411_near_repeat_qualification.distances import (
+    cpu_self_excluded_rms,
     calibrate_thresholds,
     cpu_pairwise_rms,
     tag_queries,
@@ -11,6 +12,13 @@ from experiments.exp411_near_repeat_qualification.distances import (
 
 
 class DistanceTests(unittest.TestCase):
+    def test_chunked_self_excluded_rms_matches_direct_definition(self) -> None:
+        rows = np.asarray([[0.0, 0.0], [3.0, 4.0], [4.0, 4.0]])
+        np.testing.assert_allclose(
+            cpu_self_excluded_rms(rows, chunk_rows=2),
+            np.asarray([np.sqrt(12.5), np.sqrt(0.5), np.sqrt(0.5)]),
+            atol=1e-12,
+        )
     def test_views_have_expected_widths_and_finite_values(self) -> None:
         rows = np.asarray([[0.0, 1.0, 2.0, 3.0], [0.0, 1.1, 2.0, 3.0]])
         views = view_matrices(rows)
