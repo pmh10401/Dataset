@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
+from experiments.exp414_missing_aware_near_repeat import publication
 from experiments.exp414_missing_aware_near_repeat.publication import (
     publish_payloads,
 )
@@ -12,8 +13,14 @@ from experiments.exp414_missing_aware_near_repeat.publication import (
 
 def _payloads() -> dict[str, bytes]:
     return {
-        f"artifact_{index}.bin": f"payload-{index}\n".encode("utf-8")
-        for index in range(8)
+        "exp414_frozen_config.json": b'{"experiment_id":"Exp414"}\n',
+        "exp414_missing_repair_audit.csv": b"dataset,instance_index\n",
+        "exp414_dataset_qualification.csv": b"dataset,execution_source\n",
+        "exp414_quantile_summary.csv": b"subgroup,quantile\n",
+        "exp414_backend_assessment.json": b'{"backend":"fixture"}\n',
+        "exp414_selected_rule.json": b'{"status":"qualified"}\n',
+        "exp414_summary.json": b'{"test_values_used":false}\n',
+        "EXP414_RESULT_REPORT_KO.md": b"# Exp414 fixture\n",
     }
 
 
@@ -29,15 +36,16 @@ class PublicationTests(unittest.TestCase):
     def test_requires_exactly_eight_nonmanifest_payloads(self) -> None:
         with TemporaryDirectory() as raw:
             parent = Path(raw)
+            items = tuple(_payloads().items())
             for name, payloads in (
-                ("seven", dict(list(_payloads().items())[:7])),
+                ("seven", dict(items[:7])),
                 (
                     "nine",
-                    {**_payloads(), "artifact_8.bin": b"payload-8\n"},
+                    {**_payloads(), "foreign.bin": b"foreign\n"},
                 ),
                 (
                     "manifest",
-                    {**dict(list(_payloads().items())[:7]), "MANIFEST.json": b"{}"},
+                    {**dict(items[:7]), "MANIFEST.json": b"{}"},
                 ),
             ):
                 with self.subTest(name=name), self.assertRaisesRegex(
@@ -50,6 +58,22 @@ class PublicationTests(unittest.TestCase):
                         _provenance(),
                     )
                 self.assertFalse((parent / name).exists())
+            self.assertEqual(tuple(parent.iterdir()), ())
+
+    def test_rejects_same_count_payloads_with_a_wrong_artifact_name(
+        self,
+    ) -> None:
+        payloads = _payloads()
+        payloads.pop("exp414_summary.json")
+        payloads["foreign_summary.json"] = b"{}\n"
+        with TemporaryDirectory() as raw:
+            parent = Path(raw)
+            output = parent / "publication"
+
+            with self.assertRaisesRegex(ValueError, "exact eight"):
+                publish_payloads(payloads, output, _provenance())
+
+            self.assertFalse(output.exists())
             self.assertEqual(tuple(parent.iterdir()), ())
 
     def test_existing_output_is_rejected_without_modification(self) -> None:
@@ -94,6 +118,61 @@ class PublicationTests(unittest.TestCase):
                     _provenance(),
                     pre_publish_verify=reject_changed_state,
                 )
+
+            self.assertFalse(output.exists())
+            self.assertEqual(tuple(parent.iterdir()), ())
+
+    def test_callback_staging_mutation_is_rejected_before_rename(self) -> None:
+        for mutation in ("payload", "manifest", "inventory"):
+            with self.subTest(mutation=mutation), TemporaryDirectory() as raw:
+                parent = Path(raw)
+                output = parent / "publication"
+
+                def mutate_staging() -> None:
+                    staging = next(parent.glob(".*.staging"))
+                    if mutation == "payload":
+                        (
+                            staging / "exp414_summary.json"
+                        ).write_bytes(b'{"tampered":true}\n')
+                    elif mutation == "manifest":
+                        (
+                            staging / "MANIFEST.json"
+                        ).write_bytes(b'{"tampered":true}\n')
+                    else:
+                        (staging / "foreign.bin").write_bytes(b"foreign\n")
+
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "verification|coverage",
+                ):
+                    publish_payloads(
+                        _payloads(),
+                        output,
+                        _provenance(),
+                        pre_publish_verify=mutate_staging,
+                    )
+
+                self.assertFalse(output.exists())
+                self.assertEqual(tuple(parent.iterdir()), ())
+
+    def test_parent_fsync_failure_rolls_back_published_output(self) -> None:
+        real_fsync_directory = publication._fsync_directory
+        with TemporaryDirectory() as raw:
+            parent = Path(raw)
+            output = parent / "publication"
+
+            def fail_parent_fsync(path: Path) -> None:
+                if path == parent:
+                    raise OSError("parent fsync failed")
+                real_fsync_directory(path)
+
+            with patch(
+                "experiments.exp414_missing_aware_near_repeat.publication."
+                "_fsync_directory",
+                side_effect=fail_parent_fsync,
+            ):
+                with self.assertRaisesRegex(OSError, "parent fsync failed"):
+                    publish_payloads(_payloads(), output, _provenance())
 
             self.assertFalse(output.exists())
             self.assertEqual(tuple(parent.iterdir()), ())

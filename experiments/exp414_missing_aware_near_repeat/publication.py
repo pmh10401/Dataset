@@ -16,6 +16,20 @@ from .config import FROZEN_CONFIG
 from .reporting import MANIFEST_FILE
 
 
+_EXPECTED_PAYLOAD_FILES = frozenset(
+    {
+        "exp414_frozen_config.json",
+        "exp414_missing_repair_audit.csv",
+        "exp414_dataset_qualification.csv",
+        "exp414_quantile_summary.csv",
+        "exp414_backend_assessment.json",
+        "exp414_selected_rule.json",
+        "exp414_summary.json",
+        "EXP414_RESULT_REPORT_KO.md",
+    }
+)
+
+
 def publish_payloads(
     payloads: Mapping[str, bytes],
     output_dir: Path,
@@ -32,16 +46,16 @@ def publish_payloads(
         raise FileExistsError("Exp414 output directory must not exist")
     if (
         not isinstance(payloads, Mapping)
-        or MANIFEST_FILE in payloads
-        or len(payloads) != 8
+        or set(payloads) != _EXPECTED_PAYLOAD_FILES
     ):
         raise ValueError(
-            "Exp414 publication requires eight non-manifest artifacts"
+            "Exp414 publication requires exact eight non-manifest artifacts"
         )
 
     staging = output.with_name(
         f".{output.name}.{uuid.uuid4().hex}.staging"
     )
+    published = False
     try:
         staging.mkdir(parents=False, exist_ok=False)
         artifact_hashes: dict[str, str] = {}
@@ -70,16 +84,12 @@ def publish_payloads(
         manifest_payload = _json_bytes(manifest)
         manifest_path = staging / MANIFEST_FILE
         _write_payload(manifest_path, manifest_payload)
-        if (
-            sha256_file(manifest_path)
-            != sha256(manifest_payload).hexdigest()
-            or manifest_path.read_bytes() != manifest_payload
-        ):
-            raise ValueError("Exp414 staged manifest verification failed")
-        if {path.name for path in staging.iterdir()} != (
-            set(payloads) | {MANIFEST_FILE}
-        ):
-            raise ValueError("Exp414 staged artifact coverage mismatch")
+        _verify_staging(
+            staging,
+            payloads,
+            artifact_hashes,
+            manifest_payload,
+        )
         if pre_publish_verify is not None:
             pre_publish_verify()
         if output.exists():
@@ -87,10 +97,24 @@ def publish_payloads(
                 "Exp414 output directory appeared during staging"
             )
         _fsync_directory(staging)
+        _verify_staging(
+            staging,
+            payloads,
+            artifact_hashes,
+            manifest_payload,
+        )
+        result = dict(sorted(artifact_hashes.items()))
         os.replace(staging, output)
+        published = True
         _fsync_directory(output.parent)
-        return dict(sorted(artifact_hashes.items()))
+        published = False
+        return result
     except Exception:
+        if published:
+            try:
+                os.replace(output, staging)
+            except OSError:
+                shutil.rmtree(output, ignore_errors=True)
         shutil.rmtree(staging, ignore_errors=True)
         raise
 
@@ -108,6 +132,37 @@ def _fsync_directory(path: Path) -> None:
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
+
+
+def _verify_staging(
+    staging: Path,
+    payloads: Mapping[str, bytes],
+    artifact_hashes: Mapping[str, str],
+    manifest_payload: bytes,
+) -> None:
+    expected = _EXPECTED_PAYLOAD_FILES | {MANIFEST_FILE}
+    if {path.name for path in staging.iterdir()} != expected:
+        raise ValueError("Exp414 staged artifact coverage mismatch")
+    for name, payload in sorted(payloads.items()):
+        path = staging / name
+        if (
+            path.is_symlink()
+            or not path.is_file()
+            or path.read_bytes() != payload
+            or sha256_file(path) != artifact_hashes[name]
+        ):
+            raise ValueError(
+                f"Exp414 staged artifact verification failed: {name}"
+            )
+    manifest_path = staging / MANIFEST_FILE
+    if (
+        manifest_path.is_symlink()
+        or not manifest_path.is_file()
+        or manifest_path.read_bytes() != manifest_payload
+        or sha256_file(manifest_path)
+        != sha256(manifest_payload).hexdigest()
+    ):
+        raise ValueError("Exp414 staged manifest verification failed")
 
 
 def _plain(value: object) -> object:
