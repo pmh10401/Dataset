@@ -115,7 +115,7 @@ def publish_payloads(
                 os.replace(output, staging)
             except OSError:
                 shutil.rmtree(output, ignore_errors=True)
-        shutil.rmtree(staging, ignore_errors=True)
+        _remove_staging(staging)
         raise
 
 
@@ -140,6 +140,8 @@ def _verify_staging(
     artifact_hashes: Mapping[str, str],
     manifest_payload: bytes,
 ) -> None:
+    if staging.is_symlink() or not staging.is_dir():
+        raise ValueError("Exp414 staging root must be a real directory")
     expected = _EXPECTED_PAYLOAD_FILES | {MANIFEST_FILE}
     if {path.name for path in staging.iterdir()} != expected:
         raise ValueError("Exp414 staged artifact coverage mismatch")
@@ -163,6 +165,13 @@ def _verify_staging(
         != sha256(manifest_payload).hexdigest()
     ):
         raise ValueError("Exp414 staged manifest verification failed")
+
+
+def _remove_staging(staging: Path) -> None:
+    if staging.is_symlink():
+        staging.unlink(missing_ok=True)
+    else:
+        shutil.rmtree(staging, ignore_errors=True)
 
 
 def _plain(value: object) -> object:

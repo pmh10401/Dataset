@@ -1,6 +1,7 @@
 from hashlib import sha256
 import json
 from pathlib import Path
+import shutil
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
@@ -154,6 +155,43 @@ class PublicationTests(unittest.TestCase):
 
                 self.assertFalse(output.exists())
                 self.assertEqual(tuple(parent.iterdir()), ())
+
+    def test_callback_cannot_replace_staging_root_with_directory_symlink(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as raw:
+            parent = Path(raw)
+            output = parent / "publication"
+            external_tree = parent / "external_staged_tree"
+
+            def replace_staging_root() -> None:
+                staging = next(parent.glob(".*.staging"))
+                staging.rename(external_tree)
+                staging.symlink_to(external_tree, target_is_directory=True)
+
+            try:
+                with self.assertRaisesRegex(ValueError, "staging root"):
+                    publish_payloads(
+                        _payloads(),
+                        output,
+                        _provenance(),
+                        pre_publish_verify=replace_staging_root,
+                    )
+
+                self.assertFalse(output.exists())
+                self.assertFalse(output.is_symlink())
+                self.assertEqual(tuple(parent.glob(".*.staging")), ())
+                self.assertTrue(external_tree.is_dir())
+            finally:
+                if output.is_symlink():
+                    output.unlink()
+                for staging in parent.glob(".*.staging"):
+                    if staging.is_symlink():
+                        staging.unlink()
+                    else:
+                        shutil.rmtree(staging)
+                if external_tree.exists():
+                    shutil.rmtree(external_tree)
 
     def test_parent_fsync_failure_rolls_back_published_output(self) -> None:
         real_fsync_directory = publication._fsync_directory
