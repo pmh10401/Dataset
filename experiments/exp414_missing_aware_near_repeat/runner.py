@@ -337,18 +337,33 @@ def run_representative_smoke(output_dir: Path) -> Mapping[str, str]:
     FROZEN_CONFIG.validate()
     output = _require_new_output(output_dir)
     prepared = _build_smoke_prepared()
-    cpu_rows = tuple(
-        qualify_prepared_dataset(row, accelerated=False)
-        for row in prepared
-    )
+    cpu_rows: list[DatasetQualification] = []
+    cpu_traces: dict[str, tuple[Mapping[str, object], ...]] = {}
+    for row in prepared:
+        trace: list[dict[str, object]] = []
+        cpu_rows.append(
+            _qualify_smoke_row(
+                row,
+                accelerated=False,
+                backend_audit=None,
+                parity_trace=trace,
+            )
+        )
+        if row.repair_audit.status == "ready":
+            if not trace:
+                raise ValueError("Exp414 smoke NumPy tag trace is empty")
+            cpu_traces[row.dataset] = tuple(trace)
     accelerated_rows: list[DatasetQualification] = []
+    accelerated_traces: dict[str, tuple[Mapping[str, object], ...]] = {}
     backend_audits: list[DatasetBackendAudit] = []
     for row in prepared:
         audits: list[DatasetBackendAudit] = []
-        observed = qualify_prepared_dataset(
+        trace = []
+        observed = _qualify_smoke_row(
             row,
             accelerated=True,
             backend_audit=audits,
+            parity_trace=trace,
         )
         accelerated_rows.append(observed)
         if row.repair_audit.status == "missing_support_abstain":
@@ -361,14 +376,25 @@ def run_representative_smoke(output_dir: Path) -> Mapping[str, str]:
                 )
             )
         else:
+            if not trace:
+                raise ValueError(
+                    "Exp414 smoke accelerated tag trace is empty"
+                )
+            accelerated_traces[row.dataset] = tuple(trace)
             if len(audits) != 1:
                 raise ValueError(
                     "Exp414 smoke backend audit coverage is invalid"
                 )
             backend_audits.append(audits[0])
+    cpu_values = tuple(cpu_rows)
     accelerated_values = tuple(accelerated_rows)
-    if accelerated_values != cpu_rows:
+    if accelerated_values != cpu_values:
         raise ValueError("Exp414 smoke NumPy/accelerated parity failed")
+    if accelerated_traces != cpu_traces:
+        raise ValueError("Exp414 smoke NumPy/accelerated tag parity failed")
+    parity_trace_sha256 = sha256(
+        canonical_json_bytes(cpu_traces)
+    ).hexdigest()
     repair_audits = tuple(row.repair_audit for row in prepared)
     subgroups = aggregate_subgroups(accelerated_values, repair_audits)
     aggregate = subgroups["all"]
@@ -399,6 +425,8 @@ def run_representative_smoke(output_dir: Path) -> Mapping[str, str]:
         backend_assessment={
             "canonical_backend": "adaptive_numpy_numba_cpu",
             "qualification_identity": True,
+            "tag_identity": True,
+            "parity_trace_sha256": parity_trace_sha256,
             "dataset_audits": tuple(asdict(value) for value in backend_audits),
             "mlx_status": "excluded_by_user_decision",
         },
@@ -641,6 +669,27 @@ def _build_smoke_prepared() -> tuple[PreparedDataset, ...]:
             )
         )
     return tuple(prepared)
+
+
+def _qualify_smoke_row(
+    prepared: PreparedDataset,
+    *,
+    accelerated: bool,
+    backend_audit: list[DatasetBackendAudit] | None,
+    parity_trace: list[dict[str, object]],
+) -> DatasetQualification:
+    _validate_prepared(prepared)
+    if prepared.repair_audit.status == "missing_support_abstain":
+        return missing_support_abstention(prepared)
+    return qualify_dataset(
+        dataset=prepared.dataset,
+        family=_family_from_dataset(prepared.dataset),
+        runs=prepared.runs,
+        accelerated=accelerated,
+        backend_audit=backend_audit,
+        parity_trace=parity_trace,
+        config=EXP411_FROZEN_CONFIG,
+    )
 
 
 def _require_full_state(

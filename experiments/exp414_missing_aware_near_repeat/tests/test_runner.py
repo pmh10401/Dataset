@@ -1,3 +1,4 @@
+from contextlib import ExitStack
 from dataclasses import asdict, replace
 from hashlib import sha256
 from pathlib import Path
@@ -22,8 +23,10 @@ from experiments.exp414_missing_aware_near_repeat.checkpoints import (
     Exp414CheckpointStore,
 )
 from experiments.exp414_missing_aware_near_repeat.contracts import (
+    MissingInventory,
     PreparedDataset,
 )
+from experiments.exp414_missing_aware_near_repeat.config import FROZEN_CONFIG
 from experiments.exp414_missing_aware_near_repeat.repair import (
     build_dataset_repair_audit,
     repair_train_blob,
@@ -393,6 +396,44 @@ class EntryPointTests(unittest.TestCase):
             )
             self.assertFalse(output.exists())
 
+    def test_smoke_rejects_candidate_trace_mutation_with_equal_counts(
+        self,
+    ) -> None:
+        real_qualify = qualify_dataset
+
+        def mutate_accelerated_trace(**values: object):
+            row = real_qualify(**values)
+            trace = values.get("parity_trace")
+            if values.get("accelerated") and trace:
+                trace[-1] = {
+                    **trace[-1],
+                    "candidate_index": int(trace[-1]["candidate_index"]) + 1,
+                    "tag": (
+                        "near"
+                        if trace[-1]["tag"] != "near"
+                        else "unfamiliar"
+                    ),
+                }
+            return row
+
+        with TemporaryDirectory() as raw:
+            output = Path(raw) / "publication"
+            with (
+                patch(
+                    "experiments.exp414_missing_aware_near_repeat.runner."
+                    "qualify_dataset",
+                    side_effect=mutate_accelerated_trace,
+                ),
+                patch(
+                    "experiments.exp414_missing_aware_near_repeat.runner."
+                    "_finalize_outputs",
+                    return_value={"manifest": "f" * 64},
+                ),
+            ):
+                with self.assertRaisesRegex(ValueError, "tag parity"):
+                    run_representative_smoke(output)
+            self.assertFalse(output.exists())
+
     def test_full_preflight_git_failure_never_creates_output(self) -> None:
         with TemporaryDirectory() as raw:
             parent = Path(raw)
@@ -412,6 +453,184 @@ class EntryPointTests(unittest.TestCase):
                         benchmark_report=parent / "benchmark.json",
                     )
             self.assertFalse(output.exists())
+
+    def test_full_inventory_failure_never_creates_output(self) -> None:
+        invalid = replace(
+            self._valid_inventory(),
+            affected_runs=FROZEN_CONFIG.expected_missing_runs + 1,
+        )
+        self._assert_full_failure_leaves_no_output(
+            "missing inventory",
+            inventory=invalid,
+        )
+
+    def test_full_benchmark_failure_never_creates_output(self) -> None:
+        self._assert_full_failure_leaves_no_output(
+            "benchmark failure",
+            benchmark_error=ValueError("benchmark failure"),
+        )
+
+    def test_full_stream_failure_never_creates_output(self) -> None:
+        self._assert_full_failure_leaves_no_output(
+            "stream failure",
+            stream_error=ValueError("stream failure"),
+        )
+
+    def test_full_database_recheck_failure_never_creates_output(self) -> None:
+        self._assert_full_failure_leaves_no_output(
+            "snapshot changed",
+            database_recheck_failure=True,
+        )
+
+    def _assert_full_failure_leaves_no_output(
+        self,
+        message: str,
+        *,
+        inventory: MissingInventory | None = None,
+        benchmark_error: ValueError | None = None,
+        stream_error: ValueError | None = None,
+        database_recheck_failure: bool = False,
+    ) -> None:
+        pinned = {"db": FROZEN_CONFIG.database_sha256}
+        snapshots = (
+            [pinned, {"db": "f" * 64}]
+            if database_recheck_failure
+            else [pinned]
+        )
+        contracts = {
+            "frozen_config_sha256": "1" * 64,
+            "perturbation_contract_sha256": "2" * 64,
+            "acceleration_contract_sha256": "3" * 64,
+            "missing_repair_contract_sha256": "4" * 64,
+            "qualification_contract_sha256": "5" * 64,
+            "execution_contract_sha256": "6" * 64,
+        }
+        with TemporaryDirectory() as raw:
+            parent = Path(raw)
+            output = parent / "publication"
+            with ExitStack() as stack:
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "_require_clean_git",
+                        return_value="a" * 40,
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "configure_runtime",
+                        return_value={
+                            "numba_threads": 12,
+                            "nested_threads": 1,
+                        },
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "_load_population_manifest",
+                        return_value=("Alpha_normal_0",),
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "sha256_file",
+                        return_value="b" * 64,
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "database_snapshot",
+                        side_effect=snapshots,
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "scan_missing_inventory",
+                        return_value=inventory or self._valid_inventory(),
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "_contract_values",
+                        return_value=contracts,
+                    )
+                )
+                benchmark = stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "_load_benchmark_report",
+                        return_value={"status": "passed"},
+                    )
+                )
+                if benchmark_error is not None:
+                    benchmark.side_effect = benchmark_error
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "open_exp411_checkpoint",
+                        return_value=object(),
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "iter_prepared_train_datasets",
+                        return_value=(),
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "verify_migration_representatives",
+                        return_value={},
+                    )
+                )
+                stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "_migration_source_sha256",
+                        return_value="c" * 64,
+                    )
+                )
+                stream = stack.enter_context(
+                    patch(
+                        "experiments.exp414_missing_aware_near_repeat.runner."
+                        "_run_checkpointed_stream",
+                        return_value=((), (), {"all": {}}),
+                    )
+                )
+                if stream_error is not None:
+                    stream.side_effect = stream_error
+
+                with self.assertRaisesRegex(ValueError, message):
+                    run_full_qualification(
+                        parent / "db.sqlite",
+                        parent / "population.json",
+                        output,
+                        exp411_checkpoint_dir=parent / "exp411",
+                        checkpoint_dir=parent / "exp414",
+                        benchmark_report=parent / "benchmark.json",
+                    )
+            self.assertFalse(output.exists())
+
+    @staticmethod
+    def _valid_inventory() -> MissingInventory:
+        return MissingInventory(
+            datasets=FROZEN_CONFIG.expected_datasets,
+            affected_datasets=FROZEN_CONFIG.expected_missing_datasets,
+            affected_runs=FROZEN_CONFIG.expected_missing_runs,
+            nonfinite_values=FROZEN_CONFIG.expected_nonfinite_values,
+            all_missing_runs=FROZEN_CONFIG.expected_all_missing_runs,
+            affected_datasets_sha256=(
+                FROZEN_CONFIG.affected_datasets_sha256
+            ),
+        )
 
 
 if __name__ == "__main__":
