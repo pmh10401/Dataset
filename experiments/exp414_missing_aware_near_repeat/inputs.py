@@ -27,6 +27,9 @@ def iter_prepared_train_datasets(
 ) -> Iterator[PreparedDataset]:
     """Stream repaired normal TRAIN runs without accessing TEST data or labels."""
     config.validate()
+    requested = tuple(str(dataset) for dataset in datasets)
+    if len(requested) != len(set(requested)):
+        raise ValueError("Exp414 requested datasets are duplicated")
     before = database_snapshot(db_path)
     if tuple(before) != ("db",):
         raise ValueError("Exp414 SQLite snapshot artifact set is not pinned")
@@ -41,17 +44,18 @@ def iter_prepared_train_datasets(
     try:
         if connection.execute("PRAGMA quick_check;").fetchall() != [("ok",)]:
             raise ValueError("Exp414 SQLite PRAGMA quick_check failed")
-        for dataset in sorted(str(dataset) for dataset in datasets):
+        for dataset in sorted(requested):
             yield _load_one_prepared_dataset(connection, dataset)
-        trace_sql_contract(trace)
     except sqlite3.Error as error:
         raise ValueError("Exp414 SQLite TRAIN query failed") from error
     finally:
-        connection.close()
-
-    after = database_snapshot(db_path)
-    if dict(before) != dict(after):
-        raise ValueError("Exp414 SQLite snapshot changed during TRAIN scan")
+        try:
+            trace_sql_contract(trace)
+        finally:
+            connection.close()
+            after = database_snapshot(db_path)
+            if dict(before) != dict(after):
+                raise ValueError("Exp414 SQLite snapshot changed during TRAIN scan")
 
 
 def scan_missing_inventory(

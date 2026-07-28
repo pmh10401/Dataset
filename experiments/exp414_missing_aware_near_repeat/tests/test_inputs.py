@@ -104,6 +104,17 @@ class InputTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "indices are duplicated"):
                 tuple(iter_prepared_train_datasets(path, ("Alpha_normal_0",)))
 
+    def test_loader_rejects_duplicate_requested_datasets(self) -> None:
+        with TemporaryDirectory() as raw:
+            path = Path(raw) / "fixture.db"
+            _write_db(path)
+            with self.assertRaisesRegex(ValueError, "requested datasets are duplicated"):
+                tuple(
+                    iter_prepared_train_datasets(
+                        path, ("Alpha_normal_0", "Alpha_normal_0")
+                    )
+                )
+
     def test_loader_rejects_nonzero_train_labels(self) -> None:
         with TemporaryDirectory() as raw:
             path = Path(raw) / "fixture.db"
@@ -149,6 +160,29 @@ class InputTests(unittest.TestCase):
             ):
                 with self.assertRaisesRegex(ValueError, "post-repair values"):
                     tuple(iter_prepared_train_datasets(path, ("Alpha_normal_0",)))
+
+    def test_early_close_validates_sql_trace(self) -> None:
+        with TemporaryDirectory() as raw:
+            path = Path(raw) / "fixture.db"
+            _write_db(path)
+            stream = iter_prepared_train_datasets(path, ("Alpha_normal_0",))
+            next(stream)
+            with patch(
+                "experiments.exp414_missing_aware_near_repeat.inputs.trace_sql_contract",
+                side_effect=ValueError("trace cleanup marker"),
+            ):
+                with self.assertRaisesRegex(ValueError, "trace cleanup marker"):
+                    stream.close()
+
+    def test_early_close_rechecks_database_snapshot(self) -> None:
+        with TemporaryDirectory() as raw:
+            path = Path(raw) / "fixture.db"
+            _write_db(path)
+            stream = iter_prepared_train_datasets(path, ("Alpha_normal_0",))
+            next(stream)
+            path.write_bytes(path.read_bytes() + b"changed-after-yield")
+            with self.assertRaisesRegex(ValueError, "snapshot changed"):
+                stream.close()
 
 
 if __name__ == "__main__":
