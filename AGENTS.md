@@ -1,6 +1,12 @@
 # Project Execution Rules
 
-## MLX acceleration policy
+## PyTorch, MLX, and MPS acceleration assessment policy
+
+Every experiment design must explicitly assess PyTorch, MLX, and MPS. Record
+whether the workload is tensor-eligible, current backend availability,
+transfer/compilation overhead, deterministic and numerical parity
+requirements, the canonical CPU fallback, and the benchmark required before
+an accelerated path becomes canonical.
 
 For every new score-source experiment, including non-learning feature and score
 pipelines, assess MLX acceleration before the full run.
