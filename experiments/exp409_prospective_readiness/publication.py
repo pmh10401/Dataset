@@ -28,7 +28,7 @@ from .provenance import (
 _CONFIG_FILE = "exp409_config.json"
 _CANDIDATE_FILE = "exp409_shadow_candidates.jsonl"
 _STATUS_FILE = "exp409_source_statuses.jsonl"
-_PROVENANCE_FILE = "exp409_provenance.json"
+_PROVENANCE_FILE = "exp409_provenance_manifest.json"
 _SUMMARY_FILE = "exp409_readiness_summary.json"
 _REPORT_FILE = "exp409_readiness_report_ko.md"
 _RUNTIME_FILE = "exp409_runtime_envelope.json"
@@ -36,10 +36,10 @@ _MANIFEST_FILE = "exp409_artifact_manifest.json"
 
 
 def candidate_payload_sha256(batch: ReadinessBatch) -> str:
-    """Hash the canonical ordered candidate array used by provenance."""
+    """Hash the exact canonical candidate JSONL bytes used by publication."""
     rows = _candidate_rows(batch)
     validate_label_blind_payload(rows, "exp409_candidates")
-    return hashlib.sha256(canonical_json_bytes(rows)).hexdigest()
+    return hashlib.sha256(_jsonl_bytes(rows)).hexdigest()
 
 
 def publish_batch(
@@ -144,9 +144,7 @@ def _render_payloads(
     config = FROZEN_CONFIG.to_payload()
     provenance = {
         "canonical_provenance": dict(canonical_provenance),
-        "provenance_closure_sha256": provenance_closure_sha256(
-            canonical_provenance
-        ),
+        "closure_sha256": provenance_closure_sha256(canonical_provenance),
     }
     for name, payload in (
         ("candidates", candidates),
