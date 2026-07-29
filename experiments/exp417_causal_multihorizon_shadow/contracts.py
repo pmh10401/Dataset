@@ -280,10 +280,12 @@ class ProcessedGroup:
                     raise ValueError("channels must contain exact float32 two-channel arrays")
                 if not np.isfinite(values).all():
                     raise ValueError("channels must be finite")
-                immutable = np.array(values, dtype=np.float32, copy=True, order="C")
-                immutable.setflags(write=False)
+                immutable_bytes = np.ascontiguousarray(values, dtype=np.float32).tobytes()
+                immutable = np.frombuffer(immutable_bytes, dtype=np.float32).reshape(values.shape)
                 copied[index] = immutable
             frozen_channels = MappingProxyType(copied)
+        if self.status in {"candidate_eligible", "diagnostic_only"} and not frozen_channels:
+            raise ValueError("usable processed groups require channels")
         if self.status not in {"candidate_eligible", "diagnostic_only"} and frozen_channels:
             raise ValueError("abstained processed groups cannot retain channels")
         object.__setattr__(self, "channels", frozen_channels)

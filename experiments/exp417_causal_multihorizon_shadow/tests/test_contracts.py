@@ -418,6 +418,61 @@ class ContractTests(unittest.TestCase):
         self.assertFalse(processed.channels[0].flags.writeable)
         source[0, 0] = 99.0
         self.assertEqual(float(processed.channels[0][0, 0]), 0.0)
+        with self.assertRaises(ValueError):
+            processed.channels[0].setflags(write=True)
+        with self.assertRaises(ValueError):
+            processed.channels[0][0, 0] = 1.0
+
+    def test_usable_processed_groups_require_exact_channel_coverage(self) -> None:
+        length_group = LengthGroup(
+            length=3,
+            series=(
+                RawSeries(instance_index=0, values=(0.0, 1.0, 2.0)),
+                RawSeries(instance_index=1, values=(1.0, 2.0, 3.0)),
+            ),
+        )
+        channels = np.zeros((2, 3), dtype=np.float32)
+        for status in ("diagnostic_only", "candidate_eligible"):
+            with self.subTest(status=status), self.assertRaisesRegex(ValueError, "channels"):
+                ProcessedGroup(
+                    group=length_group,
+                    raw_center=0.0,
+                    raw_scale=1.0,
+                    difference_center=0.0,
+                    difference_scale=1.0,
+                    status=status,
+                )
+            with self.subTest(status=status, coverage="missing"), self.assertRaisesRegex(ValueError, "cover"):
+                ProcessedGroup(
+                    group=length_group,
+                    raw_center=0.0,
+                    raw_scale=1.0,
+                    difference_center=0.0,
+                    difference_scale=1.0,
+                    status=status,
+                    channels={0: channels},
+                )
+            with self.subTest(status=status, coverage="extra"), self.assertRaisesRegex(ValueError, "cover"):
+                ProcessedGroup(
+                    group=length_group,
+                    raw_center=0.0,
+                    raw_scale=1.0,
+                    difference_center=0.0,
+                    difference_scale=1.0,
+                    status=status,
+                    channels={0: channels, 1: channels, 2: channels},
+                )
+
+        with self.assertRaisesRegex(ValueError, "abstained"):
+            ProcessedGroup(
+                group=length_group,
+                raw_center=0.0,
+                raw_scale=1.0,
+                difference_center=0.0,
+                difference_scale=1.0,
+                status="horizon_abstain",
+                channels={0: channels, 1: channels},
+            )
 
     def test_frozen_train_contract_preserves_only_the_qualified_near_repeat_state(self) -> None:
         contract = FrozenTrainContract(
