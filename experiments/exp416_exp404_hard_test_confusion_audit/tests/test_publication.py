@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import sys
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
@@ -187,6 +188,63 @@ class PublicationTests(unittest.TestCase):
             "foreign",
         )
 
+    def test_cleanup_is_anchored_to_open_owned_directory_descriptor(
+        self,
+    ) -> None:
+        output = self.root / "publication"
+        displaced_owned = self.root / "displaced_owned"
+        owned_identity: list[tuple[int, int]] = []
+        substitutions = 0
+        real_listdir = os.listdir
+
+        def move_staging_to_output() -> None:
+            staging = next(self.root.glob(".publication.*.staging"))
+            os.replace(staging, output)
+            metadata = output.lstat()
+            owned_identity.append((metadata.st_dev, metadata.st_ino))
+
+        def substitute_root_after_descriptor_open(
+            path: object,
+        ) -> list[str]:
+            nonlocal substitutions
+            if type(path) is int and substitutions == 0:
+                substitutions += 1
+                os.replace(output, displaced_owned)
+                output.mkdir()
+                (output / "foreign.txt").write_text(
+                    "foreign",
+                    encoding="utf-8",
+                )
+            return real_listdir(path)
+
+        with patch.object(
+            publication.os,
+            "listdir",
+            side_effect=substitute_root_after_descriptor_open,
+        ):
+            with self.assertRaises(FileExistsError):
+                self.publish(
+                    output,
+                    pre_publish_verify=move_staging_to_output,
+                )
+
+        self.assertEqual(substitutions, 1)
+        self.assertEqual(len(owned_identity), 1)
+        metadata = output.lstat()
+        self.assertNotEqual(
+            (metadata.st_dev, metadata.st_ino),
+            owned_identity[0],
+        )
+        self.assertEqual(
+            (output / "foreign.txt").read_text(encoding="utf-8"),
+            "foreign",
+        )
+        self.assertEqual(
+            (displaced_owned.lstat().st_dev, displaced_owned.lstat().st_ino),
+            owned_identity[0],
+        )
+        self.assertEqual(tuple(displaced_owned.iterdir()), ())
+
     def test_atomic_final_rename_does_not_clobber_postcheck_competitor(
         self,
     ) -> None:
@@ -226,6 +284,31 @@ class PublicationTests(unittest.TestCase):
             "foreign",
         )
         self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
+
+    @unittest.skipUnless(
+        sys.platform.startswith("linux"),
+        "Linux renameat2 regression",
+    )
+    def test_linux_relative_output_uses_platform_correct_at_fdcwd(
+        self,
+    ) -> None:
+        previous = Path.cwd()
+        os.chdir(self.root)
+        self.addCleanup(os.chdir, previous)
+        output = Path("relative-publication")
+
+        self.publish(output)
+
+        self.assertTrue(output.is_dir())
+        self.assertEqual(
+            {path.name for path in output.iterdir()},
+            {
+                "exp416_confusion_matrix.json",
+                "exp416_dataset_metrics.csv",
+                "EXP416_RESULT_REPORT_KO.md",
+                "MANIFEST.json",
+            },
+        )
 
     def test_parent_fsync_failure_rolls_back_output(self) -> None:
         real_fsync_directory = publication._fsync_directory

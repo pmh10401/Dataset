@@ -9,7 +9,6 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
-import shutil
 import stat
 import sys
 import uuid
@@ -27,9 +26,15 @@ from .reporting import (
 _EXPECTED_PAYLOAD_FILES = frozenset(
     {SUMMARY_FILE, DATASET_FILE, REPORT_FILE}
 )
-_AT_FDCWD = -2
+_LINUX_AT_FDCWD = -100
 _RENAME_NOREPLACE = 1
 _RENAME_EXCL = 0x00000004
+_DIRECTORY_OPEN_FLAGS = (
+    os.O_RDONLY
+    | getattr(os, "O_CLOEXEC", 0)
+    | getattr(os, "O_DIRECTORY", 0)
+    | getattr(os, "O_NOFOLLOW", 0)
+)
 
 
 def publish_payloads(
@@ -236,16 +241,122 @@ def _remove_owned_path(
     path: Path,
     identity: tuple[int, int] | None,
 ) -> None:
-    if not _is_owned_path(path, identity):
+    if identity is None or not _lexists(path):
         return
     if _is_symlink(path):
-        path.unlink()
+        if _is_owned_path(path, identity):
+            path.unlink()
         return
-    shutil.rmtree(path)
+    try:
+        descriptor = os.open(path, _DIRECTORY_OPEN_FLAGS)
+    except (FileNotFoundError, NotADirectoryError, OSError):
+        return
+    try:
+        metadata = os.fstat(descriptor)
+        if (
+            not stat.S_ISDIR(metadata.st_mode)
+            or (metadata.st_dev, metadata.st_ino) != identity
+        ):
+            return
+        _clear_owned_directory_fd(descriptor)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+    try:
+        current = path.lstat()
+    except FileNotFoundError:
+        return
+    if (
+        stat.S_ISDIR(current.st_mode)
+        and (current.st_dev, current.st_ino) == identity
+    ):
+        try:
+            path.rmdir()
+        except (FileNotFoundError, OSError):
+            return
+
+
+def _clear_owned_directory_fd(descriptor: int) -> None:
+    for name in os.listdir(descriptor):
+        try:
+            metadata = os.stat(
+                name,
+                dir_fd=descriptor,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            continue
+        if stat.S_ISDIR(metadata.st_mode):
+            try:
+                child = os.open(
+                    name,
+                    _DIRECTORY_OPEN_FLAGS,
+                    dir_fd=descriptor,
+                )
+            except (FileNotFoundError, NotADirectoryError, OSError):
+                continue
+            try:
+                child_metadata = os.fstat(child)
+                child_identity = (
+                    child_metadata.st_dev,
+                    child_metadata.st_ino,
+                )
+                if (
+                    not stat.S_ISDIR(child_metadata.st_mode)
+                    or child_identity
+                    != (metadata.st_dev, metadata.st_ino)
+                ):
+                    continue
+                _clear_owned_directory_fd(child)
+                os.fsync(child)
+            finally:
+                os.close(child)
+            try:
+                current = os.stat(
+                    name,
+                    dir_fd=descriptor,
+                    follow_symlinks=False,
+                )
+            except FileNotFoundError:
+                continue
+            if (
+                stat.S_ISDIR(current.st_mode)
+                and (current.st_dev, current.st_ino) == child_identity
+            ):
+                try:
+                    os.rmdir(name, dir_fd=descriptor)
+                except (FileNotFoundError, OSError):
+                    continue
+            continue
+        try:
+            current = os.stat(
+                name,
+                dir_fd=descriptor,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            continue
+        if (
+            current.st_dev,
+            current.st_ino,
+            current.st_mode,
+        ) != (
+            metadata.st_dev,
+            metadata.st_ino,
+            metadata.st_mode,
+        ):
+            continue
+        try:
+            os.unlink(name, dir_fd=descriptor)
+        except (FileNotFoundError, OSError):
+            continue
 
 
 def _atomic_rename_noreplace(source: Path, destination: Path) -> None:
     """Rename exclusively, failing closed where no safe primitive exists."""
+    source_bytes = os.fsencode(os.path.abspath(source))
+    destination_bytes = os.fsencode(os.path.abspath(destination))
     if sys.platform == "darwin":
         libc = ctypes.CDLL(None, use_errno=True)
         rename = libc.renamex_np
@@ -256,8 +367,8 @@ def _atomic_rename_noreplace(source: Path, destination: Path) -> None:
         ]
         rename.restype = ctypes.c_int
         result = rename(
-            os.fsencode(source),
-            os.fsencode(destination),
+            source_bytes,
+            destination_bytes,
             _RENAME_EXCL,
         )
         if result != 0:
@@ -282,10 +393,10 @@ def _atomic_rename_noreplace(source: Path, destination: Path) -> None:
         ]
         rename.restype = ctypes.c_int
         result = rename(
-            _AT_FDCWD,
-            os.fsencode(source),
-            _AT_FDCWD,
-            os.fsencode(destination),
+            _LINUX_AT_FDCWD,
+            source_bytes,
+            _LINUX_AT_FDCWD,
+            destination_bytes,
             _RENAME_NOREPLACE,
         )
         if result != 0:
