@@ -3,6 +3,8 @@ from __future__ import annotations
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -73,6 +75,22 @@ class Exp416CliTests(unittest.TestCase):
             "exp416_confusion_matrix.json": "6" * 64,
             "exp416_dataset_metrics.csv": "7" * 64,
         }
+
+    def test_direct_script_entrypoint_can_import_project_package(self) -> None:
+        script = (
+            Path(__file__).resolve().parents[3]
+            / "scratch/run_exp416_exp404_hard_test_confusion_audit.py"
+        )
+        completed = subprocess.run(
+            [sys.executable, str(script), "--help"],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("--frozen-test-labels", completed.stdout)
 
     def orchestration_patches(self):
         return (

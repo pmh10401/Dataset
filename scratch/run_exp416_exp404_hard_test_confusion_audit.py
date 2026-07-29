@@ -9,7 +9,13 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 from typing import Sequence
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from experiments.exp416_exp404_hard_test_confusion_audit.audit import (
     compute_confusion_audit,
@@ -29,7 +35,6 @@ from experiments.exp416_exp404_hard_test_confusion_audit.reporting import (
 )
 
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
 _COMMIT_PATTERN = re.compile(r"[0-9a-f]{40}\Z")
 
 
