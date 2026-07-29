@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import threading
 import unittest
 from unittest.mock import patch
 
@@ -16,6 +17,7 @@ from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
     Exp417CheckpointProvenance,
     Exp417CheckpointStore,
 )
+from experiments.exp417_causal_multihorizon_shadow import checkpoints
 from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     BackendAudit,
@@ -223,6 +225,152 @@ class Exp417CheckpointTests(unittest.TestCase):
             path.write_bytes(b"{")
             with self.assertRaises(ValueError):
                 store.load_completed()
+
+    def test_every_publish_boundary_failure_rolls_back_record_and_progress(self) -> None:
+        context = _context()
+        # Lock, marker write/fsync, marker directory fsync, record write/fsync,
+        # datasets directory fsync, progress write/fsync, progress directory
+        # fsync, and transaction-finalization root fsync all have rollback.
+        for fail_at in range(1, 9):
+            with self.subTest(fail_at=fail_at), TemporaryDirectory() as temporary:
+                root = Path(temporary) / "checkpoint"
+                store = Exp417CheckpointStore(root, _provenance(), context.datasets)
+                calls = 0
+                original_fsync = os.fsync
+
+                def fail_once(descriptor: int) -> None:
+                    nonlocal calls
+                    calls += 1
+                    if calls == fail_at:
+                        raise OSError(f"injected fsync {fail_at}")
+                    original_fsync(descriptor)
+
+                with patch.object(checkpoints.os, "fsync", side_effect=fail_once):
+                    with self.assertRaises(OSError):
+                        _write(store, _result(context))
+                self.assertEqual(tuple((root / "datasets").iterdir()), ())
+                self.assertEqual(dict(store.load_completed()), {})
+                self.assertEqual(store.progress()["completed_datasets"], 0)
+
+    def test_progress_replace_failure_stale_transaction_or_orphan_record_fail_closed(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary) / "checkpoint"
+            store = Exp417CheckpointStore(root, _provenance(), context.datasets)
+            original_replace = os.replace
+
+            def reject_progress(source: object, destination: object) -> None:
+                if Path(destination).name == "progress.json":
+                    raise OSError("injected progress replace")
+                original_replace(source, destination)
+
+            with patch.object(checkpoints.os, "replace", side_effect=reject_progress):
+                with self.assertRaises(OSError):
+                    _write(store, _result(context))
+            self.assertEqual(tuple((root / "datasets").iterdir()), ())
+            self.assertEqual(store.progress()["completed_datasets"], 0)
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary) / "checkpoint"
+            store = Exp417CheckpointStore(root, _provenance(), context.datasets)
+            original_write = checkpoints._atomic_write
+            failed = False
+
+            def reject_progress_write(path: Path, *args: object, **kwargs: object) -> None:
+                nonlocal failed
+                if path.name == "progress.json" and not failed:
+                    failed = True
+                    raise OSError("injected progress temp/write")
+                return original_write(path, *args, **kwargs)
+
+            with patch.object(checkpoints, "_atomic_write", side_effect=reject_progress_write):
+                with self.assertRaises(OSError):
+                    _write(store, _result(context))
+            self.assertEqual(tuple((root / "datasets").iterdir()), ())
+            self.assertEqual(store.progress()["completed_datasets"], 0)
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary) / "checkpoint"
+            store = Exp417CheckpointStore(root, _provenance(), context.datasets)
+            _write(store, _result(context))
+            progress = root / "progress.json"
+            payload = json.loads(progress.read_text(encoding="utf-8"))
+            payload["completed_datasets"] = 0
+            payload["completed_record_digests"] = {}
+            progress.write_bytes(canonical_json_bytes(payload) + b"\n")
+            with self.assertRaises(ValueError):
+                store.load_completed()
+            (root / ".checkpoint-transaction.json").write_text("{}", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                Exp417CheckpointStore(root, _provenance(), context.datasets)
+
+    def test_numeric_key_aliases_and_two_writer_race_are_rejected(self) -> None:
+        context = _context()
+        for parent, alias in (
+            ("length_group_identity_sha256", "0100"),
+            ("score_calibration_hashes", "+100"),
+            ("canonical_model_hashes", " 100"),
+        ):
+            with self.subTest(parent=parent), TemporaryDirectory() as temporary:
+                root = Path(temporary) / "checkpoint"
+                store = Exp417CheckpointStore(root, _provenance(), context.datasets)
+                _write(store, _result(context))
+                path = next((root / "datasets").glob("*.json"))
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                source = payload[parent]
+                payload[parent] = {alias: next(iter(source.values()))}
+                payload["payload_sha256"] = _digest(payload)
+                path.write_bytes(canonical_json_bytes(payload) + b"\n")
+                with self.assertRaises(ValueError):
+                    store.load_completed()
+        for mutation in ("model_seed", "horizon"):
+            with self.subTest(mutation=mutation), TemporaryDirectory() as temporary:
+                root = Path(temporary) / "checkpoint"
+                store = Exp417CheckpointStore(root, _provenance(), context.datasets)
+                _write(store, _result(context))
+                path = next((root / "datasets").glob("*.json"))
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                if mutation == "model_seed":
+                    seeds = payload["canonical_model_hashes"]["100"]
+                    payload["canonical_model_hashes"]["100"] = {
+                        "041701": seeds["41701"], "41702": seeds["41702"], "41703": seeds["41703"],
+                    }
+                else:
+                    scores = payload["qualification"]["decision_evidence"]["decisions"][0]["seed_decisions"][0]["scores"]
+                    payload["qualification"]["decision_evidence"]["decisions"][0]["seed_decisions"][0]["scores"] = {
+                        "01": scores["1"], "2": scores["2"], "10": scores["10"],
+                    }
+                payload["payload_sha256"] = _digest(payload)
+                path.write_bytes(canonical_json_bytes(payload) + b"\n")
+                with self.assertRaises(ValueError):
+                    store.load_completed()
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary) / "checkpoint"
+            first = Exp417CheckpointStore(root, _provenance(), context.datasets)
+            second = Exp417CheckpointStore(root, _provenance(), context.datasets)
+            barrier = threading.Barrier(2)
+            original_write = checkpoints._atomic_write
+            results: list[object] = []
+
+            def synchronize_record(path: Path, *args: object, **kwargs: object) -> None:
+                if path.parent.name == "datasets":
+                    barrier.wait(timeout=2)
+                return original_write(path, *args, **kwargs)
+
+            def writer(store: Exp417CheckpointStore) -> None:
+                try:
+                    _write(store, _result(context))
+                except BaseException as error:
+                    results.append(error)
+                else:
+                    results.append("ok")
+
+            with patch.object(checkpoints, "_atomic_write", side_effect=synchronize_record):
+                threads = [threading.Thread(target=writer, args=(store,)) for store in (first, second)]
+                for thread in threads:
+                    thread.start()
+                for thread in threads:
+                    thread.join(timeout=5)
+            self.assertEqual(results.count("ok"), 1)
+            self.assertEqual(len(first.load_completed()), 1)
         with TemporaryDirectory() as temporary:
             root = Path(temporary) / "checkpoint"
             target = Path(temporary) / "target"

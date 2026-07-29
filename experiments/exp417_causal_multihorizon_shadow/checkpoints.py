@@ -125,8 +125,6 @@ class Exp417CheckpointStore:
             raise ValueError("Exp417 checkpoint backend audit does not match result")
         elapsed = _finite_nonnegative(elapsed_seconds, "elapsed time")
         path = self._dataset_path(result.dataset)
-        if _path_exists_lstat(path):
-            raise ValueError(f"Exp417 checkpoint already exists for dataset: {result.dataset}")
         body: dict[str, object] = {
             "schema_version": _SCHEMA_VERSION,
             "dataset": result.dataset,
@@ -144,30 +142,36 @@ class Exp417CheckpointStore:
             "elapsed_seconds": elapsed,
         }
         body["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+        old_records = self._load_records()
+        if result.dataset in old_records:
+            raise ValueError(f"Exp417 checkpoint already exists for dataset: {result.dataset}")
+        old_progress = _read_regular(self.root / _PROGRESS_FILE, "Exp417 checkpoint progress")
+        self._begin_transaction(result.dataset, old_progress)
+        published = False
         try:
-            _atomic_write(path, canonical_json_bytes(body) + b"\n", replace=False)
+            _atomic_write_exclusive(path, canonical_json_bytes(body) + b"\n")
+            published = True
             _fsync_directory(self.datasets_dir)
+            digests = _progress_digests(self._read_progress())
+            digests[result.dataset] = body["payload_sha256"]
+            self._write_progress(completed=len(digests), current_dataset=None, record_digests=digests)
+            self._finish_transaction()
         except BaseException:
-            # Do not claim a completed record if durability acknowledgement failed.
-            try:
-                if _path_exists_lstat(path):
-                    _unlink_regular(path)
-                    _fsync_directory(self.datasets_dir)
-            except OSError:
-                pass
+            self._rollback_transaction(path if published else None, old_progress)
             raise
-        self._write_progress(completed=len(self._load_records()), current_dataset=None)
 
     def load_completed(self) -> Mapping[str, DatasetResult]:
         records = self._load_records()
+        self._assert_progress_matches_records(records)
         return MappingProxyType({name: records[name]["qualification"] for name in self.expected_datasets if name in records})
 
     def progress(self) -> Mapping[str, object]:
         records = self._load_records()
         payload = self._read_progress()
-        if payload["completed_datasets"] != len(records):
-            raise ValueError("Exp417 checkpoint progress accounting is invalid")
-        return MappingProxyType(dict(payload))
+        self._assert_progress_matches_records(records)
+        return MappingProxyType({"completed_datasets": payload["completed_datasets"],
+                                 "current_dataset": payload["current_dataset"],
+                                 "expected_datasets": payload["expected_datasets"]})
 
     def require_complete(self) -> tuple[DatasetResult, ...]:
         completed = self.load_completed()
@@ -184,7 +188,7 @@ class Exp417CheckpointStore:
             os.mkdir(self.datasets_dir, 0o700)
             os.chmod(self.datasets_dir, 0o700)
             _atomic_write(self.root / _ROOT_FILE, canonical_json_bytes(self._root_payload) + b"\n", replace=False)
-            self._write_progress(completed=0, current_dataset=None)
+            self._write_progress(completed=0, current_dataset=None, record_digests={})
             _fsync_directory(self.root)
         except BaseException:
             # A partially initialized root must never be mistaken for a checkpoint.
@@ -225,27 +229,86 @@ class Exp417CheckpointStore:
     def _dataset_path(self, dataset: str) -> Path:
         return self.datasets_dir / f"{sha256(dataset.encode('utf-8')).hexdigest()}.json"
 
-    def _write_progress(self, *, completed: int, current_dataset: str | None) -> None:
+    def _write_progress(self, *, completed: int, current_dataset: str | None,
+                        record_digests: Mapping[str, object]) -> None:
         if type(completed) is not int or not 0 <= completed <= len(self.expected_datasets):
             raise ValueError("Exp417 checkpoint progress is invalid")
+        if set(record_digests) - set(self.expected_datasets) or len(record_digests) != completed:
+            raise ValueError("Exp417 checkpoint progress is invalid")
+        digests = {name: _digest(value, "progress record digest") for name, value in sorted(record_digests.items())}
         payload = {"completed_datasets": completed, "current_dataset": current_dataset,
-                   "expected_datasets": len(self.expected_datasets)}
+                   "expected_datasets": len(self.expected_datasets), "completed_record_digests": digests}
         _atomic_write(self.root / _PROGRESS_FILE, canonical_json_bytes(payload) + b"\n", replace=True)
         _fsync_directory(self.root)
 
     def _read_progress(self) -> dict[str, object]:
         raw = _read_regular(self.root / _PROGRESS_FILE, "Exp417 checkpoint progress")
         payload = _json_object(raw, "Exp417 checkpoint progress")
-        if set(payload) != {"completed_datasets", "current_dataset", "expected_datasets"}:
+        if set(payload) != {"completed_datasets", "current_dataset", "expected_datasets", "completed_record_digests"}:
             raise ValueError("Exp417 checkpoint progress is invalid")
         if (type(payload["completed_datasets"]) is not int or type(payload["expected_datasets"]) is not int
                 or not 0 <= payload["completed_datasets"] <= len(self.expected_datasets)
                 or payload["expected_datasets"] != len(self.expected_datasets)
                 or payload["current_dataset"] is not None):
             raise ValueError("Exp417 checkpoint progress is invalid")
+        _progress_digests(payload)
+        if len(_progress_digests(payload)) != payload["completed_datasets"]:
+            raise ValueError("Exp417 checkpoint progress is invalid")
         if raw != canonical_json_bytes(payload) + b"\n":
             raise ValueError("Exp417 checkpoint progress is noncanonical")
         return payload
+
+    def _assert_progress_matches_records(self, records: Mapping[str, Mapping[str, object]]) -> None:
+        digests = _progress_digests(self._read_progress())
+        observed = {name: record["payload_sha256"] for name, record in records.items()}
+        if digests != observed:
+            raise ValueError("Exp417 checkpoint progress accounting is invalid")
+
+    def _begin_transaction(self, dataset: str, old_progress: bytes) -> None:
+        lock = self.root / ".checkpoint.lock"
+        marker = self.root / ".checkpoint-transaction.json"
+        acquired_lock = False
+        wrote_marker = False
+        try:
+            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0), 0o600)
+            os.close(descriptor)
+            acquired_lock = True
+            _fsync_directory(self.root)
+            marker_payload = {"dataset": dataset, "previous_progress_sha256": sha256(old_progress).hexdigest()}
+            _atomic_write(marker, canonical_json_bytes(marker_payload) + b"\n", replace=False)
+            wrote_marker = True
+            _fsync_directory(self.root)
+        except BaseException:
+            # Never remove a competing writer's lock or marker.
+            try:
+                if wrote_marker and _path_exists_lstat(marker):
+                    _unlink_regular(marker)
+                if acquired_lock and _path_exists_lstat(lock):
+                    _unlink_regular(lock)
+                if acquired_lock:
+                    _fsync_directory(self.root)
+            except OSError:
+                pass
+            raise
+
+    def _finish_transaction(self) -> None:
+        self._clear_transaction()
+
+    def _rollback_transaction(self, path: Path | None, old_progress: bytes) -> None:
+        try:
+            if path is not None and _path_exists_lstat(path):
+                _unlink_regular(path)
+                _fsync_directory(self.datasets_dir)
+            _atomic_write(self.root / _PROGRESS_FILE, old_progress, replace=True)
+            _fsync_directory(self.root)
+        finally:
+            self._clear_transaction()
+
+    def _clear_transaction(self) -> None:
+        for path in (self.root / ".checkpoint-transaction.json", self.root / ".checkpoint.lock"):
+            if _path_exists_lstat(path):
+                _unlink_regular(path)
+        _fsync_directory(self.root)
 
 
 def _record_from_bytes(raw: bytes) -> dict[str, object]:
@@ -479,6 +542,28 @@ def _atomic_write(path: Path, data: bytes, *, replace: bool) -> None:
             except OSError: pass
 
 
+def _atomic_write_exclusive(path: Path, data: bytes) -> None:
+    """Publish a new record with link(2), which can never overwrite a rival."""
+    _require_directory(path.parent, "Exp417 checkpoint parent")
+    descriptor, temporary = tempfile.mkstemp(prefix=".checkpoint-", dir=path.parent)
+    temporary_path = Path(temporary)
+    linked = False
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(data); handle.flush(); os.fsync(handle.fileno())
+        os.link(temporary_path, path)
+        linked = True
+    except BaseException:
+        if linked and _path_exists_lstat(path):
+            try: _unlink_regular(path)
+            except OSError: pass
+        raise
+    finally:
+        if _path_exists_lstat(temporary_path):
+            try: _unlink_regular(temporary_path)
+            except OSError: pass
+
+
 def _fsync_directory(path: Path) -> None:
     descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
     try: os.fsync(descriptor)
@@ -574,9 +659,24 @@ def _mapping_integer(value: object, name: str, minimum: int = 0) -> int:
         number = int(value)
     else:
         raise ValueError(f"Exp417 checkpoint {name} is invalid")
-    if number < minimum:
+    if number < minimum or (isinstance(value, str) and value != str(number)):
         raise ValueError(f"Exp417 checkpoint {name} is invalid")
     return number
+
+
+def _progress_digests(payload: Mapping[str, object]) -> dict[str, str]:
+    value = payload.get("completed_record_digests")
+    if not isinstance(value, dict):
+        raise ValueError("Exp417 checkpoint progress is invalid")
+    result: dict[str, str] = {}
+    for dataset, digest in value.items():
+        name = _string(dataset, "progress dataset")
+        if name in result:
+            raise ValueError("Exp417 checkpoint progress is invalid")
+        result[name] = _digest(digest, "progress record digest")
+    if tuple(result) != tuple(sorted(result)):
+        raise ValueError("Exp417 checkpoint progress is invalid")
+    return result
 
 
 def _bool(value: object, name: str) -> bool:
