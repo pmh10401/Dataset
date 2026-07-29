@@ -270,6 +270,21 @@ class ModelEvidenceBindingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "length"):
             replace(bundle, oof_residuals=wrong_length)
 
+    def test_oof_bundle_rejects_nonfinite_residual_evidence(self) -> None:
+        bundle = synthetic_oof_bundle()
+        seed = FROZEN_CONFIG.model_seeds[0]
+        index = bundle.universe_indices[0]
+        horizon = bundle.horizons[0]
+        for value in (float("nan"), float("inf")):
+            corrupted = {item_seed: dict(by_index) for item_seed, by_index in bundle.oof_residuals.items()}
+            horizon_residuals = dict(corrupted[seed][index])
+            residual = np.array(horizon_residuals[horizon], copy=True)
+            residual[0] = value
+            horizon_residuals[horizon] = residual
+            corrupted[seed][index] = horizon_residuals
+            with self.assertRaisesRegex(ValueError, "residuals must be finite"):
+                replace(bundle, oof_residuals=corrupted)
+
 
 if __name__ == "__main__":
     unittest.main()
