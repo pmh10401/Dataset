@@ -879,9 +879,16 @@ git commit -m "feat: orchestrate Exp417 label-free prediction"
 **Interfaces:**
 - Consumes: complete `RunSummary`, frozen context, checkpoint provenance.
 - Produces:
-  - `render_exp417_payloads(...) -> Mapping[str, bytes]`
-  - `verify_exp417_payloads(payloads: Mapping[str, bytes], *, config=FROZEN_CONFIG) -> None`
-  - `publish_exp417(payloads: Mapping[str, bytes], output_dir: Path, *, pre_publish_verify: Callable[[], None]) -> Mapping[str, str]`
+  - `TrustedCheckpointProvenance.from_store(complete_store) -> TrustedCheckpointProvenance`
+  - `render_exp417_payloads(..., trusted_checkpoint: TrustedCheckpointProvenance) -> Mapping[str, bytes]`
+  - `verify_exp417_payloads(payloads: Mapping[str, bytes], *, trusted_checkpoint: TrustedCheckpointProvenance, config=FROZEN_CONFIG) -> None`
+  - `publish_exp417(payloads: Mapping[str, bytes], output_dir: Path, *, checkpoints: Exp417CheckpointStore, pre_publish_verify: Callable[[], None]) -> Mapping[str, str]`
+
+`TrustedCheckpointProvenance` is an external capability derived from a
+reopened, provenance-validated, complete `Exp417CheckpointStore`.  Serialized
+payload fields and their self-declared hashes are never accepted as this trust
+root.  The public publication path derives the capability from `checkpoints`
+itself rather than accepting a caller-asserted digest map.
 
 - [ ] **Step 1: Write exact rendering tests**
 

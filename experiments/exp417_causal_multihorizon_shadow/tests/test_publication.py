@@ -12,6 +12,7 @@ import unittest
 from unittest.mock import patch
 
 from experiments.exp417_causal_multihorizon_shadow.tests.test_reporting import (
+    fixture_trusted_checkpoint,
     rendered_payloads,
 )
 
@@ -27,14 +28,24 @@ class PublicationTests(unittest.TestCase):
         from experiments.exp417_causal_multihorizon_shadow.publication import (
             publish_exp417,
         )
-
-        return dict(
-            publish_exp417(
-                self.payloads,
-                output,
-                pre_publish_verify=(lambda: None) if callback is None else callback,
-            )
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            TrustedCheckpointProvenance,
         )
+
+        checkpoint_store = object()
+        with patch.object(
+            TrustedCheckpointProvenance,
+            "from_store",
+            return_value=fixture_trusted_checkpoint(),
+        ):
+            return dict(
+                publish_exp417(
+                    self.payloads,
+                    output,
+                    checkpoints=checkpoint_store,
+                    pre_publish_verify=(lambda: None) if callback is None else callback,
+                )
+            )
 
     def test_success_publishes_exact_eight_files_and_bound_manifest(self) -> None:
         output = self.root / "publication"
@@ -112,7 +123,7 @@ class PublicationTests(unittest.TestCase):
             staging.mkdir()
             (staging / "foreign.txt").write_text("foreign", encoding="utf-8")
 
-        with self.assertRaisesRegex(ValueError, "identity|root"):
+        with self.assertRaises(ExceptionGroup):
             self.publish(output, substitute)
 
         self.assertFalse(output.exists())
@@ -126,7 +137,7 @@ class PublicationTests(unittest.TestCase):
             (displaced / "exp417_backend_benchmark.json").is_file()
         )
 
-    def test_staging_root_symlink_substitution_removes_link_not_owned_tree(self) -> None:
+    def test_staging_root_symlink_substitution_leaves_link_and_owned_tree_untouched(self) -> None:
         output = self.root / "publication"
         owned_tree = self.root / "owned-tree"
 
@@ -135,11 +146,14 @@ class PublicationTests(unittest.TestCase):
             staging.rename(owned_tree)
             staging.symlink_to(owned_tree, target_is_directory=True)
 
-        with self.assertRaisesRegex(ValueError, "root|identity"):
+        with self.assertRaises(ExceptionGroup):
             self.publish(output, substitute)
 
         self.assertFalse(output.exists())
-        self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
+        links = tuple(self.root.glob(".publication.*.staging"))
+        self.assertEqual(len(links), 1)
+        self.assertTrue(links[0].is_symlink())
+        self.assertEqual(links[0].resolve(), owned_tree.resolve())
         self.assertTrue((owned_tree / "exp417_backend_benchmark.json").is_file())
 
     def test_output_race_and_existing_output_are_never_replaced(self) -> None:
@@ -153,7 +167,11 @@ class PublicationTests(unittest.TestCase):
                 output.mkdir()
                 (output / "owner.txt").write_text("owner", encoding="utf-8")
 
-            with self.subTest(name=name), self.assertRaises(FileExistsError):
+            if create_during_staging:
+                expected = self.assertRaises(ExceptionGroup)
+            else:
+                expected = self.assertRaises(FileExistsError)
+            with self.subTest(name=name), expected:
                 self.publish(output, callback if create_during_staging else None)
             self.assertEqual(
                 (output / "owner.txt").read_text(encoding="utf-8"),
@@ -203,7 +221,7 @@ class PublicationTests(unittest.TestCase):
         with patch.object(
             publication, "_atomic_rename_noreplace", side_effect=race
         ):
-            with self.assertRaises(FileExistsError):
+            with self.assertRaises(ExceptionGroup):
                 self.publish(output)
 
         self.assertTrue(injected)
@@ -300,6 +318,47 @@ class PublicationTests(unittest.TestCase):
         self.assertTrue(injected_paths[0].exists())
         self.assertEqual(injected_paths[0].read_bytes(), b"foreign replacement\n")
 
+    def test_cleanup_mismatch_never_moves_foreign_path_or_follows_symlink(self) -> None:
+        """Foreign A/B and symlink-to-owned remain byte-for-byte at their names."""
+        from experiments.exp417_causal_multihorizon_shadow import publication
+
+        output = self.root / "publication"
+        owned = self.root / "owned-displaced"
+        foreign_b = self.root / "foreign-b"
+        foreign_b.mkdir()
+        (foreign_b / "owner.txt").write_bytes(b"foreign B\n")
+        rename_sources: list[Path] = []
+        real_rename = publication._atomic_rename_noreplace
+
+        def observe(source: Path, destination: Path) -> None:
+            rename_sources.append(source)
+            if source == output:
+                # This is the old unsafe restoration window.  A second foreign
+                # owner arrives before restore; neither may be moved.
+                real_rename(source, destination)
+                foreign_b.rename(output)
+                return
+            real_rename(source, destination)
+
+        def substitute_with_foreign() -> None:
+            staging = next(self.root.glob(".publication.*.staging"))
+            staging.rename(owned)
+            output.mkdir()
+            (output / "owner.txt").write_bytes(b"foreign A\n")
+
+        with patch.object(
+            publication, "_atomic_rename_noreplace", side_effect=observe
+        ):
+            with self.assertRaises(ExceptionGroup):
+                self.publish(output, substitute_with_foreign)
+
+        self.assertNotIn(output, rename_sources)
+        self.assertEqual((output / "owner.txt").read_bytes(), b"foreign A\n")
+        self.assertEqual(
+            (foreign_b / "owner.txt").read_bytes(), b"foreign B\n"
+        )
+        self.assertTrue((owned / "exp417_backend_benchmark.json").is_file())
+
     def test_parent_is_fsynced_again_after_rollback_mutates_it(self) -> None:
         from experiments.exp417_causal_multihorizon_shadow import publication
 
@@ -354,6 +413,7 @@ class PublicationTests(unittest.TestCase):
             publish_exp417(
                 self.payloads,
                 self.root / "missing" / "output",
+                checkpoints=object(),
                 pre_publish_verify=lambda: None,
             )
         invalid = dict(self.payloads)
@@ -362,8 +422,24 @@ class PublicationTests(unittest.TestCase):
             publish_exp417(
                 invalid,
                 self.root / "invalid",
+                checkpoints=object(),
                 pre_publish_verify=lambda: None,
             )
+
+    def test_publication_rejects_caller_asserted_nonstore_checkpoint_root(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow.publication import (
+            publish_exp417,
+        )
+
+        output = self.root / "untrusted"
+        with self.assertRaisesRegex(ValueError, "Exp417CheckpointStore"):
+            publish_exp417(
+                self.payloads,
+                output,
+                checkpoints=object(),
+                pre_publish_verify=lambda: None,
+            )
+        self.assertFalse(output.exists())
 
 
 if __name__ == "__main__":

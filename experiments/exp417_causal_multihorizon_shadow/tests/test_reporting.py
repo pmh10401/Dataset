@@ -197,7 +197,32 @@ def rendered_payloads() -> dict[str, bytes]:
         render_exp417_payloads,
     )
 
-    return dict(render_exp417_payloads(fixture_summary(), fixture_provenance()))
+    summary = fixture_summary()
+    return dict(
+        render_exp417_payloads(
+            summary, fixture_provenance(), fixture_trusted_checkpoint(summary)
+        )
+    )
+
+
+def fixture_trusted_checkpoint(summary: RunSummary | None = None):
+    from experiments.exp417_causal_multihorizon_shadow.reporting import (
+        TrustedCheckpointProvenance,
+    )
+    from experiments.exp417_causal_multihorizon_shadow.runner import (
+        _result_evidence_digest,
+    )
+
+    selected = fixture_summary() if summary is None else summary
+    return TrustedCheckpointProvenance(
+        checkpoint_provenance_sha256=sha256(
+            canonical_json_bytes(fixture_provenance().to_payload())
+        ).hexdigest(),
+        result_evidence_sha256={
+            result.dataset: _result_evidence_digest(result)
+            for result in selected.results
+        },
+    )
 
 
 def _json_lines(payload: bytes) -> list[dict[str, object]]:
@@ -225,7 +250,9 @@ class ReportingTests(unittest.TestCase):
 
         self.assertEqual(set(payloads), set(NON_MANIFEST_FILES))
         self.assertEqual(len(payloads), 7)
-        verify_exp417_payloads(payloads)
+        verify_exp417_payloads(
+            payloads, trusted_checkpoint=fixture_trusted_checkpoint()
+        )
         prediction_rows = _json_lines(
             payloads["exp417_shadow_predictions.jsonl"]
         )
@@ -328,7 +355,11 @@ class ReportingTests(unittest.TestCase):
             summary.context,
         )
         with self.assertRaisesRegex(ValueError, "global|publication"):
-            render_exp417_payloads(blocked, fixture_provenance())
+            render_exp417_payloads(
+                blocked,
+                fixture_provenance(),
+                fixture_trusted_checkpoint(summary),
+            )
 
     def test_independent_semantic_verifier_rejects_every_tamper_class(self) -> None:
         from experiments.exp417_causal_multihorizon_shadow.reporting import (
@@ -418,7 +449,9 @@ class ReportingTests(unittest.TestCase):
 
         for name, payloads in cases.items():
             with self.subTest(name=name), self.assertRaises(ValueError):
-                verify_exp417_payloads(payloads)
+                verify_exp417_payloads(
+                    payloads, trusted_checkpoint=fixture_trusted_checkpoint()
+                )
 
     def test_coherent_candidate_rewrite_cannot_recompute_its_own_trust_root(self) -> None:
         """Changing a valid score plus every mutable local hash must still fail."""
@@ -441,7 +474,9 @@ class ReportingTests(unittest.TestCase):
         payloads["exp417_frozen_config.json"] = canonical_json_bytes(config) + b"\n"
 
         with self.assertRaises(ValueError):
-            verify_exp417_payloads(payloads)
+            verify_exp417_payloads(
+                payloads, trusted_checkpoint=fixture_trusted_checkpoint()
+            )
 
     def test_coherent_backend_rewrite_cannot_recompute_its_own_trust_root(self) -> None:
         """A structurally valid CPU audit must still equal pinned Task 7 evidence."""
@@ -462,7 +497,9 @@ class ReportingTests(unittest.TestCase):
         payloads["exp417_frozen_config.json"] = canonical_json_bytes(config) + b"\n"
 
         with self.assertRaises(ValueError):
-            verify_exp417_payloads(payloads)
+            verify_exp417_payloads(
+                payloads, trusted_checkpoint=fixture_trusted_checkpoint()
+            )
 
     def test_reordered_seed_evidence_is_noncanonical_even_with_recomputed_hashes(self) -> None:
         from experiments.exp417_causal_multihorizon_shadow.reporting import (
@@ -484,7 +521,99 @@ class ReportingTests(unittest.TestCase):
         payloads["exp417_frozen_config.json"] = canonical_json_bytes(config) + b"\n"
 
         with self.assertRaises(ValueError):
-            verify_exp417_payloads(payloads)
+            verify_exp417_payloads(
+                payloads, trusted_checkpoint=fixture_trusted_checkpoint()
+            )
+
+    def test_external_checkpoint_map_rejects_missing_extra_and_mutated_entries(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            TrustedCheckpointProvenance,
+            verify_exp417_payloads,
+        )
+
+        payloads = rendered_payloads()
+        trusted = fixture_trusted_checkpoint()
+        base = dict(trusted.result_evidence_sha256)
+        variants = []
+        missing = dict(base)
+        missing.pop(next(iter(missing)))
+        variants.append(missing)
+        extra = dict(base)
+        extra["foreign"] = "f" * 64
+        variants.append(extra)
+        mutated = dict(base)
+        mutated[next(iter(mutated))] = "f" * 64
+        variants.append(mutated)
+        for index, mapping in enumerate(variants):
+            anchor = TrustedCheckpointProvenance(
+                trusted.checkpoint_provenance_sha256, mapping
+            )
+            with self.subTest(index=index), self.assertRaises(ValueError):
+                verify_exp417_payloads(payloads, trusted_checkpoint=anchor)
+
+    def test_fully_coherent_result_rewrite_fails_external_checkpoint_root(self) -> None:
+        """Even all regenerated payload-local evidence cannot replace checkpoint truth."""
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            render_exp417_payloads,
+            verify_exp417_payloads,
+        )
+
+        original = fixture_summary()
+        first = original.results[0]
+        evidence = first.decision_evidence
+        decision = evidence.decisions[0]
+        seed = decision.seed_decisions[0]
+        scores = dict(seed.scores)
+        score = scores[1]
+        scores[1] = HorizonScore(
+            score.horizon, 3.0, score.p_value, score.persistence
+        )
+        changed_seed = SeedDecision(seed.seed, scores, seed.candidate)
+        changed_decision = TestInstanceDecision(
+            decision.dataset,
+            decision.instance_index,
+            decision.length,
+            (changed_seed, *decision.seed_decisions[1:]),
+        )
+        changed_evidence = DatasetDecisionEvidence(
+            evidence.dataset,
+            evidence.context,
+            evidence.frozen_train_contract,
+            evidence.database_sha256,
+            evidence.train_identity_sha256,
+            (changed_decision, *evidence.decisions[1:]),
+        )
+        changed_first = DatasetResult(
+            first.dataset,
+            first.test_size,
+            first.group_count,
+            first.groups,
+            changed_evidence.derived_candidates,
+            changed_evidence,
+            first.lanes,
+            first.context,
+            first.status,
+        )
+        forged = RunSummary(
+            (changed_first, *original.results[1:]),
+            original.total_test,
+            True,
+            "complete",
+            original.context,
+        )
+        forged_payloads = dict(
+            render_exp417_payloads(
+                forged,
+                fixture_provenance(),
+                fixture_trusted_checkpoint(forged),
+            )
+        )
+
+        with self.assertRaises(ValueError):
+            verify_exp417_payloads(
+                forged_payloads,
+                trusted_checkpoint=fixture_trusted_checkpoint(original),
+            )
 
 
 if __name__ == "__main__":

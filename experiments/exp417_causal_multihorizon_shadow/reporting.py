@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Mapping, Sequence
 import csv
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from hashlib import sha256
 import io
 import json
@@ -15,7 +15,7 @@ from typing import Any
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
-from .checkpoints import Exp417CheckpointProvenance
+from .checkpoints import Exp417CheckpointProvenance, Exp417CheckpointStore
 from .backend import FROZEN_TASK7_BACKEND_AUDIT_SHA256
 from .config import Exp417FrozenConfig, FROZEN_CONFIG
 from .contracts import (
@@ -94,9 +94,59 @@ _FORBIDDEN_KEYS = frozenset(
 )
 
 
+@dataclass(frozen=True)
+class TrustedCheckpointProvenance:
+    """External result roots obtained from a verified complete checkpoint store."""
+
+    checkpoint_provenance_sha256: str
+    result_evidence_sha256: Mapping[str, str]
+
+    def __post_init__(self) -> None:
+        provenance_digest = _digest(
+            self.checkpoint_provenance_sha256, "checkpoint provenance"
+        )
+        if not isinstance(self.result_evidence_sha256, Mapping):
+            raise ValueError("Exp417 trusted result evidence must be a mapping")
+        result_digests: dict[str, str] = {}
+        for dataset, digest in self.result_evidence_sha256.items():
+            name = _string(dataset, "trusted checkpoint dataset")
+            if name in result_digests:
+                raise ValueError("Exp417 trusted checkpoint dataset is duplicated")
+            result_digests[name] = _digest(digest, "trusted result evidence")
+        if not result_digests or tuple(result_digests) != tuple(sorted(result_digests)):
+            raise ValueError("Exp417 trusted checkpoint map must be sorted and non-empty")
+        object.__setattr__(self, "checkpoint_provenance_sha256", provenance_digest)
+        object.__setattr__(
+            self, "result_evidence_sha256", MappingProxyType(result_digests)
+        )
+
+    @classmethod
+    def from_store(
+        cls, store: Exp417CheckpointStore
+    ) -> "TrustedCheckpointProvenance":
+        if type(store) is not Exp417CheckpointStore:
+            raise ValueError(
+                "Exp417 trusted checkpoint root requires Exp417CheckpointStore"
+            )
+        store.require_complete()
+        completed = store.load_completed()
+        if tuple(completed) != store.expected_datasets:
+            raise ValueError("Exp417 checkpoint inventory is not complete and sorted")
+        return cls(
+            checkpoint_provenance_sha256=sha256(
+                canonical_json_bytes(store.provenance.to_payload())
+            ).hexdigest(),
+            result_evidence_sha256={
+                dataset: _result_evidence_digest(completed[dataset])
+                for dataset in store.expected_datasets
+            },
+        )
+
+
 def render_exp417_payloads(
     summary: RunSummary,
     provenance: Exp417CheckpointProvenance,
+    trusted_checkpoint: TrustedCheckpointProvenance,
     *,
     config: Exp417FrozenConfig = FROZEN_CONFIG,
 ) -> Mapping[str, bytes]:
@@ -114,6 +164,9 @@ def render_exp417_payloads(
         raise ValueError("Exp417 reporting requires checkpoint provenance")
     verified_provenance = provenance.to_payload()
     _verify_provenance_context(summary.context, verified_provenance)
+    _verify_trusted_checkpoint(
+        trusted_checkpoint, provenance, summary.results
+    )
 
     predictions = _render_predictions(summary)
     dataset_csv = _render_dataset_csv(summary)
@@ -144,13 +197,16 @@ def render_exp417_payloads(
             REPORT_FILE: report,
         }
     )
-    verify_exp417_payloads(payloads, config=config)
+    verify_exp417_payloads(
+        payloads, trusted_checkpoint=trusted_checkpoint, config=config
+    )
     return payloads
 
 
 def verify_exp417_payloads(
     payloads: Mapping[str, bytes],
     *,
+    trusted_checkpoint: TrustedCheckpointProvenance,
     config: Exp417FrozenConfig = FROZEN_CONFIG,
 ) -> None:
     """Reconstruct immutable contracts and cross-check all seven payloads."""
@@ -189,6 +245,16 @@ def verify_exp417_payloads(
 
     provenance_payload = _object(config_payload["provenance"], "provenance")
     provenance = _reconstruct_provenance(provenance_payload)
+    if not isinstance(trusted_checkpoint, TrustedCheckpointProvenance):
+        raise ValueError("Exp417 verification requires trusted checkpoint provenance")
+    expected_provenance_digest = sha256(
+        canonical_json_bytes(provenance.to_payload())
+    ).hexdigest()
+    if (
+        trusted_checkpoint.checkpoint_provenance_sha256
+        != expected_provenance_digest
+    ):
+        raise ValueError("Exp417 checkpoint provenance root mismatch")
     if provenance.frozen_config_sha256 != frozen_digest:
         raise ValueError("Exp417 provenance frozen config digest mismatch")
     context = _reconstruct_context(
@@ -208,6 +274,9 @@ def verify_exp417_payloads(
         datasets,
         qualifications,
         audits,
+    )
+    _verify_trusted_checkpoint(
+        trusted_checkpoint, provenance, reconstructed
     )
     run = _object(config_payload["run"], "run")
     _verify_conservation(run, context, candidates, datasets, qualifications, audits)
@@ -935,6 +1004,29 @@ def _verify_provenance_context(
         raise ValueError("Exp417 checkpoint provenance does not match frozen context")
 
 
+def _verify_trusted_checkpoint(
+    trusted: TrustedCheckpointProvenance,
+    provenance: Exp417CheckpointProvenance,
+    results: Sequence[DatasetResult],
+) -> None:
+    if not isinstance(trusted, TrustedCheckpointProvenance):
+        raise ValueError("Exp417 trusted checkpoint provenance is required")
+    expected_provenance = sha256(
+        canonical_json_bytes(provenance.to_payload())
+    ).hexdigest()
+    if trusted.checkpoint_provenance_sha256 != expected_provenance:
+        raise ValueError("Exp417 checkpoint provenance root mismatch")
+    expected_results = {
+        result.dataset: _result_evidence_digest(result)
+        for result in results
+    }
+    if (
+        tuple(trusted.result_evidence_sha256) != tuple(expected_results)
+        or dict(trusted.result_evidence_sha256) != expected_results
+    ):
+        raise ValueError("Exp417 externally trusted result evidence mismatch")
+
+
 def _canonical_json_object(payload: bytes, name: str) -> dict[str, object]:
     value = _json_loads_unique(payload, name)
     result = _object(value, name)
@@ -1102,6 +1194,7 @@ __all__ = [
     "PREDICTION_FILE",
     "REPORT_FILE",
     "SYNTHETIC_FILE",
+    "TrustedCheckpointProvenance",
     "render_exp417_payloads",
     "verify_exp417_payloads",
 ]

@@ -15,12 +15,14 @@ import uuid
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
+from .checkpoints import Exp417CheckpointStore
 from .reporting import (
     CONFIG_FILE,
     MANIFEST_FILE,
     NON_MANIFEST_FILES,
     OFFICIAL_FILES,
     REPORT_FILE,
+    TrustedCheckpointProvenance,
     verify_exp417_payloads,
 )
 
@@ -52,6 +54,7 @@ def publish_exp417(
     payloads: Mapping[str, bytes],
     output_dir: Path,
     *,
+    checkpoints: Exp417CheckpointStore,
     pre_publish_verify: Callable[[], None],
 ) -> Mapping[str, str]:
     """Stage and publish exactly seven verified payloads plus one manifest."""
@@ -70,12 +73,17 @@ def publish_exp417(
         raise ValueError("Exp417 publication requires the exact seven non-manifest payloads")
     if not callable(pre_publish_verify):
         raise ValueError("Exp417 pre-publish verifier must be callable")
-    verify_exp417_payloads(payloads)
+    trusted_checkpoint = TrustedCheckpointProvenance.from_store(checkpoints)
+    verify_exp417_payloads(
+        payloads, trusted_checkpoint=trusted_checkpoint
+    )
     artifact_hashes = {
         name: sha256(payload).hexdigest()
         for name, payload in sorted(payloads.items())
     }
-    manifest_payload = _render_manifest(payloads, artifact_hashes)
+    manifest_payload = _render_manifest(
+        payloads, artifact_hashes, trusted_checkpoint
+    )
 
     staging = output.with_name(f".{output.name}.{uuid.uuid4().hex}.staging")
     staging_identity: tuple[int, int] | None = None
@@ -101,6 +109,7 @@ def publish_exp417(
             payloads,
             artifact_hashes,
             manifest_payload,
+            trusted_checkpoint,
         )
         pre_publish_verify()
         if _lexists(output):
@@ -113,6 +122,7 @@ def publish_exp417(
             payloads,
             artifact_hashes,
             manifest_payload,
+            trusted_checkpoint,
         )
         os.fsync(staging_descriptor)
         if _lexists(output):
@@ -130,6 +140,7 @@ def publish_exp417(
             payloads,
             artifact_hashes,
             manifest_payload,
+            trusted_checkpoint,
             expected_file_identities=staged_identities,
         )
         _fsync_directory(output.parent)
@@ -174,7 +185,9 @@ def publish_exp417(
 
 
 def _render_manifest(
-    payloads: Mapping[str, bytes], artifact_hashes: Mapping[str, str]
+    payloads: Mapping[str, bytes],
+    artifact_hashes: Mapping[str, str],
+    trusted_checkpoint: TrustedCheckpointProvenance,
 ) -> bytes:
     try:
         config = json.loads(payloads[CONFIG_FILE])
@@ -188,6 +201,11 @@ def _render_manifest(
         "frozen_config_sha256": frozen_config_sha256,
         "report_sha256": sha256(payloads[REPORT_FILE]).hexdigest(),
         "provenance": provenance,
+        "trusted_checkpoint_provenance_sha256":
+            trusted_checkpoint.checkpoint_provenance_sha256,
+        "trusted_result_map_sha256": sha256(
+            canonical_json_bytes(dict(trusted_checkpoint.result_evidence_sha256))
+        ).hexdigest(),
     }
     return canonical_json_bytes(manifest) + b"\n"
 
@@ -214,6 +232,7 @@ def _verify_publication_directory(
     payloads: Mapping[str, bytes],
     artifact_hashes: Mapping[str, str],
     manifest_payload: bytes,
+    trusted_checkpoint: TrustedCheckpointProvenance,
     *,
     expected_file_identities: Mapping[str, tuple[int, int]] | None = None,
 ) -> dict[str, tuple[int, int]]:
@@ -241,7 +260,9 @@ def _verify_publication_directory(
         )
         observed_payloads[name] = raw
         identities[name] = identity
-    verify_exp417_payloads(observed_payloads)
+    verify_exp417_payloads(
+        observed_payloads, trusted_checkpoint=trusted_checkpoint
+    )
 
     raw_manifest, manifest_identity = _read_verified_file(
         directory_descriptor,
@@ -254,7 +275,9 @@ def _verify_publication_directory(
             else expected_file_identities[MANIFEST_FILE]
         ),
     )
-    if raw_manifest != _render_manifest(observed_payloads, artifact_hashes):
+    if raw_manifest != _render_manifest(
+        observed_payloads, artifact_hashes, trusted_checkpoint
+    ):
         raise ValueError("Exp417 publication manifest provenance mismatch")
     identities[MANIFEST_FILE] = manifest_identity
     return identities
@@ -322,6 +345,17 @@ def _remove_owned_path(
 ) -> bool:
     if identity is None or not _lexists(path):
         return False
+    try:
+        before = path.lstat()
+    except FileNotFoundError:
+        return False
+    if (
+        not stat.S_ISDIR(before.st_mode)
+        or (before.st_dev, before.st_ino) != identity
+    ):
+        raise RuntimeError(
+            f"Exp417 cleanup path is not the verified owned directory; left untouched: {path}"
+        )
     quarantine = path.with_name(f".{path.name}.{uuid.uuid4().hex}.quarantine")
     try:
         _atomic_rename_noreplace(path, quarantine)
@@ -340,12 +374,6 @@ def _remove_owned_path(
                 f"it; preserved at {quarantine}: {restore_error}"
             ) from restore_error
         return False
-    if _is_symlink(quarantine):
-        # A root symlink can be removed only through a pathname, which admits
-        # an unavoidable replacement race.  Keeping the uniquely quarantined
-        # link is the fail-closed choice; it no longer occupies the official
-        # output or staging name and its target is never traversed.
-        return True
     try:
         descriptor = os.open(quarantine, _DIRECTORY_OPEN_FLAGS)
         try:
@@ -375,24 +403,9 @@ def _is_owned_path(path: Path, identity: tuple[int, int]) -> bool:
         metadata = path.lstat()
     except FileNotFoundError:
         return False
-    if stat.S_ISDIR(metadata.st_mode):
-        return (metadata.st_dev, metadata.st_ino) == identity
-    if stat.S_ISLNK(metadata.st_mode):
-        try:
-            target = path.stat()
-        except (FileNotFoundError, OSError):
-            return False
-        return stat.S_ISDIR(target.st_mode) and (
-            target.st_dev, target.st_ino
-        ) == identity
-    return False
-
-
-def _is_symlink(path: Path) -> bool:
-    try:
-        return stat.S_ISLNK(path.lstat().st_mode)
-    except FileNotFoundError:
-        return False
+    return stat.S_ISDIR(metadata.st_mode) and (
+        metadata.st_dev, metadata.st_ino
+    ) == identity
 
 
 def _atomic_rename_noreplace(source: Path, destination: Path) -> None:
