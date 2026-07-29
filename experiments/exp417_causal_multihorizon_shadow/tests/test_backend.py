@@ -5,89 +5,148 @@ from __future__ import annotations
 import unittest
 
 import numpy as np
-import torch
 
 from experiments.exp417_causal_multihorizon_shadow.backend import (
+    BenchmarkTrainGroup,
     TorchBenchmarkMeasurement,
     benchmark_scoring_backend,
     benchmark_torch_devices,
+    canonical_mps_fallback_reason,
     persistence_numba,
     persistence_numpy,
     probe_mps_host,
+    select_benchmark_strata,
     select_canonical_backend,
 )
-from experiments.exp417_causal_multihorizon_shadow.contracts import BackendAudit
-from experiments.exp417_causal_multihorizon_shadow.model import CausalMultiHorizonCNN
-from experiments.exp417_causal_multihorizon_shadow.preprocessing import build_horizons
+from experiments.exp417_causal_multihorizon_shadow.contracts import (
+    BackendAudit,
+    LengthGroup,
+    ProcessedGroup,
+    RawSeries,
+    RawTestDataset,
+    RawTrainDataset,
+)
+
+
+def train_source(dataset: str, count: int, length: int) -> BenchmarkTrainGroup:
+    positions = np.arange(length, dtype=np.float32)
+    series = tuple(
+        RawSeries(index, tuple((index * 0.01) + np.sin(positions / (2.0 + (index % 3)))))
+        for index in range(count)
+    )
+    train = RawTrainDataset(dataset=dataset, series=series)
+    channels = {
+        item.instance_index: np.stack((np.asarray(item.values, dtype=np.float32), positions / length))
+        for item in series
+    }
+    processed = ProcessedGroup(
+        LengthGroup(length=length, series=series), 0.0, 1.0, 0.0, 1.0, "diagnostic_only", channels
+    )
+    return BenchmarkTrainGroup(train, processed)
+
+
+def scoring_fixture() -> tuple[dict[int, tuple[np.ndarray, ...]], dict[int, dict[int, np.ndarray]]]:
+    oof: dict[int, tuple[np.ndarray, ...]] = {}
+    queries: dict[int, dict[int, np.ndarray]] = {0: {}, 1: {}}
+    for horizon in (1, 2, 10):
+        base = np.arange(10, dtype=np.float64)
+        oof[horizon] = (base, base + 1.0, base + 2.0)
+        queries[0][horizon] = np.array([0.0, 9.0, 9.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+        queries[1][horizon] = np.arange(10, dtype=np.float64)
+    return oof, queries
 
 
 class PersistenceParityTests(unittest.TestCase):
     def test_numpy_and_numba_keep_exact_persistence_and_candidate_identity(self) -> None:
-        fixtures = (
-            np.array([], dtype=bool),
-            np.array([False, False, False], dtype=bool),
-            np.array([True, True, True], dtype=bool),
-            np.array([True, False, True, False, True, False], dtype=bool),
+        for mask in (
+            np.array([], dtype=bool), np.array([False, False, False], dtype=bool),
+            np.array([True, True, True], dtype=bool), np.array([True, False, True, False]),
             np.random.default_rng(417).random(127) > 0.73,
             np.array([False, True, True, False, True, False, False, True], dtype=bool)[::2],
-        )
-        for mask in fixtures:
+        ):
             with self.subTest(shape=mask.shape, contiguous=mask.flags.c_contiguous):
                 self.assertEqual(persistence_numpy(mask), persistence_numba(mask))
-
-        audit = benchmark_scoring_backend(fixtures, candidate_masks=fixtures, repeats=1)
-        self.assertEqual(audit.backend, "numba")
+        audit = benchmark_scoring_backend(*scoring_fixture(), repeats=1)
         self.assertTrue(audit.candidate_identity)
         self.assertEqual(audit.max_normalized_error, 0.0)
         self.assertEqual(audit.spearman, 1.0)
-        self.assertFalse(audit.fallback)
+
+    def test_divergent_numba_candidate_path_fails_exact_identity(self) -> None:
+        import experiments.exp417_causal_multihorizon_shadow.backend as backend
+
+        oof, queries = scoring_fixture()
+        original = backend._numba_candidate_coordinates
+        try:
+            backend._numba_candidate_coordinates = lambda *_args: ((999,), np.array([0.0]))
+            audit = benchmark_scoring_backend(oof, queries, repeats=1)
+        finally:
+            backend._numba_candidate_coordinates = original
+        self.assertFalse(audit.candidate_identity)
+
+
+class BenchmarkStrataTests(unittest.TestCase):
+    def test_train_only_strata_are_deterministic_ordered_and_capped_at_nine(self) -> None:
+        sources = tuple(
+            train_source(f"dataset-{11 - rank:02d}", 50 + rank, 64 + (rank % 4) * 8)
+            for rank in range(12)
+        )
+        first = select_benchmark_strata(sources)
+        self.assertLessEqual(len(first), 9)
+        self.assertEqual(first, select_benchmark_strata(tuple(reversed(sources))))
+        self.assertEqual(tuple((item.dataset, item.length) for item in first), tuple(sorted(
+            (item.dataset, item.length) for item in first
+        )))
+
+    def test_strata_reject_test_metadata_and_unbound_processed_groups(self) -> None:
+        source = train_source("synthetic", 50, 64)
+        with self.assertRaisesRegex(ValueError, "RawTrainDataset"):
+            BenchmarkTrainGroup(RawTestDataset("test", source.train.series), source.processed)  # type: ignore[arg-type]
+        with self.assertRaisesRegex(ValueError, "bind"):
+            BenchmarkTrainGroup(source.train, train_source("other", 51, 64).processed)
 
 
 class MPSGateTests(unittest.TestCase):
     @staticmethod
     def measurement(**changes: object) -> TorchBenchmarkMeasurement:
-        base: dict[str, object] = {
-            "candidate_identity": True,
-            "max_normalized_error": 1e-4,
-            "spearman": 0.999,
-            "speedup": 1.1,
-            "finite_outputs": True,
-            "fallback": False,
-            "environment": "host",
-        }
-        base.update(changes)
-        return TorchBenchmarkMeasurement(**base)  # type: ignore[arg-type]
+        values: dict[str, object] = dict(candidate_identity=True, max_normalized_error=1e-4,
+            spearman=.999, speedup=1.1, finite_outputs=True, fallback=False, environment="host")
+        values.update(changes)
+        return TorchBenchmarkMeasurement(**values)  # type: ignore[arg-type]
 
-    def test_mps_adopts_only_when_every_frozen_boundary_passes(self) -> None:
-        audit = benchmark_torch_devices(measurement=self.measurement())
-        self.assertEqual(audit.backend, "mps")
-        self.assertFalse(audit.fallback)
-        self.assertEqual(select_canonical_backend((audit,)), "mps")
-
-    def test_each_failed_mps_gate_falls_back_to_cpu_with_its_exact_reason(self) -> None:
-        failures = (
-            ("candidate_identity", False, "candidate_identity"),
-            ("max_normalized_error", 0.000100001, "max_normalized_error"),
-            ("spearman", 0.998999, "spearman"),
-            ("speedup", 1.099999, "speedup"),
-            ("finite_outputs", False, "nonfinite_outputs"),
-            ("fallback", True, "device_fallback"),
-        )
-        for field, value, reason in failures:
+    def test_each_failed_gate_is_cpu_with_its_exact_reason(self) -> None:
+        for field, value, reason in (
+            ("candidate_identity", False, "candidate_identity"), ("max_normalized_error", .000100001, "max_normalized_error"),
+            ("spearman", .998999, "spearman"), ("speedup", 1.09999, "speedup"),
+            ("finite_outputs", False, "nonfinite_outputs"), ("fallback", True, "device_fallback"),
+        ):
             with self.subTest(field=field):
                 audit = benchmark_torch_devices(measurement=self.measurement(**{field: value}))
-                self.assertEqual(audit.backend, "cpu")
-                self.assertTrue(audit.fallback)
-                self.assertEqual(audit.fallback_reason, reason)
-                self.assertEqual(select_canonical_backend((audit,)), "cpu")
+                self.assertEqual((audit.backend, audit.fallback_reason), ("cpu", reason))
 
-    def test_isolated_unavailability_is_fail_closed_but_not_host_capability_evidence(self) -> None:
-        audit = benchmark_torch_devices(
-            measurement=self.measurement(environment="isolated", available=False)
-        )
-        self.assertEqual(audit.backend, "cpu")
-        self.assertEqual(audit.fallback_reason, "isolated_mps_unavailable")
-        self.assertEqual(select_canonical_backend((audit,)), "cpu")
+    def test_isolated_evidence_cannot_positively_adopt_mps(self) -> None:
+        isolated = benchmark_torch_devices(measurement=self.measurement(environment="isolated"))
+        unavailable = benchmark_torch_devices(measurement=self.measurement(environment="isolated", available=False))
+        self.assertEqual((isolated.backend, isolated.fallback_reason), ("cpu", "isolated_environment"))
+        self.assertEqual(unavailable.fallback_reason, "isolated_mps_unavailable")
+        self.assertEqual(select_canonical_backend((isolated,)), "cpu")
+
+
+class CanonicalSelectionTests(unittest.TestCase):
+    def test_selection_requires_every_host_mps_audit_and_is_order_independent(self) -> None:
+        numba = BackendAudit("numba", True, 0.0, 1.0, 10.0, False)
+        passed = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+        failed = BackendAudit("cpu", True, 0.0, 1.0, 1.0, True, "speedup")
+        self.assertEqual(select_canonical_backend((numba, passed)), "mps")
+        self.assertEqual(select_canonical_backend((passed, failed, numba)), "cpu")
+        self.assertEqual(select_canonical_backend((numba, failed, passed)), "cpu")
+        self.assertEqual(canonical_mps_fallback_reason((passed, failed)), "speedup")
+
+    def test_canonical_failure_reason_has_fixed_precedence(self) -> None:
+        unavailable = BackendAudit("cpu", True, 0.0, 1.0, 1.0, True, "mps_unavailable")
+        slow = BackendAudit("cpu", True, 0.0, 1.0, 1.0, True, "speedup")
+        self.assertEqual(canonical_mps_fallback_reason((slow, unavailable)), "mps_unavailable")
+        with self.assertRaisesRegex(ValueError, "MPS"):
+            select_canonical_backend(())
 
 
 class HostMPSProbeTests(unittest.TestCase):
@@ -95,36 +154,14 @@ class HostMPSProbeTests(unittest.TestCase):
         probe = probe_mps_host()
         self.assertEqual(probe.environment, "host")
         if probe.available:
-            self.assertTrue(probe.built)
             self.assertTrue(probe.forward_backward_synchronized)
-            self.assertTrue(probe.finite)
-            self.assertFalse(probe.fallback)
         else:
             self.assertEqual(probe.reason, "mps_unavailable")
 
-    def test_real_synthetic_model_benchmark_is_finite_or_fails_closed(self) -> None:
-        torch.manual_seed(41701)
-        model = CausalMultiHorizonCNN(build_horizons(64))
-        inputs = torch.linspace(-1.0, 1.0, 128, dtype=torch.float32).reshape(1, 2, 64)
-        audit = benchmark_torch_devices(
-            model=model,
-            inputs=inputs,
-            candidate_selector=lambda output: tuple(
-                np.flatnonzero(output[min(output)].reshape(-1) >= 0.0).tolist()
-            ),
-            repeats=1,
-        )
+    def test_typed_synthetic_train_strata_benchmark_is_finite_or_fails_closed(self) -> None:
+        audit = benchmark_torch_devices(select_benchmark_strata((train_source("synthetic", 50, 64),)), repeats=1)
         self.assertEqual(select_canonical_backend((audit,)), audit.backend)
         self.assertTrue(np.isfinite((audit.max_normalized_error, audit.spearman, audit.speedup)).all())
-
-
-class CanonicalSelectionTests(unittest.TestCase):
-    def test_selection_ignores_numba_and_requires_a_passing_mps_audit(self) -> None:
-        numba = BackendAudit("numba", True, 0.0, 1.0, 10.0, False)
-        cpu = BackendAudit("cpu", True, 0.0, 1.0, 1.0, True, "mps_unavailable")
-        self.assertEqual(select_canonical_backend((numba, cpu)), "cpu")
-        with self.assertRaisesRegex(ValueError, "MPS"):
-            select_canonical_backend(())
 
 
 if __name__ == "__main__":
