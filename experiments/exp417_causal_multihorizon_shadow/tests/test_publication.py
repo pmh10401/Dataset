@@ -101,13 +101,37 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(caught.exception.errno, errno.ENOTSUP)
         self.assertFalse(callback_called)
         self.assertFalse(os.path.lexists(output))
-        self.assertEqual(tuple(self.root.iterdir()), ())
+        capsules = tuple(
+            self.root.glob(".exp417.exchange-probe.retained.*")
+        )
+        self.assertEqual(len(capsules), 1)
+        capsule = capsules[0]
+        self.assertEqual(set(self.root.iterdir()), {capsule})
+        self.assertEqual(stat.S_IMODE(capsule.lstat().st_mode), 0o700)
+        self.assertEqual(
+            {path.name for path in capsule.iterdir()},
+            {"a", "b", "PROBE_PROVENANCE.json"},
+        )
+        provenance = json.loads(
+            (capsule / "PROBE_PROVENANCE.json").read_bytes()
+        )
+        self.assertFalse(provenance["atomic_exchange_supported"])
+        self.assertEqual(provenance["operation_errno"], errno.ENOTSUP)
+        self.assertFalse(provenance["automatic_cleanup"])
+        capsule_metadata = capsule.lstat()
+        self.assertEqual(
+            tuple(provenance["capsule_identity"]),
+            (capsule_metadata.st_dev, capsule_metadata.st_ino),
+        )
+        self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
+        self.assertEqual(tuple(self.root.glob(".publication.*.capture")), ())
 
     def test_capability_probe_swaps_and_restores_real_inodes(self) -> None:
         from experiments.exp417_causal_multihorizon_shadow import publication
 
-        output = self.root / "publication"
         real_exchange = publication._atomic_exchange
+        real_fsync = publication._fsync_directory
+        parent_fsyncs = 0
         exchanges: list[
             tuple[tuple[int, int], tuple[int, int], tuple[int, int], tuple[int, int]]
         ] = []
@@ -127,8 +151,19 @@ class PublicationTests(unittest.TestCase):
                 )
             )
 
-        with patch.object(publication, "_atomic_exchange", side_effect=observe):
-            self.publish(output)
+        def observe_fsync(path: Path) -> None:
+            nonlocal parent_fsyncs
+            if path == self.root:
+                parent_fsyncs += 1
+            real_fsync(path)
+
+        with (
+            patch.object(publication, "_atomic_exchange", side_effect=observe),
+            patch.object(
+                publication, "_fsync_directory", side_effect=observe_fsync
+            ),
+        ):
+            publication._require_atomic_exchange(self.root)
 
         self.assertEqual(len(exchanges), 2)
         first_before_a, first_before_b, first_after_a, first_after_b = exchanges[0]
@@ -139,44 +174,94 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(second_before_b, first_after_b)
         self.assertEqual(second_after_a, first_before_a)
         self.assertEqual(second_after_b, first_before_b)
-        self.assertEqual(tuple(self.root.iterdir()), (output,))
+        self.assertGreaterEqual(parent_fsyncs, 2)
+        capsules = tuple(
+            self.root.glob(".exp417.exchange-probe.retained.*")
+        )
+        self.assertEqual(len(capsules), 1)
+        self.assertEqual(set(self.root.iterdir()), {capsules[0]})
+        provenance = json.loads(
+            (capsules[0] / "PROBE_PROVENANCE.json").read_bytes()
+        )
+        self.assertTrue(provenance["atomic_exchange_supported"])
+        self.assertIsNone(provenance["operation_errno"])
+        self.assertFalse(provenance["automatic_cleanup"])
+        self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
+        self.assertEqual(tuple(self.root.glob(".publication.*.capture")), ())
 
-    def test_capability_probe_cleanup_failure_aborts_before_staging(self) -> None:
+    def test_probe_identity_race_never_deletes_foreign_or_owned_entry(self) -> None:
         from experiments.exp417_causal_multihorizon_shadow import publication
 
-        output = self.root / "publication"
-        callback_called = False
+        real_identity = publication._path_identity
         real_rmdir = publication.os.rmdir
-        denied = False
+        real_unlink = publication.os.unlink
+        a_identity_checks = 0
+        displaced_owned: Path | None = None
+        probe_deletions: list[tuple[str, object]] = []
 
-        def callback() -> None:
-            nonlocal callback_called
-            callback_called = True
+        def inject_after_identity_check(path: Path) -> tuple[int, int]:
+            nonlocal a_identity_checks, displaced_owned
+            identity = real_identity(path)
+            if path.name == "a" and path.parent.name.startswith(".exp417"):
+                a_identity_checks += 1
+                if a_identity_checks == 3:
+                    displaced_owned = path.with_name("a.owned-displaced")
+                    path.rename(displaced_owned)
+                    path.mkdir(mode=0o700)
+                    (path / "foreign.txt").write_bytes(b"foreign a\n")
+            return identity
 
-        def deny_probe_cleanup(
+        def observe_rmdir(
             path: object, *args: object, **kwargs: object
         ) -> None:
-            nonlocal denied
-            if path == "a" and type(kwargs.get("dir_fd")) is int and not denied:
-                denied = True
-                raise PermissionError("probe cleanup denied")
+            if path in {"a", "b"} and type(kwargs.get("dir_fd")) is int:
+                probe_deletions.append(("rmdir", path))
             real_rmdir(path, *args, **kwargs)
 
-        with patch.object(
-            publication.os, "rmdir", side_effect=deny_probe_cleanup
-        ):
-            with self.assertRaises(ExceptionGroup) as caught:
-                self.publish(output, callback)
+        def observe_unlink(
+            path: object, *args: object, **kwargs: object
+        ) -> None:
+            if ".exp417" in os.fspath(path):
+                probe_deletions.append(("unlink", path))
+            real_unlink(path, *args, **kwargs)
 
-        self.assertTrue(denied)
-        self.assertTrue(
-            any(
-                "probe cleanup denied" in str(error)
-                for error in caught.exception.exceptions
-            )
+        probe_error: Exception | None = None
+        with (
+            patch.object(
+                publication,
+                "_path_identity",
+                side_effect=inject_after_identity_check,
+            ),
+            patch.object(publication.os, "rmdir", side_effect=observe_rmdir),
+            patch.object(publication.os, "unlink", side_effect=observe_unlink),
+        ):
+            try:
+                publication._require_atomic_exchange(self.root)
+            except Exception as error:
+                probe_error = error
+
+        self.assertIsNone(probe_error)
+        self.assertEqual(probe_deletions, [])
+        self.assertIsNotNone(displaced_owned)
+        assert displaced_owned is not None
+        self.assertTrue(displaced_owned.is_dir())
+        self.assertEqual(
+            (displaced_owned.parent / "a" / "foreign.txt").read_bytes(),
+            b"foreign a\n",
         )
-        self.assertFalse(callback_called)
-        self.assertFalse(os.path.lexists(output))
+        self.assertTrue((displaced_owned.parent / "b").is_dir())
+        self.assertTrue(
+            (displaced_owned.parent / "PROBE_PROVENANCE.json").is_file()
+        )
+        provenance = json.loads(
+            (displaced_owned.parent / "PROBE_PROVENANCE.json").read_bytes()
+        )
+        displaced_metadata = displaced_owned.lstat()
+        self.assertEqual(
+            tuple(provenance["probe_inode_provenance"]["a"]),
+            (displaced_metadata.st_dev, displaced_metadata.st_ino),
+        )
+        self.assertFalse(provenance["automatic_cleanup"])
         self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
         self.assertEqual(tuple(self.root.glob(".publication.*.capture")), ())
 

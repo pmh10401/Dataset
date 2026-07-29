@@ -978,9 +978,14 @@ staging or final publication.
 The capability gate is not a symbol check.  Before staging, it creates two
 owned sibling probe directories under a private `0o700` directory in the
 exact output parent filesystem, fsyncs them, performs a real exchange, verifies
-the inode swap, exchanges them back, verifies restoration, removes only the
-recorded probe identities, and fsyncs the parent again.  Filesystem-level
-`ENOSYS`, `EINVAL`, or `ENOTSUP`, an inode mismatch, or any probe cleanup
+the inode swap, exchanges them back, verifies restoration, writes the capsule
+and child inode provenance, and fsyncs the parent again.  The uniquely named
+`0o700` `.exp417.exchange-probe.retained.<uuid>` capsule is retained on both
+success and failure.  Publication never renames, unlinks, or removes probe
+entries because the supported platforms provide no conditional inode-delete
+primitive.  Retained capsules may be removed only by an operator after offline
+identity verification; automatic cleanup is forbidden.  Filesystem-level
+`ENOSYS`, `EINVAL`, or `ENOTSUP`, an inode mismatch, or marker/finalization
 failure aborts publication before a `.staging` directory exists.
 
 - [ ] **Step 7: Run GREEN and regressions**

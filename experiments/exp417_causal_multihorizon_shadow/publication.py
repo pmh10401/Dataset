@@ -451,14 +451,18 @@ def _remove_owned_path(
 
 def _require_atomic_exchange(parent: Path) -> None:
     """Prove atomic exchange on the publication filesystem before staging."""
-    probe_root = parent / f".exp417-exchange-probe.{uuid.uuid4().hex}"
+    probe_root = (
+        parent / f".exp417.exchange-probe.retained.{uuid.uuid4().hex}"
+    )
     probe_a = probe_root / "a"
     probe_b = probe_root / "b"
     probe_root_identity: tuple[int, int] | None = None
-    probe_identities: set[tuple[int, int]] = set()
+    identity_a: tuple[int, int] | None = None
+    identity_b: tuple[int, int] | None = None
     probe_descriptor: int | None = None
     probe_error: Exception | None = None
-    cleanup_errors: list[Exception] = []
+    retention_errors: list[Exception] = []
+    exchange_verified = False
     try:
         probe_root.mkdir(mode=0o700, parents=False, exist_ok=False)
         os.chmod(probe_root, 0o700, follow_symlinks=False)
@@ -468,6 +472,7 @@ def _require_atomic_exchange(parent: Path) -> None:
         if _directory_fd_identity(probe_descriptor) != probe_root_identity:
             raise RuntimeError("Exp417 atomic-exchange probe root identity changed")
 
+        identities: list[tuple[int, int]] = []
         for name in ("a", "b"):
             os.mkdir(name, mode=0o700, dir_fd=probe_descriptor)
             child_descriptor = os.open(
@@ -476,21 +481,25 @@ def _require_atomic_exchange(parent: Path) -> None:
             try:
                 metadata = os.fstat(child_descriptor)
                 identity = (metadata.st_dev, metadata.st_ino)
-                if identity in probe_identities:
+                if identity in identities:
                     raise RuntimeError(
                         "Exp417 atomic-exchange probe inode identities collided"
                     )
-                probe_identities.add(identity)
+                identities.append(identity)
                 os.fsync(child_descriptor)
             finally:
                 os.close(child_descriptor)
+        identity_a, identity_b = identities
         os.fsync(probe_descriptor)
         _fsync_directory(parent)
 
-        identity_a, identity_b = (
-            _path_identity(probe_a),
-            _path_identity(probe_b),
-        )
+        if (_path_identity(probe_a), _path_identity(probe_b)) != (
+            identity_a,
+            identity_b,
+        ):
+            raise RuntimeError(
+                "Exp417 atomic-exchange probe identities changed before swap"
+            )
         _atomic_exchange(probe_a, probe_b)
         if (
             _path_identity(probe_a),
@@ -507,79 +516,85 @@ def _require_atomic_exchange(parent: Path) -> None:
             raise RuntimeError(
                 "Exp417 atomic-exchange capability probe did not restore inodes"
             )
+        exchange_verified = True
         os.fsync(probe_descriptor)
         _fsync_directory(parent)
     except Exception as error:
         probe_error = error
     finally:
         if probe_descriptor is not None:
-            remaining = set(probe_identities)
-            for name in ("a", "b"):
-                try:
-                    metadata = os.stat(
-                        name, dir_fd=probe_descriptor, follow_symlinks=False
-                    )
-                except FileNotFoundError:
-                    continue
-                except OSError as cleanup_error:
-                    cleanup_errors.append(cleanup_error)
-                    continue
-                identity = (metadata.st_dev, metadata.st_ino)
-                if not stat.S_ISDIR(metadata.st_mode) or identity not in remaining:
-                    cleanup_errors.append(
-                        RuntimeError(
-                            "Exp417 atomic-exchange probe cleanup found a "
-                            f"foreign entry: {probe_root / name}"
-                        )
-                    )
-                    continue
-                try:
-                    os.rmdir(name, dir_fd=probe_descriptor)
-                    remaining.remove(identity)
-                except OSError as cleanup_error:
-                    cleanup_errors.append(cleanup_error)
-            if remaining:
-                cleanup_errors.append(
-                    RuntimeError(
-                        "Exp417 atomic-exchange probe cleanup lost captured "
-                        f"inode identities: {sorted(remaining)}"
-                    )
-                )
             try:
+                _write_probe_provenance(
+                    probe_descriptor,
+                    probe_root_identity=probe_root_identity,
+                    identity_a=identity_a,
+                    identity_b=identity_b,
+                    exchange_verified=exchange_verified,
+                    probe_error=probe_error,
+                )
                 os.fsync(probe_descriptor)
-            except OSError as cleanup_error:
-                cleanup_errors.append(cleanup_error)
+            except Exception as retention_error:
+                retention_errors.append(retention_error)
             try:
                 os.close(probe_descriptor)
-            except OSError as cleanup_error:
-                cleanup_errors.append(cleanup_error)
-        if _lexists(probe_root):
-            try:
-                metadata = probe_root.lstat()
-                identity = (metadata.st_dev, metadata.st_ino)
-                if (
-                    not stat.S_ISDIR(metadata.st_mode)
-                    or identity != probe_root_identity
-                ):
-                    raise RuntimeError(
-                        "Exp417 atomic-exchange probe root became foreign; "
-                        f"preserved at {probe_root}"
-                    )
-                probe_root.rmdir()
-            except Exception as cleanup_error:
-                cleanup_errors.append(cleanup_error)
+            except OSError as retention_error:
+                retention_errors.append(retention_error)
         try:
             _fsync_directory(parent)
-        except Exception as cleanup_error:
-            cleanup_errors.append(cleanup_error)
+        except Exception as retention_error:
+            retention_errors.append(retention_error)
 
-    if cleanup_errors:
-        errors = ([probe_error] if probe_error is not None else []) + cleanup_errors
+    if retention_errors:
+        errors = ([probe_error] if probe_error is not None else []) + retention_errors
         raise ExceptionGroup(
-            "Exp417 atomic-exchange capability probe cleanup failed", errors
+            "Exp417 retained atomic-exchange probe finalization failed", errors
         )
     if probe_error is not None:
         raise probe_error
+
+
+def _write_probe_provenance(
+    probe_descriptor: int,
+    *,
+    probe_root_identity: tuple[int, int] | None,
+    identity_a: tuple[int, int] | None,
+    identity_b: tuple[int, int] | None,
+    exchange_verified: bool,
+    probe_error: Exception | None,
+) -> None:
+    payload = canonical_json_bytes(
+        {
+            "schema_version": 1,
+            "experiment_id": "Exp417",
+            "purpose": "atomic_exchange_filesystem_capability_probe",
+            "capsule_identity": probe_root_identity,
+            "probe_inode_provenance": {
+                "a": identity_a,
+                "b": identity_b,
+            },
+            "atomic_exchange_supported": exchange_verified,
+            "operation_errno": (
+                probe_error.errno
+                if isinstance(probe_error, OSError)
+                else None
+            ),
+            "operation_error_type": (
+                type(probe_error).__name__ if probe_error is not None else None
+            ),
+            "automatic_cleanup": False,
+            "cleanup_policy": "manual_offline_identity_verification_only",
+        }
+    ) + b"\n"
+    descriptor = os.open(
+        "PROBE_PROVENANCE.json",
+        _FILE_WRITE_FLAGS,
+        0o600,
+        dir_fd=probe_descriptor,
+    )
+    with os.fdopen(descriptor, "wb") as handle:
+        handle.write(payload)
+        handle.flush()
+        os.fsync(handle.fileno())
 
 
 def _path_identity(path: Path) -> tuple[int, int]:
