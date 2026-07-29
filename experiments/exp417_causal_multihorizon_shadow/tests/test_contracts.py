@@ -1,3 +1,4 @@
+from dataclasses import replace
 from types import MappingProxyType
 import unittest
 
@@ -48,7 +49,9 @@ def frozen_context(
         database_sha256=database_sha256 or FROZEN_CONFIG.database_sha256,
         datasets=names,
         lanes=lanes or frozen_lanes(),
-        test_sizes={dataset: test_size for dataset in names},
+        test_identity_manifest={
+            dataset: tuple((index, 100) for index in range(test_size)) for dataset in names
+        },
         code_commit="abc123",
         runtime_versions={"python": "3.14", "numpy": "2.3.5", "numba": "0.66.0", "torch": "2.13.0"},
     )
@@ -223,6 +226,22 @@ class ContractTests(unittest.TestCase):
             frozen_context(datasets=("A",))
         self.assertEqual(len(frozen_context().datasets), 1117)
         self.assertIsInstance(frozen_context().test_sizes, MappingProxyType)
+
+    def test_frozen_context_requires_complete_sorted_unique_identity_manifest(self) -> None:
+        """A count-equivalent but altered TEST identity manifest must not bind a run."""
+        context = frozen_context()
+        missing = dict(context.test_identity_manifest)
+        del missing["A"]
+        with self.assertRaisesRegex(ValueError, "manifest"):
+            replace(context, test_identity_manifest=missing)
+        extra = dict(context.test_identity_manifest)
+        extra["unexpected"] = ((0, 100),)
+        with self.assertRaisesRegex(ValueError, "manifest"):
+            replace(context, test_identity_manifest=extra)
+        duplicate = dict(context.test_identity_manifest)
+        duplicate["A"] = ((0, 100), (0, 100))
+        with self.assertRaisesRegex(ValueError, "sorted"):
+            replace(context, test_identity_manifest=duplicate)
 
     def test_horizon_score_requires_finite_unit_interval_evidence(self) -> None:
         with self.assertRaises(ValueError):

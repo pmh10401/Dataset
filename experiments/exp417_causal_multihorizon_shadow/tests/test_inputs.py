@@ -327,6 +327,7 @@ class InputBoundaryTests(unittest.TestCase):
         with self.synthetic_config() as config:
             context = self._context(config)
             self.assertEqual(context.datasets, ("A", "B"))
+            self.assertEqual(context.test_identity_manifest, {"A": ((2, 2), (4, 3)), "B": ((0, 2),)})
             self.assertEqual(context.test_sizes, {"A": 2, "B": 1})
             with self.assertRaises(TypeError):
                 context.test_sizes["A"] = 999  # type: ignore[index]
@@ -344,6 +345,18 @@ class InputBoundaryTests(unittest.TestCase):
                 connection.execute("INSERT INTO datasets(id, name) VALUES (3, 'C')")
             with self.assertRaisesRegex(ValueError, "SHA256"):
                 inputs.freeze_run_context(self.database, self._freeze_lanes(config), config=config)
+
+    def test_frozen_test_manifest_rejects_database_row_mutation_before_loading(self) -> None:
+        """Changing a valid-width TEST row after context freeze cannot replace its identity manifest."""
+        with self.synthetic_config() as config:
+            context = self._context(config)
+            with closing(sqlite3.connect(self.database)) as connection, connection:
+                connection.execute(
+                    "UPDATE instances SET values_blob = ? WHERE dataset_id = 1 AND split = 'TEST' AND instance_index = 2",
+                    (np.array((1.0, 2.0, 3.0, 4.0), dtype="<f4").tobytes(),),
+                )
+            with self.assertRaisesRegex(ValueError, "SHA256"):
+                inputs.load_raw_test_values(self.database, "A", self._train_contract(), context)
 
     def test_rejects_frozen_lane_dataset_outside_database_population(self) -> None:
         """A lane coordinate for an absent dataset cannot enter a run context."""
@@ -409,9 +422,8 @@ class InputBoundaryTests(unittest.TestCase):
                 (b"abc",),
             )
         with self.synthetic_config(database_sha256=_sha(self.database)) as config:
-            context = self._context(config)
-            with self.assertRaisesRegex(ValueError, "multiple of four"):
-                inputs.load_raw_test_values(self.database, "A", self._train_contract(), context)
+            with self.assertRaisesRegex(ValueError, "raw float32 length"):
+                self._context(config)
 
     def test_static_label_isolation_and_query_contract_hold(self) -> None:
         """Adding a forbidden input path or TEST selected field must fail preflight."""

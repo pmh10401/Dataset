@@ -74,6 +74,31 @@ def _immutable_mapping(values: Mapping[str, _T], name: str) -> Mapping[str, _T]:
     return MappingProxyType(dict(values))
 
 
+def _freeze_test_identity_manifest(
+    values: Mapping[str, Sequence[tuple[int, int]]], datasets: tuple[str, ...]
+) -> Mapping[str, tuple[tuple[int, int], ...]]:
+    if not isinstance(values, Mapping) or set(values) != set(datasets):
+        raise ValueError("test_identity_manifest must cover the exact frozen datasets")
+    frozen: dict[str, tuple[tuple[int, int], ...]] = {}
+    for dataset in datasets:
+        _nonempty_name(dataset, "test_identity_manifest dataset")
+        entries = _tuple(values[dataset], f"test_identity_manifest[{dataset}]")
+        if not entries:
+            raise ValueError("test identity manifest entries must not be empty")
+        checked: list[tuple[int, int]] = []
+        for entry in entries:
+            if not isinstance(entry, tuple) or len(entry) != 2:
+                raise ValueError("test identity manifest entries must be (index, raw_float32_length) tuples")
+            index = _integer(entry[0], "test identity index")
+            length = _integer(entry[1], "test raw float32 length", minimum=1)
+            checked.append((index, length))
+        indices = tuple(index for index, _ in checked)
+        if indices != tuple(sorted(indices)) or len(indices) != len(set(indices)):
+            raise ValueError("test identity manifest indices must be sorted and unique")
+        frozen[dataset] = tuple(checked)
+    return MappingProxyType(frozen)
+
+
 @dataclass(frozen=True)
 class RawSeries:
     instance_index: int
@@ -194,7 +219,7 @@ class FrozenRunContext:
     database_sha256: str
     datasets: tuple[str, ...]
     lanes: FrozenLaneSnapshot
-    test_sizes: Mapping[str, int]
+    test_identity_manifest: Mapping[str, Sequence[tuple[int, int]]]
     code_commit: str
     runtime_versions: Mapping[str, str]
     config: Exp417FrozenConfig = FROZEN_CONFIG
@@ -208,12 +233,7 @@ class FrozenRunContext:
             raise ValueError("datasets must be sorted and unique")
         if not isinstance(self.lanes, FrozenLaneSnapshot):
             raise ValueError("lanes must be frozen")
-        test_sizes = _immutable_mapping(self.test_sizes, "test_sizes")
-        if set(test_sizes) != set(datasets):
-            raise ValueError("test_sizes must cover the exact frozen datasets")
-        for dataset, size in test_sizes.items():
-            _nonempty_name(dataset, "test_sizes dataset")
-            _integer(size, "test_sizes value", minimum=1)
+        manifest = _freeze_test_identity_manifest(self.test_identity_manifest, datasets)
         _nonempty_name(self.code_commit, "code_commit")
         versions = _immutable_mapping(self.runtime_versions, "runtime_versions")
         if not versions or any(not isinstance(key, str) or not isinstance(value, str) for key, value in versions.items()):
@@ -226,8 +246,15 @@ class FrozenRunContext:
         if len(datasets) != self.config.expected_datasets:
             raise ValueError("population count is not frozen")
         object.__setattr__(self, "datasets", datasets)
-        object.__setattr__(self, "test_sizes", test_sizes)
+        object.__setattr__(self, "test_identity_manifest", manifest)
+        object.__setattr__(self, "_test_sizes", MappingProxyType({
+            dataset: len(entries) for dataset, entries in manifest.items()
+        }))
         object.__setattr__(self, "runtime_versions", versions)
+
+    @property
+    def test_sizes(self) -> Mapping[str, int]:
+        return self._test_sizes
 
 
 @dataclass(frozen=True)
@@ -540,13 +567,15 @@ class DatasetDecisionEvidence:
         decisions = _tuple(self.decisions, "decisions")
         if any(not isinstance(decision, TestInstanceDecision) for decision in decisions):
             raise ValueError("decisions must contain TestInstanceDecision records")
-        expected_size = self.context.test_sizes[self.dataset]
-        indices = tuple(decision.instance_index for decision in decisions)
-        if indices != tuple(range(expected_size)):
-            raise ValueError("decisions must cover every exact TEST index in sorted order")
+        expected_manifest = self.context.test_identity_manifest[self.dataset]
+        actual_manifest = tuple((decision.instance_index, decision.length) for decision in decisions)
+        if actual_manifest != expected_manifest:
+            raise ValueError("decisions must match every exact frozen TEST identity and length")
         if any(decision.dataset != self.dataset for decision in decisions):
             raise ValueError("decision dataset does not match evidence")
-        train_lengths = {group.length for group in self.frozen_train_contract.groups}
+        train_lengths = {
+            group.length for group in self.frozen_train_contract.groups if group.status == "qualified"
+        }
         if any(decision.length not in train_lengths for decision in decisions):
             raise ValueError("decision length is absent from the frozen TRAIN contract")
         object.__setattr__(self, "decisions", decisions)

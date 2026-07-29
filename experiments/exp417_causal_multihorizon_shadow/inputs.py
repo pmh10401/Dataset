@@ -58,6 +58,13 @@ JOIN datasets AS d ON d.id = i.dataset_id
 WHERE d.name = ? AND i.split = 'TEST'
 ORDER BY i.instance_index
 """
+_TEST_IDENTITY_SQL = """
+SELECT i.instance_index, length(i.values_blob)
+FROM instances AS i
+JOIN datasets AS d ON d.id = i.dataset_id
+WHERE d.name = ? AND i.split = 'TEST'
+ORDER BY i.instance_index
+"""
 
 
 class _DuplicateJsonKeyError(ValueError):
@@ -147,54 +154,50 @@ def freeze_run_context(
 ) -> FrozenRunContext:
     """Bind database identity, population, lanes, code, and runtime versions."""
     datasets = list_dataset_names(database, lanes, config=config)
-    test_sizes = list_dataset_test_sizes(database, datasets, config=config)
+    test_identity_manifest = list_dataset_test_identity_manifest(database, datasets, config=config)
     return FrozenRunContext(
         database_sha256=config.database_sha256,
         datasets=datasets,
         lanes=lanes,
-        test_sizes=test_sizes,
+        test_identity_manifest=test_identity_manifest,
         code_commit=_git_commit(),
         runtime_versions=_runtime_versions(),
         config=config,
     )
 
 
-def list_dataset_test_sizes(
+def list_dataset_test_identity_manifest(
     database: Path,
     datasets: tuple[str, ...],
     *,
     config: Exp417FrozenConfig = FROZEN_CONFIG,
-) -> Mapping[str, int]:
-    """Read the exact TEST population sizes from the hash-pinned database."""
+) -> Mapping[str, tuple[tuple[int, int], ...]]:
+    """Read exact TEST identities and raw float32 lengths from the pinned database."""
     _validate_config(config)
     if not isinstance(datasets, tuple) or not datasets:
         raise ValueError("datasets must be the frozen dataset tuple")
     path = Path(database)
     _verify_database_hash(path, config.database_sha256)
+    manifest: dict[str, tuple[tuple[int, int], ...]] = {}
     connection = _open_read_only(path)
     try:
-        rows = connection.execute(
-            """
-            SELECT d.name, COUNT(i.instance_index)
-            FROM datasets AS d
-            JOIN instances AS i ON i.dataset_id = d.id
-            WHERE i.split = 'TEST'
-            GROUP BY d.name
-            ORDER BY d.name
-            """
-        ).fetchall()
+        for dataset in datasets:
+            rows = connection.execute(_TEST_IDENTITY_SQL, (dataset,)).fetchall()
+            entries: list[tuple[int, int]] = []
+            for index, byte_length in rows:
+                if type(index) is not int or type(byte_length) is not int or byte_length <= 0 or byte_length % 4:
+                    raise ValueError("database TEST identity manifest has an invalid raw float32 length")
+                entries.append((index, byte_length // 4))
+            indices = tuple(index for index, _ in entries)
+            if not entries or indices != tuple(sorted(indices)) or len(indices) != len(set(indices)):
+                raise ValueError("database TEST identity manifest must have sorted unique identities")
+            manifest[dataset] = tuple(entries)
     except sqlite3.Error as error:
-        raise ValueError("Exp417 database TEST size query failed") from error
+        raise ValueError("Exp417 database TEST identity query failed") from error
     finally:
         connection.close()
-    sizes = {name: count for name, count in rows}
-    if (
-        tuple(sizes) != datasets
-        or any(type(name) is not str or type(count) is not int or count < 1 for name, count in sizes.items())
-    ):
-        raise ValueError("database TEST sizes do not match the frozen population")
     _verify_database_hash(path, config.database_sha256)
-    return sizes
+    return manifest
 
 
 def load_raw_train_values(
@@ -221,6 +224,8 @@ def load_raw_test_values(
     if frozen_train_contract.dataset != dataset:
         raise ValueError("frozen_train_contract dataset does not match requested TEST dataset")
     series = _load_values(database, dataset, context, _TEST_VALUES_SQL, "TEST")
+    if tuple((item.instance_index, len(item.values)) for item in series) != context.test_identity_manifest[dataset]:
+        raise ValueError("TEST values do not match the frozen identity manifest")
     return RawTestDataset(dataset=dataset, series=series)
 
 
@@ -235,6 +240,9 @@ def assert_label_free_sql_contract() -> None:
         raise ValueError("Exp417 TEST SQL must select only identity and values")
     if re.search(r"\blabel\b", query):
         raise ValueError("Exp417 TEST SQL contains a forbidden label token")
+    identity_query = " ".join(_TEST_IDENTITY_SQL.lower().split())
+    if re.search(r"\blabel\b", identity_query) or "length(i.values_blob)" not in identity_query:
+        raise ValueError("Exp417 TEST identity SQL must use only identity and values length")
 
 
 def verify_input_snapshots(
@@ -497,7 +505,7 @@ __all__ = [
     "assert_label_free_sql_contract",
     "freeze_lane_inputs",
     "freeze_run_context",
-    "list_dataset_test_sizes",
+    "list_dataset_test_identity_manifest",
     "list_dataset_names",
     "load_raw_test_values",
     "load_raw_train_values",

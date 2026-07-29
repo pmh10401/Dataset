@@ -182,7 +182,9 @@ def context_for(
         database_sha256=FROZEN_CONFIG.database_sha256,
         datasets=names,
         lanes=lanes_snapshot,
-        test_sizes={name: test_size for name in names},
+        test_identity_manifest={
+            name: tuple((index, 100) for index in range(test_size)) for name in names
+        },
         code_commit="synthetic",
         runtime_versions={"python": "synthetic"},
     )
@@ -194,7 +196,9 @@ def single_context(lanes_snapshot: FrozenLaneSnapshot, *, test_size: int) -> Fro
         database_sha256=FROZEN_CONFIG.database_sha256,
         datasets=names,
         lanes=lanes_snapshot,
-        test_sizes={name: test_size for name in names},
+        test_identity_manifest={
+            name: tuple((index, 100) for index in range(test_size)) for name in names
+        },
         code_commit="synthetic",
         runtime_versions={"python": "synthetic"},
     )
@@ -335,6 +339,41 @@ class QualificationBoundaryTests(unittest.TestCase):
 
 
 class LaneAndWorkloadTests(unittest.TestCase):
+    def test_decision_evidence_requires_exact_noncontiguous_identity_length_manifest(self) -> None:
+        """Range-only coverage or swapping two valid lengths must not be accepted as TEST evidence."""
+        snapshot = lanes(protected=(100, 101, 102, 103))
+        names = ("dataset",) + tuple(f"synthetic-{index:04d}" for index in range(1116))
+        manifest = {name: ((0, 100),) for name in names}
+        manifest["dataset"] = ((2, 64), (9, 100))
+        context = FrozenRunContext(
+            database_sha256=FROZEN_CONFIG.database_sha256,
+            datasets=names,
+            lanes=snapshot,
+            test_identity_manifest=manifest,
+            code_commit="synthetic",
+            runtime_versions={"python": "synthetic"},
+        )
+        groups = (
+            replace(qualifying_group(), length=64),
+            qualifying_group(),
+        )
+        contract = freeze_train_contract(
+            "dataset", groups, BackendAudit("cpu", True, 0.0, 1.0, 1.0, False)
+        )
+        exact = DatasetDecisionEvidence(
+            dataset="dataset",
+            context=context,
+            frozen_train_contract=contract,
+            database_sha256=context.database_sha256,
+            train_identity_sha256=contract.train_identity_sha256,
+            decisions=(instance_decision_for_length(2, 64), instance_decision(9)),
+        )
+        self.assertEqual(exact.test_size, 2)
+        with self.assertRaises(ValueError):
+            replace(exact, decisions=(instance_decision_for_length(2, 100), instance_decision_for_length(9, 64)))
+        with self.assertRaises(ValueError):
+            replace(exact, decisions=(instance_decision(0), instance_decision(1)))
+
     def test_complete_decision_evidence_derives_candidates_and_rejects_coverage_attacks(self) -> None:
         """Removing, duplicating, reordering, or replacing decisions must not understate workload."""
         snapshot = lanes(protected=(1, 100, 101, 102))
@@ -464,7 +503,9 @@ class LaneAndWorkloadTests(unittest.TestCase):
             database_sha256=FROZEN_CONFIG.database_sha256,
             datasets=names,
             lanes=snapshot,
-            test_sizes={name: 100 for name in names},
+            test_identity_manifest={
+                name: tuple((index, 100) for index in range(100)) for name in names
+            },
             code_commit="synthetic",
             runtime_versions={"python": "synthetic"},
         )
