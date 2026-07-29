@@ -50,8 +50,8 @@ def scoring_fixture() -> tuple[dict[int, tuple[np.ndarray, ...]], dict[int, dict
     queries: dict[int, dict[int, np.ndarray]] = {0: {}, 1: {}}
     for horizon in (1, 2, 10):
         base = np.arange(10, dtype=np.float64)
-        oof[horizon] = (base, base + 1.0, base + 2.0)
-        queries[0][horizon] = np.array([0.0, 9.0, 9.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+        oof[horizon] = tuple(base + (index / 100.0) for index in range(100))
+        queries[0][horizon] = np.array([0.0, 100.0, 100.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
         queries[1][horizon] = np.arange(10, dtype=np.float64)
     return oof, queries
 
@@ -66,7 +66,12 @@ class PersistenceParityTests(unittest.TestCase):
         ):
             with self.subTest(shape=mask.shape, contiguous=mask.flags.c_contiguous):
                 self.assertEqual(persistence_numpy(mask), persistence_numba(mask))
-        audit = benchmark_scoring_backend(*scoring_fixture(), repeats=1)
+        import experiments.exp417_causal_multihorizon_shadow.backend as backend
+        oof, queries = scoring_fixture()
+        coordinates, _ = backend._numpy_candidate_coordinates(oof, queries)
+        self.assertEqual(coordinates, (0,))
+        self.assertTrue(coordinates)
+        audit = benchmark_scoring_backend(oof, queries, repeats=1)
         self.assertTrue(audit.candidate_identity)
         self.assertEqual(audit.max_normalized_error, 0.0)
         self.assertEqual(audit.spearman, 1.0)
@@ -77,7 +82,7 @@ class PersistenceParityTests(unittest.TestCase):
         oof, queries = scoring_fixture()
         original = backend._numba_candidate_coordinates
         try:
-            backend._numba_candidate_coordinates = lambda *_args: ((999,), np.array([0.0]))
+            backend._numba_candidate_coordinates = lambda *_args: ((), np.array([0.0]))
             audit = benchmark_scoring_backend(oof, queries, repeats=1)
         finally:
             backend._numba_candidate_coordinates = original
@@ -159,7 +164,7 @@ class HostMPSProbeTests(unittest.TestCase):
             self.assertEqual(probe.reason, "mps_unavailable")
 
     def test_typed_synthetic_train_strata_benchmark_is_finite_or_fails_closed(self) -> None:
-        audit = benchmark_torch_devices(select_benchmark_strata((train_source("synthetic", 50, 64),)), repeats=1)
+        audit = benchmark_torch_devices(select_benchmark_strata((train_source("synthetic", 102, 64),)), repeats=1)
         self.assertEqual(select_canonical_backend((audit,)), audit.backend)
         self.assertTrue(np.isfinite((audit.max_normalized_error, audit.spearman, audit.speedup)).all())
 

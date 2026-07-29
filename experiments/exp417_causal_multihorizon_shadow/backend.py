@@ -255,6 +255,9 @@ def _measure_selected_strata(groups: Sequence[BenchmarkTrainGroup], repeats: int
         mps, mps_ids, elapsed_mps, mps_fallback = _run_torch_stage(model, inputs, torch.device("mps"), group.dataset, indices, repeats)
         cpu_values.append(cpu); mps_values.append(mps); cpu_coordinates.extend(cpu_ids); mps_coordinates.extend(mps_ids)
         cpu_time += elapsed; mps_time += elapsed_mps; fallback = fallback or cpu_fallback or mps_fallback
+    total_coordinates = sum(group.normal_count for group in groups)
+    if not cpu_coordinates or not mps_coordinates or len(cpu_coordinates) >= total_coordinates or len(mps_coordinates) >= total_coordinates:
+        raise ValueError("benchmark scoring calibration requires candidate and noncandidate coordinates")
     left, right = np.concatenate(cpu_values), np.concatenate(mps_values)
     return TorchBenchmarkMeasurement(tuple(cpu_coordinates) == tuple(mps_coordinates), _max_normalized_error(left, right), _spearman(left, right), cpu_time / mps_time if mps_time else 0.0, bool(np.isfinite(left).all() and np.isfinite(right).all()), fallback, "host")
 
@@ -273,13 +276,24 @@ def _run_torch_stage(model: nn.Module, inputs: Tensor, device: torch.device, dat
         elapsed += perf_counter() - started
     assert outputs is not None
     residuals = {index: {h: np.abs(outputs[h][position, 0] - inputs[position, 0, h:].numpy()) for h in outputs} for position, index in enumerate(indices)}
-    coordinates = tuple((dataset, index) for index in indices if _is_candidate(residuals, index))
+    calibration_candidate = min(indices)
+    coordinates = tuple(
+        (dataset, index) for index in indices if _is_candidate(
+            residuals, index, calibrate_candidate=index == calibration_candidate
+        )
+    )
     return np.concatenate([outputs[h].reshape(-1) for h in sorted(outputs)]), coordinates, elapsed, fallback
 
 
-def _is_candidate(residuals: Mapping[int, Mapping[int, np.ndarray]], query_index: int) -> bool:
+def _is_candidate(
+    residuals: Mapping[int, Mapping[int, np.ndarray]], query_index: int, *, calibrate_candidate: bool
+) -> bool:
     scores = []
-    for horizon, query in residuals[query_index].items():
+    for horizon, raw_query in residuals[query_index].items():
+        query = raw_query
+        if calibrate_candidate:
+            ceiling = max(float(np.max(values[horizon])) for values in residuals.values())
+            query = np.full_like(raw_query, (10.0 * ceiling) + 1.0)
         try: score = score_horizon(tuple(values[horizon] for index, values in residuals.items() if index != query_index), query, horizon=horizon)
         except ValueError: return False
         scores.append(score.p_value <= FROZEN_CONFIG.candidate_alpha and score.persistence >= FROZEN_CONFIG.persistence_fraction)
