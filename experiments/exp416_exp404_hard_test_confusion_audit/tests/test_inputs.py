@@ -162,6 +162,18 @@ class InputTests(unittest.TestCase):
             "d2b5bf8d97853a5cf97883965ad8a41dac0885ba87436ff710caa4ff0d6dcf20",
         )
 
+    def test_freeze_preserves_full_manifest_population_scope(self) -> None:
+        prediction, manifest, config = self.write_inputs(
+            [prediction_row("A", 0)],
+            frozen_hard_lanes={"A": [0], "B": []},
+            expected_datasets=2,
+            expected_prediction_datasets=1,
+        )
+        with fixture_config_validation():
+            frozen = freeze_prediction_inputs(prediction, manifest, config=config)
+        self.assertEqual(frozen.dataset_scope, ("A", "B"))
+        self.assertEqual(frozen.prediction_dataset_count, 1)
+
     def test_freeze_rejects_duplicate_and_manifest_mismatch(self) -> None:
         rows = [prediction_row("A", 3), prediction_row("A", 3)]
         prediction, manifest, config = self.write_inputs(
@@ -372,6 +384,28 @@ class InputTests(unittest.TestCase):
                 with fixture_config_validation():
                     with self.assertRaises(ValueError):
                         load_frozen_test_labels(labels, frozen, config=config)
+
+    def test_labels_reject_same_sized_scope_with_substituted_manifest_dataset(self) -> None:
+        prediction, manifest, config = self.write_inputs(
+            [prediction_row("A", 0)],
+            frozen_hard_lanes={"A": [0], "B": []},
+            expected_datasets=2,
+            expected_prediction_datasets=1,
+        )
+        labels = self.root / "labels.csv"
+        labels.write_text(
+            "dataset,candidate_index,is_true_anomaly\nA,0,1\nC,0,0\n",
+            encoding="utf-8",
+        )
+        config = replace(
+            config,
+            expected_label_rows=2,
+            labels_sha256=digest(labels),
+        )
+        with fixture_config_validation():
+            frozen = freeze_prediction_inputs(prediction, manifest, config=config)
+            with self.assertRaisesRegex(ValueError, "scope"):
+                load_frozen_test_labels(labels, frozen, config=config)
 
     def test_labels_rehash_after_streaming_and_return_sorted_rows(self) -> None:
         payload = "dataset,candidate_index,is_true_anomaly\nB,0,0\nA,0,1\n"

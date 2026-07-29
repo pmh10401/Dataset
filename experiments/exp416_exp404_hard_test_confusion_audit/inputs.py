@@ -168,7 +168,7 @@ def freeze_prediction_inputs(
         raise ValueError("Exp416 manifest changed after parsing")
     return FrozenPrediction(
         coordinates=sorted_coordinates,
-        dataset_scope=prediction_scope,
+        dataset_scope=scope,
         prediction_dataset_count=len(prediction_scope),
         identity_sha256=_coordinate_identity(sorted_coordinates),
         prediction_sha256=prediction_sha256,
@@ -228,8 +228,8 @@ def load_frozen_test_labels(
         raise ValueError("Exp416 TEST label row count mismatch")
     if len(scope) != config.expected_datasets:
         raise ValueError("Exp416 TEST label dataset count mismatch")
-    if not set(frozen_prediction.dataset_scope) <= set(scope):
-        raise ValueError("Exp416 TEST label scope does not cover prediction scope")
+    if scope != frozen_prediction.dataset_scope:
+        raise ValueError("Exp416 TEST label scope does not equal frozen prediction scope")
     if not set(frozen_prediction.coordinates) <= coordinates:
         raise ValueError("Exp416 TEST labels do not cover prediction coordinates")
     return FrozenLabels(rows=sorted_rows, dataset_scope=scope, labels_sha256=labels_sha256)

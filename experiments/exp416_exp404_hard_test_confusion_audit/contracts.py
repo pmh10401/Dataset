@@ -67,10 +67,11 @@ class FrozenPrediction:
         coordinates = _validate_coordinates(self.coordinates, "coordinates")
         scope = _validate_scope(self.dataset_scope, "dataset_scope")
         _require_nonnegative_int(self.prediction_dataset_count, "prediction_dataset_count")
-        if self.prediction_dataset_count != len(scope):
-            raise ValueError("prediction_dataset_count must equal dataset_scope size")
-        if {dataset for dataset, _ in coordinates} != set(scope):
-            raise ValueError("coordinates must cover exactly dataset_scope")
+        coordinate_scope = {dataset for dataset, _ in coordinates}
+        if self.prediction_dataset_count != len(coordinate_scope):
+            raise ValueError("prediction_dataset_count must equal coordinate dataset size")
+        if not coordinate_scope <= set(scope):
+            raise ValueError("coordinates must be within dataset_scope")
         _require_nonempty_string(self.identity_sha256, "identity_sha256")
         _require_nonempty_string(self.prediction_sha256, "prediction_sha256")
         _require_nonempty_string(self.manifest_sha256, "manifest_sha256")
