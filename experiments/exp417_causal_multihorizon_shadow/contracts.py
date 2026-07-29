@@ -19,6 +19,7 @@ _PRIMARY_PERTURBATIONS = frozenset(
 )
 _GROUP_STATUSES = frozenset({"qualified", "diagnostic", "abstained", "failed"})
 _DATASET_STATUSES = frozenset({"qualified", "abstained", "failed"})
+_TERMINAL_STAGES = frozenset({"insufficient_train", "preprocessing", "oof", "qualification", "backend", "unexpected"})
 _PROCESSED_GROUP_STATUSES = frozenset(
     {
         "candidate_eligible",
@@ -598,6 +599,29 @@ class DatasetDecisionEvidence:
             and not self.context.lanes.contains(decision.dataset, decision.instance_index)
         )
 
+@dataclass(frozen=True)
+class DatasetTerminalEvidence:
+    """Closed-stage nonprediction evidence for a context-bound failed outcome."""
+
+    dataset: str
+    context: FrozenRunContext
+    stage: str
+    reason: str
+    frozen_train_contract: FrozenTrainContract | None = None
+
+    def __post_init__(self) -> None:
+        _nonempty_name(self.dataset, "dataset")
+        if not isinstance(self.context, FrozenRunContext) or self.dataset not in self.context.test_sizes:
+            raise ValueError("terminal evidence must bind a frozen context dataset")
+        if self.stage not in _TERMINAL_STAGES:
+            raise ValueError("terminal evidence stage is invalid")
+        _nonempty_name(self.reason, "terminal evidence reason")
+        if self.frozen_train_contract is not None and (
+            not isinstance(self.frozen_train_contract, FrozenTrainContract)
+            or self.frozen_train_contract.dataset != self.dataset
+        ):
+            raise ValueError("terminal evidence contract does not match dataset")
+
 
 @dataclass(frozen=True)
 class DatasetResult:
@@ -606,7 +630,7 @@ class DatasetResult:
     group_count: int
     groups: tuple[GroupQualification, ...]
     candidates: tuple[ShadowCandidate, ...]
-    decision_evidence: DatasetDecisionEvidence
+    decision_evidence: DatasetDecisionEvidence | DatasetTerminalEvidence
     lanes: FrozenLaneSnapshot
     context: FrozenRunContext
     status: str
@@ -622,11 +646,11 @@ class DatasetResult:
         if lengths != tuple(sorted(lengths)) or len(lengths) != len(set(lengths)):
             raise ValueError("group accounting requires sorted unique lengths")
         candidates = _validated_dataset_candidates(self.candidates, self.dataset, test_size, "candidates")
-        if not isinstance(self.decision_evidence, DatasetDecisionEvidence):
-            raise ValueError("decision_evidence must be DatasetDecisionEvidence")
+        if not isinstance(self.decision_evidence, (DatasetDecisionEvidence, DatasetTerminalEvidence)):
+            raise ValueError("decision_evidence must be dataset decision or terminal evidence")
         if self.decision_evidence.dataset != self.dataset:
             raise ValueError("decision evidence dataset does not match result")
-        observed = self.decision_evidence.derived_candidates
+        observed = self.decision_evidence.derived_candidates if isinstance(self.decision_evidence, DatasetDecisionEvidence) else ()
         if not isinstance(self.lanes, FrozenLaneSnapshot):
             raise ValueError("lanes must be frozen")
         if not isinstance(self.context, FrozenRunContext):
@@ -637,9 +661,10 @@ class DatasetResult:
             raise ValueError("lanes must match the frozen context")
         if self.dataset not in self.context.test_sizes or test_size != self.context.test_sizes[self.dataset]:
             raise ValueError("test_size must match the frozen context")
-        if test_size != self.decision_evidence.test_size:
+        if isinstance(self.decision_evidence, DatasetDecisionEvidence) and test_size != self.decision_evidence.test_size:
             raise ValueError("test_size must match complete decision evidence")
-        if groups != self.decision_evidence.frozen_train_contract.groups:
+        contract = self.decision_evidence.frozen_train_contract
+        if contract is not None and groups != contract.groups:
             raise ValueError("groups must match the frozen TRAIN contract")
         if any(
             self.lanes.contains(candidate.dataset, candidate.instance_index)
@@ -648,6 +673,12 @@ class DatasetResult:
             raise ValueError("candidate overlaps a frozen lane")
         if self.status not in _DATASET_STATUSES:
             raise ValueError("invalid dataset status")
+        if isinstance(self.decision_evidence, DatasetTerminalEvidence):
+            if self.status not in {"abstained", "failed"} or candidates:
+                raise ValueError("terminal evidence requires a nonpublishable empty outcome")
+            object.__setattr__(self, "groups", groups)
+            object.__setattr__(self, "candidates", candidates)
+            return
         rate = len(observed) / test_size
         if rate > FROZEN_CONFIG.dataset_workload_rate:
             if self.status != "abstained" or candidates:
@@ -662,11 +693,11 @@ class DatasetResult:
 
     @property
     def observed_candidate_count(self) -> int:
-        return len(self.decision_evidence.derived_candidates)
+        return len(self.observed_candidates)
 
     @property
     def observed_candidates(self) -> tuple[ShadowCandidate, ...]:
-        return self.decision_evidence.derived_candidates
+        return self.decision_evidence.derived_candidates if isinstance(self.decision_evidence, DatasetDecisionEvidence) else ()
 
     @property
     def candidate_rate(self) -> float:
@@ -721,7 +752,11 @@ class RunSummary:
         if global_rate > FROZEN_CONFIG.global_workload_rate:
             if self.publication_allowed or self.status != "global_workload_gate_failed" or any(result.candidates for result in results):
                 raise ValueError("global workload gate forbids publication")
-        elif any(result.status == "failed" for result in results):
+        elif any(
+            result.status == "failed"
+            or isinstance(result.decision_evidence, DatasetTerminalEvidence)
+            for result in results
+        ):
             if self.publication_allowed or self.status != "failed":
                 raise ValueError("failed dataset summary cannot allow publication")
         elif not self.publication_allowed or self.status != "complete":

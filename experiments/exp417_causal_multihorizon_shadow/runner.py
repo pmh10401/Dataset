@@ -1,18 +1,18 @@
 """Sequential, label-free orchestration for the frozen Exp417 workflow.
 
-This module deliberately has no production database configuration.  The only
-data-bearing stages are private injectable boundaries, so a caller must supply
-an audited values-only implementation before it can run against a database.
-That keeps this orchestration layer incapable of discovering TEST labels or
-silently substituting an unverified artifact path.
+The production runtime is explicit and immutable.  Synthetic tests inject a
+``RunnerRuntime``; production uses only the frozen paths and public Task 2--8
+functions defined by this experiment.  TEST values are consequently not
+reachable until a concrete TRAIN contract has been frozen.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field
 from hashlib import sha256
 from math import isfinite
+from pathlib import Path
 import re
 from time import perf_counter
 from types import MappingProxyType
@@ -26,6 +26,7 @@ from .contracts import (
     BackendAudit,
     DatasetDecisionEvidence,
     DatasetResult,
+    DatasetTerminalEvidence,
     FrozenRunContext,
     FrozenTrainContract,
     GroupQualification,
@@ -35,14 +36,25 @@ from .contracts import (
     RunSummary,
     TestInstanceDecision,
 )
-from .model import OOFModelBundle, TrainedSeedModel
-from .inputs import assert_label_free_sql_contract
+from .model import OOFModelBundle, TrainedSeedModel, fit_final_seed_models, predict_residuals, train_oof_models
+from .inputs import (
+    assert_label_free_sql_contract, load_raw_test_values, load_raw_train_values,
+    verify_input_snapshots,
+)
+from .preprocessing import preprocess_length_groups
+from experiments.exp403_408.paths import (
+    DB_PATH, EXP291_MANIFEST_PATH, EXP291_PREDICTION_PATH,
+    EXP292_MANIFEST_PATH, EXP292_PREDICTION_PATH,
+)
 from .qualification import (
     apply_dataset_workload,
     apply_global_workload,
+    build_fixed_perturbations,
     exclude_frozen_lanes,
     freeze_train_contract,
+    qualify_group,
 )
+from .scoring import consensus_candidate, score_horizon, seed_decision
 
 
 @dataclass(frozen=True)
@@ -61,6 +73,64 @@ class TrainQualification:
         if not isinstance(self.backend, BackendAudit):
             raise ValueError("TRAIN qualification requires a backend audit")
         object.__setattr__(self, "groups", groups)
+
+
+@dataclass(frozen=True)
+class RunnerResources:
+    """Pinned production inputs; paths are never inferred from a TEST query."""
+
+    database: Path
+    exp291_prediction: Path
+    exp291_manifest: Path
+    exp292_prediction: Path
+    exp292_manifest: Path
+
+    @classmethod
+    def frozen_defaults(cls) -> "RunnerResources":
+        return cls(DB_PATH, EXP291_PREDICTION_PATH, EXP291_MANIFEST_PATH,
+                   EXP292_PREDICTION_PATH, EXP292_MANIFEST_PATH)
+
+
+@dataclass(frozen=True)
+class RunnerRuntime:
+    """Typed value-only stage plan used by production and synthetic tests.
+
+    Every stage is an explicit keyword-only dependency.  This eliminates the
+    former module-global monkeypatch path and makes the test-load barrier part
+    of the callable signature itself.
+    """
+
+    verify: Callable[[FrozenRunContext], None]
+    load_train: Callable[[str, FrozenRunContext], RawTrainDataset]
+    preprocess: Callable[[RawTrainDataset], Sequence[ProcessedGroup]]
+    train_models: Callable[[Sequence[ProcessedGroup]], "TrainModelEvidence"]
+    qualify: Callable[[str, Sequence[ProcessedGroup], "TrainModelEvidence"], TrainQualification]
+    freeze: Callable[[str, TrainQualification, "TrainModelEvidence"], FrozenTrainContract]
+    load_test: Callable[[str, FrozenTrainContract, FrozenRunContext], Any]
+    score: Callable[[Any, FrozenTrainContract, "TrainModelEvidence"], "TestScoringEvidence"]
+    exclude: Callable[[DatasetDecisionEvidence], Sequence[Any]] = exclude_frozen_lanes
+    workload: Callable[[DatasetDecisionEvidence], DatasetResult] = apply_dataset_workload
+
+    @classmethod
+    def production(cls, resources: RunnerResources | None = None) -> "RunnerRuntime":
+        pinned = RunnerResources.frozen_defaults() if resources is None else resources
+        if not isinstance(pinned, RunnerResources):
+            raise ValueError("resources must be RunnerResources")
+        return cls(
+            verify=lambda context: _production_verify(context, pinned),
+            load_train=lambda dataset, context: load_raw_train_values(pinned.database, dataset, context),
+            preprocess=preprocess_length_groups,
+            train_models=_production_train_models,
+            qualify=_production_qualify_train,
+            freeze=lambda dataset, qualification, models: freeze_train_contract(
+                dataset, qualification.groups, qualification.backend,
+                train_identity_sha256=models.train_identity_sha256,
+            ),
+            load_test=lambda dataset, contract, context: load_raw_test_values(
+                pinned.database, dataset, contract, context
+            ),
+            score=_production_score_test,
+        )
 
 
 @dataclass(frozen=True)
@@ -118,19 +188,40 @@ class CheckpointEvidence:
 class TrainModelEvidence:
     """Per-length OOF and final-model evidence actually available to scoring."""
 
+    processed: tuple[ProcessedGroup, ...]
     oof_bundles: Mapping[int, OOFModelBundle]
     final_models: Mapping[int, Sequence[TrainedSeedModel]]
     backend: BackendAudit
-    train_identity_sha256: str
+    train_identity_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
+        processed = _processed_model_groups(self.processed)
+        expected_indices = {
+            group.group.length: tuple(series.instance_index for series in group.group.series)
+            for group in processed
+        }
         bundles = _oof_bundles(self.oof_bundles)
+        if tuple(bundles) != tuple(expected_indices):
+            raise ValueError("OOF evidence must cover exact processed TRAIN lengths")
         models = _final_models(self.final_models, tuple(bundles))
+        for length, bundle in bundles.items():
+            if bundle.universe_indices != expected_indices[length]:
+                raise ValueError("OOF evidence identities do not match processed TRAIN")
+        for length, by_seed in models.items():
+            if any(
+                model.fit_indices != expected_indices[length]
+                or model.refit_indices != expected_indices[length]
+                or model.validation_indices
+                for model in by_seed
+            ):
+                raise ValueError("final refit identities do not match processed TRAIN")
         if not isinstance(self.backend, BackendAudit):
             raise ValueError("model evidence requires a backend audit")
-        _sha256(self.train_identity_sha256, "model evidence TRAIN contract identity")
+        identity = _model_evidence_digest(processed, bundles, models, self.backend)
+        object.__setattr__(self, "processed", processed)
         object.__setattr__(self, "oof_bundles", MappingProxyType(bundles))
         object.__setattr__(self, "final_models", MappingProxyType(models))
+        object.__setattr__(self, "train_identity_sha256", identity)
 
 
 @dataclass(frozen=True)
@@ -149,32 +240,51 @@ class TestScoringEvidence:
         object.__setattr__(self, "final_model_hashes", MappingProxyType(hashes))
 
 
-def run_dataset(dataset: str, context: FrozenRunContext) -> DatasetResult:
+def run_dataset(
+    dataset: str, context: FrozenRunContext, *, runtime: RunnerRuntime | None = None
+) -> DatasetResult:
     """Run one frozen dataset through the sequential label-free state machine."""
-    return _run_dataset(dataset, context, None)
+    return _run_dataset(dataset, context, None, runtime or RunnerRuntime.production())
 
 
 def _run_dataset(
     dataset: str,
     context: FrozenRunContext,
     checkpoints: Exp417CheckpointStore | None,
+    runtime: RunnerRuntime,
 ) -> DatasetResult:
     _validate_dataset(dataset, context)
+    if not isinstance(runtime, RunnerRuntime):
+        raise ValueError("runtime must be RunnerRuntime")
     started = perf_counter()
-    verify_inputs(context)
-    train = load_train_values(dataset, context)
-    processed = preprocess(train)
-    oof = train_oof(processed)
-    qualification = qualify_train(dataset, processed, oof)
+    try:
+        runtime.verify(context)
+        train = runtime.load_train(dataset, context)
+    except Exception as error:
+        return _terminal(dataset, context, "insufficient_train", error, checkpoints, started)
+    if not isinstance(train, RawTrainDataset) or train.dataset != dataset:
+        return _terminal(dataset, context, "insufficient_train", ValueError("invalid TRAIN values"), checkpoints, started)
+    try:
+        processed = tuple(runtime.preprocess(train))
+        oof = runtime.train_models(processed)
+        qualification = runtime.qualify(dataset, processed, oof)
+    except Exception as error:
+        return _terminal(dataset, context, "oof", error, checkpoints, started)
     if not isinstance(qualification, TrainQualification):
-        raise ValueError("TRAIN qualification boundary returned an invalid record")
-    contract = freeze_contract(dataset, qualification)
+        return _terminal(dataset, context, "qualification", ValueError("invalid TRAIN qualification"), checkpoints, started)
+    try:
+        contract = runtime.freeze(dataset, qualification, oof)
+    except Exception as error:
+        return _terminal(dataset, context, "qualification", error, checkpoints, started)
     if not isinstance(contract, FrozenTrainContract) or contract.dataset != dataset:
-        raise ValueError("frozen TRAIN contract boundary returned an invalid contract")
-    test = load_test_values(dataset, contract, context)
-    scoring = score_test(test, contract, oof)
+        return _terminal(dataset, context, "qualification", ValueError("invalid frozen TRAIN contract"), checkpoints, started)
+    try:
+        test = runtime.load_test(dataset, contract, context)
+        scoring = runtime.score(test, contract, oof)
+    except Exception as error:
+        return _terminal(dataset, context, "backend", error, checkpoints, started, contract)
     if not isinstance(scoring, TestScoringEvidence):
-        raise ValueError("TEST scoring boundary returned invalid evidence")
+        return _terminal(dataset, context, "backend", ValueError("invalid TEST scoring evidence"), checkpoints, started, contract)
     decisions = scoring.decisions
     evidence = DatasetDecisionEvidence(
         dataset=dataset,
@@ -184,10 +294,10 @@ def _run_dataset(
         train_identity_sha256=contract.train_identity_sha256,
         decisions=decisions,
     )
-    excluded = tuple(exclude_lanes(evidence))
+    excluded = tuple(runtime.exclude(evidence))
     if excluded != evidence.derived_candidates:
         raise ValueError("frozen-lane exclusion must retain every and only eligible coordinate")
-    result = dataset_workload(evidence)
+    result = runtime.workload(evidence)
     _validate_result(result, dataset, context, evidence)
     material = (
         None if checkpoints is None
@@ -200,7 +310,7 @@ def _run_dataset(
 
 
 def resume_or_run_population(
-    context: FrozenRunContext, checkpoints: Exp417CheckpointStore
+    context: FrozenRunContext, checkpoints: Exp417CheckpointStore, *, runtime: RunnerRuntime | None = None
 ) -> RunSummary:
     """Resume exactly the incomplete frozen datasets in sorted, sequential order."""
     if not isinstance(context, FrozenRunContext):
@@ -215,6 +325,9 @@ def resume_or_run_population(
         raise ValueError("checkpoints must provide the Exp417 checkpoint protocol")
     if checkpoints.expected_datasets != context.datasets:
         raise ValueError("checkpoint dataset universe does not match the frozen context")
+    active_runtime = runtime or RunnerRuntime.production()
+    if not isinstance(active_runtime, RunnerRuntime):
+        raise ValueError("runtime must be RunnerRuntime")
     completed = checkpoints.load_completed()
     if set(completed) - set(context.datasets):
         raise ValueError("checkpoint contains a dataset outside the frozen context")
@@ -223,12 +336,18 @@ def resume_or_run_population(
     for dataset in context.datasets:
         result = completed.get(dataset)
         if result is None:
-            result = _run_dataset(dataset, context, checkpoints)
+            result = _run_dataset(dataset, context, checkpoints, active_runtime)
         _validate_result(result, dataset, context)
         results.append(result)
 
     frozen_results = tuple(results)
     total_test = sum(context.test_sizes.values())
+    if any(
+        isinstance(result, DatasetResult)
+        and isinstance(result.decision_evidence, DatasetTerminalEvidence)
+        for result in frozen_results
+    ):
+        return RunSummary(frozen_results, total_test, False, "failed", context)
     global_summary = apply_global_workload(frozen_results, total_test, context=context)
     if global_summary.status == "global_workload_gate_failed":
         return global_summary
@@ -269,57 +388,111 @@ def build_prediction_rows(summary: RunSummary) -> tuple[Mapping[str, object], ..
     return tuple(rows)
 
 
-# The following are intentionally narrow value-only seams.  They are patched
-# by synthetic tests or replaced by an audited integration entrypoint; this
-# module never supplies a database path or an artifact path on its own.
-def verify_inputs(context: FrozenRunContext) -> None:
+def _production_verify(context: FrozenRunContext, resources: RunnerResources) -> None:
     if not isinstance(context, FrozenRunContext):
         raise ValueError("context must be a FrozenRunContext")
     assert_label_free_sql_contract()
+    verify_input_snapshots(resources.database, resources.exp291_prediction,
+                           resources.exp291_manifest, resources.exp292_prediction,
+                           resources.exp292_manifest)
 
 
-def load_train_values(dataset: str, context: FrozenRunContext) -> Any:
-    raise RuntimeError("Exp417 TRAIN values boundary is not configured")
+def _production_train_models(processed: Sequence[ProcessedGroup]) -> TrainModelEvidence:
+    groups = _processed_model_groups(processed)
+    import torch
+    device = torch.device("cpu")
+    bundles = {group.group.length: train_oof_models(group, device=device) for group in groups}
+    finals = {group.group.length: fit_final_seed_models(group, device=device) for group in groups}
+    return TrainModelEvidence(
+        groups, bundles, finals,
+        BackendAudit("cpu", True, 0.0, 1.0, 1.0, False),
+    )
 
 
-def preprocess(train: Any) -> Sequence[Any]:
-    raise RuntimeError("Exp417 preprocessing boundary is not configured")
+def _residual_decisions(
+    bundle: OOFModelBundle, residuals: Mapping[int, np.ndarray]
+) -> tuple[Any, ...]:
+    decisions = []
+    for seed in FROZEN_CONFIG.model_seeds:
+        scores = {
+            horizon: score_horizon(
+                [bundle.oof_residuals[seed][index][horizon] for index in bundle.universe_indices],
+                residuals[horizon], horizon=horizon,
+            )
+            for horizon in bundle.horizons
+        }
+        decisions.append(seed_decision(scores, seed=seed))
+    return tuple(decisions)
 
 
-def train_oof(processed: Sequence[Any]) -> TrainModelEvidence:
-    raise RuntimeError("Exp417 OOF boundary is not configured")
-
-
-def qualify_train(
-    dataset: str, processed: Sequence[Any], oof: TrainModelEvidence
+def _production_qualify_train(
+    dataset: str, processed: Sequence[ProcessedGroup], models: TrainModelEvidence
 ) -> TrainQualification:
-    raise RuntimeError("Exp417 TRAIN qualification boundary is not configured")
+    if not isinstance(dataset, str) or not dataset:
+        raise ValueError("processed TRAIN groups are invalid")
+    groups = _processed_model_groups(processed)
+    qualifications: list[GroupQualification] = []
+    for group in groups:
+        length = group.group.length
+        bundle = models.oof_bundles[length]
+        normal = tuple(
+            _residual_decisions(bundle, bundle.oof_residuals[FROZEN_CONFIG.model_seeds[0]][index])
+            for index in bundle.universe_indices
+        )
+        synthetic: dict[str, list[tuple[Any, ...]]] = {
+            name: [] for name in ("level_shift", "gradual_drift", "amplitude_scaling", "period_change", "secondary_spike")
+        }
+        for series in group.group.series:
+            base = np.asarray(series.values, dtype=np.float64)
+            for name, perturbation in build_fixed_perturbations(base, group.raw_scale, seed=FROZEN_CONFIG.perturbation_seeds[0]).items():
+                channels = _channels_from_values(perturbation, group)
+                # Qualification is deliberately based on a frozen final fit; all
+                # scoring calibration remains normal OOF TRAIN residual evidence.
+                by_seed = {
+                    seed: _prediction_residuals(models.final_models[length], seed, channels)
+                    for seed in FROZEN_CONFIG.model_seeds
+                }
+                decisions = tuple(
+                    seed_decision({horizon: score_horizon(
+                        [bundle.oof_residuals[seed][index][horizon] for index in bundle.universe_indices],
+                        by_seed[seed][horizon], horizon=horizon,
+                    ) for horizon in bundle.horizons}, seed=seed)
+                    for seed in FROZEN_CONFIG.model_seeds
+                )
+                synthetic[name].append(decisions)
+        qualifications.append(qualify_group(
+            length=length, normal_oof_decisions=normal, synthetic_decisions=synthetic,
+            finite=True, backend_fallback=models.backend.fallback,
+        ))
+    return TrainQualification(tuple(qualifications), models.backend)
 
 
-def freeze_contract(dataset: str, qualification: TrainQualification) -> FrozenTrainContract:
-    if not isinstance(qualification, TrainQualification):
-        raise ValueError("qualification must be a TrainQualification")
-    return freeze_train_contract(dataset, qualification.groups, qualification.backend)
-
-
-def load_test_values(
-    dataset: str, contract: FrozenTrainContract, context: FrozenRunContext
-) -> Any:
-    raise RuntimeError("Exp417 TEST values boundary is not configured")
-
-
-def score_test(
-    test: Any, contract: FrozenTrainContract, oof: TrainModelEvidence
+def _production_score_test(
+    test: Any, contract: FrozenTrainContract, models: TrainModelEvidence
 ) -> TestScoringEvidence:
-    raise RuntimeError("Exp417 TEST scoring boundary is not configured")
-
-
-def exclude_lanes(evidence: DatasetDecisionEvidence):
-    return exclude_frozen_lanes(evidence)
-
-
-def dataset_workload(evidence: DatasetDecisionEvidence) -> DatasetResult:
-    return apply_dataset_workload(evidence)
+    from .contracts import RawTestDataset
+    if not isinstance(test, RawTestDataset) or test.dataset != contract.dataset:
+        raise ValueError("TEST values do not match frozen TRAIN contract")
+    by_length = {group.group.length: group for group in models.processed}
+    decisions: list[TestInstanceDecision] = []
+    for series in test.series:
+        group = by_length.get(len(series.values))
+        if group is None:
+            raise ValueError("TEST length is absent from processed TRAIN")
+        length = group.group.length
+        bundle = models.oof_bundles[length]
+        channels = _channels_from_values(np.asarray(series.values, dtype=np.float64), group)
+        seeds = tuple(
+            seed_decision({horizon: score_horizon(
+                [bundle.oof_residuals[seed][index][horizon] for index in bundle.universe_indices],
+                _prediction_residuals(models.final_models[length], seed, channels)[horizon], horizon=horizon,
+            ) for horizon in bundle.horizons}, seed=seed)
+            for seed in FROZEN_CONFIG.model_seeds
+        )
+        decisions.append(TestInstanceDecision(test.dataset, series.instance_index, length, seeds))
+    hashes = {length: {model.seed: model.model_sha256 for model in fitted}
+              for length, fitted in models.final_models.items()}
+    return TestScoringEvidence(tuple(decisions), hashes)
 
 
 def build_checkpoint_evidence(
@@ -384,9 +557,21 @@ def checkpoint(
     result: DatasetResult,
     checkpoints: Exp417CheckpointStore | None,
     material: CheckpointEvidence | None = None,
+    *,
+    elapsed_seconds: float | None = None,
 ) -> None:
     """Publish a result only through Task 8's transactional store API."""
     if checkpoints is None:
+        return
+    terminal = isinstance(result.decision_evidence, DatasetTerminalEvidence)
+    if terminal and material is None:
+        if elapsed_seconds is None:
+            raise ValueError("terminal checkpoint requires elapsed time")
+        checkpoints.write_dataset(
+            result, raw_train_identity_sha256=None, repaired_train_identity_sha256=None,
+            length_group_identity_sha256={}, canonical_model_hashes={},
+            score_calibration_hashes={}, backend_audit=None, elapsed_seconds=elapsed_seconds,
+        )
         return
     if not isinstance(material, CheckpointEvidence):
         raise ValueError("checkpoint material must be complete typed evidence")
@@ -521,6 +706,79 @@ def _processed_groups(
         if repaired_indices != raw_indices:
             raise ValueError("checkpoint repaired groups do not preserve raw TRAIN identities")
     return groups
+
+
+def _processed_model_groups(values: object) -> tuple[ProcessedGroup, ...]:
+    if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
+        raise ValueError("model evidence processed groups must be a sequence")
+    groups = tuple(values)
+    if not groups or any(not isinstance(group, ProcessedGroup) for group in groups):
+        raise ValueError("model evidence processed groups are invalid")
+    if any(group.status != "candidate_eligible" for group in groups):
+        raise ValueError("model fitting requires candidate-eligible processed groups")
+    lengths = tuple(group.group.length for group in groups)
+    if lengths != tuple(sorted(lengths)) or len(set(lengths)) != len(lengths):
+        raise ValueError("model evidence processed groups must have sorted unique lengths")
+    return groups
+
+
+def _model_evidence_digest(
+    groups: Sequence[ProcessedGroup], bundles: Mapping[int, OOFModelBundle],
+    finals: Mapping[int, Sequence[TrainedSeedModel]], backend: BackendAudit,
+) -> str:
+    digest = sha256()
+    _digest_text(digest, "exp417.train-evidence.v1")
+    _digest_text(digest, backend.backend)
+    for group in groups:
+        length = group.group.length
+        digest.update(length.to_bytes(8, "little", signed=False))
+        for series in group.group.series:
+            digest.update(series.instance_index.to_bytes(8, "little", signed=False))
+            digest.update(np.asarray(series.values, dtype="<f4").tobytes(order="C"))
+        bundle = bundles[length]
+        for seed in FROZEN_CONFIG.model_seeds:
+            for model in (model for model in bundle.models if model.seed == seed):
+                _digest_text(digest, model.model_sha256)
+            final = next((model for model in finals[length] if model.seed == seed), None)
+            if final is None:
+                raise ValueError("final model evidence lacks frozen seed")
+            _digest_text(digest, final.model_sha256)
+    return digest.hexdigest()
+
+
+def _channels_from_values(values: np.ndarray, group: ProcessedGroup) -> np.ndarray:
+    raw = np.asarray(values, dtype=np.float64)
+    if raw.ndim != 1 or raw.size != group.group.length or not np.isfinite(raw).all():
+        raise ValueError("values do not match a finite processed length group")
+    differences = np.diff(raw, prepend=raw[:1])
+    channels = np.stack(((raw - group.raw_center) / group.raw_scale,
+                         (differences - group.difference_center) / group.difference_scale)).astype(np.float32)
+    if not np.isfinite(channels).all():
+        raise ValueError("processed TEST channels are non-finite")
+    channels.setflags(write=False)
+    return channels
+
+
+def _prediction_residuals(
+    models: Sequence[TrainedSeedModel], seed: int, channels: np.ndarray
+) -> Mapping[int, np.ndarray]:
+    model = next((item for item in models if item.seed == seed), None)
+    if model is None:
+        raise ValueError("final model evidence lacks frozen seed")
+    return predict_residuals(model, channels)
+
+
+def _terminal(
+    dataset: str, context: FrozenRunContext, stage: str, error: Exception,
+    checkpoints: Exp417CheckpointStore | None, started: float,
+    contract: FrozenTrainContract | None = None,
+) -> DatasetResult:
+    evidence = DatasetTerminalEvidence(dataset, context, stage, str(error) or type(error).__name__, contract)
+    result = DatasetResult(dataset, context.test_sizes[dataset], 0 if contract is None else len(contract.groups),
+                           () if contract is None else contract.groups, (), evidence,
+                           context.lanes, context, "failed")
+    checkpoint(result, checkpoints, None, elapsed_seconds=perf_counter() - started)
+    return result
 
 
 def _series_digest(schema: str, dataset: str, series: Sequence[RawSeries]) -> str:

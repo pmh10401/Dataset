@@ -23,13 +23,13 @@ from experiments.exp403_408.artifact_io import canonical_json_bytes
 
 from .config import FROZEN_CONFIG
 from .contracts import (
-    BackendAudit, DatasetDecisionEvidence, DatasetResult, FrozenLaneSnapshot,
+    BackendAudit, DatasetDecisionEvidence, DatasetResult, DatasetTerminalEvidence, FrozenLaneSnapshot,
     FrozenRunContext, FrozenTrainContract, GroupQualification, HorizonScore,
     SeedDecision, ShadowCandidate, TestInstanceDecision,
 )
 
 
-_SCHEMA_VERSION = 1
+_SCHEMA_VERSION = 2
 _ROOT_FILE = "checkpoint_provenance.json"
 _PROGRESS_FILE = "progress.json"
 
@@ -98,12 +98,12 @@ class Exp417CheckpointStore:
         self,
         result: DatasetResult,
         *,
-        raw_train_identity_sha256: str,
+        raw_train_identity_sha256: str | None,
         repaired_train_identity_sha256: str | None,
         length_group_identity_sha256: Mapping[int, str],
         canonical_model_hashes: Mapping[int, Mapping[int, str]],
         score_calibration_hashes: Mapping[int, str],
-        backend_audit: BackendAudit,
+        backend_audit: BackendAudit | None,
         elapsed_seconds: float,
     ) -> None:
         self._validate_root()
@@ -112,16 +112,28 @@ class Exp417CheckpointStore:
         _validate_result_provenance(result, self.provenance)
         if result.dataset not in self.expected_datasets:
             raise ValueError("Exp417 checkpoint dataset is outside the universe")
-        _digest(raw_train_identity_sha256, "raw TRAIN identity")
+        terminal = isinstance(result.decision_evidence, DatasetTerminalEvidence)
+        if terminal:
+            if any((raw_train_identity_sha256 is not None, repaired_train_identity_sha256 is not None,
+                    length_group_identity_sha256, canonical_model_hashes,
+                    score_calibration_hashes, backend_audit is not None)):
+                raise ValueError("terminal checkpoints must not invent training or scoring evidence")
+        elif raw_train_identity_sha256 is None:
+            raise ValueError("decision checkpoints require raw TRAIN identity")
+        if raw_train_identity_sha256 is not None:
+            _digest(raw_train_identity_sha256, "raw TRAIN identity")
         if repaired_train_identity_sha256 is not None:
             _digest(repaired_train_identity_sha256, "repaired TRAIN identity")
         identities = _length_digest_mapping(length_group_identity_sha256, "length-group identities")
         model_hashes = _model_hash_mapping(canonical_model_hashes)
         calibrations = _length_digest_mapping(score_calibration_hashes, "score calibration hashes")
         lengths = tuple(group.length for group in result.groups)
-        if tuple(identities) != lengths or tuple(model_hashes) != lengths or tuple(calibrations) != lengths:
+        if not terminal and (tuple(identities) != lengths or tuple(model_hashes) != lengths or tuple(calibrations) != lengths):
             raise ValueError("Exp417 checkpoint length-group accounting is invalid")
-        if not isinstance(backend_audit, BackendAudit) or backend_audit != result.decision_evidence.frozen_train_contract.backend:
+        contract = result.decision_evidence.frozen_train_contract
+        if terminal:
+            pass
+        elif not isinstance(backend_audit, BackendAudit) or contract is None or backend_audit != contract.backend:
             raise ValueError("Exp417 checkpoint backend audit does not match result")
         elapsed = _finite_nonnegative(elapsed_seconds, "elapsed time")
         path = self._dataset_path(result.dataset)
@@ -138,12 +150,14 @@ class Exp417CheckpointStore:
             "score_calibration_hashes": {str(key): value for key, value in calibrations.items()},
             "qualification": _result_payload(result),
             "candidate_coordinates": [[candidate.dataset, candidate.instance_index] for candidate in result.candidates],
-            "backend_audit": _backend_payload(backend_audit),
+            "backend_audit": None if backend_audit is None else _backend_payload(backend_audit),
             "elapsed_seconds": elapsed,
         }
         body["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
-        old_records = self._load_records()
-        if result.dataset in old_records:
+        # The exclusive link publication below is the concurrency authority;
+        # scanning every completed record here made a valid 1,117-dataset
+        # resume quadratic without adding safety.
+        if _path_exists_lstat(path):
             raise ValueError(f"Exp417 checkpoint already exists for dataset: {result.dataset}")
         old_progress = _read_regular(self.root / _PROGRESS_FILE, "Exp417 checkpoint progress")
         self._begin_transaction(result.dataset, old_progress)
@@ -326,24 +340,36 @@ def _record_from_bytes(raw: bytes) -> dict[str, object]:
     if raw != canonical_json_bytes(payload) + b"\n":
         raise ValueError("Exp417 checkpoint record is noncanonical")
     dataset = _string(payload["dataset"], "dataset")
-    _digest(payload["raw_train_identity_sha256"], "raw TRAIN identity")
+    result = _result_from_payload(payload["qualification"])
+    terminal = isinstance(result.decision_evidence, DatasetTerminalEvidence)
+    raw_identity = payload["raw_train_identity_sha256"]
+    if raw_identity is not None:
+        _digest(raw_identity, "raw TRAIN identity")
+    elif not terminal:
+        raise ValueError("Exp417 decision checkpoint lacks raw TRAIN identity")
     repaired = payload["repaired_train_identity_sha256"]
     if repaired is not None:
         _digest(repaired, "repaired TRAIN identity")
     identities = _length_digest_mapping(payload["length_group_identity_sha256"], "length-group identities")
     model_hashes = _model_hash_mapping(payload["canonical_model_hashes"])
     calibrations = _length_digest_mapping(payload["score_calibration_hashes"], "score calibration hashes")
-    result = _result_from_payload(payload["qualification"])
+    if terminal and (raw_identity is not None or repaired is not None or identities or model_hashes or calibrations):
+        raise ValueError("Exp417 terminal checkpoint must not include fabricated stage evidence")
     if result.dataset != dataset:
         raise ValueError("Exp417 checkpoint result identity is invalid")
     lengths = tuple(group.length for group in result.groups)
-    if tuple(identities) != lengths or tuple(model_hashes) != lengths or tuple(calibrations) != lengths:
+    if not terminal and (tuple(identities) != lengths or tuple(model_hashes) != lengths or tuple(calibrations) != lengths):
         raise ValueError("Exp417 checkpoint length-group accounting is invalid")
     coordinates = payload["candidate_coordinates"]
     if not isinstance(coordinates, list) or coordinates != [[item.dataset, item.instance_index] for item in result.candidates]:
         raise ValueError("Exp417 checkpoint candidate coordinates are invalid")
-    audit = _backend_from_payload(payload["backend_audit"])
-    if audit != result.decision_evidence.frozen_train_contract.backend:
+    audit_payload = payload["backend_audit"]
+    audit = None if audit_payload is None else _backend_from_payload(audit_payload)
+    contract = result.decision_evidence.frozen_train_contract
+    if terminal:
+        if audit is not None:
+            raise ValueError("Exp417 terminal checkpoint must not include backend audit")
+    elif audit != contract.backend:
         raise ValueError("Exp417 checkpoint backend audit does not match result")
     elapsed = _finite_nonnegative(payload["elapsed_seconds"], "elapsed time")
     return {**payload, "qualification": result, "backend_audit": audit, "elapsed_seconds": elapsed}
@@ -450,16 +476,40 @@ def _candidate_from_payload(value: object) -> ShadowCandidate:
     return ShadowCandidate(_string(data["dataset"], "dataset"), _integer(data["instance_index"], "instance index"), _integer(data["length"], "length", 1), tuple(_seed_from_payload(item) for item in _list(data["seed_decisions"], "seed decisions")))
 
 
-def _evidence_payload(value: DatasetDecisionEvidence) -> dict[str, object]:
-    return {"dataset": value.dataset, "context": _context_payload(value.context), "frozen_train_contract": {"dataset": value.frozen_train_contract.dataset, "groups": [_group_payload(item) for item in value.frozen_train_contract.groups], "backend": _backend_payload(value.frozen_train_contract.backend), "train_identity_sha256": value.frozen_train_contract.train_identity_sha256, "near_repeat_status": value.frozen_train_contract.near_repeat_status},
+def _contract_payload(value: FrozenTrainContract) -> dict[str, object]:
+    return {"dataset": value.dataset, "groups": [_group_payload(item) for item in value.groups],
+            "backend": _backend_payload(value.backend), "train_identity_sha256": value.train_identity_sha256,
+            "near_repeat_status": value.near_repeat_status}
+
+
+def _contract_from_payload(value: object) -> FrozenTrainContract:
+    train = _object_keys(value, {"dataset", "groups", "backend", "train_identity_sha256", "near_repeat_status"}, "frozen train contract")
+    return FrozenTrainContract(_string(train["dataset"], "dataset"), tuple(_group_from_payload(item) for item in _list(train["groups"], "groups")), _backend_from_payload(train["backend"]), _string(train["train_identity_sha256"], "train identity"), _string(train["near_repeat_status"], "near repeat status"))
+
+
+def _evidence_payload(value: DatasetDecisionEvidence | DatasetTerminalEvidence) -> dict[str, object]:
+    if isinstance(value, DatasetTerminalEvidence):
+        return {"kind": "terminal", "dataset": value.dataset, "context": _context_payload(value.context),
+                "stage": value.stage, "reason": value.reason,
+                "frozen_train_contract": None if value.frozen_train_contract is None else _contract_payload(value.frozen_train_contract)}
+    return {"kind": "decision", "dataset": value.dataset, "context": _context_payload(value.context), "frozen_train_contract": _contract_payload(value.frozen_train_contract),
             "database_sha256": value.database_sha256, "train_identity_sha256": value.train_identity_sha256,
             "decisions": [{"dataset": item.dataset, "instance_index": item.instance_index, "length": item.length, "seed_decisions": [_seed_payload(seed) for seed in item.seed_decisions]} for item in value.decisions]}
 
 
-def _evidence_from_payload(value: object) -> DatasetDecisionEvidence:
-    data = _object_keys(value, {"dataset", "context", "frozen_train_contract", "database_sha256", "train_identity_sha256", "decisions"}, "decision evidence")
-    train = _object_keys(data["frozen_train_contract"], {"dataset", "groups", "backend", "train_identity_sha256", "near_repeat_status"}, "frozen train contract")
-    contract = FrozenTrainContract(_string(train["dataset"], "dataset"), tuple(_group_from_payload(item) for item in _list(train["groups"], "groups")), _backend_from_payload(train["backend"]), _string(train["train_identity_sha256"], "train identity"), _string(train["near_repeat_status"], "near repeat status"))
+def _evidence_from_payload(value: object) -> DatasetDecisionEvidence | DatasetTerminalEvidence:
+    raw = _object(value, "evidence")
+    kind = raw.get("kind")
+    if kind == "terminal":
+        data = _object_keys(raw, {"kind", "dataset", "context", "stage", "reason", "frozen_train_contract"}, "terminal evidence")
+        contract_raw = data["frozen_train_contract"]
+        return DatasetTerminalEvidence(_string(data["dataset"], "dataset"), _context_from_payload(data["context"]),
+            _string(data["stage"], "terminal stage"), _string(data["reason"], "terminal reason"),
+            None if contract_raw is None else _contract_from_payload(contract_raw))
+    if kind != "decision":
+        raise ValueError("Exp417 checkpoint evidence kind is invalid")
+    data = _object_keys(raw, {"kind", "dataset", "context", "frozen_train_contract", "database_sha256", "train_identity_sha256", "decisions"}, "decision evidence")
+    contract = _contract_from_payload(data["frozen_train_contract"])
     decisions = []
     for item in _list(data["decisions"], "decisions"):
         decision = _object_keys(item, {"dataset", "instance_index", "length", "seed_decisions"}, "instance decision")

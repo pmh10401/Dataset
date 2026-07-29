@@ -156,6 +156,7 @@ def freeze_train_contract(
     groups: Sequence[GroupQualification],
     backend: BackendAudit,
     *,
+    train_identity_sha256: str | None = None,
     config: Exp417FrozenConfig = FROZEN_CONFIG,
 ) -> FrozenTrainContract:
     """Freeze deterministic TRAIN qualification evidence with no near-repeat claim."""
@@ -163,7 +164,7 @@ def freeze_train_contract(
     frozen_groups = _groups(groups)
     if not isinstance(backend, BackendAudit):
         raise ValueError("backend must be a BackendAudit")
-    identity = sha256(
+    derived_identity = sha256(
         json.dumps(
             {
                 "dataset": dataset,
@@ -187,6 +188,14 @@ def freeze_train_contract(
             separators=(",", ":"),
         ).encode("utf-8")
     ).hexdigest()
+    if train_identity_sha256 is None:
+        identity = derived_identity
+    elif isinstance(train_identity_sha256, str) and len(train_identity_sha256) == 64 and all(
+        character in "0123456789abcdef" for character in train_identity_sha256
+    ):
+        identity = train_identity_sha256
+    else:
+        raise ValueError("train_identity_sha256 must be a lowercase SHA-256 digest")
     return FrozenTrainContract(
         dataset=dataset,
         groups=frozen_groups,

@@ -796,9 +796,16 @@ git commit -m "feat: checkpoint Exp417 causal Shadow runs"
 **Interfaces:**
 - Consumes: all Task 2-8 public interfaces.
 - Produces:
-  - `run_dataset(dataset: str, context: FrozenRunContext) -> DatasetResult`
-  - `resume_or_run_population(context: FrozenRunContext, checkpoints: Exp417CheckpointStore) -> RunSummary`
+  - `run_dataset(dataset: str, context: FrozenRunContext, *, runtime: RunnerRuntime | None = None) -> DatasetResult`
+  - `resume_or_run_population(context: FrozenRunContext, checkpoints: Exp417CheckpointStore, *, runtime: RunnerRuntime | None = None) -> RunSummary`
   - `build_prediction_rows(summary: RunSummary) -> tuple[Mapping[str, object], ...]`
+
+`RunnerRuntime` is an immutable, explicitly injected value-only stage plan;
+`RunnerResources.frozen_defaults()` binds the production plan to the frozen
+Task 2 source paths and public Task 2--8 functions.  Tests use a synthetic
+runtime rather than monkeypatching production module globals.  A closed-stage
+`DatasetTerminalEvidence` records an abstention/failure reason without
+inventing TEST scores or loading TEST values before a frozen TRAIN contract.
 
 - [ ] **Step 1: Write orchestration-order test**
 
