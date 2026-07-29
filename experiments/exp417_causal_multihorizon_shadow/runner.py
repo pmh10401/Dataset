@@ -208,6 +208,7 @@ class TrainModelEvidence:
     final_models: Mapping[int, Sequence[TrainedSeedModel]]
     backend: BackendAudit
     train_identity_sha256: str = field(init=False)
+    processed_identity_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
         processed = _processed_model_groups(self.processed)
@@ -233,10 +234,12 @@ class TrainModelEvidence:
         if not isinstance(self.backend, BackendAudit):
             raise ValueError("model evidence requires a backend audit")
         identity = _model_evidence_digest(processed, bundles, models, self.backend)
+        processed_identity = _processed_identity_digest(processed)
         object.__setattr__(self, "processed", processed)
         object.__setattr__(self, "oof_bundles", MappingProxyType(bundles))
         object.__setattr__(self, "final_models", MappingProxyType(models))
         object.__setattr__(self, "train_identity_sha256", identity)
+        object.__setattr__(self, "processed_identity_sha256", processed_identity)
 
 
 @dataclass(frozen=True)
@@ -549,6 +552,8 @@ def build_checkpoint_evidence(
     groups = _processed_groups(processed, train)
     if not isinstance(oof, TrainModelEvidence):
         raise ValueError("checkpoint evidence requires TrainModelEvidence")
+    if oof.processed_identity_sha256 != _processed_identity_digest(groups):
+        raise ValueError("checkpoint processed groups do not match model evidence values")
     if not isinstance(contract, FrozenTrainContract) or contract.dataset != train.dataset:
         raise ValueError("checkpoint evidence contract does not match TRAIN dataset")
     if not isinstance(scoring, TestScoringEvidence):
@@ -815,6 +820,18 @@ def _model_evidence_digest(
             if final is None:
                 raise ValueError("final model evidence lacks frozen seed")
             _digest_text(digest, final.model_sha256)
+    return digest.hexdigest()
+
+
+def _processed_identity_digest(groups: Sequence[ProcessedGroup]) -> str:
+    digest = sha256()
+    _digest_text(digest, "exp417.processed-groups.v1")
+    for group in groups:
+        digest.update(group.group.length.to_bytes(8, "little", signed=False))
+        _digest_text(digest, group.status)
+        for series in group.group.series:
+            digest.update(series.instance_index.to_bytes(8, "little", signed=False))
+            digest.update(np.asarray(series.values, dtype="<f4").tobytes(order="C"))
     return digest.hexdigest()
 
 
