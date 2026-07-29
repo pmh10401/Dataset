@@ -150,6 +150,31 @@ class ConfusionMetrics:
             _validate_metric(getattr(self, field_name), field_name)
 
 
+def metrics_from_counts(counts: ConfusionCounts) -> ConfusionMetrics:
+    """Derive all audit metrics, preserving undefined zero-denominator ratios."""
+
+    def ratio(numerator: int, denominator: int) -> float | None:
+        return None if denominator == 0 else numerator / denominator
+
+    return ConfusionMetrics(
+        precision=ratio(counts.tp, counts.tp + counts.fp),
+        recall=ratio(counts.tp, counts.tp + counts.fn),
+        specificity=ratio(counts.tn, counts.tn + counts.fp),
+        false_positive_rate=ratio(counts.fp, counts.fp + counts.tn),
+        false_negative_rate=ratio(counts.fn, counts.fn + counts.tp),
+        f1=ratio(2 * counts.tp, 2 * counts.tp + counts.fp + counts.fn),
+    )
+
+
+def _validate_metrics_match_counts(
+    counts: ConfusionCounts,
+    metrics: ConfusionMetrics,
+    field_name: str,
+) -> None:
+    if metrics != metrics_from_counts(counts):
+        raise ValueError(f"{field_name} must be derived from confusion counts")
+
+
 @dataclass(frozen=True)
 class MacroMetric:
     value: float | None
@@ -158,6 +183,8 @@ class MacroMetric:
     def __post_init__(self) -> None:
         _validate_metric(self.value, "value")
         _require_nonnegative_int(self.defined_dataset_count, "defined_dataset_count")
+        if (self.value is None) != (self.defined_dataset_count == 0):
+            raise ValueError("value must be None exactly when defined_dataset_count is zero")
 
 
 @dataclass(frozen=True)
@@ -172,6 +199,7 @@ class DatasetAuditRow:
             raise ValueError("counts must be ConfusionCounts")
         if type(self.metrics) is not ConfusionMetrics:
             raise ValueError("metrics must be ConfusionMetrics")
+        _validate_metrics_match_counts(self.counts, self.metrics, "metrics")
 
 
 @dataclass(frozen=True)
@@ -210,6 +238,9 @@ class AuditResult:
             raise ValueError("prediction_coordinates exceeds label_rows")
         if self.micro_counts.total != self.label_rows:
             raise ValueError("micro count total must equal label_rows")
+        if self.prediction_coordinates != self.micro_counts.tp + self.micro_counts.fp:
+            raise ValueError("prediction_coordinates must equal TP + FP")
+        _validate_metrics_match_counts(self.micro_counts, self.micro_metrics, "micro_metrics")
         aggregate = ConfusionCounts(
             tp=sum(row.counts.tp for row in self.dataset_rows),
             fp=sum(row.counts.fp for row in self.dataset_rows),
