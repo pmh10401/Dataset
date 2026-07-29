@@ -36,3 +36,4 @@ EXP292_MANIFEST_PATH = EXP292_PREDICTION_PATH.with_name(
     "exp292_prediction_manifest.json"
 )
 DEFAULT_OUTPUT_DIR = DATA_ROOT / "exp403_408_feature_ml_validation"
+EXP417_BACKEND_AUDIT_PATH = DATA_ROOT / "exp417_causal_multihorizon_shadow" / "task7_backend_audit.json"

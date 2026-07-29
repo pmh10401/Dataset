@@ -44,8 +44,9 @@ from .inputs import (
 from .preprocessing import preprocess_length_groups
 from experiments.exp403_408.paths import (
     DB_PATH, EXP291_MANIFEST_PATH, EXP291_PREDICTION_PATH,
-    EXP292_MANIFEST_PATH, EXP292_PREDICTION_PATH,
+    EXP292_MANIFEST_PATH, EXP292_PREDICTION_PATH, EXP417_BACKEND_AUDIT_PATH,
 )
+from .backend import load_frozen_backend_audit
 from .qualification import (
     apply_dataset_workload,
     apply_global_workload,
@@ -85,11 +86,13 @@ class RunnerResources:
     exp292_prediction: Path
     exp292_manifest: Path
     backend_audit: BackendAudit | None = None
+    backend_audit_path: Path = EXP417_BACKEND_AUDIT_PATH
 
     @classmethod
     def frozen_defaults(cls, *, backend_audit: BackendAudit | None = None) -> "RunnerResources":
         return cls(DB_PATH, EXP291_PREDICTION_PATH, EXP291_MANIFEST_PATH,
-                   EXP292_PREDICTION_PATH, EXP292_MANIFEST_PATH, backend_audit)
+                   EXP292_PREDICTION_PATH, EXP292_MANIFEST_PATH, backend_audit,
+                   EXP417_BACKEND_AUDIT_PATH)
 
 
 @dataclass(frozen=True)
@@ -117,15 +120,16 @@ class RunnerRuntime:
         pinned = RunnerResources.frozen_defaults() if resources is None else resources
         if not isinstance(pinned, RunnerResources):
             raise ValueError("resources must be RunnerResources")
-        if not isinstance(pinned.backend_audit, BackendAudit) or pinned.backend_audit.fallback:
+        audit = load_frozen_backend_audit(pinned.backend_audit_path) if resources is None else pinned.backend_audit
+        if not isinstance(audit, BackendAudit) or audit.fallback:
             raise ValueError("production resources require a passing Task 7 backend audit")
-        if pinned.backend_audit.backend not in {"cpu", "mps"}:
+        if audit.backend not in {"cpu", "mps"}:
             raise ValueError("selected Task 7 backend must be cpu or mps for model execution")
         return cls(
             verify=lambda context: _production_verify(context, pinned),
             load_train=lambda dataset, context: load_raw_train_values(pinned.database, dataset, context),
             preprocess=preprocess_length_groups,
-            train_models=lambda processed: _production_train_models(processed, pinned.backend_audit),
+            train_models=lambda processed: _production_train_models(processed, audit),
             qualify=_production_qualify_train,
             freeze=lambda dataset, qualification, models: freeze_train_contract(
                 dataset, qualification.groups, qualification.backend,

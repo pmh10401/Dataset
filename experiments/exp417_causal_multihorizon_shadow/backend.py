@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from hashlib import sha256
+import json
 from math import ceil, isfinite
+from pathlib import Path
 from time import perf_counter
 import copy
 
@@ -28,6 +31,27 @@ _MPS_FAILURE_PRECEDENCE = (
     "mps_unavailable", "mps_runtime_error", "device_fallback", "nonfinite_outputs",
     "candidate_identity", "max_normalized_error", "spearman", "speedup",
 )
+
+
+def load_frozen_backend_audit(path: Path) -> BackendAudit:
+    """Load the one Task 7 selected-backend result; never benchmark at runtime."""
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("Task 7 backend audit artifact is unreadable") from error
+    if not isinstance(payload, dict) or set(payload) != {"selected_backend", "audit", "payload_sha256"}:
+        raise ValueError("Task 7 backend audit artifact schema is invalid")
+    digest = payload.pop("payload_sha256")
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    if not isinstance(digest, str) or sha256(canonical).hexdigest() != digest:
+        raise ValueError("Task 7 backend audit artifact digest is invalid")
+    audit_data = payload["audit"]
+    if not isinstance(audit_data, dict) or set(audit_data) != {"backend", "candidate_identity", "max_normalized_error", "spearman", "speedup", "fallback", "fallback_reason"}:
+        raise ValueError("Task 7 backend audit payload is invalid")
+    audit = BackendAudit(**audit_data)
+    if payload["selected_backend"] != audit.backend or audit.fallback or audit.backend not in {"cpu", "mps"}:
+        raise ValueError("Task 7 backend audit selected device is invalid")
+    return audit
 
 
 @dataclass(frozen=True)
