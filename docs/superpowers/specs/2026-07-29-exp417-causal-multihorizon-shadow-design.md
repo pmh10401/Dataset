@@ -296,6 +296,13 @@ Benchmark datasets are selected deterministically from TRAIN-only normal-count
 and series-length strata, with lexicographic tie-breaking. No TEST outcome
 influences benchmark selection. If any gate fails, CPU remains canonical.
 
+The Apple M2 Max host exposes MPS to normal host processes and completed a
+synchronized Conv1d forward/backward smoke. The Codex sandbox hides the Metal
+device and therefore cannot be used as the real availability probe. MPS probes
+and benchmarks run only as narrowly authorized host processes; an isolated
+`unavailable` result is recorded as execution-environment evidence, not as a
+host capability verdict.
+
 Only one MPS-heavy process runs at a time. Outer dataset multiprocessing is not
 combined with concurrent MPS jobs without a separate deterministic benchmark.
 

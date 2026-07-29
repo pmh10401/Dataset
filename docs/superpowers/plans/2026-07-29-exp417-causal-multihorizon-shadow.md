@@ -31,7 +31,7 @@
 - Qualification: normal OOF candidate rate `<=0.01`, Wilson 95% upper `<=0.05`, seed agreement 100%, pooled primary synthetic sensitivity `>=0.70`, every primary type `>=0.50`, finite outputs, no backend fallback.
 - Dataset workload failure: new Shadow rate `>0.05` causes whole-dataset abstention, never trimming.
 - Global workload failure: new Shadow rate `>0.01` prevents official eight-file publication.
-- Canonical backend is deterministic PyTorch CPU. MPS requires exact candidate identity, normalized max error `<=1e-4`, Spearman `>=0.999`, no fallback, and end-to-end speedup `>=1.1x`. Current environment reports MPS built but unavailable; CPU remains canonical unless a later clean benchmark passes.
+- Canonical reference is deterministic PyTorch CPU. MPS requires exact candidate identity, normalized max error `<=1e-4`, Spearman `>=0.999`, no fallback, and end-to-end speedup `>=1.1x`. The Apple M2 Max host reports MPS built and available and completed a Conv1d forward/backward smoke outside the Codex sandbox. The Codex sandbox hides MPS, so real MPS probes and benchmarks must run in a narrowly authorized host process. CPU remains canonical unless the frozen benchmark passes.
 - Numba may accelerate deterministic score aggregation only after NumPy parity. MLX is excluded.
 - Official output is a new no-overwrite directory containing exactly eight files named in Task 10.
 - Dataset-derived checkpoints, predictions, metrics, and reports remain local and are not pushed to GitHub.
@@ -183,7 +183,8 @@ candidate/frozen-lane overlap, and inconsistent group/dataset totals. Use
 
 `docs/EXP417_PREREGISTRATION_KO.md` must reproduce every Global Constraint,
 the exact algorithm/gates, current environment (`torch 2.13.0`,
-`numpy 2.3.5`, `numba 0.66.0`, MPS built but unavailable), the eight outputs,
+`numpy 2.3.5`, `numba 0.66.0`, host MPS built and available but hidden inside
+the Codex sandbox), the eight outputs,
 the Exp418 separation, GitHub export prohibition, and the separate approval
 required for the full run.
 
@@ -677,12 +678,13 @@ Inject benchmark results to test every boundary independently: exact candidate
 identity, error `1e-4`, Spearman `0.999`, speedup `1.1`, finite outputs,
 fallback false. One failed field must select CPU and record the exact reason.
 
-- [ ] **Step 3: Write actual environment probe test**
+- [ ] **Step 3: Write actual environment probe and isolation test**
 
-On this host assert PyTorch reports MPS built but unavailable and the audit
-returns `canonical_backend="cpu"` with `fallback_reason="mps_unavailable"`.
-If availability changes, run the frozen smoke rather than hard-failing the
-test; the test then validates the real gate result.
+Run the real MPS probe in a narrowly authorized host process and require MPS
+built/available plus a synchronized Conv1d forward/backward smoke. Separately
+test that an unavailable result from an isolated process is fail-closed and
+cannot be treated as evidence that the host lacks MPS. The benchmark, not mere
+availability, decides the canonical backend.
 
 - [ ] **Step 4: Run RED**
 
@@ -1043,7 +1045,8 @@ to official publication or checkpoint constructors.
 Document:
 
 - exact frozen SHA commands;
-- current environment and MPS unavailability;
+- current host MPS availability, Codex sandbox isolation, and the scoped
+  host-process requirement for real probes/benchmarks;
 - full unit/regression commands;
 - label-free smoke command;
 - checkpoint inspection and resume rules;
@@ -1099,8 +1102,8 @@ Do not hash, stat, or open any frozen TEST-label artifact.
 
 Run the exact smoke command from the runbook on three deterministically selected
 TRAIN strata. Verify it cannot publish an official prediction, cannot reuse an
-official checkpoint, records CPU canonical because MPS is unavailable, and
-does not change any frozen input.
+official checkpoint, records the backend selected by the frozen CPU/MPS gate
+with full audit evidence, and does not change any frozen input.
 
 - [ ] **Step 11: Review and stop before the full run**
 
