@@ -396,6 +396,130 @@ class SmokeCliTests(unittest.TestCase):
             + 20_000 * 600,
         )
 
+    def test_real_checkpoint_record_and_context_units_drive_projection(self) -> None:
+        """Corrupting either canonical measurement source changes or stops projection."""
+        from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
+            Exp417CheckpointStore,
+        )
+        from experiments.exp417_causal_multihorizon_shadow.runner import (
+            CheckpointEvidence,
+            _result_evidence_digest,
+        )
+        from experiments.exp417_causal_multihorizon_shadow.tests.test_checkpoints import (
+            _context,
+            _provenance,
+            _result,
+        )
+
+        context = _context()
+        result = _result(context)
+        contract = result.decision_evidence.frozen_train_contract
+        material = CheckpointEvidence(
+            raw_train_identity_sha256="0" * 64,
+            repaired_train_identity_sha256="1" * 64,
+            length_group_identity_sha256={100: "2" * 64},
+            canonical_model_hashes={
+                100: {seed: "3" * 64 for seed in FROZEN_CONFIG.model_seeds}
+            },
+            score_calibration_hashes={100: "4" * 64},
+            elapsed_seconds=0.0,
+            dataset=result.dataset,
+            database_sha256=context.database_sha256,
+            train_contract_identity_sha256=contract.train_identity_sha256,
+            result_evidence_sha256=_result_evidence_digest(result),
+        )
+        with TemporaryDirectory() as directory:
+            store = Exp417CheckpointStore(
+                Path(directory) / "checkpoint", _provenance(), context.datasets
+            )
+            store.write_dataset(
+                result,
+                raw_train_identity_sha256=material.raw_train_identity_sha256,
+                repaired_train_identity_sha256=material.repaired_train_identity_sha256,
+                length_group_identity_sha256=material.length_group_identity_sha256,
+                canonical_model_hashes=material.canonical_model_hashes,
+                score_calibration_hashes=material.score_calibration_hashes,
+                backend_audit=contract.backend,
+                elapsed_seconds=material.elapsed_seconds,
+            )
+            actual_record_bytes = store._dataset_path(result.dataset).stat().st_size
+
+        with (
+            patch.object(
+                self.smoke,
+                "_checkpoint_record_size",
+                wraps=self.smoke._checkpoint_record_size,
+            ) as checkpoint_measurement,
+            patch.object(
+                self.smoke,
+                "_schema_upper_units",
+                wraps=self.smoke._schema_upper_units,
+            ) as context_units,
+        ):
+            projection = self.smoke.estimate_disk_projection(
+                context,
+                (result,),
+                normal_train_series_count=100,
+                measured_smoke_artifact_bytes=10,
+            )
+
+        self.assertEqual(actual_record_bytes, 160_843)
+        self.assertEqual(projection.measured_sample_checkpoint_bytes, actual_record_bytes)
+        self.assertEqual(projection.failed_terminal_projection_bytes, 179_661_641)
+        self.assertEqual(
+            projection.candidate_bearing_conservative_upper_bytes, 187_863_577
+        )
+        self.assertEqual(projection.frozen_test_instance_count, 2_234)
+        self.assertEqual(checkpoint_measurement.call_count, 1)
+        self.assertEqual(context_units.call_count, 1)
+
+        with patch.object(
+            self.smoke,
+            "_checkpoint_record_size",
+            side_effect=ValueError("corrupt checkpoint measurement"),
+        ):
+            with self.assertRaisesRegex(ValueError, "corrupt checkpoint"):
+                self.smoke.estimate_disk_projection(
+                    context,
+                    (result,),
+                    normal_train_series_count=100,
+                    measured_smoke_artifact_bytes=10,
+                )
+        with patch.object(
+            self.smoke,
+            "_schema_upper_units",
+            side_effect=ValueError("corrupt context units"),
+        ):
+            with self.assertRaisesRegex(ValueError, "corrupt context"):
+                self.smoke.estimate_disk_projection(
+                    context,
+                    (result,),
+                    normal_train_series_count=100,
+                    measured_smoke_artifact_bytes=10,
+                )
+        with patch.object(self.smoke, "_checkpoint_record_size", return_value=1):
+            altered_record = self.smoke.estimate_disk_projection(
+                context,
+                (result,),
+                normal_train_series_count=100,
+                measured_smoke_artifact_bytes=10,
+            )
+        with patch.object(self.smoke, "_schema_upper_units", return_value=(1, 1)):
+            altered_units = self.smoke.estimate_disk_projection(
+                context,
+                (result,),
+                normal_train_series_count=100,
+                measured_smoke_artifact_bytes=10,
+            )
+        self.assertNotEqual(
+            altered_record.failed_terminal_projection_bytes,
+            projection.failed_terminal_projection_bytes,
+        )
+        self.assertNotEqual(
+            altered_units.candidate_bearing_conservative_upper_bytes,
+            projection.candidate_bearing_conservative_upper_bytes,
+        )
+
     def test_smoke_write_handles_partial_writes_and_cleans_failed_output(self) -> None:
         with TemporaryDirectory() as directory:
             output = Path(directory) / "smoke"
