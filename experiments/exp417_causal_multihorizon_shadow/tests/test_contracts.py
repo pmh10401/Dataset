@@ -265,14 +265,36 @@ class ContractTests(unittest.TestCase):
                 status="complete",
                 context=context,
             )
+        with self.assertRaisesRegex(ValueError, "global workload"):
+            RunSummary(
+                results=retained,
+                total_test=20 * len(retained),
+                publication_allowed=False,
+                status="global_workload_gate_failed",
+                context=context,
+            )
+        cleared = tuple(
+            DatasetResult(
+                dataset=result.dataset,
+                test_size=result.test_size,
+                group_count=result.group_count,
+                groups=result.groups,
+                candidates=(),
+                lanes=result.lanes,
+                status="abstained",
+                observed_candidate_count=result.observed_candidate_count,
+            )
+            for result in retained
+        )
         summary = RunSummary(
-            results=retained,
-            total_test=20 * len(retained),
+            results=cleared,
+            total_test=20 * len(cleared),
             publication_allowed=False,
             status="global_workload_gate_failed",
             context=context,
         )
         self.assertFalse(summary.publication_allowed)
+        self.assertFalse(any(result.candidates for result in summary.results))
 
     def test_run_summary_requires_exact_context_population_coverage(self) -> None:
         context = frozen_context()

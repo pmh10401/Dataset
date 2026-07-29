@@ -473,6 +473,7 @@ class DatasetResult:
     candidates: tuple[ShadowCandidate, ...]
     lanes: FrozenLaneSnapshot
     status: str
+    observed_candidate_count: int | None = None
     candidate_rate: float | None = None
 
     def __post_init__(self) -> None:
@@ -500,17 +501,36 @@ class DatasetResult:
             raise ValueError("candidate overlaps a frozen lane")
         if self.status not in _DATASET_STATUSES:
             raise ValueError("invalid dataset status")
-        retained_rate = len(candidates) / test_size
-        rate = retained_rate if self.candidate_rate is None else _finite(self.candidate_rate, "candidate_rate", minimum=0.0, maximum=1.0)
+        observed = self.observed_candidate_count
+        if observed is None:
+            if self.candidate_rate is None:
+                observed = len(candidates)
+            elif self.status == "abstained" and not candidates:
+                supplied_rate = _finite(self.candidate_rate, "candidate_rate", minimum=0.0, maximum=1.0)
+                supplied_count = supplied_rate * test_size
+                if not supplied_count.is_integer():
+                    raise ValueError("candidate_rate must encode an exact observed candidate count")
+                observed = int(supplied_count)
+            else:
+                observed = len(candidates)
+        _integer(observed, "observed_candidate_count", minimum=0)
+        if observed < len(candidates):
+            raise ValueError("observed candidate count cannot be below retained candidates")
+        rate = observed / test_size
+        if self.candidate_rate is not None:
+            supplied_rate = _finite(self.candidate_rate, "candidate_rate", minimum=0.0, maximum=1.0)
+            if supplied_rate != rate:
+                raise ValueError("candidate_rate is inconsistent with observed candidate count")
         if rate > FROZEN_CONFIG.dataset_workload_rate:
             if self.status != "abstained" or candidates:
                 raise ValueError("dataset workload gate requires abstention without candidates")
         elif self.status in {"abstained", "failed"} and candidates:
             raise ValueError("abstained or failed dataset cannot retain candidates")
-        elif self.status == "qualified" and rate != retained_rate:
-            raise ValueError("candidate_rate is inconsistent with retained candidates")
+        elif self.status == "qualified" and observed != len(candidates):
+            raise ValueError("qualified dataset must retain every observed candidate")
         object.__setattr__(self, "groups", groups)
         object.__setattr__(self, "candidates", candidates)
+        object.__setattr__(self, "observed_candidate_count", observed)
         object.__setattr__(self, "candidate_rate", rate)
 
 
@@ -542,10 +562,10 @@ class RunSummary:
             raise ValueError("publication_allowed must be bool")
         if self.status not in {"complete", "global_workload_gate_failed", "failed"}:
             raise ValueError("invalid run status")
-        candidate_total = sum(len(result.candidates) for result in results)
-        global_rate = candidate_total / total_test if total_test else 0.0
+        prospective_total = sum(result.observed_candidate_count for result in results)
+        global_rate = prospective_total / total_test if total_test else 0.0
         if global_rate > FROZEN_CONFIG.global_workload_rate:
-            if self.publication_allowed or self.status != "global_workload_gate_failed":
+            if self.publication_allowed or self.status != "global_workload_gate_failed" or any(result.candidates for result in results):
                 raise ValueError("global workload gate forbids publication")
         elif any(result.status == "failed" for result in results):
             if self.publication_allowed or self.status != "failed":
