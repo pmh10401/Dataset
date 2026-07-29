@@ -9,6 +9,8 @@ from numbers import Real
 from types import MappingProxyType
 from typing import TypeVar
 
+import numpy as np
+
 from .config import Exp417FrozenConfig, FROZEN_CONFIG
 
 
@@ -53,6 +55,13 @@ def _finite(value: object, name: str, *, minimum: float | None = None, maximum: 
     return number
 
 
+def _raw_number(value: object, name: str) -> float:
+    """Keep raw numeric values intact until TRAIN-only deterministic repair."""
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise ValueError(f"{name} must be numeric")
+    return float(value)
+
+
 def _tuple(values: Sequence[_T], name: str) -> tuple[_T, ...]:
     if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
         raise ValueError(f"{name} must be a sequence")
@@ -75,7 +84,7 @@ class RawSeries:
         values = _tuple(self.values, "values")
         if not values:
             raise ValueError("values must not be empty")
-        object.__setattr__(self, "values", tuple(_finite(value, "series value") for value in values))
+        object.__setattr__(self, "values", tuple(_raw_number(value, "series value") for value in values))
 
 
 def _freeze_lane_mapping(values: Mapping[str, Sequence[int]], name: str) -> Mapping[str, tuple[int, ...]]:
@@ -167,6 +176,8 @@ class RawTestDataset:
         if not series or any(not isinstance(item, RawSeries) for item in series):
             raise ValueError("series must contain RawSeries records")
         _validate_unique_series_indices(series)
+        if any(not isfinite(value) for item in series for value in item.values):
+            raise ValueError("TEST raw values must be finite")
         object.__setattr__(self, "series", series)
 
 
@@ -236,6 +247,7 @@ class ProcessedGroup:
     difference_center: float
     difference_scale: float
     status: str
+    channels: Mapping[int, np.ndarray] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.group, LengthGroup):
@@ -247,10 +259,34 @@ class ProcessedGroup:
         if self.status not in _PROCESSED_GROUP_STATUSES:
             raise ValueError("invalid processed group status")
         requires_zero_scale_abstention = min(raw_scale, difference_scale) <= 1e-12
-        if requires_zero_scale_abstention and self.status != "zero_scale_abstain":
+        if requires_zero_scale_abstention and self.status not in {"zero_scale_abstain", "nonfinite_abstain"}:
             raise ValueError("zero_scale_abstain is required for scale <= 1e-12")
         if self.status == "zero_scale_abstain" and not requires_zero_scale_abstention:
             raise ValueError("zero_scale_abstain requires scale <= 1e-12")
+        channels = self.channels
+        if channels is None:
+            frozen_channels: Mapping[int, np.ndarray] = MappingProxyType({})
+        elif not isinstance(channels, Mapping):
+            raise ValueError("channels must be a mapping")
+        else:
+            expected_indices = tuple(item.instance_index for item in self.group.series)
+            if tuple(sorted(channels)) != expected_indices:
+                raise ValueError("channels must cover the exact length-group indices")
+            copied: dict[int, np.ndarray] = {}
+            for index, values in channels.items():
+                if type(index) is not int or not isinstance(values, np.ndarray):
+                    raise ValueError("channels must map integer indices to arrays")
+                if values.dtype != np.dtype("float32") or values.shape != (2, self.group.length):
+                    raise ValueError("channels must contain exact float32 two-channel arrays")
+                if not np.isfinite(values).all():
+                    raise ValueError("channels must be finite")
+                immutable = np.array(values, dtype=np.float32, copy=True, order="C")
+                immutable.setflags(write=False)
+                copied[index] = immutable
+            frozen_channels = MappingProxyType(copied)
+        if self.status not in {"candidate_eligible", "diagnostic_only"} and frozen_channels:
+            raise ValueError("abstained processed groups cannot retain channels")
+        object.__setattr__(self, "channels", frozen_channels)
 
 
 @dataclass(frozen=True)

@@ -1,6 +1,8 @@
 from types import MappingProxyType
 import unittest
 
+import numpy as np
+
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     BackendAudit,
     DatasetResult,
@@ -12,6 +14,8 @@ from experiments.exp417_causal_multihorizon_shadow.contracts import (
     LengthGroup,
     ProcessedGroup,
     RawSeries,
+    RawTestDataset,
+    RawTrainDataset,
     RunSummary,
     SeedDecision,
     ShadowCandidate,
@@ -122,11 +126,14 @@ def results_for_context(
 
 
 class ContractTests(unittest.TestCase):
-    def test_raw_series_rejects_bool_index_and_nonfinite(self) -> None:
+    def test_raw_series_rejects_bool_index_and_test_dataset_rejects_nonfinite(self) -> None:
         with self.assertRaises(ValueError):
             RawSeries(instance_index=True, values=(0.0, 1.0))
+        raw = RawSeries(instance_index=1, values=(0.0, float("nan")))
+        train = RawTrainDataset(dataset="synthetic", series=(raw,))
+        self.assertTrue(np.isnan(train.series[0].values[1]))
         with self.assertRaises(ValueError):
-            RawSeries(instance_index=1, values=(0.0, float("nan")))
+            RawTestDataset(dataset="synthetic", series=(raw,))
 
     def test_coordinates_are_sorted_unique_and_mappings_are_immutable(self) -> None:
         with self.assertRaisesRegex(ValueError, "sorted"):
@@ -392,6 +399,25 @@ class ContractTests(unittest.TestCase):
                 difference_scale=1.0,
                 status="unknown",
             )
+
+    def test_processed_group_retains_only_exact_immutable_float32_channels(self) -> None:
+        length_group = LengthGroup(
+            length=3, series=(RawSeries(instance_index=0, values=(0.0, 1.0, 2.0)),)
+        )
+        source = np.zeros((2, 3), dtype=np.float32)
+        processed = ProcessedGroup(
+            group=length_group,
+            raw_center=0.0,
+            raw_scale=1.0,
+            difference_center=0.0,
+            difference_scale=1.0,
+            status="candidate_eligible",
+            channels={0: source},
+        )
+        self.assertEqual(processed.channels[0].dtype, np.dtype("float32"))
+        self.assertFalse(processed.channels[0].flags.writeable)
+        source[0, 0] = 99.0
+        self.assertEqual(float(processed.channels[0][0, 0]), 0.0)
 
     def test_frozen_train_contract_preserves_only_the_qualified_near_repeat_state(self) -> None:
         contract = FrozenTrainContract(
