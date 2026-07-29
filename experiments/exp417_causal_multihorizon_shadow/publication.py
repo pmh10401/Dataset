@@ -459,6 +459,17 @@ def _require_atomic_exchange(parent: Path) -> None:
     probe_root_identity: tuple[int, int] | None = None
     identity_a: tuple[int, int] | None = None
     identity_b: tuple[int, int] | None = None
+    child_provenance: dict[str, dict[str, object]] = {
+        name: {
+            "name": name,
+            "state": "not_created",
+            "identity": None,
+            "error_type": None,
+            "error_errno": None,
+            "error_message": None,
+        }
+        for name in ("a", "b")
+    }
     probe_descriptor: int | None = None
     probe_error: Exception | None = None
     retention_errors: list[Exception] = []
@@ -474,22 +485,46 @@ def _require_atomic_exchange(parent: Path) -> None:
 
         identities: list[tuple[int, int]] = []
         for name in ("a", "b"):
-            os.mkdir(name, mode=0o700, dir_fd=probe_descriptor)
-            child_descriptor = os.open(
-                name, _DIRECTORY_OPEN_FLAGS, dir_fd=probe_descriptor
-            )
             try:
-                metadata = os.fstat(child_descriptor)
-                identity = (metadata.st_dev, metadata.st_ino)
-                if identity in identities:
-                    raise RuntimeError(
-                        "Exp417 atomic-exchange probe inode identities collided"
+                os.mkdir(name, mode=0o700, dir_fd=probe_descriptor)
+                child_provenance[name]["state"] = "created_unresolved"
+                child_descriptor: int | None = None
+                try:
+                    child_descriptor = os.open(
+                        name, _DIRECTORY_OPEN_FLAGS, dir_fd=probe_descriptor
                     )
-                identities.append(identity)
-                os.fsync(child_descriptor)
-            finally:
-                os.close(child_descriptor)
-        identity_a, identity_b = identities
+                    metadata = os.fstat(child_descriptor)
+                    identity = (metadata.st_dev, metadata.st_ino)
+                    if not stat.S_ISDIR(metadata.st_mode):
+                        raise RuntimeError(
+                            f"Exp417 atomic-exchange probe child is not a "
+                            f"directory: {name}"
+                        )
+                    if identity in identities:
+                        raise RuntimeError(
+                            "Exp417 atomic-exchange probe inode identities "
+                            "collided"
+                        )
+                    os.fsync(child_descriptor)
+                    if name == "a":
+                        identity_a = identity
+                    else:
+                        identity_b = identity
+                    identities.append(identity)
+                    child_provenance[name]["identity"] = identity
+                    child_provenance[name]["state"] = "descriptor_verified"
+                finally:
+                    if child_descriptor is not None:
+                        os.close(child_descriptor)
+            except Exception as child_error:
+                child_provenance[name]["error_type"] = type(child_error).__name__
+                child_provenance[name]["error_errno"] = (
+                    child_error.errno
+                    if isinstance(child_error, OSError)
+                    else None
+                )
+                child_provenance[name]["error_message"] = str(child_error)
+                raise
         os.fsync(probe_descriptor)
         _fsync_directory(parent)
 
@@ -529,6 +564,7 @@ def _require_atomic_exchange(parent: Path) -> None:
                     probe_root_identity=probe_root_identity,
                     identity_a=identity_a,
                     identity_b=identity_b,
+                    child_provenance=child_provenance,
                     exchange_verified=exchange_verified,
                     probe_error=probe_error,
                 )
@@ -559,18 +595,23 @@ def _write_probe_provenance(
     probe_root_identity: tuple[int, int] | None,
     identity_a: tuple[int, int] | None,
     identity_b: tuple[int, int] | None,
+    child_provenance: Mapping[str, Mapping[str, object]],
     exchange_verified: bool,
     probe_error: Exception | None,
 ) -> None:
     payload = canonical_json_bytes(
         {
-            "schema_version": 1,
+            "schema_version": 2,
             "experiment_id": "Exp417",
             "purpose": "atomic_exchange_filesystem_capability_probe",
             "capsule_identity": probe_root_identity,
             "probe_inode_provenance": {
                 "a": identity_a,
                 "b": identity_b,
+            },
+            "probe_child_provenance": {
+                name: dict(child_provenance[name])
+                for name in ("a", "b")
             },
             "atomic_exchange_supported": exchange_verified,
             "operation_errno": (

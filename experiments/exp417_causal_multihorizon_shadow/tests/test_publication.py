@@ -265,6 +265,74 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
         self.assertEqual(tuple(self.root.glob(".publication.*.capture")), ())
 
+    def test_probe_open_b_failure_retains_verified_a_and_unresolved_b(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import publication
+
+        real_open = publication.os.open
+
+        def deny_b_open(
+            path: object, *args: object, **kwargs: object
+        ) -> int:
+            if path == "b" and type(kwargs.get("dir_fd")) is int:
+                raise PermissionError(errno.EACCES, "probe b open denied")
+            return real_open(path, *args, **kwargs)
+
+        with (
+            patch.object(publication.os, "open", side_effect=deny_b_open),
+            patch.object(publication.os, "rmdir") as rmdir,
+            patch.object(publication.os, "unlink") as unlink,
+            self.assertRaises(PermissionError) as caught,
+        ):
+            publication._require_atomic_exchange(self.root)
+
+        self.assertEqual(caught.exception.errno, errno.EACCES)
+        rmdir.assert_not_called()
+        unlink.assert_not_called()
+        capsules = tuple(
+            self.root.glob(".exp417.exchange-probe.retained.*")
+        )
+        self.assertEqual(len(capsules), 1)
+        capsule = capsules[0]
+        self.assertEqual(
+            {path.name for path in capsule.iterdir()},
+            {"a", "b", "PROBE_PROVENANCE.json"},
+        )
+        provenance = json.loads(
+            (capsule / "PROBE_PROVENANCE.json").read_bytes()
+        )
+        a_metadata = (capsule / "a").lstat()
+        self.assertEqual(
+            tuple(provenance["probe_inode_provenance"]["a"]),
+            (a_metadata.st_dev, a_metadata.st_ino),
+        )
+        self.assertIsNone(provenance["probe_inode_provenance"]["b"])
+        self.assertEqual(
+            provenance["probe_child_provenance"]["a"]["state"],
+            "descriptor_verified",
+        )
+        self.assertEqual(
+            tuple(provenance["probe_child_provenance"]["a"]["identity"]),
+            (a_metadata.st_dev, a_metadata.st_ino),
+        )
+        self.assertEqual(
+            provenance["probe_child_provenance"]["b"]["state"],
+            "created_unresolved",
+        )
+        self.assertIsNone(
+            provenance["probe_child_provenance"]["b"]["identity"]
+        )
+        self.assertEqual(
+            provenance["probe_child_provenance"]["b"]["error_type"],
+            "PermissionError",
+        )
+        self.assertEqual(
+            provenance["probe_child_provenance"]["b"]["error_errno"],
+            errno.EACCES,
+        )
+        self.assertFalse(provenance["atomic_exchange_supported"])
+        self.assertEqual(provenance["operation_errno"], errno.EACCES)
+        self.assertFalse(provenance["automatic_cleanup"])
+
     def test_mutation_extra_file_and_symlink_are_fail_closed(self) -> None:
         attacks = {}
 
