@@ -194,6 +194,22 @@ def _typed_stage_evidence(contract: FrozenTrainContract):
 
 
 class RunnerOrderTests(unittest.TestCase):
+    def test_production_runtime_requires_passing_task7_backend_audit(self) -> None:
+        """Production cannot invent a perfect CPU audit or accept a fallback."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        resources = runner.RunnerResources(
+            Path("database"), Path("291-prediction"), Path("291-manifest"),
+            Path("292-prediction"), Path("292-manifest"),
+        )
+        with self.assertRaisesRegex(ValueError, "Task 7 backend audit"):
+            runner.RunnerRuntime.production(resources)
+        fallback = replace(_contract().backend, fallback=True, fallback_reason="parity")
+        with self.assertRaisesRegex(ValueError, "Task 7 backend audit"):
+            runner.RunnerRuntime.production(replace(resources, backend_audit=fallback))
+        runtime = runner.RunnerRuntime.production(replace(resources, backend_audit=_contract().backend))
+        self.assertIsInstance(runtime, runner.RunnerRuntime)
+
     def test_normal_oof_decisions_use_each_seed_query_residual(self) -> None:
         """Reusing seed 41701's query residual would mask seed disagreement."""
         from experiments.exp417_causal_multihorizon_shadow import runner
@@ -301,6 +317,48 @@ class RunnerOrderTests(unittest.TestCase):
 
         self.assertEqual(result.status, "failed")
         self.assertEqual(result.decision_evidence.stage, "preprocessing")
+        test_loader.assert_not_called()
+
+    def test_every_noneligible_preprocessing_status_stops_before_test(self) -> None:
+        """<50, 50--99, and all-missing groups share the same closed barrier."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        context = _context()
+        train, processed, _models, _scoring = _typed_stage_evidence(_contract())
+        for status in ("insufficient_train_abstain", "diagnostic_only", "nonfinite_abstain"):
+            with self.subTest(status=status):
+                channels = processed[0].channels if status == "diagnostic_only" else None
+                blocked = replace(processed[0], status=status, channels=channels)
+                test_loader = Mock(side_effect=AssertionError("TEST values were loaded"))
+                runtime = runner.RunnerRuntime(
+                    verify=lambda _: None, load_train=lambda *_: train, preprocess=lambda _: (blocked,),
+                    train_models=lambda _: (_ for _ in ()).throw(AssertionError("OOF was reached")),
+                    qualify=lambda *_: (_ for _ in ()).throw(AssertionError("qualification was reached")),
+                    freeze=lambda *_: (_ for _ in ()).throw(AssertionError("freeze was reached")),
+                    load_test=test_loader, score=lambda *_: (_ for _ in ()).throw(AssertionError("score was reached")),
+                )
+                result = runner.run_dataset("dataset", context, runtime=runtime)
+                self.assertEqual(result.decision_evidence.stage, "preprocessing")
+                test_loader.assert_not_called()
+
+    def test_backend_fallback_is_terminal_before_qualification_or_test(self) -> None:
+        """A failed Task 7 audit cannot reach synthetic qualification or TEST."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        context = _context()
+        train, processed, models, _scoring = _typed_stage_evidence(_contract())
+        fallback = BackendAudit("cpu", True, 0.0, 1.0, 1.0, True, "parity")
+        models = replace(models, backend=fallback)
+        test_loader = Mock(side_effect=AssertionError("TEST values were loaded"))
+        runtime = runner.RunnerRuntime(
+            verify=lambda _: None, load_train=lambda *_: train, preprocess=lambda _: processed,
+            train_models=lambda _: models,
+            qualify=lambda *_: (_ for _ in ()).throw(AssertionError("qualification was reached")),
+            freeze=lambda *_: (_ for _ in ()).throw(AssertionError("freeze was reached")),
+            load_test=test_loader, score=lambda *_: (_ for _ in ()).throw(AssertionError("score was reached")),
+        )
+        result = runner.run_dataset("dataset", context, runtime=runtime)
+        self.assertEqual(result.decision_evidence.stage, "backend")
         test_loader.assert_not_called()
 
 
