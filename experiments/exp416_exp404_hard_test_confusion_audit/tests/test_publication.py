@@ -22,9 +22,17 @@ from experiments.exp416_exp404_hard_test_confusion_audit.tests.test_reporting im
 
 def valid_provenance() -> dict[str, object]:
     return {
-        "mode": "synthetic_fixture",
+        "database_reference_sha256": "4" * 64,
+        "exp415_prediction_created": False,
+        "frozen_test_labels_sha256": "3" * 64,
         "git_commit": "a" * 40,
-        "input_sha256": {"database_reference": "4" * 64},
+        "operational_policy_changed": False,
+        "prediction_identity_sha256": "5" * 64,
+        "prediction_manifest_sha256": "2" * 64,
+        "prediction_modified": False,
+        "prediction_sha256": "1" * 64,
+        "test_informed_reselection": False,
+        "test_labels_loaded_after_prediction_freeze": True,
     }
 
 
@@ -40,15 +48,19 @@ class PublicationTests(unittest.TestCase):
         output: Path,
         *,
         payloads: dict[str, bytes] | None = None,
+        provenance: dict[str, object] | None = None,
         pre_publish_verify: object = None,
     ) -> dict[str, str]:
         selected = valid_payloads(self.config) if payloads is None else payloads
+        selected_provenance = (
+            valid_provenance() if provenance is None else provenance
+        )
         with fixture_config_validation():
             return dict(
                 publish_payloads(
                     selected,
                     output,
-                    valid_provenance(),
+                    selected_provenance,
                     pre_publish_verify=pre_publish_verify,
                     config=self.config,
                 )
@@ -101,6 +113,60 @@ class PublicationTests(unittest.TestCase):
         self.assertFalse(output.exists())
         self.assertEqual(external.read_bytes(), b"external\n")
         self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
+
+    def test_metadata_capture_file_substitution_leaves_no_final_output(
+        self,
+    ) -> None:
+        output = self.root / "publication"
+        payloads = valid_payloads(self.config)
+        external = self.root / "external-summary.json"
+        external.write_bytes(payloads["exp416_confusion_matrix.json"])
+        real_stat = os.stat
+        substitutions = 0
+
+        def substitute_after_metadata(
+            path: object,
+            *args: object,
+            **kwargs: object,
+        ) -> os.stat_result:
+            nonlocal substitutions
+            metadata = real_stat(path, *args, **kwargs)
+            if (
+                path == "exp416_confusion_matrix.json"
+                and type(kwargs.get("dir_fd")) is int
+                and kwargs.get("follow_symlinks") is False
+                and substitutions == 0
+            ):
+                substitutions += 1
+                staging = next(
+                    self.root.glob(".publication.*.staging")
+                )
+                target = staging / "exp416_confusion_matrix.json"
+                target.unlink()
+                target.symlink_to(external)
+            return metadata
+
+        with patch.object(
+            publication.os,
+            "stat",
+            side_effect=substitute_after_metadata,
+        ):
+            with self.assertRaisesRegex(
+                ValueError,
+                "regular|symlink|verification",
+            ):
+                self.publish(output, payloads=payloads)
+
+        self.assertEqual(substitutions, 1)
+        self.assertFalse(os.path.lexists(output))
+        self.assertEqual(
+            tuple(self.root.glob(".publication.*.staging")),
+            (),
+        )
+        self.assertEqual(
+            external.read_bytes(),
+            payloads["exp416_confusion_matrix.json"],
+        )
 
     def test_callback_staging_root_symlink_substitution_preserves_external_tree(
         self,
@@ -333,6 +399,38 @@ class PublicationTests(unittest.TestCase):
         )
         self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
 
+    def test_post_rename_content_mutation_is_rolled_back(self) -> None:
+        output = self.root / "publication"
+        real_rename = publication._atomic_rename_noreplace
+        mutations = 0
+
+        def mutate_after_final_rename(
+            source: Path,
+            destination: Path,
+        ) -> None:
+            nonlocal mutations
+            real_rename(source, destination)
+            if destination == output:
+                mutations += 1
+                (output / "exp416_confusion_matrix.json").write_bytes(
+                    b"changed-after-rename\n"
+                )
+
+        with patch.object(
+            publication,
+            "_atomic_rename_noreplace",
+            side_effect=mutate_after_final_rename,
+        ):
+            with self.assertRaisesRegex(ValueError, "verification"):
+                self.publish(output)
+
+        self.assertEqual(mutations, 1)
+        self.assertFalse(os.path.lexists(output))
+        self.assertEqual(
+            tuple(self.root.glob(".publication.*.staging")),
+            (),
+        )
+
     @unittest.skipUnless(
         sys.platform.startswith("linux"),
         "Linux renameat2 regression",
@@ -467,6 +565,31 @@ class PublicationTests(unittest.TestCase):
             ):
                 self.publish(self.root / name, payloads=invalid)
             self.assertFalse((self.root / name).exists())
+
+    def test_provenance_requires_exact_verified_summary_values(self) -> None:
+        mismatch = valid_provenance()
+        mismatch["git_commit"] = "b" * 40
+        missing = valid_provenance()
+        del missing["prediction_manifest_sha256"]
+        extra = valid_provenance()
+        extra["foreign"] = False
+
+        for name, provenance in (
+            ("mismatch", mismatch),
+            ("missing", missing),
+            ("extra", extra),
+        ):
+            output = self.root / f"publication-{name}"
+            with self.subTest(name=name), self.assertRaisesRegex(
+                ValueError,
+                "provenance",
+            ):
+                self.publish(output, provenance=provenance)
+            self.assertFalse(os.path.lexists(output))
+            self.assertEqual(
+                tuple(self.root.glob(f".{output.name}.*.staging")),
+                (),
+            )
 
     def test_success_publishes_exact_four_files_and_manifest_hashes(
         self,

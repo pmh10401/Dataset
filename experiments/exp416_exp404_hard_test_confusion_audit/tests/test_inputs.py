@@ -295,6 +295,42 @@ class InputTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "prediction"):
                     freeze_prediction_inputs(prediction, manifest, config=config)
 
+    def test_freeze_rehashes_manifest_independently_after_parse(self) -> None:
+        prediction, manifest, config = self.write_single_prediction()
+        from experiments.exp416_exp404_hard_test_confusion_audit import inputs
+
+        original_hash = inputs.sha256_file
+        manifest_hash_calls = 0
+
+        def mutate_manifest_on_second_hash(path: Path) -> str:
+            nonlocal manifest_hash_calls
+            if path == manifest:
+                manifest_hash_calls += 1
+                if manifest_hash_calls == 2:
+                    manifest.write_text(
+                        manifest.read_text(encoding="utf-8") + "\n",
+                        encoding="utf-8",
+                    )
+            return original_hash(path)
+
+        with fixture_config_validation():
+            with mock.patch.object(
+                inputs,
+                "sha256_file",
+                side_effect=mutate_manifest_on_second_hash,
+            ):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "manifest changed after parsing",
+                ):
+                    freeze_prediction_inputs(
+                        prediction,
+                        manifest,
+                        config=config,
+                    )
+
+        self.assertEqual(manifest_hash_calls, 2)
+
     def test_labels_cannot_load_without_frozen_prediction(self) -> None:
         labels = self.root / "labels.csv"
         labels.write_text(

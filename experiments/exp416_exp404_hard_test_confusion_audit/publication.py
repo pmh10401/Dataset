@@ -26,6 +26,21 @@ from .reporting import (
 _EXPECTED_PAYLOAD_FILES = frozenset(
     {SUMMARY_FILE, DATASET_FILE, REPORT_FILE}
 )
+_PROVENANCE_FIELDS = frozenset(
+    {
+        "database_reference_sha256",
+        "exp415_prediction_created",
+        "frozen_test_labels_sha256",
+        "git_commit",
+        "operational_policy_changed",
+        "prediction_identity_sha256",
+        "prediction_manifest_sha256",
+        "prediction_modified",
+        "prediction_sha256",
+        "test_informed_reselection",
+        "test_labels_loaded_after_prediction_freeze",
+    }
+)
 _LINUX_AT_FDCWD = -100
 _RENAME_NOREPLACE = 1
 _RENAME_EXCL = 0x00000004
@@ -33,6 +48,18 @@ _DIRECTORY_OPEN_FLAGS = (
     os.O_RDONLY
     | getattr(os, "O_CLOEXEC", 0)
     | getattr(os, "O_DIRECTORY", 0)
+    | getattr(os, "O_NOFOLLOW", 0)
+)
+_FILE_READ_FLAGS = (
+    os.O_RDONLY
+    | getattr(os, "O_CLOEXEC", 0)
+    | getattr(os, "O_NOFOLLOW", 0)
+)
+_FILE_WRITE_FLAGS = (
+    os.O_WRONLY
+    | os.O_CREAT
+    | os.O_EXCL
+    | getattr(os, "O_CLOEXEC", 0)
     | getattr(os, "O_NOFOLLOW", 0)
 )
 
@@ -67,15 +94,19 @@ def publish_payloads(
     if not isinstance(provenance, Mapping):
         raise ValueError("Exp416 publication provenance must be a mapping")
     verify_rendered_payloads(payloads, config=config)
+    verified_provenance = _verified_summary_provenance(payloads, provenance)
 
     staging = output.with_name(
         f".{output.name}.{uuid.uuid4().hex}.staging"
     )
     published = False
     staging_identity: tuple[int, int] | None = None
+    staging_descriptor: int | None = None
+    output_descriptor: int | None = None
     try:
         staging.mkdir(parents=False, exist_ok=False)
-        staging_identity = _directory_identity(staging)
+        staging_descriptor = _open_directory(staging)
+        staging_identity = _directory_fd_identity(staging_descriptor)
         artifact_hashes: dict[str, str] = {}
         for name, payload in sorted(payloads.items()):
             if (
@@ -85,22 +116,21 @@ def publish_payloads(
                 or type(payload) is not bytes
             ):
                 raise ValueError("Exp416 staged payload is invalid")
-            path = staging / name
-            _write_payload(path, payload)
+            _write_payload(staging_descriptor, name, payload)
             digest = sha256(payload).hexdigest()
-            _verify_file(path, payload, digest, name)
             artifact_hashes[name] = digest
 
         manifest = {
             "experiment_id": config.experiment_id,
             "artifact_sha256": dict(sorted(artifact_hashes.items())),
-            "provenance": _plain(provenance),
+            "provenance": verified_provenance,
         }
         manifest_payload = _json_bytes(manifest)
-        _write_payload(staging / MANIFEST_FILE, manifest_payload)
-        _verify_staging(
+        _write_payload(staging_descriptor, MANIFEST_FILE, manifest_payload)
+        _verify_publication_directory(
             staging,
             staging_identity,
+            staging_descriptor,
             payloads,
             artifact_hashes,
             manifest_payload,
@@ -114,10 +144,11 @@ def publish_payloads(
                 "Exp416 output directory appeared during staging"
             )
 
-        _fsync_directory(staging)
-        _verify_staging(
+        os.fsync(staging_descriptor)
+        staged_file_identities = _verify_publication_directory(
             staging,
             staging_identity,
+            staging_descriptor,
             payloads,
             artifact_hashes,
             manifest_payload,
@@ -131,12 +162,29 @@ def publish_payloads(
         result = dict(sorted(artifact_hashes.items()))
         _atomic_rename_noreplace(staging, output)
         published = True
-        if _directory_identity(output) != staging_identity:
+        output_descriptor = _open_directory(output)
+        if _directory_fd_identity(output_descriptor) != staging_identity:
             raise ValueError("Exp416 published output identity changed")
+        _verify_publication_directory(
+            output,
+            staging_identity,
+            output_descriptor,
+            payloads,
+            artifact_hashes,
+            manifest_payload,
+            config,
+            expected_file_identities=staged_file_identities,
+        )
         _fsync_directory(output.parent)
         published = False
         return result
     except Exception as publication_error:
+        if output_descriptor is not None:
+            os.close(output_descriptor)
+            output_descriptor = None
+        if staging_descriptor is not None:
+            os.close(staging_descriptor)
+            staging_descriptor = None
         cleanup_errors: list[Exception] = []
         owned_output_removed = False
         for candidate in (output, staging):
@@ -158,75 +206,167 @@ def publish_payloads(
                 [publication_error, *cleanup_errors],
             )
         raise
+    finally:
+        if output_descriptor is not None:
+            os.close(output_descriptor)
+        if staging_descriptor is not None:
+            os.close(staging_descriptor)
 
 
-def _write_payload(path: Path, payload: bytes) -> None:
-    with path.open("xb") as handle:
+def _write_payload(
+    directory_descriptor: int,
+    name: str,
+    payload: bytes,
+) -> None:
+    descriptor = os.open(
+        name,
+        _FILE_WRITE_FLAGS,
+        0o666,
+        dir_fd=directory_descriptor,
+    )
+    with os.fdopen(descriptor, "wb") as handle:
         handle.write(payload)
         handle.flush()
         os.fsync(handle.fileno())
 
 
-def _verify_staging(
-    staging: Path,
-    staging_identity: tuple[int, int],
+def _verify_publication_directory(
+    directory: Path,
+    directory_identity: tuple[int, int],
+    directory_descriptor: int,
     payloads: Mapping[str, bytes],
     artifact_hashes: Mapping[str, str],
     manifest_payload: bytes,
     config: Exp416FrozenConfig,
-) -> None:
-    if _is_symlink(staging) or not _is_real_directory(staging):
-        raise ValueError("Exp416 staging root must be a real directory")
-    if _directory_identity(staging) != staging_identity:
-        raise ValueError("Exp416 staging root identity changed")
+    *,
+    expected_file_identities: Mapping[str, tuple[int, int]] | None = None,
+) -> dict[str, tuple[int, int]]:
+    _verify_directory_path_identity(directory, directory_identity)
+    if _directory_fd_identity(directory_descriptor) != directory_identity:
+        raise ValueError("Exp416 publication directory descriptor changed")
     expected = _EXPECTED_PAYLOAD_FILES | {MANIFEST_FILE}
-    observed = {entry.name for entry in os.scandir(staging)}
-    if observed != expected:
-        raise ValueError("Exp416 staged artifact coverage mismatch")
+    with os.scandir(directory_descriptor) as entries:
+        observed = tuple(entry.name for entry in entries)
+    if len(observed) != 4 or set(observed) != expected:
+        raise ValueError("Exp416 publication artifact coverage mismatch")
 
     staged_payloads: dict[str, bytes] = {}
+    file_identities: dict[str, tuple[int, int]] = {}
     for name, payload in sorted(payloads.items()):
-        path = staging / name
-        _verify_file(path, payload, artifact_hashes[name], name)
-        staged_payloads[name] = path.read_bytes()
+        observed_payload, identity = _read_verified_file(
+            directory_descriptor,
+            name,
+            payload,
+            artifact_hashes[name],
+            expected_identity=(
+                None
+                if expected_file_identities is None
+                else expected_file_identities[name]
+            ),
+        )
+        staged_payloads[name] = observed_payload
+        file_identities[name] = identity
     verify_rendered_payloads(staged_payloads, config=config)
 
-    manifest_path = staging / MANIFEST_FILE
-    _verify_file(
-        manifest_path,
+    observed_manifest_payload, manifest_identity = _read_verified_file(
+        directory_descriptor,
+        MANIFEST_FILE,
         manifest_payload,
         sha256(manifest_payload).hexdigest(),
-        MANIFEST_FILE,
+        expected_identity=(
+            None
+            if expected_file_identities is None
+            else expected_file_identities[MANIFEST_FILE]
+        ),
     )
+    file_identities[MANIFEST_FILE] = manifest_identity
     try:
-        observed_manifest = json.loads(manifest_path.read_bytes())
+        observed_manifest = json.loads(observed_manifest_payload)
     except (json.JSONDecodeError, UnicodeDecodeError) as error:
-        raise ValueError("Exp416 staged manifest is invalid") from error
+        raise ValueError("Exp416 publication manifest is invalid") from error
     if _json_bytes(observed_manifest) != manifest_payload:
-        raise ValueError("Exp416 staged manifest is not canonical")
+        raise ValueError("Exp416 publication manifest is not canonical")
+    return file_identities
 
 
-def _verify_file(
-    path: Path,
+def _read_verified_file(
+    directory_descriptor: int,
+    name: str,
     expected_payload: bytes,
     expected_digest: str,
-    name: str,
-) -> None:
+    *,
+    expected_identity: tuple[int, int] | None,
+) -> tuple[bytes, tuple[int, int]]:
     try:
-        metadata = path.lstat()
-    except FileNotFoundError as error:
+        metadata = os.stat(
+            name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+    except (FileNotFoundError, OSError) as error:
         raise ValueError(
-            f"Exp416 staged payload verification failed: {name}"
+            f"Exp416 publication payload verification failed: {name}"
+        ) from error
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError(
+            "Exp416 publication payload must be a regular file, not a "
+            f"symlink: {name}"
+        )
+    try:
+        descriptor = os.open(
+            name,
+            _FILE_READ_FLAGS,
+            dir_fd=directory_descriptor,
+        )
+    except OSError as error:
+        raise ValueError(
+            "Exp416 publication payload verification failed or symlinked: "
+            f"{name}"
+        ) from error
+    try:
+        opened_metadata = os.fstat(descriptor)
+        identity = (opened_metadata.st_dev, opened_metadata.st_ino)
+        if (
+            not stat.S_ISREG(opened_metadata.st_mode)
+            or identity != (metadata.st_dev, metadata.st_ino)
+            or (
+                expected_identity is not None
+                and identity != expected_identity
+            )
+        ):
+            raise ValueError(
+                "Exp416 publication payload inode or type changed: "
+                f"{name}"
+            )
+        digest = sha256()
+        chunks: list[bytes] = []
+        while chunk := os.read(descriptor, 1024 * 1024):
+            chunks.append(chunk)
+            digest.update(chunk)
+        observed_payload = b"".join(chunks)
+    finally:
+        os.close(descriptor)
+    try:
+        current_metadata = os.stat(
+            name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+    except (FileNotFoundError, OSError) as error:
+        raise ValueError(
+            f"Exp416 publication payload verification failed: {name}"
         ) from error
     if (
-        stat.S_ISLNK(metadata.st_mode)
-        or not stat.S_ISREG(metadata.st_mode)
-        or path.read_bytes() != expected_payload
-        or _sha256_file(path) != expected_digest
+        not stat.S_ISREG(current_metadata.st_mode)
+        or (current_metadata.st_dev, current_metadata.st_ino) != identity
+        or observed_payload != expected_payload
+        or digest.hexdigest() != expected_digest
     ):
         raise ValueError(
-            f"Exp416 staged payload verification failed or symlinked: {name}"
+            "Exp416 publication payload verification failed or symlinked: "
+            f"{name}"
         )
+    return observed_payload, identity
 
 
 def _is_owned_path(
@@ -471,11 +611,47 @@ def _raise_rename_error(destination: Path) -> None:
     )
 
 
-def _directory_identity(path: Path) -> tuple[int, int]:
-    metadata = path.lstat()
-    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
-        raise ValueError("Exp416 staging root must be a real directory")
+def _open_directory(path: Path) -> int:
+    try:
+        descriptor = os.open(path, _DIRECTORY_OPEN_FLAGS)
+    except OSError as error:
+        raise ValueError(
+            "Exp416 staging root or published output must be a real directory"
+        ) from error
+    try:
+        _directory_fd_identity(descriptor)
+    except Exception:
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
+def _directory_fd_identity(descriptor: int) -> tuple[int, int]:
+    metadata = os.fstat(descriptor)
+    if not stat.S_ISDIR(metadata.st_mode):
+        raise ValueError(
+            "Exp416 publication directory descriptor is not a directory"
+        )
     return (metadata.st_dev, metadata.st_ino)
+
+
+def _verify_directory_path_identity(
+    path: Path,
+    expected_identity: tuple[int, int],
+) -> None:
+    try:
+        metadata = os.stat(path, follow_symlinks=False)
+    except (FileNotFoundError, OSError) as error:
+        raise ValueError(
+            "Exp416 staging root or published output is unavailable"
+        ) from error
+    if (
+        not stat.S_ISDIR(metadata.st_mode)
+        or (metadata.st_dev, metadata.st_ino) != expected_identity
+    ):
+        raise ValueError(
+            "Exp416 staging root or published output identity changed"
+        )
 
 
 def _is_real_directory(path: Path) -> bool:
@@ -496,14 +672,6 @@ def _lexists(path: Path) -> bool:
     return os.path.lexists(path)
 
 
-def _sha256_file(path: Path) -> str:
-    digest = sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def _fsync_directory(path: Path) -> None:
     descriptor = os.open(path, os.O_RDONLY)
     try:
@@ -512,17 +680,60 @@ def _fsync_directory(path: Path) -> None:
         os.close(descriptor)
 
 
-def _plain(value: object) -> object:
-    if isinstance(value, Mapping):
-        if any(type(key) is not str for key in value):
-            raise ValueError("Exp416 provenance keys must be strings")
-        return {
-            key: _plain(child)
-            for key, child in sorted(value.items())
+def _verified_summary_provenance(
+    payloads: Mapping[str, bytes],
+    provenance: Mapping[str, object],
+) -> dict[str, object]:
+    try:
+        summary = json.loads(payloads[SUMMARY_FILE])
+        inputs = summary["input_sha256"]
+        expected = {
+            "database_reference_sha256": inputs["database_reference"],
+            "exp415_prediction_created": summary[
+                "exp415_prediction_created"
+            ],
+            "frozen_test_labels_sha256": inputs["frozen_test_labels"],
+            "git_commit": summary["git_commit"],
+            "operational_policy_changed": summary[
+                "operational_policy_changed"
+            ],
+            "prediction_identity_sha256": summary[
+                "prediction_identity_sha256"
+            ],
+            "prediction_manifest_sha256": inputs["manifest"],
+            "prediction_modified": summary["prediction_modified"],
+            "prediction_sha256": inputs["prediction"],
+            "test_informed_reselection": summary[
+                "test_informed_reselection"
+            ],
+            "test_labels_loaded_after_prediction_freeze": summary[
+                "test_labels_loaded_after_prediction_freeze"
+            ],
         }
-    if isinstance(value, (tuple, list)):
-        return [_plain(child) for child in value]
-    return value
+    except (
+        json.JSONDecodeError,
+        KeyError,
+        TypeError,
+        UnicodeDecodeError,
+    ) as error:
+        raise ValueError(
+            "Exp416 verified summary provenance could not be derived"
+        ) from error
+    if (
+        set(provenance) != _PROVENANCE_FIELDS
+        or len(provenance) != len(_PROVENANCE_FIELDS)
+    ):
+        raise ValueError("Exp416 publication provenance schema mismatch")
+    for name, expected_value in expected.items():
+        observed_value = provenance[name]
+        if (
+            type(observed_value) is not type(expected_value)
+            or observed_value != expected_value
+        ):
+            raise ValueError(
+                f"Exp416 publication provenance mismatch: {name}"
+            )
+    return dict(sorted(expected.items()))
 
 
 def _json_bytes(value: object) -> bytes:
