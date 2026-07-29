@@ -250,6 +250,7 @@ def _measure_selected_strata(groups: Sequence[BenchmarkTrainGroup], repeats: int
     for group in groups:
         indices = tuple(item.instance_index for item in group.processed.group.series)
         inputs = torch.from_numpy(np.stack([group.processed.channels[index] for index in indices]).copy())
+        torch.manual_seed(FROZEN_CONFIG.model_seeds[0])
         model = CausalMultiHorizonCNN(build_horizons(group.length))
         cpu, cpu_ids, elapsed, cpu_fallback = _run_torch_stage(model, inputs, torch.device("cpu"), group.dataset, indices, repeats)
         mps, mps_ids, elapsed_mps, mps_fallback = _run_torch_stage(model, inputs, torch.device("mps"), group.dataset, indices, repeats)
@@ -276,24 +277,13 @@ def _run_torch_stage(model: nn.Module, inputs: Tensor, device: torch.device, dat
         elapsed += perf_counter() - started
     assert outputs is not None
     residuals = {index: {h: np.abs(outputs[h][position, 0] - inputs[position, 0, h:].numpy()) for h in outputs} for position, index in enumerate(indices)}
-    calibration_candidate = min(indices)
-    coordinates = tuple(
-        (dataset, index) for index in indices if _is_candidate(
-            residuals, index, calibrate_candidate=index == calibration_candidate
-        )
-    )
+    coordinates = tuple((dataset, index) for index in indices if _is_candidate(residuals, index))
     return np.concatenate([outputs[h].reshape(-1) for h in sorted(outputs)]), coordinates, elapsed, fallback
 
 
-def _is_candidate(
-    residuals: Mapping[int, Mapping[int, np.ndarray]], query_index: int, *, calibrate_candidate: bool
-) -> bool:
+def _is_candidate(residuals: Mapping[int, Mapping[int, np.ndarray]], query_index: int) -> bool:
     scores = []
-    for horizon, raw_query in residuals[query_index].items():
-        query = raw_query
-        if calibrate_candidate:
-            ceiling = max(float(np.max(values[horizon])) for values in residuals.values())
-            query = np.full_like(raw_query, (10.0 * ceiling) + 1.0)
+    for horizon, query in residuals[query_index].items():
         try: score = score_horizon(tuple(values[horizon] for index, values in residuals.items() if index != query_index), query, horizon=horizon)
         except ValueError: return False
         scores.append(score.p_value <= FROZEN_CONFIG.candidate_alpha and score.persistence >= FROZEN_CONFIG.persistence_fraction)

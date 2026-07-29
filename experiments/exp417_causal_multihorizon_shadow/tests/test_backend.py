@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import unittest
+import inspect
 
 import numpy as np
+import torch
 
 from experiments.exp417_causal_multihorizon_shadow.backend import (
     BenchmarkTrainGroup,
@@ -18,6 +20,8 @@ from experiments.exp417_causal_multihorizon_shadow.backend import (
     select_benchmark_strata,
     select_canonical_backend,
 )
+from experiments.exp417_causal_multihorizon_shadow.model import CausalMultiHorizonCNN
+from experiments.exp417_causal_multihorizon_shadow.preprocessing import build_horizons
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     BackendAudit,
     LengthGroup,
@@ -31,7 +35,7 @@ from experiments.exp417_causal_multihorizon_shadow.contracts import (
 def train_source(dataset: str, count: int, length: int) -> BenchmarkTrainGroup:
     positions = np.arange(length, dtype=np.float32)
     series = tuple(
-        RawSeries(index, tuple((index * 0.01) + np.sin(positions / (2.0 + (index % 3)))))
+        RawSeries(index, tuple((50.0 if index == 0 else index * 0.01) + np.sin(positions / (2.0 + (index % 3)))))
         for index in range(count)
     )
     train = RawTrainDataset(dataset=dataset, series=series)
@@ -164,9 +168,24 @@ class HostMPSProbeTests(unittest.TestCase):
             self.assertEqual(probe.reason, "mps_unavailable")
 
     def test_typed_synthetic_train_strata_benchmark_is_finite_or_fails_closed(self) -> None:
+        torch.manual_seed(41701)
         audit = benchmark_torch_devices(select_benchmark_strata((train_source("synthetic", 102, 64),)), repeats=1)
         self.assertEqual(select_canonical_backend((audit,)), audit.backend)
         self.assertTrue(np.isfinite((audit.max_normalized_error, audit.spearman, audit.speedup)).all())
+
+    def test_cpu_candidate_uses_unmodified_model_residuals_without_calibration_branch(self) -> None:
+        import experiments.exp417_causal_multihorizon_shadow.backend as backend
+
+        self.assertNotIn("calibrate_candidate", inspect.signature(backend._is_candidate).parameters)
+        source = train_source("synthetic", 102, 64)
+        indices = tuple(item.instance_index for item in source.processed.group.series)
+        inputs = torch.from_numpy(np.stack([source.processed.channels[index] for index in indices]).copy())
+        torch.manual_seed(41701)
+        _scores, coordinates, _elapsed, _fallback = backend._run_torch_stage(
+            CausalMultiHorizonCNN(build_horizons(64)), inputs, torch.device("cpu"), "synthetic", indices, 1
+        )
+        self.assertIn(("synthetic", 0), coordinates)
+        self.assertLess(len(coordinates), len(indices))
 
 
 if __name__ == "__main__":
