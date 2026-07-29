@@ -365,6 +365,7 @@ class RunnerPopulationTests(unittest.TestCase):
             summary = runner.resume_or_run_population(context, store, runtime=runtime)
             self.assertEqual(summary.status, "complete")
             self.assertEqual(tuple(store.load_completed()), context.datasets)
+            self.assertEqual(tuple(result.dataset for result in store.require_complete()), context.datasets)
 
     def test_checkpoint_evidence_rejects_missing_or_corrupt_model_bindings(self) -> None:
         """A missing seed or an altered model identity cannot be checkpointed."""
