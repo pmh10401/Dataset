@@ -7,6 +7,7 @@ from hashlib import sha256
 import importlib.metadata
 import json
 from pathlib import Path
+import re
 import sqlite3
 import subprocess
 import sys
@@ -57,6 +58,10 @@ JOIN datasets AS d ON d.id = i.dataset_id
 WHERE d.name = ? AND i.split = 'TEST'
 ORDER BY i.instance_index
 """
+
+
+class _DuplicateJsonKeyError(ValueError):
+    """Raised when a JSON object repeats a key that would otherwise overwrite."""
 
 
 def freeze_lane_inputs(
@@ -188,8 +193,8 @@ def assert_label_free_sql_contract() -> None:
     columns = tuple(part.strip().removeprefix("i.") for part in selected.split(","))
     if columns != ("instance_index", "values_blob"):
         raise ValueError("Exp417 TEST SQL must select only identity and values")
-    if "label" in selected:
-        raise ValueError("Exp417 TEST SQL selected a forbidden field")
+    if re.search(r"\blabel\b", query):
+        raise ValueError("Exp417 TEST SQL contains a forbidden label token")
 
 
 def verify_input_snapshots(
@@ -289,7 +294,7 @@ def _json_object(payload: str, name: str) -> Mapping[str, Any]:
         result: dict[str, Any] = {}
         for key, value in items:
             if key in result:
-                raise ValueError(f"{name} contains duplicate key: {key}")
+                raise _DuplicateJsonKeyError(f"{name} contains duplicate key: {key}")
             result[key] = value
         return result
 
@@ -301,6 +306,8 @@ def _json_object(payload: str, name: str) -> Mapping[str, Any]:
                 ValueError(f"{name} contains invalid constant: {value}")
             ),
         )
+    except _DuplicateJsonKeyError:
+        raise
     except (json.JSONDecodeError, ValueError) as error:
         raise ValueError(f"{name} is not valid JSON") from error
     if not isinstance(result, Mapping):

@@ -201,32 +201,83 @@ class InputBoundaryTests(unittest.TestCase):
             lanes = self._freeze_lanes(config)
         self.assertEqual(lanes.automatic_normal, {"A": (1,)})
 
-    def test_rejects_prediction_or_manifest_hash_mutation_before_parse(self) -> None:
-        """Changing a pinned artifact must fail before its rows are trusted."""
+    def test_rejects_preparse_mutation_of_each_frozen_artifact(self) -> None:
+        """Every independently changed artifact must fail before parsing begins."""
+        for artifact in (
+            self.prediction_291,
+            self.manifest_291,
+            self.prediction_292,
+            self.manifest_292,
+        ):
+            with self.subTest(artifact=artifact.name):
+                self._write_predictions(self.rows, self.rows)
+                with self.synthetic_config() as config:
+                    artifact.write_text("mutated\n", encoding="utf-8")
+                    with self.assertRaisesRegex(ValueError, "SHA256"):
+                        self._freeze_lanes(config)
+
+    def test_rehash_after_parse_rejects_mutation_of_each_frozen_artifact(self) -> None:
+        """Every artifact is rehashed after its own successful parse."""
+        prediction_paths = (self.prediction_291, self.prediction_292)
+        manifest_paths = (self.manifest_291, self.manifest_292)
+        for artifact in prediction_paths + manifest_paths:
+            with self.subTest(artifact=artifact.name):
+                self._write_predictions(self.rows, self.rows)
+                with self.synthetic_config() as config:
+                    if artifact in prediction_paths:
+                        original = inputs._read_prediction_rows
+
+                        def mutate_prediction(path: Path):
+                            rows = original(path)
+                            if Path(path) == artifact:
+                                artifact.write_text("changed\n", encoding="utf-8")
+                            return rows
+
+                        replacement = mutate_prediction
+                        target = "_read_prediction_rows"
+                    else:
+                        original = inputs._read_manifest
+
+                        def mutate_manifest(path: Path):
+                            manifest = original(path)
+                            if Path(path) == artifact:
+                                artifact.write_text("changed\n", encoding="utf-8")
+                            return manifest
+
+                        replacement = mutate_manifest
+                        target = "_read_manifest"
+                    with patch.object(inputs, target, replacement):
+                        with self.assertRaisesRegex(ValueError, "changed during parsing"):
+                            self._freeze_lanes(config)
+
+    def test_rejects_duplicate_keys_in_prediction_and_manifest_json(self) -> None:
+        """Duplicate JSON keys cannot choose a lane or manifest value by order."""
+        duplicate_prediction = (
+            '{"dataset":"A","dataset":"B","n_test":5,'
+            '"automatic_hard_indices":[0],'
+            '"automatic_normal_exact_indices":[1],'
+            '"standard_review_indices":[2],"priority_review_indices":[3]}\n'
+        )
+        self.prediction_291.write_text(duplicate_prediction, encoding="utf-8")
         with self.synthetic_config() as config:
-            self.prediction_291.write_text("mutated\n", encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "SHA256"):
+            with self.assertRaisesRegex(ValueError, "duplicate key"):
                 self._freeze_lanes(config)
         self._write_predictions(self.rows, self.rows)
+        duplicate_manifest = json.dumps(
+            {
+                "prediction_sha256": _sha(self.prediction_291),
+                "rows": 2,
+                "contains_test_labels": False,
+                "contains_evaluation_metrics": False,
+            },
+            separators=(",", ":"),
+        )
+        self.manifest_291.write_text(
+            duplicate_manifest[:-1] + ',"rows":2}', encoding="utf-8"
+        )
         with self.synthetic_config() as config:
-            self.manifest_291.write_text("{}", encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "SHA256"):
+            with self.assertRaisesRegex(ValueError, "duplicate key"):
                 self._freeze_lanes(config)
-
-    def test_rehash_after_parse_rejects_independent_mutation(self) -> None:
-        """A lane file changed while parsing cannot produce a trusted snapshot."""
-        with self.synthetic_config() as config:
-            original = inputs._read_prediction_rows
-
-            def mutate_after_read(path: Path):
-                rows = original(path)
-                if Path(path) == self.prediction_291:
-                    self.prediction_291.write_text("changed\n", encoding="utf-8")
-                return rows
-
-            with patch.object(inputs, "_read_prediction_rows", mutate_after_read):
-                with self.assertRaisesRegex(ValueError, "changed during parsing"):
-                    self._freeze_lanes(config)
 
     def test_rejects_exp291_exp292_lane_mismatch(self) -> None:
         """Different frozen sources must not be merged into a new lane."""
@@ -291,6 +342,18 @@ class InputBoundaryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "SHA256"):
                 inputs.freeze_run_context(self.database, self._freeze_lanes(config), config=config)
 
+    def test_rejects_frozen_lane_dataset_outside_database_population(self) -> None:
+        """A lane coordinate for an absent dataset cannot enter a run context."""
+        outside_rows = (
+            _row("A", normal=[1], standard=[2], priority=[3]),
+            _row("C", hard=[0]),
+        )
+        self._write_predictions(outside_rows, outside_rows)
+        with self.synthetic_config() as config:
+            lanes = self._freeze_lanes(config)
+            with self.assertRaisesRegex(ValueError, "outside the database population"):
+                inputs.list_dataset_names(self.database, lanes, config=config)
+
     def test_train_loader_uses_normal_train_values_and_preserves_identity_order(self) -> None:
         """Dropping the normal-only predicate would admit the synthetic abnormal row."""
         with self.synthetic_config() as config:
@@ -351,6 +414,25 @@ class InputBoundaryTests(unittest.TestCase):
         """Adding a forbidden input path or TEST selected field must fail preflight."""
         assert_package_has_no_label_path(Path(inputs.__file__).parent)
         inputs.assert_label_free_sql_contract()
+
+    def test_sql_guard_rejects_label_anywhere_in_test_query_but_allows_train_predicate(self) -> None:
+        """A TEST predicate using labels is forbidden even when SELECT stays values-only."""
+        self.assertIn("label", inputs._TRAIN_VALUES_SQL.lower())
+        mutated_test_sql = inputs._TEST_VALUES_SQL.replace(
+            "WHERE d.name = ?", "WHERE i.label = '0' AND d.name = ?"
+        )
+        with patch.object(inputs, "_TEST_VALUES_SQL", mutated_test_sql):
+            with self.assertRaisesRegex(ValueError, "forbidden"):
+                inputs.assert_label_free_sql_contract()
+
+    def test_open_read_only_connection_rejects_writes(self) -> None:
+        """Changing URI mode would permit a synthetic SQLite write and fail this test."""
+        connection = inputs._open_read_only(self.database)
+        try:
+            with self.assertRaises(sqlite3.OperationalError):
+                connection.execute("INSERT INTO datasets(id, name) VALUES (99, 'write-forbidden')")
+        finally:
+            connection.close()
 
 
 if __name__ == "__main__":
