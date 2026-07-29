@@ -156,6 +156,77 @@ class PublicationTests(unittest.TestCase):
         self.assertFalse(output.exists())
         self.assertEqual(tuple(self.root.iterdir()), ())
 
+    def test_foreign_staging_replacement_survives_owned_output_cleanup(
+        self,
+    ) -> None:
+        output = self.root / "publication"
+        foreign_staging: list[Path] = []
+
+        def replace_both_publication_paths() -> None:
+            staging = next(self.root.glob(".publication.*.staging"))
+            os.replace(staging, output)
+            staging.mkdir()
+            (staging / "foreign.txt").write_text(
+                "foreign",
+                encoding="utf-8",
+            )
+            foreign_staging.append(staging)
+
+        with self.assertRaises(FileExistsError):
+            self.publish(
+                output,
+                pre_publish_verify=replace_both_publication_paths,
+            )
+
+        self.assertFalse(output.exists())
+        self.assertEqual(len(foreign_staging), 1)
+        self.assertEqual(
+            (foreign_staging[0] / "foreign.txt").read_text(
+                encoding="utf-8"
+            ),
+            "foreign",
+        )
+
+    def test_atomic_final_rename_does_not_clobber_postcheck_competitor(
+        self,
+    ) -> None:
+        output = self.root / "publication"
+        external = self.root / "foreign_output"
+        external.mkdir()
+        (external / "foreign.txt").write_text(
+            "foreign",
+            encoding="utf-8",
+        )
+        output_checks = 0
+
+        def inject_competitor_after_final_check(path: Path) -> bool:
+            nonlocal output_checks
+            if path == output:
+                output_checks += 1
+                if output_checks == 3:
+                    output.symlink_to(
+                        external,
+                        target_is_directory=True,
+                    )
+                    return False
+            return os.path.lexists(path)
+
+        with patch.object(
+            publication,
+            "_lexists",
+            side_effect=inject_competitor_after_final_check,
+        ):
+            with self.assertRaises(FileExistsError):
+                self.publish(output)
+
+        self.assertTrue(output.is_symlink())
+        self.assertEqual(output.readlink(), external)
+        self.assertEqual(
+            (external / "foreign.txt").read_text(encoding="utf-8"),
+            "foreign",
+        )
+        self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
+
     def test_parent_fsync_failure_rolls_back_output(self) -> None:
         real_fsync_directory = publication._fsync_directory
         output = self.root / "publication"

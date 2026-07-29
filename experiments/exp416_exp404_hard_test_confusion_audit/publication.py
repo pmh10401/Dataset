@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+import ctypes
+import errno
 from hashlib import sha256
 import json
 import os
 from pathlib import Path
 import shutil
 import stat
+import sys
 import uuid
 
 from .config import Exp416FrozenConfig, FROZEN_CONFIG
@@ -24,6 +27,9 @@ from .reporting import (
 _EXPECTED_PAYLOAD_FILES = frozenset(
     {SUMMARY_FILE, DATASET_FILE, REPORT_FILE}
 )
+_AT_FDCWD = -2
+_RENAME_NOREPLACE = 1
+_RENAME_EXCL = 0x00000004
 
 
 def publish_payloads(
@@ -118,7 +124,7 @@ def publish_payloads(
             )
 
         result = dict(sorted(artifact_hashes.items()))
-        os.replace(staging, output)
+        _atomic_rename_noreplace(staging, output)
         published = True
         if _directory_identity(output) != staging_identity:
             raise ValueError("Exp416 published output identity changed")
@@ -126,13 +132,13 @@ def publish_payloads(
         published = False
         return result
     except Exception:
-        if _is_owned_directory(output, staging_identity):
-            _rollback_publication(output, staging, staging_identity)
-        elif published:
+        owned_output = _is_owned_path(output, staging_identity)
+        _remove_owned_path(output, staging_identity)
+        _remove_owned_path(staging, staging_identity)
+        if published and not owned_output:
             raise RuntimeError(
                 "Exp416 publication rollback could not identify its output"
             )
-        _remove_staging(staging)
         raise
 
 
@@ -205,41 +211,109 @@ def _verify_file(
         )
 
 
-def _rollback_publication(
-    output: Path,
-    staging: Path,
-    staging_identity: tuple[int, int] | None,
-) -> None:
-    if (
-        staging_identity is None
-        or not _is_real_directory(output)
-        or _directory_identity(output) != staging_identity
-        or _lexists(staging)
-    ):
-        raise RuntimeError(
-            "Exp416 publication rollback could not identify its output"
-        )
-    os.replace(output, staging)
-
-
-def _is_owned_directory(
+def _is_owned_path(
     path: Path,
     identity: tuple[int, int] | None,
 ) -> bool:
-    return (
-        identity is not None
-        and _is_real_directory(path)
-        and _directory_identity(path) == identity
+    if identity is None or not _lexists(path):
+        return False
+    metadata = path.lstat()
+    if stat.S_ISDIR(metadata.st_mode):
+        return (metadata.st_dev, metadata.st_ino) == identity
+    if stat.S_ISLNK(metadata.st_mode):
+        try:
+            target = path.stat()
+        except (FileNotFoundError, OSError):
+            return False
+        return stat.S_ISDIR(target.st_mode) and (
+            target.st_dev,
+            target.st_ino,
+        ) == identity
+    return False
+
+
+def _remove_owned_path(
+    path: Path,
+    identity: tuple[int, int] | None,
+) -> None:
+    if not _is_owned_path(path, identity):
+        return
+    if _is_symlink(path):
+        path.unlink()
+        return
+    shutil.rmtree(path)
+
+
+def _atomic_rename_noreplace(source: Path, destination: Path) -> None:
+    """Rename exclusively, failing closed where no safe primitive exists."""
+    if sys.platform == "darwin":
+        libc = ctypes.CDLL(None, use_errno=True)
+        rename = libc.renamex_np
+        rename.argtypes = [
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        rename.restype = ctypes.c_int
+        result = rename(
+            os.fsencode(source),
+            os.fsencode(destination),
+            _RENAME_EXCL,
+        )
+        if result != 0:
+            _raise_rename_error(destination)
+        return
+    if sys.platform.startswith("linux"):
+        libc = ctypes.CDLL(None, use_errno=True)
+        try:
+            rename = libc.renameat2
+        except AttributeError as error:
+            raise OSError(
+                errno.ENOTSUP,
+                "atomic no-replace rename is unavailable",
+                str(destination),
+            ) from error
+        rename.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        rename.restype = ctypes.c_int
+        result = rename(
+            _AT_FDCWD,
+            os.fsencode(source),
+            _AT_FDCWD,
+            os.fsencode(destination),
+            _RENAME_NOREPLACE,
+        )
+        if result != 0:
+            _raise_rename_error(destination)
+        return
+    if os.name == "nt":
+        os.rename(source, destination)
+        return
+    raise OSError(
+        errno.ENOTSUP,
+        "atomic no-replace rename is unavailable",
+        str(destination),
     )
 
 
-def _remove_staging(staging: Path) -> None:
-    if not _lexists(staging):
-        return
-    if _is_symlink(staging):
-        staging.unlink()
-        return
-    shutil.rmtree(staging)
+def _raise_rename_error(destination: Path) -> None:
+    error_number = ctypes.get_errno()
+    if error_number in {errno.EEXIST, errno.ENOTEMPTY}:
+        raise FileExistsError(
+            error_number,
+            "Exp416 output directory appeared during atomic rename",
+            str(destination),
+        )
+    raise OSError(
+        error_number,
+        os.strerror(error_number),
+        str(destination),
+    )
 
 
 def _directory_identity(path: Path) -> tuple[int, int]:
