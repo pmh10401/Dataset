@@ -968,6 +968,13 @@ Implement this exact sequence:
     replacements, surface cleanup errors with the original error, and leave no
     owned final output.
 
+Cleanup ownership capture uses macOS `renamex_np(RENAME_SWAP)` or Linux
+`renameat2(RENAME_EXCHANGE)` with an owned placeholder.  It never performs a
+pathname precheck followed by a normal rename.  A captured foreign inode is
+atomically restored; a second racing foreign inode is preserved in the unique
+capture slot and reported.  Platforms without atomic exchange fail before
+staging or final publication.
+
 - [ ] **Step 7: Run GREEN and regressions**
 
 ```bash

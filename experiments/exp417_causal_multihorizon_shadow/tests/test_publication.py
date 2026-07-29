@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 from hashlib import sha256
 import json
 import os
@@ -77,6 +78,25 @@ class PublicationTests(unittest.TestCase):
             sha256(self.payloads["EXP417_RESULT_REPORT_KO.md"]).hexdigest(),
         )
         self.assertTrue(all(not path.is_symlink() for path in output.iterdir()))
+
+    def test_unsupported_atomic_exchange_fails_before_staging(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import publication
+
+        output = self.root / "publication"
+        callback_called = False
+
+        def callback() -> None:
+            nonlocal callback_called
+            callback_called = True
+
+        with patch.object(publication.sys, "platform", "unsupported-os"):
+            with self.assertRaises(OSError) as caught:
+                self.publish(output, callback)
+
+        self.assertEqual(caught.exception.errno, errno.ENOTSUP)
+        self.assertFalse(callback_called)
+        self.assertFalse(os.path.lexists(output))
+        self.assertEqual(tuple(self.root.glob(".publication.*")), ())
 
     def test_mutation_extra_file_and_symlink_are_fail_closed(self) -> None:
         attacks = {}
@@ -187,6 +207,8 @@ class PublicationTests(unittest.TestCase):
 
             def mutate_after_rename(source: Path, destination: Path) -> None:
                 real_rename(source, destination)
+                if destination != output:
+                    return
                 target = destination / "exp417_backend_benchmark.json"
                 if replace_inode:
                     target.unlink()
@@ -293,14 +315,17 @@ class PublicationTests(unittest.TestCase):
         real_rename = publication._atomic_rename_noreplace
         injected_paths: list[Path] = []
 
-        def inject_after_quarantine(source: Path, destination: Path) -> None:
+        def inject_before_placeholder_release(
+            source: Path, destination: Path
+        ) -> None:
+            if destination.name.endswith(".released") and not injected_paths:
+                displaced = source.with_name(f"{source.name}.placeholder-away")
+                source.rename(displaced)
+                source.mkdir()
+                target = source / "foreign.txt"
+                target.write_bytes(b"foreign replacement\n")
+                injected_paths.append(target)
             real_rename(source, destination)
-            if destination.name.endswith(".quarantine") and destination.is_dir():
-                target = destination / "exp417_backend_benchmark.json"
-                if target.exists() and not injected_paths:
-                    target.rename(destination / "displaced-owned.json")
-                    target.write_bytes(b"foreign replacement\n")
-                    injected_paths.append(target)
 
         def fail() -> None:
             staging = next(self.root.glob(".publication.*.staging"))
@@ -309,7 +334,7 @@ class PublicationTests(unittest.TestCase):
         with patch.object(
             publication,
             "_atomic_rename_noreplace",
-            side_effect=inject_after_quarantine,
+            side_effect=inject_before_placeholder_release,
         ):
             with self.assertRaises(Exception):
                 self.publish(output, fail)
@@ -318,8 +343,10 @@ class PublicationTests(unittest.TestCase):
         self.assertTrue(injected_paths[0].exists())
         self.assertEqual(injected_paths[0].read_bytes(), b"foreign replacement\n")
 
-    def test_cleanup_mismatch_never_moves_foreign_path_or_follows_symlink(self) -> None:
-        """Foreign A/B and symlink-to-owned remain byte-for-byte at their names."""
+    def test_cleanup_atomic_capture_restores_foreign_a_and_preserves_racing_b(
+        self,
+    ) -> None:
+        """Foreign A is restored and racing foreign B is retained in capture."""
         from experiments.exp417_causal_multihorizon_shadow import publication
 
         output = self.root / "publication"
@@ -327,18 +354,20 @@ class PublicationTests(unittest.TestCase):
         foreign_b = self.root / "foreign-b"
         foreign_b.mkdir()
         (foreign_b / "owner.txt").write_bytes(b"foreign B\n")
-        rename_sources: list[Path] = []
-        real_rename = publication._atomic_rename_noreplace
+        real_exchange = publication._atomic_exchange
+        output_exchanges = 0
 
-        def observe(source: Path, destination: Path) -> None:
-            rename_sources.append(source)
-            if source == output:
-                # This is the old unsafe restoration window.  A second foreign
-                # owner arrives before restore; neither may be moved.
-                real_rename(source, destination)
+        def observe(first: Path, second: Path) -> None:
+            nonlocal output_exchanges
+            if first == output:
+                output_exchanges += 1
+            if first == output and output_exchanges == 2:
+                # After atomic capture of foreign A, replace the owned
+                # placeholder with foreign B immediately before restoration.
+                placeholder_away = self.root / "placeholder-away"
+                output.rename(placeholder_away)
                 foreign_b.rename(output)
-                return
-            real_rename(source, destination)
+            real_exchange(first, second)
 
         def substitute_with_foreign() -> None:
             staging = next(self.root.glob(".publication.*.staging"))
@@ -347,16 +376,16 @@ class PublicationTests(unittest.TestCase):
             (output / "owner.txt").write_bytes(b"foreign A\n")
 
         with patch.object(
-            publication, "_atomic_rename_noreplace", side_effect=observe
+            publication, "_atomic_exchange", side_effect=observe
         ):
             with self.assertRaises(ExceptionGroup):
                 self.publish(output, substitute_with_foreign)
 
-        self.assertNotIn(output, rename_sources)
+        self.assertEqual(output_exchanges, 2)
         self.assertEqual((output / "owner.txt").read_bytes(), b"foreign A\n")
-        self.assertEqual(
-            (foreign_b / "owner.txt").read_bytes(), b"foreign B\n"
-        )
+        captures = tuple(self.root.glob(".publication.*.capture/owner.txt"))
+        self.assertEqual(len(captures), 1)
+        self.assertEqual(captures[0].read_bytes(), b"foreign B\n")
         self.assertTrue((owned / "exp417_backend_benchmark.json").is_file())
 
     def test_parent_is_fsynced_again_after_rollback_mutates_it(self) -> None:

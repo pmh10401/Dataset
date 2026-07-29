@@ -29,6 +29,8 @@ from .reporting import (
 
 _LINUX_AT_FDCWD = -100
 _RENAME_NOREPLACE = 1
+_RENAME_EXCHANGE = 2
+_RENAME_SWAP = 0x00000002
 _RENAME_EXCL = 0x00000004
 _DIRECTORY_OPEN_FLAGS = (
     os.O_RDONLY
@@ -74,6 +76,7 @@ def publish_exp417(
     if not callable(pre_publish_verify):
         raise ValueError("Exp417 pre-publish verifier must be callable")
     trusted_checkpoint = TrustedCheckpointProvenance.from_store(checkpoints)
+    _require_atomic_exchange()
     verify_exp417_payloads(
         payloads, trusted_checkpoint=trusted_checkpoint
     )
@@ -345,35 +348,83 @@ def _remove_owned_path(
 ) -> bool:
     if identity is None or not _lexists(path):
         return False
+    capture = path.with_name(f".{path.name}.{uuid.uuid4().hex}.capture")
+    capture.mkdir(mode=0o700, parents=False, exist_ok=False)
+    os.chmod(capture, 0o700, follow_symlinks=False)
+    placeholder = capture.lstat()
+    placeholder_identity = (placeholder.st_dev, placeholder.st_ino)
     try:
-        before = path.lstat()
+        _atomic_exchange(path, capture)
     except FileNotFoundError:
-        return False
-    if (
-        not stat.S_ISDIR(before.st_mode)
-        or (before.st_dev, before.st_ino) != identity
-    ):
-        raise RuntimeError(
-            f"Exp417 cleanup path is not the verified owned directory; left untouched: {path}"
-        )
-    quarantine = path.with_name(f".{path.name}.{uuid.uuid4().hex}.quarantine")
-    try:
-        _atomic_rename_noreplace(path, quarantine)
-    except FileNotFoundError:
+        # The empty owned capture slot is intentionally retained: deleting it
+        # by pathname would recreate the same conditional-unlink problem.
         return False
     except OSError as error:
         raise RuntimeError(
-            f"Exp417 failed to quarantine cleanup candidate: {path}: {error}"
+            f"Exp417 failed to atomically capture cleanup candidate: {path}: {error}"
         ) from error
-    if not _is_owned_path(quarantine, identity):
+
+    captured = capture.lstat()
+    captured_identity = (captured.st_dev, captured.st_ino)
+    if not stat.S_ISDIR(captured.st_mode) or captured_identity != identity:
+        # Restore the exact atomically captured foreign entry.  If another
+        # foreign owner replaced the placeholder at `path` before this swap,
+        # the first entry returns to its official name and the second remains
+        # intact in the unique capture slot.  Nothing is deleted or mistaken
+        # for the owned inode.
         try:
-            _atomic_rename_noreplace(quarantine, path)
+            _atomic_exchange(path, capture)
+        except (FileNotFoundError, OSError) as restore_error:
+            raise RuntimeError(
+                "Exp417 captured a foreign cleanup candidate and could not "
+                f"atomically restore it; preserved at {capture}: {restore_error}"
+            ) from restore_error
+        conflict = capture.lstat()
+        conflict_identity = (conflict.st_dev, conflict.st_ino)
+        if (
+            not stat.S_ISDIR(conflict.st_mode)
+            or conflict_identity != placeholder_identity
+        ):
+            raise RuntimeError(
+                "Exp417 cleanup ownership mismatch; first foreign entry was "
+                f"restored and a second foreign entry is preserved at {capture}"
+            )
+        raise RuntimeError(
+            f"Exp417 cleanup path was foreign and was atomically restored: {path}"
+        )
+
+    # The owned directory is now durably quarantined at `capture`; the
+    # official name contains only our known empty placeholder.  Move whatever
+    # currently occupies that name to a unique release slot atomically.  If a
+    # foreign replacement raced in, inspect it after capture and restore it to
+    # the now-empty official name when possible.
+    release = path.with_name(f".{path.name}.{uuid.uuid4().hex}.released")
+    try:
+        _atomic_rename_noreplace(path, release)
+    except OSError as error:
+        raise RuntimeError(
+            f"Exp417 failed to release owned cleanup placeholder: {path}: {error}"
+        ) from error
+    released = release.lstat()
+    released_identity = (released.st_dev, released.st_ino)
+    if (
+        not stat.S_ISDIR(released.st_mode)
+        or released_identity != placeholder_identity
+    ):
+        try:
+            _atomic_rename_noreplace(release, path)
         except OSError as restore_error:
             raise RuntimeError(
-                "Exp417 moved a foreign cleanup candidate and could not restore "
-                f"it; preserved at {quarantine}: {restore_error}"
+                "Exp417 captured a racing foreign replacement; it remains "
+                f"preserved at {release} because its official name is occupied: "
+                f"{restore_error}"
             ) from restore_error
-        return False
+        raise RuntimeError(
+            "Exp417 captured and restored a racing foreign replacement while "
+            "quarantining the verified owned directory"
+        )
+
+    quarantine = capture
     try:
         descriptor = os.open(quarantine, _DIRECTORY_OPEN_FLAGS)
         try:
@@ -398,14 +449,67 @@ def _remove_owned_path(
     return True
 
 
-def _is_owned_path(path: Path, identity: tuple[int, int]) -> bool:
-    try:
-        metadata = path.lstat()
-    except FileNotFoundError:
-        return False
-    return stat.S_ISDIR(metadata.st_mode) and (
-        metadata.st_dev, metadata.st_ino
-    ) == identity
+def _require_atomic_exchange() -> None:
+    if sys.platform == "darwin":
+        libc = ctypes.CDLL(None, use_errno=True)
+        if not hasattr(libc, "renamex_np"):
+            raise OSError(errno.ENOTSUP, "atomic directory exchange is unavailable")
+        return
+    if sys.platform.startswith("linux"):
+        libc = ctypes.CDLL(None, use_errno=True)
+        if not hasattr(libc, "renameat2"):
+            raise OSError(errno.ENOTSUP, "atomic directory exchange is unavailable")
+        return
+    raise OSError(errno.ENOTSUP, "atomic directory exchange is unavailable")
+
+
+def _atomic_exchange(first: Path, second: Path) -> None:
+    """Atomically swap two directory entries without an ownership check gap."""
+    first_bytes = os.fsencode(os.path.abspath(first))
+    second_bytes = os.fsencode(os.path.abspath(second))
+    if sys.platform == "darwin":
+        libc = ctypes.CDLL(None, use_errno=True)
+        try:
+            exchange = libc.renamex_np
+        except AttributeError as error:
+            raise OSError(
+                errno.ENOTSUP, "atomic directory exchange is unavailable"
+            ) from error
+        exchange.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+        exchange.restype = ctypes.c_int
+        if exchange(first_bytes, second_bytes, _RENAME_SWAP) != 0:
+            _raise_exchange_error(first)
+        return
+    if sys.platform.startswith("linux"):
+        libc = ctypes.CDLL(None, use_errno=True)
+        try:
+            exchange = libc.renameat2
+        except AttributeError as error:
+            raise OSError(
+                errno.ENOTSUP, "atomic directory exchange is unavailable"
+            ) from error
+        exchange.argtypes = [
+            ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        exchange.restype = ctypes.c_int
+        if exchange(
+            _LINUX_AT_FDCWD,
+            first_bytes,
+            _LINUX_AT_FDCWD,
+            second_bytes,
+            _RENAME_EXCHANGE,
+        ) != 0:
+            _raise_exchange_error(first)
+        return
+    raise OSError(errno.ENOTSUP, "atomic directory exchange is unavailable")
+
+
+def _raise_exchange_error(path: Path) -> None:
+    number = ctypes.get_errno()
+    if number == errno.ENOENT:
+        raise FileNotFoundError(number, os.strerror(number), str(path))
+    raise OSError(number, os.strerror(number), str(path))
 
 
 def _atomic_rename_noreplace(source: Path, destination: Path) -> None:
