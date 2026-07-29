@@ -517,9 +517,13 @@ git commit -m "feat: train Exp417 causal OOF models"
 - Produces:
   - `longest_true_run_fraction(mask: np.ndarray) -> float`
   - `empirical_p_value(oof_scores: Sequence[float], query: float) -> float`
-  - `score_horizon(oof_residuals: Sequence[np.ndarray], query_residual: np.ndarray) -> HorizonScore`
-  - `seed_decision(scores: Mapping[int, HorizonScore], *, config=FROZEN_CONFIG) -> SeedDecision`
+  - `score_horizon(oof_residuals: Sequence[np.ndarray], query_residual: np.ndarray, *, horizon: int) -> HorizonScore`
+  - `seed_decision(scores: Mapping[int, HorizonScore], *, seed: int, config=FROZEN_CONFIG) -> SeedDecision`
   - `consensus_candidate(decisions: Sequence[SeedDecision]) -> bool`
+
+`HorizonScore` and `SeedDecision` are immutable evidence records, so their
+horizon and seed must be explicit inputs; inference from residual length, map
+position, or sequence order is forbidden.
 
 - [ ] **Step 1: Write hand-calculated score tests**
 
