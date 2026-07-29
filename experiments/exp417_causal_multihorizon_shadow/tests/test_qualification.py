@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from math import ceil
 from types import MappingProxyType
 import unittest
 from unittest.mock import patch
@@ -12,6 +13,7 @@ import numpy as np
 from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     BackendAudit,
+    DatasetDecisionEvidence,
     DatasetResult,
     FrozenLaneSnapshot,
     FrozenRunContext,
@@ -19,6 +21,7 @@ from experiments.exp417_causal_multihorizon_shadow.contracts import (
     HorizonScore,
     SeedDecision,
     ShadowCandidate,
+    TestInstanceDecision,
 )
 from experiments.exp417_causal_multihorizon_shadow.qualification import (
     apply_dataset_workload,
@@ -66,6 +69,35 @@ def shadow_candidate(index: int, *, dataset: str = "dataset") -> ShadowCandidate
     )
 
 
+def instance_decision(
+    index: int, *, dataset: str = "dataset", candidate: bool = False, length: int = 100
+) -> TestInstanceDecision:
+    return TestInstanceDecision(
+        dataset=dataset,
+        instance_index=index,
+        length=length,
+        seed_decisions=decision_bundle(candidate=candidate),
+    )
+
+
+def instance_decision_for_length(index: int, length: int) -> TestInstanceDecision:
+    horizons = (1, ceil(0.02 * length), ceil(0.10 * length))
+    seed_scores = {
+        horizons[0]: HorizonScore(horizons[0], 1.0, 0.5, 0.0),
+        horizons[1]: HorizonScore(horizons[1], 1.0, 0.5, 0.0),
+        horizons[2]: HorizonScore(horizons[2], 1.0, 0.5, 0.0),
+    }
+    return TestInstanceDecision(
+        dataset="dataset",
+        instance_index=index,
+        length=length,
+        seed_decisions=tuple(
+            SeedDecision(seed=seed, scores=seed_scores, candidate=False)
+            for seed in FROZEN_CONFIG.model_seeds
+        ),
+    )
+
+
 def qualifying_group() -> GroupQualification:
     return GroupQualification(
         length=100,
@@ -81,6 +113,38 @@ def qualifying_group() -> GroupQualification:
             "period_change": 0.50,
         },
         seed_agreement=True,
+    )
+
+
+def train_contract(dataset: str = "dataset"):
+    return freeze_train_contract(
+        dataset,
+        (qualifying_group(),),
+        BackendAudit("cpu", True, 0.0, 1.0, 1.0, False),
+    )
+
+
+def decision_evidence(
+    context: FrozenRunContext,
+    *,
+    dataset: str = "dataset",
+    candidate_indices: tuple[int, ...] = (),
+    contract=None,
+    decisions: tuple[TestInstanceDecision, ...] | None = None,
+) -> DatasetDecisionEvidence:
+    bound_contract = train_contract(dataset) if contract is None else contract
+    size = context.test_sizes[dataset]
+    supplied = decisions or tuple(
+        instance_decision(index, dataset=dataset, candidate=index in candidate_indices)
+        for index in range(size)
+    )
+    return DatasetDecisionEvidence(
+        dataset=dataset,
+        context=context,
+        frozen_train_contract=bound_contract,
+        database_sha256=context.database_sha256,
+        train_identity_sha256=bound_contract.train_identity_sha256,
+        decisions=supplied,
     )
 
 
@@ -271,11 +335,55 @@ class QualificationBoundaryTests(unittest.TestCase):
 
 
 class LaneAndWorkloadTests(unittest.TestCase):
+    def test_complete_decision_evidence_derives_candidates_and_rejects_coverage_attacks(self) -> None:
+        """Removing, duplicating, reordering, or replacing decisions must not understate workload."""
+        snapshot = lanes(protected=(1, 100, 101, 102))
+        context = single_context(snapshot, test_size=20)
+        complete = decision_evidence(context, candidate_indices=(1, 5))
+        self.assertEqual(
+            tuple(candidate.instance_index for candidate in complete.derived_candidates), (5,)
+        )
+        malformed = (
+            complete.decisions[:-1],
+            complete.decisions + (complete.decisions[-1],),
+            tuple(reversed(complete.decisions)),
+        )
+        for decisions in malformed:
+            with self.subTest(decisions=decisions):
+                with self.assertRaises(ValueError):
+                    decision_evidence(context, decisions=decisions)
+        with self.assertRaises(ValueError):
+            replace(complete, decisions=())
+
+    def test_decision_evidence_rejects_wrong_context_train_contract_length_and_seeds(self) -> None:
+        """Evidence must be bound to one frozen context, TRAIN contract, length, and seed set."""
+        snapshot = lanes(protected=(100, 101, 102, 103))
+        context = single_context(snapshot, test_size=20)
+        complete = decision_evidence(context)
+        wrong_context = single_context(snapshot, test_size=21)
+        with self.assertRaises(ValueError):
+            replace(complete, context=wrong_context)
+        with self.assertRaises(ValueError):
+            replace(complete, frozen_train_contract=train_contract("other"))
+        wrong_length = list(complete.decisions)
+        wrong_length[0] = instance_decision_for_length(0, 64)
+        with self.assertRaises(ValueError):
+            replace(complete, decisions=tuple(wrong_length))
+        with self.assertRaises(ValueError):
+            TestInstanceDecision(
+                dataset="dataset",
+                instance_index=0,
+                length=100,
+                seed_decisions=(decision_bundle()[0], decision_bundle()[0], decision_bundle()[2]),
+            )
+
     def test_excluding_all_frozen_lanes_preserves_the_original_snapshot(self) -> None:
         """Dropping a lane type or mutating its coordinates would promote frozen work."""
         snapshot = lanes()
-        candidates = tuple(shadow_candidate(index) for index in range(1, 6))
-        retained = exclude_frozen_lanes(candidates, snapshot)
+        context = single_context(snapshot, test_size=20)
+        retained = exclude_frozen_lanes(
+            decision_evidence(context, candidate_indices=(1, 2, 3, 4, 5))
+        )
         self.assertEqual(tuple(candidate.instance_index for candidate in retained), (5,))
         self.assertEqual(snapshot.hard["dataset"][0], 1)
         self.assertEqual(snapshot.standard["dataset"][0], 2)
@@ -286,14 +394,9 @@ class LaneAndWorkloadTests(unittest.TestCase):
     def test_dataset_workload_is_all_or_none_at_five_percent(self) -> None:
         """Retaining a top subset above the dataset cap would violate the fail-closed policy."""
         snapshot = lanes(protected=(100, 101, 102, 103))
-        groups = (qualifying_group(),)
         context = single_context(snapshot, test_size=20)
-        exact = apply_dataset_workload(
-            "dataset", 20, groups, (shadow_candidate(5),), snapshot, context=context
-        )
-        rejected = apply_dataset_workload(
-            "dataset", 20, groups, (shadow_candidate(5), shadow_candidate(6)), snapshot, context=context
-        )
+        exact = apply_dataset_workload(decision_evidence(context, candidate_indices=(5,)))
+        rejected = apply_dataset_workload(decision_evidence(context, candidate_indices=(5, 6)))
         self.assertEqual(exact.status, "qualified")
         self.assertEqual(len(exact.candidates), 1)
         self.assertEqual(rejected.status, "abstained")
@@ -312,7 +415,7 @@ class LaneAndWorkloadTests(unittest.TestCase):
                 group_count=1,
                 groups=(qualifying_group(),),
                 candidates=(),
-                observed_candidates=(),
+                decision_evidence=decision_evidence(context),
                 lanes=snapshot,
                 context=context,
                 status="abstained",
@@ -323,28 +426,27 @@ class LaneAndWorkloadTests(unittest.TestCase):
     def test_workload_does_not_sort_or_select_top_n_candidates(self) -> None:
         """Changing candidate order must not turn workload gating into score-ranked selection."""
         snapshot = lanes(protected=(100, 101, 102, 103))
-        candidates = (shadow_candidate(5), shadow_candidate(6))
         context = single_context(snapshot, test_size=20)
-        first = apply_dataset_workload("dataset", 20, (qualifying_group(),), candidates, snapshot, context=context)
-        second = apply_dataset_workload("dataset", 20, (qualifying_group(),), tuple(reversed(candidates)), snapshot, context=context)
+        first = apply_dataset_workload(decision_evidence(context, candidate_indices=(5, 6)))
+        second = apply_dataset_workload(decision_evidence(context, candidate_indices=(6, 5)))
         self.assertEqual((first.status, first.candidates), ("abstained", ()))
         self.assertEqual((second.status, second.candidates), ("abstained", ()))
 
     def test_global_workload_is_all_or_none_at_one_percent(self) -> None:
         """Publishing a partial global candidate list above the cap would expose unofficial payloads."""
         snapshot = lanes(protected=(100, 101, 102, 103))
-        groups = (qualifying_group(),)
         names = tuple(f"dataset-{index:04d}" for index in range(1117))
         context = context_for(names, snapshot, test_size=100)
         exact_results = tuple(
-            apply_dataset_workload(name, 100, groups, (shadow_candidate(5, dataset=name),), snapshot, context=context)
+            apply_dataset_workload(
+                decision_evidence(context, dataset=name, candidate_indices=(5,))
+            )
             for name in names
         )
         exact = apply_global_workload(exact_results, 111_700, context=context)
         too_many = exact_results[:1] + (
             apply_dataset_workload(
-                names[1], 100, groups,
-                (shadow_candidate(5, dataset=names[1]), shadow_candidate(6, dataset=names[1])), snapshot, context=context,
+                decision_evidence(context, dataset=names[1], candidate_indices=(5, 6))
             ),
         ) + exact_results[2:]
         rejected = apply_global_workload(too_many, 111_700, context=context)
@@ -367,14 +469,11 @@ class LaneAndWorkloadTests(unittest.TestCase):
             runtime_versions={"python": "synthetic"},
         )
         local_abstention = apply_dataset_workload(
-            names[0], 100, (qualifying_group(),),
-            tuple(shadow_candidate(index, dataset=names[0]) for index in range(6)), snapshot,
-            context=context,
+            decision_evidence(context, dataset=names[0], candidate_indices=(0, 1, 2, 3, 4, 5))
         )
         others = tuple(
             apply_dataset_workload(
-                name, 100, (qualifying_group(),), (shadow_candidate(0, dataset=name),), snapshot,
-                context=context,
+                decision_evidence(context, dataset=name, candidate_indices=(0,))
             )
             for name in names[1:]
         )

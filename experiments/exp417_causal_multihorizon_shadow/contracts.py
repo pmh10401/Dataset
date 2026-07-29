@@ -473,13 +473,111 @@ class ShadowCandidate:
 
 
 @dataclass(frozen=True)
+class TestInstanceDecision:
+    """All frozen seed decisions for one exact TEST identity, including negatives."""
+
+    dataset: str
+    instance_index: int
+    length: int
+    seed_decisions: tuple[SeedDecision, ...]
+
+    def __post_init__(self) -> None:
+        _nonempty_name(self.dataset, "dataset")
+        _integer(self.instance_index, "instance_index")
+        _integer(self.length, "length", minimum=1)
+        decisions = _tuple(self.seed_decisions, "seed_decisions")
+        if len(decisions) != len(FROZEN_CONFIG.model_seeds) or any(
+            not isinstance(decision, SeedDecision) for decision in decisions
+        ):
+            raise ValueError("instance decision requires the three exact seed decisions")
+        seeds = tuple(decision.seed for decision in decisions)
+        if set(seeds) != set(FROZEN_CONFIG.model_seeds) or len(set(seeds)) != len(seeds):
+            raise ValueError("instance decision requires the three exact frozen model seeds")
+        horizons = tuple(decisions[0].scores)
+        expected_horizons = (
+            1,
+            ceil(FROZEN_CONFIG.horizon_fractions[0] * self.length),
+            ceil(FROZEN_CONFIG.horizon_fractions[1] * self.length),
+        )
+        if (
+            len(set(expected_horizons)) != 3
+            or horizons != expected_horizons
+            or any(tuple(decision.scores) != horizons for decision in decisions[1:])
+        ):
+            raise ValueError("instance decision horizons do not match its exact length")
+        object.__setattr__(self, "seed_decisions", decisions)
+
+    @property
+    def candidate(self) -> bool:
+        return all(decision.candidate for decision in self.seed_decisions)
+
+
+@dataclass(frozen=True)
+class DatasetDecisionEvidence:
+    """Exhaustive, provenance-bound TEST decisions for one frozen dataset."""
+
+    dataset: str
+    context: FrozenRunContext
+    frozen_train_contract: FrozenTrainContract
+    database_sha256: str
+    train_identity_sha256: str
+    decisions: tuple[TestInstanceDecision, ...]
+
+    def __post_init__(self) -> None:
+        _nonempty_name(self.dataset, "dataset")
+        if not isinstance(self.context, FrozenRunContext):
+            raise ValueError("context must be a FrozenRunContext")
+        if not isinstance(self.frozen_train_contract, FrozenTrainContract):
+            raise ValueError("frozen_train_contract must be a FrozenTrainContract")
+        if self.dataset not in self.context.test_sizes:
+            raise ValueError("dataset must be in the frozen context")
+        if self.frozen_train_contract.dataset != self.dataset:
+            raise ValueError("frozen train contract dataset does not match evidence")
+        if self.database_sha256 != self.context.database_sha256:
+            raise ValueError("database hash does not match frozen context")
+        if self.train_identity_sha256 != self.frozen_train_contract.train_identity_sha256:
+            raise ValueError("TRAIN contract hash does not match frozen contract")
+        decisions = _tuple(self.decisions, "decisions")
+        if any(not isinstance(decision, TestInstanceDecision) for decision in decisions):
+            raise ValueError("decisions must contain TestInstanceDecision records")
+        expected_size = self.context.test_sizes[self.dataset]
+        indices = tuple(decision.instance_index for decision in decisions)
+        if indices != tuple(range(expected_size)):
+            raise ValueError("decisions must cover every exact TEST index in sorted order")
+        if any(decision.dataset != self.dataset for decision in decisions):
+            raise ValueError("decision dataset does not match evidence")
+        train_lengths = {group.length for group in self.frozen_train_contract.groups}
+        if any(decision.length not in train_lengths for decision in decisions):
+            raise ValueError("decision length is absent from the frozen TRAIN contract")
+        object.__setattr__(self, "decisions", decisions)
+
+    @property
+    def test_size(self) -> int:
+        return self.context.test_sizes[self.dataset]
+
+    @property
+    def derived_candidates(self) -> tuple[ShadowCandidate, ...]:
+        return tuple(
+            ShadowCandidate(
+                dataset=decision.dataset,
+                instance_index=decision.instance_index,
+                length=decision.length,
+                seed_decisions=decision.seed_decisions,
+            )
+            for decision in self.decisions
+            if decision.candidate
+            and not self.context.lanes.contains(decision.dataset, decision.instance_index)
+        )
+
+
+@dataclass(frozen=True)
 class DatasetResult:
     dataset: str
     test_size: int
     group_count: int
     groups: tuple[GroupQualification, ...]
     candidates: tuple[ShadowCandidate, ...]
-    observed_candidates: tuple[ShadowCandidate, ...]
+    decision_evidence: DatasetDecisionEvidence
     lanes: FrozenLaneSnapshot
     context: FrozenRunContext
     status: str
@@ -495,17 +593,25 @@ class DatasetResult:
         if lengths != tuple(sorted(lengths)) or len(lengths) != len(set(lengths)):
             raise ValueError("group accounting requires sorted unique lengths")
         candidates = _validated_dataset_candidates(self.candidates, self.dataset, test_size, "candidates")
-        observed = _validated_dataset_candidates(
-            self.observed_candidates, self.dataset, test_size, "observed_candidates"
-        )
+        if not isinstance(self.decision_evidence, DatasetDecisionEvidence):
+            raise ValueError("decision_evidence must be DatasetDecisionEvidence")
+        if self.decision_evidence.dataset != self.dataset:
+            raise ValueError("decision evidence dataset does not match result")
+        observed = self.decision_evidence.derived_candidates
         if not isinstance(self.lanes, FrozenLaneSnapshot):
             raise ValueError("lanes must be frozen")
         if not isinstance(self.context, FrozenRunContext):
             raise ValueError("context must be a FrozenRunContext")
+        if self.decision_evidence.context != self.context:
+            raise ValueError("decision evidence context does not match result")
         if self.lanes != self.context.lanes:
             raise ValueError("lanes must match the frozen context")
         if self.dataset not in self.context.test_sizes or test_size != self.context.test_sizes[self.dataset]:
             raise ValueError("test_size must match the frozen context")
+        if test_size != self.decision_evidence.test_size:
+            raise ValueError("test_size must match complete decision evidence")
+        if groups != self.decision_evidence.frozen_train_contract.groups:
+            raise ValueError("groups must match the frozen TRAIN contract")
         if any(
             self.lanes.contains(candidate.dataset, candidate.instance_index)
             for candidate in (*candidates, *observed)
@@ -523,11 +629,15 @@ class DatasetResult:
             raise ValueError("qualified dataset must retain exact observed candidates")
         object.__setattr__(self, "groups", groups)
         object.__setattr__(self, "candidates", candidates)
-        object.__setattr__(self, "observed_candidates", observed)
+        object.__setattr__(self, "decision_evidence", self.decision_evidence)
 
     @property
     def observed_candidate_count(self) -> int:
-        return len(self.observed_candidates)
+        return len(self.decision_evidence.derived_candidates)
+
+    @property
+    def observed_candidates(self) -> tuple[ShadowCandidate, ...]:
+        return self.decision_evidence.derived_candidates
 
     @property
     def candidate_rate(self) -> float:

@@ -15,6 +15,7 @@ import numpy as np
 from .config import Exp417FrozenConfig, FROZEN_CONFIG
 from .contracts import (
     BackendAudit,
+    DatasetDecisionEvidence,
     DatasetResult,
     FrozenLaneSnapshot,
     FrozenRunContext,
@@ -195,67 +196,40 @@ def freeze_train_contract(
     )
 
 
-def exclude_frozen_lanes(
-    candidates: Sequence[ShadowCandidate], lanes: FrozenLaneSnapshot
-) -> tuple[ShadowCandidate, ...]:
-    """Exclude every frozen lane in input order; never promote or replace candidates."""
-    if not isinstance(lanes, FrozenLaneSnapshot):
-        raise ValueError("lanes must be a FrozenLaneSnapshot")
-    items = _candidates(candidates)
-    return tuple(
-        candidate
-        for candidate in items
-        if not lanes.contains(candidate.dataset, candidate.instance_index)
-    )
+def exclude_frozen_lanes(evidence: DatasetDecisionEvidence) -> tuple[ShadowCandidate, ...]:
+    """Derive every eligible candidate from complete evidence, excluding frozen lanes."""
+    if not isinstance(evidence, DatasetDecisionEvidence):
+        raise ValueError("evidence must be DatasetDecisionEvidence")
+    return evidence.derived_candidates
 
 
-def apply_dataset_workload(
-    dataset: str,
-    test_size: int,
-    groups: Sequence[GroupQualification],
-    candidates: Sequence[ShadowCandidate],
-    lanes: FrozenLaneSnapshot,
-    *,
-    context: FrozenRunContext,
-) -> DatasetResult:
+def apply_dataset_workload(evidence: DatasetDecisionEvidence) -> DatasetResult:
     """Apply the frozen dataset cap as an all-or-none workload gate."""
-    if not isinstance(dataset, str) or not dataset.strip():
-        raise ValueError("dataset must be a non-empty string")
-    if type(test_size) is not int or test_size < 1:
-        raise ValueError("test_size must be a positive integer")
-    if not isinstance(context, FrozenRunContext):
-        raise ValueError("context must be a FrozenRunContext")
-    if dataset not in context.test_sizes or test_size != context.test_sizes[dataset]:
-        raise ValueError("test_size must match the frozen context")
-    if lanes != context.lanes:
-        raise ValueError("lanes must match the frozen context")
-    frozen_groups = _groups(groups)
-    raw_candidates = _candidates(candidates)
-    if any(candidate.dataset != dataset or candidate.instance_index >= test_size for candidate in raw_candidates):
-        raise ValueError("candidates must belong to dataset")
-    retained = exclude_frozen_lanes(raw_candidates, lanes)
-    prospective_rate = len(retained) / test_size
+    if not isinstance(evidence, DatasetDecisionEvidence):
+        raise ValueError("evidence must be DatasetDecisionEvidence")
+    retained = exclude_frozen_lanes(evidence)
+    prospective_rate = len(retained) / evidence.test_size
     if prospective_rate > FROZEN_CONFIG.dataset_workload_rate:
         return DatasetResult(
-            dataset=dataset,
-            test_size=test_size,
-            group_count=len(frozen_groups),
-            groups=frozen_groups,
+            dataset=evidence.dataset,
+            test_size=evidence.test_size,
+            group_count=len(evidence.frozen_train_contract.groups),
+            groups=evidence.frozen_train_contract.groups,
             candidates=(),
-            observed_candidates=retained,
-            lanes=lanes,
-            context=context,
+            decision_evidence=evidence,
+            lanes=evidence.context.lanes,
+            context=evidence.context,
             status="abstained",
         )
     return DatasetResult(
-        dataset=dataset,
-        test_size=test_size,
-        group_count=len(frozen_groups),
-        groups=frozen_groups,
+        dataset=evidence.dataset,
+        test_size=evidence.test_size,
+        group_count=len(evidence.frozen_train_contract.groups),
+        groups=evidence.frozen_train_contract.groups,
         candidates=retained,
-        observed_candidates=retained,
-        lanes=lanes,
-        context=context,
+        decision_evidence=evidence,
+        lanes=evidence.context.lanes,
+        context=evidence.context,
         status="qualified",
     )
 
@@ -282,7 +256,7 @@ def apply_global_workload(
                 group_count=result.group_count,
                 groups=result.groups,
                 candidates=(),
-                observed_candidates=result.observed_candidates,
+                decision_evidence=result.decision_evidence,
                 lanes=result.lanes,
                 context=result.context,
                 status="abstained",

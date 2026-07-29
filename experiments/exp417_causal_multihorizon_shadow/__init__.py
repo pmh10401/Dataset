@@ -3,6 +3,7 @@
 from .config import Exp417FrozenConfig, FROZEN_CONFIG
 from .contracts import (
     BackendAudit,
+    DatasetDecisionEvidence,
     DatasetResult,
     FrozenLaneSnapshot,
     FrozenRunContext,
@@ -17,10 +18,12 @@ from .contracts import (
     RunSummary,
     SeedDecision,
     ShadowCandidate,
+    TestInstanceDecision,
 )
 
 __all__ = [
     "BackendAudit",
+    "DatasetDecisionEvidence",
     "DatasetResult",
     "Exp417FrozenConfig",
     "FROZEN_CONFIG",
@@ -37,4 +40,5 @@ __all__ = [
     "RunSummary",
     "SeedDecision",
     "ShadowCandidate",
+    "TestInstanceDecision",
 ]

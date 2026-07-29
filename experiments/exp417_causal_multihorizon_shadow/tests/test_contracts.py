@@ -5,6 +5,7 @@ import numpy as np
 
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     BackendAudit,
+    DatasetDecisionEvidence,
     DatasetResult,
     FrozenLaneSnapshot,
     FrozenRunContext,
@@ -19,6 +20,7 @@ from experiments.exp417_causal_multihorizon_shadow.contracts import (
     RunSummary,
     SeedDecision,
     ShadowCandidate,
+    TestInstanceDecision,
 )
 from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
 
@@ -78,6 +80,47 @@ def candidate(dataset: str, index: int) -> ShadowCandidate:
     )
 
 
+def decision_evidence(
+    dataset: str, context: FrozenRunContext, *, candidate_indices: tuple[int, ...] = ()
+) -> DatasetDecisionEvidence:
+    contract = FrozenTrainContract(
+        dataset=dataset,
+        groups=(group(),),
+        backend=BackendAudit("cpu", True, 0.0, 1.0, 1.0, False),
+        train_identity_sha256="a" * 64,
+    )
+    decisions = tuple(
+        TestInstanceDecision(
+            dataset=dataset,
+            instance_index=index,
+            length=100,
+            seed_decisions=tuple(
+                SeedDecision(
+                    seed=seed,
+                    scores={
+                        1: horizon(1, p_value=0.01 if index in candidate_indices else 0.5,
+                                   persistence=0.05 if index in candidate_indices else 0.0),
+                        2: horizon(2, p_value=0.01 if index in candidate_indices else 0.5,
+                                   persistence=0.05 if index in candidate_indices else 0.0),
+                        10: horizon(10, p_value=0.5, persistence=0.0),
+                    },
+                    candidate=index in candidate_indices,
+                )
+                for seed in FROZEN_CONFIG.model_seeds
+            ),
+        )
+        for index in range(context.test_sizes[dataset])
+    )
+    return DatasetDecisionEvidence(
+        dataset=dataset,
+        context=context,
+        frozen_train_contract=contract,
+        database_sha256=context.database_sha256,
+        train_identity_sha256=contract.train_identity_sha256,
+        decisions=decisions,
+    )
+
+
 def group() -> GroupQualification:
     return GroupQualification(
         length=100,
@@ -103,18 +146,22 @@ def dataset_result(
     lanes: FrozenLaneSnapshot | None = None,
     group_count: int = 1,
     test_size: int = 20,
+    context: FrozenRunContext | None = None,
 ) -> DatasetResult:
     snapshot = lanes or frozen_lanes()
-    context = frozen_context(lanes=snapshot, test_size=test_size)
+    bound_context = context or frozen_context(lanes=snapshot, test_size=test_size)
+    evidence = decision_evidence(
+        dataset, bound_context, candidate_indices=tuple(item.instance_index for item in candidates)
+    )
     return DatasetResult(
         dataset=dataset,
         test_size=test_size,
         group_count=group_count,
         groups=(group(),),
         candidates=candidates,
-        observed_candidates=candidates,
+        decision_evidence=evidence,
         lanes=snapshot,
-        context=context,
+        context=bound_context,
         status="qualified",
     )
 
@@ -127,6 +174,7 @@ def results_for_context(
             dataset,
             candidates=(candidate(dataset, 1),) if retain_one_candidate_per_dataset else (),
             lanes=context.lanes,
+            context=context,
         )
         for dataset in context.datasets
     )
@@ -261,7 +309,7 @@ class ContractTests(unittest.TestCase):
                 group_count=1,
                 groups=(group(),),
                 candidates=(),
-                observed_candidates=(),
+                decision_evidence=decision_evidence("A", context),
                 lanes=context.lanes,
                 context=context,
                 status="abstained",
@@ -276,7 +324,7 @@ class ContractTests(unittest.TestCase):
                 group_count=1,
                 groups=(group(),),
                 candidates=(candidate("A", 1), candidate("A", 2)),
-                observed_candidates=(candidate("A", 1), candidate("A", 2)),
+                decision_evidence=decision_evidence("A", context_a, candidate_indices=(1, 2)),
                 lanes=context_a.lanes,
                 context=context_a,
                 status="qualified",
@@ -287,7 +335,7 @@ class ContractTests(unittest.TestCase):
             group_count=1,
             groups=(group(),),
             candidates=(),
-            observed_candidates=(candidate("A", 1), candidate("A", 2)),
+            decision_evidence=decision_evidence("A", context_a, candidate_indices=(1, 2)),
             lanes=context_a.lanes,
             context=context_a,
             status="abstained",
@@ -318,7 +366,7 @@ class ContractTests(unittest.TestCase):
                 group_count=result.group_count,
                 groups=result.groups,
                 candidates=(),
-                observed_candidates=result.observed_candidates,
+                decision_evidence=result.decision_evidence,
                 lanes=result.lanes,
                 context=result.context,
                 status="abstained",
