@@ -194,6 +194,7 @@ class FrozenRunContext:
     database_sha256: str
     datasets: tuple[str, ...]
     lanes: FrozenLaneSnapshot
+    test_sizes: Mapping[str, int]
     code_commit: str
     runtime_versions: Mapping[str, str]
     config: Exp417FrozenConfig = FROZEN_CONFIG
@@ -207,6 +208,12 @@ class FrozenRunContext:
             raise ValueError("datasets must be sorted and unique")
         if not isinstance(self.lanes, FrozenLaneSnapshot):
             raise ValueError("lanes must be frozen")
+        test_sizes = _immutable_mapping(self.test_sizes, "test_sizes")
+        if set(test_sizes) != set(datasets):
+            raise ValueError("test_sizes must cover the exact frozen datasets")
+        for dataset, size in test_sizes.items():
+            _nonempty_name(dataset, "test_sizes dataset")
+            _integer(size, "test_sizes value", minimum=1)
         _nonempty_name(self.code_commit, "code_commit")
         versions = _immutable_mapping(self.runtime_versions, "runtime_versions")
         if not versions or any(not isinstance(key, str) or not isinstance(value, str) for key, value in versions.items()):
@@ -219,6 +226,7 @@ class FrozenRunContext:
         if len(datasets) != self.config.expected_datasets:
             raise ValueError("population count is not frozen")
         object.__setattr__(self, "datasets", datasets)
+        object.__setattr__(self, "test_sizes", test_sizes)
         object.__setattr__(self, "runtime_versions", versions)
 
 
@@ -471,10 +479,10 @@ class DatasetResult:
     group_count: int
     groups: tuple[GroupQualification, ...]
     candidates: tuple[ShadowCandidate, ...]
+    observed_candidates: tuple[ShadowCandidate, ...]
     lanes: FrozenLaneSnapshot
+    context: FrozenRunContext
     status: str
-    observed_candidate_count: int | None = None
-    candidate_rate: float | None = None
 
     def __post_init__(self) -> None:
         _nonempty_name(self.dataset, "dataset")
@@ -486,52 +494,58 @@ class DatasetResult:
         lengths = tuple(group.length for group in groups)
         if lengths != tuple(sorted(lengths)) or len(lengths) != len(set(lengths)):
             raise ValueError("group accounting requires sorted unique lengths")
-        candidates = _tuple(self.candidates, "candidates")
-        if any(not isinstance(candidate, ShadowCandidate) for candidate in candidates):
-            raise ValueError("candidates must contain ShadowCandidate records")
-        keys = tuple((candidate.dataset, candidate.instance_index) for candidate in candidates)
-        if len(keys) != len(set(keys)):
-            raise ValueError("candidate coordinates contain a duplicate")
-        for candidate in candidates:
-            if candidate.dataset != self.dataset or candidate.instance_index >= test_size:
-                raise ValueError("candidate coordinate is outside its dataset TEST range")
+        candidates = _validated_dataset_candidates(self.candidates, self.dataset, test_size, "candidates")
+        observed = _validated_dataset_candidates(
+            self.observed_candidates, self.dataset, test_size, "observed_candidates"
+        )
         if not isinstance(self.lanes, FrozenLaneSnapshot):
             raise ValueError("lanes must be frozen")
-        if any(self.lanes.contains(candidate.dataset, candidate.instance_index) for candidate in candidates):
+        if not isinstance(self.context, FrozenRunContext):
+            raise ValueError("context must be a FrozenRunContext")
+        if self.lanes != self.context.lanes:
+            raise ValueError("lanes must match the frozen context")
+        if self.dataset not in self.context.test_sizes or test_size != self.context.test_sizes[self.dataset]:
+            raise ValueError("test_size must match the frozen context")
+        if any(
+            self.lanes.contains(candidate.dataset, candidate.instance_index)
+            for candidate in (*candidates, *observed)
+        ):
             raise ValueError("candidate overlaps a frozen lane")
         if self.status not in _DATASET_STATUSES:
             raise ValueError("invalid dataset status")
-        observed = self.observed_candidate_count
-        if observed is None:
-            if self.candidate_rate is None:
-                observed = len(candidates)
-            elif self.status == "abstained" and not candidates:
-                supplied_rate = _finite(self.candidate_rate, "candidate_rate", minimum=0.0, maximum=1.0)
-                supplied_count = supplied_rate * test_size
-                if not supplied_count.is_integer():
-                    raise ValueError("candidate_rate must encode an exact observed candidate count")
-                observed = int(supplied_count)
-            else:
-                observed = len(candidates)
-        _integer(observed, "observed_candidate_count", minimum=0)
-        if observed < len(candidates):
-            raise ValueError("observed candidate count cannot be below retained candidates")
-        rate = observed / test_size
-        if self.candidate_rate is not None:
-            supplied_rate = _finite(self.candidate_rate, "candidate_rate", minimum=0.0, maximum=1.0)
-            if supplied_rate != rate:
-                raise ValueError("candidate_rate is inconsistent with observed candidate count")
+        rate = len(observed) / test_size
         if rate > FROZEN_CONFIG.dataset_workload_rate:
             if self.status != "abstained" or candidates:
                 raise ValueError("dataset workload gate requires abstention without candidates")
         elif self.status in {"abstained", "failed"} and candidates:
             raise ValueError("abstained or failed dataset cannot retain candidates")
-        elif self.status == "qualified" and observed != len(candidates):
-            raise ValueError("qualified dataset must retain every observed candidate")
+        elif self.status == "qualified" and candidates != observed:
+            raise ValueError("qualified dataset must retain exact observed candidates")
         object.__setattr__(self, "groups", groups)
         object.__setattr__(self, "candidates", candidates)
-        object.__setattr__(self, "observed_candidate_count", observed)
-        object.__setattr__(self, "candidate_rate", rate)
+        object.__setattr__(self, "observed_candidates", observed)
+
+    @property
+    def observed_candidate_count(self) -> int:
+        return len(self.observed_candidates)
+
+    @property
+    def candidate_rate(self) -> float:
+        return self.observed_candidate_count / self.test_size
+
+
+def _validated_dataset_candidates(
+    values: Sequence[ShadowCandidate], dataset: str, test_size: int, name: str
+) -> tuple[ShadowCandidate, ...]:
+    candidates = _tuple(values, name)
+    if any(not isinstance(candidate, ShadowCandidate) for candidate in candidates):
+        raise ValueError(f"{name} must contain ShadowCandidate records")
+    keys = tuple((candidate.dataset, candidate.instance_index) for candidate in candidates)
+    if len(keys) != len(set(keys)):
+        raise ValueError(f"{name} coordinates contain a duplicate")
+    if any(candidate.dataset != dataset or candidate.instance_index >= test_size for candidate in candidates):
+        raise ValueError(f"{name} coordinate is outside its dataset TEST range")
+    return candidates
 
 
 @dataclass(frozen=True)
@@ -553,16 +567,17 @@ class RunSummary:
             raise ValueError("results must have sorted unique datasets")
         if datasets != self.context.datasets:
             raise ValueError("results do not provide frozen context coverage")
-        if any(result.lanes != self.context.lanes for result in results):
-            raise ValueError("results do not use the frozen lane snapshot")
+        if any(result.lanes != self.context.lanes or result.context != self.context for result in results):
+            raise ValueError("results do not use the frozen run context")
         total_test = _integer(self.total_test, "total_test", minimum=0)
-        if total_test != sum(result.test_size for result in results):
-            raise ValueError("total_test does not conserve dataset totals")
+        frozen_total = sum(self.context.test_sizes.values())
+        if total_test != frozen_total or total_test != sum(result.test_size for result in results):
+            raise ValueError("total_test must match the frozen TEST population")
         if type(self.publication_allowed) is not bool:
             raise ValueError("publication_allowed must be bool")
         if self.status not in {"complete", "global_workload_gate_failed", "failed"}:
             raise ValueError("invalid run status")
-        prospective_total = sum(result.observed_candidate_count for result in results)
+        prospective_total = sum(len(result.observed_candidates) for result in results)
         global_rate = prospective_total / total_test if total_test else 0.0
         if global_rate > FROZEN_CONFIG.global_workload_rate:
             if self.publication_allowed or self.status != "global_workload_gate_failed" or any(result.candidates for result in results):

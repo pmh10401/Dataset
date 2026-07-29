@@ -147,14 +147,54 @@ def freeze_run_context(
 ) -> FrozenRunContext:
     """Bind database identity, population, lanes, code, and runtime versions."""
     datasets = list_dataset_names(database, lanes, config=config)
+    test_sizes = list_dataset_test_sizes(database, datasets, config=config)
     return FrozenRunContext(
         database_sha256=config.database_sha256,
         datasets=datasets,
         lanes=lanes,
+        test_sizes=test_sizes,
         code_commit=_git_commit(),
         runtime_versions=_runtime_versions(),
         config=config,
     )
+
+
+def list_dataset_test_sizes(
+    database: Path,
+    datasets: tuple[str, ...],
+    *,
+    config: Exp417FrozenConfig = FROZEN_CONFIG,
+) -> Mapping[str, int]:
+    """Read the exact TEST population sizes from the hash-pinned database."""
+    _validate_config(config)
+    if not isinstance(datasets, tuple) or not datasets:
+        raise ValueError("datasets must be the frozen dataset tuple")
+    path = Path(database)
+    _verify_database_hash(path, config.database_sha256)
+    connection = _open_read_only(path)
+    try:
+        rows = connection.execute(
+            """
+            SELECT d.name, COUNT(i.instance_index)
+            FROM datasets AS d
+            JOIN instances AS i ON i.dataset_id = d.id
+            WHERE i.split = 'TEST'
+            GROUP BY d.name
+            ORDER BY d.name
+            """
+        ).fetchall()
+    except sqlite3.Error as error:
+        raise ValueError("Exp417 database TEST size query failed") from error
+    finally:
+        connection.close()
+    sizes = {name: count for name, count in rows}
+    if (
+        tuple(sizes) != datasets
+        or any(type(name) is not str or type(count) is not int or count < 1 for name, count in sizes.items())
+    ):
+        raise ValueError("database TEST sizes do not match the frozen population")
+    _verify_database_hash(path, config.database_sha256)
+    return sizes
 
 
 def load_raw_train_values(
@@ -457,6 +497,7 @@ __all__ = [
     "assert_label_free_sql_contract",
     "freeze_lane_inputs",
     "freeze_run_context",
+    "list_dataset_test_sizes",
     "list_dataset_names",
     "load_raw_test_values",
     "load_raw_train_values",

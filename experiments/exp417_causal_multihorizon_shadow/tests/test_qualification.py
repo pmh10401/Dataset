@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from types import MappingProxyType
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -94,13 +95,42 @@ def synthetic_decisions(*, detected: bool = True) -> dict[str, tuple[tuple[SeedD
     }
 
 
-def context_for(results: tuple[DatasetResult, ...]) -> FrozenRunContext:
+def boundary_synthetic_decisions(
+    *, per_type_detected: int = 1, spike_detected: int = 10
+) -> dict[str, tuple[tuple[SeedDecision, ...], ...]]:
+    """Hand-built 20-fixture pool: primary types at 1/2 and spike at 10/12."""
+    return {
+        **{
+            name: tuple(decision_bundle(candidate=index < per_type_detected) for index in range(2))
+            for name in ("level_shift", "gradual_drift", "amplitude_scaling", "period_change")
+        },
+        "secondary_spike": tuple(
+            decision_bundle(candidate=index < spike_detected) for index in range(12)
+        ),
+    }
+
+
+def context_for(
+    names: tuple[str, ...], lanes_snapshot: FrozenLaneSnapshot, *, test_size: int
+) -> FrozenRunContext:
     """A fully frozen, synthetic context matching a 1,117-dataset result set."""
-    names = tuple(result.dataset for result in results)
     return FrozenRunContext(
         database_sha256=FROZEN_CONFIG.database_sha256,
         datasets=names,
-        lanes=results[0].lanes,
+        lanes=lanes_snapshot,
+        test_sizes={name: test_size for name in names},
+        code_commit="synthetic",
+        runtime_versions={"python": "synthetic"},
+    )
+
+
+def single_context(lanes_snapshot: FrozenLaneSnapshot, *, test_size: int) -> FrozenRunContext:
+    names = ("dataset",) + tuple(f"synthetic-{index:04d}" for index in range(1116))
+    return FrozenRunContext(
+        database_sha256=FROZEN_CONFIG.database_sha256,
+        datasets=names,
+        lanes=lanes_snapshot,
+        test_sizes={name: test_size for name in names},
         code_commit="synthetic",
         runtime_versions={"python": "synthetic"},
     )
@@ -138,6 +168,60 @@ class FixedPerturbationTests(unittest.TestCase):
 
 
 class QualificationBoundaryTests(unittest.TestCase):
+    def test_qualify_group_enforces_oof_wilson_and_synthetic_boundaries(self) -> None:
+        """Relaxing any frozen boundary must not qualify the immediately unsafe synthetic fixture."""
+        normal_at_rate = (decision_bundle(candidate=True),) + tuple(
+            decision_bundle(candidate=False) for _ in range(99)
+        )
+        normal_above_rate = (decision_bundle(candidate=True),) * 2 + tuple(
+            decision_bundle(candidate=False) for _ in range(98)
+        )
+        exact_synthetic = boundary_synthetic_decisions()
+        with patch(
+            "experiments.exp417_causal_multihorizon_shadow.qualification.wilson_upper",
+            return_value=0.05,
+        ):
+            exact = qualify_group(
+                length=100,
+                normal_oof_decisions=normal_at_rate,
+                synthetic_decisions=exact_synthetic,
+            )
+            above_oof = qualify_group(
+                length=100,
+                normal_oof_decisions=normal_above_rate,
+                synthetic_decisions=exact_synthetic,
+            )
+            below_pooled = qualify_group(
+                length=100,
+                normal_oof_decisions=normal_at_rate,
+                synthetic_decisions=boundary_synthetic_decisions(spike_detected=9),
+            )
+            below_type = qualify_group(
+                length=100,
+                normal_oof_decisions=normal_at_rate,
+                synthetic_decisions=boundary_synthetic_decisions(per_type_detected=0),
+            )
+        self.assertEqual(exact.status, "qualified")
+        self.assertEqual(above_oof.status, "failed")
+        self.assertEqual(below_pooled.status, "failed")
+        self.assertEqual(below_type.status, "failed")
+
+    def test_qualify_group_fails_just_above_the_wilson_boundary(self) -> None:
+        """A strict Wilson comparison is required even when discrete OOF counts cannot land on 0.05."""
+        normal = (decision_bundle(candidate=True),) + tuple(
+            decision_bundle(candidate=False) for _ in range(99)
+        )
+        with patch(
+            "experiments.exp417_causal_multihorizon_shadow.qualification.wilson_upper",
+            return_value=np.nextafter(0.05, np.inf),
+        ):
+            result = qualify_group(
+                length=100,
+                normal_oof_decisions=normal,
+                synthetic_decisions=boundary_synthetic_decisions(),
+            )
+        self.assertEqual(result.status, "failed")
+
     def test_qualification_accepts_all_exact_frozen_boundaries(self) -> None:
         """Tightening a <= or >= bound must not reject an exact preregistered value."""
         normal = tuple(decision_bundle(candidate=False) for _ in range(100))
@@ -203,11 +287,12 @@ class LaneAndWorkloadTests(unittest.TestCase):
         """Retaining a top subset above the dataset cap would violate the fail-closed policy."""
         snapshot = lanes(protected=(100, 101, 102, 103))
         groups = (qualifying_group(),)
+        context = single_context(snapshot, test_size=20)
         exact = apply_dataset_workload(
-            "dataset", 20, groups, (shadow_candidate(5),), snapshot
+            "dataset", 20, groups, (shadow_candidate(5),), snapshot, context=context
         )
         rejected = apply_dataset_workload(
-            "dataset", 20, groups, (shadow_candidate(5), shadow_candidate(6)), snapshot
+            "dataset", 20, groups, (shadow_candidate(5), shadow_candidate(6)), snapshot, context=context
         )
         self.assertEqual(exact.status, "qualified")
         self.assertEqual(len(exact.candidates), 1)
@@ -219,14 +304,17 @@ class LaneAndWorkloadTests(unittest.TestCase):
     def test_dataset_result_binds_pre_gate_count_to_its_rate(self) -> None:
         """A caller must not lower the recorded workload count after clearing a payload."""
         snapshot = lanes(protected=(100, 101, 102, 103))
-        with self.assertRaises(ValueError):
+        context = single_context(snapshot, test_size=20)
+        with self.assertRaises(TypeError):
             DatasetResult(
                 dataset="dataset",
                 test_size=20,
                 group_count=1,
                 groups=(qualifying_group(),),
                 candidates=(),
+                observed_candidates=(),
                 lanes=snapshot,
+                context=context,
                 status="abstained",
                 observed_candidate_count=2,
                 candidate_rate=0.05,
@@ -236,8 +324,9 @@ class LaneAndWorkloadTests(unittest.TestCase):
         """Changing candidate order must not turn workload gating into score-ranked selection."""
         snapshot = lanes(protected=(100, 101, 102, 103))
         candidates = (shadow_candidate(5), shadow_candidate(6))
-        first = apply_dataset_workload("dataset", 20, (qualifying_group(),), candidates, snapshot)
-        second = apply_dataset_workload("dataset", 20, (qualifying_group(),), tuple(reversed(candidates)), snapshot)
+        context = single_context(snapshot, test_size=20)
+        first = apply_dataset_workload("dataset", 20, (qualifying_group(),), candidates, snapshot, context=context)
+        second = apply_dataset_workload("dataset", 20, (qualifying_group(),), tuple(reversed(candidates)), snapshot, context=context)
         self.assertEqual((first.status, first.candidates), ("abstained", ()))
         self.assertEqual((second.status, second.candidates), ("abstained", ()))
 
@@ -246,23 +335,57 @@ class LaneAndWorkloadTests(unittest.TestCase):
         snapshot = lanes(protected=(100, 101, 102, 103))
         groups = (qualifying_group(),)
         names = tuple(f"dataset-{index:04d}" for index in range(1117))
+        context = context_for(names, snapshot, test_size=100)
         exact_results = tuple(
-            apply_dataset_workload(name, 100, groups, (shadow_candidate(5, dataset=name),), snapshot)
+            apply_dataset_workload(name, 100, groups, (shadow_candidate(5, dataset=name),), snapshot, context=context)
             for name in names
         )
-        exact = apply_global_workload(exact_results, 111_700, context=context_for(exact_results))
+        exact = apply_global_workload(exact_results, 111_700, context=context)
         too_many = exact_results[:1] + (
             apply_dataset_workload(
                 names[1], 100, groups,
-                (shadow_candidate(5, dataset=names[1]), shadow_candidate(6, dataset=names[1])), snapshot,
+                (shadow_candidate(5, dataset=names[1]), shadow_candidate(6, dataset=names[1])), snapshot, context=context,
             ),
         ) + exact_results[2:]
-        rejected = apply_global_workload(too_many, 111_700, context=context_for(too_many))
+        rejected = apply_global_workload(too_many, 111_700, context=context)
         self.assertTrue(exact.publication_allowed)
         self.assertEqual(exact.status, "complete")
         self.assertFalse(rejected.publication_allowed)
         self.assertEqual(rejected.status, "global_workload_gate_failed")
         self.assertFalse(any(result.candidates for result in rejected.results))
+
+    def test_global_workload_counts_locally_abstained_observed_evidence(self) -> None:
+        """Clearing a 6%-dataset payload must not erase its contribution to the 1% global gate."""
+        snapshot = lanes(protected=(100, 101, 102, 103))
+        names = tuple(f"dataset-{index:04d}" for index in range(1117))
+        context = FrozenRunContext(
+            database_sha256=FROZEN_CONFIG.database_sha256,
+            datasets=names,
+            lanes=snapshot,
+            test_sizes={name: 100 for name in names},
+            code_commit="synthetic",
+            runtime_versions={"python": "synthetic"},
+        )
+        local_abstention = apply_dataset_workload(
+            names[0], 100, (qualifying_group(),),
+            tuple(shadow_candidate(index, dataset=names[0]) for index in range(6)), snapshot,
+            context=context,
+        )
+        others = tuple(
+            apply_dataset_workload(
+                name, 100, (qualifying_group(),), (shadow_candidate(0, dataset=name),), snapshot,
+                context=context,
+            )
+            for name in names[1:]
+        )
+        summary = apply_global_workload(
+            (local_abstention,) + others, 111_700, context=context
+        )
+        self.assertEqual(local_abstention.candidates, ())
+        self.assertEqual(len(local_abstention.observed_candidates), 6)
+        self.assertEqual(summary.status, "global_workload_gate_failed")
+        self.assertFalse(summary.publication_allowed)
+        self.assertFalse(any(result.candidates for result in summary.results))
 
 
 class FreezeContractTests(unittest.TestCase):

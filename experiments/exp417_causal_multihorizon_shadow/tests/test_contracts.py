@@ -39,11 +39,14 @@ def frozen_context(
     database_sha256: str | None = None,
     datasets: tuple[str, ...] | None = None,
     lanes: FrozenLaneSnapshot | None = None,
+    test_size: int = 20,
 ) -> FrozenRunContext:
+    names = datasets or ("A",) + tuple(f"dataset-{index:04d}" for index in range(1116))
     return FrozenRunContext(
         database_sha256=database_sha256 or FROZEN_CONFIG.database_sha256,
-        datasets=datasets or tuple(f"dataset-{index:04d}" for index in range(1117)),
+        datasets=names,
         lanes=lanes or frozen_lanes(),
+        test_sizes={dataset: test_size for dataset in names},
         code_commit="abc123",
         runtime_versions={"python": "3.14", "numpy": "2.3.5", "numba": "0.66.0", "torch": "2.13.0"},
     )
@@ -101,13 +104,17 @@ def dataset_result(
     group_count: int = 1,
     test_size: int = 20,
 ) -> DatasetResult:
+    snapshot = lanes or frozen_lanes()
+    context = frozen_context(lanes=snapshot, test_size=test_size)
     return DatasetResult(
         dataset=dataset,
         test_size=test_size,
         group_count=group_count,
         groups=(group(),),
         candidates=candidates,
-        lanes=lanes or frozen_lanes(),
+        observed_candidates=candidates,
+        lanes=snapshot,
+        context=context,
         status="qualified",
     )
 
@@ -167,6 +174,7 @@ class ContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "population"):
             frozen_context(datasets=("A",))
         self.assertEqual(len(frozen_context().datasets), 1117)
+        self.assertIsInstance(frozen_context().test_sizes, MappingProxyType)
 
     def test_horizon_score_requires_finite_unit_interval_evidence(self) -> None:
         with self.assertRaises(ValueError):
@@ -232,7 +240,35 @@ class ContractTests(unittest.TestCase):
                 ),
             )
 
+    def test_dataset_result_requires_observed_evidence_and_exact_context_size(self) -> None:
+        """Counts/rates cannot be claimed separately from observed candidates or a frozen TEST size."""
+        context = frozen_context()
+        with self.assertRaises(TypeError):
+            DatasetResult(
+                dataset="A",
+                test_size=20,
+                group_count=1,
+                groups=(group(),),
+                candidates=(),
+                lanes=context.lanes,
+                context=context,
+                status="abstained",
+            )
+        with self.assertRaisesRegex(ValueError, "frozen context"):
+            DatasetResult(
+                dataset="A",
+                test_size=21,
+                group_count=1,
+                groups=(group(),),
+                candidates=(),
+                observed_candidates=(),
+                lanes=context.lanes,
+                context=context,
+                status="abstained",
+            )
+
     def test_dataset_and_global_workload_fail_closed(self) -> None:
+        context_a = frozen_context(lanes=frozen_lanes())
         with self.assertRaisesRegex(ValueError, "workload"):
             DatasetResult(
                 dataset="A",
@@ -240,9 +276,10 @@ class ContractTests(unittest.TestCase):
                 group_count=1,
                 groups=(group(),),
                 candidates=(candidate("A", 1), candidate("A", 2)),
-                lanes=frozen_lanes(),
+                observed_candidates=(candidate("A", 1), candidate("A", 2)),
+                lanes=context_a.lanes,
+                context=context_a,
                 status="qualified",
-                candidate_rate=0.10,
             )
         excessive = DatasetResult(
             dataset="A",
@@ -250,9 +287,10 @@ class ContractTests(unittest.TestCase):
             group_count=1,
             groups=(group(),),
             candidates=(),
-            lanes=frozen_lanes(),
+            observed_candidates=(candidate("A", 1), candidate("A", 2)),
+            lanes=context_a.lanes,
+            context=context_a,
             status="abstained",
-            candidate_rate=0.10,
         )
         self.assertEqual(excessive.candidate_rate, 0.10)
         context = frozen_context()
@@ -280,9 +318,10 @@ class ContractTests(unittest.TestCase):
                 group_count=result.group_count,
                 groups=result.groups,
                 candidates=(),
+                observed_candidates=result.observed_candidates,
                 lanes=result.lanes,
+                context=result.context,
                 status="abstained",
-                observed_candidate_count=result.observed_candidate_count,
             )
             for result in retained
         )
@@ -315,11 +354,13 @@ class ContractTests(unittest.TestCase):
                 status="complete",
                 context=context,
             )
-        extra = dataset_result("dataset-1117", lanes=context.lanes)
-        with self.assertRaisesRegex(ValueError, "coverage"):
+        foreign = dataset_result(
+            context.datasets[-1], lanes=context.lanes, test_size=21
+        )
+        with self.assertRaisesRegex(ValueError, "frozen run"):
             RunSummary(
-                results=exact + (extra,),
-                total_test=20 * (len(exact) + 1),
+                results=exact[:-1] + (foreign,),
+                total_test=(20 * (len(exact) - 1)) + 21,
                 publication_allowed=True,
                 status="complete",
                 context=context,

@@ -327,6 +327,9 @@ class InputBoundaryTests(unittest.TestCase):
         with self.synthetic_config() as config:
             context = self._context(config)
             self.assertEqual(context.datasets, ("A", "B"))
+            self.assertEqual(context.test_sizes, {"A": 2, "B": 1})
+            with self.assertRaises(TypeError):
+                context.test_sizes["A"] = 999  # type: ignore[index]
             self.assertEqual(context.database_sha256, _sha(self.database))
             inputs.verify_input_snapshots(
                 self.database,

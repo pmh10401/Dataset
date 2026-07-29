@@ -215,16 +215,25 @@ def apply_dataset_workload(
     groups: Sequence[GroupQualification],
     candidates: Sequence[ShadowCandidate],
     lanes: FrozenLaneSnapshot,
+    *,
+    context: FrozenRunContext,
 ) -> DatasetResult:
     """Apply the frozen dataset cap as an all-or-none workload gate."""
     if not isinstance(dataset, str) or not dataset.strip():
         raise ValueError("dataset must be a non-empty string")
     if type(test_size) is not int or test_size < 1:
         raise ValueError("test_size must be a positive integer")
+    if not isinstance(context, FrozenRunContext):
+        raise ValueError("context must be a FrozenRunContext")
+    if dataset not in context.test_sizes or test_size != context.test_sizes[dataset]:
+        raise ValueError("test_size must match the frozen context")
+    if lanes != context.lanes:
+        raise ValueError("lanes must match the frozen context")
     frozen_groups = _groups(groups)
-    retained = exclude_frozen_lanes(candidates, lanes)
-    if any(candidate.dataset != dataset for candidate in retained):
+    raw_candidates = _candidates(candidates)
+    if any(candidate.dataset != dataset or candidate.instance_index >= test_size for candidate in raw_candidates):
         raise ValueError("candidates must belong to dataset")
+    retained = exclude_frozen_lanes(raw_candidates, lanes)
     prospective_rate = len(retained) / test_size
     if prospective_rate > FROZEN_CONFIG.dataset_workload_rate:
         return DatasetResult(
@@ -233,10 +242,10 @@ def apply_dataset_workload(
             group_count=len(frozen_groups),
             groups=frozen_groups,
             candidates=(),
+            observed_candidates=retained,
             lanes=lanes,
+            context=context,
             status="abstained",
-            observed_candidate_count=len(retained),
-            candidate_rate=prospective_rate,
         )
     return DatasetResult(
         dataset=dataset,
@@ -244,9 +253,10 @@ def apply_dataset_workload(
         group_count=len(frozen_groups),
         groups=frozen_groups,
         candidates=retained,
+        observed_candidates=retained,
         lanes=lanes,
+        context=context,
         status="qualified",
-        observed_candidate_count=len(retained),
     )
 
 
@@ -261,7 +271,9 @@ def apply_global_workload(
         raise ValueError("total_test must be a non-negative integer")
     if total_test != sum(result.test_size for result in frozen_results):
         raise ValueError("total_test does not conserve dataset totals")
-    prospective_rate = sum(len(result.candidates) for result in frozen_results) / total_test if total_test else 0.0
+    if total_test != sum(context.test_sizes.values()):
+        raise ValueError("total_test must match the frozen TEST population")
+    prospective_rate = sum(len(result.observed_candidates) for result in frozen_results) / total_test if total_test else 0.0
     if prospective_rate > FROZEN_CONFIG.global_workload_rate:
         cleared = tuple(
             DatasetResult(
@@ -270,10 +282,10 @@ def apply_global_workload(
                 group_count=result.group_count,
                 groups=result.groups,
                 candidates=(),
+                observed_candidates=result.observed_candidates,
                 lanes=result.lanes,
+                context=result.context,
                 status="abstained",
-                observed_candidate_count=result.observed_candidate_count,
-                candidate_rate=result.candidate_rate,
             )
             for result in frozen_results
         )
