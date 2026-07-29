@@ -195,20 +195,15 @@ def _typed_stage_evidence(contract: FrozenTrainContract):
 
 class RunnerOrderTests(unittest.TestCase):
     def test_production_runtime_requires_passing_task7_backend_audit(self) -> None:
-        """Production cannot invent a perfect CPU audit or accept a fallback."""
+        """Production cannot accept a caller-built passing audit as Task 7 provenance."""
         from experiments.exp417_causal_multihorizon_shadow import runner
 
-        resources = runner.RunnerResources(
-            Path("database"), Path("291-prediction"), Path("291-manifest"),
-            Path("292-prediction"), Path("292-manifest"),
-        )
-        with self.assertRaisesRegex(ValueError, "Task 7 backend audit"):
-            runner.RunnerRuntime.production(resources)
-        fallback = replace(_contract().backend, fallback=True, fallback_reason="parity")
-        with self.assertRaisesRegex(ValueError, "Task 7 backend audit"):
-            runner.RunnerRuntime.production(replace(resources, backend_audit=fallback))
-        runtime = runner.RunnerRuntime.production(replace(resources, backend_audit=_contract().backend))
-        self.assertIsInstance(runtime, runner.RunnerRuntime)
+        with self.assertRaises(TypeError):
+            runner.RunnerResources(
+                Path("database"), Path("291-prediction"), Path("291-manifest"),
+                Path("292-prediction"), Path("292-manifest"),
+                backend_audit=_contract().backend,
+            )
 
     def test_normal_oof_decisions_use_each_seed_query_residual(self) -> None:
         """Reusing seed 41701's query residual would mask seed disagreement."""
@@ -233,6 +228,46 @@ class RunnerOrderTests(unittest.TestCase):
         decisions = runner._residual_decisions(bundle, query)
 
         self.assertNotEqual(decisions[0].scores[1], decisions[1].scores[1])
+
+    def test_processed_identity_covers_all_model_input_fields_and_both_channels(self) -> None:
+        """Changing any model-input determinant must invalidate processed identity."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        group = synthetic_group(count=100, length=100)
+        baseline = runner._processed_identity_digest((group,))
+        scalar_mutations = {
+            "raw_center": replace(group, raw_center=group.raw_center + 0.25),
+            "raw_scale": replace(group, raw_scale=group.raw_scale + 0.25),
+            "difference_center": replace(group, difference_center=group.difference_center + 0.25),
+            "difference_scale": replace(group, difference_scale=group.difference_scale + 0.25),
+        }
+        for name, mutated in scalar_mutations.items():
+            with self.subTest(field=name):
+                self.assertNotEqual(baseline, runner._processed_identity_digest((mutated,)))
+
+        first_index = group.group.series[0].instance_index
+        for channel in (0, 1):
+            with self.subTest(channel=channel):
+                channels = {index: values.copy() for index, values in group.channels.items()}
+                channels[first_index][channel, 0] += np.float32(0.25)
+                mutated = replace(group, channels=channels)
+                self.assertNotEqual(baseline, runner._processed_identity_digest((mutated,)))
+
+    def test_train_contract_identity_includes_processed_model_input_identity(self) -> None:
+        """A checkpoint contract must not erase the processed identity after validation."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        _train, (group,), models, _scoring = _typed_stage_evidence(_contract())
+        first_index = group.group.series[0].instance_index
+        channels = {index: values.copy() for index, values in group.channels.items()}
+        channels[first_index][1, 0] += np.float32(0.25)
+        mutated = replace(group, channels=channels)
+        rebound = runner.TrainModelEvidence(
+            (mutated,), models.oof_bundles, models.final_models, models.backend
+        )
+
+        self.assertNotEqual(models.train_identity_sha256, rebound.train_identity_sha256)
+
     def test_test_sql_static_guard_uses_only_identity_and_values(self) -> None:
         """The runner's TEST boundary cannot depend on a label-bearing query."""
         from experiments.exp417_causal_multihorizon_shadow.inputs import (

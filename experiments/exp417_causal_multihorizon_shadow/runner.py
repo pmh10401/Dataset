@@ -85,13 +85,12 @@ class RunnerResources:
     exp291_manifest: Path
     exp292_prediction: Path
     exp292_manifest: Path
-    backend_audit: BackendAudit | None = None
     backend_audit_path: Path = EXP417_BACKEND_AUDIT_PATH
 
     @classmethod
-    def frozen_defaults(cls, *, backend_audit: BackendAudit | None = None) -> "RunnerResources":
+    def frozen_defaults(cls) -> "RunnerResources":
         return cls(DB_PATH, EXP291_PREDICTION_PATH, EXP291_MANIFEST_PATH,
-                   EXP292_PREDICTION_PATH, EXP292_MANIFEST_PATH, backend_audit,
+                   EXP292_PREDICTION_PATH, EXP292_MANIFEST_PATH,
                    EXP417_BACKEND_AUDIT_PATH)
 
 
@@ -120,7 +119,7 @@ class RunnerRuntime:
         pinned = RunnerResources.frozen_defaults() if resources is None else resources
         if not isinstance(pinned, RunnerResources):
             raise ValueError("resources must be RunnerResources")
-        audit = load_frozen_backend_audit(pinned.backend_audit_path) if resources is None else pinned.backend_audit
+        audit = load_frozen_backend_audit(pinned.backend_audit_path)
         if not isinstance(audit, BackendAudit) or audit.fallback:
             raise ValueError("production resources require a passing Task 7 backend audit")
         if audit.backend not in {"cpu", "mps"}:
@@ -808,8 +807,9 @@ def _model_evidence_digest(
     finals: Mapping[int, Sequence[TrainedSeedModel]], backend: BackendAudit,
 ) -> str:
     digest = sha256()
-    _digest_text(digest, "exp417.train-evidence.v1")
+    _digest_text(digest, "exp417.train-evidence.v2")
     _digest_text(digest, backend.backend)
+    _digest_text(digest, _processed_identity_digest(groups))
     for group in groups:
         length = group.group.length
         digest.update(length.to_bytes(8, "little", signed=False))
@@ -829,13 +829,21 @@ def _model_evidence_digest(
 
 def _processed_identity_digest(groups: Sequence[ProcessedGroup]) -> str:
     digest = sha256()
-    _digest_text(digest, "exp417.processed-groups.v1")
+    _digest_text(digest, "exp417.processed-groups.v2")
     for group in groups:
         digest.update(group.group.length.to_bytes(8, "little", signed=False))
         _digest_text(digest, group.status)
+        digest.update(np.asarray(
+            [group.raw_center, group.raw_scale, group.difference_center, group.difference_scale],
+            dtype="<f8",
+        ).tobytes(order="C"))
         for series in group.group.series:
             digest.update(series.instance_index.to_bytes(8, "little", signed=False))
             digest.update(np.asarray(series.values, dtype="<f4").tobytes(order="C"))
+            channels = group.channels.get(series.instance_index)
+            if not isinstance(channels, np.ndarray):
+                raise ValueError("processed identity requires exact model-input channels")
+            digest.update(np.asarray(channels, dtype="<f4", order="C").tobytes(order="C"))
     return digest.hexdigest()
 
 

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-import unittest
+import json
 import inspect
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import unittest
 
 import numpy as np
 import torch
@@ -14,6 +17,7 @@ from experiments.exp417_causal_multihorizon_shadow.backend import (
     benchmark_scoring_backend,
     benchmark_torch_devices,
     canonical_mps_fallback_reason,
+    load_frozen_backend_audit,
     persistence_numba,
     persistence_numpy,
     probe_mps_host,
@@ -156,6 +160,77 @@ class CanonicalSelectionTests(unittest.TestCase):
         self.assertEqual(canonical_mps_fallback_reason((slow, unavailable)), "mps_unavailable")
         with self.assertRaisesRegex(ValueError, "MPS"):
             select_canonical_backend(())
+
+
+class FrozenTask7ArtifactTests(unittest.TestCase):
+    _FROZEN_PAYLOAD = {
+        "config_identity_sha256": "bbf06cdca6336bc62e642c445264d949e6be34d14c4b7abb9f45134479ccd498",
+        "execution_audit": {
+            "backend": "cpu",
+            "candidate_identity": True,
+            "fallback": False,
+            "fallback_reason": None,
+            "max_normalized_error": 4.0948700075205124e-07,
+            "spearman": 0.9999999999845686,
+            "speedup": 0.6709759390840965,
+        },
+        "host": {"architecture": "arm64", "device": "Apple M2 Max"},
+        "mps_adoption_audit": {
+            "backend": "cpu",
+            "candidate_identity": True,
+            "fallback": True,
+            "fallback_reason": "speedup",
+            "max_normalized_error": 4.0948700075205124e-07,
+            "spearman": 0.9999999999845686,
+            "speedup": 0.6709759390840965,
+        },
+        "numba": {"candidate_identity": True, "speedup": 32.49217872476399},
+        "runtime": {"torch": "2.13.0"},
+        "schema": "exp417.task7-backend-audit.v1",
+        "selected_backend": "cpu",
+        "task7_commit": "81c6ff36da7b8cdf09fc625adb2b87ad7202e05f",
+    }
+
+    @classmethod
+    def _bytes(cls, payload: dict[str, object] | None = None) -> bytes:
+        return (json.dumps(payload or cls._FROZEN_PAYLOAD, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+    def test_only_independently_pinned_task7_artifact_is_accepted(self) -> None:
+        """Recomputing a mutable file-local digest must not authorize forged evidence."""
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "task7_backend_audit.json"
+            path.write_bytes(self._bytes())
+            audit = load_frozen_backend_audit(path)
+            self.assertEqual(audit.backend, "cpu")
+            self.assertFalse(audit.fallback)
+            self.assertEqual(audit.speedup, 0.6709759390840965)
+            from experiments.exp417_causal_multihorizon_shadow.runner import (
+                RunnerResources,
+                RunnerRuntime,
+            )
+            resources = RunnerResources(
+                Path("database"), Path("291-prediction"), Path("291-manifest"),
+                Path("292-prediction"), Path("292-manifest"), path,
+            )
+            self.assertIsInstance(RunnerRuntime.production(resources), RunnerRuntime)
+
+            forged = json.loads(self._bytes())
+            forged["execution_audit"]["speedup"] = 99.0
+            forged["mps_adoption_audit"]["speedup"] = 99.0
+            forged["payload_sha256"] = "self-declared-and-recomputed"
+            path.write_bytes(self._bytes(forged))
+            with self.assertRaisesRegex(ValueError, "trusted digest"):
+                load_frozen_backend_audit(path)
+
+    def test_wrong_frozen_config_identity_is_rejected_even_with_valid_json(self) -> None:
+        """An artifact from another threshold/config contract cannot authorize execution."""
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "task7_backend_audit.json"
+            forged = dict(self._FROZEN_PAYLOAD)
+            forged["config_identity_sha256"] = "0" * 64
+            path.write_bytes(self._bytes(forged))
+            with self.assertRaisesRegex(ValueError, "trusted digest|config identity"):
+                load_frozen_backend_audit(path)
 
 
 class HostMPSProbeTests(unittest.TestCase):

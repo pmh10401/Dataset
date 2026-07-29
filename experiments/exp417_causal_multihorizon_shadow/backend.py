@@ -8,6 +8,7 @@ from hashlib import sha256
 import json
 from math import ceil, isfinite
 from pathlib import Path
+import platform
 from time import perf_counter
 import copy
 
@@ -31,27 +32,94 @@ _MPS_FAILURE_PRECEDENCE = (
     "mps_unavailable", "mps_runtime_error", "device_fallback", "nonfinite_outputs",
     "candidate_identity", "max_normalized_error", "spearman", "speedup",
 )
+_TASK7_COMMIT = "81c6ff36da7b8cdf09fc625adb2b87ad7202e05f"
+FROZEN_TASK7_BACKEND_CONFIG_SHA256 = "bbf06cdca6336bc62e642c445264d949e6be34d14c4b7abb9f45134479ccd498"
+FROZEN_TASK7_BACKEND_AUDIT_SHA256 = "f77efa941f6b33fe6687b8ac0c2b01c152dac9c15e8b0966e3d9bb41b119b592"
 
 
 def load_frozen_backend_audit(path: Path) -> BackendAudit:
-    """Load the one Task 7 selected-backend result; never benchmark at runtime."""
+    """Load the exact code-pinned Task 7 evidence; never trust a file-local hash."""
     try:
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+        raw = Path(path).read_bytes()
+    except OSError as error:
         raise ValueError("Task 7 backend audit artifact is unreadable") from error
-    if not isinstance(payload, dict) or set(payload) != {"selected_backend", "audit", "payload_sha256"}:
+    if sha256(raw).hexdigest() != FROZEN_TASK7_BACKEND_AUDIT_SHA256:
+        raise ValueError("Task 7 backend audit does not match the independently trusted digest")
+    try:
+        payload = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Task 7 backend audit artifact is unreadable") from error
+    expected_keys = {
+        "schema", "config_identity_sha256", "task7_commit", "selected_backend",
+        "execution_audit", "mps_adoption_audit", "numba", "host", "runtime",
+    }
+    if not isinstance(payload, dict) or set(payload) != expected_keys:
         raise ValueError("Task 7 backend audit artifact schema is invalid")
-    digest = payload.pop("payload_sha256")
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    if not isinstance(digest, str) or sha256(canonical).hexdigest() != digest:
-        raise ValueError("Task 7 backend audit artifact digest is invalid")
-    audit_data = payload["audit"]
-    if not isinstance(audit_data, dict) or set(audit_data) != {"backend", "candidate_identity", "max_normalized_error", "spearman", "speedup", "fallback", "fallback_reason"}:
+    if payload["schema"] != "exp417.task7-backend-audit.v1":
+        raise ValueError("Task 7 backend audit artifact schema is invalid")
+    if (
+        payload["task7_commit"] != _TASK7_COMMIT
+        or payload["config_identity_sha256"] != _task7_config_identity_sha256()
+        or payload["config_identity_sha256"] != FROZEN_TASK7_BACKEND_CONFIG_SHA256
+    ):
+        raise ValueError("Task 7 backend audit config identity is invalid")
+    audit_keys = {
+        "backend", "candidate_identity", "max_normalized_error", "spearman",
+        "speedup", "fallback", "fallback_reason",
+    }
+    execution_data = payload["execution_audit"]
+    adoption_data = payload["mps_adoption_audit"]
+    if (
+        not isinstance(execution_data, dict) or set(execution_data) != audit_keys
+        or not isinstance(adoption_data, dict) or set(adoption_data) != audit_keys
+    ):
         raise ValueError("Task 7 backend audit payload is invalid")
-    audit = BackendAudit(**audit_data)
-    if payload["selected_backend"] != audit.backend or audit.fallback or audit.backend not in {"cpu", "mps"}:
+    execution = BackendAudit(**execution_data)
+    adoption = BackendAudit(**adoption_data)
+    if (
+        payload["selected_backend"] != "cpu"
+        or execution.backend != "cpu" or execution.fallback or execution.fallback_reason is not None
+        or adoption.backend != "cpu" or not adoption.fallback or adoption.fallback_reason != "speedup"
+        or not adoption.candidate_identity
+        or adoption.max_normalized_error > FROZEN_CONFIG.mps_max_error
+        or adoption.spearman < FROZEN_CONFIG.mps_min_spearman
+        or adoption.speedup >= FROZEN_CONFIG.mps_min_speedup
+        or (
+            execution.candidate_identity, execution.max_normalized_error,
+            execution.spearman, execution.speedup,
+        ) != (
+            adoption.candidate_identity, adoption.max_normalized_error,
+            adoption.spearman, adoption.speedup,
+        )
+    ):
         raise ValueError("Task 7 backend audit selected device is invalid")
-    return audit
+    if payload["runtime"] != {"torch": "2.13.0"}:
+        raise ValueError("Task 7 backend audit runtime provenance is invalid")
+    if torch.__version__.split("+", 1)[0] != payload["runtime"]["torch"]:
+        raise ValueError("Task 7 backend audit runtime does not match the current torch")
+    if payload["host"] != {"architecture": "arm64", "device": "Apple M2 Max"}:
+        raise ValueError("Task 7 backend audit host provenance is invalid")
+    if platform.machine() != payload["host"]["architecture"]:
+        raise ValueError("Task 7 backend audit host does not match the current architecture")
+    if payload["numba"] != {"candidate_identity": True, "speedup": 32.49217872476399}:
+        raise ValueError("Task 7 backend audit Numba provenance is invalid")
+    return execution
+
+
+def _task7_config_identity_sha256() -> str:
+    payload = {
+        "schema": "exp417.task7-backend-config.v1",
+        "experiment_id": FROZEN_CONFIG.experiment_id,
+        "model_seeds": list(FROZEN_CONFIG.model_seeds),
+        "candidate_alpha": FROZEN_CONFIG.candidate_alpha,
+        "persistence_fraction": FROZEN_CONFIG.persistence_fraction,
+        "mps_max_error": FROZEN_CONFIG.mps_max_error,
+        "mps_min_spearman": FROZEN_CONFIG.mps_min_spearman,
+        "mps_min_speedup": FROZEN_CONFIG.mps_min_speedup,
+        "task7_commit": _TASK7_COMMIT,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return sha256(canonical).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -395,4 +463,11 @@ def _on_device(actual: Tensor, requested: torch.device) -> bool:
     return actual.device.type == requested.type and (requested.type != "mps" or actual.device.index in {None, 0})
 
 
-__all__ = ["BenchmarkTrainGroup", "MPSProbe", "TorchBenchmarkMeasurement", "benchmark_scoring_backend", "benchmark_torch_devices", "canonical_mps_fallback_reason", "persistence_numba", "persistence_numpy", "probe_mps_host", "select_benchmark_strata", "select_canonical_backend"]
+__all__ = [
+    "BenchmarkTrainGroup", "FROZEN_TASK7_BACKEND_AUDIT_SHA256",
+    "FROZEN_TASK7_BACKEND_CONFIG_SHA256", "MPSProbe", "TorchBenchmarkMeasurement",
+    "benchmark_scoring_backend", "benchmark_torch_devices",
+    "canonical_mps_fallback_reason", "load_frozen_backend_audit",
+    "persistence_numba", "persistence_numpy", "probe_mps_host",
+    "select_benchmark_strata", "select_canonical_backend",
+]
