@@ -30,11 +30,16 @@ def frozen_lanes(
     )
 
 
-def frozen_context(*, database_sha256: str | None = None, datasets: tuple[str, ...] | None = None) -> FrozenRunContext:
+def frozen_context(
+    *,
+    database_sha256: str | None = None,
+    datasets: tuple[str, ...] | None = None,
+    lanes: FrozenLaneSnapshot | None = None,
+) -> FrozenRunContext:
     return FrozenRunContext(
         database_sha256=database_sha256 or FROZEN_CONFIG.database_sha256,
         datasets=datasets or tuple(f"dataset-{index:04d}" for index in range(1117)),
-        lanes=frozen_lanes(),
+        lanes=lanes or frozen_lanes(),
         code_commit="abc123",
         runtime_versions={"python": "3.14", "numpy": "2.3.5", "numba": "0.66.0", "torch": "2.13.0"},
     )
@@ -90,15 +95,29 @@ def dataset_result(
     candidates: tuple[ShadowCandidate, ...] = (),
     lanes: FrozenLaneSnapshot | None = None,
     group_count: int = 1,
+    test_size: int = 20,
 ) -> DatasetResult:
     return DatasetResult(
         dataset=dataset,
-        test_size=20,
+        test_size=test_size,
         group_count=group_count,
         groups=(group(),),
         candidates=candidates,
         lanes=lanes or frozen_lanes(),
         status="qualified",
+    )
+
+
+def results_for_context(
+    context: FrozenRunContext, *, retain_one_candidate_per_dataset: bool = False
+) -> tuple[DatasetResult, ...]:
+    return tuple(
+        dataset_result(
+            dataset,
+            candidates=(candidate(dataset, 1),) if retain_one_candidate_per_dataset else (),
+            lanes=context.lanes,
+        )
+        for dataset in context.datasets
     )
 
 
@@ -229,18 +248,61 @@ class ContractTests(unittest.TestCase):
             candidate_rate=0.10,
         )
         self.assertEqual(excessive.candidate_rate, 0.10)
-        retained = dataset_result("A", candidates=(candidate("A", 1),))
+        context = frozen_context()
+        retained = results_for_context(context, retain_one_candidate_per_dataset=True)
         with self.assertRaisesRegex(ValueError, "global workload"):
             RunSummary(
-                results=(retained,), total_test=20, publication_allowed=True, status="complete"
+                results=retained,
+                total_test=20 * len(retained),
+                publication_allowed=True,
+                status="complete",
+                context=context,
             )
         summary = RunSummary(
-            results=(retained,),
-            total_test=20,
+            results=retained,
+            total_test=20 * len(retained),
             publication_allowed=False,
             status="global_workload_gate_failed",
+            context=context,
         )
         self.assertFalse(summary.publication_allowed)
+
+    def test_run_summary_requires_exact_context_population_coverage(self) -> None:
+        context = frozen_context()
+        exact = results_for_context(context)
+        complete = RunSummary(
+            results=exact,
+            total_test=20 * len(exact),
+            publication_allowed=True,
+            status="complete",
+            context=context,
+        )
+        self.assertEqual(tuple(result.dataset for result in complete.results), context.datasets)
+        with self.assertRaisesRegex(ValueError, "coverage"):
+            RunSummary(
+                results=exact[:-1],
+                total_test=20 * (len(exact) - 1),
+                publication_allowed=True,
+                status="complete",
+                context=context,
+            )
+        extra = dataset_result("dataset-1117", lanes=context.lanes)
+        with self.assertRaisesRegex(ValueError, "coverage"):
+            RunSummary(
+                results=exact + (extra,),
+                total_test=20 * (len(exact) + 1),
+                publication_allowed=True,
+                status="complete",
+                context=context,
+            )
+        with self.assertRaisesRegex(ValueError, "sorted unique"):
+            RunSummary(
+                results=exact[:-1] + (exact[0],),
+                total_test=20 * len(exact),
+                publication_allowed=True,
+                status="complete",
+                context=context,
+            )
 
     def test_candidate_requires_horizons_for_its_exact_length(self) -> None:
         wrong_scores = {

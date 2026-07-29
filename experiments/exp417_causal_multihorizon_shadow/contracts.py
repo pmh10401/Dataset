@@ -482,14 +482,21 @@ class RunSummary:
     total_test: int
     publication_allowed: bool
     status: str
+    context: FrozenRunContext
 
     def __post_init__(self) -> None:
+        if not isinstance(self.context, FrozenRunContext):
+            raise ValueError("context must be a FrozenRunContext")
         results = _tuple(self.results, "results")
         if any(not isinstance(result, DatasetResult) for result in results):
             raise ValueError("results must contain DatasetResult records")
         datasets = tuple(result.dataset for result in results)
         if datasets != tuple(sorted(datasets)) or len(datasets) != len(set(datasets)):
             raise ValueError("results must have sorted unique datasets")
+        if datasets != self.context.datasets:
+            raise ValueError("results do not provide frozen context coverage")
+        if any(result.lanes != self.context.lanes for result in results):
+            raise ValueError("results do not use the frozen lane snapshot")
         total_test = _integer(self.total_test, "total_test", minimum=0)
         if total_test != sum(result.test_size for result in results):
             raise ValueError("total_test does not conserve dataset totals")
