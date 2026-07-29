@@ -109,6 +109,7 @@ class TrainedSeedModel:
     validation_indices: tuple[int, ...]
     early_stop_fit_indices: tuple[int, ...]
     early_stop_validation_indices: tuple[int, ...]
+    refit_indices: tuple[int, ...]
     device: str = "cpu"
 
     def __post_init__(self) -> None:
@@ -123,7 +124,12 @@ class TrainedSeedModel:
             raise ValueError("stop epoch must be within the frozen 100-epoch limit")
         for name in ("training_losses", "validation_losses"):
             values = tuple(getattr(self, name))
-            if len(values) != self.stop_epoch or not all(np.isfinite(value) for value in values):
+            valid_length = (
+                len(values) == self.stop_epoch
+                if name == "training_losses"
+                else self.stop_epoch <= len(values) <= _MAX_EPOCHS
+            )
+            if not valid_length or not all(np.isfinite(value) for value in values):
                 raise ValueError(f"{name} must contain finite evidence for every completed epoch")
             object.__setattr__(self, name, tuple(float(value) for value in values))
         state = _freeze_state(self.state)
@@ -135,6 +141,7 @@ class TrainedSeedModel:
             "validation_indices",
             "early_stop_fit_indices",
             "early_stop_validation_indices",
+            "refit_indices",
         ):
             indices = tuple(getattr(self, name))
             if any(type(index) is not int or index < 0 for index in indices):
@@ -146,44 +153,74 @@ class TrainedSeedModel:
         validation = set(self.validation_indices)
         early_fit = set(self.early_stop_fit_indices)
         early_validation = set(self.early_stop_validation_indices)
+        refit = set(self.refit_indices)
         if fit & validation or validation & early_fit or validation & early_validation:
             raise ValueError("OOF validation identities cannot appear in model fit or early stopping")
         if not early_fit.issubset(fit) or not early_validation.issubset(fit):
             raise ValueError("early-stop identities must be drawn from the OOF fit side")
+        if len(early_fit) < 5 or len(early_validation) < 5:
+            raise ValueError("early stopping requires at least five identity groups on both sides")
+        if refit != fit:
+            raise ValueError("final refit must use every identity in the declared fit partition")
 
 
 @dataclass(frozen=True)
 class OOFModelBundle:
     """All five OOF folds for each frozen seed and immutable residual evidence."""
 
+    length: int
+    universe_indices: tuple[int, ...]
     horizons: tuple[int, int, int]
     folds: tuple[Fold, ...]
     models: tuple[TrainedSeedModel, ...]
     oof_residuals: Mapping[int, Mapping[int, Mapping[int, np.ndarray]]]
 
     def __post_init__(self) -> None:
+        if type(self.length) is not int or self.length <= 0:
+            raise ValueError("OOF length must be a positive integer")
+        universe = tuple(self.universe_indices)
+        if not universe or any(type(index) is not int or index < 0 for index in universe):
+            raise ValueError("OOF universe must contain non-negative integer identities")
+        if universe != tuple(sorted(universe)) or len(universe) != len(set(universe)):
+            raise ValueError("OOF universe must be sorted and unique")
         horizons = _validate_horizons(self.horizons)
+        if horizons != build_horizons(self.length):
+            raise ValueError("OOF horizons must match the exact group length")
         folds = tuple(self.folds)
         if len(folds) != 5 or any(not isinstance(fold, Fold) for fold in folds):
             raise ValueError("OOF bundle requires exactly five identity folds")
+        universe_set = set(universe)
+        covered: set[int] = set()
+        for fold in folds:
+            validation = set(fold.validation_indices)
+            if not validation or not validation.issubset(universe_set):
+                raise ValueError("OOF validation partitions must be non-empty within the universe")
+            if covered & validation:
+                raise ValueError("OOF validation partitions must be pairwise disjoint")
+            if set(fold.fit_indices) | validation != universe_set:
+                raise ValueError("OOF fold partitions must cover the exact universe")
+            covered.update(validation)
+        if covered != universe_set:
+            raise ValueError("OOF validation partitions must cover the exact universe")
         models = tuple(self.models)
         if len(models) != len(FROZEN_CONFIG.model_seeds) * len(folds):
             raise ValueError("OOF bundle requires every frozen seed in every fold")
         if any(not isinstance(model, TrainedSeedModel) or model.horizons != horizons for model in models):
             raise ValueError("OOF models must use the frozen horizons")
-        expected_pairs = {
-            (seed, fold.validation_indices)
+        expected_bindings = {
+            (seed, fold.fit_indices, fold.validation_indices, fold.early_stop_fit_indices, fold.early_stop_validation_indices)
             for seed in FROZEN_CONFIG.model_seeds
             for fold in folds
         }
-        actual_pairs = {(model.seed, model.validation_indices) for model in models}
-        if actual_pairs != expected_pairs:
-            raise ValueError("OOF models must cover every seed/fold identity partition exactly once")
-        frozen_residuals = _freeze_oof_residuals(self.oof_residuals, horizons)
-        for seed in FROZEN_CONFIG.model_seeds:
-            expected_indices = set().union(*(set(fold.validation_indices) for fold in folds))
-            if set(frozen_residuals[seed]) != expected_indices:
-                raise ValueError("OOF residuals must cover every validation identity exactly once per seed")
+        actual_bindings = [
+            (model.seed, model.fit_indices, model.validation_indices, model.early_stop_fit_indices, model.early_stop_validation_indices)
+            for model in models
+        ]
+        if len(actual_bindings) != len(set(actual_bindings)) or set(actual_bindings) != expected_bindings:
+            raise ValueError("OOF models must attest exactly one complete seed/fold partition")
+        frozen_residuals = _freeze_oof_residuals(self.oof_residuals, horizons, universe, self.length)
+        object.__setattr__(self, "length", self.length)
+        object.__setattr__(self, "universe_indices", universe)
         object.__setattr__(self, "horizons", horizons)
         object.__setattr__(self, "folds", folds)
         object.__setattr__(self, "models", models)
@@ -231,6 +268,8 @@ def train_oof_models(
             for index in fold.validation_indices:
                 mutable_residuals[seed][index] = dict(predict_residuals(trained, channels[index]))
     return OOFModelBundle(
+        length=group.group.length,
+        universe_indices=tuple(item.instance_index for item in group.group.series),
         horizons=horizons,
         folds=folds,
         models=tuple(models),
@@ -298,7 +337,7 @@ def predict_residuals(model: TrainedSeedModel, channels: np.ndarray) -> Mapping[
         }
     if any(not np.isfinite(residual).all() for residual in residuals.values()):
         raise ValueError("model residuals must be finite")
-    return _freeze_residual_mapping(residuals, model.horizons)
+    return _freeze_residual_mapping(residuals, model.horizons, values.shape[1])
 
 
 def canonical_model_sha256(model: nn.Module) -> str:
@@ -319,15 +358,58 @@ def _fit_seed_model(
     early_stop_fit_indices: tuple[int, ...],
     early_stop_validation_indices: tuple[int, ...],
 ) -> TrainedSeedModel:
-    if len(early_stop_fit_indices) < 1 or len(early_stop_validation_indices) < 1:
-        raise ValueError("model fitting requires non-empty TRAIN-only early-stop partitions")
+    if len(early_stop_fit_indices) < 5 or len(early_stop_validation_indices) < 5:
+        raise ValueError("model fitting requires five identity groups on both early-stop sides")
+    selected_epoch, selection_validation_losses = _select_stop_epoch(
+        channels,
+        horizons,
+        seed=seed,
+        device=device,
+        fit_indices=early_stop_fit_indices,
+        validation_indices=early_stop_validation_indices,
+    )
+    final_state, final_training_losses = _refit_all_identities(
+        channels,
+        horizons,
+        seed=seed,
+        device=device,
+        fit_indices=fit_indices,
+        epochs=selected_epoch,
+    )
+    return TrainedSeedModel(
+        seed=seed,
+        horizons=horizons,
+        model_sha256=_canonical_state_sha256(final_state),
+        state=final_state,
+        stop_epoch=selected_epoch,
+        training_losses=final_training_losses,
+        validation_losses=selection_validation_losses,
+        fit_indices=fit_indices,
+        validation_indices=validation_indices,
+        early_stop_fit_indices=early_stop_fit_indices,
+        early_stop_validation_indices=early_stop_validation_indices,
+        refit_indices=fit_indices,
+        device=device.type,
+    )
+
+
+def _select_stop_epoch(
+    channels: Mapping[int, np.ndarray],
+    horizons: tuple[int, int, int],
+    *,
+    seed: int,
+    device: torch.device,
+    fit_indices: tuple[int, ...],
+    validation_indices: tuple[int, ...],
+) -> tuple[int, tuple[float, ...]]:
+    """Use an identity-disjoint TRAIN subset only to choose the stop epoch."""
     set_deterministic_seed(seed, device)
     network = CausalMultiHorizonCNN(horizons).to(device)
     _assert_model_device(network, device)
     optimizer = torch.optim.AdamW(network.parameters(), lr=_LEARNING_RATE, weight_decay=_WEIGHT_DECAY)
     loss_function = nn.HuberLoss()
-    training = _channel_batch(channels, early_stop_fit_indices)
-    validation = _channel_batch(channels, early_stop_validation_indices)
+    training = _channel_batch(channels, fit_indices)
+    validation = _channel_batch(channels, validation_indices)
     loader = DataLoader(
         TensorDataset(torch.from_numpy(training)),
         batch_size=min(_BATCH_LIMIT, len(training)),
@@ -335,9 +417,8 @@ def _fit_seed_model(
         num_workers=0,
     )
     best_validation = float("inf")
-    best_state: Mapping[str, tuple[str, tuple[int, ...], bytes]] | None = None
-    training_losses: list[float] = []
     validation_losses: list[float] = []
+    best_epoch: int | None = None
     stale_epochs = 0
     for epoch in range(_MAX_EPOCHS):
         network.train()
@@ -359,32 +440,66 @@ def _fit_seed_model(
         validation_loss = _evaluate_loss(network, validation, horizons, loss_function, device)
         if not np.isfinite(train_loss) or not np.isfinite(validation_loss):
             raise ValueError("non-finite model loss")
-        training_losses.append(float(train_loss))
         validation_losses.append(float(validation_loss))
         if validation_loss < best_validation - 1e-12:
             best_validation = validation_loss
-            best_state = _serialize_state(network.state_dict())
+            best_epoch = epoch + 1
             stale_epochs = 0
         else:
             stale_epochs += 1
             if stale_epochs >= _PATIENCE:
                 break
-    if best_state is None:
-        raise ValueError("model fitting did not produce a finite checkpoint")
-    return TrainedSeedModel(
-        seed=seed,
-        horizons=horizons,
-        model_sha256=_canonical_state_sha256(best_state),
-        state=best_state,
-        stop_epoch=len(training_losses),
-        training_losses=tuple(training_losses),
-        validation_losses=tuple(validation_losses),
-        fit_indices=fit_indices,
-        validation_indices=validation_indices,
-        early_stop_fit_indices=early_stop_fit_indices,
-        early_stop_validation_indices=early_stop_validation_indices,
-        device=device.type,
+    if best_epoch is None:
+        raise ValueError("early stopping did not produce a finite selected epoch")
+    return best_epoch, tuple(validation_losses)
+
+
+def _refit_all_identities(
+    channels: Mapping[int, np.ndarray],
+    horizons: tuple[int, int, int],
+    *,
+    seed: int,
+    device: torch.device,
+    fit_indices: tuple[int, ...],
+    epochs: int,
+) -> tuple[Mapping[str, tuple[str, tuple[int, ...], bytes]], tuple[float, ...]]:
+    """Reinitialize and fit every declared normal-TRAIN identity exactly once per epoch."""
+    if type(epochs) is not int or not 1 <= epochs <= _MAX_EPOCHS:
+        raise ValueError("selected stop epoch must be within the frozen limit")
+    set_deterministic_seed(seed, device)
+    network = CausalMultiHorizonCNN(horizons).to(device)
+    _assert_model_device(network, device)
+    optimizer = torch.optim.AdamW(network.parameters(), lr=_LEARNING_RATE, weight_decay=_WEIGHT_DECAY)
+    loss_function = nn.HuberLoss()
+    training = _channel_batch(channels, fit_indices)
+    loader = DataLoader(
+        TensorDataset(torch.from_numpy(training)),
+        batch_size=min(_BATCH_LIMIT, len(training)),
+        shuffle=False,
+        num_workers=0,
     )
+    losses: list[float] = []
+    for _epoch in range(epochs):
+        network.train()
+        total_loss = 0.0
+        total_rows = 0
+        for (batch_cpu,) in loader:
+            batch = batch_cpu.to(device)
+            _assert_tensor_device(batch, device)
+            optimizer.zero_grad(set_to_none=True)
+            loss = _multi_horizon_huber(network, batch, horizons, loss_function)
+            if not torch.isfinite(loss):
+                raise ValueError("non-finite TRAIN loss")
+            loss.backward()
+            optimizer.step()
+            _assert_finite_parameters(network)
+            total_loss += float(loss.detach().cpu()) * len(batch_cpu)
+            total_rows += len(batch_cpu)
+        current_loss = total_loss / total_rows
+        if not np.isfinite(current_loss):
+            raise ValueError("non-finite final-refit loss")
+        losses.append(float(current_loss))
+    return _serialize_state(network.state_dict()), tuple(losses)
 
 
 def _multi_horizon_huber(
@@ -578,21 +693,26 @@ def _torch_dtype(name: str) -> torch.dtype:
 
 
 def _freeze_residual_mapping(
-    values: Mapping[int, np.ndarray], horizons: tuple[int, int, int]
+    values: Mapping[int, np.ndarray], horizons: tuple[int, int, int], length: int
 ) -> Mapping[int, np.ndarray]:
     if tuple(sorted(values)) != horizons:
         raise ValueError("residuals must cover the frozen horizons")
     frozen: dict[int, np.ndarray] = {}
     for horizon in horizons:
         residual = np.asarray(values[horizon], dtype=np.float64)
-        if residual.ndim != 1 or len(residual) == 0 or not np.isfinite(residual).all():
-            raise ValueError("residuals must be finite non-empty vectors")
+        if residual.ndim != 1 or len(residual) != length - horizon:
+            raise ValueError("residual length must match the exact aligned horizon region")
+        if not np.isfinite(residual).all():
+            raise ValueError("residuals must be finite")
         frozen[horizon] = np.frombuffer(np.ascontiguousarray(residual).tobytes(), dtype=np.float64)
     return MappingProxyType(frozen)
 
 
 def _freeze_oof_residuals(
-    values: Mapping[int, Mapping[int, Mapping[int, np.ndarray]]], horizons: tuple[int, int, int]
+    values: Mapping[int, Mapping[int, Mapping[int, np.ndarray]]],
+    horizons: tuple[int, int, int],
+    universe: tuple[int, ...],
+    length: int,
 ) -> Mapping[int, Mapping[int, Mapping[int, np.ndarray]]]:
     if not isinstance(values, Mapping) or tuple(sorted(values)) != FROZEN_CONFIG.model_seeds:
         raise ValueError("OOF residuals must contain every frozen seed")
@@ -601,9 +721,11 @@ def _freeze_oof_residuals(
         by_index = values[seed]
         if not isinstance(by_index, Mapping):
             raise ValueError("OOF residuals must map seed to identity evidence")
+        if set(by_index) != set(universe):
+            raise ValueError("OOF residual identity coverage must match the exact universe")
         frozen[seed] = MappingProxyType(
             {
-                index: _freeze_residual_mapping(residuals, horizons)
+                index: _freeze_residual_mapping(residuals, horizons, length)
                 for index, residuals in sorted(by_index.items())
                 if type(index) is int and index >= 0
             }

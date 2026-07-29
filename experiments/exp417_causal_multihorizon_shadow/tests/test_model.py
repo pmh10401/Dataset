@@ -17,10 +17,15 @@ from experiments.exp417_causal_multihorizon_shadow.preprocessing import (
 )
 from experiments.exp417_causal_multihorizon_shadow.model import (
     CausalMultiHorizonCNN,
+    OOFModelBundle,
+    TrainedSeedModel,
+    _canonical_state_sha256,
+    _serialize_state,
     fit_final_seed_models,
     predict_residuals,
     train_oof_models,
 )
+from experiments.exp417_causal_multihorizon_shadow.preprocessing import Fold
 
 
 CPU = torch.device("cpu")
@@ -49,6 +54,72 @@ def synthetic_group(count: int = 100, length: int = 64):
 def model() -> CausalMultiHorizonCNN:
     torch.manual_seed(41701)
     return CausalMultiHorizonCNN(build_horizons(128)).eval()
+
+
+def synthetic_folds(universe: tuple[int, ...]) -> tuple[Fold, ...]:
+    """Build direct, synthetic five-fold attestations without training models."""
+    per_fold = len(universe) // 5
+    folds = []
+    for offset in range(0, len(universe), per_fold):
+        validation = universe[offset : offset + per_fold]
+        fit = tuple(index for index in universe if index not in set(validation))
+        folds.append(
+            Fold(
+                fit_indices=fit,
+                validation_indices=validation,
+                early_stop_fit_indices=fit[5:],
+                early_stop_validation_indices=fit[:5],
+            )
+        )
+    return tuple(folds)
+
+
+def synthetic_trained_model(seed: int, fold: Fold, horizons: tuple[int, int, int]) -> TrainedSeedModel:
+    state = _serialize_state(CausalMultiHorizonCNN(horizons).state_dict())
+    return TrainedSeedModel(
+        seed=seed,
+        horizons=horizons,
+        model_sha256=_canonical_state_sha256(state),
+        state=state,
+        stop_epoch=1,
+        training_losses=(0.25,),
+        validation_losses=(0.5,),
+        fit_indices=fold.fit_indices,
+        validation_indices=fold.validation_indices,
+        early_stop_fit_indices=fold.early_stop_fit_indices,
+        early_stop_validation_indices=fold.early_stop_validation_indices,
+        refit_indices=fold.fit_indices,
+    )
+
+
+def synthetic_oof_bundle() -> OOFModelBundle:
+    length = 64
+    horizons = build_horizons(length)
+    universe = tuple(range(50))
+    folds = synthetic_folds(universe)
+    models = tuple(
+        synthetic_trained_model(seed, fold, horizons)
+        for seed in FROZEN_CONFIG.model_seeds
+        for fold in folds
+    )
+    residuals = {
+        seed: {
+            index: {
+                horizon: np.zeros(length - horizon, dtype=np.float64)
+                for horizon in horizons
+            }
+            for index in universe
+        }
+        for seed in FROZEN_CONFIG.model_seeds
+    }
+    return OOFModelBundle(
+        length=length,
+        universe_indices=universe,
+        horizons=horizons,
+        folds=folds,
+        models=models,
+        oof_residuals=residuals,
+    )
 
 
 class CausalArchitectureTests(unittest.TestCase):
@@ -109,6 +180,9 @@ class DeterministicTrainingTests(unittest.TestCase):
         for trained in first:
             self.assertEqual(trained.validation_indices, ())
             self.assertEqual(trained.early_stop_validation_indices, expected_early_validation)
+            self.assertTrue(set(trained.early_stop_validation_indices).issubset(trained.fit_indices))
+            self.assertEqual(trained.refit_indices, trained.fit_indices)
+            self.assertEqual(set(trained.refit_indices), {item.instance_index for item in self.group.group.series})
             self.assertFalse(
                 {canonical_waveform_sha256(item) for item in self.group.group.series if item.instance_index in trained.early_stop_fit_indices}
                 & {canonical_waveform_sha256(item) for item in self.group.group.series if item.instance_index in trained.early_stop_validation_indices}
@@ -154,6 +228,47 @@ class DeterministicTrainingTests(unittest.TestCase):
             fit_final_seed_models(self.group, device=torch.device("cuda"))
         with self.assertRaisesRegex(ValueError, "frozen"):
             fit_final_seed_models(self.group, device=CPU, config=replace(FROZEN_CONFIG, candidate_alpha=0.02))
+
+
+class ModelEvidenceBindingTests(unittest.TestCase):
+    def test_trained_model_rejects_nonfinite_loss_parameter_hash_and_epoch_corruption(self) -> None:
+        bundle = synthetic_oof_bundle()
+        trained = bundle.models[0]
+        with self.assertRaisesRegex(ValueError, "finite evidence"):
+            replace(trained, training_losses=(float("nan"),))
+        with self.assertRaisesRegex(ValueError, "100-epoch"):
+            replace(trained, stop_epoch=101)
+        with self.assertRaisesRegex(ValueError, "SHA"):
+            replace(trained, model_sha256="0" * 64)
+        corrupted = dict(trained.state)
+        name, (dtype, shape, _payload) = next(iter(corrupted.items()))
+        corrupted[name] = (dtype, shape, np.full(shape, np.nan, dtype=np.float32).tobytes())
+        with self.assertRaisesRegex(ValueError, "non-finite"):
+            replace(trained, state=corrupted, model_sha256=_canonical_state_sha256(corrupted))
+        with self.assertRaisesRegex(ValueError, "five identity"):
+            replace(trained, early_stop_validation_indices=trained.early_stop_validation_indices[:4])
+
+    def test_oof_bundle_rejects_duplicate_overlap_missing_and_wrong_length_evidence(self) -> None:
+        bundle = synthetic_oof_bundle()
+        duplicate_folds = (bundle.folds[0], bundle.folds[0]) + bundle.folds[2:]
+        with self.assertRaisesRegex(ValueError, "partitions"):
+            replace(bundle, folds=duplicate_folds)
+        with self.assertRaisesRegex(ValueError, "universe"):
+            replace(bundle, universe_indices=bundle.universe_indices[:-1])
+        duplicate_models = (bundle.models[0],) + bundle.models[1:-1] + (bundle.models[0],)
+        with self.assertRaisesRegex(ValueError, "seed/fold"):
+            replace(bundle, models=duplicate_models)
+        missing = {seed: dict(by_index) for seed, by_index in bundle.oof_residuals.items()}
+        del missing[FROZEN_CONFIG.model_seeds[0]][bundle.universe_indices[0]]
+        with self.assertRaisesRegex(ValueError, "coverage"):
+            replace(bundle, oof_residuals=missing)
+        wrong_length = {seed: dict(by_index) for seed, by_index in bundle.oof_residuals.items()}
+        index = bundle.universe_indices[0]
+        wrong_horizons = dict(wrong_length[FROZEN_CONFIG.model_seeds[0]][index])
+        wrong_horizons[bundle.horizons[0]] = np.zeros(1, dtype=np.float64)
+        wrong_length[FROZEN_CONFIG.model_seeds[0]][index] = wrong_horizons
+        with self.assertRaisesRegex(ValueError, "length"):
+            replace(bundle, oof_residuals=wrong_length)
 
 
 if __name__ == "__main__":
