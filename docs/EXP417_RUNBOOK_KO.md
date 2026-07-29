@@ -117,6 +117,22 @@ smoke의 status와 workload는 TEST 라벨 지표가 아니며, precision, recal
 F1, confusion matrix를 계산하거나 기록하지 않는다. smoke 전후에 3절의
 다섯 입력 SHA256이 동일해야 한다.
 
+smoke JSON은 정확히 15개 top-level key를 사용한다. disk 근거는 단일
+`estimated_full_disk_bytes` 값이 아니라 `disk_projection`에 기록한다.
+`measured_sample_checkpoint_bytes`는 Task 8 canonical JSON schema로
+메모리에서 직렬화한 smoke 결과의 실제 byte 수다. 이를 1,117개에 선형
+환산한 `failed_terminal_projection_bytes`와, 정확한 전체 TEST identity
+수 및 정상 TRAIN 수에 all-candidate/every-series-unique-group schema
+비용을 더한 `candidate_bearing_conservative_upper_bytes`를 별도로
+해석한다. 전자는 실패 terminal 중심 projection이고 후자는 의도적으로
+느슨한 보수 상한이다. 둘을 하나의 정확한 전체 실행 disk 예측처럼
+보고하지 않는다.
+
+기존 smoke가 terminal stage/reason을 보존하지 않았다면 `oof / "x"`라는
+가장 짧은 유효 terminal schema로 checkpoint record를 메모리에서
+재구성하고 `sample_basis=reconstructed_minimum_terminal_schema`로
+명시한다. 이 재구성은 공식 checkpoint를 만들거나 재사용하지 않는다.
+
 ## 5. checkpoint 검사와 resume
 
 정식 checkpoint는

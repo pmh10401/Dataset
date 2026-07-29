@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict, dataclass, field
+from hashlib import sha256
 from pathlib import Path
 import json
 import os
@@ -21,6 +22,14 @@ if str(REPO_ROOT) not in sys.path:
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp417_causal_multihorizon_shadow.backend import load_frozen_backend_audit
 from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
+from experiments.exp417_causal_multihorizon_shadow.contracts import (
+    DatasetResult,
+    DatasetTerminalEvidence,
+    FrozenRunContext,
+)
+from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
+    _result_payload,
+)
 from experiments.exp417_causal_multihorizon_shadow.inputs import (
     assert_label_free_sql_contract,
     freeze_lane_inputs,
@@ -41,6 +50,25 @@ from scratch.run_exp417_causal_multihorizon_shadow import (
 
 
 SMOKE_FILE = "EXP417_NON_OFFICIAL_SMOKE.json"
+SMOKE_SCHEMA_KEYS = frozenset(
+    {
+        "experiment_id",
+        "artifact_kind",
+        "official_prediction",
+        "publication_eligible",
+        "contains_test_labels",
+        "official_checkpoint_reusable",
+        "selection_source",
+        "selection_rule",
+        "selected_datasets",
+        "statuses",
+        "backend_audit",
+        "elapsed_seconds",
+        "estimated_full_seconds",
+        "disk_projection",
+        "estimate_method",
+    }
+)
 
 
 def _exact_three(value: str) -> int:
@@ -116,6 +144,229 @@ class SmokeContext:
     @property
     def smoke_datasets(self) -> int:
         return len(self.selected_datasets)
+
+
+@dataclass(frozen=True)
+class DiskProjection:
+    """Measured terminal projection plus a schema-derived candidate upper bound."""
+
+    measured_smoke_artifact_bytes: int
+    measured_sample_checkpoint_bytes: int
+    failed_terminal_projection_bytes: int
+    candidate_bearing_conservative_upper_bytes: int
+    frozen_dataset_count: int
+    frozen_test_instance_count: int
+    normal_train_series_count: int
+    sample_basis: str
+
+    def __post_init__(self) -> None:
+        numeric = (
+            self.measured_smoke_artifact_bytes,
+            self.measured_sample_checkpoint_bytes,
+            self.failed_terminal_projection_bytes,
+            self.candidate_bearing_conservative_upper_bytes,
+            self.frozen_dataset_count,
+            self.frozen_test_instance_count,
+            self.normal_train_series_count,
+        )
+        if any(type(value) is not int or value < 0 for value in numeric):
+            raise ValueError("disk projection values must be non-negative integers")
+        if self.frozen_dataset_count != FROZEN_CONFIG.expected_datasets:
+            raise ValueError("disk projection must use the frozen dataset count")
+        if self.candidate_bearing_conservative_upper_bytes < self.failed_terminal_projection_bytes:
+            raise ValueError("disk projection upper bound is below its terminal projection")
+        if self.sample_basis not in {
+            "actual_canonical_smoke_results",
+            "reconstructed_minimum_terminal_schema",
+        }:
+            raise ValueError("disk projection sample basis is invalid")
+
+
+def project_disk_bounds(
+    *,
+    measured_smoke_artifact_bytes: int,
+    measured_sample_checkpoint_bytes: int,
+    sample_dataset_count: int,
+    frozen_dataset_count: int,
+    frozen_test_instance_count: int,
+    normal_train_series_count: int,
+    worst_decision_bytes: int,
+    worst_group_bytes: int,
+    sample_basis: str = "actual_canonical_smoke_results",
+) -> DiskProjection:
+    """Project terminal bytes and bound candidate-bearing canonical evidence."""
+    integers = (
+        measured_smoke_artifact_bytes,
+        measured_sample_checkpoint_bytes,
+        sample_dataset_count,
+        frozen_dataset_count,
+        frozen_test_instance_count,
+        normal_train_series_count,
+        worst_decision_bytes,
+        worst_group_bytes,
+    )
+    if any(type(value) is not int or value < 0 for value in integers) or sample_dataset_count < 1:
+        raise ValueError("disk bound inputs must be non-negative integers")
+    terminal = measured_smoke_artifact_bytes + (
+        measured_sample_checkpoint_bytes * frozen_dataset_count
+        + sample_dataset_count - 1
+    ) // sample_dataset_count
+    upper = (
+        terminal
+        + frozen_test_instance_count * worst_decision_bytes
+        + normal_train_series_count * worst_group_bytes
+    )
+    return DiskProjection(
+        measured_smoke_artifact_bytes=measured_smoke_artifact_bytes,
+        measured_sample_checkpoint_bytes=measured_sample_checkpoint_bytes,
+        failed_terminal_projection_bytes=terminal,
+        candidate_bearing_conservative_upper_bytes=upper,
+        frozen_dataset_count=frozen_dataset_count,
+        frozen_test_instance_count=frozen_test_instance_count,
+        normal_train_series_count=normal_train_series_count,
+        sample_basis=sample_basis,
+    )
+
+
+def _checkpoint_record_size(result: DatasetResult) -> int:
+    """Measure canonical Task 8 record bytes without creating a checkpoint."""
+    if not isinstance(result, DatasetResult):
+        raise ValueError("checkpoint measurement requires a DatasetResult")
+    terminal = isinstance(result.decision_evidence, DatasetTerminalEvidence)
+    lengths = tuple(group.length for group in result.groups)
+    body: dict[str, Any] = {
+        "schema_version": 2,
+        "dataset": result.dataset,
+        "raw_train_identity_sha256": None if terminal else "0" * 64,
+        "repaired_train_identity_sha256": None if terminal else "1" * 64,
+        "length_group_identity_sha256": (
+            {} if terminal else {str(length): "2" * 64 for length in lengths}
+        ),
+        "canonical_model_hashes": (
+            {}
+            if terminal
+            else {
+                str(length): {
+                    str(seed): "3" * 64 for seed in FROZEN_CONFIG.model_seeds
+                }
+                for length in lengths
+            }
+        ),
+        "score_calibration_hashes": (
+            {} if terminal else {str(length): "4" * 64 for length in lengths}
+        ),
+        "qualification": _result_payload(result),
+        "candidate_coordinates": [
+            [candidate.dataset, candidate.instance_index]
+            for candidate in result.candidates
+        ],
+        "backend_audit": (
+            None
+            if terminal
+            else asdict(result.decision_evidence.frozen_train_contract.backend)
+        ),
+        "elapsed_seconds": 0.0,
+    }
+    body["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+    return len(canonical_json_bytes(body)) + 1
+
+
+def _schema_upper_units(context: FrozenRunContext) -> tuple[int, int]:
+    """Return canonical per-TEST and per-TRAIN conservative byte units."""
+    if not isinstance(context, FrozenRunContext):
+        raise ValueError("disk units require a FrozenRunContext")
+    longest_dataset = max(context.datasets, key=lambda name: len(name.encode("utf-8")))
+    maximum_index = max(
+        index
+        for entries in context.test_identity_manifest.values()
+        for index, _ in entries
+    )
+    maximum_length = max(
+        length
+        for entries in context.test_identity_manifest.values()
+        for _, length in entries
+    )
+    score = {
+        "horizon": maximum_length,
+        "score": 1.7976931348623157e308,
+        "p_value": 0.9999999999999999,
+        "persistence": 0.9999999999999999,
+    }
+    seed = {
+        "seed": max(FROZEN_CONFIG.model_seeds),
+        "scores": {
+            str(maximum_length): score,
+            str(maximum_length - 1): {**score, "horizon": maximum_length - 1},
+            str(maximum_length - 2): {**score, "horizon": maximum_length - 2},
+        },
+        "candidate": True,
+    }
+    decision = {
+        "dataset": longest_dataset,
+        "instance_index": maximum_index,
+        "length": maximum_length,
+        "seed_decisions": [seed, seed, seed],
+    }
+    # Worst case retains the same all-seed evidence in decision evidence and
+    # candidate evidence, then renders a prediction/report row.  The 1024-byte
+    # allowance covers canonical separators, CSV fields, and manifest hashes.
+    worst_decision = (
+        2 * len(canonical_json_bytes(decision)) + 1024
+    )
+    group = {
+        "length": maximum_length,
+        "series_count": 9_999_999_999,
+        "status": "qualified",
+        "oof_candidate_rate": 0.9999999999999999,
+        "wilson_upper": 0.9999999999999999,
+        "pooled_synthetic_sensitivity": 0.9999999999999999,
+        "per_type_synthetic_sensitivity": {
+            name: 0.9999999999999999
+            for name in (
+                "amplitude_scaling",
+                "gradual_drift",
+                "level_shift",
+                "period_change",
+            )
+        },
+        "seed_agreement": True,
+        "finite": True,
+        "backend_fallback": False,
+    }
+    # Every normal TRAIN series as its own length-group is deliberately much
+    # looser than reality.  Four copies cover result, contract, CSV, and the
+    # per-length digest/model maps with an additional 2048-byte allowance.
+    worst_group = 4 * len(canonical_json_bytes(group)) + 2048
+    return worst_decision, worst_group
+
+
+def estimate_disk_projection(
+    context: FrozenRunContext,
+    results: Sequence[DatasetResult],
+    *,
+    normal_train_series_count: int,
+    measured_smoke_artifact_bytes: int,
+    sample_basis: str = "actual_canonical_smoke_results",
+) -> DiskProjection:
+    frozen_results = tuple(results)
+    if not frozen_results or any(not isinstance(result, DatasetResult) for result in frozen_results):
+        raise ValueError("disk projection requires concrete dataset results")
+    if any(result.context != context for result in frozen_results):
+        raise ValueError("disk projection results do not share the frozen context")
+    decision_bytes, group_bytes = _schema_upper_units(context)
+    return project_disk_bounds(
+        measured_smoke_artifact_bytes=measured_smoke_artifact_bytes,
+        measured_sample_checkpoint_bytes=sum(
+            _checkpoint_record_size(result) for result in frozen_results
+        ),
+        sample_dataset_count=len(frozen_results),
+        frozen_dataset_count=len(context.datasets),
+        frozen_test_instance_count=sum(context.test_sizes.values()),
+        normal_train_series_count=normal_train_series_count,
+        worst_decision_bytes=decision_bytes,
+        worst_group_bytes=group_bytes,
+        sample_basis=sample_basis,
+    )
 
 
 def _tertile(value: int, ordered: Sequence[int]) -> int:
@@ -205,13 +456,15 @@ def render_smoke_context(
     backend: Mapping[str, Any],
     elapsed_seconds: float,
     estimated_full_seconds: float,
-    estimated_full_disk_bytes: int,
+    disk_projection: DiskProjection,
 ) -> dict[str, Any]:
     if not isinstance(context, SmokeContext):
         raise ValueError("smoke rendering requires SmokeContext")
     if tuple(statuses) != context.selected_datasets:
         raise ValueError("smoke statuses do not cover exact selected datasets")
-    return {
+    if not isinstance(disk_projection, DiskProjection):
+        raise ValueError("smoke rendering requires a DiskProjection")
+    payload = {
         "experiment_id": FROZEN_CONFIG.experiment_id,
         "artifact_kind": "non_official_label_free_readiness_smoke",
         "official_prediction": context.official_prediction,
@@ -225,9 +478,12 @@ def render_smoke_context(
         "backend_audit": dict(backend),
         "elapsed_seconds": float(elapsed_seconds),
         "estimated_full_seconds": float(estimated_full_seconds),
-        "estimated_full_disk_bytes": int(estimated_full_disk_bytes),
-        "estimate_method": "linear_per_dataset_from_three_dataset_smoke",
+        "disk_projection": asdict(disk_projection),
+        "estimate_method": "linear_time_and_schema_bounded_disk",
     }
+    if set(payload) != SMOKE_SCHEMA_KEYS:
+        raise ValueError("smoke artifact schema is invalid")
+    return payload
 
 
 def _write_smoke(output: Path, payload: Mapping[str, Any]) -> int:
@@ -289,28 +545,32 @@ def main(argv: list[str] | None = None) -> int:
     elapsed = perf_counter() - started
     statuses = {result.dataset: result.status for result in results}
     estimated_seconds = elapsed * FROZEN_CONFIG.expected_datasets / len(results)
-    provisional = render_smoke_context(
-        smoke,
-        statuses=statuses,
-        backend=asdict(backend),
-        elapsed_seconds=elapsed,
-        estimated_full_seconds=estimated_seconds,
-        estimated_full_disk_bytes=0,
+    projection = estimate_disk_projection(
+        frozen_context,
+        results,
+        normal_train_series_count=sum(item.normal_count for item in metadata),
+        measured_smoke_artifact_bytes=0,
     )
-    representative_bytes = len(canonical_json_bytes(provisional)) + sum(
-        len(repr(result).encode("utf-8")) for result in results
-    )
-    estimated_disk = round(
-        representative_bytes * FROZEN_CONFIG.expected_datasets / len(results)
-    )
-    payload = render_smoke_context(
-        smoke,
-        statuses=statuses,
-        backend=asdict(backend),
-        elapsed_seconds=elapsed,
-        estimated_full_seconds=estimated_seconds,
-        estimated_full_disk_bytes=estimated_disk,
-    )
+    for _ in range(4):
+        payload = render_smoke_context(
+            smoke,
+            statuses=statuses,
+            backend=asdict(backend),
+            elapsed_seconds=elapsed,
+            estimated_full_seconds=estimated_seconds,
+            disk_projection=projection,
+        )
+        measured = len(canonical_json_bytes(payload)) + 1
+        if measured == projection.measured_smoke_artifact_bytes:
+            break
+        projection = estimate_disk_projection(
+            frozen_context,
+            results,
+            normal_train_series_count=sum(item.normal_count for item in metadata),
+            measured_smoke_artifact_bytes=measured,
+        )
+    else:
+        raise ValueError("smoke artifact byte projection did not stabilize")
     verify_input_snapshots(*paths)
     _write_smoke(smoke.output_dir, payload)
     print(json.dumps(payload, sort_keys=True, separators=(",", ":")))

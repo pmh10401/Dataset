@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextlib import redirect_stderr
 import io
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import subprocess
@@ -11,6 +12,47 @@ import unittest
 from unittest.mock import patch
 
 from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
+
+
+class ReachedLaterStage(RuntimeError):
+    """Controlled sentinel proving argparse reached the post-validation path."""
+
+
+def _input_files(root: Path) -> tuple[Path, ...]:
+    paths = tuple(root / name for name in ("db", "p291", "m291", "p292", "m292"))
+    for path in paths:
+        path.write_bytes(b"x")
+    return paths
+
+
+def _official_argv(
+    root: Path, *, checkpoint: Path | None = None, output: Path | None = None
+) -> list[str]:
+    files = _input_files(root)
+    return [
+        "--database", str(files[0]),
+        "--exp291-prediction", str(files[1]),
+        "--exp291-manifest", str(files[2]),
+        "--exp292-prediction", str(files[3]),
+        "--exp292-manifest", str(files[4]),
+        "--checkpoint-dir", str(checkpoint or root / "checkpoint"),
+        "--output-dir", str(output or root / "output"),
+    ]
+
+
+def _smoke_argv(
+    root: Path, *, count: str = "3", output: Path | None = None
+) -> list[str]:
+    files = _input_files(root)
+    return [
+        "--database", str(files[0]),
+        "--exp291-prediction", str(files[1]),
+        "--exp291-manifest", str(files[2]),
+        "--exp292-prediction", str(files[3]),
+        "--exp292-manifest", str(files[4]),
+        "--smoke-datasets", count,
+        "--output-dir", str(output or root / "output"),
+    ]
 
 
 class OfficialCliTests(unittest.TestCase):
@@ -22,20 +64,8 @@ class OfficialCliTests(unittest.TestCase):
     def test_parser_accepts_only_the_seven_frozen_path_arguments(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
-            files = []
-            for name in ("db", "p291", "m291", "p292", "m292"):
-                path = root / name
-                path.write_bytes(b"x")
-                files.append(path)
-            argv = [
-                "--database", str(files[0]),
-                "--exp291-prediction", str(files[1]),
-                "--exp291-manifest", str(files[2]),
-                "--exp292-prediction", str(files[3]),
-                "--exp292-manifest", str(files[4]),
-                "--checkpoint-dir", str(root / "checkpoint"),
-                "--output-dir", str(root / "output"),
-            ]
+            files = _input_files(root)
+            argv = _official_argv(root)
             args = self.official.build_parser().parse_args(argv)
             self.assertEqual(args.database, files[0].resolve())
             for forbidden in (
@@ -49,19 +79,48 @@ class OfficialCliTests(unittest.TestCase):
                             argv + [forbidden, "x"]
                         )
 
-    def test_parser_rejects_existing_output_and_missing_parents(self) -> None:
+    def test_existing_official_output_is_rejected_only_by_new_output_validator(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
             output = root / "output"
             output.mkdir()
             with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-                self.official.build_parser().parse_args(
-                    ["--output-dir", str(output)]
-                )
+                self.official.main(_official_argv(root, output=output))
+            with (
+                patch.object(
+                    self.official,
+                    "_new_output_dir",
+                    side_effect=lambda value: Path(value).resolve(),
+                ),
+                patch.object(
+                    self.official,
+                    "execute_official",
+                    side_effect=ReachedLaterStage("official output validator bypassed"),
+                ),
+                self.assertRaisesRegex(ReachedLaterStage, "output validator"),
+            ):
+                self.official.main(_official_argv(root, output=output))
+
+    def test_missing_checkpoint_parent_is_rejected_only_by_checkpoint_validator(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            checkpoint = root / "missing" / "checkpoint"
             with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-                self.official.build_parser().parse_args(
-                    ["--checkpoint-dir", str(root / "missing" / "checkpoint")]
-                )
+                self.official.main(_official_argv(root, checkpoint=checkpoint))
+            with (
+                patch.object(
+                    self.official,
+                    "_checkpoint_dir",
+                    side_effect=lambda value: Path(value).resolve(),
+                ),
+                patch.object(
+                    self.official,
+                    "execute_official",
+                    side_effect=ReachedLaterStage("checkpoint validator bypassed"),
+                ),
+                self.assertRaisesRegex(ReachedLaterStage, "checkpoint validator"),
+            ):
+                self.official.main(_official_argv(root, checkpoint=checkpoint))
 
     def test_dirty_git_is_rejected_by_the_real_cleanliness_guard(self) -> None:
         with TemporaryDirectory() as directory:
@@ -156,26 +215,51 @@ class SmokeCliTests(unittest.TestCase):
 
     def test_smoke_count_is_exactly_three_and_explicit_names_are_forbidden(self) -> None:
         parser = self.smoke.build_parser()
-        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            parser.parse_args(["--smoke-datasets", "2"])
         with TemporaryDirectory() as directory:
             root = Path(directory)
-            files = []
-            for name in ("db", "p291", "m291", "p292", "m292"):
-                path = root / name
-                path.write_bytes(b"x")
-                files.append(path)
-            argv = [
-                "--database", str(files[0]),
-                "--exp291-prediction", str(files[1]),
-                "--exp291-manifest", str(files[2]),
-                "--exp292-prediction", str(files[3]),
-                "--exp292-manifest", str(files[4]),
-                "--smoke-datasets", "3",
-                "--output-dir", str(root / "output"),
-            ]
+            argv = _smoke_argv(root)
             with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
                 parser.parse_args(argv + ["--dataset", "A"])
+
+    def test_smoke_count_is_rejected_only_by_exact_three_validator(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            argv = _smoke_argv(root, count="2")
+            with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                self.smoke.main(argv)
+            with (
+                patch.object(self.smoke, "_exact_three", return_value=3),
+                patch.object(
+                    self.smoke,
+                    "require_clean_git",
+                    side_effect=ReachedLaterStage("smoke count validator bypassed"),
+                ),
+                self.assertRaisesRegex(ReachedLaterStage, "count validator"),
+            ):
+                self.smoke.main(argv)
+
+    def test_existing_smoke_output_is_rejected_only_by_new_output_validator(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "output"
+            output.mkdir()
+            argv = _smoke_argv(root, output=output)
+            with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                self.smoke.main(argv)
+            with (
+                patch.object(
+                    self.smoke,
+                    "_new_output_dir",
+                    side_effect=lambda value: Path(value).resolve(),
+                ),
+                patch.object(
+                    self.smoke,
+                    "require_clean_git",
+                    side_effect=ReachedLaterStage("smoke output validator bypassed"),
+                ),
+                self.assertRaisesRegex(ReachedLaterStage, "output validator"),
+            ):
+                self.smoke.main(argv)
 
     def test_train_strata_selection_is_deterministic_and_uses_three_regions(self) -> None:
         rows = (
@@ -196,6 +280,16 @@ class SmokeCliTests(unittest.TestCase):
             selected_datasets=("A", "B", "C"),
             output_dir=Path("/private/tmp/exp417-smoke"),
         )
+        projection = self.smoke.DiskProjection(
+            measured_smoke_artifact_bytes=1024,
+            measured_sample_checkpoint_bytes=2048,
+            failed_terminal_projection_bytes=1_000_000,
+            candidate_bearing_conservative_upper_bytes=9_000_000,
+            frozen_dataset_count=1117,
+            frozen_test_instance_count=5000,
+            normal_train_series_count=6000,
+            sample_basis="actual_canonical_smoke_results",
+        )
         payload = self.smoke.render_smoke_context(
             context,
             statuses={"A": "qualified", "B": "failed", "C": "qualified"},
@@ -210,7 +304,7 @@ class SmokeCliTests(unittest.TestCase):
             },
             elapsed_seconds=10.0,
             estimated_full_seconds=3723.3333333333335,
-            estimated_full_disk_bytes=4096,
+            disk_projection=projection,
         )
         self.assertEqual(payload["experiment_id"], FROZEN_CONFIG.experiment_id)
         self.assertFalse(payload["official_prediction"])
@@ -219,6 +313,88 @@ class SmokeCliTests(unittest.TestCase):
         self.assertNotIn("precision", payload)
         self.assertNotIn("recall", payload)
         self.assertNotIn("f1", payload)
+
+    def test_renderer_and_canonical_artifact_use_exact_fifteen_key_schema(self) -> None:
+        context = self.smoke.SmokeContext(
+            selected_datasets=("A", "B", "C"),
+            output_dir=Path("/private/tmp/exp417-smoke-schema"),
+        )
+        projection = self.smoke.DiskProjection(
+            measured_smoke_artifact_bytes=100,
+            measured_sample_checkpoint_bytes=200,
+            failed_terminal_projection_bytes=300,
+            candidate_bearing_conservative_upper_bytes=400,
+            frozen_dataset_count=1117,
+            frozen_test_instance_count=2222,
+            normal_train_series_count=3333,
+            sample_basis="actual_canonical_smoke_results",
+        )
+        payload = self.smoke.render_smoke_context(
+            context,
+            statuses={"A": "failed", "B": "failed", "C": "failed"},
+            backend={
+                "backend": "cpu",
+                "candidate_identity": True,
+                "max_normalized_error": 0.0,
+                "spearman": 1.0,
+                "speedup": 0.67,
+                "fallback": False,
+                "fallback_reason": None,
+            },
+            elapsed_seconds=1.0,
+            estimated_full_seconds=372.0,
+            disk_projection=projection,
+        )
+        literal = {
+            "experiment_id", "artifact_kind", "official_prediction",
+            "publication_eligible", "contains_test_labels",
+            "official_checkpoint_reusable", "selection_source",
+            "selection_rule", "selected_datasets", "statuses",
+            "backend_audit", "elapsed_seconds", "estimated_full_seconds",
+            "disk_projection", "estimate_method",
+        }
+        self.assertEqual(len(literal), 15)
+        self.assertEqual(self.smoke.SMOKE_SCHEMA_KEYS, frozenset(literal))
+        self.assertEqual(set(payload), literal)
+        canonical = json.loads(
+            self.smoke.canonical_json_bytes(payload)
+        )
+        self.assertEqual(set(canonical), literal)
+        self.assertEqual(
+            set(canonical["disk_projection"]),
+            {
+                "measured_smoke_artifact_bytes",
+                "measured_sample_checkpoint_bytes",
+                "failed_terminal_projection_bytes",
+                "candidate_bearing_conservative_upper_bytes",
+                "frozen_dataset_count",
+                "frozen_test_instance_count",
+                "normal_train_series_count",
+                "sample_basis",
+            },
+        )
+
+    def test_disk_projection_uses_canonical_bytes_and_exact_population_counts(self) -> None:
+        projection = self.smoke.project_disk_bounds(
+            measured_smoke_artifact_bytes=895,
+            measured_sample_checkpoint_bytes=12_000,
+            sample_dataset_count=3,
+            frozen_dataset_count=1117,
+            frozen_test_instance_count=10_000,
+            normal_train_series_count=20_000,
+            worst_decision_bytes=900,
+            worst_group_bytes=600,
+        )
+        self.assertEqual(
+            projection.failed_terminal_projection_bytes,
+            895 + 4_468_000,
+        )
+        self.assertEqual(
+            projection.candidate_bearing_conservative_upper_bytes,
+            projection.failed_terminal_projection_bytes
+            + 10_000 * 900
+            + 20_000 * 600,
+        )
 
     def test_smoke_write_handles_partial_writes_and_cleans_failed_output(self) -> None:
         with TemporaryDirectory() as directory:
