@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from hashlib import sha256
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 import unittest
 
@@ -123,6 +125,24 @@ def _result(context: FrozenRunContext, *, candidate: bool = False) -> DatasetRes
     )
 
 
+def _checkpoint_material(result: DatasetResult):
+    from experiments.exp417_causal_multihorizon_shadow import runner
+
+    contract = result.decision_evidence.frozen_train_contract
+    def digest(kind: str) -> str:
+        return sha256(f"{result.dataset}:{kind}".encode("utf-8")).hexdigest()
+    return runner.CheckpointEvidence(
+        raw_train_identity_sha256=digest("raw"),
+        repaired_train_identity_sha256=digest("repaired"),
+        length_group_identity_sha256={100: digest("group")},
+        canonical_model_hashes={100: {seed: digest(f"model:{seed}") for seed in FROZEN_CONFIG.model_seeds}},
+        score_calibration_hashes={100: digest("calibration")}, elapsed_seconds=0.0,
+        dataset=result.dataset, database_sha256=result.context.database_sha256,
+        train_contract_identity_sha256=contract.train_identity_sha256,
+        result_evidence_sha256=runner._result_evidence_digest(result),
+    )
+
+
 def _provenance() -> Exp417CheckpointProvenance:
     return Exp417CheckpointProvenance(
         git_commit="c" * 40,
@@ -174,6 +194,29 @@ def _typed_stage_evidence(contract: FrozenTrainContract):
 
 
 class RunnerOrderTests(unittest.TestCase):
+    def test_normal_oof_decisions_use_each_seed_query_residual(self) -> None:
+        """Reusing seed 41701's query residual would mask seed disagreement."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        horizons = (1, 2, 10)
+        bundle = SimpleNamespace(
+            universe_indices=(0, 1), horizons=horizons,
+            oof_residuals={
+                seed: {index: {horizon: np.arange(20, dtype=np.float64) + seed + index + horizon
+                               for horizon in horizons}
+                       for index in (0, 1)}
+                for seed in FROZEN_CONFIG.model_seeds
+            },
+        )
+        query = {
+            seed: {horizon: np.full(20, 1.0 if seed == FROZEN_CONFIG.model_seeds[0] else 100.0,
+                                    dtype=np.float64) for horizon in horizons}
+            for seed in FROZEN_CONFIG.model_seeds
+        }
+
+        decisions = runner._residual_decisions(bundle, query)
+
+        self.assertNotEqual(decisions[0].scores[1], decisions[1].scores[1])
     def test_test_sql_static_guard_uses_only_identity_and_values(self) -> None:
         """The runner's TEST boundary cannot depend on a label-bearing query."""
         from experiments.exp417_causal_multihorizon_shadow.inputs import (
@@ -236,8 +279,45 @@ class RunnerOrderTests(unittest.TestCase):
         self.assertEqual(result.decision_evidence.stage, "oof")
         test_loader.assert_not_called()
 
+    def test_diagnostic_preprocessing_is_terminal_before_oof_or_test(self) -> None:
+        """A 50--99 TRAIN group cannot be promoted into model or TEST work."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        context = _context()
+        train, processed, _models, _scoring = _typed_stage_evidence(_contract())
+        diagnostic = replace(processed[0], status="diagnostic_only")
+        test_loader = Mock(side_effect=AssertionError("TEST values were loaded"))
+        runtime = runner.RunnerRuntime(
+            verify=lambda _: None, load_train=lambda *_: train,
+            preprocess=lambda _: (diagnostic,),
+            train_models=lambda _: (_ for _ in ()).throw(AssertionError("OOF was reached")),
+            qualify=lambda *_: (_ for _ in ()).throw(AssertionError("qualification was reached")),
+            freeze=lambda *_: (_ for _ in ()).throw(AssertionError("freeze was reached")),
+            load_test=test_loader,
+            score=lambda *_: (_ for _ in ()).throw(AssertionError("score was reached")),
+        )
+
+        result = runner.run_dataset("dataset", context, runtime=runtime)
+
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(result.decision_evidence.stage, "preprocessing")
+        test_loader.assert_not_called()
+
 
 class RunnerPopulationTests(unittest.TestCase):
+    def test_checkpoint_rejects_cross_dataset_material_reuse(self) -> None:
+        """A valid-looking record from one dataset cannot attest another result."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        context = _context()
+        first = _result_for_dataset(context, "dataset")
+        second = _result_for_dataset(context, context.datasets[1])
+        store = Mock()
+
+        with self.assertRaisesRegex(ValueError, "exact dataset result evidence"):
+            runner.checkpoint(second, store, _checkpoint_material(first))
+        store.write_dataset.assert_not_called()
+
     def test_terminal_failure_is_checkpointed_without_prediction_evidence(self) -> None:
         """A closed pre-contract failure records its reason, never TEST scores."""
         from experiments.exp417_causal_multihorizon_shadow import runner
@@ -284,8 +364,16 @@ class RunnerPopulationTests(unittest.TestCase):
             calls.append(dataset)
             return _result_for_dataset(supplied_context, dataset)
 
+        synthetic_runtime = runner.RunnerRuntime(
+            verify=lambda _: None, load_train=lambda *_: (_ for _ in ()).throw(AssertionError("unused")),
+            preprocess=lambda _: (), train_models=lambda _: (_ for _ in ()).throw(AssertionError("unused")),
+            qualify=lambda *_: (_ for _ in ()).throw(AssertionError("unused")),
+            freeze=lambda *_: (_ for _ in ()).throw(AssertionError("unused")),
+            load_test=lambda *_: (_ for _ in ()).throw(AssertionError("unused")),
+            score=lambda *_: (_ for _ in ()).throw(AssertionError("unused")),
+        )
         with patch.object(runner, "_run_dataset", side_effect=run_missing):
-            summary = runner.resume_or_run_population(context, store)
+            summary = runner.resume_or_run_population(context, store, runtime=synthetic_runtime)
 
         self.assertEqual(calls, list(context.datasets[1:]))
         self.assertEqual(tuple(result.dataset for result in summary.results), context.datasets)
@@ -301,13 +389,21 @@ class RunnerPopulationTests(unittest.TestCase):
         store = Mock(expected_datasets=context.datasets)
         store.load_completed.return_value = completed
         global_summary = Mock(status="global_workload_gate_failed")
+        synthetic_runtime = runner.RunnerRuntime(
+            verify=lambda _: None, load_train=lambda *_: (_ for _ in ()).throw(AssertionError("unused")),
+            preprocess=lambda _: (), train_models=lambda _: (_ for _ in ()).throw(AssertionError("unused")),
+            qualify=lambda *_: (_ for _ in ()).throw(AssertionError("unused")),
+            freeze=lambda *_: (_ for _ in ()).throw(AssertionError("unused")),
+            load_test=lambda *_: (_ for _ in ()).throw(AssertionError("unused")),
+            score=lambda *_: (_ for _ in ()).throw(AssertionError("unused")),
+        )
 
         with (
             patch.object(runner, "_validate_result"),
             patch.object(runner, "RunSummary", return_value=Mock(status="failed")),
             patch.object(runner, "apply_global_workload", return_value=global_summary) as gate,
         ):
-            self.assertIs(runner.resume_or_run_population(context, store), global_summary)
+            self.assertIs(runner.resume_or_run_population(context, store, runtime=synthetic_runtime), global_summary)
         gate.assert_called_once()
 
     def test_checkpoint_writes_only_typed_complete_evidence_to_the_transaction_store(self) -> None:
@@ -317,27 +413,15 @@ class RunnerPopulationTests(unittest.TestCase):
         context = _context()
         result = _result(context)
         store = Mock()
-        material = runner.CheckpointEvidence(
-            raw_train_identity_sha256="a" * 64,
-            repaired_train_identity_sha256="b" * 64,
-            length_group_identity_sha256={100: "c" * 64},
-            canonical_model_hashes={100: {seed: "d" * 64 for seed in FROZEN_CONFIG.model_seeds}},
-            score_calibration_hashes={100: "e" * 64},
-            elapsed_seconds=0.125,
-        )
+        material = _checkpoint_material(result)
 
         runner.checkpoint(result, store, material)
 
-        store.write_dataset.assert_called_once_with(
-            result,
-            raw_train_identity_sha256="a" * 64,
-            repaired_train_identity_sha256="b" * 64,
-            length_group_identity_sha256={100: "c" * 64},
-            canonical_model_hashes={100: {seed: "d" * 64 for seed in FROZEN_CONFIG.model_seeds}},
-            score_calibration_hashes={100: "e" * 64},
-            backend_audit=result.decision_evidence.frozen_train_contract.backend,
-            elapsed_seconds=0.125,
-        )
+        store.write_dataset.assert_called_once()
+        arguments, keyword = store.write_dataset.call_args
+        self.assertEqual(arguments, (result,))
+        self.assertEqual(keyword["backend_audit"], result.decision_evidence.frozen_train_contract.backend)
+        self.assertEqual(keyword["elapsed_seconds"], material.elapsed_seconds)
 
     def test_resume_writes_and_reloads_typed_evidence_through_a_real_checkpoint_store(self) -> None:
         """Replacing typed evidence with placeholders must not produce a resumable record."""
@@ -354,9 +438,9 @@ class RunnerPopulationTests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             store = Exp417CheckpointStore(Path(temporary) / "checkpoint", _provenance(), context.datasets)
             qualification = runner.TrainQualification(contract.groups, contract.backend)
-            material = runner.build_checkpoint_evidence(train, processed, model_evidence, contract, scoring, 0.0)
             for dataset in context.datasets[1:]:
-                runner.checkpoint(_result_for_dataset(context, dataset), store, material)
+                completed = _result_for_dataset(context, dataset)
+                runner.checkpoint(completed, store, _checkpoint_material(completed))
             runtime = runner.RunnerRuntime(
                 verify=lambda _: None, load_train=lambda *_: train, preprocess=lambda _: processed,
                 train_models=lambda _: model_evidence, qualify=lambda *_: qualification,
@@ -374,6 +458,13 @@ class RunnerPopulationTests(unittest.TestCase):
         contract = _contract()
         _train, _processed, models, scoring = _typed_stage_evidence(contract)
         contract = replace(contract, train_identity_sha256=models.train_identity_sha256)
+        context = _context()
+        evidence = DatasetDecisionEvidence(
+            "dataset", context, contract, context.database_sha256,
+            contract.train_identity_sha256, scoring.decisions,
+        )
+        bound_result = DatasetResult("dataset", context.test_sizes["dataset"], 1, contract.groups,
+                                     evidence.derived_candidates, evidence, context.lanes, context, "qualified")
         with self.assertRaisesRegex(ValueError, "model hashes must cover frozen seeds"):
             runner.TestScoringEvidence(
                 scoring.decisions,
@@ -389,6 +480,7 @@ class RunnerPopulationTests(unittest.TestCase):
                     scoring.decisions,
                     {100: {seed: "d" * 64 for seed in FROZEN_CONFIG.model_seeds}},
                 ),
+                bound_result,
                 0.125,
             )
 

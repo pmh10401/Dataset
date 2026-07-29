@@ -84,11 +84,12 @@ class RunnerResources:
     exp291_manifest: Path
     exp292_prediction: Path
     exp292_manifest: Path
+    backend_audit: BackendAudit | None = None
 
     @classmethod
-    def frozen_defaults(cls) -> "RunnerResources":
+    def frozen_defaults(cls, *, backend_audit: BackendAudit | None = None) -> "RunnerResources":
         return cls(DB_PATH, EXP291_PREDICTION_PATH, EXP291_MANIFEST_PATH,
-                   EXP292_PREDICTION_PATH, EXP292_MANIFEST_PATH)
+                   EXP292_PREDICTION_PATH, EXP292_MANIFEST_PATH, backend_audit)
 
 
 @dataclass(frozen=True)
@@ -116,11 +117,15 @@ class RunnerRuntime:
         pinned = RunnerResources.frozen_defaults() if resources is None else resources
         if not isinstance(pinned, RunnerResources):
             raise ValueError("resources must be RunnerResources")
+        if not isinstance(pinned.backend_audit, BackendAudit) or pinned.backend_audit.fallback:
+            raise ValueError("production resources require a passing Task 7 backend audit")
+        if pinned.backend_audit.backend not in {"cpu", "mps"}:
+            raise ValueError("selected Task 7 backend must be cpu or mps for model execution")
         return cls(
             verify=lambda context: _production_verify(context, pinned),
             load_train=lambda dataset, context: load_raw_train_values(pinned.database, dataset, context),
             preprocess=preprocess_length_groups,
-            train_models=_production_train_models,
+            train_models=lambda processed: _production_train_models(processed, pinned.backend_audit),
             qualify=_production_qualify_train,
             freeze=lambda dataset, qualification, models: freeze_train_contract(
                 dataset, qualification.groups, qualification.backend,
@@ -143,6 +148,10 @@ class CheckpointEvidence:
     canonical_model_hashes: Mapping[int, Mapping[int, str]]
     score_calibration_hashes: Mapping[int, str]
     elapsed_seconds: float
+    dataset: str | None = None
+    database_sha256: str | None = None
+    train_contract_identity_sha256: str | None = None
+    result_evidence_sha256: str | None = None
 
     def __post_init__(self) -> None:
         _sha256(self.raw_train_identity_sha256, "raw TRAIN identity")
@@ -182,6 +191,12 @@ class CheckpointEvidence:
         object.__setattr__(self, "canonical_model_hashes", MappingProxyType(models))
         object.__setattr__(self, "score_calibration_hashes", MappingProxyType(calibrations))
         object.__setattr__(self, "elapsed_seconds", float(self.elapsed_seconds))
+        for name in ("database_sha256", "train_contract_identity_sha256", "result_evidence_sha256"):
+            value = getattr(self, name)
+            if value is not None:
+                _sha256(value, name)
+        if self.dataset is not None and (not isinstance(self.dataset, str) or not self.dataset):
+            raise ValueError("checkpoint dataset must be a non-empty string")
 
 
 @dataclass(frozen=True)
@@ -266,12 +281,29 @@ def _run_dataset(
         return _terminal(dataset, context, "insufficient_train", ValueError("invalid TRAIN values"), checkpoints, started)
     try:
         processed = tuple(runtime.preprocess(train))
+    except Exception as error:
+        return _terminal(dataset, context, "preprocessing", error, checkpoints, started)
+    reason = _processed_terminal_reason(processed)
+    if reason is not None:
+        return _terminal(dataset, context, "preprocessing", ValueError(reason), checkpoints, started)
+    try:
         oof = runtime.train_models(processed)
-        qualification = runtime.qualify(dataset, processed, oof)
     except Exception as error:
         return _terminal(dataset, context, "oof", error, checkpoints, started)
+    if not isinstance(oof, TrainModelEvidence):
+        return _terminal(dataset, context, "oof", ValueError("invalid OOF model evidence"), checkpoints, started)
+    if oof.backend.fallback:
+        return _terminal(dataset, context, "backend", ValueError("backend audit requires fallback"), checkpoints, started)
+    try:
+        qualification = runtime.qualify(dataset, processed, oof)
+    except Exception as error:
+        return _terminal(dataset, context, "qualification", error, checkpoints, started)
     if not isinstance(qualification, TrainQualification):
         return _terminal(dataset, context, "qualification", ValueError("invalid TRAIN qualification"), checkpoints, started)
+    if qualification.backend != oof.backend or qualification.backend.fallback:
+        return _terminal(dataset, context, "backend", ValueError("qualification backend audit failed"), checkpoints, started)
+    if any(group.status != "qualified" for group in qualification.groups):
+        return _terminal(dataset, context, "qualification", ValueError("TRAIN qualification did not qualify every length"), checkpoints, started)
     try:
         contract = runtime.freeze(dataset, qualification, oof)
     except Exception as error:
@@ -285,25 +317,25 @@ def _run_dataset(
         return _terminal(dataset, context, "backend", error, checkpoints, started, contract)
     if not isinstance(scoring, TestScoringEvidence):
         return _terminal(dataset, context, "backend", ValueError("invalid TEST scoring evidence"), checkpoints, started, contract)
-    decisions = scoring.decisions
-    evidence = DatasetDecisionEvidence(
-        dataset=dataset,
-        context=context,
-        frozen_train_contract=contract,
-        database_sha256=context.database_sha256,
-        train_identity_sha256=contract.train_identity_sha256,
-        decisions=decisions,
-    )
-    excluded = tuple(runtime.exclude(evidence))
-    if excluded != evidence.derived_candidates:
-        raise ValueError("frozen-lane exclusion must retain every and only eligible coordinate")
-    result = runtime.workload(evidence)
-    _validate_result(result, dataset, context, evidence)
-    material = (
-        None if checkpoints is None
-        else build_checkpoint_evidence(
-            train, processed, oof, contract, scoring, perf_counter() - started
+    try:
+        decisions = scoring.decisions
+        evidence = DatasetDecisionEvidence(
+            dataset=dataset,
+            context=context,
+            frozen_train_contract=contract,
+            database_sha256=context.database_sha256,
+            train_identity_sha256=contract.train_identity_sha256,
+            decisions=decisions,
         )
+        excluded = tuple(runtime.exclude(evidence))
+        if excluded != evidence.derived_candidates:
+            raise ValueError("frozen-lane exclusion must retain every and only eligible coordinate")
+        result = runtime.workload(evidence)
+        _validate_result(result, dataset, context, evidence)
+    except Exception as error:
+        return _terminal(dataset, context, "backend", error, checkpoints, started, contract)
+    material = None if checkpoints is None else build_checkpoint_evidence(
+        train, processed, oof, contract, scoring, result, perf_counter() - started
     )
     checkpoint(result, checkpoints, material)
     return result
@@ -397,27 +429,31 @@ def _production_verify(context: FrozenRunContext, resources: RunnerResources) ->
                            resources.exp292_manifest)
 
 
-def _production_train_models(processed: Sequence[ProcessedGroup]) -> TrainModelEvidence:
+def _production_train_models(
+    processed: Sequence[ProcessedGroup], backend_audit: BackendAudit
+) -> TrainModelEvidence:
     groups = _processed_model_groups(processed)
+    if not isinstance(backend_audit, BackendAudit) or backend_audit.fallback:
+        raise ValueError("model training requires the selected passing Task 7 backend audit")
     import torch
-    device = torch.device("cpu")
+    device = torch.device(backend_audit.backend)
     bundles = {group.group.length: train_oof_models(group, device=device) for group in groups}
     finals = {group.group.length: fit_final_seed_models(group, device=device) for group in groups}
     return TrainModelEvidence(
         groups, bundles, finals,
-        BackendAudit("cpu", True, 0.0, 1.0, 1.0, False),
+        backend_audit,
     )
 
 
 def _residual_decisions(
-    bundle: OOFModelBundle, residuals: Mapping[int, np.ndarray]
+    bundle: OOFModelBundle, residuals_by_seed: Mapping[int, Mapping[int, np.ndarray]]
 ) -> tuple[Any, ...]:
     decisions = []
     for seed in FROZEN_CONFIG.model_seeds:
         scores = {
             horizon: score_horizon(
                 [bundle.oof_residuals[seed][index][horizon] for index in bundle.universe_indices],
-                residuals[horizon], horizon=horizon,
+                residuals_by_seed[seed][horizon], horizon=horizon,
             )
             for horizon in bundle.horizons
         }
@@ -436,7 +472,10 @@ def _production_qualify_train(
         length = group.group.length
         bundle = models.oof_bundles[length]
         normal = tuple(
-            _residual_decisions(bundle, bundle.oof_residuals[FROZEN_CONFIG.model_seeds[0]][index])
+            _residual_decisions(
+                bundle,
+                {seed: bundle.oof_residuals[seed][index] for seed in FROZEN_CONFIG.model_seeds},
+            )
             for index in bundle.universe_indices
         )
         synthetic: dict[str, list[tuple[Any, ...]]] = {
@@ -501,6 +540,7 @@ def build_checkpoint_evidence(
     oof: TrainModelEvidence,
     contract: FrozenTrainContract,
     scoring: TestScoringEvidence,
+    result: DatasetResult,
     elapsed_seconds: float,
 ) -> CheckpointEvidence:
     """Derive every Task 8 record field from typed immutable stage evidence."""
@@ -513,6 +553,12 @@ def build_checkpoint_evidence(
         raise ValueError("checkpoint evidence contract does not match TRAIN dataset")
     if not isinstance(scoring, TestScoringEvidence):
         raise ValueError("checkpoint evidence requires TestScoringEvidence")
+    if not isinstance(result, DatasetResult) or result.dataset != train.dataset:
+        raise ValueError("checkpoint evidence result does not match TRAIN dataset")
+    if result.context.database_sha256 != result.decision_evidence.context.database_sha256:
+        raise ValueError("checkpoint result context evidence is inconsistent")
+    if result.decision_evidence.frozen_train_contract != contract:
+        raise ValueError("checkpoint result does not bind the supplied TRAIN contract")
     if oof.train_identity_sha256 != contract.train_identity_sha256:
         raise ValueError("checkpoint model evidence TRAIN contract identity mismatch")
     if oof.backend != contract.backend:
@@ -550,6 +596,10 @@ def build_checkpoint_evidence(
             for length in lengths
         },
         elapsed_seconds=elapsed_seconds,
+        dataset=result.dataset,
+        database_sha256=result.context.database_sha256,
+        train_contract_identity_sha256=contract.train_identity_sha256,
+        result_evidence_sha256=_result_evidence_digest(result),
     )
 
 
@@ -575,6 +625,15 @@ def checkpoint(
         return
     if not isinstance(material, CheckpointEvidence):
         raise ValueError("checkpoint material must be complete typed evidence")
+    contract = result.decision_evidence.frozen_train_contract
+    if (
+        material.dataset != result.dataset
+        or material.database_sha256 != result.context.database_sha256
+        or contract is None
+        or material.train_contract_identity_sha256 != contract.train_identity_sha256
+        or material.result_evidence_sha256 != _result_evidence_digest(result)
+    ):
+        raise ValueError("checkpoint material does not bind the exact dataset result evidence")
     if not callable(getattr(checkpoints, "write_dataset", None)):
         raise ValueError("checkpoints must provide transactional dataset writes")
     checkpoints.write_dataset(
@@ -587,7 +646,7 @@ def checkpoint(
             for length, hashes in material.canonical_model_hashes.items()
         },
         score_calibration_hashes=dict(material.score_calibration_hashes),
-        backend_audit=result.decision_evidence.frozen_train_contract.backend,
+        backend_audit=contract.backend,
         elapsed_seconds=material.elapsed_seconds,
     )
 
@@ -722,6 +781,19 @@ def _processed_model_groups(values: object) -> tuple[ProcessedGroup, ...]:
     return groups
 
 
+def _processed_terminal_reason(values: object) -> str | None:
+    if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
+        return "preprocessing did not return a sequence"
+    groups = tuple(values)
+    if not groups or any(not isinstance(group, ProcessedGroup) for group in groups):
+        return "preprocessing did not return processed groups"
+    ineligible = tuple(group for group in groups if group.status != "candidate_eligible")
+    if not ineligible:
+        return None
+    statuses = ",".join(sorted({group.status for group in ineligible}))
+    return f"preprocessing produced no candidate-eligible complete population: {statuses}"
+
+
 def _model_evidence_digest(
     groups: Sequence[ProcessedGroup], bundles: Mapping[int, OOFModelBundle],
     finals: Mapping[int, Sequence[TrainedSeedModel]], backend: BackendAudit,
@@ -743,6 +815,31 @@ def _model_evidence_digest(
             if final is None:
                 raise ValueError("final model evidence lacks frozen seed")
             _digest_text(digest, final.model_sha256)
+    return digest.hexdigest()
+
+
+def _result_evidence_digest(result: DatasetResult) -> str:
+    if not isinstance(result, DatasetResult):
+        raise ValueError("result evidence digest requires DatasetResult")
+    evidence = result.decision_evidence
+    digest = sha256()
+    _digest_text(digest, "exp417.result-evidence.v1")
+    _digest_text(digest, result.dataset)
+    _digest_text(digest, result.context.database_sha256)
+    _digest_text(digest, result.status)
+    _digest_text(digest, type(evidence).__name__)
+    if isinstance(evidence, DatasetDecisionEvidence):
+        _digest_text(digest, evidence.train_identity_sha256)
+        for decision in evidence.decisions:
+            digest.update(decision.instance_index.to_bytes(8, "little", signed=False))
+            digest.update(decision.length.to_bytes(8, "little", signed=False))
+            for seed in decision.seed_decisions:
+                digest.update(seed.seed.to_bytes(8, "little", signed=False))
+                for score in seed.scores.values():
+                    _digest_text(digest, repr((score.horizon, score.score, score.p_value, score.persistence)))
+    else:
+        _digest_text(digest, evidence.stage)
+        _digest_text(digest, evidence.reason)
     return digest.hexdigest()
 
 
