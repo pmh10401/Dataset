@@ -79,7 +79,7 @@ class PublicationTests(unittest.TestCase):
         )
         self.assertTrue(all(not path.is_symlink() for path in output.iterdir()))
 
-    def test_unsupported_atomic_exchange_fails_before_staging(self) -> None:
+    def test_filesystem_without_atomic_exchange_fails_before_staging(self) -> None:
         from experiments.exp417_causal_multihorizon_shadow import publication
 
         output = self.root / "publication"
@@ -89,14 +89,96 @@ class PublicationTests(unittest.TestCase):
             nonlocal callback_called
             callback_called = True
 
-        with patch.object(publication.sys, "platform", "unsupported-os"):
+        unsupported = OSError(
+            errno.ENOTSUP, "filesystem does not support atomic exchange"
+        )
+        with patch.object(
+            publication, "_atomic_exchange", side_effect=unsupported
+        ):
             with self.assertRaises(OSError) as caught:
                 self.publish(output, callback)
 
         self.assertEqual(caught.exception.errno, errno.ENOTSUP)
         self.assertFalse(callback_called)
         self.assertFalse(os.path.lexists(output))
-        self.assertEqual(tuple(self.root.glob(".publication.*")), ())
+        self.assertEqual(tuple(self.root.iterdir()), ())
+
+    def test_capability_probe_swaps_and_restores_real_inodes(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import publication
+
+        output = self.root / "publication"
+        real_exchange = publication._atomic_exchange
+        exchanges: list[
+            tuple[tuple[int, int], tuple[int, int], tuple[int, int], tuple[int, int]]
+        ] = []
+
+        def observe(first: Path, second: Path) -> None:
+            before_first = first.lstat()
+            before_second = second.lstat()
+            real_exchange(first, second)
+            after_first = first.lstat()
+            after_second = second.lstat()
+            exchanges.append(
+                (
+                    (before_first.st_dev, before_first.st_ino),
+                    (before_second.st_dev, before_second.st_ino),
+                    (after_first.st_dev, after_first.st_ino),
+                    (after_second.st_dev, after_second.st_ino),
+                )
+            )
+
+        with patch.object(publication, "_atomic_exchange", side_effect=observe):
+            self.publish(output)
+
+        self.assertEqual(len(exchanges), 2)
+        first_before_a, first_before_b, first_after_a, first_after_b = exchanges[0]
+        self.assertEqual(first_after_a, first_before_b)
+        self.assertEqual(first_after_b, first_before_a)
+        second_before_a, second_before_b, second_after_a, second_after_b = exchanges[1]
+        self.assertEqual(second_before_a, first_after_a)
+        self.assertEqual(second_before_b, first_after_b)
+        self.assertEqual(second_after_a, first_before_a)
+        self.assertEqual(second_after_b, first_before_b)
+        self.assertEqual(tuple(self.root.iterdir()), (output,))
+
+    def test_capability_probe_cleanup_failure_aborts_before_staging(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import publication
+
+        output = self.root / "publication"
+        callback_called = False
+        real_rmdir = publication.os.rmdir
+        denied = False
+
+        def callback() -> None:
+            nonlocal callback_called
+            callback_called = True
+
+        def deny_probe_cleanup(
+            path: object, *args: object, **kwargs: object
+        ) -> None:
+            nonlocal denied
+            if path == "a" and type(kwargs.get("dir_fd")) is int and not denied:
+                denied = True
+                raise PermissionError("probe cleanup denied")
+            real_rmdir(path, *args, **kwargs)
+
+        with patch.object(
+            publication.os, "rmdir", side_effect=deny_probe_cleanup
+        ):
+            with self.assertRaises(ExceptionGroup) as caught:
+                self.publish(output, callback)
+
+        self.assertTrue(denied)
+        self.assertTrue(
+            any(
+                "probe cleanup denied" in str(error)
+                for error in caught.exception.exceptions
+            )
+        )
+        self.assertFalse(callback_called)
+        self.assertFalse(os.path.lexists(output))
+        self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
+        self.assertEqual(tuple(self.root.glob(".publication.*.capture")), ())
 
     def test_mutation_extra_file_and_symlink_are_fail_closed(self) -> None:
         attacks = {}
@@ -393,13 +475,15 @@ class PublicationTests(unittest.TestCase):
 
         output = self.root / "publication"
         parent_calls = 0
+        failure_injected = False
         real_fsync = publication._fsync_directory
 
         def fail_once(path: Path) -> None:
-            nonlocal parent_calls
-            if path == self.root:
+            nonlocal failure_injected, parent_calls
+            if path == self.root and (failure_injected or output.exists()):
                 parent_calls += 1
-                if parent_calls == 1:
+                if not failure_injected:
+                    failure_injected = True
                     raise OSError("first parent fsync failed")
             real_fsync(path)
 
@@ -415,11 +499,13 @@ class PublicationTests(unittest.TestCase):
 
         output = self.root / "publication"
         parent_calls = 0
+        failure_injected = False
         real_fsync = publication._fsync_directory
 
         def fail_twice(path: Path) -> None:
-            nonlocal parent_calls
-            if path == self.root:
+            nonlocal failure_injected, parent_calls
+            if path == self.root and (failure_injected or output.exists()):
+                failure_injected = True
                 parent_calls += 1
                 raise OSError(f"parent fsync failed {parent_calls}")
             real_fsync(path)

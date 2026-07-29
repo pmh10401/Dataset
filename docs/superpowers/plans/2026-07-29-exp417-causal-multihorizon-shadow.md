@@ -975,6 +975,14 @@ atomically restored; a second racing foreign inode is preserved in the unique
 capture slot and reported.  Platforms without atomic exchange fail before
 staging or final publication.
 
+The capability gate is not a symbol check.  Before staging, it creates two
+owned sibling probe directories under a private `0o700` directory in the
+exact output parent filesystem, fsyncs them, performs a real exchange, verifies
+the inode swap, exchanges them back, verifies restoration, removes only the
+recorded probe identities, and fsyncs the parent again.  Filesystem-level
+`ENOSYS`, `EINVAL`, or `ENOTSUP`, an inode mismatch, or any probe cleanup
+failure aborts publication before a `.staging` directory exists.
+
 - [ ] **Step 7: Run GREEN and regressions**
 
 ```bash
