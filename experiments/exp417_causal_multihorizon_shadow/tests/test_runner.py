@@ -182,6 +182,60 @@ class RunnerPopulationTests(unittest.TestCase):
         self.assertEqual(summary.total_test, sum(context.test_sizes.values()))
         self.assertTrue(summary.publication_allowed)
 
+    def test_global_workload_gate_precedes_a_local_failed_status(self) -> None:
+        """Returning a failed summary first can bypass required global payload clearing."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        context = _context()
+        completed = {dataset: object() for dataset in context.datasets}
+        store = Mock(expected_datasets=context.datasets)
+        store.load_completed.return_value = completed
+        global_summary = Mock(status="global_workload_gate_failed")
+
+        with (
+            patch.object(runner, "_validate_result"),
+            patch.object(runner, "RunSummary", return_value=Mock(status="failed")),
+            patch.object(runner, "apply_global_workload", return_value=global_summary) as gate,
+        ):
+            self.assertIs(runner.resume_or_run_population(context, store), global_summary)
+        gate.assert_called_once()
+
+    def test_checkpoint_writes_only_typed_complete_evidence_to_the_transaction_store(self) -> None:
+        """Dropping a checkpoint field would make a resumable result unverifiable."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        context = _context()
+        result = _result(context)
+        store = Mock()
+        material = runner.CheckpointEvidence(
+            raw_train_identity_sha256="a" * 64,
+            repaired_train_identity_sha256="b" * 64,
+            length_group_identity_sha256={100: "c" * 64},
+            canonical_model_hashes={100: {seed: "d" * 64 for seed in FROZEN_CONFIG.model_seeds}},
+            score_calibration_hashes={100: "e" * 64},
+            elapsed_seconds=0.125,
+        )
+
+        runner.checkpoint(result, store, material)
+
+        store.write_dataset.assert_called_once_with(
+            result,
+            raw_train_identity_sha256="a" * 64,
+            repaired_train_identity_sha256="b" * 64,
+            length_group_identity_sha256={100: "c" * 64},
+            canonical_model_hashes={100: {seed: "d" * 64 for seed in FROZEN_CONFIG.model_seeds}},
+            score_calibration_hashes={100: "e" * 64},
+            backend_audit=result.decision_evidence.frozen_train_contract.backend,
+            elapsed_seconds=0.125,
+        )
+
+    def test_checkpoint_evidence_boundary_fails_closed_without_an_audited_adapter(self) -> None:
+        """Fabricating Task 8 provenance from opaque stage objects is forbidden."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        with self.assertRaisesRegex(RuntimeError, "checkpoint evidence boundary"):
+            runner.build_checkpoint_evidence(object(), (), object(), _contract(), _decisions())
+
     def test_prediction_rows_are_label_and_metric_free_with_false_governance_flags(self) -> None:
         """Adding evaluation data or reintroducing any frozen lane must fail publication."""
         from experiments.exp417_causal_multihorizon_shadow import runner
