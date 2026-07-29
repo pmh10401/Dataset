@@ -370,6 +370,19 @@ class InputBoundaryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "outside the database population"):
                 inputs.list_dataset_names(self.database, lanes, config=config)
 
+    def test_database_rows_outside_frozen_lane_universe_are_not_population(self) -> None:
+        """A DB-only source row must not expand the hash-frozen 1,117 universe."""
+        with closing(sqlite3.connect(self.database)) as connection, connection:
+            connection.execute(
+                "INSERT INTO datasets(id, name) VALUES (3, 'DB-only-source')"
+            )
+        with self.synthetic_config(database_sha256=_sha(self.database)) as config:
+            lanes = self._freeze_lanes(config)
+            self.assertEqual(
+                inputs.list_dataset_names(self.database, lanes, config=config),
+                ("A", "B"),
+            )
+
     def test_train_loader_uses_normal_train_values_and_preserves_identity_order(self) -> None:
         """Dropping the normal-only predicate would admit the synthetic abnormal row."""
         with self.synthetic_config() as config:

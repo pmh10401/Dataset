@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import ceil, isfinite
 from numbers import Real
 from types import MappingProxyType
@@ -140,6 +140,7 @@ class FrozenLaneSnapshot:
     exp292_prediction_sha256: str = FROZEN_CONFIG.exp292_prediction_sha256
     exp292_manifest_sha256: str = FROZEN_CONFIG.exp292_manifest_sha256
     config: Exp417FrozenConfig = FROZEN_CONFIG
+    population: tuple[str, ...] = field(default=(), compare=False, repr=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.config, Exp417FrozenConfig):
@@ -172,6 +173,16 @@ class FrozenLaneSnapshot:
         for name, expected_hash in expected_hashes.items():
             if getattr(self, name) != expected_hash:
                 raise ValueError(f"frozen {name.split('_')[0].capitalize()} artifact hash mismatch")
+        population = _tuple(self.population, "frozen population")
+        if population:
+            if (
+                len(population) != self.config.expected_datasets
+                or population != tuple(sorted(population))
+                or len(population) != len(set(population))
+                or any(not isinstance(dataset, str) or not dataset.strip() for dataset in population)
+            ):
+                raise ValueError("frozen population is invalid")
+        object.__setattr__(self, "population", population)
 
     def contains(self, dataset: str, instance_index: int) -> bool:
         return any(instance_index in lane.get(dataset, ()) for lane in (self.hard, self.standard, self.priority, self.automatic_normal))

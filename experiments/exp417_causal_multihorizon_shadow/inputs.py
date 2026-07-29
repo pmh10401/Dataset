@@ -109,6 +109,7 @@ def freeze_lane_inputs(
         exp292_prediction_sha256=config.exp292_prediction_sha256,
         exp292_manifest_sha256=config.exp292_manifest_sha256,
         config=config,
+        population=tuple(sorted(counts_291)),
     )
 
 
@@ -131,17 +132,26 @@ def list_dataset_names(
         raise ValueError("Exp417 database population query failed") from error
     finally:
         connection.close()
-    datasets = tuple(row[0] for row in rows)
+    database_datasets = tuple(row[0] for row in rows)
     if (
-        len(datasets) != config.expected_datasets
-        or any(not isinstance(name, str) or not name.strip() for name in datasets)
-        or datasets != tuple(sorted(datasets))
-        or len(datasets) != len(set(datasets))
+        any(not isinstance(name, str) or not name.strip() for name in database_datasets)
+        or database_datasets != tuple(sorted(database_datasets))
+        or len(database_datasets) != len(set(database_datasets))
     ):
-        raise ValueError("database population does not match the frozen dataset count")
-    lane_datasets = set().union(*(set(lane) for lane in _lane_maps(lanes)))
-    if not lane_datasets.issubset(datasets):
+        raise ValueError("database population is invalid")
+    if lanes.population:
+        frozen_datasets = set(lanes.population)
+    else:
+        frozen_datasets = set(database_datasets)
+        if len(frozen_datasets) != config.expected_datasets:
+            raise ValueError("database population does not match the frozen dataset count")
+    if not frozen_datasets.issubset(database_datasets):
         raise ValueError("frozen lane references a dataset outside the database population")
+    datasets = tuple(
+        name for name in database_datasets if name in frozen_datasets
+    )
+    if len(datasets) != config.expected_datasets:
+        raise ValueError("database population does not cover the frozen lane universe")
     _verify_database_hash(path, config.database_sha256)
     return datasets
 
