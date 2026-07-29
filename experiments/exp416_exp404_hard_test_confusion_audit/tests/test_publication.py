@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import sys
 from tempfile import TemporaryDirectory
 import unittest
@@ -209,7 +210,8 @@ class PublicationTests(unittest.TestCase):
             nonlocal substitutions
             if type(path) is int and substitutions == 0:
                 substitutions += 1
-                os.replace(output, displaced_owned)
+                if os.path.lexists(output):
+                    os.replace(output, displaced_owned)
                 output.mkdir()
                 (output / "foreign.txt").write_text(
                     "foreign",
@@ -239,11 +241,57 @@ class PublicationTests(unittest.TestCase):
             (output / "foreign.txt").read_text(encoding="utf-8"),
             "foreign",
         )
+        if displaced_owned.exists():
+            self.assertEqual(
+                (
+                    displaced_owned.lstat().st_dev,
+                    displaced_owned.lstat().st_ino,
+                ),
+                owned_identity[0],
+            )
+            self.assertEqual(tuple(displaced_owned.iterdir()), ())
+
+    def test_root_rmdir_substitution_preserves_foreign_final_directory(
+        self,
+    ) -> None:
+        output = self.root / "publication"
+        displaced_owned = self.root / "displaced_owned"
+        foreign_identity: list[tuple[int, int]] = []
+        substitutions = 0
+        real_rmdir = Path.rmdir
+
+        def move_staging_to_output() -> None:
+            staging = next(self.root.glob(".publication.*.staging"))
+            os.replace(staging, output)
+
+        def substitute_at_root_rmdir(path: Path) -> None:
+            nonlocal substitutions
+            if substitutions == 0:
+                substitutions += 1
+                if os.path.lexists(output):
+                    os.replace(output, displaced_owned)
+                output.mkdir(mode=0o711)
+                os.chmod(output, 0o711)
+                metadata = output.lstat()
+                foreign_identity.append((metadata.st_dev, metadata.st_ino))
+            real_rmdir(path)
+
+        with patch.object(Path, "rmdir", new=substitute_at_root_rmdir):
+            with self.assertRaises(FileExistsError):
+                self.publish(
+                    output,
+                    pre_publish_verify=move_staging_to_output,
+                )
+
+        self.assertEqual(substitutions, 1)
+        self.assertEqual(len(foreign_identity), 1)
+        metadata = output.lstat()
         self.assertEqual(
-            (displaced_owned.lstat().st_dev, displaced_owned.lstat().st_ino),
-            owned_identity[0],
+            (metadata.st_dev, metadata.st_ino),
+            foreign_identity[0],
         )
-        self.assertEqual(tuple(displaced_owned.iterdir()), ())
+        self.assertEqual(stat.S_IMODE(metadata.st_mode), 0o711)
+        self.assertEqual(tuple(output.iterdir()), ())
 
     def test_atomic_final_rename_does_not_clobber_postcheck_competitor(
         self,
@@ -329,6 +377,42 @@ class PublicationTests(unittest.TestCase):
 
         self.assertFalse(output.exists())
         self.assertEqual(tuple(self.root.iterdir()), ())
+
+    def test_parent_fsync_and_cleanup_failure_are_both_surfaced(self) -> None:
+        real_fsync_directory = publication._fsync_directory
+        output = self.root / "publication"
+
+        def fail_parent_fsync(path: Path) -> None:
+            if path == self.root:
+                raise OSError("parent fsync failed")
+            real_fsync_directory(path)
+
+        with (
+            patch.object(
+                publication,
+                "_fsync_directory",
+                side_effect=fail_parent_fsync,
+            ),
+            patch.object(
+                publication,
+                "_clear_owned_directory_fd",
+                side_effect=PermissionError("cleanup denied"),
+            ),
+        ):
+            with self.assertRaises(ExceptionGroup) as caught:
+                self.publish(output)
+
+        messages = tuple(str(error) for error in caught.exception.exceptions)
+        self.assertTrue(
+            any("parent fsync failed" in message for message in messages)
+        )
+        self.assertTrue(any("cleanup denied" in message for message in messages))
+        self.assertFalse(output.exists())
+        quarantines = tuple(self.root.glob(".publication.*.quarantine"))
+        self.assertEqual(len(quarantines), 1)
+        self.assertTrue(
+            (quarantines[0] / "exp416_confusion_matrix.json").is_file()
+        )
 
     def test_existing_output_is_no_clobber(self) -> None:
         output = self.root / "publication"

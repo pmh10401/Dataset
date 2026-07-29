@@ -136,13 +136,26 @@ def publish_payloads(
         _fsync_directory(output.parent)
         published = False
         return result
-    except Exception:
-        owned_output = _is_owned_path(output, staging_identity)
-        _remove_owned_path(output, staging_identity)
-        _remove_owned_path(staging, staging_identity)
-        if published and not owned_output:
-            raise RuntimeError(
-                "Exp416 publication rollback could not identify its output"
+    except Exception as publication_error:
+        cleanup_errors: list[Exception] = []
+        owned_output_removed = False
+        for candidate in (output, staging):
+            try:
+                removed = _remove_owned_path(candidate, staging_identity)
+                if candidate == output:
+                    owned_output_removed = removed
+            except Exception as cleanup_error:
+                cleanup_errors.append(cleanup_error)
+        if published and not owned_output_removed and not cleanup_errors:
+            cleanup_errors.append(
+                RuntimeError(
+                    "Exp416 published output could not be quarantined"
+                )
+            )
+        if cleanup_errors:
+            raise ExceptionGroup(
+                "Exp416 publication failed and cleanup also failed",
+                [publication_error, *cleanup_errors],
             )
         raise
 
@@ -240,41 +253,59 @@ def _is_owned_path(
 def _remove_owned_path(
     path: Path,
     identity: tuple[int, int] | None,
-) -> None:
+) -> bool:
     if identity is None or not _lexists(path):
-        return
-    if _is_symlink(path):
-        if _is_owned_path(path, identity):
-            path.unlink()
-        return
+        return False
+    quarantine = path.with_name(
+        f".{path.name}.{uuid.uuid4().hex}.quarantine"
+    )
     try:
-        descriptor = os.open(path, _DIRECTORY_OPEN_FLAGS)
-    except (FileNotFoundError, NotADirectoryError, OSError):
-        return
-    try:
-        metadata = os.fstat(descriptor)
-        if (
-            not stat.S_ISDIR(metadata.st_mode)
-            or (metadata.st_dev, metadata.st_ino) != identity
-        ):
-            return
-        _clear_owned_directory_fd(descriptor)
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-    try:
-        current = path.lstat()
+        _atomic_rename_noreplace(path, quarantine)
     except FileNotFoundError:
-        return
-    if (
-        stat.S_ISDIR(current.st_mode)
-        and (current.st_dev, current.st_ino) == identity
-    ):
+        return False
+    except OSError as error:
+        raise RuntimeError(
+            f"Exp416 failed to quarantine cleanup candidate: {path}: {error}"
+        ) from error
+    if not _is_owned_path(quarantine, identity):
         try:
-            path.rmdir()
-        except (FileNotFoundError, OSError):
-            return
+            _atomic_rename_noreplace(quarantine, path)
+        except OSError as restore_error:
+            raise RuntimeError(
+                "Exp416 moved a foreign cleanup candidate and could not "
+                f"restore it; preserved at {quarantine}: {restore_error}"
+            ) from restore_error
+        return False
+    if _is_symlink(quarantine):
+        try:
+            quarantine.unlink()
+        except OSError as error:
+            raise RuntimeError(
+                "Exp416 failed to remove quarantined owned symlink: "
+                f"{quarantine}: {error}"
+            ) from error
+        return True
+    try:
+        descriptor = os.open(quarantine, _DIRECTORY_OPEN_FLAGS)
+        try:
+            metadata = os.fstat(descriptor)
+            if (
+                not stat.S_ISDIR(metadata.st_mode)
+                or (metadata.st_dev, metadata.st_ino) != identity
+            ):
+                raise RuntimeError(
+                    "Exp416 quarantined cleanup inode identity changed"
+                )
+            _clear_owned_directory_fd(descriptor)
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        quarantine.rmdir()
+    except Exception as error:
+        raise RuntimeError(
+            f"Exp416 quarantined owned cleanup failed at {quarantine}: {error}"
+        ) from error
+    return True
 
 
 def _clear_owned_directory_fd(descriptor: int) -> None:
@@ -294,8 +325,12 @@ def _clear_owned_directory_fd(descriptor: int) -> None:
                     _DIRECTORY_OPEN_FLAGS,
                     dir_fd=descriptor,
                 )
-            except (FileNotFoundError, NotADirectoryError, OSError):
+            except FileNotFoundError:
                 continue
+            except OSError as error:
+                raise RuntimeError(
+                    f"Exp416 failed to open quarantined child: {name}: {error}"
+                ) from error
             try:
                 child_metadata = os.fstat(child)
                 child_identity = (
@@ -326,8 +361,13 @@ def _clear_owned_directory_fd(descriptor: int) -> None:
             ):
                 try:
                     os.rmdir(name, dir_fd=descriptor)
-                except (FileNotFoundError, OSError):
+                except FileNotFoundError:
                     continue
+                except OSError as error:
+                    raise RuntimeError(
+                        "Exp416 failed to remove quarantined child directory: "
+                        f"{name}: {error}"
+                    ) from error
             continue
         try:
             current = os.stat(
@@ -349,8 +389,12 @@ def _clear_owned_directory_fd(descriptor: int) -> None:
             continue
         try:
             os.unlink(name, dir_fd=descriptor)
-        except (FileNotFoundError, OSError):
+        except FileNotFoundError:
             continue
+        except OSError as error:
+            raise RuntimeError(
+                f"Exp416 failed to unlink quarantined child: {name}: {error}"
+            ) from error
 
 
 def _atomic_rename_noreplace(source: Path, destination: Path) -> None:
