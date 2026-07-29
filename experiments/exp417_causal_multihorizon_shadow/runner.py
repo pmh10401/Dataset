@@ -11,10 +11,14 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from hashlib import sha256
 from math import isfinite
 import re
+from time import perf_counter
 from types import MappingProxyType
 from typing import Any
+
+import numpy as np
 
 from .checkpoints import Exp417CheckpointStore
 from .config import FROZEN_CONFIG
@@ -25,9 +29,13 @@ from .contracts import (
     FrozenRunContext,
     FrozenTrainContract,
     GroupQualification,
+    ProcessedGroup,
+    RawSeries,
+    RawTrainDataset,
     RunSummary,
     TestInstanceDecision,
 )
+from .model import OOFModelBundle, TrainedSeedModel
 from .inputs import assert_label_free_sql_contract
 from .qualification import (
     apply_dataset_workload,
@@ -106,6 +114,41 @@ class CheckpointEvidence:
         object.__setattr__(self, "elapsed_seconds", float(self.elapsed_seconds))
 
 
+@dataclass(frozen=True)
+class TrainModelEvidence:
+    """Per-length OOF and final-model evidence actually available to scoring."""
+
+    oof_bundles: Mapping[int, OOFModelBundle]
+    final_models: Mapping[int, Sequence[TrainedSeedModel]]
+    backend: BackendAudit
+    train_identity_sha256: str
+
+    def __post_init__(self) -> None:
+        bundles = _oof_bundles(self.oof_bundles)
+        models = _final_models(self.final_models, tuple(bundles))
+        if not isinstance(self.backend, BackendAudit):
+            raise ValueError("model evidence requires a backend audit")
+        _sha256(self.train_identity_sha256, "model evidence TRAIN contract identity")
+        object.__setattr__(self, "oof_bundles", MappingProxyType(bundles))
+        object.__setattr__(self, "final_models", MappingProxyType(models))
+
+
+@dataclass(frozen=True)
+class TestScoringEvidence:
+    """Exhaustive TEST decisions and exact final-model identities used to score them."""
+
+    decisions: tuple[TestInstanceDecision, ...]
+    final_model_hashes: Mapping[int, Mapping[int, str]]
+
+    def __post_init__(self) -> None:
+        decisions = tuple(self.decisions)
+        if any(not isinstance(decision, TestInstanceDecision) for decision in decisions):
+            raise ValueError("TEST scoring evidence requires instance decisions")
+        hashes = _model_hashes(self.final_model_hashes)
+        object.__setattr__(self, "decisions", decisions)
+        object.__setattr__(self, "final_model_hashes", MappingProxyType(hashes))
+
+
 def run_dataset(dataset: str, context: FrozenRunContext) -> DatasetResult:
     """Run one frozen dataset through the sequential label-free state machine."""
     return _run_dataset(dataset, context, None)
@@ -117,6 +160,7 @@ def _run_dataset(
     checkpoints: Exp417CheckpointStore | None,
 ) -> DatasetResult:
     _validate_dataset(dataset, context)
+    started = perf_counter()
     verify_inputs(context)
     train = load_train_values(dataset, context)
     processed = preprocess(train)
@@ -128,7 +172,10 @@ def _run_dataset(
     if not isinstance(contract, FrozenTrainContract) or contract.dataset != dataset:
         raise ValueError("frozen TRAIN contract boundary returned an invalid contract")
     test = load_test_values(dataset, contract, context)
-    decisions = tuple(score_test(test, contract, oof))
+    scoring = score_test(test, contract, oof)
+    if not isinstance(scoring, TestScoringEvidence):
+        raise ValueError("TEST scoring boundary returned invalid evidence")
+    decisions = scoring.decisions
     evidence = DatasetDecisionEvidence(
         dataset=dataset,
         context=context,
@@ -144,7 +191,9 @@ def _run_dataset(
     _validate_result(result, dataset, context, evidence)
     material = (
         None if checkpoints is None
-        else build_checkpoint_evidence(train, processed, oof, contract, decisions)
+        else build_checkpoint_evidence(
+            train, processed, oof, contract, scoring, perf_counter() - started
+        )
     )
     checkpoint(result, checkpoints, material)
     return result
@@ -237,11 +286,13 @@ def preprocess(train: Any) -> Sequence[Any]:
     raise RuntimeError("Exp417 preprocessing boundary is not configured")
 
 
-def train_oof(processed: Sequence[Any]) -> Any:
+def train_oof(processed: Sequence[Any]) -> TrainModelEvidence:
     raise RuntimeError("Exp417 OOF boundary is not configured")
 
 
-def qualify_train(dataset: str, processed: Sequence[Any], oof: Any) -> TrainQualification:
+def qualify_train(
+    dataset: str, processed: Sequence[Any], oof: TrainModelEvidence
+) -> TrainQualification:
     raise RuntimeError("Exp417 TRAIN qualification boundary is not configured")
 
 
@@ -258,8 +309,8 @@ def load_test_values(
 
 
 def score_test(
-    test: Any, contract: FrozenTrainContract, oof: Any
-) -> Sequence[TestInstanceDecision]:
+    test: Any, contract: FrozenTrainContract, oof: TrainModelEvidence
+) -> TestScoringEvidence:
     raise RuntimeError("Exp417 TEST scoring boundary is not configured")
 
 
@@ -272,14 +323,61 @@ def dataset_workload(evidence: DatasetDecisionEvidence) -> DatasetResult:
 
 
 def build_checkpoint_evidence(
-    train: Any,
-    processed: Sequence[Any],
-    oof: Any,
+    train: RawTrainDataset,
+    processed: Sequence[ProcessedGroup],
+    oof: TrainModelEvidence,
     contract: FrozenTrainContract,
-    decisions: Sequence[TestInstanceDecision],
+    scoring: TestScoringEvidence,
+    elapsed_seconds: float,
 ) -> CheckpointEvidence:
-    """Require an audited adapter to provide every transactional record field."""
-    raise RuntimeError("Exp417 checkpoint evidence boundary is not configured")
+    """Derive every Task 8 record field from typed immutable stage evidence."""
+    if not isinstance(train, RawTrainDataset):
+        raise ValueError("checkpoint evidence requires a RawTrainDataset")
+    groups = _processed_groups(processed, train)
+    if not isinstance(oof, TrainModelEvidence):
+        raise ValueError("checkpoint evidence requires TrainModelEvidence")
+    if not isinstance(contract, FrozenTrainContract) or contract.dataset != train.dataset:
+        raise ValueError("checkpoint evidence contract does not match TRAIN dataset")
+    if not isinstance(scoring, TestScoringEvidence):
+        raise ValueError("checkpoint evidence requires TestScoringEvidence")
+    if oof.train_identity_sha256 != contract.train_identity_sha256:
+        raise ValueError("checkpoint model evidence TRAIN contract identity mismatch")
+    if oof.backend != contract.backend:
+        raise ValueError("checkpoint model evidence backend mismatch")
+    lengths = tuple(group.group.length for group in groups)
+    if tuple(group.length for group in contract.groups) != lengths:
+        raise ValueError("checkpoint processed lengths do not match frozen contract")
+    if any(
+        qualification.series_count != len(group.group.series)
+        for qualification, group in zip(contract.groups, groups, strict=True)
+    ):
+        raise ValueError("checkpoint processed group counts do not match frozen contract")
+    if tuple(oof.oof_bundles) != lengths or tuple(oof.final_models) != lengths:
+        raise ValueError("checkpoint model evidence lengths do not match frozen contract")
+    expected_hashes = {
+        length: {model.seed: model.model_sha256 for model in oof.final_models[length]}
+        for length in lengths
+    }
+    if dict(scoring.final_model_hashes) != expected_hashes:
+        raise ValueError("TEST scoring did not use the exact final model evidence")
+    if any(decision.length not in set(lengths) for decision in scoring.decisions):
+        raise ValueError("TEST scoring evidence includes an unknown TRAIN length")
+    return CheckpointEvidence(
+        raw_train_identity_sha256=_series_digest("exp417.raw-train.v1", train.dataset, train.series),
+        repaired_train_identity_sha256=_groups_digest("exp417.repaired-train.v1", train.dataset, groups),
+        length_group_identity_sha256={
+            group.group.length: _series_digest(
+                "exp417.repaired-length-group.v1", train.dataset, group.group.series
+            )
+            for group in groups
+        },
+        canonical_model_hashes=expected_hashes,
+        score_calibration_hashes={
+            length: _oof_calibration_digest(oof.oof_bundles[length])
+            for length in lengths
+        },
+        elapsed_seconds=elapsed_seconds,
+    )
 
 
 def checkpoint(
@@ -349,9 +447,148 @@ def _digest_mapping(values: object, name: str) -> dict[int, str]:
     return result
 
 
+def _oof_bundles(values: object) -> dict[int, OOFModelBundle]:
+    if not isinstance(values, Mapping):
+        raise ValueError("OOF evidence must map exact lengths to bundles")
+    bundles: dict[int, OOFModelBundle] = {}
+    for length, bundle in values.items():
+        if type(length) is not int or not isinstance(bundle, OOFModelBundle) or bundle.length != length:
+            raise ValueError("OOF evidence length binding is invalid")
+        bundles[length] = bundle
+    if not bundles or tuple(bundles) != tuple(sorted(bundles)):
+        raise ValueError("OOF evidence lengths must be non-empty and sorted")
+    return bundles
+
+
+def _final_models(
+    values: object, lengths: tuple[int, ...]
+) -> dict[int, tuple[TrainedSeedModel, ...]]:
+    if not isinstance(values, Mapping) or tuple(values) != lengths:
+        raise ValueError("final model evidence must cover exact sorted lengths")
+    result: dict[int, tuple[TrainedSeedModel, ...]] = {}
+    for length in lengths:
+        models = tuple(values[length]) if not isinstance(values[length], (str, bytes)) else ()
+        if (
+            len(models) != len(FROZEN_CONFIG.model_seeds)
+            or any(not isinstance(model, TrainedSeedModel) for model in models)
+            or tuple(model.seed for model in models) != FROZEN_CONFIG.model_seeds
+        ):
+            raise ValueError("final model evidence must contain each frozen seed once")
+        if any(model.horizons != _horizons_for_length(length) for model in models):
+            raise ValueError("final model evidence horizons do not match exact length")
+        result[length] = models
+    return result
+
+
+def _model_hashes(values: object) -> dict[int, Mapping[int, str]]:
+    if not isinstance(values, Mapping):
+        raise ValueError("TEST scoring model hashes must be a mapping")
+    result: dict[int, Mapping[int, str]] = {}
+    for length, hashes in values.items():
+        if type(length) is not int or length < 1 or not isinstance(hashes, Mapping):
+            raise ValueError("TEST scoring model hash lengths are invalid")
+        if tuple(hashes) != FROZEN_CONFIG.model_seeds:
+            raise ValueError("TEST scoring model hashes must cover frozen seeds in order")
+        result[length] = MappingProxyType({
+            seed: _sha256(digest, "TEST scoring model hash")
+            for seed, digest in hashes.items()
+        })
+    if not result or tuple(result) != tuple(sorted(result)):
+        raise ValueError("TEST scoring model hash lengths must be non-empty and sorted")
+    return result
+
+
+def _processed_groups(
+    values: object, train: RawTrainDataset
+) -> tuple[ProcessedGroup, ...]:
+    if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
+        raise ValueError("checkpoint processed groups must be a sequence")
+    groups = tuple(values)
+    if not groups or any(not isinstance(group, ProcessedGroup) for group in groups):
+        raise ValueError("checkpoint processed groups are invalid")
+    lengths = tuple(group.group.length for group in groups)
+    if lengths != tuple(sorted(lengths)) or len(lengths) != len(set(lengths)):
+        raise ValueError("checkpoint processed groups must have sorted unique lengths")
+    raw_by_length: dict[int, tuple[RawSeries, ...]] = {}
+    for series in train.series:
+        raw_by_length.setdefault(len(series.values), tuple())
+        raw_by_length[len(series.values)] += (series,)
+    if tuple(sorted(raw_by_length)) != lengths:
+        raise ValueError("checkpoint processed groups do not cover exact raw TRAIN lengths")
+    for group in groups:
+        raw_indices = tuple(item.instance_index for item in raw_by_length[group.group.length])
+        repaired_indices = tuple(item.instance_index for item in group.group.series)
+        if repaired_indices != raw_indices:
+            raise ValueError("checkpoint repaired groups do not preserve raw TRAIN identities")
+    return groups
+
+
+def _series_digest(schema: str, dataset: str, series: Sequence[RawSeries]) -> str:
+    digest = sha256()
+    _digest_text(digest, schema)
+    _digest_text(digest, dataset)
+    digest.update(len(series).to_bytes(8, "little", signed=False))
+    for item in series:
+        if not isinstance(item, RawSeries):
+            raise ValueError("checkpoint identity series are invalid")
+        digest.update(item.instance_index.to_bytes(8, "little", signed=False))
+        values = np.asarray(item.values, dtype="<f4")
+        if values.ndim != 1 or len(values) != len(item.values):
+            raise ValueError("checkpoint identity values are invalid")
+        digest.update(len(values).to_bytes(8, "little", signed=False))
+        digest.update(values.tobytes(order="C"))
+    return digest.hexdigest()
+
+
+def _groups_digest(schema: str, dataset: str, groups: Sequence[ProcessedGroup]) -> str:
+    digest = sha256()
+    _digest_text(digest, schema)
+    _digest_text(digest, dataset)
+    digest.update(len(groups).to_bytes(8, "little", signed=False))
+    for group in groups:
+        digest.update(group.group.length.to_bytes(8, "little", signed=False))
+        _digest_text(digest, group.status)
+        _digest_text(digest, _series_digest("exp417.repaired-group-members.v1", dataset, group.group.series))
+    return digest.hexdigest()
+
+
+def _oof_calibration_digest(bundle: OOFModelBundle) -> str:
+    digest = sha256()
+    _digest_text(digest, "exp417.oof-calibration.v1")
+    digest.update(bundle.length.to_bytes(8, "little", signed=False))
+    for horizon in bundle.horizons:
+        digest.update(horizon.to_bytes(8, "little", signed=False))
+    for seed in FROZEN_CONFIG.model_seeds:
+        digest.update(seed.to_bytes(8, "little", signed=False))
+        by_index = bundle.oof_residuals[seed]
+        for index in bundle.universe_indices:
+            digest.update(index.to_bytes(8, "little", signed=False))
+            for horizon in bundle.horizons:
+                residual = by_index[index][horizon]
+                if residual.flags.writeable or not np.isfinite(residual).all():
+                    raise ValueError("OOF calibration residual evidence must be immutable and finite")
+                payload = np.asarray(residual, dtype="<f8").tobytes(order="C")
+                digest.update(len(payload).to_bytes(8, "little", signed=False))
+                digest.update(payload)
+    return digest.hexdigest()
+
+
+def _digest_text(digest: Any, value: str) -> None:
+    payload = value.encode("utf-8")
+    digest.update(len(payload).to_bytes(8, "little", signed=False))
+    digest.update(payload)
+
+
+def _horizons_for_length(length: int) -> tuple[int, int, int]:
+    from .preprocessing import build_horizons
+    return build_horizons(length)
+
+
 __all__ = [
     "TrainQualification",
     "CheckpointEvidence",
+    "TestScoringEvidence",
+    "TrainModelEvidence",
     "build_prediction_rows",
     "resume_or_run_population",
     "run_dataset",

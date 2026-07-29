@@ -2,9 +2,18 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import Mock, patch
 import unittest
 
+import numpy as np
+
+from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
+    Exp417CheckpointProvenance,
+    Exp417CheckpointStore,
+)
 from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     BackendAudit,
@@ -15,8 +24,15 @@ from experiments.exp417_causal_multihorizon_shadow.contracts import (
     FrozenTrainContract,
     GroupQualification,
     HorizonScore,
+    RawTrainDataset,
     SeedDecision,
     TestInstanceDecision,
+)
+from experiments.exp417_causal_multihorizon_shadow.model import OOFModelBundle
+from experiments.exp417_causal_multihorizon_shadow.tests.test_model import (
+    synthetic_folds,
+    synthetic_group,
+    synthetic_trained_model,
 )
 
 
@@ -101,8 +117,61 @@ def _result(context: FrozenRunContext, *, candidate: bool = False) -> DatasetRes
     )
     candidates = evidence.derived_candidates
     return DatasetResult(
-        "dataset", context.test_sizes["dataset"], 1, contract.groups, candidates, evidence, context.lanes, context, "qualified"
+        "dataset", context.test_sizes["dataset"], 1, contract.groups, candidates,
+        evidence, context.lanes, context, "qualified"
     )
+
+
+def _provenance() -> Exp417CheckpointProvenance:
+    return Exp417CheckpointProvenance(
+        git_commit="c" * 40,
+        database_sha256=FROZEN_CONFIG.database_sha256,
+        exp291_prediction_sha256=FROZEN_CONFIG.exp291_prediction_sha256,
+        exp291_manifest_sha256=FROZEN_CONFIG.exp291_manifest_sha256,
+        exp292_prediction_sha256=FROZEN_CONFIG.exp292_prediction_sha256,
+        exp292_manifest_sha256=FROZEN_CONFIG.exp292_manifest_sha256,
+        frozen_config_sha256="5" * 64,
+        preprocessing_contract_sha256="6" * 64,
+        fold_contract_sha256="7" * 64,
+        model_contract_sha256="8" * 64,
+        model_seeds=FROZEN_CONFIG.model_seeds,
+        perturbation_seeds=FROZEN_CONFIG.perturbation_seeds,
+        runtime_versions={"numpy": "synthetic", "python": "synthetic", "torch": "synthetic"},
+        backend_contract_sha256="9" * 64,
+    )
+
+
+def _typed_stage_evidence(contract: FrozenTrainContract):
+    from experiments.exp417_causal_multihorizon_shadow import runner
+
+    processed = synthetic_group(count=100, length=100)
+    train = RawTrainDataset("dataset", processed.group.series)
+    universe = tuple(item.instance_index for item in processed.group.series)
+    folds = synthetic_folds(universe)
+    horizons = (1, 2, 10)
+    models = tuple(
+        synthetic_trained_model(seed, fold, horizons)
+        for seed in FROZEN_CONFIG.model_seeds
+        for fold in folds
+    )
+    residuals = {
+        seed: {
+            index: {horizon: np.zeros(100 - horizon, dtype=np.float64) for horizon in horizons}
+            for index in universe
+        }
+        for seed in FROZEN_CONFIG.model_seeds
+    }
+    bundle = OOFModelBundle(100, universe, horizons, folds, models, residuals)
+    final = tuple(
+        synthetic_trained_model(seed, folds[0], horizons)
+        for seed in FROZEN_CONFIG.model_seeds
+    )
+    model_evidence = runner.TrainModelEvidence(
+        {100: bundle}, {100: final}, contract.backend, contract.train_identity_sha256
+    )
+    hashes = {100: {model.seed: model.model_sha256 for model in final}}
+    scoring = runner.TestScoringEvidence(_decisions(candidate=False), hashes)
+    return train, (processed,), model_evidence, scoring
 
 
 class RunnerOrderTests(unittest.TestCase):
@@ -123,7 +192,10 @@ class RunnerOrderTests(unittest.TestCase):
             "qualify_train": lambda *_: events.append("qualify_train") or qualification,
             "freeze_contract": lambda *_: events.append("freeze_contract") or contract,
             "load_test_values": lambda *_: events.append("load_test_values") or object(),
-        "score_test": lambda *_: events.append("score_test") or _decisions(candidate=False),
+            "score_test": lambda *_: events.append("score_test") or runner.TestScoringEvidence(
+                _decisions(candidate=False),
+                {100: {seed: "d" * 64 for seed in FROZEN_CONFIG.model_seeds}},
+            ),
             "exclude_lanes": lambda evidence: events.append("exclude_lanes") or evidence.derived_candidates,
             "dataset_workload": lambda _: events.append("dataset_workload") or result,
             "checkpoint": lambda *_: events.append("checkpoint"),
@@ -229,12 +301,64 @@ class RunnerPopulationTests(unittest.TestCase):
             elapsed_seconds=0.125,
         )
 
-    def test_checkpoint_evidence_boundary_fails_closed_without_an_audited_adapter(self) -> None:
-        """Fabricating Task 8 provenance from opaque stage objects is forbidden."""
+    def test_resume_writes_and_reloads_typed_evidence_through_a_real_checkpoint_store(self) -> None:
+        """Replacing typed evidence with placeholders must not produce a resumable record."""
         from experiments.exp417_causal_multihorizon_shadow import runner
 
-        with self.assertRaisesRegex(RuntimeError, "checkpoint evidence boundary"):
-            runner.build_checkpoint_evidence(object(), (), object(), _contract(), _decisions())
+        context = replace(
+            _context(),
+            code_commit="c" * 40,
+            runtime_versions={"numpy": "synthetic", "python": "synthetic", "torch": "synthetic"},
+        )
+        contract = _contract()
+        train, processed, model_evidence, scoring = _typed_stage_evidence(contract)
+        target = _result(context)
+        completed = {
+            dataset: _result_for_dataset(context, dataset)
+            for dataset in context.datasets[1:]
+        }
+        with TemporaryDirectory() as temporary:
+            store = Exp417CheckpointStore(Path(temporary) / "checkpoint", _provenance(), context.datasets)
+            qualification = runner.TrainQualification(contract.groups, contract.backend)
+            with (
+                patch.object(store, "load_completed", return_value=completed),
+                patch.object(runner, "verify_inputs"),
+                patch.object(runner, "load_train_values", return_value=train),
+                patch.object(runner, "preprocess", return_value=processed),
+                patch.object(runner, "train_oof", return_value=model_evidence),
+                patch.object(runner, "qualify_train", return_value=qualification),
+                patch.object(runner, "freeze_contract", return_value=contract),
+                patch.object(runner, "load_test_values", return_value=object()),
+                patch.object(runner, "score_test", return_value=scoring),
+                patch.object(runner, "dataset_workload", return_value=target),
+            ):
+                summary = runner.resume_or_run_population(context, store)
+            self.assertEqual(summary.status, "complete")
+            self.assertEqual(store.load_completed(), {"dataset": target})
+
+    def test_checkpoint_evidence_rejects_missing_or_corrupt_model_bindings(self) -> None:
+        """A missing seed or an altered model identity cannot be checkpointed."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        contract = _contract()
+        _train, _processed, models, scoring = _typed_stage_evidence(contract)
+        with self.assertRaisesRegex(ValueError, "model hashes must cover frozen seeds"):
+            runner.TestScoringEvidence(
+                scoring.decisions,
+                {100: {FROZEN_CONFIG.model_seeds[0]: "d" * 64}},
+            )
+        with self.assertRaisesRegex(ValueError, "exact final model evidence"):
+            runner.build_checkpoint_evidence(
+                _train,
+                _processed,
+                models,
+                contract,
+                runner.TestScoringEvidence(
+                    scoring.decisions,
+                    {100: {seed: "d" * 64 for seed in FROZEN_CONFIG.model_seeds}},
+                ),
+                0.125,
+            )
 
     def test_prediction_rows_are_label_and_metric_free_with_false_governance_flags(self) -> None:
         """Adding evaluation data or reintroducing any frozen lane must fail publication."""
