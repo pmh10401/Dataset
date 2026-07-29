@@ -17,6 +17,16 @@ _PRIMARY_PERTURBATIONS = frozenset(
 )
 _GROUP_STATUSES = frozenset({"qualified", "diagnostic", "abstained", "failed"})
 _DATASET_STATUSES = frozenset({"qualified", "abstained", "failed"})
+_PROCESSED_GROUP_STATUSES = frozenset(
+    {
+        "candidate_eligible",
+        "diagnostic_only",
+        "insufficient_train_abstain",
+        "horizon_abstain",
+        "nonfinite_abstain",
+        "zero_scale_abstain",
+    }
+)
 _T = TypeVar("_T")
 
 
@@ -90,8 +100,16 @@ class FrozenLaneSnapshot:
     standard: Mapping[str, tuple[int, ...]]
     priority: Mapping[str, tuple[int, ...]]
     automatic_normal: Mapping[str, tuple[int, ...]]
+    exp291_prediction_sha256: str = FROZEN_CONFIG.exp291_prediction_sha256
+    exp291_manifest_sha256: str = FROZEN_CONFIG.exp291_manifest_sha256
+    exp292_prediction_sha256: str = FROZEN_CONFIG.exp292_prediction_sha256
+    exp292_manifest_sha256: str = FROZEN_CONFIG.exp292_manifest_sha256
+    config: Exp417FrozenConfig = FROZEN_CONFIG
 
     def __post_init__(self) -> None:
+        if not isinstance(self.config, Exp417FrozenConfig):
+            raise ValueError("config must be an Exp417 frozen config")
+        self.config.validate()
         for name in ("hard", "standard", "priority", "automatic_normal"):
             object.__setattr__(self, name, _freeze_lane_mapping(getattr(self, name), name))
         seen: set[tuple[str, int]] = set()
@@ -100,6 +118,25 @@ class FrozenLaneSnapshot:
             if seen & coordinates:
                 raise ValueError("frozen lanes overlap")
             seen.update(coordinates)
+        expected_totals = {
+            "hard": self.config.expected_hard,
+            "standard": self.config.expected_standard,
+            "priority": self.config.expected_priority,
+            "automatic_normal": self.config.expected_automatic_normal,
+        }
+        for name, expected_total in expected_totals.items():
+            actual_total = sum(len(indices) for indices in getattr(self, name).values())
+            if actual_total != expected_total:
+                raise ValueError(f"frozen lane total mismatch: {name}")
+        expected_hashes = {
+            "exp291_prediction_sha256": self.config.exp291_prediction_sha256,
+            "exp291_manifest_sha256": self.config.exp291_manifest_sha256,
+            "exp292_prediction_sha256": self.config.exp292_prediction_sha256,
+            "exp292_manifest_sha256": self.config.exp292_manifest_sha256,
+        }
+        for name, expected_hash in expected_hashes.items():
+            if getattr(self, name) != expected_hash:
+                raise ValueError(f"frozen {name.split('_')[0].capitalize()} artifact hash mismatch")
 
     def contains(self, dataset: str, instance_index: int) -> bool:
         return any(instance_index in lane.get(dataset, ()) for lane in (self.hard, self.standard, self.priority, self.automatic_normal))
@@ -166,6 +203,10 @@ class FrozenRunContext:
         if not isinstance(self.config, Exp417FrozenConfig):
             raise ValueError("config must be an Exp417 frozen config")
         self.config.validate()
+        if self.database_sha256 != self.config.database_sha256:
+            raise ValueError("database identity is not frozen")
+        if len(datasets) != self.config.expected_datasets:
+            raise ValueError("population count is not frozen")
         object.__setattr__(self, "datasets", datasets)
         object.__setattr__(self, "runtime_versions", versions)
 
@@ -201,10 +242,15 @@ class ProcessedGroup:
             raise ValueError("group must be a LengthGroup")
         _finite(self.raw_center, "raw_center")
         _finite(self.difference_center, "difference_center")
-        _finite(self.raw_scale, "raw_scale", minimum=0.0)
-        _finite(self.difference_scale, "difference_scale", minimum=0.0)
-        if not isinstance(self.status, str) or not self.status:
-            raise ValueError("status must be non-empty")
+        raw_scale = _finite(self.raw_scale, "raw_scale", minimum=0.0)
+        difference_scale = _finite(self.difference_scale, "difference_scale", minimum=0.0)
+        if self.status not in _PROCESSED_GROUP_STATUSES:
+            raise ValueError("invalid processed group status")
+        requires_zero_scale_abstention = min(raw_scale, difference_scale) <= 1e-12
+        if requires_zero_scale_abstention and self.status != "zero_scale_abstain":
+            raise ValueError("zero_scale_abstain is required for scale <= 1e-12")
+        if self.status == "zero_scale_abstain" and not requires_zero_scale_abstention:
+            raise ValueError("zero_scale_abstain requires scale <= 1e-12")
 
 
 @dataclass(frozen=True)
@@ -312,6 +358,14 @@ class BackendAudit:
         _finite(self.speedup, "speedup", minimum=0.0)
         if self.fallback_reason is not None and (not isinstance(self.fallback_reason, str) or not self.fallback_reason):
             raise ValueError("fallback_reason must be a non-empty string or None")
+        if self.backend == "mps" and (
+            not self.candidate_identity
+            or self.max_normalized_error > FROZEN_CONFIG.mps_max_error
+            or self.spearman < FROZEN_CONFIG.mps_min_spearman
+            or self.speedup < FROZEN_CONFIG.mps_min_speedup
+            or self.fallback
+        ):
+            raise ValueError("MPS backend fails frozen parity gates")
 
 
 @dataclass(frozen=True)
@@ -408,9 +462,15 @@ class DatasetResult:
             raise ValueError("candidate overlaps a frozen lane")
         if self.status not in _DATASET_STATUSES:
             raise ValueError("invalid dataset status")
-        rate = len(candidates) / test_size if self.candidate_rate is None else _finite(self.candidate_rate, "candidate_rate", minimum=0.0, maximum=1.0)
-        if rate != len(candidates) / test_size:
-            raise ValueError("candidate_rate is inconsistent with candidates")
+        retained_rate = len(candidates) / test_size
+        rate = retained_rate if self.candidate_rate is None else _finite(self.candidate_rate, "candidate_rate", minimum=0.0, maximum=1.0)
+        if rate > FROZEN_CONFIG.dataset_workload_rate:
+            if self.status != "abstained" or candidates:
+                raise ValueError("dataset workload gate requires abstention without candidates")
+        elif self.status in {"abstained", "failed"} and candidates:
+            raise ValueError("abstained or failed dataset cannot retain candidates")
+        elif self.status == "qualified" and rate != retained_rate:
+            raise ValueError("candidate_rate is inconsistent with retained candidates")
         object.__setattr__(self, "groups", groups)
         object.__setattr__(self, "candidates", candidates)
         object.__setattr__(self, "candidate_rate", rate)
@@ -435,9 +495,16 @@ class RunSummary:
             raise ValueError("total_test does not conserve dataset totals")
         if type(self.publication_allowed) is not bool:
             raise ValueError("publication_allowed must be bool")
-        if self.status not in {"complete", "global_workload_gate_failed"}:
+        if self.status not in {"complete", "global_workload_gate_failed", "failed"}:
             raise ValueError("invalid run status")
         candidate_total = sum(len(result.candidates) for result in results)
-        if total_test and candidate_total / total_test > FROZEN_CONFIG.global_workload_rate and self.publication_allowed:
-            raise ValueError("global workload gate cannot allow publication")
+        global_rate = candidate_total / total_test if total_test else 0.0
+        if global_rate > FROZEN_CONFIG.global_workload_rate:
+            if self.publication_allowed or self.status != "global_workload_gate_failed":
+                raise ValueError("global workload gate forbids publication")
+        elif any(result.status == "failed" for result in results):
+            if self.publication_allowed or self.status != "failed":
+                raise ValueError("failed dataset summary cannot allow publication")
+        elif not self.publication_allowed or self.status != "complete":
+            raise ValueError("complete summary must allow publication")
         object.__setattr__(self, "results", results)

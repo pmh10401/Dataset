@@ -5,22 +5,38 @@ from experiments.exp417_causal_multihorizon_shadow.contracts import (
     BackendAudit,
     DatasetResult,
     FrozenLaneSnapshot,
+    FrozenRunContext,
+    FrozenTrainContract,
     GroupQualification,
     HorizonScore,
+    LengthGroup,
+    ProcessedGroup,
     RawSeries,
+    RunSummary,
     SeedDecision,
     ShadowCandidate,
 )
+from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
 
 
 def frozen_lanes(
     *, hard: dict[str, tuple[int, ...]] | None = None
 ) -> FrozenLaneSnapshot:
     return FrozenLaneSnapshot(
-        hard=hard or {},
-        standard={},
-        priority={},
-        automatic_normal={},
+        hard=hard or {"hard": tuple(range(2218))},
+        standard={"standard": tuple(range(806))},
+        priority={"priority": tuple(range(31))},
+        automatic_normal={"automatic": tuple(range(35))},
+    )
+
+
+def frozen_context(*, database_sha256: str | None = None, datasets: tuple[str, ...] | None = None) -> FrozenRunContext:
+    return FrozenRunContext(
+        database_sha256=database_sha256 or FROZEN_CONFIG.database_sha256,
+        datasets=datasets or tuple(f"dataset-{index:04d}" for index in range(1117)),
+        lanes=frozen_lanes(),
+        code_commit="abc123",
+        runtime_versions={"python": "3.14", "numpy": "2.3.5", "numba": "0.66.0", "torch": "2.13.0"},
     )
 
 
@@ -102,10 +118,29 @@ class ContractTests(unittest.TestCase):
             FrozenLaneSnapshot(
                 hard={"A": (1, 1)}, standard={}, priority={}, automatic_normal={}
             )
-        lanes = frozen_lanes(hard={"A": (1,)})
+        lanes = frozen_lanes(hard={"A": (1,), "hard": tuple(range(2, 2219))})
         self.assertIsInstance(lanes.hard, MappingProxyType)
         with self.assertRaises(TypeError):
             lanes.hard["B"] = (2,)  # type: ignore[index]
+
+    def test_frozen_lanes_require_exact_totals_and_artifact_hashes(self) -> None:
+        with self.assertRaisesRegex(ValueError, "total"):
+            FrozenLaneSnapshot(hard={}, standard={}, priority={}, automatic_normal={})
+        with self.assertRaisesRegex(ValueError, "Exp291"):
+            FrozenLaneSnapshot(
+                hard={"hard": tuple(range(2218))},
+                standard={"standard": tuple(range(806))},
+                priority={"priority": tuple(range(31))},
+                automatic_normal={"automatic": tuple(range(35))},
+                exp291_prediction_sha256="0" * 64,
+            )
+
+    def test_frozen_run_context_requires_frozen_database_and_population(self) -> None:
+        with self.assertRaisesRegex(ValueError, "database"):
+            frozen_context(database_sha256="0" * 64)
+        with self.assertRaisesRegex(ValueError, "population"):
+            frozen_context(datasets=("A",))
+        self.assertEqual(len(frozen_context().datasets), 1117)
 
     def test_horizon_score_requires_finite_unit_interval_evidence(self) -> None:
         with self.assertRaises(ValueError):
@@ -150,7 +185,7 @@ class ContractTests(unittest.TestCase):
             )
 
     def test_dataset_result_rejects_lane_or_candidate_overlap(self) -> None:
-        lanes = frozen_lanes(hard={"A": (1,)})
+        lanes = frozen_lanes(hard={"A": (1,), "hard": tuple(range(2, 2219))})
         with self.assertRaisesRegex(ValueError, "frozen lane"):
             dataset_result("A", candidates=(candidate("A", 1),), lanes=lanes)
 
@@ -170,6 +205,42 @@ class ContractTests(unittest.TestCase):
                     ),
                 ),
             )
+
+    def test_dataset_and_global_workload_fail_closed(self) -> None:
+        with self.assertRaisesRegex(ValueError, "workload"):
+            DatasetResult(
+                dataset="A",
+                test_size=20,
+                group_count=1,
+                groups=(group(),),
+                candidates=(candidate("A", 1), candidate("A", 2)),
+                lanes=frozen_lanes(),
+                status="qualified",
+                candidate_rate=0.10,
+            )
+        excessive = DatasetResult(
+            dataset="A",
+            test_size=20,
+            group_count=1,
+            groups=(group(),),
+            candidates=(),
+            lanes=frozen_lanes(),
+            status="abstained",
+            candidate_rate=0.10,
+        )
+        self.assertEqual(excessive.candidate_rate, 0.10)
+        retained = dataset_result("A", candidates=(candidate("A", 1),))
+        with self.assertRaisesRegex(ValueError, "global workload"):
+            RunSummary(
+                results=(retained,), total_test=20, publication_allowed=True, status="complete"
+            )
+        summary = RunSummary(
+            results=(retained,),
+            total_test=20,
+            publication_allowed=False,
+            status="global_workload_gate_failed",
+        )
+        self.assertFalse(summary.publication_allowed)
 
     def test_candidate_requires_horizons_for_its_exact_length(self) -> None:
         wrong_scores = {
@@ -206,6 +277,82 @@ class ContractTests(unittest.TestCase):
                 spearman=1.0,
                 speedup=1.0,
                 fallback=False,
+            )
+
+    def test_mps_backend_requires_every_frozen_parity_gate(self) -> None:
+        with self.assertRaisesRegex(ValueError, "MPS"):
+            BackendAudit(
+                backend="mps",
+                candidate_identity=False,
+                max_normalized_error=1e-4,
+                spearman=0.999,
+                speedup=1.1,
+                fallback=False,
+            )
+        audit = BackendAudit(
+            backend="mps",
+            candidate_identity=True,
+            max_normalized_error=1e-4,
+            spearman=0.999,
+            speedup=1.1,
+            fallback=False,
+        )
+        self.assertEqual(audit.backend, "mps")
+
+    def test_processed_group_requires_legal_status_and_zero_scale_abstention(self) -> None:
+        length_group = LengthGroup(
+            length=3, series=(RawSeries(instance_index=0, values=(0.0, 1.0, 2.0)),)
+        )
+        with self.assertRaisesRegex(ValueError, "zero_scale_abstain"):
+            ProcessedGroup(
+                group=length_group,
+                raw_center=0.0,
+                raw_scale=1e-12,
+                difference_center=0.0,
+                difference_scale=1.0,
+                status="candidate_eligible",
+            )
+        abstained = ProcessedGroup(
+            group=length_group,
+            raw_center=0.0,
+            raw_scale=1e-12,
+            difference_center=0.0,
+            difference_scale=1.0,
+            status="zero_scale_abstain",
+        )
+        self.assertEqual(abstained.status, "zero_scale_abstain")
+        with self.assertRaisesRegex(ValueError, "processed group status"):
+            ProcessedGroup(
+                group=length_group,
+                raw_center=0.0,
+                raw_scale=1.0,
+                difference_center=0.0,
+                difference_scale=1.0,
+                status="unknown",
+            )
+
+    def test_frozen_train_contract_preserves_only_the_qualified_near_repeat_state(self) -> None:
+        contract = FrozenTrainContract(
+            dataset="A",
+            groups=(group(),),
+            backend=BackendAudit(
+                backend="cpu",
+                candidate_identity=True,
+                max_normalized_error=0.0,
+                spearman=1.0,
+                speedup=1.0,
+                fallback=False,
+            ),
+            train_identity_sha256="a" * 64,
+        )
+        self.assertEqual(contract.near_repeat_status, "not_available")
+        with self.assertRaisesRegex(ValueError, "near-repeat"):
+            FrozenTrainContract(
+                dataset="A",
+                groups=(group(),),
+                backend=contract.backend,
+                train_identity_sha256="a" * 64,
+                near_repeat_status="applied",
             )
 
 

@@ -106,8 +106,11 @@ aggregation 등에만 쓰며 NumPy parity 이후에만 Numba를 쓴다. MLX는 �
 제외한다. MPS는 same seeds/input, identical candidate coordinates, normalized max
 error `<=1e-4`, Spearman `>=0.999`, finite/no fallback, transfer와 synchronization을
 포함한 speedup `>=1.1`을 모두 통과한 TRAIN-only benchmark일 때만 채택 가능하다.
-현재 환경은 `torch 2.13.0`, `numpy 2.3.5`, `numba 0.66.0`, MPS built but unavailable이며
-CPU가 canonical이다. MPS-heavy process는 한 번에 하나만 실행한다.
+현재 host 환경은 `torch 2.13.0`, `numpy 2.3.5`, `numba 0.66.0`이며, Codex
+filesystem/process sandbox 밖에서는 MPS built/available이고 `mps:0` tensor 생성도
+확인되었다. Codex sandbox 안의 MPS unavailable/macOS 14 오류는 host capability가
+아닌 sandbox probe의 false result다. 그럼에도 frozen TRAIN-only parity와 speed gate를
+모두 통과할 때까지 CPU가 canonical이다. MPS-heavy process는 한 번에 하나만 실행한다.
 
 checkpoint 재사용은 Git commit, database/population/lane/config identity,
 preprocessing/length-group/fold/model/seed/runtime/backend/synthetic contract가 모두
