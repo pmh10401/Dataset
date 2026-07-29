@@ -155,6 +155,11 @@ def publish_exp417(
             cleanup_errors.append(
                 RuntimeError("Exp417 published output could not be quarantined")
             )
+        if staging_identity is not None:
+            try:
+                _fsync_directory(output.parent)
+            except Exception as cleanup_fsync_error:
+                cleanup_errors.append(cleanup_fsync_error)
         if cleanup_errors:
             raise ExceptionGroup(
                 "Exp417 publication failed and cleanup also failed",
@@ -336,12 +341,10 @@ def _remove_owned_path(
             ) from restore_error
         return False
     if _is_symlink(quarantine):
-        try:
-            quarantine.unlink()
-        except OSError as error:
-            raise RuntimeError(
-                f"Exp417 failed to remove quarantined owned symlink: {quarantine}: {error}"
-            ) from error
+        # A root symlink can be removed only through a pathname, which admits
+        # an unavoidable replacement race.  Keeping the uniquely quarantined
+        # link is the fail-closed choice; it no longer occupies the official
+        # output or staging name and its target is never traversed.
         return True
     try:
         descriptor = os.open(quarantine, _DIRECTORY_OPEN_FLAGS)
@@ -352,59 +355,19 @@ def _remove_owned_path(
                 or (metadata.st_dev, metadata.st_ino) != identity
             ):
                 raise RuntimeError("Exp417 quarantined cleanup inode identity changed")
-            _clear_owned_directory_fd(descriptor)
+            # POSIX has no portable unlink-if-inode-matches primitive.  Never
+            # recurse or unlink names in a directory another process may still
+            # hold open: stat→unlink would be a TOCTOU deletion of a foreign
+            # replacement.  The owned root remains at its unique quarantine
+            # name after descriptor/inode verification.
             os.fsync(descriptor)
         finally:
             os.close(descriptor)
-        quarantine.rmdir()
     except Exception as error:
         raise RuntimeError(
             f"Exp417 quarantined owned cleanup failed at {quarantine}: {error}"
         ) from error
     return True
-
-
-def _clear_owned_directory_fd(descriptor: int) -> None:
-    for name in os.listdir(descriptor):
-        try:
-            metadata = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
-        except FileNotFoundError:
-            continue
-        if stat.S_ISDIR(metadata.st_mode):
-            child = os.open(name, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
-            try:
-                opened = os.fstat(child)
-                identity = (opened.st_dev, opened.st_ino)
-                if identity != (metadata.st_dev, metadata.st_ino):
-                    continue
-                _clear_owned_directory_fd(child)
-                os.fsync(child)
-            finally:
-                os.close(child)
-            try:
-                current = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
-            except FileNotFoundError:
-                continue
-            if stat.S_ISDIR(current.st_mode) and (
-                current.st_dev, current.st_ino
-            ) == identity:
-                os.rmdir(name, dir_fd=descriptor)
-            continue
-        try:
-            current = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
-        except FileNotFoundError:
-            continue
-        if (
-            current.st_dev,
-            current.st_ino,
-            current.st_mode,
-        ) != (
-            metadata.st_dev,
-            metadata.st_ino,
-            metadata.st_mode,
-        ):
-            continue
-        os.unlink(name, dir_fd=descriptor)
 
 
 def _is_owned_path(path: Path, identity: tuple[int, int]) -> bool:

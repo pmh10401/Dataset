@@ -14,6 +14,9 @@ from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
     Exp417CheckpointProvenance,
 )
+from experiments.exp417_causal_multihorizon_shadow.backend import (
+    FROZEN_TASK7_BACKEND_AUDIT_SHA256,
+)
 from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     BackendAudit,
@@ -66,11 +69,11 @@ def fixture_backend() -> BackendAudit:
     return BackendAudit(
         backend="cpu",
         candidate_identity=True,
-        max_normalized_error=0.0000004095,
-        spearman=0.999999999985,
-        speedup=0.671,
+        max_normalized_error=4.0948700075205124e-07,
+        spearman=0.9999999999845686,
+        speedup=0.6709759390840965,
         fallback=False,
-        fallback_reason="mps_speedup_below_1.1",
+        fallback_reason=None,
     )
 
 
@@ -185,7 +188,7 @@ def fixture_provenance() -> Exp417CheckpointProvenance:
             "python": "3.14.0",
             "torch": "2.13.0",
         },
-        backend_contract_sha256="4" * 64,
+        backend_contract_sha256=FROZEN_TASK7_BACKEND_AUDIT_SHA256,
     )
 
 
@@ -416,6 +419,72 @@ class ReportingTests(unittest.TestCase):
         for name, payloads in cases.items():
             with self.subTest(name=name), self.assertRaises(ValueError):
                 verify_exp417_payloads(payloads)
+
+    def test_coherent_candidate_rewrite_cannot_recompute_its_own_trust_root(self) -> None:
+        """Changing a valid score plus every mutable local hash must still fail."""
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            verify_exp417_payloads,
+        )
+
+        payloads = rendered_payloads()
+        rows = _json_lines(payloads["exp417_shadow_predictions.jsonl"])
+        rows[0]["seed_decisions"][0]["scores"][0]["score"] = 3.0
+        body = dict(rows[0])
+        del body["evidence_sha256"]
+        rows[0]["evidence_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+        payloads["exp417_shadow_predictions.jsonl"] = _rewrite_json_lines(rows)
+        config = json.loads(payloads["exp417_frozen_config.json"])
+        if "artifact_bindings" in config:
+            config["artifact_bindings"]["exp417_shadow_predictions.jsonl"] = sha256(
+                payloads["exp417_shadow_predictions.jsonl"]
+            ).hexdigest()
+        payloads["exp417_frozen_config.json"] = canonical_json_bytes(config) + b"\n"
+
+        with self.assertRaises(ValueError):
+            verify_exp417_payloads(payloads)
+
+    def test_coherent_backend_rewrite_cannot_recompute_its_own_trust_root(self) -> None:
+        """A structurally valid CPU audit must still equal pinned Task 7 evidence."""
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            verify_exp417_payloads,
+        )
+
+        payloads = rendered_payloads()
+        backend = json.loads(payloads["exp417_backend_benchmark.json"])
+        for audit in backend["audits"]:
+            audit["speedup"] = 0.5
+        payloads["exp417_backend_benchmark.json"] = canonical_json_bytes(backend) + b"\n"
+        config = json.loads(payloads["exp417_frozen_config.json"])
+        if "artifact_bindings" in config:
+            config["artifact_bindings"]["exp417_backend_benchmark.json"] = sha256(
+                payloads["exp417_backend_benchmark.json"]
+            ).hexdigest()
+        payloads["exp417_frozen_config.json"] = canonical_json_bytes(config) + b"\n"
+
+        with self.assertRaises(ValueError):
+            verify_exp417_payloads(payloads)
+
+    def test_reordered_seed_evidence_is_noncanonical_even_with_recomputed_hashes(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            verify_exp417_payloads,
+        )
+
+        payloads = rendered_payloads()
+        rows = _json_lines(payloads["exp417_shadow_predictions.jsonl"])
+        rows[0]["seed_decisions"].reverse()
+        body = dict(rows[0])
+        del body["evidence_sha256"]
+        rows[0]["evidence_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+        payloads["exp417_shadow_predictions.jsonl"] = _rewrite_json_lines(rows)
+        config = json.loads(payloads["exp417_frozen_config.json"])
+        if "artifact_bindings" in config:
+            config["artifact_bindings"]["exp417_shadow_predictions.jsonl"] = sha256(
+                payloads["exp417_shadow_predictions.jsonl"]
+            ).hexdigest()
+        payloads["exp417_frozen_config.json"] = canonical_json_bytes(config) + b"\n"
+
+        with self.assertRaises(ValueError):
+            verify_exp417_payloads(payloads)
 
 
 if __name__ == "__main__":

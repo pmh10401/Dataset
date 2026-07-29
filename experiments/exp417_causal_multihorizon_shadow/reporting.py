@@ -16,17 +16,23 @@ from typing import Any
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
 from .checkpoints import Exp417CheckpointProvenance
+from .backend import FROZEN_TASK7_BACKEND_AUDIT_SHA256
 from .config import Exp417FrozenConfig, FROZEN_CONFIG
 from .contracts import (
     BackendAudit,
+    DatasetDecisionEvidence,
+    DatasetResult,
     FrozenLaneSnapshot,
     FrozenRunContext,
+    FrozenTrainContract,
     GroupQualification,
     HorizonScore,
     RunSummary,
     SeedDecision,
     ShadowCandidate,
+    TestInstanceDecision,
 )
+from .runner import _result_evidence_digest
 
 
 PREDICTION_FILE = "exp417_shadow_predictions.jsonl"
@@ -114,14 +120,14 @@ def render_exp417_payloads(
     oof_csv = _render_oof_csv(summary)
     synthetic_csv = _render_synthetic_csv(summary)
     backend_json = _render_backend(summary, provenance)
-    bound_payloads = {
+    rendered = {
         PREDICTION_FILE: predictions,
         DATASET_FILE: dataset_csv,
         OOF_FILE: oof_csv,
         SYNTHETIC_FILE: synthetic_csv,
         BACKEND_FILE: backend_json,
     }
-    config_json = _render_config(summary, provenance, bound_payloads, config)
+    config_json = _render_config(summary, provenance, config)
     backend_counts = Counter(result.decision_evidence.frozen_train_contract.backend.backend
                              for result in summary.results)
     report = _render_report(
@@ -133,7 +139,7 @@ def render_exp417_payloads(
     )
     payloads = MappingProxyType(
         {
-            **bound_payloads,
+            **rendered,
             CONFIG_FILE: config_json,
             REPORT_FILE: report,
         }
@@ -161,8 +167,9 @@ def verify_exp417_payloads(
     _exact_keys(
         config_payload,
         {
-            "artifact_bindings", "context", "experiment_id", "frozen_config",
-            "frozen_config_sha256", "governance", "provenance", "run",
+            "context", "experiment_id", "frozen_config",
+            "frozen_config_sha256", "governance", "provenance",
+            "result_evidence", "run",
         },
         CONFIG_FILE,
     )
@@ -189,21 +196,30 @@ def verify_exp417_payloads(
     )
     _verify_provenance_context(context, provenance.to_payload())
 
-    bindings = _object(config_payload["artifact_bindings"], "artifact bindings")
-    if set(bindings) != {PREDICTION_FILE, DATASET_FILE, OOF_FILE, SYNTHETIC_FILE, BACKEND_FILE}:
-        raise ValueError("Exp417 artifact binding coverage mismatch")
-    for name, digest in bindings.items():
-        if digest != sha256(payloads[name]).hexdigest():
-            raise ValueError(f"Exp417 rendered artifact binding mismatch: {name}")
-
     candidates = _parse_predictions(payloads[PREDICTION_FILE], context)
     datasets = _parse_dataset_csv(payloads[DATASET_FILE], context)
     qualifications = _parse_group_csvs(
         payloads[OOF_FILE], payloads[SYNTHETIC_FILE], datasets
     )
     audits = _parse_backend(payloads[BACKEND_FILE], datasets, provenance)
+    reconstructed = _reconstruct_results(
+        _list(config_payload["result_evidence"], "result evidence"),
+        context,
+        datasets,
+        qualifications,
+        audits,
+    )
     run = _object(config_payload["run"], "run")
     _verify_conservation(run, context, candidates, datasets, qualifications, audits)
+    summary = RunSummary(
+        tuple(reconstructed),
+        _integer(run["total_test"], "run total_test"),
+        True,
+        "complete",
+        context,
+    )
+    if _render_predictions(summary) != payloads[PREDICTION_FILE]:
+        raise ValueError("Exp417 predictions do not match complete result evidence")
 
     backend_counts = Counter(audit.backend for audit in audits.values())
     expected_report = _render_report(
@@ -229,22 +245,9 @@ def _render_predictions(summary: RunSummary) -> bytes:
                 "dataset": candidate.dataset,
                 "instance_index": candidate.instance_index,
                 "length": candidate.length,
-                "seed_decisions": [
-                    {
-                        "seed": decision.seed,
-                        "candidate": decision.candidate,
-                        "scores": [
-                            {
-                                "horizon": score.horizon,
-                                "score": score.score,
-                                "p_value": score.p_value,
-                                "persistence": score.persistence,
-                            }
-                            for score in decision.scores.values()
-                        ],
-                    }
-                    for decision in candidate.seed_decisions
-                ],
+                "seed_decisions": _canonical_seed_decisions_payload(
+                    candidate.seed_decisions
+                ),
                 "is_hard": False,
                 "is_standard": False,
                 "is_priority": False,
@@ -254,6 +257,52 @@ def _render_predictions(summary: RunSummary) -> bytes:
             rows.append(body)
     rows.sort(key=lambda row: (str(row["dataset"]), int(row["instance_index"])))
     return b"".join(canonical_json_bytes(row) + b"\n" for row in rows)
+
+
+def _canonical_seed_decisions_payload(
+    decisions: Sequence[SeedDecision],
+) -> list[dict[str, object]]:
+    by_seed = {decision.seed: decision for decision in decisions}
+    if set(by_seed) != set(FROZEN_CONFIG.model_seeds) or len(by_seed) != len(decisions):
+        raise ValueError("Exp417 seed decisions do not cover the frozen seeds")
+    return [
+        {
+            "seed": seed,
+            "candidate": by_seed[seed].candidate,
+            "scores": [
+                {
+                    "horizon": score.horizon,
+                    "score": score.score,
+                    "p_value": score.p_value,
+                    "persistence": score.persistence,
+                }
+                for score in by_seed[seed].scores.values()
+            ],
+        }
+        for seed in FROZEN_CONFIG.model_seeds
+    ]
+
+
+def _result_evidence_payload(result: DatasetResult) -> dict[str, object]:
+    if not isinstance(result.decision_evidence, DatasetDecisionEvidence):
+        raise ValueError("Exp417 official reporting requires complete decision evidence")
+    evidence = result.decision_evidence
+    return {
+        "dataset": result.dataset,
+        "train_identity_sha256": evidence.frozen_train_contract.train_identity_sha256,
+        "decisions": [
+            {
+                "dataset": decision.dataset,
+                "instance_index": decision.instance_index,
+                "length": decision.length,
+                "seed_decisions": _canonical_seed_decisions_payload(
+                    decision.seed_decisions
+                ),
+            }
+            for decision in evidence.decisions
+        ],
+        "checkpoint_result_evidence_sha256": _result_evidence_digest(result),
+    }
 
 
 def _render_dataset_csv(summary: RunSummary) -> bytes:
@@ -325,6 +374,7 @@ def _render_backend(
         {
             "experiment_id": FROZEN_CONFIG.experiment_id,
             "backend_contract_sha256": provenance.backend_contract_sha256,
+            "trusted_task7_backend_audit_sha256": FROZEN_TASK7_BACKEND_AUDIT_SHA256,
             "audits": audits,
         }
     )
@@ -333,7 +383,6 @@ def _render_backend(
 def _render_config(
     summary: RunSummary,
     provenance: Exp417CheckpointProvenance,
-    bound_payloads: Mapping[str, bytes],
     config: Exp417FrozenConfig,
 ) -> bytes:
     context = summary.context
@@ -369,10 +418,9 @@ def _render_config(
                 "published_candidate_count": published,
                 "global_candidate_rate": observed / summary.total_test,
             },
-            "artifact_bindings": {
-                name: sha256(payload).hexdigest()
-                for name, payload in sorted(bound_payloads.items())
-            },
+            "result_evidence": [
+                _result_evidence_payload(result) for result in summary.results
+            ],
         }
     )
 
@@ -444,6 +492,8 @@ def _parse_predictions(
             _reconstruct_seed_decision(value)
             for value in _list(row["seed_decisions"], "seed decisions")
         )
+        if tuple(decision.seed for decision in decisions) != FROZEN_CONFIG.model_seeds:
+            raise ValueError("Exp417 seed decisions are not in frozen canonical order")
         candidates.append(ShadowCandidate(dataset, index, length, decisions))
     return tuple(candidates)
 
@@ -471,6 +521,96 @@ def _reconstruct_seed_decision(value: object) -> SeedDecision:
         scores=dict(sorted(scores.items())),
         candidate=_bool(row["candidate"], "seed candidate"),
     )
+
+
+def _reconstruct_results(
+    values: Sequence[object],
+    context: FrozenRunContext,
+    datasets: Mapping[str, Mapping[str, object]],
+    qualifications: Mapping[tuple[str, int], GroupQualification],
+    audits: Mapping[str, BackendAudit],
+) -> tuple[DatasetResult, ...]:
+    results: list[DatasetResult] = []
+    observed_names: list[str] = []
+    for value in values:
+        row = _object(value, "result evidence")
+        _exact_keys(
+            row,
+            {
+                "checkpoint_result_evidence_sha256",
+                "dataset",
+                "decisions",
+                "train_identity_sha256",
+            },
+            "result evidence",
+        )
+        dataset = _string(row["dataset"], "result evidence dataset")
+        observed_names.append(dataset)
+        if dataset not in datasets:
+            raise ValueError("Exp417 result evidence dataset is outside the context")
+        groups = tuple(
+            group
+            for (group_dataset, _), group in qualifications.items()
+            if group_dataset == dataset
+        )
+        contract = FrozenTrainContract(
+            dataset=dataset,
+            groups=groups,
+            backend=audits[dataset],
+            train_identity_sha256=_digest(
+                row["train_identity_sha256"], "TRAIN identity"
+            ),
+        )
+        decisions: list[TestInstanceDecision] = []
+        for raw_decision in _list(row["decisions"], "instance decisions"):
+            decision = _object(raw_decision, "instance decision")
+            _exact_keys(
+                decision,
+                {"dataset", "instance_index", "length", "seed_decisions"},
+                "instance decision",
+            )
+            seed_values = _list(decision["seed_decisions"], "seed decisions")
+            seed_records = tuple(
+                _reconstruct_seed_decision(item) for item in seed_values
+            )
+            if tuple(record.seed for record in seed_records) != FROZEN_CONFIG.model_seeds:
+                raise ValueError("Exp417 seed decisions are not in frozen canonical order")
+            decisions.append(
+                TestInstanceDecision(
+                    dataset=_string(decision["dataset"], "decision dataset"),
+                    instance_index=_integer(
+                        decision["instance_index"], "decision instance"
+                    ),
+                    length=_integer(decision["length"], "decision length", minimum=1),
+                    seed_decisions=seed_records,
+                )
+            )
+        evidence = DatasetDecisionEvidence(
+            dataset=dataset,
+            context=context,
+            frozen_train_contract=contract,
+            database_sha256=context.database_sha256,
+            train_identity_sha256=contract.train_identity_sha256,
+            decisions=tuple(decisions),
+        )
+        dataset_row = datasets[dataset]
+        result = DatasetResult(
+            dataset=dataset,
+            test_size=int(dataset_row["test_size"]),
+            group_count=int(dataset_row["group_count"]),
+            groups=groups,
+            candidates=evidence.derived_candidates,
+            decision_evidence=evidence,
+            lanes=context.lanes,
+            context=context,
+            status=str(dataset_row["status"]),
+        )
+        if row["checkpoint_result_evidence_sha256"] != _result_evidence_digest(result):
+            raise ValueError("Exp417 checkpoint/result evidence digest mismatch")
+        results.append(result)
+    if tuple(observed_names) != context.datasets:
+        raise ValueError("Exp417 result evidence order or coverage mismatch")
+    return tuple(results)
 
 
 def _parse_dataset_csv(
@@ -591,10 +731,20 @@ def _parse_backend(
     provenance: Exp417CheckpointProvenance,
 ) -> dict[str, BackendAudit]:
     root = _canonical_json_object(payload, BACKEND_FILE)
-    _exact_keys(root, {"audits", "backend_contract_sha256", "experiment_id"}, BACKEND_FILE)
+    _exact_keys(
+        root,
+        {
+            "audits", "backend_contract_sha256", "experiment_id",
+            "trusted_task7_backend_audit_sha256",
+        },
+        BACKEND_FILE,
+    )
     if (
         root["experiment_id"] != FROZEN_CONFIG.experiment_id
         or root["backend_contract_sha256"] != provenance.backend_contract_sha256
+        or provenance.backend_contract_sha256 != FROZEN_TASK7_BACKEND_AUDIT_SHA256
+        or root["trusted_task7_backend_audit_sha256"]
+        != FROZEN_TASK7_BACKEND_AUDIT_SHA256
     ):
         raise ValueError("Exp417 backend provenance mismatch")
     audits: dict[str, BackendAudit] = {}
@@ -611,7 +761,7 @@ def _parse_backend(
         dataset = _string(row["dataset"], "backend dataset")
         if dataset in audits:
             raise ValueError("Exp417 duplicate backend dataset")
-        audits[dataset] = BackendAudit(
+        audit = BackendAudit(
             backend=_string(row["backend"], "backend"),
             candidate_identity=_bool(row["candidate_identity"], "candidate identity"),
             max_normalized_error=_number(row["max_normalized_error"], "backend error"),
@@ -624,9 +774,24 @@ def _parse_backend(
                 else _string(row["fallback_reason"], "fallback reason")
             ),
         )
+        if audit != _trusted_task7_execution_audit():
+            raise ValueError("Exp417 backend audit differs from pinned Task 7 evidence")
+        audits[dataset] = audit
     if tuple(audits) != tuple(datasets):
         raise ValueError("Exp417 backend audit order or coverage mismatch")
     return audits
+
+
+def _trusted_task7_execution_audit() -> BackendAudit:
+    return BackendAudit(
+        backend="cpu",
+        candidate_identity=True,
+        max_normalized_error=4.0948700075205124e-07,
+        spearman=0.9999999999845686,
+        speedup=0.6709759390840965,
+        fallback=False,
+        fallback_reason=None,
+    )
 
 
 def _verify_conservation(
@@ -892,6 +1057,16 @@ def _number(value: object, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value):
         raise ValueError(f"Exp417 {name} must be finite")
     return float(value)
+
+
+def _digest(value: object, name: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"Exp417 {name} must be a lowercase SHA-256 digest")
+    return value
 
 
 def _bool(value: object, name: str) -> bool:

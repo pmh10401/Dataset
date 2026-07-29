@@ -244,43 +244,106 @@ class PublicationTests(unittest.TestCase):
     def test_parent_fsync_failure_rolls_back_and_cleanup_failure_is_surfaced(self) -> None:
         from experiments.exp417_causal_multihorizon_shadow import publication
 
-        for cleanup_fails in (False, True):
-            output = self.root / f"publication-{cleanup_fails}"
-            real_fsync = publication._fsync_directory
+        output = self.root / "publication"
+        real_remove = publication._remove_owned_path
 
-            def fail_parent(path: Path) -> None:
-                if path == self.root:
-                    raise OSError("parent fsync failed")
-                real_fsync(path)
+        def cleanup_denied(path: Path, identity):
+            removed = real_remove(path, identity)
+            if removed:
+                raise PermissionError("cleanup denied")
+            return removed
 
-            patches = [patch.object(publication, "_fsync_directory", side_effect=fail_parent)]
-            if cleanup_fails:
-                patches.append(
-                    patch.object(
-                        publication,
-                        "_clear_owned_directory_fd",
-                        side_effect=PermissionError("cleanup denied"),
-                    )
-                )
-            for active in patches:
-                active.start()
-            self.addCleanup(lambda patches=patches: [active.stop() for active in patches])
-            try:
-                if cleanup_fails:
-                    with self.assertRaises(ExceptionGroup) as caught:
-                        self.publish(output)
-                    messages = tuple(
-                        str(error) for error in caught.exception.exceptions
-                    )
-                    self.assertTrue(any("parent fsync failed" in text for text in messages))
-                    self.assertTrue(any("cleanup denied" in text for text in messages))
-                else:
-                    with self.assertRaisesRegex(OSError, "parent fsync failed"):
-                        self.publish(output)
-                self.assertFalse(output.exists())
-            finally:
-                for active in reversed(patches):
-                    active.stop()
+        def fail() -> None:
+            raise RuntimeError("pre-publish verification failed")
+
+        with patch.object(
+            publication, "_remove_owned_path", side_effect=cleanup_denied
+        ):
+            with self.assertRaises(ExceptionGroup) as caught:
+                self.publish(output, fail)
+
+        messages = tuple(str(error) for error in caught.exception.exceptions)
+        self.assertTrue(any("pre-publish verification failed" in text for text in messages))
+        self.assertTrue(any("cleanup denied" in text for text in messages))
+        self.assertFalse(output.exists())
+
+    def test_cleanup_never_unlinks_foreign_replacement_after_quarantine_race(self) -> None:
+        """A file swapped after root quarantine must survive cleanup unchanged."""
+        from experiments.exp417_causal_multihorizon_shadow import publication
+
+        output = self.root / "publication"
+        real_rename = publication._atomic_rename_noreplace
+        injected_paths: list[Path] = []
+
+        def inject_after_quarantine(source: Path, destination: Path) -> None:
+            real_rename(source, destination)
+            if destination.name.endswith(".quarantine") and destination.is_dir():
+                target = destination / "exp417_backend_benchmark.json"
+                if target.exists() and not injected_paths:
+                    target.rename(destination / "displaced-owned.json")
+                    target.write_bytes(b"foreign replacement\n")
+                    injected_paths.append(target)
+
+        def fail() -> None:
+            staging = next(self.root.glob(".publication.*.staging"))
+            (staging / "exp417_backend_benchmark.json").write_bytes(b"trigger\n")
+
+        with patch.object(
+            publication,
+            "_atomic_rename_noreplace",
+            side_effect=inject_after_quarantine,
+        ):
+            with self.assertRaises(Exception):
+                self.publish(output, fail)
+
+        self.assertEqual(len(injected_paths), 1)
+        self.assertTrue(injected_paths[0].exists())
+        self.assertEqual(injected_paths[0].read_bytes(), b"foreign replacement\n")
+
+    def test_parent_is_fsynced_again_after_rollback_mutates_it(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import publication
+
+        output = self.root / "publication"
+        parent_calls = 0
+        real_fsync = publication._fsync_directory
+
+        def fail_once(path: Path) -> None:
+            nonlocal parent_calls
+            if path == self.root:
+                parent_calls += 1
+                if parent_calls == 1:
+                    raise OSError("first parent fsync failed")
+            real_fsync(path)
+
+        with patch.object(publication, "_fsync_directory", side_effect=fail_once):
+            with self.assertRaisesRegex(OSError, "first parent fsync failed"):
+                self.publish(output)
+
+        self.assertEqual(parent_calls, 2)
+        self.assertFalse(output.exists())
+
+    def test_rollback_parent_fsync_failure_is_grouped_with_original(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import publication
+
+        output = self.root / "publication"
+        parent_calls = 0
+        real_fsync = publication._fsync_directory
+
+        def fail_twice(path: Path) -> None:
+            nonlocal parent_calls
+            if path == self.root:
+                parent_calls += 1
+                raise OSError(f"parent fsync failed {parent_calls}")
+            real_fsync(path)
+
+        with patch.object(publication, "_fsync_directory", side_effect=fail_twice):
+            with self.assertRaises(ExceptionGroup) as caught:
+                self.publish(output)
+
+        messages = tuple(str(error) for error in caught.exception.exceptions)
+        self.assertTrue(any("parent fsync failed 1" in message for message in messages))
+        self.assertTrue(any("parent fsync failed 2" in message for message in messages))
+        self.assertEqual(parent_calls, 2)
 
     def test_missing_parent_and_invalid_payload_inventory_fail_before_staging(self) -> None:
         from experiments.exp417_causal_multihorizon_shadow.publication import (
