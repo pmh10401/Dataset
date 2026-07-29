@@ -1,6 +1,7 @@
 """Frozen, label-free contracts for Exp417 causal Shadow research."""
 
 from .config import Exp417FrozenConfig, FROZEN_CONFIG
+from .checkpoints import Exp417CheckpointProvenance, Exp417CheckpointStore
 from .contracts import (
     BackendAudit,
     DatasetDecisionEvidence,
@@ -25,6 +26,8 @@ __all__ = [
     "BackendAudit",
     "DatasetDecisionEvidence",
     "DatasetResult",
+    "Exp417CheckpointProvenance",
+    "Exp417CheckpointStore",
     "Exp417FrozenConfig",
     "FROZEN_CONFIG",
     "FrozenLaneSnapshot",
