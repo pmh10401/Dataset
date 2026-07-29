@@ -123,6 +123,23 @@ class Exp416CliTests(unittest.TestCase):
                         cli.main(incomplete)
                 self.assertEqual(raised.exception.code, 2)
 
+    def test_abbreviated_required_option_spellings_are_rejected(self) -> None:
+        abbreviations = {
+            "--database-reference": "--database",
+            "--prediction": "--predictio",
+            "--prediction-manifest": "--prediction-m",
+            "--frozen-test-labels": "--frozen",
+            "--output-dir": "--output",
+        }
+        for required, abbreviated in abbreviations.items():
+            argv = self.argv.copy()
+            argv[argv.index(required)] = abbreviated
+            with self.subTest(abbreviated=abbreviated):
+                with redirect_stderr(StringIO()):
+                    with self.assertRaises(SystemExit) as raised:
+                        cli._parse_args(argv)
+                self.assertEqual(raised.exception.code, 2)
+
     def test_existing_output_is_rejected_before_audit(self) -> None:
         self.output.mkdir()
         with mock.patch.object(cli, "verify_database_reference") as database:

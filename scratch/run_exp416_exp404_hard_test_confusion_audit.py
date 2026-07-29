@@ -40,7 +40,8 @@ _COMMIT_PATTERN = re.compile(r"[0-9a-f]{40}\Z")
 
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run the one-shot Exp416 Exp404 Hard TEST confusion audit."
+        description="Run the one-shot Exp416 Exp404 Hard TEST confusion audit.",
+        allow_abbrev=False,
     )
     parser.add_argument("--database-reference", type=Path, required=True)
     parser.add_argument("--prediction", type=Path, required=True)
