@@ -217,10 +217,28 @@ discard only the currently incomplete dataset in each worker.
 
 ## 7. Label Isolation and Governance
 
-Exp419 adds no TEST-label loader. Static source guards must prove that the
-Exp419 package cannot import, open, hash, stat, query, or name the frozen
-TEST-label artifact. Worker SQL is inherited from the Exp417 values-and-
-identity-only path.
+### 2026-07-30 human ruling: reviewed-source manifest
+
+The user explicitly approved replacing generic Python data-flow proof with a
+frozen reviewed-source manifest. `SOURCE_MANIFEST.json` lists the exact ten
+runtime Python files (the eight top-level Exp419 package modules and two
+scratch CLIs) and their lowercase SHA-256 digests. Verification enumerates the
+current top-level package `.py` names without a permissive recursive glob,
+requires exact sorted path equality, and reads the manifest and every source
+through no-follow regular-file descriptors. Traversal, duplicate, missing,
+extra, symlink, non-regular, non-canonical, or digest-mismatched inputs fail.
+
+After exact bytes are verified, a narrow defense-in-depth AST scan rejects
+explicit label-loader imports/calls/attributes, frozen TEST-label artifact
+names, and `label`/`labels_blob` SQL projections. It does not attempt generic
+Python alias/data-flow proof: dynamic behavior is accepted only because the
+reviewed source bytes are frozen. Only literal payloads of the guard's own
+denylist may be ignored; executable guard code is scanned normally.
+
+The source-manifest SHA-256 is bound into every runtime-trial evidence digest
+and the benchmark artifact. The official verifier requires the artifact value
+to equal the digest returned by the current clean-Git label guard before it
+accepts a worker selection.
 
 Generated predictions, checkpoints, metrics, benchmarks derived from the
 private dataset, and dataset-level reports remain local. GitHub may contain

@@ -63,6 +63,7 @@ def _passing_measured_benchmark(module, datasets: tuple[str, ...] = ("a",)):
             process_cpu_utilization=0.5,
             worker_utilization=workers,
             scientific_evidence_sha256=f"{worker_count}" * 64,
+            source_manifest_sha256="c" * 64,
         )
         measurements.append(measurement)
         trials.append(
@@ -288,6 +289,7 @@ class CliContractTests(unittest.TestCase):
                 benchmark=benchmark,
                 git_commit="a" * 40,
                 context_sha256="b" * 64,
+                source_manifest_sha256="c" * 64,
                 trial_roots=tuple(
                     Path(temporary) / f"workers-{count}"
                     for count in FROZEN_CONFIG.worker_candidates
@@ -298,10 +300,45 @@ class CliContractTests(unittest.TestCase):
                 path,
                 expected_git_commit="a" * 40,
                 expected_context_sha256="b" * 64,
+                expected_source_manifest_sha256="c" * 64,
                 expected_costs=costs,
             )
             self.assertEqual(observed, benchmark)
 
+            with self.assertRaisesRegex(ValueError, "manifest|provenance"):
+                self.official.verify_benchmark_evidence(
+                    path,
+                    expected_git_commit="a" * 40,
+                    expected_context_sha256="b" * 64,
+                    expected_source_manifest_sha256="d" * 64,
+                    expected_costs=costs,
+                )
+
+            manifest_forged = json.loads(path.read_text())
+            manifest_forged["source_manifest_sha256"] = "d" * 64
+            path.write_text(json.dumps(manifest_forged))
+            with self.assertRaisesRegex(ValueError, "manifest|provenance"):
+                self.official.verify_benchmark_evidence(
+                    path,
+                    expected_git_commit="a" * 40,
+                    expected_context_sha256="b" * 64,
+                    expected_source_manifest_sha256="c" * 64,
+                    expected_costs=costs,
+                )
+
+            path.unlink()
+            self.benchmark.write_benchmark_evidence(
+                path,
+                benchmark=benchmark,
+                git_commit="a" * 40,
+                context_sha256="b" * 64,
+                source_manifest_sha256="c" * 64,
+                trial_roots=tuple(
+                    Path(temporary) / f"workers-{count}"
+                    for count in FROZEN_CONFIG.worker_candidates
+                ),
+                runtime_measurements=measurements,
+            )
             forged = json.loads(path.read_text())
             forged["benchmark"]["selected_worker_count"] = 6
             path.write_text(json.dumps(forged))
@@ -310,6 +347,7 @@ class CliContractTests(unittest.TestCase):
                     path,
                     expected_git_commit="a" * 40,
                     expected_context_sha256="b" * 64,
+                    expected_source_manifest_sha256="c" * 64,
                     expected_costs=costs,
                 )
 
@@ -329,6 +367,7 @@ class CliContractTests(unittest.TestCase):
                 benchmark=benchmark,
                 git_commit="a" * 40,
                 context_sha256="b" * 64,
+                source_manifest_sha256="c" * 64,
                 trial_roots=tuple(
                     Path(temporary) / f"workers-{count}"
                     for count in FROZEN_CONFIG.worker_candidates
@@ -340,6 +379,7 @@ class CliContractTests(unittest.TestCase):
                     path,
                     expected_git_commit="a" * 40,
                     expected_context_sha256="b" * 64,
+                    expected_source_manifest_sha256="c" * 64,
                     expected_costs=costs,
                 )
 
@@ -363,6 +403,7 @@ class CliContractTests(unittest.TestCase):
                 benchmark=benchmark,
                 git_commit="a" * 40,
                 context_sha256="b" * 64,
+                source_manifest_sha256="c" * 64,
                 trial_roots=tuple(
                     Path(temporary) / f"workers-{count}"
                     for count in FROZEN_CONFIG.worker_candidates
@@ -377,6 +418,7 @@ class CliContractTests(unittest.TestCase):
                     path,
                     expected_git_commit="a" * 40,
                     expected_context_sha256="b" * 64,
+                    expected_source_manifest_sha256="c" * 64,
                     expected_costs=(
                         DatasetCost("a", 1, "preprocessing_only"),
                     ),
@@ -418,185 +460,148 @@ class CliContractTests(unittest.TestCase):
         )
 
 
-class StaticIsolationTests(unittest.TestCase):
+class SourceManifestTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.module = _load_script("exp419_benchmark_static", BENCHMARK_SCRIPT)
 
-    def test_exp419_sources_have_no_test_label_access_path(self) -> None:
-        paths = tuple(
-            sorted(
-                (REPO_ROOT / "experiments/exp419_deterministic_cpu_parallel").glob(
-                    "*.py"
-                )
+    def _fixture(
+        self,
+        root: Path,
+        source: str = "VALUE = 1\n",
+    ) -> tuple[Path, Path]:
+        package = root / "experiments/exp419_deterministic_cpu_parallel"
+        scratch = root / "scratch"
+        package.mkdir(parents=True)
+        scratch.mkdir()
+        runtime = package / "__init__.py"
+        runtime.write_text(source)
+        (scratch / "benchmark_exp419_deterministic_cpu_parallel.py").write_text(
+            "VALUE = 2\n"
+        )
+        (scratch / "run_exp419_deterministic_cpu_parallel.py").write_text(
+            "VALUE = 3\n"
+        )
+        return package / "SOURCE_MANIFEST.json", runtime
+
+    def test_checked_in_manifest_matches_exact_runtime_source_set(self) -> None:
+        digest = self.module.assert_exp419_label_isolation()
+        self.assertRegex(digest, r"^[0-9a-f]{64}$")
+        manifest = json.loads(
+            (
+                REPO_ROOT
+                / "experiments/exp419_deterministic_cpu_parallel"
+                / "SOURCE_MANIFEST.json"
+            ).read_bytes()
+        )
+        self.assertEqual(manifest["schema_version"], 1)
+        self.assertEqual(len(manifest["sources"]), 10)
+        self.assertEqual(
+            [entry["path"] for entry in manifest["sources"]],
+            sorted(entry["path"] for entry in manifest["sources"]),
+        )
+
+    def test_source_change_and_manifest_tamper_fail(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest, runtime = self._fixture(root)
+            self.module.propose_source_manifest(root, output_path=manifest)
+            self.module.verify_source_manifest(root, manifest)
+            original = runtime.read_text()
+            runtime.write_text(original + "# changed\n")
+            with self.assertRaisesRegex(ValueError, "digest|source"):
+                self.module.verify_source_manifest(root, manifest)
+            runtime.write_text(original)
+            manifest.write_bytes(manifest.read_bytes() + b" ")
+            with self.assertRaisesRegex(ValueError, "manifest|JSON|canonical"):
+                self.module.verify_source_manifest(root, manifest)
+
+    def test_manifest_rejects_missing_extra_duplicate_and_traversal_paths(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest, _runtime = self._fixture(root)
+            self.module.propose_source_manifest(root, output_path=manifest)
+            original = json.loads(manifest.read_bytes())
+            mutations = []
+            missing = json.loads(json.dumps(original))
+            missing["sources"].pop()
+            mutations.append(missing)
+            duplicate = json.loads(json.dumps(original))
+            duplicate["sources"].append(dict(duplicate["sources"][0]))
+            mutations.append(duplicate)
+            traversal = json.loads(json.dumps(original))
+            traversal["sources"][0]["path"] = "../outside.py"
+            mutations.append(traversal)
+            for mutation in mutations:
+                manifest.write_text(json.dumps(mutation))
+                with self.subTest(mutation=mutation), self.assertRaisesRegex(
+                    ValueError, "manifest|source|path|duplicate"
+                ):
+                    self.module.verify_source_manifest(root, manifest)
+            self.module.propose_source_manifest(root, output_path=manifest)
+            extra = (
+                root
+                / "experiments/exp419_deterministic_cpu_parallel/extra.py"
             )
-        ) + (BENCHMARK_SCRIPT, OFFICIAL_SCRIPT)
-        self.module.assert_source_label_isolation(
-            {str(path): path.read_text() for path in paths}
+            extra.write_text("VALUE = 4\n")
+            with self.assertRaisesRegex(ValueError, "extra|set|source"):
+                self.module.verify_source_manifest(root, manifest)
+
+    def test_manifest_rejects_symlink_and_nonregular_source(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest, runtime = self._fixture(root)
+            self.module.propose_source_manifest(root, output_path=manifest)
+            target = root / "target.py"
+            target.write_text(runtime.read_text())
+            runtime.unlink()
+            runtime.symlink_to(target)
+            with self.assertRaisesRegex(ValueError, "symlink|regular|source"):
+                self.module.verify_source_manifest(root, manifest)
+            runtime.unlink()
+            runtime.mkdir()
+            with self.assertRaisesRegex(ValueError, "regular|source"):
+                self.module.verify_source_manifest(root, manifest)
+
+    def test_direct_explicit_label_access_is_denied_before_manifest_acceptance(self) -> None:
+        snippets = (
+            "from secret.labels import load_labels\n",
+            "source.load_test_labels()\n",
+            'ARTIFACT = "frozen_test_labels.bin"\n',
+            'QUERY = "SELECT i.labels_blob FROM instances i"\n',
         )
+        for snippet in snippets:
+            with self.subTest(snippet=snippet), TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                manifest, _runtime = self._fixture(root, snippet)
+                with self.assertRaisesRegex(ValueError, "label"):
+                    self.module.propose_source_manifest(
+                        root, output_path=manifest
+                    )
 
-    def test_adversarial_label_access_snippets_fail_closed(self) -> None:
-        snippets = {
-            "aliased-import.py":
-                "from secret import load_labels as values_loader\nvalues_loader()\n",
-            "attribute-loader.py":
-                "import secret as source\nsource.load_test_labels()\n",
-            "stored-attribute-loader.py":
-                "import secret as source\nreader = source.load_labels\nreader()\n",
-            "concatenated-path.py":
-                'LABEL_PATH = "/private/" + "labels.bin"\nPath(LABEL_PATH).read_bytes()\n',
-            "formatted-path.py":
-                'path = f"/private/{\'test\'}_{\'labels\'}.npy"\nopen(path, "rb")\n',
-            "obfuscated-sql.py":
-                'QUERY = "SEL" + "ECT i." + "label\\nFR" + "OM instances"\n',
-            "quoted-sql.py":
-                'QUERY = """SELECT i.[label], i.`labels_blob`\nFROM instances"""\n',
-            "frozen-artifact.py":
-                'ARTIFACT = "frozen_" + "test_labels"\n',
-            "fake-allowlist-artifact.py":
-                '_MY_ALLOWLIST = "test_labels.bin"\n',
-            "getattr-loader.py":
-                'loader = getattr(source, "load_" + "labels")\nloader()\n',
-            "dynamic-label-path.py":
-                "label_path = input()\nPath(label_path).read_bytes()\n",
-            "dynamic-callable-getattr.py":
-                "name = input()\nreader = getattr(source, name)\nreader()\n",
-            "aliased-filesystem-sink.py":
-                "opener = open\ndata_path = input()\nopener(data_path)\n",
-            str(BENCHMARK_SCRIPT): (
-                "def prepare_trial_roots(root):\n"
-                "    label_path = input()\n"
-                "    return Path(root / label_path).read_bytes()\n"
-            ),
-            "method-alias.py":
-                "reader = Path.read_bytes\ntarget = input()\nreader(target)\n",
-            "destructured-sinks.py":
-                "opener, reader = open, Path.read_text\n",
-            "container-sink.py":
-                "operations = [open, Path.read_bytes]\n",
-            "container-getattr.py": (
-                "name = input()\n"
-                "reader = getattr(source, name)\n"
-                "operations = [reader]\n"
-                "operations[0]()\n"
-            ),
-            "attribute-getattr.py": (
-                "name = input()\n"
-                "reader = getattr(source, name)\n"
-                "holder.reader = reader\n"
-            ),
-        }
-        for name, source in snippets.items():
-            with self.subTest(name=name), self.assertRaisesRegex(
-                ValueError, "label"
-            ):
-                self.module.assert_source_label_isolation({name: source})
-
-    def test_guard_denylist_and_normal_train_predicate_are_allowed(self) -> None:
-        sources = {
-            "guard.py": (
-                '_FORBIDDEN_KEYS = {"label", "labels_blob"}\n'
-                'QUERY = """SELECT i.instance_index, i.values_blob\n'
-                "FROM instances i WHERE i.split='TRAIN' AND i.label='0'\"\"\"\n"
-            )
-        }
-        self.module._verify_sensitive_inventory(
-            sources, self.module.propose_sensitive_inventory(sources)
+    def test_dynamic_alias_is_governed_by_frozen_bytes_not_dataflow(self) -> None:
+        snippets = (
+            "name = input()\nreader = getattr(source, name)\nreader()\n",
+            "target = input()\nPath(target).read_bytes()\n",
+            "opener = open\ntarget = input()\nopener(target)\n",
         )
+        for snippet in snippets:
+            with self.subTest(snippet=snippet), TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                manifest, runtime = self._fixture(root, snippet)
+                self.module.propose_source_manifest(root, output_path=manifest)
+                self.module.verify_source_manifest(root, manifest)
+                runtime.write_text(snippet + "# unreviewed byte\n")
+                with self.assertRaisesRegex(ValueError, "digest|source"):
+                    self.module.verify_source_manifest(root, manifest)
 
-    def test_dynamic_nonfilesystem_getattr_requires_explicit_inventory(self) -> None:
-        sources = {
-            "benign.py": (
-                "name = input()\n"
-                "value = getattr(source, name)\n"
-                "result = (value is None, name.casefold())\n"
-            )
-        }
-        with self.assertRaisesRegex(ValueError, "label isolation inventory"):
-            self.module.assert_source_label_isolation(sources)
-        self.module._verify_sensitive_inventory(
-            sources, self.module.propose_sensitive_inventory(sources)
-        )
-
-    def test_inventory_binds_upstream_scope_and_occurrence_count(self) -> None:
-        original = {
-            "scope.py": (
-                "from pathlib import Path\n"
-                "def read(root):\n"
-                "    target = root / 'worker-1'\n"
-                "    return Path(target).resolve()\n"
-            )
-        }
-        approved = self.module.propose_sensitive_inventory(original)
-        self.module._verify_sensitive_inventory(original, approved)
-        attacks = (
-            {
-                "scope.py": (
-                    "from pathlib import Path\n"
-                    "def read(root):\n"
-                    "    target = input()\n"
-                    "    return Path(target).resolve()\n"
-                )
-            },
-            {
-                "scope.py": (
-                    "from pathlib import Path\n"
-                    "def read(root):\n"
-                    "    target = root / 'worker-1'\n"
-                    "    Path(target).resolve()\n"
-                    "    return Path(target).resolve()\n"
-                )
-            },
-        )
-        for attack in attacks:
-            with self.subTest(source=attack), self.assertRaisesRegex(
-                ValueError, "label isolation inventory"
-            ):
-                self.module._verify_sensitive_inventory(attack, approved)
-
-    def test_inventory_rejects_stale_missing_and_duplicate_entries(self) -> None:
-        sources = {
-            "inventory.py": "from pathlib import Path\nPath('safe').resolve()\n"
-        }
-        approved = self.module.propose_sensitive_inventory(sources)
-        mutations = (
-            approved[:-1],
-            approved + approved[:1],
-            approved + ((
-                "stale.py", "<module>", "call:path", "0" * 64,
-                "1" * 64, "body[0]",
-            ),),
-        )
-        for mutation in mutations:
-            with self.subTest(mutation=mutation), self.assertRaisesRegex(
-                ValueError, "label isolation inventory"
-            ):
-                self.module._verify_sensitive_inventory(sources, mutation)
-
-    def test_uninventoried_sensitive_syntax_and_reflection_fail(self) -> None:
-        snippets = {
-            "lambda.py": "reader = lambda: open('safe')\n",
-            "decorator.py": "@getattr(source, 'decorate')\ndef run(): pass\n",
-            "default.py": "def run(value=Path('safe')): pass\n",
-            "sql.py": "connection.execute(input())\n",
-            "import.py": "__import__(input())\n",
-            "reflection.py": "operator.attrgetter(input())\n",
-            "eval.py": "eval(input())\n",
-            "exec.py": "exec(input())\n",
-        }
-        for name, source in snippets.items():
-            with self.subTest(name=name), self.assertRaisesRegex(
-                ValueError, "label"
-            ):
-                self.module.assert_source_label_isolation({name: source})
-
-    def test_guard_helper_filesystem_call_is_not_exempt(self) -> None:
-        source = (
-            "def assert_source_label_isolation(sources):\n"
-            "    return open(input()).read()\n"
-        )
-        with self.assertRaisesRegex(ValueError, "label isolation inventory"):
-            self.module.assert_source_label_isolation({"guard.py": source})
+    def test_manifest_proposal_never_writes_without_explicit_output(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest, _runtime = self._fixture(root)
+            payload = self.module.propose_source_manifest(root)
+            self.assertIsInstance(payload, bytes)
+            self.assertFalse(manifest.exists())
 
 
 if __name__ == "__main__":

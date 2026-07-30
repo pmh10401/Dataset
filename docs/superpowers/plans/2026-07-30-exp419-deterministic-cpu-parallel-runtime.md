@@ -624,6 +624,17 @@ git commit -m "feat(exp419): publish verified parallel artifacts"
 
 ### Task 7: Add Benchmark, Official CLI, Label Guards, and Runbook
 
+**2026-07-30 human ruling:** the user approved replacing generic AST
+inventory/taint proof with `SOURCE_MANIFEST.json`. Freeze the exact eight
+package runtime modules plus both scratch CLIs. Verification must use
+descriptor-pinned no-follow regular-file reads, canonical sorted repo-relative
+paths, and exact SHA-256, rejecting missing/extra/duplicate/traversal,
+symlink, and non-regular inputs. Keep only a narrow direct AST denial for
+explicit label loaders, frozen TEST-label artifact names, and label-column
+projection. Bind the manifest digest into every trial and benchmark evidence,
+and require the current post-clean-Git digest in the official verifier.
+Manifest proposal is an explicit offline development action only.
+
 **Files:**
 - Create: `scratch/benchmark_exp419_deterministic_cpu_parallel.py`
 - Create: `scratch/run_exp419_deterministic_cpu_parallel.py`
@@ -669,12 +680,12 @@ The official CLI verifies the benchmark digest and runs only the frozen
 selected worker count. It contains the exact approval phrase in help and
 runbook text but does not infer approval from environment state.
 
-- [ ] **Step 4: Add static label-isolation tests**
+- [ ] **Step 4: Add frozen-source manifest and label-isolation tests**
 
-Parse/import-scan the Exp419 package and both scripts. Reject forbidden label
-loader imports, `label`/`labels_blob` SQL selection, frozen label artifact
-names, and filesystem calls targeting label paths. Reuse the Exp417 source
-guard where applicable.
+Freeze the Exp419 package and both scripts by exact path and SHA-256. Reject
+manifest/source tamper, missing/extra/duplicate/traversal paths, symlinks,
+non-regular files, forbidden label-loader imports/calls/attributes,
+`label`/`labels_blob` SQL selection, and frozen label artifact names.
 
 - [ ] **Step 5: Write the runbook**
 

@@ -75,20 +75,20 @@ shasum -a 256 \
 git diff --check
 ```
 
-정적 격리 검사도 Exp419 test suite에 포함된다. Exp419 package와 두 CLI에
-라벨 loader import, 라벨 column을 선택하는 SQL, 동결 라벨 artifact 이름,
-라벨 파일 경로가 하나라도 생기면 실패한다. alias/attribute/getattr loader,
-문자열 결합과 f-string 경로, multiline·quoted SQL projection도 AST에서
-복원해 먼저 차단한다. 이어 filesystem, SQLite, import, reflection 실행과
-참조를 모두 수집하고, 파일명·함수 scope·민감 node/AST 위치 multiset
-SHA256·전체 scope SHA256·정확한 발생 횟수를 결합한 checked-in inventory
-50개(민감 node 149개)와 1:1로 대조한다. 새 호출, 중복 호출, 호출 앞의 입력
-대입 변경, lambda/decorator/default 내부 호출, stale/missing/duplicate
-inventory는 모두 fail-closed한다. 동적 SQL은 금지하고 정상 TRAIN
-`i.label='0'` 집계 query만 exact fingerprint로 허용한다. 출력 검증용
-denylist/allowlist literal만 검사 데이터로 취급하며 guard 함수 자체도
-예외 처리하지 않는다. `propose_sensitive_inventory`는 검토용 제안만
-반환하고 checked-in inventory를 자동 수정하거나 자동 승인하지 않는다.
+2026-07-30 사용자 승인에 따라 정적 격리는 동결 소스 매니페스트 방식이다.
+`SOURCE_MANIFEST.json`은 Exp419 package 최상위 runtime 모듈 8개와 두 CLI,
+총 10개의 정확한 repo 상대 경로와 소문자 SHA256을 고정한다. clean Git
+검사 직후 manifest와 각 소스를 no-follow file descriptor로 읽어
+regular-file 여부, canonical sorted path, 중복·경로 탈출, 누락·추가 파일,
+해시 불일치를 모두 차단한다. 그 뒤 defense-in-depth AST 검사가 명시적인
+라벨 loader import/call/attribute, 동결 TEST-label artifact 이름,
+`label`/`labels_blob` SQL projection을 차단한다. 일반 Python alias/dataflow를
+추론하지 않으며, 동적 코드는 검토된 소스 바이트가 정확히 일치할 때만
+허용된다. guard denylist literal만 검사 데이터로 제외하고 실행 guard
+코드는 예외 없이 검사한다. manifest SHA256은 각 runtime trial과 benchmark
+evidence에 포함되며 공식 verifier는 현재 manifest digest와 정확히
+일치해야 benchmark를 승인한다. 제안 helper는 명시적으로 호출할 때만
+개발용 bytes/file을 만들며 검증 중 자동 재생성하지 않는다.
 
 ## 4. 비공식 label-free 병렬 benchmark
 

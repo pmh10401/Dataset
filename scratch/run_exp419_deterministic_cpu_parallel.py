@@ -129,6 +129,7 @@ def verify_benchmark_evidence(
     *,
     expected_git_commit: str,
     expected_context_sha256: str,
+    expected_source_manifest_sha256: str,
     expected_costs: Sequence[DatasetCost],
 ) -> RuntimeBenchmark:
     payload = _read_json_regular(Path(path))
@@ -139,6 +140,7 @@ def verify_benchmark_evidence(
         "git_commit",
         "runtime_measurements",
         "schema_version",
+        "source_manifest_sha256",
         "trial_roots",
         "worker_candidates",
     }
@@ -150,6 +152,8 @@ def verify_benchmark_evidence(
         or payload["schema_version"] != 1
         or payload["git_commit"] != expected_git_commit
         or payload["context_sha256"] != expected_context_sha256
+        or payload["source_manifest_sha256"]
+        != expected_source_manifest_sha256
         or payload["worker_candidates"] != list(FROZEN_CONFIG.worker_candidates)
     ):
         raise ValueError("benchmark evidence provenance or schema mismatch")
@@ -190,9 +194,9 @@ class OpenedRun:
 @dataclass(frozen=True)
 class OfficialStages:
     clean_git: Callable[[], str]
-    label_guard: Callable[[], Any]
-    freeze_inputs: Callable[[str], Any]
-    verify_benchmark: Callable[[Any, str], RuntimeBenchmark]
+    label_guard: Callable[[], str]
+    freeze_inputs: Callable[[str, str], Any]
+    verify_benchmark: Callable[[Any, str, str], RuntimeBenchmark]
     open_roots: Callable[[Any, RuntimeBenchmark], Any]
     run_resume: Callable[[Any, RuntimeBenchmark, Any], Any]
     revalidate: Callable[[], Any]
@@ -207,9 +211,11 @@ def execute_official(stages: OfficialStages) -> int:
     head = stages.clean_git()
     if not isinstance(head, str) or len(head) != 40:
         raise ValueError("clean Git stage must return the verified HEAD")
-    stages.label_guard()
-    frozen = stages.freeze_inputs(head)
-    benchmark = stages.verify_benchmark(frozen, head)
+    source_manifest_sha256 = stages.label_guard()
+    frozen = stages.freeze_inputs(head, source_manifest_sha256)
+    benchmark = stages.verify_benchmark(
+        frozen, head, source_manifest_sha256
+    )
     opened = stages.open_roots(frozen, benchmark)
     run = stages.run_resume(frozen, benchmark, opened)
     stages.revalidate()
@@ -251,9 +257,14 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
     )
     state: dict[str, Any] = {}
 
-    def freeze(head: str) -> FrozenBenchmarkInputs:
-        frozen = freeze_benchmark_inputs(args, head)
+    def freeze(
+        head: str, source_manifest_sha256: str
+    ) -> FrozenBenchmarkInputs:
+        frozen = freeze_benchmark_inputs(
+            args, head, source_manifest_sha256
+        )
         state["head"] = head
+        state["source_manifest_sha256"] = source_manifest_sha256
         state["context_sha256"] = _context_sha256(frozen.context)
         state["costs"] = frozen.costs
         return frozen
@@ -261,11 +272,13 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
     def verify_benchmark(
         frozen: FrozenBenchmarkInputs,
         head: str,
+        source_manifest_sha256: str,
     ) -> RuntimeBenchmark:
         benchmark = verify_benchmark_evidence(
             args.benchmark_evidence,
             expected_git_commit=head,
             expected_context_sha256=_context_sha256(frozen.context),
+            expected_source_manifest_sha256=source_manifest_sha256,
             expected_costs=frozen.costs,
         )
         state["benchmark_sha256"] = benchmark.sha256
@@ -310,11 +323,19 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
     def revalidate() -> None:
         if require_clean_git() != state["head"]:
             raise ValueError("Exp419 verified Git HEAD changed before publication")
+        if assert_exp419_label_isolation() != state[
+            "source_manifest_sha256"
+        ]:
+            raise ValueError(
+                "Exp419 source manifest changed before publication"
+            )
         verify_input_snapshots(*paths)
         observed = verify_benchmark_evidence(
             args.benchmark_evidence,
             expected_git_commit=state["head"],
             expected_context_sha256=state["context_sha256"],
+            expected_source_manifest_sha256=
+                state["source_manifest_sha256"],
             expected_costs=state["costs"],
         )
         if observed.sha256 != state["benchmark_sha256"]:
