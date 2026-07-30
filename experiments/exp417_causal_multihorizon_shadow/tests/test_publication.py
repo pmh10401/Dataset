@@ -51,6 +51,72 @@ class PublicationTests(unittest.TestCase):
                 )
             )
 
+    def test_generic_exact_bundle_is_atomic_no_clobber_and_verifies_before_exchange(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import publication
+        from experiments.exp417_causal_multihorizon_shadow.publication import (
+            publish_exact_bundle,
+        )
+
+        payloads = {"alpha.bin": b"alpha\n", "omega.bin": b"omega\n"}
+        exact_names = ("alpha.bin", "omega.bin")
+        output = self.root / "generic-publication"
+        callback_observations: list[tuple[bool, int]] = []
+        events: list[str] = []
+        real_rename = publication._atomic_rename_noreplace
+
+        def verify() -> None:
+            staging = tuple(self.root.glob(".generic-publication.*.staging"))
+            callback_observations.append((output.exists(), len(staging)))
+            events.append("verify")
+
+        def exchange(source: Path, destination: Path) -> None:
+            events.append("exchange")
+            real_rename(source, destination)
+
+        with patch.object(
+            publication, "_atomic_rename_noreplace", side_effect=exchange
+        ):
+            hashes = publish_exact_bundle(
+                payloads,
+                output,
+                exact_names=exact_names,
+                pre_publish_verify=verify,
+            )
+
+        self.assertEqual(callback_observations, [(False, 1)])
+        self.assertEqual(events, ["verify", "exchange"])
+        self.assertEqual(
+            hashes,
+            {
+                name: sha256(payload).hexdigest()
+                for name, payload in sorted(payloads.items())
+            },
+        )
+        self.assertEqual(
+            {path.name: path.read_bytes() for path in output.iterdir()},
+            payloads,
+        )
+        with self.assertRaises(FileExistsError):
+            publish_exact_bundle(
+                payloads,
+                output,
+                exact_names=exact_names,
+                pre_publish_verify=lambda: None,
+            )
+        for invalid in (
+            {"alpha.bin": b"alpha\n"},
+            {**payloads, "extra.bin": b"extra\n"},
+        ):
+            with self.subTest(names=tuple(sorted(invalid))), self.assertRaises(
+                ValueError
+            ):
+                publish_exact_bundle(
+                    invalid,
+                    self.root / f"invalid-{len(invalid)}",
+                    exact_names=exact_names,
+                    pre_publish_verify=lambda: None,
+                )
+
     def test_success_publishes_exact_eight_files_and_bound_manifest(self) -> None:
         output = self.root / "publication"
 

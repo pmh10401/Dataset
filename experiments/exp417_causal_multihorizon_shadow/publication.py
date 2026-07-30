@@ -75,9 +75,6 @@ def publish_exp417(
         raise ValueError("Exp417 pre-publish verifier must be callable")
     trusted_checkpoint = TrustedCheckpointProvenance.from_store(checkpoints)
     _require_disjoint_checkpoint_output(checkpoints.root, output)
-    if _lexists(output):
-        raise FileExistsError("Exp417 output directory must not exist")
-    _require_atomic_exchange(output.parent)
     verify_exp417_payloads(
         payloads, trusted_checkpoint=trusted_checkpoint
     )
@@ -88,7 +85,72 @@ def publish_exp417(
     manifest_payload = _render_manifest(
         payloads, artifact_hashes, trusted_checkpoint
     )
+    exact_payloads = {
+        **dict(payloads),
+        MANIFEST_FILE: manifest_payload,
+    }
 
+    def verify_fresh_exp417() -> None:
+        verify_exp417_payloads(
+            payloads, trusted_checkpoint=trusted_checkpoint
+        )
+        pre_publish_verify()
+
+    published_hashes = publish_exact_bundle(
+        exact_payloads,
+        output,
+        exact_names=tuple(sorted(OFFICIAL_FILES)),
+        pre_publish_verify=verify_fresh_exp417,
+    )
+    return {
+        name: published_hashes[name]
+        for name in sorted(NON_MANIFEST_FILES)
+    }
+
+
+def publish_exact_bundle(
+    payloads: Mapping[str, bytes],
+    output_dir: Path,
+    *,
+    exact_names: tuple[str, ...],
+    pre_publish_verify: Callable[[], None],
+) -> Mapping[str, str]:
+    """Atomically publish one caller-defined, exact, descriptor-verified bundle."""
+    output = Path(output_dir)
+    if output.name in {"", ".", ".."}:
+        raise ValueError("publication output directory name is invalid")
+    if (
+        type(exact_names) is not tuple
+        or not exact_names
+        or len(exact_names) != len(set(exact_names))
+        or any(
+            type(name) is not str
+            or not name
+            or Path(name).name != name
+            for name in exact_names
+        )
+    ):
+        raise ValueError("publication exact_names must be unique file basenames")
+    if (
+        not isinstance(payloads, Mapping)
+        or set(payloads) != set(exact_names)
+        or len(payloads) != len(exact_names)
+        or any(
+            type(name) is not str or type(payload) is not bytes
+            for name, payload in payloads.items()
+        )
+    ):
+        raise ValueError("publication requires the caller-supplied exact payload set")
+    if not callable(pre_publish_verify):
+        raise ValueError("pre-publish verifier must be callable")
+    _require_real_parent(output.parent)
+    if _lexists(output):
+        raise FileExistsError("publication output directory must not exist")
+    _require_atomic_exchange(output.parent)
+    artifact_hashes = {
+        name: sha256(payload).hexdigest()
+        for name, payload in sorted(payloads.items())
+    }
     staging = output.with_name(f".{output.name}.{uuid.uuid4().hex}.staging")
     staging_identity: tuple[int, int] | None = None
     staging_descriptor: int | None = None
@@ -100,51 +162,49 @@ def publish_exp417(
         staging_descriptor = _open_directory(staging)
         staging_identity = _directory_fd_identity(staging_descriptor)
         if stat.S_IMODE(os.fstat(staging_descriptor).st_mode) != 0o700:
-            raise ValueError("Exp417 staging directory mode is not 0700")
+            raise ValueError("publication staging directory mode is not 0700")
 
         for name, payload in sorted(payloads.items()):
-            _write_payload(staging_descriptor, name, payload)
-        _write_payload(staging_descriptor, MANIFEST_FILE, manifest_payload)
+            _write_exact_payload(
+                staging_descriptor, name, payload, exact_names=exact_names
+            )
 
-        _verify_publication_directory(
+        _verify_exact_publication_directory(
             staging,
             staging_identity,
             staging_descriptor,
             payloads,
             artifact_hashes,
-            manifest_payload,
-            trusted_checkpoint,
+            exact_names=exact_names,
         )
         pre_publish_verify()
         if _lexists(output):
-            raise FileExistsError("Exp417 output directory appeared during staging")
+            raise FileExistsError("publication output directory appeared during staging")
 
-        staged_identities = _verify_publication_directory(
+        staged_identities = _verify_exact_publication_directory(
             staging,
             staging_identity,
             staging_descriptor,
             payloads,
             artifact_hashes,
-            manifest_payload,
-            trusted_checkpoint,
+            exact_names=exact_names,
         )
         os.fsync(staging_descriptor)
         if _lexists(output):
-            raise FileExistsError("Exp417 output directory appeared during staging")
+            raise FileExistsError("publication output directory appeared during staging")
 
         _atomic_rename_noreplace(staging, output)
         published = True
         output_descriptor = _open_directory(output)
         if _directory_fd_identity(output_descriptor) != staging_identity:
-            raise ValueError("Exp417 published output identity changed")
-        _verify_publication_directory(
+            raise ValueError("published output identity changed")
+        _verify_exact_publication_directory(
             output,
             staging_identity,
             output_descriptor,
             payloads,
             artifact_hashes,
-            manifest_payload,
-            trusted_checkpoint,
+            exact_names=exact_names,
             expected_file_identities=staged_identities,
         )
         _fsync_directory(output.parent)
@@ -176,7 +236,7 @@ def publish_exp417(
                 cleanup_errors.append(cleanup_error)
         if published and not owned_output_removed and not cleanup_errors:
             cleanup_errors.append(
-                RuntimeError("Exp417 published output could not be quarantined")
+                RuntimeError("published output could not be quarantined")
             )
         if staging_identity is not None:
             try:
@@ -185,7 +245,7 @@ def publish_exp417(
                 cleanup_errors.append(cleanup_fsync_error)
         if cleanup_errors:
             raise BaseExceptionGroup(
-                "Exp417 publication failed and cleanup also failed",
+                "publication failed and cleanup also failed",
                 [publication_error, *cleanup_errors],
             )
         raise
@@ -194,6 +254,62 @@ def publish_exp417(
             os.close(output_descriptor)
         if staging_descriptor is not None:
             os.close(staging_descriptor)
+
+
+def _write_exact_payload(
+    directory_descriptor: int,
+    name: str,
+    payload: bytes,
+    *,
+    exact_names: tuple[str, ...],
+) -> None:
+    if Path(name).name != name or name not in exact_names:
+        raise ValueError("publication payload name is invalid")
+    descriptor = os.open(
+        name,
+        _FILE_WRITE_FLAGS,
+        0o600,
+        dir_fd=directory_descriptor,
+    )
+    with os.fdopen(descriptor, "wb") as handle:
+        handle.write(payload)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _verify_exact_publication_directory(
+    directory: Path,
+    directory_identity: tuple[int, int],
+    directory_descriptor: int,
+    payloads: Mapping[str, bytes],
+    artifact_hashes: Mapping[str, str],
+    *,
+    exact_names: tuple[str, ...],
+    expected_file_identities: Mapping[str, tuple[int, int]] | None = None,
+) -> dict[str, tuple[int, int]]:
+    _verify_directory_path_identity(directory, directory_identity)
+    if _directory_fd_identity(directory_descriptor) != directory_identity:
+        raise ValueError("publication directory descriptor identity changed")
+    with os.scandir(directory_descriptor) as scan:
+        observed = tuple(entry.name for entry in scan)
+    if len(observed) != len(exact_names) or set(observed) != set(exact_names):
+        raise ValueError("publication artifact coverage mismatch")
+
+    identities: dict[str, tuple[int, int]] = {}
+    for name, expected in sorted(payloads.items()):
+        _, identity = _read_verified_file(
+            directory_descriptor,
+            name,
+            expected,
+            artifact_hashes[name],
+            expected_identity=(
+                None
+                if expected_file_identities is None
+                else expected_file_identities[name]
+            ),
+        )
+        identities[name] = identity
+    return identities
 
 
 def _render_manifest(
@@ -220,79 +336,6 @@ def _render_manifest(
         ).hexdigest(),
     }
     return canonical_json_bytes(manifest) + b"\n"
-
-
-def _write_payload(directory_descriptor: int, name: str, payload: bytes) -> None:
-    if Path(name).name != name or name not in OFFICIAL_FILES:
-        raise ValueError("Exp417 publication payload name is invalid")
-    descriptor = os.open(
-        name,
-        _FILE_WRITE_FLAGS,
-        0o600,
-        dir_fd=directory_descriptor,
-    )
-    with os.fdopen(descriptor, "wb") as handle:
-        handle.write(payload)
-        handle.flush()
-        os.fsync(handle.fileno())
-
-
-def _verify_publication_directory(
-    directory: Path,
-    directory_identity: tuple[int, int],
-    directory_descriptor: int,
-    payloads: Mapping[str, bytes],
-    artifact_hashes: Mapping[str, str],
-    manifest_payload: bytes,
-    trusted_checkpoint: TrustedCheckpointProvenance,
-    *,
-    expected_file_identities: Mapping[str, tuple[int, int]] | None = None,
-) -> dict[str, tuple[int, int]]:
-    _verify_directory_path_identity(directory, directory_identity)
-    if _directory_fd_identity(directory_descriptor) != directory_identity:
-        raise ValueError("Exp417 publication directory descriptor identity changed")
-    with os.scandir(directory_descriptor) as scan:
-        observed = tuple(entry.name for entry in scan)
-    if len(observed) != 8 or set(observed) != OFFICIAL_FILES:
-        raise ValueError("Exp417 publication artifact coverage mismatch")
-
-    observed_payloads: dict[str, bytes] = {}
-    identities: dict[str, tuple[int, int]] = {}
-    for name, expected in sorted(payloads.items()):
-        raw, identity = _read_verified_file(
-            directory_descriptor,
-            name,
-            expected,
-            artifact_hashes[name],
-            expected_identity=(
-                None
-                if expected_file_identities is None
-                else expected_file_identities[name]
-            ),
-        )
-        observed_payloads[name] = raw
-        identities[name] = identity
-    verify_exp417_payloads(
-        observed_payloads, trusted_checkpoint=trusted_checkpoint
-    )
-
-    raw_manifest, manifest_identity = _read_verified_file(
-        directory_descriptor,
-        MANIFEST_FILE,
-        manifest_payload,
-        sha256(manifest_payload).hexdigest(),
-        expected_identity=(
-            None
-            if expected_file_identities is None
-            else expected_file_identities[MANIFEST_FILE]
-        ),
-    )
-    if raw_manifest != _render_manifest(
-        observed_payloads, artifact_hashes, trusted_checkpoint
-    ):
-        raise ValueError("Exp417 publication manifest provenance mismatch")
-    identities[MANIFEST_FILE] = manifest_identity
-    return identities
 
 
 def _read_verified_file(
