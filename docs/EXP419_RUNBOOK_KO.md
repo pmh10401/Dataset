@@ -79,10 +79,16 @@ git diff --check
 라벨 loader import, 라벨 column을 선택하는 SQL, 동결 라벨 artifact 이름,
 라벨 파일 경로가 하나라도 생기면 실패한다. alias/attribute/getattr loader,
 문자열 결합과 f-string 경로, multiline·quoted SQL projection도 AST에서
-복원해 차단한다. 동적 filesystem sink는 함수별로 등록된 database, lane,
-checkpoint, output, source-code 역할만 허용한다. 해석할 수 없는 동적 경로,
-alias된 filesystem sink, callable로 사용되는 동적 `getattr`, 동적 import는
-fail-closed한다. 출력 검증용 denylist와 정상 TRAIN predicate만 허용한다.
+복원해 먼저 차단한다. 이어 filesystem, SQLite, import, reflection 실행과
+참조를 모두 수집하고, 파일명·함수 scope·민감 node/AST 위치 multiset
+SHA256·전체 scope SHA256·정확한 발생 횟수를 결합한 checked-in inventory
+50개(민감 node 149개)와 1:1로 대조한다. 새 호출, 중복 호출, 호출 앞의 입력
+대입 변경, lambda/decorator/default 내부 호출, stale/missing/duplicate
+inventory는 모두 fail-closed한다. 동적 SQL은 금지하고 정상 TRAIN
+`i.label='0'` 집계 query만 exact fingerprint로 허용한다. 출력 검증용
+denylist/allowlist literal만 검사 데이터로 취급하며 guard 함수 자체도
+예외 처리하지 않는다. `propose_sensitive_inventory`는 검토용 제안만
+반환하고 checked-in inventory를 자동 수정하거나 자동 승인하지 않는다.
 
 ## 4. 비공식 label-free 병렬 benchmark
 

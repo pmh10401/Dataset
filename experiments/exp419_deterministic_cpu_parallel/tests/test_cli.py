@@ -453,6 +453,8 @@ class StaticIsolationTests(unittest.TestCase):
                 'QUERY = """SELECT i.[label], i.`labels_blob`\nFROM instances"""\n',
             "frozen-artifact.py":
                 'ARTIFACT = "frozen_" + "test_labels"\n',
+            "fake-allowlist-artifact.py":
+                '_MY_ALLOWLIST = "test_labels.bin"\n',
             "getattr-loader.py":
                 'loader = getattr(source, "load_" + "labels")\nloader()\n',
             "dynamic-label-path.py":
@@ -461,6 +463,28 @@ class StaticIsolationTests(unittest.TestCase):
                 "name = input()\nreader = getattr(source, name)\nreader()\n",
             "aliased-filesystem-sink.py":
                 "opener = open\ndata_path = input()\nopener(data_path)\n",
+            str(BENCHMARK_SCRIPT): (
+                "def prepare_trial_roots(root):\n"
+                "    label_path = input()\n"
+                "    return Path(root / label_path).read_bytes()\n"
+            ),
+            "method-alias.py":
+                "reader = Path.read_bytes\ntarget = input()\nreader(target)\n",
+            "destructured-sinks.py":
+                "opener, reader = open, Path.read_text\n",
+            "container-sink.py":
+                "operations = [open, Path.read_bytes]\n",
+            "container-getattr.py": (
+                "name = input()\n"
+                "reader = getattr(source, name)\n"
+                "operations = [reader]\n"
+                "operations[0]()\n"
+            ),
+            "attribute-getattr.py": (
+                "name = input()\n"
+                "reader = getattr(source, name)\n"
+                "holder.reader = reader\n"
+            ),
         }
         for name, source in snippets.items():
             with self.subTest(name=name), self.assertRaisesRegex(
@@ -469,26 +493,110 @@ class StaticIsolationTests(unittest.TestCase):
                 self.module.assert_source_label_isolation({name: source})
 
     def test_guard_denylist_and_normal_train_predicate_are_allowed(self) -> None:
-        self.module.assert_source_label_isolation(
-            {
-                "guard.py": (
-                    '_FORBIDDEN_KEYS = {"label", "labels_blob"}\n'
-                    'QUERY = """SELECT i.instance_index, i.values_blob\n'
-                    "FROM instances i WHERE i.split='TRAIN' AND i.label='0'\"\"\"\n"
-                )
-            }
+        sources = {
+            "guard.py": (
+                '_FORBIDDEN_KEYS = {"label", "labels_blob"}\n'
+                'QUERY = """SELECT i.instance_index, i.values_blob\n'
+                "FROM instances i WHERE i.split='TRAIN' AND i.label='0'\"\"\"\n"
+            )
+        }
+        self.module._verify_sensitive_inventory(
+            sources, self.module.propose_sensitive_inventory(sources)
         )
 
-    def test_dynamic_nonfilesystem_noncallable_code_is_allowed(self) -> None:
-        self.module.assert_source_label_isolation(
-            {
-                "benign.py": (
-                    "name = input()\n"
-                    "value = getattr(source, name)\n"
-                    "result = (value is None, name.casefold())\n"
-                )
-            }
+    def test_dynamic_nonfilesystem_getattr_requires_explicit_inventory(self) -> None:
+        sources = {
+            "benign.py": (
+                "name = input()\n"
+                "value = getattr(source, name)\n"
+                "result = (value is None, name.casefold())\n"
+            )
+        }
+        with self.assertRaisesRegex(ValueError, "label isolation inventory"):
+            self.module.assert_source_label_isolation(sources)
+        self.module._verify_sensitive_inventory(
+            sources, self.module.propose_sensitive_inventory(sources)
         )
+
+    def test_inventory_binds_upstream_scope_and_occurrence_count(self) -> None:
+        original = {
+            "scope.py": (
+                "from pathlib import Path\n"
+                "def read(root):\n"
+                "    target = root / 'worker-1'\n"
+                "    return Path(target).resolve()\n"
+            )
+        }
+        approved = self.module.propose_sensitive_inventory(original)
+        self.module._verify_sensitive_inventory(original, approved)
+        attacks = (
+            {
+                "scope.py": (
+                    "from pathlib import Path\n"
+                    "def read(root):\n"
+                    "    target = input()\n"
+                    "    return Path(target).resolve()\n"
+                )
+            },
+            {
+                "scope.py": (
+                    "from pathlib import Path\n"
+                    "def read(root):\n"
+                    "    target = root / 'worker-1'\n"
+                    "    Path(target).resolve()\n"
+                    "    return Path(target).resolve()\n"
+                )
+            },
+        )
+        for attack in attacks:
+            with self.subTest(source=attack), self.assertRaisesRegex(
+                ValueError, "label isolation inventory"
+            ):
+                self.module._verify_sensitive_inventory(attack, approved)
+
+    def test_inventory_rejects_stale_missing_and_duplicate_entries(self) -> None:
+        sources = {
+            "inventory.py": "from pathlib import Path\nPath('safe').resolve()\n"
+        }
+        approved = self.module.propose_sensitive_inventory(sources)
+        mutations = (
+            approved[:-1],
+            approved + approved[:1],
+            approved + ((
+                "stale.py", "<module>", "call:path", "0" * 64,
+                "1" * 64, "body[0]",
+            ),),
+        )
+        for mutation in mutations:
+            with self.subTest(mutation=mutation), self.assertRaisesRegex(
+                ValueError, "label isolation inventory"
+            ):
+                self.module._verify_sensitive_inventory(sources, mutation)
+
+    def test_uninventoried_sensitive_syntax_and_reflection_fail(self) -> None:
+        snippets = {
+            "lambda.py": "reader = lambda: open('safe')\n",
+            "decorator.py": "@getattr(source, 'decorate')\ndef run(): pass\n",
+            "default.py": "def run(value=Path('safe')): pass\n",
+            "sql.py": "connection.execute(input())\n",
+            "import.py": "__import__(input())\n",
+            "reflection.py": "operator.attrgetter(input())\n",
+            "eval.py": "eval(input())\n",
+            "exec.py": "exec(input())\n",
+        }
+        for name, source in snippets.items():
+            with self.subTest(name=name), self.assertRaisesRegex(
+                ValueError, "label"
+            ):
+                self.module.assert_source_label_isolation({name: source})
+
+    def test_guard_helper_filesystem_call_is_not_exempt(self) -> None:
+        source = (
+            "def assert_source_label_isolation(sources):\n"
+            "    return open(input()).read()\n"
+        )
+        with self.assertRaisesRegex(ValueError, "label isolation inventory"):
+            self.module.assert_source_label_isolation({"guard.py": source})
 
 
 if __name__ == "__main__":

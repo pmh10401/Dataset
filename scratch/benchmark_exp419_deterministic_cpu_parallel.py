@@ -158,7 +158,7 @@ def _contains_projected_label(query: str) -> bool:
         flags=re.IGNORECASE | re.DOTALL,
     ):
         if re.search(
-            r"\b(?:[a-z_][a-z0-9_]*\.)?(?:label|labels_blob)\b",
+            _LABEL_SQL_PROJECTION_DENYLIST,
             match.group(1),
             flags=re.IGNORECASE,
         ):
@@ -171,377 +171,462 @@ def _looks_like_label_artifact(value: str) -> bool:
     artifact_shape = any(character in lowered for character in ("/", "\\", ".", "_", "-"))
     return artifact_shape and bool(
         re.search(
-            r"(?:^|[/\\._-])(?:frozen[/\\._-]*)?(?:test[/\\._-]*)?labels?(?:$|[/\\._-])",
+            _LABEL_LITERAL_DENYLIST[2],
             lowered,
         )
-        or "labels_blob" in lowered
+        or _LABEL_LITERAL_DENYLIST[3] in lowered
     )
 
 
-_APPROVED_DYNAMIC_PATH_ROLES = {
-    ("coordinator.py", "_RunRootTransaction.__init__"): (
-        "root",
-        "self.path",
-    ),
-    ("coordinator.py", "_RunRootTransaction.verify"): ("self.path",),
-    ("coordinator.py", "_RunRootTransaction.verify_checkpoint_path"): ("path",),
-    ("coordinator.py", "_read_optional_root_file"): ("name",),
-    ("coordinator.py", "_publish_binding_no_replace"): ("temporary",),
-    ("coordinator.py", "_nonempty_checkpoint_root"): ("path",),
-    ("coordinator.py", "_replace_runtime_evidence"): ("temporary",),
-    ("coordinator.py", "_running_attempt_record"): (
-        "spec.checkpoint_root",
-        "roots.root",
-    ),
-    ("coordinator.py", "_interrupted_attempt_record"): (
-        "worker['checkpoint_root']",
-    ),
-    ("coordinator.py", "_freeze_plan_binding"): (
-        "roots.root",
-        "roots.canonical_root",
-        "roots.worker_roots[index]",
-        "path",
-    ),
-    ("coordinator.py", "_validated_evidence_digests"): (
-        "roots.root",
-        "worker['checkpoint_root']",
-        "worker['resolved_checkpoint_root']",
-    ),
-    ("coordinator.py", "_validate_and_recover_attempts"): (
-        "worker['checkpoint_root']",
-    ),
-    ("publication.py", "publish_exp419"): ("output_dir",),
-    ("reporting.py", "_source_digest"): (
-        "__file__",
-        "root",
-        "relative_path",
-    ),
-    ("reporting.py", "_exp419_source_digests"): (
-        "__file__",
-        "root",
-        "relative_path",
-    ),
-    ("workers.py", "_casefolded_path_parts"): ("path",),
-    ("workers.py", "_filesystem_identity"): ("path",),
-    ("workers.py", "_validated_specs"): ("spec.checkpoint_root",),
-    ("workers.py", "_bootstrap_from_payload"): (
-        "resources_payload['database']",
-        "resources_payload['exp291_prediction']",
-        "resources_payload['exp291_manifest']",
-        "resources_payload['exp292_prediction']",
-        "resources_payload['exp292_manifest']",
-        "resources_payload['backend_audit_path']",
-    ),
-    ("benchmark_exp419_deterministic_cpu_parallel.py", "<module>"): (
-        "__file__",
-    ),
-    (
-        "benchmark_exp419_deterministic_cpu_parallel.py",
-        "prepare_trial_roots",
-    ): ("root",),
-    (
-        "benchmark_exp419_deterministic_cpu_parallel.py",
-        "_run_trials",
-    ): ("root",),
-    (
-        "benchmark_exp419_deterministic_cpu_parallel.py",
-        "write_benchmark_evidence",
-    ): ("path", "root"),
-    (
-        "benchmark_exp419_deterministic_cpu_parallel.py",
-        "assert_exp419_label_isolation",
-    ): ("path",),
-    (
-        "benchmark_exp419_deterministic_cpu_parallel.py",
-        "_approved_dynamic_path",
-    ): ("source_name",),
-    ("run_exp419_deterministic_cpu_parallel.py", "<module>"): ("__file__",),
-    (
-        "run_exp419_deterministic_cpu_parallel.py",
-        "require_disjoint_roots",
-    ): ("checkpoint_dir", "output_dir", "output_source"),
-    (
-        "run_exp419_deterministic_cpu_parallel.py",
-        "_identity",
-    ): ("path",),
-    (
-        "run_exp419_deterministic_cpu_parallel.py",
-        "_read_json_regular",
-    ): ("path",),
-    (
-        "run_exp419_deterministic_cpu_parallel.py",
-        "verify_benchmark_evidence",
-    ): ("path", "root"),
-}
+_SENSITIVE_OPERATION_ALLOWLIST = tuple(
+    (basename, scope, "scope-sensitive-multiset", nodes, scope_sha, count)
+    for line in """
+benchmark_exp419_deterministic_cpu_parallel.py|<module>|b6ab6f113ad3c6756570a3a1d2ad5174662a877246be11acb47c47ee2fd98e16|89fa91befd69016479b599609bba0c1c236c311ad7b0f0b0d3858683c07889f0|7
+benchmark_exp419_deterministic_cpu_parallel.py|_load_train_metadata_costs|38ec405bfddc715ccf426332c6f92743df3b31fb9363ae0c41c88c5c05032116|de5b9ffc7f10fa12c27759f3bfa854c497299c41776cd3bb51d830abc79186d2|2
+benchmark_exp419_deterministic_cpu_parallel.py|_run_trials|0df827eeefb81bf38aa2dacdbc548f299917e3af72cdd6089e7f083479449060|87c604ee5d7986681f5fcba1ac38cfd27032e230f561b20e79a011bcd4b0d733|1
+benchmark_exp419_deterministic_cpu_parallel.py|assert_exp419_label_isolation|447d6541a0c0ad9d4eb84d0f9e5efb17636963167db1374bc66dd1a92fc45497|bcc287d6f7601f4ef481167f2f1d430e78e4928f27c190511700ab8e32389f1a|2
+benchmark_exp419_deterministic_cpu_parallel.py|build_parser|d720b6687ca0d2e883c3ebd12c3a3f26076f257c472899ca08f0ba6498873eed|83522f1048ab39bb84850043836387c71bb649bf17ecb0a0f26421473458485c|6
+benchmark_exp419_deterministic_cpu_parallel.py|prepare_trial_roots|ed1df775f83a5001f667ed67bd37366a43589da063ef7d7b28787a26516f6c12|f81616bf266ef4c27b3c434cfd7b82f6215a0ce2a6a8c49181f6585765b119c2|4
+benchmark_exp419_deterministic_cpu_parallel.py|propose_sensitive_inventory|c67917dfb424c49e2aa07696c1a040d6a319193db6d257b371788e34a194c179|ee5dab760c6f2d252db80b3d42d4d1a698b22a887a0b31ed1b65b2d635610179|1
+benchmark_exp419_deterministic_cpu_parallel.py|require_clean_git|5f3939b7f381473326ceeb4da4cce8951819b26af0d341d6345e1c0fb777bfc6|7d0ab73d742b2ebac8afaecbde92b2132a2506035016204864982eaf38b1544a|1
+benchmark_exp419_deterministic_cpu_parallel.py|write|b3799d3b3eaf180652e3dd7911e201c7b8fd57f6015044feedb5bd6ade48bb94|2b4c492b84bc8362e88e67797f2c9281062d28b77e3fc742fc1ebe9521573bbb|1
+benchmark_exp419_deterministic_cpu_parallel.py|write_benchmark_evidence|a1df4382cd8b93e32ed1e772b5acdbb394da4caa3bf1d56392a6727eb9a1f2bc|893945d988368f7b6315a2216230b4b3b3c03cc6631e3b188343cfcc7ef73339|6
+config.py|validate|d1af20d490bec84d012ccf14bd8018a13572a72e20439ba62c701b6f6fc580ea|7996524cc33e71502082341a63cd975786570f3804c45528175d9f776e51998c|4
+contracts.py|<module>|4fe68104df8e95eda06e560a2bedb8886a0e9a755f370eaa501a7d3abe632b3c|8d6ceab27f1ddcb9975600a6a765d1d4a6f485f770df8aa71c8fac4b4df28ec9|5
+contracts.py|__post_init__|b78f9041960368efab0a255f0c78a04c7426cc3aaf2536d5196e823933f85f62|ab27ab41fde4daf50f9b219e797f75241c648dde3c51440e1c659ab118f0e9d2|1
+contracts.py|_path|c84e111c42913bf7451d53027a5b1cfd2fb46473b96c37b3a8b91d36c70421dc|33b9152d9839668769e0eceb6b0e879075d73183e399930eeaed874b729908b4|2
+coordinator.py|<module>|b31c56b868a86b16d10a7012c7b7576ec4cd3e470a754f9bb2de4158dc33dad4|71aa20f4cfe5624326ff6b358a8f503dad5f8bccdac8d25062b2a9b640cedede|7
+coordinator.py|__init__|8471a99e1e9465d3e7e94b03e8232d359997ddb6b662f61facc1d65b24e84fc5|39a4fbb966fd0a6c34e954e60b35781fef8f0220ca86d5794d998b76c6d816d7|7
+coordinator.py|_freeze_plan_binding|ba8713e43be27e336d886c89ba1ccc34fc379051845bfca9e067b63d43e22c53|da7640731e8f8bb6395465974d7c40b6decef99b293179b131fb339c36c30711|4
+coordinator.py|_interrupted_attempt_record|debd60fcc44c493f6338fec54fd78cdd32807b424a972257c90d9ca24abbe6c6|0430516c21f6d2e63b7738763610ee237ef125af818a93056becbc66934a2b0b|1
+coordinator.py|_nonempty_checkpoint_root|bb428c04f274dcb81bcc60bac0f909456cbd08a077ad135ccc49873ce99cac6f|d12e630b0e07e80237afc570404537654619ae873ac6f1f509fcdcf5891bccca|3
+coordinator.py|_open_checkpoint_store|5f3939b7f381473326ceeb4da4cce8951819b26af0d341d6345e1c0fb777bfc6|a0ca2153c37239169a172153940c3670c346b85e1884c00c6b5f5e37104a636a|1
+coordinator.py|_open_checkpoint_store_checked|e04f066b031ad5ce397d25277977dee8c05b7f4f50fd806cdac9e2c13f91dc8e|f389c63fee9385d155bcc78ee4ae161035a38d1da26e09e39277212e975a2906|1
+coordinator.py|_provenance_payload|e74827eabb20022f005ecdf77679f2ccdeaec052fa9a4f7d6bb95bdf79f6753e|1144900c58e1199b0ce7183b56671390644d7fc0b8509b0c5261666fc3eceeef|1
+coordinator.py|_publish_binding_no_replace|ff3acda069ce80ef536e5159925d5eef945d29be693e955e048c57a1f7ad2e75|7d7273bef9b8b58bd9ddc8a11a6399369906c4b51116e84bc8c3e51806bda9d7|3
+coordinator.py|_read_optional_root_file|5561e4f1c4c4d830f4c78e9269f3bf7fd9a0607a50309a4227bd499370086d4a|fd1881ed96e9831dab36a2f2a5eb6fc33d80eb878ac501c93f768137b8043c3d|1
+coordinator.py|_replace_runtime_evidence|eca9a96416f171e51d433cb100cc649b9b682401d7a07a0bc46109e85f5939b1|745497b5fb90f2bc301c1ca03bac10d5074b2c3fa5204ec914ac8985f1c462c6|3
+coordinator.py|_running_attempt_record|b2a4b532a000a16271a990faee1b053762db321861684cec163e56f494ec7b73|4fa881793bfa39292d8bf197976e4442e4696e49b46d97173cab22b19eee237f|4
+coordinator.py|_validate_and_recover_attempts|f7664a85b0a12e105e5af1795bd2ecf323c49cf5f6a80e915edb750f2f6ddb68|616b93ba668b87539598099771d1d8e97419dd9076dd366e354de934b2d97a55|1
+coordinator.py|_validate_partial_worker_stores|48bf42d671bc7658bf90758b09fcea99b7bb213a89668778b4b083e18915f5a0|ea5cbfb6018a2c79f66348d908963e5ba8e6a9dde501b062287cc693528de6b9|2
+coordinator.py|_validated_evidence_digests|07ca3049dfb8e9236539d1085212102094bc3a348a1ff2bcc30d733eda6739e1|fe96a16da8b9b7b3666e70032de0ffb714f5309b4aa6cd31698ed4dbb3d53c58|4
+coordinator.py|_validated_partial_store_state|5bb739a8bd80a5f2d640f3ef2ec642ff85ce2c4d039ca2e8d80e8385efd09e14|ef414f0f5b773df4f98a858ebc939d6f33d0b913ef93bec2324a344335223bc3|1
+coordinator.py|merge_worker_checkpoints|05cc6369ad88979ccb7bf8c423e0bd3d537c4ada82dfdef227e29ded807464f2|58ed4afdeb857d56b8bedeb13009276a9b253f3a78d258934cdccdf76d4d22cc|4
+coordinator.py|verify|ef0ef8daad24dbee87dca68c88463546b05bb978bf7a40024a2a6d382ab33a05|7d02aaf6ae10b62fd9da81eb8aa0f8b36fef357cba9556eb554531b809cd7b8b|2
+coordinator.py|verify_checkpoint_path|1c2dfaa151ae8d8d34e7d2fc9d22e7b014b12fb84432888e1180d81698efb899|e88b30a3a6075b9f53c160928b53ae633ebb7b1566579e16a8f2975e1522ad19|3
+publication.py|<module>|529f072b5a7d22ae3fca14c213d2eb0cc42555b314ce62c2e9ab46b7f0493693|be934048aa3cab1c54db32e8ca21472e2b2c38f689008502c36cabc0b5659d56|1
+publication.py|publish_exp419|248c24d9cb06641cb8afbe18be7d680f6cdca017621cae2499f418ed8e569a9a|def0bbd59f2aeebf80263a5082f49843eb72a39eddfd6c1f94d7075b2073b5ed|4
+reporting.py|<module>|bc0f68647dbd8a357fd3430aacb8e57e969065ed63d361d9a38646222f42c596|504235cb9c0f93ac4e381923888e8c07004a2bec4c9312a315008a64625e1924|1
+reporting.py|_exp419_source_digests|9c57d4934b6f6da39c5304f3a01dc454a6431530b9e04ff9ca2870a046b4a56b|3d99a7728a18d56c693e4ebacd041a141257b6b0538183b3399478f79cbabd6b|3
+reporting.py|_source_digest|6186a2f62c9d0ebec0bea8b4e98817d3eb751c09f30eba8e00e5a298f90f6b28|9eebcd0f58d02b4db994faeb03c9b8d27e8a4c9746f25fc554a8d201c6f0c7b4|3
+run_exp419_deterministic_cpu_parallel.py|<module>|effa9365cf3c1039e7022c2f9e1651aee84043caf8e7ed9c6cf5120a21062ac1|a5a4f7a752c9eb41b206b9be48b5bf9f9f19f38a4431fdaf9b8930c44b47f47b|4
+run_exp419_deterministic_cpu_parallel.py|_identity|8107e81b9963cbc8b59e104dd30ba746fcf9a8e038c2bcae05fc5aec8ac6775e|c67cbb868fd9faa0992368faa6e3e0848ce556b716e124e6fe390bfd66ff4f37|2
+run_exp419_deterministic_cpu_parallel.py|_read_json_regular|8440dfa0386fc0acb9a6e4c274666c41f7921d6f749a85572855377a0ca4cf2d|80cc45b3b148fdc79e5bc961e90c2afefe3fdfc846e50a8adc69929bb7f1688d|3
+run_exp419_deterministic_cpu_parallel.py|build_parser|6199d448944077f77c169bb96d6afd0e9f669179d4e920fdd11bcf683953fc59|389721a33218244fc2fabc086c81dd30f9e22deb0b8ceab4daf980dfd5ddf08c|8
+run_exp419_deterministic_cpu_parallel.py|require_disjoint_roots|b353cb70b8098d07ec088eda9998560c3a89f5dd9b596d8642a4d2e89d436974|a1f403fbc5b2b5262ddd1620e4b838bff66f9f9c92bdd80b0f070f7d85700806|6
+run_exp419_deterministic_cpu_parallel.py|verify_benchmark_evidence|e25a8952d254a97f1e72cb2e68ed29dbffd4ac675eacfdd6f1bd1d17756d6f08|282319147ad01a4f6f0aedad07cd3b5aa25edb40ef2d68b9b6a1cc7febaec04f|4
+workers.py|<module>|9d355b6b984b67f64bc881e3d5e6d92b7eb1bb82631184cfec579a6f4d5b993e|a84728fa409f1abff1e168b9c26fa085b51943e8d8870ef9c0c762b2a29b2d6a|2
+workers.py|_bootstrap_from_payload|a5ebe40a9335a5895fdff73a4b171807897b4bb168cb1176ff94f60dfe66d0b9|0a0ecbebd07889efbf0da832c8b6067562bdae58a81d2f84341c4fa88b9063ef|6
+workers.py|_casefolded_path_parts|2322396516cd7afc4a465889c004e8c97368cc196269cbc3e4ad77e9486a7c58|ce3262196e911d09067aa0d9b3aac65060a40f382645d93e220f8d944f605bc5|2
+workers.py|_filesystem_identity|7407c6dd5c879cc88319735dd1fff46ca766ce5ea6ad971bf64550c8fabbb6ed|e8f4d0a3d7d323db7b03cf7e4bc3b5d0266adbe87d17cc2bbf7cbb15c2f67537|2
+workers.py|_validate_context_provenance|bf31d244f74dfab3b694ce5f633a93e7f01ff61da6510a57cbc3ba61d63113df|1fc2f698cc104dbddce5fe57673050fabe3d5810036db976abd4ab23625abe05|1
+workers.py|_validated_specs|57ab8347aa0bddad408f29b3579a806b91cf3161377bb29b6878e104e395d631|a56b90bd64b6fe6cd0c5377b90d551233621fba2be75c67767b93ab7cd60b34e|1
+""".strip().splitlines()
+    for basename, scope, nodes, scope_sha, count in (line.split("|"),)
+)
+
+_APPROVED_SQL_SHA256 = (
+    "f94aadff07a9626329efaf06331740d80c62cf5799a928bc08d690b6ad31b146",
+)
+
+_LABEL_LITERAL_DENYLIST = (
+    r"(?:load|read|fetch|get).*labels?",
+    r"(?:^|\.)labels?(?:\.|$)",
+    r"(?:^|[/\\._-])(?:frozen[/\\._-]*)?(?:test[/\\._-]*)?"
+    r"labels?(?:$|[/\\._-])",
+    "labels_blob",
+)
+
+_LABEL_SQL_PROJECTION_DENYLIST = (
+    r"\b(?:[a-z_][a-z0-9_]*\.)?(?:label|labels_blob)\b"
+)
+
+_LABEL_API_ALLOWLIST = (
+    ".assert_label_free_sql_contract",
+    "assert_label_free_sql_contract",
+)
+
+_INVENTORY_DATA_ASSIGNMENT_ALLOWLIST = (
+    "_APPROVED_SQL_SHA256",
+    "_FORBIDDEN_KEYS",
+    "_INVENTORY_DATA_ASSIGNMENT_ALLOWLIST",
+    "_LABEL_API_ALLOWLIST",
+    "_LABEL_LITERAL_DENYLIST",
+    "_LABEL_SQL_PROJECTION_DENYLIST",
+    "_SENSITIVE_OPERATION_ALLOWLIST",
+)
+
+_SENSITIVE_CALL_NAMES = (
+    "__import__",
+    "compile",
+    "eval",
+    "exec",
+    "getattr",
+    "globals",
+    "importlib.import_module",
+    "locals",
+    "open",
+    "operator.attrgetter",
+    "operator.methodcaller",
+    "os.lstat",
+    "os.open",
+    "os.stat",
+    "path",
+    "vars",
+)
+
+_SENSITIVE_METHOD_NAMES = (
+    "execute",
+    "executemany",
+    "executescript",
+    "glob",
+    "lstat",
+    "open",
+    "read_bytes",
+    "read_text",
+    "resolve",
+    "stat",
+)
+
+_SENSITIVE_REFERENCE_NAMES = (
+    "Path",
+    "__import__",
+    "compile",
+    "eval",
+    "exec",
+    "getattr",
+    "globals",
+    "locals",
+    "open",
+    "vars",
+)
 
 
-def _node_scope(node: ast.AST, parents: Mapping[ast.AST, ast.AST]) -> str:
-    functions = []
+def _inventory_data_nodes(tree: ast.AST) -> set[ast.AST]:
+    nodes: set[ast.AST] = set()
+    for assignment in ast.walk(tree):
+        target = _assignment_name(assignment)
+        value = _assignment_value(assignment)
+        if (
+            target in _INVENTORY_DATA_ASSIGNMENT_ALLOWLIST
+            and value is not None
+        ):
+            nodes.update(ast.walk(value))
+    return nodes
+
+
+def _normalized_scope(scope: ast.AST) -> str:
+    reparsed = ast.fix_missing_locations(ast.parse(ast.unparse(scope)))
+    scope = reparsed if isinstance(scope, ast.Module) else reparsed.body[0]
+    if isinstance(scope, ast.Module):
+        assignments = [
+            node
+            for node in scope.body
+            if _assignment_name(node) == "_SENSITIVE_OPERATION_ALLOWLIST"
+        ]
+        if len(assignments) > 1:
+            raise ValueError("label isolation allowlist assignment is not unique")
+        if assignments:
+            assignments[0].value = ast.Tuple(elts=[], ctx=ast.Load())
+    return ast.dump(scope, include_attributes=False)
+
+
+def _enclosing_scope(
+    node: ast.AST,
+    tree: ast.Module,
+    parents: Mapping[ast.AST, ast.AST],
+) -> tuple[str, ast.AST]:
+    scopes: list[str] = []
     current = node
     while current in parents:
         current = parents[current]
         if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            functions.append(current.name)
-        elif isinstance(current, ast.ClassDef):
-            functions.append(current.name)
-            break
-    return ".".join(reversed(functions)) if functions else "<module>"
+            scopes.append(current.name)
+            return ".".join(reversed(scopes)), current
+        if isinstance(current, ast.Lambda):
+            return "<lambda>", current
+        if isinstance(current, ast.ClassDef):
+            scopes.append(current.name)
+    return "<module>", tree
 
 
-def _filesystem_target(call: ast.Call) -> ast.AST | None:
-    called = _call_name(call.func).casefold()
-    last = called.split(".")[-1]
-    if called in {"open", "os.open", "os.stat", "os.lstat"}:
-        return call.args[0] if call.args else None
-    if last == "path":
-        return call.args[0] if call.args else None
-    if last in {
-        "stat",
-        "lstat",
-        "exists",
-        "is_file",
-        "read_bytes",
-        "read_text",
-        "resolve",
-        "open",
-    } and isinstance(call.func, ast.Attribute):
-        return call.func.value
+def _path_from_scope(scope: ast.AST, target: ast.AST) -> str:
+    def visit(node: ast.AST, path: tuple[str, ...]) -> tuple[str, ...] | None:
+        if node is target:
+            return path
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, ast.AST):
+                found = visit(value, path + (field,))
+                if found is not None:
+                    return found
+            elif isinstance(value, list):
+                for index, item in enumerate(value):
+                    if isinstance(item, ast.AST):
+                        found = visit(item, path + (f"{field}[{index}]",))
+                        if found is not None:
+                            return found
+        return None
+
+    result = visit(scope, ())
+    if result is None:
+        raise ValueError("label isolation could not locate sensitive node")
+    return "/".join(result) or "<scope>"
+
+
+def _is_loader_like(value: str) -> bool:
+    return bool(re.search(_LABEL_LITERAL_DENYLIST[0], value.casefold()))
+
+
+def _sensitive_kind(
+    node: ast.AST,
+    parents: Mapping[ast.AST, ast.AST],
+) -> str | None:
+    if isinstance(node, (ast.Import, ast.ImportFrom)):
+        names = (
+            [alias.name for alias in node.names]
+            if isinstance(node, ast.Import)
+            else [node.module or "", *(alias.name for alias in node.names)]
+        )
+        if any(
+            name in {"importlib", "os", "pathlib", "operator", "sqlite3"}
+            or _is_loader_like(name)
+            for name in names
+        ):
+            return "import"
+        return None
+    if isinstance(node, ast.Call):
+        called = _call_name(node.func).casefold()
+        last = called.rsplit(".", 1)[-1]
+        if (
+            called in _SENSITIVE_CALL_NAMES
+            or last in _SENSITIVE_METHOD_NAMES
+            or _is_loader_like(called)
+        ):
+            return f"call:{called or '<dynamic>'}"
+        return None
+    parent = parents.get(node)
+    is_direct_callee = isinstance(parent, ast.Call) and parent.func is node
+    if isinstance(node, ast.Name) and not is_direct_callee:
+        if node.id in _SENSITIVE_REFERENCE_NAMES:
+            return f"reference:{node.id}"
+    if isinstance(node, ast.Attribute) and not is_direct_callee:
+        called = _call_name(node).casefold()
+        if (
+            node.attr in _SENSITIVE_METHOD_NAMES
+            or node.attr == "__dict__"
+            or called in {"importlib.import_module", "operator.attrgetter",
+                          "operator.methodcaller", "os.open", "os.stat", "os.lstat"}
+            or _is_loader_like(called)
+        ):
+            return f"reference:{called}"
     return None
 
 
-def _role_occurs(expression: str, role: str) -> bool:
-    return bool(
-        re.search(
-            rf"(?<![A-Za-z0-9_]){re.escape(role)}(?![A-Za-z0-9_])",
-            expression,
-        )
-    )
+def _static_constants(tree: ast.AST) -> dict[str, str]:
+    constants: dict[str, str] = {}
+    assignments = [
+        node for node in ast.walk(tree)
+        if isinstance(node, (ast.Assign, ast.AnnAssign))
+    ]
+    for _ in range(len(assignments) + 1):
+        changed = False
+        for assignment in assignments:
+            target = _assignment_name(assignment)
+            value_node = _assignment_value(assignment)
+            if target is None or value_node is None:
+                continue
+            value = _static_string(value_node, constants)
+            if value is not None and constants.get(target) != value:
+                constants[target] = value
+                changed = True
+        if not changed:
+            break
+    return constants
 
 
-def _approved_dynamic_path(
-    source_name: str,
-    scope: str,
-    target: ast.AST,
+def _assert_direct_label_and_sql_denials(
+    name: str,
+    tree: ast.Module,
     constants: Mapping[str, str],
-) -> bool:
-    static = _static_string(target, constants)
-    if static is not None:
-        return not _looks_like_label_artifact(static)
-    if (
-        isinstance(target, ast.Call)
-        and _call_name(target.func).casefold().split(".")[-1] == "path"
-        and target.args
-    ):
-        return _approved_dynamic_path(
-            source_name, scope, target.args[0], constants
+    data_nodes: set[ast.AST],
+) -> None:
+    for node in ast.walk(tree):
+        if node in data_nodes:
+            continue
+        if isinstance(node, ast.ImportFrom):
+            qualified = [
+                f"{node.module or ''}.{alias.name}".casefold()
+                for alias in node.names
+            ]
+            if any(
+                value != _LABEL_API_ALLOWLIST[0]
+                and (
+                    _is_loader_like(value)
+                    or re.search(_LABEL_LITERAL_DENYLIST[1], value)
+                )
+                for value in qualified
+            ):
+                raise ValueError(f"label loader import in {name}")
+        elif isinstance(node, ast.Import):
+            if any(
+                re.search(
+                    _LABEL_LITERAL_DENYLIST[1], alias.name.casefold()
+                )
+                for alias in node.names
+            ):
+                raise ValueError(f"label module import in {name}")
+        elif isinstance(node, ast.Attribute) and _is_loader_like(
+            _call_name(node)
+        ):
+            raise ValueError(f"label loader attribute in {name}")
+        if isinstance(node, ast.Call):
+            called = _call_name(node.func).casefold()
+            if (
+                _LABEL_API_ALLOWLIST[1] not in called
+                and _is_loader_like(called)
+            ):
+                raise ValueError(f"label loader call in {name}")
+            if called == "getattr" and len(node.args) >= 2:
+                attribute = _static_string(node.args[1], constants)
+                if attribute is not None and _is_loader_like(attribute):
+                    raise ValueError(f"aliased label loader in {name}")
+            if called in {"__import__", "importlib.import_module"}:
+                target = (
+                    _static_string(node.args[0], constants)
+                    if node.args
+                    else None
+                )
+                if target is None:
+                    raise ValueError(f"dynamic label import target in {name}")
+                if re.search(_LABEL_LITERAL_DENYLIST[1], target.casefold()):
+                    raise ValueError(f"label import target in {name}")
+            if called.rsplit(".", 1)[-1] in {
+                "execute", "executemany", "executescript"
+            }:
+                query = (
+                    _static_string(node.args[0], constants)
+                    if node.args
+                    else None
+                )
+                if query is None:
+                    raise ValueError(f"dynamic label SQL in {name}")
+                query_sha256 = sha256(
+                    " ".join(query.split()).encode("utf-8")
+                ).hexdigest()
+                if query_sha256 not in _APPROVED_SQL_SHA256:
+                    raise ValueError(f"unapproved label SQL in {name}")
+        value = None if isinstance(node, ast.Name) else _static_string(
+            node, constants
         )
-    expression = ast.unparse(target).replace('"', "'")
-    roles = _APPROVED_DYNAMIC_PATH_ROLES.get(
-        (Path(source_name).name, scope),
-        (),
-    )
-    return any(_role_occurs(expression, role) for role in roles)
+        if value is None:
+            continue
+        if _contains_projected_label(value):
+            raise ValueError(f"label SQL projection in {name}")
+        if _looks_like_label_artifact(value):
+            raise ValueError(f"frozen label artifact in {name}")
 
 
-def assert_source_label_isolation(sources: Mapping[str, str]) -> None:
-    """Reject statically reachable label loaders, projections, and artifacts."""
-    if not isinstance(sources, Mapping) or not sources:
-        raise ValueError("label isolation requires source mappings")
-    for name, source in sources.items():
-        if not isinstance(name, str) or not isinstance(source, str):
-            raise ValueError("label isolation sources must be strings")
-        try:
-            tree = ast.parse(source, filename=name)
-        except SyntaxError as error:
-            raise ValueError(f"label isolation cannot parse {name}") from error
-
-        constants: dict[str, str] = {}
+def propose_sensitive_inventory(
+    sources: Mapping[str, str],
+) -> tuple[tuple[str, str, str, str, str, str], ...]:
+    """Return deterministic proposed entries; never changes the checked-in list."""
+    nodes_by_scope: dict[
+        tuple[str, str, str], list[tuple[str, str, str]]
+    ] = {}
+    for name, source in sorted(sources.items()):
+        tree = ast.parse(source, filename=name)
         parents = {
             child: parent
             for parent in ast.walk(tree)
             for child in ast.iter_child_nodes(parent)
         }
-        denylist_nodes: set[ast.AST] = set()
-        guard_definition_nodes: set[ast.AST] = set()
-        for candidate in ast.walk(tree):
-            if (
-                isinstance(candidate, (ast.FunctionDef, ast.AsyncFunctionDef))
-                and candidate.name
-                in {
-                    "_contains_projected_label",
-                    "_looks_like_label_artifact",
-                    "assert_source_label_isolation",
-                }
-            ):
-                guard_definition_nodes.update(ast.walk(candidate))
-        assignments = [
-            node
-            for node in ast.walk(tree)
-            if isinstance(node, (ast.Assign, ast.AnnAssign))
-        ]
-        for _ in range(len(assignments) + 1):
-            changed = False
-            for assignment in assignments:
-                target = _assignment_name(assignment)
-                value_node = _assignment_value(assignment)
-                if target is None or value_node is None:
-                    continue
-                value = _static_string(value_node, constants)
-                if value is not None and constants.get(target) != value:
-                    constants[target] = value
-                    changed = True
-                if any(token in target.casefold() for token in ("forbidden", "denylist")):
-                    denylist_nodes.update(ast.walk(value_node))
-            if not changed:
-                break
-
-        dynamic_getattr_aliases: set[str] = set()
-        filesystem_aliases: set[str] = set()
-        for _ in range(len(assignments) + 1):
-            changed = False
-            for assignment in assignments:
-                target = _assignment_name(assignment)
-                value_node = _assignment_value(assignment)
-                if target is None or value_node is None:
-                    continue
-                dynamic = False
-                if (
-                    isinstance(value_node, ast.Call)
-                    and _call_name(value_node.func).casefold() == "getattr"
-                    and len(value_node.args) >= 2
-                    and _static_string(value_node.args[1], constants) is None
-                ):
-                    dynamic = True
-                elif (
-                    isinstance(value_node, ast.Name)
-                    and value_node.id in dynamic_getattr_aliases
-                ):
-                    dynamic = True
-                if dynamic and target not in dynamic_getattr_aliases:
-                    dynamic_getattr_aliases.add(target)
-                    changed = True
-                source_call = _call_name(value_node).casefold()
-                filesystem_alias = (
-                    source_call
-                    in {
-                        "open",
-                        "path",
-                        "os.open",
-                        "os.stat",
-                        "os.lstat",
-                    }
-                    or (
-                        isinstance(value_node, ast.Name)
-                        and value_node.id in filesystem_aliases
-                    )
-                )
-                if filesystem_alias and target not in filesystem_aliases:
-                    filesystem_aliases.add(target)
-                    changed = True
-            if not changed:
-                break
-
+        data_nodes = _inventory_data_nodes(tree)
+        constants = _static_constants(tree)
+        _assert_direct_label_and_sql_denials(
+            name, tree, constants, data_nodes
+        )
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
-                imported = tuple(alias.name for alias in node.names)
-                module = node.module or ""
-                for imported_name in imported:
-                    qualified = f"{module}.{imported_name}".casefold()
-                    if (
-                        imported_name != "assert_label_free_sql_contract"
-                        and (
-                            re.search(r"(?:load|read|fetch|get).*labels?", qualified)
-                            or re.search(r"(?:^|\.)labels?(?:\.|$)", module.casefold())
-                        )
-                    ):
-                        raise ValueError(f"label loader import in {name}")
-            elif isinstance(node, ast.Import):
-                if any(
-                    re.search(r"(?:^|\.)labels?(?:\.|$)", alias.name.casefold())
-                    for alias in node.names
-                ):
-                    raise ValueError(f"label module import in {name}")
-            elif isinstance(node, ast.Attribute):
-                attribute_name = _call_name(node).casefold()
-                if re.search(
-                    r"(?:load|read|fetch|get).*labels?", attribute_name
-                ):
-                    raise ValueError(f"label loader attribute in {name}")
-
-            if isinstance(node, ast.Call):
-                called = _call_name(node.func).casefold()
-                if (
-                    isinstance(node.func, ast.Name)
-                    and node.func.id in dynamic_getattr_aliases
-                ) or (
-                    isinstance(node.func, ast.Attribute)
-                    and _call_name(node.func).split(".", 1)[0]
-                    in dynamic_getattr_aliases
-                ) or (
-                    isinstance(node.func, ast.Call)
-                    and _call_name(node.func.func).casefold() == "getattr"
-                    and len(node.func.args) >= 2
-                    and _static_string(node.func.args[1], constants) is None
-                ):
-                    raise ValueError(f"dynamic label loader callable in {name}")
-                if called in {"__import__", "importlib.import_module"}:
-                    target = (
-                        _static_string(node.args[0], constants)
-                        if node.args
-                        else None
-                    )
-                    if target is None:
-                        raise ValueError(f"dynamic label import target in {name}")
-                    if re.search(
-                        r"(?:^|\.)labels?(?:\.|$)", target.casefold()
-                    ):
-                        raise ValueError(f"label import target in {name}")
-                if (
-                    "assert_label_free_sql_contract" not in called
-                    and re.search(r"(?:load|read|fetch|get).*labels?", called)
-                ):
-                    raise ValueError(f"label loader call in {name}")
-                if called == "getattr" and len(node.args) >= 2:
-                    attribute = _static_string(node.args[1], constants)
-                    if attribute and re.search(
-                        r"(?:load|read|fetch|get).*labels?", attribute.casefold()
-                    ):
-                        raise ValueError(f"aliased label loader in {name}")
-                filesystem_target = (
-                    node.args[0]
-                    if (
-                        isinstance(node.func, ast.Name)
-                        and node.func.id in filesystem_aliases
-                        and node.args
-                    )
-                    else _filesystem_target(node)
+            if node in data_nodes:
+                continue
+            kind = _sensitive_kind(node, parents)
+            if kind is None:
+                continue
+            scope_name, scope = _enclosing_scope(node, tree, parents)
+            scope_sha256 = sha256(
+                _normalized_scope(scope).encode()
+            ).hexdigest()
+            nodes_by_scope.setdefault(
+                (Path(name).name, scope_name, scope_sha256), []
+            ).append(
+                (
+                    kind,
+                    sha256(
+                        ast.dump(node, include_attributes=False).encode()
+                    ).hexdigest(),
+                    _path_from_scope(scope, node),
                 )
-                if filesystem_target is not None and not _approved_dynamic_path(
-                    name,
-                    _node_scope(node, parents),
-                    filesystem_target,
-                    constants,
-                ):
-                    raise ValueError(
-                        f"dynamic or label filesystem path in {name}"
-                    )
+            )
+    entries = []
+    for (basename, scope_name, scope_sha256), nodes in nodes_by_scope.items():
+        normalized_nodes = tuple(sorted(nodes))
+        entries.append(
+            (
+                basename,
+                scope_name,
+                "scope-sensitive-multiset",
+                sha256(
+                    "\n".join("|".join(node) for node in normalized_nodes).encode()
+                ).hexdigest(),
+                scope_sha256,
+                str(len(normalized_nodes)),
+            )
+        )
+    return tuple(sorted(entries))
 
-            value = _static_string(node, constants)
-            if value is None:
-                continue
-            if (
-                node in guard_definition_nodes
-                or value
-                in {
-                    "assert_label_free_sql_contract",
-                    "assert_exp419_label_isolation",
-                }
-            ):
-                continue
-            if _contains_projected_label(value):
-                raise ValueError(f"label SQL projection in {name}")
-            if node not in denylist_nodes and _looks_like_label_artifact(value):
-                raise ValueError(f"frozen label artifact in {name}")
+
+def _verify_sensitive_inventory(
+    sources: Mapping[str, str],
+    expected: Sequence[tuple[str, str, str, str, str, str]],
+) -> None:
+    if len(expected) != len(set(expected)):
+        raise ValueError("label isolation inventory has duplicate entries")
+    observed = propose_sensitive_inventory(sources)
+    if len(observed) != len(set(observed)):
+        raise ValueError("label isolation inventory observed duplicate entries")
+    if tuple(sorted(expected)) != observed:
+        missing = len(set(expected) - set(observed))
+        extra = len(set(observed) - set(expected))
+        raise ValueError(
+            "label isolation inventory mismatch "
+            f"(missing={missing}, extra={extra})"
+        )
+
+
+def assert_source_label_isolation(sources: Mapping[str, str]) -> None:
+    """Reject labels first, then require the exact checked-in sensitive inventory."""
+    if not isinstance(sources, Mapping) or not sources:
+        raise ValueError("label isolation requires source mappings")
+    if any(
+        not isinstance(name, str) or not isinstance(source, str)
+        for name, source in sources.items()
+    ):
+        raise ValueError("label isolation sources must be strings")
+    try:
+        _verify_sensitive_inventory(
+            sources, _SENSITIVE_OPERATION_ALLOWLIST
+        )
+    except SyntaxError as error:
+        raise ValueError("label isolation cannot parse source") from error
 
 
 def assert_exp419_label_isolation() -> None:
