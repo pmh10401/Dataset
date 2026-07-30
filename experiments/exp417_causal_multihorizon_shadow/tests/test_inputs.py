@@ -5,8 +5,11 @@ from __future__ import annotations
 from contextlib import closing, contextmanager
 from dataclasses import replace
 from hashlib import sha256
+import io
 import json
+import os
 from pathlib import Path
+import shutil
 import sqlite3
 import tempfile
 import unittest
@@ -158,7 +161,12 @@ class InputBoundaryTests(unittest.TestCase):
         )
 
     def _context(self, config: Exp417FrozenConfig):
-        return inputs.freeze_run_context(self.database, self._freeze_lanes(config), config=config)
+        return inputs.freeze_run_context(
+            self.database,
+            self._freeze_lanes(config),
+            verified_code_commit="f" * 40,
+            config=config,
+        )
 
     def _train_contract(self) -> FrozenTrainContract:
         return FrozenTrainContract(
@@ -216,8 +224,8 @@ class InputBoundaryTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "SHA256"):
                         self._freeze_lanes(config)
 
-    def test_rehash_after_parse_rejects_mutation_of_each_frozen_artifact(self) -> None:
-        """Every artifact is rehashed after its own successful parse."""
+    def test_path_mutation_after_pinned_capture_cannot_change_parsed_evidence(self) -> None:
+        """Parsing captured bytes is independent of later pathname replacement."""
         prediction_paths = (self.prediction_291, self.prediction_292)
         manifest_paths = (self.manifest_291, self.manifest_292)
         for artifact in prediction_paths + manifest_paths:
@@ -225,30 +233,67 @@ class InputBoundaryTests(unittest.TestCase):
                 self._write_predictions(self.rows, self.rows)
                 with self.synthetic_config() as config:
                     if artifact in prediction_paths:
-                        original = inputs._read_prediction_rows
+                        original = inputs._parse_prediction_rows
 
-                        def mutate_prediction(path: Path):
-                            rows = original(path)
-                            if Path(path) == artifact:
+                        def mutate_prediction(payload: bytes, name: str):
+                            if name == artifact.name:
                                 artifact.write_text("changed\n", encoding="utf-8")
-                            return rows
+                            return original(payload, name)
 
                         replacement = mutate_prediction
-                        target = "_read_prediction_rows"
+                        target = "_parse_prediction_rows"
                     else:
-                        original = inputs._read_manifest
+                        original = inputs._parse_manifest
 
-                        def mutate_manifest(path: Path):
-                            manifest = original(path)
-                            if Path(path) == artifact:
+                        def mutate_manifest(payload: bytes, name: str):
+                            if name == artifact.name:
                                 artifact.write_text("changed\n", encoding="utf-8")
-                            return manifest
+                            return original(payload, name)
 
                         replacement = mutate_manifest
-                        target = "_read_manifest"
+                        target = "_parse_manifest"
                     with patch.object(inputs, target, replacement):
-                        with self.assertRaisesRegex(ValueError, "changed during parsing"):
-                            self._freeze_lanes(config)
+                        snapshot = self._freeze_lanes(config)
+                    self.assertEqual(snapshot.hard["A"], (0,))
+
+    def test_lane_hash_and_parse_share_one_pinned_descriptor_across_aba_swap(self) -> None:
+        """Restoring a pathname after parsing foreign bytes must not make them trusted."""
+        malicious_rows = (
+            _row("A", hard=[4], normal=[1], standard=[2], priority=[3]),
+            _row("B"),
+        )
+        malicious_paths: dict[Path, Path] = {}
+        for target in (self.prediction_291, self.prediction_292):
+            malicious = target.with_suffix(target.suffix + ".malicious")
+            malicious.write_text(
+                "".join(
+                    json.dumps(row, sort_keys=True) + "\n"
+                    for row in malicious_rows
+                ),
+                encoding="utf-8",
+            )
+            malicious_paths[target] = malicious
+
+        with self.synthetic_config() as config:
+            real_open = io.open
+
+            def aba_open(file: object, mode: str = "r", *args: object, **kwargs: object):
+                path = Path(file)
+                if path in malicious_paths and "r" in mode and "b" not in mode:
+                    original = path.with_suffix(path.suffix + ".trusted")
+                    malicious = malicious_paths[path]
+                    os.replace(path, original)
+                    os.replace(malicious, path)
+                    handle = real_open(path, mode, *args, **kwargs)
+                    os.replace(path, malicious)
+                    os.replace(original, path)
+                    return handle
+                return real_open(file, mode, *args, **kwargs)
+
+            with patch("io.open", side_effect=aba_open):
+                lanes = self._freeze_lanes(config)
+
+        self.assertEqual(lanes.hard, {"A": (0,)})
 
     def test_rejects_duplicate_keys_in_prediction_and_manifest_json(self) -> None:
         """Duplicate JSON keys cannot choose a lane or manifest value by order."""
@@ -344,7 +389,25 @@ class InputBoundaryTests(unittest.TestCase):
             with closing(sqlite3.connect(self.database)) as connection, connection:
                 connection.execute("INSERT INTO datasets(id, name) VALUES (3, 'C')")
             with self.assertRaisesRegex(ValueError, "SHA256"):
-                inputs.freeze_run_context(self.database, self._freeze_lanes(config), config=config)
+                inputs.freeze_run_context(
+                    self.database,
+                    self._freeze_lanes(config),
+                    verified_code_commit="f" * 40,
+                    config=config,
+                )
+
+    def test_context_uses_the_explicitly_verified_head_without_cwd_git_lookup(self) -> None:
+        """The reviewed clean HEAD, not the caller's current repository, is provenance."""
+        with self.synthetic_config() as config, patch.object(
+            inputs, "_git_commit", side_effect=AssertionError("CWD Git lookup reached")
+        ):
+            context = inputs.freeze_run_context(
+                self.database,
+                self._freeze_lanes(config),
+                verified_code_commit="d" * 40,
+                config=config,
+            )
+        self.assertEqual(context.code_commit, "d" * 40)
 
     def test_frozen_test_manifest_rejects_database_row_mutation_before_loading(self) -> None:
         """Changing a valid-width TEST row after context freeze cannot replace its identity manifest."""
@@ -402,6 +465,61 @@ class InputBoundaryTests(unittest.TestCase):
         train_selects = [sql.lower() for sql in statements if "split = 'train'" in sql.lower()]
         self.assertTrue(train_selects)
         self.assertTrue(any("label = '0'" in sql for sql in train_selects))
+
+    def test_database_query_is_bound_to_verified_inode_across_path_aba(self) -> None:
+        """A foreign SQLite inode visible only during connect must never supply rows."""
+        malicious = self.root / "malicious.sqlite"
+        shutil.copy2(self.database, malicious)
+        with closing(sqlite3.connect(malicious)) as connection, connection:
+            connection.execute(
+                "UPDATE instances SET values_blob = ? "
+                "WHERE dataset_id = 1 AND split = 'TRAIN' AND instance_index = 0",
+                (np.array((99.0, 100.0), dtype="<f4").tobytes(),),
+            )
+
+        with self.synthetic_config() as config:
+            context = self._context(config)
+            original_open = inputs._open_read_only
+
+            def aba_connect(source: object):
+                if isinstance(source, Path):
+                    trusted = self.root / "trusted.sqlite"
+                    os.replace(self.database, trusted)
+                    os.replace(malicious, self.database)
+                    connection = original_open(self.database)
+                    os.replace(self.database, malicious)
+                    os.replace(trusted, self.database)
+                    return connection
+                return original_open(source)
+
+            with patch.object(inputs, "_open_read_only", side_effect=aba_connect):
+                bundle = inputs.load_raw_train_values(
+                    self.database, "A", context
+                )
+
+        self.assertEqual(bundle.series[0].values, (4.0, 5.5))
+
+    def test_sqlite_queries_use_an_immutable_descriptor_uri(self) -> None:
+        """A pathname mode=ro URI is not an inode-bound immutable snapshot."""
+        with self.synthetic_config() as config:
+            context = self._context(config)
+            uris: list[str] = []
+            real_connect = sqlite3.connect
+
+            def observe(database: object, *args: object, **kwargs: object):
+                uris.append(str(database))
+                return real_connect(database, *args, **kwargs)
+
+            with patch.object(inputs.sqlite3, "connect", side_effect=observe):
+                inputs.load_raw_train_values(self.database, "A", context)
+
+        self.assertTrue(
+            any(
+                "immutable=1" in uri
+                and ("/dev/fd/" in uri or "/proc/self/fd/" in uri)
+                for uri in uris
+            )
+        )
 
     def test_test_loader_is_values_only_and_requires_real_train_contract_first(self) -> None:
         """Selecting a TEST label or resolving an input before the contract is a boundary breach."""

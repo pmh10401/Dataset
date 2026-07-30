@@ -64,8 +64,6 @@ def publish_exp417(
     if output.name in {"", ".", ".."}:
         raise ValueError("Exp417 output directory name is invalid")
     _require_real_parent(output.parent)
-    if _lexists(output):
-        raise FileExistsError("Exp417 output directory must not exist")
     if (
         not isinstance(payloads, Mapping)
         or set(payloads) != NON_MANIFEST_FILES
@@ -76,6 +74,9 @@ def publish_exp417(
     if not callable(pre_publish_verify):
         raise ValueError("Exp417 pre-publish verifier must be callable")
     trusted_checkpoint = TrustedCheckpointProvenance.from_store(checkpoints)
+    _require_disjoint_checkpoint_output(checkpoints.root, output)
+    if _lexists(output):
+        raise FileExistsError("Exp417 output directory must not exist")
     _require_atomic_exchange(output.parent)
     verify_exp417_payloads(
         payloads, trusted_checkpoint=trusted_checkpoint
@@ -149,21 +150,29 @@ def publish_exp417(
         _fsync_directory(output.parent)
         published = False
         return dict(sorted(artifact_hashes.items()))
-    except Exception as publication_error:
+    except BaseException as publication_error:
+        cleanup_errors: list[BaseException] = []
         if output_descriptor is not None:
-            os.close(output_descriptor)
-            output_descriptor = None
+            try:
+                os.close(output_descriptor)
+            except BaseException as close_error:
+                cleanup_errors.append(close_error)
+            finally:
+                output_descriptor = None
         if staging_descriptor is not None:
-            os.close(staging_descriptor)
-            staging_descriptor = None
-        cleanup_errors: list[Exception] = []
+            try:
+                os.close(staging_descriptor)
+            except BaseException as close_error:
+                cleanup_errors.append(close_error)
+            finally:
+                staging_descriptor = None
         owned_output_removed = False
         for candidate in (output, staging):
             try:
                 removed = _remove_owned_path(candidate, staging_identity)
                 if candidate == output:
                     owned_output_removed = removed
-            except Exception as cleanup_error:
+            except BaseException as cleanup_error:
                 cleanup_errors.append(cleanup_error)
         if published and not owned_output_removed and not cleanup_errors:
             cleanup_errors.append(
@@ -172,10 +181,10 @@ def publish_exp417(
         if staging_identity is not None:
             try:
                 _fsync_directory(output.parent)
-            except Exception as cleanup_fsync_error:
+            except BaseException as cleanup_fsync_error:
                 cleanup_errors.append(cleanup_fsync_error)
         if cleanup_errors:
-            raise ExceptionGroup(
+            raise BaseExceptionGroup(
                 "Exp417 publication failed and cleanup also failed",
                 [publication_error, *cleanup_errors],
             )
@@ -789,6 +798,21 @@ def _require_real_parent(path: Path) -> None:
         raise FileNotFoundError("Exp417 output parent does not exist") from error
     if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
         raise ValueError("Exp417 output parent must be a real directory")
+
+
+def _require_disjoint_checkpoint_output(
+    checkpoint_root: Path, output_dir: Path
+) -> None:
+    checkpoint = Path(checkpoint_root).resolve(strict=False)
+    output = Path(output_dir).resolve(strict=False)
+    if (
+        checkpoint == output
+        or checkpoint in output.parents
+        or output in checkpoint.parents
+    ):
+        raise ValueError(
+            "Exp417 checkpoint and output paths must have disjoint ancestry"
+        )
 
 
 def _fsync_directory(path: Path) -> None:

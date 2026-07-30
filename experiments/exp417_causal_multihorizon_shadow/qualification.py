@@ -57,7 +57,8 @@ def build_fixed_perturbations(
     drift = np.array(values, copy=True)
     drift[onset:] += np.linspace(0.0, 3.0 * scale, duration, dtype=np.float64)
 
-    amplitude = values * 1.5
+    center = float(np.median(values))
+    amplitude = center + 1.5 * (values - center)
 
     # The 1.25 period change is confined to the post-onset valid region.  It
     # reads a deterministic, linearly interpolated 1.25x source trajectory and
@@ -68,8 +69,13 @@ def build_fixed_perturbations(
     warped[onset:] = np.interp(source / 1.25, source, region)
 
     spike = np.array(values, copy=True)
-    spike_index = int(np.random.default_rng(seed).integers(onset, values.size))
-    spike[spike_index] += 5.0 * scale
+    spike_duration = max(1, int(np.ceil(values.size * 0.01)))
+    spike_start = int(
+        np.random.default_rng(seed).integers(
+            onset, values.size - spike_duration + 1
+        )
+    )
+    spike[spike_start : spike_start + spike_duration] += 5.0 * scale
 
     return MappingProxyType({
         "level_shift": _readonly(level),
@@ -114,8 +120,15 @@ def qualify_group(
         raise ValueError("finite and backend_fallback must be bool")
     normal = _decision_bundles(normal_oof_decisions, "normal_oof_decisions")
     synthetic = _synthetic_bundles(synthetic_decisions)
+    expected_trials = len(normal) * len(config.perturbation_seeds)
+    if any(len(bundles) != expected_trials for bundles in synthetic.values()):
+        raise ValueError(
+            "each perturbation must contain every TRAIN series-seed trial"
+        )
     agreement = all(_bundle_agrees(bundle) for bundle in normal) and all(
-        _bundle_agrees(bundle) for bundles in synthetic.values() for bundle in bundles
+        _bundle_agrees(bundle)
+        for name in _PRIMARY_TYPES
+        for bundle in synthetic[name]
     )
     normal_candidates = sum(_bundle_candidate(bundle) for bundle in normal)
     oof_rate = normal_candidates / len(normal)
@@ -125,8 +138,10 @@ def qualify_group(
         for name, bundles in synthetic.items()
     }
     pooled = sum(
-        _bundle_candidate(bundle) for bundles in synthetic.values() for bundle in bundles
-    ) / sum(len(bundles) for bundles in synthetic.values())
+        _bundle_candidate(bundle)
+        for name in _PRIMARY_TYPES
+        for bundle in synthetic[name]
+    ) / sum(len(synthetic[name]) for name in _PRIMARY_TYPES)
     qualified = (
         len(normal) >= config.min_train_candidate
         and oof_rate <= config.oof_candidate_rate
@@ -256,7 +271,11 @@ def apply_global_workload(
         raise ValueError("total_test does not conserve dataset totals")
     if total_test != sum(context.test_sizes.values()):
         raise ValueError("total_test must match the frozen TEST population")
-    prospective_rate = sum(len(result.observed_candidates) for result in frozen_results) / total_test if total_test else 0.0
+    prospective_rate = (
+        sum(len(result.candidates) for result in frozen_results) / total_test
+        if total_test
+        else 0.0
+    )
     if prospective_rate > FROZEN_CONFIG.global_workload_rate:
         cleared = tuple(
             DatasetResult(

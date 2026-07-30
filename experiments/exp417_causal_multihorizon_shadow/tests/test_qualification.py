@@ -151,25 +151,25 @@ def decision_evidence(
 def synthetic_decisions(*, detected: bool = True) -> dict[str, tuple[tuple[SeedDecision, ...], ...]]:
     bundle = decision_bundle(candidate=detected)
     return {
-        "level_shift": (bundle,),
-        "gradual_drift": (bundle,),
-        "amplitude_scaling": (bundle,),
-        "period_change": (bundle,),
-        "secondary_spike": (bundle,),
+        "level_shift": (bundle,) * 300,
+        "gradual_drift": (bundle,) * 300,
+        "amplitude_scaling": (bundle,) * 300,
+        "period_change": (bundle,) * 300,
+        "secondary_spike": (bundle,) * 300,
     }
 
 
 def boundary_synthetic_decisions(
-    *, per_type_detected: int = 1, spike_detected: int = 10
+    *, per_type_detected: int = 210, spike_detected: int = 300
 ) -> dict[str, tuple[tuple[SeedDecision, ...], ...]]:
-    """Hand-built 20-fixture pool: primary types at 1/2 and spike at 10/12."""
+    """Hand-built primary 70% boundary plus diagnostic spike evidence."""
     return {
         **{
-            name: tuple(decision_bundle(candidate=index < per_type_detected) for index in range(2))
+            name: tuple(decision_bundle(candidate=index < per_type_detected) for index in range(300))
             for name in ("level_shift", "gradual_drift", "amplitude_scaling", "period_change")
         },
         "secondary_spike": tuple(
-            decision_bundle(candidate=index < spike_detected) for index in range(12)
+            decision_bundle(candidate=index < spike_detected) for index in range(300)
         ),
     }
 
@@ -234,8 +234,108 @@ class FixedPerturbationTests(unittest.TestCase):
         for name in first:
             self.assertTrue(np.array_equal(first[name], second[name]))
 
+    def test_amplitude_is_centered_and_spike_covers_exact_one_percent(self) -> None:
+        """Raw-origin scaling or a single-sample long-series spike violates the frozen perturbation."""
+        series = np.linspace(10.0, 14.0, 1_000, dtype=np.float64)
+        perturbations = build_fixed_perturbations(series, 2.0, seed=41713)
+
+        center = float(np.median(series))
+        expected_amplitude = center + 1.5 * (series - center)
+        self.assertTrue(
+            np.array_equal(perturbations["amplitude_scaling"], expected_amplitude)
+        )
+        spike_delta = perturbations["secondary_spike"] - series
+        self.assertEqual(np.count_nonzero(spike_delta), 10)
+        self.assertTrue(
+            np.allclose(spike_delta[spike_delta != 0.0], 10.0, rtol=0.0, atol=1e-12)
+        )
+
 
 class QualificationBoundaryTests(unittest.TestCase):
+    def test_secondary_spike_cannot_rescue_failing_primary_pooled_sensitivity(self) -> None:
+        """A diagnostic-only spike must never contribute to the primary pooled gate."""
+        normal = tuple(decision_bundle(candidate=False) for _ in range(100))
+        synthetic = {
+            **{
+                name: tuple(
+                    decision_bundle(candidate=index < 195) for index in range(300)
+                )
+                for name in (
+                    "level_shift",
+                    "gradual_drift",
+                    "amplitude_scaling",
+                    "period_change",
+                )
+            },
+            "secondary_spike": tuple(
+                decision_bundle(candidate=True) for _ in range(300)
+            ),
+        }
+
+        result = qualify_group(
+            length=100,
+            normal_oof_decisions=normal,
+            synthetic_decisions=synthetic,
+        )
+
+        self.assertEqual(result.pooled_synthetic_sensitivity, 0.65)
+        self.assertEqual(result.status, "failed")
+
+    def test_secondary_spike_disagreement_is_diagnostic_only(self) -> None:
+        """Spike seed disagreement cannot veto otherwise complete primary qualification."""
+        normal = tuple(decision_bundle(candidate=False) for _ in range(100))
+        primary = tuple(decision_bundle(candidate=True) for _ in range(300))
+        disagreeing = list(decision_bundle(candidate=True))
+        disagreeing[-1] = SeedDecision(
+            seed=FROZEN_CONFIG.model_seeds[-1],
+            scores=scores(candidate=False),
+            candidate=False,
+        )
+        synthetic = {
+            name: primary
+            for name in (
+                "level_shift",
+                "gradual_drift",
+                "amplitude_scaling",
+                "period_change",
+            )
+        }
+        synthetic["secondary_spike"] = (
+            tuple(disagreeing),
+            *(decision_bundle(candidate=True) for _ in range(299)),
+        )
+
+        result = qualify_group(
+            length=100,
+            normal_oof_decisions=normal,
+            synthetic_decisions=synthetic,
+        )
+
+        self.assertEqual(result.status, "qualified")
+
+    def test_each_perturbation_requires_every_series_seed_trial(self) -> None:
+        """Dropping one series-seed perturbation must fail closed before rates are computed."""
+        normal = tuple(decision_bundle(candidate=False) for _ in range(100))
+        complete = tuple(decision_bundle(candidate=True) for _ in range(300))
+        synthetic = {
+            name: complete
+            for name in (
+                "level_shift",
+                "gradual_drift",
+                "amplitude_scaling",
+                "period_change",
+                "secondary_spike",
+            )
+        }
+        synthetic["period_change"] = complete[:-1]
+
+        with self.assertRaisesRegex(ValueError, "series-seed|trial"):
+            qualify_group(
+                length=100,
+                normal_oof_decisions=normal,
+                synthetic_decisions=synthetic,
+            )
+
     def test_qualify_group_enforces_oof_wilson_and_synthetic_boundaries(self) -> None:
         """Relaxing any frozen boundary must not qualify the immediately unsafe synthetic fixture."""
         normal_at_rate = (decision_bundle(candidate=True),) + tuple(
@@ -262,7 +362,7 @@ class QualificationBoundaryTests(unittest.TestCase):
             below_pooled = qualify_group(
                 length=100,
                 normal_oof_decisions=normal_at_rate,
-                synthetic_decisions=boundary_synthetic_decisions(spike_detected=9),
+                synthetic_decisions=boundary_synthetic_decisions(per_type_detected=209),
             )
             below_type = qualify_group(
                 length=100,
@@ -329,7 +429,15 @@ class QualificationBoundaryTests(unittest.TestCase):
             seed=41703, scores=scores(candidate=False), candidate=False
         )
         for kwargs in (
-            {"synthetic_decisions": {**synthetic_decisions(), "level_shift": (tuple(disagreeing),)}},
+            {
+                "synthetic_decisions": {
+                    **synthetic_decisions(),
+                    "level_shift": (
+                        tuple(disagreeing),
+                        *synthetic_decisions()["level_shift"][1:],
+                    ),
+                }
+            },
             {"synthetic_decisions": synthetic_decisions(), "finite": False},
             {"synthetic_decisions": synthetic_decisions(), "backend_fallback": True},
         ):
@@ -495,8 +603,8 @@ class LaneAndWorkloadTests(unittest.TestCase):
         self.assertEqual(rejected.status, "global_workload_gate_failed")
         self.assertFalse(any(result.candidates for result in rejected.results))
 
-    def test_global_workload_counts_locally_abstained_observed_evidence(self) -> None:
-        """Clearing a 6%-dataset payload must not erase its contribution to the 1% global gate."""
+    def test_global_workload_runs_after_local_dataset_abstentions(self) -> None:
+        """A locally abstained dataset contributes no retained payload to the global gate."""
         snapshot = lanes(protected=(100, 101, 102, 103))
         names = tuple(f"dataset-{index:04d}" for index in range(1117))
         context = FrozenRunContext(
@@ -523,9 +631,9 @@ class LaneAndWorkloadTests(unittest.TestCase):
         )
         self.assertEqual(local_abstention.candidates, ())
         self.assertEqual(len(local_abstention.observed_candidates), 6)
-        self.assertEqual(summary.status, "global_workload_gate_failed")
-        self.assertFalse(summary.publication_allowed)
-        self.assertFalse(any(result.candidates for result in summary.results))
+        self.assertEqual(summary.status, "complete")
+        self.assertTrue(summary.publication_allowed)
+        self.assertEqual(sum(len(result.candidates) for result in summary.results), 1116)
 
 
 class FreezeContractTests(unittest.TestCase):

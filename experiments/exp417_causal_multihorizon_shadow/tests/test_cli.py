@@ -61,6 +61,30 @@ class OfficialCliTests(unittest.TestCase):
 
         self.official = official
 
+    def test_model_contract_hash_covers_runner_routing_and_seed_loops(self) -> None:
+        """Changing qualification routing in runner.py must invalidate resume provenance."""
+        from experiments.exp417_causal_multihorizon_shadow.tests.test_checkpoints import (
+            _context,
+        )
+
+        calls: list[tuple[str, ...]] = []
+        with patch.object(
+            self.official,
+            "_source_digest",
+            side_effect=lambda *paths: calls.append(paths) or "f" * 64,
+        ):
+            self.official._provenance(_context())
+
+        model_call = next(
+            paths
+            for paths in calls
+            if any(path.endswith("scoring.py") for path in paths)
+        )
+        self.assertIn(
+            "experiments/exp417_causal_multihorizon_shadow/runner.py",
+            model_call,
+        )
+
     def test_parser_accepts_only_the_seven_frozen_path_arguments(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -122,6 +146,32 @@ class OfficialCliTests(unittest.TestCase):
             ):
                 self.official.main(_official_argv(root, checkpoint=checkpoint))
 
+    def test_checkpoint_and_output_ancestry_must_be_disjoint(self) -> None:
+        """An official output nested in the checkpoint root corrupts exact checkpoint inventory."""
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            checkpoint = root / "checkpoint"
+            checkpoint.mkdir()
+            cases = (
+                (checkpoint, checkpoint / "official-output"),
+                (root / "same-new-path", root / "same-new-path"),
+            )
+            for checkpoint_path, output in cases:
+                with (
+                    self.subTest(output=output),
+                    patch.object(
+                        self.official,
+                        "execute_official",
+                        side_effect=ReachedLaterStage("ancestry validator bypassed"),
+                    ),
+                    self.assertRaisesRegex(ValueError, "disjoint"),
+                ):
+                    self.official.main(
+                        _official_argv(
+                            root, checkpoint=checkpoint_path, output=output
+                        )
+                    )
+
     def test_dirty_git_is_rejected_by_the_real_cleanliness_guard(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -146,10 +196,13 @@ class OfficialCliTests(unittest.TestCase):
 
     def test_official_pipeline_has_strict_order_and_stops_after_failure(self) -> None:
         events: list[str] = []
+        verified_head = "d" * 40
         stages = self.official.OfficialStages(
-            clean_git=lambda: events.append("clean_git"),
+            clean_git=lambda: events.append("clean_git") or verified_head,
             label_guard=lambda: events.append("label_guard"),
-            freeze_inputs=lambda: events.append("freeze_inputs") or "context",
+            freeze_inputs=lambda head: events.append(
+                f"freeze_inputs:{head}"
+            ) or "context",
             open_checkpoint=lambda context: events.append("checkpoint") or "store",
             run=lambda context, store: events.append("runner") or "summary",
             revalidate=lambda: events.append("revalidate"),
@@ -161,12 +214,16 @@ class OfficialCliTests(unittest.TestCase):
         self.assertEqual(
             events,
             [
-                "clean_git", "label_guard", "freeze_inputs", "checkpoint",
+                "clean_git", "label_guard", f"freeze_inputs:{verified_head}", "checkpoint",
                 "runner", "revalidate", "render", "verify", "publish",
             ],
         )
 
-        for failed_stage in tuple(events):
+        stage_names = (
+            "clean_git", "label_guard", "freeze_inputs", "checkpoint",
+            "runner", "revalidate", "render", "verify", "publish",
+        )
+        for failed_stage in stage_names:
             observed: list[str] = []
 
             def stage(name: str, value=None):
@@ -179,7 +236,7 @@ class OfficialCliTests(unittest.TestCase):
                 return invoke
 
             failing = self.official.OfficialStages(
-                clean_git=stage("clean_git"),
+                clean_git=stage("clean_git", verified_head),
                 label_guard=stage("label_guard"),
                 freeze_inputs=stage("freeze_inputs", "context"),
                 open_checkpoint=stage("checkpoint", "store"),
@@ -193,7 +250,10 @@ class OfficialCliTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, failed_stage):
                     self.official.execute_official(failing)
                 self.assertEqual(observed[-1], failed_stage)
-                self.assertEqual(observed, events[: events.index(failed_stage) + 1])
+                self.assertEqual(
+                    observed,
+                    list(stage_names[: stage_names.index(failed_stage) + 1]),
+                )
 
 
 class SmokeCliTests(unittest.TestCase):

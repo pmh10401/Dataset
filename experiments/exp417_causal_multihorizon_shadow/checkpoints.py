@@ -7,17 +7,22 @@ canonical JSON and all run provenance still agrees with the root manifest.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
+from contextlib import contextmanager
+import ctypes
 from dataclasses import asdict, dataclass
+import errno
+import fcntl
 from hashlib import sha256
 import json
 import math
 import os
 from pathlib import Path
 import stat
-import tempfile
+import sys
 from types import MappingProxyType
 from typing import Any
+import uuid
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
@@ -29,9 +34,35 @@ from .contracts import (
 )
 
 
-_SCHEMA_VERSION = 2
+_SCHEMA_VERSION = 3
 _ROOT_FILE = "checkpoint_provenance.json"
 _PROGRESS_FILE = "progress.json"
+_DIRECTORY_OPEN_FLAGS = (
+    os.O_RDONLY
+    | getattr(os, "O_CLOEXEC", 0)
+    | getattr(os, "O_DIRECTORY", 0)
+    | getattr(os, "O_NOFOLLOW", 0)
+)
+_LINUX_AT_FDCWD = -100
+_RENAME_NOREPLACE = 1
+_RENAME_EXCHANGE = 2
+_RENAME_SWAP = 0x00000002
+_RENAME_EXCL = 0x00000004
+
+
+class _CommittedWriteError(BaseException):
+    """Carry inode ownership when an atomic rename committed before failure."""
+
+    def __init__(
+        self, original: BaseException, identity: tuple[int, int]
+    ) -> None:
+        super().__init__(str(original))
+        self.original = original
+        self.identity = identity
+
+
+class _DirectoryBindingError(ValueError):
+    """A pathname no longer names the directory inode opened for the operation."""
 
 
 @dataclass(frozen=True)
@@ -73,6 +104,13 @@ class Exp417CheckpointProvenance:
         return payload
 
 
+def canonical_result_sha256(result: DatasetResult) -> str:
+    """Hash the complete canonical DatasetResult checkpoint payload."""
+    if not isinstance(result, DatasetResult):
+        raise ValueError("Exp417 checkpoint result is invalid")
+    return sha256(canonical_json_bytes(_result_payload(result))).hexdigest()
+
+
 class Exp417CheckpointStore:
     """An exclusive per-dataset checkpoint store with a fixed dataset universe."""
 
@@ -90,7 +128,7 @@ class Exp417CheckpointStore:
             "expected_datasets": list(self.expected_datasets),
         }
         if _path_exists_lstat(self.root):
-            self._validate_root()
+            self._validate_existing_root_or_quarantine()
         else:
             self._create_root()
 
@@ -106,7 +144,6 @@ class Exp417CheckpointStore:
         backend_audit: BackendAudit | None,
         elapsed_seconds: float,
     ) -> None:
-        self._validate_root()
         if not isinstance(result, DatasetResult):
             raise ValueError("Exp417 checkpoint result is invalid")
         _validate_result_provenance(result, self.provenance)
@@ -127,16 +164,17 @@ class Exp417CheckpointStore:
         identities = _length_digest_mapping(length_group_identity_sha256, "length-group identities")
         model_hashes = _model_hash_mapping(canonical_model_hashes)
         calibrations = _length_digest_mapping(score_calibration_hashes, "score calibration hashes")
-        lengths = tuple(group.length for group in result.groups)
-        if not terminal and (tuple(identities) != lengths or tuple(model_hashes) != lengths or tuple(calibrations) != lengths):
-            raise ValueError("Exp417 checkpoint length-group accounting is invalid")
+        if not terminal:
+            _validate_length_evidence(
+                result, identities, model_hashes, calibrations
+            )
         contract = result.decision_evidence.frozen_train_contract
         if terminal:
             pass
         elif not isinstance(backend_audit, BackendAudit) or contract is None or backend_audit != contract.backend:
             raise ValueError("Exp417 checkpoint backend audit does not match result")
         elapsed = _finite_nonnegative(elapsed_seconds, "elapsed time")
-        path = self._dataset_path(result.dataset)
+        record_name = self._dataset_path(result.dataset).name
         body: dict[str, object] = {
             "schema_version": _SCHEMA_VERSION,
             "dataset": result.dataset,
@@ -154,59 +192,707 @@ class Exp417CheckpointStore:
             "elapsed_seconds": elapsed,
         }
         body["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
-        # The exclusive link publication below is the concurrency authority;
-        # scanning every completed record here made a valid 1,117-dataset
-        # resume quadratic without adding safety.
-        if _path_exists_lstat(path):
-            raise ValueError(f"Exp417 checkpoint already exists for dataset: {result.dataset}")
-        old_progress = _read_regular(self.root / _PROGRESS_FILE, "Exp417 checkpoint progress")
-        self._begin_transaction(result.dataset, old_progress)
-        published = False
-        try:
-            _atomic_write_exclusive(path, canonical_json_bytes(body) + b"\n")
-            published = True
-            _fsync_directory(self.datasets_dir)
-            digests = _progress_digests(self._read_progress())
-            digests[result.dataset] = body["payload_sha256"]
-            self._write_progress(completed=len(digests), current_dataset=None, record_digests=digests)
-            self._finish_transaction()
-        except BaseException:
-            self._rollback_transaction(path if published else None, old_progress)
-            raise
+        record_bytes = canonical_json_bytes(body) + b"\n"
+        with self._root_descriptor_lock(exclusive=True) as (
+            root_descriptor,
+            root_identity,
+        ):
+            datasets_descriptor: int | None = None
+            try:
+                try:
+                    datasets_descriptor, datasets_identity = (
+                        _open_directory_at_verified(
+                            root_descriptor,
+                            "datasets",
+                            "Exp417 checkpoint datasets directory",
+                        )
+                    )
+                    (
+                        old_provenance,
+                        old_provenance_identity,
+                        old_progress,
+                        old_progress_identity,
+                        digests,
+                        dataset_names,
+                    ) = self._read_write_metadata_at(
+                        root_descriptor, datasets_descriptor
+                    )
+                except _DirectoryBindingError:
+                    raise
+                except ValueError as error:
+                    if datasets_descriptor is not None:
+                        _verify_directory_entry_identity_at(
+                            root_descriptor,
+                            "datasets",
+                            datasets_identity,
+                            "Exp417 checkpoint datasets directory",
+                        )
+                    self._verify_root_path_identity(root_identity)
+                    quarantine = self._quarantine_root(
+                        root_identity,
+                        root_descriptor,
+                    )
+                    raise ValueError(
+                        "Exp417 checkpoint state was quarantined at "
+                        f"{quarantine}"
+                    ) from error
+                # The locked directory descriptors are the transaction
+                # authority.  Every read and mutation remains bound to
+                # those inodes even if their pathnames undergo ABA swaps.
+                if (
+                    result.dataset in digests
+                    or record_name in dataset_names
+                ):
+                    raise ValueError(
+                        "Exp417 checkpoint already exists for dataset: "
+                        f"{result.dataset}"
+                    )
+                published = False
+                progress_published = False
+                progress_identity: tuple[int, int] | None = None
+                try:
+                    try:
+                        published_identity = _atomic_write_exclusive_at(
+                            datasets_descriptor,
+                            record_name,
+                            record_bytes,
+                            recovery_root_descriptor=root_descriptor,
+                        )
+                        published = True
+                    except _CommittedWriteError as committed:
+                        published_identity = committed.identity
+                        published = True
+                        raise committed.original
+                    os.fsync(datasets_descriptor)
+                    digests[result.dataset] = body["payload_sha256"]
+                    progress_bytes = self._progress_bytes(
+                        completed=len(digests),
+                        current_dataset=None,
+                        record_digests=digests,
+                    )
+                    try:
+                        progress_identity = self._replace_owned_progress_at(
+                            root_descriptor,
+                            progress_bytes,
+                            old_progress_identity,
+                        )
+                        progress_published = True
+                    except _CommittedWriteError as committed:
+                        progress_identity = committed.identity
+                        progress_published = True
+                        raise committed.original
+                    os.fsync(root_descriptor)
+                    observed_record, observed_record_identity = (
+                        _read_regular_entry_at(
+                            datasets_descriptor,
+                            record_name,
+                            "Exp417 published dataset checkpoint",
+                        )
+                    )
+                    if (
+                        observed_record_identity != published_identity
+                        or observed_record != record_bytes
+                    ):
+                        raise ValueError(
+                            "Exp417 published dataset checkpoint changed "
+                            "before commit verification"
+                        )
+                    observed_progress, observed_progress_identity = (
+                        _read_regular_entry_at(
+                            root_descriptor,
+                            _PROGRESS_FILE,
+                            "Exp417 published checkpoint progress",
+                        )
+                    )
+                    if (
+                        observed_progress_identity != progress_identity
+                        or observed_progress != progress_bytes
+                    ):
+                        raise ValueError(
+                            "Exp417 published checkpoint progress changed "
+                            "before commit verification"
+                        )
+                    (
+                        observed_provenance,
+                        observed_provenance_identity,
+                    ) = _read_regular_entry_at(
+                        root_descriptor,
+                        _ROOT_FILE,
+                        "Exp417 published checkpoint provenance",
+                    )
+                    if (
+                        observed_provenance_identity
+                        != old_provenance_identity
+                        or observed_provenance != old_provenance
+                    ):
+                        raise ValueError(
+                            "Exp417 checkpoint provenance changed "
+                            "during commit"
+                        )
+                    final_root_inventory = set(
+                        _list_directory_descriptor(
+                            root_descriptor,
+                            "Exp417 checkpoint root",
+                        )
+                    )
+                    if final_root_inventory != {
+                        _ROOT_FILE,
+                        _PROGRESS_FILE,
+                        "datasets",
+                    }:
+                        raise ValueError(
+                            "Exp417 checkpoint root inventory changed "
+                            "during commit"
+                        )
+                    final_dataset_names = (
+                        self._validate_write_dataset_inventory_at(
+                            datasets_descriptor,
+                            digests,
+                        )
+                    )
+                    if final_dataset_names != dataset_names | {record_name}:
+                        raise ValueError(
+                            "Exp417 checkpoint dataset inventory changed "
+                            "during commit"
+                        )
+                    _verify_directory_entry_identity_at(
+                        root_descriptor,
+                        "datasets",
+                        datasets_identity,
+                        "Exp417 checkpoint datasets directory",
+                    )
+                    self._verify_root_path_identity(root_identity)
+                except BaseException as error:
+                    try:
+                        self._rollback_transaction_at(
+                            datasets_descriptor,
+                            record_name if published else None,
+                            published_identity if published else None,
+                            root_descriptor,
+                            old_provenance,
+                            old_provenance_identity,
+                            old_progress,
+                            old_progress_identity,
+                            progress_identity if progress_published else None,
+                            root_identity,
+                            datasets_identity,
+                        )
+                    except BaseException as rollback_error:
+                        raise BaseExceptionGroup(
+                            "Exp417 checkpoint transaction and rollback both failed",
+                            [error, rollback_error],
+                        )
+                    raise
+            finally:
+                if datasets_descriptor is not None:
+                    os.close(datasets_descriptor)
 
     def load_completed(self) -> Mapping[str, DatasetResult]:
-        records = self._load_records()
-        self._assert_progress_matches_records(records)
-        return MappingProxyType({name: records[name]["qualification"] for name in self.expected_datasets if name in records})
+        records, _ = self._read_state_snapshot()
+        return MappingProxyType(
+            {
+                name: records[name]["qualification"]
+                for name in self.expected_datasets
+                if name in records
+            }
+        )
 
     def progress(self) -> Mapping[str, object]:
-        records = self._load_records()
-        payload = self._read_progress()
-        self._assert_progress_matches_records(records)
-        return MappingProxyType({"completed_datasets": payload["completed_datasets"],
-                                 "current_dataset": payload["current_dataset"],
-                                 "expected_datasets": payload["expected_datasets"]})
+        _, payload = self._read_state_snapshot()
+        return MappingProxyType(
+            {
+                "completed_datasets": payload["completed_datasets"],
+                "current_dataset": payload["current_dataset"],
+                "expected_datasets": payload["expected_datasets"],
+            }
+        )
+
+    def completed_record_digests(self) -> Mapping[str, str]:
+        """Return validated canonical record digests under a shared root lock."""
+        _, payload = self._read_state_snapshot()
+        digests = _progress_digests(payload)
+        return MappingProxyType(dict(sorted(digests.items())))
+
+    def require_complete_snapshot(
+        self,
+    ) -> tuple[Mapping[str, DatasetResult], Mapping[str, str]]:
+        """Return complete results and record digests from one shared-lock snapshot."""
+        records, progress = self._read_state_snapshot()
+        if set(records) != set(self.expected_datasets):
+            raise ValueError("Exp417 checkpoint dataset coverage is incomplete")
+        completed = {
+            name: records[name]["qualification"]
+            for name in self.expected_datasets
+        }
+        progress_digests = _progress_digests(progress)
+        digests = {
+            name: _digest(
+                progress_digests[name],
+                "checkpoint record payload",
+            )
+            for name in self.expected_datasets
+        }
+        return MappingProxyType(completed), MappingProxyType(digests)
+
+    def _read_state_snapshot(
+        self,
+    ) -> tuple[dict[str, dict[str, object]], dict[str, object]]:
+        with self._root_descriptor_lock(exclusive=False) as (
+            root_descriptor,
+            root_identity,
+        ):
+            datasets_descriptor, datasets_identity = (
+                _open_directory_at_verified(
+                    root_descriptor,
+                    "datasets",
+                    "Exp417 checkpoint datasets directory",
+                )
+            )
+            try:
+                records = self._load_records_from_descriptor(
+                    root_descriptor, datasets_descriptor
+                )
+                progress = self._read_progress_from_descriptor(
+                    root_descriptor
+                )
+                progress_digests = _progress_digests(progress)
+                observed_digests = {
+                    name: record["payload_sha256"]
+                    for name, record in records.items()
+                }
+                if progress_digests != observed_digests:
+                    raise ValueError(
+                        "Exp417 checkpoint progress accounting is invalid"
+                    )
+                _verify_directory_entry_identity_at(
+                    root_descriptor,
+                    "datasets",
+                    datasets_identity,
+                    "Exp417 checkpoint datasets directory",
+                )
+                self._verify_root_path_identity(root_identity)
+                return records, progress
+            finally:
+                os.close(datasets_descriptor)
 
     def require_complete(self) -> tuple[DatasetResult, ...]:
-        completed = self.load_completed()
-        if tuple(completed) != self.expected_datasets:
-            raise ValueError("Exp417 checkpoint dataset coverage is incomplete")
+        completed, _ = self.require_complete_snapshot()
         return tuple(completed[name] for name in self.expected_datasets)
 
     def _create_root(self) -> None:
-        if not self.root.parent.is_dir() or stat.S_ISLNK(os.lstat(self.root.parent).st_mode):
-            raise ValueError("Exp417 checkpoint parent is invalid")
+        root_name = _entry_name(
+            self.root.name, "Exp417 checkpoint root name"
+        )
+        staging_name = f".exp417-init-{uuid.uuid4().hex}"
         try:
-            os.mkdir(self.root, 0o700)
-            os.chmod(self.root, 0o700)
-            os.mkdir(self.datasets_dir, 0o700)
-            os.chmod(self.datasets_dir, 0o700)
-            _atomic_write(self.root / _ROOT_FILE, canonical_json_bytes(self._root_payload) + b"\n", replace=False)
-            self._write_progress(completed=0, current_dataset=None, record_digests={})
-            _fsync_directory(self.root)
-        except BaseException:
-            # A partially initialized root must never be mistaken for a checkpoint.
-            raise
+            parent_descriptor = os.open(
+                self.root.parent, _DIRECTORY_OPEN_FLAGS
+            )
+        except OSError as error:
+            raise ValueError("Exp417 checkpoint parent is invalid") from error
+        root_descriptor: int | None = None
+        datasets_descriptor: int | None = None
+        try:
+            parent_metadata = os.fstat(parent_descriptor)
+            if not stat.S_ISDIR(parent_metadata.st_mode):
+                raise ValueError("Exp417 checkpoint parent is invalid")
+            parent_identity = (
+                parent_metadata.st_dev,
+                parent_metadata.st_ino,
+            )
+            try:
+                named_parent = os.stat(
+                    self.root.parent, follow_symlinks=False
+                )
+            except OSError as error:
+                raise ValueError(
+                    "Exp417 checkpoint parent is invalid"
+                ) from error
+            if (
+                not stat.S_ISDIR(named_parent.st_mode)
+                or (named_parent.st_dev, named_parent.st_ino)
+                != parent_identity
+            ):
+                raise ValueError(
+                    "Exp417 checkpoint parent identity changed"
+                )
+            baseline_inventory = _directory_inventory_at(
+                parent_descriptor,
+                "Exp417 checkpoint parent",
+            )
+            baseline_identities = {
+                (metadata.st_dev, metadata.st_ino)
+                for metadata in baseline_inventory.values()
+            }
+            os.mkdir(
+                staging_name,
+                0o700,
+                dir_fd=parent_descriptor,
+            )
+            initialized_inventory = _directory_inventory_at(
+                parent_descriptor,
+                "Exp417 checkpoint parent",
+            )
+            staged_metadata = initialized_inventory.get(staging_name)
+            new_identities = {
+                (metadata.st_dev, metadata.st_ino)
+                for metadata in initialized_inventory.values()
+                if (metadata.st_dev, metadata.st_ino)
+                not in baseline_identities
+            }
+            if (
+                staged_metadata is None
+                or not stat.S_ISDIR(staged_metadata.st_mode)
+                or new_identities
+                != {(staged_metadata.st_dev, staged_metadata.st_ino)}
+            ):
+                raise ValueError(
+                    "Exp417 checkpoint staging root ownership is invalid"
+                )
+            staged_identity = (
+                staged_metadata.st_dev,
+                staged_metadata.st_ino,
+            )
+            root_descriptor = os.open(
+                staging_name,
+                _DIRECTORY_OPEN_FLAGS,
+                dir_fd=parent_descriptor,
+            )
+            root_metadata = os.fstat(root_descriptor)
+            if not stat.S_ISDIR(root_metadata.st_mode):
+                raise ValueError("Exp417 checkpoint root is invalid")
+            root_identity = (
+                root_metadata.st_dev,
+                root_metadata.st_ino,
+            )
+            if root_identity != staged_identity:
+                raise ValueError(
+                    "Exp417 checkpoint staging root identity changed"
+                )
+            _verify_directory_entry_identity_at(
+                parent_descriptor,
+                staging_name,
+                root_identity,
+                "Exp417 checkpoint staging root",
+            )
+            os.fchmod(root_descriptor, 0o700)
+            os.mkdir("datasets", 0o700, dir_fd=root_descriptor)
+            (
+                datasets_descriptor,
+                datasets_identity,
+            ) = _open_directory_at_verified(
+                root_descriptor,
+                "datasets",
+                "Exp417 checkpoint datasets directory",
+            )
+            os.fchmod(datasets_descriptor, 0o700)
+            provenance_bytes = (
+                canonical_json_bytes(self._root_payload) + b"\n"
+            )
+            progress_bytes = self._progress_bytes(
+                completed=0,
+                current_dataset=None,
+                record_digests={},
+            )
+            provenance_identity = _atomic_write_exclusive_at(
+                root_descriptor,
+                _ROOT_FILE,
+                provenance_bytes,
+                recovery_root_descriptor=root_descriptor,
+            )
+            progress_identity = _atomic_write_exclusive_at(
+                root_descriptor,
+                _PROGRESS_FILE,
+                progress_bytes,
+                recovery_root_descriptor=root_descriptor,
+            )
+            os.fsync(datasets_descriptor)
+            os.fsync(root_descriptor)
+            os.fsync(parent_descriptor)
+            if set(_list_directory_descriptor(
+                root_descriptor, "Exp417 checkpoint root"
+            )) != {_ROOT_FILE, _PROGRESS_FILE, "datasets"}:
+                raise ValueError(
+                    "Exp417 checkpoint root inventory is invalid"
+                )
+            observed_provenance, observed_provenance_identity = (
+                _read_regular_entry_at(
+                    root_descriptor,
+                    _ROOT_FILE,
+                    "Exp417 checkpoint provenance",
+                )
+            )
+            observed_progress, observed_progress_identity = (
+                _read_regular_entry_at(
+                    root_descriptor,
+                    _PROGRESS_FILE,
+                    "Exp417 checkpoint progress",
+                )
+            )
+            if (
+                observed_provenance != provenance_bytes
+                or observed_provenance_identity != provenance_identity
+                or observed_progress != progress_bytes
+                or observed_progress_identity != progress_identity
+            ):
+                raise ValueError(
+                    "Exp417 checkpoint initialization changed during publish"
+                )
+            _verify_directory_entry_identity_at(
+                root_descriptor,
+                "datasets",
+                datasets_identity,
+                "Exp417 checkpoint datasets directory",
+            )
+            _verify_directory_entry_identity_at(
+                parent_descriptor,
+                staging_name,
+                root_identity,
+                "Exp417 checkpoint staging root",
+            )
+            try:
+                publish_returned = False
+                _atomic_rename_noreplace_at(
+                    parent_descriptor,
+                    staging_name,
+                    parent_descriptor,
+                    root_name,
+                )
+                publish_returned = True
+                os.fsync(parent_descriptor)
+                published_root_metadata = os.fstat(root_descriptor)
+                if (
+                    not stat.S_ISDIR(published_root_metadata.st_mode)
+                    or (
+                        published_root_metadata.st_dev,
+                        published_root_metadata.st_ino,
+                    )
+                    != root_identity
+                ):
+                    raise ValueError(
+                        "Exp417 checkpoint published root identity changed"
+                    )
+                _verify_directory_entry_identity_at(
+                    parent_descriptor,
+                    root_name,
+                    root_identity,
+                    "Exp417 checkpoint root",
+                )
+                if set(_list_directory_descriptor(
+                    root_descriptor,
+                    "Exp417 checkpoint root",
+                )) != {_ROOT_FILE, _PROGRESS_FILE, "datasets"}:
+                    raise ValueError(
+                        "Exp417 checkpoint published root inventory is "
+                        "invalid"
+                    )
+                (
+                    published_provenance,
+                    published_provenance_identity,
+                ) = _read_regular_entry_at(
+                    root_descriptor,
+                    _ROOT_FILE,
+                    "Exp417 checkpoint provenance",
+                )
+                (
+                    published_progress,
+                    published_progress_identity,
+                ) = _read_regular_entry_at(
+                    root_descriptor,
+                    _PROGRESS_FILE,
+                    "Exp417 checkpoint progress",
+                )
+                if (
+                    published_provenance != provenance_bytes
+                    or published_provenance_identity
+                    != provenance_identity
+                    or published_progress != progress_bytes
+                    or published_progress_identity != progress_identity
+                ):
+                    raise ValueError(
+                        "Exp417 checkpoint initialization changed during "
+                        "root publish"
+                    )
+                _verify_directory_entry_identity_at(
+                    root_descriptor,
+                    "datasets",
+                    datasets_identity,
+                    "Exp417 checkpoint datasets directory",
+                )
+                if _list_directory_descriptor(
+                    datasets_descriptor,
+                    "Exp417 checkpoint datasets directory",
+                ):
+                    raise ValueError(
+                        "Exp417 checkpoint published datasets inventory is "
+                        "invalid"
+                    )
+                _verify_directory_entry_identity_at(
+                    parent_descriptor,
+                    root_name,
+                    root_identity,
+                    "Exp417 checkpoint root",
+                )
+                self._verify_root_path_identity(root_identity)
+                try:
+                    final_parent = os.stat(
+                        self.root.parent, follow_symlinks=False
+                    )
+                except OSError as error:
+                    raise ValueError(
+                        "Exp417 checkpoint parent identity changed"
+                    ) from error
+                if (
+                    not stat.S_ISDIR(final_parent.st_mode)
+                    or (final_parent.st_dev, final_parent.st_ino)
+                    != parent_identity
+                ):
+                    raise ValueError(
+                        "Exp417 checkpoint parent identity changed"
+                    )
+            except BaseException as error:
+                failures: list[BaseException] = [error]
+                try:
+                    source_identity = _entry_identity_at_optional(
+                        parent_descriptor,
+                        staging_name,
+                        "Exp417 checkpoint staging root",
+                    )
+                except BaseException as probe_error:
+                    failures.append(probe_error)
+                    source_identity = None
+                target_probe_failed = False
+                try:
+                    target_identity = _entry_identity_at_optional(
+                        parent_descriptor,
+                        root_name,
+                        "Exp417 checkpoint root",
+                    )
+                except BaseException as probe_error:
+                    failures.append(probe_error)
+                    target_identity = None
+                    target_probe_failed = True
+                should_capture = (
+                    publish_returned
+                    or target_probe_failed
+                    or (
+                        target_identity is not None
+                        and source_identity != root_identity
+                    )
+                )
+                captured: tuple[str, tuple[int, int]] | None = None
+                if should_capture:
+                    try:
+                        captured = _preserve_root_publish_target_at(
+                            parent_descriptor,
+                            root_name,
+                        )
+                    except BaseException as preserve_error:
+                        failures.append(preserve_error)
+                    if (
+                        captured is not None
+                        and captured[1] != root_identity
+                    ):
+                        failures.append(ValueError(
+                            "Exp417 checkpoint foreign root publish target "
+                            f"was preserved as {captured[0]}"
+                        ))
+                try:
+                    canonical_identity = _entry_identity_at_optional(
+                        parent_descriptor,
+                        root_name,
+                        "Exp417 checkpoint root",
+                    )
+                except BaseException as probe_error:
+                    failures.append(probe_error)
+                    canonical_identity = None
+                if should_capture and canonical_identity is not None:
+                    failures.append(ValueError(
+                        "Exp417 checkpoint canonical root remains after "
+                        "publish recovery"
+                    ))
+                if len(failures) == 1:
+                    raise failures[0]
+                raise BaseExceptionGroup(
+                    "Exp417 checkpoint root publish recovery failed",
+                    failures,
+                )
+        finally:
+            if datasets_descriptor is not None:
+                os.close(datasets_descriptor)
+            if root_descriptor is not None:
+                os.close(root_descriptor)
+            os.close(parent_descriptor)
+
+    def _validate_existing_root_or_quarantine(self) -> None:
+        with self._root_descriptor_lock(exclusive=True) as (
+            root_descriptor,
+            root_identity,
+        ):
+            # Provenance establishes ownership.  A root belonging to a
+            # different run is foreign and must be rejected without moving it.
+            provenance, _ = _read_regular_entry_at(
+                root_descriptor,
+                _ROOT_FILE,
+                "Exp417 checkpoint provenance",
+            )
+            if provenance != canonical_json_bytes(self._root_payload) + b"\n":
+                raise ValueError("Exp417 checkpoint provenance mismatch")
+            datasets_descriptor: int | None = None
+            try:
+                try:
+                    datasets_descriptor, datasets_identity = (
+                        _open_directory_at_verified(
+                            root_descriptor,
+                            "datasets",
+                            "Exp417 checkpoint datasets directory",
+                        )
+                    )
+                    records = self._load_records_from_descriptor(
+                        root_descriptor,
+                        datasets_descriptor,
+                    )
+                    progress = self._read_progress_from_descriptor(
+                        root_descriptor
+                    )
+                    digests = _progress_digests(progress)
+                    observed = {
+                        name: record["payload_sha256"]
+                        for name, record in records.items()
+                    }
+                    if digests != observed:
+                        raise ValueError(
+                            "Exp417 checkpoint progress accounting is invalid"
+                        )
+                except _DirectoryBindingError:
+                    raise
+                except ValueError as error:
+                    if datasets_descriptor is not None:
+                        _verify_directory_entry_identity_at(
+                            root_descriptor,
+                            "datasets",
+                            datasets_identity,
+                            "Exp417 checkpoint datasets directory",
+                        )
+                    self._verify_root_path_identity(root_identity)
+                    quarantine = self._quarantine_root(
+                        root_identity,
+                        root_descriptor,
+                    )
+                    raise ValueError(
+                        "Exp417 checkpoint state was quarantined at "
+                        f"{quarantine}"
+                    ) from error
+                _verify_directory_entry_identity_at(
+                    root_descriptor,
+                    "datasets",
+                    datasets_identity,
+                    "Exp417 checkpoint datasets directory",
+                )
+                self._verify_root_path_identity(root_identity)
+            finally:
+                if datasets_descriptor is not None:
+                    os.close(datasets_descriptor)
 
     def _validate_root(self) -> None:
         _require_directory(self.root, "Exp417 checkpoint root")
@@ -240,11 +926,213 @@ class Exp417CheckpointStore:
             result[dataset] = record
         return result
 
+    def _load_records_from_descriptor(
+        self,
+        root_descriptor: int,
+        datasets_descriptor: int | None = None,
+    ) -> dict[str, dict[str, object]]:
+        inventory = set(
+            _list_directory_descriptor(
+                root_descriptor, "Exp417 checkpoint root"
+            )
+        )
+        if inventory != {_ROOT_FILE, _PROGRESS_FILE, "datasets"}:
+            raise ValueError("Exp417 checkpoint root inventory is invalid")
+        root_payload = _read_regular_at(
+            root_descriptor,
+            _ROOT_FILE,
+            "Exp417 checkpoint provenance",
+        )
+        if root_payload != canonical_json_bytes(self._root_payload) + b"\n":
+            raise ValueError("Exp417 checkpoint provenance mismatch")
+        owns_datasets_descriptor = datasets_descriptor is None
+        if datasets_descriptor is None:
+            datasets_descriptor, datasets_identity = (
+                _open_directory_at_verified(
+                    root_descriptor,
+                    "datasets",
+                    "Exp417 checkpoint datasets directory",
+                )
+            )
+        else:
+            metadata = os.fstat(datasets_descriptor)
+            if not stat.S_ISDIR(metadata.st_mode):
+                raise ValueError(
+                    "Exp417 checkpoint datasets directory is invalid"
+                )
+            datasets_identity = (metadata.st_dev, metadata.st_ino)
+            _verify_directory_entry_identity_at(
+                root_descriptor,
+                "datasets",
+                datasets_identity,
+                "Exp417 checkpoint datasets directory",
+            )
+        try:
+            names = _list_directory_descriptor(
+                datasets_descriptor, "Exp417 checkpoint datasets directory"
+            )
+            expected_names = {
+                self._dataset_path(dataset).name
+                for dataset in self.expected_datasets
+            }
+            result: dict[str, dict[str, object]] = {}
+            for name in names:
+                if name not in expected_names or not name.endswith(".json"):
+                    raise ValueError(
+                        "Exp417 checkpoint dataset inventory is invalid"
+                    )
+                record = _record_from_bytes(
+                    _read_regular_at(
+                        datasets_descriptor,
+                        name,
+                        "Exp417 dataset checkpoint",
+                    )
+                )
+                dataset = record["dataset"]
+                if (
+                    not isinstance(dataset, str)
+                    or dataset not in self.expected_datasets
+                    or name != self._dataset_path(dataset).name
+                    or dataset in result
+                ):
+                    raise ValueError(
+                        "Exp417 checkpoint dataset identity is invalid"
+                    )
+                _validate_result_provenance(
+                    record["qualification"], self.provenance
+                )
+                result[dataset] = record
+            _verify_directory_entry_identity_at(
+                root_descriptor,
+                "datasets",
+                datasets_identity,
+                "Exp417 checkpoint datasets directory",
+            )
+            return result
+        finally:
+            if owns_datasets_descriptor:
+                os.close(datasets_descriptor)
+
+    def _read_write_metadata_at(
+        self,
+        root_descriptor: int,
+        datasets_descriptor: int,
+    ) -> tuple[
+        bytes,
+        tuple[int, int],
+        bytes,
+        tuple[int, int],
+        dict[str, str],
+        frozenset[str],
+    ]:
+        """Reconcile append metadata without reconstructing prior results."""
+        inventory = set(
+            _list_directory_descriptor(
+                root_descriptor, "Exp417 checkpoint root"
+            )
+        )
+        if inventory != {_ROOT_FILE, _PROGRESS_FILE, "datasets"}:
+            raise ValueError("Exp417 checkpoint root inventory is invalid")
+        root_payload, root_payload_identity = _read_regular_entry_at(
+            root_descriptor,
+            _ROOT_FILE,
+            "Exp417 checkpoint provenance",
+        )
+        if root_payload != canonical_json_bytes(self._root_payload) + b"\n":
+            raise ValueError("Exp417 checkpoint provenance mismatch")
+        metadata = os.fstat(datasets_descriptor)
+        if not stat.S_ISDIR(metadata.st_mode):
+            raise ValueError(
+                "Exp417 checkpoint datasets directory is invalid"
+            )
+        datasets_identity = (metadata.st_dev, metadata.st_ino)
+        _verify_directory_entry_identity_at(
+            root_descriptor,
+            "datasets",
+            datasets_identity,
+            "Exp417 checkpoint datasets directory",
+        )
+        old_progress, old_progress_identity = _read_regular_entry_at(
+            root_descriptor,
+            _PROGRESS_FILE,
+            "Exp417 checkpoint progress",
+        )
+        progress = self._progress_from_bytes(old_progress)
+        digests = _progress_digests(progress)
+        if set(digests) - set(self.expected_datasets):
+            raise ValueError(
+                "Exp417 checkpoint progress contains a foreign dataset"
+            )
+        names = self._validate_write_dataset_inventory_at(
+            datasets_descriptor,
+            digests,
+        )
+        _verify_directory_entry_identity_at(
+            root_descriptor,
+            "datasets",
+            datasets_identity,
+            "Exp417 checkpoint datasets directory",
+        )
+        return (
+            root_payload,
+            root_payload_identity,
+            old_progress,
+            old_progress_identity,
+            digests,
+            names,
+        )
+
+    def _validate_write_dataset_inventory_at(
+        self,
+        datasets_descriptor: int,
+        record_digests: Mapping[str, str],
+    ) -> frozenset[str]:
+        names = _list_directory_descriptor(
+            datasets_descriptor,
+            "Exp417 checkpoint datasets directory",
+        )
+        if len(names) != len(set(names)):
+            raise ValueError(
+                "Exp417 checkpoint dataset inventory is invalid"
+            )
+        expected_names = {
+            self._dataset_path(dataset).name
+            for dataset in record_digests
+        }
+        if (
+            len(expected_names) != len(record_digests)
+            or set(names) != expected_names
+        ):
+            raise ValueError(
+                "Exp417 checkpoint progress accounting is invalid"
+            )
+        for name in names:
+            try:
+                metadata = os.stat(
+                    name,
+                    dir_fd=datasets_descriptor,
+                    follow_symlinks=False,
+                )
+            except OSError as error:
+                raise ValueError(
+                    "Exp417 checkpoint dataset entry is invalid"
+                ) from error
+            if not stat.S_ISREG(metadata.st_mode):
+                raise ValueError(
+                    "Exp417 checkpoint dataset entry is invalid"
+                )
+        return frozenset(names)
+
     def _dataset_path(self, dataset: str) -> Path:
         return self.datasets_dir / f"{sha256(dataset.encode('utf-8')).hexdigest()}.json"
 
-    def _write_progress(self, *, completed: int, current_dataset: str | None,
-                        record_digests: Mapping[str, object]) -> None:
+    def _progress_bytes(
+        self,
+        *,
+        completed: int,
+        current_dataset: str | None,
+        record_digests: Mapping[str, object],
+    ) -> bytes:
         if type(completed) is not int or not 0 <= completed <= len(self.expected_datasets):
             raise ValueError("Exp417 checkpoint progress is invalid")
         if set(record_digests) - set(self.expected_datasets) or len(record_digests) != completed:
@@ -252,11 +1140,24 @@ class Exp417CheckpointStore:
         digests = {name: _digest(value, "progress record digest") for name, value in sorted(record_digests.items())}
         payload = {"completed_datasets": completed, "current_dataset": current_dataset,
                    "expected_datasets": len(self.expected_datasets), "completed_record_digests": digests}
-        _atomic_write(self.root / _PROGRESS_FILE, canonical_json_bytes(payload) + b"\n", replace=True)
-        _fsync_directory(self.root)
+        return canonical_json_bytes(payload) + b"\n"
 
     def _read_progress(self) -> dict[str, object]:
         raw = _read_regular(self.root / _PROGRESS_FILE, "Exp417 checkpoint progress")
+        return self._progress_from_bytes(raw)
+
+    def _read_progress_from_descriptor(
+        self, root_descriptor: int
+    ) -> dict[str, object]:
+        return self._progress_from_bytes(
+            _read_regular_at(
+                root_descriptor,
+                _PROGRESS_FILE,
+                "Exp417 checkpoint progress",
+            )
+        )
+
+    def _progress_from_bytes(self, raw: bytes) -> dict[str, object]:
         payload = _json_object(raw, "Exp417 checkpoint progress")
         if set(payload) != {"completed_datasets", "current_dataset", "expected_datasets", "completed_record_digests"}:
             raise ValueError("Exp417 checkpoint progress is invalid")
@@ -278,51 +1179,374 @@ class Exp417CheckpointStore:
         if digests != observed:
             raise ValueError("Exp417 checkpoint progress accounting is invalid")
 
-    def _begin_transaction(self, dataset: str, old_progress: bytes) -> None:
-        lock = self.root / ".checkpoint.lock"
-        marker = self.root / ".checkpoint-transaction.json"
-        acquired_lock = False
-        wrote_marker = False
+    @contextmanager
+    def _root_lock(
+        self, *, exclusive: bool
+    ) -> Iterator[tuple[int, int]]:
+        with self._root_descriptor_lock(exclusive=exclusive) as (
+            _,
+            root_identity,
+        ):
+            yield root_identity
+
+    @contextmanager
+    def _root_descriptor_lock(
+        self, *, exclusive: bool
+    ) -> Iterator[tuple[int, tuple[int, int]]]:
         try:
-            descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0), 0o600)
-            os.close(descriptor)
-            acquired_lock = True
-            _fsync_directory(self.root)
-            marker_payload = {"dataset": dataset, "previous_progress_sha256": sha256(old_progress).hexdigest()}
-            _atomic_write(marker, canonical_json_bytes(marker_payload) + b"\n", replace=False)
-            wrote_marker = True
-            _fsync_directory(self.root)
-        except BaseException:
-            # Never remove a competing writer's lock or marker.
+            descriptor = os.open(self.root, _DIRECTORY_OPEN_FLAGS)
+        except OSError as error:
+            raise ValueError("Exp417 checkpoint root is invalid") from error
+        try:
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISDIR(metadata.st_mode):
+                raise ValueError("Exp417 checkpoint root is invalid")
+            root_identity = (metadata.st_dev, metadata.st_ino)
+            fcntl.flock(
+                descriptor, fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
+            )
             try:
-                if wrote_marker and _path_exists_lstat(marker):
-                    _unlink_regular(marker)
-                if acquired_lock and _path_exists_lstat(lock):
-                    _unlink_regular(lock)
-                if acquired_lock:
-                    _fsync_directory(self.root)
-            except OSError:
-                pass
-            raise
-
-    def _finish_transaction(self) -> None:
-        self._clear_transaction()
-
-    def _rollback_transaction(self, path: Path | None, old_progress: bytes) -> None:
-        try:
-            if path is not None and _path_exists_lstat(path):
-                _unlink_regular(path)
-                _fsync_directory(self.datasets_dir)
-            _atomic_write(self.root / _PROGRESS_FILE, old_progress, replace=True)
-            _fsync_directory(self.root)
+                self._verify_root_path_identity(root_identity)
+                yield descriptor, root_identity
+            finally:
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
         finally:
-            self._clear_transaction()
+            os.close(descriptor)
 
-    def _clear_transaction(self) -> None:
-        for path in (self.root / ".checkpoint-transaction.json", self.root / ".checkpoint.lock"):
-            if _path_exists_lstat(path):
-                _unlink_regular(path)
-        _fsync_directory(self.root)
+    def _verify_root_path_identity(
+        self, root_identity: tuple[int, int]
+    ) -> None:
+        try:
+            metadata = os.stat(self.root, follow_symlinks=False)
+        except OSError as error:
+            raise ValueError("Exp417 checkpoint root identity changed") from error
+        if (
+            not stat.S_ISDIR(metadata.st_mode)
+            or (metadata.st_dev, metadata.st_ino) != root_identity
+        ):
+            raise ValueError("Exp417 checkpoint root identity changed")
+
+    def _replace_owned_progress_at(
+        self,
+        root_descriptor: int,
+        payload: bytes,
+        expected_identity: tuple[int, int],
+    ) -> tuple[int, int]:
+        captured_name, captured_identity = self._capture_rollback_entry(
+            root_descriptor,
+            _PROGRESS_FILE,
+            root_descriptor,
+            "progress-previous",
+        )
+        if captured_identity != expected_identity:
+            raise ValueError(
+                "Exp417 checkpoint foreign progress replacement was "
+                f"preserved as {captured_name}"
+            )
+        return _atomic_write_at(
+            root_descriptor,
+            _PROGRESS_FILE,
+            payload,
+            replace=False,
+            recovery_root_descriptor=root_descriptor,
+        )
+
+    def _rollback_transaction_at(
+        self,
+        datasets_descriptor: int,
+        record_name: str | None,
+        record_identity: tuple[int, int] | None,
+        root_descriptor: int,
+        old_provenance: bytes,
+        old_provenance_identity: tuple[int, int],
+        old_progress: bytes,
+        old_progress_identity: tuple[int, int],
+        progress_identity: tuple[int, int] | None,
+        root_identity: tuple[int, int],
+        datasets_identity: tuple[int, int],
+    ) -> None:
+        rollback_errors: list[BaseException] = []
+        def rollback_entry_exists(
+            descriptor: int, name: str
+        ) -> bool:
+            try:
+                return _entry_exists_at(descriptor, name)
+            except BaseException as error:
+                rollback_errors.append(error)
+                # A failed probe is not evidence of absence.  Continue with
+                # descriptor-bound read/capture so later cleanup still runs.
+                return True
+
+        if not rollback_entry_exists(root_descriptor, _ROOT_FILE):
+            current_provenance = None
+            current_provenance_identity = None
+        else:
+            try:
+                (
+                    current_provenance,
+                    current_provenance_identity,
+                ) = _read_regular_entry_at(
+                    root_descriptor,
+                    _ROOT_FILE,
+                    "Exp417 checkpoint provenance",
+                )
+            except BaseException as error:
+                rollback_errors.append(error)
+                current_provenance = None
+                current_provenance_identity = None
+        if (
+            current_provenance != old_provenance
+            or current_provenance_identity != old_provenance_identity
+        ):
+            if rollback_entry_exists(root_descriptor, _ROOT_FILE):
+                try:
+                    captured_name, captured_identity = (
+                        self._capture_rollback_entry(
+                            root_descriptor,
+                            _ROOT_FILE,
+                            root_descriptor,
+                            "provenance",
+                        )
+                    )
+                    if captured_identity != old_provenance_identity:
+                        rollback_errors.append(ValueError(
+                            "Exp417 checkpoint foreign provenance replacement "
+                            f"was preserved as {captured_name}"
+                        ))
+                except BaseException as error:
+                    rollback_errors.append(error)
+            try:
+                _atomic_write_at(
+                    root_descriptor,
+                    _ROOT_FILE,
+                    old_provenance,
+                    replace=False,
+                    recovery_root_descriptor=root_descriptor,
+                )
+                os.fsync(root_descriptor)
+            except BaseException as error:
+                rollback_errors.append(error)
+        if record_name is not None:
+            if record_identity is None:
+                rollback_errors.append(ValueError(
+                    "Exp417 checkpoint published record identity is missing"
+                ))
+            elif rollback_entry_exists(datasets_descriptor, record_name):
+                try:
+                    captured_name, captured_identity = (
+                        self._capture_rollback_entry(
+                            datasets_descriptor,
+                            record_name,
+                            root_descriptor,
+                            "record",
+                        )
+                    )
+                    if captured_identity != record_identity:
+                        rollback_errors.append(ValueError(
+                            "Exp417 checkpoint foreign record replacement was "
+                            f"preserved as {captured_name}"
+                        ))
+                except BaseException as error:
+                    rollback_errors.append(error)
+            else:
+                rollback_errors.append(ValueError(
+                    "Exp417 checkpoint published record disappeared before rollback"
+                ))
+        if not rollback_entry_exists(root_descriptor, _PROGRESS_FILE):
+            current_progress = None
+            current_progress_identity = None
+        else:
+            try:
+                (
+                    current_progress,
+                    current_progress_identity,
+                ) = _read_regular_entry_at(
+                    root_descriptor,
+                    _PROGRESS_FILE,
+                    "Exp417 checkpoint progress",
+                )
+            except BaseException as error:
+                rollback_errors.append(error)
+                current_progress = None
+                current_progress_identity = None
+        if (
+            current_progress != old_progress
+            or current_progress_identity != old_progress_identity
+        ):
+            expected_current_identity = (
+                progress_identity
+                if progress_identity is not None
+                else old_progress_identity
+            )
+            if rollback_entry_exists(root_descriptor, _PROGRESS_FILE):
+                try:
+                    captured_name, captured_identity = (
+                        self._capture_rollback_entry(
+                            root_descriptor,
+                            _PROGRESS_FILE,
+                            root_descriptor,
+                            "progress",
+                        )
+                    )
+                    if captured_identity != expected_current_identity:
+                        rollback_errors.append(ValueError(
+                            "Exp417 checkpoint foreign progress replacement was "
+                            f"preserved as {captured_name}"
+                        ))
+                except BaseException as error:
+                    rollback_errors.append(error)
+            try:
+                _atomic_write_at(
+                    root_descriptor,
+                    _PROGRESS_FILE,
+                    old_progress,
+                    replace=False,
+                    recovery_root_descriptor=root_descriptor,
+                )
+                os.fsync(root_descriptor)
+            except BaseException as error:
+                rollback_errors.append(error)
+        try:
+            _verify_directory_entry_identity_at(
+                root_descriptor,
+                "datasets",
+                datasets_identity,
+                "Exp417 checkpoint datasets directory",
+            )
+        except BaseException as error:
+            rollback_errors.append(error)
+        try:
+            self._verify_root_path_identity(root_identity)
+        except BaseException as error:
+            rollback_errors.append(error)
+        if len(rollback_errors) == 1:
+            raise rollback_errors[0]
+        if rollback_errors:
+            raise BaseExceptionGroup(
+                "Exp417 checkpoint rollback encountered multiple failures",
+                rollback_errors,
+            )
+
+    def _capture_rollback_entry(
+        self,
+        source_descriptor: int,
+        source_name: str,
+        root_descriptor: int,
+        kind: str,
+    ) -> tuple[str, tuple[int, int]]:
+        try:
+            parent_descriptor = os.open(
+                "..", _DIRECTORY_OPEN_FLAGS, dir_fd=root_descriptor
+            )
+        except OSError as error:
+            raise ValueError(
+                "Exp417 checkpoint rollback parent is invalid"
+            ) from error
+        capture_name = (
+            f".{self.root.name}.rollback-{kind}.{uuid.uuid4().hex}.json"
+        )
+        try:
+            _atomic_rename_noreplace_at(
+                source_descriptor,
+                source_name,
+                parent_descriptor,
+                capture_name,
+            )
+            os.fsync(source_descriptor)
+            os.fsync(parent_descriptor)
+            metadata = os.stat(
+                capture_name,
+                dir_fd=parent_descriptor,
+                follow_symlinks=False,
+            )
+            if not stat.S_ISREG(metadata.st_mode):
+                raise ValueError(
+                    "Exp417 checkpoint rollback capture is invalid"
+                )
+            return capture_name, (metadata.st_dev, metadata.st_ino)
+        finally:
+            os.close(parent_descriptor)
+
+    def _quarantine_root(
+        self,
+        root_identity: tuple[int, int],
+        root_descriptor: int,
+    ) -> Path:
+        """Atomically capture only the provenance-owned root inode."""
+        locked = os.fstat(root_descriptor)
+        if (
+            not stat.S_ISDIR(locked.st_mode)
+            or (locked.st_dev, locked.st_ino) != root_identity
+        ):
+            raise ValueError(
+                "Exp417 checkpoint quarantine root identity changed"
+            )
+        provenance, _ = _read_regular_entry_at(
+            root_descriptor,
+            _ROOT_FILE,
+            "Exp417 checkpoint provenance",
+        )
+        if provenance != canonical_json_bytes(self._root_payload) + b"\n":
+            raise ValueError("Exp417 checkpoint provenance mismatch")
+        self._verify_root_path_identity(root_identity)
+        parent = self.root.parent
+        _require_directory(parent, "Exp417 checkpoint parent")
+        token = uuid.uuid4().hex
+        quarantine = parent / f".{self.root.name}.quarantine.{token}"
+        release = parent / f".{self.root.name}.recovery-placeholder.{token}"
+        os.mkdir(quarantine, 0o700)
+        placeholder = os.lstat(quarantine)
+        placeholder_identity = (placeholder.st_dev, placeholder.st_ino)
+        _fsync_directory(parent)
+        _atomic_exchange(self.root, quarantine)
+        captured = os.lstat(quarantine)
+        captured_identity = (captured.st_dev, captured.st_ino)
+        if not stat.S_ISDIR(captured.st_mode) or captured_identity != root_identity:
+            # A foreign pathname replacement won the race.  Restore that exact
+            # entry atomically; retain our empty capture slot and touch nothing.
+            _atomic_exchange(self.root, quarantine)
+            _fsync_directory(parent)
+            raise ValueError(
+                "Exp417 checkpoint root identity changed; foreign entry restored"
+            )
+        try:
+            _atomic_rename_noreplace(self.root, release)
+        except BaseException:
+            # Restore the owned checkpoint to its original name when release is
+            # unavailable.  Both exchange operands are still known identities.
+            _atomic_exchange(self.root, quarantine)
+            _fsync_directory(parent)
+            raise
+        released = os.lstat(release)
+        released_identity = (released.st_dev, released.st_ino)
+        if (
+            not stat.S_ISDIR(released.st_mode)
+            or released_identity != placeholder_identity
+        ):
+            # Preserve and restore a racing foreign replacement.  The owned
+            # checkpoint remains intact under its unique quarantine name.
+            _atomic_rename_noreplace(release, self.root)
+            _fsync_directory(parent)
+            raise ValueError(
+                "Exp417 checkpoint quarantine restored a foreign replacement"
+            )
+        # The caller still holds the original directory descriptor locked;
+        # opening the quarantine pathname confirms it names that same inode.
+        descriptor = os.open(quarantine, _DIRECTORY_OPEN_FLAGS)
+        try:
+            locked = os.fstat(descriptor)
+            if (
+                not stat.S_ISDIR(locked.st_mode)
+                or (locked.st_dev, locked.st_ino) != root_identity
+            ):
+                raise ValueError(
+                    "Exp417 checkpoint quarantine inode identity changed"
+                )
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        _fsync_directory(parent)
+        return quarantine
 
 
 def _record_from_bytes(raw: bytes) -> dict[str, object]:
@@ -357,9 +1581,8 @@ def _record_from_bytes(raw: bytes) -> dict[str, object]:
         raise ValueError("Exp417 terminal checkpoint must not include fabricated stage evidence")
     if result.dataset != dataset:
         raise ValueError("Exp417 checkpoint result identity is invalid")
-    lengths = tuple(group.length for group in result.groups)
-    if not terminal and (tuple(identities) != lengths or tuple(model_hashes) != lengths or tuple(calibrations) != lengths):
-        raise ValueError("Exp417 checkpoint length-group accounting is invalid")
+    if not terminal:
+        _validate_length_evidence(result, identities, model_hashes, calibrations)
     coordinates = payload["candidate_coordinates"]
     if not isinstance(coordinates, list) or coordinates != [[item.dataset, item.instance_index] for item in result.candidates]:
         raise ValueError("Exp417 checkpoint candidate coordinates are invalid")
@@ -433,9 +1656,18 @@ def _group_payload(value: GroupQualification) -> dict[str, object]:
 def _group_from_payload(value: object) -> GroupQualification:
     data = _object_keys(value, {"length", "series_count", "status", "oof_candidate_rate", "wilson_upper", "pooled_synthetic_sensitivity", "per_type_synthetic_sensitivity", "seed_agreement", "finite", "backend_fallback"}, "group")
     return GroupQualification(_integer(data["length"], "length", 1), _integer(data["series_count"], "series count"), _string(data["status"], "group status"),
-        _finite(data["oof_candidate_rate"], "oof rate"), _finite(data["wilson_upper"], "wilson upper"), _finite(data["pooled_synthetic_sensitivity"], "sensitivity"),
-        {_string(key, "perturbation"): _finite(item, "sensitivity") for key, item in _object(data["per_type_synthetic_sensitivity"], "sensitivity map").items()},
-        _bool(data["seed_agreement"], "seed agreement"), _bool(data["finite"], "finite"), _bool(data["backend_fallback"], "backend fallback"))
+        _optional_finite(data["oof_candidate_rate"], "oof rate"),
+        _optional_finite(data["wilson_upper"], "wilson upper"),
+        _optional_finite(data["pooled_synthetic_sensitivity"], "sensitivity"),
+        {
+            _string(key, "perturbation"): _optional_finite(item, "sensitivity")
+            for key, item in _object(
+                data["per_type_synthetic_sensitivity"], "sensitivity map"
+            ).items()
+        },
+        _optional_bool(data["seed_agreement"], "seed agreement"),
+        _optional_bool(data["finite"], "finite"),
+        _optional_bool(data["backend_fallback"], "backend fallback"))
 
 
 def _backend_payload(value: BackendAudit) -> dict[str, object]:
@@ -546,6 +1778,38 @@ def _validate_result_provenance(result: object, provenance: Exp417CheckpointProv
         raise ValueError("Exp417 checkpoint result provenance mismatch")
 
 
+def _validate_length_evidence(
+    result: DatasetResult,
+    identities: Mapping[int, str],
+    model_hashes: Mapping[int, Mapping[int, str]],
+    calibrations: Mapping[int, str],
+) -> None:
+    lengths = tuple(group.length for group in result.groups)
+    identity_lengths = set(identities)
+    model_lengths = set(model_hashes)
+    calibration_lengths = set(calibrations)
+    qualified_lengths = {
+        group.length for group in result.groups if group.status == "qualified"
+    }
+    diagnostic_lengths = {
+        group.length for group in result.groups if group.status == "diagnostic"
+    }
+    failed_lengths = {
+        group.length for group in result.groups if group.status == "failed"
+    }
+    expected_calibrations = (
+        qualified_lengths | diagnostic_lengths | failed_lengths
+    )
+    expected_models = qualified_lengths | failed_lengths
+    if (
+        tuple(identities) != lengths
+        or identity_lengths != set(lengths)
+        or calibration_lengths != expected_calibrations
+        or model_lengths != expected_models
+    ):
+        raise ValueError("Exp417 checkpoint length-group accounting is invalid")
+
+
 def _dataset_universe(values: Sequence[str]) -> tuple[str, ...]:
     if isinstance(values, (str, bytes)) or not isinstance(values, Sequence): raise ValueError("Exp417 checkpoint dataset universe is invalid")
     names = tuple(values)
@@ -555,67 +1819,571 @@ def _dataset_universe(values: Sequence[str]) -> tuple[str, ...]:
 
 
 def _length_digest_mapping(value: object, name: str) -> dict[int, str]:
-    data = _integer_key_mapping(value, name); result = {_mapping_integer(key, name, 1): _digest(item, name) for key, item in data.items()}
-    if tuple(result) != tuple(sorted(result)): raise ValueError(f"Exp417 checkpoint {name} are not sorted")
-    return result
+    data = _integer_key_mapping(value, name)
+    result: dict[int, str] = {}
+    for key, item in data.items():
+        length = _mapping_integer(key, name, 1)
+        if length in result:
+            raise ValueError(f"Exp417 checkpoint {name} contain an alias")
+        result[length] = _digest(item, name)
+    return dict(sorted(result.items()))
 
 
 def _model_hash_mapping(value: object) -> dict[int, dict[int, str]]:
     data = _integer_key_mapping(value, "canonical model hashes"); result: dict[int, dict[int, str]] = {}
     for raw_length, raw_hashes in data.items():
         length = _mapping_integer(raw_length, "model length", 1)
-        hashes = {_mapping_integer(seed, "model seed", 1): _digest(digest, "model hash") for seed, digest in _integer_key_mapping(raw_hashes, "model hashes").items()}
-        if tuple(hashes) != FROZEN_CONFIG.model_seeds: raise ValueError("Exp417 checkpoint model seed accounting is invalid")
+        if length in result:
+            raise ValueError("Exp417 checkpoint model lengths contain an alias")
+        hashes: dict[int, str] = {}
+        for raw_seed, digest in _integer_key_mapping(
+            raw_hashes, "model hashes"
+        ).items():
+            seed = _mapping_integer(raw_seed, "model seed", 1)
+            if seed in hashes:
+                raise ValueError(
+                    "Exp417 checkpoint model seeds contain an alias"
+                )
+            hashes[seed] = _digest(digest, "model hash")
+        hashes = dict(sorted(hashes.items()))
+        if tuple(hashes) != FROZEN_CONFIG.model_seeds:
+            raise ValueError("Exp417 checkpoint model seed accounting is invalid")
         result[length] = hashes
-    if tuple(result) != tuple(sorted(result)): raise ValueError("Exp417 checkpoint model hashes are not sorted")
-    return result
+    return dict(sorted(result.items()))
 
 
-def _atomic_write(path: Path, data: bytes, *, replace: bool) -> None:
-    _require_directory(path.parent, "Exp417 checkpoint parent")
-    descriptor, temporary = tempfile.mkstemp(prefix=".checkpoint-", dir=path.parent)
-    temporary_path = Path(temporary)
-    committed = False
+def _entry_name(value: object, context: str) -> str:
+    if (
+        not isinstance(value, str)
+        or not value
+        or value in {".", ".."}
+        or "/" in value
+        or "\x00" in value
+    ):
+        raise ValueError(f"{context} is invalid")
+    return value
+
+
+def _entry_exists_at(directory_descriptor: int, name: str) -> bool:
+    checked = _entry_name(name, "Exp417 checkpoint entry")
     try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(data); handle.flush(); os.fsync(handle.fileno())
-        if not replace and _path_exists_lstat(path): raise FileExistsError(path)
-        os.replace(temporary_path, path); committed = True
-    except BaseException:
-        if committed and _path_exists_lstat(path):
-            try: _unlink_regular(path)
-            except OSError: pass
-        raise
-    finally:
-        if _path_exists_lstat(temporary_path):
-            try: _unlink_regular(temporary_path)
-            except OSError: pass
+        os.stat(checked, dir_fd=directory_descriptor, follow_symlinks=False)
+        return True
+    except FileNotFoundError:
+        return False
+    except OSError as error:
+        raise ValueError("Exp417 checkpoint entry is invalid") from error
 
 
-def _atomic_write_exclusive(path: Path, data: bytes) -> None:
-    """Publish a new record with link(2), which can never overwrite a rival."""
-    _require_directory(path.parent, "Exp417 checkpoint parent")
-    descriptor, temporary = tempfile.mkstemp(prefix=".checkpoint-", dir=path.parent)
-    temporary_path = Path(temporary)
-    linked = False
+def _entry_identity_at_optional(
+    directory_descriptor: int, name: str, context: str
+) -> tuple[int, int] | None:
+    checked = _entry_name(name, context)
     try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(data); handle.flush(); os.fsync(handle.fileno())
-        os.link(temporary_path, path)
-        linked = True
-    except BaseException:
-        if linked and _path_exists_lstat(path):
-            try: _unlink_regular(path)
-            except OSError: pass
-        raise
+        metadata = os.stat(
+            checked,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+    except FileNotFoundError:
+        return None
+    except OSError as error:
+        raise ValueError(f"{context} is invalid") from error
+    return metadata.st_dev, metadata.st_ino
+
+
+def _preserve_root_publish_target_at(
+    parent_descriptor: int,
+    root_name: str,
+) -> tuple[str, tuple[int, int]] | None:
+    checked_root = _entry_name(
+        root_name, "Exp417 checkpoint root recovery source"
+    )
+    capture_name = (
+        ".exp417-checkpoint.rollback-root-publish-target."
+        f"{uuid.uuid4().hex}.entry"
+    )
+    try:
+        _atomic_rename_noreplace_at(
+            parent_descriptor,
+            checked_root,
+            parent_descriptor,
+            capture_name,
+        )
+    except FileNotFoundError:
+        return None
+    os.fsync(parent_descriptor)
+    identity = _entry_identity_at_optional(
+        parent_descriptor,
+        capture_name,
+        "Exp417 checkpoint root recovery entry",
+    )
+    if identity is None:
+        raise ValueError(
+            "Exp417 checkpoint root recovery entry is missing"
+        )
+    return capture_name, identity
+
+
+def _regular_identity_at(
+    directory_descriptor: int, name: str, context: str
+) -> tuple[int, int]:
+    checked = _entry_name(name, context)
+    try:
+        metadata = os.stat(
+            checked,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+    except OSError as error:
+        raise ValueError(f"{context} is invalid") from error
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError(f"{context} is invalid")
+    return metadata.st_dev, metadata.st_ino
+
+
+def _preserve_entry_at(
+    directory_descriptor: int,
+    source_name: str,
+    recovery_root_descriptor: int,
+    kind: str,
+) -> tuple[str, tuple[int, int]] | None:
+    """Atomically move any basename occupant out; never unlink by name."""
+    checked_kind = _entry_name(
+        kind, "Exp417 checkpoint recovery kind"
+    )
+    try:
+        parent_descriptor = os.open(
+            "..",
+            _DIRECTORY_OPEN_FLAGS,
+            dir_fd=recovery_root_descriptor,
+        )
+    except OSError as error:
+        raise ValueError(
+            "Exp417 checkpoint temporary recovery parent is invalid"
+        ) from error
+    capture_name = (
+        f".exp417-checkpoint.rollback-{checked_kind}."
+        f"{uuid.uuid4().hex}.bin"
+    )
+    try:
+        try:
+            _atomic_rename_noreplace_at(
+                directory_descriptor,
+                source_name,
+                parent_descriptor,
+                capture_name,
+            )
+        except FileNotFoundError:
+            return None
+        os.fsync(directory_descriptor)
+        os.fsync(parent_descriptor)
+        metadata = os.stat(
+            capture_name,
+            dir_fd=parent_descriptor,
+            follow_symlinks=False,
+        )
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ValueError(
+                "Exp417 checkpoint recovery entry is invalid"
+            )
+        return capture_name, (metadata.st_dev, metadata.st_ino)
     finally:
-        if _path_exists_lstat(temporary_path):
-            try: _unlink_regular(temporary_path)
-            except OSError: pass
+        os.close(parent_descriptor)
+
+
+def _preserve_temporary_entry_at(
+    directory_descriptor: int,
+    temporary: str,
+    recovery_root_descriptor: int,
+) -> tuple[str, tuple[int, int]] | None:
+    return _preserve_entry_at(
+        directory_descriptor,
+        temporary,
+        recovery_root_descriptor,
+        "temporary",
+    )
+
+
+def _write_temporary_at(
+    directory_descriptor: int,
+    target_name: str,
+    data: bytes,
+    *,
+    recovery_root_descriptor: int,
+) -> tuple[str, tuple[int, int]]:
+    if type(data) is not bytes:
+        raise ValueError("Exp417 checkpoint payload is invalid")
+    temporary = f".checkpoint-{uuid.uuid4().hex}"
+    try:
+        descriptor = os.open(
+            temporary,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=directory_descriptor,
+        )
+    except OSError as error:
+        raise ValueError("Exp417 checkpoint temporary file is invalid") from error
+    identity: tuple[int, int] | None = None
+    failures: list[BaseException] = []
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ValueError("Exp417 checkpoint temporary file is invalid")
+        identity = (metadata.st_dev, metadata.st_ino)
+        view = memoryview(data)
+        offset = 0
+        while offset < len(view):
+            written = os.write(descriptor, view[offset:])
+            if written <= 0:
+                raise OSError("Exp417 checkpoint write made no progress")
+            offset += written
+        os.fsync(descriptor)
+    except BaseException as error:
+        failures.append(error)
+    try:
+        os.close(descriptor)
+    except BaseException as error:
+        failures.append(error)
+    if failures:
+        preserve_succeeded = False
+        try:
+            captured = _preserve_temporary_entry_at(
+                directory_descriptor,
+                temporary,
+                recovery_root_descriptor,
+            )
+            preserve_succeeded = True
+        except BaseException as preserve_error:
+            failures.append(preserve_error)
+            captured = None
+        if (
+            identity is not None
+            and captured is not None
+            and captured[1] != identity
+        ):
+            failures.append(ValueError(
+                "Exp417 checkpoint foreign temporary replacement was "
+                f"preserved as {captured[0]}"
+            ))
+        if len(failures) == 1:
+            raise failures[0]
+        raise BaseExceptionGroup(
+            "Exp417 checkpoint temporary write recovery failed",
+            failures,
+        )
+    if identity is None:
+        raise ValueError(
+            "Exp417 checkpoint temporary identity is unavailable"
+        )
+    return temporary, identity
+
+
+def _atomic_write_exclusive_at(
+    directory_descriptor: int,
+    name: str,
+    data: bytes,
+    *,
+    recovery_root_descriptor: int,
+) -> tuple[int, int]:
+    checked = _entry_name(name, "Exp417 checkpoint record name")
+    temporary, identity = _write_temporary_at(
+        directory_descriptor,
+        checked,
+        data,
+        recovery_root_descriptor=recovery_root_descriptor,
+    )
+    try:
+        _atomic_rename_noreplace_at(
+            directory_descriptor,
+            temporary,
+            directory_descriptor,
+            checked,
+        )
+        return identity
+    except BaseException as error:
+        failures: list[BaseException] = [error]
+        try:
+            target_identity = _regular_identity_at(
+                directory_descriptor,
+                checked,
+                "Exp417 checkpoint published record",
+            )
+        except ValueError:
+            target_identity = None
+        except BaseException as target_error:
+            failures.append(target_error)
+            target_identity = None
+        try:
+            source_exists: bool | None = _entry_exists_at(
+                directory_descriptor, temporary
+            )
+        except BaseException as probe_error:
+            failures.append(probe_error)
+            source_exists = None
+        try:
+            captured = _preserve_temporary_entry_at(
+                directory_descriptor,
+                temporary,
+                recovery_root_descriptor,
+            )
+        except BaseException as preserve_error:
+            failures.append(preserve_error)
+            captured = None
+        if captured is not None and captured[1] != identity:
+            failures.append(ValueError(
+                "Exp417 checkpoint foreign temporary replacement was "
+                f"preserved as {captured[0]}"
+            ))
+        target_preserve_failed = False
+        try:
+            captured_target = _preserve_entry_at(
+                directory_descriptor,
+                checked,
+                recovery_root_descriptor,
+                "publish-target",
+            )
+        except BaseException as preserve_error:
+            failures.append(preserve_error)
+            captured_target = None
+            target_preserve_failed = True
+        if (
+            captured_target is not None
+            and target_identity is not None
+            and captured_target[1] != target_identity
+        ):
+            failures.append(ValueError(
+                "Exp417 checkpoint publish target changed during recovery; "
+                f"latest entry was preserved as {captured_target[0]}"
+            ))
+        if (
+            captured_target is not None
+            and captured_target[1] != identity
+        ):
+            failures.append(ValueError(
+                "Exp417 checkpoint foreign publish target was preserved as "
+                f"{captured_target[0]}"
+            ))
+        if len(failures) == 1:
+            combined_error = failures[0]
+        else:
+            combined_error = BaseExceptionGroup(
+                "Exp417 checkpoint publish recovery failed",
+                failures,
+            )
+        if target_preserve_failed and target_identity is not None:
+            raise _CommittedWriteError(
+                combined_error,
+                target_identity,
+            ) from combined_error
+        raise combined_error
+
+
+def _atomic_write_at(
+    directory_descriptor: int,
+    name: str,
+    data: bytes,
+    *,
+    replace: bool,
+    recovery_root_descriptor: int,
+) -> tuple[int, int]:
+    checked = _entry_name(name, "Exp417 checkpoint target name")
+    if replace is not False:
+        raise ValueError(
+            "Exp417 checkpoint descriptor writes must not replace entries"
+        )
+    return _atomic_write_exclusive_at(
+        directory_descriptor,
+        checked,
+        data,
+        recovery_root_descriptor=recovery_root_descriptor,
+    )
+
+
+def _atomic_exchange(first: Path, second: Path) -> None:
+    """Atomically exchange two directory entries without a pathname race."""
+    first_bytes = os.fsencode(os.path.abspath(first))
+    second_bytes = os.fsencode(os.path.abspath(second))
+    if sys.platform == "darwin":
+        libc = ctypes.CDLL(None, use_errno=True)
+        try:
+            exchange = libc.renamex_np
+        except AttributeError as error:
+            raise OSError(
+                errno.ENOTSUP, "atomic directory exchange is unavailable"
+            ) from error
+        exchange.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+        exchange.restype = ctypes.c_int
+        if exchange(first_bytes, second_bytes, _RENAME_SWAP) != 0:
+            _raise_rename_error(first)
+        return
+    if sys.platform.startswith("linux"):
+        libc = ctypes.CDLL(None, use_errno=True)
+        try:
+            exchange = libc.renameat2
+        except AttributeError as error:
+            raise OSError(
+                errno.ENOTSUP, "atomic directory exchange is unavailable"
+            ) from error
+        exchange.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        exchange.restype = ctypes.c_int
+        if (
+            exchange(
+                _LINUX_AT_FDCWD,
+                first_bytes,
+                _LINUX_AT_FDCWD,
+                second_bytes,
+                _RENAME_EXCHANGE,
+            )
+            != 0
+        ):
+            _raise_rename_error(first)
+        return
+    raise OSError(errno.ENOTSUP, "atomic directory exchange is unavailable")
+
+
+def _atomic_rename_noreplace(source: Path, destination: Path) -> None:
+    """Atomically rename while refusing to overwrite a competing entry."""
+    source_bytes = os.fsencode(os.path.abspath(source))
+    destination_bytes = os.fsencode(os.path.abspath(destination))
+    if sys.platform == "darwin":
+        libc = ctypes.CDLL(None, use_errno=True)
+        try:
+            rename = libc.renamex_np
+        except AttributeError as error:
+            raise OSError(
+                errno.ENOTSUP, "atomic no-replace rename is unavailable"
+            ) from error
+        rename.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+        rename.restype = ctypes.c_int
+        if rename(source_bytes, destination_bytes, _RENAME_EXCL) != 0:
+            _raise_rename_error(destination)
+        return
+    if sys.platform.startswith("linux"):
+        libc = ctypes.CDLL(None, use_errno=True)
+        try:
+            rename = libc.renameat2
+        except AttributeError as error:
+            raise OSError(
+                errno.ENOTSUP, "atomic no-replace rename is unavailable"
+            ) from error
+        rename.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        rename.restype = ctypes.c_int
+        if (
+            rename(
+                _LINUX_AT_FDCWD,
+                source_bytes,
+                _LINUX_AT_FDCWD,
+                destination_bytes,
+                _RENAME_NOREPLACE,
+            )
+            != 0
+        ):
+            _raise_rename_error(destination)
+        return
+    raise OSError(errno.ENOTSUP, "atomic no-replace rename is unavailable")
+
+
+def _atomic_rename_noreplace_at(
+    source_descriptor: int,
+    source_name: str,
+    destination_descriptor: int,
+    destination_name: str,
+) -> None:
+    source_bytes = os.fsencode(
+        _entry_name(source_name, "Exp417 checkpoint rename source")
+    )
+    destination_bytes = os.fsencode(
+        _entry_name(
+            destination_name, "Exp417 checkpoint rename destination"
+        )
+    )
+    if sys.platform == "darwin":
+        libc = ctypes.CDLL(None, use_errno=True)
+        try:
+            rename = libc.renameatx_np
+        except AttributeError as error:
+            raise OSError(
+                errno.ENOTSUP, "atomic no-replace rename is unavailable"
+            ) from error
+        rename.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        rename.restype = ctypes.c_int
+        if (
+            rename(
+                source_descriptor,
+                source_bytes,
+                destination_descriptor,
+                destination_bytes,
+                _RENAME_EXCL,
+            )
+            != 0
+        ):
+            _raise_rename_error(Path(destination_name))
+        return
+    if sys.platform.startswith("linux"):
+        libc = ctypes.CDLL(None, use_errno=True)
+        try:
+            rename = libc.renameat2
+        except AttributeError as error:
+            raise OSError(
+                errno.ENOTSUP, "atomic no-replace rename is unavailable"
+            ) from error
+        rename.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        rename.restype = ctypes.c_int
+        if (
+            rename(
+                source_descriptor,
+                source_bytes,
+                destination_descriptor,
+                destination_bytes,
+                _RENAME_NOREPLACE,
+            )
+            != 0
+        ):
+            _raise_rename_error(Path(destination_name))
+        return
+    raise OSError(errno.ENOTSUP, "atomic no-replace rename is unavailable")
+
+
+def _raise_rename_error(path: Path) -> None:
+    number = ctypes.get_errno()
+    if number == errno.ENOENT:
+        raise FileNotFoundError(number, os.strerror(number), str(path))
+    if number in {errno.EEXIST, errno.ENOTEMPTY}:
+        raise FileExistsError(number, os.strerror(number), str(path))
+    raise OSError(number, os.strerror(number), str(path))
 
 
 def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+    descriptor = os.open(path, _DIRECTORY_OPEN_FLAGS)
     try: os.fsync(descriptor)
     finally: os.close(descriptor)
 
@@ -625,6 +2393,154 @@ def _scandir(path: Path) -> list[os.DirEntry[str]]:
     try:
         with os.scandir(path) as scan: return list(scan)
     except OSError as error: raise ValueError("Exp417 checkpoint inventory is unreadable") from error
+
+
+def _list_directory_descriptor(descriptor: int, name: str) -> list[str]:
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISDIR(metadata.st_mode):
+            raise ValueError(f"{name} is invalid")
+        entries = os.listdir(descriptor)
+    except OSError as error:
+        raise ValueError(f"{name} inventory is unreadable") from error
+    if any(not isinstance(entry, str) or not entry for entry in entries):
+        raise ValueError(f"{name} inventory is invalid")
+    return entries
+
+
+def _directory_inventory_at(
+    descriptor: int, name: str
+) -> dict[str, os.stat_result]:
+    inventory: dict[str, os.stat_result] = {}
+    for entry in _list_directory_descriptor(descriptor, name):
+        try:
+            inventory[entry] = os.stat(
+                entry,
+                dir_fd=descriptor,
+                follow_symlinks=False,
+            )
+        except OSError as error:
+            raise ValueError(f"{name} inventory changed") from error
+    return inventory
+
+
+def _open_directory_at_verified(
+    parent_descriptor: int, name: str, context: str
+) -> tuple[int, tuple[int, int]]:
+    checked = _entry_name(name, context)
+    try:
+        descriptor = os.open(
+            checked, _DIRECTORY_OPEN_FLAGS, dir_fd=parent_descriptor
+        )
+    except OSError as error:
+        raise ValueError(f"{context} is invalid") from error
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISDIR(metadata.st_mode):
+            raise ValueError(f"{context} is invalid")
+        identity = (metadata.st_dev, metadata.st_ino)
+        _verify_directory_entry_identity_at(
+            parent_descriptor, checked, identity, context
+        )
+        return descriptor, identity
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _verify_directory_entry_identity_at(
+    parent_descriptor: int,
+    name: str,
+    identity: tuple[int, int],
+    context: str,
+) -> None:
+    checked = _entry_name(name, context)
+    try:
+        metadata = os.stat(
+            checked,
+            dir_fd=parent_descriptor,
+            follow_symlinks=False,
+        )
+    except OSError as error:
+        raise _DirectoryBindingError(
+            f"{context} identity changed"
+        ) from error
+    if (
+        not stat.S_ISDIR(metadata.st_mode)
+        or (metadata.st_dev, metadata.st_ino) != identity
+    ):
+        raise _DirectoryBindingError(
+            f"{context} identity changed"
+        )
+
+
+def _read_regular_entry_at(
+    directory_descriptor: int, name: str, context: str
+) -> tuple[bytes, tuple[int, int]]:
+    if (
+        not isinstance(name, str)
+        or not name
+        or name in {".", ".."}
+        or "/" in name
+        or "\x00" in name
+    ):
+        raise ValueError(f"{context} is invalid")
+    try:
+        descriptor = os.open(
+            name,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=directory_descriptor,
+        )
+    except OSError as error:
+        raise ValueError(f"{context} is invalid") from error
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode):
+            raise ValueError(f"{context} is invalid")
+        chunks: list[bytes] = []
+        while block := os.read(descriptor, 65536):
+            chunks.append(block)
+        after = os.fstat(descriptor)
+        if (
+            before.st_dev,
+            before.st_ino,
+            before.st_size,
+            before.st_mtime_ns,
+            before.st_ctime_ns,
+        ) != (
+            after.st_dev,
+            after.st_ino,
+            after.st_size,
+            after.st_mtime_ns,
+            after.st_ctime_ns,
+        ):
+            raise ValueError(f"{context} changed while being read")
+        try:
+            named = os.stat(
+                name,
+                dir_fd=directory_descriptor,
+                follow_symlinks=False,
+            )
+        except OSError as error:
+            raise ValueError(f"{context} identity changed") from error
+        if (
+            not stat.S_ISREG(named.st_mode)
+            or (named.st_dev, named.st_ino)
+            != (before.st_dev, before.st_ino)
+        ):
+            raise ValueError(f"{context} identity changed")
+        return b"".join(chunks), (before.st_dev, before.st_ino)
+    except OSError as error:
+        raise ValueError(f"{context} is invalid") from error
+    finally:
+        os.close(descriptor)
+
+
+def _read_regular_at(directory_descriptor: int, name: str, context: str) -> bytes:
+    payload, _ = _read_regular_entry_at(directory_descriptor, name, context)
+    return payload
 
 
 def _read_regular(path: Path, name: str) -> bytes:
@@ -652,10 +2568,6 @@ def _path_exists_lstat(path: Path) -> bool:
     except FileNotFoundError: return False
 
 
-def _unlink_regular(path: Path) -> None:
-    metadata = os.lstat(path)
-    if not stat.S_ISREG(metadata.st_mode): raise OSError("not a regular file")
-    os.unlink(path)
 
 
 def _json_object(raw: bytes, name: str) -> dict[str, object]:
@@ -734,9 +2646,21 @@ def _bool(value: object, name: str) -> bool:
     return value
 
 
+def _optional_bool(value: object, name: str) -> bool | None:
+    if value is None:
+        return None
+    return _bool(value, name)
+
+
 def _finite(value: object, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value): raise ValueError(f"Exp417 checkpoint {name} is invalid")
     return float(value)
+
+
+def _optional_finite(value: object, name: str) -> float | None:
+    if value is None:
+        return None
+    return _finite(value, name)
 
 
 def _finite_nonnegative(value: object, name: str) -> float:
@@ -750,4 +2674,8 @@ def _digest(value: object, name: str) -> str:
     return value
 
 
-__all__ = ["Exp417CheckpointProvenance", "Exp417CheckpointStore"]
+__all__ = [
+    "Exp417CheckpointProvenance",
+    "Exp417CheckpointStore",
+    "canonical_result_sha256",
+]

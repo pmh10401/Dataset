@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import stat
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -33,7 +34,9 @@ class PublicationTests(unittest.TestCase):
             TrustedCheckpointProvenance,
         )
 
-        checkpoint_store = object()
+        checkpoint_store = SimpleNamespace(
+            root=self.root / ".trusted-checkpoint-boundary"
+        )
         with patch.object(
             TrustedCheckpointProvenance,
             "from_store",
@@ -542,6 +545,102 @@ class PublicationTests(unittest.TestCase):
         self.assertTrue(any("cleanup denied" in text for text in messages))
         self.assertFalse(output.exists())
 
+    def test_control_flow_interrupt_after_atomic_rename_rolls_back_output(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import publication
+
+        for name, interruption in (
+            ("keyboard", KeyboardInterrupt("post-rename keyboard interrupt")),
+            ("system-exit", SystemExit("post-rename system exit")),
+        ):
+            output = self.root / name
+            real_rename = publication._atomic_rename_noreplace
+
+            def interrupt_after_rename(
+                source: Path,
+                destination: Path,
+                *,
+                output: Path = output,
+                interruption: BaseException = interruption,
+            ) -> None:
+                real_rename(source, destination)
+                if destination == output:
+                    raise interruption
+
+            with (
+                self.subTest(name=name),
+                patch.object(
+                    publication,
+                    "_atomic_rename_noreplace",
+                    side_effect=interrupt_after_rename,
+                ),
+                self.assertRaises(type(interruption)) as caught,
+            ):
+                self.publish(output)
+
+            self.assertIs(caught.exception, interruption)
+            self.assertFalse(os.path.lexists(output))
+            self.assertEqual(
+                tuple(self.root.glob(f".{output.name}.*.staging")),
+                (),
+            )
+            quarantines = tuple(
+                self.root.glob(f".{output.name}.*.capture")
+            )
+            self.assertEqual(len(quarantines), 1)
+            self.assertEqual(
+                {path.name for path in quarantines[0].iterdir()},
+                set(self.payloads) | {"MANIFEST.json"},
+            )
+
+    def test_cleanup_base_exception_is_grouped_with_original_interrupt(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import publication
+
+        output = self.root / "publication"
+        real_rename = publication._atomic_rename_noreplace
+        real_remove = publication._remove_owned_path
+        publication_error = KeyboardInterrupt("post-rename interrupt")
+        cleanup_error = SystemExit("rollback cleanup interrupted")
+
+        def interrupt_after_rename(source: Path, destination: Path) -> None:
+            real_rename(source, destination)
+            if destination == output:
+                raise publication_error
+
+        def interrupt_cleanup(
+            path: Path, identity: tuple[int, int] | None
+        ) -> bool:
+            removed = real_remove(path, identity)
+            if path == output:
+                raise cleanup_error
+            return removed
+
+        observed: BaseException | None = None
+        with (
+            patch.object(
+                publication,
+                "_atomic_rename_noreplace",
+                side_effect=interrupt_after_rename,
+            ),
+            patch.object(
+                publication,
+                "_remove_owned_path",
+                side_effect=interrupt_cleanup,
+            ),
+        ):
+            try:
+                self.publish(output)
+            except BaseException as error:
+                observed = error
+
+        self.assertIs(type(observed), BaseExceptionGroup)
+        assert isinstance(observed, BaseExceptionGroup)
+        self.assertEqual(
+            observed.exceptions,
+            (publication_error, cleanup_error),
+        )
+        self.assertFalse(os.path.lexists(output))
+        self.assertEqual(tuple(self.root.glob(".publication.*.staging")), ())
+
     def test_cleanup_never_unlinks_foreign_replacement_after_quarantine_race(self) -> None:
         """A file swapped after root quarantine must survive cleanup unchanged."""
         from experiments.exp417_causal_multihorizon_shadow import publication
@@ -708,6 +807,75 @@ class PublicationTests(unittest.TestCase):
                 pre_publish_verify=lambda: None,
             )
         self.assertFalse(output.exists())
+
+    def test_programmatic_publication_rejects_overlapping_checkpoint_ancestry_before_mutation(
+        self,
+    ) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import publication
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            TrustedCheckpointProvenance,
+        )
+
+        cases: list[tuple[str, Path, Path]] = []
+
+        same_root = self.root / "same-root"
+        same_root.mkdir()
+        cases.append(("same", same_root, same_root))
+
+        checkpoint_parent = self.root / "checkpoint-parent"
+        checkpoint_parent.mkdir()
+        cases.append(
+            (
+                "output-inside-checkpoint",
+                checkpoint_parent,
+                checkpoint_parent / "official-output",
+            )
+        )
+
+        output_parent = self.root / "output-parent"
+        output_parent.mkdir()
+        nested_checkpoint = output_parent / "checkpoint"
+        nested_checkpoint.mkdir()
+        cases.append(
+            ("checkpoint-inside-output", nested_checkpoint, output_parent)
+        )
+
+        for name, checkpoint_root, output in cases:
+            before = tuple(
+                sorted(
+                    path.relative_to(self.root)
+                    for path in self.root.rglob("*")
+                )
+            )
+            observed: BaseException | None = None
+            with (
+                self.subTest(name=name),
+                patch.object(
+                    TrustedCheckpointProvenance,
+                    "from_store",
+                    return_value=fixture_trusted_checkpoint(),
+                ),
+            ):
+                try:
+                    publication.publish_exp417(
+                        self.payloads,
+                        output,
+                        checkpoints=SimpleNamespace(root=checkpoint_root),
+                        pre_publish_verify=lambda: None,
+                    )
+                except BaseException as error:
+                    observed = error
+
+                self.assertIs(type(observed), ValueError)
+                assert observed is not None
+                self.assertRegex(str(observed), "disjoint ancestry")
+                after = tuple(
+                    sorted(
+                        path.relative_to(self.root)
+                        for path in self.root.rglob("*")
+                    )
+                )
+                self.assertEqual(after, before)
 
 
 if __name__ == "__main__":

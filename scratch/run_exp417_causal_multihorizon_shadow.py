@@ -109,7 +109,7 @@ class OfficialStages:
 
     clean_git: Callable[[], Any]
     label_guard: Callable[[], Any]
-    freeze_inputs: Callable[[], Any]
+    freeze_inputs: Callable[[str], Any]
     open_checkpoint: Callable[[Any], Any]
     run: Callable[[Any, Any], Any]
     revalidate: Callable[[], Any]
@@ -122,9 +122,11 @@ def execute_official(stages: OfficialStages) -> int:
     """Execute the exact official order; exceptions stop all later stages."""
     if not isinstance(stages, OfficialStages):
         raise ValueError("official stages must be typed")
-    stages.clean_git()
+    verified_head = stages.clean_git()
+    if not isinstance(verified_head, str) or not verified_head:
+        raise ValueError("clean Git stage must return the verified HEAD")
     stages.label_guard()
-    context = stages.freeze_inputs()
+    context = stages.freeze_inputs(verified_head)
     checkpoints = stages.open_checkpoint(context)
     summary = stages.run(context, checkpoints)
     stages.revalidate()
@@ -172,6 +174,7 @@ def _provenance(context) -> Exp417CheckpointProvenance:
             "experiments/exp417_causal_multihorizon_shadow/model.py",
             "experiments/exp417_causal_multihorizon_shadow/scoring.py",
             "experiments/exp417_causal_multihorizon_shadow/qualification.py",
+            "experiments/exp417_causal_multihorizon_shadow/runner.py",
         ),
         model_seeds=FROZEN_CONFIG.model_seeds,
         perturbation_seeds=FROZEN_CONFIG.perturbation_seeds,
@@ -190,12 +193,15 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
     )
     state: dict[str, Any] = {}
 
-    def freeze_inputs():
+    def freeze_inputs(verified_head: str):
         lanes = freeze_lane_inputs(*paths[1:])
-        context = freeze_run_context(paths[0], lanes)
+        context = freeze_run_context(
+            paths[0], lanes, verified_code_commit=verified_head
+        )
         state["resources"] = RunnerResources(
             *paths, backend_audit_path=_backend_audit_path(paths[0])
         )
+        state["verified_head"] = verified_head
         state["provenance"] = _provenance(context)
         return context
 
@@ -209,6 +215,8 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
         return resume_or_run_population(context, checkpoints, runtime=runtime)
 
     def revalidate() -> None:
+        if require_clean_git(REPO_ROOT) != state["verified_head"]:
+            raise ValueError("Exp417 verified Git HEAD changed before publication")
         verify_input_snapshots(*paths)
 
     def render(summary, checkpoints):
@@ -246,7 +254,23 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    _require_disjoint_checkpoint_output(args.checkpoint_dir, args.output_dir)
     return execute_official(_build_stages(args))
+
+
+def _require_disjoint_checkpoint_output(
+    checkpoint_dir: Path, output_dir: Path
+) -> None:
+    checkpoint = Path(checkpoint_dir).resolve(strict=False)
+    output = Path(output_dir).resolve(strict=False)
+    if (
+        checkpoint == output
+        or checkpoint in output.parents
+        or output in checkpoint.parents
+    ):
+        raise ValueError(
+            "Exp417 checkpoint and output paths must have disjoint ancestry"
+        )
 
 
 if __name__ == "__main__":

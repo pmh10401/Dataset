@@ -15,7 +15,11 @@ from typing import Any
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
-from .checkpoints import Exp417CheckpointProvenance, Exp417CheckpointStore
+from .checkpoints import (
+    Exp417CheckpointProvenance,
+    Exp417CheckpointStore,
+    canonical_result_sha256,
+)
 from .backend import FROZEN_TASK7_BACKEND_AUDIT_SHA256
 from .config import Exp417FrozenConfig, FROZEN_CONFIG
 from .contracts import (
@@ -32,9 +36,6 @@ from .contracts import (
     ShadowCandidate,
     TestInstanceDecision,
 )
-from .runner import _result_evidence_digest
-
-
 PREDICTION_FILE = "exp417_shadow_predictions.jsonl"
 DATASET_FILE = "exp417_dataset_qualification.csv"
 OOF_FILE = "exp417_oof_normal_metrics.csv"
@@ -100,24 +101,30 @@ class TrustedCheckpointProvenance:
 
     checkpoint_provenance_sha256: str
     result_evidence_sha256: Mapping[str, str]
+    checkpoint_payload_sha256: Mapping[str, str]
 
     def __post_init__(self) -> None:
         provenance_digest = _digest(
             self.checkpoint_provenance_sha256, "checkpoint provenance"
         )
-        if not isinstance(self.result_evidence_sha256, Mapping):
-            raise ValueError("Exp417 trusted result evidence must be a mapping")
-        result_digests: dict[str, str] = {}
-        for dataset, digest in self.result_evidence_sha256.items():
-            name = _string(dataset, "trusted checkpoint dataset")
-            if name in result_digests:
-                raise ValueError("Exp417 trusted checkpoint dataset is duplicated")
-            result_digests[name] = _digest(digest, "trusted result evidence")
-        if not result_digests or tuple(result_digests) != tuple(sorted(result_digests)):
-            raise ValueError("Exp417 trusted checkpoint map must be sorted and non-empty")
+        result_digests = _trusted_digest_mapping(
+            self.result_evidence_sha256, "result payload"
+        )
+        checkpoint_digests = _trusted_digest_mapping(
+            self.checkpoint_payload_sha256, "checkpoint record payload"
+        )
+        if tuple(result_digests) != tuple(checkpoint_digests):
+            raise ValueError(
+                "Exp417 trusted result and checkpoint maps must cover identical datasets"
+            )
         object.__setattr__(self, "checkpoint_provenance_sha256", provenance_digest)
         object.__setattr__(
             self, "result_evidence_sha256", MappingProxyType(result_digests)
+        )
+        object.__setattr__(
+            self,
+            "checkpoint_payload_sha256",
+            MappingProxyType(checkpoint_digests),
         )
 
     @classmethod
@@ -128,18 +135,16 @@ class TrustedCheckpointProvenance:
             raise ValueError(
                 "Exp417 trusted checkpoint root requires Exp417CheckpointStore"
             )
-        store.require_complete()
-        completed = store.load_completed()
-        if tuple(completed) != store.expected_datasets:
-            raise ValueError("Exp417 checkpoint inventory is not complete and sorted")
+        completed, record_digests = store.require_complete_snapshot()
         return cls(
             checkpoint_provenance_sha256=sha256(
                 canonical_json_bytes(store.provenance.to_payload())
             ).hexdigest(),
             result_evidence_sha256={
-                dataset: _result_evidence_digest(completed[dataset])
+                dataset: canonical_result_sha256(completed[dataset])
                 for dataset in store.expected_datasets
             },
+            checkpoint_payload_sha256=record_digests,
         )
 
 
@@ -180,7 +185,9 @@ def render_exp417_payloads(
         SYNTHETIC_FILE: synthetic_csv,
         BACKEND_FILE: backend_json,
     }
-    config_json = _render_config(summary, provenance, config)
+    config_json = _render_config(
+        summary, provenance, trusted_checkpoint, config
+    )
     backend_counts = Counter(result.decision_evidence.frozen_train_contract.backend.backend
                              for result in summary.results)
     report = _render_report(
@@ -274,6 +281,7 @@ def verify_exp417_payloads(
         datasets,
         qualifications,
         audits,
+        trusted_checkpoint,
     )
     _verify_trusted_checkpoint(
         trusted_checkpoint, provenance, reconstructed
@@ -352,7 +360,9 @@ def _canonical_seed_decisions_payload(
     ]
 
 
-def _result_evidence_payload(result: DatasetResult) -> dict[str, object]:
+def _result_evidence_payload(
+    result: DatasetResult, trusted: TrustedCheckpointProvenance
+) -> dict[str, object]:
     if not isinstance(result.decision_evidence, DatasetDecisionEvidence):
         raise ValueError("Exp417 official reporting requires complete decision evidence")
     evidence = result.decision_evidence
@@ -370,7 +380,12 @@ def _result_evidence_payload(result: DatasetResult) -> dict[str, object]:
             }
             for decision in evidence.decisions
         ],
-        "checkpoint_result_evidence_sha256": _result_evidence_digest(result),
+        "checkpoint_result_payload_sha256": trusted.result_evidence_sha256[
+            result.dataset
+        ],
+        "checkpoint_record_payload_sha256": trusted.checkpoint_payload_sha256[
+            result.dataset
+        ],
     }
 
 
@@ -406,11 +421,11 @@ def _render_oof_csv(summary: RunSummary) -> bytes:
                     str(group.length),
                     str(group.series_count),
                     group.status,
-                    _float(group.oof_candidate_rate),
-                    _float(group.wilson_upper),
-                    _bool_text(group.seed_agreement),
-                    _bool_text(group.finite),
-                    _bool_text(group.backend_fallback),
+                    _optional_float(group.oof_candidate_rate),
+                    _optional_float(group.wilson_upper),
+                    _optional_bool_text(group.seed_agreement),
+                    _optional_bool_text(group.finite),
+                    _optional_bool_text(group.backend_fallback),
                 )
             )
     return _csv_bytes(rows)
@@ -425,8 +440,11 @@ def _render_synthetic_csv(summary: RunSummary) -> bytes:
                 (
                     result.dataset,
                     str(group.length),
-                    _float(group.pooled_synthetic_sensitivity),
-                    *(_float(sensitivity[name]) for name in _SYNTHETIC_HEADER[3:]),
+                    _optional_float(group.pooled_synthetic_sensitivity),
+                    *(
+                        _optional_float(sensitivity[name])
+                        for name in _SYNTHETIC_HEADER[3:]
+                    ),
                 )
             )
     return _csv_bytes(rows)
@@ -452,6 +470,7 @@ def _render_backend(
 def _render_config(
     summary: RunSummary,
     provenance: Exp417CheckpointProvenance,
+    trusted: TrustedCheckpointProvenance,
     config: Exp417FrozenConfig,
 ) -> bytes:
     context = summary.context
@@ -485,10 +504,11 @@ def _render_config(
                 "total_test": summary.total_test,
                 "observed_candidate_count": observed,
                 "published_candidate_count": published,
-                "global_candidate_rate": observed / summary.total_test,
+                "global_candidate_rate": published / summary.total_test,
             },
             "result_evidence": [
-                _result_evidence_payload(result) for result in summary.results
+                _result_evidence_payload(result, trusted)
+                for result in summary.results
             ],
         }
     )
@@ -598,6 +618,7 @@ def _reconstruct_results(
     datasets: Mapping[str, Mapping[str, object]],
     qualifications: Mapping[tuple[str, int], GroupQualification],
     audits: Mapping[str, BackendAudit],
+    trusted_checkpoint: TrustedCheckpointProvenance,
 ) -> tuple[DatasetResult, ...]:
     results: list[DatasetResult] = []
     observed_names: list[str] = []
@@ -606,7 +627,8 @@ def _reconstruct_results(
         _exact_keys(
             row,
             {
-                "checkpoint_result_evidence_sha256",
+                "checkpoint_record_payload_sha256",
+                "checkpoint_result_payload_sha256",
                 "dataset",
                 "decisions",
                 "train_identity_sha256",
@@ -668,14 +690,25 @@ def _reconstruct_results(
             test_size=int(dataset_row["test_size"]),
             group_count=int(dataset_row["group_count"]),
             groups=groups,
-            candidates=evidence.derived_candidates,
+            candidates=(
+                evidence.derived_candidates
+                if dataset_row["status"] == "qualified"
+                else ()
+            ),
             decision_evidence=evidence,
             lanes=context.lanes,
             context=context,
             status=str(dataset_row["status"]),
         )
-        if row["checkpoint_result_evidence_sha256"] != _result_evidence_digest(result):
-            raise ValueError("Exp417 checkpoint/result evidence digest mismatch")
+        if (
+            row["checkpoint_result_payload_sha256"]
+            != trusted_checkpoint.result_evidence_sha256.get(dataset)
+            or row["checkpoint_record_payload_sha256"]
+            != trusted_checkpoint.checkpoint_payload_sha256.get(dataset)
+            or row["checkpoint_result_payload_sha256"]
+            != canonical_result_sha256(result)
+        ):
+            raise ValueError("Exp417 checkpoint/result payload digest mismatch")
         results.append(result)
     if tuple(observed_names) != context.datasets:
         raise ValueError("Exp417 result evidence order or coverage mismatch")
@@ -697,8 +730,10 @@ def _parse_dataset_csv(
         if dataset in parsed:
             raise ValueError("Exp417 duplicate dataset CSV row")
         status = values["status"]
-        if status != "qualified":
-            raise ValueError("Exp417 official complete payload contains nonqualified dataset")
+        if status not in {"qualified", "abstained"}:
+            raise ValueError(
+                "Exp417 official complete payload contains an invalid dataset status"
+            )
         test_size = _decimal(values["test_size"], "dataset TEST size", minimum=1)
         if context.test_sizes.get(dataset) != test_size:
             raise ValueError("Exp417 dataset TEST size mismatch")
@@ -711,6 +746,13 @@ def _parse_dataset_csv(
         workload = _text_bool(values["dataset_workload_passed"], "dataset workload")
         if workload != (rate <= FROZEN_CONFIG.dataset_workload_rate):
             raise ValueError("Exp417 dataset workload flag mismatch")
+        if (
+            published > observed
+            or (status == "qualified" and (not workload or published != observed))
+            or (status == "abstained" and published != 0)
+            or (not workload and status != "abstained")
+        ):
+            raise ValueError("Exp417 dataset abstention accounting mismatch")
         if values["terminal_stage"] or values["terminal_reason"]:
             raise ValueError("Exp417 complete dataset must have empty terminal diagnostics")
         parsed[dataset] = {
@@ -771,18 +813,28 @@ def _parse_group_csvs(
             length=key[1],
             series_count=_decimal(values["series_count"], "series count"),
             status=_string(values["status"], "group status"),
-            oof_candidate_rate=_decimal_float(values["oof_candidate_rate"], "OOF rate"),
-            wilson_upper=_decimal_float(values["wilson_upper"], "Wilson upper"),
-            pooled_synthetic_sensitivity=_decimal_float(
+            oof_candidate_rate=_optional_decimal_float(
+                values["oof_candidate_rate"], "OOF rate"
+            ),
+            wilson_upper=_optional_decimal_float(
+                values["wilson_upper"], "Wilson upper"
+            ),
+            pooled_synthetic_sensitivity=_optional_decimal_float(
                 safety["pooled_synthetic_sensitivity"], "pooled sensitivity"
             ),
             per_type_synthetic_sensitivity={
-                name: _decimal_float(safety[name], f"{name} sensitivity")
+                name: _optional_decimal_float(
+                    safety[name], f"{name} sensitivity"
+                )
                 for name in _SYNTHETIC_HEADER[3:]
             },
-            seed_agreement=_text_bool(values["seed_agreement"], "seed agreement"),
-            finite=_text_bool(values["finite"], "finite"),
-            backend_fallback=_text_bool(values["backend_fallback"], "backend fallback"),
+            seed_agreement=_optional_text_bool(
+                values["seed_agreement"], "seed agreement"
+            ),
+            finite=_optional_text_bool(values["finite"], "finite"),
+            backend_fallback=_optional_text_bool(
+                values["backend_fallback"], "backend fallback"
+            ),
         )
         group_counts[dataset] += 1
     if set(result) != set(synthetic):
@@ -894,8 +946,7 @@ def _verify_conservation(
         or observed != sum(int(row["observed"]) for row in datasets.values())
         or published != sum(int(row["published"]) for row in datasets.values())
         or published != len(candidates)
-        or observed != published
-        or rate != observed / total_test
+        or rate != published / total_test
         or rate > FROZEN_CONFIG.global_workload_rate
     ):
         raise ValueError("Exp417 run conservation or workload gate mismatch")
@@ -903,7 +954,10 @@ def _verify_conservation(
     if any(by_dataset[name] != datasets[name]["published"] for name in datasets):
         raise ValueError("Exp417 prediction/dataset candidate accounting mismatch")
     for (dataset, _), group in qualifications.items():
-        if group.backend_fallback != audits[dataset].fallback:
+        if (
+            group.backend_fallback is not None
+            and group.backend_fallback != audits[dataset].fallback
+        ):
             raise ValueError("Exp417 group/backend fallback mismatch")
 
 
@@ -1017,14 +1071,29 @@ def _verify_trusted_checkpoint(
     if trusted.checkpoint_provenance_sha256 != expected_provenance:
         raise ValueError("Exp417 checkpoint provenance root mismatch")
     expected_results = {
-        result.dataset: _result_evidence_digest(result)
-        for result in results
+        result.dataset: canonical_result_sha256(result) for result in results
     }
     if (
         tuple(trusted.result_evidence_sha256) != tuple(expected_results)
         or dict(trusted.result_evidence_sha256) != expected_results
     ):
         raise ValueError("Exp417 externally trusted result evidence mismatch")
+    if tuple(trusted.checkpoint_payload_sha256) != tuple(expected_results):
+        raise ValueError("Exp417 externally trusted checkpoint payload map mismatch")
+
+
+def _trusted_digest_mapping(value: object, name: str) -> dict[str, str]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"Exp417 trusted {name} evidence must be a mapping")
+    result: dict[str, str] = {}
+    for dataset, digest in value.items():
+        key = _string(dataset, "trusted checkpoint dataset")
+        if key in result:
+            raise ValueError("Exp417 trusted checkpoint dataset is duplicated")
+        result[key] = _digest(digest, f"trusted {name}")
+    if not result or tuple(result) != tuple(sorted(result)):
+        raise ValueError("Exp417 trusted checkpoint map must be sorted and non-empty")
+    return result
 
 
 def _canonical_json_object(payload: bytes, name: str) -> dict[str, object]:
@@ -1086,10 +1155,22 @@ def _float(value: float) -> str:
     return repr(float(value))
 
 
+def _optional_float(value: float | None) -> str:
+    if value is None:
+        return ""
+    return _float(value)
+
+
 def _bool_text(value: bool) -> str:
     if type(value) is not bool:
         raise ValueError("Exp417 rendered flag must be bool")
     return "true" if value else "false"
+
+
+def _optional_bool_text(value: bool | None) -> str:
+    if value is None:
+        return ""
+    return _bool_text(value)
 
 
 def _text_bool(value: object, name: str) -> bool:
@@ -1098,6 +1179,12 @@ def _text_bool(value: object, name: str) -> bool:
     if value == "false":
         return False
     raise ValueError(f"Exp417 {name} must be true or false")
+
+
+def _optional_text_bool(value: object, name: str) -> bool | None:
+    if value == "":
+        return None
+    return _text_bool(value, name)
 
 
 def _decimal(value: object, name: str, minimum: int = 0) -> int:
@@ -1119,6 +1206,12 @@ def _decimal_float(value: object, name: str) -> float:
     if not isfinite(number) or value != repr(number):
         raise ValueError(f"Exp417 {name} must be a canonical float")
     return number
+
+
+def _optional_decimal_float(value: object, name: str) -> float | None:
+    if value == "":
+        return None
+    return _decimal_float(value, name)
 
 
 def _object(value: object, name: str) -> dict[str, object]:

@@ -389,37 +389,94 @@ class GroupQualification:
     length: int
     series_count: int
     status: str
-    oof_candidate_rate: float
-    wilson_upper: float
-    pooled_synthetic_sensitivity: float
-    per_type_synthetic_sensitivity: Mapping[str, float]
-    seed_agreement: bool
-    finite: bool = True
-    backend_fallback: bool = False
+    oof_candidate_rate: float | None
+    wilson_upper: float | None
+    pooled_synthetic_sensitivity: float | None
+    per_type_synthetic_sensitivity: Mapping[str, float | None]
+    seed_agreement: bool | None
+    finite: bool | None = True
+    backend_fallback: bool | None = False
 
     def __post_init__(self) -> None:
         _integer(self.length, "length", minimum=1)
         _integer(self.series_count, "series_count", minimum=0)
         if self.status not in _GROUP_STATUSES:
             raise ValueError("invalid group status")
-        for name in ("oof_candidate_rate", "wilson_upper", "pooled_synthetic_sensitivity"):
-            _finite(getattr(self, name), name, minimum=0.0, maximum=1.0)
-        if type(self.seed_agreement) is not bool or type(self.finite) is not bool or type(self.backend_fallback) is not bool:
-            raise ValueError("qualification flags must be bool")
         sensitivity = _immutable_mapping(self.per_type_synthetic_sensitivity, "per_type_synthetic_sensitivity")
         if set(sensitivity) != _PRIMARY_PERTURBATIONS:
             raise ValueError("per_type_synthetic_sensitivity must cover every primary perturbation")
+        oof_values = (self.oof_candidate_rate, self.wilson_upper)
+        synthetic_values = (
+            self.pooled_synthetic_sensitivity,
+            *sensitivity.values(),
+        )
+        flags = (self.seed_agreement, self.finite, self.backend_fallback)
+        if self.status in {"qualified", "failed"}:
+            if any(value is None for value in (*oof_values, *synthetic_values)):
+                raise ValueError("qualified or failed metrics must be defined")
+            if any(type(value) is not bool for value in flags):
+                raise ValueError("qualified or failed flags must be defined bool")
+        elif self.status == "diagnostic":
+            if not 50 <= self.series_count < FROZEN_CONFIG.min_train_candidate:
+                raise ValueError("diagnostic group requires 50..99 TRAIN series")
+            if any(value is None for value in oof_values) or any(
+                value is not None for value in synthetic_values
+            ):
+                raise ValueError(
+                    "diagnostic synthetic metrics must remain undefined"
+                )
+            if any(type(value) is not bool for value in flags):
+                raise ValueError("diagnostic flags must be defined bool")
+        else:
+            if any(value is not None for value in (*oof_values, *synthetic_values, *flags)):
+                raise ValueError("abstained qualification evidence must remain undefined")
+        for name in (
+            "oof_candidate_rate",
+            "wilson_upper",
+            "pooled_synthetic_sensitivity",
+        ):
+            value = getattr(self, name)
+            if value is not None:
+                _finite(value, name, minimum=0.0, maximum=1.0)
         for value in sensitivity.values():
-            _finite(value, "per-type synthetic sensitivity", minimum=0.0, maximum=1.0)
-        if self.status == "qualified":
-            if self.series_count < FROZEN_CONFIG.min_train_candidate:
-                raise ValueError("qualified group has insufficient TRAIN series")
-            if self.oof_candidate_rate > FROZEN_CONFIG.oof_candidate_rate or self.wilson_upper > FROZEN_CONFIG.oof_wilson_upper:
-                raise ValueError("qualified group fails OOF safety")
-            if self.pooled_synthetic_sensitivity < FROZEN_CONFIG.pooled_synthetic_sensitivity or any(value < FROZEN_CONFIG.per_type_synthetic_sensitivity for value in sensitivity.values()):
-                raise ValueError("qualified group fails synthetic safety")
-            if not self.seed_agreement or not self.finite or self.backend_fallback:
-                raise ValueError("qualified group fails deterministic backend safety")
+            if value is not None:
+                _finite(
+                    value,
+                    "per-type synthetic sensitivity",
+                    minimum=0.0,
+                    maximum=1.0,
+                )
+        if self.status in {"qualified", "failed"}:
+            assert self.oof_candidate_rate is not None
+            assert self.wilson_upper is not None
+            assert self.pooled_synthetic_sensitivity is not None
+            passes_qualification = (
+                self.series_count >= FROZEN_CONFIG.min_train_candidate
+                and self.oof_candidate_rate <= FROZEN_CONFIG.oof_candidate_rate
+                and self.wilson_upper <= FROZEN_CONFIG.oof_wilson_upper
+                and self.pooled_synthetic_sensitivity
+                >= FROZEN_CONFIG.pooled_synthetic_sensitivity
+                and all(
+                    value is not None
+                    and value
+                    >= FROZEN_CONFIG.per_type_synthetic_sensitivity
+                    for value in sensitivity.values()
+                )
+                and self.seed_agreement is True
+                and self.finite is True
+                and self.backend_fallback is False
+            )
+            if self.status == "qualified" and not passes_qualification:
+                raise ValueError("qualified group fails qualification safety")
+            if self.status == "failed":
+                if self.series_count < FROZEN_CONFIG.min_train_candidate:
+                    raise ValueError(
+                        "failed group requires candidate-eligible TRAIN series"
+                    )
+                if passes_qualification:
+                    raise ValueError(
+                        "failed group cannot pass every qualification gate"
+                    )
         object.__setattr__(self, "per_type_synthetic_sensitivity", sensitivity)
 
 
@@ -579,16 +636,24 @@ class DatasetDecisionEvidence:
         decisions = _tuple(self.decisions, "decisions")
         if any(not isinstance(decision, TestInstanceDecision) for decision in decisions):
             raise ValueError("decisions must contain TestInstanceDecision records")
-        expected_manifest = self.context.test_identity_manifest[self.dataset]
+        qualified_lengths = {
+            group.length
+            for group in self.frozen_train_contract.groups
+            if group.status == "qualified"
+        }
+        expected_manifest = tuple(
+            identity
+            for identity in self.context.test_identity_manifest[self.dataset]
+            if identity[1] in qualified_lengths
+        )
         actual_manifest = tuple((decision.instance_index, decision.length) for decision in decisions)
         if actual_manifest != expected_manifest:
-            raise ValueError("decisions must match every exact frozen TEST identity and length")
+            raise ValueError(
+                "decisions must match every exact qualified frozen TEST identity and length"
+            )
         if any(decision.dataset != self.dataset for decision in decisions):
             raise ValueError("decision dataset does not match evidence")
-        train_lengths = {
-            group.length for group in self.frozen_train_contract.groups if group.status == "qualified"
-        }
-        if any(decision.length not in train_lengths for decision in decisions):
+        if any(decision.length not in qualified_lengths for decision in decisions):
             raise ValueError("decision length is absent from the frozen TRAIN contract")
         object.__setattr__(self, "decisions", decisions)
 
@@ -758,7 +823,11 @@ class RunSummary:
             raise ValueError("publication_allowed must be bool")
         if self.status not in {"complete", "global_workload_gate_failed", "failed"}:
             raise ValueError("invalid run status")
-        prospective_total = sum(len(result.observed_candidates) for result in results)
+        prospective_total = sum(
+            result.observed_candidate_count
+            for result in results
+            if result.candidate_rate <= FROZEN_CONFIG.dataset_workload_rate
+        )
         global_rate = prospective_total / total_test if total_test else 0.0
         if global_rate > FROZEN_CONFIG.global_workload_rate:
             if self.publication_allowed or self.status != "global_workload_gate_failed" or any(result.candidates for result in results):

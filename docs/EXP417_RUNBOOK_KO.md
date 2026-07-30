@@ -143,11 +143,48 @@ config, preprocessing/fold/model/backend contract, runtime version, 정확한
 dataset universe가 정확히 일치할 때만 열리고, 완료된 canonical record만
 재사용된다.
 
-중단되면 정식 output이 아직 없는지, Git과 입력 SHA가 그대로인지 확인하고
-다시 별도 승인을 받은 뒤 같은 명령을 한 번 실행한다. checkpoint를
-복사·병합·부분 삭제하지 않는다. smoke 출력은 정식 checkpoint로 재사용할
-수 없다. 이미 존재하는 정식 output을 덮어쓰거나 같은 경로에 재실행하지
-않는다.
+writer는 checkpoint root 디렉터리 inode의 exclusive lock을, 검사·resume
+reader는 shared lock을 잡는다. 따라서 active writer가 끝나기 전에는 다른
+writer나 reader가 중간 record/progress 상태를 관찰하지 않는다.
+
+새 root는 예측 불가능한 `.exp417-init-<uuid>` staging 이름으로 만든다.
+생성 직전·직후 parent inventory를 descriptor 기준으로 비교해 새 inode가
+정확히 하나이고 그 inode가 staging 이름에 결합된 경우에만 내용을 쓴다.
+교체나 다른 동시 변경이 보이면 초기화를 중단하며 staging 또는 이동된
+inode를 자동 삭제하지 않는다. 최종 no-replace rename 뒤에도 root와
+datasets inode/inventory, provenance/progress bytes와 inode를 모두 다시
+검증한다. publish 뒤 검증이 실패하면 canonical root를 recovery 이름으로
+원자적으로 옮겨 공식 이름을 비운다. 이는 우발적 동시 실행과 같은 parent
+안의 pathname 교체를 fail-closed로 막는다. 다만 portable POSIX에는
+`mkdir`와 생성 inode의 descriptor 획득을 하나로 묶는 API가 없으므로,
+임의의 다른 디렉터리까지 감시·이동할 수 있는 악의적 동일 UID 프로세스는
+운영 위협 모델 밖이다. checkpoint parent는 해당 실행 계정만 쓸 수 있게
+권한을 제한해야 한다.
+
+중단되면 정식 output이 아직 없는지, Git과 입력 SHA가 그대로인지 확인한다.
+다음 실행에서 동일 provenance의 root에 hard-crash transaction marker,
+임시 파일, record/progress 불일치가 발견되면 구현이 그 root inode 전체를
+같은 parent의 고유한 `.exp417_causal_multihorizon_shadow.checkpoint.quarantine.*`
+경로로 원자적으로 격리하고, 보존 경로를 포함한 오류로 중단한다. 다른
+provenance의 foreign root는 이동하거나 수정하지 않는다. 격리본의 파일을
+부분 삭제·병합·원래 경로로 복사하지 말고 그대로 보존한 뒤 원인을
+검사한다. 다시 별도 승인을 받은 다음 호출에서만 새 checkpoint root를
+생성한다. smoke 출력은 정식 checkpoint로 재사용할 수 없다. 이미 존재하는
+정식 output을 덮어쓰거나 같은 경로에 재실행하지 않는다.
+
+transaction rollback이나 원자적 progress 교체 과정에서 밀려난 기존
+record/progress는 checkpoint parent의 고유한
+`.exp417_causal_multihorizon_shadow.checkpoint.rollback-*.json` recovery
+capsule로 이동한다. commit 전 임시 payload나 경쟁 target을 안전하게
+원위치로 돌릴 수 없으면
+`.exp417-checkpoint.rollback-temporary.*.bin` 또는
+`.exp417-checkpoint.rollback-publish-target.*.bin`으로 보존한다. 이
+파일들 외에 실패한 최종 root target은
+`.exp417-checkpoint.rollback-root-publish-target.*.entry`로 보존한다.
+recovery entry와 실패한 `.exp417-init-*` staging은 자동 삭제하지 않는다.
+정상 실행 중에도 이전 progress 보존본이 생길 수 있다. 실행 중 이름을
+바꾸거나 지우지 말고, 실행·검증 완료 뒤에도 provenance와 최종 산출물
+보존 정책에 따라 별도 보관한다.
 
 ## 사용자의 별도 명시적 승인 후에만 실행
 

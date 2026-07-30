@@ -142,6 +142,24 @@ def group() -> GroupQualification:
     )
 
 
+def diagnostic_group(*, length: int = 64, series_count: int = 64) -> GroupQualification:
+    return GroupQualification(
+        length=length,
+        series_count=series_count,
+        status="diagnostic",
+        oof_candidate_rate=0.0,
+        wilson_upper=0.05,
+        pooled_synthetic_sensitivity=None,
+        per_type_synthetic_sensitivity={
+            "level_shift": None,
+            "gradual_drift": None,
+            "amplitude_scaling": None,
+            "period_change": None,
+        },
+        seed_agreement=True,
+    )
+
+
 def dataset_result(
     dataset: str,
     *,
@@ -184,6 +202,117 @@ def results_for_context(
 
 
 class ContractTests(unittest.TestCase):
+    def test_group_states_preserve_undefined_diagnostics_as_none(self) -> None:
+        """Diagnostic and preprocessing abstention states must not invent zero measurements."""
+        undefined = {
+            "level_shift": None,
+            "gradual_drift": None,
+            "amplitude_scaling": None,
+            "period_change": None,
+        }
+        diagnostic = GroupQualification(
+            length=64,
+            series_count=64,
+            status="diagnostic",
+            oof_candidate_rate=0.0,
+            wilson_upper=0.05,
+            pooled_synthetic_sensitivity=None,
+            per_type_synthetic_sensitivity=undefined,
+            seed_agreement=True,
+            finite=True,
+            backend_fallback=False,
+        )
+        abstained = GroupQualification(
+            length=32,
+            series_count=32,
+            status="abstained",
+            oof_candidate_rate=None,
+            wilson_upper=None,
+            pooled_synthetic_sensitivity=None,
+            per_type_synthetic_sensitivity=undefined,
+            seed_agreement=None,
+            finite=None,
+            backend_fallback=None,
+        )
+
+        self.assertIsNone(diagnostic.pooled_synthetic_sensitivity)
+        self.assertIsNone(abstained.oof_candidate_rate)
+        with self.assertRaisesRegex(ValueError, "undefined|diagnostic"):
+            replace(diagnostic, pooled_synthetic_sensitivity=0.0)
+        with self.assertRaisesRegex(ValueError, "undefined|abstained"):
+            replace(abstained, oof_candidate_rate=0.0)
+
+    def test_failed_group_is_a_measured_candidate_group_that_misses_a_gate(self) -> None:
+        """A passing or undersized group cannot be relabeled as a measured failure."""
+        with self.assertRaisesRegex(ValueError, "failed|qualification"):
+            replace(group(), status="failed")
+        with self.assertRaisesRegex(ValueError, "failed|series"):
+            GroupQualification(
+                length=100,
+                series_count=99,
+                status="failed",
+                oof_candidate_rate=0.02,
+                wilson_upper=0.06,
+                pooled_synthetic_sensitivity=0.69,
+                per_type_synthetic_sensitivity={
+                    "level_shift": 0.49,
+                    "gradual_drift": 0.49,
+                    "amplitude_scaling": 0.49,
+                    "period_change": 0.49,
+                },
+                seed_agreement=True,
+                finite=True,
+                backend_fallback=False,
+            )
+
+    def test_decision_evidence_scores_only_qualified_length_identities(self) -> None:
+        """Diagnostic TEST identities are accounted by abstention, never invented scores."""
+        context = frozen_context()
+        manifest = dict(context.test_identity_manifest)
+        manifest["A"] = ((0, 64), (1, 100))
+        context = replace(context, test_identity_manifest=manifest)
+        contract = FrozenTrainContract(
+            dataset="A",
+            groups=(diagnostic_group(), group()),
+            backend=BackendAudit("cpu", True, 0.0, 1.0, 1.0, False),
+            train_identity_sha256="a" * 64,
+        )
+        scored = decision_evidence("A", frozen_context(test_size=2)).decisions[1]
+        scored = replace(scored, instance_index=1)
+
+        evidence = DatasetDecisionEvidence(
+            "A", context, contract, context.database_sha256,
+            contract.train_identity_sha256, (scored,),
+        )
+
+        self.assertEqual(
+            tuple((item.instance_index, item.length) for item in evidence.decisions),
+            ((1, 100),),
+        )
+        with self.assertRaisesRegex(ValueError, "qualified"):
+            DatasetDecisionEvidence(
+                "A", context, contract, context.database_sha256,
+                contract.train_identity_sha256,
+                (
+                    TestInstanceDecision(
+                        "A", 0, 64,
+                        tuple(
+                            SeedDecision(
+                                seed,
+                                {
+                                    1: horizon(1, p_value=0.5, persistence=0.0),
+                                    2: horizon(2, p_value=0.5, persistence=0.0),
+                                    7: horizon(7, p_value=0.5, persistence=0.0),
+                                },
+                                False,
+                            )
+                            for seed in FROZEN_CONFIG.model_seeds
+                        ),
+                    ),
+                    scored,
+                ),
+            )
+
     def test_raw_series_rejects_bool_index_and_test_dataset_rejects_nonfinite(self) -> None:
         with self.assertRaises(ValueError):
             RawSeries(instance_index=True, values=(0.0, 1.0))

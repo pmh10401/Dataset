@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import csv
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from hashlib import sha256
 import io
 import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import MappingProxyType
 import unittest
+from unittest.mock import patch
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
@@ -206,21 +209,28 @@ def rendered_payloads() -> dict[str, bytes]:
 
 
 def fixture_trusted_checkpoint(summary: RunSummary | None = None):
+    from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
+        canonical_result_sha256,
+    )
     from experiments.exp417_causal_multihorizon_shadow.reporting import (
         TrustedCheckpointProvenance,
     )
-    from experiments.exp417_causal_multihorizon_shadow.runner import (
-        _result_evidence_digest,
-    )
 
     selected = fixture_summary() if summary is None else summary
+    result_digests = {
+        result.dataset: canonical_result_sha256(result)
+        for result in selected.results
+    }
     return TrustedCheckpointProvenance(
         checkpoint_provenance_sha256=sha256(
             canonical_json_bytes(fixture_provenance().to_payload())
         ).hexdigest(),
-        result_evidence_sha256={
-            result.dataset: _result_evidence_digest(result)
-            for result in selected.results
+        result_evidence_sha256=result_digests,
+        checkpoint_payload_sha256={
+            dataset: sha256(
+                f"checkpoint-record:{digest}".encode("ascii")
+            ).hexdigest()
+            for dataset, digest in result_digests.items()
         },
     )
 
@@ -240,6 +250,296 @@ def _rewrite_csv(rows: list[list[str]]) -> bytes:
 
 
 class ReportingTests(unittest.TestCase):
+    def test_trusted_checkpoint_snapshot_cannot_mix_two_complete_roots(self) -> None:
+        """One trust capability must bind results and records from one locked snapshot."""
+        from experiments.exp417_causal_multihorizon_shadow import checkpoints
+        from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
+            Exp417CheckpointStore,
+        )
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            TrustedCheckpointProvenance,
+        )
+
+        original = fixture_summary().results[0]
+        changed_group = replace(
+            original.groups[0], pooled_synthetic_sensitivity=0.71
+        )
+        changed_contract = replace(
+            original.decision_evidence.frozen_train_contract,
+            groups=(changed_group,),
+        )
+        changed_evidence = replace(
+            original.decision_evidence,
+            frozen_train_contract=changed_contract,
+        )
+        changed = replace(
+            original,
+            groups=(changed_group,),
+            decision_evidence=changed_evidence,
+        )
+
+        def write(
+            store: Exp417CheckpointStore, result: DatasetResult
+        ) -> None:
+            store.write_dataset(
+                result,
+                raw_train_identity_sha256="1" * 64,
+                repaired_train_identity_sha256="2" * 64,
+                length_group_identity_sha256={100: "3" * 64},
+                canonical_model_hashes={
+                    100: {
+                        seed: "4" * 64
+                        for seed in FROZEN_CONFIG.model_seeds
+                    }
+                },
+                score_calibration_hashes={100: "5" * 64},
+                backend_audit=fixture_backend(),
+                elapsed_seconds=0.1,
+            )
+
+        with TemporaryDirectory() as temporary:
+            root_a = Path(temporary) / "checkpoint-a"
+            root_b = Path(temporary) / "checkpoint-b"
+            store_a = Exp417CheckpointStore(
+                root_a, fixture_provenance(), (original.dataset,)
+            )
+            store_b = Exp417CheckpointStore(
+                root_b, fixture_provenance(), (original.dataset,)
+            )
+            write(store_a, original)
+            write(store_b, changed)
+            expected_a_results = {
+                original.dataset: checkpoints.canonical_result_sha256(original)
+            }
+            expected_a_records = dict(store_a.completed_record_digests())
+            expected_b_records = dict(store_b.completed_record_digests())
+            self.assertNotEqual(expected_a_results[original.dataset],
+                                checkpoints.canonical_result_sha256(changed))
+            self.assertNotEqual(expected_a_records, expected_b_records)
+
+            swapped = False
+
+            def swap_after_hash(result: DatasetResult) -> str:
+                nonlocal swapped
+                digest = checkpoints.canonical_result_sha256(result)
+                if not swapped:
+                    checkpoints._atomic_exchange(root_a, root_b)
+                    swapped = True
+                return digest
+
+            with patch(
+                "experiments.exp417_causal_multihorizon_shadow.reporting."
+                "canonical_result_sha256",
+                side_effect=swap_after_hash,
+            ):
+                trusted = TrustedCheckpointProvenance.from_store(store_a)
+
+            self.assertTrue(swapped)
+            self.assertEqual(
+                dict(trusted.result_evidence_sha256), expected_a_results
+            )
+            self.assertEqual(
+                dict(trusted.checkpoint_payload_sha256), expected_a_records
+            )
+            self.assertNotEqual(
+                dict(trusted.checkpoint_payload_sha256), expected_b_records
+            )
+
+    def test_undefined_group_metrics_render_as_blank_and_round_trip(self) -> None:
+        """Diagnostic and preprocessing abstention rows must not invent zero evidence."""
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            render_exp417_payloads,
+            verify_exp417_payloads,
+        )
+
+        original = fixture_summary()
+        first = original.results[0]
+        undefined = {
+            "amplitude_scaling": None,
+            "gradual_drift": None,
+            "level_shift": None,
+            "period_change": None,
+        }
+        abstained = GroupQualification(
+            length=32,
+            series_count=32,
+            status="abstained",
+            oof_candidate_rate=None,
+            wilson_upper=None,
+            pooled_synthetic_sensitivity=None,
+            per_type_synthetic_sensitivity=undefined,
+            seed_agreement=None,
+            finite=None,
+            backend_fallback=None,
+        )
+        diagnostic = GroupQualification(
+            length=64,
+            series_count=64,
+            status="diagnostic",
+            oof_candidate_rate=0.0,
+            wilson_upper=0.05,
+            pooled_synthetic_sensitivity=None,
+            per_type_synthetic_sensitivity=undefined,
+            seed_agreement=True,
+            finite=True,
+            backend_fallback=False,
+        )
+        groups = (abstained, diagnostic, first.groups[0])
+        contract = replace(
+            first.decision_evidence.frozen_train_contract, groups=groups
+        )
+        evidence = DatasetDecisionEvidence(
+            dataset=first.dataset,
+            context=first.context,
+            frozen_train_contract=contract,
+            database_sha256=first.context.database_sha256,
+            train_identity_sha256=contract.train_identity_sha256,
+            decisions=first.decision_evidence.decisions,
+        )
+        result = DatasetResult(
+            dataset=first.dataset,
+            test_size=first.test_size,
+            group_count=len(groups),
+            groups=groups,
+            candidates=evidence.derived_candidates,
+            decision_evidence=evidence,
+            lanes=first.lanes,
+            context=first.context,
+            status="qualified",
+        )
+        summary = RunSummary(
+            results=(result, *original.results[1:]),
+            total_test=original.total_test,
+            publication_allowed=True,
+            status="complete",
+            context=original.context,
+        )
+        trusted = fixture_trusted_checkpoint(summary)
+
+        payloads = dict(
+            render_exp417_payloads(
+                summary, fixture_provenance(), trusted
+            )
+        )
+        verify_exp417_payloads(payloads, trusted_checkpoint=trusted)
+        oof_rows = list(
+            csv.DictReader(
+                io.StringIO(
+                    payloads[
+                        "exp417_oof_normal_metrics.csv"
+                    ].decode("utf-8")
+                )
+            )
+        )
+        synthetic_rows = list(
+            csv.DictReader(
+                io.StringIO(
+                    payloads["exp417_synthetic_safety.csv"].decode("utf-8")
+                )
+            )
+        )
+        self.assertTrue(
+            all(
+                oof_rows[0][name] == ""
+                for name in (
+                    "oof_candidate_rate",
+                    "wilson_upper",
+                    "seed_agreement",
+                    "finite",
+                    "backend_fallback",
+                )
+            )
+        )
+        self.assertTrue(
+            all(
+                synthetic_rows[index][name] == ""
+                for index in (0, 1)
+                for name in (
+                    "pooled_synthetic_sensitivity",
+                    "amplitude_scaling",
+                    "gradual_drift",
+                    "level_shift",
+                    "period_change",
+                )
+            )
+        )
+
+        tampered = list(
+            csv.reader(
+                io.StringIO(
+                    payloads["exp417_synthetic_safety.csv"].decode("utf-8")
+                )
+            )
+        )
+        tampered[1][2] = "0.0"
+        payloads["exp417_synthetic_safety.csv"] = _rewrite_csv(tampered)
+        with self.assertRaises(ValueError):
+            verify_exp417_payloads(payloads, trusted_checkpoint=trusted)
+
+    def test_legitimate_dataset_workload_abstention_round_trips_officially(self) -> None:
+        """A local all-or-none abstention is valid accounting after the global gate passes."""
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            render_exp417_payloads,
+            verify_exp417_payloads,
+        )
+
+        original = fixture_summary()
+        first = original.results[0]
+        contract = first.decision_evidence.frozen_train_contract
+        decisions = tuple(
+            TestInstanceDecision(
+                first.dataset,
+                index,
+                100,
+                fixture_seed_decisions(candidate=index < 6),
+            )
+            for index in range(first.test_size)
+        )
+        evidence = DatasetDecisionEvidence(
+            first.dataset,
+            first.context,
+            contract,
+            first.context.database_sha256,
+            contract.train_identity_sha256,
+            decisions,
+        )
+        abstained = DatasetResult(
+            first.dataset,
+            first.test_size,
+            first.group_count,
+            first.groups,
+            (),
+            evidence,
+            first.lanes,
+            first.context,
+            "abstained",
+        )
+        summary = RunSummary(
+            (abstained, *original.results[1:]),
+            original.total_test,
+            True,
+            "complete",
+            original.context,
+        )
+        trusted = fixture_trusted_checkpoint(summary)
+
+        payloads = render_exp417_payloads(
+            summary, fixture_provenance(), trusted
+        )
+        verify_exp417_payloads(payloads, trusted_checkpoint=trusted)
+        rows = list(
+            csv.DictReader(
+                io.StringIO(
+                    payloads[
+                        "exp417_dataset_qualification.csv"
+                    ].decode("utf-8")
+                )
+            )
+        )
+        self.assertEqual(rows[0]["status"], "abstained")
+        self.assertEqual(rows[0]["observed_candidate_count"], "6")
+        self.assertEqual(rows[0]["published_candidate_count"], "0")
+
     def test_renders_exact_canonical_seven_payloads(self) -> None:
         from experiments.exp417_causal_multihorizon_shadow.reporting import (
             NON_MANIFEST_FILES,
@@ -314,51 +614,68 @@ class ReportingTests(unittest.TestCase):
         from experiments.exp417_causal_multihorizon_shadow.reporting import (
             render_exp417_payloads,
         )
+        from experiments.exp417_causal_multihorizon_shadow.qualification import (
+            apply_global_workload,
+        )
 
-        summary = fixture_summary()
-        first = summary.results[0]
-        contract = first.decision_evidence.frozen_train_contract
-        decisions = tuple(
-            TestInstanceDecision(
-                dataset=first.dataset,
-                instance_index=index,
-                length=100,
-                seed_decisions=fixture_seed_decisions(candidate=index < 13),
+        base = fixture_context()
+        context = replace(
+            base,
+            test_identity_manifest={
+                dataset: tuple((index, 100) for index in range(20))
+                for dataset in base.datasets
+            },
+        )
+        group = fixture_group()
+        results = []
+        for dataset_number, dataset in enumerate(context.datasets):
+            contract = FrozenTrainContract(
+                dataset,
+                (group,),
+                fixture_backend(),
+                sha256(dataset.encode("utf-8")).hexdigest(),
             )
-            for index in range(first.test_size)
+            decisions = tuple(
+                TestInstanceDecision(
+                    dataset,
+                    index,
+                    100,
+                    fixture_seed_decisions(
+                        candidate=dataset_number < 225 and index == 0
+                    ),
+                )
+                for index in range(20)
+            )
+            evidence = DatasetDecisionEvidence(
+                dataset,
+                context,
+                contract,
+                context.database_sha256,
+                contract.train_identity_sha256,
+                decisions,
+            )
+            results.append(
+                DatasetResult(
+                    dataset,
+                    20,
+                    1,
+                    (group,),
+                    evidence.derived_candidates,
+                    evidence,
+                    context.lanes,
+                    context,
+                    "qualified",
+                )
+            )
+        blocked = apply_global_workload(
+            tuple(results), 20 * len(results), context=context
         )
-        evidence = DatasetDecisionEvidence(
-            dataset=first.dataset,
-            context=summary.context,
-            frozen_train_contract=contract,
-            database_sha256=summary.context.database_sha256,
-            train_identity_sha256=contract.train_identity_sha256,
-            decisions=decisions,
-        )
-        blocked_first = DatasetResult(
-            first.dataset,
-            first.test_size,
-            first.group_count,
-            first.groups,
-            (),
-            evidence,
-            first.lanes,
-            first.context,
-            "abstained",
-        )
-        blocked_results = (blocked_first, *summary.results[1:])
-        blocked = RunSummary(
-            blocked_results,
-            summary.total_test,
-            False,
-            "global_workload_gate_failed",
-            summary.context,
-        )
+        self.assertEqual(blocked.status, "global_workload_gate_failed")
         with self.assertRaisesRegex(ValueError, "global|publication"):
             render_exp417_payloads(
                 blocked,
                 fixture_provenance(),
-                fixture_trusted_checkpoint(summary),
+                fixture_trusted_checkpoint(fixture_summary()),
             )
 
     def test_independent_semantic_verifier_rejects_every_tamper_class(self) -> None:
@@ -545,10 +862,12 @@ class ReportingTests(unittest.TestCase):
         mutated[next(iter(mutated))] = "f" * 64
         variants.append(mutated)
         for index, mapping in enumerate(variants):
-            anchor = TrustedCheckpointProvenance(
-                trusted.checkpoint_provenance_sha256, mapping
-            )
             with self.subTest(index=index), self.assertRaises(ValueError):
+                anchor = TrustedCheckpointProvenance(
+                    trusted.checkpoint_provenance_sha256,
+                    mapping,
+                    trusted.checkpoint_payload_sha256,
+                )
                 verify_exp417_payloads(payloads, trusted_checkpoint=anchor)
 
     def test_fully_coherent_result_rewrite_fails_external_checkpoint_root(self) -> None:
@@ -610,6 +929,63 @@ class ReportingTests(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError):
+            verify_exp417_payloads(
+                forged_payloads,
+                trusted_checkpoint=fixture_trusted_checkpoint(original),
+            )
+
+    def test_fully_coherent_qualification_rewrite_fails_checkpoint_payload_root(self) -> None:
+        """Qualification/backend evidence must be covered by checkpoint trust, not a reduced score digest."""
+        from experiments.exp417_causal_multihorizon_shadow.reporting import (
+            render_exp417_payloads,
+            verify_exp417_payloads,
+        )
+
+        original = fixture_summary()
+        first = original.results[0]
+        changed_group = replace(
+            first.groups[0], pooled_synthetic_sensitivity=0.80
+        )
+        evidence = first.decision_evidence
+        changed_contract = FrozenTrainContract(
+            evidence.frozen_train_contract.dataset,
+            (changed_group,),
+            evidence.frozen_train_contract.backend,
+            evidence.frozen_train_contract.train_identity_sha256,
+        )
+        changed_evidence = DatasetDecisionEvidence(
+            evidence.dataset,
+            evidence.context,
+            changed_contract,
+            evidence.database_sha256,
+            evidence.train_identity_sha256,
+            evidence.decisions,
+        )
+        changed_first = DatasetResult(
+            first.dataset,
+            first.test_size,
+            1,
+            (changed_group,),
+            changed_evidence.derived_candidates,
+            changed_evidence,
+            first.lanes,
+            first.context,
+            first.status,
+        )
+        forged = RunSummary(
+            (changed_first, *original.results[1:]),
+            original.total_test,
+            True,
+            "complete",
+            original.context,
+        )
+        forged_payloads = render_exp417_payloads(
+            forged,
+            fixture_provenance(),
+            fixture_trusted_checkpoint(forged),
+        )
+
+        with self.assertRaisesRegex(ValueError, "checkpoint|payload|trust"):
             verify_exp417_payloads(
                 forged_payloads,
                 trusted_checkpoint=fixture_trusted_checkpoint(original),

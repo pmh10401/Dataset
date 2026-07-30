@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from contextlib import contextmanager
 from hashlib import sha256
 import importlib.metadata
 import json
+import os
 from pathlib import Path
 import re
 import sqlite3
+import stat
 import subprocess
 import sys
 from typing import Any
+from urllib.parse import quote
 
 import numpy as np
 
@@ -65,6 +69,12 @@ JOIN datasets AS d ON d.id = i.dataset_id
 WHERE d.name = ? AND i.split = 'TEST'
 ORDER BY i.instance_index
 """
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_INPUT_OPEN_FLAGS = (
+    os.O_RDONLY
+    | getattr(os, "O_CLOEXEC", 0)
+    | getattr(os, "O_NOFOLLOW", 0)
+)
 
 
 class _DuplicateJsonKeyError(ValueError):
@@ -87,18 +97,23 @@ def freeze_lane_inputs(
         Path(exp292_prediction),
         Path(exp292_manifest),
     )
-    _verify_hashes(paths, _lane_hashes(config), "SHA256 mismatch")
-    rows_291 = _read_prediction_rows(paths[0])
-    manifest_291 = _read_manifest(paths[1])
-    rows_292 = _read_prediction_rows(paths[2])
-    manifest_292 = _read_manifest(paths[3])
+    payloads = tuple(_read_pinned_bytes(path) for path in paths)
+    expected_hashes = _lane_hashes(config)
+    for path, (_, actual), wanted in zip(
+        paths, payloads, expected_hashes, strict=True
+    ):
+        if actual != wanted:
+            raise ValueError(f"Exp417 input SHA256 mismatch: {path.name}")
+    rows_291 = _parse_prediction_rows(payloads[0][0], paths[0].name)
+    manifest_291 = _parse_manifest(payloads[1][0], paths[1].name)
+    rows_292 = _parse_prediction_rows(payloads[2][0], paths[2].name)
+    manifest_292 = _parse_manifest(payloads[3][0], paths[3].name)
     lanes_291, counts_291 = _lanes_from_rows(rows_291)
     lanes_292, counts_292 = _lanes_from_rows(rows_292)
     _validate_manifest(manifest_291, config.exp291_prediction_sha256, len(rows_291))
     _validate_manifest(manifest_292, config.exp292_prediction_sha256, len(rows_292))
     if lanes_291 != lanes_292 or counts_291 != counts_292:
         raise ValueError("Exp291/Exp292 frozen lane mismatch")
-    _verify_hashes(paths, _lane_hashes(config), "changed during parsing")
     return FrozenLaneSnapshot(
         hard=lanes_291["hard"],
         standard=lanes_291["standard"],
@@ -124,14 +139,11 @@ def list_dataset_names(
     if not isinstance(lanes, FrozenLaneSnapshot) or lanes.config != config:
         raise ValueError("lanes must use the supplied frozen config")
     path = Path(database)
-    _verify_database_hash(path, config.database_sha256)
-    connection = _open_read_only(path)
-    try:
-        rows = connection.execute("SELECT name FROM datasets ORDER BY name").fetchall()
-    except sqlite3.Error as error:
-        raise ValueError("Exp417 database population query failed") from error
-    finally:
-        connection.close()
+    with _verified_database_connection(path, config.database_sha256) as connection:
+        try:
+            rows = connection.execute("SELECT name FROM datasets ORDER BY name").fetchall()
+        except sqlite3.Error as error:
+            raise ValueError("Exp417 database population query failed") from error
     database_datasets = tuple(row[0] for row in rows)
     if (
         any(not isinstance(name, str) or not name.strip() for name in database_datasets)
@@ -152,7 +164,6 @@ def list_dataset_names(
     )
     if len(datasets) != config.expected_datasets:
         raise ValueError("database population does not cover the frozen lane universe")
-    _verify_database_hash(path, config.database_sha256)
     return datasets
 
 
@@ -160,9 +171,15 @@ def freeze_run_context(
     database: Path,
     lanes: FrozenLaneSnapshot,
     *,
+    verified_code_commit: str,
     config: Exp417FrozenConfig = FROZEN_CONFIG,
 ) -> FrozenRunContext:
     """Bind database identity, population, lanes, code, and runtime versions."""
+    if (
+        not isinstance(verified_code_commit, str)
+        or re.fullmatch(r"[0-9a-f]{40}", verified_code_commit) is None
+    ):
+        raise ValueError("verified_code_commit must be the reviewed clean Git HEAD")
     datasets = list_dataset_names(database, lanes, config=config)
     test_identity_manifest = list_dataset_test_identity_manifest(database, datasets, config=config)
     return FrozenRunContext(
@@ -170,7 +187,7 @@ def freeze_run_context(
         datasets=datasets,
         lanes=lanes,
         test_identity_manifest=test_identity_manifest,
-        code_commit=_git_commit(),
+        code_commit=verified_code_commit,
         runtime_versions=_runtime_versions(),
         config=config,
     )
@@ -187,26 +204,22 @@ def list_dataset_test_identity_manifest(
     if not isinstance(datasets, tuple) or not datasets:
         raise ValueError("datasets must be the frozen dataset tuple")
     path = Path(database)
-    _verify_database_hash(path, config.database_sha256)
     manifest: dict[str, tuple[tuple[int, int], ...]] = {}
-    connection = _open_read_only(path)
-    try:
-        for dataset in datasets:
-            rows = connection.execute(_TEST_IDENTITY_SQL, (dataset,)).fetchall()
-            entries: list[tuple[int, int]] = []
-            for index, byte_length in rows:
-                if type(index) is not int or type(byte_length) is not int or byte_length <= 0 or byte_length % 4:
-                    raise ValueError("database TEST identity manifest has an invalid raw float32 length")
-                entries.append((index, byte_length // 4))
-            indices = tuple(index for index, _ in entries)
-            if not entries or indices != tuple(sorted(indices)) or len(indices) != len(set(indices)):
-                raise ValueError("database TEST identity manifest must have sorted unique identities")
-            manifest[dataset] = tuple(entries)
-    except sqlite3.Error as error:
-        raise ValueError("Exp417 database TEST identity query failed") from error
-    finally:
-        connection.close()
-    _verify_database_hash(path, config.database_sha256)
+    with _verified_database_connection(path, config.database_sha256) as connection:
+        try:
+            for dataset in datasets:
+                rows = connection.execute(_TEST_IDENTITY_SQL, (dataset,)).fetchall()
+                entries: list[tuple[int, int]] = []
+                for index, byte_length in rows:
+                    if type(index) is not int or type(byte_length) is not int or byte_length <= 0 or byte_length % 4:
+                        raise ValueError("database TEST identity manifest has an invalid raw float32 length")
+                    entries.append((index, byte_length // 4))
+                indices = tuple(index for index, _ in entries)
+                if not entries or indices != tuple(sorted(indices)) or len(indices) != len(set(indices)):
+                    raise ValueError("database TEST identity manifest must have sorted unique identities")
+                manifest[dataset] = tuple(entries)
+        except sqlite3.Error as error:
+            raise ValueError("Exp417 database TEST identity query failed") from error
     return manifest
 
 
@@ -304,44 +317,74 @@ def _verify_database_hash(database: Path, expected: str) -> None:
 
 
 def _sha256_file(path: Path) -> str:
+    return _read_pinned_bytes(path)[1]
+
+
+def _read_pinned_bytes(path: Path) -> tuple[bytes, str]:
+    """Read and hash one regular inode through one O_NOFOLLOW descriptor."""
     try:
-        digest = sha256()
-        with Path(path).open("rb") as handle:
-            for block in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(block)
-        return digest.hexdigest()
+        descriptor = os.open(Path(path), _INPUT_OPEN_FLAGS)
     except OSError as error:
         raise ValueError(f"Exp417 cannot hash input: {path}") from error
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink < 1:
+            raise ValueError(f"Exp417 input is not a linked regular file: {path}")
+        digest = sha256()
+        chunks: list[bytes] = []
+        while block := os.read(descriptor, 1024 * 1024):
+            chunks.append(block)
+            digest.update(block)
+        after = os.fstat(descriptor)
+        if _stable_inode_metadata(before) != _stable_inode_metadata(after):
+            raise ValueError(f"Exp417 input inode changed while reading: {path}")
+        return b"".join(chunks), digest.hexdigest()
+    except OSError as error:
+        raise ValueError(f"Exp417 cannot read pinned input: {path}") from error
+    finally:
+        os.close(descriptor)
 
 
 def _read_prediction_rows(path: Path) -> tuple[Mapping[str, Any], ...]:
+    payload, _ = _read_pinned_bytes(path)
+    return _parse_prediction_rows(payload, Path(path).name)
+
+
+def _parse_prediction_rows(
+    payload: bytes, source_name: str
+) -> tuple[Mapping[str, Any], ...]:
     rows: list[Mapping[str, Any]] = []
     seen_datasets: set[str] = set()
     try:
-        with Path(path).open(encoding="utf-8") as handle:
-            for line_number, line in enumerate(handle, start=1):
-                if not line.strip():
-                    raise ValueError(f"prediction JSONL has blank row {line_number}")
-                row = _json_object(line, f"prediction row {line_number}")
-                if not _LANE_ROW_FIELDS.issubset(row):
-                    raise ValueError(f"prediction JSONL has malformed row {line_number}")
-                dataset = row["dataset"]
-                if not isinstance(dataset, str) or not dataset.strip() or dataset in seen_datasets:
-                    raise ValueError("prediction JSONL has duplicate or invalid dataset")
-                seen_datasets.add(dataset)
-                rows.append(row)
-    except OSError as error:
-        raise ValueError(f"cannot read prediction JSONL: {path}") from error
+        text = payload.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError(f"cannot decode prediction JSONL: {source_name}") from error
+    for line_number, line in enumerate(text.splitlines(keepends=True), start=1):
+        if not line.strip():
+            raise ValueError(f"prediction JSONL has blank row {line_number}")
+        row = _json_object(line, f"prediction row {line_number}")
+        if not _LANE_ROW_FIELDS.issubset(row):
+            raise ValueError(f"prediction JSONL has malformed row {line_number}")
+        dataset = row["dataset"]
+        if not isinstance(dataset, str) or not dataset.strip() or dataset in seen_datasets:
+            raise ValueError("prediction JSONL has duplicate or invalid dataset")
+        seen_datasets.add(dataset)
+        rows.append(row)
     if not rows:
         raise ValueError("prediction JSONL must not be empty")
     return tuple(rows)
 
 
 def _read_manifest(path: Path) -> Mapping[str, Any]:
+    payload, _ = _read_pinned_bytes(path)
+    return _parse_manifest(payload, Path(path).name)
+
+
+def _parse_manifest(payload: bytes, source_name: str) -> Mapping[str, Any]:
     try:
-        manifest = _json_object(Path(path).read_text(encoding="utf-8"), "manifest")
-    except OSError as error:
-        raise ValueError(f"cannot read manifest: {path}") from error
+        manifest = _json_object(payload.decode("utf-8"), "manifest")
+    except UnicodeDecodeError as error:
+        raise ValueError(f"cannot decode manifest: {source_name}") from error
     if not _MANIFEST_REQUIRED_FIELDS.issubset(manifest):
         raise ValueError("manifest has malformed fields")
     return manifest
@@ -430,12 +473,74 @@ def _validate_manifest(manifest: Mapping[str, Any], prediction_sha256: str, row_
         raise ValueError("manifest declares forbidden content")
 
 
-def _open_read_only(database: Path) -> sqlite3.Connection:
+def _open_read_only(database: Path | int) -> sqlite3.Connection:
     try:
-        resolved = Path(database).resolve(strict=True)
-        return sqlite3.connect(f"file:{resolved}?mode=ro", uri=True)
+        if type(database) is int:
+            descriptor_root = (
+                Path("/dev/fd")
+                if Path("/dev/fd").is_dir()
+                else Path("/proc/self/fd")
+            )
+            descriptor_path = descriptor_root / str(database)
+            uri = f"file:{quote(str(descriptor_path), safe='/')}?mode=ro&immutable=1"
+        else:
+            resolved = Path(database).resolve(strict=True)
+            uri = f"file:{quote(str(resolved), safe='/')}?mode=ro"
+        return sqlite3.connect(uri, uri=True)
     except (OSError, sqlite3.Error) as error:
         raise ValueError(f"Exp417 cannot open read-only database: {database}") from error
+
+
+@contextmanager
+def _verified_database_connection(
+    database: Path, expected_sha256: str
+):
+    """Yield an immutable SQLite connection bound to the hashed source inode."""
+    path = Path(database)
+    try:
+        descriptor = os.open(path, _INPUT_OPEN_FLAGS)
+    except OSError as error:
+        raise ValueError(f"Exp417 cannot open pinned database: {path}") from error
+    connection: sqlite3.Connection | None = None
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink < 1:
+            raise ValueError("Exp417 database must be a linked regular file")
+        actual = _sha256_descriptor(descriptor)
+        if actual != expected_sha256:
+            raise ValueError("Exp417 database SHA256 mismatch")
+        connection = _open_read_only(descriptor)
+        yield connection
+        after = os.fstat(descriptor)
+        if _stable_inode_metadata(before) != _stable_inode_metadata(after):
+            raise ValueError("Exp417 database inode changed during query")
+    except OSError as error:
+        raise ValueError("Exp417 pinned database verification failed") from error
+    finally:
+        if connection is not None:
+            connection.close()
+        os.close(descriptor)
+
+
+def _sha256_descriptor(descriptor: int) -> str:
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    digest = sha256()
+    while block := os.read(descriptor, 1024 * 1024):
+        digest.update(block)
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    return digest.hexdigest()
+
+
+def _stable_inode_metadata(metadata: os.stat_result) -> tuple[int, ...]:
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mode,
+        metadata.st_nlink,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
 
 
 def _validate_context_dataset(dataset: str, context: FrozenRunContext) -> None:
@@ -453,15 +558,11 @@ def _load_values(
     split: str,
 ) -> tuple[RawSeries, ...]:
     path = Path(database)
-    _verify_database_hash(path, context.database_sha256)
-    connection = _open_read_only(path)
-    try:
-        rows = connection.execute(query, (dataset,)).fetchall()
-    except sqlite3.Error as error:
-        raise ValueError(f"Exp417 {split} values query failed") from error
-    finally:
-        connection.close()
-    _verify_database_hash(path, context.database_sha256)
+    with _verified_database_connection(path, context.database_sha256) as connection:
+        try:
+            rows = connection.execute(query, (dataset,)).fetchall()
+        except sqlite3.Error as error:
+            raise ValueError(f"Exp417 {split} values query failed") from error
     if not rows:
         raise ValueError(f"Exp417 {split} values are empty for dataset={dataset}")
     decoded = tuple(_decode_raw_series(dataset, split, row) for row in rows)
@@ -488,10 +589,10 @@ def _lane_maps(lanes: FrozenLaneSnapshot) -> tuple[Mapping[str, tuple[int, ...]]
     return lanes.hard, lanes.standard, lanes.priority, lanes.automatic_normal
 
 
-def _git_commit() -> str:
+def _git_commit(repository: Path = _REPO_ROOT) -> str:
     try:
         return subprocess.run(
-            ("git", "rev-parse", "HEAD"),
+            ("git", "-C", str(repository), "rev-parse", "HEAD"),
             check=True,
             capture_output=True,
             text=True,

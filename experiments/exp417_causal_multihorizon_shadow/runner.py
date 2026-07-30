@@ -20,7 +20,7 @@ from typing import Any
 
 import numpy as np
 
-from .checkpoints import Exp417CheckpointStore
+from .checkpoints import Exp417CheckpointStore, canonical_result_sha256
 from .config import FROZEN_CONFIG
 from .contracts import (
     BackendAudit,
@@ -164,15 +164,19 @@ class CheckpointEvidence:
             self.length_group_identity_sha256, "length-group identities"
         )
         calibrations = _digest_mapping(
-            self.score_calibration_hashes, "score calibration hashes"
+            self.score_calibration_hashes, "score calibration hashes",
+            allow_empty=True,
         )
-        if tuple(lengths) != tuple(calibrations):
-            raise ValueError("checkpoint length evidence must cover identical groups")
+        if set(calibrations) - set(lengths):
+            raise ValueError("checkpoint calibration evidence contains an unknown group")
         if (
             not isinstance(self.canonical_model_hashes, Mapping)
-            or tuple(self.canonical_model_hashes) != tuple(lengths)
+            or set(self.canonical_model_hashes) - set(calibrations)
+            or tuple(self.canonical_model_hashes) != tuple(
+                sorted(self.canonical_model_hashes)
+            )
         ):
-            raise ValueError("checkpoint model hashes must cover identical groups")
+            raise ValueError("checkpoint model hashes are not a sorted OOF subset")
         models: dict[int, Mapping[int, str]] = {}
         for length, hashes in self.canonical_model_hashes.items():
             if type(length) is not int or not isinstance(hashes, Mapping):
@@ -214,15 +218,26 @@ class TrainModelEvidence:
     processed_identity_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        processed = _processed_model_groups(self.processed)
+        processed = _processed_evidence_groups(self.processed)
+        oof_groups = tuple(
+            group
+            for group in processed
+            if group.status in {"candidate_eligible", "diagnostic_only"}
+        )
+        final_groups = tuple(
+            group for group in processed if group.status == "candidate_eligible"
+        )
         expected_indices = {
             group.group.length: tuple(series.instance_index for series in group.group.series)
-            for group in processed
+            for group in oof_groups
         }
         bundles = _oof_bundles(self.oof_bundles)
         if tuple(bundles) != tuple(expected_indices):
             raise ValueError("OOF evidence must cover exact processed TRAIN lengths")
-        models = _final_models(self.final_models, tuple(bundles))
+        models = _final_models(
+            self.final_models,
+            tuple(group.group.length for group in final_groups),
+        )
         for length, bundle in bundles.items():
             if bundle.universe_indices != expected_indices[length]:
                 raise ValueError("OOF evidence identities do not match processed TRAIN")
@@ -308,14 +323,53 @@ def _run_dataset(
         return _terminal(dataset, context, "qualification", ValueError("invalid TRAIN qualification"), checkpoints, started)
     if qualification.backend != oof.backend or qualification.backend.fallback:
         return _terminal(dataset, context, "backend", ValueError("qualification backend audit failed"), checkpoints, started)
-    if any(group.status != "qualified" for group in qualification.groups):
-        return _terminal(dataset, context, "qualification", ValueError("TRAIN qualification did not qualify every length"), checkpoints, started)
     try:
         contract = runtime.freeze(dataset, qualification, oof)
     except Exception as error:
         return _terminal(dataset, context, "qualification", error, checkpoints, started)
     if not isinstance(contract, FrozenTrainContract) or contract.dataset != dataset:
         return _terminal(dataset, context, "qualification", ValueError("invalid frozen TRAIN contract"), checkpoints, started)
+    if contract.groups != qualification.groups:
+        return _terminal(
+            dataset,
+            context,
+            "qualification",
+            ValueError("frozen TRAIN contract changed qualification groups"),
+            checkpoints,
+            started,
+        )
+    if not any(group.status == "qualified" for group in contract.groups):
+        try:
+            scoring = TestScoringEvidence((), {})
+            evidence = DatasetDecisionEvidence(
+                dataset=dataset,
+                context=context,
+                frozen_train_contract=contract,
+                database_sha256=context.database_sha256,
+                train_identity_sha256=contract.train_identity_sha256,
+                decisions=(),
+            )
+            result = DatasetResult(
+                dataset,
+                context.test_sizes[dataset],
+                len(contract.groups),
+                contract.groups,
+                (),
+                evidence,
+                context.lanes,
+                context,
+                "abstained",
+            )
+            _validate_result(result, dataset, context, evidence)
+        except Exception as error:
+            return _terminal(
+                dataset, context, "qualification", error, checkpoints, started, contract
+            )
+        material = None if checkpoints is None else build_checkpoint_evidence(
+            train, processed, oof, contract, scoring, result, perf_counter() - started
+        )
+        checkpoint(result, checkpoints, material)
+        return result
     try:
         test = runtime.load_test(dataset, contract, context)
         scoring = runtime.score(test, contract, oof)
@@ -438,13 +492,27 @@ def _production_verify(context: FrozenRunContext, resources: RunnerResources) ->
 def _production_train_models(
     processed: Sequence[ProcessedGroup], backend_audit: BackendAudit
 ) -> TrainModelEvidence:
-    groups = _processed_model_groups(processed)
+    groups = _processed_evidence_groups(processed)
     if not isinstance(backend_audit, BackendAudit) or backend_audit.fallback:
         raise ValueError("model training requires the selected passing Task 7 backend audit")
     import torch
     device = torch.device(backend_audit.backend)
-    bundles = {group.group.length: train_oof_models(group, device=device) for group in groups}
-    finals = {group.group.length: fit_final_seed_models(group, device=device) for group in groups}
+    oof_groups = tuple(
+        group
+        for group in groups
+        if group.status in {"candidate_eligible", "diagnostic_only"}
+    )
+    final_groups = tuple(
+        group for group in groups if group.status == "candidate_eligible"
+    )
+    bundles = {
+        group.group.length: train_oof_models(group, device=device)
+        for group in oof_groups
+    }
+    finals = {
+        group.group.length: fit_final_seed_models(group, device=device)
+        for group in final_groups
+    }
     return TrainModelEvidence(
         groups, bundles, finals,
         backend_audit,
@@ -472,10 +540,34 @@ def _production_qualify_train(
 ) -> TrainQualification:
     if not isinstance(dataset, str) or not dataset:
         raise ValueError("processed TRAIN groups are invalid")
-    groups = _processed_model_groups(processed)
+    groups = _processed_evidence_groups(processed)
     qualifications: list[GroupQualification] = []
     for group in groups:
         length = group.group.length
+        if group.status not in {"candidate_eligible", "diagnostic_only"}:
+            qualifications.append(
+                GroupQualification(
+                    length=length,
+                    series_count=len(group.group.series),
+                    status="abstained",
+                    oof_candidate_rate=None,
+                    wilson_upper=None,
+                    pooled_synthetic_sensitivity=None,
+                    per_type_synthetic_sensitivity={
+                        name: None
+                        for name in (
+                            "level_shift",
+                            "gradual_drift",
+                            "amplitude_scaling",
+                            "period_change",
+                        )
+                    },
+                    seed_agreement=None,
+                    finite=None,
+                    backend_fallback=None,
+                )
+            )
+            continue
         bundle = models.oof_bundles[length]
         normal = tuple(
             _residual_decisions(
@@ -484,27 +576,64 @@ def _production_qualify_train(
             )
             for index in bundle.universe_indices
         )
+        if group.status == "diagnostic_only":
+            normal_candidates = sum(
+                len({decision.candidate for decision in decisions}) == 1
+                and all(decision.candidate for decision in decisions)
+                for decisions in normal
+            )
+            from .qualification import wilson_upper
+            qualifications.append(
+                GroupQualification(
+                    length=length,
+                    series_count=len(normal),
+                    status="diagnostic",
+                    oof_candidate_rate=normal_candidates / len(normal),
+                    wilson_upper=wilson_upper(normal_candidates, len(normal)),
+                    pooled_synthetic_sensitivity=None,
+                    per_type_synthetic_sensitivity={
+                        name: None
+                        for name in (
+                            "level_shift",
+                            "gradual_drift",
+                            "amplitude_scaling",
+                            "period_change",
+                        )
+                    },
+                    seed_agreement=all(
+                        len({decision.candidate for decision in decisions}) == 1
+                        for decisions in normal
+                    ),
+                    finite=True,
+                    backend_fallback=models.backend.fallback,
+                )
+            )
+            continue
         synthetic: dict[str, list[tuple[Any, ...]]] = {
             name: [] for name in ("level_shift", "gradual_drift", "amplitude_scaling", "period_change", "secondary_spike")
         }
         for series in group.group.series:
             base = np.asarray(series.values, dtype=np.float64)
-            for name, perturbation in build_fixed_perturbations(base, group.raw_scale, seed=FROZEN_CONFIG.perturbation_seeds[0]).items():
-                channels = _channels_from_values(perturbation, group)
-                # Qualification is deliberately based on a frozen final fit; all
-                # scoring calibration remains normal OOF TRAIN residual evidence.
-                by_seed = {
-                    seed: _prediction_residuals(models.final_models[length], seed, channels)
-                    for seed in FROZEN_CONFIG.model_seeds
-                }
-                decisions = tuple(
-                    seed_decision({horizon: score_horizon(
-                        [bundle.oof_residuals[seed][index][horizon] for index in bundle.universe_indices],
-                        by_seed[seed][horizon], horizon=horizon,
-                    ) for horizon in bundle.horizons}, seed=seed)
-                    for seed in FROZEN_CONFIG.model_seeds
+            for perturbation_seed in FROZEN_CONFIG.perturbation_seeds:
+                perturbations = build_fixed_perturbations(
+                    base, group.raw_scale, seed=perturbation_seed
                 )
-                synthetic[name].append(decisions)
+                for name, perturbation in perturbations.items():
+                    channels = _channels_from_values(perturbation, group)
+                    # Qualification is deliberately based on a frozen final fit; all
+                    # scoring calibration remains normal OOF TRAIN residual evidence.
+                    by_seed = {
+                        seed: _prediction_residuals(models.final_models[length], seed, channels)
+                        for seed in FROZEN_CONFIG.model_seeds
+                    }
+                    decisions = tuple(
+                        seed_decision({horizon: score_horizon(
+                            [bundle.oof_residuals[seed][index][horizon] for index in bundle.universe_indices],
+                            by_seed[seed][horizon], horizon=horizon,
+                        ) for horizon in bundle.horizons}, seed=seed)
+                        for seed in FROZEN_CONFIG.model_seeds
+                    )
+                    synthetic[name].append(decisions)
         qualifications.append(qualify_group(
             length=length, normal_oof_decisions=normal, synthetic_decisions=synthetic,
             finite=True, backend_fallback=models.backend.fallback,
@@ -519,8 +648,13 @@ def _production_score_test(
     if not isinstance(test, RawTestDataset) or test.dataset != contract.dataset:
         raise ValueError("TEST values do not match frozen TRAIN contract")
     by_length = {group.group.length: group for group in models.processed}
+    qualified_lengths = {
+        group.length for group in contract.groups if group.status == "qualified"
+    }
     decisions: list[TestInstanceDecision] = []
     for series in test.series:
+        if len(series.values) not in qualified_lengths:
+            continue
         group = by_length.get(len(series.values))
         if group is None:
             raise ValueError("TEST length is absent from processed TRAIN")
@@ -535,8 +669,10 @@ def _production_score_test(
             for seed in FROZEN_CONFIG.model_seeds
         )
         decisions.append(TestInstanceDecision(test.dataset, series.instance_index, length, seeds))
-    hashes = {length: {model.seed: model.model_sha256 for model in fitted}
-              for length, fitted in models.final_models.items()}
+    hashes = {
+        length: {model.seed: model.model_sha256 for model in models.final_models[length]}
+        for length in sorted(qualified_lengths)
+    }
     return TestScoringEvidence(tuple(decisions), hashes)
 
 
@@ -579,15 +715,29 @@ def build_checkpoint_evidence(
         for qualification, group in zip(contract.groups, groups, strict=True)
     ):
         raise ValueError("checkpoint processed group counts do not match frozen contract")
-    if tuple(oof.oof_bundles) != lengths or tuple(oof.final_models) != lengths:
+    oof_lengths = tuple(
+        group.group.length
+        for group in groups
+        if group.status in {"candidate_eligible", "diagnostic_only"}
+    )
+    final_lengths = tuple(
+        group.group.length for group in groups if group.status == "candidate_eligible"
+    )
+    if tuple(oof.oof_bundles) != oof_lengths or tuple(oof.final_models) != final_lengths:
         raise ValueError("checkpoint model evidence lengths do not match frozen contract")
     expected_hashes = {
         length: {model.seed: model.model_sha256 for model in oof.final_models[length]}
-        for length in lengths
+        for length in final_lengths
     }
-    if dict(scoring.final_model_hashes) != expected_hashes:
+    qualified_lengths = tuple(
+        group.length for group in contract.groups if group.status == "qualified"
+    )
+    scoring_hashes = {
+        length: expected_hashes[length] for length in qualified_lengths
+    }
+    if dict(scoring.final_model_hashes) != scoring_hashes:
         raise ValueError("TEST scoring did not use the exact final model evidence")
-    if any(decision.length not in set(lengths) for decision in scoring.decisions):
+    if any(decision.length not in set(qualified_lengths) for decision in scoring.decisions):
         raise ValueError("TEST scoring evidence includes an unknown TRAIN length")
     return CheckpointEvidence(
         raw_train_identity_sha256=_series_digest("exp417.raw-train.v1", train.dataset, train.series),
@@ -601,7 +751,7 @@ def build_checkpoint_evidence(
         canonical_model_hashes=expected_hashes,
         score_calibration_hashes={
             length: _oof_calibration_digest(oof.oof_bundles[length])
-            for length in lengths
+            for length in oof_lengths
         },
         elapsed_seconds=elapsed_seconds,
         dataset=result.dataset,
@@ -686,7 +836,9 @@ def _sha256(value: object, name: str) -> str:
     return value
 
 
-def _digest_mapping(values: object, name: str) -> dict[int, str]:
+def _digest_mapping(
+    values: object, name: str, *, allow_empty: bool = False
+) -> dict[int, str]:
     if not isinstance(values, Mapping):
         raise ValueError(f"{name} must be a mapping")
     result: dict[int, str] = {}
@@ -694,8 +846,9 @@ def _digest_mapping(values: object, name: str) -> dict[int, str]:
         if type(length) is not int or length < 1:
             raise ValueError(f"{name} must use positive integer lengths")
         result[length] = _sha256(digest, name)
-    if not result or tuple(result) != tuple(sorted(result)):
-        raise ValueError(f"{name} must be non-empty and sorted")
+    if (not result and not allow_empty) or tuple(result) != tuple(sorted(result)):
+        requirement = "sorted" if allow_empty else "non-empty and sorted"
+        raise ValueError(f"{name} must be {requirement}")
     return result
 
 
@@ -707,8 +860,8 @@ def _oof_bundles(values: object) -> dict[int, OOFModelBundle]:
         if type(length) is not int or not isinstance(bundle, OOFModelBundle) or bundle.length != length:
             raise ValueError("OOF evidence length binding is invalid")
         bundles[length] = bundle
-    if not bundles or tuple(bundles) != tuple(sorted(bundles)):
-        raise ValueError("OOF evidence lengths must be non-empty and sorted")
+    if tuple(bundles) != tuple(sorted(bundles)):
+        raise ValueError("OOF evidence lengths must be sorted")
     return bundles
 
 
@@ -745,8 +898,8 @@ def _model_hashes(values: object) -> dict[int, Mapping[int, str]]:
             seed: _sha256(digest, "TEST scoring model hash")
             for seed, digest in hashes.items()
         })
-    if not result or tuple(result) != tuple(sorted(result)):
-        raise ValueError("TEST scoring model hash lengths must be non-empty and sorted")
+    if tuple(result) != tuple(sorted(result)):
+        raise ValueError("TEST scoring model hash lengths must be sorted")
     return result
 
 
@@ -789,17 +942,28 @@ def _processed_model_groups(values: object) -> tuple[ProcessedGroup, ...]:
     return groups
 
 
+def _processed_evidence_groups(values: object) -> tuple[ProcessedGroup, ...]:
+    if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
+        raise ValueError("model evidence processed groups must be a sequence")
+    groups = tuple(values)
+    if not groups or any(not isinstance(group, ProcessedGroup) for group in groups):
+        raise ValueError("model evidence processed groups are invalid")
+    lengths = tuple(group.group.length for group in groups)
+    if lengths != tuple(sorted(lengths)) or len(set(lengths)) != len(lengths):
+        raise ValueError("model evidence processed groups must have sorted unique lengths")
+    return groups
+
+
 def _processed_terminal_reason(values: object) -> str | None:
     if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
         return "preprocessing did not return a sequence"
     groups = tuple(values)
     if not groups or any(not isinstance(group, ProcessedGroup) for group in groups):
         return "preprocessing did not return processed groups"
-    ineligible = tuple(group for group in groups if group.status != "candidate_eligible")
-    if not ineligible:
-        return None
-    statuses = ",".join(sorted({group.status for group in ineligible}))
-    return f"preprocessing produced no candidate-eligible complete population: {statuses}"
+    lengths = tuple(group.group.length for group in groups)
+    if lengths != tuple(sorted(lengths)) or len(lengths) != len(set(lengths)):
+        return "preprocessing produced unsorted or duplicate length groups"
+    return None
 
 
 def _model_evidence_digest(
@@ -816,14 +980,19 @@ def _model_evidence_digest(
         for series in group.group.series:
             digest.update(series.instance_index.to_bytes(8, "little", signed=False))
             digest.update(np.asarray(series.values, dtype="<f4").tobytes(order="C"))
-        bundle = bundles[length]
-        for seed in FROZEN_CONFIG.model_seeds:
-            for model in (model for model in bundle.models if model.seed == seed):
-                _digest_text(digest, model.model_sha256)
-            final = next((model for model in finals[length] if model.seed == seed), None)
-            if final is None:
-                raise ValueError("final model evidence lacks frozen seed")
-            _digest_text(digest, final.model_sha256)
+        bundle = bundles.get(length)
+        if bundle is not None:
+            for seed in FROZEN_CONFIG.model_seeds:
+                for model in (model for model in bundle.models if model.seed == seed):
+                    _digest_text(digest, model.model_sha256)
+                final = next(
+                    (model for model in finals.get(length, ()) if model.seed == seed),
+                    None,
+                )
+                if group.status == "candidate_eligible":
+                    if final is None:
+                        raise ValueError("final model evidence lacks frozen seed")
+                    _digest_text(digest, final.model_sha256)
     return digest.hexdigest()
 
 
@@ -841,35 +1010,22 @@ def _processed_identity_digest(groups: Sequence[ProcessedGroup]) -> str:
             digest.update(series.instance_index.to_bytes(8, "little", signed=False))
             digest.update(np.asarray(series.values, dtype="<f4").tobytes(order="C"))
             channels = group.channels.get(series.instance_index)
-            if not isinstance(channels, np.ndarray):
+            if channels is None:
+                _digest_text(digest, "no-model-channels")
+            elif not isinstance(channels, np.ndarray):
                 raise ValueError("processed identity requires exact model-input channels")
-            digest.update(np.asarray(channels, dtype="<f4", order="C").tobytes(order="C"))
+            else:
+                digest.update(
+                    np.asarray(channels, dtype="<f4", order="C").tobytes(order="C")
+                )
     return digest.hexdigest()
 
 
 def _result_evidence_digest(result: DatasetResult) -> str:
+    """Return the complete canonical checkpoint result-payload digest."""
     if not isinstance(result, DatasetResult):
         raise ValueError("result evidence digest requires DatasetResult")
-    evidence = result.decision_evidence
-    digest = sha256()
-    _digest_text(digest, "exp417.result-evidence.v1")
-    _digest_text(digest, result.dataset)
-    _digest_text(digest, result.context.database_sha256)
-    _digest_text(digest, result.status)
-    _digest_text(digest, type(evidence).__name__)
-    if isinstance(evidence, DatasetDecisionEvidence):
-        _digest_text(digest, evidence.train_identity_sha256)
-        for decision in evidence.decisions:
-            digest.update(decision.instance_index.to_bytes(8, "little", signed=False))
-            digest.update(decision.length.to_bytes(8, "little", signed=False))
-            for seed in decision.seed_decisions:
-                digest.update(seed.seed.to_bytes(8, "little", signed=False))
-                for score in seed.scores.values():
-                    _digest_text(digest, repr((score.horizon, score.score, score.p_value, score.persistence)))
-    else:
-        _digest_text(digest, evidence.stage)
-        _digest_text(digest, evidence.reason)
-    return digest.hexdigest()
+    return canonical_result_sha256(result)
 
 
 def _channels_from_values(values: np.ndarray, group: ProcessedGroup) -> np.ndarray:

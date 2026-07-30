@@ -162,10 +162,12 @@ def _provenance() -> Exp417CheckpointProvenance:
     )
 
 
-def _typed_stage_evidence(contract: FrozenTrainContract):
+def _typed_stage_evidence(
+    contract: FrozenTrainContract, *, count: int = 100
+):
     from experiments.exp417_causal_multihorizon_shadow import runner
 
-    processed = synthetic_group(count=100, length=100)
+    processed = synthetic_group(count=count, length=100)
     train = RawTrainDataset("dataset", processed.group.series)
     universe = tuple(item.instance_index for item in processed.group.series)
     folds = synthetic_folds(universe)
@@ -185,10 +187,18 @@ def _typed_stage_evidence(contract: FrozenTrainContract):
     bundle = OOFModelBundle(100, universe, horizons, folds, models, residuals)
     final_fold = Fold(universe, (), universe[5:], universe[:5])
     final = tuple(synthetic_trained_model(seed, final_fold, horizons) for seed in FROZEN_CONFIG.model_seeds)
-    model_evidence = runner.TrainModelEvidence(
-        (processed,), {100: bundle}, {100: final}, contract.backend
+    finals = (
+        {100: final}
+        if processed.status == "candidate_eligible"
+        else {}
     )
-    hashes = {100: {model.seed: model.model_sha256 for model in final}}
+    model_evidence = runner.TrainModelEvidence(
+        (processed,), {100: bundle}, finals, contract.backend
+    )
+    hashes = {
+        length: {model.seed: model.model_sha256 for model in fitted}
+        for length, fitted in finals.items()
+    }
     scoring = runner.TestScoringEvidence(_decisions(candidate=False), hashes)
     return train, (processed,), model_evidence, scoring
 
@@ -228,6 +238,42 @@ class RunnerOrderTests(unittest.TestCase):
         decisions = runner._residual_decisions(bundle, query)
 
         self.assertNotEqual(decisions[0].scores[1], decisions[1].scores[1])
+
+    def test_production_qualification_executes_every_frozen_perturbation_seed(self) -> None:
+        """Using only the first perturbation seed silently weakens frozen synthetic coverage."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        _train, processed, models, _scoring = _typed_stage_evidence(_contract())
+        calls: list[int] = []
+
+        def observe(_series: np.ndarray, _scale: float, *, seed: int):
+            calls.append(seed)
+            return {}
+
+        with (
+            patch.object(
+                runner, "build_fixed_perturbations", side_effect=observe
+            ),
+            patch.object(
+                runner,
+                "_residual_decisions",
+                return_value=_decisions(candidate=False, count=1)[0].seed_decisions,
+            ),
+            patch.object(runner, "qualify_group", return_value=_group()),
+        ):
+            qualification = runner._production_qualify_train(
+                "dataset", processed, models
+            )
+
+        self.assertEqual(qualification.groups, (_group(),))
+        self.assertEqual(
+            calls,
+            [
+                seed
+                for _series in processed[0].group.series
+                for seed in FROZEN_CONFIG.perturbation_seeds
+            ],
+        )
 
     def test_processed_identity_covers_all_model_input_fields_and_both_channels(self) -> None:
         """Changing any model-input determinant must invalidate processed identity."""
@@ -331,49 +377,111 @@ class RunnerOrderTests(unittest.TestCase):
         test_loader.assert_not_called()
 
     def test_diagnostic_preprocessing_is_terminal_before_oof_or_test(self) -> None:
-        """A 50--99 TRAIN group cannot be promoted into model or TEST work."""
+        """A diagnostic group receives OOF diagnostics but never final-fit or TEST work."""
         from experiments.exp417_causal_multihorizon_shadow import runner
 
         context = _context()
-        train, processed, _models, _scoring = _typed_stage_evidence(_contract())
-        diagnostic = replace(processed[0], status="diagnostic_only")
+        train, processed, diagnostic_models, _scoring = _typed_stage_evidence(
+            _contract(), count=60
+        )
+        diagnostic = processed[0]
+        diagnostic_group = GroupQualification(
+            length=100,
+            series_count=60,
+            status="diagnostic",
+            oof_candidate_rate=0.0,
+            wilson_upper=0.05,
+            pooled_synthetic_sensitivity=None,
+            per_type_synthetic_sensitivity={
+                name: None
+                for name in (
+                    "level_shift",
+                    "gradual_drift",
+                    "amplitude_scaling",
+                    "period_change",
+                )
+            },
+            seed_agreement=True,
+            finite=True,
+            backend_fallback=False,
+        )
+        contract = replace(_contract(), groups=(diagnostic_group,),
+                           train_identity_sha256=diagnostic_models.train_identity_sha256)
+        qualification = runner.TrainQualification(contract.groups, contract.backend)
+        events: list[str] = []
         test_loader = Mock(side_effect=AssertionError("TEST values were loaded"))
         runtime = runner.RunnerRuntime(
             verify=lambda _: None, load_train=lambda *_: train,
             preprocess=lambda _: (diagnostic,),
-            train_models=lambda _: (_ for _ in ()).throw(AssertionError("OOF was reached")),
-            qualify=lambda *_: (_ for _ in ()).throw(AssertionError("qualification was reached")),
-            freeze=lambda *_: (_ for _ in ()).throw(AssertionError("freeze was reached")),
+            train_models=lambda _: events.append("oof") or diagnostic_models,
+            qualify=lambda *_: events.append("qualification") or qualification,
+            freeze=lambda *_: events.append("freeze") or contract,
             load_test=test_loader,
             score=lambda *_: (_ for _ in ()).throw(AssertionError("score was reached")),
         )
 
         result = runner.run_dataset("dataset", context, runtime=runtime)
 
-        self.assertEqual(result.status, "failed")
-        self.assertEqual(result.decision_evidence.stage, "preprocessing")
+        self.assertEqual(events, ["oof", "qualification", "freeze"])
+        self.assertEqual(result.status, "abstained")
+        self.assertIsInstance(result.decision_evidence, DatasetDecisionEvidence)
+        self.assertEqual(result.decision_evidence.decisions, ())
         test_loader.assert_not_called()
 
-    def test_every_noneligible_preprocessing_status_stops_before_test(self) -> None:
-        """<50, 50--99, and all-missing groups share the same closed barrier."""
+    def test_preprocessing_abstentions_are_accounted_without_test(self) -> None:
+        """<50 and invalid TRAIN groups are explicit abstentions, not run failures."""
         from experiments.exp417_causal_multihorizon_shadow import runner
 
         context = _context()
-        train, processed, _models, _scoring = _typed_stage_evidence(_contract())
-        for status in ("insufficient_train_abstain", "diagnostic_only", "nonfinite_abstain"):
+        train, processed, models, _scoring = _typed_stage_evidence(_contract())
+        for status in ("insufficient_train_abstain", "nonfinite_abstain"):
             with self.subTest(status=status):
-                channels = processed[0].channels if status == "diagnostic_only" else None
-                blocked = replace(processed[0], status=status, channels=channels)
+                blocked = replace(processed[0], status=status, channels=None)
+                model_evidence = runner.TrainModelEvidence(
+                    (blocked,), {}, {}, models.backend
+                )
+                abstained_group = GroupQualification(
+                    length=100,
+                    series_count=len(blocked.group.series),
+                    status="abstained",
+                    oof_candidate_rate=None,
+                    wilson_upper=None,
+                    pooled_synthetic_sensitivity=None,
+                    per_type_synthetic_sensitivity={
+                        name: None
+                        for name in (
+                            "level_shift",
+                            "gradual_drift",
+                            "amplitude_scaling",
+                            "period_change",
+                        )
+                    },
+                    seed_agreement=None,
+                    finite=None,
+                    backend_fallback=None,
+                )
+                contract = replace(
+                    _contract(),
+                    groups=(abstained_group,),
+                    train_identity_sha256=model_evidence.train_identity_sha256,
+                )
+                qualification = runner.TrainQualification(
+                    contract.groups, contract.backend
+                )
                 test_loader = Mock(side_effect=AssertionError("TEST values were loaded"))
                 runtime = runner.RunnerRuntime(
                     verify=lambda _: None, load_train=lambda *_: train, preprocess=lambda _: (blocked,),
-                    train_models=lambda _: (_ for _ in ()).throw(AssertionError("OOF was reached")),
-                    qualify=lambda *_: (_ for _ in ()).throw(AssertionError("qualification was reached")),
-                    freeze=lambda *_: (_ for _ in ()).throw(AssertionError("freeze was reached")),
+                    train_models=lambda _: model_evidence,
+                    qualify=lambda *_: qualification,
+                    freeze=lambda *_: contract,
                     load_test=test_loader, score=lambda *_: (_ for _ in ()).throw(AssertionError("score was reached")),
                 )
                 result = runner.run_dataset("dataset", context, runtime=runtime)
-                self.assertEqual(result.decision_evidence.stage, "preprocessing")
+                self.assertEqual(result.status, "abstained")
+                self.assertIsInstance(
+                    result.decision_evidence, DatasetDecisionEvidence
+                )
+                self.assertEqual(result.decision_evidence.decisions, ())
                 test_loader.assert_not_called()
 
     def test_backend_fallback_is_terminal_before_qualification_or_test(self) -> None:
@@ -398,6 +506,34 @@ class RunnerOrderTests(unittest.TestCase):
 
 
 class RunnerPopulationTests(unittest.TestCase):
+    def test_checkpoint_material_digest_covers_qualification_and_backend(self) -> None:
+        """A coherent safety rewrite must invalidate material before checkpoint publication."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        context = _context()
+        original = _result(context)
+        evidence = original.decision_evidence
+        changed_group = replace(
+            evidence.frozen_train_contract.groups[0],
+            pooled_synthetic_sensitivity=0.80,
+        )
+        changed_contract = replace(
+            evidence.frozen_train_contract, groups=(changed_group,)
+        )
+        changed_evidence = replace(
+            evidence, frozen_train_contract=changed_contract
+        )
+        changed = replace(
+            original,
+            groups=(changed_group,),
+            decision_evidence=changed_evidence,
+        )
+
+        self.assertNotEqual(
+            runner._result_evidence_digest(original),
+            runner._result_evidence_digest(changed),
+        )
+
     def test_checkpoint_rejects_cross_dataset_material_reuse(self) -> None:
         """A valid-looking record from one dataset cannot attest another result."""
         from experiments.exp417_causal_multihorizon_shadow import runner

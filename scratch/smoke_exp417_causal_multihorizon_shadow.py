@@ -519,7 +519,7 @@ def _write_smoke(output: Path, payload: Mapping[str, Any]) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    require_clean_git()
+    verified_head = require_clean_git()
     assert_label_free_sql_contract()
     paths = (
         args.database,
@@ -529,7 +529,9 @@ def main(argv: list[str] | None = None) -> int:
         args.exp292_manifest,
     )
     lanes = freeze_lane_inputs(*paths[1:])
-    frozen_context = freeze_run_context(paths[0], lanes)
+    frozen_context = freeze_run_context(
+        paths[0], lanes, verified_code_commit=verified_head
+    )
     metadata = load_train_metadata(paths[0], frozen_context.datasets)
     selected = select_train_strata(metadata, args.smoke_datasets)
     smoke = SmokeContext(selected, args.output_dir)
