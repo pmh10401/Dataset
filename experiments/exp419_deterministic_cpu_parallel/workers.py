@@ -6,12 +6,14 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from hashlib import sha256
 import multiprocessing
+from multiprocessing.connection import wait as wait_connections
 import os
 from pathlib import Path
 import resource
 import sys
 from time import monotonic
 from types import MappingProxyType
+import unicodedata
 
 from .contracts import WorkerBootstrap, WorkerCompletion, WorkerSpec
 
@@ -21,6 +23,8 @@ _THREAD_ENVIRONMENT = {
     "OPENBLAS_NUM_THREADS": "1",
     "VECLIB_MAXIMUM_THREADS": "1",
 }
+_CLEANUP_TERMINATE_SECONDS = 2.0
+_CLEANUP_KILL_SECONDS = 2.0
 
 
 def pin_worker_threads() -> Mapping[str, str]:
@@ -440,18 +444,238 @@ def _validated_specs(specs: Sequence[WorkerSpec]) -> tuple[WorkerSpec, ...]:
     if len(indices) != len(set(indices)):
         raise ValueError("worker shard indices must be unique")
 
-    roots = tuple(spec.checkpoint_root.resolve(strict=False) for spec in frozen)
-    for index, root in enumerate(roots):
-        for other in roots[index + 1 :]:
+    roots = tuple(
+        (
+            spec.checkpoint_root.resolve(strict=False),
+            _casefolded_path_parts(spec.checkpoint_root),
+            _filesystem_identity(spec.checkpoint_root),
+        )
+        for spec in frozen
+    )
+    for index, (root, folded, identity) in enumerate(roots):
+        for other, other_folded, other_identity in roots[index + 1 :]:
             if (
                 root == other
                 or root.is_relative_to(other)
                 or other.is_relative_to(root)
+                or _parts_are_nested(folded, other_folded)
+                or (
+                    identity is not None
+                    and identity == other_identity
+                )
             ):
                 raise ValueError(
                     "worker checkpoint roots must be disjoint"
                 )
     return frozen
+
+
+def _casefolded_path_parts(path: Path) -> tuple[str, ...]:
+    resolved = path.resolve(strict=False)
+    return tuple(
+        unicodedata.normalize("NFC", part).casefold()
+        for part in resolved.parts
+    )
+
+
+def _filesystem_identity(path: Path) -> tuple[int, int] | None:
+    try:
+        status = path.stat()
+    except FileNotFoundError:
+        return None
+    return status.st_dev, status.st_ino
+
+
+def _parts_are_nested(
+    first: tuple[str, ...],
+    second: tuple[str, ...],
+) -> bool:
+    shortest = min(len(first), len(second))
+    return (
+        first[:shortest] == second[:shortest]
+        and (
+            len(first) == shortest
+            or len(second) == shortest
+        )
+    )
+
+
+def _terminate_and_reap(processes: Sequence[object]) -> None:
+    started = tuple(
+        process
+        for process in processes
+        if process.pid is not None
+    )
+    for process in started:
+        if process.is_alive():
+            process.terminate()
+
+    terminate_deadline = monotonic() + _CLEANUP_TERMINATE_SECONDS
+    for process in started:
+        process.join(max(0.0, terminate_deadline - monotonic()))
+
+    for process in started:
+        if process.is_alive():
+            process.kill()
+
+    kill_deadline = monotonic() + _CLEANUP_KILL_SECONDS
+    for process in started:
+        process.join(max(0.0, kill_deadline - monotonic()))
+
+    survivors = tuple(
+        process.pid
+        for process in started
+        if process.is_alive()
+    )
+    if survivors:
+        raise RuntimeError(
+            f"worker cleanup could not reap processes: {survivors}"
+        )
+
+
+def _close_connections(receivers: Sequence[object]) -> None:
+    for receiver in receivers:
+        try:
+            receiver.close()
+        except OSError:
+            pass
+
+
+def _validate_completion_contract(
+    spec: WorkerSpec,
+    completion: WorkerCompletion,
+) -> None:
+    if dict(completion.thread_environment) != _THREAD_ENVIRONMENT:
+        raise RuntimeError(
+            f"worker shard {spec.shard.shard_index} thread environment "
+            "does not match the pinned contract"
+        )
+    assigned = spec.shard.datasets
+    completed = completion.completed_datasets
+    if completion.status == "completed":
+        if (
+            completed != assigned
+            or set(completion.record_digests) != set(assigned)
+        ):
+            raise RuntimeError(
+                f"worker shard {spec.shard.shard_index} successful "
+                "completion does not cover exact assigned datasets"
+            )
+    elif (
+        completed != assigned[: len(completed)]
+        or set(completion.record_digests) != set(completed)
+    ):
+        raise RuntimeError(
+            f"worker shard {spec.shard.shard_index} failed completion "
+            "is not an assigned prefix"
+        )
+
+
+def _drain_worker_messages(
+    specs: tuple[WorkerSpec, ...],
+    processes: Sequence[object],
+    receivers: Sequence[object],
+) -> tuple[WorkerCompletion, ...]:
+    waitables: dict[object, tuple[str, int]] = {}
+    for index, (process, receiver) in enumerate(
+        zip(processes, receivers, strict=True)
+    ):
+        waitables[receiver] = ("pipe", index)
+        waitables[process.sentinel] = ("sentinel", index)
+
+    completions: list[WorkerCompletion | None] = [None] * len(specs)
+    message_received = [False] * len(specs)
+    pipe_closed = [False] * len(specs)
+    process_exited = [False] * len(specs)
+
+    while waitables:
+        ready = wait_connections(tuple(waitables))
+        for waitable in ready:
+            kind, index = waitables.get(waitable, (None, None))
+            if kind is None or index is None:
+                raise RuntimeError("worker IPC returned an unknown waitable")
+            if kind == "pipe":
+                receiver = receivers[index]
+                try:
+                    payload = receiver.recv()
+                except EOFError:
+                    pipe_closed[index] = True
+                    del waitables[waitable]
+                else:
+                    if message_received[index]:
+                        raise RuntimeError(
+                            f"worker shard {specs[index].shard.shard_index} "
+                            "sent multiple completion messages"
+                        )
+                    message_received[index] = True
+                    try:
+                        completion = _completion_from_payload(payload)
+                    except (TypeError, ValueError) as error:
+                        raise RuntimeError(
+                            f"worker shard "
+                            f"{specs[index].shard.shard_index} sent an "
+                            "invalid completion"
+                        ) from error
+                    _validate_completion_contract(specs[index], completion)
+                    if (
+                        completion.shard_index
+                        != specs[index].shard.shard_index
+                        or completion.pid != processes[index].pid
+                    ):
+                        raise RuntimeError(
+                            f"worker shard "
+                            f"{specs[index].shard.shard_index} completion "
+                            "identity does not match its process"
+                        )
+                    completions[index] = completion
+            else:
+                processes[index].join()
+                process_exited[index] = True
+                del waitables[waitable]
+
+        for index, spec in enumerate(specs):
+            if (
+                process_exited[index]
+                and pipe_closed[index]
+                and not message_received[index]
+            ):
+                raise RuntimeError(
+                    f"worker shard {spec.shard.shard_index} exited with "
+                    f"code {processes[index].exitcode} without a completion"
+                )
+
+    validated: list[WorkerCompletion] = []
+    for spec, process, completion in zip(
+        specs,
+        processes,
+        completions,
+        strict=True,
+    ):
+        if completion is None:
+            raise RuntimeError(
+                f"worker shard {spec.shard.shard_index} has no completion"
+            )
+        if completion.status == "completed":
+            if process.exitcode != 0:
+                raise RuntimeError(
+                    f"worker shard {spec.shard.shard_index} reported success "
+                    f"but exited with code {process.exitcode}"
+                )
+        elif process.exitcode == 0:
+            raise RuntimeError(
+                f"worker shard {spec.shard.shard_index} reported failure "
+                "but exited with code 0"
+            )
+        else:
+            completion = replace(
+                completion,
+                error=(
+                    f"{completion.error}; process exit code "
+                    f"{process.exitcode}"
+                ),
+            )
+        validated.append(completion)
+    return tuple(sorted(validated, key=lambda item: item.shard_index))
 
 
 def spawn_workers(
@@ -490,90 +714,21 @@ def spawn_workers(
             receivers.append(receiver)
             processes.append(process)
     except BaseException:
-        for process in processes:
-            process.join()
-        for receiver in receivers:
-            receiver.close()
+        _close_connections(receivers)
+        _terminate_and_reap(processes)
         raise
 
-    for process in processes:
-        process.join()
-
-    completions: list[WorkerCompletion] = []
-    protocol_errors: list[str] = []
-    for spec, process, receiver in zip(
-        frozen_specs,
-        processes,
-        receivers,
-        strict=True,
-    ):
-        completion: object | None = None
-        try:
-            try:
-                completion = receiver.recv()
-            except EOFError:
-                protocol_errors.append(
-                    f"worker shard {spec.shard.shard_index} exited with "
-                    f"code {process.exitcode} without a completion"
-                )
-                continue
-            try:
-                extra = receiver.recv()
-            except EOFError:
-                pass
-            else:
-                del extra
-                protocol_errors.append(
-                    f"worker shard {spec.shard.shard_index} sent multiple "
-                    "completion messages"
-                )
-                continue
-        finally:
-            receiver.close()
-
-        try:
-            completion = _completion_from_payload(completion)
-        except (TypeError, ValueError):
-            protocol_errors.append(
-                f"worker shard {spec.shard.shard_index} sent an invalid "
-                "completion"
-            )
-            continue
-        if (
-            completion.shard_index != spec.shard.shard_index
-            or completion.pid != process.pid
-        ):
-            protocol_errors.append(
-                f"worker shard {spec.shard.shard_index} completion identity "
-                "does not match its process"
-            )
-            continue
-        if completion.status == "completed":
-            if process.exitcode != 0:
-                protocol_errors.append(
-                    f"worker shard {spec.shard.shard_index} reported success "
-                    f"but exited with code {process.exitcode}"
-                )
-                continue
-        elif process.exitcode == 0:
-            protocol_errors.append(
-                f"worker shard {spec.shard.shard_index} reported failure "
-                "but exited with code 0"
-            )
-            continue
-        else:
-            completion = replace(
-                completion,
-                error=(
-                    f"{completion.error}; process exit code "
-                    f"{process.exitcode}"
-                ),
-            )
-        completions.append(completion)
-
-    if protocol_errors:
-        raise RuntimeError("; ".join(protocol_errors))
-    return tuple(sorted(completions, key=lambda item: item.shard_index))
+    try:
+        return _drain_worker_messages(
+            frozen_specs,
+            processes,
+            receivers,
+        )
+    except BaseException:
+        _terminate_and_reap(processes)
+        raise
+    finally:
+        _close_connections(receivers)
 
 
 __all__ = ["pin_worker_threads", "run_worker", "spawn_workers"]

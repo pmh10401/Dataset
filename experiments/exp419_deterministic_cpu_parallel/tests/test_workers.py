@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import multiprocessing
+import pickle
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import threading
 from types import MappingProxyType, ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 import os
@@ -39,6 +42,9 @@ _THREAD_ENVIRONMENT = {
 _RUN_ORDER: list[str] = []
 _OPENED_STORES: list["_SyntheticCheckpointStore"] = []
 _SYNTHETIC_CONTEXT: FrozenRunContext | None = None
+_ORIGINAL_PROCESS_START = multiprocessing.process.BaseProcess.start
+_STARTED_TEST_PIDS: list[int] = []
+_TEST_START_ATTEMPTS = 0
 
 
 def _lanes() -> FrozenLaneSnapshot:
@@ -227,7 +233,7 @@ def _synthetic_run_untyped_result(
 
 def _raise_spawn_timeout(signum: int, frame: object) -> None:
     del signum, frame
-    raise TimeoutError("real spawn integration exceeded 15 seconds")
+    raise TimeoutError("synthetic fault-path watchdog expired")
 
 
 def _spawn_success_worker(
@@ -279,12 +285,211 @@ def _spawn_failed_worker(
     )
 
 
+def _large_completion(spec: WorkerSpec) -> WorkerCompletion:
+    return WorkerCompletion(
+        shard_index=spec.shard.shard_index,
+        pid=os.getpid(),
+        completed_datasets=spec.shard.datasets,
+        record_digests={
+            dataset: sha256(dataset.encode("utf-8")).hexdigest()
+            for dataset in spec.shard.datasets
+        },
+        elapsed_seconds=0.001,
+        peak_rss_bytes=1,
+        thread_environment=_THREAD_ENVIRONMENT,
+        status="completed",
+        error="",
+    )
+
+
+def _spawn_large_worker(
+    spec: WorkerSpec,
+    bootstrap: WorkerBootstrap,
+) -> WorkerCompletion:
+    del bootstrap
+    spec.checkpoint_root.mkdir(parents=True, exist_ok=False)
+    return _large_completion(spec)
+
+
+def _spawn_incomplete_success_worker(
+    spec: WorkerSpec,
+    bootstrap: WorkerBootstrap,
+) -> WorkerCompletion:
+    del bootstrap
+    completed = spec.shard.datasets[:1]
+    return WorkerCompletion(
+        shard_index=spec.shard.shard_index,
+        pid=os.getpid(),
+        completed_datasets=completed,
+        record_digests={
+            dataset: sha256(dataset.encode("utf-8")).hexdigest()
+            for dataset in completed
+        },
+        elapsed_seconds=0.001,
+        peak_rss_bytes=1,
+        thread_environment=_THREAD_ENVIRONMENT,
+        status="completed",
+        error="",
+    )
+
+
+def _spawn_wrong_environment_worker(
+    spec: WorkerSpec,
+    bootstrap: WorkerBootstrap,
+) -> WorkerCompletion:
+    del bootstrap
+    return WorkerCompletion(
+        shard_index=spec.shard.shard_index,
+        pid=os.getpid(),
+        completed_datasets=spec.shard.datasets,
+        record_digests={
+            dataset: sha256(dataset.encode("utf-8")).hexdigest()
+            for dataset in spec.shard.datasets
+        },
+        elapsed_seconds=0.001,
+        peak_rss_bytes=1,
+        thread_environment={
+            **_THREAD_ENVIRONMENT,
+            "OMP_NUM_THREADS": "2",
+        },
+        status="completed",
+        error="",
+    )
+
+
+def _spawn_nonprefix_failure_worker(
+    spec: WorkerSpec,
+    bootstrap: WorkerBootstrap,
+) -> WorkerCompletion:
+    del bootstrap
+    completed = spec.shard.datasets[1:2]
+    return WorkerCompletion(
+        shard_index=spec.shard.shard_index,
+        pid=os.getpid(),
+        completed_datasets=completed,
+        record_digests={
+            dataset: sha256(dataset.encode("utf-8")).hexdigest()
+            for dataset in completed
+        },
+        elapsed_seconds=0.001,
+        peak_rss_bytes=1,
+        thread_environment=_THREAD_ENVIRONMENT,
+        status="failed",
+        error="RuntimeError: synthetic non-prefix failure",
+    )
+
+
+def _terminate_test_children() -> None:
+    for process in multiprocessing.active_children():
+        process.terminate()
+        process.join(2.0)
+        if process.is_alive():
+            process.kill()
+            process.join(2.0)
+
+
+def _recording_process_start(process: object) -> None:
+    _ORIGINAL_PROCESS_START(process)
+    _STARTED_TEST_PIDS.append(process.pid)
+
+
+def _fail_second_process_start(process: object) -> None:
+    global _TEST_START_ATTEMPTS
+    _TEST_START_ATTEMPTS += 1
+    if _TEST_START_ATTEMPTS == 2:
+        raise RuntimeError("synthetic second start failure")
+    _recording_process_start(process)
+
+
+def _pid_exists(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    return True
+
+
+def _spawn_blocking_worker(
+    spec: WorkerSpec,
+    bootstrap: WorkerBootstrap,
+) -> WorkerCompletion:
+    del spec, bootstrap
+    threading.Event().wait()
+    raise AssertionError("unreachable")
+
+
+def _plain_completion_payload(spec: WorkerSpec) -> dict[str, object]:
+    from experiments.exp419_deterministic_cpu_parallel import workers
+
+    return workers._completion_payload(
+        WorkerCompletion(
+            shard_index=spec.shard.shard_index,
+            pid=os.getpid(),
+            completed_datasets=spec.shard.datasets,
+            record_digests={
+                dataset: sha256(dataset.encode("utf-8")).hexdigest()
+                for dataset in spec.shard.datasets
+            },
+            elapsed_seconds=0.001,
+            peak_rss_bytes=1,
+            thread_environment=_THREAD_ENVIRONMENT,
+            status="completed",
+            error="",
+        )
+    )
+
+
+def _spawn_abrupt_or_blocking_entry(
+    worker_function: object,
+    spec: WorkerSpec,
+    bootstrap_payload: object,
+    result_connection: object,
+) -> None:
+    del worker_function, bootstrap_payload
+    if spec.shard.shard_index == 0:
+        result_connection.close()
+        os._exit(7)
+    threading.Event().wait()
+
+
+def _spawn_malformed_entry(
+    worker_function: object,
+    spec: WorkerSpec,
+    bootstrap_payload: object,
+    result_connection: object,
+) -> None:
+    del worker_function, spec, bootstrap_payload
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    result_connection.send({"malformed": True})
+    threading.Event().wait()
+
+
+def _spawn_multiple_entry(
+    worker_function: object,
+    spec: WorkerSpec,
+    bootstrap_payload: object,
+    result_connection: object,
+) -> None:
+    del worker_function, bootstrap_payload
+    payload = _plain_completion_payload(spec)
+    result_connection.send(payload)
+    result_connection.send(payload)
+    threading.Event().wait()
+
+
+def _raise_keyboard_interrupt(waitables: object) -> None:
+    del waitables
+    raise KeyboardInterrupt("synthetic explicit interruption")
+
+
 class WorkerTests(unittest.TestCase):
     def setUp(self):
-        global _SYNTHETIC_CONTEXT
+        global _SYNTHETIC_CONTEXT, _TEST_START_ATTEMPTS
         _SYNTHETIC_CONTEXT = _context()
         _RUN_ORDER.clear()
         _OPENED_STORES.clear()
+        _STARTED_TEST_PIDS.clear()
+        _TEST_START_ATTEMPTS = 0
 
     def test_pins_exact_thread_contract(self):
         from experiments.exp419_deterministic_cpu_parallel.workers import (
@@ -581,19 +786,10 @@ class WorkerTests(unittest.TestCase):
                     clear=False,
                 ),
             ):
-                previous_handler = signal.signal(
-                    signal.SIGALRM,
-                    _raise_spawn_timeout,
+                completions = workers.spawn_workers(
+                    specs,
+                    _bootstrap(_SYNTHETIC_CONTEXT),
                 )
-                signal.setitimer(signal.ITIMER_REAL, 15.0)
-                try:
-                    completions = workers.spawn_workers(
-                        specs,
-                        _bootstrap(_SYNTHETIC_CONTEXT),
-                    )
-                finally:
-                    signal.setitimer(signal.ITIMER_REAL, 0.0)
-                    signal.signal(signal.SIGALRM, previous_handler)
 
             self.assertEqual(
                 tuple(item.shard_index for item in completions),
@@ -647,6 +843,90 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(completions[0].status, "failed")
             self.assertRegex(completions[0].error, r"process exit code 1")
 
+    def test_spawn_workers_drains_oversized_completion_before_join(self):
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        with TemporaryDirectory() as temporary:
+            large_datasets = tuple(
+                f"synthetic-large-dataset-{index:04d}-{'x' * 32}"
+                for index in range(1117)
+            )
+            spec = WorkerSpec(
+                ShardAssignment(
+                    0,
+                    large_datasets,
+                    len(large_datasets),
+                ),
+                Path(temporary) / "worker-0",
+            )
+            sample_payload = workers._completion_payload(
+                _large_completion(spec)
+            )
+            self.assertGreater(len(pickle.dumps(sample_payload)), 113_000)
+            with (
+                patch.object(
+                    workers,
+                    "run_worker",
+                    _spawn_large_worker,
+                ),
+                patch.dict(
+                    os.environ,
+                    _THREAD_ENVIRONMENT,
+                    clear=False,
+                ),
+            ):
+                completions = workers.spawn_workers(
+                    (spec,),
+                    _bootstrap(_SYNTHETIC_CONTEXT),
+                )
+
+            self.assertEqual(
+                completions[0].completed_datasets,
+                spec.shard.datasets,
+            )
+            self.assertEqual(
+                set(completions[0].record_digests),
+                set(spec.shard.datasets),
+            )
+
+    def test_spawn_workers_rejects_invalid_terminal_contracts(self):
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        cases = (
+            (_spawn_incomplete_success_worker, "successful completion"),
+            (_spawn_wrong_environment_worker, "thread environment"),
+            (_spawn_nonprefix_failure_worker, "assigned prefix"),
+        )
+        with TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            for index, (worker_function, message) in enumerate(cases):
+                with self.subTest(worker=worker_function.__name__):
+                    spec = WorkerSpec(
+                        ShardAssignment(
+                            0,
+                            ("alpha", "beta"),
+                            2,
+                        ),
+                        base / f"worker-{index}",
+                    )
+                    with (
+                        patch.object(
+                            workers,
+                            "run_worker",
+                            worker_function,
+                        ),
+                        patch.dict(
+                            os.environ,
+                            _THREAD_ENVIRONMENT,
+                            clear=False,
+                        ),
+                    ):
+                        with self.assertRaisesRegex(RuntimeError, message):
+                            workers.spawn_workers(
+                                (spec,),
+                                _bootstrap(_SYNTHETIC_CONTEXT),
+                            )
+
     def test_spawn_workers_rejects_shared_or_nested_checkpoint_roots(self):
         from experiments.exp419_deterministic_cpu_parallel import workers
 
@@ -672,3 +952,206 @@ class WorkerTests(unittest.TestCase):
                         workers.spawn_workers(specs, bootstrap)
                     self.assertFalse(roots[0].exists())
                     self.assertFalse(roots[1].exists())
+
+    def test_spawn_workers_rejects_casefolded_and_symlink_root_aliases(self):
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        with TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            actual = base / "actual"
+            actual.mkdir()
+            alias = base / "alias"
+            alias.symlink_to(actual, target_is_directory=True)
+            bootstrap = _bootstrap(_SYNTHETIC_CONTEXT)
+            cases = (
+                (base / "Worker-A", base / "worker-a"),
+                (actual, alias),
+            )
+            for roots in cases:
+                with self.subTest(roots=roots):
+                    specs = (
+                        WorkerSpec(
+                            ShardAssignment(0, ("alpha",), 1),
+                            roots[0],
+                        ),
+                        WorkerSpec(
+                            ShardAssignment(1, ("beta",), 1),
+                            roots[1],
+                        ),
+                    )
+                    with self.assertRaisesRegex(ValueError, "disjoint"):
+                        workers.spawn_workers(specs, bootstrap)
+
+    def test_partial_start_failure_terminates_and_reaps_started_children(self):
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        observed: BaseException | None = None
+        with TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            specs = (
+                WorkerSpec(
+                    ShardAssignment(0, ("alpha",), 1),
+                    base / "worker-0",
+                ),
+                WorkerSpec(
+                    ShardAssignment(1, ("beta",), 1),
+                    base / "worker-1",
+                ),
+            )
+            with (
+                patch.object(
+                    workers,
+                    "run_worker",
+                    _spawn_blocking_worker,
+                ),
+                patch.object(
+                    multiprocessing.process.BaseProcess,
+                    "start",
+                    _fail_second_process_start,
+                ),
+                patch.dict(
+                    os.environ,
+                    _THREAD_ENVIRONMENT,
+                    clear=False,
+                ),
+            ):
+                previous_handler = signal.signal(
+                    signal.SIGALRM,
+                    _raise_spawn_timeout,
+                )
+                signal.setitimer(signal.ITIMER_REAL, 10.0)
+                try:
+                    workers.spawn_workers(
+                        specs,
+                        _bootstrap(_SYNTHETIC_CONTEXT),
+                    )
+                except BaseException as error:
+                    observed = error
+                finally:
+                    signal.setitimer(signal.ITIMER_REAL, 0.0)
+                    signal.signal(signal.SIGALRM, previous_handler)
+            surviving = tuple(
+                pid for pid in _STARTED_TEST_PIDS if _pid_exists(pid)
+            )
+            _terminate_test_children()
+
+        self.assertIsInstance(observed, RuntimeError)
+        self.assertRegex(str(observed), "second start failure")
+        self.assertEqual(surviving, ())
+
+    def test_ipc_faults_terminate_and_reap_all_children(self):
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        cases = (
+            (_spawn_abrupt_or_blocking_entry, "without a completion", 2),
+            (_spawn_malformed_entry, "invalid completion", 1),
+            (_spawn_multiple_entry, "multiple completion", 1),
+        )
+        with TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            for case_index, (entry, message, worker_count) in enumerate(cases):
+                with self.subTest(entry=entry.__name__):
+                    _STARTED_TEST_PIDS.clear()
+                    specs = tuple(
+                        WorkerSpec(
+                            ShardAssignment(
+                                index,
+                                ("alpha",) if index == 0 else ("beta",),
+                                1,
+                            ),
+                            base / f"case-{case_index}-worker-{index}",
+                        )
+                        for index in range(worker_count)
+                    )
+                    observed: BaseException | None = None
+                    with (
+                        patch.object(
+                            workers,
+                            "_worker_process_entry",
+                            entry,
+                        ),
+                        patch.object(
+                            multiprocessing.process.BaseProcess,
+                            "start",
+                            _recording_process_start,
+                        ),
+                    ):
+                        previous_handler = signal.signal(
+                            signal.SIGALRM,
+                            _raise_spawn_timeout,
+                        )
+                        signal.setitimer(signal.ITIMER_REAL, 10.0)
+                        try:
+                            workers.spawn_workers(
+                                specs,
+                                _bootstrap(_SYNTHETIC_CONTEXT),
+                            )
+                        except BaseException as error:
+                            observed = error
+                        finally:
+                            signal.setitimer(signal.ITIMER_REAL, 0.0)
+                            signal.signal(signal.SIGALRM, previous_handler)
+                    surviving = tuple(
+                        pid
+                        for pid in _STARTED_TEST_PIDS
+                        if _pid_exists(pid)
+                    )
+                    _terminate_test_children()
+                    self.assertIsInstance(observed, RuntimeError)
+                    self.assertRegex(str(observed), message)
+                    self.assertEqual(surviving, ())
+
+    def test_explicit_interruption_terminates_and_reaps_children(self):
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        observed: BaseException | None = None
+        with TemporaryDirectory() as temporary:
+            spec = WorkerSpec(
+                ShardAssignment(0, ("alpha",), 1),
+                Path(temporary) / "worker-0",
+            )
+            with (
+                patch.object(
+                    workers,
+                    "run_worker",
+                    _spawn_blocking_worker,
+                ),
+                patch.object(
+                    workers,
+                    "wait_connections",
+                    _raise_keyboard_interrupt,
+                    create=True,
+                ),
+                patch.object(
+                    multiprocessing.process.BaseProcess,
+                    "start",
+                    _recording_process_start,
+                ),
+                patch.dict(
+                    os.environ,
+                    _THREAD_ENVIRONMENT,
+                    clear=False,
+                ),
+            ):
+                previous_handler = signal.signal(
+                    signal.SIGALRM,
+                    _raise_spawn_timeout,
+                )
+                signal.setitimer(signal.ITIMER_REAL, 10.0)
+                try:
+                    workers.spawn_workers(
+                        (spec,),
+                        _bootstrap(_SYNTHETIC_CONTEXT),
+                    )
+                except BaseException as error:
+                    observed = error
+                finally:
+                    signal.setitimer(signal.ITIMER_REAL, 0.0)
+                    signal.signal(signal.SIGALRM, previous_handler)
+            surviving = tuple(
+                pid for pid in _STARTED_TEST_PIDS if _pid_exists(pid)
+            )
+            _terminate_test_children()
+
+        self.assertIsInstance(observed, KeyboardInterrupt)
+        self.assertEqual(surviving, ())
