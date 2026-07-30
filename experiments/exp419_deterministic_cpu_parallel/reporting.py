@@ -341,13 +341,14 @@ def _verify_completion_runtime_evidence(
         for completion in completions
     ):
         raise ValueError("Exp419 worker thread environment is not frozen")
-    worker_peak_sum = sum(
-        completion.peak_rss_bytes for completion in completions
+    individual_worker_peak = max(
+        (completion.peak_rss_bytes for completion in completions),
+        default=0,
     )
     if (
         type(aggregate_peak_rss_bytes) is not int
         or aggregate_peak_rss_bytes <= 0
-        or aggregate_peak_rss_bytes < worker_peak_sum
+        or aggregate_peak_rss_bytes < individual_worker_peak
         or aggregate_peak_rss_bytes > FROZEN_CONFIG.memory_limit_bytes
     ):
         raise ValueError(

@@ -367,6 +367,53 @@ class ReportingTests(unittest.TestCase):
                     mutated, trusted_checkpoint=self.trusted
                 )
 
+    def test_multi_attempt_resume_aggregate_uses_individual_peak_lower_bound(self) -> None:
+        from experiments.exp419_deterministic_cpu_parallel.reporting import (
+            render_exp419_payloads,
+            verify_exp419_payloads,
+        )
+
+        # Each shard maximum can come from a different resume attempt.  The
+        # coordinator persists max(parent + workers) per attempt, not the sum
+        # of maxima observed across unrelated attempts.
+        aggregate = max(
+            completion.peak_rss_bytes
+            for completion in self.parallel_run.completions
+        )
+        self.assertLess(
+            aggregate,
+            sum(
+                completion.peak_rss_bytes
+                for completion in self.parallel_run.completions
+            ),
+        )
+        resumed = ParallelRun(
+            self.plan,
+            self.parallel_run.completions,
+            self.parallel_run.record_digests,
+            {
+                **dict(self.parallel_run.summary),
+                "aggregate_peak_rss_bytes": aggregate,
+            },
+            True,
+            "completed",
+        )
+
+        payloads = dict(
+            render_exp419_payloads(
+                resumed, self.benchmark, self.plan, self.trusted
+            )
+        )
+        verify_exp419_payloads(
+            payloads, trusted_checkpoint=self.trusted
+        )
+        self.assertEqual(
+            json.loads(payloads["MANIFEST.json"])[
+                "aggregate_peak_rss_bytes"
+            ],
+            aggregate,
+        )
+
     def test_verifier_rejects_each_payload_mutation(self) -> None:
         from experiments.exp419_deterministic_cpu_parallel.reporting import (
             verify_exp419_payloads,
