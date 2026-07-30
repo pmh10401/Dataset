@@ -475,32 +475,52 @@ def _evidence_bytes(
     binding_sha256: str,
     attempts: Sequence[Mapping[str, object]],
 ) -> bytes:
+    serialized_attempts = []
+    for attempt in attempts:
+        state = attempt["state"]
+        workers = []
+        for worker in attempt["workers"]:
+            serialized = {
+                "checkpoint_root": worker["checkpoint_root"],
+                "inventory": list(worker["inventory"]),
+                "resolved_checkpoint_root": worker[
+                    "resolved_checkpoint_root"
+                ],
+                "shard_index": worker["shard_index"],
+            }
+            if state == "terminal":
+                serialized["completion"] = _completion_payload(
+                    worker["completion"]
+                )
+            elif state == "interrupted":
+                serialized["record_digests"] = dict(
+                    worker["record_digests"]
+                )
+                serialized["recovered_datasets"] = list(
+                    worker["recovered_datasets"]
+                )
+            workers.append(serialized)
+        serialized_attempt = {
+            "attempt_id": attempt["attempt_id"],
+            "binding_sha256": attempt["binding_sha256"],
+            "context_sha256": attempt["context_sha256"],
+            "plan_sha256": attempt["plan_sha256"],
+            "state": state,
+            "workers": workers,
+        }
+        if state == "terminal":
+            serialized_attempt["parent_peak_rss_bytes"] = attempt[
+                "parent_peak_rss_bytes"
+            ]
+            serialized_attempt["peak_total_rss_bytes"] = attempt[
+                "peak_total_rss_bytes"
+            ]
+        serialized_attempts.append(serialized_attempt)
     return canonical_json_bytes(
         {
-            "attempts": [
-                {
-                    "attempt_id": attempt["attempt_id"],
-                    "workers": [
-                        {
-                            "checkpoint_root": worker["checkpoint_root"],
-                            "completion": _completion_payload(
-                                worker["completion"]
-                            ),
-                            "inventory": list(worker["inventory"]),
-                        }
-                        for worker in attempt["workers"]
-                    ],
-                    "parent_peak_rss_bytes": attempt[
-                        "parent_peak_rss_bytes"
-                    ],
-                    "peak_total_rss_bytes": attempt[
-                        "peak_total_rss_bytes"
-                    ],
-                }
-                for attempt in attempts
-            ],
+            "attempts": serialized_attempts,
             "binding_sha256": binding_sha256,
-            "schema_version": 2,
+            "schema_version": 3,
         }
     ) + b"\n"
 
@@ -531,7 +551,7 @@ def _load_runtime_evidence(
             "binding_sha256",
             "schema_version",
         }
-        or payload["schema_version"] != 2
+        or payload["schema_version"] != 3
         or payload["binding_sha256"] != binding_sha256
         or not isinstance(payload["attempts"], list)
     ):
@@ -539,43 +559,81 @@ def _load_runtime_evidence(
     attempts = []
     seen_ids = set()
     for raw_attempt in payload["attempts"]:
-        if not isinstance(raw_attempt, dict) or set(raw_attempt) != {
+        if not isinstance(raw_attempt, dict):
+            raise ValueError("runtime attempt evidence fields are invalid")
+        state = raw_attempt.get("state")
+        common_fields = {
             "attempt_id",
-            "parent_peak_rss_bytes",
-            "peak_total_rss_bytes",
+            "binding_sha256",
+            "context_sha256",
+            "plan_sha256",
+            "state",
             "workers",
-        }:
+        }
+        expected_fields = (
+            common_fields
+            | {
+                "parent_peak_rss_bytes",
+                "peak_total_rss_bytes",
+            }
+            if state == "terminal"
+            else common_fields
+        )
+        if (
+            state not in {"running", "interrupted", "terminal"}
+            or set(raw_attempt) != expected_fields
+        ):
             raise ValueError("runtime attempt evidence fields are invalid")
         attempt_id = raw_attempt["attempt_id"]
-        parent_rss = raw_attempt["parent_peak_rss_bytes"]
-        peak_total = raw_attempt["peak_total_rss_bytes"]
         if (
             not isinstance(attempt_id, str)
             or not attempt_id
             or attempt_id in seen_ids
-            or type(parent_rss) is not int
-            or parent_rss < 0
-            or type(peak_total) is not int
-            or peak_total < 0
+            or raw_attempt["binding_sha256"] != binding_sha256
+            or not _is_sha256(raw_attempt["context_sha256"])
+            or not _is_sha256(raw_attempt["plan_sha256"])
             or not isinstance(raw_attempt["workers"], list)
             or not raw_attempt["workers"]
         ):
             raise ValueError("runtime attempt evidence is invalid")
         workers = []
+        seen_shards = set()
         for raw_worker in raw_attempt["workers"]:
-            if not isinstance(raw_worker, dict) or set(raw_worker) != {
+            common_worker_fields = {
                 "checkpoint_root",
-                "completion",
                 "inventory",
-            }:
+                "resolved_checkpoint_root",
+                "shard_index",
+            }
+            expected_worker_fields = (
+                common_worker_fields | {"completion"}
+                if state == "terminal"
+                else (
+                    common_worker_fields
+                    | {"record_digests", "recovered_datasets"}
+                    if state == "interrupted"
+                    else common_worker_fields
+                )
+            )
+            if (
+                not isinstance(raw_worker, dict)
+                or set(raw_worker) != expected_worker_fields
+            ):
                 raise ValueError(
                     "runtime attempt worker evidence fields are invalid"
                 )
             checkpoint_root = raw_worker["checkpoint_root"]
+            resolved_root = raw_worker["resolved_checkpoint_root"]
+            shard_index = raw_worker["shard_index"]
             inventory = raw_worker["inventory"]
             if (
                 not isinstance(checkpoint_root, str)
                 or not checkpoint_root
+                or not isinstance(resolved_root, str)
+                or not resolved_root
+                or type(shard_index) is not int
+                or shard_index < 0
+                or shard_index in seen_shards
                 or not isinstance(inventory, list)
                 or not inventory
                 or any(
@@ -587,38 +645,89 @@ def _load_runtime_evidence(
                 raise ValueError(
                     "runtime attempt worker evidence is invalid"
                 )
-            workers.append(
-                MappingProxyType(
-                    {
-                        "checkpoint_root": checkpoint_root,
-                        "completion": _completion_from_payload(
-                            raw_worker["completion"]
-                        ),
-                        "inventory": tuple(inventory),
-                    }
+            seen_shards.add(shard_index)
+            worker = {
+                "checkpoint_root": checkpoint_root,
+                "inventory": tuple(inventory),
+                "resolved_checkpoint_root": resolved_root,
+                "shard_index": shard_index,
+            }
+            if state == "terminal":
+                worker["completion"] = _completion_from_payload(
+                    raw_worker["completion"]
                 )
+            elif state == "interrupted":
+                recovered = raw_worker["recovered_datasets"]
+                digests = raw_worker["record_digests"]
+                if (
+                    not isinstance(recovered, list)
+                    or any(
+                        not isinstance(name, str) or not name
+                        for name in recovered
+                    )
+                    or len(recovered) != len(set(recovered))
+                    or not isinstance(digests, dict)
+                    or set(digests) != set(recovered)
+                    or any(
+                        not _is_sha256(digest)
+                        for digest in digests.values()
+                    )
+                ):
+                    raise ValueError(
+                        "interrupted attempt record evidence is invalid"
+                    )
+                worker["recovered_datasets"] = tuple(recovered)
+                worker["record_digests"] = MappingProxyType(
+                    dict(digests)
+                )
+            workers.append(
+                MappingProxyType(worker)
             )
         frozen_workers = tuple(workers)
-        if peak_total != parent_rss + sum(
-            worker["completion"].peak_rss_bytes
-            for worker in frozen_workers
-        ):
-            raise ValueError("runtime attempt memory evidence is invalid")
+        attempt = {
+            "attempt_id": attempt_id,
+            "binding_sha256": raw_attempt["binding_sha256"],
+            "context_sha256": raw_attempt["context_sha256"],
+            "plan_sha256": raw_attempt["plan_sha256"],
+            "state": state,
+            "workers": frozen_workers,
+        }
+        if state == "terminal":
+            parent_rss = raw_attempt["parent_peak_rss_bytes"]
+            peak_total = raw_attempt["peak_total_rss_bytes"]
+            if (
+                type(parent_rss) is not int
+                or parent_rss < 0
+                or type(peak_total) is not int
+                or peak_total < 0
+                or peak_total
+                != parent_rss
+                + sum(
+                    worker["completion"].peak_rss_bytes
+                    for worker in frozen_workers
+                )
+            ):
+                raise ValueError(
+                    "runtime attempt memory evidence is invalid"
+                )
+            attempt["parent_peak_rss_bytes"] = parent_rss
+            attempt["peak_total_rss_bytes"] = peak_total
         seen_ids.add(attempt_id)
         attempts.append(
-            MappingProxyType(
-                {
-                    "attempt_id": attempt_id,
-                    "parent_peak_rss_bytes": parent_rss,
-                    "peak_total_rss_bytes": peak_total,
-                    "workers": frozen_workers,
-                }
-            )
+            MappingProxyType(attempt)
         )
     frozen = tuple(attempts)
     if raw != _evidence_bytes(binding_sha256, frozen):
         raise ValueError("runtime evidence is noncanonical")
     return frozen
+
+
+def _is_sha256(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
 
 
 def _replace_runtime_evidence(
@@ -669,88 +778,148 @@ def _replace_runtime_evidence(
             active.close()
 
 
-def _attempt_record(
+def _running_attempt_record(
     roots: ParallelRoots,
     plan: ShardPlan,
+    binding_sha256: str,
+    context_sha256: str,
     attempt_id: str,
     specs: Sequence[WorkerSpec],
-    completions: Sequence[WorkerCompletion],
-    parent_peak_rss_bytes: int,
 ) -> Mapping[str, object]:
     if not isinstance(attempt_id, str) or not attempt_id:
         raise ValueError("runtime attempt id is invalid")
     frozen_specs = tuple(specs)
-    frozen_completions = tuple(completions)
-    completion_by_shard = {
-        completion.shard_index: completion
-        for completion in frozen_completions
-    }
-    if (
-        len(completion_by_shard) != len(frozen_completions)
-        or tuple(sorted(completion_by_shard))
-        != tuple(spec.shard.shard_index for spec in frozen_specs)
-    ):
-        raise ValueError("worker completions do not cover scheduled shards")
+    if not frozen_specs:
+        raise ValueError("running attempt must contain worker specs")
     workers = []
     for spec in frozen_specs:
-        expected_root = (
+        lexical_root = Path(
+            os.path.abspath(spec.checkpoint_root)
+        )
+        expected_lexical = Path(
+            os.path.abspath(
+                roots.root
+                / ".attempts"
+                / plan.sha256
+                / attempt_id
+                / f"worker-{spec.shard.shard_index}"
+            )
+        )
+        expected_resolved = (
             roots.root
             / ".attempts"
             / plan.sha256
             / attempt_id
             / f"worker-{spec.shard.shard_index}"
         ).resolve(strict=False)
-        observed_root = spec.checkpoint_root.resolve(strict=False)
-        if observed_root != expected_root:
+        observed_resolved = spec.checkpoint_root.resolve(strict=False)
+        if (
+            lexical_root != expected_lexical
+            or observed_resolved != expected_resolved
+        ):
             raise ValueError("runtime attempt root is not plan-bound")
         workers.append(
             MappingProxyType(
                 {
-                    "checkpoint_root": str(observed_root),
-                    "completion": completion_by_shard[
-                        spec.shard.shard_index
-                    ],
+                    "checkpoint_root": str(lexical_root),
                     "inventory": spec.shard.datasets,
+                    "resolved_checkpoint_root": str(observed_resolved),
+                    "shard_index": spec.shard.shard_index,
                 }
             )
         )
-    frozen_workers = tuple(workers)
     return MappingProxyType(
         {
             "attempt_id": attempt_id,
-            "parent_peak_rss_bytes": parent_peak_rss_bytes,
-            "peak_total_rss_bytes": parent_peak_rss_bytes
-            + sum(
-                worker["completion"].peak_rss_bytes
-                for worker in frozen_workers
-            ),
-            "workers": frozen_workers,
+            "binding_sha256": binding_sha256,
+            "context_sha256": context_sha256,
+            "plan_sha256": plan.sha256,
+            "state": "running",
+            "workers": tuple(workers),
         }
     )
 
 
-def _append_runtime_evidence(
+def _terminal_attempt_record(
+    running: Mapping[str, object],
+    completions: Sequence[WorkerCompletion],
+    parent_peak_rss_bytes: int,
+) -> Mapping[str, object]:
+    if running["state"] != "running":
+        raise ValueError("only a running attempt can become terminal")
+    if type(parent_peak_rss_bytes) is not int or parent_peak_rss_bytes < 0:
+        raise ValueError("parent peak RSS evidence is invalid")
+    frozen_completions = tuple(completions)
+    completion_by_shard = {
+        completion.shard_index: completion
+        for completion in frozen_completions
+    }
+    expected_shards = tuple(
+        worker["shard_index"] for worker in running["workers"]
+    )
+    if (
+        len(completion_by_shard) != len(frozen_completions)
+        or tuple(sorted(completion_by_shard)) != expected_shards
+    ):
+        raise ValueError("worker completions do not cover scheduled shards")
+    workers = tuple(
+        MappingProxyType(
+            {
+                **dict(worker),
+                "completion": completion_by_shard[
+                    worker["shard_index"]
+                ],
+            }
+        )
+        for worker in running["workers"]
+    )
+    return MappingProxyType(
+        {
+            "attempt_id": running["attempt_id"],
+            "binding_sha256": running["binding_sha256"],
+            "context_sha256": running["context_sha256"],
+            "parent_peak_rss_bytes": parent_peak_rss_bytes,
+            "peak_total_rss_bytes": parent_peak_rss_bytes
+            + sum(
+                worker["completion"].peak_rss_bytes
+                for worker in workers
+            ),
+            "plan_sha256": running["plan_sha256"],
+            "state": "terminal",
+            "workers": workers,
+        }
+    )
+
+
+def _register_running_attempt(
     roots: ParallelRoots,
     plan: ShardPlan,
     binding_sha256: str,
+    context_sha256: str,
     attempts: Sequence[Mapping[str, object]],
     attempt_id: str,
     specs: Sequence[WorkerSpec],
-    completions: Sequence[WorkerCompletion],
-    parent_peak_rss_bytes: int,
     *,
     transaction: _RunRootTransaction | None = None,
 ) -> tuple[Mapping[str, object], ...]:
-    attempt = _attempt_record(
+    if any(attempt["state"] == "running" for attempt in attempts):
+        raise ValueError("a running attempt is already registered")
+    attempt = _running_attempt_record(
         roots,
         plan,
+        binding_sha256,
+        context_sha256,
         attempt_id,
         specs,
-        completions,
-        parent_peak_rss_bytes,
     )
     updated = (*attempts, attempt)
-    _validated_evidence_digests(plan, roots, updated)
+    _validated_evidence_digests(
+        plan,
+        roots,
+        updated,
+        binding_sha256=binding_sha256,
+        context_sha256=context_sha256,
+    )
     _replace_runtime_evidence(
         roots,
         binding_sha256,
@@ -760,10 +929,83 @@ def _append_runtime_evidence(
     return tuple(updated)
 
 
+def _advance_running_attempt(
+    roots: ParallelRoots,
+    plan: ShardPlan,
+    binding_sha256: str,
+    context_sha256: str,
+    attempts: Sequence[Mapping[str, object]],
+    replacement: Mapping[str, object],
+    *,
+    transaction: _RunRootTransaction | None = None,
+) -> tuple[Mapping[str, object], ...]:
+    if replacement["state"] not in {"interrupted", "terminal"}:
+        raise ValueError("running attempt requires a terminal transition")
+    replaced = False
+    updated = []
+    for attempt in attempts:
+        if attempt["attempt_id"] == replacement["attempt_id"]:
+            if replaced or attempt["state"] != "running":
+                raise ValueError("running attempt transition is invalid")
+            immutable_fields = (
+                "attempt_id",
+                "binding_sha256",
+                "context_sha256",
+                "plan_sha256",
+            )
+            if any(
+                replacement[field] != attempt[field]
+                for field in immutable_fields
+            ) or tuple(
+                (
+                    worker["checkpoint_root"],
+                    worker["inventory"],
+                    worker["resolved_checkpoint_root"],
+                    worker["shard_index"],
+                )
+                for worker in replacement["workers"]
+            ) != tuple(
+                (
+                    worker["checkpoint_root"],
+                    worker["inventory"],
+                    worker["resolved_checkpoint_root"],
+                    worker["shard_index"],
+                )
+                for worker in attempt["workers"]
+            ):
+                raise ValueError(
+                    "immutable running attempt descriptor changed"
+                )
+            updated.append(replacement)
+            replaced = True
+        else:
+            updated.append(attempt)
+    if not replaced:
+        raise ValueError("registered running attempt is missing")
+    frozen = tuple(updated)
+    _validated_evidence_digests(
+        plan,
+        roots,
+        frozen,
+        binding_sha256=binding_sha256,
+        context_sha256=context_sha256,
+    )
+    _replace_runtime_evidence(
+        roots,
+        binding_sha256,
+        frozen,
+        transaction=transaction,
+    )
+    return frozen
+
+
 def _validated_evidence_digests(
     plan: ShardPlan,
     roots: ParallelRoots,
     attempts: Sequence[Mapping[str, object]],
+    *,
+    binding_sha256: str | None = None,
+    context_sha256: str | None = None,
 ) -> Mapping[str, str]:
     assignments = {
         assignment.shard_index: assignment
@@ -771,17 +1013,29 @@ def _validated_evidence_digests(
     }
     digests = {}
     for attempt in attempts:
+        if (
+            attempt["plan_sha256"] != plan.sha256
+            or (
+                binding_sha256 is not None
+                and attempt["binding_sha256"] != binding_sha256
+            )
+            or (
+                context_sha256 is not None
+                and attempt["context_sha256"] != context_sha256
+            )
+        ):
+            raise ValueError("runtime attempt binding is invalid")
         seen_shards = set()
         for worker in attempt["workers"]:
-            completion = worker["completion"]
-            assignment = assignments.get(completion.shard_index)
+            shard_index = worker["shard_index"]
+            assignment = assignments.get(shard_index)
             if assignment is None:
                 raise ValueError("runtime evidence contains an unknown shard")
-            if completion.shard_index in seen_shards:
+            if shard_index in seen_shards:
                 raise ValueError(
                     "runtime attempt contains a duplicate shard"
                 )
-            seen_shards.add(completion.shard_index)
+            seen_shards.add(shard_index)
             inventory = worker["inventory"]
             inventory_set = set(inventory)
             if inventory != tuple(
@@ -792,36 +1046,65 @@ def _validated_evidence_digests(
                 raise ValueError(
                     "runtime attempt inventory is not original-shard ordered"
                 )
-            expected_root = (
+            expected_lexical = Path(
+                os.path.abspath(
+                    roots.root
+                    / ".attempts"
+                    / plan.sha256
+                    / attempt["attempt_id"]
+                    / f"worker-{shard_index}"
+                )
+            )
+            expected_resolved = (
                 roots.root
                 / ".attempts"
                 / plan.sha256
                 / attempt["attempt_id"]
-                / f"worker-{completion.shard_index}"
+                / f"worker-{shard_index}"
             ).resolve(strict=False)
-            if Path(worker["checkpoint_root"]) != expected_root:
+            if (
+                Path(worker["checkpoint_root"]) != expected_lexical
+                or Path(worker["resolved_checkpoint_root"])
+                != expected_resolved
+            ):
                 raise ValueError(
                     "runtime attempt root is not plan-bound"
                 )
-            completed = completion.completed_datasets
+            if attempt["state"] == "running":
+                continue
+            if attempt["state"] == "terminal":
+                completion = worker["completion"]
+                if completion.shard_index != shard_index:
+                    raise ValueError(
+                        "runtime completion shard binding is invalid"
+                    )
+                completed = completion.completed_datasets
+                record_digests = completion.record_digests
+            else:
+                completed = worker["recovered_datasets"]
+                record_digests = worker["record_digests"]
             if completed != inventory[: len(completed)]:
                 raise ValueError(
                     "runtime completion is not an atomic dataset prefix"
                 )
             if (
-                completion.status == "completed"
+                attempt["state"] == "terminal"
+                and completion.status == "completed"
                 and completed != inventory
             ):
                 raise ValueError(
                     "completed runtime evidence has incomplete inventory"
                 )
-            if completed and dict(
-                completion.thread_environment
-            ) != dict(_THREAD_ENVIRONMENT):
+            if (
+                attempt["state"] == "terminal"
+                and completed
+                and dict(completion.thread_environment)
+                != dict(_THREAD_ENVIRONMENT)
+            ):
                 raise ValueError(
                     "runtime evidence thread environment mismatch"
                 )
-            for name, digest in completion.record_digests.items():
+            for name, digest in record_digests.items():
                 if name in digests:
                     raise ValueError(
                         "runtime evidence contains duplicate dataset evidence"
@@ -842,6 +1125,7 @@ def _aggregate_evidence_completions(
         items = tuple(
             worker["completion"]
             for attempt in attempts
+            if attempt["state"] == "terminal"
             for worker in attempt["workers"]
             if worker["completion"].shard_index
             == assignment.shard_index
@@ -884,10 +1168,20 @@ def _peak_total_rss_bytes(
         (
             attempt["peak_total_rss_bytes"]
             for attempt in attempts
+            if attempt["state"] == "terminal"
         ),
         default=0,
     )
     return max(persisted, _parent_peak_rss_bytes())
+
+
+def _has_missing_terminal_evidence(
+    attempts: Sequence[Mapping[str, object]],
+) -> bool:
+    return any(
+        attempt["state"] == "interrupted"
+        for attempt in attempts
+    )
 
 
 def _validated_partial_store_state(
@@ -1025,6 +1319,116 @@ def _open_checkpoint_store_checked(
     return store
 
 
+def _interrupted_attempt_record(
+    running: Mapping[str, object],
+    bootstrap: WorkerBootstrap,
+    transaction: _RunRootTransaction,
+) -> Mapping[str, object]:
+    if running["state"] != "running":
+        raise ValueError("only a running attempt can be interrupted")
+    workers = []
+    for worker in running["workers"]:
+        source_root = Path(worker["checkpoint_root"])
+        inventory = worker["inventory"]
+        source = _open_checkpoint_store_checked(
+            transaction,
+            source_root,
+            bootstrap.provenance,
+            inventory,
+        )
+        on_disk, completed = _validated_partial_store_state(
+            source,
+            transaction=transaction,
+            root=source_root,
+        )
+        recovered = tuple(
+            name for name in inventory if name in on_disk
+        )
+        if (
+            recovered != inventory[: len(recovered)]
+            or set(on_disk) != set(recovered)
+            or set(completed) != set(recovered)
+        ):
+            raise ValueError(
+                "registered running attempt is not an atomic dataset prefix"
+            )
+        if any(
+            isinstance(
+                result.decision_evidence,
+                DatasetTerminalEvidence,
+            )
+            for result in completed.values()
+        ):
+            raise ValueError(
+                "registered running attempt contains terminal evidence"
+            )
+        workers.append(
+            MappingProxyType(
+                {
+                    **dict(worker),
+                    "record_digests": MappingProxyType(
+                        {
+                            name: on_disk[name]
+                            for name in recovered
+                        }
+                    ),
+                    "recovered_datasets": recovered,
+                }
+            )
+        )
+    return MappingProxyType(
+        {
+            "attempt_id": running["attempt_id"],
+            "binding_sha256": running["binding_sha256"],
+            "context_sha256": running["context_sha256"],
+            "plan_sha256": running["plan_sha256"],
+            "state": "interrupted",
+            "workers": tuple(workers),
+        }
+    )
+
+
+def _recover_registered_running_attempt(
+    roots: ParallelRoots,
+    plan: ShardPlan,
+    binding_sha256: str,
+    context_sha256: str,
+    bootstrap: WorkerBootstrap,
+    attempts: Sequence[Mapping[str, object]],
+    transaction: _RunRootTransaction,
+) -> tuple[Mapping[str, object], ...]:
+    _validated_evidence_digests(
+        plan,
+        roots,
+        attempts,
+        binding_sha256=binding_sha256,
+        context_sha256=context_sha256,
+    )
+    running = tuple(
+        attempt
+        for attempt in attempts
+        if attempt["state"] == "running"
+    )
+    if len(running) > 1:
+        raise ValueError("multiple running attempts are registered")
+    if not running:
+        return tuple(attempts)
+    interrupted = _interrupted_attempt_record(
+        running[0],
+        bootstrap,
+        transaction,
+    )
+    return _advance_running_attempt(
+        roots,
+        plan,
+        binding_sha256,
+        context_sha256,
+        attempts,
+        interrupted,
+        transaction=transaction,
+    )
+
+
 def _validate_and_recover_attempts(
     plan: ShardPlan,
     roots: ParallelRoots,
@@ -1036,16 +1440,21 @@ def _validate_and_recover_attempts(
 ) -> None:
     _validated_evidence_digests(plan, roots, attempts)
     for attempt in attempts:
-        for worker in attempt["workers"]:
-            completion = worker["completion"]
-            source_root = (
-                roots.root
-                / ".attempts"
-                / plan.sha256
-                / attempt["attempt_id"]
-                / f"worker-{completion.shard_index}"
+        if attempt["state"] == "running":
+            raise ValueError(
+                "running attempt must be terminalized before recovery"
             )
+        for worker in attempt["workers"]:
+            shard_index = worker["shard_index"]
+            source_root = Path(worker["checkpoint_root"])
             inventory = worker["inventory"]
+            if attempt["state"] == "terminal":
+                completion = worker["completion"]
+                evidence_datasets = completion.completed_datasets
+                evidence_digests = completion.record_digests
+            else:
+                evidence_datasets = worker["recovered_datasets"]
+                evidence_digests = worker["record_digests"]
             source = _open_checkpoint_store_checked(
                 transaction,
                 source_root,
@@ -1058,17 +1467,17 @@ def _validate_and_recover_attempts(
                 root=source_root,
             )
             transaction.verify_checkpoint_path(source_root)
-            if tuple(completion.completed_datasets) != tuple(
+            if tuple(evidence_datasets) != tuple(
                 name for name in inventory if name in on_disk
             ):
                 raise ValueError(
                     "runtime attempt dataset evidence differs from its checkpoint"
                 )
-            if dict(completion.record_digests) != dict(on_disk):
+            if dict(evidence_digests) != dict(on_disk):
                 raise ValueError(
                     "runtime attempt digest evidence differs from its checkpoint"
                 )
-            if set(completed) != set(completion.completed_datasets):
+            if set(completed) != set(evidence_datasets):
                 raise ValueError(
                     "runtime attempt loaded evidence differs from its checkpoint"
                 )
@@ -1084,15 +1493,15 @@ def _validate_and_recover_attempts(
                 )
             if worker_stores is None:
                 continue
-            target_root = roots.worker_roots[completion.shard_index]
-            target = worker_stores[completion.shard_index]
+            target_root = roots.worker_roots[shard_index]
+            target = worker_stores[shard_index]
             target_digests, _ = _validated_partial_store_state(
                 target,
                 transaction=transaction,
                 root=target_root,
             )
             transaction.verify_checkpoint_path(target_root)
-            for dataset in completion.completed_datasets:
+            for dataset in evidence_datasets:
                 if dataset in target_digests:
                     if target_digests[dataset] != on_disk[dataset]:
                         raise ValueError(
@@ -1145,10 +1554,21 @@ def resume_or_run_parallel(
             binding_sha256,
             transaction=transaction,
         )
+        attempts = _recover_registered_running_attempt(
+            roots,
+            plan,
+            binding_sha256,
+            context_digest,
+            bootstrap,
+            attempts,
+            transaction,
+        )
         evidence_digests = _validated_evidence_digests(
             plan,
             roots,
             attempts,
+            binding_sha256=binding_sha256,
+            context_sha256=context_digest,
         )
         canonical = _open_checkpoint_store_checked(
             transaction,
@@ -1221,6 +1641,10 @@ def resume_or_run_parallel(
             )
 
         if set(canonical_digests) == set(context.datasets):
+            if _has_missing_terminal_evidence(attempts):
+                raise ValueError(
+                    "missing terminal worker evidence for interrupted attempt"
+                )
             summary = _reconstruct_global_summary(context, canonical)
             transaction.verify_checkpoint_path(roots.canonical_root)
             error = "" if summary.publication_allowed else summary.status
@@ -1275,25 +1699,45 @@ def resume_or_run_parallel(
                     )
                 )
 
+        if specs:
+            attempts = _register_running_attempt(
+                roots,
+                plan,
+                binding_sha256,
+                context_digest,
+                attempts,
+                attempt_token,
+                specs,
+                transaction=transaction,
+            )
         transaction.verify()
         raw_completions = (
             spawn_workers(tuple(specs), bootstrap) if specs else ()
         )
         transaction.verify()
         if raw_completions:
-            candidate = _attempt_record(
-                roots,
-                plan,
-                attempt_token,
-                specs,
+            running_attempt = next(
+                attempt
+                for attempt in attempts
+                if attempt["attempt_id"] == attempt_token
+            )
+            candidate = _terminal_attempt_record(
+                running_attempt,
                 raw_completions,
                 _parent_peak_rss_bytes(),
             )
-            candidate_attempts = (*attempts, candidate)
+            candidate_attempts = tuple(
+                candidate
+                if attempt["attempt_id"] == attempt_token
+                else attempt
+                for attempt in attempts
+            )
             _validated_evidence_digests(
                 plan,
                 roots,
                 candidate_attempts,
+                binding_sha256=binding_sha256,
+                context_sha256=context_digest,
             )
             _validate_and_recover_attempts(
                 plan,
@@ -1303,21 +1747,21 @@ def resume_or_run_parallel(
                 transaction,
                 worker_stores=None,
             )
-            attempts = _append_runtime_evidence(
+            attempts = _advance_running_attempt(
                 roots,
                 plan,
                 binding_sha256,
+                context_digest,
                 attempts,
-                attempt_token,
-                specs,
-                raw_completions,
-                candidate["parent_peak_rss_bytes"],
+                candidate,
                 transaction=transaction,
             )
             evidence_digests = _validated_evidence_digests(
                 plan,
                 roots,
                 attempts,
+                binding_sha256=binding_sha256,
+                context_sha256=context_digest,
             )
             _validate_and_recover_attempts(
                 plan,
@@ -1372,6 +1816,10 @@ def resume_or_run_parallel(
         if complete_digests != dict(evidence_digests):
             raise ValueError(
                 "complete worker stores differ from durable evidence"
+            )
+        if _has_missing_terminal_evidence(attempts):
+            raise ValueError(
+                "missing terminal worker evidence for interrupted attempt"
             )
         transaction.verify()
         merged = merge_worker_checkpoints(
