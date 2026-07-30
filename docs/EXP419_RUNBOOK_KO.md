@@ -30,7 +30,10 @@ git rev-parse HEAD
 
 benchmark와 공식 실행은 `git status --porcelain`이 빈 clean commit에서만
 허용된다. 실행 도중 HEAD 또는 입력 파일이 바뀌면 publication 전에
-fail-stop한다.
+fail-stop한다. 두 CLI의 argument parser는 문자열을 `Path`로 바꾸는
+문법 처리만 한다. 파일 존재·종류·symlink·root 관계는 parser에서 열거나
+검사하지 않고 반드시 clean Git → label guard 뒤의 동결/검증 단계에서
+확인한다.
 
 ## 2. 중단된 Exp417 근거는 그대로 보존
 
@@ -74,7 +77,9 @@ git diff --check
 
 정적 격리 검사도 Exp419 test suite에 포함된다. Exp419 package와 두 CLI에
 라벨 loader import, 라벨 column을 선택하는 SQL, 동결 라벨 artifact 이름,
-라벨 파일 경로가 하나라도 생기면 실패한다.
+라벨 파일 경로가 하나라도 생기면 실패한다. alias/attribute/getattr loader,
+문자열 결합과 f-string 경로, multiline·quoted SQL projection도 AST에서
+복원해 차단하고, 출력 검증용 denylist와 정상 TRAIN predicate만 허용한다.
 
 ## 4. 비공식 label-free 병렬 benchmark
 
@@ -107,12 +112,17 @@ from pathlib import Path
 path = Path("/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json")
 value = json.loads(path.read_bytes())
 benchmark = value["benchmark"]
+measurements = value["runtime_measurements"]
 print("git_commit", value["git_commit"])
 print("worker_candidates", value["worker_candidates"])
 print("status", benchmark["status"])
 print("selected_worker_count", benchmark["selected_worker_count"])
 for trial in benchmark["trials"]:
     print(trial["worker_count"], trial["elapsed_seconds"], trial["peak_rss_bytes"], trial["parity"], trial["finite"], trial["fallback"])
+for measurement in measurements:
+    print("runtime", measurement["worker_count"], measurement["process_cpu_seconds"], measurement["process_cpu_utilization"])
+    for worker in measurement["worker_utilization"]:
+        print("worker", worker["shard_index"], worker["pid"], worker["elapsed_seconds"], worker["wall_occupancy_fraction"])
 PY
 ```
 
@@ -122,6 +132,19 @@ parity가 exact, finite, fallback 없음, peak aggregate RSS가
 최소 `2.0x` 빠른 것이다. 조건을 만족하는 병렬 후보 중 가장 빠른 수만
 선택된다. `no_qualified_parallel_runtime`이면 공식 실행 승인을 요청하지
 않고 중단한다.
+
+각 trial은 parent와 종료된 child들의 실제 user+system CPU time 증가분을
+`process_cpu_seconds`로 기록한다. `process_cpu_utilization`은
+`CPU seconds / (wall seconds × (parent 1 + worker count))`다. 각 worker의
+`wall_occupancy_fraction`은 `worker elapsed / trial wall elapsed`다.
+모든 값은 finite·nonnegative이고 이 수식과 정확히 일치해야 한다. telemetry
+SHA256은 scientific evidence SHA256과 결합되어 trial evidence 및 전체
+benchmark SHA256에 포함되므로 숫자를 따로 고칠 수 없다.
+
+공식 검증기는 JSON 내부 일관성만 보지 않는다. 현재 frozen TRAIN metadata로
+`select_benchmark_datasets`를 다시 실행해 dataset 이름과 순서가 benchmark와
+정확히 같은지 확인한다. 임의의 더 쉬운 subset으로 모든 trial과 digest를
+다시 만든 파일도 거부한다.
 
 ## 5. resume와 실패 처리
 

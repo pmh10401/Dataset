@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-import argparse
-import ast
-from dataclasses import replace
 import importlib.util
 import json
+from math import isclose
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
-from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 from experiments.exp419_deterministic_cpu_parallel.config import FROZEN_CONFIG
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
+    DatasetCost,
     RuntimeBenchmark,
     RuntimeTrial,
 )
@@ -43,6 +41,43 @@ def _passing_benchmark(datasets: tuple[str, ...] = ("a",)) -> RuntimeBenchmark:
         RuntimeTrial(6, 6.0, 400, True, True, "", datasets, "4" * 64),
     )
     return select_runtime(trials)
+
+
+def _passing_measured_benchmark(module, datasets: tuple[str, ...] = ("a",)):
+    measurements = []
+    trials = []
+    for worker_count, elapsed in ((1, 12.0), (2, 5.0), (4, 4.0), (6, 6.0)):
+        workers = tuple(
+            module.WorkerUtilization(
+                shard_index=index,
+                pid=1000 + index,
+                elapsed_seconds=elapsed * 0.8,
+                wall_occupancy_fraction=0.8,
+            )
+            for index in range(worker_count)
+        )
+        measurement = module.TrialRuntimeMeasurement(
+            worker_count=worker_count,
+            wall_seconds=elapsed,
+            process_cpu_seconds=elapsed * (worker_count + 1) * 0.5,
+            process_cpu_utilization=0.5,
+            worker_utilization=workers,
+            scientific_evidence_sha256=f"{worker_count}" * 64,
+        )
+        measurements.append(measurement)
+        trials.append(
+            RuntimeTrial(
+                worker_count,
+                elapsed,
+                worker_count * 100,
+                True,
+                True,
+                "",
+                datasets,
+                measurement.evidence_sha256,
+            )
+        )
+    return select_runtime(tuple(trials)), tuple(measurements)
 
 
 class OfficialOrderTests(unittest.TestCase):
@@ -175,29 +210,49 @@ class CliContractTests(unittest.TestCase):
                     module.execute_for_test(stages)
                 self.assertEqual(calls, ["clean"])
 
-    def test_official_main_reaches_clean_git_before_root_validation(self) -> None:
-        events: list[str] = []
-
-        def dirty():
-            events.append("clean")
-            raise ValueError("dirty")
-
-        stages = self.official.make_test_stages(clean_git=dirty)
-        parser = SimpleNamespace(
-            parse_args=lambda _argv: SimpleNamespace(
-                checkpoint_dir=Path("/checkpoint"),
-                output_dir=Path("/output"),
-            )
+    def test_real_parsers_do_no_filesystem_work_before_clean_and_label_guards(self) -> None:
+        common = [
+            "--database", "/does/not/exist/database",
+            "--exp291-prediction", "/does/not/exist/291-prediction",
+            "--exp291-manifest", "/does/not/exist/291-manifest",
+            "--exp292-prediction", "/does/not/exist/292-prediction",
+            "--exp292-manifest", "/does/not/exist/292-manifest",
+        ]
+        cases = (
+            (
+                self.benchmark,
+                common + ["--benchmark-root", "/does/not/exist/benchmark"],
+            ),
+            (
+                self.official,
+                common
+                + [
+                    "--benchmark-evidence", "/does/not/exist/evidence",
+                    "--checkpoint-dir", "/does/not/exist/checkpoint",
+                    "--output-dir", "/does/not/exist/output",
+                ],
+            ),
         )
-        with patch.object(self.official, "build_parser", return_value=parser), \
-             patch.object(self.official, "_build_stages", return_value=stages), \
-             patch.object(
-                 self.official,
-                 "require_disjoint_roots",
-                 side_effect=lambda *_args: events.append("roots"),
-             ), self.assertRaisesRegex(ValueError, "dirty"):
-            self.official.main([])
-        self.assertEqual(events, ["clean"])
+        for module, argv in cases:
+            with self.subTest(module=module.__name__):
+                events: list[str] = []
+
+                def clean():
+                    events.append("clean")
+                    return "a" * 40
+
+                def label():
+                    events.append("label")
+                    raise ValueError("label boundary")
+
+                with patch.object(module, "require_clean_git", side_effect=clean), \
+                     patch.object(
+                         module,
+                         "assert_exp419_label_isolation",
+                         side_effect=label,
+                     ), self.assertRaisesRegex(ValueError, "label boundary"):
+                    module.main(argv)
+                self.assertEqual(events, ["clean", "label"])
 
     def test_output_and_checkpoint_roots_must_be_new_disjoint_and_unaliased(self) -> None:
         with TemporaryDirectory() as temporary:
@@ -219,7 +274,13 @@ class CliContractTests(unittest.TestCase):
                 self.official.require_disjoint_roots(checkpoint, alias)
 
     def test_benchmark_evidence_is_digest_context_and_selection_bound(self) -> None:
-        benchmark = _passing_benchmark(("a", "b"))
+        benchmark, measurements = _passing_measured_benchmark(
+            self.benchmark, ("a", "b")
+        )
+        costs = (
+            DatasetCost("a", 1, "preprocessing_only"),
+            DatasetCost("b", 2, "diagnostic_oof"),
+        )
         with TemporaryDirectory() as temporary:
             path = Path(temporary) / "benchmark.json"
             self.benchmark.write_benchmark_evidence(
@@ -231,11 +292,13 @@ class CliContractTests(unittest.TestCase):
                     Path(temporary) / f"workers-{count}"
                     for count in FROZEN_CONFIG.worker_candidates
                 ),
+                runtime_measurements=measurements,
             )
             observed = self.official.verify_benchmark_evidence(
                 path,
                 expected_git_commit="a" * 40,
                 expected_context_sha256="b" * 64,
+                expected_costs=costs,
             )
             self.assertEqual(observed, benchmark)
 
@@ -247,6 +310,76 @@ class CliContractTests(unittest.TestCase):
                     path,
                     expected_git_commit="a" * 40,
                     expected_context_sha256="b" * 64,
+                    expected_costs=costs,
+                )
+
+    def test_official_rejects_internally_consistent_arbitrary_benchmark_subset(self) -> None:
+        benchmark, measurements = _passing_measured_benchmark(
+            self.benchmark, ("a", "b")
+        )
+        costs = (
+            DatasetCost("a", 1, "preprocessing_only"),
+            DatasetCost("b", 2, "diagnostic_oof"),
+            DatasetCost("c", 3, "candidate_eligible"),
+        )
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "benchmark.json"
+            self.benchmark.write_benchmark_evidence(
+                path,
+                benchmark=benchmark,
+                git_commit="a" * 40,
+                context_sha256="b" * 64,
+                trial_roots=tuple(
+                    Path(temporary) / f"workers-{count}"
+                    for count in FROZEN_CONFIG.worker_candidates
+                ),
+                runtime_measurements=measurements,
+            )
+            with self.assertRaisesRegex(ValueError, "subset|datasets"):
+                self.official.verify_benchmark_evidence(
+                    path,
+                    expected_git_commit="a" * 40,
+                    expected_context_sha256="b" * 64,
+                    expected_costs=costs,
+                )
+
+    def test_runtime_measurements_are_finite_consistent_and_evidence_bound(self) -> None:
+        benchmark, measurements = _passing_measured_benchmark(self.benchmark)
+        for trial, measurement in zip(
+            benchmark.trials, measurements, strict=True
+        ):
+            self.assertEqual(trial.evidence_sha256, measurement.evidence_sha256)
+            self.assertTrue(
+                isclose(
+                    measurement.process_cpu_utilization,
+                    measurement.process_cpu_seconds
+                    / (trial.elapsed_seconds * (trial.worker_count + 1)),
+                )
+            )
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "benchmark.json"
+            self.benchmark.write_benchmark_evidence(
+                path,
+                benchmark=benchmark,
+                git_commit="a" * 40,
+                context_sha256="b" * 64,
+                trial_roots=tuple(
+                    Path(temporary) / f"workers-{count}"
+                    for count in FROZEN_CONFIG.worker_candidates
+                ),
+                runtime_measurements=measurements,
+            )
+            payload = json.loads(path.read_bytes())
+            payload["runtime_measurements"][0]["process_cpu_seconds"] = -1.0
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "CPU|cpu|finite|nonnegative"):
+                self.official.verify_benchmark_evidence(
+                    path,
+                    expected_git_commit="a" * 40,
+                    expected_context_sha256="b" * 64,
+                    expected_costs=(
+                        DatasetCost("a", 1, "preprocessing_only"),
+                    ),
                 )
 
     def test_benchmark_requires_fresh_disjoint_candidate_roots(self) -> None:
@@ -286,6 +419,10 @@ class CliContractTests(unittest.TestCase):
 
 
 class StaticIsolationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.module = _load_script("exp419_benchmark_static", BENCHMARK_SCRIPT)
+
     def test_exp419_sources_have_no_test_label_access_path(self) -> None:
         paths = tuple(
             sorted(
@@ -294,53 +431,47 @@ class StaticIsolationTests(unittest.TestCase):
                 )
             )
         ) + (BENCHMARK_SCRIPT, OFFICIAL_SCRIPT)
-        forbidden_artifacts = {
-            "test_labels.npy",
-            "test_labels.json",
-            "frozen_test_labels",
-            "labels_blob",
+        self.module.assert_source_label_isolation(
+            {str(path): path.read_text() for path in paths}
+        )
+
+    def test_adversarial_label_access_snippets_fail_closed(self) -> None:
+        snippets = {
+            "aliased-import.py":
+                "from secret import load_labels as values_loader\nvalues_loader()\n",
+            "attribute-loader.py":
+                "import secret as source\nsource.load_test_labels()\n",
+            "stored-attribute-loader.py":
+                "import secret as source\nreader = source.load_labels\nreader()\n",
+            "concatenated-path.py":
+                'LABEL_PATH = "/private/" + "labels.bin"\nPath(LABEL_PATH).read_bytes()\n',
+            "formatted-path.py":
+                'path = f"/private/{\'test\'}_{\'labels\'}.npy"\nopen(path, "rb")\n',
+            "obfuscated-sql.py":
+                'QUERY = "SEL" + "ECT i." + "label\\nFR" + "OM instances"\n',
+            "quoted-sql.py":
+                'QUERY = """SELECT i.[label], i.`labels_blob`\nFROM instances"""\n',
+            "frozen-artifact.py":
+                'ARTIFACT = "frozen_" + "test_labels"\n',
+            "getattr-loader.py":
+                'loader = getattr(source, "load_" + "labels")\nloader()\n',
         }
-        for path in paths:
-            tree = ast.parse(path.read_text(), filename=str(path))
-            forbidden_key_nodes: set[ast.AST] = set()
-            for node in ast.walk(tree):
-                if (
-                    isinstance(node, ast.Assign)
-                    and any(
-                        isinstance(target, ast.Name)
-                        and target.id == "_FORBIDDEN_KEYS"
-                        for target in node.targets
-                    )
-                ):
-                    forbidden_key_nodes.update(ast.walk(node.value))
-            for node in ast.walk(tree):
-                if isinstance(node, (ast.Import, ast.ImportFrom)):
-                    imported = []
-                    if isinstance(node, ast.Import):
-                        imported = [alias.name for alias in node.names]
-                    else:
-                        imported = [
-                            f"{node.module or ''}.{alias.name}"
-                            for alias in node.names
-                        ]
-                    self.assertFalse(
-                        any(
-                            "label" in name.lower()
-                            and "assert_label_free_sql_contract" not in name
-                            for name in imported
-                        ),
-                        f"forbidden label loader import in {path}",
-                    )
-                if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                    lowered = node.value.lower()
-                    if node not in forbidden_key_nodes:
-                        self.assertFalse(
-                            any(name in lowered for name in forbidden_artifacts),
-                            f"forbidden frozen label artifact in {path}",
-                        )
-                    if "select " in lowered and " from " in lowered:
-                        projection = lowered.split(" from ", 1)[0]
-                        self.assertNotIn("label", projection)
+        for name, source in snippets.items():
+            with self.subTest(name=name), self.assertRaisesRegex(
+                ValueError, "label"
+            ):
+                self.module.assert_source_label_isolation({name: source})
+
+    def test_guard_denylist_and_normal_train_predicate_are_allowed(self) -> None:
+        self.module.assert_source_label_isolation(
+            {
+                "guard.py": (
+                    '_FORBIDDEN_KEYS = {"label", "labels_blob"}\n'
+                    'QUERY = """SELECT i.instance_index, i.values_blob\n'
+                    "FROM instances i WHERE i.split='TRAIN' AND i.label='0'\"\"\"\n"
+                )
+            }
+        )
 
 
 if __name__ == "__main__":

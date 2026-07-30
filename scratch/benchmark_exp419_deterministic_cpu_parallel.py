@@ -4,14 +4,18 @@
 from __future__ import annotations
 
 import argparse
+import ast
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from hashlib import sha256
+from math import isclose, isfinite
+from numbers import Real
 from pathlib import Path
+import re
 import resource
 import subprocess
 import sys
-from time import monotonic
+from time import monotonic, process_time
 from typing import Any
 
 
@@ -58,22 +62,6 @@ from scratch.run_exp417_causal_multihorizon_shadow import (
 BENCHMARK_FILE = "EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"
 
 
-def _existing_file(value: str) -> Path:
-    path = Path(value).expanduser().resolve(strict=False)
-    if not path.is_file():
-        raise argparse.ArgumentTypeError(f"file does not exist: {path}")
-    return path
-
-
-def _new_root(value: str) -> Path:
-    path = Path(value).expanduser().resolve(strict=False)
-    if path.exists():
-        raise argparse.ArgumentTypeError("benchmark root must be new")
-    if not path.parent.is_dir():
-        raise argparse.ArgumentTypeError("benchmark parent must exist")
-    return path
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
@@ -82,12 +70,12 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         allow_abbrev=False,
     )
-    parser.add_argument("--database", type=_existing_file, required=True)
-    parser.add_argument("--exp291-prediction", type=_existing_file, required=True)
-    parser.add_argument("--exp291-manifest", type=_existing_file, required=True)
-    parser.add_argument("--exp292-prediction", type=_existing_file, required=True)
-    parser.add_argument("--exp292-manifest", type=_existing_file, required=True)
-    parser.add_argument("--benchmark-root", type=_new_root, required=True)
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--exp291-prediction", type=Path, required=True)
+    parser.add_argument("--exp291-manifest", type=Path, required=True)
+    parser.add_argument("--exp292-prediction", type=Path, required=True)
+    parser.add_argument("--exp292-manifest", type=Path, required=True)
+    parser.add_argument("--benchmark-root", type=Path, required=True)
     return parser
 
 
@@ -111,6 +99,215 @@ def require_clean_git(repository: Path = REPO_ROOT) -> str:
     return head
 
 
+def _static_string(node: ast.AST, constants: Mapping[str, str]) -> str | None:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.Name):
+        return constants.get(node.id)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left = _static_string(node.left, constants)
+        right = _static_string(node.right, constants)
+        return None if left is None or right is None else left + right
+    if isinstance(node, ast.JoinedStr):
+        parts = []
+        for value in node.values:
+            target = value.value if isinstance(value, ast.FormattedValue) else value
+            part = _static_string(target, constants)
+            if part is None:
+                return None
+            parts.append(part)
+        return "".join(parts)
+    return None
+
+
+def _call_name(node: ast.AST) -> str:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        parent = _call_name(node.value)
+        return f"{parent}.{node.attr}" if parent else node.attr
+    return ""
+
+
+def _assignment_name(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Assign) and len(node.targets) == 1:
+        target = node.targets[0]
+        return target.id if isinstance(target, ast.Name) else None
+    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+        return node.target.id
+    return None
+
+
+def _assignment_value(node: ast.AST) -> ast.AST | None:
+    if isinstance(node, (ast.Assign, ast.AnnAssign)):
+        return node.value
+    return None
+
+
+def _contains_projected_label(query: str) -> bool:
+    without_comments = re.sub(
+        r"/\*.*?\*/|--[^\r\n]*", " ", query, flags=re.DOTALL
+    )
+    normalized = " ".join(without_comments.split())
+    normalized = normalized.translate(
+        str.maketrans({"\"": "", "`": "", "[": "", "]": ""})
+    )
+    for match in re.finditer(
+        r"\bselect\b(.*?)\bfrom\b",
+        normalized,
+        flags=re.IGNORECASE | re.DOTALL,
+    ):
+        if re.search(
+            r"\b(?:[a-z_][a-z0-9_]*\.)?(?:label|labels_blob)\b",
+            match.group(1),
+            flags=re.IGNORECASE,
+        ):
+            return True
+    return False
+
+
+def _looks_like_label_artifact(value: str) -> bool:
+    lowered = value.casefold()
+    artifact_shape = any(character in lowered for character in ("/", "\\", ".", "_", "-"))
+    return artifact_shape and bool(
+        re.search(
+            r"(?:^|[/\\._-])(?:frozen[/\\._-]*)?(?:test[/\\._-]*)?labels?(?:$|[/\\._-])",
+            lowered,
+        )
+        or "labels_blob" in lowered
+    )
+
+
+def assert_source_label_isolation(sources: Mapping[str, str]) -> None:
+    """Reject statically reachable label loaders, projections, and artifacts."""
+    if not isinstance(sources, Mapping) or not sources:
+        raise ValueError("label isolation requires source mappings")
+    for name, source in sources.items():
+        if not isinstance(name, str) or not isinstance(source, str):
+            raise ValueError("label isolation sources must be strings")
+        try:
+            tree = ast.parse(source, filename=name)
+        except SyntaxError as error:
+            raise ValueError(f"label isolation cannot parse {name}") from error
+
+        constants: dict[str, str] = {}
+        denylist_nodes: set[ast.AST] = set()
+        guard_definition_nodes: set[ast.AST] = set()
+        for candidate in ast.walk(tree):
+            if (
+                isinstance(candidate, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and candidate.name
+                in {
+                    "_contains_projected_label",
+                    "_looks_like_label_artifact",
+                    "assert_source_label_isolation",
+                }
+            ):
+                guard_definition_nodes.update(ast.walk(candidate))
+        assignments = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.Assign, ast.AnnAssign))
+        ]
+        for _ in range(len(assignments) + 1):
+            changed = False
+            for assignment in assignments:
+                target = _assignment_name(assignment)
+                value_node = _assignment_value(assignment)
+                if target is None or value_node is None:
+                    continue
+                value = _static_string(value_node, constants)
+                if value is not None and constants.get(target) != value:
+                    constants[target] = value
+                    changed = True
+                if any(token in target.casefold() for token in ("forbidden", "denylist")):
+                    denylist_nodes.update(ast.walk(value_node))
+            if not changed:
+                break
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                imported = tuple(alias.name for alias in node.names)
+                module = node.module or ""
+                for imported_name in imported:
+                    qualified = f"{module}.{imported_name}".casefold()
+                    if (
+                        imported_name != "assert_label_free_sql_contract"
+                        and (
+                            re.search(r"(?:load|read|fetch|get).*labels?", qualified)
+                            or re.search(r"(?:^|\.)labels?(?:\.|$)", module.casefold())
+                        )
+                    ):
+                        raise ValueError(f"label loader import in {name}")
+            elif isinstance(node, ast.Import):
+                if any(
+                    re.search(r"(?:^|\.)labels?(?:\.|$)", alias.name.casefold())
+                    for alias in node.names
+                ):
+                    raise ValueError(f"label module import in {name}")
+            elif isinstance(node, ast.Attribute):
+                attribute_name = _call_name(node).casefold()
+                if re.search(
+                    r"(?:load|read|fetch|get).*labels?", attribute_name
+                ):
+                    raise ValueError(f"label loader attribute in {name}")
+
+            if isinstance(node, ast.Call):
+                called = _call_name(node.func).casefold()
+                if (
+                    "assert_label_free_sql_contract" not in called
+                    and re.search(r"(?:load|read|fetch|get).*labels?", called)
+                ):
+                    raise ValueError(f"label loader call in {name}")
+                if called == "getattr" and len(node.args) >= 2:
+                    attribute = _static_string(node.args[1], constants)
+                    if attribute and re.search(
+                        r"(?:load|read|fetch|get).*labels?", attribute.casefold()
+                    ):
+                        raise ValueError(f"aliased label loader in {name}")
+                filesystem_call = called.split(".")[-1] in {
+                    "open",
+                    "path",
+                    "stat",
+                    "lstat",
+                    "exists",
+                    "is_file",
+                    "read_bytes",
+                    "read_text",
+                    "resolve",
+                }
+                if filesystem_call:
+                    for argument in node.args:
+                        value = _static_string(argument, constants)
+                        if value is not None and _looks_like_label_artifact(value):
+                            raise ValueError(f"label filesystem path in {name}")
+
+            value = _static_string(node, constants)
+            if value is None:
+                continue
+            if (
+                node in guard_definition_nodes
+                or value == "assert_label_free_sql_contract"
+            ):
+                continue
+            if _contains_projected_label(value):
+                raise ValueError(f"label SQL projection in {name}")
+            if node not in denylist_nodes and _looks_like_label_artifact(value):
+                raise ValueError(f"frozen label artifact in {name}")
+
+
+def assert_exp419_label_isolation() -> None:
+    assert_label_free_sql_contract()
+    package = REPO_ROOT / "experiments/exp419_deterministic_cpu_parallel"
+    paths = tuple(sorted(package.glob("*.py"))) + (
+        REPO_ROOT / "scratch/benchmark_exp419_deterministic_cpu_parallel.py",
+        REPO_ROOT / "scratch/run_exp419_deterministic_cpu_parallel.py",
+    )
+    assert_source_label_isolation(
+        {str(path): path.read_text(encoding="utf-8") for path in paths}
+    )
+
+
 @dataclass(frozen=True)
 class FrozenBenchmarkInputs:
     context: Any
@@ -118,6 +315,182 @@ class FrozenBenchmarkInputs:
     costs: tuple[DatasetCost, ...]
     bootstrap: WorkerBootstrap
     paths: tuple[Path, ...]
+
+
+def _sha256_text(value: object, name: str) -> str:
+    if not (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"{name} must be a lowercase SHA-256")
+    return value
+
+
+@dataclass(frozen=True)
+class WorkerUtilization:
+    shard_index: int
+    pid: int
+    elapsed_seconds: float
+    wall_occupancy_fraction: float
+
+    def __post_init__(self) -> None:
+        if type(self.shard_index) is not int or self.shard_index < 0:
+            raise ValueError("worker utilization shard index is invalid")
+        if type(self.pid) is not int or self.pid <= 0:
+            raise ValueError("worker utilization PID is invalid")
+        if (
+            isinstance(self.elapsed_seconds, bool)
+            or not isinstance(self.elapsed_seconds, Real)
+            or not isfinite(self.elapsed_seconds)
+            or self.elapsed_seconds < 0.0
+        ):
+            raise ValueError("worker elapsed time must be finite and nonnegative")
+        if (
+            isinstance(self.wall_occupancy_fraction, bool)
+            or not isinstance(self.wall_occupancy_fraction, Real)
+            or not isfinite(self.wall_occupancy_fraction)
+            or not 0.0 <= self.wall_occupancy_fraction <= 1.0
+        ):
+            raise ValueError("worker utilization must be finite and within [0, 1]")
+
+
+def _worker_utilization_payload(worker: WorkerUtilization) -> dict[str, object]:
+    return {
+        "elapsed_seconds": worker.elapsed_seconds,
+        "pid": worker.pid,
+        "shard_index": worker.shard_index,
+        "wall_occupancy_fraction": worker.wall_occupancy_fraction,
+    }
+
+
+@dataclass(frozen=True)
+class TrialRuntimeMeasurement:
+    worker_count: int
+    wall_seconds: float
+    process_cpu_seconds: float
+    process_cpu_utilization: float
+    worker_utilization: tuple[WorkerUtilization, ...]
+    scientific_evidence_sha256: str
+    telemetry_sha256: str = ""
+    evidence_sha256: str = ""
+
+    def __post_init__(self) -> None:
+        if (
+            type(self.worker_count) is not int
+            or self.worker_count not in FROZEN_CONFIG.worker_candidates
+        ):
+            raise ValueError("runtime measurement worker count is not frozen")
+        if (
+            isinstance(self.wall_seconds, bool)
+            or not isinstance(self.wall_seconds, Real)
+            or not isfinite(self.wall_seconds)
+            or self.wall_seconds <= 0.0
+        ):
+            raise ValueError("runtime wall time must be finite and positive")
+        if (
+            isinstance(self.process_cpu_seconds, bool)
+            or not isinstance(self.process_cpu_seconds, Real)
+            or not isfinite(self.process_cpu_seconds)
+            or self.process_cpu_seconds < 0.0
+        ):
+            raise ValueError("process CPU time must be finite and nonnegative")
+        expected_cpu_utilization = self.process_cpu_seconds / (
+            self.wall_seconds * (self.worker_count + 1)
+        )
+        if (
+            isinstance(self.process_cpu_utilization, bool)
+            or not isinstance(self.process_cpu_utilization, Real)
+            or not isfinite(self.process_cpu_utilization)
+            or not 0.0 <= self.process_cpu_utilization <= 1.0
+            or not isclose(
+                self.process_cpu_utilization,
+                expected_cpu_utilization,
+                rel_tol=1e-12,
+                abs_tol=1e-12,
+            )
+        ):
+            raise ValueError("process CPU utilization is semantically inconsistent")
+        workers = tuple(self.worker_utilization)
+        if (
+            len(workers) != self.worker_count
+            or any(not isinstance(worker, WorkerUtilization) for worker in workers)
+            or tuple(worker.shard_index for worker in workers)
+            != tuple(range(self.worker_count))
+        ):
+            raise ValueError("worker utilization must cover exact frozen shards")
+        for worker in workers:
+            expected_occupancy = worker.elapsed_seconds / self.wall_seconds
+            if (
+                worker.elapsed_seconds > self.wall_seconds
+                or not isclose(
+                    worker.wall_occupancy_fraction,
+                    expected_occupancy,
+                    rel_tol=1e-12,
+                    abs_tol=1e-12,
+                )
+            ):
+                raise ValueError("worker utilization is semantically inconsistent")
+        scientific = _sha256_text(
+            self.scientific_evidence_sha256,
+            "scientific evidence",
+        )
+        telemetry_payload = {
+            "process_cpu_seconds": self.process_cpu_seconds,
+            "process_cpu_utilization": self.process_cpu_utilization,
+            "wall_seconds": self.wall_seconds,
+            "worker_count": self.worker_count,
+            "worker_utilization": [
+                _worker_utilization_payload(worker) for worker in workers
+            ],
+        }
+        telemetry = sha256(canonical_json_bytes(telemetry_payload)).hexdigest()
+        evidence = sha256(
+            canonical_json_bytes(
+                {
+                    "scientific_evidence_sha256": scientific,
+                    "telemetry_sha256": telemetry,
+                }
+            )
+        ).hexdigest()
+        if self.telemetry_sha256 and self.telemetry_sha256 != telemetry:
+            raise ValueError("runtime telemetry digest mismatch")
+        if self.evidence_sha256 and self.evidence_sha256 != evidence:
+            raise ValueError("runtime evidence digest mismatch")
+        object.__setattr__(self, "worker_utilization", workers)
+        object.__setattr__(self, "telemetry_sha256", telemetry)
+        object.__setattr__(self, "evidence_sha256", evidence)
+
+
+@dataclass(frozen=True)
+class MeasuredBenchmark:
+    benchmark: RuntimeBenchmark
+    runtime_measurements: tuple[TrialRuntimeMeasurement, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.benchmark, RuntimeBenchmark):
+            raise ValueError("measured benchmark requires RuntimeBenchmark")
+        measurements = tuple(self.runtime_measurements)
+        if (
+            tuple(item.worker_count for item in measurements)
+            != FROZEN_CONFIG.worker_candidates
+        ):
+            raise ValueError("measurements must cover exact frozen worker candidates")
+        for trial, measurement in zip(
+            self.benchmark.trials, measurements, strict=True
+        ):
+            if (
+                trial.worker_count != measurement.worker_count
+                or not isclose(
+                    trial.elapsed_seconds,
+                    measurement.wall_seconds,
+                    rel_tol=0.0,
+                    abs_tol=0.0,
+                )
+                or trial.evidence_sha256 != measurement.evidence_sha256
+            ):
+                raise ValueError("runtime measurement differs from benchmark trial")
+        object.__setattr__(self, "runtime_measurements", measurements)
 
 
 def costs_from_metadata_rows(
@@ -203,10 +576,15 @@ def prepare_trial_roots(root: Path) -> Mapping[int, Path]:
     }
 
 
+def _children_cpu_seconds() -> float:
+    usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return float(usage.ru_utime + usage.ru_stime)
+
+
 def _run_trials(
     frozen: FrozenBenchmarkInputs,
     trial_roots: Mapping[int, Path],
-) -> RuntimeBenchmark:
+) -> MeasuredBenchmark:
     selected = select_benchmark_datasets(frozen.costs)
     if not selected:
         raise ValueError("frozen benchmark subset is empty")
@@ -216,6 +594,7 @@ def _run_trials(
         raise ValueError("benchmark subset differs from frozen TRAIN-only selection")
 
     trials: list[RuntimeTrial] = []
+    measurements: list[TrialRuntimeMeasurement] = []
     reference_digests: dict[str, str] | None = None
     for worker_count in FROZEN_CONFIG.worker_candidates:
         root = trial_roots[worker_count]
@@ -230,9 +609,15 @@ def _run_trials(
             )
             for assignment in plan.assignments
         )
+        child_cpu_started = _children_cpu_seconds()
+        parent_cpu_started = process_time()
         started = monotonic()
         completions = spawn_workers(specs, frozen.bootstrap)
         elapsed = monotonic() - started
+        process_cpu_seconds = (
+            process_time() - parent_cpu_started
+            + _children_cpu_seconds() - child_cpu_started
+        )
         record_digests = {
             dataset: digest
             for completion in completions
@@ -256,7 +641,7 @@ def _run_trials(
             for completion in completions
             if completion.error
         ) or "incomplete benchmark trial"
-        evidence = sha256(
+        scientific_evidence = sha256(
             canonical_json_bytes(
                 {
                     "completed_datasets": completed,
@@ -264,6 +649,26 @@ def _run_trials(
                 }
             )
         ).hexdigest()
+        worker_utilization = tuple(
+            WorkerUtilization(
+                completion.shard_index,
+                completion.pid,
+                completion.elapsed_seconds,
+                completion.elapsed_seconds / elapsed,
+            )
+            for completion in sorted(
+                completions, key=lambda item: item.shard_index
+            )
+        )
+        measurement = TrialRuntimeMeasurement(
+            worker_count,
+            elapsed,
+            process_cpu_seconds,
+            process_cpu_seconds / (elapsed * (worker_count + 1)),
+            worker_utilization,
+            scientific_evidence,
+        )
+        measurements.append(measurement)
         parent_peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         if sys.platform == "darwin":
             parent_peak_bytes = int(parent_peak)
@@ -281,10 +686,13 @@ def _run_trials(
                 finite,
                 fallback,
                 selected,
-                evidence,
+                measurement.evidence_sha256,
             )
         )
-    return select_runtime(tuple(trials))
+    return MeasuredBenchmark(
+        select_runtime(tuple(trials)),
+        tuple(measurements),
+    )
 
 
 def _trial_payload(trial: RuntimeTrial) -> dict[str, object]:
@@ -308,6 +716,83 @@ def benchmark_payload(benchmark: RuntimeBenchmark) -> dict[str, object]:
         "benchmark_datasets": list(benchmark.benchmark_datasets),
         "sha256": benchmark.sha256,
     }
+
+
+def runtime_measurement_payload(
+    measurement: TrialRuntimeMeasurement,
+) -> dict[str, object]:
+    return {
+        "evidence_sha256": measurement.evidence_sha256,
+        "process_cpu_seconds": measurement.process_cpu_seconds,
+        "process_cpu_utilization": measurement.process_cpu_utilization,
+        "scientific_evidence_sha256":
+            measurement.scientific_evidence_sha256,
+        "telemetry_sha256": measurement.telemetry_sha256,
+        "wall_seconds": measurement.wall_seconds,
+        "worker_count": measurement.worker_count,
+        "worker_utilization": [
+            _worker_utilization_payload(worker)
+            for worker in measurement.worker_utilization
+        ],
+    }
+
+
+def runtime_measurements_from_payload(
+    payload: object,
+) -> tuple[TrialRuntimeMeasurement, ...]:
+    if not isinstance(payload, list):
+        raise ValueError("runtime measurements must be a list")
+    exact_fields = {
+        "evidence_sha256",
+        "process_cpu_seconds",
+        "process_cpu_utilization",
+        "scientific_evidence_sha256",
+        "telemetry_sha256",
+        "wall_seconds",
+        "worker_count",
+        "worker_utilization",
+    }
+    worker_fields = {
+        "elapsed_seconds",
+        "pid",
+        "shard_index",
+        "wall_occupancy_fraction",
+    }
+    measurements = []
+    for raw in payload:
+        if not isinstance(raw, dict) or set(raw) != exact_fields:
+            raise ValueError("runtime measurement fields are invalid")
+        raw_workers = raw["worker_utilization"]
+        if not isinstance(raw_workers, list):
+            raise ValueError("worker utilization must be a list")
+        workers = []
+        for raw_worker in raw_workers:
+            if (
+                not isinstance(raw_worker, dict)
+                or set(raw_worker) != worker_fields
+            ):
+                raise ValueError("worker utilization fields are invalid")
+            workers.append(
+                WorkerUtilization(
+                    raw_worker["shard_index"],
+                    raw_worker["pid"],
+                    raw_worker["elapsed_seconds"],
+                    raw_worker["wall_occupancy_fraction"],
+                )
+            )
+        measurements.append(
+            TrialRuntimeMeasurement(
+                raw["worker_count"],
+                raw["wall_seconds"],
+                raw["process_cpu_seconds"],
+                raw["process_cpu_utilization"],
+                tuple(workers),
+                raw["scientific_evidence_sha256"],
+                raw["telemetry_sha256"],
+                raw["evidence_sha256"],
+            )
+        )
+    return tuple(measurements)
 
 
 def benchmark_from_payload(payload: object) -> RuntimeBenchmark:
@@ -368,7 +853,12 @@ def write_benchmark_evidence(
     git_commit: str,
     context_sha256: str,
     trial_roots: Sequence[Path],
+    runtime_measurements: Sequence[TrialRuntimeMeasurement],
 ) -> None:
+    measured = MeasuredBenchmark(
+        benchmark,
+        tuple(runtime_measurements),
+    )
     roots = tuple(Path(root).resolve(strict=False) for root in trial_roots)
     if len(roots) != len(FROZEN_CONFIG.worker_candidates) or len(set(roots)) != len(roots):
         raise ValueError("benchmark evidence requires exact disjoint trial roots")
@@ -377,6 +867,10 @@ def write_benchmark_evidence(
         "benchmark": benchmark_payload(benchmark),
         "context_sha256": context_sha256,
         "git_commit": git_commit,
+        "runtime_measurements": [
+            runtime_measurement_payload(measurement)
+            for measurement in measured.runtime_measurements
+        ],
         "schema_version": 1,
         "trial_roots": [str(root) for root in roots],
         "worker_candidates": list(FROZEN_CONFIG.worker_candidates),
@@ -394,9 +888,14 @@ class BenchmarkStages:
     label_guard: Callable[[], Any]
     freeze_inputs: Callable[[str], FrozenBenchmarkInputs]
     prepare_roots: Callable[[], Mapping[int, Path]]
-    run_trials: Callable[[FrozenBenchmarkInputs, Mapping[int, Path]], RuntimeBenchmark]
+    run_trials: Callable[
+        [FrozenBenchmarkInputs, Mapping[int, Path]], MeasuredBenchmark
+    ]
     revalidate: Callable[[], Any]
-    write: Callable[[RuntimeBenchmark, str, FrozenBenchmarkInputs, Mapping[int, Path]], Any]
+    write: Callable[
+        [MeasuredBenchmark, str, FrozenBenchmarkInputs, Mapping[int, Path]],
+        Any,
+    ]
 
 
 def execute_benchmark(stages: BenchmarkStages) -> int:
@@ -404,9 +903,9 @@ def execute_benchmark(stages: BenchmarkStages) -> int:
     stages.label_guard()
     frozen = stages.freeze_inputs(head)
     roots = stages.prepare_roots()
-    benchmark = stages.run_trials(frozen, roots)
+    measured = stages.run_trials(frozen, roots)
     stages.revalidate()
-    stages.write(benchmark, head, frozen, roots)
+    stages.write(measured, head, frozen, roots)
     return 0
 
 
@@ -450,22 +949,23 @@ def _build_stages(args: argparse.Namespace) -> BenchmarkStages:
         verify_input_snapshots(*paths)
 
     def write(
-        benchmark: RuntimeBenchmark,
+        measured: MeasuredBenchmark,
         head: str,
         frozen: FrozenBenchmarkInputs,
         roots: Mapping[int, Path],
     ) -> None:
         write_benchmark_evidence(
             args.benchmark_root / BENCHMARK_FILE,
-            benchmark=benchmark,
+            benchmark=measured.benchmark,
             git_commit=head,
             context_sha256=_context_sha256(frozen.context),
             trial_roots=tuple(roots[count] for count in FROZEN_CONFIG.worker_candidates),
+            runtime_measurements=measured.runtime_measurements,
         )
 
     return BenchmarkStages(
         require_clean_git,
-        assert_label_free_sql_contract,
+        assert_exp419_label_isolation,
         freeze,
         lambda: prepare_trial_roots(args.benchmark_root),
         _run_trials,

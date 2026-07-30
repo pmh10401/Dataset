@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 import json
 import os
@@ -22,7 +22,6 @@ from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
     Exp417CheckpointStore,
 )
 from experiments.exp417_causal_multihorizon_shadow.inputs import (
-    assert_label_free_sql_contract,
     verify_input_snapshots,
 )
 from experiments.exp417_causal_multihorizon_shadow.reporting import (
@@ -30,6 +29,7 @@ from experiments.exp417_causal_multihorizon_shadow.reporting import (
 )
 from experiments.exp419_deterministic_cpu_parallel.config import FROZEN_CONFIG
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
+    DatasetCost,
     ParallelRoots,
     RuntimeBenchmark,
 )
@@ -37,7 +37,10 @@ from experiments.exp419_deterministic_cpu_parallel.coordinator import (
     _context_sha256,
     resume_or_run_parallel,
 )
-from experiments.exp419_deterministic_cpu_parallel.planner import build_shard_plan
+from experiments.exp419_deterministic_cpu_parallel.planner import (
+    build_shard_plan,
+    select_benchmark_datasets,
+)
 from experiments.exp419_deterministic_cpu_parallel.publication import publish_exp419
 from experiments.exp419_deterministic_cpu_parallel.reporting import (
     render_exp419_payloads,
@@ -45,40 +48,16 @@ from experiments.exp419_deterministic_cpu_parallel.reporting import (
 )
 from scratch.benchmark_exp419_deterministic_cpu_parallel import (
     FrozenBenchmarkInputs,
+    MeasuredBenchmark,
+    assert_exp419_label_isolation,
     benchmark_from_payload,
     freeze_benchmark_inputs,
     require_clean_git,
+    runtime_measurements_from_payload,
 )
 
 
 APPROVAL_PHRASE = "Exp419 1,117개 전체 label-free 병렬 실행 승인"
-
-
-def _existing_file(value: str) -> Path:
-    path = Path(value).expanduser().resolve(strict=False)
-    if not path.is_file():
-        raise argparse.ArgumentTypeError(f"file does not exist: {path}")
-    return path
-
-
-def _checkpoint_root(value: str) -> Path:
-    path = Path(value).expanduser().resolve(strict=False)
-    if path.exists() and not path.is_dir():
-        raise argparse.ArgumentTypeError(
-            "checkpoint path must be a directory or new path"
-        )
-    if not path.exists() and not path.parent.is_dir():
-        raise argparse.ArgumentTypeError("checkpoint parent must exist")
-    return path
-
-
-def _new_output(value: str) -> Path:
-    path = Path(value).expanduser().resolve(strict=False)
-    if path.exists():
-        raise argparse.ArgumentTypeError("output directory must be new")
-    if not path.parent.is_dir():
-        raise argparse.ArgumentTypeError("output parent must exist")
-    return path
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -91,14 +70,14 @@ def build_parser() -> argparse.ArgumentParser:
         allow_abbrev=False,
         formatter_class=lambda prog: argparse.HelpFormatter(prog, width=160),
     )
-    parser.add_argument("--database", type=_existing_file, required=True)
-    parser.add_argument("--exp291-prediction", type=_existing_file, required=True)
-    parser.add_argument("--exp291-manifest", type=_existing_file, required=True)
-    parser.add_argument("--exp292-prediction", type=_existing_file, required=True)
-    parser.add_argument("--exp292-manifest", type=_existing_file, required=True)
-    parser.add_argument("--benchmark-evidence", type=_existing_file, required=True)
-    parser.add_argument("--checkpoint-dir", type=_checkpoint_root, required=True)
-    parser.add_argument("--output-dir", type=_new_output, required=True)
+    parser.add_argument("--database", type=Path, required=True)
+    parser.add_argument("--exp291-prediction", type=Path, required=True)
+    parser.add_argument("--exp291-manifest", type=Path, required=True)
+    parser.add_argument("--exp292-prediction", type=Path, required=True)
+    parser.add_argument("--exp292-manifest", type=Path, required=True)
+    parser.add_argument("--benchmark-evidence", type=Path, required=True)
+    parser.add_argument("--checkpoint-dir", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
     return parser
 
 
@@ -150,6 +129,7 @@ def verify_benchmark_evidence(
     *,
     expected_git_commit: str,
     expected_context_sha256: str,
+    expected_costs: Sequence[DatasetCost],
 ) -> RuntimeBenchmark:
     payload = _read_json_regular(Path(path))
     exact_fields = {
@@ -157,6 +137,7 @@ def verify_benchmark_evidence(
         "benchmark",
         "context_sha256",
         "git_commit",
+        "runtime_measurements",
         "schema_version",
         "trial_roots",
         "worker_candidates",
@@ -182,6 +163,15 @@ def verify_benchmark_evidence(
     ):
         raise ValueError("benchmark evidence trial roots are invalid")
     benchmark = benchmark_from_payload(payload["benchmark"])
+    measurements = runtime_measurements_from_payload(
+        payload["runtime_measurements"]
+    )
+    MeasuredBenchmark(benchmark, measurements)
+    expected_datasets = select_benchmark_datasets(tuple(expected_costs))
+    if benchmark.benchmark_datasets != expected_datasets:
+        raise ValueError(
+            "benchmark datasets differ from the frozen TRAIN-only subset"
+        )
     if (
         benchmark.status != "qualified_parallel_runtime"
         or benchmark.selected_worker_count not in FROZEN_CONFIG.worker_candidates[1:]
@@ -265,6 +255,7 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
         frozen = freeze_benchmark_inputs(args, head)
         state["head"] = head
         state["context_sha256"] = _context_sha256(frozen.context)
+        state["costs"] = frozen.costs
         return frozen
 
     def verify_benchmark(
@@ -275,6 +266,7 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
             args.benchmark_evidence,
             expected_git_commit=head,
             expected_context_sha256=_context_sha256(frozen.context),
+            expected_costs=frozen.costs,
         )
         state["benchmark_sha256"] = benchmark.sha256
         return benchmark
@@ -323,6 +315,7 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
             args.benchmark_evidence,
             expected_git_commit=state["head"],
             expected_context_sha256=state["context_sha256"],
+            expected_costs=state["costs"],
         )
         if observed.sha256 != state["benchmark_sha256"]:
             raise ValueError("Exp419 benchmark evidence changed before publication")
@@ -366,7 +359,7 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
 
     return OfficialStages(
         require_clean_git,
-        assert_label_free_sql_contract,
+        assert_exp419_label_isolation,
         freeze,
         verify_benchmark,
         open_roots,
