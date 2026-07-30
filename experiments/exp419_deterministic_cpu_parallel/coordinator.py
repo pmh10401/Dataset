@@ -64,6 +64,65 @@ _REGULAR_READ_FLAGS = (
 )
 
 
+class _RunRootTransaction:
+    """Pin one run-root inode and final pathname for one coordinator call."""
+
+    def __init__(self, root: Path) -> None:
+        if not isinstance(root, Path):
+            raise ValueError("run root must be a Path")
+        self.path = Path(os.path.abspath(root))
+        try:
+            initial = os.lstat(self.path)
+        except FileNotFoundError:
+            self.path.mkdir(parents=True)
+            initial = os.lstat(self.path)
+        if not stat.S_ISDIR(initial.st_mode):
+            raise ValueError("run root must be a no-follow directory")
+        self.descriptor = os.open(self.path, _DIRECTORY_FLAGS)
+        opened = os.fstat(self.descriptor)
+        self.identity = (opened.st_dev, opened.st_ino)
+        if self.identity != (initial.st_dev, initial.st_ino):
+            os.close(self.descriptor)
+            raise ValueError("run root identity changed while opening")
+        self.resolved_path = self.path.resolve(strict=True)
+        try:
+            self.verify()
+        except Exception:
+            os.close(self.descriptor)
+            raise
+
+    def verify(self) -> None:
+        try:
+            observed = os.lstat(self.path)
+            opened = os.fstat(self.descriptor)
+            resolved = self.path.resolve(strict=True)
+        except (FileNotFoundError, OSError) as error:
+            raise ValueError(
+                "run root identity or final pathname changed"
+            ) from error
+        if (
+            not stat.S_ISDIR(observed.st_mode)
+            or not stat.S_ISDIR(opened.st_mode)
+            or (observed.st_dev, observed.st_ino) != self.identity
+            or (opened.st_dev, opened.st_ino) != self.identity
+            or resolved != self.resolved_path
+        ):
+            raise ValueError("run root identity or final pathname changed")
+
+    def verify_checkpoint_path(self, path: Path) -> Path:
+        self.verify()
+        resolved = path.resolve(strict=False)
+        if (
+            resolved == self.resolved_path
+            or not resolved.is_relative_to(self.resolved_path)
+        ):
+            raise ValueError("checkpoint path escaped the pinned run root")
+        return resolved
+
+    def close(self) -> None:
+        os.close(self.descriptor)
+
+
 def _provenance_payload(provenance: object) -> object:
     to_payload = getattr(provenance, "to_payload", None)
     return to_payload() if callable(to_payload) else provenance
@@ -160,6 +219,8 @@ def _freeze_plan_binding(
     roots: ParallelRoots,
     plan: ShardPlan,
     context: FrozenRunContext,
+    *,
+    transaction: _RunRootTransaction | None = None,
 ) -> str:
     if not isinstance(roots, ParallelRoots):
         raise ValueError("roots must be ParallelRoots")
@@ -167,113 +228,173 @@ def _freeze_plan_binding(
         raise ValueError("context must be FrozenRunContext")
     if tuple(sorted(roots.worker_roots)) != tuple(range(plan.worker_count)):
         raise ValueError("worker roots do not cover the exact shard plan")
-    context_sha256 = _context_sha256(context)
-    parent = roots.root.resolve(strict=False)
-    children = {
-        "canonical": roots.canonical_root.resolve(strict=False),
-        **{
-            f"worker-{index}": path.resolve(strict=False)
-            for index, path in roots.worker_roots.items()
-        },
-    }
-    if any(
-        path == parent or not path.is_relative_to(parent)
-        for path in children.values()
-    ):
-        raise ValueError("checkpoint roots must be distinct children of the run root")
-    child_paths = tuple(children.values())
-    identities = tuple(_filesystem_identity(path) for path in child_paths)
-    folded = tuple(_casefolded_path_parts(path) for path in child_paths)
-    for index, path in enumerate(child_paths):
-        for other_index, other in enumerate(
-            child_paths[index + 1 :], start=index + 1
-        ):
-            if (
-                path == other
-                or _parts_are_nested(folded[index], folded[other_index])
-                or (
-                    identities[index] is not None
-                    and identities[index] == identities[other_index]
-                )
-            ):
-                raise ValueError(
-                    "checkpoint roots contain a Unicode/casefold or inode alias"
-                )
-
-    roots.root.mkdir(parents=True, exist_ok=True)
-    payload = canonical_json_bytes(
-        {
-            "canonical_root": str(children["canonical"]),
-            "context_sha256": context_sha256,
-            "frozen_config": asdict(FROZEN_CONFIG),
-            "plan_sha256": plan.sha256,
-            "runtime_versions": dict(context.runtime_versions),
-            "start_method": FROZEN_CONFIG.start_method,
-            "thread_environment": dict(_THREAD_ENVIRONMENT),
-            "worker_roots": {
-                str(index): str(
-                    roots.worker_roots[index].resolve(strict=False)
-                )
-                for index in range(plan.worker_count)
+    owned_transaction = transaction is None
+    active = transaction or _RunRootTransaction(roots.root)
+    try:
+        active.verify()
+        if Path(os.path.abspath(roots.root)) != active.path:
+            raise ValueError("run root transaction path mismatch")
+        context_sha256 = _context_sha256(context)
+        parent = active.resolved_path
+        children = {
+            "canonical": roots.canonical_root.resolve(strict=False),
+            **{
+                f"worker-{index}": path.resolve(strict=False)
+                for index, path in roots.worker_roots.items()
             },
         }
-    ) + b"\n"
-    binding_sha256 = sha256(payload).hexdigest()
-    root_descriptor = os.open(roots.root, _DIRECTORY_FLAGS)
-    try:
-        try:
-            descriptor = os.open(
-                _BINDING_FILE,
-                _REGULAR_READ_FLAGS,
-                dir_fd=root_descriptor,
+        if any(
+            path == parent or not path.is_relative_to(parent)
+            for path in children.values()
+        ):
+            raise ValueError(
+                "checkpoint roots must be distinct children of the run root"
             )
-        except FileNotFoundError:
+        child_paths = tuple(children.values())
+        identities = tuple(_filesystem_identity(path) for path in child_paths)
+        folded = tuple(_casefolded_path_parts(path) for path in child_paths)
+        for index, path in enumerate(child_paths):
+            for other_index, other in enumerate(
+                child_paths[index + 1 :], start=index + 1
+            ):
+                if (
+                    path == other
+                    or _parts_are_nested(folded[index], folded[other_index])
+                    or (
+                        identities[index] is not None
+                        and identities[index] == identities[other_index]
+                    )
+                ):
+                    raise ValueError(
+                        "checkpoint roots contain a Unicode/casefold or inode alias"
+                    )
+
+        payload = canonical_json_bytes(
+            {
+                "canonical_root": str(children["canonical"]),
+                "context_sha256": context_sha256,
+                "frozen_config": asdict(FROZEN_CONFIG),
+                "plan_sha256": plan.sha256,
+                "run_root": str(active.resolved_path),
+                "run_root_identity": list(active.identity),
+                "runtime_versions": dict(context.runtime_versions),
+                "start_method": FROZEN_CONFIG.start_method,
+                "thread_environment": dict(_THREAD_ENVIRONMENT),
+                "worker_roots": {
+                    str(index): str(
+                        roots.worker_roots[index].resolve(strict=False)
+                    )
+                    for index in range(plan.worker_count)
+                },
+            }
+        ) + b"\n"
+        binding_sha256 = sha256(payload).hexdigest()
+        observed = _read_optional_root_file(active, _BINDING_FILE)
+        if observed is None:
             for path in child_paths:
-                if _nonempty_checkpoint_root(path):
+                if _nonempty_checkpoint_root(path, active):
                     raise ValueError(
                         "unbound prior checkpoint evidence cannot be adopted"
                     )
-            descriptor = os.open(
-                _BINDING_FILE,
-                os.O_WRONLY
-                | os.O_CREAT
-                | os.O_EXCL
-                | getattr(os, "O_CLOEXEC", 0)
-                | getattr(os, "O_NOFOLLOW", 0),
-                0o600,
-                dir_fd=root_descriptor,
-            )
-            try:
-                _write_all(descriptor, payload)
-                os.fsync(descriptor)
-            finally:
-                os.close(descriptor)
-            os.fsync(root_descriptor)
-            return binding_sha256
-        except OSError as error:
-            raise ValueError(
-                "frozen shard-plan binding must be a regular no-follow file"
-            ) from error
-        try:
-            metadata = os.fstat(descriptor)
-            if not stat.S_ISREG(metadata.st_mode):
-                raise ValueError(
-                    "frozen shard-plan binding must be a regular file"
-                )
-            observed = _read_all(descriptor)
-        finally:
-            os.close(descriptor)
+            _publish_binding_no_replace(active, payload)
+            observed = _read_optional_root_file(active, _BINDING_FILE)
+            if observed is None:
+                raise ValueError("frozen shard-plan binding was not published")
         if observed != payload:
             raise ValueError("frozen shard-plan binding mismatch")
+        active.verify()
         return binding_sha256
     finally:
-        os.close(root_descriptor)
+        if owned_transaction:
+            active.close()
 
 
-def _nonempty_checkpoint_root(path: Path) -> bool:
+def _read_optional_root_file(
+    transaction: _RunRootTransaction,
+    name: str,
+) -> bytes | None:
+    transaction.verify()
+    try:
+        descriptor = os.open(
+            name,
+            _REGULAR_READ_FLAGS,
+            dir_fd=transaction.descriptor,
+        )
+    except FileNotFoundError:
+        transaction.verify()
+        return None
+    except OSError as error:
+        raise ValueError(
+            f"{name} must be a regular no-follow file"
+        ) from error
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ValueError(f"{name} must be a regular file")
+        observed = _read_all(descriptor)
+    finally:
+        os.close(descriptor)
+    transaction.verify()
+    return observed
+
+
+def _publish_binding_no_replace(
+    transaction: _RunRootTransaction,
+    payload: bytes,
+) -> None:
+    temporary = f".{_BINDING_FILE}.{uuid.uuid4().hex}"
+    descriptor = None
+    linked = False
+    try:
+        descriptor = os.open(
+            temporary,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=transaction.descriptor,
+        )
+        _write_all(descriptor, payload)
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = None
+        transaction.verify()
+        try:
+            os.link(
+                temporary,
+                _BINDING_FILE,
+                src_dir_fd=transaction.descriptor,
+                dst_dir_fd=transaction.descriptor,
+                follow_symlinks=False,
+            )
+            linked = True
+        except FileExistsError:
+            pass
+        if linked:
+            os.fsync(transaction.descriptor)
+        transaction.verify()
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        try:
+            os.unlink(temporary, dir_fd=transaction.descriptor)
+        except FileNotFoundError:
+            pass
+        os.fsync(transaction.descriptor)
+        transaction.verify()
+
+
+def _nonempty_checkpoint_root(
+    path: Path,
+    transaction: _RunRootTransaction,
+) -> bool:
+    transaction.verify_checkpoint_path(path)
     try:
         metadata = os.lstat(path)
     except FileNotFoundError:
+        transaction.verify()
         return False
     if not stat.S_ISDIR(metadata.st_mode):
         raise ValueError("checkpoint root must be a no-follow directory")
@@ -285,9 +406,11 @@ def _nonempty_checkpoint_root(path: Path) -> bool:
             metadata.st_ino,
         ):
             raise ValueError("checkpoint root identity changed")
-        return bool(os.listdir(descriptor))
+        nonempty = bool(os.listdir(descriptor))
     finally:
         os.close(descriptor)
+    transaction.verify_checkpoint_path(path)
+    return nonempty
 
 
 def _write_all(descriptor: int, payload: bytes) -> None:
@@ -357,9 +480,15 @@ def _evidence_bytes(
             "attempts": [
                 {
                     "attempt_id": attempt["attempt_id"],
-                    "completions": [
-                        _completion_payload(completion)
-                        for completion in attempt["completions"]
+                    "workers": [
+                        {
+                            "checkpoint_root": worker["checkpoint_root"],
+                            "completion": _completion_payload(
+                                worker["completion"]
+                            ),
+                            "inventory": list(worker["inventory"]),
+                        }
+                        for worker in attempt["workers"]
                     ],
                     "parent_peak_rss_bytes": attempt[
                         "parent_peak_rss_bytes"
@@ -371,7 +500,7 @@ def _evidence_bytes(
                 for attempt in attempts
             ],
             "binding_sha256": binding_sha256,
-            "schema_version": 1,
+            "schema_version": 2,
         }
     ) + b"\n"
 
@@ -379,30 +508,18 @@ def _evidence_bytes(
 def _load_runtime_evidence(
     roots: ParallelRoots,
     binding_sha256: str,
+    *,
+    transaction: _RunRootTransaction | None = None,
 ) -> tuple[Mapping[str, object], ...]:
-    root_descriptor = os.open(roots.root, _DIRECTORY_FLAGS)
+    owned_transaction = transaction is None
+    active = transaction or _RunRootTransaction(roots.root)
     try:
-        try:
-            descriptor = os.open(
-                _EVIDENCE_FILE,
-                _REGULAR_READ_FLAGS,
-                dir_fd=root_descriptor,
-            )
-        except FileNotFoundError:
+        raw = _read_optional_root_file(active, _EVIDENCE_FILE)
+        if raw is None:
             return ()
-        except OSError as error:
-            raise ValueError(
-                "runtime evidence must be a regular no-follow file"
-            ) from error
-        try:
-            metadata = os.fstat(descriptor)
-            if not stat.S_ISREG(metadata.st_mode):
-                raise ValueError("runtime evidence must be a regular file")
-            raw = _read_all(descriptor)
-        finally:
-            os.close(descriptor)
     finally:
-        os.close(root_descriptor)
+        if owned_transaction:
+            active.close()
     try:
         payload = json.loads(raw)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -414,7 +531,7 @@ def _load_runtime_evidence(
             "binding_sha256",
             "schema_version",
         }
-        or payload["schema_version"] != 1
+        or payload["schema_version"] != 2
         or payload["binding_sha256"] != binding_sha256
         or not isinstance(payload["attempts"], list)
     ):
@@ -424,9 +541,9 @@ def _load_runtime_evidence(
     for raw_attempt in payload["attempts"]:
         if not isinstance(raw_attempt, dict) or set(raw_attempt) != {
             "attempt_id",
-            "completions",
             "parent_peak_rss_bytes",
             "peak_total_rss_bytes",
+            "workers",
         }:
             raise ValueError("runtime attempt evidence fields are invalid")
         attempt_id = raw_attempt["attempt_id"]
@@ -440,16 +557,51 @@ def _load_runtime_evidence(
             or parent_rss < 0
             or type(peak_total) is not int
             or peak_total < 0
-            or not isinstance(raw_attempt["completions"], list)
-            or not raw_attempt["completions"]
+            or not isinstance(raw_attempt["workers"], list)
+            or not raw_attempt["workers"]
         ):
             raise ValueError("runtime attempt evidence is invalid")
-        completions = tuple(
-            _completion_from_payload(item)
-            for item in raw_attempt["completions"]
-        )
+        workers = []
+        for raw_worker in raw_attempt["workers"]:
+            if not isinstance(raw_worker, dict) or set(raw_worker) != {
+                "checkpoint_root",
+                "completion",
+                "inventory",
+            }:
+                raise ValueError(
+                    "runtime attempt worker evidence fields are invalid"
+                )
+            checkpoint_root = raw_worker["checkpoint_root"]
+            inventory = raw_worker["inventory"]
+            if (
+                not isinstance(checkpoint_root, str)
+                or not checkpoint_root
+                or not isinstance(inventory, list)
+                or not inventory
+                or any(
+                    not isinstance(name, str) or not name
+                    for name in inventory
+                )
+                or len(inventory) != len(set(inventory))
+            ):
+                raise ValueError(
+                    "runtime attempt worker evidence is invalid"
+                )
+            workers.append(
+                MappingProxyType(
+                    {
+                        "checkpoint_root": checkpoint_root,
+                        "completion": _completion_from_payload(
+                            raw_worker["completion"]
+                        ),
+                        "inventory": tuple(inventory),
+                    }
+                )
+            )
+        frozen_workers = tuple(workers)
         if peak_total != parent_rss + sum(
-            item.peak_rss_bytes for item in completions
+            worker["completion"].peak_rss_bytes
+            for worker in frozen_workers
         ):
             raise ValueError("runtime attempt memory evidence is invalid")
         seen_ids.add(attempt_id)
@@ -457,9 +609,9 @@ def _load_runtime_evidence(
             MappingProxyType(
                 {
                     "attempt_id": attempt_id,
-                    "completions": completions,
                     "parent_peak_rss_bytes": parent_rss,
                     "peak_total_rss_bytes": peak_total,
+                    "workers": frozen_workers,
                 }
             )
         )
@@ -473,12 +625,16 @@ def _replace_runtime_evidence(
     roots: ParallelRoots,
     binding_sha256: str,
     attempts: Sequence[Mapping[str, object]],
+    *,
+    transaction: _RunRootTransaction | None = None,
 ) -> None:
     payload = _evidence_bytes(binding_sha256, attempts)
-    root_descriptor = os.open(roots.root, _DIRECTORY_FLAGS)
+    owned_transaction = transaction is None
+    active = transaction or _RunRootTransaction(roots.root)
     temporary = f".{_EVIDENCE_FILE}.{uuid.uuid4().hex}"
     descriptor = None
     try:
+        active.verify()
         descriptor = os.open(
             temporary,
             os.O_WRONLY
@@ -487,54 +643,126 @@ def _replace_runtime_evidence(
             | getattr(os, "O_CLOEXEC", 0)
             | getattr(os, "O_NOFOLLOW", 0),
             0o600,
-            dir_fd=root_descriptor,
+            dir_fd=active.descriptor,
         )
         _write_all(descriptor, payload)
         os.fsync(descriptor)
         os.close(descriptor)
         descriptor = None
+        active.verify()
         os.rename(
             temporary,
             _EVIDENCE_FILE,
-            src_dir_fd=root_descriptor,
-            dst_dir_fd=root_descriptor,
+            src_dir_fd=active.descriptor,
+            dst_dir_fd=active.descriptor,
         )
-        os.fsync(root_descriptor)
+        os.fsync(active.descriptor)
+        active.verify()
     finally:
         if descriptor is not None:
             os.close(descriptor)
         try:
-            os.unlink(temporary, dir_fd=root_descriptor)
+            os.unlink(temporary, dir_fd=active.descriptor)
         except FileNotFoundError:
             pass
-        os.close(root_descriptor)
+        if owned_transaction:
+            active.close()
+
+
+def _attempt_record(
+    roots: ParallelRoots,
+    plan: ShardPlan,
+    attempt_id: str,
+    specs: Sequence[WorkerSpec],
+    completions: Sequence[WorkerCompletion],
+    parent_peak_rss_bytes: int,
+) -> Mapping[str, object]:
+    if not isinstance(attempt_id, str) or not attempt_id:
+        raise ValueError("runtime attempt id is invalid")
+    frozen_specs = tuple(specs)
+    frozen_completions = tuple(completions)
+    completion_by_shard = {
+        completion.shard_index: completion
+        for completion in frozen_completions
+    }
+    if (
+        len(completion_by_shard) != len(frozen_completions)
+        or tuple(sorted(completion_by_shard))
+        != tuple(spec.shard.shard_index for spec in frozen_specs)
+    ):
+        raise ValueError("worker completions do not cover scheduled shards")
+    workers = []
+    for spec in frozen_specs:
+        expected_root = (
+            roots.root
+            / ".attempts"
+            / plan.sha256
+            / attempt_id
+            / f"worker-{spec.shard.shard_index}"
+        ).resolve(strict=False)
+        observed_root = spec.checkpoint_root.resolve(strict=False)
+        if observed_root != expected_root:
+            raise ValueError("runtime attempt root is not plan-bound")
+        workers.append(
+            MappingProxyType(
+                {
+                    "checkpoint_root": str(observed_root),
+                    "completion": completion_by_shard[
+                        spec.shard.shard_index
+                    ],
+                    "inventory": spec.shard.datasets,
+                }
+            )
+        )
+    frozen_workers = tuple(workers)
+    return MappingProxyType(
+        {
+            "attempt_id": attempt_id,
+            "parent_peak_rss_bytes": parent_peak_rss_bytes,
+            "peak_total_rss_bytes": parent_peak_rss_bytes
+            + sum(
+                worker["completion"].peak_rss_bytes
+                for worker in frozen_workers
+            ),
+            "workers": frozen_workers,
+        }
+    )
 
 
 def _append_runtime_evidence(
     roots: ParallelRoots,
+    plan: ShardPlan,
     binding_sha256: str,
     attempts: Sequence[Mapping[str, object]],
     attempt_id: str,
+    specs: Sequence[WorkerSpec],
     completions: Sequence[WorkerCompletion],
     parent_peak_rss_bytes: int,
+    *,
+    transaction: _RunRootTransaction | None = None,
 ) -> tuple[Mapping[str, object], ...]:
-    frozen_completions = tuple(completions)
-    attempt = MappingProxyType(
-        {
-            "attempt_id": attempt_id,
-            "completions": frozen_completions,
-            "parent_peak_rss_bytes": parent_peak_rss_bytes,
-            "peak_total_rss_bytes": parent_peak_rss_bytes
-            + sum(item.peak_rss_bytes for item in frozen_completions),
-        }
+    attempt = _attempt_record(
+        roots,
+        plan,
+        attempt_id,
+        specs,
+        completions,
+        parent_peak_rss_bytes,
     )
     updated = (*attempts, attempt)
-    _replace_runtime_evidence(roots, binding_sha256, updated)
+    _validated_evidence_digests(plan, roots, updated)
+    _replace_runtime_evidence(
+        roots,
+        binding_sha256,
+        updated,
+        transaction=transaction,
+    )
     return tuple(updated)
 
 
 def _validated_evidence_digests(
     plan: ShardPlan,
+    roots: ParallelRoots,
     attempts: Sequence[Mapping[str, object]],
 ) -> Mapping[str, str]:
     assignments = {
@@ -543,21 +771,56 @@ def _validated_evidence_digests(
     }
     digests = {}
     for attempt in attempts:
-        for completion in attempt["completions"]:
+        seen_shards = set()
+        for worker in attempt["workers"]:
+            completion = worker["completion"]
             assignment = assignments.get(completion.shard_index)
             if assignment is None:
                 raise ValueError("runtime evidence contains an unknown shard")
-            if dict(completion.thread_environment) != dict(
-                _THREAD_ENVIRONMENT
+            if completion.shard_index in seen_shards:
+                raise ValueError(
+                    "runtime attempt contains a duplicate shard"
+                )
+            seen_shards.add(completion.shard_index)
+            inventory = worker["inventory"]
+            inventory_set = set(inventory)
+            if inventory != tuple(
+                name
+                for name in assignment.datasets
+                if name in inventory_set
             ):
+                raise ValueError(
+                    "runtime attempt inventory is not original-shard ordered"
+                )
+            expected_root = (
+                roots.root
+                / ".attempts"
+                / plan.sha256
+                / attempt["attempt_id"]
+                / f"worker-{completion.shard_index}"
+            ).resolve(strict=False)
+            if Path(worker["checkpoint_root"]) != expected_root:
+                raise ValueError(
+                    "runtime attempt root is not plan-bound"
+                )
+            completed = completion.completed_datasets
+            if completed != inventory[: len(completed)]:
+                raise ValueError(
+                    "runtime completion is not an atomic dataset prefix"
+                )
+            if (
+                completion.status == "completed"
+                and completed != inventory
+            ):
+                raise ValueError(
+                    "completed runtime evidence has incomplete inventory"
+                )
+            if completed and dict(
+                completion.thread_environment
+            ) != dict(_THREAD_ENVIRONMENT):
                 raise ValueError(
                     "runtime evidence thread environment mismatch"
                 )
-            if any(
-                name not in assignment.datasets
-                for name in completion.completed_datasets
-            ):
-                raise ValueError("runtime evidence contains a wrong-shard record")
             for name, digest in completion.record_digests.items():
                 if name in digests:
                     raise ValueError(
@@ -577,10 +840,11 @@ def _aggregate_evidence_completions(
     result = []
     for assignment in plan.assignments:
         items = tuple(
-            completion
+            worker["completion"]
             for attempt in attempts
-            for completion in attempt["completions"]
-            if completion.shard_index == assignment.shard_index
+            for worker in attempt["workers"]
+            if worker["completion"].shard_index
+            == assignment.shard_index
         )
         covered = {
             name
@@ -628,21 +892,28 @@ def _peak_total_rss_bytes(
 
 def _validated_partial_store_state(
     store: object,
+    *,
+    transaction: _RunRootTransaction | None = None,
+    root: Path | None = None,
 ) -> tuple[Mapping[str, str], Mapping[str, object]]:
+    if (transaction is None) != (root is None):
+        raise ValueError(
+            "checkpoint transaction and root must be provided together"
+        )
+    if transaction is not None:
+        transaction.verify_checkpoint_path(root)
     first = store.completed_record_digests()
+    if transaction is not None:
+        transaction.verify_checkpoint_path(root)
     completed = store.load_completed()
+    if transaction is not None:
+        transaction.verify_checkpoint_path(root)
     second = store.completed_record_digests()
+    if transaction is not None:
+        transaction.verify_checkpoint_path(root)
     if dict(first) != dict(second) or set(completed) != set(first):
         raise ValueError("checkpoint changed during coordinator validation")
     return first, completed
-
-
-def _store_has_terminal_results(store: object) -> bool:
-    _, completed = _validated_partial_store_state(store)
-    return any(
-        isinstance(result.decision_evidence, DatasetTerminalEvidence)
-        for result in completed.values()
-    )
 
 
 def _reconstruct_global_summary(
@@ -705,14 +976,29 @@ def _failed_parallel_run(
 def _validate_partial_worker_stores(
     plan: ShardPlan,
     stores: Mapping[int, object],
+    *,
+    transaction: _RunRootTransaction | None = None,
+    roots: Mapping[int, Path] | None = None,
 ) -> dict[int, Mapping[str, str]]:
+    if (transaction is None) != (roots is None):
+        raise ValueError(
+            "worker transaction and roots must be provided together"
+        )
     seen: set[str] = set()
     observed: dict[int, Mapping[str, str]] = {}
     for assignment in plan.assignments:
         store = stores[assignment.shard_index]
         if getattr(store, "expected_datasets", None) != assignment.datasets:
             raise ValueError("worker store inventory does not match its shard")
-        digests, completed = _validated_partial_store_state(store)
+        digests, completed = _validated_partial_store_state(
+            store,
+            transaction=transaction,
+            root=(
+                None
+                if roots is None
+                else roots[assignment.shard_index]
+            ),
+        )
         if set(digests) - set(assignment.datasets):
             raise ValueError("worker store contains a wrong-shard record")
         if seen & set(digests):
@@ -725,6 +1011,105 @@ def _validate_partial_worker_stores(
             raise ValueError("worker store contains terminal dataset evidence")
         observed[assignment.shard_index] = digests
     return observed
+
+
+def _open_checkpoint_store_checked(
+    transaction: _RunRootTransaction,
+    root: Path,
+    provenance: object,
+    datasets: tuple[str, ...],
+) -> Exp417CheckpointStore:
+    transaction.verify_checkpoint_path(root)
+    store = _open_checkpoint_store(root, provenance, datasets)
+    transaction.verify_checkpoint_path(root)
+    return store
+
+
+def _validate_and_recover_attempts(
+    plan: ShardPlan,
+    roots: ParallelRoots,
+    bootstrap: WorkerBootstrap,
+    attempts: Sequence[Mapping[str, object]],
+    transaction: _RunRootTransaction,
+    *,
+    worker_stores: Mapping[int, object] | None,
+) -> None:
+    _validated_evidence_digests(plan, roots, attempts)
+    for attempt in attempts:
+        for worker in attempt["workers"]:
+            completion = worker["completion"]
+            source_root = (
+                roots.root
+                / ".attempts"
+                / plan.sha256
+                / attempt["attempt_id"]
+                / f"worker-{completion.shard_index}"
+            )
+            inventory = worker["inventory"]
+            source = _open_checkpoint_store_checked(
+                transaction,
+                source_root,
+                bootstrap.provenance,
+                inventory,
+            )
+            on_disk, completed = _validated_partial_store_state(
+                source,
+                transaction=transaction,
+                root=source_root,
+            )
+            transaction.verify_checkpoint_path(source_root)
+            if tuple(completion.completed_datasets) != tuple(
+                name for name in inventory if name in on_disk
+            ):
+                raise ValueError(
+                    "runtime attempt dataset evidence differs from its checkpoint"
+                )
+            if dict(completion.record_digests) != dict(on_disk):
+                raise ValueError(
+                    "runtime attempt digest evidence differs from its checkpoint"
+                )
+            if set(completed) != set(completion.completed_datasets):
+                raise ValueError(
+                    "runtime attempt loaded evidence differs from its checkpoint"
+                )
+            if any(
+                isinstance(
+                    result.decision_evidence,
+                    DatasetTerminalEvidence,
+                )
+                for result in completed.values()
+            ):
+                raise ValueError(
+                    "runtime attempt contains terminal dataset evidence"
+                )
+            if worker_stores is None:
+                continue
+            target_root = roots.worker_roots[completion.shard_index]
+            target = worker_stores[completion.shard_index]
+            target_digests, _ = _validated_partial_store_state(
+                target,
+                transaction=transaction,
+                root=target_root,
+            )
+            transaction.verify_checkpoint_path(target_root)
+            for dataset in completion.completed_datasets:
+                if dataset in target_digests:
+                    if target_digests[dataset] != on_disk[dataset]:
+                        raise ValueError(
+                            "recovered shard digest differs from attempt evidence"
+                        )
+                    continue
+                imported = target.import_validated_dataset(source, dataset)
+                transaction.verify_checkpoint_path(target_root)
+                transaction.verify_checkpoint_path(source_root)
+                if imported != on_disk[dataset]:
+                    raise ValueError(
+                        "recovered shard import digest mismatch"
+                    )
+                target_digests = {
+                    **target_digests,
+                    dataset: imported,
+                }
 
 
 def resume_or_run_parallel(
@@ -741,23 +1126,44 @@ def resume_or_run_parallel(
     if not isinstance(bootstrap, WorkerBootstrap):
         raise ValueError("bootstrap must be a WorkerBootstrap")
     started = monotonic()
+    transaction = None
     try:
         if plan.population != context.datasets:
             raise ValueError("shard plan does not match the frozen context")
         context_digest = _context_sha256(context)
         if bootstrap.expected_context_sha256 != context_digest:
             raise ValueError("bootstrap context digest mismatch")
-        binding_sha256 = _freeze_plan_binding(roots, plan, context)
-        attempts = _load_runtime_evidence(roots, binding_sha256)
-        evidence_digests = _validated_evidence_digests(plan, attempts)
-        canonical = _open_checkpoint_store(
+        transaction = _RunRootTransaction(roots.root)
+        binding_sha256 = _freeze_plan_binding(
+            roots,
+            plan,
+            context,
+            transaction=transaction,
+        )
+        attempts = _load_runtime_evidence(
+            roots,
+            binding_sha256,
+            transaction=transaction,
+        )
+        evidence_digests = _validated_evidence_digests(
+            plan,
+            roots,
+            attempts,
+        )
+        canonical = _open_checkpoint_store_checked(
+            transaction,
             roots.canonical_root,
             bootstrap.provenance,
             context.datasets,
         )
         canonical_digests, canonical_completed = (
-            _validated_partial_store_state(canonical)
+            _validated_partial_store_state(
+                canonical,
+                transaction=transaction,
+                root=roots.canonical_root,
+            )
         )
+        transaction.verify_checkpoint_path(roots.canonical_root)
         if any(
             isinstance(result.decision_evidence, DatasetTerminalEvidence)
             for result in canonical_completed.values()
@@ -775,7 +1181,48 @@ def resume_or_run_parallel(
                 raise ValueError(
                     "complete canonical checkpoint lacks durable worker evidence"
                 )
+        if set(canonical_digests) - set(context.datasets):
+            raise ValueError("canonical checkpoint contains an extra dataset")
+
+        worker_stores = {
+            assignment.shard_index: _open_checkpoint_store_checked(
+                transaction,
+                roots.worker_roots[assignment.shard_index],
+                bootstrap.provenance,
+                assignment.datasets,
+            )
+            for assignment in plan.assignments
+        }
+        _validate_and_recover_attempts(
+            plan,
+            roots,
+            bootstrap,
+            attempts,
+            transaction,
+            worker_stores=worker_stores,
+        )
+        observed = _validate_partial_worker_stores(
+            plan,
+            worker_stores,
+            transaction=transaction,
+            roots=roots.worker_roots,
+        )
+        transaction.verify()
+        observed_digests = {
+            name: digest
+            for assignment in plan.assignments
+            for name, digest in observed[
+                assignment.shard_index
+            ].items()
+        }
+        if observed_digests != dict(evidence_digests):
+            raise ValueError(
+                "reused worker checkpoints lack matching durable evidence"
+            )
+
+        if set(canonical_digests) == set(context.datasets):
             summary = _reconstruct_global_summary(context, canonical)
+            transaction.verify_checkpoint_path(roots.canonical_root)
             error = "" if summary.publication_allowed else summary.status
             completions = _aggregate_evidence_completions(
                 plan,
@@ -788,6 +1235,7 @@ def resume_or_run_parallel(
                 raise ValueError(
                     "aggregate worker and parent RSS exceeds the frozen limit"
                 )
+            transaction.verify()
             return ParallelRun(
                 plan,
                 completions,
@@ -802,29 +1250,6 @@ def resume_or_run_parallel(
                 },
                 summary.publication_allowed,
                 "completed" if summary.publication_allowed else "failed",
-            )
-        if set(canonical_digests) - set(context.datasets):
-            raise ValueError("canonical checkpoint contains an extra dataset")
-
-        worker_stores = {
-            assignment.shard_index: _open_checkpoint_store(
-                roots.worker_roots[assignment.shard_index],
-                bootstrap.provenance,
-                assignment.datasets,
-            )
-            for assignment in plan.assignments
-        }
-        observed = _validate_partial_worker_stores(plan, worker_stores)
-        observed_digests = {
-            name: digest
-            for assignment in plan.assignments
-            for name, digest in observed[
-                assignment.shard_index
-            ].items()
-        }
-        if observed_digests != dict(evidence_digests):
-            raise ValueError(
-                "reused worker checkpoints lack matching durable evidence"
             )
         specs = []
         attempt_token = uuid.uuid4().hex
@@ -850,18 +1275,57 @@ def resume_or_run_parallel(
                     )
                 )
 
-        raw_completions = spawn_workers(tuple(specs), bootstrap) if specs else ()
+        transaction.verify()
+        raw_completions = (
+            spawn_workers(tuple(specs), bootstrap) if specs else ()
+        )
+        transaction.verify()
         if raw_completions:
-            attempts = _append_runtime_evidence(
+            candidate = _attempt_record(
                 roots,
-                binding_sha256,
-                attempts,
+                plan,
                 attempt_token,
+                specs,
                 raw_completions,
                 _parent_peak_rss_bytes(),
             )
+            candidate_attempts = (*attempts, candidate)
+            _validated_evidence_digests(
+                plan,
+                roots,
+                candidate_attempts,
+            )
+            _validate_and_recover_attempts(
+                plan,
+                roots,
+                bootstrap,
+                (candidate,),
+                transaction,
+                worker_stores=None,
+            )
+            attempts = _append_runtime_evidence(
+                roots,
+                plan,
+                binding_sha256,
+                attempts,
+                attempt_token,
+                specs,
+                raw_completions,
+                candidate["parent_peak_rss_bytes"],
+                transaction=transaction,
+            )
             evidence_digests = _validated_evidence_digests(
-                plan, attempts
+                plan,
+                roots,
+                attempts,
+            )
+            _validate_and_recover_attempts(
+                plan,
+                roots,
+                bootstrap,
+                (attempts[-1],),
+                transaction,
+                worker_stores=worker_stores,
             )
         metrics = {
             completion.shard_index: completion
@@ -884,31 +1348,14 @@ def resume_or_run_parallel(
                     f"worker shard {spec.shard.shard_index} failed: "
                     f"{completion.error}"
                 )
-            source = _open_checkpoint_store(
-                spec.checkpoint_root,
-                bootstrap.provenance,
-                spec.shard.datasets,
-            )
-            on_disk = source.completed_record_digests()
-            if (
-                completion.completed_datasets != spec.shard.datasets
-                or dict(completion.record_digests) != dict(on_disk)
-                or set(on_disk) != set(spec.shard.datasets)
-            ):
-                raise ValueError(
-                    "worker completion does not match on-disk record digests"
-                )
-            if _store_has_terminal_results(source):
-                raise ValueError("worker produced terminal dataset evidence")
-            target = worker_stores[spec.shard.shard_index]
-            for dataset in spec.shard.datasets:
-                imported = target.import_validated_dataset(source, dataset)
-                if imported != on_disk[dataset]:
-                    raise ValueError(
-                        "worker shard import digest mismatch"
-                    )
 
-        complete = _validate_partial_worker_stores(plan, worker_stores)
+        complete = _validate_partial_worker_stores(
+            plan,
+            worker_stores,
+            transaction=transaction,
+            roots=roots.worker_roots,
+        )
+        transaction.verify()
         if any(
             set(complete[assignment.shard_index])
             != set(assignment.datasets)
@@ -926,10 +1373,13 @@ def resume_or_run_parallel(
             raise ValueError(
                 "complete worker stores differ from durable evidence"
             )
+        transaction.verify()
         merged = merge_worker_checkpoints(
             context, plan, worker_stores, canonical
         )
+        transaction.verify()
         summary = _reconstruct_global_summary(context, canonical)
+        transaction.verify()
         error = "" if summary.publication_allowed else summary.status
         completions = _aggregate_evidence_completions(
             plan,
@@ -955,6 +1405,9 @@ def resume_or_run_parallel(
         )
     except Exception as error:
         return _failed_parallel_run(plan, error, started)
+    finally:
+        if transaction is not None:
+            transaction.close()
 
 
 def select_runtime(trials: Sequence[RuntimeTrial]) -> RuntimeBenchmark:

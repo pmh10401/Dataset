@@ -23,6 +23,7 @@ from experiments.exp419_deterministic_cpu_parallel.contracts import (
     ShardPlan,
     WorkerBootstrap,
     WorkerCompletion,
+    WorkerSpec,
 )
 from experiments.exp419_deterministic_cpu_parallel.workers import (
     _context_sha256,
@@ -300,15 +301,41 @@ class CoordinatorTests(unittest.TestCase):
         coordinator,
         roots: ParallelRoots,
         completions: tuple[WorkerCompletion, ...],
+        stores: dict[Path, _Store],
     ) -> None:
+        attempt_id = "seeded-prior-attempt"
+        specs = tuple(
+            WorkerSpec(
+                ShardAssignment(
+                    completion.shard_index,
+                    completion.completed_datasets,
+                    len(completion.completed_datasets),
+                ),
+                roots.root
+                / ".attempts"
+                / self.plan.sha256
+                / attempt_id
+                / f"worker-{completion.shard_index}",
+            )
+            for completion in completions
+        )
+        for spec, completion in zip(specs, completions, strict=True):
+            stores[spec.checkpoint_root] = _Store(
+                spec.checkpoint_root,
+                self.provenance,
+                spec.shard.datasets,
+                completed=completion.completed_datasets,
+            )
         binding = coordinator._freeze_plan_binding(
             roots, self.plan, self.context
         )
         coordinator._append_runtime_evidence(
             roots,
+            self.plan,
             binding,
             (),
-            "seeded-prior-attempt",
+            attempt_id,
+            specs,
             completions,
             50,
         )
@@ -369,6 +396,7 @@ class CoordinatorTests(unittest.TestCase):
                     )
                     for assignment in self.plan.assignments
                 ),
+                stores,
             )
             scheduled = []
 
@@ -458,6 +486,14 @@ class CoordinatorTests(unittest.TestCase):
                 self.context.datasets,
                 completed=self.context.datasets,
             )
+            stores = {roots.canonical_root: canonical}
+            for assignment in self.plan.assignments:
+                stores[roots.worker_roots[assignment.shard_index]] = _Store(
+                    roots.worker_roots[assignment.shard_index],
+                    self.provenance,
+                    assignment.datasets,
+                    completed=assignment.datasets,
+                )
             self._seed_runtime_evidence(
                 coordinator,
                 roots,
@@ -482,15 +518,21 @@ class CoordinatorTests(unittest.TestCase):
                     )
                     for assignment in self.plan.assignments
                 ),
+                stores,
             )
             summary = SimpleNamespace(
                 publication_allowed=True, status="complete"
             )
+
+            def open_store(path, provenance, datasets):
+                del provenance, datasets
+                return stores[path]
+
             with (
                 patch.object(
                     coordinator,
                     "_open_checkpoint_store",
-                    return_value=canonical,
+                    side_effect=open_store,
                 ),
                 patch.object(coordinator, "spawn_workers") as spawn,
                 patch.object(
@@ -587,6 +629,14 @@ class CoordinatorTests(unittest.TestCase):
                 self.context.datasets,
                 completed=self.context.datasets,
             )
+            stores = {roots.canonical_root: canonical}
+            for assignment in self.plan.assignments:
+                stores[roots.worker_roots[assignment.shard_index]] = _Store(
+                    roots.worker_roots[assignment.shard_index],
+                    self.provenance,
+                    assignment.datasets,
+                    completed=assignment.datasets,
+                )
             self._seed_runtime_evidence(
                 coordinator,
                 roots,
@@ -611,15 +661,21 @@ class CoordinatorTests(unittest.TestCase):
                     )
                     for assignment in self.plan.assignments
                 ),
+                stores,
             )
             summary = SimpleNamespace(
                 publication_allowed=True, status="complete"
             )
+
+            def open_store(path, provenance, datasets):
+                del provenance, datasets
+                return stores[path]
+
             with (
                 patch.object(
                     coordinator,
                     "_open_checkpoint_store",
-                    return_value=canonical,
+                    side_effect=open_store,
                 ),
                 patch.object(
                     coordinator,
@@ -939,6 +995,364 @@ class CoordinatorTests(unittest.TestCase):
             self.assertEqual(second_metrics, first_metrics)
             self.assertEqual(
                 tuple(second.record_digests), self.context.datasets
+            )
+
+    def test_resume_recovers_attempt_after_evidence_import_interruption(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            roots = self._roots(root)
+            stores: dict[Path, _Store] = {
+                roots.canonical_root: _Store(
+                    roots.canonical_root,
+                    self.provenance,
+                    self.context.datasets,
+                )
+            }
+            for assignment in self.plan.assignments:
+                stores[roots.worker_roots[assignment.shard_index]] = _Store(
+                    roots.worker_roots[assignment.shard_index],
+                    self.provenance,
+                    assignment.datasets,
+                )
+
+            def open_store(path, provenance, datasets):
+                if path not in stores:
+                    stores[path] = _Store(path, provenance, datasets)
+                return stores[path]
+
+            spawn_count = 0
+
+            def spawn(specs, bootstrap):
+                nonlocal spawn_count
+                del bootstrap
+                spawn_count += 1
+                if spawn_count > 1:
+                    self.fail("durable attempt should be recovered, not rerun")
+                completions = []
+                for spec in specs:
+                    store = open_store(
+                        spec.checkpoint_root,
+                        self.provenance,
+                        spec.shard.datasets,
+                    )
+                    for name in spec.shard.datasets:
+                        store._digests[name] = _digest(name)
+                        store._results[name] = SimpleNamespace(
+                            dataset=name,
+                            decision_evidence=object(),
+                            status="qualified",
+                        )
+                    completions.append(
+                        WorkerCompletion(
+                            spec.shard.shard_index,
+                            800 + spec.shard.shard_index,
+                            spec.shard.datasets,
+                            dict(store._digests),
+                            4.0,
+                            100,
+                            {
+                                "OMP_NUM_THREADS": "1",
+                                "OPENBLAS_NUM_THREADS": "1",
+                                "VECLIB_MAXIMUM_THREADS": "1",
+                            },
+                            "completed",
+                            "",
+                        )
+                    )
+                return tuple(completions)
+
+            interrupted = True
+            target = stores[roots.worker_roots[0]]
+            original_import = target.import_validated_dataset
+
+            def interrupt_once(source, dataset):
+                nonlocal interrupted
+                if interrupted:
+                    interrupted = False
+                    raise RuntimeError("synthetic post-evidence interruption")
+                return original_import(source, dataset)
+
+            target.import_validated_dataset = interrupt_once
+            summary = SimpleNamespace(
+                publication_allowed=True, status="complete"
+            )
+            with (
+                patch.object(
+                    coordinator,
+                    "_open_checkpoint_store",
+                    side_effect=open_store,
+                ),
+                patch.object(coordinator, "spawn_workers", side_effect=spawn),
+                patch.object(
+                    coordinator,
+                    "_reconstruct_global_summary",
+                    return_value=summary,
+                ),
+                patch.object(
+                    coordinator,
+                    "_parent_peak_rss_bytes",
+                    return_value=50,
+                ),
+            ):
+                first = coordinator.resume_or_run_parallel(
+                    self.context,
+                    self.plan,
+                    roots,
+                    self._bootstrap(),
+                )
+                second = coordinator.resume_or_run_parallel(
+                    self.context,
+                    self.plan,
+                    roots,
+                    self._bootstrap(),
+                )
+
+            self.assertFalse(first.publication_allowed)
+            self.assertIn("post-evidence interruption", first.summary["error"])
+            self.assertTrue(second.publication_allowed)
+            self.assertEqual(spawn_count, 1)
+            self.assertEqual(
+                tuple(second.record_digests), self.context.datasets
+            )
+
+    def test_failed_worker_prefix_is_recovered_on_next_resume(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            roots = self._roots(root)
+            stores: dict[Path, _Store] = {
+                roots.canonical_root: _Store(
+                    roots.canonical_root,
+                    self.provenance,
+                    self.context.datasets,
+                )
+            }
+            for assignment in self.plan.assignments:
+                stores[roots.worker_roots[assignment.shard_index]] = _Store(
+                    roots.worker_roots[assignment.shard_index],
+                    self.provenance,
+                    assignment.datasets,
+                )
+
+            def open_store(path, provenance, datasets):
+                if path not in stores:
+                    stores[path] = _Store(path, provenance, datasets)
+                return stores[path]
+
+            failed_prefix = self.plan.assignments[0].datasets[:3]
+            scheduled: list[tuple[tuple[str, ...], ...]] = []
+
+            def spawn(specs, bootstrap):
+                del bootstrap
+                scheduled.append(tuple(spec.shard.datasets for spec in specs))
+                completions = []
+                first_attempt = len(scheduled) == 1
+                for spec in specs:
+                    completed = (
+                        failed_prefix
+                        if first_attempt and spec.shard.shard_index == 0
+                        else spec.shard.datasets
+                    )
+                    store = open_store(
+                        spec.checkpoint_root,
+                        self.provenance,
+                        spec.shard.datasets,
+                    )
+                    for name in completed:
+                        store._digests[name] = _digest(name)
+                        store._results[name] = SimpleNamespace(
+                            dataset=name,
+                            decision_evidence=object(),
+                            status="qualified",
+                        )
+                    failed = first_attempt and spec.shard.shard_index == 0
+                    completions.append(
+                        WorkerCompletion(
+                            spec.shard.shard_index,
+                            900 + spec.shard.shard_index,
+                            completed,
+                            dict(store._digests),
+                            4.0,
+                            100,
+                            {
+                                "OMP_NUM_THREADS": "1",
+                                "OPENBLAS_NUM_THREADS": "1",
+                                "VECLIB_MAXIMUM_THREADS": "1",
+                            },
+                            "failed" if failed else "completed",
+                            "synthetic interruption" if failed else "",
+                        )
+                    )
+                return tuple(completions)
+
+            summary = SimpleNamespace(
+                publication_allowed=True, status="complete"
+            )
+            with (
+                patch.object(
+                    coordinator,
+                    "_open_checkpoint_store",
+                    side_effect=open_store,
+                ),
+                patch.object(coordinator, "spawn_workers", side_effect=spawn),
+                patch.object(
+                    coordinator,
+                    "_reconstruct_global_summary",
+                    return_value=summary,
+                ),
+                patch.object(
+                    coordinator,
+                    "_parent_peak_rss_bytes",
+                    return_value=50,
+                ),
+            ):
+                first = coordinator.resume_or_run_parallel(
+                    self.context,
+                    self.plan,
+                    roots,
+                    self._bootstrap(),
+                )
+                second = coordinator.resume_or_run_parallel(
+                    self.context,
+                    self.plan,
+                    roots,
+                    self._bootstrap(),
+                )
+
+            self.assertFalse(first.publication_allowed)
+            self.assertIn("synthetic interruption", first.summary["error"])
+            self.assertTrue(second.publication_allowed)
+            self.assertEqual(
+                scheduled[1],
+                (self.plan.assignments[0].datasets[len(failed_prefix) :],),
+            )
+            self.assertEqual(
+                tuple(second.record_digests), self.context.datasets
+            )
+
+    def test_run_root_replacement_between_phases_fails_closed(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        with TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            root = base / "run"
+            root.mkdir()
+            moved = base / "moved-run"
+            roots = self._roots(root)
+            stores: dict[Path, _Store] = {}
+            replaced = False
+
+            def open_store(path, provenance, datasets):
+                nonlocal replaced
+                if not replaced:
+                    root.rename(moved)
+                    root.mkdir()
+                    replaced = True
+                if path not in stores:
+                    stores[path] = _Store(path, provenance, datasets)
+                return stores[path]
+
+            def spawn(specs, bootstrap):
+                del bootstrap
+                completions = []
+                for spec in specs:
+                    store = open_store(
+                        spec.checkpoint_root,
+                        self.provenance,
+                        spec.shard.datasets,
+                    )
+                    for name in spec.shard.datasets:
+                        store._digests[name] = _digest(name)
+                        store._results[name] = SimpleNamespace(
+                            dataset=name,
+                            decision_evidence=object(),
+                            status="qualified",
+                        )
+                    completions.append(
+                        WorkerCompletion(
+                            spec.shard.shard_index,
+                            1000 + spec.shard.shard_index,
+                            spec.shard.datasets,
+                            dict(store._digests),
+                            1.0,
+                            100,
+                            {
+                                "OMP_NUM_THREADS": "1",
+                                "OPENBLAS_NUM_THREADS": "1",
+                                "VECLIB_MAXIMUM_THREADS": "1",
+                            },
+                            "completed",
+                            "",
+                        )
+                    )
+                return tuple(completions)
+
+            with (
+                patch.object(
+                    coordinator,
+                    "_open_checkpoint_store",
+                    side_effect=open_store,
+                ),
+                patch.object(coordinator, "spawn_workers", side_effect=spawn),
+                patch.object(
+                    coordinator,
+                    "_reconstruct_global_summary",
+                    return_value=SimpleNamespace(
+                        publication_allowed=True,
+                        status="complete",
+                    ),
+                ),
+            ):
+                run = coordinator.resume_or_run_parallel(
+                    self.context,
+                    self.plan,
+                    roots,
+                    self._bootstrap(),
+                )
+
+            self.assertTrue(replaced)
+            self.assertFalse(run.publication_allowed)
+            self.assertIn("run root identity", run.summary["error"])
+
+    def test_interrupted_initial_binding_publication_is_not_authoritative(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            roots = self._roots(root)
+
+            def interrupt_write(descriptor, payload):
+                os.write(descriptor, payload[:8])
+                raise OSError("synthetic interrupted marker publication")
+
+            with (
+                patch.object(
+                    coordinator,
+                    "_write_all",
+                    side_effect=interrupt_write,
+                ),
+                self.assertRaisesRegex(OSError, "interrupted marker"),
+            ):
+                coordinator._freeze_plan_binding(
+                    roots,
+                    self.plan,
+                    self.context,
+                )
+
+            self.assertFalse(
+                (root / "exp419_shard_plan.json").exists()
+            )
+            self.assertEqual(
+                tuple(root.glob(".exp419_shard_plan.json.*")),
+                (),
+            )
+            coordinator._freeze_plan_binding(
+                roots,
+                self.plan,
+                self.context,
             )
 
     def test_partial_canonical_terminal_record_fails_before_worker_scheduling(self):
