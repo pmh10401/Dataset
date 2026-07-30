@@ -54,6 +54,26 @@ def _context() -> FrozenRunContext:
     )
 
 
+def _import_context() -> FrozenRunContext:
+    datasets = ("a", "b") + tuple(
+        f"synthetic-{number:04d}" for number in range(1115)
+    )
+    return FrozenRunContext(
+        database_sha256=FROZEN_CONFIG.database_sha256,
+        datasets=datasets,
+        lanes=_lanes(),
+        test_identity_manifest={
+            name: ((0, 100), (1, 100)) for name in datasets
+        },
+        code_commit="c" * 40,
+        runtime_versions={
+            "numpy": "synthetic",
+            "python": "synthetic",
+            "torch": "synthetic",
+        },
+    )
+
+
 def _group() -> GroupQualification:
     return GroupQualification(
         length=100,
@@ -475,6 +495,165 @@ class Exp417CheckpointTests(unittest.TestCase):
             self.assertEqual(store.progress()["completed_datasets"], 1)
             with self.assertRaisesRegex(ValueError, "incomplete"):
                 store.require_complete()
+
+    def test_imports_one_validated_shard_record(self) -> None:
+        """Re-encoding a shard could silently change its canonical checkpoint bytes."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            _write(source, _result(context, "a"))
+            source_record = next(
+                (source.root / "datasets").glob("*.json")
+            ).read_bytes()
+
+            digest = target.import_validated_dataset(source, "a")
+
+            self.assertEqual(
+                digest, target.completed_record_digests()["a"]
+            )
+            self.assertEqual(
+                target.load_completed()["a"], _result(context, "a")
+            )
+            self.assertEqual(
+                next((target.root / "datasets").glob("*.json")).read_bytes(),
+                source_record,
+            )
+
+    def test_import_rejects_provenance_mismatch(self) -> None:
+        """A shard from a different frozen contract cannot enter the target run."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target",
+                replace(_provenance(), model_contract_sha256="f" * 64),
+                ("a", "b"),
+            )
+            _write(source, _result(context, "a"))
+
+            with self.assertRaisesRegex(ValueError, "provenance"):
+                target.import_validated_dataset(source, "a")
+
+            self.assertEqual(dict(target.load_completed()), {})
+
+    def test_import_rejects_wrong_source_shard_inventory(self) -> None:
+        """An unaccounted source entry must not be ignored during shard import."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            _write(source, _result(context, "a"))
+            (source.root / "datasets" / "unexpected.json").write_bytes(b"{}")
+
+            with self.assertRaisesRegex(ValueError, "inventory"):
+                target.import_validated_dataset(source, "a")
+
+            self.assertEqual(dict(target.load_completed()), {})
+
+    def test_import_rejects_missing_source_record(self) -> None:
+        """A source progress file cannot stand in for the requested record."""
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+
+            with self.assertRaisesRegex(ValueError, "missing"):
+                target.import_validated_dataset(source, "a")
+
+            self.assertEqual(dict(target.load_completed()), {})
+
+    def test_import_rejects_duplicate_target_record(self) -> None:
+        """A transfer must never replace a checkpoint already owned by the target."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            result = _result(context, "a")
+            _write(source, result)
+            _write(target, result)
+            before = dict(target.completed_record_digests())
+
+            with self.assertRaisesRegex(ValueError, "already exists"):
+                target.import_validated_dataset(source, "a")
+
+            self.assertEqual(dict(target.completed_record_digests()), before)
+
+    def test_import_rejects_corrupt_source_json(self) -> None:
+        """Malformed source bytes cannot be copied before full reconstruction."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            _write(source, _result(context, "a"))
+            next((source.root / "datasets").glob("*.json")).write_bytes(b"{")
+
+            with self.assertRaises(ValueError):
+                target.import_validated_dataset(source, "a")
+
+            self.assertEqual(dict(target.load_completed()), {})
+
+    def test_import_rejects_nonregular_source_record(self) -> None:
+        """A directory or device node cannot masquerade as canonical shard bytes."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            _write(source, _result(context, "a"))
+            record = next((source.root / "datasets").glob("*.json"))
+            record.unlink()
+            record.mkdir()
+
+            with self.assertRaises(ValueError):
+                target.import_validated_dataset(source, "a")
+
+            self.assertEqual(dict(target.load_completed()), {})
+
+    def test_import_rejects_source_target_path_alias(self) -> None:
+        """Locking one root twice could deadlock or turn an import into replacement."""
+        with TemporaryDirectory() as temporary:
+            target = Exp417CheckpointStore(
+                Path(temporary) / "target",
+                _provenance(),
+                ("a", "b"),
+            )
+
+            with self.assertRaisesRegex(ValueError, "alias"):
+                target.import_validated_dataset(target, "a")
+
+            self.assertEqual(dict(target.load_completed()), {})
 
     def test_complete_snapshot_returns_one_sorted_read_only_atomic_pair(self) -> None:
         context = _context()

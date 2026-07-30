@@ -387,6 +387,355 @@ class Exp417CheckpointStore:
                 if datasets_descriptor is not None:
                     os.close(datasets_descriptor)
 
+    def import_validated_dataset(
+        self, source: Exp417CheckpointStore, dataset: str
+    ) -> str:
+        """Import one canonical source record into this store without replacement."""
+        if not isinstance(source, Exp417CheckpointStore):
+            raise ValueError(
+                "source must be an Exp417CheckpointStore"
+            )
+        if not isinstance(dataset, str) or not dataset:
+            raise ValueError("Exp417 checkpoint dataset is invalid")
+        with self._import_root_descriptor_locks(source) as (
+            root_descriptor,
+            root_identity,
+            source_root_descriptor,
+            source_root_identity,
+        ):
+            if self.provenance.to_payload() != source.provenance.to_payload():
+                raise ValueError(
+                    "Exp417 checkpoint import provenance mismatch"
+                )
+            if (
+                dataset not in self.expected_datasets
+                or dataset not in source.expected_datasets
+            ):
+                raise ValueError(
+                    "Exp417 checkpoint import dataset is outside an expected "
+                    "inventory"
+                )
+            datasets_descriptor: int | None = None
+            source_datasets_descriptor: int | None = None
+            try:
+                datasets_descriptor, datasets_identity = (
+                    _open_directory_at_verified(
+                        root_descriptor,
+                        "datasets",
+                        "Exp417 checkpoint datasets directory",
+                    )
+                )
+                source_datasets_descriptor, source_datasets_identity = (
+                    _open_directory_at_verified(
+                        source_root_descriptor,
+                        "datasets",
+                        "Exp417 checkpoint source datasets directory",
+                    )
+                )
+                source_records = source._load_records_from_descriptor(
+                    source_root_descriptor,
+                    source_datasets_descriptor,
+                )
+                (
+                    source_progress,
+                    source_progress_identity,
+                ) = _read_regular_entry_at(
+                    source_root_descriptor,
+                    _PROGRESS_FILE,
+                    "Exp417 checkpoint source progress",
+                )
+                source_progress_payload = source._progress_from_bytes(
+                    source_progress
+                )
+                source_digests = _progress_digests(
+                    source_progress_payload
+                )
+                observed_source_digests = {
+                    name: record["payload_sha256"]
+                    for name, record in source_records.items()
+                }
+                if source_digests != observed_source_digests:
+                    raise ValueError(
+                        "Exp417 checkpoint source progress accounting is "
+                        "invalid"
+                    )
+                source_record = source_records.get(dataset)
+                if source_record is None:
+                    raise ValueError(
+                        "Exp417 checkpoint source record is missing"
+                    )
+                record_name = self._dataset_path(dataset).name
+                source_record_name = source._dataset_path(dataset).name
+                (
+                    record_bytes,
+                    source_record_identity,
+                ) = _read_regular_entry_at(
+                    source_datasets_descriptor,
+                    source_record_name,
+                    "Exp417 checkpoint source dataset record",
+                )
+                validated_record = _record_from_bytes(record_bytes)
+                if (
+                    validated_record["dataset"] != dataset
+                    or validated_record["payload_sha256"]
+                    != source_record["payload_sha256"]
+                ):
+                    raise ValueError(
+                        "Exp417 checkpoint source dataset identity is invalid"
+                    )
+                _validate_result_provenance(
+                    validated_record["qualification"],
+                    source.provenance,
+                )
+                record_digest = _digest(
+                    validated_record["payload_sha256"],
+                    "checkpoint record payload",
+                )
+                if source_digests.get(dataset) != record_digest:
+                    raise ValueError(
+                        "Exp417 checkpoint source record digest is invalid"
+                    )
+                (
+                    source_provenance,
+                    source_provenance_identity,
+                ) = _read_regular_entry_at(
+                    source_root_descriptor,
+                    _ROOT_FILE,
+                    "Exp417 checkpoint source provenance",
+                )
+                source_dataset_names = frozenset(
+                    _list_directory_descriptor(
+                        source_datasets_descriptor,
+                        "Exp417 checkpoint source datasets directory",
+                    )
+                )
+                (
+                    old_provenance,
+                    old_provenance_identity,
+                    old_progress,
+                    old_progress_identity,
+                    digests,
+                    dataset_names,
+                ) = self._read_write_metadata_at(
+                    root_descriptor, datasets_descriptor
+                )
+                if dataset in digests or record_name in dataset_names:
+                    raise ValueError(
+                        "Exp417 checkpoint already exists for dataset: "
+                        f"{dataset}"
+                    )
+                published = False
+                progress_published = False
+                progress_identity: tuple[int, int] | None = None
+                try:
+                    try:
+                        published_identity = _atomic_write_exclusive_at(
+                            datasets_descriptor,
+                            record_name,
+                            record_bytes,
+                            recovery_root_descriptor=root_descriptor,
+                        )
+                        published = True
+                    except _CommittedWriteError as committed:
+                        published_identity = committed.identity
+                        published = True
+                        raise committed.original
+                    os.fsync(datasets_descriptor)
+                    digests[dataset] = record_digest
+                    progress_bytes = self._progress_bytes(
+                        completed=len(digests),
+                        current_dataset=None,
+                        record_digests=digests,
+                    )
+                    try:
+                        progress_identity = self._replace_owned_progress_at(
+                            root_descriptor,
+                            progress_bytes,
+                            old_progress_identity,
+                        )
+                        progress_published = True
+                    except _CommittedWriteError as committed:
+                        progress_identity = committed.identity
+                        progress_published = True
+                        raise committed.original
+                    os.fsync(root_descriptor)
+                    observed_record, observed_record_identity = (
+                        _read_regular_entry_at(
+                            datasets_descriptor,
+                            record_name,
+                            "Exp417 imported dataset checkpoint",
+                        )
+                    )
+                    if (
+                        observed_record_identity != published_identity
+                        or observed_record != record_bytes
+                    ):
+                        raise ValueError(
+                            "Exp417 imported dataset checkpoint changed "
+                            "before commit verification"
+                        )
+                    observed_progress, observed_progress_identity = (
+                        _read_regular_entry_at(
+                            root_descriptor,
+                            _PROGRESS_FILE,
+                            "Exp417 imported checkpoint progress",
+                        )
+                    )
+                    if (
+                        observed_progress_identity != progress_identity
+                        or observed_progress != progress_bytes
+                    ):
+                        raise ValueError(
+                            "Exp417 imported checkpoint progress changed "
+                            "before commit verification"
+                        )
+                    (
+                        observed_provenance,
+                        observed_provenance_identity,
+                    ) = _read_regular_entry_at(
+                        root_descriptor,
+                        _ROOT_FILE,
+                        "Exp417 imported checkpoint provenance",
+                    )
+                    if (
+                        observed_provenance_identity
+                        != old_provenance_identity
+                        or observed_provenance != old_provenance
+                    ):
+                        raise ValueError(
+                            "Exp417 checkpoint provenance changed during "
+                            "import"
+                        )
+                    final_root_inventory = set(
+                        _list_directory_descriptor(
+                            root_descriptor,
+                            "Exp417 checkpoint root",
+                        )
+                    )
+                    if final_root_inventory != {
+                        _ROOT_FILE,
+                        _PROGRESS_FILE,
+                        "datasets",
+                    }:
+                        raise ValueError(
+                            "Exp417 checkpoint root inventory changed during "
+                            "import"
+                        )
+                    final_dataset_names = (
+                        self._validate_write_dataset_inventory_at(
+                            datasets_descriptor,
+                            digests,
+                        )
+                    )
+                    if final_dataset_names != dataset_names | {record_name}:
+                        raise ValueError(
+                            "Exp417 checkpoint dataset inventory changed "
+                            "during import"
+                        )
+                    (
+                        observed_source_record,
+                        observed_source_record_identity,
+                    ) = _read_regular_entry_at(
+                        source_datasets_descriptor,
+                        source_record_name,
+                        "Exp417 checkpoint source dataset record",
+                    )
+                    if (
+                        observed_source_record_identity
+                        != source_record_identity
+                        or observed_source_record != record_bytes
+                    ):
+                        raise ValueError(
+                            "Exp417 checkpoint source record changed during "
+                            "import"
+                        )
+                    (
+                        observed_source_progress,
+                        observed_source_progress_identity,
+                    ) = _read_regular_entry_at(
+                        source_root_descriptor,
+                        _PROGRESS_FILE,
+                        "Exp417 checkpoint source progress",
+                    )
+                    if (
+                        observed_source_progress_identity
+                        != source_progress_identity
+                        or observed_source_progress != source_progress
+                    ):
+                        raise ValueError(
+                            "Exp417 checkpoint source progress changed during "
+                            "import"
+                        )
+                    (
+                        observed_source_provenance,
+                        observed_source_provenance_identity,
+                    ) = _read_regular_entry_at(
+                        source_root_descriptor,
+                        _ROOT_FILE,
+                        "Exp417 checkpoint source provenance",
+                    )
+                    if (
+                        observed_source_provenance_identity
+                        != source_provenance_identity
+                        or observed_source_provenance != source_provenance
+                    ):
+                        raise ValueError(
+                            "Exp417 checkpoint source provenance changed "
+                            "during import"
+                        )
+                    final_source_dataset_names = frozenset(
+                        _list_directory_descriptor(
+                            source_datasets_descriptor,
+                            "Exp417 checkpoint source datasets directory",
+                        )
+                    )
+                    if final_source_dataset_names != source_dataset_names:
+                        raise ValueError(
+                            "Exp417 checkpoint source dataset inventory "
+                            "changed during import"
+                        )
+                    _verify_directory_entry_identity_at(
+                        root_descriptor,
+                        "datasets",
+                        datasets_identity,
+                        "Exp417 checkpoint datasets directory",
+                    )
+                    _verify_directory_entry_identity_at(
+                        source_root_descriptor,
+                        "datasets",
+                        source_datasets_identity,
+                        "Exp417 checkpoint source datasets directory",
+                    )
+                    self._verify_root_path_identity(root_identity)
+                    source._verify_root_path_identity(source_root_identity)
+                except BaseException as error:
+                    try:
+                        self._rollback_transaction_at(
+                            datasets_descriptor,
+                            record_name if published else None,
+                            published_identity if published else None,
+                            root_descriptor,
+                            old_provenance,
+                            old_provenance_identity,
+                            old_progress,
+                            old_progress_identity,
+                            progress_identity if progress_published else None,
+                            root_identity,
+                            datasets_identity,
+                        )
+                    except BaseException as rollback_error:
+                        raise BaseExceptionGroup(
+                            "Exp417 checkpoint import and rollback both failed",
+                            [error, rollback_error],
+                        )
+                    raise
+                return record_digest
+            finally:
+                if source_datasets_descriptor is not None:
+                    os.close(source_datasets_descriptor)
+                if datasets_descriptor is not None:
+                    os.close(datasets_descriptor)
+
     def load_completed(self) -> Mapping[str, DatasetResult]:
         records, _ = self._read_state_snapshot()
         return MappingProxyType(
@@ -1212,6 +1561,75 @@ class Exp417CheckpointStore:
                 fcntl.flock(descriptor, fcntl.LOCK_UN)
         finally:
             os.close(descriptor)
+
+    @contextmanager
+    def _import_root_descriptor_locks(
+        self, source: Exp417CheckpointStore
+    ) -> Iterator[
+        tuple[int, tuple[int, int], int, tuple[int, int]]
+    ]:
+        opened: list[
+            tuple[
+                Exp417CheckpointStore,
+                int,
+                tuple[int, int],
+                bool,
+            ]
+        ] = []
+        locked: list[
+            tuple[
+                Exp417CheckpointStore,
+                int,
+                tuple[int, int],
+                bool,
+            ]
+        ] = []
+        try:
+            for store, exclusive in ((self, True), (source, False)):
+                try:
+                    descriptor = os.open(
+                        store.root, _DIRECTORY_OPEN_FLAGS
+                    )
+                except OSError as error:
+                    raise ValueError(
+                        "Exp417 checkpoint import root is invalid"
+                    ) from error
+                try:
+                    metadata = os.fstat(descriptor)
+                    if not stat.S_ISDIR(metadata.st_mode):
+                        raise ValueError(
+                            "Exp417 checkpoint import root is invalid"
+                        )
+                    identity = (metadata.st_dev, metadata.st_ino)
+                    opened.append(
+                        (store, descriptor, identity, exclusive)
+                    )
+                except BaseException:
+                    os.close(descriptor)
+                    raise
+            if opened[0][2] == opened[1][2]:
+                raise ValueError(
+                    "Exp417 checkpoint source and target paths alias"
+                )
+            for entry in sorted(opened, key=lambda item: item[2]):
+                fcntl.flock(
+                    entry[1],
+                    fcntl.LOCK_EX if entry[3] else fcntl.LOCK_SH,
+                )
+                locked.append(entry)
+            for store, _, identity, _ in opened:
+                store._verify_root_path_identity(identity)
+            yield (
+                opened[0][1],
+                opened[0][2],
+                opened[1][1],
+                opened[1][2],
+            )
+        finally:
+            for _, descriptor, _, _ in reversed(locked):
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+            for _, descriptor, _, _ in reversed(opened):
+                os.close(descriptor)
 
     def _verify_root_path_identity(
         self, root_identity: tuple[int, int]

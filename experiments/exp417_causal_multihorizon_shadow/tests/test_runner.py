@@ -506,6 +506,62 @@ class RunnerOrderTests(unittest.TestCase):
 
 
 class RunnerPopulationTests(unittest.TestCase):
+    def test_checkpointed_single_dataset_uses_transactional_store(self) -> None:
+        """Bypassing the store would permit duplicate or out-of-context shards."""
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        context = replace(
+            _context(),
+            code_commit="c" * 40,
+            runtime_versions={
+                "numpy": "synthetic",
+                "python": "synthetic",
+                "torch": "synthetic",
+            },
+        )
+        contract = _contract()
+        train, processed, model_evidence, scoring = _typed_stage_evidence(
+            contract
+        )
+        contract = replace(
+            contract,
+            train_identity_sha256=model_evidence.train_identity_sha256,
+        )
+        qualification = runner.TrainQualification(
+            contract.groups, contract.backend
+        )
+        runtime = runner.RunnerRuntime(
+            verify=lambda _: None,
+            load_train=lambda *_: train,
+            preprocess=lambda _: processed,
+            train_models=lambda _: model_evidence,
+            qualify=lambda *_: qualification,
+            freeze=lambda *_: contract,
+            load_test=lambda *_: object(),
+            score=lambda *_: scoring,
+        )
+        with TemporaryDirectory() as temporary:
+            store = Exp417CheckpointStore(
+                Path(temporary) / "checkpoint",
+                _provenance(),
+                context.datasets,
+            )
+
+            result = runner.run_dataset_checkpointed(
+                "dataset", context, store, runtime=runtime
+            )
+
+            self.assertEqual(result.dataset, "dataset")
+            self.assertEqual(tuple(store.load_completed()), ("dataset",))
+            with self.assertRaisesRegex(ValueError, "already exists"):
+                runner.run_dataset_checkpointed(
+                    "dataset", context, store, runtime=runtime
+                )
+            with self.assertRaises(ValueError):
+                runner.run_dataset_checkpointed(
+                    "outside", context, store, runtime=runtime
+                )
+
     def test_checkpoint_material_digest_covers_qualification_and_backend(self) -> None:
         """A coherent safety rewrite must invalidate material before checkpoint publication."""
         from experiments.exp417_causal_multihorizon_shadow import runner

@@ -283,6 +283,24 @@ def run_dataset(
     return _run_dataset(dataset, context, None, runtime or RunnerRuntime.production())
 
 
+def run_dataset_checkpointed(
+    dataset: str,
+    context: FrozenRunContext,
+    checkpoints: Exp417CheckpointStore,
+    *,
+    runtime: RunnerRuntime | None = None,
+) -> DatasetResult:
+    """Run and transactionally checkpoint one frozen dataset."""
+    if not isinstance(checkpoints, Exp417CheckpointStore):
+        raise ValueError("checkpoints must be an Exp417CheckpointStore")
+    return _run_dataset(
+        dataset,
+        context,
+        checkpoints,
+        runtime or RunnerRuntime.production(),
+    )
+
+
 def _run_dataset(
     dataset: str,
     context: FrozenRunContext,
