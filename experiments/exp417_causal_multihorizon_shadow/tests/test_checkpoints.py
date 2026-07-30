@@ -7,6 +7,7 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import stat
 from tempfile import TemporaryDirectory
 import threading
 import unittest
@@ -196,6 +197,22 @@ def _write(store: Exp417CheckpointStore, result: DatasetResult) -> None:
         backend_audit=BackendAudit("cpu", True, 0.0, 1.0, 1.0, False),
         elapsed_seconds=0.125,
     )
+
+
+def _checkpoint_tree_snapshot(
+    root: Path,
+) -> dict[str, tuple[int, int, int, bytes | None]]:
+    snapshot: dict[str, tuple[int, int, int, bytes | None]] = {}
+    for path in (root, *sorted(root.rglob("*"))):
+        metadata = os.lstat(path)
+        payload = path.read_bytes() if stat.S_ISREG(metadata.st_mode) else None
+        snapshot[str(path.relative_to(root))] = (
+            stat.S_IFMT(metadata.st_mode),
+            metadata.st_dev,
+            metadata.st_ino,
+            payload,
+        )
+    return snapshot
 
 
 class Exp417CheckpointTests(unittest.TestCase):
@@ -654,6 +671,478 @@ class Exp417CheckpointTests(unittest.TestCase):
                 target.import_validated_dataset(target, "a")
 
             self.assertEqual(dict(target.load_completed()), {})
+
+    def test_import_rolls_back_exactly_after_record_publication_failure(
+        self,
+    ) -> None:
+        """A committed target record without progress must be removed exactly once."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            _write(source, _result(context, "a"))
+            _write(target, _result(context, "b"))
+            source_before = _checkpoint_tree_snapshot(source.root)
+            progress_before = (target.root / "progress.json").read_bytes()
+            digests_before = dict(target.completed_record_digests())
+            target_record_before = target._dataset_path("b").read_bytes()
+            original_publish = checkpoints._atomic_write_exclusive_at
+            injected = False
+
+            def publish_then_fail(
+                directory_descriptor: int,
+                name: str,
+                data: bytes,
+                *,
+                recovery_root_descriptor: int,
+            ) -> tuple[int, int]:
+                nonlocal injected
+                identity = original_publish(
+                    directory_descriptor,
+                    name,
+                    data,
+                    recovery_root_descriptor=recovery_root_descriptor,
+                )
+                if name == target._dataset_path("a").name and not injected:
+                    injected = True
+                    raise checkpoints._CommittedWriteError(
+                        OSError("injected post-record publication failure"),
+                        identity,
+                    )
+                return identity
+
+            with (
+                patch.object(
+                    checkpoints,
+                    "_atomic_write_exclusive_at",
+                    side_effect=publish_then_fail,
+                ),
+                self.assertRaisesRegex(OSError, "post-record"),
+            ):
+                target.import_validated_dataset(source, "a")
+
+            self.assertTrue(injected)
+            self.assertEqual(
+                _checkpoint_tree_snapshot(source.root), source_before
+            )
+            self.assertEqual(
+                dict(target.completed_record_digests()), digests_before
+            )
+            self.assertEqual(
+                (target.root / "progress.json").read_bytes(),
+                progress_before,
+            )
+            self.assertEqual(
+                target._dataset_path("b").read_bytes(),
+                target_record_before,
+            )
+            self.assertFalse(target._dataset_path("a").exists())
+
+    def test_import_rolls_back_exactly_after_progress_replacement_failure(
+        self,
+    ) -> None:
+        """A committed progress replacement must restore prior progress and records."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            _write(source, _result(context, "a"))
+            _write(target, _result(context, "b"))
+            source_before = _checkpoint_tree_snapshot(source.root)
+            progress_before = (target.root / "progress.json").read_bytes()
+            digests_before = dict(target.completed_record_digests())
+            target_record_before = target._dataset_path("b").read_bytes()
+            replace_progress = target._replace_owned_progress_at
+            injected = False
+
+            def replace_then_fail(
+                root_descriptor: int,
+                payload: bytes,
+                expected_identity: tuple[int, int],
+            ) -> tuple[int, int]:
+                nonlocal injected
+                identity = replace_progress(
+                    root_descriptor, payload, expected_identity
+                )
+                injected = True
+                raise checkpoints._CommittedWriteError(
+                    OSError("injected post-progress replacement failure"),
+                    identity,
+                )
+
+            with (
+                patch.object(
+                    target,
+                    "_replace_owned_progress_at",
+                    side_effect=replace_then_fail,
+                ),
+                self.assertRaisesRegex(OSError, "post-progress"),
+            ):
+                target.import_validated_dataset(source, "a")
+
+            self.assertTrue(injected)
+            self.assertEqual(
+                _checkpoint_tree_snapshot(source.root), source_before
+            )
+            self.assertEqual(
+                dict(target.completed_record_digests()), digests_before
+            )
+            self.assertEqual(
+                (target.root / "progress.json").read_bytes(),
+                progress_before,
+            )
+            self.assertEqual(
+                target._dataset_path("b").read_bytes(),
+                target_record_before,
+            )
+            self.assertFalse(target._dataset_path("a").exists())
+
+    def test_opposing_imports_finish_without_lock_order_deadlock(self) -> None:
+        """Opposite source/target roles must acquire the same inode lock order."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            first = Exp417CheckpointStore(
+                parent / "first", _provenance(), ("a", "b")
+            )
+            second = Exp417CheckpointStore(
+                parent / "second", _provenance(), ("a", "b")
+            )
+            _write(first, _result(context, "a"))
+            _write(second, _result(context, "b"))
+            first_before = _checkpoint_tree_snapshot(first.root)
+            second_before = _checkpoint_tree_snapshot(second.root)
+            start = threading.Barrier(3)
+            outcomes: dict[str, object] = {}
+
+            def transfer(
+                name: str,
+                target: Exp417CheckpointStore,
+                source: Exp417CheckpointStore,
+                dataset: str,
+            ) -> None:
+                start.wait()
+                try:
+                    outcomes[name] = target.import_validated_dataset(
+                        source, dataset
+                    )
+                except BaseException as error:
+                    outcomes[name] = error
+
+            threads = (
+                threading.Thread(
+                    target=transfer,
+                    args=("first", first, second, "b"),
+                    daemon=True,
+                ),
+                threading.Thread(
+                    target=transfer,
+                    args=("second", second, first, "a"),
+                    daemon=True,
+                ),
+            )
+            for thread in threads:
+                thread.start()
+            start.wait()
+            for thread in threads:
+                thread.join(timeout=5)
+
+            self.assertTrue(all(not thread.is_alive() for thread in threads))
+            self.assertTrue(
+                all(isinstance(value, str) for value in outcomes.values()),
+                outcomes,
+            )
+            self.assertEqual(tuple(first.load_completed()), ("a", "b"))
+            self.assertEqual(tuple(second.load_completed()), ("a", "b"))
+            self.assertEqual(
+                first._dataset_path("a").read_bytes(),
+                first_before[
+                    str(first._dataset_path("a").relative_to(first.root))
+                ][3],
+            )
+            self.assertEqual(
+                second._dataset_path("b").read_bytes(),
+                second_before[
+                    str(second._dataset_path("b").relative_to(second.root))
+                ][3],
+            )
+
+    def test_concurrent_imports_publish_one_duplicate_target(self) -> None:
+        """Two valid sources racing for one target may commit exactly one record."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            sources = (
+                Exp417CheckpointStore(
+                    parent / "source-a", _provenance(), ("a",)
+                ),
+                Exp417CheckpointStore(
+                    parent / "source-b", _provenance(), ("a",)
+                ),
+            )
+            for source in sources:
+                _write(source, _result(context, "a"))
+            source_before = tuple(
+                _checkpoint_tree_snapshot(source.root)
+                for source in sources
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            start = threading.Barrier(3)
+            outcomes: list[object] = []
+            outcome_lock = threading.Lock()
+
+            def transfer(source: Exp417CheckpointStore) -> None:
+                start.wait()
+                try:
+                    outcome: object = target.import_validated_dataset(
+                        source, "a"
+                    )
+                except BaseException as error:
+                    outcome = error
+                with outcome_lock:
+                    outcomes.append(outcome)
+
+            threads = tuple(
+                threading.Thread(
+                    target=transfer, args=(source,), daemon=True
+                )
+                for source in sources
+            )
+            for thread in threads:
+                thread.start()
+            start.wait()
+            for thread in threads:
+                thread.join(timeout=5)
+
+            self.assertTrue(all(not thread.is_alive() for thread in threads))
+            self.assertEqual(
+                sum(isinstance(outcome, str) for outcome in outcomes), 1
+            )
+            failures = tuple(
+                outcome
+                for outcome in outcomes
+                if isinstance(outcome, BaseException)
+            )
+            self.assertEqual(len(failures), 1)
+            self.assertRegex(str(failures[0]), "already exists")
+            self.assertEqual(tuple(target.load_completed()), ("a",))
+            self.assertEqual(
+                tuple(
+                    _checkpoint_tree_snapshot(source.root)
+                    for source in sources
+                ),
+                source_before,
+            )
+
+    def test_import_rejects_source_root_and_datasets_path_substitution(
+        self,
+    ) -> None:
+        """A substituted source pathname cannot validate a pinned source inode."""
+        context = _import_context()
+        for substituted_entry in ("root", "datasets"):
+            with self.subTest(
+                substituted_entry=substituted_entry
+            ), TemporaryDirectory() as temporary:
+                parent = Path(temporary)
+                source = Exp417CheckpointStore(
+                    parent / "source", _provenance(), ("a",)
+                )
+                foreign = Exp417CheckpointStore(
+                    parent / "foreign", _provenance(), ("a",)
+                )
+                target = Exp417CheckpointStore(
+                    parent / "target", _provenance(), ("a", "b")
+                )
+                _write(source, _result(context, "a"))
+                _write(foreign, _result(context, "a"))
+                source_before = _checkpoint_tree_snapshot(source.root)
+                foreign_before = _checkpoint_tree_snapshot(foreign.root)
+                publish = checkpoints._atomic_write_exclusive_at
+                swapped = False
+
+                def substitute_then_publish(
+                    directory_descriptor: int,
+                    name: str,
+                    data: bytes,
+                    *,
+                    recovery_root_descriptor: int,
+                ) -> tuple[int, int]:
+                    nonlocal swapped
+                    if name == target._dataset_path("a").name and not swapped:
+                        if substituted_entry == "root":
+                            checkpoints._atomic_exchange(
+                                source.root, foreign.root
+                            )
+                        else:
+                            checkpoints._atomic_exchange(
+                                source.root / "datasets",
+                                foreign.root / "datasets",
+                            )
+                        swapped = True
+                    return publish(
+                        directory_descriptor,
+                        name,
+                        data,
+                        recovery_root_descriptor=recovery_root_descriptor,
+                    )
+
+                try:
+                    with (
+                        patch.object(
+                            checkpoints,
+                            "_atomic_write_exclusive_at",
+                            side_effect=substitute_then_publish,
+                        ),
+                        self.assertRaises(
+                            (ValueError, BaseExceptionGroup)
+                        ),
+                    ):
+                        target.import_validated_dataset(source, "a")
+                finally:
+                    if swapped:
+                        if substituted_entry == "root":
+                            checkpoints._atomic_exchange(
+                                source.root, foreign.root
+                            )
+                        else:
+                            checkpoints._atomic_exchange(
+                                source.root / "datasets",
+                                foreign.root / "datasets",
+                            )
+
+                self.assertTrue(swapped)
+                self.assertEqual(dict(target.load_completed()), {})
+                self.assertEqual(
+                    _checkpoint_tree_snapshot(source.root), source_before
+                )
+                self.assertEqual(
+                    _checkpoint_tree_snapshot(foreign.root), foreign_before
+                )
+
+    def test_import_revalidates_complete_source_snapshot_before_success(
+        self,
+    ) -> None:
+        """Stable corruption outside the requested record must roll back the target."""
+        context = _import_context()
+        mutations = (
+            "nonrequested_corruption",
+            "nonrequested_identity",
+            "root_inventory",
+            "dataset_inventory",
+            "provenance",
+        )
+        for mutation in mutations:
+            with self.subTest(
+                mutation=mutation
+            ), TemporaryDirectory() as temporary:
+                parent = Path(temporary)
+                source = Exp417CheckpointStore(
+                    parent / "source", _provenance(), ("a", "b")
+                )
+                target = Exp417CheckpointStore(
+                    parent / "target", _provenance(), ("a", "b")
+                )
+                _write(source, _result(context, "a"))
+                _write(source, _result(context, "b"))
+                publish = checkpoints._atomic_write_exclusive_at
+                mutated = False
+                mutated_snapshot: dict[
+                    str, tuple[int, int, int, bytes | None]
+                ] | None = None
+
+                def mutate_then_publish(
+                    directory_descriptor: int,
+                    name: str,
+                    data: bytes,
+                    *,
+                    recovery_root_descriptor: int,
+                ) -> tuple[int, int]:
+                    nonlocal mutated, mutated_snapshot
+                    if name == target._dataset_path("a").name and not mutated:
+                        nonrequested = source._dataset_path("b")
+                        if mutation == "nonrequested_corruption":
+                            nonrequested.write_bytes(b"{")
+                        elif mutation == "nonrequested_identity":
+                            replacement = parent / "replacement.json"
+                            replacement.write_bytes(nonrequested.read_bytes())
+                            os.replace(replacement, nonrequested)
+                        elif mutation == "root_inventory":
+                            (source.root / "unexpected.bin").write_bytes(b"x")
+                        elif mutation == "dataset_inventory":
+                            (
+                                source.root / "datasets" / "unexpected.json"
+                            ).write_bytes(b"{}")
+                        else:
+                            replacement = parent / "provenance.json"
+                            replacement.write_bytes(b'{"foreign":true}\n')
+                            os.replace(
+                                replacement,
+                                source.root / "checkpoint_provenance.json",
+                            )
+                        mutated = True
+                        mutated_snapshot = _checkpoint_tree_snapshot(
+                            source.root
+                        )
+                    return publish(
+                        directory_descriptor,
+                        name,
+                        data,
+                        recovery_root_descriptor=recovery_root_descriptor,
+                    )
+
+                with (
+                    patch.object(
+                        checkpoints,
+                        "_atomic_write_exclusive_at",
+                        side_effect=mutate_then_publish,
+                    ),
+                    self.assertRaises(
+                        (ValueError, BaseExceptionGroup)
+                    ),
+                ):
+                    target.import_validated_dataset(source, "a")
+
+                self.assertTrue(mutated)
+                self.assertIsNotNone(mutated_snapshot)
+                self.assertEqual(dict(target.load_completed()), {})
+                self.assertEqual(
+                    _checkpoint_tree_snapshot(source.root),
+                    mutated_snapshot,
+                    "import mutated the source while rejecting corruption",
+                )
+
+    def test_successful_import_never_mutates_source_tree(self) -> None:
+        """A validated import is a read-only operation on every source entry."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a", "b")
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            _write(source, _result(context, "a"))
+            _write(source, _result(context, "b"))
+            source_before = _checkpoint_tree_snapshot(source.root)
+
+            target.import_validated_dataset(source, "a")
+
+            self.assertEqual(
+                _checkpoint_tree_snapshot(source.root), source_before
+            )
 
     def test_complete_snapshot_returns_one_sorted_read_only_atomic_pair(self) -> None:
         context = _context()
