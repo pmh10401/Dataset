@@ -1123,6 +1123,97 @@ class Exp417CheckpointTests(unittest.TestCase):
                     "import mutated the source while rejecting corruption",
                 )
 
+    def test_import_snapshot_rejects_root_inventory_hidden_from_validator(
+        self,
+    ) -> None:
+        """A stable unexpected root entry cannot be hidden only during decode."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            _write(source, _result(context, "a"))
+            unexpected = source.root / "unexpected.bin"
+            hidden = parent / "unexpected.hidden"
+            unexpected.write_bytes(b"stable-unexpected-root-entry")
+            source_before = _checkpoint_tree_snapshot(source.root)
+            validate = source._load_records_from_descriptor
+
+            def hide_inventory_during_validation(
+                root_descriptor: int,
+                datasets_descriptor: int | None = None,
+            ):
+                os.rename(unexpected, hidden)
+                try:
+                    return validate(root_descriptor, datasets_descriptor)
+                finally:
+                    os.rename(hidden, unexpected)
+
+            with (
+                patch.object(
+                    source,
+                    "_load_records_from_descriptor",
+                    side_effect=hide_inventory_during_validation,
+                ),
+                self.assertRaises(ValueError),
+            ):
+                target.import_validated_dataset(source, "a")
+
+            self.assertEqual(dict(target.load_completed()), {})
+            self.assertEqual(
+                _checkpoint_tree_snapshot(source.root), source_before
+            )
+
+    def test_import_snapshot_rejects_provenance_hidden_from_validator(
+        self,
+    ) -> None:
+        """Canonical bytes shown only to the decoder cannot bless wrong provenance."""
+        context = _import_context()
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary)
+            source = Exp417CheckpointStore(
+                parent / "source", _provenance(), ("a",)
+            )
+            target = Exp417CheckpointStore(
+                parent / "target", _provenance(), ("a", "b")
+            )
+            _write(source, _result(context, "a"))
+            provenance = source.root / "checkpoint_provenance.json"
+            canonical = provenance.read_bytes()
+            wrong = b'{"wrong_provenance":true}\n'
+            provenance.write_bytes(wrong)
+            source_before = _checkpoint_tree_snapshot(source.root)
+            validate = source._load_records_from_descriptor
+
+            def show_canonical_during_validation(
+                root_descriptor: int,
+                datasets_descriptor: int | None = None,
+            ):
+                provenance.write_bytes(canonical)
+                try:
+                    return validate(root_descriptor, datasets_descriptor)
+                finally:
+                    provenance.write_bytes(wrong)
+
+            with (
+                patch.object(
+                    source,
+                    "_load_records_from_descriptor",
+                    side_effect=show_canonical_during_validation,
+                ),
+                self.assertRaises(ValueError),
+            ):
+                target.import_validated_dataset(source, "a")
+
+            self.assertEqual(dict(target.load_completed()), {})
+            self.assertEqual(
+                _checkpoint_tree_snapshot(source.root), source_before
+            )
+
     def test_successful_import_never_mutates_source_tree(self) -> None:
         """A validated import is a read-only operation on every source entry."""
         context = _import_context()

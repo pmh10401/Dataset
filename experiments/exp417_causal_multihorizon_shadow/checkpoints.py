@@ -664,6 +664,12 @@ class Exp417CheckpointStore:
                 "Exp417 checkpoint source root",
             )
         )
+        if root_inventory != frozenset(
+            {_ROOT_FILE, _PROGRESS_FILE, "datasets"}
+        ):
+            raise ValueError(
+                "Exp417 checkpoint source root inventory is invalid"
+            )
         records = self._load_records_from_descriptor(
             root_descriptor, datasets_descriptor
         )
@@ -672,6 +678,13 @@ class Exp417CheckpointStore:
             _ROOT_FILE,
             "Exp417 checkpoint source provenance",
         )
+        if (
+            provenance[0]
+            != canonical_json_bytes(self._root_payload) + b"\n"
+        ):
+            raise ValueError(
+                "Exp417 checkpoint source provenance mismatch"
+            )
         progress = _read_regular_entry_at(
             root_descriptor,
             _PROGRESS_FILE,
