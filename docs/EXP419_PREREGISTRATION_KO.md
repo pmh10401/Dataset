@@ -15,6 +15,15 @@ Exp419는 TEST label, 이상 위치, 과거 TEST/family 성능 또는 사람 검
 변경 불가 증거일 뿐이며 Exp419가 가져오거나, 고치거나, Exp419 결과라고 주장하지
 않는다.
 
+Exp419는 Exp417 동결 구성과 정확히 결합한다. 데이터베이스 SHA-256은
+`8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c`이며, 동결된
+lane 개수는 Hard 2,218개, Standard 806개, Priority 31개, automatic-normal 35개다.
+lane identity는 Exp291 prediction
+`73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848`, Exp291
+manifest `761466253cccbb7b91fe36cdbd6d298de5d141c90e01e9fe646a8ae242ca9c3e`, Exp292
+prediction `f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b`, Exp292
+manifest `0672b2f84a3b2883628bac3c12ad8a25ebfb48efd929e4c0a448c5418267b0d0`으로 고정한다.
+
 ## 고정된 런타임 계약
 
 - 실험 식별자: `Exp419`; 기대 모집단: 1,117개 데이터셋.

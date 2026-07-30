@@ -274,15 +274,31 @@ class ParallelRun:
         if any(not isinstance(completion, WorkerCompletion) for completion in completions):
             raise ValueError("completions must contain WorkerCompletion records")
         indices = tuple(completion.shard_index for completion in completions)
-        if len(indices) != len(set(indices)):
-            raise ValueError("completions contain a duplicate shard")
+        if indices != tuple(range(self.plan.worker_count)):
+            raise ValueError("completions must cover exact plan shard indices")
         digests = _digest_mapping(self.record_digests, "record_digests")
-        if set(digests) - set(self.plan.population):
-            raise ValueError("record_digests contain a dataset outside the population")
         if type(self.publication_allowed) is not bool:
             raise ValueError("publication_allowed must be a bool")
         if self.status not in PARALLEL_RUN_STATUSES:
             raise ValueError("status is not a parallel run status")
+        if self.publication_allowed != (self.status == "completed"):
+            raise ValueError("publication_allowed must match terminal status")
+        expected_digests: dict[str, str] = {}
+        for completion, assignment in zip(completions, self.plan.assignments, strict=True):
+            if completion.completed_datasets != assignment.datasets[:len(completion.completed_datasets)]:
+                raise ValueError("completion datasets do not match the assigned shard")
+            expected_digests.update(completion.record_digests)
+        if dict(digests) != expected_digests:
+            raise ValueError("record_digests must match completed worker records")
+        if self.status == "completed":
+            if any(completion.status != "completed" for completion in completions):
+                raise ValueError("completed run requires completed worker status")
+            if any(completion.completed_datasets != assignment.datasets for completion, assignment in zip(completions, self.plan.assignments, strict=True)):
+                raise ValueError("completed run requires exact shard datasets")
+            if set(digests) != set(self.plan.population):
+                raise ValueError("record_digests must cover the exact plan population")
+        elif not any(completion.status == "failed" for completion in completions):
+            raise ValueError("failed run requires failed worker status")
         object.__setattr__(self, "completions", completions)
         object.__setattr__(self, "record_digests", digests)
         object.__setattr__(self, "summary", _mapping(self.summary, "summary"))
@@ -326,17 +342,19 @@ class RuntimeBenchmark:
         if not trials or any(not isinstance(trial, RuntimeTrial) for trial in trials):
             raise ValueError("trials must contain RuntimeTrial records")
         counts = tuple(trial.worker_count for trial in trials)
-        if len(counts) != len(set(counts)):
-            raise ValueError("trials contain a duplicate worker_count")
+        if counts != FROZEN_CONFIG.worker_candidates:
+            raise ValueError("trials must cover exact frozen worker_candidates")
         if self.status not in RUNTIME_BENCHMARK_STATUSES:
             raise ValueError("status is not a runtime benchmark status")
+        datasets = _datasets(self.benchmark_datasets, "benchmark_datasets")
+        if any(trial.completed_datasets != datasets for trial in trials):
+            raise ValueError("trials must cover exact benchmark completed_datasets")
         if self.status == "qualified_parallel_runtime":
-            _integer(self.selected_worker_count, "selected_worker_count", minimum=1)
+            _integer(self.selected_worker_count, "selected_worker_count", minimum=2)
             if self.selected_worker_count not in counts:
                 raise ValueError("selected_worker_count is not a trial")
         elif self.selected_worker_count is not None:
             raise ValueError("unqualified benchmark cannot select a worker count")
-        datasets = _datasets(self.benchmark_datasets, "benchmark_datasets")
         object.__setattr__(self, "trials", trials)
         object.__setattr__(self, "benchmark_datasets", datasets)
         payload = {
