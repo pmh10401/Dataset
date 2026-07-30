@@ -690,8 +690,7 @@ def spawn_workers(
     context = multiprocessing.get_context("spawn")
     worker_function = run_worker
     bootstrap_payload = _bootstrap_payload(bootstrap)
-    processes: list[object] = []
-    receivers: list[object] = []
+    owned_workers: list[tuple[object, object, object]] = []
     try:
         for spec in frozen_specs:
             receiver, sender = context.Pipe(duplex=False)
@@ -710,14 +709,26 @@ def spawn_workers(
                 receiver.close()
                 sender.close()
                 raise
+            owned_workers.append((process, receiver, sender))
             sender.close()
-            receivers.append(receiver)
-            processes.append(process)
     except BaseException:
-        _close_connections(receivers)
-        _terminate_and_reap(processes)
+        _close_connections(
+            tuple(sender for _, _, sender in owned_workers)
+        )
+        _close_connections(
+            tuple(receiver for _, receiver, _ in owned_workers)
+        )
+        _terminate_and_reap(
+            tuple(process for process, _, _ in owned_workers)
+        )
         raise
 
+    processes = tuple(
+        process for process, _, _ in owned_workers
+    )
+    receivers = tuple(
+        receiver for _, receiver, _ in owned_workers
+    )
     try:
         return _drain_worker_messages(
             frozen_specs,
@@ -728,6 +739,9 @@ def spawn_workers(
         _terminate_and_reap(processes)
         raise
     finally:
+        _close_connections(
+            tuple(sender for _, _, sender in owned_workers)
+        )
         _close_connections(receivers)
 
 

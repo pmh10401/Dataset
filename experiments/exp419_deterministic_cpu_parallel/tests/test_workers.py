@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 import multiprocessing
+from multiprocessing.connection import Connection
 import pickle
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -45,6 +46,10 @@ _SYNTHETIC_CONTEXT: FrozenRunContext | None = None
 _ORIGINAL_PROCESS_START = multiprocessing.process.BaseProcess.start
 _STARTED_TEST_PIDS: list[int] = []
 _TEST_START_ATTEMPTS = 0
+_ORIGINAL_CONNECTION_CLOSE = Connection.close
+_TEST_RECEIVER: Connection | None = None
+_TEST_SENDER: Connection | None = None
+_INTERRUPTED_SENDER_CLOSE = False
 
 
 def _lanes() -> FrozenLaneSnapshot:
@@ -482,14 +487,41 @@ def _raise_keyboard_interrupt(waitables: object) -> None:
     raise KeyboardInterrupt("synthetic explicit interruption")
 
 
+class _RecordingSpawnContext:
+    def __init__(self, context: object) -> None:
+        self._context = context
+
+    def Pipe(self, *, duplex: bool):
+        global _TEST_RECEIVER, _TEST_SENDER
+        receiver, sender = self._context.Pipe(duplex=duplex)
+        _TEST_RECEIVER = receiver
+        _TEST_SENDER = sender
+        return receiver, sender
+
+    def Process(self, *args: object, **kwargs: object):
+        return self._context.Process(*args, **kwargs)
+
+
+def _interrupt_first_sender_close(connection: Connection) -> None:
+    global _INTERRUPTED_SENDER_CLOSE
+    if connection is _TEST_SENDER and not _INTERRUPTED_SENDER_CLOSE:
+        _INTERRUPTED_SENDER_CLOSE = True
+        raise KeyboardInterrupt("synthetic sender close interruption")
+    _ORIGINAL_CONNECTION_CLOSE(connection)
+
+
 class WorkerTests(unittest.TestCase):
     def setUp(self):
         global _SYNTHETIC_CONTEXT, _TEST_START_ATTEMPTS
+        global _TEST_RECEIVER, _TEST_SENDER, _INTERRUPTED_SENDER_CLOSE
         _SYNTHETIC_CONTEXT = _context()
         _RUN_ORDER.clear()
         _OPENED_STORES.clear()
         _STARTED_TEST_PIDS.clear()
         _TEST_START_ATTEMPTS = 0
+        _TEST_RECEIVER = None
+        _TEST_SENDER = None
+        _INTERRUPTED_SENDER_CLOSE = False
 
     def test_pins_exact_thread_contract(self):
         from experiments.exp419_deterministic_cpu_parallel.workers import (
@@ -1038,6 +1070,69 @@ class WorkerTests(unittest.TestCase):
         self.assertIsInstance(observed, RuntimeError)
         self.assertRegex(str(observed), "second start failure")
         self.assertEqual(surviving, ())
+
+    def test_post_start_sender_close_interruption_cleans_owned_child_and_pipes(self):
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        observed: BaseException | None = None
+        real_context = multiprocessing.get_context("spawn")
+        with TemporaryDirectory() as temporary:
+            spec = WorkerSpec(
+                ShardAssignment(0, ("alpha",), 1),
+                Path(temporary) / "worker-0",
+            )
+            with (
+                patch.object(
+                    workers,
+                    "run_worker",
+                    _spawn_blocking_worker,
+                ),
+                patch.object(
+                    workers.multiprocessing,
+                    "get_context",
+                    return_value=_RecordingSpawnContext(real_context),
+                ),
+                patch.object(
+                    multiprocessing.process.BaseProcess,
+                    "start",
+                    _recording_process_start,
+                ),
+                patch.object(
+                    Connection,
+                    "close",
+                    _interrupt_first_sender_close,
+                ),
+                patch.dict(
+                    os.environ,
+                    _THREAD_ENVIRONMENT,
+                    clear=False,
+                ),
+            ):
+                try:
+                    workers.spawn_workers(
+                        (spec,),
+                        _bootstrap(_SYNTHETIC_CONTEXT),
+                    )
+                except BaseException as error:
+                    observed = error
+
+            surviving = tuple(
+                pid for pid in _STARTED_TEST_PIDS if _pid_exists(pid)
+            )
+            closed_before_fallback = (
+                _TEST_RECEIVER is not None and _TEST_RECEIVER.closed,
+                _TEST_SENDER is not None and _TEST_SENDER.closed,
+            )
+            _terminate_test_children()
+            if _TEST_RECEIVER is not None and not _TEST_RECEIVER.closed:
+                _ORIGINAL_CONNECTION_CLOSE(_TEST_RECEIVER)
+            if _TEST_SENDER is not None and not _TEST_SENDER.closed:
+                _ORIGINAL_CONNECTION_CLOSE(_TEST_SENDER)
+
+        self.assertIsInstance(observed, KeyboardInterrupt)
+        self.assertRegex(str(observed), "sender close interruption")
+        self.assertEqual(surviving, ())
+        self.assertEqual(closed_before_fallback, (True, True))
 
     def test_ipc_faults_terminate_and_reap_all_children(self):
         from experiments.exp419_deterministic_cpu_parallel import workers
