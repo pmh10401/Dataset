@@ -1,0 +1,361 @@
+"""Validated immutable records for Exp419's deterministic CPU runtime."""
+
+from __future__ import annotations
+
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
+from hashlib import sha256
+import json
+from math import isfinite
+from numbers import Real
+from pathlib import Path
+from types import MappingProxyType
+from typing import TypeVar
+
+from .config import FROZEN_CONFIG
+
+
+STRATA = frozenset({"preprocessing_only", "diagnostic_oof", "candidate_eligible"})
+WORKER_COMPLETION_STATUSES = frozenset({"completed", "failed"})
+PARALLEL_RUN_STATUSES = frozenset({"completed", "failed"})
+RUNTIME_BENCHMARK_STATUSES = frozenset(
+    {"qualified_parallel_runtime", "no_qualified_parallel_runtime"}
+)
+
+_T = TypeVar("_T")
+
+
+def _name(value: object, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be a non-empty string")
+    return value
+
+
+def _integer(value: object, name: str, *, minimum: int = 0) -> int:
+    if type(value) is not int or value < minimum:
+        raise ValueError(f"{name} must be an integer >= {minimum}")
+    return value
+
+
+def _finite(value: object, name: str, *, minimum: float = 0.0) -> float:
+    if isinstance(value, bool) or not isinstance(value, Real) or not isfinite(value):
+        raise ValueError(f"{name} must be finite")
+    number = float(value)
+    if number < minimum:
+        raise ValueError(f"{name} must be >= {minimum}")
+    return number
+
+
+def _tuple(values: object, name: str) -> tuple[_T, ...]:
+    if isinstance(values, (str, bytes)) or not isinstance(values, Sequence):
+        raise ValueError(f"{name} must be a sequence")
+    return tuple(values)
+
+
+def _datasets(values: object, name: str, *, allow_empty: bool = False) -> tuple[str, ...]:
+    datasets = _tuple(values, name)
+    if not allow_empty and not datasets:
+        raise ValueError(f"{name} must not be empty")
+    for dataset in datasets:
+        _name(dataset, name)
+    if len(datasets) != len(set(datasets)):
+        raise ValueError(f"{name} contains a duplicate dataset")
+    return datasets
+
+
+def _sha256(value: object, name: str) -> str:
+    if not (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"{name} must be a lowercase SHA-256 digest")
+    return value
+
+
+def _string_mapping(values: object, name: str) -> Mapping[str, str]:
+    if not isinstance(values, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    copied: dict[str, str] = {}
+    for key, value in values.items():
+        copied[_name(key, f"{name} key")] = _name(value, f"{name} value")
+    return MappingProxyType(copied)
+
+
+def _digest_mapping(values: object, name: str) -> Mapping[str, str]:
+    if not isinstance(values, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    copied: dict[str, str] = {}
+    for key, value in values.items():
+        copied[_name(key, f"{name} key")] = _sha256(value, f"{name}[{key!r}]")
+    return MappingProxyType(copied)
+
+
+def _mapping(values: object, name: str) -> Mapping[object, object]:
+    if not isinstance(values, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    return MappingProxyType(dict(values))
+
+
+def _path(value: object, name: str) -> Path:
+    if not isinstance(value, Path):
+        raise ValueError(f"{name} must be a Path")
+    return value
+
+
+@dataclass(frozen=True)
+class TrainLengthGroupMeta:
+    dataset: str
+    length: int
+    series_count: int
+
+    def __post_init__(self) -> None:
+        _name(self.dataset, "dataset")
+        _integer(self.length, "length", minimum=1)
+        _integer(self.series_count, "series_count", minimum=1)
+
+
+@dataclass(frozen=True)
+class DatasetCost:
+    dataset: str
+    cost: int
+    stratum: str
+
+    def __post_init__(self) -> None:
+        _name(self.dataset, "dataset")
+        _integer(self.cost, "cost", minimum=0)
+        if self.stratum not in STRATA:
+            raise ValueError("stratum is not an Exp419 benchmark stratum")
+
+
+@dataclass(frozen=True)
+class ShardAssignment:
+    shard_index: int
+    datasets: tuple[str, ...]
+    total_cost: int
+
+    def __post_init__(self) -> None:
+        _integer(self.shard_index, "shard_index")
+        object.__setattr__(self, "datasets", _datasets(self.datasets, "datasets"))
+        _integer(self.total_cost, "total_cost", minimum=0)
+
+
+@dataclass(frozen=True)
+class ShardPlan:
+    worker_count: int
+    assignments: tuple[ShardAssignment, ...]
+    population: tuple[str, ...]
+    sha256: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        _integer(self.worker_count, "worker_count", minimum=1)
+        if self.worker_count not in FROZEN_CONFIG.worker_candidates:
+            raise ValueError("worker_count is not frozen")
+        assignments = _tuple(self.assignments, "assignments")
+        if len(assignments) != self.worker_count or any(
+            not isinstance(assignment, ShardAssignment) for assignment in assignments
+        ):
+            raise ValueError("assignments must contain one ShardAssignment per worker")
+        indices = tuple(assignment.shard_index for assignment in assignments)
+        if indices != tuple(range(self.worker_count)):
+            raise ValueError("shard indices must be ordered and contiguous")
+        population = _datasets(self.population, "population")
+        assigned = tuple(dataset for assignment in assignments for dataset in assignment.datasets)
+        if len(assigned) != len(set(assigned)):
+            raise ValueError("assignments contain a duplicate dataset")
+        if set(assigned) != set(population):
+            raise ValueError("assignments do not cover the exact population")
+        object.__setattr__(self, "assignments", assignments)
+        object.__setattr__(self, "population", population)
+        payload = {
+            "assignments": [
+                {
+                    "datasets": assignment.datasets,
+                    "shard_index": assignment.shard_index,
+                    "total_cost": assignment.total_cost,
+                }
+                for assignment in assignments
+            ],
+            "population": population,
+            "worker_count": self.worker_count,
+        }
+        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        object.__setattr__(self, "sha256", sha256(canonical.encode("utf-8")).hexdigest())
+
+
+@dataclass(frozen=True)
+class WorkerSpec:
+    shard: ShardAssignment
+    checkpoint_root: Path
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.shard, ShardAssignment):
+            raise ValueError("shard must be a ShardAssignment")
+        _path(self.checkpoint_root, "checkpoint_root")
+
+
+@dataclass(frozen=True)
+class WorkerBootstrap:
+    resources: object
+    provenance: object
+    expected_context_sha256: str
+
+    def __post_init__(self) -> None:
+        if self.resources is None or self.provenance is None:
+            raise ValueError("resources and provenance are required")
+        _sha256(self.expected_context_sha256, "expected_context_sha256")
+
+
+@dataclass(frozen=True)
+class WorkerCompletion:
+    shard_index: int
+    pid: int
+    completed_datasets: tuple[str, ...]
+    record_digests: Mapping[str, str]
+    elapsed_seconds: float
+    peak_rss_bytes: int
+    thread_environment: Mapping[str, str]
+    status: str
+    error: str
+
+    def __post_init__(self) -> None:
+        _integer(self.shard_index, "shard_index")
+        _integer(self.pid, "pid", minimum=1)
+        completed = _datasets(self.completed_datasets, "completed_datasets", allow_empty=True)
+        digests = _digest_mapping(self.record_digests, "record_digests")
+        if set(digests) != set(completed):
+            raise ValueError("record_digests must cover the exact completed_datasets")
+        _finite(self.elapsed_seconds, "elapsed_seconds")
+        _integer(self.peak_rss_bytes, "peak_rss_bytes")
+        environment = _string_mapping(self.thread_environment, "thread_environment")
+        if self.status not in WORKER_COMPLETION_STATUSES:
+            raise ValueError("status is not a worker completion status")
+        if not isinstance(self.error, str):
+            raise ValueError("error must be a string")
+        if self.status == "completed" and self.error:
+            raise ValueError("completed worker cannot have an error")
+        if self.status == "failed" and not self.error:
+            raise ValueError("failed worker must include an error")
+        object.__setattr__(self, "completed_datasets", completed)
+        object.__setattr__(self, "record_digests", digests)
+        object.__setattr__(self, "thread_environment", environment)
+
+
+@dataclass(frozen=True)
+class ParallelRoots:
+    root: Path
+    worker_roots: Mapping[int, Path]
+    canonical_root: Path
+
+    def __post_init__(self) -> None:
+        _path(self.root, "root")
+        if not isinstance(self.worker_roots, Mapping) or not self.worker_roots:
+            raise ValueError("worker_roots must be a non-empty mapping")
+        worker_roots: dict[int, Path] = {}
+        for index, root in self.worker_roots.items():
+            worker_roots[_integer(index, "worker_roots key")] = _path(root, "worker_roots value")
+        _path(self.canonical_root, "canonical_root")
+        object.__setattr__(self, "worker_roots", MappingProxyType(worker_roots))
+
+
+@dataclass(frozen=True)
+class ParallelRun:
+    plan: ShardPlan
+    completions: tuple[WorkerCompletion, ...]
+    record_digests: Mapping[str, str]
+    summary: Mapping[object, object]
+    publication_allowed: bool
+    status: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plan, ShardPlan):
+            raise ValueError("plan must be a ShardPlan")
+        completions = _tuple(self.completions, "completions")
+        if any(not isinstance(completion, WorkerCompletion) for completion in completions):
+            raise ValueError("completions must contain WorkerCompletion records")
+        indices = tuple(completion.shard_index for completion in completions)
+        if len(indices) != len(set(indices)):
+            raise ValueError("completions contain a duplicate shard")
+        digests = _digest_mapping(self.record_digests, "record_digests")
+        if set(digests) - set(self.plan.population):
+            raise ValueError("record_digests contain a dataset outside the population")
+        if type(self.publication_allowed) is not bool:
+            raise ValueError("publication_allowed must be a bool")
+        if self.status not in PARALLEL_RUN_STATUSES:
+            raise ValueError("status is not a parallel run status")
+        object.__setattr__(self, "completions", completions)
+        object.__setattr__(self, "record_digests", digests)
+        object.__setattr__(self, "summary", _mapping(self.summary, "summary"))
+
+
+@dataclass(frozen=True)
+class RuntimeTrial:
+    worker_count: int
+    elapsed_seconds: float
+    peak_rss_bytes: int
+    parity: bool
+    finite: bool
+    fallback: str
+    completed_datasets: tuple[str, ...]
+    evidence_sha256: str
+
+    def __post_init__(self) -> None:
+        _integer(self.worker_count, "worker_count", minimum=1)
+        if self.worker_count not in FROZEN_CONFIG.worker_candidates:
+            raise ValueError("worker_count is not frozen")
+        _finite(self.elapsed_seconds, "elapsed_seconds")
+        _integer(self.peak_rss_bytes, "peak_rss_bytes")
+        if type(self.parity) is not bool or type(self.finite) is not bool:
+            raise ValueError("parity and finite must be bool")
+        if not isinstance(self.fallback, str):
+            raise ValueError("fallback must be a string")
+        object.__setattr__(self, "completed_datasets", _datasets(self.completed_datasets, "completed_datasets"))
+        _sha256(self.evidence_sha256, "evidence_sha256")
+
+
+@dataclass(frozen=True)
+class RuntimeBenchmark:
+    trials: tuple[RuntimeTrial, ...]
+    selected_worker_count: int | None
+    status: str
+    benchmark_datasets: tuple[str, ...]
+    sha256: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        trials = _tuple(self.trials, "trials")
+        if not trials or any(not isinstance(trial, RuntimeTrial) for trial in trials):
+            raise ValueError("trials must contain RuntimeTrial records")
+        counts = tuple(trial.worker_count for trial in trials)
+        if len(counts) != len(set(counts)):
+            raise ValueError("trials contain a duplicate worker_count")
+        if self.status not in RUNTIME_BENCHMARK_STATUSES:
+            raise ValueError("status is not a runtime benchmark status")
+        if self.status == "qualified_parallel_runtime":
+            _integer(self.selected_worker_count, "selected_worker_count", minimum=1)
+            if self.selected_worker_count not in counts:
+                raise ValueError("selected_worker_count is not a trial")
+        elif self.selected_worker_count is not None:
+            raise ValueError("unqualified benchmark cannot select a worker count")
+        datasets = _datasets(self.benchmark_datasets, "benchmark_datasets")
+        object.__setattr__(self, "trials", trials)
+        object.__setattr__(self, "benchmark_datasets", datasets)
+        payload = {
+            "benchmark_datasets": datasets,
+            "selected_worker_count": self.selected_worker_count,
+            "status": self.status,
+            "trials": [
+                {
+                    "completed_datasets": trial.completed_datasets,
+                    "elapsed_seconds": trial.elapsed_seconds,
+                    "evidence_sha256": trial.evidence_sha256,
+                    "fallback": trial.fallback,
+                    "finite": trial.finite,
+                    "parity": trial.parity,
+                    "peak_rss_bytes": trial.peak_rss_bytes,
+                    "worker_count": trial.worker_count,
+                }
+                for trial in trials
+            ],
+        }
+        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        object.__setattr__(self, "sha256", sha256(canonical.encode("utf-8")).hexdigest())
