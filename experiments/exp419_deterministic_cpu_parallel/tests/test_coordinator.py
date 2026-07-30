@@ -12,6 +12,9 @@ import unittest
 from experiments.exp417_causal_multihorizon_shadow.config import (
     FROZEN_CONFIG as EXP417_CONFIG,
 )
+from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
+    Exp417CheckpointProvenance,
+)
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     FrozenLaneSnapshot,
     FrozenRunContext,
@@ -63,6 +66,31 @@ def _plan(context: FrozenRunContext) -> ShardPlan:
 
 def _digest(dataset: str) -> str:
     return sha256(dataset.encode("utf-8")).hexdigest()
+
+
+def _real_provenance() -> Exp417CheckpointProvenance:
+    return Exp417CheckpointProvenance(
+        git_commit="c" * 40,
+        database_sha256=EXP417_CONFIG.database_sha256,
+        exp291_prediction_sha256=EXP417_CONFIG.exp291_prediction_sha256,
+        exp291_manifest_sha256=EXP417_CONFIG.exp291_manifest_sha256,
+        exp292_prediction_sha256=EXP417_CONFIG.exp292_prediction_sha256,
+        exp292_manifest_sha256=EXP417_CONFIG.exp292_manifest_sha256,
+        frozen_config_sha256="5" * 64,
+        preprocessing_contract_sha256="6" * 64,
+        fold_contract_sha256="7" * 64,
+        model_contract_sha256="8" * 64,
+        model_seeds=EXP417_CONFIG.model_seeds,
+        perturbation_seeds=EXP417_CONFIG.perturbation_seeds,
+        runtime_versions=MappingProxyType(
+            {
+                "numpy": "synthetic",
+                "python": "synthetic",
+                "torch": "synthetic",
+            }
+        ),
+        backend_contract_sha256="9" * 64,
+    )
 
 
 class _Store:
@@ -143,6 +171,102 @@ class CoordinatorTests(unittest.TestCase):
             )
             for assignment in self.plan.assignments
         }
+
+    def test_real_store_boundary_canonicalizes_nonlexical_shard_universe(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        with TemporaryDirectory() as temporary:
+            datasets = ("beta", "alpha")
+            store = coordinator._open_checkpoint_store(
+                Path(temporary) / "worker-0",
+                _real_provenance(),
+                datasets,
+            )
+
+            self.assertEqual(datasets, ("beta", "alpha"))
+            self.assertEqual(store.expected_datasets, ("alpha", "beta"))
+
+    def test_real_partial_store_validation_accepts_canonical_shard_universe(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        first, second = self.plan.assignments
+        nonlexical = ShardPlan(
+            2,
+            (
+                ShardAssignment(
+                    first.shard_index,
+                    tuple(reversed(first.datasets)),
+                    first.total_cost,
+                ),
+                second,
+            ),
+            self.context.datasets,
+        )
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            stores = {
+                assignment.shard_index: coordinator._open_checkpoint_store(
+                    root / f"worker-{assignment.shard_index}",
+                    _real_provenance(),
+                    assignment.datasets,
+                )
+                for assignment in nonlexical.assignments
+            }
+
+            observed = coordinator._validate_partial_worker_stores(
+                nonlexical, stores
+            )
+
+            self.assertEqual(
+                stores[0].expected_datasets,
+                tuple(sorted(nonlexical.assignments[0].datasets)),
+            )
+            self.assertEqual(dict(observed[0]), {})
+            self.assertEqual(
+                nonlexical.assignments[0].datasets,
+                tuple(reversed(first.datasets)),
+            )
+
+    def test_real_merge_validation_accepts_canonical_shard_universe(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        first, second = self.plan.assignments
+        nonlexical = ShardPlan(
+            2,
+            (
+                ShardAssignment(
+                    first.shard_index,
+                    tuple(reversed(first.datasets)),
+                    first.total_cost,
+                ),
+                second,
+            ),
+            self.context.datasets,
+        )
+        provenance = _real_provenance()
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            stores = {
+                assignment.shard_index: coordinator._open_checkpoint_store(
+                    root / f"worker-{assignment.shard_index}",
+                    provenance,
+                    assignment.datasets,
+                )
+                for assignment in nonlexical.assignments
+            }
+            canonical = coordinator._open_checkpoint_store(
+                root / "canonical",
+                provenance,
+                self.context.datasets,
+            )
+
+            with self.assertRaisesRegex(ValueError, "coverage"):
+                coordinator.merge_worker_checkpoints(
+                    self.context,
+                    nonlexical,
+                    stores,
+                    canonical,
+                )
 
     def test_merge_is_canonical_when_workers_finish_out_of_order(self):
         from experiments.exp419_deterministic_cpu_parallel.coordinator import (

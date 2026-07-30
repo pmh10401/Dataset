@@ -157,7 +157,9 @@ def merge_worker_checkpoints(
     source_digests: dict[int, Mapping[str, str]] = {}
     for assignment in plan.assignments:
         source = worker_stores[assignment.shard_index]
-        if getattr(source, "expected_datasets", None) != assignment.datasets:
+        if getattr(source, "expected_datasets", None) != tuple(
+            sorted(assignment.datasets)
+        ):
             raise ValueError("worker store inventory does not match its shard")
         if (
             _provenance_payload(getattr(source, "provenance", None))
@@ -212,7 +214,7 @@ def _open_checkpoint_store(
     provenance: object,
     datasets: tuple[str, ...],
 ) -> Exp417CheckpointStore:
-    return Exp417CheckpointStore(root, provenance, datasets)
+    return Exp417CheckpointStore(root, provenance, tuple(sorted(datasets)))
 
 
 def _freeze_plan_binding(
@@ -1282,7 +1284,9 @@ def _validate_partial_worker_stores(
     observed: dict[int, Mapping[str, str]] = {}
     for assignment in plan.assignments:
         store = stores[assignment.shard_index]
-        if getattr(store, "expected_datasets", None) != assignment.datasets:
+        if getattr(store, "expected_datasets", None) != tuple(
+            sorted(assignment.datasets)
+        ):
             raise ValueError("worker store inventory does not match its shard")
         digests, completed = _validated_partial_store_state(
             store,
