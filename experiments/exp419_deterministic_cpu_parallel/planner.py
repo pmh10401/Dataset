@@ -2,7 +2,13 @@
 
 from collections.abc import Sequence
 
-from .contracts import DatasetCost, ShardAssignment, ShardPlan, TrainLengthGroupMeta
+from .contracts import (
+    BenchmarkSelectionProof,
+    DatasetCost,
+    ShardAssignment,
+    ShardPlan,
+    TrainLengthGroupMeta,
+)
 from .config import FROZEN_CONFIG
 
 
@@ -53,6 +59,65 @@ def select_benchmark_datasets(costs: Sequence[DatasetCost]) -> tuple[str, ...]:
                 if dataset not in selected:
                     selected.append(dataset)
     return tuple(sorted(selected))
+
+
+def select_balanced_benchmark_datasets(
+    costs: Sequence[DatasetCost],
+) -> BenchmarkSelectionProof:
+    """Select the first TRAIN-cost prefix that clears the frozen proxy gate."""
+    if len(costs) < 6:
+        raise ValueError("costs must contain at least six records")
+    if any(not isinstance(cost, DatasetCost) for cost in costs):
+        raise ValueError("costs must contain DatasetCost records")
+    if len({cost.dataset for cost in costs}) != len(costs):
+        raise ValueError("costs contain a duplicate dataset")
+    if not any(cost.cost for cost in costs):
+        raise ValueError("balanced benchmark population cannot meet proxy gate")
+
+    anchors = select_benchmark_datasets(costs)
+    selected = set(anchors)
+    remaining = sorted(
+        (cost for cost in costs if cost.dataset not in selected),
+        key=lambda cost: (-cost.cost, cost.dataset),
+    )
+    while True:
+        if len(selected) < max(FROZEN_CONFIG.benchmark_proxy_headroom_workers):
+            if not remaining:
+                raise ValueError("balanced benchmark population cannot meet proxy gate")
+            selected.add(remaining.pop(0).dataset)
+            continue
+        selected_costs = tuple(cost for cost in costs if cost.dataset in selected)
+        plans = {
+            count: build_shard_plan(selected_costs, count)
+            for count in (2, 4, 6)
+        }
+        total_cost = sum(cost.cost for cost in selected_costs)
+        headrooms = {
+            count: total_cost
+            / max(assignment.total_cost for assignment in plan.assignments)
+            for count, plan in plans.items()
+        }
+        if all(
+            headrooms[count] >= FROZEN_CONFIG.benchmark_proxy_headroom_gate
+            for count in FROZEN_CONFIG.benchmark_proxy_headroom_workers
+        ):
+            break
+        if not remaining:
+            raise ValueError("balanced benchmark population cannot meet proxy gate")
+        selected.add(remaining.pop(0).dataset)
+
+    return BenchmarkSelectionProof(
+        anchor_datasets=anchors,
+        added_datasets=tuple(sorted(selected - set(anchors))),
+        selected_datasets=tuple(sorted(selected)),
+        proxy_headroom_gate=FROZEN_CONFIG.benchmark_proxy_headroom_gate,
+        total_cost=total_cost,
+        shard_loads={
+            count: tuple(assignment.total_cost for assignment in plan.assignments)
+            for count, plan in plans.items()
+        },
+        proxy_headrooms=headrooms,
+    )
 
 
 def build_shard_plan(costs: Sequence[DatasetCost], worker_count: int) -> ShardPlan:

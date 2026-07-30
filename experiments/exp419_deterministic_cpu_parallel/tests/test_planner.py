@@ -9,6 +9,147 @@ from experiments.exp419_deterministic_cpu_parallel.planner import estimate_datas
 
 
 class PlannerTests(unittest.TestCase):
+    @staticmethod
+    def _balanced_selection_costs():
+        return tuple(
+            reversed(
+                (
+                    *(DatasetCost(f"pre{index}", 1, "preprocessing_only") for index in range(20)),
+                    *(DatasetCost(f"diag{index}", 1, "diagnostic_oof") for index in range(20)),
+                    *(
+                        DatasetCost(
+                            f"cand{index}",
+                            2000 if index == 19 else 800 if index >= 15 else 1,
+                            "candidate_eligible",
+                        )
+                        for index in range(20)
+                    ),
+                )
+            )
+        )
+
+    def test_balanced_selection_adds_first_cost_ordered_prefix_until_proxy_gate(self):
+        from experiments.exp419_deterministic_cpu_parallel.planner import (
+            select_balanced_benchmark_datasets,
+        )
+
+        proof = select_balanced_benchmark_datasets(self._balanced_selection_costs())
+
+        self.assertEqual(
+            proof.anchor_datasets,
+            (
+                "cand0", "cand12", "cand19", "cand4", "cand9",
+                "diag0", "diag12", "diag17", "diag4", "diag9",
+                "pre0", "pre12", "pre17", "pre4", "pre9",
+            ),
+        )
+        self.assertEqual(
+            proof.added_datasets,
+            ("cand15", "cand16", "cand17", "cand18"),
+        )
+        self.assertEqual(
+            proof.selected_datasets,
+            (
+                "cand0", "cand12", "cand15", "cand16", "cand17", "cand18",
+                "cand19", "cand4", "cand9", "diag0", "diag12", "diag17",
+                "diag4", "diag9", "pre0", "pre12", "pre17", "pre4", "pre9",
+            ),
+        )
+        self.assertEqual(proof.total_cost, 5214)
+        self.assertEqual(
+            dict(proof.shard_loads),
+            {2: (2800, 2414), 4: (2000, 1600, 807, 807), 6: (2000, 800, 800, 800, 800, 14)},
+        )
+        self.assertEqual(
+            dict(proof.proxy_headrooms),
+            {2: 1.862142857142857, 4: 2.607, 6: 2.607},
+        )
+
+        from experiments.exp419_deterministic_cpu_parallel.planner import build_shard_plan
+
+        previous_prefix_names = (
+            "cand0", "cand12", "cand15", "cand16", "cand17", "cand19",
+            "cand4", "cand9", "diag0", "diag12", "diag17", "diag4", "diag9",
+            "pre0", "pre12", "pre17", "pre4", "pre9",
+        )
+        previous_prefix = tuple(
+            cost for cost in self._balanced_selection_costs()
+            if cost.dataset in previous_prefix_names
+        )
+        self.assertEqual(sum(cost.cost for cost in previous_prefix), 4414)
+        self.assertEqual(
+            tuple(assignment.total_cost for assignment in build_shard_plan(previous_prefix, 4).assignments),
+            (2000, 805, 805, 804),
+        )
+        self.assertEqual(
+            tuple(assignment.total_cost for assignment in build_shard_plan(previous_prefix, 6).assignments),
+            (2000, 800, 800, 800, 7, 7),
+        )
+        self.assertLess(4414 / 2000, 2.5)
+
+    def test_balanced_selection_fills_single_stratum_to_six_workers_before_planning(self):
+        from experiments.exp419_deterministic_cpu_parallel.planner import (
+            select_balanced_benchmark_datasets,
+        )
+
+        proof = select_balanced_benchmark_datasets(
+            (
+                DatasetCost("a", 4, "candidate_eligible"),
+                DatasetCost("b", 2, "candidate_eligible"),
+                DatasetCost("c", 1, "candidate_eligible"),
+                DatasetCost("d", 1, "candidate_eligible"),
+                DatasetCost("e", 1, "candidate_eligible"),
+                DatasetCost("f", 1, "candidate_eligible"),
+            )
+        )
+
+        self.assertEqual(proof.anchor_datasets, ("a", "c", "d", "e", "f"))
+        self.assertEqual(proof.added_datasets, ("b",))
+        self.assertEqual(proof.selected_datasets, ("a", "b", "c", "d", "e", "f"))
+        self.assertEqual(proof.total_cost, 10)
+        self.assertEqual(
+            dict(proof.shard_loads),
+            {2: (5, 5), 4: (4, 2, 2, 2), 6: (4, 2, 1, 1, 1, 1)},
+        )
+        self.assertEqual(dict(proof.proxy_headrooms), {2: 2.0, 4: 2.5, 6: 2.5})
+
+    def test_balanced_selection_rejects_invalid_or_unbalanced_cost_populations(self):
+        from experiments.exp419_deterministic_cpu_parallel.planner import (
+            select_balanced_benchmark_datasets,
+        )
+
+        costs = self._balanced_selection_costs()
+        with self.assertRaisesRegex(ValueError, "six"):
+            select_balanced_benchmark_datasets(costs[:5])
+        with self.assertRaisesRegex(ValueError, "DatasetCost"):
+            select_balanced_benchmark_datasets(("not-a-cost", *costs[1:]))
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            select_balanced_benchmark_datasets(
+                (*costs, DatasetCost("pre0", 1, "preprocessing_only"))
+            )
+        with self.assertRaisesRegex(ValueError, "cannot meet proxy gate"):
+            select_balanced_benchmark_datasets(
+                (
+                    DatasetCost("pre", 1, "preprocessing_only"),
+                    DatasetCost("diag", 1, "diagnostic_oof"),
+                    DatasetCost("cand", 1000, "candidate_eligible"),
+                    DatasetCost("pre-extra", 1, "preprocessing_only"),
+                    DatasetCost("diag-extra", 1, "diagnostic_oof"),
+                    DatasetCost("cand-extra", 1, "candidate_eligible"),
+                )
+            )
+        with self.assertRaisesRegex(ValueError, "cannot meet proxy gate"):
+            select_balanced_benchmark_datasets(
+                (
+                    DatasetCost("pre", 0, "preprocessing_only"),
+                    DatasetCost("diag", 0, "diagnostic_oof"),
+                    DatasetCost("cand", 0, "candidate_eligible"),
+                    DatasetCost("pre-extra", 0, "preprocessing_only"),
+                    DatasetCost("diag-extra", 0, "diagnostic_oof"),
+                    DatasetCost("cand-extra", 0, "candidate_eligible"),
+                )
+            )
+
     def test_cost_proxy_uses_frozen_group_weights(self):
         groups = (
             TrainLengthGroupMeta("a", 10, 49),
