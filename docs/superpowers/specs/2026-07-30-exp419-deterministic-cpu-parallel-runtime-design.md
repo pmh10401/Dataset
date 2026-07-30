@@ -23,6 +23,24 @@ The stopped Exp417 sequential attempt and its 94 validated dataset
 checkpoints remain immutable local evidence. Exp419 does not import, rewrite,
 or claim those records as Exp419 results.
 
+### 2026-07-30 pre-official human ruling: balanced benchmark correction
+
+The first private Exp419 attempt exposed two development defects before any
+valid benchmark or official output existed. The checkpoint-universe boundary
+was corrected and reviewed in commits `f54ac4d` and `b706393`. The user then
+approved the TRAIN-only balanced benchmark design in commit `4ea4334`.
+
+The terminated attempt has wrapper status `143`, published no benchmark JSON,
+qualified no worker trial, and opened no official checkpoint or output root.
+Its root is retained as immutable diagnostic-only evidence and must never be
+accepted, resumed, merged, or reused:
+
+`/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark`
+
+The corrected benchmark uses this new exact no-clobber root:
+
+`/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced`
+
 ## 2. Scope
 
 The first Exp419 implementation changes only population orchestration and
@@ -158,9 +176,42 @@ The TRAIN-only population is split into three benchmark strata:
 Within each non-empty stratum, datasets are ordered by `(cost, dataset)` and
 the records at quantiles `0`, `0.25`, `0.50`, `0.75`, and `1.0` are selected
 using index `floor(q * (n-1))`. Duplicate selections are removed without
-replacement. The resulting sorted dataset names and identities are written
-to the benchmark manifest before timing begins. The same subset, inputs, and
-seeds are used for every worker count.
+replacement. These records are the unchanged original anchors.
+
+The original 15 anchors have total proxy cost `388,627,551`.
+`StarLightCurves_normal_3` alone has cost `353,424,384`, so the largest-first
+proxy speedup ceiling is only `1.0996059372x` for 2, 4, or 6 workers. The
+approved correction does not remove or time-tune an anchor. It sorts every
+remaining TRAIN-only cost record by `(-cost, dataset)`, adds exactly one
+record at a time, and stops at the first prefix for which both the 4-worker
+and 6-worker largest-first plans have
+`sum(selected costs) / max(shard total cost) >= 2.5`.
+
+For the frozen inputs, this selects exactly 19 datasets: the original 15
+anchors plus:
+
+- `StarLightCurves_normal_2`, cost `171,196,416`;
+- `HandOutlines_normal_1`, cost `153,600,300`;
+- `StarLightCurves_normal_1`, cost `88,169,472`;
+- `HandOutlines_normal_0`, cost `86,893,884`.
+
+The selected total cost is `888,487,623`. The exact proxy evidence is:
+
+- 2-worker loads `444,237,111`, `444,250,512`; headroom
+  `1.9999698346x`;
+- 4-worker loads `353,424,384`, `178,469,604`, `178,343,436`,
+  `178,250,199`; headroom `2.5139397937x`;
+- 6-worker loads `353,424,384`, `171,196,416`, `153,600,300`,
+  `88,169,472`, `86,893,884`, `35,203,167`; headroom
+  `2.5139397937x`.
+
+The selected sorted dataset names, anchor/addition partition, proxy gate,
+total cost, exact 2/4/6-worker loads and headrooms, and canonical proof digest
+are written before timing begins. The same exact 19-dataset subset, inputs,
+and seeds are used for every worker count. Timing results cannot add, remove,
+reorder, or select benchmark datasets. The `2.5x` proxy gate is only a
+feasibility margin; the measured wall-clock qualification gate remains
+unchanged at `2.0x`.
 
 The selected official worker count must satisfy all of:
 
@@ -178,6 +229,9 @@ The selected official worker count must satisfy all of:
 Among passing candidates, Exp419 selects the fastest worker count. If no
 candidate with more than one worker passes, Exp419 records
 `no_qualified_parallel_runtime` and no full-population run is authorized.
+The 2-worker trial remains mandatory evidence even though its proxy headroom
+does not reach `2.5x`; qualification requires an unchanged 4- or 6-worker
+candidate to pass every measured gate.
 
 The selected worker count and thread environment are frozen before the
 1,117-dataset run. The full run cannot reduce parity requirements, change the
@@ -199,6 +253,10 @@ Worker and canonical checkpoint reuse requires exact equality of:
 On resume, the parent validates completed worker records before scheduling
 only missing records in their original shards. It never moves an incomplete
 dataset to another shard during the same official run.
+
+The terminated diagnostic benchmark root and all of its descendants are
+permanently ineligible for reuse. Only the new balanced benchmark root named
+in the human ruling may produce evidence for official verification.
 
 Failure policy is fail-closed:
 
@@ -246,7 +304,9 @@ code, preregistration, runbooks, synthetic tests, and synthetic benchmark
 evidence only.
 
 The full 1,117-dataset Exp419 run requires a new exact user approval after all
-tests, parity checks, and the worker-count benchmark pass.
+tests, parity checks, and the corrected worker-count benchmark pass. Earlier
+blanket approval, an environment variable, a file, or benchmark success is
+not substituted for this fresh phrase.
 
 ## 8. Testing Strategy
 
@@ -258,6 +318,10 @@ Implementation follows test-driven development.
 - every dataset appears exactly once;
 - tie-breaking is stable;
 - only TRAIN metadata enters the estimator;
+- every original anchor remains selected and additions follow exact
+  `(-cost, dataset)` order until both 4- and 6-worker proxy headrooms reach
+  `2.5x`;
+- the frozen result is the exact 19-dataset population and exact proof;
 - invalid worker counts and non-finite costs fail closed.
 
 ### 8.2 Worker tests
@@ -296,7 +360,10 @@ not byte equality.
 The benchmark records wall time, CPU time, peak aggregate resident memory,
 worker utilization, completed datasets, parity results, and fallback reasons
 for `1`, `2`, `4`, and `6` workers. Benchmark output is local, immutable, and
-hash-bound into the Exp419 manifest.
+hash-bound into the Exp419 manifest. It also records the exact balanced
+selection proof and rejects the terminated diagnostic root or any descendant.
+No automatic polling, monitor, cron, or keepalive is created; after launch,
+state is inspected only when the user requests it.
 
 ## 9. Acceptance Criteria
 

@@ -365,6 +365,28 @@ class CliContractTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.official.build_parser().parse_args(["--approval", "yes"])
 
+    def test_runbook_freezes_corrected_root_and_retains_diagnostic_root(
+        self,
+    ) -> None:
+        runbook = (REPO_ROOT / "docs/EXP419_RUNBOOK_KO.md").read_text()
+        invalid_root = str(INVALID_DIAGNOSTIC_ROOT)
+        corrected_root = str(CORRECTED_BENCHMARK_ROOT)
+        corrected_evidence = (
+            corrected_root + "/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"
+        )
+        self.assertIn(invalid_root, runbook)
+        self.assertIn("진단 전용", runbook)
+        self.assertIn("재사용", runbook)
+        self.assertNotIn(f'--benchmark-root "{invalid_root}"', runbook)
+        self.assertNotIn(
+            '--benchmark-evidence "'
+            + invalid_root
+            + '/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"',
+            runbook,
+        )
+        self.assertIn(f'--benchmark-root "{corrected_root}"', runbook)
+        self.assertIn(f'--benchmark-evidence "{corrected_evidence}"', runbook)
+
     def test_dirty_git_blocks_benchmark_and_official_before_other_work(self) -> None:
         for module in (self.benchmark, self.official):
             with self.subTest(module=module.__name__):
@@ -958,6 +980,22 @@ class SourceManifestTests(unittest.TestCase):
             manifest.write_bytes(manifest.read_bytes() + b" ")
             with self.assertRaisesRegex(ValueError, "manifest|JSON|canonical"):
                 self.module.verify_source_manifest(root, manifest)
+
+    def test_manifest_proposal_differs_until_explicit_regeneration(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest, runtime = self._fixture(root)
+            self.module.propose_source_manifest(root, output_path=manifest)
+            stale = manifest.read_bytes()
+            runtime.write_text(runtime.read_text() + "# reviewed change\n")
+
+            proposed = self.module.propose_source_manifest(root)
+            self.assertNotEqual(proposed, stale)
+            self.assertEqual(manifest.read_bytes(), stale)
+
+            self.module.propose_source_manifest(root, output_path=manifest)
+            self.assertEqual(manifest.read_bytes(), proposed)
+            self.module.verify_source_manifest(root, manifest)
 
     def test_manifest_rejects_missing_extra_duplicate_and_traversal_paths(self) -> None:
         with TemporaryDirectory() as temporary:

@@ -8,6 +8,15 @@
 
 **Tech Stack:** Python 3.14, standard-library `multiprocessing` with `spawn`, PyTorch CPU, NumPy, Numba, SQLite, `unittest`, canonical JSON/SHA-256, existing Exp417 atomic checkpoint/publication primitives.
 
+**2026-07-30 pre-official correction:** checkpoint-universe fixes are frozen
+in reviewed commits `f54ac4d` and `b706393`; the user-approved balanced
+benchmark design is commit `4ea4334`. The terminated diagnostic root
+`/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark`
+has status `143`, no benchmark JSON, no qualified trial, and no opened
+official root. It remains immutable and may never be accepted, resumed,
+merged, or reused. The corrected exact root is
+`/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced`.
+
 ## Global Constraints
 
 - The population is exactly 1,117 datasets from the frozen database SHA-256 `8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c`.
@@ -18,6 +27,9 @@
 - Worker candidates are exactly `(1, 2, 4, 6)` with multiprocessing start method `spawn`.
 - Every process uses one PyTorch intra-op thread, one inter-op thread, `OMP_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`, and `VECLIB_MAXIMUM_THREADS=1`.
 - The selected runtime must be exactly equivalent to the one-worker reference, use at most `27,487,790,694` resident bytes, and be at least `2.0x` faster.
+- The original 15 benchmark anchors remain included. Remaining TRAIN-only
+  costs are added in `(-cost, dataset)` order until both 4- and 6-worker proxy
+  headrooms reach `2.5x`; timing never selects the benchmark population.
 - Existing Exp417 checkpoint records are local immutable evidence and are never imported into Exp419.
 - The full 1,117-dataset run is forbidden until the user says exactly `Exp419 1,117개 전체 label-free 병렬 실행 승인`.
 
@@ -672,13 +684,23 @@ Assert:
 
 - [ ] **Step 3: Implement the two CLIs minimally**
 
-The benchmark selects its subset through `select_benchmark_datasets`, runs
-each worker candidate with fresh disjoint roots, verifies parity, and writes
-one local no-clobber JSON file.
+The benchmark selects the original anchors through
+`select_benchmark_datasets`, then freezes the exact balanced proof through
+`select_balanced_benchmark_datasets`. It runs each worker candidate with fresh
+disjoint roots, verifies parity, and writes one local no-clobber JSON file.
+For the frozen inputs this is exactly 19 datasets: the original 15 plus
+`StarLightCurves_normal_2`, `HandOutlines_normal_1`,
+`StarLightCurves_normal_1`, and `HandOutlines_normal_0`. The original total
+cost is `388,627,551` with a `1.0996059372x` proxy ceiling; the corrected
+total is `888,487,623`, and both 4- and 6-worker proxy headrooms are
+`2.5139397937x`. The measured gate remains `2.0x`.
 
 The official CLI verifies the benchmark digest and runs only the frozen
-selected worker count. It contains the exact approval phrase in help and
-runbook text but does not infer approval from environment state.
+selected worker count. It recomputes the exact proof from frozen TRAIN
+metadata and rejects the terminated diagnostic root or any descendant before
+opening official roots. It contains the exact approval phrase in help and
+runbook text but does not infer approval from environment state, prior
+blanket approval, a file, or benchmark success.
 
 - [ ] **Step 4: Add frozen-source manifest and label-isolation tests**
 
@@ -696,6 +718,9 @@ Include:
 - full unit/regression commands;
 - label-free benchmark command;
 - benchmark acceptance inspection;
+- exact anchor/addition, proxy gate, total-cost, 2/4/6 load/headroom, and proof
+  digest inspection;
+- invalid-root retention and non-reuse plus the corrected exact root;
 - resume and worker-failure procedure;
 - exact official approval phrase and command;
 - no automatic polling or monitoring;
@@ -723,11 +748,14 @@ git commit -m "feat(exp419): prepare deterministic parallel execution"
 
 ---
 
-### Task 8: Full Regression, Parity Benchmark, and Readiness Report
+### Task 8: Full Regression, Balanced Parity Benchmark, and Readiness Report
 
 **Files:**
 - Modify only if evidence exposes a tested defect in Task 1--7 files.
-- Create local only: `/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark/`
+- Retain local diagnostic-only:
+  `/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark/`
+- Create local only:
+  `/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/`
 
 **Interfaces:**
 - Consumes the completed Exp419 package and frozen private inputs.
@@ -765,16 +793,21 @@ Expected: compilation exits 0; the source scan has no prohibited access path.
 Use the exact command recorded in `docs/EXP419_RUNBOOK_KO.md`, writing only to:
 
 ```text
-/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark/
+/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/
 ```
 
-Do not run competing MPS/MLX work and do not create an automatic monitor.
+Do not touch or resume the terminated diagnostic root. Do not run competing
+MPS/MLX work and do not create an automatic monitor, polling loop, cron, or
+keepalive.
 
 - [ ] **Step 4: Verify benchmark evidence**
 
 Check:
 
 - all four worker trials exist;
+- the proof contains the exact original 15 anchors plus the four frozen
+  additions, total cost `888,487,623`, proxy gate `2.5`, and exact 2/4/6
+  loads/headrooms;
 - one-worker matches the Exp417 scientific reference;
 - selected parallel trial has exact model, calibration, qualification, and
   candidate identity;
@@ -782,6 +815,7 @@ Check:
 - aggregate peak RSS is at most `27,487,790,694`;
 - no fallback, missing, duplicate, extra, or terminal dataset exists;
 - benchmark manifest and files match their SHA-256 digests.
+- no `trial_roots` entry names the terminated diagnostic root or a descendant.
 
 - [ ] **Step 5: Run final clean-tree verification**
 
@@ -797,7 +831,8 @@ private benchmark results must remain local.
 
 - [ ] **Step 6: Report readiness and stop**
 
-Report the selected worker count, one-worker time, selected time, speedup,
+Report the exact selection proof, selected worker count, one-worker time,
+selected time, speedup,
 peak memory, parity outcome, test counts, commit, benchmark SHA-256, and local
 checkpoint/output paths. Do not start the full run. Request the exact approval:
 

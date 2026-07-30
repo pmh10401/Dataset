@@ -24,6 +24,24 @@ manifest `761466253cccbb7b91fe36cdbd6d298de5d141c90e01e9fe646a8ae242ca9c3e`, Exp
 prediction `f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b`, Exp292
 manifest `0672b2f84a3b2883628bac3c12ad8a25ebfb48efd929e4c0a448c5418267b0d0`으로 고정한다.
 
+## 2026-07-30 공식 실행 전 사용자 판정
+
+첫 비공개 Exp419 시도는 유효한 timing benchmark 또는 공식 산출물을 만들기 전에
+두 개발 결함을 드러냈다. checkpoint universe 경계는 검토된 commit `f54ac4d`와
+`b706393`에서 수정되었다. 사용자는 commit `4ea4334`의 정상 TRAIN 전용 균형
+benchmark 설계를 승인했다. 이 판정은 과학 계산이나 실제 통과 gate를 바꾸지 않고
+원래 benchmark anchor의 병렬 실행 가능성만 바로잡는다.
+
+중단된 시도의 wrapper status는 `143`이고 benchmark JSON, 자격을 얻은 worker trial,
+공식 checkpoint/output root는 존재하지 않는다. 다음 root와 그 하위 경로는 진단 전용
+불변 증거로 남기며 승인, 재개, 병합 또는 재사용하지 않는다.
+
+`/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark`
+
+정정 benchmark는 다음의 새로운 정확한 no-clobber root만 사용한다.
+
+`/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced`
+
 ## 고정된 런타임 계약
 
 - 실험 식별자: `Exp419`; 기대 모집단: 1,117개 데이터셋.
@@ -64,9 +82,37 @@ TRAIN 전용 모집단은 다음 세 strata로 나눈다.
 
 비어 있지 않은 각 stratum에서 데이터셋을 `(cost, dataset)`으로 정렬하고, quantile
 `0`, `0.25`, `0.50`, `0.75`, `1.0`마다 `floor(q * (n - 1))`의 레코드를 선택한다.
-중복 선택은 replacement 없이 제거한다. 선택된 정렬 데이터셋 이름과 identity를 timing
-전에 벤치마크 manifest에 기록하며, 모든 worker 수에서 동일 subset, 입력 및 seed를
-사용한다.
+중복 선택은 replacement 없이 제거한다. 이 결과가 변경하지 않는 원래 anchor다.
+
+원래 15개 anchor의 총 대리비용은 `388,627,551`이다.
+`StarLightCurves_normal_3`의 비용 `353,424,384`가 전체의 90.94%를 차지하여,
+2/4/6 worker largest-first 대리 speedup 상한은 `1.0996059372x`에 불과하다.
+정정 규칙은 anchor를 제거하거나 timing을 보고 조정하지 않는다. 남은 정상 TRAIN 전용
+비용 레코드를 `(-cost, dataset)`으로 정렬하고 한 번에 정확히 하나씩 추가한다.
+4-worker와 6-worker 계획 모두에서
+`sum(selected costs) / max(shard total cost) >= 2.5`가 처음 성립하는 prefix에서
+멈춘다.
+
+동결 입력에서 정확히 19개가 선택된다. 원래 15개에 다음 네 데이터셋을 추가한다.
+
+1. `StarLightCurves_normal_2`: `171,196,416`
+2. `HandOutlines_normal_1`: `153,600,300`
+3. `StarLightCurves_normal_1`: `88,169,472`
+4. `HandOutlines_normal_0`: `86,893,884`
+
+총 비용은 `888,487,623`이고 정확한 대리 증거는 다음과 같다.
+
+- 2-worker load `(444,237,111, 444,250,512)`, headroom `1.9999698346x`
+- 4-worker load `(353,424,384, 178,469,604, 178,343,436, 178,250,199)`,
+  headroom `2.5139397937x`
+- 6-worker load `(353,424,384, 171,196,416, 153,600,300, 88,169,472,
+  86,893,884, 35,203,167)`, headroom `2.5139397937x`
+
+anchor/addition/전체 dataset 이름, proxy gate `2.5`, 총 비용, 정확한 2/4/6-worker
+load·headroom과 canonical proof SHA-256을 timing 전에 고정한다. 모든 worker 수에서
+동일한 19개 subset, 입력 및 seed를 사용한다. timing 결과로 dataset을 추가, 제거,
+재정렬 또는 선택하지 않는다. `2.5x`는 실행 가능성 여유일 뿐이며 실제 wall-clock
+통과 gate `2.0x`는 바꾸지 않는다.
 
 선택 worker 수는 다음을 모두 만족해야 한다.
 
@@ -81,6 +127,9 @@ TRAIN 전용 모집단은 다음 세 strata로 나눈다.
 
 통과한 후보 중 가장 빠른 worker 수를 선택한다. 1개 초과 worker 후보가 통과하지
 않으면 `no_qualified_parallel_runtime`을 기록하며 전체 모집단 실행은 승인되지 않는다.
+2-worker는 proxy headroom `2.5x` 대상이 아니지만 필수 benchmark 증거로 남는다.
+공식 자격은 변경하지 않은 4-worker 또는 6-worker 후보 하나 이상이 모든 실제 gate를
+통과해야 한다.
 선택 worker 수와 thread 환경은 전체 실행 전에 고정하며, 런타임 또는 unlabeled candidate
 수를 본 뒤 parity 조건, worker 수 또는 backend를 바꿀 수 없다.
 
@@ -96,6 +145,8 @@ worker 실패, 데이터셋 terminal failure, corrupt checkpoint, timeout은 모
 부분 worker/canonical 체크포인트와 private dataset에서 나온 prediction, metric, benchmark,
 데이터셋 수준 report는 지역에만 남기며 GitHub에 내보내지 않는다. GitHub에는 코드,
 사전등록, runbook, synthetic test와 synthetic benchmark 증거만 포함할 수 있다.
+자동 polling, monitor, cron 또는 keepalive는 만들지 않는다. 장시간 실행을 시작한 뒤에는
+사용자가 요청한 시점에만 상태를 한 번 확인한다.
 
 Exp419 패키지는 동결된 TEST-label artifact를 import, open, hash, stat, query 또는 name할
 수 없다. Exp420은 성공적으로 동결된 Exp419 prediction에 대한 retrospective TEST-label
@@ -104,8 +155,10 @@ Exp419 패키지는 동결된 TEST-label artifact를 import, open, hash, stat, q
 
 ## 전체 실행 승인
 
-모든 테스트, parity 검사와 worker-count 벤치마크가 통과한 뒤에만 1,117개 전체 실행을
-요청할 수 있다. 필요한 정확한 사용자 승인 문구는 다음과 같다.
+모든 테스트, parity 검사와 정정된 worker-count 벤치마크가 통과한 뒤에만 1,117개 전체
+실행을 요청할 수 있다. 이전의 포괄 승인, 환경 변수, 파일 또는 benchmark 성공을
+승인으로 추론하지 않는다. 그 시점에 사용자가 새로 말해야 하는 정확한 문구는 다음과
+같다.
 
 `Exp419 1,117개 전체 label-free 병렬 실행 승인`
 
