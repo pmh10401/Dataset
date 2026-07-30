@@ -291,7 +291,57 @@ class ReportingTests(unittest.TestCase):
                     verify_exp419_payloads(
                         mutated,
                         trusted_checkpoint=self.trusted,
+                        expected_selection_proof=
+                            self.benchmark.selection_proof,
                     )
+
+    def test_verify_rejects_coherent_alternate_selection_proof_bundle(
+        self,
+    ) -> None:
+        from experiments.exp419_deterministic_cpu_parallel.reporting import (
+            render_exp419_payloads,
+            verify_exp419_payloads,
+        )
+
+        datasets = self.benchmark.benchmark_datasets
+        alternate_proof = BenchmarkSelectionProof(
+            anchor_datasets=(datasets[0], datasets[2]),
+            added_datasets=(datasets[1],),
+            selected_datasets=datasets,
+            proxy_headroom_gate=self.benchmark.selection_proof.proxy_headroom_gate,
+            total_cost=self.benchmark.selection_proof.total_cost,
+            shard_loads=self.benchmark.selection_proof.shard_loads,
+            proxy_headrooms=self.benchmark.selection_proof.proxy_headrooms,
+        )
+        forged_benchmark = RuntimeBenchmark(
+            self.benchmark.trials,
+            self.benchmark.selected_worker_count,
+            self.benchmark.status,
+            datasets,
+            alternate_proof,
+        )
+        forged_payloads = dict(
+            render_exp419_payloads(
+                self.parallel_run,
+                forged_benchmark,
+                self.plan,
+                self.trusted,
+            )
+        )
+
+        self.assertIsNone(
+            verify_exp419_payloads(
+                forged_payloads,
+                trusted_checkpoint=self.trusted,
+                expected_selection_proof=alternate_proof,
+            )
+        )
+        with self.assertRaisesRegex(ValueError, "selection proof"):
+            verify_exp419_payloads(
+                forged_payloads,
+                trusted_checkpoint=self.trusted,
+                expected_selection_proof=self.benchmark.selection_proof,
+            )
 
     def test_render_recomputes_runtime_qualification_and_rejects_forged_selection(self) -> None:
         from experiments.exp419_deterministic_cpu_parallel.reporting import (
@@ -416,7 +466,9 @@ class ReportingTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "recomputed|qualification"):
             verify_exp419_payloads(
-                runtime_mutation, trusted_checkpoint=self.trusted
+                runtime_mutation,
+                trusted_checkpoint=self.trusted,
+                expected_selection_proof=self.benchmark.selection_proof,
             )
 
         for mutation in ("thread", "aggregate"):
@@ -435,7 +487,10 @@ class ReportingTests(unittest.TestCase):
                 ValueError, "thread|RSS"
             ):
                 verify_exp419_payloads(
-                    mutated, trusted_checkpoint=self.trusted
+                    mutated,
+                    trusted_checkpoint=self.trusted,
+                    expected_selection_proof=
+                        self.benchmark.selection_proof,
                 )
 
     def test_multi_attempt_resume_aggregate_uses_individual_peak_lower_bound(self) -> None:
@@ -476,7 +531,9 @@ class ReportingTests(unittest.TestCase):
             )
         )
         verify_exp419_payloads(
-            payloads, trusted_checkpoint=self.trusted
+            payloads,
+            trusted_checkpoint=self.trusted,
+            expected_selection_proof=self.benchmark.selection_proof,
         )
         self.assertEqual(
             json.loads(payloads["MANIFEST.json"])[
@@ -491,14 +548,19 @@ class ReportingTests(unittest.TestCase):
         )
 
         verify_exp419_payloads(
-            self.payloads, trusted_checkpoint=self.trusted
+            self.payloads,
+            trusted_checkpoint=self.trusted,
+            expected_selection_proof=self.benchmark.selection_proof,
         )
         for name in EXACT_FILES:
             mutated = dict(self.payloads)
             mutated[name] = mutated[name] + b" "
             with self.subTest(name=name), self.assertRaises(ValueError):
                 verify_exp419_payloads(
-                    mutated, trusted_checkpoint=self.trusted
+                    mutated,
+                    trusted_checkpoint=self.trusted,
+                    expected_selection_proof=
+                        self.benchmark.selection_proof,
                 )
 
     def test_semantic_candidate_worker_shard_model_and_evaluation_attacks_fail(self) -> None:
@@ -565,7 +627,10 @@ class ReportingTests(unittest.TestCase):
             mutated[name] = replacement
             with self.subTest(name=name), self.assertRaises(ValueError):
                 verify_exp419_payloads(
-                    mutated, trusted_checkpoint=self.trusted
+                    mutated,
+                    trusted_checkpoint=self.trusted,
+                    expected_selection_proof=
+                        self.benchmark.selection_proof,
                 )
 
     def test_source_digest_manifest_missing_tampered_and_wrong_values_fail(self) -> None:
@@ -589,5 +654,8 @@ class ReportingTests(unittest.TestCase):
             mutated["MANIFEST.json"] = canonical_json_bytes(manifest) + b"\n"
             with self.subTest(mutation=mutation), self.assertRaises(ValueError):
                 verify_exp419_payloads(
-                    mutated, trusted_checkpoint=self.trusted
+                    mutated,
+                    trusted_checkpoint=self.trusted,
+                    expected_selection_proof=
+                        self.benchmark.selection_proof,
                 )

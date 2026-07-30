@@ -273,6 +273,58 @@ class CliContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "digest"):
             self.benchmark.benchmark_from_payload(copied_digest)
 
+    def test_benchmark_parser_is_structural_and_writer_checks_selection(
+        self,
+    ) -> None:
+        benchmark, measurements = _passing_measured_benchmark(self.benchmark)
+        selected_index = next(
+            index
+            for index, trial in enumerate(benchmark.trials)
+            if trial.worker_count == benchmark.selected_worker_count
+        )
+        selected = benchmark.trials[selected_index]
+        invalid_selected = RuntimeTrial(
+            selected.worker_count,
+            selected.elapsed_seconds,
+            selected.peak_rss_bytes,
+            False,
+            selected.finite,
+            selected.fallback,
+            selected.completed_datasets,
+            selected.evidence_sha256,
+        )
+        forged_trials = list(benchmark.trials)
+        forged_trials[selected_index] = invalid_selected
+        forged = RuntimeBenchmark(
+            tuple(forged_trials),
+            benchmark.selected_worker_count,
+            benchmark.status,
+            benchmark.benchmark_datasets,
+            benchmark.selection_proof,
+        )
+        payload = self.benchmark.benchmark_payload(forged)
+        self.assertEqual(
+            self.benchmark.benchmark_from_payload(payload),
+            forged,
+        )
+
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "benchmark.json"
+            with self.assertRaisesRegex(ValueError, "selection"):
+                self.benchmark.write_benchmark_evidence(
+                    path,
+                    benchmark=forged,
+                    git_commit="a" * 40,
+                    context_sha256="b" * 64,
+                    source_manifest_sha256="c" * 64,
+                    trial_roots=tuple(
+                        CORRECTED_BENCHMARK_ROOT / f"workers-{count}"
+                        for count in FROZEN_CONFIG.worker_candidates
+                    ),
+                    runtime_measurements=measurements,
+                )
+            self.assertFalse(path.exists())
+
     def test_parsers_expose_only_frozen_path_arguments(self) -> None:
         forbidden = {
             "workers",
@@ -579,6 +631,59 @@ class CliContractTests(unittest.TestCase):
                             expected_costs=costs,
                         )
 
+    def test_official_compares_expected_proof_before_runtime_selection(
+        self,
+    ) -> None:
+        wrong_proof = _selection_proof(
+            anchor_datasets=("b", "c", "d", "e", "f"),
+            added_datasets=("a",),
+        )
+        benchmark, measurements = _passing_measured_benchmark(
+            self.benchmark,
+            selection_proof=wrong_proof,
+        )
+        selection_events: list[str] = []
+
+        def selection_reached(*_args):
+            selection_events.append("selection")
+            raise AssertionError("runtime selection reached before proof check")
+
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "benchmark.json"
+            self.benchmark.write_benchmark_evidence(
+                path,
+                benchmark=benchmark,
+                git_commit="a" * 40,
+                context_sha256="b" * 64,
+                source_manifest_sha256="c" * 64,
+                trial_roots=tuple(
+                    CORRECTED_BENCHMARK_ROOT / f"workers-{count}"
+                    for count in FROZEN_CONFIG.worker_candidates
+                ),
+                runtime_measurements=measurements,
+            )
+            with (
+                patch.dict(
+                    self.official.benchmark_from_payload.__globals__,
+                    {"select_runtime": selection_reached},
+                ),
+                patch.object(
+                    self.official,
+                    "select_runtime",
+                    side_effect=selection_reached,
+                    create=True,
+                ),
+                self.assertRaisesRegex(ValueError, "selection proof"),
+            ):
+                self.official.verify_benchmark_evidence(
+                    path,
+                    expected_git_commit="a" * 40,
+                    expected_context_sha256="b" * 64,
+                    expected_source_manifest_sha256="c" * 64,
+                    expected_costs=BALANCED_COSTS,
+                )
+        self.assertEqual(selection_events, [])
+
     def test_official_rejects_terminated_diagnostic_roots_and_accepts_corrected_root(
         self,
     ) -> None:
@@ -668,9 +773,7 @@ class CliContractTests(unittest.TestCase):
                     expected_git_commit="a" * 40,
                     expected_context_sha256="b" * 64,
                     expected_source_manifest_sha256="c" * 64,
-                    expected_costs=(
-                        DatasetCost("a", 1, "preprocessing_only"),
-                    ),
+                    expected_costs=BALANCED_COSTS,
                 )
 
     def test_runtime_measurements_are_finite_consistent_and_evidence_bound(self) -> None:
@@ -709,9 +812,7 @@ class CliContractTests(unittest.TestCase):
                     expected_git_commit="a" * 40,
                     expected_context_sha256="b" * 64,
                     expected_source_manifest_sha256="c" * 64,
-                    expected_costs=(
-                        DatasetCost("a", 1, "preprocessing_only"),
-                    ),
+                    expected_costs=BALANCED_COSTS,
                 )
 
     def test_benchmark_requires_fresh_disjoint_candidate_roots(self) -> None:
@@ -750,6 +851,10 @@ class CliContractTests(unittest.TestCase):
         )
 
     def test_train_metadata_ignores_rows_outside_frozen_population(self) -> None:
+        from experiments.exp419_deterministic_cpu_parallel.planner import (
+            select_benchmark_datasets,
+        )
+
         expected_rows = (
             ("a", 160, 49),
             ("a", 320, 50),
@@ -768,8 +873,8 @@ class CliContractTests(unittest.TestCase):
         )
         self.assertEqual(observed, expected)
         self.assertEqual(
-            self.benchmark.select_benchmark_datasets(observed),
-            self.benchmark.select_benchmark_datasets(expected),
+            select_benchmark_datasets(observed),
+            select_benchmark_datasets(expected),
         )
 
     def test_train_metadata_requires_valid_unique_complete_frozen_population(self) -> None:

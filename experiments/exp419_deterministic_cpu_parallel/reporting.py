@@ -33,6 +33,7 @@ from experiments.exp417_causal_multihorizon_shadow.reporting import (
 from .config import FROZEN_CONFIG
 from .coordinator import select_runtime
 from .contracts import (
+    BenchmarkSelectionProof,
     ParallelRun,
     RuntimeBenchmark,
     RuntimeTrial,
@@ -327,9 +328,20 @@ def _manifest_payload(
     }
 
 
-def _verify_runtime_qualification(benchmark: RuntimeBenchmark) -> None:
+def _verify_runtime_qualification(
+    benchmark: RuntimeBenchmark,
+    expected_selection_proof: BenchmarkSelectionProof,
+) -> None:
+    if type(expected_selection_proof) is not BenchmarkSelectionProof:
+        raise ValueError(
+            "Exp419 expected selection proof must be exact"
+        )
+    if benchmark.selection_proof != expected_selection_proof:
+        raise ValueError(
+            "Exp419 benchmark selection proof differs from expected proof"
+        )
     recomputed = select_runtime(
-        benchmark.trials, benchmark.selection_proof
+        benchmark.trials, expected_selection_proof
     )
     if recomputed != benchmark:
         raise ValueError(
@@ -382,7 +394,9 @@ def render_exp419_payloads(
         or benchmark.selected_worker_count != plan.worker_count
     ):
         raise ValueError("Exp419 runtime benchmark does not authorize this plan")
-    _verify_runtime_qualification(benchmark)
+    _verify_runtime_qualification(
+        benchmark, benchmark.selection_proof
+    )
     if not isinstance(trusted_checkpoint, TrustedCheckpointProvenance):
         raise ValueError("Exp419 requires trusted canonical checkpoint provenance")
     if dict(run.record_digests) != dict(
@@ -458,7 +472,9 @@ def render_exp419_payloads(
         )
     )
     verify_exp419_payloads(
-        ordered, trusted_checkpoint=trusted_checkpoint
+        ordered,
+        trusted_checkpoint=trusted_checkpoint,
+        expected_selection_proof=benchmark.selection_proof,
     )
     return MappingProxyType(ordered)
 
@@ -570,6 +586,7 @@ def verify_exp419_payloads(
     payloads: Mapping[str, bytes],
     *,
     trusted_checkpoint: TrustedCheckpointProvenance,
+    expected_selection_proof: BenchmarkSelectionProof,
 ) -> None:
     """Reconstruct and cross-bind every scientific and runtime artifact."""
     FROZEN_CONFIG.validate()
@@ -583,6 +600,10 @@ def verify_exp419_payloads(
         raise ValueError("Exp419 reporting requires the exact ordered ten-file set")
     if not isinstance(trusted_checkpoint, TrustedCheckpointProvenance):
         raise ValueError("Exp419 verification requires trusted checkpoint provenance")
+    if type(expected_selection_proof) is not BenchmarkSelectionProof:
+        raise ValueError(
+            "Exp419 verification requires an expected selection proof"
+        )
 
     config = _canonical_object(payloads[CONFIG_FILE], CONFIG_FILE)
     if set(config) != {
@@ -633,7 +654,9 @@ def verify_exp419_payloads(
             payloads[RUNTIME_BENCHMARK_FILE], RUNTIME_BENCHMARK_FILE
         )
     )
-    _verify_runtime_qualification(benchmark)
+    _verify_runtime_qualification(
+        benchmark, expected_selection_proof
+    )
     if (
         benchmark.status != "qualified_parallel_runtime"
         or benchmark.selected_worker_count != plan.worker_count

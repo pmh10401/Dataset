@@ -36,6 +36,7 @@ from experiments.exp419_deterministic_cpu_parallel.contracts import (
 from experiments.exp419_deterministic_cpu_parallel.coordinator import (
     _context_sha256,
     resume_or_run_parallel,
+    select_runtime,
 )
 from experiments.exp419_deterministic_cpu_parallel.planner import (
     build_shard_plan,
@@ -182,12 +183,6 @@ def verify_benchmark_evidence(
             "benchmark evidence uses the terminated diagnostic root"
         )
     benchmark = benchmark_from_payload(payload["benchmark"])
-    measurements = runtime_measurements_from_payload(
-        payload["runtime_measurements"]
-    )
-    validate_benchmark_source_manifest_binding(
-        benchmark, measurements, payload["source_manifest_sha256"]
-    )
     expected_proof = select_balanced_benchmark_datasets(
         tuple(expected_costs)
     )
@@ -206,6 +201,18 @@ def verify_benchmark_evidence(
         raise ValueError(
             "benchmark datasets differ from the frozen TRAIN-only balance"
         )
+    if select_runtime(
+        benchmark.trials, expected_proof
+    ) != benchmark:
+        raise ValueError(
+            "benchmark selection is not the frozen passing selection"
+        )
+    measurements = runtime_measurements_from_payload(
+        payload["runtime_measurements"]
+    )
+    validate_benchmark_source_manifest_binding(
+        benchmark, measurements, payload["source_manifest_sha256"]
+    )
     if (
         benchmark.status != "qualified_parallel_runtime"
         or benchmark.selected_worker_count not in FROZEN_CONFIG.worker_candidates[1:]
@@ -379,20 +386,28 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
         )
 
     def verify(payloads: Mapping[str, bytes], opened: OpenedRun) -> None:
+        expected_proof = select_balanced_benchmark_datasets(
+            opened.frozen.costs
+        )
         verify_exp419_payloads(
             payloads,
             trusted_checkpoint=TrustedCheckpointProvenance.from_store(
                 state["checkpoints"]
             ),
+            expected_selection_proof=expected_proof,
         )
 
     def publish(payloads: Mapping[str, bytes], opened: OpenedRun) -> None:
+        expected_proof = select_balanced_benchmark_datasets(
+            opened.frozen.costs
+        )
         publish_exp419(
             payloads,
             args.output_dir,
             checkpoints=state["checkpoints"],
             run=state["run"],
             benchmark=state["benchmark"],
+            expected_selection_proof=expected_proof,
             plan=opened.plan,
             pre_publish_verify=revalidate,
         )

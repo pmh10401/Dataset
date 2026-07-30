@@ -9,6 +9,9 @@ from unittest.mock import patch
 from experiments.exp417_causal_multihorizon_shadow.reporting import (
     TrustedCheckpointProvenance,
 )
+from experiments.exp419_deterministic_cpu_parallel.contracts import (
+    BenchmarkSelectionProof,
+)
 from experiments.exp419_deterministic_cpu_parallel.tests.test_reporting import (
     EXACT_FILES,
     fixture_inputs,
@@ -51,6 +54,8 @@ class PublicationTests(unittest.TestCase):
                     checkpoints=checkpoint,
                     run=self.parallel_run,
                     benchmark=self.benchmark,
+                    expected_selection_proof=
+                        self.benchmark.selection_proof,
                     plan=self.plan,
                     pre_publish_verify=lambda: callbacks.append("fresh"),
                 )
@@ -60,6 +65,40 @@ class PublicationTests(unittest.TestCase):
             self.assertEqual(tuple(sorted(path.name for path in output.iterdir())),
                              tuple(sorted(EXACT_FILES)))
             self.assertEqual(set(hashes), set(EXACT_FILES))
+
+    def test_publish_requires_independent_expected_selection_proof(
+        self,
+    ) -> None:
+        from experiments.exp419_deterministic_cpu_parallel.publication import (
+            publish_exp419,
+        )
+
+        datasets = self.benchmark.benchmark_datasets
+        alternate = BenchmarkSelectionProof(
+            anchor_datasets=(datasets[0], datasets[2]),
+            added_datasets=(datasets[1],),
+            selected_datasets=datasets,
+            proxy_headroom_gate=self.benchmark.selection_proof.proxy_headroom_gate,
+            total_cost=self.benchmark.selection_proof.total_cost,
+            shard_loads=self.benchmark.selection_proof.shard_loads,
+            proxy_headrooms=self.benchmark.selection_proof.proxy_headrooms,
+        )
+        with TemporaryDirectory() as temporary:
+            output = Path(temporary) / "official"
+            with self.assertRaisesRegex(ValueError, "selection proof"):
+                publish_exp419(
+                    self.payloads,
+                    output,
+                    checkpoints=SimpleNamespace(
+                        root=Path(temporary) / "checkpoint"
+                    ),
+                    run=self.parallel_run,
+                    benchmark=self.benchmark,
+                    expected_selection_proof=alternate,
+                    plan=self.plan,
+                    pre_publish_verify=lambda: None,
+                )
+            self.assertFalse(output.exists())
 
     def test_publish_fails_closed_on_stale_checkpoint_extra_name_and_overlap(self) -> None:
         from experiments.exp419_deterministic_cpu_parallel.publication import (
@@ -86,6 +125,8 @@ class PublicationTests(unittest.TestCase):
                     checkpoints=checkpoint,
                     run=self.parallel_run,
                     benchmark=self.benchmark,
+                    expected_selection_proof=
+                        self.benchmark.selection_proof,
                     plan=self.plan,
                     pre_publish_verify=lambda: None,
                 )
@@ -103,6 +144,8 @@ class PublicationTests(unittest.TestCase):
                     checkpoints=checkpoint,
                     run=self.parallel_run,
                     benchmark=self.benchmark,
+                    expected_selection_proof=
+                        self.benchmark.selection_proof,
                     plan=self.plan,
                     pre_publish_verify=lambda: None,
                 )
@@ -117,6 +160,8 @@ class PublicationTests(unittest.TestCase):
                     checkpoints=checkpoint,
                     run=self.parallel_run,
                     benchmark=self.benchmark,
+                    expected_selection_proof=
+                        self.benchmark.selection_proof,
                     plan=self.plan,
                     pre_publish_verify=lambda: None,
                 )

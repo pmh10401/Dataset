@@ -16,7 +16,12 @@ from experiments.exp417_causal_multihorizon_shadow.reporting import (
     TrustedCheckpointProvenance,
 )
 
-from .contracts import ParallelRun, RuntimeBenchmark, ShardPlan
+from .contracts import (
+    BenchmarkSelectionProof,
+    ParallelRun,
+    RuntimeBenchmark,
+    ShardPlan,
+)
 from .reporting import (
     OFFICIAL_FILES,
     render_exp419_payloads,
@@ -31,12 +36,20 @@ def publish_exp419(
     checkpoints: Exp417CheckpointStore,
     run: ParallelRun,
     benchmark: RuntimeBenchmark,
+    expected_selection_proof: BenchmarkSelectionProof,
     plan: ShardPlan,
     pre_publish_verify: Callable[[], None],
 ) -> Mapping[str, str]:
     """Publish only a fresh, complete, canonical Exp419 ten-file bundle."""
     if not callable(pre_publish_verify):
         raise ValueError("Exp419 pre-publish verifier must be callable")
+    if (
+        type(expected_selection_proof) is not BenchmarkSelectionProof
+        or benchmark.selection_proof != expected_selection_proof
+    ):
+        raise ValueError(
+            "Exp419 publication benchmark selection proof mismatch"
+        )
     if (
         not isinstance(payloads, Mapping)
         or set(payloads) != set(OFFICIAL_FILES)
@@ -59,7 +72,11 @@ def publish_exp419(
     )
     if dict(payloads) != expected:
         raise ValueError("Exp419 payloads differ from verified run evidence")
-    verify_exp419_payloads(payloads, trusted_checkpoint=trusted)
+    verify_exp419_payloads(
+        payloads,
+        trusted_checkpoint=trusted,
+        expected_selection_proof=expected_selection_proof,
+    )
 
     def fresh_revalidation() -> None:
         fresh = TrustedCheckpointProvenance.from_store(checkpoints)
@@ -70,7 +87,11 @@ def publish_exp419(
         )
         if rerendered != dict(payloads):
             raise ValueError("Exp419 inputs or Git-bound sources changed")
-        verify_exp419_payloads(payloads, trusted_checkpoint=fresh)
+        verify_exp419_payloads(
+            payloads,
+            trusted_checkpoint=fresh,
+            expected_selection_proof=expected_selection_proof,
+        )
         pre_publish_verify()
 
     return publish_exact_bundle(

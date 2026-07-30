@@ -53,7 +53,6 @@ from experiments.exp419_deterministic_cpu_parallel.planner import (
     build_shard_plan,
     estimate_dataset_cost,
     select_balanced_benchmark_datasets,
-    select_benchmark_datasets,
 )
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
     TrainLengthGroupMeta,
@@ -1102,10 +1101,6 @@ def benchmark_from_payload(payload: object) -> RuntimeBenchmark:
     )
     if benchmark.sha256 != payload["sha256"]:
         raise ValueError("benchmark digest mismatch")
-    if select_runtime(
-        benchmark.trials, benchmark.selection_proof
-    ) != benchmark:
-        raise ValueError("benchmark selection is not the frozen passing selection")
     return benchmark
 
 
@@ -1119,6 +1114,12 @@ def write_benchmark_evidence(
     trial_roots: Sequence[Path],
     runtime_measurements: Sequence[TrialRuntimeMeasurement],
 ) -> None:
+    if select_runtime(
+        benchmark.trials, benchmark.selection_proof
+    ) != benchmark:
+        raise ValueError(
+            "benchmark selection is not the frozen passing selection"
+        )
     measured = validate_benchmark_source_manifest_binding(
         benchmark, runtime_measurements, source_manifest_sha256
     )
