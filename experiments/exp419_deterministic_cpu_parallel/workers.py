@@ -703,13 +703,8 @@ def spawn_workers(
                     sender,
                 ),
             )
-            try:
-                process.start()
-            except BaseException:
-                receiver.close()
-                sender.close()
-                raise
             owned_workers.append((process, receiver, sender))
+            process.start()
             sender.close()
     except BaseException:
         _close_connections(

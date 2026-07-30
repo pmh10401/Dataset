@@ -406,6 +406,11 @@ def _fail_second_process_start(process: object) -> None:
     _recording_process_start(process)
 
 
+def _launch_then_interrupt_process_start(process: object) -> None:
+    _recording_process_start(process)
+    raise KeyboardInterrupt("synthetic interruption after process launch")
+
+
 def _pid_exists(pid: int) -> bool:
     try:
         os.kill(pid, 0)
@@ -1070,6 +1075,64 @@ class WorkerTests(unittest.TestCase):
         self.assertIsInstance(observed, RuntimeError)
         self.assertRegex(str(observed), "second start failure")
         self.assertEqual(surviving, ())
+
+    def test_start_interruption_after_launch_cleans_owned_child_and_pipes(self):
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        observed: BaseException | None = None
+        real_context = multiprocessing.get_context("spawn")
+        with TemporaryDirectory() as temporary:
+            spec = WorkerSpec(
+                ShardAssignment(0, ("alpha",), 1),
+                Path(temporary) / "worker-0",
+            )
+            with (
+                patch.object(
+                    workers,
+                    "run_worker",
+                    _spawn_blocking_worker,
+                ),
+                patch.object(
+                    workers.multiprocessing,
+                    "get_context",
+                    return_value=_RecordingSpawnContext(real_context),
+                ),
+                patch.object(
+                    multiprocessing.process.BaseProcess,
+                    "start",
+                    _launch_then_interrupt_process_start,
+                ),
+                patch.dict(
+                    os.environ,
+                    _THREAD_ENVIRONMENT,
+                    clear=False,
+                ),
+            ):
+                try:
+                    workers.spawn_workers(
+                        (spec,),
+                        _bootstrap(_SYNTHETIC_CONTEXT),
+                    )
+                except BaseException as error:
+                    observed = error
+
+            surviving = tuple(
+                pid for pid in _STARTED_TEST_PIDS if _pid_exists(pid)
+            )
+            closed_before_fallback = (
+                _TEST_RECEIVER is not None and _TEST_RECEIVER.closed,
+                _TEST_SENDER is not None and _TEST_SENDER.closed,
+            )
+            _terminate_test_children()
+            if _TEST_RECEIVER is not None and not _TEST_RECEIVER.closed:
+                _ORIGINAL_CONNECTION_CLOSE(_TEST_RECEIVER)
+            if _TEST_SENDER is not None and not _TEST_SENDER.closed:
+                _ORIGINAL_CONNECTION_CLOSE(_TEST_SENDER)
+
+        self.assertIsInstance(observed, KeyboardInterrupt)
+        self.assertRegex(str(observed), "after process launch")
+        self.assertEqual(surviving, ())
+        self.assertEqual(closed_before_fallback, (True, True))
 
     def test_post_start_sender_close_interruption_cleans_owned_child_and_pipes(self):
         from experiments.exp419_deterministic_cpu_parallel import workers
