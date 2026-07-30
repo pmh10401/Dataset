@@ -12,6 +12,8 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import TypeVar
 
+from experiments.exp403_408.artifact_io import canonical_json_bytes
+
 from .config import FROZEN_CONFIG
 
 
@@ -21,6 +23,7 @@ PARALLEL_RUN_STATUSES = frozenset({"completed", "failed"})
 RUNTIME_BENCHMARK_STATUSES = frozenset(
     {"qualified_parallel_runtime", "no_qualified_parallel_runtime"}
 )
+BENCHMARK_SELECTION_WORKERS = (2, 4, 6)
 
 _T = TypeVar("_T")
 
@@ -181,6 +184,161 @@ class ShardPlan:
         }
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
         object.__setattr__(self, "sha256", sha256(canonical.encode("utf-8")).hexdigest())
+
+
+def _lexical_datasets(values: object, name: str) -> tuple[str, ...]:
+    datasets = _datasets(values, name)
+    if datasets != tuple(sorted(datasets)):
+        raise ValueError(f"{name} must be lexical")
+    return datasets
+
+
+def _benchmark_selection_loads(values: object) -> Mapping[int, tuple[int, ...]]:
+    if not isinstance(values, Mapping) or tuple(values) != BENCHMARK_SELECTION_WORKERS:
+        raise ValueError("shard_loads must have exact ordered benchmark worker keys")
+    copied: dict[int, tuple[int, ...]] = {}
+    for worker_count in BENCHMARK_SELECTION_WORKERS:
+        if type(worker_count) is not int:
+            raise ValueError("shard_loads worker key must be an integer")
+        loads = _tuple(values[worker_count], f"shard_loads[{worker_count}]")
+        if len(loads) != worker_count:
+            raise ValueError("shard_loads length must match its worker count")
+        copied[worker_count] = tuple(
+            _integer(load, f"shard_loads[{worker_count}]", minimum=0)
+            for load in loads
+        )
+    return MappingProxyType(copied)
+
+
+def _benchmark_selection_headrooms(values: object) -> Mapping[int, float]:
+    if not isinstance(values, Mapping) or tuple(values) != BENCHMARK_SELECTION_WORKERS:
+        raise ValueError("proxy_headrooms must have exact ordered benchmark worker keys")
+    copied: dict[int, float] = {}
+    for worker_count in BENCHMARK_SELECTION_WORKERS:
+        if type(worker_count) is not int:
+            raise ValueError("proxy_headrooms worker key must be an integer")
+        copied[worker_count] = _finite(
+            values[worker_count], f"proxy_headrooms[{worker_count}]"
+        )
+    return MappingProxyType(copied)
+
+
+@dataclass(frozen=True)
+class BenchmarkSelectionProof:
+    anchor_datasets: tuple[str, ...]
+    added_datasets: tuple[str, ...]
+    selected_datasets: tuple[str, ...]
+    proxy_headroom_gate: float
+    total_cost: int
+    shard_loads: Mapping[int, tuple[int, ...]]
+    proxy_headrooms: Mapping[int, float]
+    sha256: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        anchors = _lexical_datasets(self.anchor_datasets, "anchor_datasets")
+        additions = _lexical_datasets(self.added_datasets, "added_datasets")
+        selected = _lexical_datasets(self.selected_datasets, "selected_datasets")
+        if set(anchors) & set(additions):
+            raise ValueError("anchor_datasets and added_datasets must be disjoint")
+        if selected != tuple(sorted((*anchors, *additions))):
+            raise ValueError("selected_datasets must equal the anchor and addition union")
+        gate = _finite(self.proxy_headroom_gate, "proxy_headroom_gate")
+        if gate != FROZEN_CONFIG.benchmark_proxy_headroom_gate:
+            raise ValueError("proxy_headroom_gate is not frozen")
+        total_cost = _integer(self.total_cost, "total_cost", minimum=1)
+        loads = _benchmark_selection_loads(self.shard_loads)
+        headrooms = _benchmark_selection_headrooms(self.proxy_headrooms)
+        for worker_count in BENCHMARK_SELECTION_WORKERS:
+            worker_loads = loads[worker_count]
+            if sum(worker_loads) != total_cost:
+                raise ValueError("shard_loads must sum to total_cost")
+            maximum_load = max(worker_loads)
+            if maximum_load == 0:
+                raise ValueError("shard_loads must contain a positive load")
+            expected_headroom = total_cost / maximum_load
+            if abs(headrooms[worker_count] - expected_headroom) > 1e-12:
+                raise ValueError("proxy_headrooms must match shard_loads")
+        for worker_count in FROZEN_CONFIG.benchmark_proxy_headroom_workers:
+            if headrooms[worker_count] < gate:
+                raise ValueError("proxy_headrooms must meet the frozen gate")
+        object.__setattr__(self, "anchor_datasets", anchors)
+        object.__setattr__(self, "added_datasets", additions)
+        object.__setattr__(self, "selected_datasets", selected)
+        object.__setattr__(self, "proxy_headroom_gate", gate)
+        object.__setattr__(self, "shard_loads", loads)
+        object.__setattr__(self, "proxy_headrooms", headrooms)
+        object.__setattr__(
+            self,
+            "sha256",
+            sha256(canonical_json_bytes(_benchmark_selection_proof_body(self))).hexdigest(),
+        )
+
+
+def _benchmark_selection_proof_body(proof: BenchmarkSelectionProof) -> dict[str, object]:
+    return {
+        "anchor_datasets": list(proof.anchor_datasets),
+        "added_datasets": list(proof.added_datasets),
+        "selected_datasets": list(proof.selected_datasets),
+        "proxy_headroom_gate": proof.proxy_headroom_gate,
+        "total_cost": proof.total_cost,
+        "shard_loads": {
+            str(worker_count): list(proof.shard_loads[worker_count])
+            for worker_count in BENCHMARK_SELECTION_WORKERS
+        },
+        "proxy_headrooms": {
+            str(worker_count): proof.proxy_headrooms[worker_count]
+            for worker_count in BENCHMARK_SELECTION_WORKERS
+        },
+    }
+
+
+def benchmark_selection_proof_payload(proof: BenchmarkSelectionProof) -> dict[str, object]:
+    if type(proof) is not BenchmarkSelectionProof:
+        raise ValueError("proof must be a BenchmarkSelectionProof")
+    return {**_benchmark_selection_proof_body(proof), "sha256": proof.sha256}
+
+
+def _benchmark_selection_mapping_from_payload(
+    values: object, name: str
+) -> dict[int, object]:
+    expected_keys = tuple(str(worker_count) for worker_count in BENCHMARK_SELECTION_WORKERS)
+    if type(values) is not dict or tuple(values) != expected_keys:
+        raise ValueError(f"{name} payload keys are invalid")
+    return {worker_count: values[str(worker_count)] for worker_count in BENCHMARK_SELECTION_WORKERS}
+
+
+def benchmark_selection_proof_from_payload(payload: object) -> BenchmarkSelectionProof:
+    if type(payload) is not dict:
+        raise ValueError("benchmark selection proof payload must be a dictionary")
+    expected_fields = {
+        "anchor_datasets",
+        "added_datasets",
+        "selected_datasets",
+        "proxy_headroom_gate",
+        "total_cost",
+        "shard_loads",
+        "proxy_headrooms",
+        "sha256",
+    }
+    if set(payload) != expected_fields:
+        raise ValueError("benchmark selection proof payload fields are invalid")
+    supplied_sha256 = _sha256(payload["sha256"], "sha256")
+    proof = BenchmarkSelectionProof(
+        anchor_datasets=payload["anchor_datasets"],
+        added_datasets=payload["added_datasets"],
+        selected_datasets=payload["selected_datasets"],
+        proxy_headroom_gate=payload["proxy_headroom_gate"],
+        total_cost=payload["total_cost"],
+        shard_loads=_benchmark_selection_mapping_from_payload(
+            payload["shard_loads"], "shard_loads"
+        ),
+        proxy_headrooms=_benchmark_selection_mapping_from_payload(
+            payload["proxy_headrooms"], "proxy_headrooms"
+        ),
+    )
+    if proof.sha256 != supplied_sha256:
+        raise ValueError("benchmark selection proof payload sha256 is invalid")
+    return proof
 
 
 @dataclass(frozen=True)

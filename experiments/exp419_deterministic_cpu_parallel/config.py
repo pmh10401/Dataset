@@ -28,6 +28,8 @@ class Exp419FrozenConfig:
     memory_limit_bytes: int = 27_487_790_694
     torch_threads: int = 1
     benchmark_quantiles: tuple[float, ...] = (0.0, 0.25, 0.50, 0.75, 1.0)
+    benchmark_proxy_headroom_gate: float = 2.5
+    benchmark_proxy_headroom_workers: tuple[int, ...] = (4, 6)
 
     def validate(self) -> None:
         if type(self.exp417_config) is not Exp417FrozenConfig:

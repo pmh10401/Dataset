@@ -13,10 +13,14 @@ class Exp419ConfigTests(unittest.TestCase):
         self.assertEqual(FROZEN_CONFIG.speedup_gate, 2.0)
         self.assertEqual(FROZEN_CONFIG.memory_limit_bytes, 27_487_790_694)
         self.assertEqual(FROZEN_CONFIG.torch_threads, 1)
+        self.assertEqual(FROZEN_CONFIG.benchmark_proxy_headroom_gate, 2.5)
+        self.assertEqual(FROZEN_CONFIG.benchmark_proxy_headroom_workers, (4, 6))
 
     def test_modified_contract_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "worker_candidates"):
             replace(FROZEN_CONFIG, worker_candidates=(1, 8)).validate()
+        with self.assertRaisesRegex(ValueError, "benchmark_proxy_headroom_gate"):
+            replace(FROZEN_CONFIG, benchmark_proxy_headroom_gate=2.0).validate()
 
     def test_exp417_scientific_config_database_and_lanes_are_bound(self):
         required_fields = {
