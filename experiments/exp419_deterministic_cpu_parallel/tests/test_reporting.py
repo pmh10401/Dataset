@@ -49,11 +49,15 @@ def fixture_inputs():
 
     summary = fixture_summary()
     population = summary.context.datasets
-    assignments = (
-        ShardAssignment(0, population[::2], len(population[::2])),
-        ShardAssignment(1, population[1::2], len(population[1::2])),
+    assignments = tuple(
+        ShardAssignment(
+            shard_index,
+            population[shard_index::4],
+            len(population[shard_index::4]),
+        )
+        for shard_index in range(4)
     )
-    plan = ShardPlan(2, assignments, population)
+    plan = ShardPlan(4, assignments, population)
     result_digests = {
         result.dataset: canonical_result_sha256(result)
         for result in summary.results
@@ -97,7 +101,7 @@ def fixture_inputs():
         {
             "run_summary": summary,
             "plan_sha256": plan.sha256,
-            "aggregate_peak_rss_bytes": 2_000_001,
+            "aggregate_peak_rss_bytes": 4_000_006,
         },
         True,
         "completed",
@@ -131,7 +135,7 @@ def fixture_inputs():
     )
     benchmark = RuntimeBenchmark(
         trials,
-        2,
+        4,
         "qualified_parallel_runtime",
         benchmark_datasets,
         selection_proof,
@@ -188,7 +192,7 @@ class ReportingTests(unittest.TestCase):
         runtime = json.loads(
             self.payloads["exp419_parallel_runtime_benchmark.json"]
         )
-        self.assertEqual(runtime["selected_worker_count"], 2)
+        self.assertEqual(runtime["selected_worker_count"], 4)
         self.assertEqual(
             runtime["selection_proof"],
             benchmark_selection_proof_payload(
@@ -220,8 +224,8 @@ class ReportingTests(unittest.TestCase):
         )
         self.assertEqual(manifest["benchmark_sha256"], self.benchmark.sha256)
         self.assertEqual(manifest["shard_plan_sha256"], self.plan.sha256)
-        self.assertEqual(manifest["selected_worker_count"], 2)
-        self.assertEqual(manifest["aggregate_peak_rss_bytes"], 2_000_001)
+        self.assertEqual(manifest["selected_worker_count"], 4)
+        self.assertEqual(manifest["aggregate_peak_rss_bytes"], 4_000_006)
         self.assertEqual(
             manifest["canonical_checkpoint_record_sha256"],
             dict(self.trusted.checkpoint_payload_sha256),
@@ -348,7 +352,7 @@ class ReportingTests(unittest.TestCase):
             render_exp419_payloads,
         )
 
-        selected = self.benchmark.trials[1]
+        selected = self.benchmark.trials[2]
         attacks = (
             replace(selected, parity=False),
             replace(selected, finite=False),
@@ -359,12 +363,13 @@ class ReportingTests(unittest.TestCase):
         for trial in attacks:
             trials = (
                 self.benchmark.trials[0],
+                self.benchmark.trials[1],
                 trial,
-                *self.benchmark.trials[2:],
+                self.benchmark.trials[3],
             )
             forged = RuntimeBenchmark(
                 trials,
-                2,
+                4,
                 "qualified_parallel_runtime",
                 self.benchmark.benchmark_datasets,
                 self.benchmark.selection_proof,
@@ -376,17 +381,17 @@ class ReportingTests(unittest.TestCase):
                     self.parallel_run, forged, self.plan, self.trusted
                 )
 
-        faster_four = replace(
-            self.benchmark.trials[2], elapsed_seconds=20.0
+        faster_six = replace(
+            self.benchmark.trials[3], elapsed_seconds=20.0
         )
         forged = RuntimeBenchmark(
             (
                 self.benchmark.trials[0],
                 self.benchmark.trials[1],
-                faster_four,
-                self.benchmark.trials[3],
+                self.benchmark.trials[2],
+                faster_six,
             ),
-            2,
+            4,
             "qualified_parallel_runtime",
             self.benchmark.benchmark_datasets,
             self.benchmark.selection_proof,
@@ -448,14 +453,15 @@ class ReportingTests(unittest.TestCase):
             verify_exp419_payloads,
         )
 
-        bad_trial = replace(self.benchmark.trials[1], parity=False)
+        bad_trial = replace(self.benchmark.trials[2], parity=False)
         forged_benchmark = RuntimeBenchmark(
             (
                 self.benchmark.trials[0],
+                self.benchmark.trials[1],
                 bad_trial,
-                *self.benchmark.trials[2:],
+                self.benchmark.trials[3],
             ),
-            2,
+            4,
             "qualified_parallel_runtime",
             self.benchmark.benchmark_datasets,
             self.benchmark.selection_proof,
@@ -600,7 +606,7 @@ class ReportingTests(unittest.TestCase):
         runtime = json.loads(
             self.payloads["exp419_parallel_runtime_benchmark.json"]
         )
-        runtime["selected_worker_count"] = 4
+        runtime["selected_worker_count"] = 6
         attacks.append(
             (
                 "exp419_parallel_runtime_benchmark.json",

@@ -26,7 +26,10 @@ merged, or reused. The corrected exact root is
 - MLX and MPS are excluded; canonical model execution is deterministic PyTorch CPU.
 - Worker candidates are exactly `(1, 2, 4, 6)` with multiprocessing start method `spawn`.
 - Every process uses one PyTorch intra-op thread, one inter-op thread, `OMP_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`, and `VECLIB_MAXIMUM_THREADS=1`.
-- The selected runtime must be exactly equivalent to the one-worker reference, use at most `27,487,790,694` resident bytes, and be at least `2.0x` faster.
+- The selected runtime must be an eligible 4- or 6-worker trial, be exactly
+  equivalent to the one-worker reference, use at most `27,487,790,694`
+  resident bytes, and be at least `2.0x` faster. The mandatory 2-worker trial
+  is comparison evidence only and cannot qualify the official run.
 - The original 15 benchmark anchors remain included. Remaining TRAIN-only
   costs are added in `(-cost, dataset)` order until both 4- and 6-worker proxy
   headrooms reach `2.5x`; timing never selects the benchmark population.

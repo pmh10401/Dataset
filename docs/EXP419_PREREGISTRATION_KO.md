@@ -125,11 +125,11 @@ load·headroom과 canonical proof SHA-256을 timing 전에 고정한다. 모든 
 7. 총 peak resident memory가 32-GiB host의 80% 이하, 정확히 `27,487,790,694` bytes다.
 8. 동일 벤치마크 subset에서 1-worker Exp419 기준보다 wall-clock speedup이 최소 `2.0x`다.
 
-통과한 후보 중 가장 빠른 worker 수를 선택한다. 1개 초과 worker 후보가 통과하지
-않으면 `no_qualified_parallel_runtime`을 기록하며 전체 모집단 실행은 승인되지 않는다.
-2-worker는 proxy headroom `2.5x` 대상이 아니지만 필수 benchmark 증거로 남는다.
-공식 자격은 변경하지 않은 4-worker 또는 6-worker 후보 하나 이상이 모든 실제 gate를
-통과해야 한다.
+통과한 4-worker와 6-worker 후보 중 가장 빠른 worker 수를 선택한다. 두 후보가 모두
+실패하면 `no_qualified_parallel_runtime`을 기록하며 전체 모집단 실행은 승인되지 않는다.
+2-worker는 proxy headroom `2.5x` 대상이 아니고 공식 선택 후보도 아니지만 필수
+benchmark 비교 증거로 남는다. 2-worker만 실제 `2.0x` gate를 통과해도 공식 실행을
+승인하지 않는다.
 선택 worker 수와 thread 환경은 전체 실행 전에 고정하며, 런타임 또는 unlabeled candidate
 수를 본 뒤 parity 조건, worker 수 또는 backend를 바꿀 수 없다.
 

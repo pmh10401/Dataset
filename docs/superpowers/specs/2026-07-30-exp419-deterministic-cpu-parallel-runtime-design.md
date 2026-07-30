@@ -226,12 +226,12 @@ The selected official worker count must satisfy all of:
 8. at least `2.0x` wall-clock speedup relative to the one-worker Exp419
    reference on the exact benchmark subset.
 
-Among passing candidates, Exp419 selects the fastest worker count. If no
-candidate with more than one worker passes, Exp419 records
+Among passing 4- and 6-worker candidates, Exp419 selects the fastest worker
+count. If neither eligible candidate passes, Exp419 records
 `no_qualified_parallel_runtime` and no full-population run is authorized.
-The 2-worker trial remains mandatory evidence even though its proxy headroom
-does not reach `2.5x`; qualification requires an unchanged 4- or 6-worker
-candidate to pass every measured gate.
+The 2-worker trial remains mandatory comparison evidence but is not eligible
+for selection. A 2-worker-only measured `2.0x` pass cannot qualify the
+runtime; an unchanged 4- or 6-worker candidate must pass every measured gate.
 
 The selected worker count and thread environment are frozen before the
 1,117-dataset run. The full run cannot reduce parity requirements, change the

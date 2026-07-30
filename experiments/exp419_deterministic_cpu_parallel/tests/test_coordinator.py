@@ -1768,6 +1768,26 @@ class CoordinatorTests(unittest.TestCase):
         self.assertEqual(benchmark.status, "qualified_parallel_runtime")
         self.assertEqual(benchmark.selection_proof, proof)
 
+    def test_select_runtime_rejects_two_worker_only_speedup(self):
+        from experiments.exp419_deterministic_cpu_parallel.coordinator import (
+            select_runtime,
+        )
+
+        datasets = ("a", "b")
+        trials = (
+            RuntimeTrial(1, 100.0, 100, True, True, "", datasets, "1" * 64),
+            RuntimeTrial(2, 49.0, 100, True, True, "", datasets, "2" * 64),
+            RuntimeTrial(4, 60.0, 100, True, True, "", datasets, "4" * 64),
+            RuntimeTrial(6, 70.0, 100, True, True, "", datasets, "6" * 64),
+        )
+
+        benchmark = select_runtime(trials, _selection_proof())
+
+        self.assertIsNone(benchmark.selected_worker_count)
+        self.assertEqual(
+            benchmark.status, "no_qualified_parallel_runtime"
+        )
+
     def test_select_runtime_rejects_parity_memory_finite_fallback_and_speed(self):
         from experiments.exp419_deterministic_cpu_parallel.config import (
             FROZEN_CONFIG,

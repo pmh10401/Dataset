@@ -578,6 +578,84 @@ class CliContractTests(unittest.TestCase):
                     expected_costs=costs,
                 )
 
+    def test_official_rejects_two_worker_only_qualified_selection(self) -> None:
+        measurements = []
+        trials = []
+        for worker_count, elapsed in (
+            (1, 100.0),
+            (2, 49.0),
+            (4, 60.0),
+            (6, 70.0),
+        ):
+            workers = tuple(
+                self.benchmark.WorkerUtilization(
+                    shard_index=index,
+                    pid=1000 + index,
+                    elapsed_seconds=elapsed * 0.8,
+                    wall_occupancy_fraction=0.8,
+                )
+                for index in range(worker_count)
+            )
+            measurement = self.benchmark.TrialRuntimeMeasurement(
+                worker_count=worker_count,
+                wall_seconds=elapsed,
+                process_cpu_seconds=elapsed * (worker_count + 1) * 0.5,
+                process_cpu_utilization=0.5,
+                worker_utilization=workers,
+                scientific_evidence_sha256=f"{worker_count}" * 64,
+                source_manifest_sha256="c" * 64,
+            )
+            measurements.append(measurement)
+            trials.append(
+                RuntimeTrial(
+                    worker_count,
+                    elapsed,
+                    worker_count * 100,
+                    True,
+                    True,
+                    "",
+                    BALANCED_DATASETS,
+                    measurement.evidence_sha256,
+                )
+            )
+        benchmark = RuntimeBenchmark(
+            tuple(trials),
+            2,
+            "qualified_parallel_runtime",
+            BALANCED_DATASETS,
+            _selection_proof(),
+        )
+        payload = {
+            "artifact_kind": "exp419_non_official_runtime_benchmark",
+            "benchmark": self.benchmark.benchmark_payload(benchmark),
+            "context_sha256": "b" * 64,
+            "git_commit": "a" * 40,
+            "runtime_measurements": [
+                self.benchmark.runtime_measurement_payload(measurement)
+                for measurement in measurements
+            ],
+            "schema_version": 1,
+            "source_manifest_sha256": "c" * 64,
+            "trial_roots": [
+                str(CORRECTED_BENCHMARK_ROOT / f"workers-{count}")
+                for count in FROZEN_CONFIG.worker_candidates
+            ],
+            "worker_candidates": list(FROZEN_CONFIG.worker_candidates),
+        }
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "benchmark.json"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(
+                ValueError, "4|6|eligible|authorize|selection"
+            ):
+                self.official.verify_benchmark_evidence(
+                    path,
+                    expected_git_commit="a" * 40,
+                    expected_context_sha256="b" * 64,
+                    expected_source_manifest_sha256="c" * 64,
+                    expected_costs=BALANCED_COSTS,
+                )
+
     def test_official_recomputes_exact_proof_and_rejects_old_or_mutated_balance(
         self,
     ) -> None:

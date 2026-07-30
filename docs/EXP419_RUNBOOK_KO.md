@@ -187,10 +187,12 @@ PY
 
 통과 조건은 후보가 정확히 `1, 2, 4, 6`, 모든 trial의 dataset·과학적 digest
 parity가 exact, finite, fallback 없음, peak aggregate RSS가
-`27,487,790,694` bytes 이하이고, 선택된 2/4/6 worker가 1-worker 대비
-최소 `2.0x` 빠른 것이다. 조건을 만족하는 병렬 후보 중 가장 빠른 수만
-선택된다. `no_qualified_parallel_runtime`이면 공식 실행 승인을 요청하지
-않고 중단한다.
+`27,487,790,694` bytes 이하인 것이다. 2-worker trial은 필수 비교 증거지만
+공식 선택 후보가 아니다. 4-worker 또는 6-worker가 1-worker 대비 최소
+`2.0x` 빠른 것을 포함한 모든 gate를 통과해야 하며, 두 eligible 후보 중
+조건을 만족하는 가장 빠른 수만 선택된다. 2-worker만 `2.0x`를 통과하거나
+4/6-worker가 모두 실패하면 `no_qualified_parallel_runtime`이며 공식 실행
+승인을 요청하지 않고 중단한다.
 
 추가로 `benchmark_datasets`는 proof의 lexical `selected_datasets`와 같은
 정확한 19개여야 한다. proof는 원래 15개 anchor, 위 네 addition, gate

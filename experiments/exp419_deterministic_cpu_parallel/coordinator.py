@@ -1885,7 +1885,8 @@ def select_runtime(
     if baseline_valid:
         for trial in frozen[1:]:
             if (
-                trial.worker_count > 1
+                trial.worker_count
+                in FROZEN_CONFIG.benchmark_proxy_headroom_workers
                 and trial.elapsed_seconds > 0.0
                 and trial.parity
                 and trial.finite

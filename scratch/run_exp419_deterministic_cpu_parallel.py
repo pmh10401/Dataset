@@ -215,9 +215,12 @@ def verify_benchmark_evidence(
     )
     if (
         benchmark.status != "qualified_parallel_runtime"
-        or benchmark.selected_worker_count not in FROZEN_CONFIG.worker_candidates[1:]
+        or benchmark.selected_worker_count
+        not in FROZEN_CONFIG.benchmark_proxy_headroom_workers
     ):
-        raise ValueError("benchmark does not authorize a parallel runtime")
+        raise ValueError(
+            "benchmark does not authorize an eligible 4- or 6-worker runtime"
+        )
     return benchmark
 
 
