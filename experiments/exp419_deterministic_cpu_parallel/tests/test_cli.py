@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import json
 from math import isclose
 from pathlib import Path
@@ -494,6 +495,54 @@ class CliContractTests(unittest.TestCase):
                 ("b", 518_400, "candidate_eligible"),
             ),
         )
+
+    def test_train_metadata_ignores_rows_outside_frozen_population(self) -> None:
+        expected_rows = (
+            ("a", 160, 49),
+            ("a", 320, 50),
+            ("b", 256, 100),
+        )
+        expected = self.benchmark.costs_from_metadata_rows(
+            expected_rows, expected_datasets=("a", "b")
+        )
+        observed = self.benchmark.costs_from_metadata_rows(
+            (
+                ("CornellWhaleChallenge", 1, 0),
+                *expected_rows,
+                ("Wafer_normal_1", 4_000_000, 1_000_000),
+            ),
+            expected_datasets=("a", "b"),
+        )
+        self.assertEqual(observed, expected)
+        self.assertEqual(
+            self.benchmark.select_benchmark_datasets(observed),
+            self.benchmark.select_benchmark_datasets(expected),
+        )
+
+    def test_train_metadata_requires_valid_unique_complete_frozen_population(self) -> None:
+        rows = (("a", 160, 49), ("b", 256, 100))
+        invalid_expected = (
+            ("a", "a"),
+            ("a", ""),
+            ("a", 1),
+            (),
+        )
+        for expected in invalid_expected:
+            with self.subTest(expected=expected), self.assertRaisesRegex(
+                ValueError, "expected|population|dataset"
+            ):
+                self.benchmark.costs_from_metadata_rows(
+                    rows, expected_datasets=expected
+                )
+        with self.assertRaisesRegex(ValueError, "cover|missing|population"):
+            self.benchmark.costs_from_metadata_rows(
+                (("a", 160, 49),),
+                expected_datasets=("a", "b"),
+            )
+
+    def test_train_metadata_query_remains_train_normal_only(self) -> None:
+        source = inspect.getsource(self.benchmark._load_train_metadata_costs)
+        self.assertIn("WHERE i.split = 'TRAIN' AND i.label = '0'", source)
 
 
 class SourceManifestTests(unittest.TestCase):

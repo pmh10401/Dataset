@@ -725,13 +725,28 @@ def costs_from_metadata_rows(
     *,
     expected_datasets: Sequence[str],
 ) -> tuple[DatasetCost, ...]:
+    expected = tuple(expected_datasets)
+    if (
+        not expected
+        or any(not isinstance(dataset, str) or not dataset for dataset in expected)
+        or len(set(expected)) != len(expected)
+    ):
+        raise ValueError(
+            "expected frozen population must contain unique non-empty dataset names"
+        )
+    expected_set = set(expected)
     grouped: dict[str, list[TrainLengthGroupMeta]] = {}
     for row in rows:
         if (
             not isinstance(row, tuple)
             or len(row) != 3
             or not isinstance(row[0], str)
-            or type(row[1]) is not int
+        ):
+            raise ValueError("TRAIN metadata row is invalid")
+        if row[0] not in expected_set:
+            continue
+        if (
+            type(row[1]) is not int
             or row[1] <= 0
             or row[1] % 4
             or type(row[2]) is not int
@@ -741,8 +756,7 @@ def costs_from_metadata_rows(
         grouped.setdefault(row[0], []).append(
             TrainLengthGroupMeta(row[0], row[1] // 4, row[2])
         )
-    expected = tuple(expected_datasets)
-    if tuple(sorted(grouped)) != expected:
+    if set(grouped) != expected_set:
         raise ValueError("TRAIN metadata does not cover the exact frozen population")
     return tuple(
         estimate_dataset_cost(dataset, tuple(grouped[dataset]))
