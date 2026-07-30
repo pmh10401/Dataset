@@ -74,7 +74,7 @@ def _open_checkpoint_store(spec: WorkerSpec, provenance: object) -> object:
     return Exp417CheckpointStore(
         spec.checkpoint_root,
         provenance,
-        spec.shard.datasets,
+        tuple(sorted(spec.shard.datasets)),
     )
 
 

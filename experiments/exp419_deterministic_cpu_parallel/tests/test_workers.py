@@ -629,6 +629,24 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(completion.status, "completed")
             self.assertEqual(completion.error, "")
 
+    def test_checkpoint_store_uses_canonical_universe_without_changing_run_order(
+        self,
+    ):
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary) / "worker-0"
+            spec = WorkerSpec(
+                ShardAssignment(0, ("beta", "alpha"), 2),
+                root,
+            )
+
+            store = workers._open_checkpoint_store(spec, _provenance())
+
+            self.assertEqual(spec.shard.datasets, ("beta", "alpha"))
+            self.assertEqual(store.expected_datasets, ("alpha", "beta"))
+            self.assertTrue(root.is_dir())
+
     def test_worker_refuses_result_outside_assigned_shard(self):
         from experiments.exp419_deterministic_cpu_parallel import workers
 
