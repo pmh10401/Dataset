@@ -128,7 +128,11 @@ current frozen TRAIN metadata. It rejects:
 - an easier or hand-picked replacement subset;
 - missing, extra, duplicate, reordered, or cost-mutated records;
 - altered threshold, loads, headroom, or digests;
-- any benchmark produced from the terminated diagnostic root.
+- any evidence outside the exact corrected lexical/canonical path;
+- trial roots other than the exact ordered direct children `workers-1`,
+  `workers-2`, `workers-4`, and `workers-6`;
+- copied evidence, arbitrary sibling/temp roots, other descendants, and
+  symlink aliases.
 
 The invalid root remains untouched at:
 
@@ -137,6 +141,11 @@ The invalid root remains untouched at:
 The corrected no-clobber benchmark root is:
 
 `/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced`
+
+The evidence path is exactly the direct child
+`EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json`. These paths are frozen once in
+reviewed shared production configuration and validated before any benchmark
+or official root is created or opened.
 
 Any test, parity, finite-output, fallback, memory, source, input, Git, subset,
 or measured-speed failure remains fail-closed and forbids the official run.

@@ -35,7 +35,12 @@ from experiments.exp417_causal_multihorizon_shadow.inputs import (
     verify_input_snapshots,
 )
 from experiments.exp417_causal_multihorizon_shadow.runner import RunnerResources
-from experiments.exp419_deterministic_cpu_parallel.config import FROZEN_CONFIG
+from experiments.exp419_deterministic_cpu_parallel.config import (
+    FROZEN_CONFIG,
+    require_exact_benchmark_evidence_path,
+    require_exact_benchmark_root,
+    require_exact_trial_roots,
+)
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
     DatasetCost,
     RuntimeBenchmark,
@@ -64,7 +69,7 @@ from scratch.run_exp417_causal_multihorizon_shadow import (
 )
 
 
-BENCHMARK_FILE = "EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"
+BENCHMARK_FILE = FROZEN_CONFIG.benchmark_evidence_filename
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -812,15 +817,23 @@ def freeze_benchmark_inputs(
 
 
 def prepare_trial_roots(root: Path) -> Mapping[int, Path]:
-    root = Path(root).resolve(strict=False)
+    root = require_exact_benchmark_root(Path(root))
     if root.exists():
         raise ValueError("benchmark root must be new")
     if not root.parent.is_dir():
         raise ValueError("benchmark parent must exist")
     root.mkdir()
+    ordered = require_exact_trial_roots(
+        tuple(
+            root / f"workers-{count}"
+            for count in FROZEN_CONFIG.worker_candidates
+        )
+    )
     return {
-        count: root / f"workers-{count}"
-        for count in FROZEN_CONFIG.worker_candidates
+        count: path
+        for count, path in zip(
+            FROZEN_CONFIG.worker_candidates, ordered, strict=True
+        )
     }
 
 
@@ -1230,13 +1243,22 @@ def _build_stages(args: argparse.Namespace) -> BenchmarkStages:
         frozen: FrozenBenchmarkInputs,
         roots: Mapping[int, Path],
     ) -> None:
+        evidence_path = require_exact_benchmark_evidence_path(
+            args.benchmark_root / BENCHMARK_FILE
+        )
+        ordered_roots = require_exact_trial_roots(
+            tuple(
+                roots[count]
+                for count in FROZEN_CONFIG.worker_candidates
+            )
+        )
         write_benchmark_evidence(
-            args.benchmark_root / BENCHMARK_FILE,
+            evidence_path,
             benchmark=measured.benchmark,
             git_commit=head,
             context_sha256=_context_sha256(frozen.context),
             source_manifest_sha256=frozen.source_manifest_sha256,
-            trial_roots=tuple(roots[count] for count in FROZEN_CONFIG.worker_candidates),
+            trial_roots=ordered_roots,
             runtime_measurements=measured.runtime_measurements,
         )
 

@@ -42,6 +42,13 @@ benchmark 설계를 승인했다. 이 판정은 과학 계산이나 실제 통�
 
 `/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced`
 
+검토된 공용 설정은 이 exact lexical/canonical root를 단일 allowlist로
+동결한다. evidence는 root 바로 아래의
+`EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json`만 허용하며 trial root는 정확히
+`workers-1`, `workers-2`, `workers-4`, `workers-6` 순서만 허용한다. 임의
+sibling/temp root, 복사한 evidence, 다른 descendant, 순서 변경 및 symlink
+alias는 benchmark 또는 공식 root를 만들거나 열기 전에 거부한다.
+
 ## 고정된 런타임 계약
 
 - 실험 식별자: `Exp419`; 기대 모집단: 1,117개 데이터셋.

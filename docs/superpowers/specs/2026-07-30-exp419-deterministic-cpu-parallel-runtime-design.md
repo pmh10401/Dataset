@@ -41,6 +41,15 @@ The corrected benchmark uses this new exact no-clobber root:
 
 `/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced`
 
+The reviewed shared configuration freezes that exact lexical and canonical
+root as an allowlist, not merely as an exclusion of the terminated root.
+Evidence must be the direct child
+`EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json`, and trial roots must be the exact
+ordered direct children `workers-1`, `workers-2`, `workers-4`, and `workers-6`.
+Arbitrary siblings or temporary roots, copied evidence, other descendants,
+reordering, and symlink aliases fail before benchmark or official roots are
+created or opened.
+
 ## 2. Scope
 
 The first Exp419 implementation changes only population orchestration and
@@ -255,8 +264,11 @@ only missing records in their original shards. It never moves an incomplete
 dataset to another shard during the same official run.
 
 The terminated diagnostic benchmark root and all of its descendants are
-permanently ineligible for reuse. Only the new balanced benchmark root named
-in the human ruling may produce evidence for official verification.
+permanently ineligible for reuse. More strongly, the reviewed shared
+configuration permits only the exact lexical and canonical balanced root,
+direct evidence child, and ordered four trial children named in the human
+ruling. Every other path, including a copied file or symlink alias, fails
+closed before any benchmark or official root is created or opened.
 
 Failure policy is fail-closed:
 

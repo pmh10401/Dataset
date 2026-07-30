@@ -700,10 +700,14 @@ total is `888,487,623`, and both 4- and 6-worker proxy headrooms are
 
 The official CLI verifies the benchmark digest and runs only the frozen
 selected worker count. It recomputes the exact proof from frozen TRAIN
-metadata and rejects the terminated diagnostic root or any descendant before
-opening official roots. It contains the exact approval phrase in help and
-runbook text but does not infer approval from environment state, prior
-blanket approval, a file, or benchmark success.
+metadata. Shared reviewed production configuration accepts only the exact
+lexical/canonical corrected root, its direct evidence child, and the ordered
+direct trial children `workers-1`, `workers-2`, `workers-4`, and `workers-6`.
+It rejects arbitrary siblings/temp roots, copied evidence, other descendants,
+reordering, and symlink aliases before creating/opening benchmark or official
+roots. It contains the exact approval phrase in help and runbook text but does
+not infer approval from environment state, prior blanket approval, a file, or
+benchmark success.
 
 - [ ] **Step 4: Add frozen-source manifest and label-isolation tests**
 
@@ -799,6 +803,11 @@ Use the exact command recorded in `docs/EXP419_RUNBOOK_KO.md`, writing only to:
 /Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/
 ```
 
+First run the executable runbook preflight and require the exact 15 anchors,
+four additions, selected 19 tuple, total cost, 4/6-worker loads and headrooms,
+proof recomputation and proof digest. Abort before root creation on any
+mismatch.
+
 Do not touch or resume the terminated diagnostic root. Do not run competing
 MPS/MLX work and do not create an automatic monitor, polling loop, cron, or
 keepalive.
@@ -818,7 +827,9 @@ Check:
 - aggregate peak RSS is at most `27,487,790,694`;
 - no fallback, missing, duplicate, extra, or terminal dataset exists;
 - benchmark manifest and files match their SHA-256 digests.
-- no `trial_roots` entry names the terminated diagnostic root or a descendant.
+- the evidence and ordered `trial_roots` equal the exact shared
+  lexical/canonical allowlist; copied evidence, arbitrary roots, descendants,
+  reordering, and symlink aliases are rejected.
 
 - [ ] **Step 5: Run final clean-tree verification**
 

@@ -387,9 +387,12 @@ The verifier must reject before `open_roots`:
 - correct names with wrong anchors/additions;
 - correct names with wrong load order;
 - correct proof with a stale Git, context, source-manifest, or benchmark digest;
-- a benchmark path within the terminated diagnostic root.
+- arbitrary sibling/temp benchmark roots;
+- copied evidence at any path other than the exact direct child;
+- trial roots with other descendants, wrong order, or symlink aliases.
 
-It must accept the corrected root and an exact recomputed proof.
+It must accept only the exact lexical/canonical corrected root, direct evidence
+child, exact ordered direct trial roots, and an exact recomputed proof.
 
 - [ ] **Step 7: Implement exact official proof verification**
 
@@ -405,8 +408,11 @@ if benchmark.selection_proof != expected_proof:
 
 Require every `trial.completed_datasets`,
 `benchmark.benchmark_datasets`, and `expected_proof.selected_datasets` to be
-identical lexical tuples. Resolve `trial_roots` and reject the exact invalid
-diagnostic root and its descendants.
+identical lexical tuples. Freeze the corrected benchmark root, direct evidence
+file, and ordered direct trial roots once in shared reviewed production
+configuration. Validate exact lexical and canonical equality before creating
+or opening benchmark or official roots; reject every arbitrary root,
+descendant, copy, reorder, and symlink alias.
 
 - [ ] **Step 8: Write failing reporting round-trip tests**
 

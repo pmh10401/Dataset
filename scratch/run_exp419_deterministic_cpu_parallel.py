@@ -27,7 +27,12 @@ from experiments.exp417_causal_multihorizon_shadow.inputs import (
 from experiments.exp417_causal_multihorizon_shadow.reporting import (
     TrustedCheckpointProvenance,
 )
-from experiments.exp419_deterministic_cpu_parallel.config import FROZEN_CONFIG
+from experiments.exp419_deterministic_cpu_parallel.config import (
+    FROZEN_CONFIG,
+    corrected_trial_roots,
+    require_exact_benchmark_evidence_path,
+    require_exact_trial_roots,
+)
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
     DatasetCost,
     ParallelRoots,
@@ -59,10 +64,6 @@ from scratch.benchmark_exp419_deterministic_cpu_parallel import (
 
 
 APPROVAL_PHRASE = "Exp419 1,117개 전체 label-free 병렬 실행 승인"
-TERMINATED_DIAGNOSTIC_ROOT = Path(
-    "/Users/mac/Documents/Dataset/"
-    "exp419_deterministic_cpu_parallel_benchmark"
-).resolve(strict=False)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -137,7 +138,8 @@ def verify_benchmark_evidence(
     expected_source_manifest_sha256: str,
     expected_costs: Sequence[DatasetCost],
 ) -> RuntimeBenchmark:
-    payload = _read_json_regular(Path(path))
+    path = require_exact_benchmark_evidence_path(Path(path))
+    payload = _read_json_regular(path)
     exact_fields = {
         "artifact_kind",
         "benchmark",
@@ -163,25 +165,19 @@ def verify_benchmark_evidence(
     ):
         raise ValueError("benchmark evidence provenance or schema mismatch")
     roots = payload["trial_roots"]
+    exact_root_strings = tuple(str(root) for root in corrected_trial_roots())
     if (
         not isinstance(roots, list)
         or len(roots) != len(FROZEN_CONFIG.worker_candidates)
         or any(not isinstance(root, str) or not root for root in roots)
-        or len({str(Path(root).resolve(strict=False)) for root in roots})
-        != len(roots)
-    ):
-        raise ValueError("benchmark evidence trial roots are invalid")
-    resolved_roots = tuple(
-        Path(root).resolve(strict=False) for root in roots
-    )
-    if any(
-        root == TERMINATED_DIAGNOSTIC_ROOT
-        or TERMINATED_DIAGNOSTIC_ROOT in root.parents
-        for root in resolved_roots
+        or tuple(roots) != exact_root_strings
     ):
         raise ValueError(
-            "benchmark evidence uses the terminated diagnostic root"
+            "benchmark evidence trial roots are not the exact ordered roots"
         )
+    require_exact_trial_roots(
+        tuple(Path(root) for root in roots)
+    )
     benchmark = benchmark_from_payload(payload["benchmark"])
     expected_proof = select_balanced_benchmark_datasets(
         tuple(expected_costs)

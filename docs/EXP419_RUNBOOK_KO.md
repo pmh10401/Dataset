@@ -132,9 +132,187 @@ timing은 선택에 사용하지 않는다.
 `2.5139397937x`다. proxy gate `2.5x`는 실행 가능성 여유이며 실제 측정
 speedup gate는 변경 없이 `2.0x`다.
 
-모든 회귀 검증이 끝난 뒤 다음 명령을 딱 한 번 실행한다. 출력 root는
-존재하지 않는 다음의 새 정확한 로컬 경로여야 한다. 자동 polling,
-monitor, cron 또는 keepalive를 만들지 않는다.
+모든 회귀 검증이 끝난 뒤 먼저 아래 preflight를 실행한다. 이 검사는
+benchmark/official root를 만들거나 열지 않는다. 현재 동결 TRAIN metadata로
+선택을 다시 계산하고, 15개 anchor, 4개 addition, 19개 선택 tuple, 총 비용,
+4/6-worker load와 headroom, proof digest가 아래 literal과 정확히 맞지 않으면
+root 생성 전에 즉시 중단한다. headroom 허용오차는 proof contract와 같은
+절대오차 `1e-12`다.
+
+```bash
+.venv/bin/python - <<'PY'
+from argparse import Namespace
+from math import isclose
+from pathlib import Path
+import subprocess
+
+from experiments.exp419_deterministic_cpu_parallel.config import (
+    FROZEN_CONFIG,
+    corrected_benchmark_evidence_path,
+    corrected_benchmark_root,
+    corrected_trial_roots,
+    require_exact_benchmark_evidence_path,
+    require_exact_benchmark_root,
+    require_exact_trial_roots,
+)
+from experiments.exp419_deterministic_cpu_parallel.contracts import (
+    benchmark_selection_proof_from_payload,
+    benchmark_selection_proof_payload,
+)
+from experiments.exp419_deterministic_cpu_parallel.planner import (
+    select_balanced_benchmark_datasets,
+)
+from scratch.benchmark_exp419_deterministic_cpu_parallel import (
+    assert_exp419_label_isolation,
+    freeze_benchmark_inputs,
+)
+
+EXPECTED_ANCHORS = (
+    "Adiac_normal_20",
+    "CBF_normal_1",
+    "Chinatown_normal_2",
+    "CricketX_normal_2",
+    "ElectricDevices_normal_6",
+    "InlineSkate_normal_5",
+    "InlineSkate_normal_7",
+    "NonInvasiveFetalECGThorax2_normal_20",
+    "Phoneme_normal_3",
+    "PigAirwayPressure_normal_42",
+    "ShakeGestureWiimoteZ_normal_5",
+    "ShapeletSim_normal_1",
+    "ShapesAll_normal_38",
+    "SmoothSubspace_normal_1",
+    "StarLightCurves_normal_3",
+)
+EXPECTED_ADDITIONS = (
+    "HandOutlines_normal_0",
+    "HandOutlines_normal_1",
+    "StarLightCurves_normal_1",
+    "StarLightCurves_normal_2",
+)
+EXPECTED_SELECTED = (
+    "Adiac_normal_20",
+    "CBF_normal_1",
+    "Chinatown_normal_2",
+    "CricketX_normal_2",
+    "ElectricDevices_normal_6",
+    "HandOutlines_normal_0",
+    "HandOutlines_normal_1",
+    "InlineSkate_normal_5",
+    "InlineSkate_normal_7",
+    "NonInvasiveFetalECGThorax2_normal_20",
+    "Phoneme_normal_3",
+    "PigAirwayPressure_normal_42",
+    "ShakeGestureWiimoteZ_normal_5",
+    "ShapeletSim_normal_1",
+    "ShapesAll_normal_38",
+    "SmoothSubspace_normal_1",
+    "StarLightCurves_normal_1",
+    "StarLightCurves_normal_2",
+    "StarLightCurves_normal_3",
+)
+EXPECTED_TOTAL_COST = 888_487_623
+EXPECTED_LOADS_4 = (353424384, 178469604, 178343436, 178250199)
+EXPECTED_LOADS_6 = (
+    353424384,
+    171196416,
+    153600300,
+    88169472,
+    86893884,
+    35203167,
+)
+EXPECTED_PROOF_SHA256 = (
+    "00ac443347f97c267ffdfce82185c4631ca802e97f1685057976194ba2e52522"
+)
+
+root = require_exact_benchmark_root(corrected_benchmark_root())
+evidence = require_exact_benchmark_evidence_path(
+    corrected_benchmark_evidence_path()
+)
+trials = require_exact_trial_roots(corrected_trial_roots())
+assert root == Path(
+    "/Users/mac/Documents/Dataset/"
+    "exp419_deterministic_cpu_parallel_benchmark_balanced"
+)
+assert evidence == root / "EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"
+assert trials == tuple(
+    root / f"workers-{count}" for count in (1, 2, 4, 6)
+)
+assert not root.exists()
+
+args = Namespace(
+    database=Path("/Users/mac/Documents/Dataset/univariate_ts.db"),
+    exp291_prediction=Path(
+        "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/"
+        "exp291_frozen_operational_routing.jsonl"
+    ),
+    exp291_manifest=Path(
+        "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/"
+        "exp291_prediction_manifest.json"
+    ),
+    exp292_prediction=Path(
+        "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/"
+        "exp292_frozen_review_tiers.jsonl"
+    ),
+    exp292_manifest=Path(
+        "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/"
+        "exp292_prediction_manifest.json"
+    ),
+)
+head = subprocess.run(
+    ["git", "rev-parse", "HEAD"],
+    check=True,
+    capture_output=True,
+    text=True,
+).stdout.strip()
+manifest_sha256 = assert_exp419_label_isolation()
+frozen = freeze_benchmark_inputs(args, head, manifest_sha256)
+proof = select_balanced_benchmark_datasets(frozen.costs)
+recomputed = select_balanced_benchmark_datasets(frozen.costs)
+
+assert FROZEN_CONFIG.benchmark_proxy_headroom_gate == 2.5
+assert FROZEN_CONFIG.benchmark_proxy_headroom_workers == (4, 6)
+assert len(proof.anchor_datasets) == 15
+assert proof.anchor_datasets == EXPECTED_ANCHORS
+assert len(proof.added_datasets) == 4
+assert proof.added_datasets == EXPECTED_ADDITIONS
+assert len(proof.selected_datasets) == 19
+assert proof.selected_datasets == EXPECTED_SELECTED
+assert proof.total_cost == EXPECTED_TOTAL_COST
+assert proof.shard_loads[4] == EXPECTED_LOADS_4
+assert proof.shard_loads[6] == EXPECTED_LOADS_6
+expected_headroom = EXPECTED_TOTAL_COST / max(EXPECTED_LOADS_4)
+assert isclose(
+    proof.proxy_headrooms[4],
+    expected_headroom,
+    rel_tol=0.0,
+    abs_tol=1e-12,
+)
+assert isclose(
+    proof.proxy_headrooms[6],
+    expected_headroom,
+    rel_tol=0.0,
+    abs_tol=1e-12,
+)
+assert proof.sha256 == EXPECTED_PROOF_SHA256
+assert recomputed == proof
+assert (
+    benchmark_selection_proof_from_payload(
+        benchmark_selection_proof_payload(proof)
+    )
+    == proof
+)
+print("Exp419 corrected benchmark preflight passed", proof.sha256)
+PY
+```
+
+preflight가 통과한 뒤 다음 명령을 딱 한 번 실행한다. 출력 root는 존재하지
+않는 위의 정확한 로컬 경로여야 한다. evidence는 그 root 바로 아래의 정확한
+파일명만 허용하고, trial root 순서는 정확히 `workers-1`, `workers-2`,
+`workers-4`, `workers-6`이다. 임의 sibling/temp root, 복사한 evidence,
+다른 descendant, 순서 변경 또는 symlink alias는 모두 root를 만들거나
+열기 전에 거부한다. 자동 polling, monitor, cron 또는 keepalive를 만들지
+않는다.
 
 ```bash
 .venv/bin/python scratch/benchmark_exp419_deterministic_cpu_parallel.py \
@@ -215,8 +393,10 @@ benchmark SHA256에 포함되므로 숫자를 따로 고칠 수 없다.
 공식 검증기는 JSON 내부 일관성만 보지 않는다. 현재 frozen TRAIN metadata로
 `select_balanced_benchmark_datasets`를 다시 실행해 selection proof, dataset
 이름과 순서가 benchmark와 정확히 같은지 확인한다. 임의의 더 쉬운 subset으로
-모든 trial과 digest를 다시 만든 파일도 거부한다. 기존 진단 root 또는 그
-하위 경로를 가리키는 `trial_roots`도 공식 root를 열기 전에 거부한다.
+모든 trial과 digest를 다시 만든 파일도 거부한다. evidence는 위 exact
+canonical 파일이어야 하고 payload의 `trial_roots`도 위 네 exact canonical
+경로와 순서까지 같아야 한다. 임의 sibling/temp root, 복사본, 다른 descendant,
+순서 변경 및 symlink alias는 공식 root를 열기 전에 거부한다.
 
 ## 5. resume와 실패 처리
 

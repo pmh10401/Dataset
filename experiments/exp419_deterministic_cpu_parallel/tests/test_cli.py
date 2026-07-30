@@ -3,7 +3,9 @@ from __future__ import annotations
 import importlib.util
 import inspect
 import json
+from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import replace
 from math import isclose
 from pathlib import Path
 import sys
@@ -12,6 +14,9 @@ import unittest
 from unittest.mock import patch
 
 from experiments.exp419_deterministic_cpu_parallel.config import FROZEN_CONFIG
+from experiments.exp419_deterministic_cpu_parallel import (
+    config as exp419_config,
+)
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
     BenchmarkSelectionProof,
     DatasetCost,
@@ -231,6 +236,26 @@ class CliContractTests(unittest.TestCase):
         cls.benchmark = _load_script("exp419_benchmark_cli", BENCHMARK_SCRIPT)
         cls.official = _load_script("exp419_official_cli_contract", OFFICIAL_SCRIPT)
 
+    @contextmanager
+    def _exact_layout(self, temporary: str):
+        parent = Path(temporary).resolve()
+        root = (
+            parent
+            / "exp419_deterministic_cpu_parallel_benchmark_balanced"
+        )
+        root.mkdir()
+        evidence = root / FROZEN_CONFIG.benchmark_evidence_filename
+        trials = tuple(
+            root / f"workers-{count}"
+            for count in FROZEN_CONFIG.worker_candidates
+        )
+        frozen = replace(
+            FROZEN_CONFIG,
+            corrected_benchmark_root=str(root),
+        )
+        with patch.object(exp419_config, "FROZEN_CONFIG", frozen):
+            yield root, evidence, trials
+
     def test_benchmark_payload_round_trips_exact_selection_proof(self) -> None:
         benchmark = _passing_benchmark()
         payload = self.benchmark.benchmark_payload(benchmark)
@@ -386,6 +411,24 @@ class CliContractTests(unittest.TestCase):
         )
         self.assertIn(f'--benchmark-root "{corrected_root}"', runbook)
         self.assertIn(f'--benchmark-evidence "{corrected_evidence}"', runbook)
+        for frozen_preflight_literal in (
+            "EXPECTED_ANCHORS = (",
+            "EXPECTED_ADDITIONS = (",
+            "EXPECTED_SELECTED = (",
+            "EXPECTED_TOTAL_COST = 888_487_623",
+            "EXPECTED_LOADS_4 = (353424384, 178469604, 178343436, 178250199)",
+            "EXPECTED_LOADS_6 = (",
+            "00ac443347f97c267ffdfce82185c4631ca802e97f1685057976194ba2e52522",
+            "abs_tol=1e-12",
+            "assert not root.exists()",
+            "benchmark_selection_proof_from_payload(",
+        ):
+            with self.subTest(literal=frozen_preflight_literal):
+                self.assertIn(frozen_preflight_literal, runbook)
+        self.assertIn(
+            'root / f"workers-{count}" for count in (1, 2, 4, 6)',
+            runbook,
+        )
 
     def test_dirty_git_blocks_benchmark_and_official_before_other_work(self) -> None:
         for module in (self.benchmark, self.official):
@@ -468,85 +511,85 @@ class CliContractTests(unittest.TestCase):
         benchmark, measurements = _passing_measured_benchmark(self.benchmark)
         costs = BALANCED_COSTS
         with TemporaryDirectory() as temporary:
-            path = Path(temporary) / "benchmark.json"
-            self.benchmark.write_benchmark_evidence(
+            with self._exact_layout(temporary) as (
+                _root,
                 path,
-                benchmark=benchmark,
-                git_commit="a" * 40,
-                context_sha256="b" * 64,
-                source_manifest_sha256="c" * 64,
-                trial_roots=tuple(
-                    Path(temporary) / f"workers-{count}"
-                    for count in FROZEN_CONFIG.worker_candidates
-                ),
-                runtime_measurements=measurements,
-            )
-            observed = self.official.verify_benchmark_evidence(
-                path,
-                expected_git_commit="a" * 40,
-                expected_context_sha256="b" * 64,
-                expected_source_manifest_sha256="c" * 64,
-                expected_costs=costs,
-            )
-            self.assertEqual(observed, benchmark)
+                trial_roots,
+            ):
+                self.benchmark.write_benchmark_evidence(
+                    path,
+                    benchmark=benchmark,
+                    git_commit="a" * 40,
+                    context_sha256="b" * 64,
+                    source_manifest_sha256="c" * 64,
+                    trial_roots=trial_roots,
+                    runtime_measurements=measurements,
+                )
+                observed = self.official.verify_benchmark_evidence(
+                    path,
+                    expected_git_commit="a" * 40,
+                    expected_context_sha256="b" * 64,
+                    expected_source_manifest_sha256="c" * 64,
+                    expected_costs=costs,
+                )
+                self.assertEqual(observed, benchmark)
 
-            stale_provenance = (
-                ("d" * 40, "b" * 64, "c" * 64),
-                ("a" * 40, "d" * 64, "c" * 64),
-                ("a" * 40, "b" * 64, "d" * 64),
-            )
-            for git_commit, context_sha256, source_manifest in stale_provenance:
-                with self.subTest(
-                    git_commit=git_commit,
-                    context_sha256=context_sha256,
-                    source_manifest=source_manifest,
-                ), self.assertRaisesRegex(
-                    ValueError, "manifest|provenance"
-                ):
+                stale_provenance = (
+                    ("d" * 40, "b" * 64, "c" * 64),
+                    ("a" * 40, "d" * 64, "c" * 64),
+                    ("a" * 40, "b" * 64, "d" * 64),
+                )
+                for git_commit, context_sha256, source_manifest in stale_provenance:
+                    with self.subTest(
+                        git_commit=git_commit,
+                        context_sha256=context_sha256,
+                        source_manifest=source_manifest,
+                    ), self.assertRaisesRegex(
+                        ValueError, "manifest|provenance"
+                    ):
+                        self.official.verify_benchmark_evidence(
+                            path,
+                            expected_git_commit=git_commit,
+                            expected_context_sha256=context_sha256,
+                            expected_source_manifest_sha256=source_manifest,
+                            expected_costs=costs,
+                        )
+
+                manifest_forged = json.loads(path.read_text())
+                manifest_forged["source_manifest_sha256"] = "d" * 64
+                path.write_text(json.dumps(manifest_forged))
+                with self.assertRaisesRegex(ValueError, "manifest|provenance"):
                     self.official.verify_benchmark_evidence(
                         path,
-                        expected_git_commit=git_commit,
-                        expected_context_sha256=context_sha256,
-                        expected_source_manifest_sha256=source_manifest,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
                         expected_costs=costs,
                     )
 
-            manifest_forged = json.loads(path.read_text())
-            manifest_forged["source_manifest_sha256"] = "d" * 64
-            path.write_text(json.dumps(manifest_forged))
-            with self.assertRaisesRegex(ValueError, "manifest|provenance"):
-                self.official.verify_benchmark_evidence(
+                path.unlink()
+                self.benchmark.write_benchmark_evidence(
                     path,
-                    expected_git_commit="a" * 40,
-                    expected_context_sha256="b" * 64,
-                    expected_source_manifest_sha256="c" * 64,
-                    expected_costs=costs,
+                    benchmark=benchmark,
+                    git_commit="a" * 40,
+                    context_sha256="b" * 64,
+                    source_manifest_sha256="c" * 64,
+                    trial_roots=trial_roots,
+                    runtime_measurements=measurements,
                 )
-
-            path.unlink()
-            self.benchmark.write_benchmark_evidence(
-                path,
-                benchmark=benchmark,
-                git_commit="a" * 40,
-                context_sha256="b" * 64,
-                source_manifest_sha256="c" * 64,
-                trial_roots=tuple(
-                    Path(temporary) / f"workers-{count}"
-                    for count in FROZEN_CONFIG.worker_candidates
-                ),
-                runtime_measurements=measurements,
-            )
-            forged = json.loads(path.read_text())
-            forged["benchmark"]["selected_worker_count"] = 6
-            path.write_text(json.dumps(forged))
-            with self.assertRaisesRegex(ValueError, "digest|selection|benchmark"):
-                self.official.verify_benchmark_evidence(
-                    path,
-                    expected_git_commit="a" * 40,
-                    expected_context_sha256="b" * 64,
-                    expected_source_manifest_sha256="c" * 64,
-                    expected_costs=costs,
-                )
+                forged = json.loads(path.read_text())
+                forged["benchmark"]["selected_worker_count"] = 6
+                path.write_text(json.dumps(forged))
+                with self.assertRaisesRegex(
+                    ValueError, "digest|selection|benchmark"
+                ):
+                    self.official.verify_benchmark_evidence(
+                        path,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=costs,
+                    )
 
     def test_official_rejects_internally_consistent_arbitrary_benchmark_subset(self) -> None:
         benchmark, measurements = _passing_measured_benchmark(
@@ -554,29 +597,30 @@ class CliContractTests(unittest.TestCase):
         )
         costs = BALANCED_COSTS
         with TemporaryDirectory() as temporary:
-            path = Path(temporary) / "benchmark.json"
-            self.benchmark.write_benchmark_evidence(
+            with self._exact_layout(temporary) as (
+                _root,
                 path,
-                benchmark=benchmark,
-                git_commit="a" * 40,
-                context_sha256="b" * 64,
-                source_manifest_sha256="c" * 64,
-                trial_roots=tuple(
-                    Path(temporary) / f"workers-{count}"
-                    for count in FROZEN_CONFIG.worker_candidates
-                ),
-                runtime_measurements=measurements,
-            )
-            with self.assertRaisesRegex(
-                ValueError, "proof|balance|subset|datasets"
+                trial_roots,
             ):
-                self.official.verify_benchmark_evidence(
+                self.benchmark.write_benchmark_evidence(
                     path,
-                    expected_git_commit="a" * 40,
-                    expected_context_sha256="b" * 64,
-                    expected_source_manifest_sha256="c" * 64,
-                    expected_costs=costs,
+                    benchmark=benchmark,
+                    git_commit="a" * 40,
+                    context_sha256="b" * 64,
+                    source_manifest_sha256="c" * 64,
+                    trial_roots=trial_roots,
+                    runtime_measurements=measurements,
                 )
+                with self.assertRaisesRegex(
+                    ValueError, "proof|balance|subset|datasets"
+                ):
+                    self.official.verify_benchmark_evidence(
+                        path,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=costs,
+                    )
 
     def test_official_rejects_two_worker_only_qualified_selection(self) -> None:
         measurements = []
@@ -636,25 +680,29 @@ class CliContractTests(unittest.TestCase):
             ],
             "schema_version": 1,
             "source_manifest_sha256": "c" * 64,
-            "trial_roots": [
-                str(CORRECTED_BENCHMARK_ROOT / f"workers-{count}")
-                for count in FROZEN_CONFIG.worker_candidates
-            ],
+            "trial_roots": [],
             "worker_candidates": list(FROZEN_CONFIG.worker_candidates),
         }
         with TemporaryDirectory() as temporary:
-            path = Path(temporary) / "benchmark.json"
-            path.write_text(json.dumps(payload))
-            with self.assertRaisesRegex(
-                ValueError, "4|6|eligible|authorize|selection"
+            with self._exact_layout(temporary) as (
+                _root,
+                path,
+                trial_roots,
             ):
-                self.official.verify_benchmark_evidence(
-                    path,
-                    expected_git_commit="a" * 40,
-                    expected_context_sha256="b" * 64,
-                    expected_source_manifest_sha256="c" * 64,
-                    expected_costs=BALANCED_COSTS,
-                )
+                payload["trial_roots"] = [
+                    str(root) for root in trial_roots
+                ]
+                path.write_text(json.dumps(payload))
+                with self.assertRaisesRegex(
+                    ValueError, "4|6|eligible|authorize|selection"
+                ):
+                    self.official.verify_benchmark_evidence(
+                        path,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=BALANCED_COSTS,
+                    )
 
     def test_official_recomputes_exact_proof_and_rejects_old_or_mutated_balance(
         self,
@@ -705,31 +753,33 @@ class CliContractTests(unittest.TestCase):
             ),
         )
         with TemporaryDirectory() as temporary:
-            for index, ((benchmark, measurements), costs) in enumerate(attacks):
-                with self.subTest(index=index):
-                    path = Path(temporary) / f"benchmark-{index}.json"
-                    self.benchmark.write_benchmark_evidence(
-                        path,
-                        benchmark=benchmark,
-                        git_commit="a" * 40,
-                        context_sha256="b" * 64,
-                        source_manifest_sha256="c" * 64,
-                        trial_roots=tuple(
-                            CORRECTED_BENCHMARK_ROOT / f"workers-{count}"
-                            for count in FROZEN_CONFIG.worker_candidates
-                        ),
-                        runtime_measurements=measurements,
-                    )
-                    with self.assertRaisesRegex(
-                        ValueError, "proof|balance|subset|datasets"
-                    ):
-                        self.official.verify_benchmark_evidence(
+            with self._exact_layout(temporary) as (
+                _root,
+                path,
+                trial_roots,
+            ):
+                for index, ((benchmark, measurements), costs) in enumerate(attacks):
+                    with self.subTest(index=index):
+                        self.benchmark.write_benchmark_evidence(
                             path,
-                            expected_git_commit="a" * 40,
-                            expected_context_sha256="b" * 64,
-                            expected_source_manifest_sha256="c" * 64,
-                            expected_costs=costs,
+                            benchmark=benchmark,
+                            git_commit="a" * 40,
+                            context_sha256="b" * 64,
+                            source_manifest_sha256="c" * 64,
+                            trial_roots=trial_roots,
+                            runtime_measurements=measurements,
                         )
+                        with self.assertRaisesRegex(
+                            ValueError, "proof|balance|subset|datasets"
+                        ):
+                            self.official.verify_benchmark_evidence(
+                                path,
+                                expected_git_commit="a" * 40,
+                                expected_context_sha256="b" * 64,
+                                expected_source_manifest_sha256="c" * 64,
+                                expected_costs=costs,
+                            )
+                        path.unlink()
 
     def test_official_compares_expected_proof_before_runtime_selection(
         self,
@@ -749,39 +799,40 @@ class CliContractTests(unittest.TestCase):
             raise AssertionError("runtime selection reached before proof check")
 
         with TemporaryDirectory() as temporary:
-            path = Path(temporary) / "benchmark.json"
-            self.benchmark.write_benchmark_evidence(
+            with self._exact_layout(temporary) as (
+                _root,
                 path,
-                benchmark=benchmark,
-                git_commit="a" * 40,
-                context_sha256="b" * 64,
-                source_manifest_sha256="c" * 64,
-                trial_roots=tuple(
-                    CORRECTED_BENCHMARK_ROOT / f"workers-{count}"
-                    for count in FROZEN_CONFIG.worker_candidates
-                ),
-                runtime_measurements=measurements,
-            )
-            with (
-                patch.dict(
-                    self.official.benchmark_from_payload.__globals__,
-                    {"select_runtime": selection_reached},
-                ),
-                patch.object(
-                    self.official,
-                    "select_runtime",
-                    side_effect=selection_reached,
-                    create=True,
-                ),
-                self.assertRaisesRegex(ValueError, "selection proof"),
+                trial_roots,
             ):
-                self.official.verify_benchmark_evidence(
+                self.benchmark.write_benchmark_evidence(
                     path,
-                    expected_git_commit="a" * 40,
-                    expected_context_sha256="b" * 64,
-                    expected_source_manifest_sha256="c" * 64,
-                    expected_costs=BALANCED_COSTS,
+                    benchmark=benchmark,
+                    git_commit="a" * 40,
+                    context_sha256="b" * 64,
+                    source_manifest_sha256="c" * 64,
+                    trial_roots=trial_roots,
+                    runtime_measurements=measurements,
                 )
+                with (
+                    patch.dict(
+                        self.official.benchmark_from_payload.__globals__,
+                        {"select_runtime": selection_reached},
+                    ),
+                    patch.object(
+                        self.official,
+                        "select_runtime",
+                        side_effect=selection_reached,
+                        create=True,
+                    ),
+                    self.assertRaisesRegex(ValueError, "selection proof"),
+                ):
+                    self.official.verify_benchmark_evidence(
+                        path,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=BALANCED_COSTS,
+                    )
         self.assertEqual(selection_events, [])
 
     def test_official_rejects_terminated_diagnostic_roots_and_accepts_corrected_root(
@@ -789,92 +840,97 @@ class CliContractTests(unittest.TestCase):
     ) -> None:
         benchmark, measurements = _passing_measured_benchmark(self.benchmark)
         with TemporaryDirectory() as temporary:
-            path = Path(temporary) / "benchmark.json"
-            for root in (
-                INVALID_DIAGNOSTIC_ROOT,
-                INVALID_DIAGNOSTIC_ROOT / "workers-1",
-            ):
-                with self.subTest(root=root):
-                    self.benchmark.write_benchmark_evidence(
-                        path,
-                        benchmark=benchmark,
-                        git_commit="a" * 40,
-                        context_sha256="b" * 64,
-                        source_manifest_sha256="c" * 64,
-                        trial_roots=tuple(
-                            (
-                                root
-                                if count == FROZEN_CONFIG.worker_candidates[0]
-                                else root / f"trial-{count}"
-                            )
-                            for count in FROZEN_CONFIG.worker_candidates
-                        ),
-                        runtime_measurements=measurements,
-                    )
-                    with self.assertRaisesRegex(
-                        ValueError, "diagnostic|terminated|root"
-                    ):
-                        self.official.verify_benchmark_evidence(
-                            path,
-                            expected_git_commit="a" * 40,
-                            expected_context_sha256="b" * 64,
-                            expected_source_manifest_sha256="c" * 64,
-                            expected_costs=BALANCED_COSTS,
-                        )
-                    path.unlink()
-
-            self.benchmark.write_benchmark_evidence(
+            with self._exact_layout(temporary) as (
+                _root,
                 path,
-                benchmark=benchmark,
-                git_commit="a" * 40,
-                context_sha256="b" * 64,
-                source_manifest_sha256="c" * 64,
-                trial_roots=tuple(
-                    CORRECTED_BENCHMARK_ROOT / f"workers-{count}"
-                    for count in FROZEN_CONFIG.worker_candidates
-                ),
-                runtime_measurements=measurements,
-            )
-            self.assertEqual(
-                self.official.verify_benchmark_evidence(
+                trial_roots,
+            ):
+                for root in (
+                    INVALID_DIAGNOSTIC_ROOT,
+                    INVALID_DIAGNOSTIC_ROOT / "workers-1",
+                ):
+                    with self.subTest(root=root):
+                        self.benchmark.write_benchmark_evidence(
+                            path,
+                            benchmark=benchmark,
+                            git_commit="a" * 40,
+                            context_sha256="b" * 64,
+                            source_manifest_sha256="c" * 64,
+                            trial_roots=tuple(
+                                (
+                                    root
+                                    if count
+                                    == FROZEN_CONFIG.worker_candidates[0]
+                                    else root / f"trial-{count}"
+                                )
+                                for count in FROZEN_CONFIG.worker_candidates
+                            ),
+                            runtime_measurements=measurements,
+                        )
+                        with self.assertRaisesRegex(
+                            ValueError, "exact|ordered|root"
+                        ):
+                            self.official.verify_benchmark_evidence(
+                                path,
+                                expected_git_commit="a" * 40,
+                                expected_context_sha256="b" * 64,
+                                expected_source_manifest_sha256="c" * 64,
+                                expected_costs=BALANCED_COSTS,
+                            )
+                        path.unlink()
+
+                self.benchmark.write_benchmark_evidence(
                     path,
-                    expected_git_commit="a" * 40,
-                    expected_context_sha256="b" * 64,
-                    expected_source_manifest_sha256="c" * 64,
-                    expected_costs=BALANCED_COSTS,
-                ),
-                benchmark,
-            )
+                    benchmark=benchmark,
+                    git_commit="a" * 40,
+                    context_sha256="b" * 64,
+                    source_manifest_sha256="c" * 64,
+                    trial_roots=trial_roots,
+                    runtime_measurements=measurements,
+                )
+                self.assertEqual(
+                    self.official.verify_benchmark_evidence(
+                        path,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=BALANCED_COSTS,
+                    ),
+                    benchmark,
+                )
 
     def test_official_rejects_old_manifest_bound_trials_under_current_top_level(self) -> None:
         benchmark, measurements = _passing_measured_benchmark(
             self.benchmark, source_manifest_sha256="d" * 64
         )
         with TemporaryDirectory() as temporary:
-            path = Path(temporary) / "benchmark.json"
-            self.benchmark.write_benchmark_evidence(
+            with self._exact_layout(temporary) as (
+                _root,
                 path,
-                benchmark=benchmark,
-                git_commit="a" * 40,
-                context_sha256="b" * 64,
-                source_manifest_sha256="d" * 64,
-                trial_roots=tuple(
-                    Path(temporary) / f"workers-{count}"
-                    for count in FROZEN_CONFIG.worker_candidates
-                ),
-                runtime_measurements=measurements,
-            )
-            payload = json.loads(path.read_bytes())
-            payload["source_manifest_sha256"] = "c" * 64
-            path.write_text(json.dumps(payload))
-            with self.assertRaisesRegex(ValueError, "manifest|measurement"):
-                self.official.verify_benchmark_evidence(
+                trial_roots,
+            ):
+                self.benchmark.write_benchmark_evidence(
                     path,
-                    expected_git_commit="a" * 40,
-                    expected_context_sha256="b" * 64,
-                    expected_source_manifest_sha256="c" * 64,
-                    expected_costs=BALANCED_COSTS,
+                    benchmark=benchmark,
+                    git_commit="a" * 40,
+                    context_sha256="b" * 64,
+                    source_manifest_sha256="d" * 64,
+                    trial_roots=trial_roots,
+                    runtime_measurements=measurements,
                 )
+                payload = json.loads(path.read_bytes())
+                payload["source_manifest_sha256"] = "c" * 64
+                path.write_text(json.dumps(payload))
+                with self.assertRaisesRegex(
+                    ValueError, "manifest|measurement"
+                ):
+                    self.official.verify_benchmark_evidence(
+                        path,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=BALANCED_COSTS,
+                    )
 
     def test_runtime_measurements_are_finite_consistent_and_evidence_bound(self) -> None:
         benchmark, measurements = _passing_measured_benchmark(self.benchmark)
@@ -890,48 +946,183 @@ class CliContractTests(unittest.TestCase):
                 )
             )
         with TemporaryDirectory() as temporary:
-            path = Path(temporary) / "benchmark.json"
-            self.benchmark.write_benchmark_evidence(
+            with self._exact_layout(temporary) as (
+                _root,
                 path,
-                benchmark=benchmark,
-                git_commit="a" * 40,
-                context_sha256="b" * 64,
-                source_manifest_sha256="c" * 64,
-                trial_roots=tuple(
-                    Path(temporary) / f"workers-{count}"
-                    for count in FROZEN_CONFIG.worker_candidates
-                ),
-                runtime_measurements=measurements,
-            )
-            payload = json.loads(path.read_bytes())
-            payload["runtime_measurements"][0]["process_cpu_seconds"] = -1.0
-            path.write_text(json.dumps(payload))
-            with self.assertRaisesRegex(ValueError, "CPU|cpu|finite|nonnegative"):
-                self.official.verify_benchmark_evidence(
+                trial_roots,
+            ):
+                self.benchmark.write_benchmark_evidence(
                     path,
-                    expected_git_commit="a" * 40,
-                    expected_context_sha256="b" * 64,
-                    expected_source_manifest_sha256="c" * 64,
-                    expected_costs=BALANCED_COSTS,
+                    benchmark=benchmark,
+                    git_commit="a" * 40,
+                    context_sha256="b" * 64,
+                    source_manifest_sha256="c" * 64,
+                    trial_roots=trial_roots,
+                    runtime_measurements=measurements,
                 )
+                payload = json.loads(path.read_bytes())
+                payload["runtime_measurements"][0][
+                    "process_cpu_seconds"
+                ] = -1.0
+                path.write_text(json.dumps(payload))
+                with self.assertRaisesRegex(
+                    ValueError, "CPU|cpu|finite|nonnegative"
+                ):
+                    self.official.verify_benchmark_evidence(
+                        path,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=BALANCED_COSTS,
+                    )
 
     def test_benchmark_requires_fresh_disjoint_candidate_roots(self) -> None:
         with TemporaryDirectory() as temporary:
-            root = Path(temporary) / "benchmark"
-            roots = self.benchmark.prepare_trial_roots(root)
-            self.assertEqual(
-                tuple(roots),
-                FROZEN_CONFIG.worker_candidates,
+            parent = Path(temporary).resolve()
+            root = (
+                parent
+                / "exp419_deterministic_cpu_parallel_benchmark_balanced"
             )
-            self.assertEqual(
-                len({path.resolve() for path in roots.values()}),
-                len(FROZEN_CONFIG.worker_candidates),
+            frozen = replace(
+                FROZEN_CONFIG,
+                corrected_benchmark_root=str(root),
             )
-            self.assertTrue(
-                all(path.parent == root.resolve() for path in roots.values())
+            with patch.object(exp419_config, "FROZEN_CONFIG", frozen):
+                roots = self.benchmark.prepare_trial_roots(root)
+                self.assertEqual(
+                    tuple(roots),
+                    FROZEN_CONFIG.worker_candidates,
+                )
+                self.assertEqual(
+                    tuple(roots.values()),
+                    tuple(
+                        root / f"workers-{count}"
+                        for count in FROZEN_CONFIG.worker_candidates
+                    ),
+                )
+                with self.assertRaisesRegex(ValueError, "new"):
+                    self.benchmark.prepare_trial_roots(root)
+
+    def test_benchmark_root_allowlist_rejects_arbitrary_and_symlink_aliases(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary).resolve()
+            root = (
+                parent
+                / "exp419_deterministic_cpu_parallel_benchmark_balanced"
             )
-            with self.assertRaisesRegex(ValueError, "new"):
-                self.benchmark.prepare_trial_roots(root)
+            frozen = replace(
+                FROZEN_CONFIG,
+                corrected_benchmark_root=str(root),
+            )
+            with patch.object(exp419_config, "FROZEN_CONFIG", frozen):
+                arbitrary = parent / "arbitrary-benchmark"
+                with self.assertRaisesRegex(
+                    ValueError, "exact|canonical|allowlist"
+                ):
+                    self.benchmark.prepare_trial_roots(arbitrary)
+                self.assertFalse(arbitrary.exists())
+
+                target_parent = parent / "target"
+                target_parent.mkdir()
+                alias_parent = parent / "alias"
+                alias_parent.symlink_to(
+                    target_parent, target_is_directory=True
+                )
+                alias_root = alias_parent / root.name
+                with self.assertRaisesRegex(
+                    ValueError, "exact|canonical|allowlist"
+                ):
+                    self.benchmark.prepare_trial_roots(alias_root)
+                self.assertFalse((target_parent / root.name).exists())
+
+    def test_official_requires_exact_evidence_and_ordered_canonical_trial_roots(
+        self,
+    ) -> None:
+        benchmark, measurements = _passing_measured_benchmark(self.benchmark)
+        with TemporaryDirectory() as temporary:
+            parent = Path(temporary).resolve()
+            root = (
+                parent
+                / "exp419_deterministic_cpu_parallel_benchmark_balanced"
+            )
+            root.mkdir()
+            evidence = root / "EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"
+            trials = tuple(
+                root / f"workers-{count}"
+                for count in FROZEN_CONFIG.worker_candidates
+            )
+            frozen = replace(
+                FROZEN_CONFIG,
+                corrected_benchmark_root=str(root),
+            )
+            with patch.object(exp419_config, "FROZEN_CONFIG", frozen):
+                self.benchmark.write_benchmark_evidence(
+                    evidence,
+                    benchmark=benchmark,
+                    git_commit="a" * 40,
+                    context_sha256="b" * 64,
+                    source_manifest_sha256="c" * 64,
+                    trial_roots=trials,
+                    runtime_measurements=measurements,
+                )
+                self.assertEqual(
+                    self.official.verify_benchmark_evidence(
+                        evidence,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=BALANCED_COSTS,
+                    ),
+                    benchmark,
+                )
+
+                copied = parent / evidence.name
+                copied.write_bytes(evidence.read_bytes())
+                with self.assertRaisesRegex(
+                    ValueError, "evidence|exact|canonical"
+                ):
+                    self.official.verify_benchmark_evidence(
+                        copied,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=BALANCED_COSTS,
+                    )
+
+                payload = json.loads(evidence.read_bytes())
+                payload["trial_roots"] = [
+                    str(parent / "arbitrary" / f"workers-{count}")
+                    for count in FROZEN_CONFIG.worker_candidates
+                ]
+                evidence.write_text(json.dumps(payload))
+                with self.assertRaisesRegex(
+                    ValueError, "trial|exact|ordered|canonical"
+                ):
+                    self.official.verify_benchmark_evidence(
+                        evidence,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=BALANCED_COSTS,
+                    )
+
+                payload["trial_roots"] = [str(path) for path in trials]
+                evidence.write_text(json.dumps(payload))
+                target = parent / "worker-alias-target"
+                target.mkdir()
+                trials[0].symlink_to(target, target_is_directory=True)
+                with self.assertRaisesRegex(
+                    ValueError, "trial|exact|ordered|canonical"
+                ):
+                    self.official.verify_benchmark_evidence(
+                        evidence,
+                        expected_git_commit="a" * 40,
+                        expected_context_sha256="b" * 64,
+                        expected_source_manifest_sha256="c" * 64,
+                        expected_costs=BALANCED_COSTS,
+                    )
 
     def test_train_metadata_rows_build_exact_costs_without_loading_series(self) -> None:
         costs = self.benchmark.costs_from_metadata_rows(
