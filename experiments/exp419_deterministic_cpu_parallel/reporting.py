@@ -31,6 +31,7 @@ from experiments.exp417_causal_multihorizon_shadow.reporting import (
 )
 
 from .config import FROZEN_CONFIG
+from .coordinator import select_runtime
 from .contracts import (
     ParallelRun,
     RuntimeBenchmark,
@@ -39,6 +40,7 @@ from .contracts import (
     ShardPlan,
     WorkerCompletion,
 )
+from .workers import _THREAD_ENVIRONMENT
 
 
 PREDICTION_FILE = "exp419_shadow_predictions.jsonl"
@@ -107,6 +109,20 @@ _SOURCE_GROUPS = {
         "experiments/exp417_causal_multihorizon_shadow/runner.py",
     ),
 }
+_EXP419_SOURCE_PATHS = (
+    "experiments/exp419_deterministic_cpu_parallel/planner.py",
+    "experiments/exp419_deterministic_cpu_parallel/workers.py",
+    "experiments/exp419_deterministic_cpu_parallel/coordinator.py",
+    "experiments/exp419_deterministic_cpu_parallel/reporting.py",
+    "experiments/exp419_deterministic_cpu_parallel/publication.py",
+)
+_EXP419_SOURCE_ROLES = {
+    "scheduler": _EXP419_SOURCE_PATHS[0],
+    "worker": _EXP419_SOURCE_PATHS[1],
+    "merge": _EXP419_SOURCE_PATHS[2],
+    "reporting": _EXP419_SOURCE_PATHS[3],
+    "publication": _EXP419_SOURCE_PATHS[4],
+}
 
 
 def _json_bytes(value: object) -> bytes:
@@ -123,6 +139,14 @@ def _source_digest(relative_paths: tuple[str, ...]) -> str:
         digest.update(len(payload).to_bytes(8, "big"))
         digest.update(payload)
     return digest.hexdigest()
+
+
+def _exp419_source_digests() -> dict[str, str]:
+    root = Path(__file__).resolve().parents[2]
+    return {
+        relative_path: sha256((root / relative_path).read_bytes()).hexdigest()
+        for relative_path in _EXP419_SOURCE_PATHS
+    }
 
 
 def _derive_exp417_provenance(summary: RunSummary) -> Exp417CheckpointProvenance:
@@ -251,8 +275,10 @@ def _manifest_payload(
     benchmark: RuntimeBenchmark,
     plan: ShardPlan,
     trusted_checkpoint: TrustedCheckpointProvenance,
+    aggregate_peak_rss_bytes: int,
 ) -> dict[str, object]:
     return {
+        "aggregate_peak_rss_bytes": aggregate_peak_rss_bytes,
         "artifact_sha256": {
             name: sha256(payloads[name]).hexdigest()
             for name in NON_MANIFEST_FILES
@@ -265,6 +291,8 @@ def _manifest_payload(
             trusted_checkpoint.checkpoint_payload_sha256
         ),
         "experiment_id": "Exp419",
+        "exp419_source_roles": dict(_EXP419_SOURCE_ROLES),
+        "exp419_source_sha256": _exp419_source_digests(),
         "git_commit": scientific["context"]["code_commit"],
         "runtime_versions": scientific["context"]["runtime_versions"],
         "selected_worker_count": benchmark.selected_worker_count,
@@ -296,6 +324,38 @@ def _manifest_payload(
     }
 
 
+def _verify_runtime_qualification(benchmark: RuntimeBenchmark) -> None:
+    recomputed = select_runtime(benchmark.trials)
+    if recomputed != benchmark:
+        raise ValueError(
+            "Exp419 runtime qualification differs from recomputed selection"
+        )
+
+
+def _verify_completion_runtime_evidence(
+    completions: tuple[WorkerCompletion, ...],
+    aggregate_peak_rss_bytes: object,
+) -> int:
+    if any(
+        dict(completion.thread_environment) != dict(_THREAD_ENVIRONMENT)
+        for completion in completions
+    ):
+        raise ValueError("Exp419 worker thread environment is not frozen")
+    worker_peak_sum = sum(
+        completion.peak_rss_bytes for completion in completions
+    )
+    if (
+        type(aggregate_peak_rss_bytes) is not int
+        or aggregate_peak_rss_bytes <= 0
+        or aggregate_peak_rss_bytes < worker_peak_sum
+        or aggregate_peak_rss_bytes > FROZEN_CONFIG.memory_limit_bytes
+    ):
+        raise ValueError(
+            "Exp419 aggregate peak RSS is inconsistent with worker evidence"
+        )
+    return aggregate_peak_rss_bytes
+
+
 def render_exp419_payloads(
     run: ParallelRun,
     benchmark: RuntimeBenchmark,
@@ -316,6 +376,7 @@ def render_exp419_payloads(
         or benchmark.selected_worker_count != plan.worker_count
     ):
         raise ValueError("Exp419 runtime benchmark does not authorize this plan")
+    _verify_runtime_qualification(benchmark)
     if not isinstance(trusted_checkpoint, TrustedCheckpointProvenance):
         raise ValueError("Exp419 requires trusted canonical checkpoint provenance")
     if dict(run.record_digests) != dict(
@@ -329,11 +390,10 @@ def render_exp419_payloads(
         raise ValueError("Exp419 population differs from the scientific context")
     if not summary.publication_allowed or summary.status != "complete":
         raise ValueError("Exp417 scientific publication gate is not complete")
-    aggregate_rss = run.summary.get("aggregate_peak_rss_bytes")
-    if type(aggregate_rss) is not int or not (
-        0 <= aggregate_rss <= FROZEN_CONFIG.memory_limit_bytes
-    ):
-        raise ValueError("Exp419 aggregate memory evidence is invalid")
+    aggregate_rss = _verify_completion_runtime_evidence(
+        run.completions,
+        run.summary.get("aggregate_peak_rss_bytes"),
+    )
 
     provenance = _derive_exp417_provenance(summary)
     exp417 = dict(
@@ -388,6 +448,7 @@ def render_exp419_payloads(
             benchmark=benchmark,
             plan=plan,
             trusted_checkpoint=trusted_checkpoint,
+            aggregate_peak_rss_bytes=aggregate_rss,
         )
     )
     verify_exp419_payloads(
@@ -563,6 +624,7 @@ def verify_exp419_payloads(
             payloads[RUNTIME_BENCHMARK_FILE], RUNTIME_BENCHMARK_FILE
         )
     )
+    _verify_runtime_qualification(benchmark)
     if (
         benchmark.status != "qualified_parallel_runtime"
         or benchmark.selected_worker_count != plan.worker_count
@@ -591,10 +653,6 @@ def verify_exp419_payloads(
         or parallel_run["plan_sha256"] != plan.sha256
         or parallel_run["record_digests"]
         != dict(trusted_checkpoint.checkpoint_payload_sha256)
-        or type(parallel_run["aggregate_peak_rss_bytes"]) is not int
-        or not 0
-        <= parallel_run["aggregate_peak_rss_bytes"]
-        <= FROZEN_CONFIG.memory_limit_bytes
     ):
         raise ValueError("Exp419 parallel run binding mismatch")
     completions = _reconstruct_completions(parallel_run["completions"])
@@ -613,12 +671,16 @@ def verify_exp419_payloads(
             }
         ):
             raise ValueError("Exp419 shard record binding mismatch")
+    aggregate_peak_rss_bytes = _verify_completion_runtime_evidence(
+        completions,
+        parallel_run["aggregate_peak_rss_bytes"],
+    )
 
     expected_report = _render_report(
         scientific,
         benchmark,
         plan,
-        parallel_run["aggregate_peak_rss_bytes"],
+        aggregate_peak_rss_bytes,
     )
     if payloads[REPORT_FILE] != expected_report:
         raise ValueError("Exp419 report differs from verified evidence")
@@ -636,6 +698,7 @@ def verify_exp419_payloads(
         benchmark=benchmark,
         plan=plan,
         trusted_checkpoint=trusted_checkpoint,
+        aggregate_peak_rss_bytes=aggregate_peak_rss_bytes,
     )
     manifest = _canonical_object(payloads[MANIFEST_FILE], MANIFEST_FILE)
     if manifest != expected_manifest:

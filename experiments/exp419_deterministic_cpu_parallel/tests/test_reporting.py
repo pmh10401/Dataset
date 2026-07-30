@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from hashlib import sha256
 import json
 import unittest
@@ -104,7 +104,7 @@ def fixture_inputs():
     trials = tuple(
         RuntimeTrial(
             worker_count,
-            100.0 / worker_count,
+            {1: 100.0, 2: 40.0, 4: 50.0, 6: 60.0}[worker_count],
             2_000_000 * worker_count,
             True,
             True,
@@ -194,10 +194,178 @@ class ReportingTests(unittest.TestCase):
         self.assertEqual(manifest["benchmark_sha256"], self.benchmark.sha256)
         self.assertEqual(manifest["shard_plan_sha256"], self.plan.sha256)
         self.assertEqual(manifest["selected_worker_count"], 2)
+        self.assertEqual(manifest["aggregate_peak_rss_bytes"], 2_000_001)
         self.assertEqual(
             manifest["canonical_checkpoint_record_sha256"],
             dict(self.trusted.checkpoint_payload_sha256),
         )
+        self.assertEqual(
+            set(manifest["exp419_source_sha256"]),
+            {
+                "experiments/exp419_deterministic_cpu_parallel/planner.py",
+                "experiments/exp419_deterministic_cpu_parallel/workers.py",
+                "experiments/exp419_deterministic_cpu_parallel/coordinator.py",
+                "experiments/exp419_deterministic_cpu_parallel/reporting.py",
+                "experiments/exp419_deterministic_cpu_parallel/publication.py",
+            },
+        )
+        self.assertEqual(
+            manifest["exp419_source_roles"],
+            {
+                "scheduler":
+                    "experiments/exp419_deterministic_cpu_parallel/planner.py",
+                "worker":
+                    "experiments/exp419_deterministic_cpu_parallel/workers.py",
+                "merge":
+                    "experiments/exp419_deterministic_cpu_parallel/coordinator.py",
+                "reporting":
+                    "experiments/exp419_deterministic_cpu_parallel/reporting.py",
+                "publication":
+                    "experiments/exp419_deterministic_cpu_parallel/publication.py",
+            },
+        )
+
+    def test_render_recomputes_runtime_qualification_and_rejects_forged_selection(self) -> None:
+        from experiments.exp419_deterministic_cpu_parallel.reporting import (
+            render_exp419_payloads,
+        )
+
+        selected = self.benchmark.trials[1]
+        attacks = (
+            replace(selected, parity=False),
+            replace(selected, finite=False),
+            replace(selected, fallback="worker fallback"),
+            replace(selected, peak_rss_bytes=FROZEN_CONFIG.memory_limit_bytes + 1),
+            replace(selected, elapsed_seconds=60.0),
+        )
+        for trial in attacks:
+            trials = (
+                self.benchmark.trials[0],
+                trial,
+                *self.benchmark.trials[2:],
+            )
+            forged = RuntimeBenchmark(
+                trials,
+                2,
+                "qualified_parallel_runtime",
+                self.benchmark.benchmark_datasets,
+            )
+            with self.subTest(trial=trial), self.assertRaisesRegex(
+                ValueError, "recomputed|qualification"
+            ):
+                render_exp419_payloads(
+                    self.parallel_run, forged, self.plan, self.trusted
+                )
+
+        faster_four = replace(
+            self.benchmark.trials[2], elapsed_seconds=20.0
+        )
+        forged = RuntimeBenchmark(
+            (
+                self.benchmark.trials[0],
+                self.benchmark.trials[1],
+                faster_four,
+                self.benchmark.trials[3],
+            ),
+            2,
+            "qualified_parallel_runtime",
+            self.benchmark.benchmark_datasets,
+        )
+        with self.assertRaisesRegex(ValueError, "recomputed|qualification"):
+            render_exp419_payloads(
+                self.parallel_run, forged, self.plan, self.trusted
+            )
+
+    def test_render_rejects_thread_and_aggregate_memory_fabrication(self) -> None:
+        from experiments.exp419_deterministic_cpu_parallel.reporting import (
+            render_exp419_payloads,
+        )
+
+        bad_completion = replace(
+            self.parallel_run.completions[0],
+            thread_environment={
+                "OMP_NUM_THREADS": "8",
+                "OPENBLAS_NUM_THREADS": "1",
+                "VECLIB_MAXIMUM_THREADS": "1",
+            },
+        )
+        completions = (
+            bad_completion,
+            *self.parallel_run.completions[1:],
+        )
+        bad_run = ParallelRun(
+            self.plan,
+            completions,
+            self.parallel_run.record_digests,
+            self.parallel_run.summary,
+            True,
+            "completed",
+        )
+        with self.assertRaisesRegex(ValueError, "thread"):
+            render_exp419_payloads(
+                bad_run, self.benchmark, self.plan, self.trusted
+            )
+
+        zero_run = ParallelRun(
+            self.plan,
+            self.parallel_run.completions,
+            self.parallel_run.record_digests,
+            {
+                **dict(self.parallel_run.summary),
+                "aggregate_peak_rss_bytes": 0,
+            },
+            True,
+            "completed",
+        )
+        with self.assertRaisesRegex(ValueError, "memory|RSS"):
+            render_exp419_payloads(
+                zero_run, self.benchmark, self.plan, self.trusted
+            )
+
+    def test_verify_recomputes_runtime_and_rejects_thread_memory_fabrication(self) -> None:
+        from experiments.exp419_deterministic_cpu_parallel.reporting import (
+            _benchmark_payload,
+            verify_exp419_payloads,
+        )
+
+        bad_trial = replace(self.benchmark.trials[1], parity=False)
+        forged_benchmark = RuntimeBenchmark(
+            (
+                self.benchmark.trials[0],
+                bad_trial,
+                *self.benchmark.trials[2:],
+            ),
+            2,
+            "qualified_parallel_runtime",
+            self.benchmark.benchmark_datasets,
+        )
+        runtime_mutation = dict(self.payloads)
+        runtime_mutation["exp419_parallel_runtime_benchmark.json"] = (
+            canonical_json_bytes(_benchmark_payload(forged_benchmark)) + b"\n"
+        )
+        with self.assertRaisesRegex(ValueError, "recomputed|qualification"):
+            verify_exp419_payloads(
+                runtime_mutation, trusted_checkpoint=self.trusted
+            )
+
+        for mutation in ("thread", "aggregate"):
+            config = json.loads(self.payloads["exp419_frozen_config.json"])
+            if mutation == "thread":
+                config["parallel_run"]["completions"][0][
+                    "thread_environment"
+                ]["OMP_NUM_THREADS"] = "8"
+            else:
+                config["parallel_run"]["aggregate_peak_rss_bytes"] = 0
+            mutated = dict(self.payloads)
+            mutated["exp419_frozen_config.json"] = (
+                canonical_json_bytes(config) + b"\n"
+            )
+            with self.subTest(mutation=mutation), self.assertRaisesRegex(
+                ValueError, "thread|RSS"
+            ):
+                verify_exp419_payloads(
+                    mutated, trusted_checkpoint=self.trusted
+                )
 
     def test_verifier_rejects_each_payload_mutation(self) -> None:
         from experiments.exp419_deterministic_cpu_parallel.reporting import (
@@ -278,6 +446,30 @@ class ReportingTests(unittest.TestCase):
             mutated = dict(self.payloads)
             mutated[name] = replacement
             with self.subTest(name=name), self.assertRaises(ValueError):
+                verify_exp419_payloads(
+                    mutated, trusted_checkpoint=self.trusted
+                )
+
+    def test_source_digest_manifest_missing_tampered_and_wrong_values_fail(self) -> None:
+        from experiments.exp419_deterministic_cpu_parallel.reporting import (
+            verify_exp419_payloads,
+        )
+
+        for mutation in ("missing", "wrong", "extra"):
+            manifest = json.loads(self.payloads["MANIFEST.json"])
+            sources = manifest["exp419_source_sha256"]
+            first = next(iter(sources))
+            if mutation == "missing":
+                sources.pop(first)
+            elif mutation == "wrong":
+                sources[first] = "f" * 64
+            else:
+                sources["experiments/exp419_deterministic_cpu_parallel/alias.py"] = (
+                    "e" * 64
+                )
+            mutated = dict(self.payloads)
+            mutated["MANIFEST.json"] = canonical_json_bytes(manifest) + b"\n"
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
                 verify_exp419_payloads(
                     mutated, trusted_checkpoint=self.trusted
                 )
