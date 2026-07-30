@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import inspect
 import json
+from copy import deepcopy
 from math import isclose
 from pathlib import Path
 import sys
@@ -12,9 +13,11 @@ from unittest.mock import patch
 
 from experiments.exp419_deterministic_cpu_parallel.config import FROZEN_CONFIG
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
+    BenchmarkSelectionProof,
     DatasetCost,
     RuntimeBenchmark,
     RuntimeTrial,
+    benchmark_selection_proof_payload,
 )
 from experiments.exp419_deterministic_cpu_parallel.coordinator import select_runtime
 
@@ -22,6 +25,23 @@ from experiments.exp419_deterministic_cpu_parallel.coordinator import select_run
 REPO_ROOT = Path(__file__).resolve().parents[3]
 BENCHMARK_SCRIPT = REPO_ROOT / "scratch/benchmark_exp419_deterministic_cpu_parallel.py"
 OFFICIAL_SCRIPT = REPO_ROOT / "scratch/run_exp419_deterministic_cpu_parallel.py"
+BALANCED_DATASETS = ("a", "b", "c", "d", "e", "f")
+BALANCED_COSTS = (
+    DatasetCost("a", 4, "candidate_eligible"),
+    DatasetCost("b", 2, "candidate_eligible"),
+    DatasetCost("c", 1, "candidate_eligible"),
+    DatasetCost("d", 1, "candidate_eligible"),
+    DatasetCost("e", 1, "candidate_eligible"),
+    DatasetCost("f", 1, "candidate_eligible"),
+)
+INVALID_DIAGNOSTIC_ROOT = Path(
+    "/Users/mac/Documents/Dataset/"
+    "exp419_deterministic_cpu_parallel_benchmark"
+)
+CORRECTED_BENCHMARK_ROOT = Path(
+    "/Users/mac/Documents/Dataset/"
+    "exp419_deterministic_cpu_parallel_benchmark_balanced"
+)
 
 
 def _load_script(name: str, path: Path):
@@ -34,20 +54,63 @@ def _load_script(name: str, path: Path):
     return module
 
 
-def _passing_benchmark(datasets: tuple[str, ...] = ("a",)) -> RuntimeBenchmark:
+def _selection_proof(
+    datasets: tuple[str, ...] = BALANCED_DATASETS,
+    **changes,
+) -> BenchmarkSelectionProof:
+    if datasets == BALANCED_DATASETS:
+        values = {
+            "anchor_datasets": ("a", "c", "d", "e", "f"),
+            "added_datasets": ("b",),
+            "selected_datasets": BALANCED_DATASETS,
+            "proxy_headroom_gate": 2.5,
+            "total_cost": 10,
+            "shard_loads": {
+                2: (5, 5),
+                4: (4, 2, 2, 2),
+                6: (4, 2, 1, 1, 1, 1),
+            },
+            "proxy_headrooms": {2: 2.0, 4: 2.5, 6: 2.5},
+        }
+    else:
+        values = {
+            "anchor_datasets": datasets[:-1],
+            "added_datasets": datasets[-1:],
+            "selected_datasets": datasets,
+            "proxy_headroom_gate": 2.5,
+            "total_cost": 100,
+            "shard_loads": {
+                2: (50, 50),
+                4: (40, 20, 20, 20),
+                6: (40, 12, 12, 12, 12, 12),
+            },
+            "proxy_headrooms": {2: 2.0, 4: 2.5, 6: 2.5},
+        }
+    values.update(changes)
+    return BenchmarkSelectionProof(**values)
+
+
+def _passing_benchmark(
+    datasets: tuple[str, ...] = BALANCED_DATASETS,
+    selection_proof: BenchmarkSelectionProof | None = None,
+) -> RuntimeBenchmark:
     trials = (
         RuntimeTrial(1, 12.0, 100, True, True, "", datasets, "1" * 64),
         RuntimeTrial(2, 5.0, 200, True, True, "", datasets, "2" * 64),
         RuntimeTrial(4, 4.0, 300, True, True, "", datasets, "3" * 64),
         RuntimeTrial(6, 6.0, 400, True, True, "", datasets, "4" * 64),
     )
-    return select_runtime(trials)
+    return select_runtime(
+        trials,
+        selection_proof or _selection_proof(datasets),
+    )
 
 
 def _passing_measured_benchmark(
     module,
-    datasets: tuple[str, ...] = ("a",),
+    datasets: tuple[str, ...] = BALANCED_DATASETS,
     source_manifest_sha256: str = "c" * 64,
+    selection_proof: BenchmarkSelectionProof | None = None,
 ):
     measurements = []
     trials = []
@@ -83,7 +146,13 @@ def _passing_measured_benchmark(
                 measurement.evidence_sha256,
             )
         )
-    return select_runtime(tuple(trials)), tuple(measurements)
+    return (
+        select_runtime(
+            tuple(trials),
+            selection_proof or _selection_proof(datasets),
+        ),
+        tuple(measurements),
+    )
 
 
 class OfficialOrderTests(unittest.TestCase):
@@ -161,6 +230,48 @@ class CliContractTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.benchmark = _load_script("exp419_benchmark_cli", BENCHMARK_SCRIPT)
         cls.official = _load_script("exp419_official_cli_contract", OFFICIAL_SCRIPT)
+
+    def test_benchmark_payload_round_trips_exact_selection_proof(self) -> None:
+        benchmark = _passing_benchmark()
+        payload = self.benchmark.benchmark_payload(benchmark)
+        self.assertEqual(
+            payload["selection_proof"],
+            benchmark_selection_proof_payload(benchmark.selection_proof),
+        )
+        self.assertEqual(
+            self.benchmark.benchmark_from_payload(payload),
+            benchmark,
+        )
+
+        mutations = (
+            lambda proof: proof["anchor_datasets"].__setitem__(0, "z"),
+            lambda proof: proof["added_datasets"].__setitem__(0, "z"),
+            lambda proof: proof["selected_datasets"].reverse(),
+            lambda proof: proof.update({"proxy_headroom_gate": 2.0}),
+            lambda proof: proof.update({"total_cost": 11}),
+            lambda proof: proof["shard_loads"].__setitem__(
+                "4", [4, 2, 1, 3]
+            ),
+            lambda proof: proof["proxy_headrooms"].__setitem__("4", 2.6),
+            lambda proof: proof.update({"sha256": "0" * 64}),
+        )
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                mutated = deepcopy(payload)
+                mutation(mutated["selection_proof"])
+                with self.assertRaises(ValueError):
+                    self.benchmark.benchmark_from_payload(mutated)
+
+        different_proof = _selection_proof(
+            anchor_datasets=("b", "c", "d", "e", "f"),
+            added_datasets=("a",),
+        )
+        copied_digest = self.benchmark.benchmark_payload(
+            _passing_benchmark(selection_proof=different_proof)
+        )
+        copied_digest["sha256"] = payload["sha256"]
+        with self.assertRaisesRegex(ValueError, "digest"):
+            self.benchmark.benchmark_from_payload(copied_digest)
 
     def test_parsers_expose_only_frozen_path_arguments(self) -> None:
         forbidden = {
@@ -280,13 +391,8 @@ class CliContractTests(unittest.TestCase):
                 self.official.require_disjoint_roots(checkpoint, alias)
 
     def test_benchmark_evidence_is_digest_context_and_selection_bound(self) -> None:
-        benchmark, measurements = _passing_measured_benchmark(
-            self.benchmark, ("a", "b")
-        )
-        costs = (
-            DatasetCost("a", 1, "preprocessing_only"),
-            DatasetCost("b", 2, "diagnostic_oof"),
-        )
+        benchmark, measurements = _passing_measured_benchmark(self.benchmark)
+        costs = BALANCED_COSTS
         with TemporaryDirectory() as temporary:
             path = Path(temporary) / "benchmark.json"
             self.benchmark.write_benchmark_evidence(
@@ -310,14 +416,26 @@ class CliContractTests(unittest.TestCase):
             )
             self.assertEqual(observed, benchmark)
 
-            with self.assertRaisesRegex(ValueError, "manifest|provenance"):
-                self.official.verify_benchmark_evidence(
-                    path,
-                    expected_git_commit="a" * 40,
-                    expected_context_sha256="b" * 64,
-                    expected_source_manifest_sha256="d" * 64,
-                    expected_costs=costs,
-                )
+            stale_provenance = (
+                ("d" * 40, "b" * 64, "c" * 64),
+                ("a" * 40, "d" * 64, "c" * 64),
+                ("a" * 40, "b" * 64, "d" * 64),
+            )
+            for git_commit, context_sha256, source_manifest in stale_provenance:
+                with self.subTest(
+                    git_commit=git_commit,
+                    context_sha256=context_sha256,
+                    source_manifest=source_manifest,
+                ), self.assertRaisesRegex(
+                    ValueError, "manifest|provenance"
+                ):
+                    self.official.verify_benchmark_evidence(
+                        path,
+                        expected_git_commit=git_commit,
+                        expected_context_sha256=context_sha256,
+                        expected_source_manifest_sha256=source_manifest,
+                        expected_costs=costs,
+                    )
 
             manifest_forged = json.loads(path.read_text())
             manifest_forged["source_manifest_sha256"] = "d" * 64
@@ -360,11 +478,7 @@ class CliContractTests(unittest.TestCase):
         benchmark, measurements = _passing_measured_benchmark(
             self.benchmark, ("a", "b")
         )
-        costs = (
-            DatasetCost("a", 1, "preprocessing_only"),
-            DatasetCost("b", 2, "diagnostic_oof"),
-            DatasetCost("c", 3, "candidate_eligible"),
-        )
+        costs = BALANCED_COSTS
         with TemporaryDirectory() as temporary:
             path = Path(temporary) / "benchmark.json"
             self.benchmark.write_benchmark_evidence(
@@ -379,7 +493,9 @@ class CliContractTests(unittest.TestCase):
                 ),
                 runtime_measurements=measurements,
             )
-            with self.assertRaisesRegex(ValueError, "subset|datasets"):
+            with self.assertRaisesRegex(
+                ValueError, "proof|balance|subset|datasets"
+            ):
                 self.official.verify_benchmark_evidence(
                     path,
                     expected_git_commit="a" * 40,
@@ -387,6 +503,143 @@ class CliContractTests(unittest.TestCase):
                     expected_source_manifest_sha256="c" * 64,
                     expected_costs=costs,
                 )
+
+    def test_official_recomputes_exact_proof_and_rejects_old_or_mutated_balance(
+        self,
+    ) -> None:
+        old_names = tuple(f"old-{index:02d}" for index in range(15))
+        old_proof = _selection_proof(old_names)
+        wrong_partition = _selection_proof(
+            anchor_datasets=("b", "c", "d", "e", "f"),
+            added_datasets=("a",),
+        )
+        wrong_load_order = _selection_proof(
+            shard_loads={
+                2: (5, 5),
+                4: (2, 4, 2, 2),
+                6: (4, 2, 1, 1, 1, 1),
+            },
+        )
+        attacks = (
+            (
+                _passing_measured_benchmark(
+                    self.benchmark,
+                    old_names,
+                    selection_proof=old_proof,
+                ),
+                BALANCED_COSTS,
+            ),
+            (
+                _passing_measured_benchmark(self.benchmark),
+                (
+                    DatasetCost("a", 4, "candidate_eligible"),
+                    DatasetCost("b", 3, "candidate_eligible"),
+                    *BALANCED_COSTS[2:],
+                ),
+            ),
+            (
+                _passing_measured_benchmark(
+                    self.benchmark,
+                    selection_proof=wrong_partition,
+                ),
+                BALANCED_COSTS,
+            ),
+            (
+                _passing_measured_benchmark(
+                    self.benchmark,
+                    selection_proof=wrong_load_order,
+                ),
+                BALANCED_COSTS,
+            ),
+        )
+        with TemporaryDirectory() as temporary:
+            for index, ((benchmark, measurements), costs) in enumerate(attacks):
+                with self.subTest(index=index):
+                    path = Path(temporary) / f"benchmark-{index}.json"
+                    self.benchmark.write_benchmark_evidence(
+                        path,
+                        benchmark=benchmark,
+                        git_commit="a" * 40,
+                        context_sha256="b" * 64,
+                        source_manifest_sha256="c" * 64,
+                        trial_roots=tuple(
+                            CORRECTED_BENCHMARK_ROOT / f"workers-{count}"
+                            for count in FROZEN_CONFIG.worker_candidates
+                        ),
+                        runtime_measurements=measurements,
+                    )
+                    with self.assertRaisesRegex(
+                        ValueError, "proof|balance|subset|datasets"
+                    ):
+                        self.official.verify_benchmark_evidence(
+                            path,
+                            expected_git_commit="a" * 40,
+                            expected_context_sha256="b" * 64,
+                            expected_source_manifest_sha256="c" * 64,
+                            expected_costs=costs,
+                        )
+
+    def test_official_rejects_terminated_diagnostic_roots_and_accepts_corrected_root(
+        self,
+    ) -> None:
+        benchmark, measurements = _passing_measured_benchmark(self.benchmark)
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "benchmark.json"
+            for root in (
+                INVALID_DIAGNOSTIC_ROOT,
+                INVALID_DIAGNOSTIC_ROOT / "workers-1",
+            ):
+                with self.subTest(root=root):
+                    self.benchmark.write_benchmark_evidence(
+                        path,
+                        benchmark=benchmark,
+                        git_commit="a" * 40,
+                        context_sha256="b" * 64,
+                        source_manifest_sha256="c" * 64,
+                        trial_roots=tuple(
+                            (
+                                root
+                                if count == FROZEN_CONFIG.worker_candidates[0]
+                                else root / f"trial-{count}"
+                            )
+                            for count in FROZEN_CONFIG.worker_candidates
+                        ),
+                        runtime_measurements=measurements,
+                    )
+                    with self.assertRaisesRegex(
+                        ValueError, "diagnostic|terminated|root"
+                    ):
+                        self.official.verify_benchmark_evidence(
+                            path,
+                            expected_git_commit="a" * 40,
+                            expected_context_sha256="b" * 64,
+                            expected_source_manifest_sha256="c" * 64,
+                            expected_costs=BALANCED_COSTS,
+                        )
+                    path.unlink()
+
+            self.benchmark.write_benchmark_evidence(
+                path,
+                benchmark=benchmark,
+                git_commit="a" * 40,
+                context_sha256="b" * 64,
+                source_manifest_sha256="c" * 64,
+                trial_roots=tuple(
+                    CORRECTED_BENCHMARK_ROOT / f"workers-{count}"
+                    for count in FROZEN_CONFIG.worker_candidates
+                ),
+                runtime_measurements=measurements,
+            )
+            self.assertEqual(
+                self.official.verify_benchmark_evidence(
+                    path,
+                    expected_git_commit="a" * 40,
+                    expected_context_sha256="b" * 64,
+                    expected_source_manifest_sha256="c" * 64,
+                    expected_costs=BALANCED_COSTS,
+                ),
+                benchmark,
+            )
 
     def test_official_rejects_old_manifest_bound_trials_under_current_top_level(self) -> None:
         benchmark, measurements = _passing_measured_benchmark(

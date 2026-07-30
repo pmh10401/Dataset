@@ -17,12 +17,14 @@ from experiments.exp417_causal_multihorizon_shadow.tests.test_reporting import (
 )
 from experiments.exp419_deterministic_cpu_parallel.config import FROZEN_CONFIG
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
+    BenchmarkSelectionProof,
     ParallelRun,
     RuntimeBenchmark,
     RuntimeTrial,
     ShardAssignment,
     ShardPlan,
     WorkerCompletion,
+    benchmark_selection_proof_payload,
 )
 
 
@@ -100,7 +102,20 @@ def fixture_inputs():
         True,
         "completed",
     )
-    benchmark_datasets = population[:3]
+    benchmark_datasets = tuple(sorted(population[:3]))
+    selection_proof = BenchmarkSelectionProof(
+        anchor_datasets=benchmark_datasets[:2],
+        added_datasets=benchmark_datasets[2:],
+        selected_datasets=benchmark_datasets,
+        proxy_headroom_gate=2.5,
+        total_cost=100,
+        shard_loads={
+            2: (50, 50),
+            4: (40, 20, 20, 20),
+            6: (40, 12, 12, 12, 12, 12),
+        },
+        proxy_headrooms={2: 2.0, 4: 2.5, 6: 2.5},
+    )
     trials = tuple(
         RuntimeTrial(
             worker_count,
@@ -119,6 +134,7 @@ def fixture_inputs():
         2,
         "qualified_parallel_runtime",
         benchmark_datasets,
+        selection_proof,
     )
     return run, benchmark, plan, trusted
 
@@ -174,6 +190,17 @@ class ReportingTests(unittest.TestCase):
         )
         self.assertEqual(runtime["selected_worker_count"], 2)
         self.assertEqual(
+            runtime["selection_proof"],
+            benchmark_selection_proof_payload(
+                self.benchmark.selection_proof
+            ),
+        )
+        self.assertEqual(
+            runtime["selection_proof"]["sha256"],
+            self.benchmark.selection_proof.sha256,
+        )
+        self.assertEqual(runtime["sha256"], self.benchmark.sha256)
+        self.assertEqual(
             [trial["worker_count"] for trial in runtime["trials"]],
             [1, 2, 4, 6],
         )
@@ -225,6 +252,47 @@ class ReportingTests(unittest.TestCase):
             },
         )
 
+    def test_verify_rejects_every_rendered_selection_proof_mutation(
+        self,
+    ) -> None:
+        from experiments.exp419_deterministic_cpu_parallel.reporting import (
+            verify_exp419_payloads,
+        )
+
+        mutations = (
+            lambda proof: proof["anchor_datasets"].__setitem__(
+                0, "mutated-anchor"
+            ),
+            lambda proof: proof["added_datasets"].__setitem__(
+                0, "mutated-addition"
+            ),
+            lambda proof: proof["selected_datasets"].reverse(),
+            lambda proof: proof.update({"proxy_headroom_gate": 2.0}),
+            lambda proof: proof.update({"total_cost": 101}),
+            lambda proof: proof["shard_loads"].__setitem__(
+                "4", [40, 20, 19, 21]
+            ),
+            lambda proof: proof["proxy_headrooms"].__setitem__("4", 2.6),
+            lambda proof: proof.update({"sha256": "0" * 64}),
+        )
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                runtime = json.loads(
+                    self.payloads[
+                        "exp419_parallel_runtime_benchmark.json"
+                    ]
+                )
+                mutation(runtime["selection_proof"])
+                mutated = dict(self.payloads)
+                mutated["exp419_parallel_runtime_benchmark.json"] = (
+                    canonical_json_bytes(runtime) + b"\n"
+                )
+                with self.assertRaises(ValueError):
+                    verify_exp419_payloads(
+                        mutated,
+                        trusted_checkpoint=self.trusted,
+                    )
+
     def test_render_recomputes_runtime_qualification_and_rejects_forged_selection(self) -> None:
         from experiments.exp419_deterministic_cpu_parallel.reporting import (
             render_exp419_payloads,
@@ -249,6 +317,7 @@ class ReportingTests(unittest.TestCase):
                 2,
                 "qualified_parallel_runtime",
                 self.benchmark.benchmark_datasets,
+                self.benchmark.selection_proof,
             )
             with self.subTest(trial=trial), self.assertRaisesRegex(
                 ValueError, "recomputed|qualification"
@@ -270,6 +339,7 @@ class ReportingTests(unittest.TestCase):
             2,
             "qualified_parallel_runtime",
             self.benchmark.benchmark_datasets,
+            self.benchmark.selection_proof,
         )
         with self.assertRaisesRegex(ValueError, "recomputed|qualification"):
             render_exp419_payloads(
@@ -338,6 +408,7 @@ class ReportingTests(unittest.TestCase):
             2,
             "qualified_parallel_runtime",
             self.benchmark.benchmark_datasets,
+            self.benchmark.selection_proof,
         )
         runtime_mutation = dict(self.payloads)
         runtime_mutation["exp419_parallel_runtime_benchmark.json"] = (

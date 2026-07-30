@@ -42,6 +42,8 @@ from experiments.exp419_deterministic_cpu_parallel.contracts import (
     RuntimeTrial,
     WorkerBootstrap,
     WorkerSpec,
+    benchmark_selection_proof_from_payload,
+    benchmark_selection_proof_payload,
 )
 from experiments.exp419_deterministic_cpu_parallel.coordinator import (
     _context_sha256,
@@ -50,6 +52,7 @@ from experiments.exp419_deterministic_cpu_parallel.coordinator import (
 from experiments.exp419_deterministic_cpu_parallel.planner import (
     build_shard_plan,
     estimate_dataset_cost,
+    select_balanced_benchmark_datasets,
     select_benchmark_datasets,
 )
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
@@ -831,7 +834,8 @@ def _run_trials(
     frozen: FrozenBenchmarkInputs,
     trial_roots: Mapping[int, Path],
 ) -> MeasuredBenchmark:
-    selected = select_benchmark_datasets(frozen.costs)
+    selection_proof = select_balanced_benchmark_datasets(frozen.costs)
+    selected = selection_proof.selected_datasets
     if not selected:
         raise ValueError("frozen benchmark subset is empty")
     selected_set = set(selected)
@@ -939,7 +943,7 @@ def _run_trials(
             )
         )
     return MeasuredBenchmark(
-        select_runtime(tuple(trials)),
+        select_runtime(tuple(trials), selection_proof),
         tuple(measurements),
     )
 
@@ -961,6 +965,9 @@ def benchmark_payload(benchmark: RuntimeBenchmark) -> dict[str, object]:
     return {
         "trials": [_trial_payload(trial) for trial in benchmark.trials],
         "selected_worker_count": benchmark.selected_worker_count,
+        "selection_proof": benchmark_selection_proof_payload(
+            benchmark.selection_proof
+        ),
         "status": benchmark.status,
         "benchmark_datasets": list(benchmark.benchmark_datasets),
         "sha256": benchmark.sha256,
@@ -1053,6 +1060,7 @@ def benchmark_from_payload(payload: object) -> RuntimeBenchmark:
         "selected_worker_count",
         "status",
         "benchmark_datasets",
+        "selection_proof",
         "sha256",
     }:
         raise ValueError("benchmark evidence fields are invalid")
@@ -1090,10 +1098,13 @@ def benchmark_from_payload(payload: object) -> RuntimeBenchmark:
         payload["selected_worker_count"],
         payload["status"],
         payload["benchmark_datasets"],
+        benchmark_selection_proof_from_payload(payload["selection_proof"]),
     )
     if benchmark.sha256 != payload["sha256"]:
         raise ValueError("benchmark digest mismatch")
-    if select_runtime(benchmark.trials) != benchmark:
+    if select_runtime(
+        benchmark.trials, benchmark.selection_proof
+    ) != benchmark:
         raise ValueError("benchmark selection is not the frozen passing selection")
     return benchmark
 

@@ -178,6 +178,90 @@ class Exp419ContractTests(unittest.TestCase):
             f"{worker_count:x}" * 64,
         )
 
+    def _benchmark_selection_proof(self, **changes):
+        values = {
+            "anchor_datasets": ("a",),
+            "added_datasets": ("b",),
+            "selected_datasets": ("a", "b"),
+        }
+        values.update(changes)
+        return self._selection_proof(**values)
+
+    def _runtime_benchmark(self, proof=None):
+        proof = proof or self._benchmark_selection_proof()
+        return RuntimeBenchmark(
+            trials=tuple(self._trial(count) for count in (1, 2, 4, 6)),
+            selected_worker_count=2,
+            status="qualified_parallel_runtime",
+            benchmark_datasets=("a", "b"),
+            selection_proof=proof,
+        )
+
+    def test_runtime_benchmark_binds_exact_valid_selection_proof(self):
+        benchmark = self._runtime_benchmark()
+        self.assertEqual(
+            benchmark.benchmark_datasets,
+            benchmark.selection_proof.selected_datasets,
+        )
+        different_datasets = self._benchmark_selection_proof(
+            anchor_datasets=("a", "b"),
+            added_datasets=("c",),
+            selected_datasets=("a", "b", "c"),
+        )
+        with self.assertRaisesRegex(ValueError, "selection proof"):
+            self._runtime_benchmark(different_datasets)
+
+        proof = self._benchmark_selection_proof()
+        mutations = (
+            ("anchor_datasets", ("b",)),
+            ("added_datasets", ("a",)),
+            (
+                "shard_loads",
+                MappingProxyType(
+                    {
+                        2: (51, 49),
+                        4: (40, 20, 20, 20),
+                        6: (40, 12, 12, 12, 12, 12),
+                    }
+                ),
+            ),
+            (
+                "proxy_headrooms",
+                MappingProxyType({2: 100 / 51, 4: 2.5, 6: 2.5}),
+            ),
+            ("total_cost", 101),
+            ("sha256", "0" * 64),
+        )
+        for name, value in mutations:
+            with self.subTest(name=name):
+                mutated = self._benchmark_selection_proof()
+                object.__setattr__(mutated, name, value)
+                with self.assertRaisesRegex(ValueError, "selection proof"):
+                    self._runtime_benchmark(mutated)
+
+        other = self._benchmark_selection_proof(
+            anchor_datasets=("b",),
+            added_datasets=("a",),
+        )
+        copied_digest = self._benchmark_selection_proof()
+        object.__setattr__(copied_digest, "sha256", other.sha256)
+        with self.assertRaisesRegex(ValueError, "selection proof"):
+            self._runtime_benchmark(copied_digest)
+
+        with self.assertRaisesRegex(ValueError, "BenchmarkSelectionProof"):
+            self._runtime_benchmark(object())
+
+    def test_runtime_benchmark_sha256_includes_full_selection_proof(self):
+        first = self._runtime_benchmark()
+        second = self._runtime_benchmark(
+            self._benchmark_selection_proof(
+                anchor_datasets=("b",),
+                added_datasets=("a",),
+            )
+        )
+        self.assertNotEqual(first.selection_proof.sha256, second.selection_proof.sha256)
+        self.assertNotEqual(first.sha256, second.sha256)
+
     def test_valid_cost_and_complete_shard_plan_are_accepted(self):
         self.assertEqual(
             DatasetCost("a", 10, "preprocessing_only").cost,
@@ -255,6 +339,7 @@ class Exp419ContractTests(unittest.TestCase):
                 2,
                 "qualified_parallel_runtime",
                 ("a", "b"),
+                self._benchmark_selection_proof(),
             )
 
     def test_qualified_runtime_benchmark_requires_a_parallel_selection(self):
@@ -264,6 +349,7 @@ class Exp419ContractTests(unittest.TestCase):
                 1,
                 "qualified_parallel_runtime",
                 ("a", "b"),
+                self._benchmark_selection_proof(),
             )
 
     def test_runtime_benchmark_requires_trials_to_cover_exact_benchmark_datasets(self):
@@ -278,6 +364,7 @@ class Exp419ContractTests(unittest.TestCase):
                 2,
                 "qualified_parallel_runtime",
                 ("a", "b"),
+                self._benchmark_selection_proof(),
             )
 
     def test_completed_parallel_run_requires_every_plan_shard_completion(self):

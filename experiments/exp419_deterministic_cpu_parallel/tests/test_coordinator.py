@@ -20,6 +20,7 @@ from experiments.exp417_causal_multihorizon_shadow.contracts import (
     FrozenRunContext,
 )
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
+    BenchmarkSelectionProof,
     ParallelRoots,
     RuntimeTrial,
     ShardAssignment,
@@ -66,6 +67,22 @@ def _plan(context: FrozenRunContext) -> ShardPlan:
 
 def _digest(dataset: str) -> str:
     return sha256(dataset.encode("utf-8")).hexdigest()
+
+
+def _selection_proof() -> BenchmarkSelectionProof:
+    return BenchmarkSelectionProof(
+        anchor_datasets=("a",),
+        added_datasets=("b",),
+        selected_datasets=("a", "b"),
+        proxy_headroom_gate=2.5,
+        total_cost=100,
+        shard_loads={
+            2: (50, 50),
+            4: (40, 20, 20, 20),
+            6: (40, 12, 12, 12, 12, 12),
+        },
+        proxy_headrooms={2: 2.0, 4: 2.5, 6: 2.5},
+    )
 
 
 def _real_provenance() -> Exp417CheckpointProvenance:
@@ -1745,9 +1762,11 @@ class CoordinatorTests(unittest.TestCase):
             RuntimeTrial(4, 30.0, 100, True, True, "", datasets, "4" * 64),
             RuntimeTrial(6, 25.0, 100, False, True, "", datasets, "6" * 64),
         )
-        benchmark = select_runtime(trials)
+        proof = _selection_proof()
+        benchmark = select_runtime(trials, proof)
         self.assertEqual(benchmark.selected_worker_count, 4)
         self.assertEqual(benchmark.status, "qualified_parallel_runtime")
+        self.assertEqual(benchmark.selection_proof, proof)
 
     def test_select_runtime_rejects_parity_memory_finite_fallback_and_speed(self):
         from experiments.exp419_deterministic_cpu_parallel.config import (
@@ -1782,7 +1801,7 @@ class CoordinatorTests(unittest.TestCase):
                 "6" * 64,
             ),
         )
-        benchmark = select_runtime(trials)
+        benchmark = select_runtime(trials, _selection_proof())
         self.assertIsNone(benchmark.selected_worker_count)
         self.assertEqual(
             benchmark.status, "no_qualified_parallel_runtime"

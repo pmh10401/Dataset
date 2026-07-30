@@ -39,6 +39,8 @@ from .contracts import (
     ShardAssignment,
     ShardPlan,
     WorkerCompletion,
+    benchmark_selection_proof_from_payload,
+    benchmark_selection_proof_payload,
 )
 from .workers import _THREAD_ENVIRONMENT
 
@@ -212,6 +214,9 @@ def _trial_payload(trial: RuntimeTrial) -> dict[str, object]:
 def _benchmark_payload(benchmark: RuntimeBenchmark) -> dict[str, object]:
     return {
         "benchmark_datasets": list(benchmark.benchmark_datasets),
+        "selection_proof": benchmark_selection_proof_payload(
+            benchmark.selection_proof
+        ),
         "selected_worker_count": benchmark.selected_worker_count,
         "sha256": benchmark.sha256,
         "status": benchmark.status,
@@ -323,7 +328,9 @@ def _manifest_payload(
 
 
 def _verify_runtime_qualification(benchmark: RuntimeBenchmark) -> None:
-    recomputed = select_runtime(benchmark.trials)
+    recomputed = select_runtime(
+        benchmark.trials, benchmark.selection_proof
+    )
     if recomputed != benchmark:
         raise ValueError(
             "Exp419 runtime qualification differs from recomputed selection"
@@ -510,6 +517,9 @@ def _reconstruct_benchmark(value: Mapping[str, object]) -> RuntimeBenchmark:
             value["selected_worker_count"],
             value["status"],
             tuple(value["benchmark_datasets"]),
+            benchmark_selection_proof_from_payload(
+                value["selection_proof"]
+            ),
         )
     except (KeyError, TypeError, ValueError) as error:
         raise ValueError("Exp419 runtime benchmark is invalid") from error

@@ -493,6 +493,7 @@ class RuntimeBenchmark:
     selected_worker_count: int | None
     status: str
     benchmark_datasets: tuple[str, ...]
+    selection_proof: BenchmarkSelectionProof
     sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
@@ -505,6 +506,20 @@ class RuntimeBenchmark:
         if self.status not in RUNTIME_BENCHMARK_STATUSES:
             raise ValueError("status is not a runtime benchmark status")
         datasets = _datasets(self.benchmark_datasets, "benchmark_datasets")
+        if type(self.selection_proof) is not BenchmarkSelectionProof:
+            raise ValueError(
+                "selection proof must be a BenchmarkSelectionProof"
+            )
+        try:
+            proof = benchmark_selection_proof_from_payload(
+                benchmark_selection_proof_payload(self.selection_proof)
+            )
+        except ValueError as error:
+            raise ValueError("selection proof is not canonical") from error
+        if datasets != proof.selected_datasets:
+            raise ValueError(
+                "benchmark datasets must equal selection proof datasets"
+            )
         if any(trial.completed_datasets != datasets for trial in trials):
             raise ValueError("trials must cover exact benchmark completed_datasets")
         if self.status == "qualified_parallel_runtime":
@@ -515,8 +530,10 @@ class RuntimeBenchmark:
             raise ValueError("unqualified benchmark cannot select a worker count")
         object.__setattr__(self, "trials", trials)
         object.__setattr__(self, "benchmark_datasets", datasets)
+        object.__setattr__(self, "selection_proof", proof)
         payload = {
             "benchmark_datasets": datasets,
+            "selection_proof": benchmark_selection_proof_payload(proof),
             "selected_worker_count": self.selected_worker_count,
             "status": self.status,
             "trials": [

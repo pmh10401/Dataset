@@ -28,6 +28,7 @@ from experiments.exp417_causal_multihorizon_shadow.runner import (
 
 from .config import FROZEN_CONFIG
 from .contracts import (
+    BenchmarkSelectionProof,
     ParallelRoots,
     ParallelRun,
     RuntimeBenchmark,
@@ -1862,7 +1863,10 @@ def resume_or_run_parallel(
             transaction.close()
 
 
-def select_runtime(trials: Sequence[RuntimeTrial]) -> RuntimeBenchmark:
+def select_runtime(
+    trials: Sequence[RuntimeTrial],
+    selection_proof: BenchmarkSelectionProof,
+) -> RuntimeBenchmark:
     """Select the fastest exact parallel trial passing every frozen gate."""
     frozen = tuple(trials)
     if not frozen:
@@ -1912,6 +1916,7 @@ def select_runtime(trials: Sequence[RuntimeTrial]) -> RuntimeBenchmark:
             else "no_qualified_parallel_runtime"
         ),
         benchmark_datasets,
+        selection_proof,
     )
 
 

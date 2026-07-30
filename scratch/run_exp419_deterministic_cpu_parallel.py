@@ -39,7 +39,7 @@ from experiments.exp419_deterministic_cpu_parallel.coordinator import (
 )
 from experiments.exp419_deterministic_cpu_parallel.planner import (
     build_shard_plan,
-    select_benchmark_datasets,
+    select_balanced_benchmark_datasets,
 )
 from experiments.exp419_deterministic_cpu_parallel.publication import publish_exp419
 from experiments.exp419_deterministic_cpu_parallel.reporting import (
@@ -58,6 +58,10 @@ from scratch.benchmark_exp419_deterministic_cpu_parallel import (
 
 
 APPROVAL_PHRASE = "Exp419 1,117개 전체 label-free 병렬 실행 승인"
+TERMINATED_DIAGNOSTIC_ROOT = Path(
+    "/Users/mac/Documents/Dataset/"
+    "exp419_deterministic_cpu_parallel_benchmark"
+).resolve(strict=False)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -166,6 +170,17 @@ def verify_benchmark_evidence(
         != len(roots)
     ):
         raise ValueError("benchmark evidence trial roots are invalid")
+    resolved_roots = tuple(
+        Path(root).resolve(strict=False) for root in roots
+    )
+    if any(
+        root == TERMINATED_DIAGNOSTIC_ROOT
+        or TERMINATED_DIAGNOSTIC_ROOT in root.parents
+        for root in resolved_roots
+    ):
+        raise ValueError(
+            "benchmark evidence uses the terminated diagnostic root"
+        )
     benchmark = benchmark_from_payload(payload["benchmark"])
     measurements = runtime_measurements_from_payload(
         payload["runtime_measurements"]
@@ -173,10 +188,23 @@ def verify_benchmark_evidence(
     validate_benchmark_source_manifest_binding(
         benchmark, measurements, payload["source_manifest_sha256"]
     )
-    expected_datasets = select_benchmark_datasets(tuple(expected_costs))
-    if benchmark.benchmark_datasets != expected_datasets:
+    expected_proof = select_balanced_benchmark_datasets(
+        tuple(expected_costs)
+    )
+    if benchmark.selection_proof != expected_proof:
         raise ValueError(
-            "benchmark datasets differ from the frozen TRAIN-only subset"
+            "benchmark selection proof differs from frozen TRAIN-only balance"
+        )
+    expected_datasets = expected_proof.selected_datasets
+    if (
+        benchmark.benchmark_datasets != expected_datasets
+        or any(
+            trial.completed_datasets != expected_datasets
+            for trial in benchmark.trials
+        )
+    ):
+        raise ValueError(
+            "benchmark datasets differ from the frozen TRAIN-only balance"
         )
     if (
         benchmark.status != "qualified_parallel_runtime"
