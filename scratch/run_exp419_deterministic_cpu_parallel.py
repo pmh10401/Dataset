@@ -48,12 +48,12 @@ from experiments.exp419_deterministic_cpu_parallel.reporting import (
 )
 from scratch.benchmark_exp419_deterministic_cpu_parallel import (
     FrozenBenchmarkInputs,
-    MeasuredBenchmark,
     assert_exp419_label_isolation,
     benchmark_from_payload,
     freeze_benchmark_inputs,
     require_clean_git,
     runtime_measurements_from_payload,
+    validate_benchmark_source_manifest_binding,
 )
 
 
@@ -170,7 +170,9 @@ def verify_benchmark_evidence(
     measurements = runtime_measurements_from_payload(
         payload["runtime_measurements"]
     )
-    MeasuredBenchmark(benchmark, measurements)
+    validate_benchmark_source_manifest_binding(
+        benchmark, measurements, payload["source_manifest_sha256"]
+    )
     expected_datasets = select_benchmark_datasets(tuple(expected_costs))
     if benchmark.benchmark_datasets != expected_datasets:
         raise ValueError(

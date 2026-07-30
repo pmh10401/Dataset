@@ -74,8 +74,7 @@ _EXP417_TO_EXP419 = {
     EXP417_SYNTHETIC_FILE: SYNTHETIC_FILE,
     EXP417_BACKEND_FILE: BACKEND_FILE,
 }
-_FORBIDDEN_KEYS = frozenset(
-    {
+_FORBIDDEN_KEYS = {
         "ground_truth",
         "label",
         "labels",
@@ -92,8 +91,7 @@ _FORBIDDEN_KEYS = frozenset(
         "actual_anomaly_location",
         "human_review",
         "human_reviewed_result",
-    }
-)
+}
 _SOURCE_GROUPS = {
     "preprocessing_contract_sha256": (
         "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",

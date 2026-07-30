@@ -90,6 +90,13 @@ evidence에 포함되며 공식 verifier는 현재 manifest digest와 정확히
 일치해야 benchmark를 승인한다. 제안 helper는 명시적으로 호출할 때만
 개발용 bytes/file을 만들며 검증 중 자동 재생성하지 않는다.
 
+Guard literal 예외는 알려진 source file의 module-level denylist assignment로
+한정한다. 값은 승인된 set/tuple/list/dict literal과 정적 문자열 leaf만
+가능하며 Call, Attribute, comprehension, 문자열 결합, f-string은 거부한다.
+Writer와 공식 verifier는 같은 binding validator를 사용하여 각 runtime
+measurement의 manifest SHA256, trial evidence, benchmark digest/selection과
+top-level/current manifest SHA256을 함께 재검증한다.
+
 ## 4. 비공식 label-free 병렬 benchmark
 
 Task 7 구현 중에는 이 benchmark를 실행하지 않는다. 모든 회귀 검증이 끝난

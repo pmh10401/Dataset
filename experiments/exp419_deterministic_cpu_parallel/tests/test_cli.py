@@ -43,7 +43,11 @@ def _passing_benchmark(datasets: tuple[str, ...] = ("a",)) -> RuntimeBenchmark:
     return select_runtime(trials)
 
 
-def _passing_measured_benchmark(module, datasets: tuple[str, ...] = ("a",)):
+def _passing_measured_benchmark(
+    module,
+    datasets: tuple[str, ...] = ("a",),
+    source_manifest_sha256: str = "c" * 64,
+):
     measurements = []
     trials = []
     for worker_count, elapsed in ((1, 12.0), (2, 5.0), (4, 4.0), (6, 6.0)):
@@ -63,7 +67,7 @@ def _passing_measured_benchmark(module, datasets: tuple[str, ...] = ("a",)):
             process_cpu_utilization=0.5,
             worker_utilization=workers,
             scientific_evidence_sha256=f"{worker_count}" * 64,
-            source_manifest_sha256="c" * 64,
+            source_manifest_sha256=source_manifest_sha256,
         )
         measurements.append(measurement)
         trials.append(
@@ -383,6 +387,38 @@ class CliContractTests(unittest.TestCase):
                     expected_costs=costs,
                 )
 
+    def test_official_rejects_old_manifest_bound_trials_under_current_top_level(self) -> None:
+        benchmark, measurements = _passing_measured_benchmark(
+            self.benchmark, source_manifest_sha256="d" * 64
+        )
+        with TemporaryDirectory() as temporary:
+            path = Path(temporary) / "benchmark.json"
+            self.benchmark.write_benchmark_evidence(
+                path,
+                benchmark=benchmark,
+                git_commit="a" * 40,
+                context_sha256="b" * 64,
+                source_manifest_sha256="d" * 64,
+                trial_roots=tuple(
+                    Path(temporary) / f"workers-{count}"
+                    for count in FROZEN_CONFIG.worker_candidates
+                ),
+                runtime_measurements=measurements,
+            )
+            payload = json.loads(path.read_bytes())
+            payload["source_manifest_sha256"] = "c" * 64
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "manifest|measurement"):
+                self.official.verify_benchmark_evidence(
+                    path,
+                    expected_git_commit="a" * 40,
+                    expected_context_sha256="b" * 64,
+                    expected_source_manifest_sha256="c" * 64,
+                    expected_costs=(
+                        DatasetCost("a", 1, "preprocessing_only"),
+                    ),
+                )
+
     def test_runtime_measurements_are_finite_consistent_and_evidence_bound(self) -> None:
         benchmark, measurements = _passing_measured_benchmark(self.benchmark)
         for trial, measurement in zip(
@@ -575,6 +611,30 @@ class SourceManifestTests(unittest.TestCase):
                 root = Path(temporary)
                 manifest, _runtime = self._fixture(root, snippet)
                 with self.assertRaisesRegex(ValueError, "label"):
+                    self.module.propose_source_manifest(
+                        root, output_path=manifest
+                    )
+
+    def test_guard_literal_exemption_rejects_executable_and_label_payloads(self) -> None:
+        snippets = (
+            "_FORBIDDEN_KEYS = source.load_test_labels()\n",
+            '_FORBIDDEN_KEYS = "frozen_test_labels.bin"\n',
+            "_FORBIDDEN_KEYS = {source.load_test_labels}\n",
+            "_FORBIDDEN_KEYS = {value for value in ('safe',)}\n",
+            '_FORBIDDEN_KEYS = "frozen_" + "test_labels.bin"\n',
+            '_FORBIDDEN_KEYS = f"frozen_{\'test_labels.bin\'}"\n',
+            "_FORBIDDEN_KEYS = {'safe_but_unapproved'}\n",
+        )
+        for snippet in snippets:
+            with self.subTest(snippet=snippet), TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                manifest, _runtime = self._fixture(root)
+                reporting = (
+                    root
+                    / "experiments/exp419_deterministic_cpu_parallel/reporting.py"
+                )
+                reporting.write_text(snippet)
+                with self.assertRaisesRegex(ValueError, "guard|label"):
                     self.module.propose_source_manifest(
                         root, output_path=manifest
                     )

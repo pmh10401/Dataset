@@ -183,7 +183,7 @@ def _contains_projected_label(query: str) -> bool:
         flags=re.IGNORECASE | re.DOTALL,
     ):
         if re.search(
-            _DIRECT_LABEL_PROJECTION_DENYLIST,
+            _DIRECT_LABEL_PROJECTION_DENYLIST[0],
             match.group(1),
             flags=re.IGNORECASE,
         ):
@@ -211,19 +211,20 @@ _DIRECT_LABEL_DENYLIST = (
     r"(?:load|read|fetch|get).*labels?",
     r"(?:^|\.)labels?(?:\.|$)",
     r"(?:^|[/\\._-])(?:frozen[/\\._-]*)?(?:test[/\\._-]*)?"
-    r"labels?(?:$|[/\\._-])",
+    r"labels?(?:$|[/\\.]|-(?:bin|npy|npz|json|csv|txt)$)",
     "labels_blob",
 )
 _DIRECT_LABEL_PROJECTION_DENYLIST = (
-    r"\b(?:[a-z_][a-z0-9_]*\.)?(?:label|labels_blob)\b"
+    r"\b(?:[a-z_][a-z0-9_]*\.)?(?:label|labels_blob)\b",
 )
-_GUARD_LITERAL_ASSIGNMENTS = frozenset(
-    {
-        "_DIRECT_LABEL_DENYLIST",
-        "_DIRECT_LABEL_PROJECTION_DENYLIST",
-        "_FORBIDDEN_KEYS",
-        "_GUARD_LITERAL_ASSIGNMENTS",
-    }
+_GUARD_LITERAL_ASSIGNMENTS = (
+    "_DIRECT_LABEL_DENYLIST",
+    "_DIRECT_LABEL_PROJECTION_DENYLIST",
+    "_GUARD_LITERAL_ASSIGNMENTS",
+    "_FORBIDDEN_KEYS",
+)
+_REPORTING_FORBIDDEN_KEYS_SHA256 = (
+    "a20c61eb989ed44697812562e4381ed6c4f09b7d9c565512d1f6bcdd92995fec"
 )
 
 
@@ -287,13 +288,83 @@ def _validated_relative_source_path(value: object) -> str:
     return value
 
 
-def _guard_literal_nodes(tree: ast.AST) -> set[ast.AST]:
+def _literal_container_schema(
+    node: ast.AST,
+) -> tuple[str, tuple[str, ...]]:
+    if isinstance(node, ast.Tuple):
+        kind, children = "tuple", node.elts
+    elif isinstance(node, ast.List):
+        kind, children = "list", node.elts
+    elif isinstance(node, ast.Set):
+        kind, children = "set", node.elts
+    elif isinstance(node, ast.Dict):
+        kind = "dict"
+        children = [
+            child
+            for pair in zip(node.keys, node.values, strict=True)
+            for child in pair
+            if child is not None
+        ]
+    else:
+        raise ValueError("guard denylist value must be a literal container")
+    leaves: list[str] = []
+    for child in children:
+        if isinstance(child, ast.Constant) and isinstance(child.value, str):
+            leaves.append(child.value)
+            continue
+        if isinstance(child, (ast.Tuple, ast.List, ast.Set, ast.Dict)):
+            _nested_kind, nested = _literal_container_schema(child)
+            leaves.extend(nested)
+            continue
+        raise ValueError(
+            "guard denylist container must contain static string literals"
+        )
+    return kind, tuple(leaves)
+
+
+def _guard_literal_nodes(name: str, tree: ast.Module) -> set[ast.AST]:
+    benchmark_name = "scratch/benchmark_exp419_deterministic_cpu_parallel.py"
+    reporting_name = "experiments/exp419_deterministic_cpu_parallel/reporting.py"
+    approved: dict[str, tuple[str, tuple[str, ...] | str]] = {}
+    if name == benchmark_name:
+        approved = {
+            "_DIRECT_LABEL_DENYLIST": ("tuple", _DIRECT_LABEL_DENYLIST),
+            "_DIRECT_LABEL_PROJECTION_DENYLIST": (
+                "tuple", _DIRECT_LABEL_PROJECTION_DENYLIST
+            ),
+            "_GUARD_LITERAL_ASSIGNMENTS": (
+                "tuple", _GUARD_LITERAL_ASSIGNMENTS
+            ),
+        }
+    elif name == reporting_name:
+        approved = {
+            "_FORBIDDEN_KEYS": (
+                "set", _REPORTING_FORBIDDEN_KEYS_SHA256
+            )
+        }
     nodes: set[ast.AST] = set()
-    for assignment in ast.walk(tree):
+    seen: set[str] = set()
+    for assignment in tree.body:
         target = _assignment_name(assignment)
         value = _assignment_value(assignment)
-        if target in _GUARD_LITERAL_ASSIGNMENTS and value is not None:
-            nodes.update(ast.walk(value))
+        if target not in approved or value is None:
+            continue
+        if target in seen:
+            raise ValueError("guard denylist assignment is duplicated")
+        seen.add(target)
+        kind, leaves = _literal_container_schema(value)
+        expected_kind, expected = approved[target]
+        if kind != expected_kind:
+            raise ValueError("guard denylist container type is invalid")
+        if isinstance(expected, str):
+            observed = sha256(
+                canonical_json_bytes(sorted(leaves))
+            ).hexdigest()
+            if observed != expected:
+                raise ValueError("guard denylist payload is invalid")
+        elif leaves != expected:
+            raise ValueError("guard denylist payload is invalid")
+        nodes.update(ast.walk(value))
     return nodes
 
 
@@ -312,7 +383,7 @@ def _direct_label_deny_scan(name: str, source: bytes) -> None:
     except (UnicodeDecodeError, SyntaxError) as error:
         raise ValueError(f"label guard cannot parse {name}") from error
     constants = _static_constants(tree)
-    ignored = _guard_literal_nodes(tree)
+    ignored = _guard_literal_nodes(name, tree)
     for node in ast.walk(tree):
         if node in ignored:
             continue
@@ -630,6 +701,23 @@ class MeasuredBenchmark:
             ):
                 raise ValueError("runtime measurement differs from benchmark trial")
         object.__setattr__(self, "runtime_measurements", measurements)
+
+
+def validate_benchmark_source_manifest_binding(
+    benchmark: RuntimeBenchmark,
+    runtime_measurements: Sequence[TrialRuntimeMeasurement],
+    source_manifest_sha256: str,
+) -> MeasuredBenchmark:
+    expected = _sha256_text(source_manifest_sha256, "source manifest")
+    measured = MeasuredBenchmark(benchmark, tuple(runtime_measurements))
+    if any(
+        measurement.source_manifest_sha256 != expected
+        for measurement in measured.runtime_measurements
+    ):
+        raise ValueError(
+            "runtime measurement source manifest digest mismatch"
+        )
+    return measured
 
 
 def costs_from_metadata_rows(
@@ -1006,17 +1094,9 @@ def write_benchmark_evidence(
     trial_roots: Sequence[Path],
     runtime_measurements: Sequence[TrialRuntimeMeasurement],
 ) -> None:
-    measured = MeasuredBenchmark(
-        benchmark,
-        tuple(runtime_measurements),
+    measured = validate_benchmark_source_manifest_binding(
+        benchmark, runtime_measurements, source_manifest_sha256
     )
-    if any(
-        measurement.source_manifest_sha256 != source_manifest_sha256
-        for measurement in measured.runtime_measurements
-    ):
-        raise ValueError(
-            "runtime measurement source manifest digest mismatch"
-        )
     roots = tuple(Path(root).resolve(strict=False) for root in trial_roots)
     if len(roots) != len(FROZEN_CONFIG.worker_candidates) or len(set(roots)) != len(roots):
         raise ValueError("benchmark evidence requires exact disjoint trial roots")
