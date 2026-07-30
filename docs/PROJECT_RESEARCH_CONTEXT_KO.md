@@ -48,8 +48,8 @@ TRAIN 데이터만으로 정상 동작의 기준과 후보 생성 규칙을 만�
 현재 데이터에서 얻은 결과는 retrospective benchmark, 즉 이미 동결된
 평가셋을 사후 분석한 근거로만 해석한다. 이를 반도체 현장 성능, 실제 배포
 검증 또는 새 데이터에 대한 prospective 성능이라고 부르지 않는다. 후속
-연구는 현재 데이터 안에서 family 중복, TRAIN/TEST 중복, 설정 선택과 최종
-평가의 혼입을 최대한 줄이는 방향으로 설계한다.
+연구는 반복 정상이라는 의도적 운전 조건은 보존하면서 family 과대대표,
+설정 선택과 최종 평가의 혼입을 최대한 줄이는 방향으로 설계한다.
 
 ## 3. 데이터셋과 평가의 주요 위험
 
@@ -60,22 +60,29 @@ TRAIN 데이터만으로 정상 동작의 기준과 후보 생성 규칙을 만�
 |---|---|---|
 | 작은 TEST와 단일 이상 | 788개 데이터셋은 이상이 1개이고 TEST 크기가 50 이하 | 한 샘플의 성공·실패가 F1을 크게 바꿀 수 있음 |
 | 작은 TRAIN | 478개 데이터셋은 TRAIN이 20 미만 | calibration과 conformal 해상도가 제한됨 |
-| 정상 TRAIN/TEST 중복 | 460개 데이터셋은 정상 TEST의 90% 이상이 TRAIN 정상과 정확히 겹침 | 일반화 성능이 실제보다 좋아 보일 수 있음 |
-| 전체 정상 중복 | 정상 TEST 221,284개 중 179,652개, 약 81.2%가 TRAIN 정상과 정확히 겹침 | 무작위 dataset 평균만으로 독립성을 주장할 수 없음 |
+| 의도적 repeated-normal 운전 조건 | 460개 데이터셋은 정상 TEST의 90% 이상이 TRAIN 정상과 정확히 겹침 | 안정된 설비·recipe 상태의 반복을 모사하므로 낮은 오경보는 긍정적이다. 다만 미관측 상태 일반화와는 분리해 보고함 |
+| 전체 정상 반복 | 정상 TEST 221,284개 중 179,652개, 약 81.2%가 TRAIN 정상과 정확히 겹침 | 반복 정상 운영 성능의 주 근거이며, 독립·저반복 조건의 성능을 함께 뜻하지는 않음 |
 | family 반복 | `ShapesAll` 60개, Pig 세 family 각각 52개, `FiftyWords` 50개처럼 동일 원자료 계열이 반복됨 | family 유사성 누수와 큰 family의 과대대표를 막아야 함 |
 | label 의미 | `labels_blob`은 instance label을 전체 series 길이에 반복한 값 | 실제 이상 시점 위치로 해석하면 안 됨 |
 | 가변 길이 | 153개 데이터셋에서 길이 관련 메타데이터와 실제 blob의 불일치가 보고됨 | 고정 길이 가정을 적용하기 전에 원자료 확인이 필요함 |
 | 난이도 구분 | model-hard 218개, evaluation-hard 789개, 상대적으로 신뢰 가능한 집합 110개 | 모델 실패와 평가 불안정을 같은 문제로 취급하지 않음 |
 
-작은 표본, 작은 TRAIN, 90% 이상 정상 중복, 가변 길이, 난이도 분류 수치는
+작은 표본, 작은 TRAIN, 90% 이상 정상 반복, 가변 길이, 난이도 분류 수치는
 [이상치 검증 난이도 보고서](anomaly_validation_difficulty_report_20260707.md)에
 정리되어 있다. 전체 정상 중복률, family 반복, `labels_blob`의 의미는
 [과거 데이터 구조 감사 기록](archive/task_history_20260709_before_compaction.md)에
 근거한다.
 
-이 위험의 결론은 “데이터를 버린다”가 아니다. 어떤 모델 문제인지, 어떤
-평가 문제인지 구분하고, family와 중복 정도에 따라 결과를 나누어 보고하며,
-주장의 범위를 현재 벤치마크 안으로 제한해야 한다는 뜻이다.
+정상 TRAIN/TEST의 정확 중복은 이 프로젝트에서 안정된
+equipment/recipe/sensor/step 상태가 반복되는 의도적 repeated-normal 운전
+조건이다. 반복 정상에 대한 낮은 오경보는 반도체 적용 목표와 맞는 긍정적
+특성이다. 다만 UCR waveform 중복이 실제 동일 wafer run을 뜻하거나 미관측
+설비의 prospective 성능을 증명하지는 않는다.
+
+따라서 결론은 “중복을 제거하거나 데이터를 버린다”가 아니다. 반복 정상
+성능, 덜 반복되는 정상에 대한 보조 스트레스 결과, family별 차이를 나누어
+보고하고 주장의 범위를 현재 벤치마크 안으로 제한한다. 자세한 결정은
+[반복 정상 해석 결정 기록](REPEATED_NORMAL_INTERPRETATION_KO.md)에 고정한다.
 
 ## 4. 연구가 현재 구조에 도달한 과정
 
@@ -83,9 +90,10 @@ TRAIN 데이터만으로 정상 동작의 기준과 후보 생성 규칙을 만�
    [README](../README.md)는 947개 데이터셋에서 VAE, 증강, threshold,
    hybrid routing을 비교한 당시 연구 단계의 기록이다. 현재 1,117개 동결
    모집단의 공식 종합 결과가 아니라 역사적 출발점으로 읽는다.
-2. **데이터와 평가 구조 감사:** 이후 작은 TEST, 단일 이상, 정상
-   TRAIN/TEST 중복, one-vs-all family 반복이 확인되면서 단일 평균 성능의
-   해석 범위가 축소되었다. 평가 불안정과 실제 모델 실패도 분리되었다.
+2. **데이터와 평가 구조 감사:** 이후 작은 TEST, 단일 이상, 의도적인 정상
+   반복, one-vs-all family 반복이 확인되면서 단일 평균만으로 서로 다른
+   운전 조건을 설명하지 않게 되었다. 평가 불안정과 실제 모델 실패도
+   분리되었다.
 3. **넓은 교체와 합집합의 한계:** global replacement와 candidate union은
    놓친 이상을 일부 복구했지만 false positive가 더 빠르게 늘어나는 경우가
    반복되었다. 정답 후보 수만 늘리는 방식은 사용자 신뢰라는 목표와 맞지
@@ -93,13 +101,19 @@ TRAIN 데이터만으로 정상 동작의 기준과 후보 생성 규칙을 만�
 4. **family별 신호와 누수 경계:** family별 표현과 score source에서 유용한
    신호가 발견되었지만, 과거 family별 TEST 성능을 보고 routing하는 것은
    prediction에 정답 정보를 간접 사용하므로 금지되었다.
-5. **보수적인 lane 분리:** 자동 경보인 Hard를 동결하고 Standard와
+5. **exact-normal 자동 정상 guard:** Exp290은 기존 Hard 후보 중 같은
+   데이터셋의 정상 TRAIN과 byte-for-byte 같은 35개를 `automatic normal
+   exact`로 분리했다. 사후 평가에서 35개 모두 FP였고 TP 손실은 0이었다.
+   Exp291은 이 규칙을 최종 routing에 고정했다.
+6. **보수적인 lane 분리:** 자동 경보인 Hard를 동결하고 Standard와
    Priority를 사람 검토 영역으로 분리했다. 새 근거는 먼저 Shadow 또는
    review-only로 검토하며 자동 경보에 바로 합치지 않는다.
-6. **Exp403-409:** Exp403-408은 feature 안정성, confidence, demotion,
+7. **Exp403-410:** Exp403-408은 feature 안정성, confidence, demotion,
    self-supervised·synthetic 근거와 독립 consensus를 검증했다. Exp409는
    이 근거를 새 데이터에 적용할 준비가 되었는지 label isolation, lane
-   불변성, budget, provenance 관점에서 확인했다.
+   불변성, budget, provenance 관점에서 확인했다. Exp410은 동결 Hard가
+   family 크기 차이와 반복 정상 구간에서 어떻게 보이는지 읽기 전용으로
+   감사했다.
 
 이 흐름은 초기 결과가 잘못되었다는 뜻이 아니다. 초기 결과는 당시 모집단과
 평가 계약에서 얻은 역사적 결과다. 이후 감사와 실험이 데이터의 성격을 더
@@ -115,6 +129,11 @@ TRAIN 데이터만으로 정상 동작의 기준과 후보 생성 규칙을 만�
 | Standard | 806 | 사람이 검토하는 보조 후보 | 자동 승격 금지 |
 | Priority | 31 | 더 우선적으로 사람이 검토하는 후보 | 자동 승격 금지 |
 
+별도의 `automatic normal exact` 35개는 Exp290/291에서 정상 TRAIN과
+byte-for-byte 같은 입력으로 판정되어 자동 이상 경보에서 제외된 정상
+lane이다. 이는 현재 Hard 2,218개와 서로소이며 Standard·Priority review로
+이동하지 않는다.
+
 동결 Hard의 retrospective benchmark 결과는 다음과 같다.
 
 > TP 1,915 / FP 303 / precision 86.339% / mean dataset F1 0.608983
@@ -129,7 +148,7 @@ retrospective 결과다. 반도체 현장 또는 prospective 성능이 아니며
 Standard·Priority의 사람이 확인한 결과를 합친 human-assisted 성능도
 아니다.
 
-## 6. Exp403-409가 제공한 증거
+## 6. Exp403-410이 제공한 증거
 
 Exp403-408은 하나의 새 모델로 기존 운영 정책을 교체하는 실험이 아니다.
 기존 feature의 안정성, 자동 Hard의 confidence와 하향 가능성, 새로운
@@ -144,6 +163,7 @@ Shadow score, 독립 근거의 합의를 순서대로 분리해 검증한 묶음
 | Exp407 | 정상 TRAIN으로 만든 합성 이상이 놓친 이상 후보를 찾는가? | 합성 교란 기반의 보조 근거지만 human-assisted review-only Shadow |
 | Exp408 | 서로 독립적인 근거의 합의가 후보 품질을 보장하는가? | 가장 엄격한 변형도 62개 중 TP 29, FP 33으로 자동 경보 승격 근거가 부족함 |
 | Exp409 | 고정 계약을 label-blind하게 재실행할 준비가 되었는가? | representative smoke에서 label isolation, lane 불변성, budget, provenance를 확인했지만 성능은 평가하지 않음 |
+| Exp410 | 큰 family가 전체 평균을 지배하는가? 반복 정상 구간에서 Hard는 어떻게 보이는가? | family별 성능 차이가 크다는 감사 결과와 함께, 높은 반복 정상 구간에서 상대적으로 강한 성능을 확인함. 운영 정책은 변경하지 않음 |
 
 Exp405의 결과는 “재확인”을 곧 “오경보”로 간주할 수 없음을 보여 준다.
 473개 중 395개가 실제 TP이므로 이를 자동으로 내리면 false alarm 78개를
@@ -163,6 +183,13 @@ Exp409 smoke는 8개 대표 데이터셋에서 같은 고정 variant와 alpha를
 `prospective_validated: false`, `deployment_eligible: false`,
 `operational_policy_changed: false`다. 즉 Exp409가 입증한 것은 실행
 준비성과 실패 폐쇄(fail-closed) 거버넌스이지 이상 탐지 성능이 아니다.
+
+Exp410의 `severe_family_imbalance` 판정은 “정상 반복이 나쁘다”는 뜻이
+아니다. 이는 dataset마다 한 표를 줄 때와 family마다 한 표를 줄 때 결과가
+크게 달라지고 family별 성능 편차가 크다는 뜻이다. 별도로 높은 정상 반복
+구간의 더 좋은 결과는 안정된 recipe 운전에서 false alarm을 억제하려는
+방향과 맞는 긍정적 관찰이다. 다만 family 구성과 TRAIN 크기 등이 함께
+다르므로 overlap 하나의 인과 효과라고 부르지 않는다.
 
 이 해석의 직접 근거는
 [Exp403-408 설계](superpowers/specs/2026-07-27-exp403-408-feature-ml-validation-design.md),
@@ -252,7 +279,7 @@ checkpoint 파일이 남아 있어도 입력 artifact, 코드, 설정의 hash �
 |---|---|---|
 | family-grouped validation | `ShapesAll` 계열을 쪼개 학습·평가 양쪽에 넣지 않고 family 전체를 한쪽 fold에 둠 | family 유사성 누수와 큰 family의 과대대표 |
 | nested validation | 안쪽 fold에서 alpha·threshold를 고르고 바깥 fold는 최종 평가에만 사용 | TEST를 본 뒤 설정을 재선택하는 과적합 |
-| overlap-aware reporting | 정상 중복이 높은 집합과 낮은 집합의 결과를 따로 보고 전체 평균과 함께 제시 | TRAIN/TEST 정확 중복이 만드는 낙관적 해석 |
+| repeatability-aware reporting | exact·near·덜 익숙한 정상 조건을 나누고 원본 repeated-normal 결과와 보조 스트레스 결과를 함께 제시 | 안정 운전의 장점과 덜 반복되는 조건의 한계를 혼동하는 해석 |
 | uncertainty-aware reporting | 이상 1개인 데이터셋과 충분한 이상이 있는 데이터셋을 분리하고 신뢰구간·민감도를 제시 | 작은 분모에 의한 F1 급변 |
 
 예를 들어 ShapesAll의 여러 one-vs-all 데이터셋을 무작위로 나누면 매우
@@ -265,10 +292,14 @@ nested validation에서는 안쪽 fold만 사용해 여러 alpha 중 하나를 �
 않는다고 alpha를 다시 고르면 바깥 fold도 사실상 TRAIN이 되므로 새 실험과
 사전등록 없이 변경하지 않는다.
 
+repeatability-aware reporting은 정상 반복을 제거하자는 방법이 아니다.
+원본 repeated-normal을 정본 운영 시나리오로 유지하고, `clean-balanced`는
+반복성이 약해졌을 때의 보조 스트레스·하한 검증으로만 사용한다.
+
 이 네 방법은 신규 데이터에 대한 진정한 prospective validation을
 대체하지 않는다. 추가 데이터를 얻을 수 없는 조건에서 family 반복,
-정상 중복, 설정 선택 과적합, 작은 표본의 불확실성을 숨기지 않는 엄격한
-retrospective 연구 방식이다.
+운전 반복성 차이, 설정 선택 과적합, 작은 표본의 불확실성을 숨기지 않는
+엄격한 retrospective 연구 방식이다.
 
 ## 10. 후속 작업의 불변 원칙
 
@@ -299,6 +330,7 @@ retrospective 연구 방식이다.
 
 ### 데이터 품질과 평가 난이도
 
+- [반복 정상 해석 결정 기록](REPEATED_NORMAL_INTERPRETATION_KO.md)
 - [이상치 검증 난이도 보고서](anomaly_validation_difficulty_report_20260707.md)
 - [실험 일관성 감사](experiment_consistency_audit_20260707.md)
 - [과거 데이터 구조 감사 기록](archive/task_history_20260709_before_compaction.md)
@@ -332,6 +364,16 @@ retrospective 연구 방식이다.
 현재 Mac의 representative smoke 보고서는
 `/Users/mac/Documents/Dataset/exp409_prospective_readiness_smoke/EXP409_READINESS_REPORT_KO.md`에
 있다. 이 보고서는 성능표가 아니라 준비성 검증 기록이다.
+
+### Exp410 family 견고성 감사
+
+- [사전등록](EXP410_PREREGISTRATION_KO.md)
+- [실행 runbook](EXP410_RUNBOOK_KO.md)
+- [설계 명세](superpowers/specs/2026-07-28-exp410-frozen-hard-family-robustness-audit-design.md)
+
+현재 Mac의 상세 결과와 파생 metric은
+`/Users/mac/Documents/Dataset/exp410_family_robustness/`에 로컬 전용으로
+보존한다. 공개 GitHub 문서에는 상세 파생 수치를 게시하지 않는다.
 
 ### 새 실험 작성 규칙
 
