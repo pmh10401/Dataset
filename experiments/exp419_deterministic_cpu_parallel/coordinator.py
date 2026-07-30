@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import asdict
+from hashlib import sha256
+import json
 import os
 from pathlib import Path
+import stat
+from time import monotonic
 from types import MappingProxyType
 import uuid
 
@@ -33,7 +38,30 @@ from .contracts import (
     WorkerCompletion,
     WorkerSpec,
 )
-from .workers import _context_sha256, spawn_workers
+from .workers import (
+    _THREAD_ENVIRONMENT,
+    _casefolded_path_parts,
+    _context_sha256,
+    _filesystem_identity,
+    _parts_are_nested,
+    _peak_rss_bytes,
+    spawn_workers,
+)
+
+
+_BINDING_FILE = "exp419_shard_plan.json"
+_EVIDENCE_FILE = "exp419_runtime_evidence.json"
+_DIRECTORY_FLAGS = (
+    os.O_RDONLY
+    | getattr(os, "O_DIRECTORY", 0)
+    | getattr(os, "O_CLOEXEC", 0)
+    | getattr(os, "O_NOFOLLOW", 0)
+)
+_REGULAR_READ_FLAGS = (
+    os.O_RDONLY
+    | getattr(os, "O_CLOEXEC", 0)
+    | getattr(os, "O_NOFOLLOW", 0)
+)
 
 
 def _provenance_payload(provenance: object) -> object:
@@ -131,12 +159,15 @@ def _open_checkpoint_store(
 def _freeze_plan_binding(
     roots: ParallelRoots,
     plan: ShardPlan,
-    context_sha256: str,
-) -> None:
+    context: FrozenRunContext,
+) -> str:
     if not isinstance(roots, ParallelRoots):
         raise ValueError("roots must be ParallelRoots")
+    if not isinstance(context, FrozenRunContext):
+        raise ValueError("context must be FrozenRunContext")
     if tuple(sorted(roots.worker_roots)) != tuple(range(plan.worker_count)):
         raise ValueError("worker roots do not cover the exact shard plan")
+    context_sha256 = _context_sha256(context)
     parent = roots.root.resolve(strict=False)
     children = {
         "canonical": roots.canonical_root.resolve(strict=False),
@@ -145,22 +176,40 @@ def _freeze_plan_binding(
             for index, path in roots.worker_roots.items()
         },
     }
-    if any(path == parent or not path.is_relative_to(parent) for path in children.values()):
+    if any(
+        path == parent or not path.is_relative_to(parent)
+        for path in children.values()
+    ):
         raise ValueError("checkpoint roots must be distinct children of the run root")
     child_paths = tuple(children.values())
-    if len(child_paths) != len(set(child_paths)):
-        raise ValueError("checkpoint roots must be distinct")
+    identities = tuple(_filesystem_identity(path) for path in child_paths)
+    folded = tuple(_casefolded_path_parts(path) for path in child_paths)
     for index, path in enumerate(child_paths):
-        for other in child_paths[index + 1 :]:
-            if path.is_relative_to(other) or other.is_relative_to(path):
-                raise ValueError("checkpoint roots must not be nested")
+        for other_index, other in enumerate(
+            child_paths[index + 1 :], start=index + 1
+        ):
+            if (
+                path == other
+                or _parts_are_nested(folded[index], folded[other_index])
+                or (
+                    identities[index] is not None
+                    and identities[index] == identities[other_index]
+                )
+            ):
+                raise ValueError(
+                    "checkpoint roots contain a Unicode/casefold or inode alias"
+                )
 
     roots.root.mkdir(parents=True, exist_ok=True)
     payload = canonical_json_bytes(
         {
             "canonical_root": str(children["canonical"]),
             "context_sha256": context_sha256,
+            "frozen_config": asdict(FROZEN_CONFIG),
             "plan_sha256": plan.sha256,
+            "runtime_versions": dict(context.runtime_versions),
+            "start_method": FROZEN_CONFIG.start_method,
+            "thread_environment": dict(_THREAD_ENVIRONMENT),
             "worker_roots": {
                 str(index): str(
                     roots.worker_roots[index].resolve(strict=False)
@@ -169,24 +218,412 @@ def _freeze_plan_binding(
             },
         }
     ) + b"\n"
-    marker = roots.root / "exp419_shard_plan.json"
+    binding_sha256 = sha256(payload).hexdigest()
+    root_descriptor = os.open(roots.root, _DIRECTORY_FLAGS)
     try:
-        descriptor = os.open(
-            marker,
-            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
-            0o600,
-        )
-    except FileExistsError:
-        if marker.read_bytes() != payload:
+        try:
+            descriptor = os.open(
+                _BINDING_FILE,
+                _REGULAR_READ_FLAGS,
+                dir_fd=root_descriptor,
+            )
+        except FileNotFoundError:
+            for path in child_paths:
+                if _nonempty_checkpoint_root(path):
+                    raise ValueError(
+                        "unbound prior checkpoint evidence cannot be adopted"
+                    )
+            descriptor = os.open(
+                _BINDING_FILE,
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+                dir_fd=root_descriptor,
+            )
+            try:
+                _write_all(descriptor, payload)
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+            os.fsync(root_descriptor)
+            return binding_sha256
+        except OSError as error:
+            raise ValueError(
+                "frozen shard-plan binding must be a regular no-follow file"
+            ) from error
+        try:
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode):
+                raise ValueError(
+                    "frozen shard-plan binding must be a regular file"
+                )
+            observed = _read_all(descriptor)
+        finally:
+            os.close(descriptor)
+        if observed != payload:
             raise ValueError("frozen shard-plan binding mismatch")
-        return
+        return binding_sha256
+    finally:
+        os.close(root_descriptor)
+
+
+def _nonempty_checkpoint_root(path: Path) -> bool:
     try:
-        written = 0
-        while written < len(payload):
-            written += os.write(descriptor, payload[written:])
-        os.fsync(descriptor)
+        metadata = os.lstat(path)
+    except FileNotFoundError:
+        return False
+    if not stat.S_ISDIR(metadata.st_mode):
+        raise ValueError("checkpoint root must be a no-follow directory")
+    descriptor = os.open(path, _DIRECTORY_FLAGS)
+    try:
+        opened = os.fstat(descriptor)
+        if (opened.st_dev, opened.st_ino) != (
+            metadata.st_dev,
+            metadata.st_ino,
+        ):
+            raise ValueError("checkpoint root identity changed")
+        return bool(os.listdir(descriptor))
     finally:
         os.close(descriptor)
+
+
+def _write_all(descriptor: int, payload: bytes) -> None:
+    written = 0
+    while written < len(payload):
+        count = os.write(descriptor, payload[written:])
+        if count <= 0:
+            raise OSError("short write")
+        written += count
+
+
+def _read_all(descriptor: int) -> bytes:
+    chunks = []
+    while True:
+        chunk = os.read(descriptor, 65536)
+        if not chunk:
+            return b"".join(chunks)
+        chunks.append(chunk)
+
+
+def _completion_payload(completion: WorkerCompletion) -> dict[str, object]:
+    return {
+        "completed_datasets": list(completion.completed_datasets),
+        "elapsed_seconds": completion.elapsed_seconds,
+        "error": completion.error,
+        "peak_rss_bytes": completion.peak_rss_bytes,
+        "pid": completion.pid,
+        "record_digests": dict(completion.record_digests),
+        "shard_index": completion.shard_index,
+        "status": completion.status,
+        "thread_environment": dict(completion.thread_environment),
+    }
+
+
+def _completion_from_payload(payload: object) -> WorkerCompletion:
+    if not isinstance(payload, dict) or set(payload) != {
+        "completed_datasets",
+        "elapsed_seconds",
+        "error",
+        "peak_rss_bytes",
+        "pid",
+        "record_digests",
+        "shard_index",
+        "status",
+        "thread_environment",
+    }:
+        raise ValueError("runtime completion evidence fields are invalid")
+    return WorkerCompletion(
+        payload["shard_index"],
+        payload["pid"],
+        payload["completed_datasets"],
+        payload["record_digests"],
+        payload["elapsed_seconds"],
+        payload["peak_rss_bytes"],
+        payload["thread_environment"],
+        payload["status"],
+        payload["error"],
+    )
+
+
+def _evidence_bytes(
+    binding_sha256: str,
+    attempts: Sequence[Mapping[str, object]],
+) -> bytes:
+    return canonical_json_bytes(
+        {
+            "attempts": [
+                {
+                    "attempt_id": attempt["attempt_id"],
+                    "completions": [
+                        _completion_payload(completion)
+                        for completion in attempt["completions"]
+                    ],
+                    "parent_peak_rss_bytes": attempt[
+                        "parent_peak_rss_bytes"
+                    ],
+                    "peak_total_rss_bytes": attempt[
+                        "peak_total_rss_bytes"
+                    ],
+                }
+                for attempt in attempts
+            ],
+            "binding_sha256": binding_sha256,
+            "schema_version": 1,
+        }
+    ) + b"\n"
+
+
+def _load_runtime_evidence(
+    roots: ParallelRoots,
+    binding_sha256: str,
+) -> tuple[Mapping[str, object], ...]:
+    root_descriptor = os.open(roots.root, _DIRECTORY_FLAGS)
+    try:
+        try:
+            descriptor = os.open(
+                _EVIDENCE_FILE,
+                _REGULAR_READ_FLAGS,
+                dir_fd=root_descriptor,
+            )
+        except FileNotFoundError:
+            return ()
+        except OSError as error:
+            raise ValueError(
+                "runtime evidence must be a regular no-follow file"
+            ) from error
+        try:
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode):
+                raise ValueError("runtime evidence must be a regular file")
+            raw = _read_all(descriptor)
+        finally:
+            os.close(descriptor)
+    finally:
+        os.close(root_descriptor)
+    try:
+        payload = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("runtime evidence is invalid JSON") from error
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != {
+            "attempts",
+            "binding_sha256",
+            "schema_version",
+        }
+        or payload["schema_version"] != 1
+        or payload["binding_sha256"] != binding_sha256
+        or not isinstance(payload["attempts"], list)
+    ):
+        raise ValueError("runtime evidence binding is invalid")
+    attempts = []
+    seen_ids = set()
+    for raw_attempt in payload["attempts"]:
+        if not isinstance(raw_attempt, dict) or set(raw_attempt) != {
+            "attempt_id",
+            "completions",
+            "parent_peak_rss_bytes",
+            "peak_total_rss_bytes",
+        }:
+            raise ValueError("runtime attempt evidence fields are invalid")
+        attempt_id = raw_attempt["attempt_id"]
+        parent_rss = raw_attempt["parent_peak_rss_bytes"]
+        peak_total = raw_attempt["peak_total_rss_bytes"]
+        if (
+            not isinstance(attempt_id, str)
+            or not attempt_id
+            or attempt_id in seen_ids
+            or type(parent_rss) is not int
+            or parent_rss < 0
+            or type(peak_total) is not int
+            or peak_total < 0
+            or not isinstance(raw_attempt["completions"], list)
+            or not raw_attempt["completions"]
+        ):
+            raise ValueError("runtime attempt evidence is invalid")
+        completions = tuple(
+            _completion_from_payload(item)
+            for item in raw_attempt["completions"]
+        )
+        if peak_total != parent_rss + sum(
+            item.peak_rss_bytes for item in completions
+        ):
+            raise ValueError("runtime attempt memory evidence is invalid")
+        seen_ids.add(attempt_id)
+        attempts.append(
+            MappingProxyType(
+                {
+                    "attempt_id": attempt_id,
+                    "completions": completions,
+                    "parent_peak_rss_bytes": parent_rss,
+                    "peak_total_rss_bytes": peak_total,
+                }
+            )
+        )
+    frozen = tuple(attempts)
+    if raw != _evidence_bytes(binding_sha256, frozen):
+        raise ValueError("runtime evidence is noncanonical")
+    return frozen
+
+
+def _replace_runtime_evidence(
+    roots: ParallelRoots,
+    binding_sha256: str,
+    attempts: Sequence[Mapping[str, object]],
+) -> None:
+    payload = _evidence_bytes(binding_sha256, attempts)
+    root_descriptor = os.open(roots.root, _DIRECTORY_FLAGS)
+    temporary = f".{_EVIDENCE_FILE}.{uuid.uuid4().hex}"
+    descriptor = None
+    try:
+        descriptor = os.open(
+            temporary,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=root_descriptor,
+        )
+        _write_all(descriptor, payload)
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = None
+        os.rename(
+            temporary,
+            _EVIDENCE_FILE,
+            src_dir_fd=root_descriptor,
+            dst_dir_fd=root_descriptor,
+        )
+        os.fsync(root_descriptor)
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        try:
+            os.unlink(temporary, dir_fd=root_descriptor)
+        except FileNotFoundError:
+            pass
+        os.close(root_descriptor)
+
+
+def _append_runtime_evidence(
+    roots: ParallelRoots,
+    binding_sha256: str,
+    attempts: Sequence[Mapping[str, object]],
+    attempt_id: str,
+    completions: Sequence[WorkerCompletion],
+    parent_peak_rss_bytes: int,
+) -> tuple[Mapping[str, object], ...]:
+    frozen_completions = tuple(completions)
+    attempt = MappingProxyType(
+        {
+            "attempt_id": attempt_id,
+            "completions": frozen_completions,
+            "parent_peak_rss_bytes": parent_peak_rss_bytes,
+            "peak_total_rss_bytes": parent_peak_rss_bytes
+            + sum(item.peak_rss_bytes for item in frozen_completions),
+        }
+    )
+    updated = (*attempts, attempt)
+    _replace_runtime_evidence(roots, binding_sha256, updated)
+    return tuple(updated)
+
+
+def _validated_evidence_digests(
+    plan: ShardPlan,
+    attempts: Sequence[Mapping[str, object]],
+) -> Mapping[str, str]:
+    assignments = {
+        assignment.shard_index: assignment
+        for assignment in plan.assignments
+    }
+    digests = {}
+    for attempt in attempts:
+        for completion in attempt["completions"]:
+            assignment = assignments.get(completion.shard_index)
+            if assignment is None:
+                raise ValueError("runtime evidence contains an unknown shard")
+            if dict(completion.thread_environment) != dict(
+                _THREAD_ENVIRONMENT
+            ):
+                raise ValueError(
+                    "runtime evidence thread environment mismatch"
+                )
+            if any(
+                name not in assignment.datasets
+                for name in completion.completed_datasets
+            ):
+                raise ValueError("runtime evidence contains a wrong-shard record")
+            for name, digest in completion.record_digests.items():
+                if name in digests:
+                    raise ValueError(
+                        "runtime evidence contains duplicate dataset evidence"
+                    )
+                digests[name] = digest
+    return MappingProxyType(digests)
+
+
+def _aggregate_evidence_completions(
+    plan: ShardPlan,
+    attempts: Sequence[Mapping[str, object]],
+    digests: Mapping[str, str],
+    *,
+    error: str = "",
+) -> tuple[WorkerCompletion, ...]:
+    result = []
+    for assignment in plan.assignments:
+        items = tuple(
+            completion
+            for attempt in attempts
+            for completion in attempt["completions"]
+            if completion.shard_index == assignment.shard_index
+        )
+        covered = {
+            name
+            for item in items
+            for name in item.completed_datasets
+        }
+        if covered != set(assignment.datasets) or not items:
+            raise ValueError("runtime evidence is incomplete for a shard")
+        last = items[-1]
+        result.append(
+            WorkerCompletion(
+                assignment.shard_index,
+                last.pid,
+                assignment.datasets,
+                {
+                    name: digests[name]
+                    for name in assignment.datasets
+                },
+                sum(item.elapsed_seconds for item in items),
+                max(item.peak_rss_bytes for item in items),
+                last.thread_environment,
+                "failed" if error else "completed",
+                error,
+            )
+        )
+    return tuple(result)
+
+
+def _parent_peak_rss_bytes() -> int:
+    return _peak_rss_bytes()
+
+
+def _peak_total_rss_bytes(
+    attempts: Sequence[Mapping[str, object]],
+) -> int:
+    persisted = max(
+        (
+            attempt["peak_total_rss_bytes"]
+            for attempt in attempts
+        ),
+        default=0,
+    )
+    return max(persisted, _parent_peak_rss_bytes())
 
 
 def _validated_partial_store_state(
@@ -228,46 +665,28 @@ def _reconstruct_global_summary(
     return summary
 
 
-def _completion_records(
+def _failed_parallel_run(
     plan: ShardPlan,
-    digests: Mapping[str, str],
-    metrics: Mapping[int, WorkerCompletion],
-    *,
-    error: str = "",
-) -> tuple[WorkerCompletion, ...]:
-    completions = []
-    for assignment in plan.assignments:
-        metric = metrics.get(assignment.shard_index)
-        completions.append(
-            WorkerCompletion(
-                assignment.shard_index,
-                os.getpid() if metric is None else metric.pid,
-                assignment.datasets,
-                {
-                    name: digests[name]
-                    for name in assignment.datasets
-                },
-                0.0 if metric is None else metric.elapsed_seconds,
-                0 if metric is None else metric.peak_rss_bytes,
-                {} if metric is None else metric.thread_environment,
-                "failed" if error else "completed",
-                error,
-            )
-        )
-    return tuple(completions)
-
-
-def _failed_parallel_run(plan: ShardPlan, error: BaseException | str) -> ParallelRun:
+    error: BaseException | str,
+    started: float,
+) -> ParallelRun:
     message = str(error)
+    elapsed = monotonic() - started
+    parent_rss = _parent_peak_rss_bytes()
+    environment = {
+        name: os.environ[name]
+        for name in _THREAD_ENVIRONMENT
+        if name in os.environ
+    }
     completions = tuple(
         WorkerCompletion(
             assignment.shard_index,
             os.getpid(),
             (),
             {},
-            0.0,
-            0,
-            {},
+            elapsed,
+            parent_rss,
+            environment,
             "failed",
             message or type(error).__name__,
         )
@@ -321,13 +740,16 @@ def resume_or_run_parallel(
         raise ValueError("plan must be a ShardPlan")
     if not isinstance(bootstrap, WorkerBootstrap):
         raise ValueError("bootstrap must be a WorkerBootstrap")
+    started = monotonic()
     try:
         if plan.population != context.datasets:
             raise ValueError("shard plan does not match the frozen context")
         context_digest = _context_sha256(context)
         if bootstrap.expected_context_sha256 != context_digest:
             raise ValueError("bootstrap context digest mismatch")
-        _freeze_plan_binding(roots, plan, context_digest)
+        binding_sha256 = _freeze_plan_binding(roots, plan, context)
+        attempts = _load_runtime_evidence(roots, binding_sha256)
+        evidence_digests = _validated_evidence_digests(plan, attempts)
         canonical = _open_checkpoint_store(
             roots.canonical_root,
             bootstrap.provenance,
@@ -343,24 +765,40 @@ def resume_or_run_parallel(
             raise ValueError(
                 "canonical checkpoint contains terminal dataset evidence"
             )
+        for name, digest in canonical_digests.items():
+            if evidence_digests.get(name) != digest:
+                raise ValueError(
+                    "canonical checkpoint lacks matching durable evidence"
+                )
         if set(canonical_digests) == set(context.datasets):
+            if set(evidence_digests) != set(context.datasets):
+                raise ValueError(
+                    "complete canonical checkpoint lacks durable worker evidence"
+                )
             summary = _reconstruct_global_summary(context, canonical)
             error = "" if summary.publication_allowed else summary.status
-            completions = _completion_records(
-                plan, canonical_digests, {}, error=error
+            completions = _aggregate_evidence_completions(
+                plan,
+                attempts,
+                evidence_digests,
+                error=error,
             )
+            aggregate_rss = _peak_total_rss_bytes(attempts)
+            if aggregate_rss > FROZEN_CONFIG.memory_limit_bytes:
+                raise ValueError(
+                    "aggregate worker and parent RSS exceeds the frozen limit"
+                )
             return ParallelRun(
                 plan,
                 completions,
                 {
                     name: canonical_digests[name]
-                    for assignment in plan.assignments
-                    for name in assignment.datasets
+                    for name in context.datasets
                 },
                 {
                     "run_summary": summary,
                     "plan_sha256": plan.sha256,
-                    "aggregate_peak_rss_bytes": 0,
+                    "aggregate_peak_rss_bytes": aggregate_rss,
                 },
                 summary.publication_allowed,
                 "completed" if summary.publication_allowed else "failed",
@@ -377,6 +815,17 @@ def resume_or_run_parallel(
             for assignment in plan.assignments
         }
         observed = _validate_partial_worker_stores(plan, worker_stores)
+        observed_digests = {
+            name: digest
+            for assignment in plan.assignments
+            for name, digest in observed[
+                assignment.shard_index
+            ].items()
+        }
+        if observed_digests != dict(evidence_digests):
+            raise ValueError(
+                "reused worker checkpoints lack matching durable evidence"
+            )
         specs = []
         attempt_token = uuid.uuid4().hex
         for assignment in plan.assignments:
@@ -402,6 +851,18 @@ def resume_or_run_parallel(
                 )
 
         raw_completions = spawn_workers(tuple(specs), bootstrap) if specs else ()
+        if raw_completions:
+            attempts = _append_runtime_evidence(
+                roots,
+                binding_sha256,
+                attempts,
+                attempt_token,
+                raw_completions,
+                _parent_peak_rss_bytes(),
+            )
+            evidence_digests = _validated_evidence_digests(
+                plan, attempts
+            )
         metrics = {
             completion.shard_index: completion
             for completion in raw_completions
@@ -410,11 +871,11 @@ def resume_or_run_parallel(
             spec.shard.shard_index for spec in specs
         ):
             raise ValueError("worker completions do not cover scheduled shards")
-        aggregate_rss = sum(
-            completion.peak_rss_bytes for completion in raw_completions
-        )
+        aggregate_rss = _peak_total_rss_bytes(attempts)
         if aggregate_rss > FROZEN_CONFIG.memory_limit_bytes:
-            raise ValueError("aggregate worker RSS exceeds the frozen limit")
+            raise ValueError(
+                "aggregate worker and parent RSS exceeds the frozen limit"
+            )
 
         for spec in specs:
             completion = metrics[spec.shard.shard_index]
@@ -454,18 +915,31 @@ def resume_or_run_parallel(
             for assignment in plan.assignments
         ):
             raise ValueError("worker stores remain incomplete after resume")
+        complete_digests = {
+            name: digest
+            for assignment in plan.assignments
+            for name, digest in complete[
+                assignment.shard_index
+            ].items()
+        }
+        if complete_digests != dict(evidence_digests):
+            raise ValueError(
+                "complete worker stores differ from durable evidence"
+            )
         merged = merge_worker_checkpoints(
             context, plan, worker_stores, canonical
         )
         summary = _reconstruct_global_summary(context, canonical)
         error = "" if summary.publication_allowed else summary.status
-        completions = _completion_records(
-            plan, merged, metrics, error=error
+        completions = _aggregate_evidence_completions(
+            plan,
+            attempts,
+            evidence_digests,
+            error=error,
         )
         record_digests = {
             name: merged[name]
-            for assignment in plan.assignments
-            for name in assignment.datasets
+            for name in context.datasets
         }
         return ParallelRun(
             plan,
@@ -480,7 +954,7 @@ def resume_or_run_parallel(
             "completed" if summary.publication_allowed else "failed",
         )
     except Exception as error:
-        return _failed_parallel_run(plan, error)
+        return _failed_parallel_run(plan, error, started)
 
 
 def select_runtime(trials: Sequence[RuntimeTrial]) -> RuntimeBenchmark:

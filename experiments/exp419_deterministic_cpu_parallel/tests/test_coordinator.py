@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import json
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import MappingProxyType, SimpleNamespace
@@ -293,6 +295,24 @@ class CoordinatorTests(unittest.TestCase):
             _context_sha256(self.context),
         )
 
+    def _seed_runtime_evidence(
+        self,
+        coordinator,
+        roots: ParallelRoots,
+        completions: tuple[WorkerCompletion, ...],
+    ) -> None:
+        binding = coordinator._freeze_plan_binding(
+            roots, self.plan, self.context
+        )
+        coordinator._append_runtime_evidence(
+            roots,
+            binding,
+            (),
+            "seeded-prior-attempt",
+            completions,
+            50,
+        )
+
     def test_resume_schedules_only_missing_records_in_original_shards(self):
         from experiments.exp419_deterministic_cpu_parallel import coordinator
 
@@ -320,6 +340,36 @@ class CoordinatorTests(unittest.TestCase):
                     assignment.datasets,
                     completed=completed,
                 )
+            self._seed_runtime_evidence(
+                coordinator,
+                roots,
+                tuple(
+                    WorkerCompletion(
+                        assignment.shard_index,
+                        300 + assignment.shard_index,
+                        stores[
+                            roots.worker_roots[assignment.shard_index]
+                        ].expected_datasets[1::3],
+                        dict(
+                            stores[
+                                roots.worker_roots[
+                                    assignment.shard_index
+                                ]
+                            ]._digests
+                        ),
+                        2.0,
+                        50,
+                        {
+                            "OMP_NUM_THREADS": "1",
+                            "OPENBLAS_NUM_THREADS": "1",
+                            "VECLIB_MAXIMUM_THREADS": "1",
+                        },
+                        "failed",
+                        "synthetic prior interruption",
+                    )
+                    for assignment in self.plan.assignments
+                ),
+            )
             scheduled = []
 
             def open_store(path, provenance, datasets):
@@ -407,6 +457,31 @@ class CoordinatorTests(unittest.TestCase):
                 self.provenance,
                 self.context.datasets,
                 completed=self.context.datasets,
+            )
+            self._seed_runtime_evidence(
+                coordinator,
+                roots,
+                tuple(
+                    WorkerCompletion(
+                        assignment.shard_index,
+                        400 + assignment.shard_index,
+                        assignment.datasets,
+                        {
+                            name: _digest(name)
+                            for name in assignment.datasets
+                        },
+                        2.0,
+                        50,
+                        {
+                            "OMP_NUM_THREADS": "1",
+                            "OPENBLAS_NUM_THREADS": "1",
+                            "VECLIB_MAXIMUM_THREADS": "1",
+                        },
+                        "completed",
+                        "",
+                    )
+                    for assignment in self.plan.assignments
+                ),
             )
             summary = SimpleNamespace(
                 publication_allowed=True, status="complete"
@@ -512,6 +587,31 @@ class CoordinatorTests(unittest.TestCase):
                 self.context.datasets,
                 completed=self.context.datasets,
             )
+            self._seed_runtime_evidence(
+                coordinator,
+                roots,
+                tuple(
+                    WorkerCompletion(
+                        assignment.shard_index,
+                        500 + assignment.shard_index,
+                        assignment.datasets,
+                        {
+                            name: _digest(name)
+                            for name in assignment.datasets
+                        },
+                        2.0,
+                        50,
+                        {
+                            "OMP_NUM_THREADS": "1",
+                            "OPENBLAS_NUM_THREADS": "1",
+                            "VECLIB_MAXIMUM_THREADS": "1",
+                        },
+                        "completed",
+                        "",
+                    )
+                    for assignment in self.plan.assignments
+                ),
+            )
             summary = SimpleNamespace(
                 publication_allowed=True, status="complete"
             )
@@ -554,6 +654,292 @@ class CoordinatorTests(unittest.TestCase):
             self.assertTrue(first.publication_allowed)
             self.assertFalse(second.publication_allowed)
             self.assertIn("shard-plan", second.summary["error"])
+
+    def test_new_binding_rejects_any_nonempty_checkpoint_root(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        for occupied in ("canonical", "worker"):
+            with self.subTest(occupied=occupied), TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                roots = self._roots(root)
+                checkpoint = (
+                    roots.canonical_root
+                    if occupied == "canonical"
+                    else roots.worker_roots[0]
+                )
+                checkpoint.mkdir()
+                (checkpoint / "prior-exp417-evidence").write_text(
+                    "unbound", encoding="utf-8"
+                )
+
+                with self.assertRaisesRegex(ValueError, "unbound"):
+                    coordinator._freeze_plan_binding(
+                        roots,
+                        self.plan,
+                        self.context,
+                    )
+                self.assertFalse(
+                    (root / "exp419_shard_plan.json").exists()
+                )
+
+    def test_binding_freezes_full_runtime_and_thread_contract(self):
+        from dataclasses import asdict
+
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+        from experiments.exp419_deterministic_cpu_parallel.config import (
+            FROZEN_CONFIG,
+        )
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            roots = self._roots(root)
+            coordinator._freeze_plan_binding(
+                roots,
+                self.plan,
+                self.context,
+            )
+            payload = json.loads(
+                (root / "exp419_shard_plan.json").read_text("utf-8")
+            )
+
+            self.assertEqual(
+                payload["frozen_config"],
+                json.loads(json.dumps(asdict(FROZEN_CONFIG))),
+            )
+            self.assertEqual(
+                payload["runtime_versions"],
+                dict(self.context.runtime_versions),
+            )
+            self.assertEqual(payload["start_method"], "spawn")
+            self.assertEqual(
+                payload["thread_environment"],
+                {
+                    "OMP_NUM_THREADS": "1",
+                    "OPENBLAS_NUM_THREADS": "1",
+                    "VECLIB_MAXIMUM_THREADS": "1",
+                },
+            )
+
+    def test_binding_rejects_casefold_aliases_and_symlink_marker(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            aliased = ParallelRoots(
+                root,
+                {
+                    0: root / "Shard",
+                    1: root / "shard",
+                },
+                root / "canonical",
+            )
+            with self.assertRaisesRegex(ValueError, "alias"):
+                coordinator._freeze_plan_binding(
+                    aliased,
+                    self.plan,
+                    self.context,
+                )
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            roots = self._roots(root)
+            coordinator._freeze_plan_binding(
+                roots,
+                self.plan,
+                self.context,
+            )
+            marker = root / "exp419_shard_plan.json"
+            saved = root.parent / f"{root.name}-saved-binding"
+            saved.write_bytes(marker.read_bytes())
+            marker.unlink()
+            marker.symlink_to(saved)
+            with self.assertRaisesRegex(ValueError, "regular"):
+                coordinator._freeze_plan_binding(
+                    roots,
+                    self.plan,
+                    self.context,
+                )
+
+    def test_complete_canonical_without_durable_worker_evidence_fails_closed(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            roots = self._roots(root)
+            coordinator._freeze_plan_binding(
+                roots,
+                self.plan,
+                self.context,
+            )
+            canonical = _Store(
+                roots.canonical_root,
+                self.provenance,
+                self.context.datasets,
+                completed=self.context.datasets,
+            )
+            with (
+                patch.object(
+                    coordinator,
+                    "_open_checkpoint_store",
+                    return_value=canonical,
+                ),
+                patch.object(
+                    coordinator,
+                    "_reconstruct_global_summary",
+                    return_value=SimpleNamespace(
+                        publication_allowed=True, status="complete"
+                    ),
+                ),
+                patch.object(
+                    coordinator,
+                    "_parent_peak_rss_bytes",
+                    return_value=77,
+                ),
+            ):
+                run = coordinator.resume_or_run_parallel(
+                    self.context,
+                    self.plan,
+                    roots,
+                    self._bootstrap(),
+                )
+
+            self.assertFalse(run.publication_allowed)
+            self.assertIn("evidence", run.summary["error"])
+            self.assertTrue(
+                all(item.pid == os.getpid() for item in run.completions)
+            )
+            self.assertTrue(
+                all(item.peak_rss_bytes == 77 for item in run.completions)
+            )
+
+    def test_fresh_worker_evidence_is_durable_reused_and_includes_parent_rss(self):
+        from experiments.exp419_deterministic_cpu_parallel import coordinator
+
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            roots = self._roots(root)
+            stores: dict[Path, _Store] = {
+                roots.canonical_root: _Store(
+                    roots.canonical_root,
+                    self.provenance,
+                    self.context.datasets,
+                )
+            }
+            for assignment in self.plan.assignments:
+                stores[roots.worker_roots[assignment.shard_index]] = _Store(
+                    roots.worker_roots[assignment.shard_index],
+                    self.provenance,
+                    assignment.datasets,
+                )
+
+            def open_store(path, provenance, datasets):
+                if path not in stores:
+                    stores[path] = _Store(path, provenance, datasets)
+                return stores[path]
+
+            def spawn(specs, bootstrap):
+                del bootstrap
+                completions = []
+                for spec in specs:
+                    store = open_store(
+                        spec.checkpoint_root,
+                        self.provenance,
+                        spec.shard.datasets,
+                    )
+                    for name in spec.shard.datasets:
+                        store._digests[name] = _digest(name)
+                        store._results[name] = SimpleNamespace(
+                            dataset=name,
+                            decision_evidence=object(),
+                            status="qualified",
+                        )
+                    completions.append(
+                        WorkerCompletion(
+                            spec.shard.shard_index,
+                            700 + spec.shard.shard_index,
+                            spec.shard.datasets,
+                            dict(store._digests),
+                            3.5 + spec.shard.shard_index,
+                            100,
+                            {
+                                "OMP_NUM_THREADS": "1",
+                                "OPENBLAS_NUM_THREADS": "1",
+                                "VECLIB_MAXIMUM_THREADS": "1",
+                            },
+                            "completed",
+                            "",
+                        )
+                    )
+                return tuple(completions)
+
+            summary = SimpleNamespace(
+                publication_allowed=True, status="complete"
+            )
+            with (
+                patch.object(
+                    coordinator,
+                    "_open_checkpoint_store",
+                    side_effect=open_store,
+                ),
+                patch.object(coordinator, "spawn_workers", side_effect=spawn),
+                patch.object(
+                    coordinator,
+                    "_reconstruct_global_summary",
+                    return_value=summary,
+                ),
+                patch.object(
+                    coordinator,
+                    "_parent_peak_rss_bytes",
+                    return_value=50,
+                    create=True,
+                ),
+            ):
+                first = coordinator.resume_or_run_parallel(
+                    self.context,
+                    self.plan,
+                    roots,
+                    self._bootstrap(),
+                )
+                second = coordinator.resume_or_run_parallel(
+                    self.context,
+                    self.plan,
+                    roots,
+                    self._bootstrap(),
+                )
+
+            self.assertTrue(first.publication_allowed)
+            self.assertTrue(second.publication_allowed)
+            self.assertTrue(
+                (root / "exp419_runtime_evidence.json").is_file()
+            )
+            self.assertEqual(
+                first.summary["aggregate_peak_rss_bytes"], 250
+            )
+            self.assertEqual(
+                second.summary["aggregate_peak_rss_bytes"], 250
+            )
+            first_metrics = tuple(
+                (
+                    item.pid,
+                    item.elapsed_seconds,
+                    item.peak_rss_bytes,
+                    dict(item.thread_environment),
+                )
+                for item in first.completions
+            )
+            second_metrics = tuple(
+                (
+                    item.pid,
+                    item.elapsed_seconds,
+                    item.peak_rss_bytes,
+                    dict(item.thread_environment),
+                )
+                for item in second.completions
+            )
+            self.assertEqual(second_metrics, first_metrics)
+            self.assertEqual(
+                tuple(second.record_digests), self.context.datasets
+            )
 
     def test_partial_canonical_terminal_record_fails_before_worker_scheduling(self):
         from experiments.exp419_deterministic_cpu_parallel import coordinator
