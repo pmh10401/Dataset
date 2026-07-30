@@ -455,6 +455,12 @@ class StaticIsolationTests(unittest.TestCase):
                 'ARTIFACT = "frozen_" + "test_labels"\n',
             "getattr-loader.py":
                 'loader = getattr(source, "load_" + "labels")\nloader()\n',
+            "dynamic-label-path.py":
+                "label_path = input()\nPath(label_path).read_bytes()\n",
+            "dynamic-callable-getattr.py":
+                "name = input()\nreader = getattr(source, name)\nreader()\n",
+            "aliased-filesystem-sink.py":
+                "opener = open\ndata_path = input()\nopener(data_path)\n",
         }
         for name, source in snippets.items():
             with self.subTest(name=name), self.assertRaisesRegex(
@@ -469,6 +475,17 @@ class StaticIsolationTests(unittest.TestCase):
                     '_FORBIDDEN_KEYS = {"label", "labels_blob"}\n'
                     'QUERY = """SELECT i.instance_index, i.values_blob\n'
                     "FROM instances i WHERE i.split='TRAIN' AND i.label='0'\"\"\"\n"
+                )
+            }
+        )
+
+    def test_dynamic_nonfilesystem_noncallable_code_is_allowed(self) -> None:
+        self.module.assert_source_label_isolation(
+            {
+                "benign.py": (
+                    "name = input()\n"
+                    "value = getattr(source, name)\n"
+                    "result = (value is None, name.casefold())\n"
                 )
             }
         )

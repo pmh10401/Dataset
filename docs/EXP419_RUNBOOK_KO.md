@@ -79,7 +79,10 @@ git diff --check
 라벨 loader import, 라벨 column을 선택하는 SQL, 동결 라벨 artifact 이름,
 라벨 파일 경로가 하나라도 생기면 실패한다. alias/attribute/getattr loader,
 문자열 결합과 f-string 경로, multiline·quoted SQL projection도 AST에서
-복원해 차단하고, 출력 검증용 denylist와 정상 TRAIN predicate만 허용한다.
+복원해 차단한다. 동적 filesystem sink는 함수별로 등록된 database, lane,
+checkpoint, output, source-code 역할만 허용한다. 해석할 수 없는 동적 경로,
+alias된 filesystem sink, callable로 사용되는 동적 `getattr`, 동적 import는
+fail-closed한다. 출력 검증용 denylist와 정상 TRAIN predicate만 허용한다.
 
 ## 4. 비공식 label-free 병렬 benchmark
 

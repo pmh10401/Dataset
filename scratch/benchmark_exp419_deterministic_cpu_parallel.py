@@ -178,6 +178,171 @@ def _looks_like_label_artifact(value: str) -> bool:
     )
 
 
+_APPROVED_DYNAMIC_PATH_ROLES = {
+    ("coordinator.py", "_RunRootTransaction.__init__"): (
+        "root",
+        "self.path",
+    ),
+    ("coordinator.py", "_RunRootTransaction.verify"): ("self.path",),
+    ("coordinator.py", "_RunRootTransaction.verify_checkpoint_path"): ("path",),
+    ("coordinator.py", "_read_optional_root_file"): ("name",),
+    ("coordinator.py", "_publish_binding_no_replace"): ("temporary",),
+    ("coordinator.py", "_nonempty_checkpoint_root"): ("path",),
+    ("coordinator.py", "_replace_runtime_evidence"): ("temporary",),
+    ("coordinator.py", "_running_attempt_record"): (
+        "spec.checkpoint_root",
+        "roots.root",
+    ),
+    ("coordinator.py", "_interrupted_attempt_record"): (
+        "worker['checkpoint_root']",
+    ),
+    ("coordinator.py", "_freeze_plan_binding"): (
+        "roots.root",
+        "roots.canonical_root",
+        "roots.worker_roots[index]",
+        "path",
+    ),
+    ("coordinator.py", "_validated_evidence_digests"): (
+        "roots.root",
+        "worker['checkpoint_root']",
+        "worker['resolved_checkpoint_root']",
+    ),
+    ("coordinator.py", "_validate_and_recover_attempts"): (
+        "worker['checkpoint_root']",
+    ),
+    ("publication.py", "publish_exp419"): ("output_dir",),
+    ("reporting.py", "_source_digest"): (
+        "__file__",
+        "root",
+        "relative_path",
+    ),
+    ("reporting.py", "_exp419_source_digests"): (
+        "__file__",
+        "root",
+        "relative_path",
+    ),
+    ("workers.py", "_casefolded_path_parts"): ("path",),
+    ("workers.py", "_filesystem_identity"): ("path",),
+    ("workers.py", "_validated_specs"): ("spec.checkpoint_root",),
+    ("workers.py", "_bootstrap_from_payload"): (
+        "resources_payload['database']",
+        "resources_payload['exp291_prediction']",
+        "resources_payload['exp291_manifest']",
+        "resources_payload['exp292_prediction']",
+        "resources_payload['exp292_manifest']",
+        "resources_payload['backend_audit_path']",
+    ),
+    ("benchmark_exp419_deterministic_cpu_parallel.py", "<module>"): (
+        "__file__",
+    ),
+    (
+        "benchmark_exp419_deterministic_cpu_parallel.py",
+        "prepare_trial_roots",
+    ): ("root",),
+    (
+        "benchmark_exp419_deterministic_cpu_parallel.py",
+        "_run_trials",
+    ): ("root",),
+    (
+        "benchmark_exp419_deterministic_cpu_parallel.py",
+        "write_benchmark_evidence",
+    ): ("path", "root"),
+    (
+        "benchmark_exp419_deterministic_cpu_parallel.py",
+        "assert_exp419_label_isolation",
+    ): ("path",),
+    (
+        "benchmark_exp419_deterministic_cpu_parallel.py",
+        "_approved_dynamic_path",
+    ): ("source_name",),
+    ("run_exp419_deterministic_cpu_parallel.py", "<module>"): ("__file__",),
+    (
+        "run_exp419_deterministic_cpu_parallel.py",
+        "require_disjoint_roots",
+    ): ("checkpoint_dir", "output_dir", "output_source"),
+    (
+        "run_exp419_deterministic_cpu_parallel.py",
+        "_identity",
+    ): ("path",),
+    (
+        "run_exp419_deterministic_cpu_parallel.py",
+        "_read_json_regular",
+    ): ("path",),
+    (
+        "run_exp419_deterministic_cpu_parallel.py",
+        "verify_benchmark_evidence",
+    ): ("path", "root"),
+}
+
+
+def _node_scope(node: ast.AST, parents: Mapping[ast.AST, ast.AST]) -> str:
+    functions = []
+    current = node
+    while current in parents:
+        current = parents[current]
+        if isinstance(current, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            functions.append(current.name)
+        elif isinstance(current, ast.ClassDef):
+            functions.append(current.name)
+            break
+    return ".".join(reversed(functions)) if functions else "<module>"
+
+
+def _filesystem_target(call: ast.Call) -> ast.AST | None:
+    called = _call_name(call.func).casefold()
+    last = called.split(".")[-1]
+    if called in {"open", "os.open", "os.stat", "os.lstat"}:
+        return call.args[0] if call.args else None
+    if last == "path":
+        return call.args[0] if call.args else None
+    if last in {
+        "stat",
+        "lstat",
+        "exists",
+        "is_file",
+        "read_bytes",
+        "read_text",
+        "resolve",
+        "open",
+    } and isinstance(call.func, ast.Attribute):
+        return call.func.value
+    return None
+
+
+def _role_occurs(expression: str, role: str) -> bool:
+    return bool(
+        re.search(
+            rf"(?<![A-Za-z0-9_]){re.escape(role)}(?![A-Za-z0-9_])",
+            expression,
+        )
+    )
+
+
+def _approved_dynamic_path(
+    source_name: str,
+    scope: str,
+    target: ast.AST,
+    constants: Mapping[str, str],
+) -> bool:
+    static = _static_string(target, constants)
+    if static is not None:
+        return not _looks_like_label_artifact(static)
+    if (
+        isinstance(target, ast.Call)
+        and _call_name(target.func).casefold().split(".")[-1] == "path"
+        and target.args
+    ):
+        return _approved_dynamic_path(
+            source_name, scope, target.args[0], constants
+        )
+    expression = ast.unparse(target).replace('"', "'")
+    roles = _APPROVED_DYNAMIC_PATH_ROLES.get(
+        (Path(source_name).name, scope),
+        (),
+    )
+    return any(_role_occurs(expression, role) for role in roles)
+
+
 def assert_source_label_isolation(sources: Mapping[str, str]) -> None:
     """Reject statically reachable label loaders, projections, and artifacts."""
     if not isinstance(sources, Mapping) or not sources:
@@ -191,6 +356,11 @@ def assert_source_label_isolation(sources: Mapping[str, str]) -> None:
             raise ValueError(f"label isolation cannot parse {name}") from error
 
         constants: dict[str, str] = {}
+        parents = {
+            child: parent
+            for parent in ast.walk(tree)
+            for child in ast.iter_child_nodes(parent)
+        }
         denylist_nodes: set[ast.AST] = set()
         guard_definition_nodes: set[ast.AST] = set()
         for candidate in ast.walk(tree):
@@ -225,6 +395,52 @@ def assert_source_label_isolation(sources: Mapping[str, str]) -> None:
             if not changed:
                 break
 
+        dynamic_getattr_aliases: set[str] = set()
+        filesystem_aliases: set[str] = set()
+        for _ in range(len(assignments) + 1):
+            changed = False
+            for assignment in assignments:
+                target = _assignment_name(assignment)
+                value_node = _assignment_value(assignment)
+                if target is None or value_node is None:
+                    continue
+                dynamic = False
+                if (
+                    isinstance(value_node, ast.Call)
+                    and _call_name(value_node.func).casefold() == "getattr"
+                    and len(value_node.args) >= 2
+                    and _static_string(value_node.args[1], constants) is None
+                ):
+                    dynamic = True
+                elif (
+                    isinstance(value_node, ast.Name)
+                    and value_node.id in dynamic_getattr_aliases
+                ):
+                    dynamic = True
+                if dynamic and target not in dynamic_getattr_aliases:
+                    dynamic_getattr_aliases.add(target)
+                    changed = True
+                source_call = _call_name(value_node).casefold()
+                filesystem_alias = (
+                    source_call
+                    in {
+                        "open",
+                        "path",
+                        "os.open",
+                        "os.stat",
+                        "os.lstat",
+                    }
+                    or (
+                        isinstance(value_node, ast.Name)
+                        and value_node.id in filesystem_aliases
+                    )
+                )
+                if filesystem_alias and target not in filesystem_aliases:
+                    filesystem_aliases.add(target)
+                    changed = True
+            if not changed:
+                break
+
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
                 imported = tuple(alias.name for alias in node.names)
@@ -255,6 +471,32 @@ def assert_source_label_isolation(sources: Mapping[str, str]) -> None:
             if isinstance(node, ast.Call):
                 called = _call_name(node.func).casefold()
                 if (
+                    isinstance(node.func, ast.Name)
+                    and node.func.id in dynamic_getattr_aliases
+                ) or (
+                    isinstance(node.func, ast.Attribute)
+                    and _call_name(node.func).split(".", 1)[0]
+                    in dynamic_getattr_aliases
+                ) or (
+                    isinstance(node.func, ast.Call)
+                    and _call_name(node.func.func).casefold() == "getattr"
+                    and len(node.func.args) >= 2
+                    and _static_string(node.func.args[1], constants) is None
+                ):
+                    raise ValueError(f"dynamic label loader callable in {name}")
+                if called in {"__import__", "importlib.import_module"}:
+                    target = (
+                        _static_string(node.args[0], constants)
+                        if node.args
+                        else None
+                    )
+                    if target is None:
+                        raise ValueError(f"dynamic label import target in {name}")
+                    if re.search(
+                        r"(?:^|\.)labels?(?:\.|$)", target.casefold()
+                    ):
+                        raise ValueError(f"label import target in {name}")
+                if (
                     "assert_label_free_sql_contract" not in called
                     and re.search(r"(?:load|read|fetch|get).*labels?", called)
                 ):
@@ -265,29 +507,35 @@ def assert_source_label_isolation(sources: Mapping[str, str]) -> None:
                         r"(?:load|read|fetch|get).*labels?", attribute.casefold()
                     ):
                         raise ValueError(f"aliased label loader in {name}")
-                filesystem_call = called.split(".")[-1] in {
-                    "open",
-                    "path",
-                    "stat",
-                    "lstat",
-                    "exists",
-                    "is_file",
-                    "read_bytes",
-                    "read_text",
-                    "resolve",
-                }
-                if filesystem_call:
-                    for argument in node.args:
-                        value = _static_string(argument, constants)
-                        if value is not None and _looks_like_label_artifact(value):
-                            raise ValueError(f"label filesystem path in {name}")
+                filesystem_target = (
+                    node.args[0]
+                    if (
+                        isinstance(node.func, ast.Name)
+                        and node.func.id in filesystem_aliases
+                        and node.args
+                    )
+                    else _filesystem_target(node)
+                )
+                if filesystem_target is not None and not _approved_dynamic_path(
+                    name,
+                    _node_scope(node, parents),
+                    filesystem_target,
+                    constants,
+                ):
+                    raise ValueError(
+                        f"dynamic or label filesystem path in {name}"
+                    )
 
             value = _static_string(node, constants)
             if value is None:
                 continue
             if (
                 node in guard_definition_nodes
-                or value == "assert_label_free_sql_contract"
+                or value
+                in {
+                    "assert_label_free_sql_contract",
+                    "assert_exp419_label_isolation",
+                }
             ):
                 continue
             if _contains_projected_label(value):
