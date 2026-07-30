@@ -194,12 +194,12 @@ def _lexical_datasets(values: object, name: str) -> tuple[str, ...]:
 
 
 def _benchmark_selection_loads(values: object) -> Mapping[int, tuple[int, ...]]:
-    if not isinstance(values, Mapping) or tuple(values) != BENCHMARK_SELECTION_WORKERS:
+    if not isinstance(values, Mapping) or any(type(key) is not int for key in values):
+        raise ValueError("shard_loads worker key must be an integer")
+    if tuple(values) != BENCHMARK_SELECTION_WORKERS:
         raise ValueError("shard_loads must have exact ordered benchmark worker keys")
     copied: dict[int, tuple[int, ...]] = {}
     for worker_count in BENCHMARK_SELECTION_WORKERS:
-        if type(worker_count) is not int:
-            raise ValueError("shard_loads worker key must be an integer")
         loads = _tuple(values[worker_count], f"shard_loads[{worker_count}]")
         if len(loads) != worker_count:
             raise ValueError("shard_loads length must match its worker count")
@@ -211,12 +211,12 @@ def _benchmark_selection_loads(values: object) -> Mapping[int, tuple[int, ...]]:
 
 
 def _benchmark_selection_headrooms(values: object) -> Mapping[int, float]:
-    if not isinstance(values, Mapping) or tuple(values) != BENCHMARK_SELECTION_WORKERS:
+    if not isinstance(values, Mapping) or any(type(key) is not int for key in values):
+        raise ValueError("proxy_headrooms worker key must be an integer")
+    if tuple(values) != BENCHMARK_SELECTION_WORKERS:
         raise ValueError("proxy_headrooms must have exact ordered benchmark worker keys")
     copied: dict[int, float] = {}
     for worker_count in BENCHMARK_SELECTION_WORKERS:
-        if type(worker_count) is not int:
-            raise ValueError("proxy_headrooms worker key must be an integer")
         copied[worker_count] = _finite(
             values[worker_count], f"proxy_headrooms[{worker_count}]"
         )

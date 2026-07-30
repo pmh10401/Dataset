@@ -85,9 +85,11 @@ class Exp419ContractTests(unittest.TestCase):
             {"shard_loads": {2: (50, 50), 4: (40, 20, 20, 20)}},
             {"shard_loads": {2: (50, 50), 4: (40, 20, 20, 20), 6: (40, 12, 12, 12, 12, 12), 8: (25,) * 8}},
             {"shard_loads": {4: (40, 20, 20, 20), 2: (50, 50), 6: (40, 12, 12, 12, 12, 12)}},
+            {"shard_loads": {2.0: (50, 50), 4.0: (40, 20, 20, 20), 6.0: (40, 12, 12, 12, 12, 12)}},
             {"proxy_headrooms": {2: 2.0, 4: 2.5}},
             {"proxy_headrooms": {2: 2.0, 4: 2.5, 6: 2.5, 8: 2.5}},
             {"proxy_headrooms": {4: 2.5, 2: 2.0, 6: 2.5}},
+            {"proxy_headrooms": {2.0: 2.0, 4.0: 2.5, 6.0: 2.5}},
         )
         for changes in invalid:
             with self.subTest(changes=changes):
