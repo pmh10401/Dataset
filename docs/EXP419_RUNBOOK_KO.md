@@ -80,12 +80,24 @@ Exp419는 별도의 새 root와 provenance를 사용한다.
 아래 다섯 입력만 확인한다.
 
 ```bash
-shasum -a 256 \
-  "/Users/mac/Documents/Dataset/univariate_ts.db" \
-  "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
-  "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
-  "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
-  "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json"
+"/Users/mac/Documents/Time Series/.venv/bin/python" - <<'PY'
+from hashlib import sha256
+from pathlib import Path
+
+paths = (
+    Path("/Users/mac/Documents/Dataset/univariate_ts.db"),
+    Path("/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl"),
+    Path("/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json"),
+    Path("/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl"),
+    Path("/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json"),
+)
+for path in paths:
+    digest = sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    print(digest.hexdigest(), path)
+PY
 
 "/Users/mac/Documents/Time Series/.venv/bin/python" -m unittest discover \
   -s experiments/exp419_deterministic_cpu_parallel/tests -p "test_*.py"
