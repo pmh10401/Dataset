@@ -307,7 +307,7 @@ class CliContractTests(unittest.TestCase):
         frozen = SimpleNamespace(
             costs=BALANCED_COSTS,
             bootstrap=object(),
-            context=SimpleNamespace(),
+            context=SimpleNamespace(sha256="a" * 64),
         )
         observed: dict[str, object] = {}
 
@@ -346,11 +346,6 @@ class CliContractTests(unittest.TestCase):
                 self.benchmark,
                 "spawn_bounded_train_smoke_workers",
                 side_effect=bounded_workers,
-            ),
-            patch.object(
-                self.benchmark,
-                "_context_sha256",
-                return_value="a" * 64,
             ),
         ):
             measurement = self.benchmark.run_bounded_train_runtime_smoke(

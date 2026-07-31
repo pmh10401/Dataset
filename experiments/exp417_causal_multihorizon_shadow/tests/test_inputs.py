@@ -210,6 +210,22 @@ class InputBoundaryTests(unittest.TestCase):
                 shutil.copyfile(self.database, replacement)
                 os.replace(replacement, self.database)
 
+    def test_lane_snapshot_verification_does_not_rehash_the_database(self) -> None:
+        """A session-backed worker verifies lane artifacts without a second DB pass."""
+        with self.synthetic_config() as config, patch.object(
+            inputs, "_verify_hashes"
+        ) as verify_hashes, patch.object(
+            inputs, "_verify_database_hash"
+        ) as verify_database:
+            inputs.verify_lane_input_snapshots(
+                self.database,
+                self.database,
+                self.database,
+                self.database,
+            )
+        verify_hashes.assert_called_once()
+        verify_database.assert_not_called()
+
     def _train_contract(self) -> FrozenTrainContract:
         return FrozenTrainContract(
             dataset="A",

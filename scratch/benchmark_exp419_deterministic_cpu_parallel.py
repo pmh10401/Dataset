@@ -31,8 +31,8 @@ from experiments.exp417_causal_multihorizon_shadow.inputs import (
     assert_label_free_sql_contract,
     _verified_database_connection,
     freeze_lane_inputs,
-    freeze_run_context,
-    verify_input_snapshots,
+    list_dataset_names,
+    _runtime_versions,
 )
 from experiments.exp417_causal_multihorizon_shadow.runner import RunnerResources
 from experiments.exp419_deterministic_cpu_parallel.config import (
@@ -44,9 +44,10 @@ from experiments.exp419_deterministic_cpu_parallel.config import (
 )
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
     DatasetCost,
+    BenchmarkTrainBootstrap,
+    BenchmarkTrainContext,
     RuntimeBenchmark,
     RuntimeTrial,
-    WorkerBootstrap,
     WorkerSpec,
     benchmark_selection_proof_from_payload,
     benchmark_selection_proof_payload,
@@ -68,7 +69,6 @@ from experiments.exp419_deterministic_cpu_parallel.workers import (
 )
 from scratch.run_exp417_causal_multihorizon_shadow import (
     _backend_audit_path,
-    _provenance,
 )
 
 
@@ -524,10 +524,10 @@ def assert_exp419_label_isolation(
 
 @dataclass(frozen=True)
 class FrozenBenchmarkInputs:
-    context: Any
+    context: BenchmarkTrainContext
     resources: RunnerResources
     costs: tuple[DatasetCost, ...]
-    bootstrap: WorkerBootstrap
+    bootstrap: BenchmarkTrainBootstrap
     paths: tuple[Path, ...]
     source_manifest_sha256: str
 
@@ -822,17 +822,22 @@ def freeze_benchmark_inputs(
         args.exp292_manifest,
     )
     lanes = freeze_lane_inputs(*paths[1:])
-    context = freeze_run_context(paths[0], lanes, verified_code_commit=verified_head)
+    context = BenchmarkTrainContext(
+        database_sha256=FROZEN_CONFIG.database_sha256,
+        datasets=list_dataset_names(paths[0], lanes),
+        lanes=lanes,
+        code_commit=verified_head,
+        runtime_versions=_runtime_versions(),
+    )
     resources = RunnerResources(
         *paths, backend_audit_path=_backend_audit_path(paths[0])
     )
-    provenance = _provenance(context)
     costs = _load_train_metadata_costs(paths[0], context)
     return FrozenBenchmarkInputs(
         context,
         resources,
         costs,
-        WorkerBootstrap(resources, provenance, _context_sha256(context)),
+        BenchmarkTrainBootstrap(resources, context, context.sha256),
         paths,
         _sha256_text(source_manifest_sha256, "source manifest"),
     )
@@ -927,7 +932,7 @@ def run_bounded_train_runtime_smoke(
     peak_rss_bytes = parent_peak_bytes + sum(
         completion.peak_rss_bytes for completion in completions
     )
-    input_proof_sha256 = _context_sha256(frozen.context)
+    input_proof_sha256 = frozen.context.sha256
     if (
         wall_seconds <= 0.0
         or any(completion.status != "completed" for completion in completions)
@@ -1349,7 +1354,7 @@ def _build_stages(args: argparse.Namespace) -> BenchmarkStages:
             evidence_path,
             benchmark=measured.benchmark,
             git_commit=head,
-            context_sha256=_context_sha256(frozen.context),
+            context_sha256=frozen.context.sha256,
             source_manifest_sha256=frozen.source_manifest_sha256,
             trial_roots=ordered_roots,
             runtime_measurements=measured.runtime_measurements,

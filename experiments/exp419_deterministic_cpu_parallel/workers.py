@@ -16,7 +16,15 @@ from time import monotonic
 from types import MappingProxyType
 import unicodedata
 
-from .contracts import WorkerBootstrap, WorkerCompletion, WorkerSpec
+from .contracts import (
+    BenchmarkTrainBootstrap,
+    BenchmarkTrainContext,
+    WorkerBootstrap,
+    WorkerCompletion,
+    WorkerSpec,
+    benchmark_train_context_from_payload,
+    benchmark_train_context_payload,
+)
 from .config import FROZEN_CONFIG, seed_workers_for_outer_workers
 from .worker_status import WorkerStatus, write_worker_status
 
@@ -85,10 +93,17 @@ def _build_runtime(
     resources: object,
     seed_workers: int,
     on_stage: Callable[[str, int | None, int | None], None],
+    *,
+    connection: object,
+    context: object,
 ) -> object:
     """Keep all production stages except deterministic TRAIN seed fitting."""
     from experiments.exp417_causal_multihorizon_shadow.backend import (
         load_frozen_backend_audit,
+    )
+    from experiments.exp417_causal_multihorizon_shadow.inputs import (
+        load_raw_test_values_from_connection,
+        load_raw_train_values_from_connection,
     )
     from experiments.exp417_causal_multihorizon_shadow.runner import RunnerRuntime
     from .seed_parallel import train_models_seed_parallel
@@ -105,9 +120,20 @@ def _build_runtime(
 
     base = RunnerRuntime.production_with_train_models(resources, train_models)
 
-    def load_train(dataset: str, context: object) -> object:
+    def verify(current_context: object) -> None:
+        if current_context is not context:
+            raise ValueError("worker runtime context changed")
+
+    def load_train(dataset: str, current_context: object) -> object:
         on_stage("train_loading", None, None)
-        return base.load_train(dataset, context)
+        if current_context is not context:
+            raise ValueError("worker runtime context changed")
+        return load_raw_train_values_from_connection(
+            connection,
+            dataset,
+            database_sha256=context.database_sha256,
+            datasets=context.datasets,
+        )
 
     def preprocess(train: object) -> object:
         on_stage("preprocessing", None, None)
@@ -117,12 +143,17 @@ def _build_runtime(
         on_stage("qualification", None, None)
         return base.qualify(dataset, processed, models)
 
-    def load_test(dataset: str, contract: object, context: object) -> object:
+    def load_test(dataset: str, contract: object, current_context: object) -> object:
         on_stage("test_scoring", None, None)
-        return base.load_test(dataset, contract, context)
+        if current_context is not context:
+            raise ValueError("worker runtime context changed")
+        return load_raw_test_values_from_connection(
+            connection, dataset, contract, context
+        )
 
     return replace(
         base,
+        verify=verify,
         load_train=load_train,
         preprocess=preprocess,
         qualify=qualify,
@@ -219,39 +250,80 @@ def _validate_bootstrap_types(bootstrap: WorkerBootstrap) -> None:
         raise ValueError(
             "worker provenance must be Exp417CheckpointProvenance"
         )
+    from experiments.exp417_causal_multihorizon_shadow.contracts import (
+        FrozenRunContext,
+    )
+
+    if not isinstance(bootstrap.context, FrozenRunContext):
+        raise ValueError("worker context must be FrozenRunContext")
 
 
-def _bootstrap_payload(bootstrap: WorkerBootstrap) -> dict[str, object]:
-    _validate_bootstrap_types(bootstrap)
+def _validate_benchmark_bootstrap_types(
+    bootstrap: BenchmarkTrainBootstrap,
+) -> None:
+    from experiments.exp417_causal_multihorizon_shadow.runner import RunnerResources
+
+    if not isinstance(bootstrap.resources, RunnerResources):
+        raise ValueError("benchmark worker resources must be RunnerResources")
+    if type(bootstrap.context) is not BenchmarkTrainContext:
+        raise ValueError("benchmark worker context must be BenchmarkTrainContext")
+    if bootstrap.expected_context_sha256 != bootstrap.context.sha256:
+        raise ValueError("benchmark worker context SHA-256 does not match bootstrap")
+
+
+def _resources_payload(resources: object) -> dict[str, str]:
+    from experiments.exp417_causal_multihorizon_shadow.runner import RunnerResources
+
+    if not isinstance(resources, RunnerResources):
+        raise ValueError("worker resources must be RunnerResources")
+    return {
+        "database": str(resources.database),
+        "exp291_prediction": str(resources.exp291_prediction),
+        "exp291_manifest": str(resources.exp291_manifest),
+        "exp292_prediction": str(resources.exp292_prediction),
+        "exp292_manifest": str(resources.exp292_manifest),
+        "backend_audit_path": str(resources.backend_audit_path),
+    }
+
+
+def _bootstrap_payload(
+    bootstrap: WorkerBootstrap | BenchmarkTrainBootstrap,
+) -> dict[str, object]:
+    from experiments.exp417_causal_multihorizon_shadow import checkpoints
+
+    if isinstance(bootstrap, WorkerBootstrap):
+        _validate_bootstrap_types(bootstrap)
+        return {
+            "kind": "official",
+            "resources": _resources_payload(bootstrap.resources),
+            "provenance": bootstrap.provenance.to_payload(),
+            "context": checkpoints._context_payload(bootstrap.context),
+            "expected_context_sha256": bootstrap.expected_context_sha256,
+        }
+    if not isinstance(bootstrap, BenchmarkTrainBootstrap):
+        raise ValueError("worker bootstrap is invalid")
+    _validate_benchmark_bootstrap_types(bootstrap)
     resources = bootstrap.resources
     return {
-        "resources": {
-            "database": str(resources.database),
-            "exp291_prediction": str(resources.exp291_prediction),
-            "exp291_manifest": str(resources.exp291_manifest),
-            "exp292_prediction": str(resources.exp292_prediction),
-            "exp292_manifest": str(resources.exp292_manifest),
-            "backend_audit_path": str(resources.backend_audit_path),
-        },
-        "provenance": bootstrap.provenance.to_payload(),
+        "kind": "benchmark_train",
+        "resources": _resources_payload(resources),
+        "context": benchmark_train_context_payload(bootstrap.context),
         "expected_context_sha256": bootstrap.expected_context_sha256,
     }
 
 
-def _bootstrap_from_payload(payload: object) -> WorkerBootstrap:
+def _bootstrap_from_payload(
+    payload: object,
+) -> WorkerBootstrap | BenchmarkTrainBootstrap:
     from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
         Exp417CheckpointProvenance,
     )
+    from experiments.exp417_causal_multihorizon_shadow import checkpoints
     from experiments.exp417_causal_multihorizon_shadow.runner import RunnerResources
 
-    if not isinstance(payload, dict) or set(payload) != {
-        "resources",
-        "provenance",
-        "expected_context_sha256",
-    }:
+    if not isinstance(payload, dict) or not isinstance(payload.get("kind"), str):
         raise ValueError("worker bootstrap payload is invalid")
     resources_payload = payload["resources"]
-    provenance_payload = payload["provenance"]
     if not isinstance(resources_payload, dict) or set(resources_payload) != {
         "database",
         "exp291_prediction",
@@ -261,8 +333,6 @@ def _bootstrap_from_payload(payload: object) -> WorkerBootstrap:
         "backend_audit_path",
     }:
         raise ValueError("worker resources payload is invalid")
-    if not isinstance(provenance_payload, dict):
-        raise ValueError("worker provenance payload is invalid")
     resources = RunnerResources(
         database=Path(resources_payload["database"]),
         exp291_prediction=Path(resources_payload["exp291_prediction"]),
@@ -271,12 +341,35 @@ def _bootstrap_from_payload(payload: object) -> WorkerBootstrap:
         exp292_manifest=Path(resources_payload["exp292_manifest"]),
         backend_audit_path=Path(resources_payload["backend_audit_path"]),
     )
-    provenance = Exp417CheckpointProvenance(**provenance_payload)
-    return WorkerBootstrap(
-        resources,
-        provenance,
-        payload["expected_context_sha256"],
-    )
+    if payload["kind"] == "official":
+        if set(payload) != {
+            "kind",
+            "resources",
+            "provenance",
+            "context",
+            "expected_context_sha256",
+        } or not isinstance(payload["provenance"], dict):
+            raise ValueError("official worker bootstrap payload is invalid")
+        return WorkerBootstrap(
+            resources,
+            Exp417CheckpointProvenance(**payload["provenance"]),
+            payload["expected_context_sha256"],
+            checkpoints._context_from_payload(payload["context"]),
+        )
+    if payload["kind"] == "benchmark_train":
+        if set(payload) != {
+            "kind",
+            "resources",
+            "context",
+            "expected_context_sha256",
+        }:
+            raise ValueError("benchmark worker bootstrap payload is invalid")
+        return BenchmarkTrainBootstrap(
+            resources,
+            benchmark_train_context_from_payload(payload["context"]),
+            payload["expected_context_sha256"],
+        )
+    raise ValueError("worker bootstrap kind is invalid")
 
 
 def _context_sha256(context: object) -> str:
@@ -307,6 +400,47 @@ def _validate_context_provenance(context: object, provenance: object) -> None:
         raise ValueError(
             "worker provenance does not match reconstructed frozen context"
         )
+
+
+def _verify_official_worker_inputs(resources: object, context: object) -> None:
+    """Verify immutable sources once before a session-backed official shard."""
+    from experiments.exp417_causal_multihorizon_shadow.contracts import (
+        FrozenRunContext,
+    )
+    from experiments.exp417_causal_multihorizon_shadow.inputs import (
+        assert_label_free_sql_contract,
+        verify_lane_input_snapshots,
+    )
+    from experiments.exp417_causal_multihorizon_shadow.runner import RunnerResources
+
+    if not isinstance(resources, RunnerResources):
+        raise ValueError("worker resources must be RunnerResources")
+    if not isinstance(context, FrozenRunContext):
+        raise ValueError("worker context must be FrozenRunContext")
+    assert_label_free_sql_contract()
+    verify_lane_input_snapshots(
+        resources.exp291_prediction,
+        resources.exp291_manifest,
+        resources.exp292_prediction,
+        resources.exp292_manifest,
+    )
+
+
+def _verified_worker_connection(resources: object, context: object) -> object:
+    """Open the one descriptor-pinned SQLite session for an official shard."""
+    from experiments.exp417_causal_multihorizon_shadow.contracts import (
+        FrozenRunContext,
+    )
+    from experiments.exp417_causal_multihorizon_shadow.inputs import (
+        verified_read_only_connection,
+    )
+    from experiments.exp417_causal_multihorizon_shadow.runner import RunnerResources
+
+    if not isinstance(resources, RunnerResources):
+        raise ValueError("worker resources must be RunnerResources")
+    if not isinstance(context, FrozenRunContext):
+        raise ValueError("worker context must be FrozenRunContext")
+    return verified_read_only_connection(resources.database, context.database_sha256)
 
 
 def _peak_rss_bytes() -> int:
@@ -375,43 +509,47 @@ def _run_worker_pinned(
         status.emit("worker_starting")
         _validate_bootstrap_types(bootstrap)
         status.emit("context")
-        context = _freeze_context(bootstrap.resources, bootstrap.provenance)
+        context = bootstrap.context
         _validate_context_provenance(context, bootstrap.provenance)
         if _context_sha256(context) != bootstrap.expected_context_sha256:
             raise ValueError(
-                "reconstructed worker context SHA-256 does not match bootstrap"
+                "worker context SHA-256 does not match bootstrap"
             )
         if any(dataset not in context.datasets for dataset in spec.shard.datasets):
             raise ValueError("worker shard contains a dataset outside context")
 
+        _verify_official_worker_inputs(bootstrap.resources, context)
         checkpoint_store = _open_checkpoint_store(
             spec,
             bootstrap.provenance,
         )
-        runtime = _build_runtime(
-            bootstrap.resources,
-            seed_workers_for_outer_workers(spec.outer_worker_count),
-            status.emit,
-        )
-        for index, dataset in enumerate(spec.shard.datasets):
-            status.begin_dataset(dataset, index)
-            result = _run_dataset_checkpointed(
-                dataset,
-                context,
-                checkpoint_store,
-                runtime,
+        with _verified_worker_connection(bootstrap.resources, context) as connection:
+            runtime = _build_runtime(
+                bootstrap.resources,
+                seed_workers_for_outer_workers(spec.outer_worker_count),
+                status.emit,
+                connection=connection,
+                context=context,
             )
-            _validate_dataset_result(result, dataset)
-            observed = checkpoint_store.completed_record_digests()
-            expected_prefix = spec.shard.datasets[: index + 1]
-            if (
-                set(observed) != set(expected_prefix)
-                or any(name not in spec.shard.datasets for name in observed)
-            ):
-                raise ValueError(
-                    "worker checkpoint digests do not match assigned prefix"
+            for index, dataset in enumerate(spec.shard.datasets):
+                status.begin_dataset(dataset, index)
+                result = _run_dataset_checkpointed(
+                    dataset,
+                    context,
+                    checkpoint_store,
+                    runtime,
                 )
-            status.mark_checkpointed()
+                _validate_dataset_result(result, dataset)
+                observed = checkpoint_store.completed_record_digests()
+                expected_prefix = spec.shard.datasets[: index + 1]
+                if (
+                    set(observed) != set(expected_prefix)
+                    or any(name not in spec.shard.datasets for name in observed)
+                ):
+                    raise ValueError(
+                        "worker checkpoint digests do not match assigned prefix"
+                    )
+                status.mark_checkpointed()
 
         digests = checkpoint_store.completed_record_digests()
         completed, frozen_digests = _completed_prefix(spec, digests)
@@ -473,7 +611,7 @@ def _failed_completion(
 
 def run_bounded_train_smoke_worker(
     spec: WorkerSpec,
-    bootstrap: WorkerBootstrap,
+    bootstrap: BenchmarkTrainBootstrap,
 ) -> WorkerCompletion:
     """Run only the preregistered TRAIN-only scheduler smoke for one shard.
 
@@ -483,50 +621,56 @@ def run_bounded_train_smoke_worker(
     """
     if not isinstance(spec, WorkerSpec):
         raise ValueError("spec must be WorkerSpec")
-    if not isinstance(bootstrap, WorkerBootstrap):
-        raise ValueError("bootstrap must be WorkerBootstrap")
+    if not isinstance(bootstrap, BenchmarkTrainBootstrap):
+        raise ValueError("bootstrap must be BenchmarkTrainBootstrap")
     started = monotonic()
     thread_environment: Mapping[str, str] = MappingProxyType({})
     completed: list[str] = []
     digests: dict[str, str] = {}
     try:
         thread_environment = pin_worker_threads()
-        _validate_bootstrap_types(bootstrap)
-        context = _freeze_context(bootstrap.resources, bootstrap.provenance)
-        _validate_context_provenance(context, bootstrap.provenance)
-        if _context_sha256(context) != bootstrap.expected_context_sha256:
+        _validate_benchmark_bootstrap_types(bootstrap)
+        context = bootstrap.context
+        if context.sha256 != bootstrap.expected_context_sha256:
             raise ValueError(
-                "reconstructed worker context SHA-256 does not match bootstrap"
+                "benchmark worker context SHA-256 does not match bootstrap"
             )
         if any(dataset not in context.datasets for dataset in spec.shard.datasets):
             raise ValueError("worker shard contains a dataset outside context")
 
         from experiments.exp417_causal_multihorizon_shadow.inputs import (
-            load_raw_train_values,
+            load_raw_train_values_from_connection,
+            verified_read_only_connection,
         )
         from experiments.exp417_causal_multihorizon_shadow.preprocessing import (
             preprocess_length_groups,
         )
 
         seed_workers = seed_workers_for_outer_workers(spec.outer_worker_count)
-        for dataset in spec.shard.datasets:
-            train = load_raw_train_values(
-                bootstrap.resources.database, dataset, context
-            )
-            processed = tuple(preprocess_length_groups(train))
-            _run_bounded_train_batches(
-                processed,
-                seed_workers,
-                FROZEN_CONFIG.bounded_train_batches_per_seed,
-            )
-            completed.append(dataset)
-            digests[dataset] = _bounded_smoke_digest(
-                dataset,
-                spec.outer_worker_count,
-                seed_workers,
-                FROZEN_CONFIG.bounded_train_batches_per_seed,
-                bootstrap.expected_context_sha256,
-            )
+        with verified_read_only_connection(
+            bootstrap.resources.database, context.database_sha256
+        ) as connection:
+            for dataset in spec.shard.datasets:
+                train = load_raw_train_values_from_connection(
+                    connection,
+                    dataset,
+                    database_sha256=context.database_sha256,
+                    datasets=context.datasets,
+                )
+                processed = tuple(preprocess_length_groups(train))
+                _run_bounded_train_batches(
+                    processed,
+                    seed_workers,
+                    FROZEN_CONFIG.bounded_train_batches_per_seed,
+                )
+                completed.append(dataset)
+                digests[dataset] = _bounded_smoke_digest(
+                    dataset,
+                    spec.outer_worker_count,
+                    seed_workers,
+                    FROZEN_CONFIG.bounded_train_batches_per_seed,
+                    bootstrap.expected_context_sha256,
+                )
         return WorkerCompletion(
             shard_index=spec.shard.shard_index,
             pid=os.getpid(),
@@ -642,7 +786,9 @@ def _bounded_smoke_digest(
 
 
 def _worker_process_entry(
-    worker_function: Callable[[WorkerSpec, WorkerBootstrap], WorkerCompletion],
+    worker_function: Callable[
+        [WorkerSpec, WorkerBootstrap | BenchmarkTrainBootstrap], WorkerCompletion
+    ],
     spec: WorkerSpec,
     bootstrap_payload: object,
     result_connection: object,
@@ -960,13 +1106,15 @@ def _drain_worker_messages(
 
 def _spawn_workers_with(
     specs: Sequence[WorkerSpec],
-    bootstrap: WorkerBootstrap,
-    worker_function: Callable[[WorkerSpec, WorkerBootstrap], WorkerCompletion],
+    bootstrap: WorkerBootstrap | BenchmarkTrainBootstrap,
+    worker_function: Callable[
+        [WorkerSpec, WorkerBootstrap | BenchmarkTrainBootstrap], WorkerCompletion
+    ],
 ) -> tuple[WorkerCompletion, ...]:
     """Spawn one isolated process and result pipe per typed worker function."""
     frozen_specs = _validated_specs(specs)
-    if not isinstance(bootstrap, WorkerBootstrap):
-        raise ValueError("bootstrap must be WorkerBootstrap")
+    if not isinstance(bootstrap, (WorkerBootstrap, BenchmarkTrainBootstrap)):
+        raise ValueError("bootstrap must be an Exp419 worker bootstrap")
     if not callable(worker_function):
         raise ValueError("worker_function must be callable")
 
@@ -1032,7 +1180,7 @@ def spawn_workers(
 
 def spawn_bounded_train_smoke_workers(
     specs: Sequence[WorkerSpec],
-    bootstrap: WorkerBootstrap,
+    bootstrap: BenchmarkTrainBootstrap,
     *,
     batches_per_seed: int,
 ) -> tuple[WorkerCompletion, ...]:

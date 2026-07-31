@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from contextlib import contextmanager, nullcontext
 from hashlib import sha256
 import json
 import multiprocessing
 from multiprocessing.connection import Connection
 import pickle
 from pathlib import Path
+import sqlite3
+import struct
 from tempfile import TemporaryDirectory
 import threading
 from types import MappingProxyType, ModuleType, SimpleNamespace
@@ -29,6 +32,8 @@ from experiments.exp417_causal_multihorizon_shadow.contracts import (
     FrozenRunContext,
 )
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
+    BenchmarkTrainBootstrap,
+    BenchmarkTrainContext,
     ShardAssignment,
     WorkerBootstrap,
     WorkerCompletion,
@@ -126,7 +131,24 @@ def _resources():
 
 
 def _bootstrap(context: FrozenRunContext) -> WorkerBootstrap:
-    return WorkerBootstrap(_resources(), _provenance(), _context_sha256(context))
+    return WorkerBootstrap(
+        _resources(), _provenance(), _context_sha256(context), context
+    )
+
+
+def _benchmark_context(context: FrozenRunContext) -> BenchmarkTrainContext:
+    return BenchmarkTrainContext(
+        database_sha256=context.database_sha256,
+        datasets=context.datasets,
+        lanes=context.lanes,
+        code_commit=context.code_commit,
+        runtime_versions=context.runtime_versions,
+    )
+
+
+def _benchmark_bootstrap(context: FrozenRunContext) -> BenchmarkTrainBootstrap:
+    train_context = _benchmark_context(context)
+    return BenchmarkTrainBootstrap(_resources(), train_context, train_context.sha256)
 
 
 def _torch_module() -> ModuleType:
@@ -183,8 +205,11 @@ def _synthetic_build_runtime(
     resources: RunnerResources,
     seed_workers: int,
     on_stage: object,
+    *,
+    connection: object,
+    context: object,
 ) -> object:
-    del resources, seed_workers, on_stage
+    del resources, seed_workers, on_stage, connection, context
     return object()
 
 
@@ -532,6 +557,20 @@ class WorkerTests(unittest.TestCase):
         _TEST_RECEIVER = None
         _TEST_SENDER = None
         _INTERRUPTED_SENDER_CLOSE = False
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        self._input_verifier = patch.object(
+            workers, "_verify_official_worker_inputs", return_value=None
+        )
+        self._worker_connection = patch.object(
+            workers,
+            "_verified_worker_connection",
+            return_value=nullcontext(object()),
+        )
+        self._input_verifier.start()
+        self._worker_connection.start()
+        self.addCleanup(self._input_verifier.stop)
+        self.addCleanup(self._worker_connection.stop)
 
     def test_pins_exact_thread_contract(self):
         from experiments.exp419_deterministic_cpu_parallel.workers import (
@@ -595,7 +634,9 @@ class WorkerTests(unittest.TestCase):
                     return_value=MappingProxyType(dict(_THREAD_ENVIRONMENT)),
                 ),
                 patch.object(
-                    workers, "_freeze_context", _synthetic_freeze_context
+                    workers,
+                    "_freeze_context",
+                    side_effect=AssertionError("official context rebuild"),
                 ),
                 patch.object(
                     workers, "_open_checkpoint_store", _synthetic_open_store
@@ -631,7 +672,7 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(
                 dict(completion.thread_environment), _THREAD_ENVIRONMENT
             )
-            self.assertEqual(completion.status, "completed")
+            self.assertEqual(completion.status, "completed", completion.error)
             self.assertEqual(completion.error, "")
 
             status = json.loads(
@@ -647,6 +688,93 @@ class WorkerTests(unittest.TestCase):
             self.assertTrue(
                 {"prediction", "score", "label", "metric"}.isdisjoint(status)
             )
+
+    def test_bounded_smoke_uses_train_context_without_full_context_freezer(self):
+        """The two-batch smoke must not construct Exp417 TEST identity metadata."""
+        from experiments.exp417_causal_multihorizon_shadow.runner import (
+            RunnerResources,
+        )
+        from experiments.exp419_deterministic_cpu_parallel import workers
+
+        with TemporaryDirectory() as temporary:
+            database = Path(temporary) / "train-only.sqlite"
+            connection = sqlite3.connect(database)
+            try:
+                connection.executescript(
+                    """
+                    CREATE TABLE datasets (id INTEGER PRIMARY KEY, name TEXT);
+                    CREATE TABLE instances (
+                        dataset_id INTEGER,
+                        split TEXT,
+                        label TEXT,
+                        instance_index INTEGER,
+                        values_blob BLOB
+                    );
+                    """
+                )
+                connection.execute(
+                    "INSERT INTO datasets (id, name) VALUES (1, 'alpha')"
+                )
+                connection.execute(
+                    """
+                    INSERT INTO instances
+                    (dataset_id, split, label, instance_index, values_blob)
+                    VALUES (1, 'TRAIN', '0', 0, ?)
+                    """,
+                    (struct.pack("<8f", *range(8)),),
+                )
+                connection.commit()
+            finally:
+                connection.close()
+            context = _benchmark_context(_SYNTHETIC_CONTEXT)
+            resources = RunnerResources(
+                database,
+                Path("/synthetic/exp291-prediction"),
+                Path("/synthetic/exp291-manifest"),
+                Path("/synthetic/exp292-prediction"),
+                Path("/synthetic/exp292-manifest"),
+                Path("/synthetic/backend-audit"),
+            )
+            bootstrap = BenchmarkTrainBootstrap(
+                resources, context, context.sha256
+            )
+            spec = WorkerSpec(
+                ShardAssignment(0, ("alpha",), 1),
+                Path(temporary) / "worker-0",
+            )
+
+            @contextmanager
+            def train_only_connection(*_args):
+                live = sqlite3.connect(database)
+                try:
+                    yield live
+                finally:
+                    live.close()
+
+            with (
+                patch.object(
+                    workers,
+                    "pin_worker_threads",
+                    return_value=MappingProxyType(dict(_THREAD_ENVIRONMENT)),
+                ),
+                patch.object(
+                    workers,
+                    "_freeze_context",
+                    side_effect=AssertionError("full context freezer"),
+                ),
+                patch.object(workers, "_run_bounded_train_batches"),
+                patch(
+                    "experiments.exp417_causal_multihorizon_shadow.inputs."
+                    "verified_read_only_connection",
+                    side_effect=train_only_connection,
+                ),
+            ):
+                completion = workers.run_bounded_train_smoke_worker(
+                    spec, bootstrap
+                )
+
+            self.assertEqual(completion.status, "completed", completion.error)
+            self.assertEqual(completion.completed_datasets, ("alpha",))
 
     def test_checkpoint_store_uses_canonical_universe_without_changing_run_order(
         self,
@@ -754,7 +882,7 @@ class WorkerTests(unittest.TestCase):
             root = Path(temporary) / "worker-0"
             spec = WorkerSpec(ShardAssignment(0, ("alpha",), 1), root)
             bootstrap = WorkerBootstrap(
-                _resources(), _provenance(), "f" * 64
+                _resources(), _provenance(), "f" * 64, _SYNTHETIC_CONTEXT
             )
             with (
                 patch.object(
@@ -820,7 +948,10 @@ class WorkerTests(unittest.TestCase):
                 Path(temporary) / "worker-0",
             )
             bootstrap = WorkerBootstrap(
-                object(), _provenance(), _context_sha256(_SYNTHETIC_CONTEXT)
+                object(),
+                _provenance(),
+                _context_sha256(_SYNTHETIC_CONTEXT),
+                _SYNTHETIC_CONTEXT,
             )
             with patch.object(
                 workers,

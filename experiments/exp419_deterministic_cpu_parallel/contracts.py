@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from hashlib import sha256
 import json
 from math import isfinite
@@ -14,7 +14,7 @@ from typing import TypeVar
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
-from .config import FROZEN_CONFIG, seed_workers_for_outer_workers
+from .config import Exp419FrozenConfig, FROZEN_CONFIG, seed_workers_for_outer_workers
 
 
 STRATA = frozenset({"preprocessing_only", "diagnostic_oof", "candidate_eligible"})
@@ -104,6 +104,50 @@ def _path(value: object, name: str) -> Path:
     if not isinstance(value, Path):
         raise ValueError(f"{name} must be a Path")
     return value
+
+
+def _lane_payload(lanes: object) -> dict[str, object]:
+    """Return the non-TEST lane snapshot portion of a train context."""
+    from experiments.exp417_causal_multihorizon_shadow.contracts import (
+        FrozenLaneSnapshot,
+    )
+
+    if not isinstance(lanes, FrozenLaneSnapshot):
+        raise ValueError("lanes must be a FrozenLaneSnapshot")
+    return {
+        name: {
+            dataset: list(indices)
+            for dataset, indices in getattr(lanes, name).items()
+        }
+        for name in ("hard", "standard", "priority", "automatic_normal")
+    }
+
+
+def _lanes_from_payload(payload: object) -> object:
+    from experiments.exp417_causal_multihorizon_shadow.contracts import (
+        FrozenLaneSnapshot,
+    )
+
+    if not isinstance(payload, Mapping) or set(payload) != {
+        "hard",
+        "standard",
+        "priority",
+        "automatic_normal",
+    }:
+        raise ValueError("benchmark train context lanes are invalid")
+    restored: dict[str, dict[str, tuple[int, ...]]] = {}
+    for name in ("hard", "standard", "priority", "automatic_normal"):
+        lane = payload[name]
+        if not isinstance(lane, Mapping):
+            raise ValueError("benchmark train context lane is invalid")
+        restored[name] = {}
+        for dataset, indices in lane.items():
+            _name(dataset, "benchmark train context lane dataset")
+            values = _tuple(indices, "benchmark train context lane indices")
+            if any(type(index) is not int or index < 0 for index in values):
+                raise ValueError("benchmark train context lane index is invalid")
+            restored[name][dataset] = tuple(values)
+    return FrozenLaneSnapshot(**restored)
 
 
 @dataclass(frozen=True)
@@ -378,15 +422,144 @@ def _parts_are_nested_path(first: Path, second: Path) -> bool:
 
 
 @dataclass(frozen=True)
+class BenchmarkTrainContext:
+    """Pinned Exp419 benchmark inputs with no TEST-derived field or payload."""
+
+    database_sha256: str
+    datasets: tuple[str, ...]
+    lanes: object
+    code_commit: str
+    runtime_versions: Mapping[str, str]
+    config: Exp419FrozenConfig = FROZEN_CONFIG
+    sha256: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow.contracts import (
+            FrozenLaneSnapshot,
+        )
+
+        database_sha256 = _sha256(self.database_sha256, "database_sha256")
+        datasets = _lexical_datasets(self.datasets, "datasets")
+        if not isinstance(self.lanes, FrozenLaneSnapshot):
+            raise ValueError("lanes must be a FrozenLaneSnapshot")
+        if (
+            not isinstance(self.code_commit, str)
+            or len(self.code_commit) != 40
+            or any(character not in "0123456789abcdef" for character in self.code_commit)
+        ):
+            raise ValueError("code_commit must be a lowercase Git SHA-1")
+        versions = _string_mapping(self.runtime_versions, "runtime_versions")
+        if not versions:
+            raise ValueError("runtime_versions must not be empty")
+        if not isinstance(self.config, Exp419FrozenConfig):
+            raise ValueError("config must be an Exp419FrozenConfig")
+        self.config.validate()
+        if database_sha256 != self.config.database_sha256:
+            raise ValueError("database SHA256 is not frozen")
+        if len(datasets) != self.config.expected_datasets:
+            raise ValueError("benchmark train population count is not frozen")
+        expected_lane_hashes = (
+            self.config.exp291_prediction_sha256,
+            self.config.exp291_manifest_sha256,
+            self.config.exp292_prediction_sha256,
+            self.config.exp292_manifest_sha256,
+        )
+        observed_lane_hashes = (
+            self.lanes.exp291_prediction_sha256,
+            self.lanes.exp291_manifest_sha256,
+            self.lanes.exp292_prediction_sha256,
+            self.lanes.exp292_manifest_sha256,
+        )
+        if observed_lane_hashes != expected_lane_hashes:
+            raise ValueError("benchmark train lane snapshot is not frozen")
+        object.__setattr__(self, "database_sha256", database_sha256)
+        object.__setattr__(self, "datasets", datasets)
+        object.__setattr__(self, "runtime_versions", versions)
+        object.__setattr__(
+            self,
+            "sha256",
+            sha256(canonical_json_bytes(_benchmark_train_context_body(self))).hexdigest(),
+        )
+
+
+def _benchmark_train_context_body(context: BenchmarkTrainContext) -> dict[str, object]:
+    if type(context) is not BenchmarkTrainContext:
+        raise ValueError("context must be a BenchmarkTrainContext")
+    return {
+        "code_commit": context.code_commit,
+        "config_sha256": sha256(canonical_json_bytes(asdict(context.config))).hexdigest(),
+        "database_sha256": context.database_sha256,
+        "datasets": list(context.datasets),
+        "lanes": _lane_payload(context.lanes),
+        "runtime_versions": dict(context.runtime_versions),
+    }
+
+
+def benchmark_train_context_payload(
+    context: BenchmarkTrainContext,
+) -> dict[str, object]:
+    """Serialize a benchmark context without any TEST-derived material."""
+    return {**_benchmark_train_context_body(context), "sha256": context.sha256}
+
+
+def benchmark_train_context_from_payload(payload: object) -> BenchmarkTrainContext:
+    if not isinstance(payload, Mapping) or set(payload) != {
+        "code_commit",
+        "config_sha256",
+        "database_sha256",
+        "datasets",
+        "lanes",
+        "runtime_versions",
+        "sha256",
+    }:
+        raise ValueError("benchmark train context payload is invalid")
+    expected_config_sha256 = sha256(
+        canonical_json_bytes(asdict(FROZEN_CONFIG))
+    ).hexdigest()
+    if payload["config_sha256"] != expected_config_sha256:
+        raise ValueError("benchmark train context config is invalid")
+    context = BenchmarkTrainContext(
+        database_sha256=payload["database_sha256"],
+        datasets=_tuple(payload["datasets"], "datasets"),
+        lanes=_lanes_from_payload(payload["lanes"]),
+        code_commit=payload["code_commit"],
+        runtime_versions=payload["runtime_versions"],
+    )
+    supplied_sha256 = _sha256(payload["sha256"], "sha256")
+    if context.sha256 != supplied_sha256:
+        raise ValueError("benchmark train context payload SHA-256 is invalid")
+    return context
+
+
+@dataclass(frozen=True)
 class WorkerBootstrap:
     resources: object
     provenance: object
     expected_context_sha256: str
+    context: object | None = None
 
     def __post_init__(self) -> None:
         if self.resources is None or self.provenance is None:
             raise ValueError("resources and provenance are required")
         _sha256(self.expected_context_sha256, "expected_context_sha256")
+
+
+@dataclass(frozen=True)
+class BenchmarkTrainBootstrap:
+    resources: object
+    context: BenchmarkTrainContext
+    expected_context_sha256: str
+
+    def __post_init__(self) -> None:
+        if self.resources is None:
+            raise ValueError("resources are required")
+        if type(self.context) is not BenchmarkTrainContext:
+            raise ValueError("context must be a BenchmarkTrainContext")
+        expected = _sha256(
+            self.expected_context_sha256, "expected_context_sha256"
+        )
+        if expected != self.context.sha256:
+            raise ValueError("benchmark train context SHA-256 does not match bootstrap")
 
 
 @dataclass(frozen=True)

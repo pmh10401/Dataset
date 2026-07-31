@@ -22,6 +22,7 @@ from experiments.exp417_causal_multihorizon_shadow.checkpoints import (
     Exp417CheckpointStore,
 )
 from experiments.exp417_causal_multihorizon_shadow.inputs import (
+    freeze_run_context,
     verify_input_snapshots,
 )
 from experiments.exp417_causal_multihorizon_shadow.reporting import (
@@ -37,6 +38,7 @@ from experiments.exp419_deterministic_cpu_parallel.contracts import (
     DatasetCost,
     ParallelRoots,
     RuntimeBenchmark,
+    WorkerBootstrap,
 )
 from experiments.exp419_deterministic_cpu_parallel.coordinator import (
     _context_sha256,
@@ -53,7 +55,6 @@ from experiments.exp419_deterministic_cpu_parallel.reporting import (
     verify_exp419_payloads,
 )
 from scratch.benchmark_exp419_deterministic_cpu_parallel import (
-    FrozenBenchmarkInputs,
     assert_exp419_label_isolation,
     benchmark_from_payload,
     freeze_benchmark_inputs,
@@ -61,6 +62,7 @@ from scratch.benchmark_exp419_deterministic_cpu_parallel import (
     runtime_measurements_from_payload,
     validate_benchmark_source_manifest_binding,
 )
+from scratch.run_exp417_causal_multihorizon_shadow import _provenance
 
 
 APPROVAL_PHRASE = "Exp419 1,117개 전체 label-free 병렬 실행 승인"
@@ -224,7 +226,19 @@ def verify_benchmark_evidence(
 class OpenedRun:
     plan: Any
     roots: ParallelRoots
-    frozen: FrozenBenchmarkInputs
+    frozen: "FrozenOfficialInputs"
+
+
+@dataclass(frozen=True)
+class FrozenOfficialInputs:
+    """Full parent-frozen context for official work plus benchmark inputs."""
+
+    context: Any
+    costs: tuple[DatasetCost, ...]
+    bootstrap: WorkerBootstrap
+    paths: tuple[Path, ...]
+    source_manifest_sha256: str
+    benchmark_context_sha256: str
 
 
 @dataclass(frozen=True)
@@ -295,25 +309,46 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
 
     def freeze(
         head: str, source_manifest_sha256: str
-    ) -> FrozenBenchmarkInputs:
-        frozen = freeze_benchmark_inputs(
+    ) -> FrozenOfficialInputs:
+        benchmark_inputs = freeze_benchmark_inputs(
             args, head, source_manifest_sha256
+        )
+        context = freeze_run_context(
+            args.database,
+            benchmark_inputs.context.lanes,
+            verified_code_commit=head,
+        )
+        provenance = _provenance(context)
+        frozen = FrozenOfficialInputs(
+            context=context,
+            costs=benchmark_inputs.costs,
+            bootstrap=WorkerBootstrap(
+                benchmark_inputs.resources,
+                provenance,
+                _context_sha256(context),
+                context,
+            ),
+            paths=benchmark_inputs.paths,
+            source_manifest_sha256=source_manifest_sha256,
+            benchmark_context_sha256=benchmark_inputs.context.sha256,
         )
         state["head"] = head
         state["source_manifest_sha256"] = source_manifest_sha256
-        state["context_sha256"] = _context_sha256(frozen.context)
+        state["benchmark_context_sha256"] = (
+            frozen.benchmark_context_sha256
+        )
         state["costs"] = frozen.costs
         return frozen
 
     def verify_benchmark(
-        frozen: FrozenBenchmarkInputs,
+        frozen: FrozenOfficialInputs,
         head: str,
         source_manifest_sha256: str,
     ) -> RuntimeBenchmark:
         benchmark = verify_benchmark_evidence(
             args.benchmark_evidence,
             expected_git_commit=head,
-            expected_context_sha256=_context_sha256(frozen.context),
+            expected_context_sha256=frozen.benchmark_context_sha256,
             expected_source_manifest_sha256=source_manifest_sha256,
             expected_costs=frozen.costs,
         )
@@ -321,7 +356,7 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
         return benchmark
 
     def open_roots(
-        frozen: FrozenBenchmarkInputs,
+        frozen: FrozenOfficialInputs,
         benchmark: RuntimeBenchmark,
     ) -> OpenedRun:
         require_disjoint_roots(args.checkpoint_dir, args.output_dir)
@@ -340,7 +375,7 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
         return OpenedRun(plan, roots, frozen)
 
     def run_resume(
-        frozen: FrozenBenchmarkInputs,
+        frozen: FrozenOfficialInputs,
         benchmark: RuntimeBenchmark,
         opened: OpenedRun,
     ):
@@ -369,7 +404,7 @@ def _build_stages(args: argparse.Namespace) -> OfficialStages:
         observed = verify_benchmark_evidence(
             args.benchmark_evidence,
             expected_git_commit=state["head"],
-            expected_context_sha256=state["context_sha256"],
+            expected_context_sha256=state["benchmark_context_sha256"],
             expected_source_manifest_sha256=
                 state["source_manifest_sha256"],
             expected_costs=state["costs"],

@@ -315,6 +315,26 @@ def verify_input_snapshots(
 ) -> None:
     """Verify exact source hashes before parsing or publishing a context."""
     _validate_config(config)
+    verify_lane_input_snapshots(
+        exp291_prediction,
+        exp291_manifest,
+        exp292_prediction,
+        exp292_manifest,
+        config=config,
+    )
+    _verify_database_hash(Path(database), config.database_sha256)
+
+
+def verify_lane_input_snapshots(
+    exp291_prediction: Path,
+    exp291_manifest: Path,
+    exp292_prediction: Path,
+    exp292_manifest: Path,
+    *,
+    config: Exp417FrozenConfig = FROZEN_CONFIG,
+) -> None:
+    """Verify only the frozen lane artifacts, never the SQLite database."""
+    _validate_config(config)
     paths = (
         Path(exp291_prediction),
         Path(exp291_manifest),
@@ -322,7 +342,6 @@ def verify_input_snapshots(
         Path(exp292_manifest),
     )
     _verify_hashes(paths, _lane_hashes(config), "SHA256 mismatch")
-    _verify_database_hash(Path(database), config.database_sha256)
 
 
 def _validate_config(config: Exp417FrozenConfig) -> None:
@@ -695,5 +714,7 @@ __all__ = [
     "list_dataset_names",
     "load_raw_test_values",
     "load_raw_train_values",
+    "verified_read_only_connection",
+    "verify_lane_input_snapshots",
     "verify_input_snapshots",
 ]
