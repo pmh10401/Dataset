@@ -73,6 +73,21 @@ SQLite 연결 또는 체크포인트 root를 공유하지 않고, 자신에게 �
 정확한 shard, provenance, 완전한 증거, canonical payload digest 및 중복/누락/추가
 레코드를 검증한 뒤에만 모집단의 canonical 순서로 병합한다.
 
+정정된 비공식 benchmark의 부모는 `BenchmarkTrainContext`를 한 번만 동결한다. 이
+문맥에는 database SHA-256, lexical 1,117개 모집단, lane snapshot, reviewed commit,
+runtime version, frozen config만 있으며 TEST identity·길이·값·label·score·candidate·평가
+필드는 없다. worker는 이 canonical digest를 검증한 뒤 normal-TRAIN metadata와 raw
+TRAIN 값만 읽는다. 특히 Exp417의 전체 context freezer를 benchmark worker에서 호출하지
+않는다.
+
+공식 실행에서는 부모가 전체 `FrozenRunContext`를 한 번 동결해 canonical payload로
+worker에 전달한다. 각 worker는 이를 다시 DB에서 만들지 않고 전달된 context와
+provenance digest를 검증한다. 그 뒤 lane artifact를 한 번 확인하고, 자신의 descriptor가
+검증된 read-only SQLite 세션 하나로 shard의 기존 TRAIN/허용된 TEST 값 query를 처리한다.
+DB SHA-256은 worker session 시작 시 한 번, inode 안정성은 session 종료 시 한 번
+검증한다. SQL, decoding, 전처리, 모델, score, threshold, lane 및 checkpoint schema는
+변경하지 않는다.
+
 ## TRAIN 전용 비용과 shard 계획
 
 정확한 길이 그룹에서 정상 series 수가 `n`, 길이가 `L`일 때 정수 비용은 `n * L * w`다.
@@ -174,6 +189,12 @@ worker 실패, 데이터셋 terminal failure, corrupt checkpoint, timeout은 모
 완료 수, phase, seed/fold, 안전한 한 줄 오류만 담는다. raw series, score,
 prediction, TEST label·위치·metric은 절대 포함하지 않으며 재개 또는 publication
 evidence로 사용하지 않는다.
+
+각 worker는 같은 sidecar directory에 append-only
+`worker-<shard>.runtime.jsonl`도 남긴다. 각 줄은 `run_id`, UTC timestamp, PID,
+shard, 현재 dataset, phase, 선택 seed/fold, 완료 수, elapsed seconds, terminal status와
+안전한 한 줄 오류만 담는다. 이 로그는 관찰 전용이다. scheduler, resume, merge,
+publication, 모델 또는 lane decision은 이 파일을 읽지 않는다.
 
 Exp419 패키지는 동결된 TEST-label artifact를 import, open, hash, stat, query 또는 name할
 수 없다. Exp418은 원 Exp417 계약에서 prediction이 완성될 경우를 위해 계속 예약한다.

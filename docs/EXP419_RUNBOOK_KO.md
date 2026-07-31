@@ -21,13 +21,27 @@ benchmark, prediction, metrics와 보고서는 모두 반도체 설비 데이터
 
 ## 1. 환경과 버전 확인
 
+Exp419의 유일한 Python 환경은 repository root의
+`/Users/mac/Documents/Time Series/.venv`다. 새 Mac 또는 새 worktree에서는 이 환경을
+한 번만 만들고 `requirements-exp419-runtime.txt`를 설치한다. 모든 명령은 이 절대 경로의
+Python만 사용하며, 시스템 Python이나 Codex bundle Python을 번갈아 사용하지 않는다.
+
+```bash
+python3 -m venv "/Users/mac/Documents/Time Series/.venv"
+"/Users/mac/Documents/Time Series/.venv/bin/python" -m pip install -r \
+  requirements-exp419-runtime.txt
+```
+
+고정 direct dependency는 NumPy 2.4.6, Numba 0.66.0, scikit-learn 1.9.0,
+PyTorch 2.13.0이다. PyTorch가 MPS를 감지하더라도 Exp419는 CPU device만 사용한다.
+
 ```bash
 cd "/Users/mac/Documents/Time Series/.worktrees/exp419-runtime-recovery"
 git status --short --branch
 git rev-parse HEAD
-.venv/bin/python --version
-.venv/bin/python -c 'import platform, numpy, numba, torch; print(platform.platform()); print("numpy", numpy.__version__); print("numba", numba.__version__); print("torch", torch.__version__)'
-.venv/bin/python -c 'from experiments.exp419_deterministic_cpu_parallel.config import FROZEN_CONFIG; FROZEN_CONFIG.validate(); print(FROZEN_CONFIG)'
+"/Users/mac/Documents/Time Series/.venv/bin/python" --version
+"/Users/mac/Documents/Time Series/.venv/bin/python" -c 'import platform, numpy, numba, torch; print(platform.platform()); print("numpy", numpy.__version__); print("numba", numba.__version__); print("torch", torch.__version__)'
+"/Users/mac/Documents/Time Series/.venv/bin/python" -c 'from experiments.exp419_deterministic_cpu_parallel.config import FROZEN_CONFIG; FROZEN_CONFIG.validate(); print(FROZEN_CONFIG)'
 ```
 
 benchmark와 공식 실행은 `git status --porcelain`이 빈 clean commit에서만
@@ -73,19 +87,19 @@ shasum -a 256 \
   "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
   "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json"
 
-.venv/bin/python -m unittest discover \
+"/Users/mac/Documents/Time Series/.venv/bin/python" -m unittest discover \
   -s experiments/exp419_deterministic_cpu_parallel/tests -p "test_*.py"
-.venv/bin/python -m unittest discover \
+"/Users/mac/Documents/Time Series/.venv/bin/python" -m unittest discover \
   -s experiments/exp417_causal_multihorizon_shadow/tests -p "test_*.py"
-.venv/bin/python -m unittest discover \
+"/Users/mac/Documents/Time Series/.venv/bin/python" -m unittest discover \
   -s experiments/exp414_missing_aware_near_repeat/tests -p "test_*.py"
-.venv/bin/python -m unittest discover \
+"/Users/mac/Documents/Time Series/.venv/bin/python" -m unittest discover \
   -s experiments/exp416_exp404_hard_test_confusion_audit/tests -p "test_*.py"
-.venv/bin/python -m py_compile \
+"/Users/mac/Documents/Time Series/.venv/bin/python" -m py_compile \
   experiments/exp419_deterministic_cpu_parallel/*.py \
   scratch/benchmark_exp419_deterministic_cpu_parallel.py \
   scratch/run_exp419_deterministic_cpu_parallel.py
-.venv/bin/python - <<'PY'
+"/Users/mac/Documents/Time Series/.venv/bin/python" - <<'PY'
 from scratch.benchmark_exp419_deterministic_cpu_parallel import (
     assert_exp419_label_isolation,
 )
@@ -130,6 +144,13 @@ batch만 실행해 scheduler, inner seed layout, memory와 wall time만 측정�
 label, prediction, score, candidate, qualification result, checkpoint는 만들거나 읽지
 않는다.
 
+이 benchmark는 `BenchmarkTrainContext`를 부모에서 한 번 동결해 worker에 전달한다.
+문맥에는 database SHA-256, lexical 모집단, lane snapshot, commit, runtime version,
+frozen config만 들어가며 TEST identity·길이·값은 만들지 않는다. worker는 전달된 digest를
+확인하고 normal-TRAIN query에만 사용하는 검증된 SQLite 세션 하나를 연다. 따라서
+benchmark가 Exp417 전체 context freezer를 호출하거나 TEST metadata를 만드는 것은
+즉시 계약 위반이다.
+
 동결 결과는 원래 15개와 `StarLightCurves_normal_2` (`171,196,416`),
 `HandOutlines_normal_1` (`153,600,300`),
 `StarLightCurves_normal_1` (`88,169,472`),
@@ -146,7 +167,7 @@ root 생성 전에 즉시 중단한다. headroom 허용오차는 proof contract�
 절대오차 `1e-12`다.
 
 ```bash
-.venv/bin/python - <<'PY'
+"/Users/mac/Documents/Time Series/.venv/bin/python" - <<'PY'
 from argparse import Namespace
 from math import isclose
 from pathlib import Path
@@ -321,14 +342,28 @@ preflight가 통과한 뒤 다음 명령을 딱 한 번 실행한다. 출력 roo
 않는다.
 
 ```bash
-.venv/bin/python scratch/benchmark_exp419_deterministic_cpu_parallel.py \
-  --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
-  --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
-  --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
-  --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
-  --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
-  --benchmark-root "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced"
+RUNSTAMP="$(date +%Y%m%d-%H%M%S)"
+RUNLOG="/Users/mac/Documents/Dataset/exp419_benchmark_${RUNSTAMP}.log"
+RUNPID="${RUNLOG%.log}.pid"
+RUNEXIT="${RUNLOG%.log}.exit"
+(
+  "/Users/mac/Documents/Time Series/.venv/bin/python" scratch/benchmark_exp419_deterministic_cpu_parallel.py \
+    --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
+    --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
+    --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
+    --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
+    --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
+    --benchmark-root "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced"
+  printf '%s\n' "$?" > "$RUNEXIT"
+) > "$RUNLOG" 2>&1 &
+printf '%s\n' "$!" > "$RUNPID"
 ```
+
+위 명령은 parent stdout/stderr, PID, exit code를 모두 local Dataset directory에 남긴다.
+자동 감시는 만들지 않는다. benchmark worker별 safe JSONL은 trial root 아래
+`workers-<n>/worker-<shard>.status/worker-<shard>.runtime.jsonl`에, 최신 snapshot은
+같은 directory의 `exp419_worker_status.json`에 생긴다. JSONL에는 run ID, 시간, PID,
+dataset 이름, phase, seed/fold, 완료 수, elapsed time, status/error만 있어야 한다.
 
 생성 파일은 다음 하나다.
 
@@ -339,7 +374,7 @@ preflight가 통과한 뒤 다음 명령을 딱 한 번 실행한다. 출력 roo
 검사는 다음과 같이 수행한다.
 
 ```bash
-.venv/bin/python - <<'PY'
+"/Users/mac/Documents/Time Series/.venv/bin/python" - <<'PY'
 import json
 from pathlib import Path
 path = Path("/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json")
@@ -349,6 +384,7 @@ measurements = value["runtime_measurements"]
 proof = benchmark["selection_proof"]
 print("git_commit", value["git_commit"])
 print("source_manifest_sha256", value["source_manifest_sha256"])
+print("benchmark_train_context_sha256", value["context_sha256"])
 print("worker_candidates", value["worker_candidates"])
 print("status", benchmark["status"])
 print("selected_worker_count", benchmark["selected_worker_count"])
@@ -426,10 +462,14 @@ threshold, seed, horizon, budget, source 또는 worker 수를 바꿔 실패를
 우회하지 않는다. output 경로가 이미 생겼다면 덮어쓰지 않고 중단한다.
 
 공식 실행 중 사용자가 한 번 상태를 요청한 경우에만 각 worker의 checkpoint root와
-분리된 sidecar `exp419_worker_status.json`을 읽는다. 이 파일은 현재 dataset·순번,
-완료 수, phase, seed/fold, 안전한 오류 문자열만 보여 주는 관찰용 snapshot이다. raw
-series, score, prediction, TEST label/location 또는 metric이 보이면 즉시 fail-closed한다.
-자동 monitor, polling loop, cron은 만들지 않는다.
+분리된 sidecar `exp419_worker_status.json`과
+`worker-<shard>.runtime.jsonl`을 읽는다. attempt별 경로는
+`<checkpoint>/.attempts/<plan-sha>/<attempt-id>/worker-<shard>.status/`다.
+snapshot은 현재 dataset·순번, 완료 수, phase, seed/fold, 안전한 오류 문자열만 보여
+주고 JSONL은 그 진행 상태의 append-only 이력이다. raw series, feature/residual,
+score, prediction, TEST identity/value/label/location 또는 metric이 보이면 즉시
+fail-closed한다. 이 로그는 관찰 전용이므로 scheduler, resume, merge, publication,
+모델 결정은 절대 읽지 않는다. 자동 monitor, polling loop, cron은 만들지 않는다.
 
 ## 6. 별도 명시적 승인 뒤의 공식 명령
 
@@ -445,15 +485,23 @@ Exp419 1,117개 전체 label-free 병렬 실행 승인
 그 승인 뒤에만 다음 명령을 한 번 실행한다.
 
 ```bash
-.venv/bin/python scratch/run_exp419_deterministic_cpu_parallel.py \
-  --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
-  --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
-  --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
-  --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
-  --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
-  --benchmark-evidence "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json" \
-  --checkpoint-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel.checkpoint" \
-  --output-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_official"
+RUNSTAMP="$(date +%Y%m%d-%H%M%S)"
+RUNLOG="/Users/mac/Documents/Dataset/exp419_official_${RUNSTAMP}.log"
+RUNPID="${RUNLOG%.log}.pid"
+RUNEXIT="${RUNLOG%.log}.exit"
+(
+  "/Users/mac/Documents/Time Series/.venv/bin/python" scratch/run_exp419_deterministic_cpu_parallel.py \
+    --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
+    --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
+    --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
+    --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
+    --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
+    --benchmark-evidence "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json" \
+    --checkpoint-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel.checkpoint" \
+    --output-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_official"
+  printf '%s\n' "$?" > "$RUNEXIT"
+) > "$RUNLOG" 2>&1 &
+printf '%s\n' "$!" > "$RUNPID"
 ```
 
 공식 순서는 정확히 clean Git → label guard → 입력 동결 → benchmark 검증
