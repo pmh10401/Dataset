@@ -227,10 +227,58 @@ class OOFModelBundle:
         object.__setattr__(self, "oof_residuals", frozen_residuals)
 
 
+@dataclass(frozen=True)
+class SeedOOFTraining:
+    """One frozen seed's five OOF fits before Exp419 reassembles all seeds."""
+
+    seed: int
+    length: int
+    horizons: tuple[int, int, int]
+    folds: tuple[Fold, ...]
+    models: tuple[TrainedSeedModel, ...]
+    oof_residuals: Mapping[int, Mapping[int, np.ndarray]]
+
+    def __post_init__(self) -> None:
+        if type(self.seed) is not int or self.seed not in FROZEN_CONFIG.model_seeds:
+            raise ValueError("seed OOF training seed must be frozen")
+        if type(self.length) is not int or self.length <= 0:
+            raise ValueError("seed OOF training length must be positive")
+        horizons = _validate_horizons(self.horizons)
+        if horizons != build_horizons(self.length):
+            raise ValueError("seed OOF training horizons must match length")
+        folds = tuple(self.folds)
+        models = tuple(self.models)
+        if len(folds) != 5 or len(models) != len(folds):
+            raise ValueError("seed OOF training requires one model for each fold")
+        if any(not isinstance(fold, Fold) for fold in folds) or any(
+            not isinstance(model, TrainedSeedModel) for model in models
+        ):
+            raise ValueError("seed OOF training contains invalid evidence")
+        for fold, model in zip(folds, models, strict=True):
+            if (
+                model.seed != self.seed
+                or model.horizons != horizons
+                or model.fit_indices != fold.fit_indices
+                or model.validation_indices != fold.validation_indices
+                or model.early_stop_fit_indices != fold.early_stop_fit_indices
+                or model.early_stop_validation_indices != fold.early_stop_validation_indices
+            ):
+                raise ValueError("seed OOF model does not match its fold")
+        expected_indices = tuple(sorted(index for fold in folds for index in fold.validation_indices))
+        if len(expected_indices) != len(set(expected_indices)):
+            raise ValueError("seed OOF validation identities overlap")
+        frozen = _freeze_seed_oof_residuals(
+            self.oof_residuals, horizons, expected_indices, self.length
+        )
+        object.__setattr__(self, "horizons", horizons)
+        object.__setattr__(self, "folds", folds)
+        object.__setattr__(self, "models", models)
+        object.__setattr__(self, "oof_residuals", frozen)
+
+
 def set_deterministic_seed(seed: int, device: torch.device) -> None:
     """Set all fitting RNGs without silently changing the requested device."""
-    if type(seed) is not int or seed not in FROZEN_CONFIG.model_seeds:
-        raise ValueError("seed must be a frozen Exp417 model seed")
+    _validate_seed(seed)
     _validate_device(device)
     random.seed(seed)
     np.random.seed(seed)
@@ -239,6 +287,11 @@ def set_deterministic_seed(seed: int, device: torch.device) -> None:
         torch.mps.manual_seed(seed)
     torch.use_deterministic_algorithms(True)
     torch.backends.cudnn.benchmark = False
+
+
+def _validate_seed(seed: int) -> None:
+    if type(seed) is not int or seed not in FROZEN_CONFIG.model_seeds:
+        raise ValueError("seed must be a frozen Exp417 model seed")
 
 
 def train_oof_models(
@@ -308,6 +361,96 @@ def fit_final_seed_models(
             early_stop_validation_indices=early_validation,
         )
         for seed in config.model_seeds
+    )
+
+
+def prepare_seed_initial_states(
+    horizons: tuple[int, int, int], device: torch.device
+) -> Mapping[int, Mapping[str, tuple[str, tuple[int, ...], bytes]]]:
+    """Create immutable seed states serially before concurrent fitting begins."""
+    frozen_horizons = _validate_horizons(horizons)
+    _validate_device(device)
+    return MappingProxyType(
+        {
+            seed: _initial_state(seed, frozen_horizons, device)
+            for seed in FROZEN_CONFIG.model_seeds
+        }
+    )
+
+
+def fit_seed_oof_from_state(
+    group: ProcessedGroup,
+    *,
+    seed: int,
+    initial_state: Mapping[str, tuple[str, tuple[int, ...], bytes]],
+    device: torch.device,
+) -> SeedOOFTraining:
+    """Fit a single OOF seed from a state prepared before task concurrency."""
+    channels, horizons = _validated_group_channels(group, FROZEN_CONFIG)
+    _validate_device(device)
+    _validate_seed(seed)
+    frozen_state = _freeze_state(initial_state)
+    folds = identity_grouped_folds(group.group.series)
+    models: list[TrainedSeedModel] = []
+    residuals: dict[int, dict[int, np.ndarray]] = {}
+    for fold in folds:
+        trained = _fit_seed_model_from_state(
+            channels,
+            horizons,
+            seed=seed,
+            initial_state=frozen_state,
+            device=device,
+            fit_indices=fold.fit_indices,
+            validation_indices=fold.validation_indices,
+            early_stop_fit_indices=fold.early_stop_fit_indices,
+            early_stop_validation_indices=fold.early_stop_validation_indices,
+        )
+        models.append(trained)
+        for index in fold.validation_indices:
+            residuals[index] = dict(predict_residuals(trained, channels[index]))
+    return SeedOOFTraining(
+        seed=seed,
+        length=group.group.length,
+        horizons=horizons,
+        folds=folds,
+        models=tuple(models),
+        oof_residuals=residuals,
+    )
+
+
+def fit_seed_final_from_state(
+    group: ProcessedGroup,
+    *,
+    seed: int,
+    initial_state: Mapping[str, tuple[str, tuple[int, ...], bytes]],
+    device: torch.device,
+) -> TrainedSeedModel:
+    """Fit one final seed from a state prepared before task concurrency."""
+    channels, horizons = _validated_group_channels(group, FROZEN_CONFIG)
+    _validate_device(device)
+    _validate_seed(seed)
+    identities = tuple(sorted(channels))
+    identity_by_index = {
+        item.instance_index: canonical_waveform_sha256(item) for item in group.group.series
+    }
+    early_validation = tuple(
+        index for index in identities if int(identity_by_index[index], 16) % 10 == 0
+    )
+    early_fit = tuple(index for index in identities if index not in set(early_validation))
+    if len({identity_by_index[index] for index in early_fit}) < 5 or len(
+        {identity_by_index[index] for index in early_validation}
+    ) < 5:
+        raise ValueError("final fit requires five identity groups on both early-stop sides")
+    return _fit_seed_model_from_state(
+        channels,
+        horizons,
+        seed=seed,
+        initial_state=_freeze_state(initial_state),
+        device=device,
+        fit_indices=identities,
+        validation_indices=(),
+        early_stop_fit_indices=early_fit,
+        early_stop_validation_indices=early_validation,
     )
 
 
@@ -393,6 +536,63 @@ def _fit_seed_model(
     )
 
 
+def _initial_state(
+    seed: int, horizons: tuple[int, int, int], device: torch.device
+) -> Mapping[str, tuple[str, tuple[int, ...], bytes]]:
+    _validate_seed(seed)
+    set_deterministic_seed(seed, device)
+    network = CausalMultiHorizonCNN(horizons).to(device)
+    _assert_model_device(network, device)
+    return _serialize_state(network.state_dict())
+
+
+def _fit_seed_model_from_state(
+    channels: Mapping[int, np.ndarray],
+    horizons: tuple[int, int, int],
+    *,
+    seed: int,
+    initial_state: Mapping[str, tuple[str, tuple[int, ...], bytes]],
+    device: torch.device,
+    fit_indices: tuple[int, ...],
+    validation_indices: tuple[int, ...],
+    early_stop_fit_indices: tuple[int, ...],
+    early_stop_validation_indices: tuple[int, ...],
+) -> TrainedSeedModel:
+    if len(early_stop_fit_indices) < 5 or len(early_stop_validation_indices) < 5:
+        raise ValueError("model fitting requires five identity groups on both early-stop sides")
+    selected_epoch, selection_validation_losses = _select_stop_epoch_from_state(
+        channels,
+        horizons,
+        initial_state=_freeze_state(initial_state),
+        device=device,
+        fit_indices=early_stop_fit_indices,
+        validation_indices=early_stop_validation_indices,
+    )
+    final_state, final_training_losses = _refit_all_identities_from_state(
+        channels,
+        horizons,
+        initial_state=_freeze_state(initial_state),
+        device=device,
+        fit_indices=fit_indices,
+        epochs=selected_epoch,
+    )
+    return TrainedSeedModel(
+        seed=seed,
+        horizons=horizons,
+        model_sha256=_canonical_state_sha256(final_state),
+        state=final_state,
+        stop_epoch=selected_epoch,
+        training_losses=final_training_losses,
+        validation_losses=selection_validation_losses,
+        fit_indices=fit_indices,
+        validation_indices=validation_indices,
+        early_stop_fit_indices=early_stop_fit_indices,
+        early_stop_validation_indices=early_stop_validation_indices,
+        refit_indices=fit_indices,
+        device=device.type,
+    )
+
+
 def _select_stop_epoch(
     channels: Mapping[int, np.ndarray],
     horizons: tuple[int, int, int],
@@ -405,6 +605,46 @@ def _select_stop_epoch(
     """Use an identity-disjoint TRAIN subset only to choose the stop epoch."""
     set_deterministic_seed(seed, device)
     network = CausalMultiHorizonCNN(horizons).to(device)
+    _assert_model_device(network, device)
+    return _select_stop_epoch_with_network(
+        network,
+        channels,
+        horizons,
+        device=device,
+        fit_indices=fit_indices,
+        validation_indices=validation_indices,
+    )
+
+
+def _select_stop_epoch_from_state(
+    channels: Mapping[int, np.ndarray],
+    horizons: tuple[int, int, int],
+    *,
+    initial_state: Mapping[str, tuple[str, tuple[int, ...], bytes]],
+    device: torch.device,
+    fit_indices: tuple[int, ...],
+    validation_indices: tuple[int, ...],
+) -> tuple[int, tuple[float, ...]]:
+    network = _materialize_network_from_state(initial_state, horizons, device)
+    return _select_stop_epoch_with_network(
+        network,
+        channels,
+        horizons,
+        device=device,
+        fit_indices=fit_indices,
+        validation_indices=validation_indices,
+    )
+
+
+def _select_stop_epoch_with_network(
+    network: CausalMultiHorizonCNN,
+    channels: Mapping[int, np.ndarray],
+    horizons: tuple[int, int, int],
+    *,
+    device: torch.device,
+    fit_indices: tuple[int, ...],
+    validation_indices: tuple[int, ...],
+) -> tuple[int, tuple[float, ...]]:
     _assert_model_device(network, device)
     optimizer = torch.optim.AdamW(network.parameters(), lr=_LEARNING_RATE, weight_decay=_WEIGHT_DECAY)
     loss_function = nn.HuberLoss()
@@ -468,6 +708,48 @@ def _refit_all_identities(
         raise ValueError("selected stop epoch must be within the frozen limit")
     set_deterministic_seed(seed, device)
     network = CausalMultiHorizonCNN(horizons).to(device)
+    _assert_model_device(network, device)
+    return _refit_all_identities_with_network(
+        network,
+        channels,
+        horizons,
+        device=device,
+        fit_indices=fit_indices,
+        epochs=epochs,
+    )
+
+
+def _refit_all_identities_from_state(
+    channels: Mapping[int, np.ndarray],
+    horizons: tuple[int, int, int],
+    *,
+    initial_state: Mapping[str, tuple[str, tuple[int, ...], bytes]],
+    device: torch.device,
+    fit_indices: tuple[int, ...],
+    epochs: int,
+) -> tuple[Mapping[str, tuple[str, tuple[int, ...], bytes]], tuple[float, ...]]:
+    if type(epochs) is not int or not 1 <= epochs <= _MAX_EPOCHS:
+        raise ValueError("selected stop epoch must be within the frozen limit")
+    network = _materialize_network_from_state(initial_state, horizons, device)
+    return _refit_all_identities_with_network(
+        network,
+        channels,
+        horizons,
+        device=device,
+        fit_indices=fit_indices,
+        epochs=epochs,
+    )
+
+
+def _refit_all_identities_with_network(
+    network: CausalMultiHorizonCNN,
+    channels: Mapping[int, np.ndarray],
+    horizons: tuple[int, int, int],
+    *,
+    device: torch.device,
+    fit_indices: tuple[int, ...],
+    epochs: int,
+) -> tuple[Mapping[str, tuple[str, tuple[int, ...], bytes]], tuple[float, ...]]:
     _assert_model_device(network, device)
     optimizer = torch.optim.AdamW(network.parameters(), lr=_LEARNING_RATE, weight_decay=_WEIGHT_DECAY)
     loss_function = nn.HuberLoss()
@@ -661,12 +943,22 @@ def _canonical_state_sha256(state: Mapping[str, tuple[str, tuple[int, ...], byte
 
 
 def _materialize_model(trained: TrainedSeedModel, device: torch.device) -> CausalMultiHorizonCNN:
+    return _materialize_network_from_state(trained.state, trained.horizons, device)
+
+
+def _materialize_network_from_state(
+    state: Mapping[str, tuple[str, tuple[int, ...], bytes]],
+    horizons: tuple[int, int, int],
+    device: torch.device,
+) -> CausalMultiHorizonCNN:
     _validate_device(device)
+    frozen_horizons = _validate_horizons(horizons)
+    frozen_state = _freeze_state(state)
     state: dict[str, Tensor] = {}
-    for name, (dtype_name, shape, payload) in trained.state.items():
+    for name, (dtype_name, shape, payload) in frozen_state.items():
         tensor = torch.frombuffer(bytearray(payload), dtype=_torch_dtype(dtype_name)).clone().reshape(shape)
         state[name] = tensor
-    network = CausalMultiHorizonCNN(trained.horizons).to(device)
+    network = CausalMultiHorizonCNN(frozen_horizons).to(device)
     network.load_state_dict(state, strict=True)
     _assert_model_device(network, device)
     _assert_finite_parameters(network)
@@ -735,13 +1027,34 @@ def _freeze_oof_residuals(
     return MappingProxyType(frozen)
 
 
+def _freeze_seed_oof_residuals(
+    values: Mapping[int, Mapping[int, np.ndarray]],
+    horizons: tuple[int, int, int],
+    universe: tuple[int, ...],
+    length: int,
+) -> Mapping[int, Mapping[int, np.ndarray]]:
+    if not isinstance(values, Mapping) or tuple(sorted(values)) != universe:
+        raise ValueError("seed OOF residual identities must match validation universe")
+    frozen: dict[int, Mapping[int, np.ndarray]] = {}
+    for index in universe:
+        residuals = values[index]
+        if not isinstance(residuals, Mapping):
+            raise ValueError("seed OOF residual mapping is invalid")
+        frozen[index] = _freeze_residual_mapping(residuals, horizons, length)
+    return MappingProxyType(frozen)
+
+
 __all__ = [
     "CausalConv1d",
     "CausalMultiHorizonCNN",
     "OOFModelBundle",
+    "SeedOOFTraining",
     "TrainedSeedModel",
     "canonical_model_sha256",
     "fit_final_seed_models",
+    "fit_seed_final_from_state",
+    "fit_seed_oof_from_state",
+    "prepare_seed_initial_states",
     "predict_residuals",
     "set_deterministic_seed",
     "train_oof_models",

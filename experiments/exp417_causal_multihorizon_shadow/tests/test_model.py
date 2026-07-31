@@ -21,7 +21,9 @@ from experiments.exp417_causal_multihorizon_shadow.model import (
     TrainedSeedModel,
     _canonical_state_sha256,
     _serialize_state,
+    fit_seed_oof_from_state,
     fit_final_seed_models,
+    prepare_seed_initial_states,
     predict_residuals,
     train_oof_models,
 )
@@ -195,6 +197,42 @@ class DeterministicTrainingTests(unittest.TestCase):
                 np.testing.assert_array_equal(residuals[horizon], repeated[horizon])
                 with self.assertRaises(ValueError):
                     residuals[horizon][0] = 0.0
+
+    def test_prepared_seed_oof_matches_legacy_evidence(self) -> None:
+        legacy = train_oof_models(self.group, device=CPU)
+        states = prepare_seed_initial_states(
+            build_horizons(self.group.group.length), CPU
+        )
+
+        actual = fit_seed_oof_from_state(
+            self.group,
+            seed=41701,
+            initial_state=states[41701],
+            device=CPU,
+        )
+
+        self.assertEqual(
+            tuple(model.model_sha256 for model in legacy.models if model.seed == 41701),
+            tuple(model.model_sha256 for model in actual.models),
+        )
+        self.assertEqual(
+            tuple(model.stop_epoch for model in legacy.models if model.seed == 41701),
+            tuple(model.stop_epoch for model in actual.models),
+        )
+        self.assertEqual(
+            tuple(model.training_losses for model in legacy.models if model.seed == 41701),
+            tuple(model.training_losses for model in actual.models),
+        )
+        self.assertEqual(
+            tuple(model.validation_losses for model in legacy.models if model.seed == 41701),
+            tuple(model.validation_losses for model in actual.models),
+        )
+        for index, residuals in actual.oof_residuals.items():
+            for horizon, residual in residuals.items():
+                np.testing.assert_array_equal(
+                    residual,
+                    legacy.oof_residuals[41701][index][horizon],
+                )
 
     def test_oof_models_keep_validation_identities_out_of_all_fit_sets(self) -> None:
         bundle = train_oof_models(self.group, device=CPU)
