@@ -46,9 +46,13 @@ INVALID_DIAGNOSTIC_ROOT = Path(
     "/Users/mac/Documents/Dataset/"
     "exp419_deterministic_cpu_parallel_benchmark"
 )
-CORRECTED_BENCHMARK_ROOT = Path(
+FAILED_BALANCED_BENCHMARK_ROOT = Path(
     "/Users/mac/Documents/Dataset/"
     "exp419_deterministic_cpu_parallel_benchmark_balanced"
+)
+CORRECTED_BENCHMARK_ROOT = Path(
+    "/Users/mac/Documents/Dataset/"
+    "exp419_deterministic_cpu_parallel_benchmark_balanced_runtime_recovery"
 )
 
 
@@ -460,17 +464,26 @@ class CliContractTests(unittest.TestCase):
     ) -> None:
         runbook = (REPO_ROOT / "docs/EXP419_RUNBOOK_KO.md").read_text()
         invalid_root = str(INVALID_DIAGNOSTIC_ROOT)
+        failed_balanced_root = str(FAILED_BALANCED_BENCHMARK_ROOT)
         corrected_root = str(CORRECTED_BENCHMARK_ROOT)
         corrected_evidence = (
             corrected_root + "/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"
         )
         self.assertIn(invalid_root, runbook)
+        self.assertIn(failed_balanced_root, runbook)
         self.assertIn("진단 전용", runbook)
         self.assertIn("재사용", runbook)
         self.assertNotIn(f'--benchmark-root "{invalid_root}"', runbook)
         self.assertNotIn(
             '--benchmark-evidence "'
             + invalid_root
+            + '/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"',
+            runbook,
+        )
+        self.assertNotIn(f'--benchmark-root "{failed_balanced_root}"', runbook)
+        self.assertNotIn(
+            '--benchmark-evidence "'
+            + failed_balanced_root
             + '/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"',
             runbook,
         )
@@ -495,6 +508,13 @@ class CliContractTests(unittest.TestCase):
             runbook,
         )
 
+    def test_runbook_records_exit_code_with_a_zsh_safe_variable(self) -> None:
+        runbook = (REPO_ROOT / "docs/EXP419_RUNBOOK_KO.md").read_text()
+        self.assertIn('exit_code="$?"', runbook)
+        self.assertIn('printf \'%s\\n\' "$exit_code" > "$RUNEXIT"', runbook)
+        self.assertIn('exit "$exit_code"', runbook)
+        self.assertNotIn('status="$?"', runbook)
+
     def test_dirty_git_blocks_benchmark_and_official_before_other_work(self) -> None:
         for module in (self.benchmark, self.official):
             with self.subTest(module=module.__name__):
@@ -508,6 +528,58 @@ class CliContractTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "dirty"):
                     module.execute_for_test(stages)
                 self.assertEqual(calls, ["clean"])
+
+    def test_benchmark_revalidation_verifies_the_exact_frozen_inputs(
+        self,
+    ) -> None:
+        verifier = getattr(
+            self.benchmark, "verify_input_snapshots", None
+        )
+        self.assertTrue(
+            callable(verifier),
+            "benchmark runtime must bind the frozen input snapshot verifier",
+        )
+        paths = (
+            Path("/immutable/database.sqlite"),
+            Path("/immutable/exp291-prediction.jsonl"),
+            Path("/immutable/exp291-manifest.json"),
+            Path("/immutable/exp292-prediction.jsonl"),
+            Path("/immutable/exp292-manifest.json"),
+        )
+        args = SimpleNamespace(
+            database=paths[0],
+            exp291_prediction=paths[1],
+            exp291_manifest=paths[2],
+            exp292_prediction=paths[3],
+            exp292_manifest=paths[4],
+        )
+        observed: list[tuple[Path, ...]] = []
+
+        with (
+            patch.object(
+                self.benchmark,
+                "freeze_benchmark_inputs",
+                return_value=object(),
+            ),
+            patch.object(
+                self.benchmark, "require_clean_git", return_value="a" * 40
+            ),
+            patch.object(
+                self.benchmark,
+                "assert_exp419_label_isolation",
+                return_value="b" * 64,
+            ),
+            patch.object(
+                self.benchmark,
+                "verify_input_snapshots",
+                side_effect=lambda *actual: observed.append(actual),
+            ),
+        ):
+            stages = self.benchmark._build_stages(args)
+            stages.freeze_inputs("a" * 40, "b" * 64)
+            stages.revalidate()
+
+        self.assertEqual(observed, [paths])
 
     def test_real_parsers_do_no_filesystem_work_before_clean_and_label_guards(self) -> None:
         common = [

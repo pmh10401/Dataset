@@ -30,7 +30,7 @@ class Exp419ConfigTests(unittest.TestCase):
         self.assertEqual(
             FROZEN_CONFIG.corrected_benchmark_root,
             "/Users/mac/Documents/Dataset/"
-            "exp419_deterministic_cpu_parallel_benchmark_balanced",
+            "exp419_deterministic_cpu_parallel_benchmark_balanced_runtime_recovery",
         )
         self.assertEqual(
             FROZEN_CONFIG.benchmark_evidence_filename,

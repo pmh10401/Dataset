@@ -38,9 +38,21 @@ benchmark 설계를 승인했다. 이 판정은 과학 계산이나 실제 통�
 
 `/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark`
 
-정정 benchmark는 다음의 새로운 정확한 no-clobber root만 사용한다.
+2026-07-31 runtime recovery에서 위 정정 root는 입력 동결과 worker 시작까지
+통과했지만, trial 완료 뒤 부모 재검증 단계의 누락된 함수 import로
+`NameError`가 발생했다. 이어서 zsh wrapper가 읽기 전용 `status` 변수에
+종료 코드를 쓰려 해 exit 파일도 남기지 못했다. worker sidecar 로그만 생겼고
+benchmark JSON, timing gate 판정, 공식 checkpoint/output은 생성되지 않았다.
+따라서 아래 경로와 모든 하위 경로도 두 번째 진단 전용 불변 증거로 보존하며
+승인, 재개, 병합 또는 재사용하지 않는다.
 
 `/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced`
+
+과학 설정·입력·subset·worker 후보·gate는 바꾸지 않는다. 수정된 부모 재검증과
+zsh-safe 종료 기록을 검증하는 runtime recovery benchmark만 다음의 새로운 정확한
+no-clobber root를 사용한다.
+
+`/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced_runtime_recovery`
 
 검토된 공용 설정은 이 exact lexical/canonical root를 단일 allowlist로
 동결한다. evidence는 root 바로 아래의

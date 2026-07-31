@@ -41,7 +41,7 @@ class Exp419FrozenConfig:
     benchmark_proxy_headroom_workers: tuple[int, ...] = (4, 6)
     corrected_benchmark_root: str = (
         "/Users/mac/Documents/Dataset/"
-        "exp419_deterministic_cpu_parallel_benchmark_balanced"
+        "exp419_deterministic_cpu_parallel_benchmark_balanced_runtime_recovery"
     )
     benchmark_evidence_filename: str = (
         "EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"

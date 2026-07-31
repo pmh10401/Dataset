@@ -33,6 +33,7 @@ from experiments.exp417_causal_multihorizon_shadow.inputs import (
     freeze_lane_inputs,
     list_dataset_names,
     _runtime_versions,
+    verify_input_snapshots,
 )
 from experiments.exp417_causal_multihorizon_shadow.runner import RunnerResources
 from experiments.exp419_deterministic_cpu_parallel.config import (

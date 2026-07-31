@@ -75,6 +75,19 @@ Exp419는 별도의 새 root와 provenance를 사용한다.
 /Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark
 ```
 
+2026-07-31 runtime recovery 전의 정정 benchmark도 worker sidecar 로그만 남긴 채
+부모 재검증에서 누락된 함수 import 때문에 `NameError`로 중단되었다. 이어진 zsh
+wrapper는 읽기 전용 `status` 변수 때문에 exit file을 만들지 못했다. 유효 benchmark
+JSON, timing gate 판정, 공식 checkpoint/output은 없으며, 다음 root와 모든 하위 경로는
+두 번째 진단 전용 불변 증거로 보존하고 승인, 재개, 병합 또는 재사용하지 않는다.
+
+```text
+/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced
+```
+
+과학 설정·입력·subset·worker 후보·gate는 그대로다. runtime recovery는 부모의 입력
+재검증 binding과 zsh-safe 종료 코드 기록만 고친 뒤, 아래의 새 no-clobber root를 쓴다.
+
 ## 3. 입력 해시와 전체 테스트
 
 아래 다섯 입력만 확인한다.
@@ -281,7 +294,7 @@ evidence = require_exact_benchmark_evidence_path(
 trials = require_exact_trial_roots(corrected_trial_roots())
 assert root == Path(
     "/Users/mac/Documents/Dataset/"
-    "exp419_deterministic_cpu_parallel_benchmark_balanced"
+    "exp419_deterministic_cpu_parallel_benchmark_balanced_runtime_recovery"
 )
 assert evidence == root / "EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json"
 assert trials == tuple(
@@ -376,10 +389,10 @@ printf '%s\n' "$$" > "$RUNPID"
   --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
   --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
   --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
-  --benchmark-root "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced"
-  status="$?"
-  printf '%s\n' "$status" > "$RUNEXIT"
-  exit "$status"
+  --benchmark-root "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced_runtime_recovery"
+  exit_code="$?"
+  printf '%s\n' "$exit_code" > "$RUNEXIT"
+  exit "$exit_code"
 ) > "$RUNLOG" 2>&1
 ```
 
@@ -394,7 +407,7 @@ dataset 이름, phase, seed/fold, 완료 수, elapsed time, status/error만 있�
 생성 파일은 다음 하나다.
 
 ```text
-/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json
+/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced_runtime_recovery/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json
 ```
 
 검사는 다음과 같이 수행한다.
@@ -403,7 +416,7 @@ dataset 이름, phase, seed/fold, 완료 수, elapsed time, status/error만 있�
 "/Users/mac/Documents/Time Series/.venv/bin/python" - <<'PY'
 import json
 from pathlib import Path
-path = Path("/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json")
+path = Path("/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced_runtime_recovery/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json")
 value = json.loads(path.read_bytes())
 benchmark = value["benchmark"]
 measurements = value["runtime_measurements"]
@@ -523,12 +536,12 @@ printf '%s\n' "$$" > "$RUNPID"
   --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
   --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
   --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
-  --benchmark-evidence "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json" \
+  --benchmark-evidence "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced_runtime_recovery/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json" \
   --checkpoint-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel.checkpoint" \
   --output-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_official"
-  status="$?"
-  printf '%s\n' "$status" > "$RUNEXIT"
-  exit "$status"
+  exit_code="$?"
+  printf '%s\n' "$exit_code" > "$RUNEXIT"
+  exit "$exit_code"
 ) > "$RUNLOG" 2>&1
 ```
 
