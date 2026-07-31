@@ -1702,6 +1702,7 @@ def resume_or_run_parallel(
                         / attempt_token
                         / f"worker-{assignment.shard_index}",
                         outer_worker_count=plan.worker_count,
+                        run_id=attempt_token,
                     )
                 )
 

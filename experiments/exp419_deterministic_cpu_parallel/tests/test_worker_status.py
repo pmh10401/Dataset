@@ -7,7 +7,11 @@ import unittest
 
 from experiments.exp419_deterministic_cpu_parallel.worker_status import (
     WorkerStatus,
+    append_runtime_log,
     write_worker_status,
+)
+from experiments.exp419_deterministic_cpu_parallel.contracts import (
+    RuntimeLogRecord,
 )
 
 
@@ -69,6 +73,50 @@ class WorkerStatusTests(unittest.TestCase):
                     "worker_pid": 123,
                 }
             )
+
+    def test_runtime_log_rejects_test_prediction_label_and_metric_fields(self) -> None:
+        with self.assertRaisesRegex(ValueError, "forbidden"):
+            RuntimeLogRecord.from_mapping(
+                {
+                    "run_id": "run-1",
+                    "timestamp": "2026-07-31T00:00:00Z",
+                    "pid": 123,
+                    "shard_index": 0,
+                    "current_dataset": None,
+                    "phase": "worker_starting",
+                    "seed": None,
+                    "fold": None,
+                    "completed_datasets": 0,
+                    "elapsed_seconds": 0.0,
+                    "status": "running",
+                    "error": "",
+                    "test_values": [1.0],
+                }
+            )
+
+    def test_runtime_log_writer_appends_only_safe_progress_fields(self) -> None:
+        record = RuntimeLogRecord(
+            run_id="run-1",
+            timestamp="2026-07-31T00:00:00Z",
+            pid=123,
+            shard_index=0,
+            current_dataset="alpha",
+            phase="preprocessing",
+            seed=None,
+            fold=None,
+            completed_datasets=1,
+            elapsed_seconds=1.25,
+            status="running",
+            error="",
+        )
+
+        path = append_runtime_log(self.root, record)
+
+        self.assertEqual(path, self.root / "worker-0.runtime.jsonl")
+        self.assertEqual(
+            json.loads(path.read_text(encoding="utf-8")),
+            record.to_payload(),
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover

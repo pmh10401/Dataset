@@ -688,6 +688,20 @@ class WorkerTests(unittest.TestCase):
             self.assertTrue(
                 {"prediction", "score", "label", "metric"}.isdisjoint(status)
             )
+            records = [
+                json.loads(line)
+                for line in (
+                    spec.status_root
+                    / "worker-3.runtime.jsonl"
+                ).read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual(records[-1]["status"], "completed")
+            self.assertEqual(records[-1]["phase"], "worker_completed")
+            self.assertEqual(records[-1]["completed_datasets"], 2)
+            self.assertTrue(
+                {"test", "prediction", "score", "label", "metric"}
+                .isdisjoint(records[-1])
+            )
 
     def test_bounded_smoke_uses_train_context_without_full_context_freezer(self):
         """The two-batch smoke must not construct Exp417 TEST identity metadata."""

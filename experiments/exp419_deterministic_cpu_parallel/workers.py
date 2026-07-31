@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
+from datetime import datetime, timezone
 from hashlib import sha256
 import multiprocessing
 from multiprocessing.connection import wait as wait_connections
@@ -19,6 +20,7 @@ import unicodedata
 from .contracts import (
     BenchmarkTrainBootstrap,
     BenchmarkTrainContext,
+    RuntimeLogRecord,
     WorkerBootstrap,
     WorkerCompletion,
     WorkerSpec,
@@ -26,7 +28,11 @@ from .contracts import (
     benchmark_train_context_payload,
 )
 from .config import FROZEN_CONFIG, seed_workers_for_outer_workers
-from .worker_status import WorkerStatus, write_worker_status
+from .worker_status import (
+    WorkerStatus,
+    append_runtime_log,
+    write_worker_status,
+)
 
 
 _THREAD_ENVIRONMENT = {
@@ -166,6 +172,7 @@ class _WorkerStatusReporter:
 
     def __init__(self, spec: WorkerSpec) -> None:
         self._spec = spec
+        self._started = monotonic()
         self._dataset: str | None = None
         self._dataset_index: int | None = None
         self._completed = 0
@@ -186,19 +193,42 @@ class _WorkerStatusReporter:
         fold: int | None = None,
         error: str = "",
     ) -> None:
-        write_worker_status(
+        worker_status = WorkerStatus(
+            shard_index=self._spec.shard.shard_index,
+            worker_pid=os.getpid(),
+            expected_datasets=len(self._spec.shard.datasets),
+            completed_datasets=self._completed,
+            phase=phase,
+            dataset=self._dataset,
+            dataset_index=self._dataset_index,
+            seed=seed,
+            fold=fold,
+            error=error,
+        )
+        write_worker_status(self._spec.status_root, worker_status)
+        append_runtime_log(
             self._spec.status_root,
-            WorkerStatus(
-                shard_index=self._spec.shard.shard_index,
-                worker_pid=os.getpid(),
-                expected_datasets=len(self._spec.shard.datasets),
-                completed_datasets=self._completed,
-                phase=phase,
-                dataset=self._dataset,
-                dataset_index=self._dataset_index,
-                seed=seed,
-                fold=fold,
-                error=error,
+            RuntimeLogRecord(
+                run_id=self._spec.run_id,
+                timestamp=datetime.now(timezone.utc).isoformat(
+                    timespec="milliseconds"
+                ).replace("+00:00", "Z"),
+                pid=worker_status.worker_pid,
+                shard_index=worker_status.shard_index,
+                current_dataset=worker_status.dataset,
+                phase=worker_status.phase,
+                seed=worker_status.seed,
+                fold=worker_status.fold,
+                completed_datasets=worker_status.completed_datasets,
+                elapsed_seconds=monotonic() - self._started,
+                status=(
+                    "failed"
+                    if phase == "worker_failed"
+                    else "completed"
+                    if phase == "worker_completed"
+                    else "running"
+                ),
+                error=worker_status.error,
             ),
         )
 
@@ -479,9 +509,17 @@ def run_worker(
 
     started = monotonic()
     thread_environment: Mapping[str, str] = MappingProxyType({})
+    status = _WorkerStatusReporter(spec)
     try:
+        status.emit("worker_starting")
         thread_environment = pin_worker_threads()
     except Exception as error:
+        try:
+            status.emit("worker_failed", error=_status_error(error))
+        except Exception as status_error:
+            error = RuntimeError(
+                f"worker status write failed: {_status_error(status_error)}"
+            )
         return _failed_completion(
             spec,
             started,
@@ -494,6 +532,7 @@ def run_worker(
         bootstrap,
         started,
         thread_environment,
+        status,
     )
 
 
@@ -502,11 +541,10 @@ def _run_worker_pinned(
     bootstrap: WorkerBootstrap,
     started: float,
     thread_environment: Mapping[str, str],
+    status: _WorkerStatusReporter,
 ) -> WorkerCompletion:
     checkpoint_store: object | None = None
-    status = _WorkerStatusReporter(spec)
     try:
-        status.emit("worker_starting")
         _validate_bootstrap_types(bootstrap)
         status.emit("context")
         context = bootstrap.context
@@ -627,10 +665,13 @@ def run_bounded_train_smoke_worker(
     thread_environment: Mapping[str, str] = MappingProxyType({})
     completed: list[str] = []
     digests: dict[str, str] = {}
+    status = _WorkerStatusReporter(spec)
     try:
+        status.emit("worker_starting")
         thread_environment = pin_worker_threads()
         _validate_benchmark_bootstrap_types(bootstrap)
         context = bootstrap.context
+        status.emit("context")
         if context.sha256 != bootstrap.expected_context_sha256:
             raise ValueError(
                 "benchmark worker context SHA-256 does not match bootstrap"
@@ -650,14 +691,18 @@ def run_bounded_train_smoke_worker(
         with verified_read_only_connection(
             bootstrap.resources.database, context.database_sha256
         ) as connection:
-            for dataset in spec.shard.datasets:
+            for index, dataset in enumerate(spec.shard.datasets):
+                status.begin_dataset(dataset, index)
+                status.emit("train_loading")
                 train = load_raw_train_values_from_connection(
                     connection,
                     dataset,
                     database_sha256=context.database_sha256,
                     datasets=context.datasets,
                 )
+                status.emit("preprocessing")
                 processed = tuple(preprocess_length_groups(train))
+                status.emit("oof")
                 _run_bounded_train_batches(
                     processed,
                     seed_workers,
@@ -671,6 +716,8 @@ def run_bounded_train_smoke_worker(
                     FROZEN_CONFIG.bounded_train_batches_per_seed,
                     bootstrap.expected_context_sha256,
                 )
+                status.mark_checkpointed()
+        status.emit("worker_completed")
         return WorkerCompletion(
             shard_index=spec.shard.shard_index,
             pid=os.getpid(),
@@ -683,6 +730,12 @@ def run_bounded_train_smoke_worker(
             error="",
         )
     except Exception as error:
+        try:
+            status.emit("worker_failed", error=_status_error(error))
+        except Exception as status_error:
+            error = RuntimeError(
+                f"worker status write failed: {_status_error(status_error)}"
+            )
         return WorkerCompletion(
             shard_index=spec.shard.shard_index,
             pid=os.getpid(),
@@ -796,20 +849,31 @@ def _worker_process_entry(
     completion: WorkerCompletion | None = None
     started = monotonic()
     thread_environment: Mapping[str, str] = MappingProxyType({})
+    status = _WorkerStatusReporter(spec)
     try:
         try:
             bootstrap = _bootstrap_from_payload(bootstrap_payload)
             if worker_function is run_worker:
+                if not isinstance(bootstrap, WorkerBootstrap):
+                    raise ValueError("official worker requires WorkerBootstrap")
+                status.emit("worker_starting")
                 thread_environment = pin_worker_threads()
                 completion = _run_worker_pinned(
                     spec,
                     bootstrap,
                     started,
                     thread_environment,
+                    status,
                 )
             else:
                 completion = worker_function(spec, bootstrap)
         except Exception as error:
+            try:
+                status.emit("worker_failed", error=_status_error(error))
+            except Exception as status_error:
+                error = RuntimeError(
+                    f"worker status write failed: {_status_error(status_error)}"
+                )
             completion = _failed_completion(
                 spec,
                 started,

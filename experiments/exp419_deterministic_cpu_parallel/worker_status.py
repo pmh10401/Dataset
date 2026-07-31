@@ -10,6 +10,8 @@ from typing import ClassVar
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
+from .contracts import RuntimeLogRecord
+
 
 _SCHEMA = "exp419.worker-status.v1"
 _STATUS_FILENAME = "exp419_worker_status.json"
@@ -162,4 +164,34 @@ def write_worker_status(root: Path, status: WorkerStatus) -> Path:
     return target
 
 
-__all__ = ["WorkerStatus", "write_worker_status"]
+def append_runtime_log(root: Path, record: RuntimeLogRecord) -> Path:
+    """Durably append one safe worker observation without reading any log."""
+    if not isinstance(root, Path):
+        raise ValueError("runtime log root must be a Path")
+    if not isinstance(record, RuntimeLogRecord):
+        raise ValueError("record must be a RuntimeLogRecord")
+    root.mkdir(parents=True, exist_ok=True)
+    target = root / f"worker-{record.shard_index}.runtime.jsonl"
+    flags = (
+        os.O_WRONLY
+        | os.O_APPEND
+        | os.O_CREAT
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        descriptor = os.open(target, flags, 0o600)
+    except OSError as error:
+        raise ValueError("runtime log must be a regular non-symlink file") from error
+    try:
+        payload = record.canonical_json_line()
+        count = os.write(descriptor, payload)
+        if count != len(payload):
+            raise OSError("short runtime log append")
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    return target
+
+
+__all__ = ["WorkerStatus", "append_runtime_log", "write_worker_status"]

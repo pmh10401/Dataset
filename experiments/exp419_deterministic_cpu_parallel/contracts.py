@@ -24,6 +24,54 @@ RUNTIME_BENCHMARK_STATUSES = frozenset(
     {"qualified_parallel_runtime", "no_qualified_parallel_runtime"}
 )
 BENCHMARK_SELECTION_WORKERS = (2, 4, 6)
+RUNTIME_LOG_STATUSES = frozenset({"running", "completed", "failed"})
+RUNTIME_LOG_PHASES = frozenset(
+    {
+        "worker_starting",
+        "context",
+        "dataset_starting",
+        "train_loading",
+        "preprocessing",
+        "oof",
+        "final_fit",
+        "qualification",
+        "test_scoring",
+        "checkpoint",
+        "worker_completed",
+        "worker_failed",
+    }
+)
+_RUNTIME_LOG_FIELDS = frozenset(
+    {
+        "run_id",
+        "timestamp",
+        "pid",
+        "shard_index",
+        "current_dataset",
+        "phase",
+        "seed",
+        "fold",
+        "completed_datasets",
+        "elapsed_seconds",
+        "status",
+        "error",
+    }
+)
+_FORBIDDEN_RUNTIME_LOG_KEY_PARTS = frozenset(
+    {
+        "test",
+        "value",
+        "label",
+        "prediction",
+        "score",
+        "metric",
+        "candidate",
+        "residual",
+        "coordinate",
+        "anomaly",
+        "confusion",
+    }
+)
 
 _T = TypeVar("_T")
 
@@ -391,6 +439,7 @@ class WorkerSpec:
     checkpoint_root: Path
     outer_worker_count: int = 1
     status_root: Path | None = None
+    run_id: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.shard, ShardAssignment):
@@ -407,9 +456,17 @@ class WorkerSpec:
         )
         if _parts_are_nested_path(checkpoint_root, status_root):
             raise ValueError("status_root must be disjoint from checkpoint_root")
+        run_id = (
+            f"exp419-{sha256(str(checkpoint_root).encode('utf-8')).hexdigest()[:16]}"
+            if self.run_id is None
+            else _name(self.run_id, "run_id")
+        )
+        if "\n" in run_id or len(run_id) > 128:
+            raise ValueError("run_id must be a one-line string at most 128 characters")
         object.__setattr__(self, "checkpoint_root", checkpoint_root)
         object.__setattr__(self, "outer_worker_count", outer_workers)
         object.__setattr__(self, "status_root", status_root)
+        object.__setattr__(self, "run_id", run_id)
 
 
 def _parts_are_nested_path(first: Path, second: Path) -> bool:
@@ -560,6 +617,90 @@ class BenchmarkTrainBootstrap:
         )
         if expected != self.context.sha256:
             raise ValueError("benchmark train context SHA-256 does not match bootstrap")
+
+
+@dataclass(frozen=True)
+class RuntimeLogRecord:
+    """One append-only, safe-field-only local progress observation."""
+
+    run_id: str
+    timestamp: str
+    pid: int
+    shard_index: int
+    current_dataset: str | None
+    phase: str
+    seed: int | None
+    fold: int | None
+    completed_datasets: int
+    elapsed_seconds: float
+    status: str
+    error: str
+
+    def __post_init__(self) -> None:
+        run_id = _name(self.run_id, "run_id")
+        if "\n" in run_id or len(run_id) > 128:
+            raise ValueError("run_id must be a one-line string at most 128 characters")
+        if (
+            not isinstance(self.timestamp, str)
+            or not self.timestamp.endswith("Z")
+            or len(self.timestamp) < 20
+        ):
+            raise ValueError("timestamp must be an ISO-8601 UTC string")
+        _integer(self.pid, "pid", minimum=1)
+        _integer(self.shard_index, "shard_index")
+        if self.current_dataset is not None:
+            _name(self.current_dataset, "current_dataset")
+        if self.phase not in RUNTIME_LOG_PHASES:
+            raise ValueError("phase is not an Exp419 runtime log phase")
+        if self.seed is not None:
+            _integer(self.seed, "seed")
+        if self.fold is not None:
+            _integer(self.fold, "fold")
+            if self.fold >= 5:
+                raise ValueError("fold must be an OOF fold index")
+        _integer(self.completed_datasets, "completed_datasets")
+        _finite(self.elapsed_seconds, "elapsed_seconds")
+        if self.status not in RUNTIME_LOG_STATUSES:
+            raise ValueError("status is not an Exp419 runtime log status")
+        if not isinstance(self.error, str) or "\n" in self.error or len(self.error) > 512:
+            raise ValueError("error must be a one-line string at most 512 characters")
+        if self.status == "failed" and not self.error:
+            raise ValueError("failed runtime log must include an error")
+        if self.status != "failed" and self.error:
+            raise ValueError("non-failed runtime log cannot include an error")
+
+    def to_payload(self) -> dict[str, object]:
+        return {
+            "run_id": self.run_id,
+            "timestamp": self.timestamp,
+            "pid": self.pid,
+            "shard_index": self.shard_index,
+            "current_dataset": self.current_dataset,
+            "phase": self.phase,
+            "seed": self.seed,
+            "fold": self.fold,
+            "completed_datasets": self.completed_datasets,
+            "elapsed_seconds": self.elapsed_seconds,
+            "status": self.status,
+            "error": self.error,
+        }
+
+    def canonical_json_line(self) -> bytes:
+        return canonical_json_bytes(self.to_payload()) + b"\n"
+
+    @classmethod
+    def from_mapping(cls, payload: object) -> "RuntimeLogRecord":
+        if not isinstance(payload, Mapping):
+            raise ValueError("runtime log payload must be a mapping")
+        unknown = set(payload) - _RUNTIME_LOG_FIELDS
+        if any(
+            any(part in str(key).casefold() for part in _FORBIDDEN_RUNTIME_LOG_KEY_PARTS)
+            for key in unknown
+        ):
+            raise ValueError("runtime log payload contains a forbidden field")
+        if set(payload) != _RUNTIME_LOG_FIELDS:
+            raise ValueError("runtime log payload field set is invalid")
+        return cls(**payload)
 
 
 @dataclass(frozen=True)

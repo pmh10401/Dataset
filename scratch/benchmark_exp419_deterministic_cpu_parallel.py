@@ -887,6 +887,8 @@ class BoundedTrainRuntimeSmoke:
 def run_bounded_train_runtime_smoke(
     frozen: FrozenBenchmarkInputs,
     worker_count: int,
+    *,
+    status_parent: Path | None = None,
 ) -> BoundedTrainRuntimeSmoke:
     """Measure the frozen outer/inner layout using two normal-TRAIN batches.
 
@@ -905,12 +907,17 @@ def run_bounded_train_runtime_smoke(
         raise ValueError("benchmark subset differs from frozen TRAIN-only selection")
     plan = build_shard_plan(subset_costs, worker_count)
     seed_workers = seed_workers_for_outer_workers(worker_count)
+    root = (
+        Path(f"/non-published-exp419-smoke-{worker_count}")
+        if status_parent is None
+        else Path(status_parent)
+    )
     specs = tuple(
         WorkerSpec(
             assignment,
-            Path(f"/non-published-exp419-smoke-{worker_count}")
-            / f"worker-{assignment.shard_index}",
+            root / f"worker-{assignment.shard_index}",
             outer_worker_count=worker_count,
+            run_id=f"benchmark-{worker_count}",
         )
         for assignment in plan.assignments
     )
@@ -968,7 +975,9 @@ def _run_trials(
         if root.exists():
             raise ValueError("every benchmark candidate root must be fresh")
         root.mkdir()
-        smoke = run_bounded_train_runtime_smoke(frozen, worker_count)
+        smoke = run_bounded_train_runtime_smoke(
+            frozen, worker_count, status_parent=root
+        )
         completions = smoke.completions
         elapsed = smoke.wall_seconds
         process_cpu_seconds = smoke.process_cpu_seconds
