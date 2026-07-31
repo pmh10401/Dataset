@@ -79,6 +79,16 @@ Exp419는 별도의 새 root와 provenance를 사용한다.
 
 아래 다섯 입력만 확인한다.
 
+macOS에서 SQLite descriptor URI가 대기하면 runtime은 검증된 DB inode의 임시 hard-link를
+같은 Dataset directory에 만들고 `mode=ro&immutable=1`로 연다. 이 link는 원본의 복사본이
+아니며, session 종료 전에 원래 pathname과 같은 inode임을 확인한 뒤 자동 제거된다. 다음
+명령은 잔여 link가 없음을 확인하는 데 쓸 수 있다.
+
+```bash
+find "/Users/mac/Documents/Dataset" -maxdepth 1 \
+  -name '.univariate_ts.db.exp417-pinned-*' -print
+```
+
 ```bash
 "/Users/mac/Documents/Time Series/.venv/bin/python" - <<'PY'
 from hashlib import sha256

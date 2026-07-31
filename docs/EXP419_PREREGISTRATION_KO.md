@@ -88,6 +88,13 @@ DB SHA-256은 worker session 시작 시 한 번, inode 안정성은 session 종�
 검증한다. SQL, decoding, 전처리, 모델, score, threshold, lane 및 checkpoint schema는
 변경하지 않는다.
 
+macOS에서 SQLite가 `/dev/fd/<descriptor>` URI를 다시 열 수 없는 경우에만, 이미
+`O_NOFOLLOW` descriptor로 SHA-256을 확인한 원본 inode의 임시 hard-link를 같은 Dataset
+directory에 만든다. SQLite는 이 link를 `mode=ro&immutable=1`로만 열고, connection
+종료 전에 원래 pathname과 link가 모두 같은 inode임을 다시 확인한 뒤 link를 제거한다.
+복사본·새 데이터·TEST metadata는 만들지 않으며, link-count/ctime만의 변화는 해당
+정리 동작의 정상 부작용으로 취급한다.
+
 ## TRAIN 전용 비용과 shard 계획
 
 정확한 길이 그룹에서 정상 series 수가 `n`, 길이가 `L`일 때 정수 비용은 `n * L * w`다.

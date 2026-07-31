@@ -16,6 +16,7 @@ import subprocess
 import sys
 from typing import Any
 from urllib.parse import quote
+from uuid import uuid4
 
 import numpy as np
 
@@ -540,10 +541,68 @@ def _open_read_only(database: Path | int) -> sqlite3.Connection:
             uri = f"file:{quote(str(descriptor_path), safe='/')}?mode=ro&immutable=1"
         else:
             resolved = Path(database).resolve(strict=True)
-            uri = f"file:{quote(str(resolved), safe='/')}?mode=ro"
+            uri = f"file:{quote(str(resolved), safe='/')}?mode=ro&immutable=1"
         return sqlite3.connect(uri, uri=True)
     except (OSError, sqlite3.Error) as error:
         raise ValueError(f"Exp417 cannot open read-only database: {database}") from error
+
+
+def _macos_pinned_sqlite_path(path: Path, before: os.stat_result) -> Path:
+    """Create one private hard link that names the descriptor's exact inode."""
+    source = Path(path)
+    for _ in range(8):
+        candidate = source.parent / f".{source.name}.exp417-pinned-{uuid4().hex}"
+        try:
+            os.link(source, candidate, follow_symlinks=False)
+        except FileExistsError:
+            continue
+        except OSError as error:
+            raise ValueError("Exp417 cannot pin macOS SQLite source") from error
+        try:
+            linked = os.stat(candidate, follow_symlinks=False)
+            if (
+                not stat.S_ISREG(linked.st_mode)
+                or (linked.st_dev, linked.st_ino) != (before.st_dev, before.st_ino)
+            ):
+                raise ValueError("Exp417 database changed before SQLite connect")
+            return candidate
+        except BaseException:
+            try:
+                os.unlink(candidate)
+            except OSError:
+                pass
+            raise
+    raise ValueError("Exp417 cannot allocate macOS SQLite pin")
+
+
+def _remove_macos_pinned_sqlite_path(path: Path, before: os.stat_result) -> None:
+    """Remove only the private hard link if it still names the pinned inode."""
+    try:
+        linked = os.stat(path, follow_symlinks=False)
+    except OSError as error:
+        raise ValueError("Exp417 macOS SQLite pin disappeared") from error
+    if (
+        not stat.S_ISREG(linked.st_mode)
+        or (linked.st_dev, linked.st_ino) != (before.st_dev, before.st_ino)
+    ):
+        raise ValueError("Exp417 macOS SQLite pin changed before cleanup")
+    try:
+        os.unlink(path)
+    except OSError as error:
+        raise ValueError("Exp417 cannot remove macOS SQLite pin") from error
+
+
+def _verify_macos_database_path(path: Path, before: os.stat_result) -> None:
+    """The published pathname must still name the descriptor's frozen inode."""
+    try:
+        named = os.stat(path, follow_symlinks=False)
+    except OSError as error:
+        raise ValueError("Exp417 database inode changed during query") from error
+    if (
+        not stat.S_ISREG(named.st_mode)
+        or (named.st_dev, named.st_ino) != (before.st_dev, before.st_ino)
+    ):
+        raise ValueError("Exp417 database inode changed during query")
 
 
 @contextmanager
@@ -557,6 +616,7 @@ def verified_read_only_connection(
     except OSError as error:
         raise ValueError(f"Exp417 cannot open pinned database: {path}") from error
     connection: sqlite3.Connection | None = None
+    pinned_path: Path | None = None
     try:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode) or before.st_nlink < 1:
@@ -564,16 +624,34 @@ def verified_read_only_connection(
         actual = _sha256_descriptor(descriptor)
         if actual != expected_sha256:
             raise ValueError("Exp417 database SHA256 mismatch")
-        connection = _open_read_only(descriptor)
-        yield connection
-        after = os.fstat(descriptor)
-        if _stable_inode_metadata(before) != _stable_inode_metadata(after):
-            raise ValueError("Exp417 database inode changed during query")
+        source: Path | int = descriptor
+        if sys.platform == "darwin":
+            pinned_path = _macos_pinned_sqlite_path(path, before)
+            source = pinned_path
+        try:
+            connection = _open_read_only(source)
+            yield connection
+        finally:
+            try:
+                if connection is not None:
+                    connection.close()
+                    connection = None
+            finally:
+                if pinned_path is not None:
+                    _verify_macos_database_path(path, before)
+                if pinned_path is not None:
+                    _remove_macos_pinned_sqlite_path(pinned_path, before)
+                    pinned_path = None
+                after = os.fstat(descriptor)
+                if _stable_database_metadata(before) != _stable_database_metadata(after):
+                    raise ValueError("Exp417 database inode changed during query")
     except OSError as error:
         raise ValueError("Exp417 pinned database verification failed") from error
     finally:
         if connection is not None:
             connection.close()
+        if pinned_path is not None:
+            _remove_macos_pinned_sqlite_path(pinned_path, before)
         os.close(descriptor)
 
 
@@ -605,6 +683,19 @@ def _stable_inode_metadata(metadata: os.stat_result) -> tuple[int, ...]:
         metadata.st_mtime_ns,
         metadata.st_ctime_ns,
     )
+
+
+def _stable_database_metadata(metadata: os.stat_result) -> tuple[int, ...]:
+    """Ignore only the hard-link bookkeeping fields changed by macOS pin cleanup."""
+    if sys.platform == "darwin":
+        return (
+            metadata.st_dev,
+            metadata.st_ino,
+            metadata.st_mode,
+            metadata.st_size,
+            metadata.st_mtime_ns,
+        )
+    return _stable_inode_metadata(metadata)
 
 
 def _validate_context_dataset(dataset: str, context: FrozenRunContext) -> None:

@@ -14,6 +14,7 @@ import sqlite3
 import tempfile
 import unittest
 from unittest.mock import patch
+from urllib.parse import unquote
 
 import numpy as np
 
@@ -524,8 +525,8 @@ class InputBoundaryTests(unittest.TestCase):
         self.assertTrue(train_selects)
         self.assertTrue(any("label = '0'" in sql for sql in train_selects))
 
-    def test_database_query_is_bound_to_verified_inode_across_path_aba(self) -> None:
-        """A foreign SQLite inode visible only during connect must never supply rows."""
+    def test_macos_hard_link_rejects_path_aba_before_sqlite_connect(self) -> None:
+        """A swapped source path must fail before it can supply SQLite rows."""
         malicious = self.root / "malicious.sqlite"
         shutil.copy2(self.database, malicious)
         with closing(sqlite3.connect(malicious)) as connection, connection:
@@ -537,47 +538,55 @@ class InputBoundaryTests(unittest.TestCase):
 
         with self.synthetic_config() as config:
             context = self._context(config)
-            original_open = inputs._open_read_only
+            original_link = os.link
 
-            def aba_connect(source: object):
-                if isinstance(source, Path):
+            def aba_link(source: object, target: object, *args: object, **kwargs: object):
+                if Path(source) == self.database:
                     trusted = self.root / "trusted.sqlite"
                     os.replace(self.database, trusted)
                     os.replace(malicious, self.database)
-                    connection = original_open(self.database)
-                    os.replace(self.database, malicious)
-                    os.replace(trusted, self.database)
-                    return connection
-                return original_open(source)
+                    try:
+                        return original_link(source, target, *args, **kwargs)
+                    finally:
+                        os.replace(self.database, malicious)
+                        os.replace(trusted, self.database)
+                return original_link(source, target, *args, **kwargs)
 
-            with patch.object(inputs, "_open_read_only", side_effect=aba_connect):
-                bundle = inputs.load_raw_train_values(
-                    self.database, "A", context
-                )
+            with patch.object(inputs.sys, "platform", "darwin"), patch.object(
+                inputs.os, "link", side_effect=aba_link
+            ):
+                with self.assertRaisesRegex(ValueError, "changed before SQLite connect"):
+                    inputs.load_raw_train_values(self.database, "A", context)
 
-        self.assertEqual(bundle.series[0].values, (4.0, 5.5))
-
-    def test_sqlite_queries_use_an_immutable_descriptor_uri(self) -> None:
-        """A pathname mode=ro URI is not an inode-bound immutable snapshot."""
+    def test_macos_connection_uses_cleaned_hard_link_to_verified_inode(self) -> None:
+        """macOS must avoid the blocking /dev/fd SQLite source without ABA drift."""
         with self.synthetic_config() as config:
             context = self._context(config)
             uris: list[str] = []
+            source_inodes: list[int] = []
             real_connect = sqlite3.connect
 
             def observe(database: object, *args: object, **kwargs: object):
                 uris.append(str(database))
+                source = Path(
+                    unquote(str(database).removeprefix("file:").split("?", 1)[0])
+                )
+                source_inodes.append(os.stat(source).st_ino)
                 return real_connect(database, *args, **kwargs)
 
-            with patch.object(inputs.sqlite3, "connect", side_effect=observe):
+            with patch.object(inputs.sys, "platform", "darwin"), patch.object(
+                inputs.sqlite3, "connect", side_effect=observe
+            ):
                 inputs.load_raw_train_values(self.database, "A", context)
 
-        self.assertTrue(
-            any(
-                "immutable=1" in uri
-                and ("/dev/fd/" in uri or "/proc/self/fd/" in uri)
-                for uri in uris
-            )
-        )
+        self.assertEqual(len(uris), 1)
+        uri = uris[0]
+        source_path = Path(unquote(uri.removeprefix("file:").split("?", 1)[0]))
+        self.assertIn("immutable=1", uri)
+        self.assertNotIn("/dev/fd/", uri)
+        self.assertNotIn("/proc/self/fd/", uri)
+        self.assertEqual(source_inodes, [os.stat(self.database).st_ino])
+        self.assertFalse(source_path.exists())
 
     def test_test_loader_is_values_only_and_requires_real_train_contract_first(self) -> None:
         """Selecting a TEST label or resolving an input before the contract is a boundary breach."""
