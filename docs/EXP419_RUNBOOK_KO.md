@@ -359,17 +359,22 @@ RUNLOG="/Users/mac/Documents/Dataset/exp419_benchmark_${RUNSTAMP}.log"
 RUNPID="${RUNLOG%.log}.pid"
 RUNEXIT="${RUNLOG%.log}.exit"
 RUNJOB="${RUNLOG%.log}.job"
+PROJECT_ROOT="/Users/mac/Documents/Time Series/.worktrees/exp419-runtime-recovery"
 launchctl submit -l "com.codex.exp419.benchmark.${RUNSTAMP}" \
   -o "$RUNLOG" -e "$RUNLOG" -- /bin/zsh -c '
-    runpid="$1"; runexit="$2"; shift 2
+    runpid="$1"; runexit="$2"; project_root="$3"; shift 3
     printf "%s\n" "$$" > "$runpid"
-    "$@"
-    status="$?"
+    if cd "$project_root"; then
+      "$@"
+      status="$?"
+    else
+      status=70
+    fi
     printf "%s\n" "$status" > "$runexit"
     exit "$status"
-  ' zsh "$RUNPID" "$RUNEXIT" \
+  ' zsh "$RUNPID" "$RUNEXIT" "$PROJECT_ROOT" \
   "/Users/mac/Documents/Time Series/.venv/bin/python" \
-  scratch/benchmark_exp419_deterministic_cpu_parallel.py \
+  "$PROJECT_ROOT/scratch/benchmark_exp419_deterministic_cpu_parallel.py" \
   --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
   --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
   --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
@@ -511,17 +516,22 @@ RUNLOG="/Users/mac/Documents/Dataset/exp419_official_${RUNSTAMP}.log"
 RUNPID="${RUNLOG%.log}.pid"
 RUNEXIT="${RUNLOG%.log}.exit"
 RUNJOB="${RUNLOG%.log}.job"
+PROJECT_ROOT="/Users/mac/Documents/Time Series/.worktrees/exp419-runtime-recovery"
 launchctl submit -l "com.codex.exp419.official.${RUNSTAMP}" \
   -o "$RUNLOG" -e "$RUNLOG" -- /bin/zsh -c '
-    runpid="$1"; runexit="$2"; shift 2
+    runpid="$1"; runexit="$2"; project_root="$3"; shift 3
     printf "%s\n" "$$" > "$runpid"
-    "$@"
-    status="$?"
+    if cd "$project_root"; then
+      "$@"
+      status="$?"
+    else
+      status=70
+    fi
     printf "%s\n" "$status" > "$runexit"
     exit "$status"
-  ' zsh "$RUNPID" "$RUNEXIT" \
+  ' zsh "$RUNPID" "$RUNEXIT" "$PROJECT_ROOT" \
   "/Users/mac/Documents/Time Series/.venv/bin/python" \
-  scratch/run_exp419_deterministic_cpu_parallel.py \
+  "$PROJECT_ROOT/scratch/run_exp419_deterministic_cpu_parallel.py" \
   --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
   --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
   --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
