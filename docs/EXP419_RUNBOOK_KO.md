@@ -358,7 +358,7 @@ RUNSTAMP="$(date +%Y%m%d-%H%M%S)"
 RUNLOG="/Users/mac/Documents/Dataset/exp419_benchmark_${RUNSTAMP}.log"
 RUNPID="${RUNLOG%.log}.pid"
 RUNEXIT="${RUNLOG%.log}.exit"
-(
+RUNEXIT="$RUNEXIT" nohup zsh -c '
   "/Users/mac/Documents/Time Series/.venv/bin/python" scratch/benchmark_exp419_deterministic_cpu_parallel.py \
     --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
     --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
@@ -366,12 +366,15 @@ RUNEXIT="${RUNLOG%.log}.exit"
     --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
     --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
     --benchmark-root "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced"
-  printf '%s\n' "$?" > "$RUNEXIT"
-) > "$RUNLOG" 2>&1 &
+  status="$?"
+  printf "%s\\n" "$status" > "$RUNEXIT"
+  exit "$status"
+' > "$RUNLOG" 2>&1 < /dev/null &
 printf '%s\n' "$!" > "$RUNPID"
 ```
 
-위 명령은 parent stdout/stderr, PID, exit code를 모두 local Dataset directory에 남긴다.
+위 명령은 `nohup`으로 호출 셸 종료와 분리되며 parent stdout/stderr, PID, exit code를
+모두 local Dataset directory에 남긴다.
 자동 감시는 만들지 않는다. benchmark worker별 safe JSONL은 trial root 아래
 `workers-<n>/worker-<shard>.status/worker-<shard>.runtime.jsonl`에, 최신 snapshot은
 같은 directory의 `exp419_worker_status.json`에 생긴다. JSONL에는 run ID, 시간, PID,
@@ -501,7 +504,7 @@ RUNSTAMP="$(date +%Y%m%d-%H%M%S)"
 RUNLOG="/Users/mac/Documents/Dataset/exp419_official_${RUNSTAMP}.log"
 RUNPID="${RUNLOG%.log}.pid"
 RUNEXIT="${RUNLOG%.log}.exit"
-(
+RUNEXIT="$RUNEXIT" nohup zsh -c '
   "/Users/mac/Documents/Time Series/.venv/bin/python" scratch/run_exp419_deterministic_cpu_parallel.py \
     --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
     --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
@@ -511,8 +514,10 @@ RUNEXIT="${RUNLOG%.log}.exit"
     --benchmark-evidence "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json" \
     --checkpoint-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel.checkpoint" \
     --output-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_official"
-  printf '%s\n' "$?" > "$RUNEXIT"
-) > "$RUNLOG" 2>&1 &
+  status="$?"
+  printf "%s\\n" "$status" > "$RUNEXIT"
+  exit "$status"
+' > "$RUNLOG" 2>&1 < /dev/null &
 printf '%s\n' "$!" > "$RUNPID"
 ```
 
