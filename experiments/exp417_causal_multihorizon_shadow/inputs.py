@@ -230,7 +230,25 @@ def load_raw_train_values(
 ) -> RawTrainDataset:
     """Load only normal TRAIN raw float32 values without transformations."""
     _validate_context_dataset(dataset, context)
-    series = _load_values(database, dataset, context, _TRAIN_VALUES_SQL, "TRAIN")
+    with verified_read_only_connection(database, context.database_sha256) as connection:
+        return load_raw_train_values_from_connection(
+            connection,
+            dataset,
+            database_sha256=context.database_sha256,
+            datasets=context.datasets,
+        )
+
+
+def load_raw_train_values_from_connection(
+    connection: sqlite3.Connection,
+    dataset: str,
+    *,
+    database_sha256: str,
+    datasets: tuple[str, ...],
+) -> RawTrainDataset:
+    """Decode one normal-TRAIN dataset through an already verified connection."""
+    _validate_frozen_population_dataset(dataset, database_sha256, datasets)
+    series = _load_values_from_connection(connection, dataset, _TRAIN_VALUES_SQL, "TRAIN")
     return RawTrainDataset(dataset=dataset, series=series)
 
 
@@ -246,7 +264,25 @@ def load_raw_test_values(
     _validate_context_dataset(dataset, context)
     if frozen_train_contract.dataset != dataset:
         raise ValueError("frozen_train_contract dataset does not match requested TEST dataset")
-    series = _load_values(database, dataset, context, _TEST_VALUES_SQL, "TEST")
+    with verified_read_only_connection(database, context.database_sha256) as connection:
+        return load_raw_test_values_from_connection(
+            connection, dataset, frozen_train_contract, context
+        )
+
+
+def load_raw_test_values_from_connection(
+    connection: sqlite3.Connection,
+    dataset: str,
+    frozen_train_contract: FrozenTrainContract,
+    context: FrozenRunContext,
+) -> RawTestDataset:
+    """Decode TEST values through an already verified connection."""
+    if not isinstance(frozen_train_contract, FrozenTrainContract):
+        raise ValueError("frozen_train_contract must be a FrozenTrainContract")
+    _validate_context_dataset(dataset, context)
+    if frozen_train_contract.dataset != dataset:
+        raise ValueError("frozen_train_contract dataset does not match requested TEST dataset")
+    series = _load_values_from_connection(connection, dataset, _TEST_VALUES_SQL, "TEST")
     if tuple((item.instance_index, len(item.values)) for item in series) != context.test_identity_manifest[dataset]:
         raise ValueError("TEST values do not match the frozen identity manifest")
     return RawTestDataset(dataset=dataset, series=series)
@@ -492,10 +528,10 @@ def _open_read_only(database: Path | int) -> sqlite3.Connection:
 
 
 @contextmanager
-def _verified_database_connection(
+def verified_read_only_connection(
     database: Path, expected_sha256: str
 ):
-    """Yield an immutable SQLite connection bound to the hashed source inode."""
+    """Yield one immutable SQLite connection bound to a pinned source inode."""
     path = Path(database)
     try:
         descriptor = os.open(path, _INPUT_OPEN_FLAGS)
@@ -520,6 +556,15 @@ def _verified_database_connection(
         if connection is not None:
             connection.close()
         os.close(descriptor)
+
+
+@contextmanager
+def _verified_database_connection(
+    database: Path, expected_sha256: str
+):
+    """Backward-compatible private alias for one-use verified connections."""
+    with verified_read_only_connection(database, expected_sha256) as connection:
+        yield connection
 
 
 def _sha256_descriptor(descriptor: int) -> str:
@@ -550,6 +595,25 @@ def _validate_context_dataset(dataset: str, context: FrozenRunContext) -> None:
         raise ValueError("dataset is not in the frozen run context")
 
 
+def _validate_frozen_population_dataset(
+    dataset: str,
+    database_sha256: str,
+    datasets: tuple[str, ...],
+) -> None:
+    if not isinstance(database_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", database_sha256) is None:
+        raise ValueError("database SHA256 is invalid")
+    if (
+        not isinstance(datasets, tuple)
+        or not datasets
+        or any(not isinstance(value, str) or not value.strip() for value in datasets)
+        or datasets != tuple(sorted(datasets))
+        or len(datasets) != len(set(datasets))
+    ):
+        raise ValueError("frozen dataset population is invalid")
+    if not isinstance(dataset, str) or not dataset.strip() or dataset not in datasets:
+        raise ValueError("dataset is not in the frozen population")
+
+
 def _load_values(
     database: Path,
     dataset: str,
@@ -559,10 +623,21 @@ def _load_values(
 ) -> tuple[RawSeries, ...]:
     path = Path(database)
     with _verified_database_connection(path, context.database_sha256) as connection:
-        try:
-            rows = connection.execute(query, (dataset,)).fetchall()
-        except sqlite3.Error as error:
-            raise ValueError(f"Exp417 {split} values query failed") from error
+        return _load_values_from_connection(connection, dataset, query, split)
+
+
+def _load_values_from_connection(
+    connection: sqlite3.Connection,
+    dataset: str,
+    query: str,
+    split: str,
+) -> tuple[RawSeries, ...]:
+    if not isinstance(connection, sqlite3.Connection):
+        raise ValueError("connection must be a SQLite connection")
+    try:
+        rows = connection.execute(query, (dataset,)).fetchall()
+    except sqlite3.Error as error:
+        raise ValueError(f"Exp417 {split} values query failed") from error
     if not rows:
         raise ValueError(f"Exp417 {split} values are empty for dataset={dataset}")
     decoded = tuple(_decode_raw_series(dataset, split, row) for row in rows)

@@ -168,6 +168,48 @@ class InputBoundaryTests(unittest.TestCase):
             config=config,
         )
 
+    def test_verified_connection_loads_multiple_train_datasets_with_one_source_digest(self) -> None:
+        """A worker session must not rehash the pinned database per dataset."""
+        with self.synthetic_config() as config, patch.object(
+            inputs, "_sha256_descriptor", wraps=inputs._sha256_descriptor
+        ) as digest:
+            with inputs.verified_read_only_connection(
+                self.database, config.database_sha256
+            ) as connection:
+                first = inputs.load_raw_train_values_from_connection(
+                    connection,
+                    "A",
+                    database_sha256=config.database_sha256,
+                    datasets=("A", "B"),
+                )
+                second = inputs.load_raw_train_values_from_connection(
+                    connection,
+                    "B",
+                    database_sha256=config.database_sha256,
+                    datasets=("A", "B"),
+                )
+        self.assertEqual(first.dataset, "A")
+        self.assertEqual(second.dataset, "B")
+        self.assertEqual(digest.call_count, 1)
+
+    def test_verified_connection_rejects_database_inode_replacement_on_close(self) -> None:
+        """A query session cannot accept an ABA replacement of its source DB."""
+        replacement = self.root / "replacement.sqlite"
+        with self.synthetic_config() as config, self.assertRaisesRegex(
+            ValueError, "inode changed"
+        ):
+            with inputs.verified_read_only_connection(
+                self.database, config.database_sha256
+            ) as connection:
+                inputs.load_raw_train_values_from_connection(
+                    connection,
+                    "A",
+                    database_sha256=config.database_sha256,
+                    datasets=("A", "B"),
+                )
+                shutil.copyfile(self.database, replacement)
+                os.replace(replacement, self.database)
+
     def _train_contract(self) -> FrozenTrainContract:
         return FrozenTrainContract(
             dataset="A",
