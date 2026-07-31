@@ -69,6 +69,20 @@ identity mismatch, non-read-only connection, worker failure, or context
 reconstruction attempt is fail-closed. Old partial Exp417 checkpoints and the
 terminated Exp419 diagnostic root remain untouched and cannot be reused.
 
+### 5. Local progress log
+
+Each benchmark and official run creates a local, append-only runtime log next
+to its checkpoint status sidecar. It records the run identifier, parent and
+worker PIDs, shard assignment, current dataset, phase, seed/fold when known,
+completed count, elapsed time, and a one-line safe error. The same information
+continues to be atomically available in each worker's JSON status snapshot.
+
+Logs must never contain raw series, feature values, residuals, scores,
+predictions, TEST identities or lengths, labels, anomaly locations, confusion
+counts, or performance metrics. They are observation-only: no polling loop,
+monitor, keepalive, scheduling, resume, publication, or model decision may
+read them.
+
 ## Data and policy boundaries
 
 - Benchmark selection and smoke access normal TRAIN metadata and values only.
@@ -99,6 +113,8 @@ terminated Exp419 diagnostic root remain untouched and cannot be reused.
 5. Update the Exp419 preregistration, runbook, source manifest, and all
    Exp419/Exp417/Exp414/Exp416 regression suites. Run the corrected 19-dataset
    bounded benchmark before asking for a fresh official 1,117-dataset approval.
+6. A log-schema test proves normal progress and failure records contain only
+   the safe fields above, and rejects raw/test/prediction/label/metric fields.
 
 ## Non-goals
 
