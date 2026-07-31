@@ -9,7 +9,7 @@ reachable until a concrete TRAIN contract has been frozen.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from hashlib import sha256
 from math import isfinite
 from pathlib import Path
@@ -139,6 +139,21 @@ class RunnerRuntime:
             ),
             score=_production_score_test,
         )
+
+    @classmethod
+    def production_with_train_models(
+        cls,
+        resources: RunnerResources | None,
+        train_models: Callable[[Sequence[ProcessedGroup]], "TrainModelEvidence"],
+    ) -> "RunnerRuntime":
+        """Return production stages with only the TRAIN-model stage replaced.
+
+        Exp419 uses this narrow injection seam to retain the existing input
+        verification, TRAIN-to-TEST barrier, scoring, and publication paths.
+        """
+        if not callable(train_models):
+            raise ValueError("train_models must be callable")
+        return replace(cls.production(resources), train_models=train_models)
 
 
 @dataclass(frozen=True)
