@@ -358,23 +358,29 @@ RUNSTAMP="$(date +%Y%m%d-%H%M%S)"
 RUNLOG="/Users/mac/Documents/Dataset/exp419_benchmark_${RUNSTAMP}.log"
 RUNPID="${RUNLOG%.log}.pid"
 RUNEXIT="${RUNLOG%.log}.exit"
-RUNEXIT="$RUNEXIT" nohup zsh -c '
-  "/Users/mac/Documents/Time Series/.venv/bin/python" scratch/benchmark_exp419_deterministic_cpu_parallel.py \
-    --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
-    --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
-    --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
-    --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
-    --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
-    --benchmark-root "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced"
-  status="$?"
-  printf "%s\\n" "$status" > "$RUNEXIT"
-  exit "$status"
-' > "$RUNLOG" 2>&1 < /dev/null &
-printf '%s\n' "$!" > "$RUNPID"
+RUNJOB="${RUNLOG%.log}.job"
+launchctl submit -l "com.codex.exp419.benchmark.${RUNSTAMP}" \
+  -o "$RUNLOG" -e "$RUNLOG" -- /bin/zsh -c '
+    runpid="$1"; runexit="$2"; shift 2
+    printf "%s\n" "$$" > "$runpid"
+    "$@"
+    status="$?"
+    printf "%s\n" "$status" > "$runexit"
+    exit "$status"
+  ' zsh "$RUNPID" "$RUNEXIT" \
+  "/Users/mac/Documents/Time Series/.venv/bin/python" \
+  scratch/benchmark_exp419_deterministic_cpu_parallel.py \
+  --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
+  --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
+  --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
+  --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
+  --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
+  --benchmark-root "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced"
+printf '%s\n' "com.codex.exp419.benchmark.${RUNSTAMP}" > "$RUNJOB"
 ```
 
-위 명령은 `nohup`으로 호출 셸 종료와 분리되며 parent stdout/stderr, PID, exit code를
-모두 local Dataset directory에 남긴다.
+위 명령은 macOS `launchd`로 호출 셸 종료와 분리되며 parent stdout/stderr, PID, exit
+code와 job label을 모두 local Dataset directory에 남긴다.
 자동 감시는 만들지 않는다. benchmark worker별 safe JSONL은 trial root 아래
 `workers-<n>/worker-<shard>.status/worker-<shard>.runtime.jsonl`에, 최신 snapshot은
 같은 directory의 `exp419_worker_status.json`에 생긴다. JSONL에는 run ID, 시간, PID,
@@ -504,21 +510,27 @@ RUNSTAMP="$(date +%Y%m%d-%H%M%S)"
 RUNLOG="/Users/mac/Documents/Dataset/exp419_official_${RUNSTAMP}.log"
 RUNPID="${RUNLOG%.log}.pid"
 RUNEXIT="${RUNLOG%.log}.exit"
-RUNEXIT="$RUNEXIT" nohup zsh -c '
-  "/Users/mac/Documents/Time Series/.venv/bin/python" scratch/run_exp419_deterministic_cpu_parallel.py \
-    --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
-    --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
-    --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
-    --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
-    --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
-    --benchmark-evidence "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json" \
-    --checkpoint-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel.checkpoint" \
-    --output-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_official"
-  status="$?"
-  printf "%s\\n" "$status" > "$RUNEXIT"
-  exit "$status"
-' > "$RUNLOG" 2>&1 < /dev/null &
-printf '%s\n' "$!" > "$RUNPID"
+RUNJOB="${RUNLOG%.log}.job"
+launchctl submit -l "com.codex.exp419.official.${RUNSTAMP}" \
+  -o "$RUNLOG" -e "$RUNLOG" -- /bin/zsh -c '
+    runpid="$1"; runexit="$2"; shift 2
+    printf "%s\n" "$$" > "$runpid"
+    "$@"
+    status="$?"
+    printf "%s\n" "$status" > "$runexit"
+    exit "$status"
+  ' zsh "$RUNPID" "$RUNEXIT" \
+  "/Users/mac/Documents/Time Series/.venv/bin/python" \
+  scratch/run_exp419_deterministic_cpu_parallel.py \
+  --database "/Users/mac/Documents/Dataset/univariate_ts.db" \
+  --exp291-prediction "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl" \
+  --exp291-manifest "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_prediction_manifest.json" \
+  --exp292-prediction "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl" \
+  --exp292-manifest "/Users/mac/Documents/Dataset/exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json" \
+  --benchmark-evidence "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_benchmark_balanced/EXP419_NON_OFFICIAL_RUNTIME_BENCHMARK.json" \
+  --checkpoint-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel.checkpoint" \
+  --output-dir "/Users/mac/Documents/Dataset/exp419_deterministic_cpu_parallel_official"
+printf '%s\n' "com.codex.exp419.official.${RUNSTAMP}" > "$RUNJOB"
 ```
 
 공식 순서는 정확히 clean Git → label guard → 입력 동결 → benchmark 검증
