@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from hashlib import sha256
 import multiprocessing
@@ -16,6 +17,8 @@ from types import MappingProxyType
 import unicodedata
 
 from .contracts import WorkerBootstrap, WorkerCompletion, WorkerSpec
+from .config import FROZEN_CONFIG, seed_workers_for_outer_workers
+from .worker_status import WorkerStatus, write_worker_status
 
 
 _THREAD_ENVIRONMENT = {
@@ -78,10 +81,99 @@ def _open_checkpoint_store(spec: WorkerSpec, provenance: object) -> object:
     )
 
 
-def _build_runtime(resources: object) -> object:
+def _build_runtime(
+    resources: object,
+    seed_workers: int,
+    on_stage: Callable[[str, int | None, int | None], None],
+) -> object:
+    """Keep all production stages except deterministic TRAIN seed fitting."""
+    from experiments.exp417_causal_multihorizon_shadow.backend import (
+        load_frozen_backend_audit,
+    )
     from experiments.exp417_causal_multihorizon_shadow.runner import RunnerRuntime
+    from .seed_parallel import train_models_seed_parallel
 
-    return RunnerRuntime.production(resources)
+    audit = load_frozen_backend_audit(resources.backend_audit_path)
+
+    def train_models(processed: object) -> object:
+        return train_models_seed_parallel(
+            processed,
+            audit,
+            seed_workers,
+            on_stage=lambda phase, _length, seed: on_stage(phase, seed, None),
+        )
+
+    base = RunnerRuntime.production_with_train_models(resources, train_models)
+
+    def load_train(dataset: str, context: object) -> object:
+        on_stage("train_loading", None, None)
+        return base.load_train(dataset, context)
+
+    def preprocess(train: object) -> object:
+        on_stage("preprocessing", None, None)
+        return base.preprocess(train)
+
+    def qualify(dataset: str, processed: object, models: object) -> object:
+        on_stage("qualification", None, None)
+        return base.qualify(dataset, processed, models)
+
+    def load_test(dataset: str, contract: object, context: object) -> object:
+        on_stage("test_scoring", None, None)
+        return base.load_test(dataset, contract, context)
+
+    return replace(
+        base,
+        load_train=load_train,
+        preprocess=preprocess,
+        qualify=qualify,
+        load_test=load_test,
+    )
+
+
+class _WorkerStatusReporter:
+    """Worker-local, visibility-only snapshots kept outside checkpoint roots."""
+
+    def __init__(self, spec: WorkerSpec) -> None:
+        self._spec = spec
+        self._dataset: str | None = None
+        self._dataset_index: int | None = None
+        self._completed = 0
+
+    def begin_dataset(self, dataset: str, dataset_index: int) -> None:
+        self._dataset = dataset
+        self._dataset_index = dataset_index
+        self.emit("dataset_starting")
+
+    def mark_checkpointed(self) -> None:
+        self._completed += 1
+        self.emit("checkpoint")
+
+    def emit(
+        self,
+        phase: str,
+        seed: int | None = None,
+        fold: int | None = None,
+        error: str = "",
+    ) -> None:
+        write_worker_status(
+            self._spec.status_root,
+            WorkerStatus(
+                shard_index=self._spec.shard.shard_index,
+                worker_pid=os.getpid(),
+                expected_datasets=len(self._spec.shard.datasets),
+                completed_datasets=self._completed,
+                phase=phase,
+                dataset=self._dataset,
+                dataset_index=self._dataset_index,
+                seed=seed,
+                fold=fold,
+                error=error,
+            ),
+        )
+
+
+def _status_error(error: BaseException) -> str:
+    return f"{type(error).__name__}: {error}".replace("\n", " ")[:512]
 
 
 def _run_dataset_checkpointed(
@@ -278,8 +370,11 @@ def _run_worker_pinned(
     thread_environment: Mapping[str, str],
 ) -> WorkerCompletion:
     checkpoint_store: object | None = None
+    status = _WorkerStatusReporter(spec)
     try:
+        status.emit("worker_starting")
         _validate_bootstrap_types(bootstrap)
+        status.emit("context")
         context = _freeze_context(bootstrap.resources, bootstrap.provenance)
         _validate_context_provenance(context, bootstrap.provenance)
         if _context_sha256(context) != bootstrap.expected_context_sha256:
@@ -293,8 +388,13 @@ def _run_worker_pinned(
             spec,
             bootstrap.provenance,
         )
-        runtime = _build_runtime(bootstrap.resources)
+        runtime = _build_runtime(
+            bootstrap.resources,
+            seed_workers_for_outer_workers(spec.outer_worker_count),
+            status.emit,
+        )
         for index, dataset in enumerate(spec.shard.datasets):
+            status.begin_dataset(dataset, index)
             result = _run_dataset_checkpointed(
                 dataset,
                 context,
@@ -311,10 +411,11 @@ def _run_worker_pinned(
                 raise ValueError(
                     "worker checkpoint digests do not match assigned prefix"
                 )
+            status.mark_checkpointed()
 
         digests = checkpoint_store.completed_record_digests()
         completed, frozen_digests = _completed_prefix(spec, digests)
-        return WorkerCompletion(
+        completion = WorkerCompletion(
             shard_index=spec.shard.shard_index,
             pid=os.getpid(),
             completed_datasets=completed,
@@ -325,7 +426,15 @@ def _run_worker_pinned(
             status="completed",
             error="",
         )
+        status.emit("worker_completed")
+        return completion
     except Exception as error:
+        try:
+            status.emit("worker_failed", error=_status_error(error))
+        except Exception as status_error:
+            error = RuntimeError(
+                f"worker status write failed: {_status_error(status_error)}"
+            )
         return _failed_completion(
             spec,
             started,
@@ -362,6 +471,176 @@ def _failed_completion(
     )
 
 
+def run_bounded_train_smoke_worker(
+    spec: WorkerSpec,
+    bootstrap: WorkerBootstrap,
+) -> WorkerCompletion:
+    """Run only the preregistered TRAIN-only scheduler smoke for one shard.
+
+    This does not create a checkpoint, prediction, score, candidate, metric,
+    or TEST-value object.  Its record digests bind only the fixed smoke layout
+    and dataset names so the benchmark cannot be mistaken for Exp417 evidence.
+    """
+    if not isinstance(spec, WorkerSpec):
+        raise ValueError("spec must be WorkerSpec")
+    if not isinstance(bootstrap, WorkerBootstrap):
+        raise ValueError("bootstrap must be WorkerBootstrap")
+    started = monotonic()
+    thread_environment: Mapping[str, str] = MappingProxyType({})
+    completed: list[str] = []
+    digests: dict[str, str] = {}
+    try:
+        thread_environment = pin_worker_threads()
+        _validate_bootstrap_types(bootstrap)
+        context = _freeze_context(bootstrap.resources, bootstrap.provenance)
+        _validate_context_provenance(context, bootstrap.provenance)
+        if _context_sha256(context) != bootstrap.expected_context_sha256:
+            raise ValueError(
+                "reconstructed worker context SHA-256 does not match bootstrap"
+            )
+        if any(dataset not in context.datasets for dataset in spec.shard.datasets):
+            raise ValueError("worker shard contains a dataset outside context")
+
+        from experiments.exp417_causal_multihorizon_shadow.inputs import (
+            load_raw_train_values,
+        )
+        from experiments.exp417_causal_multihorizon_shadow.preprocessing import (
+            preprocess_length_groups,
+        )
+
+        seed_workers = seed_workers_for_outer_workers(spec.outer_worker_count)
+        for dataset in spec.shard.datasets:
+            train = load_raw_train_values(
+                bootstrap.resources.database, dataset, context
+            )
+            processed = tuple(preprocess_length_groups(train))
+            _run_bounded_train_batches(
+                processed,
+                seed_workers,
+                FROZEN_CONFIG.bounded_train_batches_per_seed,
+            )
+            completed.append(dataset)
+            digests[dataset] = _bounded_smoke_digest(
+                dataset,
+                spec.outer_worker_count,
+                seed_workers,
+                FROZEN_CONFIG.bounded_train_batches_per_seed,
+                bootstrap.expected_context_sha256,
+            )
+        return WorkerCompletion(
+            shard_index=spec.shard.shard_index,
+            pid=os.getpid(),
+            completed_datasets=tuple(completed),
+            record_digests=digests,
+            elapsed_seconds=monotonic() - started,
+            peak_rss_bytes=_peak_rss_bytes(),
+            thread_environment=thread_environment,
+            status="completed",
+            error="",
+        )
+    except Exception as error:
+        return WorkerCompletion(
+            shard_index=spec.shard.shard_index,
+            pid=os.getpid(),
+            completed_datasets=tuple(completed),
+            record_digests=digests,
+            elapsed_seconds=monotonic() - started,
+            peak_rss_bytes=_peak_rss_bytes(),
+            thread_environment=thread_environment,
+            status="failed",
+            error=_status_error(error),
+        )
+
+
+def _run_bounded_train_batches(
+    processed: Sequence[object], seed_workers: int, batches_per_seed: int
+) -> None:
+    """Run exactly ``batches_per_seed`` optimizer batches for every model group."""
+    if type(batches_per_seed) is not int or batches_per_seed != 2:
+        raise ValueError("bounded TRAIN smoke batch limit must be frozen at two")
+    from experiments.exp417_causal_multihorizon_shadow.config import (
+        FROZEN_CONFIG as EXP417_CONFIG,
+    )
+    from experiments.exp417_causal_multihorizon_shadow.contracts import (
+        ProcessedGroup,
+    )
+    from experiments.exp417_causal_multihorizon_shadow.model import (
+        _materialize_network_from_state,
+        prepare_seed_initial_states,
+    )
+    from experiments.exp417_causal_multihorizon_shadow.preprocessing import (
+        build_horizons,
+    )
+    import numpy as np
+    import torch
+    from torch import nn
+
+    groups = tuple(processed)
+    if any(not isinstance(group, ProcessedGroup) for group in groups):
+        raise ValueError("bounded TRAIN smoke requires processed groups")
+    device = torch.device("cpu")
+    for group in groups:
+        if group.status not in {"candidate_eligible", "diagnostic_only"}:
+            continue
+        horizons = build_horizons(group.group.length)
+        states = prepare_seed_initial_states(horizons, device)
+
+        def fit(seed: int) -> None:
+            state = states[seed]
+            network = _materialize_network_from_state(state, horizons, device)
+            network.train()
+            optimizer = torch.optim.AdamW(network.parameters(), lr=1e-3)
+            loss_function = nn.HuberLoss()
+            indices = tuple(sorted(group.channels))
+            batch_size = min(32, len(indices))
+            for batch_number in range(batches_per_seed):
+                offset = (batch_number * batch_size) % len(indices)
+                selected = tuple(
+                    indices[(offset + position) % len(indices)]
+                    for position in range(batch_size)
+                )
+                inputs = torch.from_numpy(
+                    np.stack([group.channels[index] for index in selected]).copy()
+                ).to(device)
+                optimizer.zero_grad(set_to_none=True)
+                predictions = network(inputs)
+                loss = sum(
+                    loss_function(
+                        predictions[horizon][:, 0], inputs[:, 0, horizon:]
+                    )
+                    for horizon in horizons
+                )
+                if not torch.isfinite(loss):
+                    raise ValueError("bounded TRAIN smoke loss is non-finite")
+                loss.backward()
+                optimizer.step()
+
+        with ThreadPoolExecutor(max_workers=seed_workers) as pool:
+            futures = tuple(
+                pool.submit(fit, seed) for seed in EXP417_CONFIG.model_seeds
+            )
+            for future in futures:
+                future.result()
+
+
+def _bounded_smoke_digest(
+    dataset: str,
+    outer_workers: int,
+    seed_workers: int,
+    batches_per_seed: int,
+    context_sha256: str,
+) -> str:
+    payload = (
+        "exp419.bounded-train-smoke.v1",
+        dataset,
+        outer_workers,
+        seed_workers,
+        batches_per_seed,
+        context_sha256,
+    )
+    return sha256(repr(payload).encode("utf-8")).hexdigest()
+
+
 def _worker_process_entry(
     worker_function: Callable[[WorkerSpec, WorkerBootstrap], WorkerCompletion],
     spec: WorkerSpec,
@@ -373,9 +652,9 @@ def _worker_process_entry(
     thread_environment: Mapping[str, str] = MappingProxyType({})
     try:
         try:
-            thread_environment = pin_worker_threads()
             bootstrap = _bootstrap_from_payload(bootstrap_payload)
             if worker_function is run_worker:
+                thread_environment = pin_worker_threads()
                 completion = _run_worker_pinned(
                     spec,
                     bootstrap,
@@ -446,11 +725,12 @@ def _validated_specs(specs: Sequence[WorkerSpec]) -> tuple[WorkerSpec, ...]:
 
     roots = tuple(
         (
-            spec.checkpoint_root.resolve(strict=False),
-            _casefolded_path_parts(spec.checkpoint_root),
-            _filesystem_identity(spec.checkpoint_root),
+            root.resolve(strict=False),
+            _casefolded_path_parts(root),
+            _filesystem_identity(root),
         )
         for spec in frozen
+        for root in (spec.checkpoint_root, spec.status_root)
     )
     for index, (root, folded, identity) in enumerate(roots):
         for other, other_folded, other_identity in roots[index + 1 :]:
@@ -678,17 +958,19 @@ def _drain_worker_messages(
     return tuple(sorted(validated, key=lambda item: item.shard_index))
 
 
-def spawn_workers(
+def _spawn_workers_with(
     specs: Sequence[WorkerSpec],
     bootstrap: WorkerBootstrap,
+    worker_function: Callable[[WorkerSpec, WorkerBootstrap], WorkerCompletion],
 ) -> tuple[WorkerCompletion, ...]:
-    """Spawn one isolated process and result pipe per worker shard."""
+    """Spawn one isolated process and result pipe per typed worker function."""
     frozen_specs = _validated_specs(specs)
     if not isinstance(bootstrap, WorkerBootstrap):
         raise ValueError("bootstrap must be WorkerBootstrap")
+    if not callable(worker_function):
+        raise ValueError("worker_function must be callable")
 
     context = multiprocessing.get_context("spawn")
-    worker_function = run_worker
     bootstrap_payload = _bootstrap_payload(bootstrap)
     owned_workers: list[tuple[object, object, object]] = []
     try:
@@ -740,4 +1022,33 @@ def spawn_workers(
         _close_connections(receivers)
 
 
-__all__ = ["pin_worker_threads", "run_worker", "spawn_workers"]
+def spawn_workers(
+    specs: Sequence[WorkerSpec],
+    bootstrap: WorkerBootstrap,
+) -> tuple[WorkerCompletion, ...]:
+    """Spawn one isolated process and result pipe per official worker shard."""
+    return _spawn_workers_with(specs, bootstrap, run_worker)
+
+
+def spawn_bounded_train_smoke_workers(
+    specs: Sequence[WorkerSpec],
+    bootstrap: WorkerBootstrap,
+    *,
+    batches_per_seed: int,
+) -> tuple[WorkerCompletion, ...]:
+    """Spawn the non-official, two-batch TRAIN-only scheduler smoke."""
+    if (
+        type(batches_per_seed) is not int
+        or batches_per_seed != FROZEN_CONFIG.bounded_train_batches_per_seed
+    ):
+        raise ValueError("bounded TRAIN smoke batch limit is not frozen")
+    return _spawn_workers_with(specs, bootstrap, run_bounded_train_smoke_worker)
+
+
+__all__ = [
+    "pin_worker_threads",
+    "run_bounded_train_smoke_worker",
+    "run_worker",
+    "spawn_bounded_train_smoke_workers",
+    "spawn_workers",
+]

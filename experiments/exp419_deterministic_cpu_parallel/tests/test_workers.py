@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import json
 import multiprocessing
 from multiprocessing.connection import Connection
 import pickle
@@ -178,8 +179,12 @@ def _synthetic_open_store(
     return store
 
 
-def _synthetic_build_runtime(resources: RunnerResources) -> object:
-    del resources
+def _synthetic_build_runtime(
+    resources: RunnerResources,
+    seed_workers: int,
+    on_stage: object,
+) -> object:
+    del resources, seed_workers, on_stage
     return object()
 
 
@@ -628,6 +633,20 @@ class WorkerTests(unittest.TestCase):
             )
             self.assertEqual(completion.status, "completed")
             self.assertEqual(completion.error, "")
+
+            status = json.loads(
+                (spec.status_root / "exp419_worker_status.json").read_bytes()
+            )
+            self.assertEqual(status["phase"], "worker_completed")
+            self.assertEqual(status["dataset"], "alpha")
+            self.assertEqual(status["dataset_index"], 1)
+            self.assertEqual(status["completed_datasets"], 2)
+            self.assertEqual(status["seed"], None)
+            self.assertEqual(status["fold"], None)
+            self.assertEqual(status["error"], "")
+            self.assertTrue(
+                {"prediction", "score", "label", "metric"}.isdisjoint(status)
+            )
 
     def test_checkpoint_store_uses_canonical_universe_without_changing_run_order(
         self,

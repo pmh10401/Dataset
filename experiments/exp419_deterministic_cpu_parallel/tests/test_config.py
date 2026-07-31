@@ -12,6 +12,7 @@ from experiments.exp419_deterministic_cpu_parallel.config import (
     require_exact_benchmark_evidence_path,
     require_exact_benchmark_root,
     require_exact_trial_roots,
+    seed_workers_for_outer_workers,
 )
 from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG as EXP417_FROZEN_CONFIG
 
@@ -45,6 +46,22 @@ class Exp419ConfigTests(unittest.TestCase):
             replace(
                 FROZEN_CONFIG, corrected_benchmark_root="/tmp/benchmark"
             ).validate()
+
+    def test_outer_and_seed_worker_layout_is_exact_and_within_cpu_budget(self):
+        self.assertEqual(
+            FROZEN_CONFIG.seed_workers_by_outer_worker,
+            ((1, 1), (2, 3), (4, 3), (6, 2)),
+        )
+        for outer_workers, seed_workers in (
+            (1, 1), (2, 3), (4, 3), (6, 2)
+        ):
+            with self.subTest(outer_workers=outer_workers):
+                self.assertEqual(
+                    seed_workers_for_outer_workers(outer_workers), seed_workers
+                )
+                self.assertLessEqual(outer_workers * seed_workers, 12)
+        with self.assertRaisesRegex(ValueError, "outer worker"):
+            seed_workers_for_outer_workers(3)
 
     def test_exp417_scientific_config_database_and_lanes_are_bound(self):
         required_fields = {

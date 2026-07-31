@@ -59,7 +59,13 @@ alias는 benchmark 또는 공식 root를 만들거나 열기 전에 거부한다
 - MLX는 사용자의 명시적 결정으로 제외한다. MPS도 Exp417 벤치마크에서 CPU 대비
   `0.6709759390840965x`로 1.1x 채택 기준에 미달했으므로 제외한다. Numba는 이미
   감사된 결정론적 점수 집계 경로에만 제한한다.
-- 배치 추론과 데이터셋 내부 시드/fold 병렬화는 포함하지 않는다.
+- 데이터셋 내부에서는 서로 독립인 세 model seed만 병렬화한다. outer worker별
+  inner seed worker 수는 정확히 `1→1`, `2→3`, `4→3`, `6→2`이며 곱은 최대
+  12개 CPU slot이다. 한 CNN fit의 PyTorch/BLAS thread 수는 계속 1개다.
+- 각 length group의 seed 초기 모델 상태는 직렬로 고정한 뒤 복사본에서 학습한다.
+  직렬과 병렬 경로는 synthetic smoke에서 model SHA-256, stop epoch, loss history,
+  OOF residual byte와 candidate index가 모두 정확히 같아야 한다. 하나라도 다르면
+  fail-closed한다.
 
 부모 프로세스만 실행 상태와 정식 병합을 소유한다. worker는 모델 상태, 난수 생성기,
 SQLite 연결 또는 체크포인트 root를 공유하지 않고, 자신에게 배정된 데이터셋을 기록된
@@ -121,16 +127,24 @@ load·headroom과 canonical proof SHA-256을 timing 전에 고정한다. 모든 
 재정렬 또는 선택하지 않는다. `2.5x`는 실행 가능성 여유일 뿐이며 실제 wall-clock
 통과 gate `2.0x`는 바꾸지 않는다.
 
+runtime benchmark는 전체 Exp417 pipeline을 네 번 실행하지 않는다. 고정된 19개
+normal-TRAIN subset과 shard plan은 유지하되, 각 length group·각 frozen seed에서
+정확히 두 optimizer batch만 실행한다. TEST 값/label, prediction, score, candidate,
+qualification result, checkpoint는 만들거나 읽지 않는다. 이는 scheduler와 메모리
+gate만 검증하는 비공식 smoke다.
+
 선택 worker 수는 다음을 모두 만족해야 한다.
 
-1. 출력이 finite이고 설명되지 않은 worker fallback이 없다.
-2. 데이터셋 상태와 candidate-coordinate identity가 정확히 같다.
-3. canonical model hash가 정확히 같다.
-4. score-calibration 및 TRAIN-contract hash가 정확히 같다.
-5. qualification 및 lane-exclusion 결정이 정확히 같다.
-6. 누락, 중복, 추가 데이터셋이 없다.
-7. 총 peak resident memory가 32-GiB host의 80% 이하, 정확히 `27,487,790,694` bytes다.
-8. 동일 벤치마크 subset에서 1-worker Exp419 기준보다 wall-clock speedup이 최소 `2.0x`다.
+1. 두-batch TRAIN-only smoke가 finite이고 설명되지 않은 worker fallback이 없다.
+2. outer worker와 inner seed worker layout, batch limit, input proof, source manifest가
+   고정 계약과 정확히 맞고 TEST 값 사용 표시는 반드시 false다.
+3. 19개 subset이 누락·중복·추가 없이 완료된다.
+4. 총 peak resident memory가 32-GiB host의 80% 이하, 정확히 `27,487,790,694` bytes다.
+5. 동일 subset에서 1-worker 기준보다 wall-clock speedup이 최소 `2.0x`다.
+
+이 smoke는 과학 출력 동등성을 대체하지 않는다. 공식 1,117개 실행에서는 각 dataset의
+checkpoint model hash, calibration, TRAIN contract와 canonical digest가 기존 Exp417
+계약에 맞는지 계속 fail-closed 검증한다.
 
 통과한 4-worker와 6-worker 후보 중 가장 빠른 worker 수를 선택한다. 두 후보가 모두
 실패하면 `no_qualified_parallel_runtime`을 기록하며 전체 모집단 실행은 승인되지 않는다.
@@ -155,10 +169,14 @@ worker 실패, 데이터셋 terminal failure, corrupt checkpoint, timeout은 모
 자동 polling, monitor, cron 또는 keepalive는 만들지 않는다. 장시간 실행을 시작한 뒤에는
 사용자가 요청한 시점에만 상태를 한 번 확인한다.
 
+각 official worker는 checkpoint root와 분리된 local sidecar에 원자적으로 교체되는
+`exp419_worker_status.json`을 남긴다. 이 파일에는 shard/PID, 현재 dataset·순번,
+완료 수, phase, seed/fold, 안전한 한 줄 오류만 담는다. raw series, score,
+prediction, TEST label·위치·metric은 절대 포함하지 않으며 재개 또는 publication
+evidence로 사용하지 않는다.
+
 Exp419 패키지는 동결된 TEST-label artifact를 import, open, hash, stat, query 또는 name할
-수 없다. Exp420은 성공적으로 동결된 Exp419 prediction에 대한 retrospective TEST-label
-감사로 예약한다. Exp418은 원 Exp417 계약에서 prediction이 완성될 경우를 위해 계속
-예약한다.
+수 없다. Exp418은 원 Exp417 계약에서 prediction이 완성될 경우를 위해 계속 예약한다.
 
 ## 전체 실행 승인
 

@@ -40,6 +40,7 @@ from experiments.exp419_deterministic_cpu_parallel.config import (
     require_exact_benchmark_evidence_path,
     require_exact_benchmark_root,
     require_exact_trial_roots,
+    seed_workers_for_outer_workers,
 )
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
     DatasetCost,
@@ -62,7 +63,9 @@ from experiments.exp419_deterministic_cpu_parallel.planner import (
 from experiments.exp419_deterministic_cpu_parallel.contracts import (
     TrainLengthGroupMeta,
 )
-from experiments.exp419_deterministic_cpu_parallel.workers import spawn_workers
+from experiments.exp419_deterministic_cpu_parallel.workers import (
+    spawn_bounded_train_smoke_workers,
+)
 from scratch.run_exp417_causal_multihorizon_shadow import (
     _backend_audit_path,
     _provenance,
@@ -585,6 +588,10 @@ class TrialRuntimeMeasurement:
     worker_utilization: tuple[WorkerUtilization, ...]
     scientific_evidence_sha256: str
     source_manifest_sha256: str
+    seed_workers: int = 1
+    batches_per_seed: int = 2
+    input_proof_sha256: str = "0" * 64
+    test_values_loaded: bool = False
     telemetry_sha256: str = ""
     evidence_sha256: str = ""
 
@@ -651,9 +658,23 @@ class TrialRuntimeMeasurement:
         source_manifest = _sha256_text(
             self.source_manifest_sha256, "source manifest"
         )
+        if type(self.seed_workers) is not int or self.seed_workers < 1:
+            raise ValueError("runtime seed worker count is invalid")
+        if (
+            type(self.batches_per_seed) is not int
+            or self.batches_per_seed != FROZEN_CONFIG.bounded_train_batches_per_seed
+        ):
+            raise ValueError("runtime bounded batch limit is not frozen")
+        input_proof = _sha256_text(self.input_proof_sha256, "input proof")
+        if self.test_values_loaded is not False:
+            raise ValueError("runtime smoke must not load TEST values")
         telemetry_payload = {
+            "batches_per_seed": self.batches_per_seed,
+            "input_proof_sha256": input_proof,
             "process_cpu_seconds": self.process_cpu_seconds,
             "process_cpu_utilization": self.process_cpu_utilization,
+            "seed_workers": self.seed_workers,
+            "test_values_loaded": self.test_values_loaded,
             "wall_seconds": self.wall_seconds,
             "worker_count": self.worker_count,
             "worker_utilization": [
@@ -675,6 +696,7 @@ class TrialRuntimeMeasurement:
         if self.evidence_sha256 and self.evidence_sha256 != evidence:
             raise ValueError("runtime evidence digest mismatch")
         object.__setattr__(self, "worker_utilization", workers)
+        object.__setattr__(self, "input_proof_sha256", input_proof)
         object.__setattr__(self, "telemetry_sha256", telemetry)
         object.__setattr__(self, "evidence_sha256", evidence)
 
@@ -842,6 +864,90 @@ def _children_cpu_seconds() -> float:
     return float(usage.ru_utime + usage.ru_stime)
 
 
+@dataclass(frozen=True)
+class BoundedTrainRuntimeSmoke:
+    """One non-official TRAIN-only scheduler measurement."""
+
+    worker_count: int
+    seed_workers: int
+    batches_per_seed: int
+    wall_seconds: float
+    process_cpu_seconds: float
+    completions: tuple[object, ...]
+    peak_rss_bytes: int
+    input_proof_sha256: str
+    test_values_loaded: bool = False
+
+
+def run_bounded_train_runtime_smoke(
+    frozen: FrozenBenchmarkInputs,
+    worker_count: int,
+) -> BoundedTrainRuntimeSmoke:
+    """Measure the frozen outer/inner layout using two normal-TRAIN batches.
+
+    The smoke reconstructs normal TRAIN inputs and never has a TEST loader in
+    its call path.  It is scheduler evidence only, not an Exp417 result.
+    """
+    if type(worker_count) is not int or worker_count not in FROZEN_CONFIG.worker_candidates:
+        raise ValueError("bounded runtime smoke worker count is not frozen")
+    selection_proof = select_balanced_benchmark_datasets(frozen.costs)
+    selected = selection_proof.selected_datasets
+    selected_set = set(selected)
+    subset_costs = tuple(
+        cost for cost in frozen.costs if cost.dataset in selected_set
+    )
+    if tuple(sorted(cost.dataset for cost in subset_costs)) != selected:
+        raise ValueError("benchmark subset differs from frozen TRAIN-only selection")
+    plan = build_shard_plan(subset_costs, worker_count)
+    seed_workers = seed_workers_for_outer_workers(worker_count)
+    specs = tuple(
+        WorkerSpec(
+            assignment,
+            Path(f"/non-published-exp419-smoke-{worker_count}")
+            / f"worker-{assignment.shard_index}",
+            outer_worker_count=worker_count,
+        )
+        for assignment in plan.assignments
+    )
+    child_cpu_started = _children_cpu_seconds()
+    parent_cpu_started = process_time()
+    started = monotonic()
+    completions = spawn_bounded_train_smoke_workers(
+        specs,
+        frozen.bootstrap,
+        batches_per_seed=FROZEN_CONFIG.bounded_train_batches_per_seed,
+    )
+    wall_seconds = monotonic() - started
+    process_cpu_seconds = (
+        process_time() - parent_cpu_started
+        + _children_cpu_seconds() - child_cpu_started
+    )
+    parent_peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    parent_peak_bytes = int(parent_peak) if sys.platform == "darwin" else int(parent_peak) * 1024
+    peak_rss_bytes = parent_peak_bytes + sum(
+        completion.peak_rss_bytes for completion in completions
+    )
+    input_proof_sha256 = _context_sha256(frozen.context)
+    if (
+        wall_seconds <= 0.0
+        or any(completion.status != "completed" for completion in completions)
+        or {dataset for completion in completions for dataset in completion.completed_datasets}
+        != set(selected)
+    ):
+        raise ValueError("bounded TRAIN smoke did not cover the frozen subset")
+    return BoundedTrainRuntimeSmoke(
+        worker_count=worker_count,
+        seed_workers=seed_workers,
+        batches_per_seed=FROZEN_CONFIG.bounded_train_batches_per_seed,
+        wall_seconds=wall_seconds,
+        process_cpu_seconds=process_cpu_seconds,
+        completions=tuple(completions),
+        peak_rss_bytes=peak_rss_bytes,
+        input_proof_sha256=input_proof_sha256,
+        test_values_loaded=False,
+    )
+
+
 def _run_trials(
     frozen: FrozenBenchmarkInputs,
     trial_roots: Mapping[int, Path],
@@ -850,54 +956,30 @@ def _run_trials(
     selected = selection_proof.selected_datasets
     if not selected:
         raise ValueError("frozen benchmark subset is empty")
-    selected_set = set(selected)
-    subset_costs = tuple(cost for cost in frozen.costs if cost.dataset in selected_set)
-    if tuple(sorted(cost.dataset for cost in subset_costs)) != selected:
-        raise ValueError("benchmark subset differs from frozen TRAIN-only selection")
-
     trials: list[RuntimeTrial] = []
     measurements: list[TrialRuntimeMeasurement] = []
-    reference_digests: dict[str, str] | None = None
     for worker_count in FROZEN_CONFIG.worker_candidates:
         root = trial_roots[worker_count]
         if root.exists():
             raise ValueError("every benchmark candidate root must be fresh")
         root.mkdir()
-        plan = build_shard_plan(subset_costs, worker_count)
-        specs = tuple(
-            WorkerSpec(
-                assignment,
-                root / f"worker-{assignment.shard_index}",
+        smoke = run_bounded_train_runtime_smoke(frozen, worker_count)
+        completions = smoke.completions
+        elapsed = smoke.wall_seconds
+        process_cpu_seconds = smoke.process_cpu_seconds
+        completed = tuple(
+            sorted(
+                dataset
+                for completion in completions
+                for dataset in completion.completed_datasets
             )
-            for assignment in plan.assignments
-        )
-        child_cpu_started = _children_cpu_seconds()
-        parent_cpu_started = process_time()
-        started = monotonic()
-        completions = spawn_workers(specs, frozen.bootstrap)
-        elapsed = monotonic() - started
-        process_cpu_seconds = (
-            process_time() - parent_cpu_started
-            + _children_cpu_seconds() - child_cpu_started
-        )
-        record_digests = {
-            dataset: digest
-            for completion in completions
-            for dataset, digest in completion.record_digests.items()
-        }
-        completed = (
-            tuple(sorted(record_digests))
-            if set(record_digests) == set(selected)
-            else selected
         )
         finite = (
             elapsed > 0.0
             and all(completion.status == "completed" for completion in completions)
-            and set(record_digests) == set(selected)
+            and completed == selected
         )
-        if worker_count == 1 and finite:
-            reference_digests = dict(record_digests)
-        parity = finite and reference_digests is not None and record_digests == reference_digests
+        parity = finite and not smoke.test_values_loaded
         fallback = "" if finite else "; ".join(
             completion.error
             for completion in completions
@@ -906,10 +988,13 @@ def _run_trials(
         scientific_evidence = sha256(
             canonical_json_bytes(
                 {
+                    "batches_per_seed": smoke.batches_per_seed,
                     "completed_datasets": completed,
-                    "record_digests": record_digests,
+                    "input_proof_sha256": smoke.input_proof_sha256,
+                    "seed_workers": smoke.seed_workers,
                     "source_manifest_sha256":
                         frozen.source_manifest_sha256,
+                    "test_values_loaded": smoke.test_values_loaded,
                 }
             )
         ).hexdigest()
@@ -932,21 +1017,17 @@ def _run_trials(
             worker_utilization,
             scientific_evidence,
             frozen.source_manifest_sha256,
+            smoke.seed_workers,
+            smoke.batches_per_seed,
+            smoke.input_proof_sha256,
+            smoke.test_values_loaded,
         )
         measurements.append(measurement)
-        parent_peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        if sys.platform == "darwin":
-            parent_peak_bytes = int(parent_peak)
-        else:
-            parent_peak_bytes = int(parent_peak) * 1024
-        peak_rss = parent_peak_bytes + sum(
-            completion.peak_rss_bytes for completion in completions
-        )
         trials.append(
             RuntimeTrial(
                 worker_count,
                 elapsed,
-                peak_rss,
+                smoke.peak_rss_bytes,
                 parity,
                 finite,
                 fallback,
@@ -990,12 +1071,16 @@ def runtime_measurement_payload(
     measurement: TrialRuntimeMeasurement,
 ) -> dict[str, object]:
     return {
+        "batches_per_seed": measurement.batches_per_seed,
         "evidence_sha256": measurement.evidence_sha256,
+        "input_proof_sha256": measurement.input_proof_sha256,
         "process_cpu_seconds": measurement.process_cpu_seconds,
         "process_cpu_utilization": measurement.process_cpu_utilization,
         "scientific_evidence_sha256":
             measurement.scientific_evidence_sha256,
+        "seed_workers": measurement.seed_workers,
         "source_manifest_sha256": measurement.source_manifest_sha256,
+        "test_values_loaded": measurement.test_values_loaded,
         "telemetry_sha256": measurement.telemetry_sha256,
         "wall_seconds": measurement.wall_seconds,
         "worker_count": measurement.worker_count,
@@ -1012,11 +1097,15 @@ def runtime_measurements_from_payload(
     if not isinstance(payload, list):
         raise ValueError("runtime measurements must be a list")
     exact_fields = {
+        "batches_per_seed",
         "evidence_sha256",
+        "input_proof_sha256",
         "process_cpu_seconds",
         "process_cpu_utilization",
         "scientific_evidence_sha256",
+        "seed_workers",
         "source_manifest_sha256",
+        "test_values_loaded",
         "telemetry_sha256",
         "wall_seconds",
         "worker_count",
@@ -1059,6 +1148,10 @@ def runtime_measurements_from_payload(
                 tuple(workers),
                 raw["scientific_evidence_sha256"],
                 raw["source_manifest_sha256"],
+                raw["seed_workers"],
+                raw["batches_per_seed"],
+                raw["input_proof_sha256"],
+                raw["test_values_loaded"],
                 raw["telemetry_sha256"],
                 raw["evidence_sha256"],
             )

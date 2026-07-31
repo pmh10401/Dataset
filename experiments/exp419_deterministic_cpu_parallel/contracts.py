@@ -14,7 +14,7 @@ from typing import TypeVar
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
-from .config import FROZEN_CONFIG
+from .config import FROZEN_CONFIG, seed_workers_for_outer_workers
 
 
 STRATA = frozenset({"preprocessing_only", "diagnostic_oof", "candidate_eligible"})
@@ -345,11 +345,36 @@ def benchmark_selection_proof_from_payload(payload: object) -> BenchmarkSelectio
 class WorkerSpec:
     shard: ShardAssignment
     checkpoint_root: Path
+    outer_worker_count: int = 1
+    status_root: Path | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.shard, ShardAssignment):
             raise ValueError("shard must be a ShardAssignment")
-        _path(self.checkpoint_root, "checkpoint_root")
+        checkpoint_root = _path(self.checkpoint_root, "checkpoint_root")
+        outer_workers = _integer(
+            self.outer_worker_count, "outer_worker_count", minimum=1
+        )
+        seed_workers_for_outer_workers(outer_workers)
+        status_root = (
+            checkpoint_root.parent / f"{checkpoint_root.name}.status"
+            if self.status_root is None
+            else _path(self.status_root, "status_root")
+        )
+        if _parts_are_nested_path(checkpoint_root, status_root):
+            raise ValueError("status_root must be disjoint from checkpoint_root")
+        object.__setattr__(self, "checkpoint_root", checkpoint_root)
+        object.__setattr__(self, "outer_worker_count", outer_workers)
+        object.__setattr__(self, "status_root", status_root)
+
+
+def _parts_are_nested_path(first: Path, second: Path) -> bool:
+    try:
+        left = first.resolve(strict=False)
+        right = second.resolve(strict=False)
+    except (OSError, RuntimeError) as error:
+        raise ValueError("worker root path cannot be resolved") from error
+    return left == right or left.is_relative_to(right) or right.is_relative_to(left)
 
 
 @dataclass(frozen=True)

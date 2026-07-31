@@ -1701,6 +1701,7 @@ def resume_or_run_parallel(
                         / plan.sha256
                         / attempt_token
                         / f"worker-{assignment.shard_index}",
+                        outer_worker_count=plan.worker_count,
                     )
                 )
 

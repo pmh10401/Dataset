@@ -25,10 +25,17 @@ class Exp419FrozenConfig:
     exp292_prediction_sha256: str = EXP417_FROZEN_CONFIG.exp292_prediction_sha256
     exp292_manifest_sha256: str = EXP417_FROZEN_CONFIG.exp292_manifest_sha256
     worker_candidates: tuple[int, ...] = (1, 2, 4, 6)
+    seed_workers_by_outer_worker: tuple[tuple[int, int], ...] = (
+        (1, 1),
+        (2, 3),
+        (4, 3),
+        (6, 2),
+    )
     start_method: str = "spawn"
     speedup_gate: float = 2.0
     memory_limit_bytes: int = 27_487_790_694
     torch_threads: int = 1
+    bounded_train_batches_per_seed: int = 2
     benchmark_quantiles: tuple[float, ...] = (0.0, 0.25, 0.50, 0.75, 1.0)
     benchmark_proxy_headroom_gate: float = 2.5
     benchmark_proxy_headroom_workers: tuple[int, ...] = (4, 6)
@@ -66,6 +73,16 @@ class Exp419FrozenConfig:
 
 
 FROZEN_CONFIG = Exp419FrozenConfig()
+
+
+def seed_workers_for_outer_workers(worker_count: int) -> int:
+    """Return the preregistered inner seed concurrency for one outer layout."""
+    if type(worker_count) is not int:
+        raise ValueError("outer worker count must be an integer")
+    for outer_workers, seed_workers in FROZEN_CONFIG.seed_workers_by_outer_worker:
+        if worker_count == outer_workers:
+            return seed_workers
+    raise ValueError("outer worker count is not frozen")
 
 
 def _require_exact_path(path: Path, expected: Path, name: str) -> Path:

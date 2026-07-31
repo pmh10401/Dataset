@@ -6,10 +6,12 @@ import json
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import replace
+from hashlib import sha256
 from math import isclose
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -22,6 +24,7 @@ from experiments.exp419_deterministic_cpu_parallel.contracts import (
     DatasetCost,
     RuntimeBenchmark,
     RuntimeTrial,
+    WorkerCompletion,
     benchmark_selection_proof_payload,
 )
 from experiments.exp419_deterministic_cpu_parallel.coordinator import select_runtime
@@ -267,7 +270,6 @@ class CliContractTests(unittest.TestCase):
             self.benchmark.benchmark_from_payload(payload),
             benchmark,
         )
-
         mutations = (
             lambda proof: proof["anchor_datasets"].__setitem__(0, "z"),
             lambda proof: proof["added_datasets"].__setitem__(0, "z"),
@@ -297,6 +299,74 @@ class CliContractTests(unittest.TestCase):
         copied_digest["sha256"] = payload["sha256"]
         with self.assertRaisesRegex(ValueError, "digest"):
             self.benchmark.benchmark_from_payload(copied_digest)
+
+    def test_bounded_runtime_smoke_uses_two_train_batches_without_test_loader(
+        self,
+    ) -> None:
+        proof = _selection_proof()
+        frozen = SimpleNamespace(
+            costs=BALANCED_COSTS,
+            bootstrap=object(),
+            context=SimpleNamespace(),
+        )
+        observed: dict[str, object] = {}
+
+        def bounded_workers(specs, bootstrap, *, batches_per_seed):
+            observed["bootstrap"] = bootstrap
+            observed["batches_per_seed"] = batches_per_seed
+            return tuple(
+                WorkerCompletion(
+                    shard_index=spec.shard.shard_index,
+                    pid=1000 + spec.shard.shard_index,
+                    completed_datasets=spec.shard.datasets,
+                    record_digests={
+                        dataset: sha256(dataset.encode()).hexdigest()
+                        for dataset in spec.shard.datasets
+                    },
+                    elapsed_seconds=0.5,
+                    peak_rss_bytes=1024,
+                    thread_environment={
+                        "OMP_NUM_THREADS": "1",
+                        "OPENBLAS_NUM_THREADS": "1",
+                        "VECLIB_MAXIMUM_THREADS": "1",
+                    },
+                    status="completed",
+                    error="",
+                )
+                for spec in specs
+            )
+
+        with (
+            patch.object(
+                self.benchmark,
+                "select_balanced_benchmark_datasets",
+                return_value=proof,
+            ),
+            patch.object(
+                self.benchmark,
+                "spawn_bounded_train_smoke_workers",
+                side_effect=bounded_workers,
+            ),
+            patch.object(
+                self.benchmark,
+                "_context_sha256",
+                return_value="a" * 64,
+            ),
+        ):
+            measurement = self.benchmark.run_bounded_train_runtime_smoke(
+                frozen, 4
+            )
+
+        self.assertEqual(measurement.worker_count, 4)
+        self.assertEqual(measurement.seed_workers, 3)
+        self.assertEqual(measurement.batches_per_seed, 2)
+        self.assertFalse(measurement.test_values_loaded)
+        self.assertEqual(observed["bootstrap"], frozen.bootstrap)
+        self.assertEqual(observed["batches_per_seed"], 2)
+        self.assertNotIn(
+            "load_raw_test_values",
+            inspect.getsource(self.benchmark.run_bounded_train_runtime_smoke),
+        )
 
     def test_benchmark_parser_is_structural_and_writer_checks_selection(
         self,
@@ -1229,7 +1299,7 @@ class SourceManifestTests(unittest.TestCase):
             ).read_bytes()
         )
         self.assertEqual(manifest["schema_version"], 1)
-        self.assertEqual(len(manifest["sources"]), 10)
+        self.assertEqual(len(manifest["sources"]), 12)
         self.assertEqual(
             [entry["path"] for entry in manifest["sources"]],
             sorted(entry["path"] for entry in manifest["sources"]),

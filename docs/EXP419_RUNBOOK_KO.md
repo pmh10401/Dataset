@@ -9,8 +9,10 @@ TEST의 값은 동결된 TRAIN 계약 뒤에만 기존 값 전용 경로로 읽�
 실제 이상 위치, 과거 TEST 성능은 열거나 조회하지 않는다.
 
 MLX와 MPS는 사용하지 않는다. worker 후보는 정확히 `1, 2, 4, 6`이고 각
-프로세스의 PyTorch/BLAS thread는 1개로 고정된다. benchmark가 고른 worker
-수만 공식 실행에 쓸 수 있으며 명령행에서 바꿀 수 없다.
+CNN fit의 PyTorch/BLAS thread는 1개로 고정된다. 각 outer worker의 inner seed
+worker 수는 정확히 `1→1`, `2→3`, `4→3`, `6→2`이며 동시에 쓰는 CPU slot은
+최대 12개다. benchmark가 고른 outer worker 수만 공식 실행에 쓸 수 있으며
+명령행에서 바꿀 수 없다.
 
 자동 감시, polling loop, cron, keepalive를 만들지 않는다. 장시간 실행을
 시작한 뒤 상태는 사용자가 요청한 시점에 한 번만 확인한다. checkpoint,
@@ -20,7 +22,7 @@ benchmark, prediction, metrics와 보고서는 모두 반도체 설비 데이터
 ## 1. 환경과 버전 확인
 
 ```bash
-cd "/Users/mac/Documents/Time Series/.worktrees/exp409-prospective-readiness"
+cd "/Users/mac/Documents/Time Series/.worktrees/exp419-runtime-recovery"
 git status --short --branch
 git rev-parse HEAD
 .venv/bin/python --version
@@ -93,8 +95,8 @@ git diff --check
 ```
 
 2026-07-30 사용자 승인에 따라 정적 격리는 동결 소스 매니페스트 방식이다.
-`SOURCE_MANIFEST.json`은 Exp419 package 최상위 runtime 모듈 8개와 두 CLI,
-총 10개의 정확한 repo 상대 경로와 소문자 SHA256을 고정한다. clean Git
+`SOURCE_MANIFEST.json`은 Exp419 package 최상위 runtime 모듈 10개와 두 CLI,
+총 12개의 정확한 repo 상대 경로와 소문자 SHA256을 고정한다. clean Git
 검사 직후 manifest와 각 소스를 no-follow file descriptor로 읽어
 regular-file 여부, canonical sorted path, 중복·경로 탈출, 누락·추가 파일,
 해시 불일치를 모두 차단한다. 그 뒤 defense-in-depth AST 검사가 명시적인
@@ -114,7 +116,7 @@ Writer와 공식 verifier는 같은 binding validator를 사용하여 각 runtim
 measurement의 manifest SHA256, trial evidence, benchmark digest/selection과
 top-level/current manifest SHA256을 함께 재검증한다.
 
-## 4. 정정된 비공식 label-free 병렬 benchmark
+## 4. 정정된 비공식 label-free 병렬 runtime smoke
 
 원래 15개 anchor는 총 대리비용 `388,627,551` 중
 `StarLightCurves_normal_3` 하나가 `353,424,384`를 차지하여 2/4/6-worker
@@ -122,7 +124,11 @@ largest-first 대리 speedup 상한이 `1.0996059372x`였다. 승인된 정정�
 15개를 모두 유지하고, 남은 정상 TRAIN 비용을 `(-cost, dataset)` 순으로
 하나씩 추가하여 4-worker와 6-worker의
 `총 비용 / 최대 shard 비용`이 모두 `2.5x` 이상인 첫 prefix에서 멈춘다.
-timing은 선택에 사용하지 않는다.
+timing은 subset 선택에 사용하지 않는다. 또한 네 worker 후보가 전체 Exp417 pipeline을
+반복하지 않는다. 각 exact length group·각 frozen seed에서 정상 TRAIN 두 optimizer
+batch만 실행해 scheduler, inner seed layout, memory와 wall time만 측정한다. TEST 값,
+label, prediction, score, candidate, qualification result, checkpoint는 만들거나 읽지
+않는다.
 
 동결 결과는 원래 15개와 `StarLightCurves_normal_2` (`171,196,416`),
 `HandOutlines_normal_1` (`153,600,300`),
@@ -357,14 +363,15 @@ print("selection_proof_sha256", proof["sha256"])
 for trial in benchmark["trials"]:
     print(trial["worker_count"], trial["elapsed_seconds"], trial["peak_rss_bytes"], trial["parity"], trial["finite"], trial["fallback"])
 for measurement in measurements:
-    print("runtime", measurement["worker_count"], measurement["process_cpu_seconds"], measurement["process_cpu_utilization"])
+    print("runtime", measurement["worker_count"], measurement["seed_workers"], measurement["batches_per_seed"], measurement["test_values_loaded"], measurement["input_proof_sha256"], measurement["process_cpu_seconds"], measurement["process_cpu_utilization"])
     for worker in measurement["worker_utilization"]:
         print("worker", worker["shard_index"], worker["pid"], worker["elapsed_seconds"], worker["wall_occupancy_fraction"])
 PY
 ```
 
-통과 조건은 후보가 정확히 `1, 2, 4, 6`, 모든 trial의 dataset·과학적 digest
-parity가 exact, finite, fallback 없음, peak aggregate RSS가
+통과 조건은 후보가 정확히 `1, 2, 4, 6`, 모든 trial의 19개 TRAIN-only subset 완료,
+고정 outer/inner layout과 seed당 두 batch, TEST 값 사용 false, finite, fallback 없음,
+peak aggregate RSS가
 `27,487,790,694` bytes 이하인 것이다. 2-worker trial은 필수 비교 증거지만
 공식 선택 후보가 아니다. 4-worker 또는 6-worker가 1-worker 대비 최소
 `2.0x` 빠른 것을 포함한 모든 gate를 통과해야 하며, 두 eligible 후보 중
@@ -387,7 +394,7 @@ parity가 exact, finite, fallback 없음, peak aggregate RSS가
 `CPU seconds / (wall seconds × (parent 1 + worker count))`다. 각 worker의
 `wall_occupancy_fraction`은 `worker elapsed / trial wall elapsed`다.
 모든 값은 finite·nonnegative이고 이 수식과 정확히 일치해야 한다. telemetry
-SHA256은 scientific evidence SHA256과 결합되어 trial evidence 및 전체
+SHA256은 TRAIN-only smoke evidence SHA256과 결합되어 trial evidence 및 전체
 benchmark SHA256에 포함되므로 숫자를 따로 고칠 수 없다.
 
 공식 검증기는 JSON 내부 일관성만 보지 않는다. 현재 frozen TRAIN metadata로
@@ -417,6 +424,12 @@ canonical staging은 삭제하거나 수동 병합하지 말고 그대로 보존
 오류 원인과 provenance를 감사한 뒤 별도의 사용자 지시가 있을 때만 재개한다.
 threshold, seed, horizon, budget, source 또는 worker 수를 바꿔 실패를
 우회하지 않는다. output 경로가 이미 생겼다면 덮어쓰지 않고 중단한다.
+
+공식 실행 중 사용자가 한 번 상태를 요청한 경우에만 각 worker의 checkpoint root와
+분리된 sidecar `exp419_worker_status.json`을 읽는다. 이 파일은 현재 dataset·순번,
+완료 수, phase, seed/fold, 안전한 오류 문자열만 보여 주는 관찰용 snapshot이다. raw
+series, score, prediction, TEST label/location 또는 metric이 보이면 즉시 fail-closed한다.
+자동 monitor, polling loop, cron은 만들지 않는다.
 
 ## 6. 별도 명시적 승인 뒤의 공식 명령
 
