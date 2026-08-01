@@ -63,6 +63,7 @@ _MANIFEST_PROVENANCE_FIELDS = frozenset(
         "mlx_eligibility_reason",
     }
 )
+_MLX_UNAVAILABLE_REASONS = frozenset({"package_absent", "algorithm_rewrite_required"})
 
 
 @dataclass(frozen=True)
@@ -263,13 +264,15 @@ class Exp421Manifest:
             if any(provenance[name] not in (None, "unavailable") for name in ("mlx_version", "mlx_metal_version")):
                 raise ValueError("unavailable MLX must have absent or unavailable versions")
             _no_test_token(reason, "mlx_eligibility_reason")
-            if reason.strip().lower() == "eligible":
-                raise ValueError("unavailable MLX must have a non-eligible reason")
+            if reason.strip().lower() not in _MLX_UNAVAILABLE_REASONS:
+                raise ValueError("unavailable MLX must have an explicit unavailable reason")
         else:
             for name in ("mlx_version", "mlx_metal_version"):
                 _no_test_token(provenance[name], name)
                 if provenance[name].strip().lower() == "unavailable":
                     raise ValueError("available MLX must have concrete versions")
             _no_test_token(reason, "mlx_eligibility_reason")
+            if reason.strip().lower() in _MLX_UNAVAILABLE_REASONS:
+                raise ValueError("available MLX cannot have an unavailable reason")
         object.__setattr__(self, "cached_candidate_indices", cached)
         object.__setattr__(self, "provenance", MappingProxyType(provenance))

@@ -172,6 +172,10 @@ class Exp421ContractTests(unittest.TestCase):
 
     def test_manifest_rejects_incoherent_mlx_capability_provenance(self):
         provenance = dict(self._manifest().provenance)
+        provenance.update(mlx_eligibility_reason="package_absent")
+        with self.assertRaises(ValueError):
+            self._manifest(provenance=provenance)
+        provenance.update(mlx_eligibility_reason="eligible")
         provenance.update(
             mlx_availability="unavailable",
             mlx_version="0.20.0",
@@ -186,6 +190,9 @@ class Exp421ContractTests(unittest.TestCase):
             mlx_eligibility_reason="package_absent",
         )
         self._manifest(provenance=provenance)
+        provenance.update(mlx_eligibility_reason="eligible")
+        with self.assertRaises(ValueError):
+            self._manifest(provenance=provenance)
 
     def test_manifest_rejects_test_token_invalid_state_and_writable_cached_array(self):
         writable = np.array([1, 4], dtype=np.int64)
