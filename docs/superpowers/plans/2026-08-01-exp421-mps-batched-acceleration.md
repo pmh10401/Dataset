@@ -29,7 +29,7 @@ The implementation is intentionally additive. The new package owns runtime adapt
 
 - Create `experiments/exp421_mps_batched_acceleration/__init__.py`: package version and narrow public exports.
 - Create `experiments/exp421_mps_batched_acceleration/config.py`: immutable Exp421 gates, exact batch list, memory/benchmark bounds, and frozen source identifiers.
-- Create `experiments/exp421_mps_batched_acceleration/contracts.py`: validated immutable records for batch keys, predictions, calibration entries, perturbation entries, measurements, parity, MLX assessment, policy, and manifest.
+- Create `experiments/exp421_mps_batched_acceleration/contracts.py`: validated immutable records for batch keys, predictions, calibration entries, perturbation entries, measurements, parity, MPS assessment, policy, and manifest; MLX is capability provenance only.
 - Create `experiments/exp421_mps_batched_acceleration/batch_inference.py`: materialize a serialized `TrainedSeedModel` once, run batched residual inference, and reproduce frozen Huber/AdamW fitting for a bounded batch without changing the reference function.
 - Create `experiments/exp421_mps_batched_acceleration/calibration.py`: build and consume a TRAIN OOF calibration cache while preserving `score_horizon` results.
 - Create `experiments/exp421_mps_batched_acceleration/perturbations.py`: cache deterministic primary perturbations and seed-keyed secondary spikes using `build_fixed_perturbations`.
@@ -154,7 +154,7 @@ class BackendMeasurement:
     candidate_coordinates_sha256: str
 ```
 
-- [ ] **Step 4: Add negative tests for scientific immutability.** Verify that a TEST token in a manifest boundary field, `batch_size=2`, a nonfinite timing, a speedup below `1.1`, a missing MLX fallback reason, and a writable cached array are rejected before serialization.
+- [ ] **Step 4: Add negative tests for scientific immutability.** Verify that a TEST token in a manifest boundary field, `batch_size=2`, a nonfinite timing, a speedup below `1.1`, a missing MPS fallback reason, and a writable cached array are rejected before serialization.
 
 - [ ] **Step 5: Run the focused tests and commit.**
 
@@ -301,7 +301,7 @@ git commit -m "feat(exp421): cache deterministic TRAIN perturbations"
 - Consumes: `BackendMeasurement`, `ParityReport`, `MpsAssessment`, and `Exp421Config`. Runtime backends are CPU/MPS; MLX is capability/version provenance only.
 - Produces: `choose_backend(measurements, config)` and a `BackendPolicy` containing selected backend per batch size, exact reasons, and a `fail_closed` boolean.
 
-- [ ] **Step 1: Write red policy tests.** Cover CPU selection at batch one, MPS selection only when all gates pass, CPU fallback for unavailable MPS, nonfinite output, coordinate mismatch, normalized error above `1e-4`, Spearman below `0.999`, speedup below `1.1`, missing transfer/synchronization timings, and any MLX ineligibility. Assert no input can alter alpha, threshold, seeds, or qualification fields.
+- [ ] **Step 1: Write red policy tests.** Cover CPU selection at batch one, MPS selection only when all gates pass, CPU fallback for unavailable MPS, nonfinite output, coordinate mismatch at every alpha, normalized error above `1e-4`, Spearman below `0.999`, speedup below `1.1`, missing transfer/synchronization timings, and any MLX capability/provenance inconsistency. Assert no input can alter alpha, threshold, seeds, or qualification fields.
 
 - [ ] **Step 2: Run the focused tests and verify failure.**
 
@@ -384,7 +384,7 @@ Expected: missing benchmark module/function failure.
 
 - [ ] **Step 5: Compute parity and policy without TEST data.** Compare finite values, normalized max error, rank correlation, candidate-coordinate hashes, model state/stop/loss/OOF/calibration hashes where fitting is included, and perturbation/qualification decisions. Pass all measurements to `choose_backend`; any failed gate records a precise CPU fallback reason.
 
-- [ ] **Step 6: Emit and validate the manifest in a fresh attempt root.** Include benchmark start/end times, process ID, host/device, timings, parity, selected policy, MLX assessment, source digests, and no-clobber output paths. Return the validated `Exp421Manifest` rather than a private record.
+- [ ] **Step 6: Emit and validate the manifest in a fresh attempt root.** Include benchmark start/end times, process ID, host/device, timings, parity, selected MPS policy, MLX capability/version provenance, source digests, and no-clobber output paths. Return the validated `Exp421Manifest` rather than a private record.
 
 - [ ] **Step 7: Run and commit.**
 
@@ -480,7 +480,7 @@ git commit -m "test(exp421): verify isolated acceleration prototype"
 
 ## Self-review checklist
 
-- The design requirements map to Tasks 1–5: frozen adapter, calibration cache, perturbation cache, hybrid policy, and MLX manifest assessment.
+- The design requirements map to Tasks 1–5: frozen adapter, calibration cache, perturbation cache, hybrid policy, and MLX capability provenance in the manifest.
 - The boundary and provenance requirements map to Tasks 6–8: no TEST access, source/database/Git digests, fresh attempt roots, Korean preregistration/runbook, and explicit CLI refusal of full Exp419 execution.
 - The acceptance gates map to Tasks 2, 3, 5, and 7: finite outputs, identical candidate coordinates, normalized error `1e-4`, Spearman `0.999`, model/stop/loss/OOF/calibration/qualification parity, transfer/synchronization-inclusive speedup `1.1`, memory bound, and one-process isolation.
 - No task changes frozen Exp417/Exp419 source, lanes, checkpoints, predictions, or private data.

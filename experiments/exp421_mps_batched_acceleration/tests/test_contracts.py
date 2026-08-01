@@ -41,7 +41,8 @@ class Exp421ContractTests(unittest.TestCase):
     def _parity(self, **changes):
         values = {
             "batch_key": self._batch_key(),
-            "candidate_indices_by_alpha": {0.01: np.array([1, 4], dtype=np.int64)},
+            "cpu_candidate_indices_by_alpha": {0.01: np.array([1, 4], dtype=np.int64)},
+            "mps_candidate_indices_by_alpha": {0.01: np.array([1, 4], dtype=np.int64)},
             "max_normalized_error": 1e-5,
             "spearman": 1.0,
         }
@@ -94,8 +95,8 @@ class Exp421ContractTests(unittest.TestCase):
     def test_valid_records_freeze_mapping_and_cached_arrays(self):
         parity = self._parity()
         manifest = self._manifest()
-        self.assertIsInstance(parity.candidate_indices_by_alpha, MappingProxyType)
-        self.assertFalse(parity.candidate_indices_by_alpha[0.01].flags.writeable)
+        self.assertIsInstance(parity.cpu_candidate_indices_by_alpha, MappingProxyType)
+        self.assertFalse(parity.cpu_candidate_indices_by_alpha[0.01].flags.writeable)
         self.assertIsInstance(manifest.provenance, MappingProxyType)
         self.assertFalse(manifest.cached_candidate_indices.flags.writeable)
 
@@ -138,7 +139,7 @@ class Exp421ContractTests(unittest.TestCase):
         )
         self.assertFalse(assessment.uses_mps)
 
-    def test_batch_one_is_cpu_mandatory_even_when_mlx_gates_pass(self):
+    def test_batch_one_is_cpu_mandatory_even_when_mps_gates_pass(self):
         batch_key = self._batch_key(batch_size=1)
         cpu = self._measurement("cpu", batch_size=1)
         mps = self._measurement(
@@ -161,6 +162,30 @@ class Exp421ContractTests(unittest.TestCase):
         )
         self.assertFalse(assessment.uses_mps)
         self.assertFalse(assessment.mps_available)
+
+    def test_mps_candidate_indices_must_match_cpu_at_every_alpha(self):
+        parity = self._parity(
+            mps_candidate_indices_by_alpha={0.01: np.array([1, 5], dtype=np.int64)},
+        )
+        with self.assertRaises(ValueError):
+            self._assessment(parity_report=parity)
+
+    def test_manifest_rejects_incoherent_mlx_capability_provenance(self):
+        provenance = dict(self._manifest().provenance)
+        provenance.update(
+            mlx_availability="unavailable",
+            mlx_version="0.20.0",
+            mlx_metal_version="0.20.0",
+            mlx_eligibility_reason="eligible",
+        )
+        with self.assertRaises(ValueError):
+            self._manifest(provenance=provenance)
+        provenance.update(
+            mlx_version="unavailable",
+            mlx_metal_version="unavailable",
+            mlx_eligibility_reason="package_absent",
+        )
+        self._manifest(provenance=provenance)
 
     def test_manifest_rejects_test_token_invalid_state_and_writable_cached_array(self):
         writable = np.array([1, 4], dtype=np.int64)

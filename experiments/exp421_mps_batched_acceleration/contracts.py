@@ -109,29 +109,42 @@ class BackendMeasurement:
 @dataclass(frozen=True)
 class ParityReport:
     batch_key: BatchKey
-    candidate_indices_by_alpha: Mapping[float, np.ndarray]
+    cpu_candidate_indices_by_alpha: Mapping[float, np.ndarray]
+    mps_candidate_indices_by_alpha: Mapping[float, np.ndarray]
     max_normalized_error: float
     spearman: float
 
     def __post_init__(self) -> None:
         if not isinstance(self.batch_key, BatchKey):
             raise ValueError("batch_key must be a BatchKey")
-        if not isinstance(self.candidate_indices_by_alpha, Mapping):
-            raise ValueError("candidate_indices_by_alpha must be a mapping")
+        if not isinstance(self.cpu_candidate_indices_by_alpha, Mapping):
+            raise ValueError("cpu_candidate_indices_by_alpha must be a mapping")
+        if not isinstance(self.mps_candidate_indices_by_alpha, Mapping):
+            raise ValueError("mps_candidate_indices_by_alpha must be a mapping")
         expected_alphas = (FROZEN_CONFIG.exp417_config.candidate_alpha,)
-        if tuple(self.candidate_indices_by_alpha) != expected_alphas:
-            raise ValueError("candidate indices must cover exact preregistered alphas")
-        frozen: dict[float, np.ndarray] = {}
+        if tuple(self.cpu_candidate_indices_by_alpha) != expected_alphas or tuple(self.mps_candidate_indices_by_alpha) != expected_alphas:
+            raise ValueError("CPU and MPS candidate indices must cover exact preregistered alphas")
+        frozen_cpu: dict[float, np.ndarray] = {}
+        frozen_mps: dict[float, np.ndarray] = {}
         for alpha in expected_alphas:
             _finite(alpha, "candidate alpha", minimum=0.0)
-            frozen[alpha] = _readonly_indices(self.candidate_indices_by_alpha[alpha], f"candidate_indices_by_alpha[{alpha}]")
+            frozen_cpu[alpha] = _readonly_indices(self.cpu_candidate_indices_by_alpha[alpha], f"cpu_candidate_indices_by_alpha[{alpha}]")
+            frozen_mps[alpha] = _readonly_indices(self.mps_candidate_indices_by_alpha[alpha], f"mps_candidate_indices_by_alpha[{alpha}]")
         _finite(self.max_normalized_error, "max_normalized_error", minimum=0.0)
         _finite(self.spearman, "spearman")
-        object.__setattr__(self, "candidate_indices_by_alpha", MappingProxyType(frozen))
+        object.__setattr__(self, "cpu_candidate_indices_by_alpha", MappingProxyType(frozen_cpu))
+        object.__setattr__(self, "mps_candidate_indices_by_alpha", MappingProxyType(frozen_mps))
+
+    @property
+    def candidate_indices_match(self) -> bool:
+        return all(
+            np.array_equal(self.cpu_candidate_indices_by_alpha[alpha], self.mps_candidate_indices_by_alpha[alpha])
+            for alpha in self.cpu_candidate_indices_by_alpha
+        )
 
     @property
     def passes(self) -> bool:
-        return self.max_normalized_error <= FROZEN_CONFIG.max_normalized_error and self.spearman >= FROZEN_CONFIG.min_spearman
+        return self.candidate_indices_match and self.max_normalized_error <= FROZEN_CONFIG.max_normalized_error and self.spearman >= FROZEN_CONFIG.min_spearman
 
 
 @dataclass(frozen=True)
@@ -180,6 +193,7 @@ class MpsAssessment:
             raise ValueError("speedup must match complete measured timings")
         eligible = (
             self.batch_key.batch_size != 1
+            and self.parity_report.candidate_indices_match
             and self.parity_report.passes
             and speedup >= FROZEN_CONFIG.min_speedup
         )
@@ -233,7 +247,7 @@ class Exp421Manifest:
             raise ValueError("git_commit must be a lowercase Git object digest")
         if provenance["database_sha256"] != self.config.exp417_config.database_sha256:
             raise ValueError("database_sha256 must bind to Exp417")
-        for name in ("device", "runtime", "source", "mlx_availability", "mlx_version", "mlx_metal_version", "mlx_eligibility_reason"):
+        for name in ("device", "runtime", "source"):
             _no_test_token(provenance[name], name)
         if type(provenance["fresh_no_clobber_attempt"]) is not bool or not provenance["fresh_no_clobber_attempt"]:
             raise ValueError("fresh_no_clobber_attempt must be true")
@@ -241,7 +255,21 @@ class Exp421Manifest:
             raise ValueError("train_only must be true")
         if provenance["device"] != self.policy.assessment.device:
             raise ValueError("manifest device must match the MPS assessment")
-        if provenance["mlx_availability"] not in {"available", "unavailable"}:
+        availability = provenance["mlx_availability"]
+        if availability not in {"available", "unavailable"}:
             raise ValueError("manifest MLX availability must be available or unavailable")
+        reason = provenance["mlx_eligibility_reason"]
+        if availability == "unavailable":
+            if any(provenance[name] not in (None, "unavailable") for name in ("mlx_version", "mlx_metal_version")):
+                raise ValueError("unavailable MLX must have absent or unavailable versions")
+            _no_test_token(reason, "mlx_eligibility_reason")
+            if reason.strip().lower() == "eligible":
+                raise ValueError("unavailable MLX must have a non-eligible reason")
+        else:
+            for name in ("mlx_version", "mlx_metal_version"):
+                _no_test_token(provenance[name], name)
+                if provenance[name].strip().lower() == "unavailable":
+                    raise ValueError("available MLX must have concrete versions")
+            _no_test_token(reason, "mlx_eligibility_reason")
         object.__setattr__(self, "cached_candidate_indices", cached)
         object.__setattr__(self, "provenance", MappingProxyType(provenance))
