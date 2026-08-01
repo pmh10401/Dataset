@@ -12,6 +12,10 @@ from experiments.exp421_mps_batched_acceleration.contracts import (
     MlxAssessment,
     ParityReport,
 )
+from experiments.exp421_mps_batched_acceleration.config import (
+    Exp421Config,
+    frozen_config_sha256,
+)
 
 
 class Exp421ContractTests(unittest.TestCase):
@@ -74,7 +78,7 @@ class Exp421ContractTests(unittest.TestCase):
             "provenance": {
                 "git_commit": "a" * 40,
                 "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
-                "config_sha256": "b" * 64,
+                "config_sha256": frozen_config_sha256(Exp421Config()),
                 "device": "Apple M4",
                 "runtime": "Python 3.14",
                 "source": "exp417",
@@ -176,6 +180,8 @@ class Exp421ContractTests(unittest.TestCase):
         self.assertEqual(self._manifest(provenance={**self._manifest().provenance, "source": "latest"}).provenance["source"], "latest")
         with self.assertRaises(ValueError):
             self._manifest(provenance={**self._manifest().provenance, "train_only": False})
+        with self.assertRaises(ValueError):
+            self._manifest(provenance={**self._manifest().provenance, "config_sha256": "b" * 64})
 
 
 if __name__ == "__main__":

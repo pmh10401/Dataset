@@ -11,7 +11,7 @@ from types import MappingProxyType
 
 import numpy as np
 
-from .config import Exp421Config, FROZEN_CONFIG
+from .config import Exp421Config, FROZEN_CONFIG, frozen_config_sha256
 
 
 def _finite(value: object, name: str, *, minimum: float | None = None) -> float:
@@ -235,8 +235,9 @@ class Exp421Manifest:
         if not isinstance(self.provenance, Mapping) or set(self.provenance) != _MANIFEST_PROVENANCE_FIELDS:
             raise ValueError("manifest provenance must contain the exact required fields")
         provenance = dict(self.provenance)
-        for name in ("git_commit", "config_sha256"):
-            _sha256(provenance[name], name) if name == "config_sha256" else _no_test_token(provenance[name], name)
+        _sha256(provenance["config_sha256"], "config_sha256")
+        if provenance["config_sha256"] != frozen_config_sha256(self.config):
+            raise ValueError("config_sha256 must bind to the frozen Exp421 config")
         if not (isinstance(provenance["git_commit"], str) and len(provenance["git_commit"]) in {40, 64} and all(c in "0123456789abcdef" for c in provenance["git_commit"])):
             raise ValueError("git_commit must be a lowercase Git object digest")
         if provenance["database_sha256"] != self.config.exp417_config.database_sha256:

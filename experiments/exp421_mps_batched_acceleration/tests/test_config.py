@@ -1,7 +1,10 @@
 from dataclasses import replace
 import unittest
 
-from experiments.exp421_mps_batched_acceleration.config import Exp421Config
+from experiments.exp421_mps_batched_acceleration.config import (
+    Exp421Config,
+    frozen_config_sha256,
+)
 
 
 class Exp421ConfigTests(unittest.TestCase):
@@ -29,6 +32,13 @@ class Exp421ConfigTests(unittest.TestCase):
         cfg = Exp421Config()
         self.assertGreater(cfg.max_dataset_workers, 0)
         self.assertGreater(cfg.max_mlx_heavy_processes, 0)
+
+    def test_frozen_config_digest_is_deterministic(self):
+        self.assertEqual(
+            frozen_config_sha256(Exp421Config()),
+            frozen_config_sha256(Exp421Config()),
+        )
+        self.assertEqual(len(frozen_config_sha256(Exp421Config())), 64)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 """Exact immutable configuration preregistered for Exp421."""
 
-from dataclasses import dataclass, fields
+from dataclasses import asdict, dataclass, fields
+from hashlib import sha256
+import json
 from math import isfinite
 from numbers import Real
 
@@ -55,3 +57,14 @@ class Exp421Config:
 
 FROZEN_CONFIG = Exp421Config()
 FROZEN_CONFIG.validate()
+
+
+def frozen_config_sha256(config: Exp421Config = FROZEN_CONFIG) -> str:
+    """Return the canonical digest for the exact immutable Exp421 config."""
+    if type(config) is not Exp421Config:
+        raise ValueError("config must be an Exp421Config")
+    config.validate()
+    payload = json.dumps(
+        asdict(config), sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+    ).encode("utf-8")
+    return sha256(payload).hexdigest()
