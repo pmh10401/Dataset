@@ -87,6 +87,69 @@ def _cache_scores(values: object, expected_count: int) -> tuple[float, ...]:
     return scores
 
 
+def _validated_cache_evidence(
+    *,
+    horizon: object,
+    center: object,
+    scale: object,
+    exceedance_threshold: object,
+    normalized_oof_residuals: object,
+    oof_scores: object,
+    formula_version: object,
+) -> tuple[int, float, float, float, tuple[np.ndarray, ...], tuple[float, ...]]:
+    frozen_horizon = _positive_horizon(horizon)
+    frozen_center = _finite_number(center, "center")
+    frozen_scale = _finite_number(scale, "scale")
+    if frozen_scale <= _MIN_ROBUST_SCALE:
+        raise ValueError("OOF residual robust scale must be finite and greater than 1e-12")
+    threshold = _finite_number(exceedance_threshold, "exceedance_threshold")
+    normalized = _cache_arrays(normalized_oof_residuals)
+    scores = _cache_scores(oof_scores, len(normalized))
+    if formula_version != _FORMULA_VERSION:
+        raise ValueError("formula_version must match frozen Exp417 scoring")
+    expected_threshold = float(
+        np.percentile(np.concatenate(normalized), 99, method="linear")
+    )
+    if threshold != expected_threshold:
+        raise ValueError("exceedance_threshold must match normalized OOF residuals")
+    expected_scores = tuple(
+        _series_score(values, threshold)[0] for values in normalized
+    )
+    if scores != expected_scores:
+        raise ValueError("oof_scores must match frozen series scoring")
+    return frozen_horizon, frozen_center, frozen_scale, threshold, normalized, scores
+
+
+def _cache_evidence_digest(
+    *,
+    horizon: int,
+    center: float,
+    scale: float,
+    exceedance_threshold: float,
+    normalized_oof_residuals: tuple[np.ndarray, ...],
+    oof_scores: tuple[float, ...],
+    formula_version: str,
+) -> str:
+    """Return the canonical digest for exactly the immutable cache evidence."""
+    digest = sha256()
+    digest.update(formula_version.encode("ascii"))
+    digest.update(b"\x00")
+    digest.update(horizon.to_bytes(8, byteorder="little", signed=False))
+    for value in (center, scale, exceedance_threshold):
+        digest.update(np.asarray([value], dtype="<f8").tobytes())
+    digest.update(len(normalized_oof_residuals).to_bytes(8, byteorder="little", signed=False))
+    for values in normalized_oof_residuals:
+        canonical = np.ascontiguousarray(values, dtype="<f8")
+        digest.update(canonical.ndim.to_bytes(8, byteorder="little", signed=False))
+        for dimension in canonical.shape:
+            digest.update(dimension.to_bytes(8, byteorder="little", signed=False))
+        digest.update(canonical.nbytes.to_bytes(8, byteorder="little", signed=False))
+        digest.update(canonical.tobytes())
+    digest.update(len(oof_scores).to_bytes(8, byteorder="little", signed=False))
+    digest.update(np.asarray(oof_scores, dtype="<f8").tobytes())
+    return digest.hexdigest()
+
+
 @dataclass(frozen=True)
 class CalibrationCache:
     """Precomputed, immutable normal-TRAIN evidence for one exact horizon."""
@@ -101,34 +164,34 @@ class CalibrationCache:
     formula_version: str = _FORMULA_VERSION
 
     def __post_init__(self) -> None:
-        _positive_horizon(self.horizon)
-        center = _finite_number(self.center, "center")
-        scale = _finite_number(self.scale, "scale")
-        if scale <= _MIN_ROBUST_SCALE:
-            raise ValueError("OOF residual robust scale must be finite and greater than 1e-12")
-        threshold = _finite_number(self.exceedance_threshold, "exceedance_threshold")
-        normalized = _cache_arrays(self.normalized_oof_residuals)
-        scores = _cache_scores(self.oof_scores, len(normalized))
+        horizon, center, scale, threshold, normalized, scores = _validated_cache_evidence(
+            horizon=self.horizon,
+            center=self.center,
+            scale=self.scale,
+            exceedance_threshold=self.exceedance_threshold,
+            normalized_oof_residuals=self.normalized_oof_residuals,
+            oof_scores=self.oof_scores,
+            formula_version=self.formula_version,
+        )
         if not (
             isinstance(self.digest, str)
             and len(self.digest) == 64
             and all(character in "0123456789abcdef" for character in self.digest)
         ):
             raise ValueError("digest must be a lowercase SHA-256 digest")
-        if self.formula_version != _FORMULA_VERSION:
-            raise ValueError("formula_version must match frozen Exp417 scoring")
-
-        expected_threshold = float(
-            np.percentile(np.concatenate(normalized), 99, method="linear")
+        expected_digest = _cache_evidence_digest(
+            horizon=horizon,
+            center=center,
+            scale=scale,
+            exceedance_threshold=threshold,
+            normalized_oof_residuals=normalized,
+            oof_scores=scores,
+            formula_version=self.formula_version,
         )
-        if threshold != expected_threshold:
-            raise ValueError("exceedance_threshold must match normalized OOF residuals")
-        expected_scores = tuple(
-            _series_score(values, threshold)[0] for values in normalized
-        )
-        if scores != expected_scores:
-            raise ValueError("oof_scores must match frozen series scoring")
+        if self.digest != expected_digest:
+            raise ValueError("digest must bind the complete calibration cache evidence")
 
+        object.__setattr__(self, "horizon", horizon)
         object.__setattr__(self, "center", center)
         object.__setattr__(self, "scale", scale)
         object.__setattr__(self, "exceedance_threshold", threshold)
@@ -136,23 +199,35 @@ class CalibrationCache:
         object.__setattr__(self, "oof_scores", scores)
 
 
-def calibration_digest(oof_residuals: Sequence[np.ndarray], *, horizon: int) -> str:
-    """Hash validated OOF residuals in canonical, endian-stable form."""
-    _positive_horizon(horizon)
-    oof = _aligned_oof(oof_residuals)
-    digest = sha256()
-    digest.update(_FORMULA_VERSION.encode("ascii"))
-    digest.update(b"\x00")
-    digest.update(horizon.to_bytes(8, byteorder="little", signed=False))
-    digest.update(len(oof).to_bytes(8, byteorder="little", signed=False))
-    for values in oof:
-        canonical = np.ascontiguousarray(values, dtype="<f8")
-        digest.update(canonical.ndim.to_bytes(8, byteorder="little", signed=False))
-        for dimension in canonical.shape:
-            digest.update(dimension.to_bytes(8, byteorder="little", signed=False))
-        digest.update(canonical.nbytes.to_bytes(8, byteorder="little", signed=False))
-        digest.update(canonical.tobytes())
-    return digest.hexdigest()
+def calibration_digest(
+    *,
+    horizon: int,
+    center: float,
+    scale: float,
+    exceedance_threshold: float,
+    normalized_oof_residuals: Sequence[np.ndarray],
+    oof_scores: Sequence[float],
+    formula_version: str = _FORMULA_VERSION,
+) -> str:
+    """Hash complete validated cache evidence in canonical endian-stable form."""
+    evidence = _validated_cache_evidence(
+        horizon=horizon,
+        center=center,
+        scale=scale,
+        exceedance_threshold=exceedance_threshold,
+        normalized_oof_residuals=normalized_oof_residuals,
+        oof_scores=oof_scores,
+        formula_version=formula_version,
+    )
+    return _cache_evidence_digest(
+        horizon=evidence[0],
+        center=evidence[1],
+        scale=evidence[2],
+        exceedance_threshold=evidence[3],
+        normalized_oof_residuals=evidence[4],
+        oof_scores=evidence[5],
+        formula_version=formula_version,
+    )
 
 
 def build_calibration_cache(
@@ -179,7 +254,14 @@ def build_calibration_cache(
         exceedance_threshold=threshold,
         normalized_oof_residuals=normalized,
         oof_scores=scores,
-        digest=calibration_digest(source, horizon=horizon),
+        digest=calibration_digest(
+            horizon=horizon,
+            center=center,
+            scale=scale,
+            exceedance_threshold=threshold,
+            normalized_oof_residuals=normalized,
+            oof_scores=scores,
+        ),
     )
 
 

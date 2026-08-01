@@ -8,7 +8,8 @@ import unittest
 import numpy as np
 
 from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
-from experiments.exp417_causal_multihorizon_shadow.scoring import score_horizon
+from experiments.exp417_causal_multihorizon_shadow.preprocessing import build_horizons
+from experiments.exp417_causal_multihorizon_shadow.scoring import seed_decision, score_horizon
 from experiments.exp421_mps_batched_acceleration.calibration import (
     CalibrationCache,
     build_calibration_cache,
@@ -27,6 +28,17 @@ def _oof_residuals() -> tuple[np.ndarray, ...]:
         np.array([0.15, 0.55, 0.75, 1.40, 0.30, 1.55, 0.45, 0.95], dtype=np.float64),
         np.array([0.20, 0.60, 1.05, 1.65, 0.40, 1.30, 0.70, 1.10], dtype=np.float64),
     )
+
+
+def _digest_arguments(cache: CalibrationCache) -> dict[str, object]:
+    return {
+        "horizon": cache.horizon,
+        "center": cache.center,
+        "scale": cache.scale,
+        "exceedance_threshold": cache.exceedance_threshold,
+        "normalized_oof_residuals": cache.normalized_oof_residuals,
+        "oof_scores": cache.oof_scores,
+    }
 
 
 class CalibrationCacheTests(unittest.TestCase):
@@ -54,11 +66,34 @@ class CalibrationCacheTests(unittest.TestCase):
                     and expected.persistence >= FROZEN_CONFIG.persistence_fraction,
                 )
 
+    def test_cached_horizon_triple_preserves_frozen_seed_decision_inputs(self) -> None:
+        """Catches cache evidence that changes a frozen three-horizon seed decision."""
+        horizons = build_horizons(64)
+        oof = _oof_residuals()
+        query = np.array([0.20, 2.20, 2.30, 2.40, 0.30, 0.40, 0.50, 0.60])
+        actual = {
+            horizon: score_query_with_cache(
+                build_calibration_cache(oof, horizon=horizon), query
+            )
+            for horizon in horizons
+        }
+        expected = {
+            horizon: score_horizon(oof, query, horizon=horizon)
+            for horizon in horizons
+        }
+        self.assertEqual(
+            seed_decision(actual, seed=FROZEN_CONFIG.model_seeds[0]),
+            seed_decision(expected, seed=FROZEN_CONFIG.model_seeds[0]),
+        )
+
     def test_cache_contains_only_train_calibration_evidence(self) -> None:
-        """Catches accidental retention of labels or TEST identity data in a calibration entry."""
+        """Catches retention of prohibited labels, identities, review, or evaluation data."""
         cache = build_calibration_cache(_oof_residuals(), horizon=HORIZON)
         field_names = {item.name.lower() for item in fields(cache)}
-        self.assertFalse(any("label" in name or "test" in name for name in field_names))
+        prohibited = (
+            "label", "test", "anomaly", "location", "human", "review", "evaluation", "metric",
+        )
+        self.assertFalse(any(token in name for name in field_names for token in prohibited))
         self.assertEqual(len(cache.normalized_oof_residuals), 3)
         self.assertEqual(len(cache.oof_scores), 3)
 
@@ -82,23 +117,48 @@ class CalibrationCacheTests(unittest.TestCase):
                 digest=cache.digest,
             )
 
+    def test_cache_rejects_a_valid_format_digest_that_does_not_bind_its_evidence(self) -> None:
+        """Catches accepted cache metadata whose center or digest can change query scores."""
+        cache = build_calibration_cache(_oof_residuals(), horizon=HORIZON)
+        with self.assertRaisesRegex(ValueError, "digest"):
+            CalibrationCache(
+                horizon=cache.horizon,
+                center=cache.center + 0.25,
+                scale=cache.scale,
+                exceedance_threshold=cache.exceedance_threshold,
+                normalized_oof_residuals=cache.normalized_oof_residuals,
+                oof_scores=cache.oof_scores,
+                digest=cache.digest,
+            )
+        with self.assertRaisesRegex(ValueError, "digest"):
+            CalibrationCache(
+                horizon=cache.horizon,
+                center=cache.center,
+                scale=cache.scale,
+                exceedance_threshold=cache.exceedance_threshold,
+                normalized_oof_residuals=cache.normalized_oof_residuals,
+                oof_scores=cache.oof_scores,
+                digest="0" * 64,
+            )
+
     def test_digest_is_canonical_and_changes_when_residual_bytes_change(self) -> None:
         """Catches a digest that omits horizon, shape, or canonical residual bytes."""
         original = _oof_residuals()
+        original_cache = build_calibration_cache(original, horizon=HORIZON)
         changed = list(_oof_residuals())
         changed[1] = changed[1].copy()
         changed[1][3] += 0.125
         self.assertEqual(
-            calibration_digest(original, horizon=HORIZON),
-            build_calibration_cache(original, horizon=HORIZON).digest,
+            calibration_digest(**_digest_arguments(original_cache)),
+            original_cache.digest,
         )
         self.assertNotEqual(
-            calibration_digest(original, horizon=HORIZON),
-            calibration_digest(tuple(changed), horizon=HORIZON),
+            original_cache.digest,
+            build_calibration_cache(tuple(changed), horizon=HORIZON).digest,
         )
         self.assertNotEqual(
-            calibration_digest(original, horizon=HORIZON),
-            calibration_digest(original, horizon=HORIZON + 1),
+            original_cache.digest,
+            build_calibration_cache(original, horizon=HORIZON + 1).digest,
         )
 
     def test_build_and_query_fail_closed_for_invalid_calibration_inputs(self) -> None:
