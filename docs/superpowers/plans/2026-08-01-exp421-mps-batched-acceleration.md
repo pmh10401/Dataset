@@ -113,7 +113,7 @@ def run_train_only_benchmark(database: Path, output_root: Path, *, config: Exp42
 
 **Interfaces:**
 - Consumes: `Exp417FrozenConfig`, `FROZEN_CONFIG`, and the existing `TrainedSeedModel`/`HorizonScore` types.
-- Produces: validated `Exp421Config`, `BatchKey`, `BackendMeasurement`, `ParityReport`, `MlxAssessment`, `BackendPolicy`, and `Exp421Manifest` records used by the following tasks.
+- Produces: validated `Exp421Config`, `BatchKey`, `BackendMeasurement`, `ParityReport`, `MpsAssessment`, `BackendPolicy`, and `Exp421Manifest` records used by the following tasks. Runtime backends are CPU/MPS; MLX is capability/version provenance only.
 
 - [ ] **Step 1: Write failing configuration tests.** Assert the exact batch tuple, gates, frozen seeds, positive resource bounds, and rejection of a changed candidate batch, changed gate, or changed frozen seed.
 
@@ -298,7 +298,7 @@ git commit -m "feat(exp421): cache deterministic TRAIN perturbations"
 - Create: `experiments/exp421_mps_batched_acceleration/tests/test_policy.py`
 
 **Interfaces:**
-- Consumes: `BackendMeasurement`, `ParityReport`, `MlxAssessment`, and `Exp421Config`.
+- Consumes: `BackendMeasurement`, `ParityReport`, `MpsAssessment`, and `Exp421Config`. Runtime backends are CPU/MPS; MLX is capability/version provenance only.
 - Produces: `choose_backend(measurements, config)` and a `BackendPolicy` containing selected backend per batch size, exact reasons, and a `fail_closed` boolean.
 
 - [ ] **Step 1: Write red policy tests.** Cover CPU selection at batch one, MPS selection only when all gates pass, CPU fallback for unavailable MPS, nonfinite output, coordinate mismatch, normalized error above `1e-4`, Spearman below `0.999`, speedup below `1.1`, missing transfer/synchronization timings, and any MLX ineligibility. Assert no input can alter alpha, threshold, seeds, or qualification fields.
@@ -313,7 +313,7 @@ Expected: missing policy implementation failure.
 
 - [ ] **Step 3: Implement deterministic policy evaluation.** Validate that one measurement exists for every declared batch size and that total timing equals transfer + compute + synchronization within a fixed tolerance. Calculate CPU-over-MPS speedup from the complete stage; choose MPS only for passing rows with batch size at least four; otherwise record a reason and choose CPU. Reject an incomplete manifest rather than silently assuming a pass.
 
-- [ ] **Step 4: Add MPS/MLX capability assessment.** Record `torch.__version__`, `torch.backends.mps.is_built()`, `torch.backends.mps.is_available()`, device name, `mlx` version, `mlx-metal` version, and the exact reason MLX is ineligible (`package_absent` or `algorithm_rewrite_required`). Never import or install MLX as part of the benchmark.
+- [ ] **Step 4: Add MPS/MLX capability assessment.** Record `torch.__version__`, `torch.backends.mps.is_built()`, `torch.backends.mps.is_available()`, device name, `mlx` version, `mlx-metal` version, and the exact reason MLX is ineligible (`package_absent` or `algorithm_rewrite_required`) in manifest provenance only. Never import or install MLX as part of the benchmark; no runtime measurement is labeled MLX.
 
 - [ ] **Step 5: Run and commit.**
 
@@ -331,7 +331,7 @@ git commit -m "feat(exp421): add fail-closed backend policy"
 - Create: `SOURCE_MANIFEST.json`
 
 **Interfaces:**
-- Consumes: `Exp421Config`, `BackendPolicy`, `MlxAssessment`, `BackendMeasurement`, source file paths, and the pinned database digest.
+- Consumes: `Exp421Config`, `BackendPolicy`, `MpsAssessment`, `BackendMeasurement`, source file paths, and the pinned database digest. MLX fields remain capability/version provenance only.
 - Produces: `build_manifest(...) -> Exp421Manifest`, `validate_manifest(payload) -> Exp421Manifest`, `canonical_manifest_sha256(payload) -> str`, and atomic `write_manifest(path, manifest)`.
 
 - [ ] **Step 1: Write red manifest tests.** Assert required fields include experiment ID, Git commit, database SHA-256, Exp417 config digest, device, PyTorch, MLX/`mlx-metal` status, candidate batch sizes, measurements, parity, policy, fallback reasons, source digests, attempt root, and `train_only=true`. Reject missing fields, non-hex digests, TEST/label/location tokens in SQL or artifact declarations, changed batch list, and output paths inside the official Exp419 root.
