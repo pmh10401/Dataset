@@ -5,7 +5,6 @@ from __future__ import annotations
 from copy import deepcopy
 import json
 from pathlib import Path
-import shutil
 from tempfile import TemporaryDirectory
 import unittest
 
@@ -22,6 +21,7 @@ from experiments.exp422_mps_numeric_delta.core_parity import CoreStageResult
 from experiments.exp422_mps_numeric_delta.manifest import (
     SOURCE_MANIFEST_RELATIVE,
     build_manifest,
+    source_manifest_git_commit,
     validate_manifest,
     verify_source_manifest,
     write_manifest,
@@ -46,29 +46,34 @@ def _capability() -> DeviceCapability:
 
 def _core(state: StageResult | None = None) -> CoreStageResult:
     stage = state or StageResult.failed("mps_unavailable")
-    delta = TensorDelta(
-        "prediction",
-        True,
-        0.0,
-        0.0,
-        0.0,
-        0,
-        "1" * 64,
-        "1" * 64,
-        None,
-    )
-    reports = tuple(
-        CoreParityReport(
-            BatchKey(batch, FROZEN_CONFIG.model_seeds[0], FROZEN_CONFIG.perturbation_seeds[0]),
-            (delta,),
-            TimingEvidence("cpu", 0.0, 0.02, 0.0, 0.02),
-            TimingEvidence("mps", 0.0, 0.01, 0.0, 0.01),
-            stage.state == "passed",
-            1.0,
-        )
-        for batch in FROZEN_CONFIG.candidate_batch_sizes
-    )
-    return CoreStageResult(_capability(), reports, stage)
+    reports = []
+    for batch in FROZEN_CONFIG.candidate_batch_sizes:
+        for model_seed, perturbation_seed in zip(
+            FROZEN_CONFIG.model_seeds, FROZEN_CONFIG.perturbation_seeds, strict=True
+        ):
+            for length in (64, 128, 256, 512):
+                delta = TensorDelta(
+                    f"length_{length}_prediction",
+                    True,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0,
+                    "1" * 64,
+                    "1" * 64,
+                    None,
+                )
+                reports.append(
+                    CoreParityReport(
+                        BatchKey(batch, model_seed, perturbation_seed),
+                        (delta,),
+                        TimingEvidence("cpu", 0.0, 0.02, 0.0, 0.02),
+                        TimingEvidence("mps", 0.0, 0.01, 0.0, 0.01),
+                        stage.state == "passed",
+                        1.0,
+                    )
+                )
+    return CoreStageResult(_capability(), tuple(reports), stage)
 
 
 def _provenance() -> dict[str, object]:
@@ -87,6 +92,7 @@ def _provenance() -> dict[str, object]:
         "mps_available": capability.mps_available,
         "mps_built": capability.mps_built,
         "repeats": 1,
+        "source_git_commit": "c" * 40,
         "source_manifest_sha256": "b" * 64,
         "sqlite_quick_check": "ok",
         "torch_version": capability.torch_version,
@@ -117,6 +123,13 @@ class Exp422ManifestTests(unittest.TestCase):
             validate_manifest(missing)
         with self.assertRaisesRegex(ValueError, "batch"):
             validate_manifest(changed)
+
+    def test_validation_rejects_incomplete_core_matrix(self) -> None:
+        payload = build_manifest(_core(), None, _provenance()).to_payload()
+        payload["core_stage"]["reports"] = payload["core_stage"]["reports"][:-1]
+
+        with self.assertRaisesRegex(ValueError, "60-row|complete exact"):
+            validate_manifest(payload)
 
     def test_validation_rejects_noncanonical_digest_and_test_token(self) -> None:
         payload = build_manifest(_core(), None, _provenance()).to_payload()
@@ -169,25 +182,35 @@ class Exp422ManifestTests(unittest.TestCase):
     def test_checked_in_source_manifest_matches_declared_sources(self) -> None:
         digest = verify_source_manifest(REPO_ROOT)
         self.assertRegex(digest, r"^[0-9a-f]{64}$")
+        self.assertRegex(source_manifest_git_commit(REPO_ROOT), r"^[0-9a-f]{40,64}$")
 
     def test_declared_source_tampering_is_rejected(self) -> None:
         source_manifest = REPO_ROOT / SOURCE_MANIFEST_RELATIVE
         source_payload = json.loads(source_manifest.read_bytes())
         with TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            for entry in source_payload["sources"]:
-                source = REPO_ROOT / entry["path"]
-                target = root / entry["path"]
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(source, target)
-            manifest_copy = root / SOURCE_MANIFEST_RELATIVE
+            manifest_copy = Path(temporary) / "source-manifest.json"
             manifest_copy.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source_manifest, manifest_copy)
-            declared = root / source_payload["sources"][0]["path"]
-            declared.write_bytes(declared.read_bytes() + b"\n# tampered\n")
+            source_payload["sources"][0]["sha256"] = "a" * 64
+            manifest_copy.write_bytes(
+                json.dumps(source_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")
+                + b"\n"
+            )
 
             with self.assertRaisesRegex(ValueError, "digest|source"):
-                verify_source_manifest(root)
+                verify_source_manifest(REPO_ROOT, manifest_copy)
+
+    def test_wrong_source_snapshot_commit_is_rejected(self) -> None:
+        source_manifest = REPO_ROOT / SOURCE_MANIFEST_RELATIVE
+        source_payload = json.loads(source_manifest.read_bytes())
+        source_payload["git_commit"] = "d" * 40
+        with TemporaryDirectory() as temporary:
+            manifest_copy = Path(temporary) / "source-manifest.json"
+            manifest_copy.write_bytes(
+                json.dumps(source_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")
+                + b"\n"
+            )
+            with self.assertRaisesRegex(ValueError, "commit|Git"):
+                verify_source_manifest(REPO_ROOT, manifest_copy)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ from experiments.exp422_mps_numeric_delta.config import FROZEN_CONFIG, frozen_co
 from experiments.exp422_mps_numeric_delta.core_parity import run_core_parity
 from experiments.exp422_mps_numeric_delta.manifest import (
     build_manifest,
+    source_manifest_git_commit,
     verify_source_manifest,
     write_manifest,
 )
@@ -167,6 +168,7 @@ def _provenance(
     output_root: Path,
     repeats: int,
     git_commit: str,
+    source_git_commit: str,
     source_manifest_sha256: str,
     sqlite_quick_check: str,
     capability: object,
@@ -189,6 +191,7 @@ def _provenance(
         "mps_available": capability.mps_available,
         "mps_built": capability.mps_built,
         "repeats": repeats,
+        "source_git_commit": source_git_commit,
         "source_manifest_sha256": source_manifest_sha256,
         "sqlite_quick_check": sqlite_quick_check,
         "torch_version": capability.torch_version,
@@ -203,6 +206,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     capability = detect_capability()
     quick_check = preflight_database(args.database)
     source_digest = verify_source_manifest(REPO_ROOT)
+    source_git_commit = source_manifest_git_commit(REPO_ROOT)
     git_commit = current_git_commit(REPO_ROOT)
     output_root.mkdir(parents=True, exist_ok=True)
 
@@ -228,6 +232,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             output_root=output_root,
             repeats=args.repeats,
             git_commit=git_commit,
+            source_git_commit=source_git_commit,
             source_manifest_sha256=source_digest,
             sqlite_quick_check=quick_check,
             capability=capability,

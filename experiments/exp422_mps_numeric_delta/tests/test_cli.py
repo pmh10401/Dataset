@@ -98,6 +98,8 @@ class Exp422CliTests(unittest.TestCase):
             with patch.object(cli, "detect_capability", return_value=_capability()), patch.object(
                 cli, "preflight_database", return_value="ok"
             ), patch.object(cli, "verify_source_manifest", return_value="b" * 64), patch.object(
+                cli, "source_manifest_git_commit", return_value="c" * 40
+            ), patch.object(
                 cli, "current_git_commit", return_value="a" * 40
             ), patch.object(cli, "run_core_parity", return_value=_core()), patch.object(
                 cli, "select_train_sample", side_effect=AssertionError("score selector must be skipped")

@@ -10,6 +10,7 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import stat
+import subprocess
 from types import MappingProxyType
 
 from .capability import DeviceCapability
@@ -21,7 +22,7 @@ from .contracts import (
     TensorDelta,
     TimingEvidence,
 )
-from .core_parity import CoreStageResult
+from .core_parity import CoreStageResult, _LENGTHS
 from .score_parity import ScoreBatchReport, ScoreStageResult, validate_dataset_name
 
 
@@ -50,6 +51,7 @@ _PROVENANCE_FIELDS = frozenset(
         "mps_built",
         "repeats",
         "source_manifest_sha256",
+        "source_git_commit",
         "sqlite_quick_check",
         "torch_version",
         "train_only",
@@ -73,6 +75,8 @@ SOURCE_MANIFEST_RELATIVE = "experiments/exp422_mps_numeric_delta/SOURCE_MANIFEST
 _SOURCE_PATHS = (
     "docs/EXP422_PREREGISTRATION_KO.md",
     "docs/EXP422_RUNBOOK_KO.md",
+    "docs/superpowers/plans/2026-08-02-exp422-mps-numeric-delta.md",
+    "docs/superpowers/specs/2026-08-02-exp422-mps-numeric-delta-design.md",
     "experiments/exp422_mps_numeric_delta/__init__.py",
     "experiments/exp422_mps_numeric_delta/capability.py",
     "experiments/exp422_mps_numeric_delta/config.py",
@@ -80,8 +84,19 @@ _SOURCE_PATHS = (
     "experiments/exp422_mps_numeric_delta/core_parity.py",
     "experiments/exp422_mps_numeric_delta/manifest.py",
     "experiments/exp422_mps_numeric_delta/score_parity.py",
+    "experiments/exp422_mps_numeric_delta/tests/__init__.py",
+    "experiments/exp422_mps_numeric_delta/tests/test_capability.py",
+    "experiments/exp422_mps_numeric_delta/tests/test_cli.py",
+    "experiments/exp422_mps_numeric_delta/tests/test_config.py",
+    "experiments/exp422_mps_numeric_delta/tests/test_contracts.py",
+    "experiments/exp422_mps_numeric_delta/tests/test_core_parity.py",
+    "experiments/exp422_mps_numeric_delta/tests/test_manifest.py",
+    "experiments/exp422_mps_numeric_delta/tests/test_score_boundary.py",
+    "experiments/exp422_mps_numeric_delta/tests/test_score_parity.py",
     "scratch/run_exp422_mps_numeric_delta.py",
 )
+
+_CORE_LENGTHS = _LENGTHS
 
 
 def _canonical_json_bytes(value: object) -> bytes:
@@ -287,12 +302,35 @@ def _parse_core(value: object) -> CoreStageResult:
     if isinstance(raw_reports, (str, bytes)) or not isinstance(raw_reports, Sequence) or not raw_reports:
         raise ValueError("core reports must be a nonempty sequence")
     reports = tuple(_parse_core_report(report) for report in raw_reports)
-    observed: list[int] = []
+    expected = {
+        (batch_size, model_seed, perturbation_seed, length)
+        for batch_size in FROZEN_CONFIG.candidate_batch_sizes
+        for model_seed, perturbation_seed in zip(
+            FROZEN_CONFIG.model_seeds, FROZEN_CONFIG.perturbation_seeds, strict=True
+        )
+        for length in _CORE_LENGTHS
+    }
+    observed: list[tuple[int, int, int, int]] = []
     for report in reports:
-        if not observed or observed[-1] != report.batch_key.batch_size:
-            observed.append(report.batch_key.batch_size)
-    if tuple(observed) != FROZEN_CONFIG.candidate_batch_sizes:
-        raise ValueError("core reports must preserve the exact batch schedule")
+        lengths: set[int] = set()
+        for delta in report.tensor_deltas:
+            match = re.fullmatch(r"length_(\d+)_(?:horizon_\d+|prediction)", delta.name)
+            if match is None:
+                raise ValueError("core report tensor names do not bind a canonical length")
+            lengths.add(int(match.group(1)))
+        if len(lengths) != 1:
+            raise ValueError("core report must contain exactly one canonical length")
+        length = next(iter(lengths))
+        observed.append(
+            (
+                report.batch_key.batch_size,
+                report.batch_key.model_seed,
+                report.batch_key.perturbation_seed,
+                length,
+            )
+        )
+    if len(observed) != len(expected) or len(set(observed)) != len(observed) or set(observed) != expected:
+        raise ValueError("core reports must contain the complete exact 60-row evidence matrix")
     stage = _parse_stage(value["stage"], "core")
     if stage.state == "passed" and not all(report.passes for report in reports):
         raise ValueError("passed core stage contains a failed report")
@@ -497,6 +535,11 @@ def _validate_provenance(value: object, capability: DeviceCapability) -> dict[st
     _sha256_digest(provenance["source_manifest_sha256"], "source_manifest_sha256")
     if not isinstance(provenance["git_commit"], str) or _GIT_RE.fullmatch(provenance["git_commit"]) is None:
         raise ValueError("git_commit must be a canonical lowercase Git digest")
+    if (
+        not isinstance(provenance["source_git_commit"], str)
+        or _GIT_RE.fullmatch(provenance["source_git_commit"]) is None
+    ):
+        raise ValueError("source_git_commit must be a canonical lowercase Git digest")
     if provenance["sqlite_quick_check"] != "ok":
         raise ValueError("SQLite quick-check must be ok")
     if type(provenance["repeats"]) is not int or not 1 <= provenance["repeats"] <= 7:
@@ -697,36 +740,62 @@ def _validated_source_path(value: object) -> str:
     return value
 
 
-def propose_source_manifest(repo_root: Path) -> bytes:
-    """Return canonical reviewed-source bytes without mutating the repository."""
-    root = Path(repo_root)
-    sources = []
-    for relative in _SOURCE_PATHS:
-        data = _read_regular_no_follow(root / relative, f"source {relative}")
-        sources.append({"path": relative, "sha256": sha256(data).hexdigest()})
-    payload = {
-        "artifact_kind": _SOURCE_ARTIFACT_KIND,
-        "schema_version": _SCHEMA_VERSION,
-        "sources": sources,
-    }
-    return _canonical_json_bytes(payload) + b"\n"
+def _validated_git_commit(value: object, name: str = "git_commit") -> str:
+    if not isinstance(value, str) or _GIT_RE.fullmatch(value) is None:
+        raise ValueError(f"{name} must be a canonical lowercase Git digest")
+    return value
 
 
-def verify_source_manifest(
-    repo_root: Path,
-    manifest_path: Path | None = None,
-) -> str:
-    """Verify the exact declared Exp422 runtime/documentation source set."""
-    root = Path(repo_root)
-    path = root / SOURCE_MANIFEST_RELATIVE if manifest_path is None else Path(manifest_path)
-    raw = _read_regular_no_follow(path, "source manifest")
+def _git_stdout(repo_root: Path, args: Sequence[str], description: str) -> bytes:
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            cwd=Path(repo_root),
+            check=True,
+            capture_output=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError(f"unable to verify {description}") from exc
+    return result.stdout
+
+
+def _git_commit_exists(repo_root: Path, commit: str) -> None:
+    resolved = _git_stdout(
+        repo_root,
+        ["rev-parse", "--verify", f"{commit}^{{commit}}"],
+        "source-manifest Git commit",
+    ).decode("ascii", errors="strict").strip()
+    if resolved != commit:
+        raise ValueError("source-manifest Git commit is not an exact commit object")
+
+
+def _git_head(repo_root: Path) -> str:
+    head = _git_stdout(repo_root, ["rev-parse", "--verify", "HEAD"], "current Git HEAD")
+    return _validated_git_commit(head.decode("ascii", errors="strict").strip(), "current Git HEAD")
+
+
+def _git_worktree_is_clean(repo_root: Path) -> None:
+    for args in (("diff", "--quiet", "HEAD", "--"), ("diff", "--cached", "--quiet", "HEAD", "--")):
+        try:
+            subprocess.run(["git", *args], cwd=Path(repo_root), check=True, capture_output=True)
+        except subprocess.CalledProcessError as exc:
+            raise ValueError("source-manifest Git worktree has tracked changes") from exc
+        except OSError as exc:
+            raise ValueError("unable to verify source-manifest Git worktree") from exc
+
+
+def _git_blob(repo_root: Path, commit: str, relative: str) -> bytes:
+    return _git_stdout(repo_root, ["show", f"{commit}:{relative}"], f"Git source blob {relative}")
+
+
+def _source_manifest_payload(raw: bytes) -> tuple[dict[str, object], str]:
     try:
         payload = json.loads(raw)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("source manifest is invalid JSON") from exc
     if (
         not isinstance(payload, dict)
-        or set(payload) != {"artifact_kind", "schema_version", "sources"}
+        or set(payload) != {"artifact_kind", "schema_version", "git_commit", "sources"}
         or payload["artifact_kind"] != _SOURCE_ARTIFACT_KIND
         or payload["schema_version"] != _SCHEMA_VERSION
         or not isinstance(payload["sources"], list)
@@ -734,6 +803,62 @@ def verify_source_manifest(
         raise ValueError("source manifest schema is invalid")
     if raw != _canonical_json_bytes(payload) + b"\n":
         raise ValueError("source manifest must use canonical JSON")
+    return payload, _validated_git_commit(payload["git_commit"], "source-manifest git_commit")
+
+
+def propose_source_manifest(repo_root: Path, *, git_commit: str) -> bytes:
+    """Return canonical reviewed-source bytes bound to an already-committed source snapshot."""
+    root = Path(repo_root)
+    source_commit = _validated_git_commit(git_commit)
+    _git_commit_exists(root, source_commit)
+    sources = []
+    for relative in _SOURCE_PATHS:
+        data = _read_regular_no_follow(root / relative, f"source {relative}")
+        sources.append({"path": relative, "sha256": sha256(data).hexdigest()})
+    payload = {
+        "artifact_kind": _SOURCE_ARTIFACT_KIND,
+        "schema_version": _SCHEMA_VERSION,
+        "git_commit": source_commit,
+        "sources": sources,
+    }
+    return _canonical_json_bytes(payload) + b"\n"
+
+
+def source_manifest_git_commit(
+    repo_root: Path,
+    manifest_path: Path | None = None,
+) -> str:
+    """Read the source snapshot commit after validating manifest syntax."""
+    root = Path(repo_root)
+    path = root / SOURCE_MANIFEST_RELATIVE if manifest_path is None else Path(manifest_path)
+    raw = _read_regular_no_follow(path, "source manifest")
+    _payload, commit = _source_manifest_payload(raw)
+    return commit
+
+
+def verify_source_manifest(
+    repo_root: Path,
+    manifest_path: Path | None = None,
+) -> str:
+    """Verify declared source bytes against both the working tree and a Git snapshot."""
+    root = Path(repo_root)
+    path = root / SOURCE_MANIFEST_RELATIVE if manifest_path is None else Path(manifest_path)
+    raw = _read_regular_no_follow(path, "source manifest")
+    payload, source_commit = _source_manifest_payload(raw)
+    _git_commit_exists(root, source_commit)
+    head = _git_head(root)
+    try:
+        subprocess.run(
+            ["git", "merge-base", "--is-ancestor", source_commit, head],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise ValueError("source-manifest Git commit is not an ancestor of current HEAD") from exc
+    except OSError as exc:
+        raise ValueError("unable to verify source-manifest Git ancestry") from exc
+    _git_worktree_is_clean(root)
     entries = payload["sources"]
     if any(not isinstance(entry, dict) or set(entry) != {"path", "sha256"} for entry in entries):
         raise ValueError("source manifest entries are invalid")
@@ -742,8 +867,10 @@ def verify_source_manifest(
         raise ValueError("source manifest source set is missing, extra, duplicated, or reordered")
     for entry, relative in zip(entries, paths, strict=True):
         expected = _sha256_digest(entry["sha256"], f"source digest {relative}")
-        actual = sha256(_read_regular_no_follow(root / relative, f"source {relative}")).hexdigest()
-        if actual != expected:
+        current = _read_regular_no_follow(root / relative, f"source {relative}")
+        actual = sha256(current).hexdigest()
+        committed = sha256(_git_blob(root, source_commit, relative)).hexdigest()
+        if actual != expected or committed != expected:
             raise ValueError(f"source digest mismatch: {relative}")
     return sha256(raw).hexdigest()
 
@@ -753,6 +880,7 @@ __all__ = (
     "SOURCE_MANIFEST_RELATIVE",
     "build_manifest",
     "propose_source_manifest",
+    "source_manifest_git_commit",
     "validate_manifest",
     "verify_source_manifest",
     "write_manifest",
