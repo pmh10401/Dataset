@@ -237,6 +237,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             {
                 "experiment": "Exp422-IR",
                 "git_commit": git_commit,
+                "pid": os.getpid(),
                 "predecessor_exp419_exit_code": predecessor_exit_code,
                 "predecessor_policy": "exp419_interrupted_exit_143_only",
                 "progress_log": str((output_root / "progress.jsonl").resolve()),
