@@ -16,6 +16,7 @@ from experiments.exp421_mps_batched_acceleration.config import (
     Exp421Config,
     frozen_config_sha256,
 )
+from experiments.exp421_mps_batched_acceleration.policy import MpsCapability, capability_provenance
 
 
 class Exp421ContractTests(unittest.TestCase):
@@ -83,10 +84,14 @@ class Exp421ContractTests(unittest.TestCase):
                 "source": "exp417",
                 "fresh_no_clobber_attempt": True,
                 "train_only": True,
+                "torch_version": "2.13.0",
+                "mps_built": True,
+                "mps_available": True,
+                "device_name": "Darwin arm64 MPS",
                 "mlx_availability": "available",
                 "mlx_version": "0.20.0",
                 "mlx_metal_version": "0.20.0",
-                "mlx_eligibility_reason": "eligible",
+                "mlx_eligibility_reason": "algorithm_rewrite_required",
             },
         }
         values.update(changes)
@@ -190,9 +195,36 @@ class Exp421ContractTests(unittest.TestCase):
             mlx_eligibility_reason="package_absent",
         )
         self._manifest(provenance=provenance)
-        provenance.update(mlx_eligibility_reason="eligible")
+        provenance.update(mlx_eligibility_reason="algorithm_rewrite_required")
         with self.assertRaises(ValueError):
             self._manifest(provenance=provenance)
+
+    def test_manifest_accepts_capability_provenance_and_preserves_torch_mps_fields(self):
+        capability = MpsCapability(
+            torch_version="2.13.0",
+            mps_built=True,
+            mps_available=True,
+            device_name="Darwin arm64 MPS",
+            mlx_version="0.20.0",
+            mlx_metal_version="0.20.0",
+            mlx_availability="available",
+            mlx_eligibility_reason="algorithm_rewrite_required",
+        )
+        provenance = dict(self._manifest().provenance)
+        provenance = dict(capability_provenance(capability, provenance))
+        manifest = self._manifest(provenance=provenance)
+        self.assertEqual(manifest.provenance["torch_version"], "2.13.0")
+        self.assertTrue(manifest.provenance["mps_built"])
+        self.assertTrue(manifest.provenance["mps_available"])
+        self.assertEqual(manifest.provenance["device_name"], "Darwin arm64 MPS")
+
+    def test_manifest_requires_torch_mps_capability_fields(self):
+        for field in ("torch_version", "mps_built", "mps_available", "device_name"):
+            provenance = dict(self._manifest().provenance)
+            del provenance[field]
+            with self.subTest(field=field):
+                with self.assertRaises(ValueError):
+                    self._manifest(provenance=provenance)
 
     def test_manifest_rejects_test_token_invalid_state_and_writable_cached_array(self):
         writable = np.array([1, 4], dtype=np.int64)

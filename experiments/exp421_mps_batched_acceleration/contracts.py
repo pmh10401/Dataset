@@ -57,13 +57,18 @@ _MANIFEST_PROVENANCE_FIELDS = frozenset(
         "source",
         "fresh_no_clobber_attempt",
         "train_only",
+        "torch_version",
+        "mps_built",
+        "mps_available",
+        "device_name",
         "mlx_availability",
         "mlx_version",
         "mlx_metal_version",
         "mlx_eligibility_reason",
     }
 )
-_MLX_UNAVAILABLE_REASONS = frozenset({"package_absent", "algorithm_rewrite_required"})
+_MLX_UNAVAILABLE_REASONS = frozenset({"package_absent"})
+_MLX_AVAILABLE_REASON = "algorithm_rewrite_required"
 
 
 @dataclass(frozen=True)
@@ -248,7 +253,7 @@ class Exp421Manifest:
             raise ValueError("git_commit must be a lowercase Git object digest")
         if provenance["database_sha256"] != self.config.exp417_config.database_sha256:
             raise ValueError("database_sha256 must bind to Exp417")
-        for name in ("device", "runtime", "source"):
+        for name in ("device", "runtime", "source", "torch_version", "device_name"):
             _no_test_token(provenance[name], name)
         if type(provenance["fresh_no_clobber_attempt"]) is not bool or not provenance["fresh_no_clobber_attempt"]:
             raise ValueError("fresh_no_clobber_attempt must be true")
@@ -256,6 +261,12 @@ class Exp421Manifest:
             raise ValueError("train_only must be true")
         if provenance["device"] != self.policy.assessment.device:
             raise ValueError("manifest device must match the MPS assessment")
+        if type(provenance["mps_built"]) is not bool or type(provenance["mps_available"]) is not bool:
+            raise ValueError("manifest MPS capability fields must be bools")
+        if provenance["mps_available"] != self.policy.assessment.mps_available:
+            raise ValueError("manifest MPS availability must match the assessment")
+        if provenance["mps_available"] and not provenance["mps_built"]:
+            raise ValueError("available MPS requires a built MPS backend")
         availability = provenance["mlx_availability"]
         if availability not in {"available", "unavailable"}:
             raise ValueError("manifest MLX availability must be available or unavailable")
@@ -265,14 +276,14 @@ class Exp421Manifest:
                 raise ValueError("unavailable MLX must have absent or unavailable versions")
             _no_test_token(reason, "mlx_eligibility_reason")
             if reason.strip().lower() not in _MLX_UNAVAILABLE_REASONS:
-                raise ValueError("unavailable MLX must have an explicit unavailable reason")
+                raise ValueError("unavailable MLX must have package_absent reason")
         else:
             for name in ("mlx_version", "mlx_metal_version"):
                 _no_test_token(provenance[name], name)
                 if provenance[name].strip().lower() == "unavailable":
                     raise ValueError("available MLX must have concrete versions")
             _no_test_token(reason, "mlx_eligibility_reason")
-            if reason.strip().lower() in _MLX_UNAVAILABLE_REASONS:
-                raise ValueError("available MLX cannot have an unavailable reason")
+            if reason.strip().lower() != _MLX_AVAILABLE_REASON:
+                raise ValueError("available MLX must have algorithm_rewrite_required reason")
         object.__setattr__(self, "cached_candidate_indices", cached)
         object.__setattr__(self, "provenance", MappingProxyType(provenance))

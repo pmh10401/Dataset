@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 import unittest
+import platform
 
 import numpy as np
 
@@ -173,6 +174,96 @@ class BackendPolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             choose_backend(measurements, Exp421Config())
 
+    def test_policy_rejects_forged_batch_key_seed_fields(self):
+        measurements = self._all_assessments()
+        source = measurements[4]
+        forged_key = object.__new__(BatchKey)
+        object.__setattr__(forged_key, "batch_size", 4)
+        object.__setattr__(forged_key, "model_seed", 99999)
+        object.__setattr__(forged_key, "perturbation_seed", 41711)
+        malformed = object.__new__(MpsAssessment)
+        for field in (
+            "cpu_measurement", "mps_measurement", "parity_report", "speedup",
+            "uses_mps", "fallback_reason", "mps_available", "device",
+        ):
+            object.__setattr__(malformed, field, getattr(source, field))
+        object.__setattr__(malformed, "batch_key", forged_key)
+        measurements[4] = malformed
+        with self.assertRaises(ValueError):
+            choose_backend(measurements, Exp421Config())
+
+    def test_policy_rejects_parity_report_bound_to_another_batch_key(self):
+        measurements = self._all_assessments()
+        source = measurements[4]
+        forged_report = object.__new__(ParityReport)
+        object.__setattr__(forged_report, "batch_key", self._key(8))
+        for field in (
+            "cpu_candidate_indices_by_alpha", "mps_candidate_indices_by_alpha",
+            "max_normalized_error", "spearman",
+        ):
+            object.__setattr__(forged_report, field, getattr(source.parity_report, field))
+        malformed = object.__new__(MpsAssessment)
+        for field in (
+            "batch_key", "cpu_measurement", "mps_measurement", "speedup",
+            "uses_mps", "fallback_reason", "mps_available", "device",
+        ):
+            object.__setattr__(malformed, field, getattr(source, field))
+        object.__setattr__(malformed, "parity_report", forged_report)
+        measurements[4] = malformed
+        with self.assertRaises(ValueError):
+            choose_backend(measurements, Exp421Config())
+
+    def test_policy_rejects_non_bool_finite_evidence(self):
+        measurements = self._all_assessments()
+        source = measurements[4]
+        forged_measurement = object.__new__(BackendMeasurement)
+        for field in (
+            "batch_size", "backend", "transfer_seconds", "compute_seconds",
+            "synchronize_seconds", "total_seconds", "candidate_coordinates_sha256",
+        ):
+            object.__setattr__(forged_measurement, field, getattr(source.mps_measurement, field))
+        object.__setattr__(forged_measurement, "finite", 1)
+        malformed = object.__new__(MpsAssessment)
+        for field in (
+            "batch_key", "cpu_measurement", "parity_report", "speedup",
+            "uses_mps", "fallback_reason", "mps_available", "device",
+        ):
+            object.__setattr__(malformed, field, getattr(source, field))
+        object.__setattr__(malformed, "mps_measurement", forged_measurement)
+        measurements[4] = malformed
+        with self.assertRaises(ValueError):
+            choose_backend(measurements, Exp421Config())
+
+    def test_policy_rejects_assessments_with_missing_required_fields(self):
+        source = self._assessment(4)
+        fields = (
+            "batch_key", "cpu_measurement", "mps_measurement", "parity_report",
+            "speedup", "uses_mps", "fallback_reason", "mps_available", "device",
+        )
+        for missing in ("fallback_reason", "cpu_measurement", "mps_available"):
+            malformed = object.__new__(MpsAssessment)
+            for field in fields:
+                if field != missing:
+                    object.__setattr__(malformed, field, getattr(source, field))
+            measurements = self._all_assessments()
+            measurements[4] = malformed
+            with self.subTest(missing=missing):
+                with self.assertRaises(ValueError):
+                    choose_backend(measurements, Exp421Config())
+
+    def test_bundle_rejects_wrong_reason_backend_assessment_or_fail_closed(self):
+        result = choose_backend(self._all_assessments(), Exp421Config())
+        with self.assertRaises(ValueError):
+            BackendPolicyBundle(result.policies, {**result.reasons, 4: "speedup_below_1.1"})
+        with self.assertRaises(ValueError):
+            BackendPolicyBundle(result.policies, result.reasons, fail_closed=False)
+        forged_policy = object.__new__(type(result.policies[1]))
+        object.__setattr__(forged_policy, "backend", "mps")
+        object.__setattr__(forged_policy, "assessment", result.policies[1].assessment)
+        policies = {**result.policies, 1: forged_policy}
+        with self.assertRaises(ValueError):
+            BackendPolicyBundle(policies, result.reasons, fail_closed=True)
+
     def test_nonfinite_mps_output_falls_back_to_cpu(self):
         measurements = self._all_assessments()
         source = measurements[4]
@@ -227,6 +318,28 @@ class BackendPolicyTests(unittest.TestCase):
         values.update(mlx_availability="unavailable", mlx_version="0.0.0")
         with self.assertRaises(ValueError):
             type(capability)(**values)
+        values = capability.__dict__.copy()
+        values.update(
+            mlx_availability="available",
+            mlx_version="0.20.0",
+            mlx_metal_version="0.20.0",
+            mlx_eligibility_reason="package_absent",
+        )
+        with self.assertRaises(ValueError):
+            type(capability)(**values)
+        values.update(
+            mlx_availability="unavailable",
+            mlx_version="unavailable",
+            mlx_metal_version="unavailable",
+            mlx_eligibility_reason="algorithm_rewrite_required",
+        )
+        with self.assertRaises(ValueError):
+            type(capability)(**values)
+
+    def test_capability_device_name_has_stable_platform_and_architecture_label(self):
+        capability = assess_mps_capability()
+        self.assertIn(platform.system(), capability.device_name)
+        self.assertIn(platform.machine(), capability.device_name)
 
     def test_capability_provenance_is_immutable_and_revalidated(self):
         capability = assess_mps_capability()
@@ -235,6 +348,15 @@ class BackendPolicyTests(unittest.TestCase):
         self.assertEqual(provenance["torch_version"], checked.torch_version)
         with self.assertRaises(TypeError):
             provenance["torch_version"] = "changed"
+
+    def test_capability_rejects_missing_fields_as_value_error(self):
+        capability = assess_mps_capability()
+        forged = object.__new__(type(capability))
+        for name, value in capability.__dict__.items():
+            if name != "torch_version":
+                object.__setattr__(forged, name, value)
+        with self.assertRaises(ValueError):
+            validate_mps_capability(forged)
 
 
 if __name__ == "__main__":

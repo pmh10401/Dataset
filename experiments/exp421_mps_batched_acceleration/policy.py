@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from importlib import metadata
 from math import isclose, isfinite
 from numbers import Real
+import platform
 from types import MappingProxyType
 from typing import Any
 
@@ -32,7 +33,20 @@ from .contracts import (
 
 _TIMING_TOLERANCE = 1e-12
 _MLX_MISSING = "unavailable"
-_MLX_UNAVAILABLE_REASONS = frozenset({"package_absent", "algorithm_rewrite_required"})
+_MISSING = object()
+_MLX_REASONS = frozenset({"package_absent", "algorithm_rewrite_required"})
+_POLICY_REASONS = frozenset(
+    {
+        "batch_size_one_cpu_mandatory",
+        "mps_unavailable",
+        "nonfinite_output",
+        "candidate_coordinates_mismatch",
+        "normalized_error_above_1e-4",
+        "spearman_below_0.999",
+        "speedup_below_1.1",
+        "eligible",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -52,21 +66,44 @@ class BackendPolicyBundle:
 
     def __post_init__(self) -> None:
         expected = FROZEN_CONFIG.candidate_batch_sizes
-        if not isinstance(self.policies, Mapping) or tuple(self.policies) != expected:
+        policy_keys = tuple(self.policies) if isinstance(self.policies, Mapping) else ()
+        reason_keys = tuple(self.reasons) if isinstance(self.reasons, Mapping) else ()
+        if (
+            not isinstance(self.policies, Mapping)
+            or policy_keys != expected
+            or any(type(key) is not int for key in policy_keys)
+        ):
             raise ValueError("policy must cover the exact frozen batch sizes")
-        if not isinstance(self.reasons, Mapping) or tuple(self.reasons) != expected:
+        if (
+            not isinstance(self.reasons, Mapping)
+            or reason_keys != expected
+            or any(type(key) is not int for key in reason_keys)
+        ):
             raise ValueError("policy reasons must cover the exact frozen batch sizes")
+        any_mps = False
+        any_fallback = False
         for batch_size in expected:
             if type(batch_size) is not int:
                 raise ValueError("policy batch sizes must be exact integers")
             policy = self.policies[batch_size]
             if not isinstance(policy, BackendPolicy):
                 raise ValueError("policy rows must be BackendPolicy records")
+            backend = getattr(policy, "backend", _MISSING)
+            assessment = getattr(policy, "assessment", _MISSING)
+            if backend not in {"cpu", "mps"} or not isinstance(assessment, MpsAssessment):
+                raise ValueError("policy rows must contain valid CPU/MPS assessments")
+            uses_mps = getattr(assessment, "uses_mps", _MISSING)
+            if type(uses_mps) is not bool or (backend == "mps") != uses_mps:
+                raise ValueError("policy backend must agree with its MPS assessment")
+            derived_reason = _assessment_reason(assessment, FROZEN_CONFIG)
             reason = self.reasons[batch_size]
-            if not isinstance(reason, str) or not reason.strip():
-                raise ValueError("policy rows require an explicit reason")
-        if type(self.fail_closed) is not bool or not self.fail_closed:
-            raise ValueError("policy must be explicitly fail-closed")
+            if reason != derived_reason or reason not in _POLICY_REASONS:
+                raise ValueError("policy reason must exactly match the frozen assessment gates")
+            any_mps = any_mps or backend == "mps"
+            any_fallback = any_fallback or reason != "eligible"
+        expected_fail_closed = (not any_mps) or any_fallback
+        if type(self.fail_closed) is not bool or self.fail_closed != expected_fail_closed:
+            raise ValueError("policy fail_closed must match MPS selection and fallback rows")
         object.__setattr__(self, "policies", MappingProxyType(dict(self.policies)))
         object.__setattr__(self, "reasons", MappingProxyType(dict(self.reasons)))
 
@@ -96,31 +133,41 @@ class MpsCapability:
     mps_built: bool
     mps_available: bool
     device_name: str
-    mlx_version: str
-    mlx_metal_version: str
+    mlx_version: str | None
+    mlx_metal_version: str | None
     mlx_availability: str
     mlx_eligibility_reason: str
 
     def __post_init__(self) -> None:
-        for name in (
-            "torch_version",
-            "device_name",
-            "mlx_version",
-            "mlx_metal_version",
-            "mlx_eligibility_reason",
-        ):
+        for name in ("torch_version", "device_name", "mlx_eligibility_reason"):
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip() or "test" in value.lower():
                 raise ValueError(f"{name} must be a non-test boundary string")
+        for name in ("mlx_version", "mlx_metal_version"):
+            value = getattr(self, name)
+            if value is not None and (
+                not isinstance(value, str) or not value.strip() or "test" in value.lower()
+            ):
+                raise ValueError(f"{name} must be absent or a non-test version string")
         if type(self.mps_built) is not bool or type(self.mps_available) is not bool:
             raise ValueError("MPS capability flags must be bools")
         if self.mlx_availability not in {"available", "unavailable"}:
             raise ValueError("MLX availability must be available or unavailable")
-        if self.mlx_eligibility_reason not in _MLX_UNAVAILABLE_REASONS:
+        if self.mlx_eligibility_reason not in _MLX_REASONS:
             raise ValueError("MLX must have an exact ineligibility reason")
-        versions_absent = self.mlx_version == _MLX_MISSING and self.mlx_metal_version == _MLX_MISSING
-        if (self.mlx_availability == "unavailable") != versions_absent:
-            raise ValueError("MLX availability must agree with recorded versions")
+        versions_absent = all(
+            value is None or (isinstance(value, str) and value.strip().lower() == _MLX_MISSING)
+            for value in (self.mlx_version, self.mlx_metal_version)
+        )
+        versions_concrete = all(
+            isinstance(value, str) and value.strip() and value.strip().lower() != _MLX_MISSING
+            for value in (self.mlx_version, self.mlx_metal_version)
+        )
+        if self.mlx_eligibility_reason == "package_absent":
+            if self.mlx_availability != "unavailable" or not versions_absent:
+                raise ValueError("package_absent requires unavailable MLX with absent versions")
+        elif self.mlx_availability != "available" or not versions_concrete:
+            raise ValueError("algorithm_rewrite_required requires available MLX versions")
 
 
 def _distribution_version(name: str) -> str:
@@ -149,7 +196,6 @@ def assess_mps_capability() -> MpsCapability:
         torch_version = "unavailable"
         mps_built = False
         mps_available = False
-        device_name = "cpu"
     else:
         torch_version = str(getattr(torch, "__version__", "unavailable"))
         try:
@@ -160,14 +206,20 @@ def assess_mps_capability() -> MpsCapability:
             mps_available = bool(torch.backends.mps.is_available())
         except Exception:
             mps_available = False
-        # PyTorch does not expose a stable cross-version MPS hardware-name
-        # API.  Keep an explicit device label and retain host details in the
-        # surrounding manifest/runtime provenance.
-        device_name = "mps" if mps_available else "cpu"
+    # PyTorch does not expose a stable cross-version Apple hardware-name API.
+    # Keep only public platform and architecture labels; do not embed
+    # hostnames or other private machine identifiers in the manifest.
+    system = platform.system() or "unknown"
+    machine = platform.machine() or "unknown"
+    device_name = f"{system} {machine} {'MPS' if mps_available else 'CPU'}"
 
-    mlx_version = _distribution_version("mlx")
-    mlx_metal_version = _distribution_version("mlx-metal")
-    mlx_available = mlx_version != _MLX_MISSING and mlx_metal_version != _MLX_MISSING
+    raw_mlx_version = _distribution_version("mlx")
+    raw_mlx_metal_version = _distribution_version("mlx-metal")
+    mlx_available = raw_mlx_version != _MLX_MISSING and raw_mlx_metal_version != _MLX_MISSING
+    # A partial optional installation is still unavailable to this prototype;
+    # normalize both provenance slots so package_absent remains coherent.
+    mlx_version = raw_mlx_version if mlx_available else _MLX_MISSING
+    mlx_metal_version = raw_mlx_metal_version if mlx_available else _MLX_MISSING
     return MpsCapability(
         torch_version=torch_version,
         mps_built=mps_built,
@@ -193,13 +245,28 @@ def validate_mps_capability(capability: MpsCapability) -> MpsCapability:
     # Reconstructing through the public frozen constructor catches records
     # produced by an unsafe deserializer or an object forged without running
     # ``__post_init__``.
-    return MpsCapability(**capability.__dict__)
+    try:
+        values = dict(capability.__dict__)
+        return MpsCapability(**values)
+    except Exception as exc:
+        raise ValueError("capability record is malformed") from exc
 
 
-def capability_provenance(capability: MpsCapability) -> Mapping[str, object]:
-    """Return immutable manifest-ready capability and MLX fields."""
+def capability_provenance(
+    capability: MpsCapability,
+    base: Mapping[str, object] | None = None,
+) -> Mapping[str, object]:
+    """Return immutable manifest-ready capability and MLX fields.
+
+    When ``base`` is supplied, the required Git/DB/config/runtime fields are
+    preserved and capability fields are overlaid, yielding a complete mapping
+    accepted by :class:`Exp421Manifest`.
+    """
     checked = validate_mps_capability(capability)
-    return MappingProxyType({
+    if base is not None and not isinstance(base, Mapping):
+        raise ValueError("base provenance must be a mapping")
+    values = dict(base or {})
+    values.update({
         "torch_version": checked.torch_version,
         "mps_built": checked.mps_built,
         "mps_available": checked.mps_available,
@@ -209,6 +276,7 @@ def capability_provenance(capability: MpsCapability) -> Mapping[str, object]:
         "mlx_metal_version": checked.mlx_metal_version,
         "mlx_eligibility_reason": checked.mlx_eligibility_reason,
     })
+    return MappingProxyType(values)
 
 
 def _validate_config(config: Exp421Config) -> None:
@@ -217,9 +285,49 @@ def _validate_config(config: Exp421Config) -> None:
     config.validate()
 
 
-def _validate_timing(measurement: Any, name: str) -> None:
+def _validate_batch_key(key: Any, name: str = "batch_key") -> BatchKey:
+    if not isinstance(key, BatchKey):
+        raise ValueError(f"{name} must be a BatchKey")
+    try:
+        batch_size = key.batch_size
+        model_seed = key.model_seed
+        perturbation_seed = key.perturbation_seed
+    except Exception as exc:
+        raise ValueError(f"{name} is malformed") from exc
+    # Reconstruct through the immutable contract so object.__new__ records
+    # cannot smuggle an unregistered batch or seed into an MPS decision.
+    try:
+        return BatchKey(batch_size, model_seed, perturbation_seed)
+    except Exception as exc:
+        raise ValueError(f"{name} contains invalid frozen batch or seed fields") from exc
+
+
+def _validate_timing(
+    measurement: Any,
+    name: str,
+    *,
+    expected_batch_size: int | None = None,
+    expected_backend: str | None = None,
+) -> BackendMeasurement:
     if not isinstance(measurement, BackendMeasurement):
         raise ValueError(f"{name} must be a BackendMeasurement")
+    try:
+        batch_size = measurement.batch_size
+        backend = measurement.backend
+        finite = measurement.finite
+        digest = measurement.candidate_coordinates_sha256
+    except Exception as exc:
+        raise ValueError(f"{name} is malformed") from exc
+    if type(batch_size) is not int or batch_size not in FROZEN_CONFIG.candidate_batch_sizes:
+        raise ValueError(f"{name}.batch_size is not preregistered")
+    if expected_batch_size is not None and batch_size != expected_batch_size:
+        raise ValueError(f"{name}.batch_size does not match the batch key")
+    if backend not in {"cpu", "mps"} or (expected_backend is not None and backend != expected_backend):
+        raise ValueError(f"{name}.backend is invalid")
+    if type(finite) is not bool:
+        raise ValueError(f"{name}.finite must be a bool")
+    if not isinstance(digest, str) or len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
+        raise ValueError(f"{name}.candidate_coordinates_sha256 is invalid")
     for field in ("transfer_seconds", "compute_seconds", "synchronize_seconds", "total_seconds"):
         value = getattr(measurement, field, None)
         if isinstance(value, bool) or not isinstance(value, Real) or not isfinite(float(value)) or float(value) < 0:
@@ -231,25 +339,32 @@ def _validate_timing(measurement: Any, name: str) -> None:
     )
     if not isclose(measurement.total_seconds, expected, rel_tol=0.0, abs_tol=_TIMING_TOLERANCE):
         raise ValueError(f"{name}.total_seconds must include transfer, compute, and synchronization")
+    return measurement
 
 
-def _validate_parity_shape(report: Any, config: Exp421Config) -> None:
+def _validate_parity_shape(report: Any, config: Exp421Config, batch_key: BatchKey) -> ParityReport:
     if not isinstance(report, ParityReport):
         raise ValueError("available MPS requires a ParityReport")
+    report_key = _validate_batch_key(getattr(report, "batch_key", None), "parity_report.batch_key")
+    if report_key != batch_key:
+        raise ValueError("parity report must bind to the exact assessment batch key")
     expected_alpha = config.exp417_config.candidate_alpha
     for name in ("cpu_candidate_indices_by_alpha", "mps_candidate_indices_by_alpha"):
         values = getattr(report, name, None)
-        if not isinstance(values, Mapping) or tuple(values) != (expected_alpha,):
+        if not isinstance(values, MappingProxyType) or tuple(values) != (expected_alpha,):
             raise ValueError("parity must cover exactly the preregistered alpha")
         indices = values[expected_alpha]
         if not isinstance(indices, np.ndarray) or indices.dtype != np.dtype("int64") or indices.ndim != 1:
             raise ValueError("parity candidate indices must be one-dimensional int64 arrays")
+        if indices.flags.writeable:
+            raise ValueError("parity candidate indices must be read-only")
         if indices.size and (np.any(indices < 0) or np.any(indices[1:] <= indices[:-1])):
             raise ValueError("parity candidate indices must be sorted and unique")
     for name in ("max_normalized_error", "spearman"):
         value = getattr(report, name, None)
         if isinstance(value, bool) or not isinstance(value, Real) or not isfinite(float(value)):
             raise ValueError(f"parity {name} must be finite")
+    return report
 
 
 def _candidate_indices_match(report: ParityReport, config: Exp421Config) -> bool:
@@ -264,41 +379,71 @@ def _assessment_reason(assessment: MpsAssessment, config: Exp421Config) -> str:
     """Validate an assessment and return its deterministic policy reason."""
     if not isinstance(assessment, MpsAssessment):
         raise ValueError("assessment must be an MpsAssessment")
-    if not isinstance(assessment.batch_key, BatchKey):
-        raise ValueError("assessment must contain a frozen BatchKey")
-    if not isinstance(assessment.device, str) or not assessment.device.strip():
+    batch_key = _validate_batch_key(getattr(assessment, "batch_key", None), "assessment.batch_key")
+    uses_mps = getattr(assessment, "uses_mps", _MISSING)
+    mps_available = getattr(assessment, "mps_available", _MISSING)
+    fallback_reason = getattr(assessment, "fallback_reason", _MISSING)
+    cpu = getattr(assessment, "cpu_measurement", _MISSING)
+    mps = getattr(assessment, "mps_measurement", _MISSING)
+    parity_report = getattr(assessment, "parity_report", _MISSING)
+    speedup = getattr(assessment, "speedup", _MISSING)
+    device = getattr(assessment, "device", _MISSING)
+    if type(uses_mps) is not bool:
+        raise ValueError("assessment.uses_mps must be a bool")
+    if type(mps_available) is not bool:
+        raise ValueError("assessment.mps_available must be a bool")
+    if (
+        not isinstance(device, str)
+        or not device.strip()
+        or "test" in device.lower()
+    ):
         raise ValueError("MPS assessment requires a device label")
-    batch_size = assessment.batch_key.batch_size
-    cpu = assessment.cpu_measurement
-    _validate_timing(cpu, "cpu_measurement")
-    if cpu.batch_size != batch_size or cpu.backend != "cpu":
-        raise ValueError("CPU measurement does not match the batch key")
+    if fallback_reason is _MISSING:
+        raise ValueError("assessment.fallback_reason is missing")
+    if fallback_reason is not None and (
+        not isinstance(fallback_reason, str) or not fallback_reason.strip()
+    ):
+        raise ValueError("assessment fallback_reason must be a nonempty string or None")
+    batch_size = batch_key.batch_size
+    if cpu is _MISSING:
+        raise ValueError("assessment.cpu_measurement is missing")
+    _validate_timing(
+        cpu,
+        "cpu_measurement",
+        expected_batch_size=batch_size,
+        expected_backend="cpu",
+    )
 
     if not cpu.finite:
-        if assessment.uses_mps or not isinstance(assessment.fallback_reason, str) or not assessment.fallback_reason.strip():
+        if uses_mps or not isinstance(fallback_reason, str) or not fallback_reason.strip():
             raise ValueError("nonfinite CPU output requires an explicit CPU fallback")
         return "nonfinite_output"
 
-    if not assessment.mps_available:
-        if assessment.mps_measurement is not None or assessment.parity_report is not None or assessment.speedup is not None:
+    if not mps_available:
+        if mps is not None or parity_report is not None or speedup is not None:
             raise ValueError("unavailable MPS cannot include MPS evidence")
-        if assessment.uses_mps or not isinstance(assessment.fallback_reason, str) or not assessment.fallback_reason.strip():
+        if uses_mps or not isinstance(fallback_reason, str) or not fallback_reason.strip():
             raise ValueError("unavailable MPS requires a CPU fallback reason")
         return "mps_unavailable"
 
-    if assessment.device.strip().lower() in {"unavailable", "cpu"}:
+    if device.strip().lower() in {"unavailable", "cpu"}:
         raise ValueError("available MPS requires a non-CPU device label")
 
-    mps = assessment.mps_measurement
-    _validate_timing(mps, "mps_measurement")
-    if mps.batch_size != batch_size or mps.backend != "mps":
-        raise ValueError("MPS measurement does not match the batch key")
+    if mps is _MISSING:
+        raise ValueError("assessment.mps_measurement is missing")
+    _validate_timing(
+        mps,
+        "mps_measurement",
+        expected_batch_size=batch_size,
+        expected_backend="mps",
+    )
     if not mps.finite:
         reason = "nonfinite_output"
         expected_uses_mps = False
     else:
-        report = assessment.parity_report
-        _validate_parity_shape(report, config)
+        if parity_report is _MISSING:
+            raise ValueError("assessment.parity_report is missing")
+        report = _validate_parity_shape(parity_report, config, batch_key)
         if cpu.candidate_coordinates_sha256 != mps.candidate_coordinates_sha256:
             reason = "candidate_coordinates_mismatch"
             expected_uses_mps = False
@@ -315,7 +460,9 @@ def _assessment_reason(assessment: MpsAssessment, config: Exp421Config) -> str:
             raise ValueError("MPS total_seconds must be positive")
         else:
             expected_speedup = cpu.total_seconds / mps.total_seconds
-            supplied_speedup = assessment.speedup
+            if speedup is _MISSING:
+                raise ValueError("assessment.speedup is missing")
+            supplied_speedup = speedup
             if (
                 isinstance(supplied_speedup, bool)
                 or not isinstance(supplied_speedup, Real)
@@ -333,12 +480,12 @@ def _assessment_reason(assessment: MpsAssessment, config: Exp421Config) -> str:
                 reason = "eligible"
                 expected_uses_mps = True
 
-    if assessment.uses_mps != expected_uses_mps:
+    if uses_mps != expected_uses_mps:
         raise ValueError("MPS assessment selection disagrees with all frozen gates")
     if expected_uses_mps:
-        if assessment.fallback_reason is not None:
+        if fallback_reason is not None:
             raise ValueError("eligible MPS assessment cannot have a fallback reason")
-    elif not isinstance(assessment.fallback_reason, str) or not assessment.fallback_reason.strip():
+    elif not isinstance(fallback_reason, str) or not fallback_reason.strip():
         raise ValueError("failed MPS assessment requires an explicit fallback reason")
     return reason
 
@@ -353,9 +500,15 @@ def _normalize_measurements(measurements: Mapping[int, Any] | Sequence[Any], con
             if isinstance(item, tuple) and len(item) == 2 and type(item[0]) is int:
                 items.append((item[0], item[1]))
             elif isinstance(item, MpsAssessment):
-                items.append((item.batch_key.batch_size, item))
+                key = _validate_batch_key(getattr(item, "batch_key", None), "assessment.batch_key")
+                items.append((key.batch_size, item))
             elif isinstance(item, BackendPolicy):
-                items.append((item.assessment.batch_key.batch_size, item))
+                item_backend = getattr(item, "backend", _MISSING)
+                item_assessment = getattr(item, "assessment", _MISSING)
+                if item_backend not in {"cpu", "mps"} or not isinstance(item_assessment, MpsAssessment):
+                    raise ValueError("measurement policy is malformed")
+                key = _validate_batch_key(getattr(item_assessment, "batch_key", None), "assessment.batch_key")
+                items.append((key.batch_size, item))
             else:
                 raise ValueError("measurements must contain MpsAssessment records")
     else:
@@ -368,14 +521,16 @@ def _normalize_measurements(measurements: Mapping[int, Any] | Sequence[Any], con
         if batch_size in normalized:
             raise ValueError("measurements contain duplicate batch sizes")
         if isinstance(value, BackendPolicy):
-            assessment = value.assessment
-            if value.backend not in {"cpu", "mps"}:
+            policy_backend = getattr(value, "backend", _MISSING)
+            assessment = getattr(value, "assessment", _MISSING)
+            if policy_backend not in {"cpu", "mps"} or not isinstance(assessment, MpsAssessment):
                 raise ValueError("measurement policy contains an invalid backend")
         else:
             assessment = value
         if not isinstance(assessment, MpsAssessment):
             raise ValueError("measurements must contain MpsAssessment records")
-        if assessment.batch_key.batch_size != batch_size:
+        key = _validate_batch_key(getattr(assessment, "batch_key", None), "assessment.batch_key")
+        if key.batch_size != batch_size:
             raise ValueError("measurement batch size does not match its key")
         normalized[batch_size] = assessment
     if set(normalized) != set(expected):
@@ -403,7 +558,10 @@ def choose_backend(
         backend = "mps" if assessment.uses_mps else "cpu"
         policies[batch_size] = BackendPolicy(backend, assessment)
         reasons[batch_size] = reason
-    return BackendPolicyBundle(policies=policies, reasons=reasons, fail_closed=True)
+    fail_closed = (not any(policy.backend == "mps" for policy in policies.values())) or any(
+        reason != "eligible" for reason in reasons.values()
+    )
+    return BackendPolicyBundle(policies=policies, reasons=reasons, fail_closed=fail_closed)
 
 
 __all__ = [
