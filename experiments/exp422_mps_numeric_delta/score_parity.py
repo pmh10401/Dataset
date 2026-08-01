@@ -174,6 +174,8 @@ class ScoreBatchReport:
     tensor_deltas: tuple[TensorDelta, ...]
     cpu_forward_sha256: str
     mps_forward_sha256: str
+    cpu_residual_sha256: str
+    mps_residual_sha256: str
     cpu_score_sha256: str
     mps_score_sha256: str
     cpu_candidate_coordinates_sha256: str
@@ -184,17 +186,28 @@ class ScoreBatchReport:
     cpu_timing: TimingEvidence
     mps_timing: TimingEvidence
     max_normalized_error: float
+    status: str = "passed"
+    fallback_reason: str | None = None
 
     def __post_init__(self) -> None:
         if type(self.batch_size) is not int or self.batch_size not in FROZEN_CONFIG.candidate_batch_sizes:
             raise ValueError("batch_size must be preregistered for Exp422")
-        if not self.chunk_sizes or any(type(size) is not int or not 1 <= size <= self.batch_size for size in self.chunk_sizes):
+        if self.status not in {"passed", "failed", "skipped"}:
+            raise ValueError("score batch status must be passed, failed, or skipped")
+        if self.status == "passed" and (
+            not self.chunk_sizes
+            or any(type(size) is not int or not 1 <= size <= self.batch_size for size in self.chunk_sizes)
+        ):
             raise ValueError("chunk_sizes must be positive and bounded by the batch policy")
-        if not self.tensor_deltas or any(not isinstance(item, TensorDelta) for item in self.tensor_deltas):
+        if self.status == "passed" and (
+            not self.tensor_deltas or any(not isinstance(item, TensorDelta) for item in self.tensor_deltas)
+        ):
             raise ValueError("tensor_deltas must contain parity evidence")
         for name in (
             "cpu_forward_sha256",
             "mps_forward_sha256",
+            "cpu_residual_sha256",
+            "mps_residual_sha256",
             "cpu_score_sha256",
             "mps_score_sha256",
             "cpu_candidate_coordinates_sha256",
@@ -204,6 +217,12 @@ class ScoreBatchReport:
                 raise ValueError(f"{name} must be a lowercase SHA-256 digest")
         if type(self.candidate_indices_match) is not bool or type(self.qualification_match) is not bool:
             raise ValueError("parity flags must be bools")
+        if self.status == "passed" and self.fallback_reason is not None:
+            raise ValueError("passed score batch cannot have a fallback reason")
+        if self.status != "passed" and (
+            not isinstance(self.fallback_reason, str) or not self.fallback_reason.strip()
+        ):
+            raise ValueError("failed or skipped score batch requires a fallback reason")
         if not np.isfinite(self.spearman) or not -1.0 <= self.spearman <= 1.0:
             raise ValueError("spearman must be finite and between -1 and 1")
         if not np.isfinite(self.max_normalized_error) or self.max_normalized_error < 0.0:
@@ -218,7 +237,8 @@ class ScoreBatchReport:
     @property
     def passes(self) -> bool:
         return (
-            self.candidate_indices_match
+            self.status == "passed"
+            and self.candidate_indices_match
             and self.qualification_match
             and all(delta.passes for delta in self.tensor_deltas)
             and self.max_normalized_error <= FROZEN_CONFIG.max_normalized_error
@@ -248,6 +268,10 @@ class ScoreStageResult:
             raise ValueError("score result requires a TrainSample and StageResult")
         if any(not isinstance(report, ScoreBatchReport) for report in self.reports):
             raise ValueError("reports must contain ScoreBatchReport records")
+        expected_batches = FROZEN_CONFIG.candidate_batch_sizes
+        actual_batches = tuple(report.batch_size for report in self.reports)
+        if self.stage.state != "skipped" and actual_batches != expected_batches:
+            raise ValueError("score result requires exact Exp422 batch coverage")
         digests = (
             self.model_state_sha256,
             self.model_stop_sha256,
@@ -261,8 +285,16 @@ class ScoreStageResult:
         if self.stage.state == "skipped":
             if self.reports or any(value is not None for value in digests):
                 raise ValueError("skipped score stage cannot retain computed evidence")
-        elif any(not isinstance(value, str) or _SHA256_RE.fullmatch(value) is None for value in digests):
+        elif self.stage.state == "passed" and any(
+            not isinstance(value, str) or _SHA256_RE.fullmatch(value) is None for value in digests
+        ):
             raise ValueError("completed score stage requires every SHA-256 evidence digest")
+        else:
+            for value in digests:
+                if value is not None and (
+                    not isinstance(value, str) or _SHA256_RE.fullmatch(value) is None
+                ):
+                    raise ValueError("score evidence digests must be lowercase SHA-256 values")
 
 
 def _dataset_names(connection: object) -> tuple[str, ...]:
@@ -343,12 +375,17 @@ def select_train_sample(database: Path, config: Exp422Config) -> TrainSample:
     raise ValueError("no finite exact-length normal TRAIN sample is available")
 
 
-def _hash_arrays(tag: bytes, values: Mapping[int, Mapping[int, np.ndarray]]) -> str:
+def _hash_arrays(
+    tag: bytes,
+    values: Mapping[int, Mapping[int, np.ndarray]],
+    *,
+    dtype: np.dtype | str = "<f8",
+) -> str:
     digest = sha256(tag + b"\x00")
     for seed in sorted(values):
         digest.update(seed.to_bytes(8, "little", signed=False))
         for horizon in sorted(values[seed]):
-            array = np.ascontiguousarray(values[seed][horizon], dtype="<f8")
+            array = np.ascontiguousarray(values[seed][horizon], dtype=dtype)
             digest.update(horizon.to_bytes(8, "little", signed=False))
             digest.update(len(array.shape).to_bytes(8, "little", signed=False))
             for size in array.shape:
@@ -395,7 +432,7 @@ def _build_calibration(
 
 def _timed_adapter_predict(
     adapter: FrozenModelAdapter, channels: np.ndarray
-) -> tuple[Mapping[int, np.ndarray], TimingEvidence]:
+) -> tuple[Mapping[int, np.ndarray], Mapping[int, np.ndarray], TimingEvidence]:
     """Time the low-level frozen adapter including transfers and MPS synchronization."""
     values = np.array(channels, dtype=np.float32, copy=True, order="C")
     if values.ndim != 3 or not np.isfinite(values).all():
@@ -422,20 +459,24 @@ def _timed_adapter_predict(
     transfer = transfer_in + perf_counter() - output_start
     if not np.isfinite(packed_cpu).all():
         raise ValueError("score forward outputs must be finite")
+    predictions_by_horizon: dict[int, np.ndarray] = {}
     residuals: dict[int, np.ndarray] = {}
     offset = 0
     for horizon in adapter.model.horizons:
         count = values.shape[0] * (values.shape[2] - horizon)
         prediction = packed_cpu[offset : offset + count].reshape(values.shape[0], values.shape[2] - horizon)
         offset += count
+        predictions_by_horizon[horizon] = _readonly(prediction, "<f4")
         residual = np.abs(prediction - values[:, 0, horizon:]).astype(np.float64, copy=False)
         if not np.isfinite(residual).all():
             raise ValueError("score residuals must be finite")
         residuals[horizon] = _readonly(residual, "<f8")
     if offset != packed_cpu.size:
         raise ValueError("score forward output shape is invalid")
-    return MappingProxyType(residuals), TimingEvidence(
-        device.type, transfer, compute, synchronize, transfer + compute + synchronize
+    return (
+        MappingProxyType(predictions_by_horizon),
+        MappingProxyType(residuals),
+        TimingEvidence(device.type, transfer, compute, synchronize, transfer + compute + synchronize),
     )
 
 
@@ -445,28 +486,48 @@ def _predict_for_policy(
     *,
     batch_size: int,
     max_batch_bytes: int,
-) -> tuple[Mapping[int, Mapping[int, np.ndarray]], TimingEvidence, tuple[int, ...]]:
+) -> tuple[
+    Mapping[int, Mapping[int, np.ndarray]],
+    Mapping[int, Mapping[int, np.ndarray]],
+    TimingEvidence,
+    tuple[int, ...],
+]:
     """Predict every bounded row in deterministic chunks without padding or replay."""
     if channels.nbytes > max_batch_bytes:
         raise MemoryError("fixed_batch_memory_limit")
     chunks = tuple(min(batch_size, len(channels) - start) for start in range(0, len(channels), batch_size))
     backend = next(iter(adapters.values())).device.type
     totals = [0.0, 0.0, 0.0]
-    outputs: dict[int, Mapping[int, np.ndarray]] = {}
+    predictions_by_seed: dict[int, Mapping[int, np.ndarray]] = {}
+    residuals_by_seed: dict[int, Mapping[int, np.ndarray]] = {}
     for seed in sorted(adapters):
-        pieces: dict[int, list[np.ndarray]] = {}
+        prediction_pieces: dict[int, list[np.ndarray]] = {}
+        residual_pieces: dict[int, list[np.ndarray]] = {}
         for start in range(0, len(channels), batch_size):
-            predicted, timing = _timed_adapter_predict(adapters[seed], channels[start : start + batch_size])
+            predicted, residuals, timing = _timed_adapter_predict(
+                adapters[seed], channels[start : start + batch_size]
+            )
             for horizon, values in predicted.items():
-                pieces.setdefault(horizon, []).append(values)
+                prediction_pieces.setdefault(horizon, []).append(values)
+            for horizon, values in residuals.items():
+                residual_pieces.setdefault(horizon, []).append(values)
             totals[0] += timing.transfer_seconds
             totals[1] += timing.compute_seconds
             totals[2] += timing.synchronize_seconds
-        outputs[seed] = MappingProxyType(
-            {horizon: _readonly(np.concatenate(parts, axis=0), "<f8") for horizon, parts in sorted(pieces.items())}
+        predictions_by_seed[seed] = MappingProxyType(
+            {
+                horizon: _readonly(np.concatenate(parts, axis=0), "<f4")
+                for horizon, parts in sorted(prediction_pieces.items())
+            }
+        )
+        residuals_by_seed[seed] = MappingProxyType(
+            {
+                horizon: _readonly(np.concatenate(parts, axis=0), "<f8")
+                for horizon, parts in sorted(residual_pieces.items())
+            }
         )
     timing = TimingEvidence(backend, totals[0], totals[1], totals[2], sum(totals))
-    return MappingProxyType(outputs), timing, chunks
+    return MappingProxyType(predictions_by_seed), MappingProxyType(residuals_by_seed), timing, chunks
 
 
 def _coordinate_digest(dataset: str, length: int, indices: tuple[int, ...]) -> str:
@@ -511,27 +572,45 @@ def _score_outputs(
     return values, tuple(selected), digest.hexdigest()
 
 
+class _ScoreBackendError(RuntimeError):
+    """A backend-specific score failure that must become a structured row."""
+
+
 def _qualification_evidence(
     sample: TrainSample,
     cpu_adapters: Mapping[int, FrozenModelAdapter],
     mps_adapters: Mapping[int, FrozenModelAdapter],
     caches: Mapping[int, Mapping[int, CalibrationCache]],
     config: Exp422Config,
+    *,
+    batch_size: int,
 ) -> tuple[str, str, str, bool]:
-    index = sample.indices[0]
-    raw = sample.raw_by_index[index]
+    if type(batch_size) is not int or batch_size not in config.candidate_batch_sizes:
+        raise ValueError("qualification batch size must be preregistered")
+    perturbation_names = (
+        "level_shift",
+        "gradual_drift",
+        "amplitude_scaling",
+        "period_change",
+        "secondary_spike",
+    )
     perturb_digest = sha256(b"exp422.normal-train.perturbation.v1\x00")
     arrays: list[np.ndarray] = []
-    for seed in config.perturbation_seeds:
+    for row in range(batch_size):
+        index = sample.indices[row % len(sample.indices)]
+        seed = config.perturbation_seeds[row % len(config.perturbation_seeds)]
+        repaired = next(
+            item.values for item in sample.group.group.series if item.instance_index == index
+        )
         cached = build_cached_perturbations(
             "TRAIN_" + sha256(sample.dataset.encode("utf-8")).hexdigest()[:16],
             index,
-            raw,
+            np.asarray(repaired, dtype=np.float64),
             max(float(sample.group.raw_scale), 1e-6),
             seed,
         )
         perturb_digest.update(cached.digest.encode("ascii"))
-        arrays.extend(cached[name] for name in cached)
+        arrays.append(np.asarray(cached[perturbation_names[row % len(perturbation_names)]], dtype=np.float64))
     raw_batch = np.stack(arrays)
     differences = np.diff(raw_batch, axis=1, prepend=raw_batch[:, :1])
     channels = np.stack(
@@ -543,23 +622,62 @@ def _qualification_evidence(
     ).astype(np.float32, copy=False)
     if not np.isfinite(channels).all() or channels.nbytes > config.max_batch_bytes:
         raise ValueError("qualification channels must be finite and bounded")
-    policy = config.candidate_batch_sizes[0]
-    cpu, _cpu_timing, _ = _predict_for_policy(
-        cpu_adapters, channels, batch_size=policy, max_batch_bytes=config.max_batch_bytes
-    )
-    mps, _mps_timing, _ = _predict_for_policy(
-        mps_adapters, channels, batch_size=policy, max_batch_bytes=config.max_batch_bytes
-    )
+    try:
+        _cpu_forward, cpu, _cpu_timing, _ = _predict_for_policy(
+            cpu_adapters, channels, batch_size=batch_size, max_batch_bytes=config.max_batch_bytes
+        )
+    except (MemoryError, OSError, RuntimeError, ValueError) as exc:
+        raise _ScoreBackendError("cpu_qualification_runtime_error") from exc
+    try:
+        _mps_forward, mps, _mps_timing, _ = _predict_for_policy(
+            mps_adapters, channels, batch_size=batch_size, max_batch_bytes=config.max_batch_bytes
+        )
+    except (MemoryError, OSError, RuntimeError, ValueError) as exc:
+        raise _ScoreBackendError("mps_qualification_runtime_error") from exc
     coordinates = tuple(range(len(channels)))
     cpu_scores, cpu_selected, cpu_digest = _score_outputs(cpu, caches, coordinates, config)
     mps_scores, mps_selected, mps_digest = _score_outputs(mps, caches, coordinates, config)
     delta = compare_tensor(cpu_scores, mps_scores, name="synthetic_qualification_scores")
     matches = (
         cpu_selected == mps_selected
+        and cpu_digest == mps_digest
         and delta.passes
         and tie_aware_spearman(cpu_scores, mps_scores) >= config.min_spearman
     )
     return perturb_digest.hexdigest(), cpu_digest, mps_digest, matches
+
+
+def _empty_score_report(
+    batch_size: int,
+    reason: str,
+    *,
+    cpu_timing: TimingEvidence | None = None,
+) -> ScoreBatchReport:
+    """Record a policy that could not execute at its exact registered size."""
+    zero_cpu = cpu_timing or TimingEvidence("cpu", 0.0, 0.0, 0.0, 0.0)
+    zero_mps = TimingEvidence("mps", 0.0, 0.0, 0.0, 0.0)
+    digest = sha256(f"exp422.failed-policy.{batch_size}.{reason}".encode("ascii")).hexdigest()
+    return ScoreBatchReport(
+        batch_size=batch_size,
+        chunk_sizes=(),
+        tensor_deltas=(),
+        cpu_forward_sha256=digest,
+        mps_forward_sha256=digest,
+        cpu_residual_sha256=digest,
+        mps_residual_sha256=digest,
+        cpu_score_sha256=digest,
+        mps_score_sha256=digest,
+        cpu_candidate_coordinates_sha256=digest,
+        mps_candidate_coordinates_sha256=digest,
+        candidate_indices_match=False,
+        spearman=0.0,
+        qualification_match=False,
+        cpu_timing=zero_cpu,
+        mps_timing=zero_mps,
+        max_normalized_error=1.0,
+        status="failed",
+        fallback_reason=reason,
+    )
 
 
 def run_score_parity(
@@ -623,51 +741,105 @@ def run_score_parity(
         )
     except (MemoryError, OSError, RuntimeError, ValueError):
         return ScoreStageResult(sample, (), StageResult.skipped("mps_runtime_error"))
-    perturbation_sha256, cpu_qualification_sha256, mps_qualification_sha256, qualification_match = _qualification_evidence(
-        sample, cpu_adapters, mps_adapters, caches, config
-    )
     reports: list[ScoreBatchReport] = []
+    perturbation_digests: list[str] = []
+    cpu_qualification_digests: list[str] = []
+    mps_qualification_digests: list[str] = []
     for batch_size in config.candidate_batch_sizes:
-        cpu_outputs, cpu_timing, cpu_chunks = _predict_for_policy(
-            cpu_adapters,
-            sample.channels,
-            batch_size=batch_size,
-            max_batch_bytes=config.max_batch_bytes,
-        )
-        mps_outputs, mps_timing, mps_chunks = _predict_for_policy(
-            mps_adapters,
-            sample.channels,
-            batch_size=batch_size,
-            max_batch_bytes=config.max_batch_bytes,
-        )
-        if cpu_chunks != mps_chunks:
-            raise ValueError("CPU and MPS chunk policies differ")
-        deltas = tuple(
-            compare_tensor(
-                cpu_outputs[seed][horizon],
-                mps_outputs[seed][horizon],
-                name=f"batch_{batch_size}_seed_{seed}_horizon_{horizon}_forward_residual",
+        if sample.bounded_series_count < batch_size:
+            reports.append(
+                _empty_score_report(batch_size, "fixed_batch_sample_too_small")
             )
-            for seed in config.model_seeds
-            for horizon in sorted(cpu_outputs[seed])
-        )
+            continue
+        batch_channels = sample.channels[:batch_size]
+        batch_indices = sample.indices[:batch_size]
+        try:
+            cpu_forward, cpu_outputs, cpu_timing, cpu_chunks = _predict_for_policy(
+                cpu_adapters,
+                batch_channels,
+                batch_size=batch_size,
+                max_batch_bytes=config.max_batch_bytes,
+            )
+        except (MemoryError, OSError, RuntimeError, ValueError):
+            reports.append(_empty_score_report(batch_size, "cpu_runtime_error"))
+            continue
+        if cpu_chunks != (batch_size,):
+            reports.append(_empty_score_report(batch_size, "cpu_exact_batch_policy_error", cpu_timing=cpu_timing))
+            continue
+        try:
+            mps_forward, mps_outputs, mps_timing, mps_chunks = _predict_for_policy(
+                mps_adapters,
+                batch_channels,
+                batch_size=batch_size,
+                max_batch_bytes=config.max_batch_bytes,
+            )
+        except (MemoryError, OSError, RuntimeError, ValueError):
+            reports.append(_empty_score_report(batch_size, "mps_runtime_error", cpu_timing=cpu_timing))
+            continue
+        if mps_chunks != (batch_size,):
+            reports.append(_empty_score_report(batch_size, "mps_exact_batch_policy_error", cpu_timing=cpu_timing))
+            continue
+        try:
+            perturbation_sha256, cpu_qualification_sha256, mps_qualification_sha256, qualification_match = _qualification_evidence(
+                sample,
+                cpu_adapters,
+                mps_adapters,
+                caches,
+                config,
+                batch_size=batch_size,
+            )
+        except _ScoreBackendError as exc:
+            reports.append(_empty_score_report(batch_size, str(exc), cpu_timing=cpu_timing))
+            continue
+        except (MemoryError, OSError, RuntimeError, ValueError):
+            reports.append(_empty_score_report(batch_size, "qualification_runtime_error", cpu_timing=cpu_timing))
+            continue
+        perturbation_digests.append(perturbation_sha256)
+        cpu_qualification_digests.append(cpu_qualification_sha256)
+        mps_qualification_digests.append(mps_qualification_sha256)
+        deltas = []
+        for seed in config.model_seeds:
+            for horizon in sorted(cpu_forward[seed]):
+                deltas.append(
+                    compare_tensor(
+                        cpu_forward[seed][horizon],
+                        mps_forward[seed][horizon],
+                        name=f"batch_{batch_size}_seed_{seed}_horizon_{horizon}_forward",
+                    )
+                )
+                deltas.append(
+                    compare_tensor(
+                        cpu_outputs[seed][horizon],
+                        mps_outputs[seed][horizon],
+                        name=f"batch_{batch_size}_seed_{seed}_horizon_{horizon}_residual",
+                    )
+                )
         cpu_scores, cpu_candidates, cpu_score_sha256 = _score_outputs(
-            cpu_outputs, caches, sample.indices, config
+            cpu_outputs, caches, batch_indices, config
         )
         mps_scores, mps_candidates, mps_score_sha256 = _score_outputs(
-            mps_outputs, caches, sample.indices, config
+            mps_outputs, caches, batch_indices, config
         )
-        score_delta = compare_tensor(
-            cpu_scores, mps_scores, name=f"batch_{batch_size}_horizon_scores"
+        deltas.append(
+            compare_tensor(cpu_scores, mps_scores, name=f"batch_{batch_size}_horizon_scores")
         )
-        all_deltas = deltas + (score_delta,)
         reports.append(
             ScoreBatchReport(
                 batch_size=batch_size,
                 chunk_sizes=cpu_chunks,
-                tensor_deltas=all_deltas,
-                cpu_forward_sha256=_hash_arrays(b"exp422.forward-output.v1", cpu_outputs),
-                mps_forward_sha256=_hash_arrays(b"exp422.forward-output.v1", mps_outputs),
+                tensor_deltas=tuple(deltas),
+                cpu_forward_sha256=_hash_arrays(
+                    b"exp422.forward-output.v1", cpu_forward, dtype="<f4"
+                ),
+                mps_forward_sha256=_hash_arrays(
+                    b"exp422.forward-output.v1", mps_forward, dtype="<f4"
+                ),
+                cpu_residual_sha256=_hash_arrays(
+                    b"exp422.residual-output.v1", cpu_outputs, dtype="<f8"
+                ),
+                mps_residual_sha256=_hash_arrays(
+                    b"exp422.residual-output.v1", mps_outputs, dtype="<f8"
+                ),
                 cpu_score_sha256=cpu_score_sha256,
                 mps_score_sha256=mps_score_sha256,
                 cpu_candidate_coordinates_sha256=_coordinate_digest(
@@ -678,13 +850,17 @@ def run_score_parity(
                 ),
                 candidate_indices_match=cpu_candidates == mps_candidates,
                 spearman=tie_aware_spearman(cpu_scores, mps_scores),
-                qualification_match=qualification_match,
+                qualification_match=qualification_match
+                and cpu_qualification_sha256 == mps_qualification_sha256,
                 cpu_timing=cpu_timing,
                 mps_timing=mps_timing,
-                max_normalized_error=max(delta.max_normalized_error for delta in all_deltas),
+                max_normalized_error=max(delta.max_normalized_error for delta in deltas),
             )
         )
     stage = StageResult.passed() if all(report.passes for report in reports) else StageResult.failed("score_parity_gate_failed")
+    digest_qual_cpu = sha256("".join(cpu_qualification_digests).encode("ascii")).hexdigest()
+    digest_qual_mps = sha256("".join(mps_qualification_digests).encode("ascii")).hexdigest()
+    digest_perturb = sha256("".join(perturbation_digests).encode("ascii")).hexdigest()
     return ScoreStageResult(
         sample=sample,
         reports=tuple(reports),
@@ -694,9 +870,9 @@ def run_score_parity(
         loss_history_sha256=loss_history_sha256,
         oof_residual_sha256=oof_sha256,
         calibration_sha256=calibration_sha256,
-        perturbation_sha256=perturbation_sha256,
-        cpu_qualification_sha256=cpu_qualification_sha256,
-        mps_qualification_sha256=mps_qualification_sha256,
+        perturbation_sha256=digest_perturb,
+        cpu_qualification_sha256=digest_qual_cpu,
+        mps_qualification_sha256=digest_qual_mps,
     )
 
 
