@@ -46,10 +46,12 @@ stratum별 읽기 전용 tensor를 함께 사용한다.
 ### 2.2 2단계: 실제 Exp417 score parity
 
 1단계가 모든 필수 조합에서 통과한 경우에만, 정상 TRAIN 표본에서 동결된
-Exp417 batched benchmark를 실행한다. 표본 선택 규칙은 기존 Exp421의
-읽기 전용 exact-length TRAIN selector를 재사용하며, 길이·TRAIN 행 수
-stratum을 사전에 고정하고 digest를 기록한다. 표본은 최대 64 series와
-256 MiB로 제한한다.
+Exp417 score parity를 실행한다. 표본 선택 규칙은 기존 Exp421의 읽기 전용
+exact-length TRAIN selector를 재사용하며, 길이·TRAIN 행 수 stratum을
+사전에 고정하고 digest를 기록한다. 표본은 최대 64 series와 256 MiB로
+제한한다. Exp421의 low-level model adapter·calibration·perturbation
+primitive만 재사용하고, Exp421의 `FROZEN_CONFIG`나 candidate batch 설정은
+수정하지 않는다.
 
 2단계는 다음을 CPU/MPS로 비교한다.
 
@@ -115,8 +117,8 @@ artifact로 복사하지 않는다. 부분 실행도 삭제하지 않고 원인 
 ## 6. 구현과 검증 순서
 
 1. Exp422 worktree에서 이 설계와 사전등록·runbook을 고정한다.
-2. Exp421의 동결 모델 adapter와 TRAIN-only boundary를 재사용하는 얇은
-   numeric-delta 모듈을 작성한다.
+2. Exp421의 low-level 동결 모델 adapter와 TRAIN-only boundary를 재사용하되
+   Exp422 자체 batch 계약을 갖는 얇은 numeric-delta 모듈을 작성한다.
 3. 1단계 tensor parity의 실패·오차·ULP·후보 좌표 테스트를 먼저 통과시킨다.
 4. 2단계 benchmark wrapper, 매니페스트 검증, no-TEST/no-clobber 테스트를
    추가한다.
