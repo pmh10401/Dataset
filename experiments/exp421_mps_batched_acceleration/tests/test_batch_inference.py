@@ -256,6 +256,14 @@ class FrozenModelAdapterMpsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "device fallback"):
             adapter.predict_batch(batch)
 
+    def test_mps_device_without_index_is_canonicalized_to_mps_zero(self) -> None:
+        """The logical MPS device must match PyTorch's materialized mps:0 tensors."""
+        adapter = FrozenModelAdapter.from_trained_seed(self.model, device=torch.device("mps"))
+        self.assertEqual(adapter.device, torch.device("mps:0"))
+        self.assertTrue(
+            all(parameter.device == torch.device("mps:0") for parameter in adapter._network.parameters())
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

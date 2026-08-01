@@ -48,6 +48,7 @@ class FrozenModelAdapter:
         _validate_frozen_horizons(model.horizons)
         selected = torch.device(model.device) if device is None else device
         _validate_device(selected)
+        selected = _canonical_device(selected)
         network = _materialize_network_from_state(model.state, model.horizons, selected)
         _assert_model_device(network, selected)
         return cls(model=model, device=selected, _network=network)
@@ -194,6 +195,13 @@ def _validate_device(device: torch.device) -> None:
         raise ValueError("adapter device must be cpu or mps")
     if device.type == "mps" and not torch.backends.mps.is_available():
         raise ValueError("requested MPS device is unavailable; CPU fallback is forbidden")
+
+
+def _canonical_device(device: torch.device) -> torch.device:
+    """Normalize PyTorch's logical MPS device to the materialized mps:0 form."""
+    if device.type == "mps":
+        return torch.device("mps:0")
+    return device
 
 
 def _assert_tensor_device(tensor: torch.Tensor, device: torch.device) -> None:
