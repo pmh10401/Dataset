@@ -9,7 +9,7 @@ from experiments.exp421_mps_batched_acceleration.contracts import (
     BackendPolicy,
     BatchKey,
     Exp421Manifest,
-    MlxAssessment,
+    MpsAssessment,
     ParityReport,
 )
 from experiments.exp421_mps_batched_acceleration.config import (
@@ -52,28 +52,26 @@ class Exp421ContractTests(unittest.TestCase):
         values = {
             "batch_key": self._batch_key(),
             "cpu_measurement": self._measurement("cpu"),
-            "mlx_measurement": self._measurement(
-                "mlx", transfer_seconds=0.05, compute_seconds=0.1,
+            "mps_measurement": self._measurement(
+                "mps", transfer_seconds=0.05, compute_seconds=0.1,
                 synchronize_seconds=0.05, total_seconds=0.2,
             ),
             "parity_report": self._parity(),
             "speedup": 2.0,
-            "uses_mlx": True,
+            "uses_mps": True,
             "fallback_reason": None,
-            "mlx_available": True,
-            "mlx_version": "0.20.0",
-            "mlx_metal_version": "0.20.0",
-            "eligibility_reason": None,
+            "mps_available": True,
+            "device": "Apple M4",
         }
         values.update(changes)
-        return MlxAssessment(**values)
+        return MpsAssessment(**values)
 
     def _manifest(self, **changes):
         cached = np.array([1, 4], dtype=np.int64)
         cached.setflags(write=False)
         values = {
             "state": "draft",
-            "policy": BackendPolicy("mlx", self._assessment()),
+            "policy": BackendPolicy("mps", self._assessment()),
             "cached_candidate_indices": cached,
             "provenance": {
                 "git_commit": "a" * 40,
@@ -119,7 +117,12 @@ class Exp421ContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self._measurement("cpu", **changes)
 
-    def test_assessment_requires_fallback_when_speedup_misses_gate(self):
+    def test_measurement_accepts_only_cpu_and_mps_backend_names(self):
+        self._measurement("mps")
+        with self.assertRaises(ValueError):
+            self._measurement("mlx")
+
+    def test_mps_assessment_requires_fallback_when_speedup_misses_gate(self):
         slow_cpu = self._measurement(
             "cpu", transfer_seconds=0.03, compute_seconds=0.13,
             synchronize_seconds=0.058, total_seconds=0.218,
@@ -127,39 +130,37 @@ class Exp421ContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self._assessment(
                 cpu_measurement=slow_cpu, speedup=1.09,
-                uses_mlx=False, fallback_reason=None,
+                uses_mps=False, fallback_reason=None,
             )
         assessment = self._assessment(
             cpu_measurement=slow_cpu, speedup=1.09,
-            uses_mlx=False, fallback_reason="speedup", eligibility_reason="speedup",
+            uses_mps=False, fallback_reason="speedup",
         )
-        self.assertFalse(assessment.uses_mlx)
+        self.assertFalse(assessment.uses_mps)
 
     def test_batch_one_is_cpu_mandatory_even_when_mlx_gates_pass(self):
         batch_key = self._batch_key(batch_size=1)
         cpu = self._measurement("cpu", batch_size=1)
-        mlx = self._measurement(
-            "mlx", batch_size=1, transfer_seconds=0.05,
+        mps = self._measurement(
+            "mps", batch_size=1, transfer_seconds=0.05,
             compute_seconds=0.1, synchronize_seconds=0.05, total_seconds=0.2,
         )
         parity = self._parity(batch_key=batch_key)
         assessment = self._assessment(
-            batch_key=batch_key, cpu_measurement=cpu, mlx_measurement=mlx,
-            parity_report=parity, speedup=2.0, uses_mlx=False,
+            batch_key=batch_key, cpu_measurement=cpu, mps_measurement=mps,
+            parity_report=parity, speedup=2.0, uses_mps=False,
             fallback_reason="batch_size_one_cpu_mandatory",
-            eligibility_reason="batch_size_one_cpu_mandatory",
         )
-        self.assertFalse(assessment.uses_mlx)
+        self.assertFalse(assessment.uses_mps)
 
-    def test_mlx_unavailable_is_a_complete_cpu_fallback_record(self):
+    def test_mps_unavailable_is_a_complete_cpu_fallback_record(self):
         assessment = self._assessment(
-            mlx_measurement=None, parity_report=None, speedup=None,
-            uses_mlx=False, fallback_reason="mlx_unavailable",
-            mlx_available=False, mlx_version="unavailable",
-            mlx_metal_version="unavailable", eligibility_reason="mlx_unavailable",
+            mps_measurement=None, parity_report=None, speedup=None,
+            uses_mps=False, fallback_reason="mps_unavailable",
+            mps_available=False, device="unavailable",
         )
-        self.assertFalse(assessment.uses_mlx)
-        self.assertFalse(assessment.mlx_available)
+        self.assertFalse(assessment.uses_mps)
+        self.assertFalse(assessment.mps_available)
 
     def test_manifest_rejects_test_token_invalid_state_and_writable_cached_array(self):
         writable = np.array([1, 4], dtype=np.int64)

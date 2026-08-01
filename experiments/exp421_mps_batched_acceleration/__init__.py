@@ -6,7 +6,7 @@ from .contracts import (
     BackendPolicy,
     BatchKey,
     Exp421Manifest,
-    MlxAssessment,
+    MpsAssessment,
     ParityReport,
 )
 
@@ -17,6 +17,6 @@ __all__ = [
     "Exp421Config",
     "Exp421Manifest",
     "FROZEN_CONFIG",
-    "MlxAssessment",
+    "MpsAssessment",
     "ParityReport",
 ]

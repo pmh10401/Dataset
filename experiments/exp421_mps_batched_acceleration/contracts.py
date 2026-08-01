@@ -94,8 +94,8 @@ class BackendMeasurement:
     def __post_init__(self) -> None:
         if type(self.batch_size) is not int or self.batch_size not in FROZEN_CONFIG.candidate_batch_sizes:
             raise ValueError("measurement batch_size is not preregistered")
-        if self.backend not in {"cpu", "mlx"}:
-            raise ValueError("measurement backend must be cpu or mlx")
+        if self.backend not in {"cpu", "mps"}:
+            raise ValueError("measurement backend must be cpu or mps")
         for name in ("transfer_seconds", "compute_seconds", "synchronize_seconds", "total_seconds"):
             _finite(getattr(self, name), name, minimum=0.0)
         if type(self.finite) is not bool or not self.finite:
@@ -135,18 +135,16 @@ class ParityReport:
 
 
 @dataclass(frozen=True)
-class MlxAssessment:
+class MpsAssessment:
     batch_key: BatchKey
     cpu_measurement: BackendMeasurement
-    mlx_measurement: BackendMeasurement | None
+    mps_measurement: BackendMeasurement | None
     parity_report: ParityReport | None
     speedup: float | None
-    uses_mlx: bool
+    uses_mps: bool
     fallback_reason: str | None
-    mlx_available: bool = True
-    mlx_version: str = "unrecorded"
-    mlx_metal_version: str = "unrecorded"
-    eligibility_reason: str | None = None
+    mps_available: bool
+    device: str
 
     def __post_init__(self) -> None:
         if not isinstance(self.batch_key, BatchKey):
@@ -155,34 +153,29 @@ class MlxAssessment:
             raise ValueError("cpu_measurement must be a CPU measurement")
         if self.cpu_measurement.batch_size != self.batch_key.batch_size:
             raise ValueError("measurement batch size mismatch")
-        if type(self.uses_mlx) is not bool:
-            raise ValueError("uses_mlx must be a bool")
-        if type(self.mlx_available) is not bool:
-            raise ValueError("mlx_available must be a bool")
-        _no_test_token(self.mlx_version, "mlx_version")
-        _no_test_token(self.mlx_metal_version, "mlx_metal_version")
-        if self.eligibility_reason is not None:
-            _no_test_token(self.eligibility_reason, "eligibility_reason")
-        if not self.mlx_available:
-            if any(value is not None for value in (self.mlx_measurement, self.parity_report, self.speedup)):
-                raise ValueError("unavailable MLX cannot have MLX measurement or parity evidence")
-            if self.uses_mlx or not isinstance(self.fallback_reason, str) or not self.fallback_reason.strip():
-                raise ValueError("unavailable MLX requires an explicit CPU fallback reason")
-            if not self.eligibility_reason:
-                raise ValueError("unavailable MLX requires an eligibility reason")
+        if type(self.uses_mps) is not bool:
+            raise ValueError("uses_mps must be a bool")
+        if type(self.mps_available) is not bool:
+            raise ValueError("mps_available must be a bool")
+        _no_test_token(self.device, "device")
+        if not self.mps_available:
+            if any(value is not None for value in (self.mps_measurement, self.parity_report, self.speedup)):
+                raise ValueError("unavailable MPS cannot have MPS measurement or parity evidence")
+            if self.uses_mps or not isinstance(self.fallback_reason, str) or not self.fallback_reason.strip():
+                raise ValueError("unavailable MPS requires an explicit CPU fallback reason")
             return
-        if not isinstance(self.mlx_measurement, BackendMeasurement) or self.mlx_measurement.backend != "mlx":
-            raise ValueError("available MLX requires an MLX measurement")
+        if not isinstance(self.mps_measurement, BackendMeasurement) or self.mps_measurement.backend != "mps":
+            raise ValueError("available MPS requires an MPS measurement")
         if not isinstance(self.parity_report, ParityReport) or self.parity_report.batch_key != self.batch_key:
-            raise ValueError("available MLX requires parity for the exact batch key")
-        if self.mlx_measurement.batch_size != self.batch_key.batch_size:
+            raise ValueError("available MPS requires parity for the exact batch key")
+        if self.mps_measurement.batch_size != self.batch_key.batch_size:
             raise ValueError("measurement batch size mismatch")
-        if self.cpu_measurement.candidate_coordinates_sha256 != self.mlx_measurement.candidate_coordinates_sha256:
-            raise ValueError("CPU and MLX candidate coordinates differ")
+        if self.cpu_measurement.candidate_coordinates_sha256 != self.mps_measurement.candidate_coordinates_sha256:
+            raise ValueError("CPU and MPS candidate coordinates differ")
         speedup = _finite(self.speedup, "speedup", minimum=0.0)
-        if self.mlx_measurement.total_seconds <= 0.0:
-            raise ValueError("available MLX total_seconds must be positive")
-        expected_speedup = self.cpu_measurement.total_seconds / self.mlx_measurement.total_seconds
+        if self.mps_measurement.total_seconds <= 0.0:
+            raise ValueError("available MPS total_seconds must be positive")
+        expected_speedup = self.cpu_measurement.total_seconds / self.mps_measurement.total_seconds
         if not isclose(speedup, expected_speedup, rel_tol=1e-12, abs_tol=1e-12):
             raise ValueError("speedup must match complete measured timings")
         eligible = (
@@ -190,25 +183,23 @@ class MlxAssessment:
             and self.parity_report.passes
             and speedup >= FROZEN_CONFIG.min_speedup
         )
-        if self.uses_mlx != eligible:
-            raise ValueError("MLX selection must match all preregistered gates")
-        if eligible and (self.fallback_reason is not None or self.eligibility_reason is not None):
-            raise ValueError("passing MLX assessment cannot have a fallback reason")
+        if self.uses_mps != eligible:
+            raise ValueError("MPS selection must match all preregistered gates")
+        if eligible and self.fallback_reason is not None:
+            raise ValueError("passing MPS assessment cannot have a fallback reason")
         if not eligible and (not isinstance(self.fallback_reason, str) or not self.fallback_reason.strip()):
-            raise ValueError("failed MLX assessment requires a fallback reason")
-        if not eligible and (not isinstance(self.eligibility_reason, str) or not self.eligibility_reason.strip()):
-            raise ValueError("failed MLX assessment requires an eligibility reason")
+            raise ValueError("failed MPS assessment requires a fallback reason")
 
 
 @dataclass(frozen=True)
 class BackendPolicy:
     backend: str
-    assessment: MlxAssessment
+    assessment: MpsAssessment
 
     def __post_init__(self) -> None:
-        if self.backend not in {"cpu", "mlx"} or not isinstance(self.assessment, MlxAssessment):
+        if self.backend not in {"cpu", "mps"} or not isinstance(self.assessment, MpsAssessment):
             raise ValueError("backend policy is invalid")
-        if (self.backend == "mlx") != self.assessment.uses_mlx:
+        if (self.backend == "mps") != self.assessment.uses_mps:
             raise ValueError("backend policy must fail closed to the assessment")
 
 
@@ -248,13 +239,9 @@ class Exp421Manifest:
             raise ValueError("fresh_no_clobber_attempt must be true")
         if type(provenance["train_only"]) is not bool or not provenance["train_only"]:
             raise ValueError("train_only must be true")
-        availability = "available" if self.policy.assessment.mlx_available else "unavailable"
-        if provenance["mlx_availability"] != availability:
-            raise ValueError("manifest MLX availability must match the assessment")
-        if provenance["mlx_version"] != self.policy.assessment.mlx_version or provenance["mlx_metal_version"] != self.policy.assessment.mlx_metal_version:
-            raise ValueError("manifest MLX versions must match the assessment")
-        expected_reason = self.policy.assessment.eligibility_reason or "eligible"
-        if provenance["mlx_eligibility_reason"] != expected_reason:
-            raise ValueError("manifest MLX eligibility reason must match the assessment")
+        if provenance["device"] != self.policy.assessment.device:
+            raise ValueError("manifest device must match the MPS assessment")
+        if provenance["mlx_availability"] not in {"available", "unavailable"}:
+            raise ValueError("manifest MLX availability must be available or unavailable")
         object.__setattr__(self, "cached_candidate_indices", cached)
         object.__setattr__(self, "provenance", MappingProxyType(provenance))
