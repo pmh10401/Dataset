@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -119,6 +120,35 @@ class BenchmarkBoundaryTests(unittest.TestCase):
         self.assertEqual(len(sample.indices), 10)
         self.assertEqual(sample.channels.shape, (10, 2, 64))
         connection.close()
+
+    def test_measurement_rejects_undersized_sample_before_any_fit(self):
+        sample = self._fake_measurement_sample()
+        undersized = replace(
+            sample,
+            indices=sample.indices[:16],
+            channels=sample.channels[:16],
+        )
+        with self.assertRaises(benchmark.BenchmarkBoundaryError):
+            benchmark._measurements_for_sample(
+                undersized,
+                capability=MpsCapability(
+                    torch_version="unavailable",
+                    mps_built=False,
+                    mps_available=False,
+                    device_name="Linux x86_64 CPU",
+                    mlx_version="unavailable",
+                    mlx_metal_version="unavailable",
+                    mlx_availability="unavailable",
+                    mlx_eligibility_reason="package_absent",
+                ),
+                config=FROZEN_CONFIG,
+                max_batch_bytes=benchmark.MAX_BATCH_BYTES,
+            )
+
+    def test_coordinate_digest_binds_exact_candidate_coordinates(self):
+        first = benchmark._coordinate_digest([1, 4], dataset="A_train", length=64)
+        second = benchmark._coordinate_digest([1, 5], dataset="A_train", length=64)
+        self.assertNotEqual(first, second)
 
     def test_public_runner_uses_fresh_root_and_unavailable_mps_falls_back(self):
         connection, raw = self._fixture()
