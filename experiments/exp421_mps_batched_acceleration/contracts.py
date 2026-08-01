@@ -8,6 +8,7 @@ from math import isclose, isfinite
 from numbers import Real
 import re
 from types import MappingProxyType
+from datetime import datetime
 
 import numpy as np
 
@@ -67,6 +68,34 @@ _MANIFEST_PROVENANCE_FIELDS = frozenset(
         "mlx_eligibility_reason",
     }
 )
+_MANIFEST_RUNTIME_FIELDS = frozenset(
+    {
+        "benchmark_started_at",
+        "benchmark_finished_at",
+        "process_id",
+        "host",
+        "fit_population_count",
+        "fit_population_sha256",
+        "model_state_sha256",
+        "model_stop_sha256",
+        "loss_history_sha256",
+        "oof_sha256",
+        "calibration_sha256",
+        "perturbation_sha256",
+        "qualification_sha256",
+        "synthetic_qualification_sha256",
+        "synthetic_qualification_status",
+    }
+)
+_MANIFEST_DEFAULT_RUNTIME = {
+    "benchmark_started_at": "1970-01-01T00:00:00+00:00",
+    "benchmark_finished_at": "1970-01-01T00:00:00+00:00",
+    "process_id": 1,
+    "host": "unspecified",
+    "fit_population_count": 0,
+    "synthetic_qualification_status": "mps_unavailable",
+    **{name: "0" * 64 for name in _MANIFEST_RUNTIME_FIELDS if name.endswith("_sha256")},
+}
 _MLX_UNAVAILABLE_REASONS = frozenset({"package_absent"})
 _MLX_AVAILABLE_REASON = "algorithm_rewrite_required"
 
@@ -104,8 +133,8 @@ class BackendMeasurement:
             raise ValueError("measurement backend must be cpu or mps")
         for name in ("transfer_seconds", "compute_seconds", "synchronize_seconds", "total_seconds"):
             _finite(getattr(self, name), name, minimum=0.0)
-        if type(self.finite) is not bool or not self.finite:
-            raise ValueError("measurement finite must be true")
+        if type(self.finite) is not bool:
+            raise ValueError("measurement finite must be a bool")
         _sha256(self.candidate_coordinates_sha256, "candidate_coordinates_sha256")
         stage_total = self.transfer_seconds + self.compute_seconds + self.synchronize_seconds
         if not isclose(self.total_seconds, stage_total, rel_tol=0.0, abs_tol=1e-12):
@@ -119,6 +148,7 @@ class ParityReport:
     mps_candidate_indices_by_alpha: Mapping[float, np.ndarray]
     max_normalized_error: float
     spearman: float
+    qualification_match: bool = True
 
     def __post_init__(self) -> None:
         if not isinstance(self.batch_key, BatchKey):
@@ -138,6 +168,8 @@ class ParityReport:
             frozen_mps[alpha] = _readonly_indices(self.mps_candidate_indices_by_alpha[alpha], f"mps_candidate_indices_by_alpha[{alpha}]")
         _finite(self.max_normalized_error, "max_normalized_error", minimum=0.0)
         _finite(self.spearman, "spearman")
+        if type(self.qualification_match) is not bool:
+            raise ValueError("qualification_match must be a bool")
         object.__setattr__(self, "cpu_candidate_indices_by_alpha", MappingProxyType(frozen_cpu))
         object.__setattr__(self, "mps_candidate_indices_by_alpha", MappingProxyType(frozen_mps))
 
@@ -189,8 +221,6 @@ class MpsAssessment:
             raise ValueError("available MPS requires parity for the exact batch key")
         if self.mps_measurement.batch_size != self.batch_key.batch_size:
             raise ValueError("measurement batch size mismatch")
-        if self.cpu_measurement.candidate_coordinates_sha256 != self.mps_measurement.candidate_coordinates_sha256:
-            raise ValueError("CPU and MPS candidate coordinates differ")
         speedup = _finite(self.speedup, "speedup", minimum=0.0)
         if self.mps_measurement.total_seconds <= 0.0:
             raise ValueError("available MPS total_seconds must be positive")
@@ -199,7 +229,10 @@ class MpsAssessment:
             raise ValueError("speedup must match complete measured timings")
         eligible = (
             self.batch_key.batch_size != 1
+            and self.cpu_measurement.finite
+            and self.mps_measurement.finite
             and self.parity_report.candidate_indices_match
+            and self.parity_report.qualification_match
             and self.parity_report.passes
             and speedup >= FROZEN_CONFIG.min_speedup
         )
@@ -253,9 +286,16 @@ class Exp421Manifest:
         if self.experiment_id != self.config.experiment_id:
             raise ValueError("manifest experiment_id is invalid")
         cached = _readonly_indices(self.cached_candidate_indices, "cached_candidate_indices", require_readonly=True)
-        if not isinstance(self.provenance, Mapping) or set(self.provenance) != _MANIFEST_PROVENANCE_FIELDS:
+        if not isinstance(self.provenance, Mapping):
+            raise ValueError("manifest provenance must be a mapping")
+        provided_fields = set(self.provenance)
+        expected_fields = _MANIFEST_PROVENANCE_FIELDS | _MANIFEST_RUNTIME_FIELDS
+        if provided_fields == _MANIFEST_PROVENANCE_FIELDS:
+            provenance = {**_MANIFEST_DEFAULT_RUNTIME, **dict(self.provenance)}
+        elif provided_fields == expected_fields:
+            provenance = dict(self.provenance)
+        else:
             raise ValueError("manifest provenance must contain the exact required fields")
-        provenance = dict(self.provenance)
         _sha256(provenance["config_sha256"], "config_sha256")
         if provenance["config_sha256"] != frozen_config_sha256(self.config):
             raise ValueError("config_sha256 must bind to the frozen Exp421 config")
@@ -263,8 +303,25 @@ class Exp421Manifest:
             raise ValueError("git_commit must be a lowercase Git object digest")
         if provenance["database_sha256"] != self.config.exp417_config.database_sha256:
             raise ValueError("database_sha256 must bind to Exp417")
-        for name in ("device", "runtime", "source", "torch_version", "device_name"):
+        for name in ("device", "runtime", "source", "torch_version", "device_name", "host", "benchmark_started_at", "benchmark_finished_at"):
             _no_test_token(provenance[name], name)
+        if provenance["synthetic_qualification_status"] not in {
+            "mps_unavailable", "compared_pass", "qualification_mismatch", "nonfinite_output"
+        }:
+            raise ValueError("synthetic_qualification_status is invalid")
+        if type(provenance["process_id"]) is not int or provenance["process_id"] < 1:
+            raise ValueError("process_id must be a positive integer")
+        if type(provenance["fit_population_count"]) is not int or provenance["fit_population_count"] < 0:
+            raise ValueError("fit_population_count must be a nonnegative integer")
+        try:
+            started = datetime.fromisoformat(provenance["benchmark_started_at"])
+            finished = datetime.fromisoformat(provenance["benchmark_finished_at"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError("benchmark timestamps must be ISO-8601 strings") from exc
+        if finished < started:
+            raise ValueError("benchmark_finished_at must not precede benchmark_started_at")
+        for name in ("model_state_sha256", "model_stop_sha256", "loss_history_sha256", "oof_sha256", "calibration_sha256", "perturbation_sha256", "qualification_sha256", "synthetic_qualification_sha256"):
+            _sha256(provenance[name], name)
         if type(provenance["fresh_no_clobber_attempt"]) is not bool or not provenance["fresh_no_clobber_attempt"]:
             raise ValueError("fresh_no_clobber_attempt must be true")
         if type(provenance["train_only"]) is not bool or not provenance["train_only"]:
@@ -414,6 +471,7 @@ def _policy_rows_equivalent(left: BackendPolicy, right: BackendPolicy) -> bool:
         left_parity.batch_key != right_parity.batch_key
         or left_parity.max_normalized_error != right_parity.max_normalized_error
         or left_parity.spearman != right_parity.spearman
+        or left_parity.qualification_match != right_parity.qualification_match
     ):
         return False
     for alpha in left_parity.cpu_candidate_indices_by_alpha:

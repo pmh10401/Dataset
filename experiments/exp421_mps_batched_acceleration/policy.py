@@ -41,6 +41,7 @@ _POLICY_REASONS = frozenset(
         "mps_unavailable",
         "nonfinite_output",
         "candidate_coordinates_mismatch",
+        "qualification_mismatch",
         "normalized_error_above_1e-4",
         "spearman_below_0.999",
         "speedup_below_1.1",
@@ -374,6 +375,8 @@ def _validate_parity_shape(report: Any, config: Exp421Config, batch_key: BatchKe
             raise ValueError(f"parity {name} must be finite")
         if name == "max_normalized_error" and float(value) < 0.0:
             raise ValueError("parity max_normalized_error must be nonnegative")
+    if type(getattr(report, "qualification_match", None)) is not bool:
+        raise ValueError("parity qualification_match must be a bool")
     return report
 
 
@@ -459,6 +462,9 @@ def _assessment_reason(assessment: MpsAssessment, config: Exp421Config) -> str:
             expected_uses_mps = False
         elif not _candidate_indices_match(report, config):
             reason = "candidate_coordinates_mismatch"
+            expected_uses_mps = False
+        elif not report.qualification_match:
+            reason = "qualification_mismatch"
             expected_uses_mps = False
         elif report.max_normalized_error > config.max_normalized_error:
             reason = "normalized_error_above_1e-4"

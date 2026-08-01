@@ -3,17 +3,23 @@
 This module is deliberately small and defensive.  It opens one verified
 read-only SQLite connection, asks the frozen Exp417 input boundary for normal
 TRAIN values, and evaluates at most a bounded set of exact-length channels.
-There is no TEST loader in this module, no multiprocessing, and no path that
-can write into the official Exp419 run.  The returned object is the validated
-Exp421 manifest; raw series, labels, and evaluation coordinates never enter
-the artifact.
+The bounded device sample is measured in exact batch sizes; the complete
+candidate-eligible length stratum is still used for the frozen fit/OOF step,
+with its count and waveform digest recorded in provenance.  There is no TEST
+loader in this module, no multiprocessing, and no path that can write into
+the official Exp419 run.  The returned object is the validated Exp421
+manifest; raw series, labels, and evaluation coordinates never enter the
+artifact.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from hashlib import sha256
+import json
+import os
 from pathlib import Path
 import platform
 import subprocess
@@ -33,17 +39,21 @@ from experiments.exp417_causal_multihorizon_shadow.inputs import (
     verified_read_only_connection,
 )
 from experiments.exp417_causal_multihorizon_shadow.model import (
-    TrainedSeedModel,
-    _canonical_state_sha256,
-    prepare_seed_initial_states,
+    fit_final_seed_models,
+    train_oof_models,
 )
 from experiments.exp417_causal_multihorizon_shadow.preprocessing import (
     build_horizons,
     preprocess_length_groups,
 )
+from experiments.exp417_causal_multihorizon_shadow.scoring import (
+    score_horizon,
+    seed_decision,
+    consensus_candidate,
+)
 
 from .batch_inference import FrozenModelAdapter
-from .calibration import build_calibration_cache, score_query_with_cache
+from .calibration import build_calibration_cache
 from .config import Exp421Config, FROZEN_CONFIG, frozen_config_sha256
 from .contracts import (
     BackendMeasurement,
@@ -150,7 +160,18 @@ def _path_text(path: Path | str, name: str) -> Path:
     except OSError as exc:
         raise BenchmarkBoundaryError(f"{name} cannot be resolved") from exc
     lowered = str(resolved).lower()
-    if "exp419_deterministic_cpu_parallel" in lowered or "/exp419/" in lowered:
+    components = [component for component in lowered.replace("\\", "/").split("/") if component]
+    if any(
+        component == "exp419"
+        or component.startswith("exp419_")
+        or component.startswith("exp419-")
+        or component in {
+            "exp419_deterministic_cpu_parallel.checkpoint",
+            "exp419_prediction",
+            "exp419_checkpoint",
+        }
+        for component in components
+    ):
         raise BenchmarkBoundaryError(f"{name} must not target official Exp419 artifacts")
     return resolved
 
@@ -227,7 +248,7 @@ def _select_train_sample(
         )
         groups = preprocess_length_groups(raw)
         for group in groups:
-            if group.status not in {"candidate_eligible", "diagnostic_only"} or not group.channels:
+            if group.status != "candidate_eligible" or not group.channels:
                 continue
             finite_indices = tuple(
                 item.instance_index
@@ -346,17 +367,34 @@ def _timed_predict(adapter: FrozenModelAdapter, channels: np.ndarray) -> tuple[M
     )
 
 
+def _rankdata(values: np.ndarray) -> np.ndarray:
+    """Return deterministic average ranks without importing another experiment.
+
+    Exp421 keeps its source trust root self-contained.  This is the same
+    tie-aware, stable-sort rule used by the reviewed parity helper: equal
+    values receive the mean of their occupied one-based ranks.
+    """
+    array = np.asarray(values, dtype=float).reshape(-1)
+    order = np.argsort(array, kind="mergesort")
+    ranks = np.empty(len(array), dtype=float)
+    start = 0
+    while start < len(array):
+        end = start + 1
+        while end < len(array) and array[order[end]] == array[order[start]]:
+            end += 1
+        ranks[order[start:end]] = (start + end - 1) / 2.0 + 1.0
+        start = end
+    return ranks
+
+
 def _spearman(left: np.ndarray, right: np.ndarray) -> float:
-    if left.size != right.size or left.size == 0:
-        return 1.0 if left.size == right.size else 0.0
-    def ranks(values: np.ndarray) -> np.ndarray:
-        order = np.argsort(values, kind="mergesort")
-        result = np.empty(values.size, dtype=np.float64)
-        result[order] = np.arange(values.size, dtype=np.float64)
-        return result
-    left_rank, right_rank = ranks(left.reshape(-1)), ranks(right.reshape(-1))
-    if np.std(left_rank) == 0 or np.std(right_rank) == 0:
-        return 1.0 if np.array_equal(left_rank, right_rank) else 0.0
+    """Compute tie-aware Spearman correlation for parity evidence."""
+    if np.asarray(left).size != np.asarray(right).size:
+        return 0.0
+    left_rank = _rankdata(np.asarray(left))
+    right_rank = _rankdata(np.asarray(right))
+    if len(left_rank) < 2 or float(np.std(left_rank)) <= 1e-12 or float(np.std(right_rank)) <= 1e-12:
+        return 0.0
     value = float(np.corrcoef(left_rank, right_rank)[0, 1])
     return value if np.isfinite(value) else 0.0
 
@@ -365,64 +403,96 @@ def _candidate_indices(
     residuals_by_seed: Sequence[Mapping[int, np.ndarray]],
     indices: Sequence[int],
     config: Exp421Config,
-) -> tuple[np.ndarray, float, str]:
+    *,
+    oof_by_seed: Mapping[int, Mapping[int, Mapping[int, np.ndarray]]] | None = None,
+) -> tuple[np.ndarray, Mapping[str, str], str]:
+    """Apply the exact Exp417 score, seed, and consensus candidate rule."""
+    if not residuals_by_seed or len(residuals_by_seed) != len(config.frozen_model_seeds):
+        raise BenchmarkBoundaryError("candidate evidence requires every frozen model seed")
+    horizons = tuple(sorted(residuals_by_seed[0]))
+    if len(horizons) != 3 or any(tuple(sorted(item)) != horizons for item in residuals_by_seed):
+        raise BenchmarkBoundaryError("candidate evidence must cover all frozen horizons")
+    if any(residuals[horizon].shape[0] != len(indices) for residuals in residuals_by_seed for horizon in horizons):
+        raise BenchmarkBoundaryError("candidate residual rows do not bind to TRAIN coordinates")
+    if oof_by_seed is not None:
+        if set(oof_by_seed) != set(config.frozen_model_seeds):
+            raise BenchmarkBoundaryError("OOF evidence must contain every frozen model seed")
+        for seed in config.frozen_model_seeds:
+            if any(int(index) not in oof_by_seed[seed] for index in indices):
+                raise BenchmarkBoundaryError("query coordinates must belong to the OOF identity universe")
+    evidence_hash = sha256(b"exp421.oof.v1\x00")
+    calibration_hash = sha256(b"exp421.calibration.v1\x00")
+    for seed_position, residuals in enumerate(residuals_by_seed):
+        seed = config.frozen_model_seeds[seed_position]
+        for horizon in horizons:
+            if oof_by_seed is None:
+                values = tuple(residuals[horizon][row] for row in range(residuals[horizon].shape[0]))
+            else:
+                values = tuple(oof_by_seed[seed][index][horizon] for index in sorted(oof_by_seed[seed]))
+                for index in sorted(oof_by_seed[seed]):
+                    evidence_hash.update(int(index).to_bytes(8, "little", signed=False))
+            for item in values:
+                evidence_hash.update(np.ascontiguousarray(item, dtype="<f8").tobytes())
+            try:
+                cache = build_calibration_cache(values, horizon=horizon)
+                calibration_hash.update(cache.digest.encode("ascii"))
+            except ValueError:
+                calibration_hash.update(b"calibration_unavailable\x00")
     selected: set[int] = set()
-    # Calibration is intentionally derived from normal TRAIN residuals only.
-    # Constant residuals are a valid diagnostic with no candidates.
-    caches = []
-    for horizon in residuals_by_seed[0]:
-        arrays = [residuals[horizon][row] for residuals in residuals_by_seed for row in range(residuals[horizon].shape[0])]
-        try:
-            caches.append((horizon, build_calibration_cache(arrays, horizon=horizon)))
-        except ValueError:
-            caches.append((horizon, None))
+    qualification_hash = sha256(b"exp421.qualification.v1\x00")
     for row, index in enumerate(indices):
-        for horizon, cache in caches:
-            if cache is None:
-                continue
-            for residuals in residuals_by_seed:
-                score = score_query_with_cache(cache, residuals[horizon][row]).p_value
-                if score <= config.exp417_config.candidate_alpha:
-                    selected.add(index)
+        decisions = []
+        for seed_position, residuals in enumerate(residuals_by_seed):
+            scores = {}
+            for horizon in horizons:
+                # The candidate is scored against the complete normal TRAIN
+                # OOF universe when a frozen bundle is present.  The
+                # no-bundle fallback is retained only for isolated unit
+                # fixtures and removes the query row to avoid self-calibration.
+                if oof_by_seed is None:
+                    oof = tuple(residuals[horizon][other] for other in range(len(indices)) if other != row)
+                else:
+                    oof = tuple(
+                        oof_by_seed[config.frozen_model_seeds[seed_position]][index][horizon]
+                        for index in sorted(oof_by_seed[config.frozen_model_seeds[seed_position]])
+                    )
+                if len(oof) < 2:
+                    scores = {}
                     break
+                try:
+                    scored = score_horizon(oof, residuals[horizon][row], horizon=horizon)
+                    scores[horizon] = scored
+                except ValueError:
+                    scores = {}
+                    break
+            if len(scores) != len(horizons):
+                decisions = []
+                break
+            decisions.append(seed_decision(scores, seed=config.frozen_model_seeds[seed_position], config=config.exp417_config))
+        accepted = bool(decisions) and consensus_candidate(decisions)
+        qualification_hash.update(int(index).to_bytes(8, "little", signed=False))
+        qualification_hash.update(b"\x01" if accepted else b"\x00")
+        if accepted:
+            selected.add(index)
     values = np.asarray(sorted(selected), dtype=np.int64)
     values.setflags(write=False)
-    return values, 0.0, _coordinate_digest(values)
-
-
-def _make_probe_model(group: ProcessedGroup, seed: int, indices: Sequence[int]) -> TrainedSeedModel:
-    """Create a canonical frozen-state probe without fitting or changing Exp417."""
-    horizons = build_horizons(group.group.length)
-    initial = prepare_seed_initial_states(horizons, torch.device("cpu"))[seed]
-    identities = tuple(sorted(int(index) for index in indices))
-    if len(identities) < 10:
-        raise BenchmarkBoundaryError("bounded benchmark needs ten TRAIN identities for frozen split evidence")
-    early_fit = identities[: max(5, len(identities) // 2)]
-    early_validation = identities[max(5, len(identities) // 2) :]
-    if len(early_validation) < 5:
-        early_validation = identities[-5:]
-    return TrainedSeedModel(
-        seed=seed,
-        horizons=horizons,
-        model_sha256=_canonical_state_sha256(initial),
-        state=initial,
-        stop_epoch=1,
-        training_losses=(0.0,),
-        validation_losses=(0.0,),
-        fit_indices=identities,
-        validation_indices=(),
-        early_stop_fit_indices=tuple(sorted(set(early_fit))),
-        early_stop_validation_indices=tuple(sorted(set(early_validation))),
-        refit_indices=identities,
-    )
+    return values, MappingProxyType({
+        "oof_sha256": evidence_hash.hexdigest(),
+        "calibration_sha256": calibration_hash.hexdigest(),
+        "qualification_sha256": qualification_hash.hexdigest(),
+    }), _coordinate_digest(values)
 
 
 def _perturbation_provenance(sample: _TrainSample, config: Exp421Config) -> str:
     """Exercise the frozen TRAIN perturbation definitions without serializing arrays."""
     digest = sha256(b"exp421.train.perturbation-provenance.v1\x00")
     scale = max(float(sample.group.raw_scale), 1e-6)
+    repaired_by_index = {
+        item.instance_index: np.asarray(item.values, dtype=np.float64)
+        for item in sample.group.group.series
+    }
     for row, index in enumerate(sample.indices):
-        series = sample.raw_by_index[index]
+        series = repaired_by_index[index]
         # PerturbationCacheKey intentionally requires a TRAIN namespace.  The
         # hash-derived identifier contains no private dataset name in output.
         identifier = "train_" + sha256(sample.dataset.encode("utf-8")).hexdigest()[:16]
@@ -432,6 +502,132 @@ def _perturbation_provenance(sample: _TrainSample, config: Exp421Config) -> str:
         if row >= MAX_BENCHMARK_SERIES - 1:
             break
     return digest.hexdigest()
+
+
+def _fit_population_provenance(sample: _TrainSample) -> tuple[int, str]:
+    """Hash the complete eligible TRAIN stratum used by fit and OOF.
+
+    Device prediction is bounded by ``sample.indices``.  Model fitting and
+    OOF calibration intentionally use the full exact-length eligible stratum
+    so the frozen Exp417 candidate rule is not changed by the device cap.
+    This digest makes that distinction auditable without serializing values.
+    """
+    digest = sha256(b"exp421.train.fit-population.v1\x00")
+    series = tuple(sorted(sample.group.group.series, key=lambda item: item.instance_index))
+    for item in series:
+        values = np.asarray(item.values, dtype="<f8")
+        digest.update(int(item.instance_index).to_bytes(8, "little", signed=False))
+        digest.update(int(values.size).to_bytes(8, "little", signed=False))
+        digest.update(np.ascontiguousarray(values, dtype="<f8").tobytes())
+    return len(series), digest.hexdigest()
+
+
+def _synthetic_qualification_parity(
+    sample: _TrainSample,
+    *,
+    cpu_adapters: Mapping[int, FrozenModelAdapter],
+    mps_adapters: Mapping[int, FrozenModelAdapter],
+    oof_by_seed: Mapping[int, Mapping[int, Mapping[int, np.ndarray]]],
+    config: Exp421Config,
+) -> tuple[str, bool, str]:
+    """Run a bounded TRAIN perturbation qualification parity check.
+
+    One deterministic TRAIN identity, every frozen perturbation type, and
+    every perturbation seed are enough to exercise the qualification decision
+    boundary.  MPS is never selected from this check alone: the resulting
+    digest and match bit are an additional gate alongside prediction parity.
+    """
+    digest = sha256(b"exp421.synthetic-qualification.v1\x00")
+    compare_mps = bool(mps_adapters)
+    all_match = True
+    nonfinite_output = False
+    index = sample.indices[0]
+    series = next(item.values for item in sample.group.group.series if item.instance_index == index)
+    identifier = "train_" + sha256(sample.dataset.encode("utf-8")).hexdigest()[:16]
+    raw_scale = max(float(sample.group.raw_scale), 1e-6)
+    difference_scale = max(float(sample.group.difference_scale), 1e-6)
+    for perturbation_seed in config.frozen_perturbation_seeds:
+        cached = build_cached_perturbations(identifier, index, np.asarray(series, dtype=np.float64), raw_scale, perturbation_seed)
+        for perturbation_name in cached:
+            raw = np.asarray(cached[perturbation_name], dtype=np.float64)
+            differences = np.diff(raw, prepend=raw[:1])
+            channels = np.stack(
+                (
+                    (raw - float(sample.group.raw_center)) / raw_scale,
+                    (differences - float(sample.group.difference_center)) / difference_scale,
+                ),
+                axis=0,
+            ).astype(np.float32, copy=False)[None, ...]
+            if not np.isfinite(channels).all():
+                all_match = False
+                digest.update(perturbation_name.encode("ascii") + b"\x00nonfinite")
+                continue
+            residuals_by_backend: dict[str, dict[int, Mapping[int, np.ndarray]]] = {}
+            for backend, adapters in (("cpu", cpu_adapters), ("mps", mps_adapters)):
+                if not adapters:
+                    continue
+                try:
+                    residuals_by_backend[backend] = {
+                        seed: adapters[seed].predict_batch(channels)
+                        for seed in config.frozen_model_seeds
+                    }
+                except Exception as exc:
+                    digest.update(backend.encode("ascii") + b"\x00prediction_error\x00")
+                    if backend == "mps":
+                        all_match = False
+                        nonfinite_output = nonfinite_output or "finite" in str(exc).lower()
+                    continue
+            decisions_by_backend: dict[str, bool] = {}
+            flattened: dict[str, np.ndarray] = {}
+            for backend, residuals_by_seed in residuals_by_backend.items():
+                decisions = []
+                flat_parts = []
+                try:
+                    for seed in config.frozen_model_seeds:
+                        scores = {
+                            horizon: score_horizon(
+                                tuple(oof_by_seed[seed][oof_index][horizon] for oof_index in sorted(oof_by_seed[seed])),
+                                residuals_by_seed[seed][horizon][0],
+                                horizon=horizon,
+                            )
+                            for horizon in build_horizons(sample.group.group.length)
+                        }
+                        decisions.append(seed_decision(scores, seed=seed, config=config.exp417_config))
+                        flat_parts.extend(
+                            residuals_by_seed[seed][horizon].reshape(-1)
+                            for horizon in build_horizons(sample.group.group.length)
+                        )
+                except (KeyError, TypeError, ValueError):
+                    decisions = []
+                    all_match = False if compare_mps else all_match
+                decisions_by_backend[backend] = bool(decisions) and consensus_candidate(decisions)
+                flattened[backend] = np.concatenate(flat_parts) if flat_parts else np.asarray([], dtype=np.float64)
+                digest.update(backend.encode("ascii"))
+                digest.update(perturbation_seed.to_bytes(8, "little", signed=False))
+                digest.update(perturbation_name.encode("ascii") + b"\x00")
+                digest.update(b"\x01" if decisions_by_backend[backend] else b"\x00")
+            if compare_mps and "mps" in decisions_by_backend:
+                cpu_flat = flattened.get("cpu", np.asarray([], dtype=np.float64))
+                mps_flat = flattened["mps"]
+                denominator = np.maximum(np.abs(cpu_flat), 1e-12)
+                error = float(np.max(np.abs(cpu_flat - mps_flat) / denominator)) if cpu_flat.size else 0.0
+                rank = _spearman(cpu_flat, mps_flat)
+                if (
+                    decisions_by_backend.get("cpu") != decisions_by_backend.get("mps")
+                    or error > config.max_normalized_error
+                    or rank < config.min_spearman
+                ):
+                    all_match = False
+                digest.update(np.asarray([error, rank], dtype="<f8").tobytes())
+    if not compare_mps:
+        status = "mps_unavailable"
+    elif nonfinite_output:
+        status = "nonfinite_output"
+    elif all_match:
+        status = "compared_pass"
+    else:
+        status = "qualification_mismatch"
+    return digest.hexdigest(), all_match, status
 
 
 def _unavailable_assessment(assessment: MpsAssessment, capability: Any) -> MpsAssessment:
@@ -449,20 +645,107 @@ def _unavailable_assessment(assessment: MpsAssessment, capability: Any) -> MpsAs
     )
 
 
+def _nonfinite_mps_assessment(
+    *,
+    batch_size: int,
+    cpu_measurement: BackendMeasurement,
+    cpu_candidates: np.ndarray,
+    device: str,
+) -> MpsAssessment:
+    """Retain an available MPS row when its output finite gate fails."""
+    key = BatchKey(batch_size, FROZEN_CONFIG.frozen_model_seeds[0], FROZEN_CONFIG.frozen_perturbation_seeds[0])
+    mps_measurement = BackendMeasurement(
+        batch_size=batch_size,
+        backend="mps",
+        transfer_seconds=0.0,
+        compute_seconds=1e-12,
+        synchronize_seconds=0.0,
+        total_seconds=1e-12,
+        finite=False,
+        candidate_coordinates_sha256=cpu_measurement.candidate_coordinates_sha256,
+    )
+    empty = np.asarray([], dtype=np.int64)
+    empty.setflags(write=False)
+    parity = ParityReport(
+        batch_key=key,
+        cpu_candidate_indices_by_alpha={FROZEN_CONFIG.exp417_config.candidate_alpha: cpu_candidates},
+        mps_candidate_indices_by_alpha={FROZEN_CONFIG.exp417_config.candidate_alpha: empty},
+        max_normalized_error=1.0,
+        spearman=0.0,
+    )
+    return MpsAssessment(
+        batch_key=key,
+        cpu_measurement=cpu_measurement,
+        mps_measurement=mps_measurement,
+        parity_report=parity,
+        speedup=cpu_measurement.total_seconds / 1e-12,
+        uses_mps=False,
+        fallback_reason="nonfinite_output",
+        mps_available=True,
+        device=device,
+    )
+
+
 def _measurements_for_sample(
     sample: _TrainSample,
     *,
     capability: Any,
     config: Exp421Config,
     max_batch_bytes: int,
-) -> tuple[dict[int, MpsAssessment], np.ndarray]:
+) -> tuple[dict[int, MpsAssessment], np.ndarray, Mapping[str, object]]:
     """Measure exact batch rows sequentially and derive fail-closed assessments."""
     selected_count = len(sample.indices)
     if selected_count < 1:
         raise BenchmarkBoundaryError("sample is empty")
-    model_by_seed = {
-        seed: _make_probe_model(sample.group, seed, sample.indices)
-        for seed in config.frozen_model_seeds
+    if selected_count < max(config.candidate_batch_sizes):
+        raise BenchmarkBoundaryError(
+            "benchmark sample must contain every exact preregistered batch size"
+        )
+    assessments: dict[int, MpsAssessment] = {}
+    # Fit the frozen final states and OOF residuals on the full eligible
+    # normal-TRAIN stratum before applying the bounded prediction cap.  The
+    # cap therefore limits device work, not the qualification population.
+    fitted_models = fit_final_seed_models(sample.group, device=torch.device("cpu"))
+    model_by_seed = {model.seed: model for model in fitted_models}
+    if set(model_by_seed) != set(config.frozen_model_seeds):
+        raise BenchmarkBoundaryError("frozen final fit omitted a required model seed")
+    oof_bundle = train_oof_models(sample.group, device=torch.device("cpu"))
+    oof_by_seed: dict[int, Mapping[int, Mapping[int, np.ndarray]]] = {
+        int(seed): {
+            int(index): {int(horizon): values for horizon, values in by_horizon.items()}
+            for index, by_horizon in by_index.items()
+        }
+        for seed, by_index in oof_bundle.oof_residuals.items()
+    }
+    evidence_hashes = {
+        "model_state_sha256": sha256(
+            b"exp421.model-state.v1\x00" + b"".join(
+                model_by_seed[seed].model_sha256.encode("ascii")
+                for seed in config.frozen_model_seeds
+            )
+        ).hexdigest(),
+        "model_stop_sha256": sha256(
+            json.dumps(
+                [(seed, model_by_seed[seed].stop_epoch) for seed in config.frozen_model_seeds],
+                separators=(",", ":"),
+            ).encode("ascii")
+        ).hexdigest(),
+        "loss_history_sha256": sha256(
+            json.dumps(
+                [
+                    (seed, model_by_seed[seed].training_losses, model_by_seed[seed].validation_losses)
+                    for seed in config.frozen_model_seeds
+                ],
+                separators=(",", ":"),
+            ).encode("ascii")
+        ).hexdigest(),
+    }
+    perturbation_digest = _perturbation_provenance(sample, config)
+    evidence_hashes["perturbation_sha256"] = perturbation_digest
+    fit_population_count, fit_population_digest = _fit_population_provenance(sample)
+    evidence_accumulators = {
+        name: sha256(value.encode("ascii"))
+        for name, value in evidence_hashes.items()
     }
     cpu_adapters = {
         seed: FrozenModelAdapter.from_trained_seed(model, device=torch.device("cpu"))
@@ -481,15 +764,19 @@ def _measurements_for_sample(
             }
         except Exception:
             mps_adapters = {}
-            for previous_size, previous in tuple(assessments.items()):
-                assessments[previous_size] = _unavailable_assessment(previous, capability)
+    synthetic_qualification_digest, synthetic_qualification_match, synthetic_qualification_status = _synthetic_qualification_parity(
+        sample,
+        cpu_adapters=cpu_adapters,
+        mps_adapters=mps_adapters,
+        oof_by_seed=oof_by_seed,
+        config=config,
+    )
     coordinate_indices = tuple(sample.indices)
-    assessments: dict[int, MpsAssessment] = {}
     cached_union: set[int] = set()
     for batch_size in config.candidate_batch_sizes:
-        # Keep exact batch sizes even when the bounded fixture is smaller by
-        # selecting a deterministic prefix.  MPS paths above require all rows.
-        indices = coordinate_indices[:batch_size] if selected_count >= batch_size else coordinate_indices
+        # Every frozen batch size has an exact row count; the boundary above
+        # rejects a sample too small for the largest preregistered batch.
+        indices = coordinate_indices[:batch_size]
         rows = tuple(sample.indices.index(index) for index in indices)
         batch = np.ascontiguousarray(sample.channels[list(rows)], dtype=np.float32)
         if batch.nbytes > max_batch_bytes:
@@ -507,7 +794,13 @@ def _measurements_for_sample(
                 cpu_outputs.append(output)
                 for position in range(3):
                     cpu_timing[position] += timing[position]
-        cpu_candidates, _, _ = _candidate_indices(cpu_outputs, indices, config)
+        cpu_candidates, cpu_evidence, _ = _candidate_indices(
+            cpu_outputs, indices, config, oof_by_seed=oof_by_seed
+        )
+        for name in ("oof_sha256", "calibration_sha256", "qualification_sha256"):
+            evidence_accumulators[name] = sha256(
+                evidence_accumulators.get(name, sha256()).digest() + cpu_evidence[name].encode("ascii")
+            )
         cached_union.update(int(index) for index in cpu_candidates.tolist())
         if not mps_adapters:
             candidate_digest = _coordinate_digest(
@@ -546,10 +839,9 @@ def _measurements_for_sample(
                 mps_outputs.append(output)
                 for position in range(3):
                     mps_timing[position] += timing[position]
-        except Exception:
+        except Exception as exc:
             # A runtime allocation, synchronization, or finite-output failure
             # is a CPU fallback, never an implicit MPS adoption.
-            mps_adapters = {}
             candidate_digest = _coordinate_digest(
                 cpu_candidates.tolist(), dataset=sample.dataset, length=sample.group.group.length
             )
@@ -563,6 +855,18 @@ def _measurements_for_sample(
                 finite=True,
                 candidate_coordinates_sha256=candidate_digest,
             )
+            if "finite" in str(exc).lower() or "nonfinite" in str(exc).lower():
+                assessments[batch_size] = _nonfinite_mps_assessment(
+                    batch_size=batch_size,
+                    cpu_measurement=cpu_measurement,
+                    cpu_candidates=cpu_candidates,
+                    device=str(capability.device_name),
+                )
+                mps_adapters = {}
+                continue
+            mps_adapters = {}
+            for previous_size, previous in tuple(assessments.items()):
+                assessments[previous_size] = _unavailable_assessment(previous, capability)
             assessments[batch_size] = MpsAssessment(
                 batch_key=BatchKey(batch_size, config.frozen_model_seeds[0], config.frozen_perturbation_seeds[0]),
                 cpu_measurement=cpu_measurement,
@@ -575,10 +879,18 @@ def _measurements_for_sample(
                 device=str(capability.device_name),
             )
             continue
-        mps_candidates, _, _ = _candidate_indices(mps_outputs, indices, config)
-        common_candidate_indices = sorted(set(cpu_candidates.tolist()) | set(mps_candidates.tolist()))
-        candidate_digest = _coordinate_digest(
-            common_candidate_indices, dataset=sample.dataset, length=sample.group.group.length
+        mps_candidates, mps_evidence, _ = _candidate_indices(
+            mps_outputs, indices, config, oof_by_seed=oof_by_seed
+        )
+        for name in ("oof_sha256", "calibration_sha256", "qualification_sha256"):
+            evidence_accumulators[name] = sha256(
+                evidence_accumulators.get(name, sha256()).digest() + mps_evidence[name].encode("ascii")
+            )
+        cpu_candidate_digest = _coordinate_digest(
+            cpu_candidates.tolist(), dataset=sample.dataset, length=sample.group.group.length
+        )
+        mps_candidate_digest = _coordinate_digest(
+            mps_candidates.tolist(), dataset=sample.dataset, length=sample.group.group.length
         )
         cpu_measurement = BackendMeasurement(
             batch_size=batch_size,
@@ -588,7 +900,7 @@ def _measurements_for_sample(
             synchronize_seconds=cpu_timing[2],
             total_seconds=sum(cpu_timing),
             finite=True,
-            candidate_coordinates_sha256=candidate_digest,
+            candidate_coordinates_sha256=cpu_candidate_digest,
         )
         mps_measurement = BackendMeasurement(
             batch_size=batch_size,
@@ -598,7 +910,7 @@ def _measurements_for_sample(
             synchronize_seconds=mps_timing[2],
             total_seconds=sum(mps_timing),
             finite=True,
-            candidate_coordinates_sha256=candidate_digest,
+            candidate_coordinates_sha256=mps_candidate_digest,
         )
         cpu_flat = np.concatenate([cpu_outputs[seed][horizon].reshape(-1) for seed in range(len(cpu_outputs)) for horizon in cpu_outputs[seed]])
         mps_flat = np.concatenate([mps_outputs[seed][horizon].reshape(-1) for seed in range(len(mps_outputs)) for horizon in mps_outputs[seed]])
@@ -610,11 +922,14 @@ def _measurements_for_sample(
             mps_candidate_indices_by_alpha={config.exp417_config.candidate_alpha: mps_candidates},
             max_normalized_error=error,
             spearman=_spearman(cpu_flat, mps_flat),
+            qualification_match=synthetic_qualification_match,
         )
         speedup = cpu_measurement.total_seconds / max(mps_measurement.total_seconds, 1e-12)
         passing = batch_size != 1 and parity.passes and speedup >= config.min_speedup
         if not parity.candidate_indices_match:
             fallback_reason = "candidate_coordinates_mismatch"
+        elif not parity.qualification_match:
+            fallback_reason = "qualification_mismatch"
         elif parity.max_normalized_error > config.max_normalized_error:
             fallback_reason = "normalized_error_above_1e-4"
         elif parity.spearman < config.min_spearman:
@@ -637,7 +952,15 @@ def _measurements_for_sample(
             device=str(capability.device_name),
         )
         assessments[batch_size] = assessment
-    return assessments, np.asarray(sorted(cached_union), dtype=np.int64)
+    final_evidence = dict(evidence_hashes)
+    for name, accumulator in evidence_accumulators.items():
+        if name not in final_evidence:
+            final_evidence[name] = accumulator.hexdigest()
+    final_evidence["fit_population_count"] = fit_population_count
+    final_evidence["fit_population_sha256"] = fit_population_digest
+    final_evidence["synthetic_qualification_sha256"] = synthetic_qualification_digest
+    final_evidence["synthetic_qualification_status"] = synthetic_qualification_status
+    return assessments, np.asarray(sorted(cached_union), dtype=np.int64), MappingProxyType(final_evidence)
 
 
 def _git_commit() -> str:
@@ -661,7 +984,11 @@ def _runtime_label() -> str:
 
 def _effective_capability(capability: MpsCapability, assessments: Mapping[int, MpsAssessment]) -> MpsCapability:
     """Bind provenance to the runtime path that actually produced evidence."""
-    runtime_available = bool(assessments) and all(item.mps_available for item in assessments.values())
+    runtime_available = (
+        assessments.get(1).mps_available
+        if 1 in assessments
+        else bool(assessments) and all(item.mps_available for item in assessments.values())
+    )
     if runtime_available == capability.mps_available:
         return capability
     # PyTorch can report a built/available backend while model materialization
@@ -688,6 +1015,7 @@ def run_train_only_benchmark(
 ) -> Exp421Manifest:
     """Run a bounded normal-TRAIN diagnostic and emit its validated manifest."""
     max_series, max_batch_bytes = _validate_config(config)
+    benchmark_started_at = datetime.now(timezone.utc).isoformat()
     database_path = _path_text(database, "database")
     attempt_root = _fresh_output_root(output_root)
     expected_db_sha = config.exp417_config.database_sha256
@@ -705,13 +1033,37 @@ def run_train_only_benchmark(
         )
     if sample is None:
         raise BenchmarkBoundaryError("no finite exact-length normal TRAIN sample is available")
-    _perturbation_provenance(sample, config)
-    assessments, cached_indices = _measurements_for_sample(
+    measurement_result = _measurements_for_sample(
         sample,
         capability=capability,
         config=config,
         max_batch_bytes=max_batch_bytes,
     )
+    if not isinstance(measurement_result, tuple) or len(measurement_result) != 3:
+        raise BenchmarkBoundaryError("benchmark measurement evidence is incomplete")
+    else:
+        assessments, cached_indices, evidence = measurement_result
+    required_hashes = (
+        "fit_population_sha256", "model_state_sha256", "model_stop_sha256",
+        "loss_history_sha256", "oof_sha256", "calibration_sha256",
+        "perturbation_sha256", "qualification_sha256", "synthetic_qualification_sha256",
+    )
+    if (
+        not isinstance(evidence, Mapping)
+        or type(evidence.get("fit_population_count")) is not int
+        or evidence["fit_population_count"] < config.exp417_config.min_train_candidate
+        or any(
+            not isinstance(evidence.get(name), str)
+            or len(evidence[name]) != 64
+            or evidence[name] == "0" * 64
+            for name in required_hashes
+        )
+        or evidence.get("synthetic_qualification_status") not in {
+            "mps_unavailable", "compared_pass", "qualification_mismatch", "nonfinite_output"
+        }
+    ):
+        raise BenchmarkBoundaryError("benchmark provenance evidence is incomplete")
+    benchmark_finished_at = datetime.now(timezone.utc).isoformat()
     capability = _effective_capability(capability, assessments)
     policy_bundle: BackendPolicyBundle = choose_backend(assessments, config)
     _, source_digests, _ = _source_manifest_metadata()
@@ -726,6 +1078,11 @@ def run_train_only_benchmark(
             "source": "exp421-train-only-benchmark",
             "fresh_no_clobber_attempt": True,
             "train_only": True,
+            "benchmark_started_at": benchmark_started_at,
+            "benchmark_finished_at": benchmark_finished_at,
+            "process_id": os.getpid(),
+            "host": f"{platform.system()} {platform.machine()}",
+            **dict(evidence),
         },
     )
     state = "passed" if all(

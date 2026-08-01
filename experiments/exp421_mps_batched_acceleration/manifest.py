@@ -75,6 +75,7 @@ _PARITY_FIELDS = frozenset(
         "mps_candidate_indices_by_alpha",
         "max_normalized_error",
         "spearman",
+        "qualification_match",
     }
 )
 _BATCH_KEY_FIELDS = frozenset({"batch_size", "model_seed", "perturbation_seed"})
@@ -435,6 +436,7 @@ def _serialize_parity(parity: ParityReport | None) -> dict[str, object] | None:
         "mps_candidate_indices_by_alpha": serialize_indices(parity.mps_candidate_indices_by_alpha),
         "max_normalized_error": parity.max_normalized_error,
         "spearman": parity.spearman,
+        "qualification_match": parity.qualification_match,
     }
 
 
@@ -466,6 +468,7 @@ def _parse_parity(payload: object, *, expected_batch_key: BatchKey) -> ParityRep
             mps_candidate_indices_by_alpha=parse_indices(payload["mps_candidate_indices_by_alpha"]),
             max_normalized_error=payload["max_normalized_error"],
             spearman=payload["spearman"],
+            qualification_match=payload["qualification_match"],
         )
     except (TypeError, ValueError) as exc:
         raise ValueError("parity payload is invalid") from exc

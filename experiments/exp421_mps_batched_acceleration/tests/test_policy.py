@@ -137,6 +137,32 @@ class BackendPolicyTests(unittest.TestCase):
             self.assertEqual(result.policies[size].backend, "cpu")
             self.assertEqual(result.reasons[size], reason)
 
+    def test_failed_synthetic_qualification_parity_is_a_cpu_reason(self):
+        measurements = self._all_assessments()
+        source = measurements[4]
+        report = ParityReport(
+            batch_key=self._key(4),
+            cpu_candidate_indices_by_alpha=source.parity_report.cpu_candidate_indices_by_alpha,
+            mps_candidate_indices_by_alpha=source.parity_report.mps_candidate_indices_by_alpha,
+            max_normalized_error=source.parity_report.max_normalized_error,
+            spearman=source.parity_report.spearman,
+            qualification_match=False,
+        )
+        measurements[4] = MpsAssessment(
+            batch_key=self._key(4),
+            cpu_measurement=source.cpu_measurement,
+            mps_measurement=source.mps_measurement,
+            parity_report=report,
+            speedup=source.speedup,
+            uses_mps=False,
+            fallback_reason="qualification_mismatch",
+            mps_available=True,
+            device=source.device,
+        )
+        result = choose_backend(measurements, Exp421Config())
+        self.assertEqual(result.policies[4].backend, "cpu")
+        self.assertEqual(result.reasons[4], "qualification_mismatch")
+
     def test_policy_rejects_coordinate_mismatch_at_any_preregistered_alpha(self):
         measurements = self._all_assessments()
         malformed = object.__new__(MpsAssessment)
