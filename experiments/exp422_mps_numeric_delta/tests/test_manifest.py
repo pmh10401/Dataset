@@ -8,6 +8,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
+from experiments.exp417_causal_multihorizon_shadow.preprocessing import build_horizons
 from experiments.exp422_mps_numeric_delta.capability import DeviceCapability
 from experiments.exp422_mps_numeric_delta.config import FROZEN_CONFIG, frozen_config_sha256
 from experiments.exp422_mps_numeric_delta.contracts import (
@@ -52,21 +53,29 @@ def _core(state: StageResult | None = None) -> CoreStageResult:
             FROZEN_CONFIG.model_seeds, FROZEN_CONFIG.perturbation_seeds, strict=True
         ):
             for length in (64, 128, 256, 512):
-                delta = TensorDelta(
-                    f"length_{length}_prediction",
-                    True,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0,
-                    "1" * 64,
-                    "1" * 64,
-                    None,
+                names = (
+                    tuple(f"length_{length}_horizon_{horizon}" for horizon in build_horizons(length))
+                    if stage.state == "passed"
+                    else (f"length_{length}_prediction",)
+                )
+                deltas = tuple(
+                    TensorDelta(
+                        name,
+                        True,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0,
+                        "1" * 64,
+                        "1" * 64,
+                        None,
+                    )
+                    for name in names
                 )
                 reports.append(
                     CoreParityReport(
                         BatchKey(batch, model_seed, perturbation_seed),
-                        (delta,),
+                        deltas,
                         TimingEvidence("cpu", 0.0, 0.02, 0.0, 0.02),
                         TimingEvidence("mps", 0.0, 0.01, 0.0, 0.01),
                         stage.state == "passed",
@@ -130,6 +139,37 @@ class Exp422ManifestTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "60-row|complete exact"):
             validate_manifest(payload)
+
+    def test_passed_core_requires_canonical_exp417_heads(self) -> None:
+        core_payload = build_manifest(_core(), None, _provenance()).to_payload()["core_stage"]
+        core_payload["stage"] = {"state": "passed", "reason": None}
+        for report in core_payload["reports"]:
+            report["candidate_indices_match"] = True
+            report["spearman"] = 1.0
+            report["cpu_timing"]["compute_seconds"] = 0.02
+            report["cpu_timing"]["total_seconds"] = 0.02
+            report["mps_timing"]["compute_seconds"] = 0.01
+            report["mps_timing"]["total_seconds"] = 0.01
+            report["tensor_deltas"] = [
+                {
+                    **report["tensor_deltas"][0],
+                    "name": f"length_{report['tensor_deltas'][0]['name'].split('_')[1]}_prediction",
+                }
+            ]
+        with self.assertRaisesRegex(ValueError, "placeholder|horizon|canonical"):
+            validate_manifest(
+                {
+                    "artifact_kind": "exp422_mps_numeric_delta_manifest",
+                    "schema_version": 1,
+                    "experiment_id": "Exp422",
+                    "state": "failed",
+                    "candidate_batch_sizes": [16, 32, 64, 128, 256],
+                    "core_stage": core_payload,
+                    "score_stage": None,
+                    "fallback_reasons": ["mps_unavailable"],
+                    "provenance": _provenance(),
+                }
+            )
 
     def test_validation_rejects_noncanonical_digest_and_test_token(self) -> None:
         payload = build_manifest(_core(), None, _provenance()).to_payload()

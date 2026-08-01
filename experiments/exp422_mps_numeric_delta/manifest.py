@@ -23,6 +23,7 @@ from .contracts import (
     TimingEvidence,
 )
 from .core_parity import CoreStageResult, _LENGTHS
+from experiments.exp417_causal_multihorizon_shadow.preprocessing import build_horizons
 from .score_parity import ScoreBatchReport, ScoreStageResult, validate_dataset_name
 
 
@@ -302,14 +303,15 @@ def _parse_core(value: object) -> CoreStageResult:
     if isinstance(raw_reports, (str, bytes)) or not isinstance(raw_reports, Sequence) or not raw_reports:
         raise ValueError("core reports must be a nonempty sequence")
     reports = tuple(_parse_core_report(report) for report in raw_reports)
-    expected = {
+    expected_order = tuple(
         (batch_size, model_seed, perturbation_seed, length)
         for batch_size in FROZEN_CONFIG.candidate_batch_sizes
         for model_seed, perturbation_seed in zip(
             FROZEN_CONFIG.model_seeds, FROZEN_CONFIG.perturbation_seeds, strict=True
         )
         for length in _CORE_LENGTHS
-    }
+    )
+    expected = set(expected_order)
     observed: list[tuple[int, int, int, int]] = []
     for report in reports:
         lengths: set[int] = set()
@@ -321,6 +323,20 @@ def _parse_core(value: object) -> CoreStageResult:
         if len(lengths) != 1:
             raise ValueError("core report must contain exactly one canonical length")
         length = next(iter(lengths))
+        names = tuple(delta.name for delta in report.tensor_deltas)
+        if len(set(names)) != len(names):
+            raise ValueError("core report tensor names must be unique")
+        horizon_names = {name for name in names if "_horizon_" in name}
+        placeholder_names = {name for name in names if name.endswith("_prediction")}
+        expected_horizon_names = {
+            f"length_{length}_horizon_{horizon}" for horizon in build_horizons(length)
+        }
+        if horizon_names and horizon_names != expected_horizon_names:
+            raise ValueError("core report horizons do not bind the canonical Exp417 heads")
+        if placeholder_names and (placeholder_names != {f"length_{length}_prediction"} or report.passes):
+            raise ValueError("core report placeholder is only valid for a failed row")
+        if not horizon_names and not placeholder_names:
+            raise ValueError("core report must contain canonical horizon or failure evidence")
         observed.append(
             (
                 report.batch_key.batch_size,
@@ -329,7 +345,12 @@ def _parse_core(value: object) -> CoreStageResult:
                 length,
             )
         )
-    if len(observed) != len(expected) or len(set(observed)) != len(observed) or set(observed) != expected:
+    if (
+        tuple(observed) != expected_order
+        or len(observed) != len(expected)
+        or len(set(observed)) != len(observed)
+        or set(observed) != expected
+    ):
         raise ValueError("core reports must contain the complete exact 60-row evidence matrix")
     stage = _parse_stage(value["stage"], "core")
     if stage.state == "passed" and not all(report.passes for report in reports):
