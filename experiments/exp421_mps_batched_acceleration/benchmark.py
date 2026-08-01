@@ -85,6 +85,7 @@ MAX_BENCHMARK_SERIES = 64
 MAX_BATCH_BYTES = 256 * 1024 * 1024
 _MEASURED_REPEATS = 1
 _WARMUP_REPEATS = 1
+MAX_MEASURED_REPEATS = 7
 
 
 class BenchmarkBoundaryError(ValueError):
@@ -151,6 +152,15 @@ def _validate_config(config: Exp421Config) -> tuple[int, int]:
         _config_bound(config, "max_benchmark_series", MAX_BENCHMARK_SERIES),
         _config_bound(config, "max_batch_bytes", MAX_BATCH_BYTES),
     )
+
+
+def _validate_repeats(repeats: int) -> int:
+    """Validate a bounded timing-repeat knob without changing frozen science."""
+    if type(repeats) is not int or not 1 <= repeats <= MAX_MEASURED_REPEATS:
+        raise BenchmarkBoundaryError(
+            f"repeats must be an integer between 1 and {MAX_MEASURED_REPEATS}"
+        )
+    return repeats
 
 
 def _path_text(path: Path | str, name: str) -> Path:
@@ -706,8 +716,10 @@ def _measurements_for_sample(
     capability: Any,
     config: Exp421Config,
     max_batch_bytes: int,
+    repeats: int = _MEASURED_REPEATS,
 ) -> tuple[dict[int, MpsAssessment], np.ndarray, Mapping[str, object]]:
     """Measure exact batch rows sequentially and derive fail-closed assessments."""
+    measured_repeats = _validate_repeats(repeats)
     selected_count = len(sample.indices)
     if selected_count < 1:
         raise BenchmarkBoundaryError("sample is empty")
@@ -800,14 +812,20 @@ def _measurements_for_sample(
         for seed in config.frozen_model_seeds:
             adapter = cpu_adapters[seed]
             adapter.predict_batch(batch)  # warm-up is outside measured timing
-        for _repeat in range(_MEASURED_REPEATS):
+        cpu_timing_runs: list[tuple[float, float, float]] = []
+        for _repeat in range(measured_repeats):
             cpu_outputs.clear()
-            cpu_timing = [0.0, 0.0, 0.0]
+            repeat_timing = [0.0, 0.0, 0.0]
             for seed in config.frozen_model_seeds:
                 output, timing = _timed_predict(cpu_adapters[seed], batch)
                 cpu_outputs.append(output)
                 for position in range(3):
-                    cpu_timing[position] += timing[position]
+                    repeat_timing[position] += timing[position]
+            cpu_timing_runs.append(tuple(repeat_timing))
+        cpu_timing = [
+            sum(run[position] for run in cpu_timing_runs) / measured_repeats
+            for position in range(3)
+        ]
         cpu_candidates, cpu_evidence, _ = _candidate_indices(
             cpu_outputs, indices, config, oof_by_seed=oof_by_seed
         )
@@ -847,12 +865,20 @@ def _measurements_for_sample(
             for seed in config.frozen_model_seeds:
                 mps_adapters[seed].predict_batch(batch)  # warm-up is outside measured timing
             mps_outputs: list[Mapping[int, np.ndarray]] = []
-            mps_timing = [0.0, 0.0, 0.0]
-            for seed in config.frozen_model_seeds:
-                output, timing = _timed_predict(mps_adapters[seed], batch)
-                mps_outputs.append(output)
-                for position in range(3):
-                    mps_timing[position] += timing[position]
+            mps_timing_runs: list[tuple[float, float, float]] = []
+            for _repeat in range(measured_repeats):
+                mps_outputs.clear()
+                repeat_timing = [0.0, 0.0, 0.0]
+                for seed in config.frozen_model_seeds:
+                    output, timing = _timed_predict(mps_adapters[seed], batch)
+                    mps_outputs.append(output)
+                    for position in range(3):
+                        repeat_timing[position] += timing[position]
+                mps_timing_runs.append(tuple(repeat_timing))
+            mps_timing = [
+                sum(run[position] for run in mps_timing_runs) / measured_repeats
+                for position in range(3)
+            ]
         except Exception as exc:
             # A runtime allocation, synchronization, or finite-output failure
             # is a CPU fallback, never an implicit MPS adoption.
@@ -1026,9 +1052,11 @@ def run_train_only_benchmark(
     *,
     config: Exp421Config = FROZEN_CONFIG,
     dataset_names: Sequence[str] | None = None,
+    repeats: int = _MEASURED_REPEATS,
 ) -> Exp421Manifest:
     """Run a bounded normal-TRAIN diagnostic and emit its validated manifest."""
     max_series, max_batch_bytes = _validate_config(config)
+    measured_repeats = _validate_repeats(repeats)
     benchmark_started_at = datetime.now(timezone.utc).isoformat()
     database_path = _path_text(database, "database")
     attempt_root = _fresh_output_root(output_root)
@@ -1052,6 +1080,7 @@ def run_train_only_benchmark(
         capability=capability,
         config=config,
         max_batch_bytes=max_batch_bytes,
+        repeats=measured_repeats,
     )
     if not isinstance(measurement_result, tuple) or len(measurement_result) != 3:
         raise BenchmarkBoundaryError("benchmark measurement evidence is incomplete")
@@ -1118,5 +1147,6 @@ __all__ = [
     "BenchmarkBoundaryError",
     "MAX_BATCH_BYTES",
     "MAX_BENCHMARK_SERIES",
+    "MAX_MEASURED_REPEATS",
     "run_train_only_benchmark",
 ]
