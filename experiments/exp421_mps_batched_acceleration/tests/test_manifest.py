@@ -230,6 +230,27 @@ class ManifestTests(unittest.TestCase):
             finally:
                 source_manifest_path.write_bytes(original)
 
+    def test_source_manifest_declared_sha_must_match_recorded_git_blob(self):
+        # The pre-fix loader checked only that a path existed in the recorded
+        # tree.  Replacing the current source-manifest commit with the parent
+        # Task6 commit keeps the path names valid but changes manifest.py's
+        # bytes; the loader must reject that blob mismatch.
+        source_manifest_path = Path(__file__).resolve().parents[3] / "SOURCE_MANIFEST.json"
+        original = source_manifest_path.read_bytes()
+        try:
+            payload = json.loads(original.decode("utf-8"))
+            payload["git_commit"] = "007bfaad037bccdff5d51574e112fb61cdfadc7c"
+            source_manifest_path.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":")),
+                encoding="utf-8",
+            )
+            from experiments.exp421_mps_batched_acceleration.manifest import _load_source_manifest
+
+            with self.assertRaises(ValueError):
+                _load_source_manifest()
+        finally:
+            source_manifest_path.write_bytes(original)
+
     def test_write_is_atomic_and_no_clobber(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

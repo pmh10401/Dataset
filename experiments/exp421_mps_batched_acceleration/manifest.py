@@ -10,6 +10,7 @@ or prediction payloads are accepted here.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from functools import lru_cache
 from hashlib import sha256
 import json
 import os
@@ -167,6 +168,24 @@ def _git_tree_paths(commit: str) -> set[str]:
     return {line for line in result.stdout.splitlines() if line}
 
 
+@lru_cache(maxsize=32)
+def _git_blob_sha256(commit: str, relative_path: str) -> str | None:
+    """Return the SHA-256 of a source file's bytes at a recorded Git commit."""
+    try:
+        result = subprocess.run(
+            ["git", "cat-file", "blob", f"{commit}:{relative_path}"],
+            cwd=_repository_root(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    return sha256(result.stdout).hexdigest()
+
+
 def _load_source_manifest() -> tuple[str, dict[str, str], str]:
     """Read and independently verify the committed source trust root.
 
@@ -209,6 +228,9 @@ def _load_source_manifest() -> tuple[str, dict[str, str], str]:
         source_digests[relative] = digest
         if relative not in git_paths:
             raise ValueError(f"SOURCE_MANIFEST git commit does not contain {relative}")
+        git_digest = _git_blob_sha256(commit, relative)
+        if git_digest != digest:
+            raise ValueError(f"SOURCE_MANIFEST Git blob digest mismatch: {relative}")
         actual = _source_file_digest(str(resolved))
         if actual != digest:
             raise ValueError(f"SOURCE_MANIFEST source digest drift: {relative}")
