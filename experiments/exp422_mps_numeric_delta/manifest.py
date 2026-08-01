@@ -78,9 +78,12 @@ _SOURCE_PATHS = (
     "docs/EXP422_RUNBOOK_KO.md",
     "docs/EXP422_IR_PREREGISTRATION_KO.md",
     "docs/EXP422_IR_RUNBOOK_KO.md",
+    "docs/EXP422_IR_E_PREREGISTRATION_KO.md",
+    "docs/EXP422_IR_E_RUNBOOK_KO.md",
     "docs/superpowers/plans/2026-08-02-exp422-mps-numeric-delta.md",
     "docs/superpowers/specs/2026-08-02-exp422-mps-numeric-delta-design.md",
     "docs/superpowers/specs/2026-08-02-exp422-interrupted419-design.md",
+    "docs/superpowers/specs/2026-08-02-exp422-ir-exploratory-score-design.md",
     "experiments/exp422_mps_numeric_delta/__init__.py",
     "experiments/exp422_mps_numeric_delta/capability.py",
     "experiments/exp422_mps_numeric_delta/config.py",
@@ -98,8 +101,10 @@ _SOURCE_PATHS = (
     "experiments/exp422_mps_numeric_delta/tests/test_score_boundary.py",
     "experiments/exp422_mps_numeric_delta/tests/test_score_parity.py",
     "experiments/exp422_mps_numeric_delta/tests/test_interrupted_cli.py",
+    "experiments/exp422_mps_numeric_delta/tests/test_exploratory_cli.py",
     "scratch/run_exp422_mps_numeric_delta.py",
     "scratch/run_exp422_interrupted419_diagnostic.py",
+    "scratch/run_exp422_ir_exploratory_score.py",
 )
 
 _CORE_LENGTHS = _LENGTHS
