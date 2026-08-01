@@ -25,10 +25,11 @@ causal Conv1d, GELU, residual, horizon head, loss/reduction의 CPU/MPS
 출력을 비교한다. 입력은 고정된 합성 tensor와 정상 TRAIN에서 얻은 길이
 stratum별 읽기 전용 tensor를 함께 사용한다.
 
-고정 batch 후보는 `(1, 4, 8, 16, 32)`이고, 모델 seed는 `41701, 41702,
-41703`이다. batch 1은 CPU 기준으로 남기며 MPS로 강제하지 않는다. 각
-조합은 같은 순서로 CPU를 먼저 실행한 뒤 MPS를 실행하고, MPS 동기화를
-호출한 후 결과를 CPU로 복사한다.
+고정 batch 후보는 `(16, 32, 64, 128, 256)`이고, 모델 seed는 `41701,
+41702, 41703`이다. 각 조합은 같은 순서로 CPU를 먼저 실행한 뒤 MPS를
+실행하고, MPS 동기화를 호출한 후 결과를 CPU로 복사한다. 256 batch가
+고정 메모리 상한을 넘으면 batch 크기를 줄여 재선택하지 않고 해당 조합을
+실패로 기록한다.
 
 각 연산·batch·seed에 대해 다음을 기록한다.
 
@@ -87,8 +88,8 @@ Exp421의 모델 seed·perturbation seed·horizon·alpha·persistence·loss·fol
 4. tie-aware Spearman 순위 상관은 `0.999` 이상이어야 한다.
 5. 2단계에서는 model state, stop epoch, loss history, OOF, calibration,
    perturbation, qualification digest가 일치해야 한다.
-6. batch 1을 제외한 MPS 총시간 speedup은 transfer와 synchronization을
-   포함하여 `1.1x` 이상이어야 한다.
+6. 각 MPS batch의 총시간 speedup은 transfer와 synchronization을 포함하여
+   `1.1x` 이상이어야 한다.
 
 하나라도 실패하면 해당 조합은 CPU fallback으로 기록한다. `passed`는
 사전등록된 표본·조합에서만 통과했다는 의미이며 운영 백엔드 채택이나
