@@ -1,8 +1,16 @@
 {
   "artifact_kind": "exp421_train_only_acceleration_source_manifest",
   "schema_version": 1,
-  "git_commit": "2b543dafce53287ef54a1eaf890add56a6055bf3",
+  "git_commit": "41aa949315e343b8c95ec97eb62e0f66d452dc2c",
   "sources": [
+    {
+      "path": "docs/EXP421_PREREGISTRATION_KO.md",
+      "sha256": "893d84268329abbbf80f4a1ec30faada0b3b8fa3c797dab697c8fabc22a8020d"
+    },
+    {
+      "path": "docs/EXP421_RUNBOOK_KO.md",
+      "sha256": "cd7360b27c15f4d6900debc02fce2279d9598ce1d3cbb01644e8824da3772870"
+    },
     {
       "path": "docs/superpowers/plans/2026-08-01-exp421-mps-batched-acceleration.md",
       "sha256": "208e58cb10a87638d4d685080a25d7007337eb02196f4544f19e83ff78298fcb"
@@ -21,7 +29,7 @@
     },
     {
       "path": "experiments/exp421_mps_batched_acceleration/benchmark.py",
-      "sha256": "88b398fe116a10d95401d1ae9f618fa218e18d0583bcb86dcdc142639075ed3d"
+      "sha256": "07ff78f989a3a5eb5653ca4a64abce6b423f80475a7959244d37cfb61d74d693"
     },
     {
       "path": "experiments/exp421_mps_batched_acceleration/calibration.py",
@@ -64,6 +72,10 @@
       "sha256": "34370472048c66d78c59b5470bd78820fb1889954c80c80e4db1add1f1e60722"
     },
     {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/test_cli.py",
+      "sha256": "3bb444ba3188d0a94f08068edd10c8b4d8ad3d21a31fdd582de3eb8f1b72da7a"
+    },
+    {
       "path": "experiments/exp421_mps_batched_acceleration/tests/test_config.py",
       "sha256": "f0003dca49ecf05325ca38d9e6e4df99a0f515caaa4e7670e4f38a920d2022f3"
     },
@@ -82,6 +94,10 @@
     {
       "path": "experiments/exp421_mps_batched_acceleration/tests/test_policy.py",
       "sha256": "26188cb75e8ea6ee774b5a4f9ed3c7415c9e7904602b93fe26cab3e387fd3705"
+    },
+    {
+      "path": "scratch/run_exp421_mps_batched_acceleration.py",
+      "sha256": "d281add2627a1dcee04007dd82545eb2a53e0dabe99c53f6256c1876ad72dacc"
     }
   ]
 }
