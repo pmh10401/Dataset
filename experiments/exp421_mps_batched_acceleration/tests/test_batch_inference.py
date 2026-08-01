@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+from hashlib import sha256
 import unittest
 
 import numpy as np
@@ -15,12 +17,14 @@ from experiments.exp417_causal_multihorizon_shadow.model import (
     _serialize_state,
     predict_residuals,
 )
+from experiments.exp417_causal_multihorizon_shadow.backend import _numpy_candidate_coordinates
+from experiments.exp417_causal_multihorizon_shadow.preprocessing import build_horizons
 from experiments.exp421_mps_batched_acceleration.batch_inference import FrozenModelAdapter
 
 
 CPU = torch.device("cpu")
-HORIZONS = (1, 3, 7)
-LENGTH = 40
+LENGTH = 64
+HORIZONS = build_horizons(LENGTH)
 IDENTITIES = tuple(range(10))
 EARLY_FIT = IDENTITIES[:5]
 EARLY_VALIDATION = IDENTITIES[5:]
@@ -49,6 +53,29 @@ def _trained_model() -> TrainedSeedModel:
     )
 
 
+def _candidate_coordinates_sha256(residuals: dict[int, np.ndarray]) -> str:
+    """Hash frozen candidate identities derived only from residual coordinates."""
+    oof = {
+        horizon: tuple(
+            np.linspace(0.01, 0.02, values.shape[1], dtype=np.float64)
+            for _ in range(10)
+        )
+        for horizon, values in residuals.items()
+    }
+    queries = {
+        coordinate: {
+            horizon: values[coordinate]
+            for horizon, values in residuals.items()
+        }
+        for coordinate in range(next(iter(residuals.values())).shape[0])
+    }
+    coordinates, _scores = _numpy_candidate_coordinates(oof, queries)
+    payload = len(coordinates).to_bytes(8, "little") + b"".join(
+        coordinate.to_bytes(8, "little", signed=False) for coordinate in coordinates
+    )
+    return sha256(payload).hexdigest()
+
+
 def _channels() -> np.ndarray:
     positions = np.arange(LENGTH, dtype=np.float32)
     return np.ascontiguousarray(
@@ -68,8 +95,22 @@ def _fit_channels() -> dict[int, np.ndarray]:
 class FrozenModelAdapterTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.model = _trained_model()
+        cls.initial_state = _state()
         cls.channels = _channels()
+        cls.fit_channels = _fit_channels()
+        cls.model = _fit_seed_model_from_state(
+            cls.fit_channels,
+            HORIZONS,
+            seed=41701,
+            initial_state=cls.initial_state,
+            device=CPU,
+            fit_indices=IDENTITIES,
+            validation_indices=(),
+            early_stop_fit_indices=EARLY_FIT,
+            early_stop_validation_indices=EARLY_VALIDATION,
+        )
+        if cls.model.state == cls.initial_state:
+            raise AssertionError("fixture must retain a fitted state distinct from initialization")
         cls.adapter = FrozenModelAdapter.from_trained_seed(cls.model, device=CPU)
 
     def test_predict_batch_matches_single_series_reference_for_every_batch_size(self) -> None:
@@ -90,6 +131,10 @@ class FrozenModelAdapterTests(unittest.TestCase):
                     self.assertTrue(np.isfinite(actual[horizon]).all())
                     self.assertFalse(actual[horizon].flags.writeable)
                     np.testing.assert_allclose(actual[horizon], expected[horizon], rtol=0, atol=1e-5)
+                self.assertEqual(
+                    _candidate_coordinates_sha256(actual),
+                    _candidate_coordinates_sha256(expected),
+                )
 
     def test_predict_batch_rejects_invalid_shapes_lengths_and_nonfinite_values(self) -> None:
         """Catches validation that permits inputs the frozen reference rejects."""
@@ -99,19 +144,27 @@ class FrozenModelAdapterTests(unittest.TestCase):
             self.adapter.predict_batch(np.zeros((1, 1, LENGTH), dtype=np.float32))
         with self.assertRaisesRegex(ValueError, "aligned horizon"):
             self.adapter.predict_batch(np.zeros((1, 2, max(HORIZONS)), dtype=np.float32))
+        with self.assertRaisesRegex(ValueError, "frozen horizon"):
+            self.adapter.predict_batch(np.zeros((1, 2, LENGTH + 16), dtype=np.float32))
         nonfinite = np.repeat(self.channels[None, ...], 1, axis=0)
         nonfinite[0, 0, 0] = np.nan
         with self.assertRaisesRegex(ValueError, "finite"):
             self.adapter.predict_batch(nonfinite)
 
+    def test_from_trained_seed_rejects_horizons_that_do_not_come_from_a_valid_length(self) -> None:
+        """Catches state materialization under a horizon triple outside the frozen formula."""
+        invalid = replace(self.model, horizons=(1, 3, 7))
+        with self.assertRaisesRegex(ValueError, "frozen horizon"):
+            FrozenModelAdapter.from_trained_seed(invalid, device=CPU)
+
     def test_fit_batch_matches_frozen_cpu_fit_from_the_same_initial_state(self) -> None:
         """Catches changed ordering, optimizer constants, or state serialization in fitting."""
-        channels = _fit_channels()
+        channels = self.fit_channels
         expected = _fit_seed_model_from_state(
             channels,
             HORIZONS,
             seed=self.model.seed,
-            initial_state=self.model.state,
+            initial_state=self.initial_state,
             device=CPU,
             fit_indices=IDENTITIES,
             validation_indices=(),
@@ -120,6 +173,8 @@ class FrozenModelAdapterTests(unittest.TestCase):
         )
         actual = self.adapter.fit_batch(
             channels,
+            seed=self.model.seed,
+            initial_state=self.initial_state,
             fit_indices=IDENTITIES,
             validation_indices=(),
             early_stop_fit_indices=EARLY_FIT,
@@ -136,6 +191,37 @@ class FrozenModelAdapterTests(unittest.TestCase):
             expected_residuals = predict_residuals(expected, channels[index])
             for horizon in HORIZONS:
                 np.testing.assert_allclose(residuals[horizon][row], expected_residuals[horizon], rtol=0, atol=1e-5)
+
+    def test_fit_batch_requires_a_seed_and_distinct_canonical_initial_state(self) -> None:
+        """Catches accidental reuse of the completed model state as the fit initialization."""
+        with self.assertRaises(TypeError):
+            self.adapter.fit_batch(
+                self.fit_channels,
+                seed=self.model.seed,
+                fit_indices=IDENTITIES,
+                validation_indices=(),
+                early_stop_fit_indices=EARLY_FIT,
+                early_stop_validation_indices=EARLY_VALIDATION,
+            )
+        with self.assertRaises(TypeError):
+            self.adapter.fit_batch(
+                self.fit_channels,
+                initial_state=self.initial_state,
+                fit_indices=IDENTITIES,
+                validation_indices=(),
+                early_stop_fit_indices=EARLY_FIT,
+                early_stop_validation_indices=EARLY_VALIDATION,
+            )
+        with self.assertRaisesRegex(ValueError, "canonical frozen seed initialization"):
+            self.adapter.fit_batch(
+                self.fit_channels,
+                seed=self.model.seed,
+                initial_state=self.model.state,
+                fit_indices=IDENTITIES,
+                validation_indices=(),
+                early_stop_fit_indices=EARLY_FIT,
+                early_stop_validation_indices=EARLY_VALIDATION,
+            )
 
     def test_from_trained_seed_fails_closed_for_unavailable_mps(self) -> None:
         """Catches an implicit MPS-to-CPU device fallback."""

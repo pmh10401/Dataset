@@ -17,9 +17,13 @@ import torch
 from experiments.exp417_causal_multihorizon_shadow.model import (
     CausalMultiHorizonCNN,
     TrainedSeedModel,
+    _canonical_state_sha256,
     _fit_seed_model_from_state,
+    _freeze_state,
     _materialize_network_from_state,
+    prepare_seed_initial_states,
 )
+from experiments.exp417_causal_multihorizon_shadow.preprocessing import build_horizons
 
 
 _INPUT_CHANNELS = 2
@@ -41,6 +45,7 @@ class FrozenModelAdapter:
         """Materialize one canonical CPU state on the explicitly selected device."""
         if not isinstance(model, TrainedSeedModel):
             raise ValueError("model must be a TrainedSeedModel")
+        _validate_frozen_horizons(model.horizons)
         selected = torch.device(model.device) if device is None else device
         _validate_device(selected)
         network = _materialize_network_from_state(model.state, model.horizons, selected)
@@ -97,7 +102,8 @@ class FrozenModelAdapter:
         validation_indices: Sequence[int],
         early_stop_fit_indices: Sequence[int],
         early_stop_validation_indices: Sequence[int],
-        initial_state: Mapping[str, tuple[str, tuple[int, ...], bytes]] | None = None,
+        seed: int,
+        initial_state: Mapping[str, tuple[str, tuple[int, ...], bytes]],
     ) -> TrainedSeedModel:
         """Run the exact frozen fit pipeline from canonical initial CPU state.
 
@@ -107,12 +113,21 @@ class FrozenModelAdapter:
         while MPS executes the same frozen tensor operations on its selected device.
         """
         _validate_channel_mapping(channels, self.model.horizons)
-        selected_state = self.model.state if initial_state is None else initial_state
+        frozen_initial_state = _freeze_state(initial_state)
+        expected_initial_state = prepare_seed_initial_states(
+            self.model.horizons, self.device
+        ).get(seed)
+        if (
+            expected_initial_state is None
+            or _canonical_state_sha256(frozen_initial_state)
+            != _canonical_state_sha256(expected_initial_state)
+        ):
+            raise ValueError("initial_state must match the canonical frozen seed initialization")
         trained = _fit_seed_model_from_state(
             channels,
             self.model.horizons,
-            seed=self.model.seed,
-            initial_state=selected_state,
+            seed=seed,
+            initial_state=frozen_initial_state,
             device=self.device,
             fit_indices=tuple(fit_indices),
             validation_indices=tuple(validation_indices),
@@ -135,6 +150,8 @@ def _validated_batch(channels: np.ndarray, horizons: tuple[int, int, int]) -> np
         raise ValueError("batch channels must have exactly two input channels")
     if channels.shape[2] <= max(horizons):
         raise ValueError("batch channels leave no aligned horizon targets")
+    if build_horizons(int(channels.shape[2])) != horizons:
+        raise ValueError("batch horizons must match the frozen horizon definition for its length")
     if channels.nbytes > _MAX_INPUT_BYTES:
         raise ValueError("batch channels exceed the bounded allocation limit")
     if not np.isfinite(channels).all():
@@ -147,10 +164,29 @@ def _validate_channel_mapping(
 ) -> None:
     if not isinstance(channels, Mapping) or not channels:
         raise ValueError("channels must be a non-empty mapping")
+    expected_length: int | None = None
     for index, values in channels.items():
         if type(index) is not int or index < 0:
             raise ValueError("channel indices must be non-negative integers")
-        _validated_batch(values[None, ...] if isinstance(values, np.ndarray) else values, horizons)
+        batch = _validated_batch(
+            values[None, ...] if isinstance(values, np.ndarray) else values, horizons
+        )
+        if expected_length is None:
+            expected_length = int(batch.shape[2])
+        elif batch.shape[2] != expected_length:
+            raise ValueError("channel mapping must preserve one exact frozen length")
+
+
+def _validate_frozen_horizons(horizons: tuple[int, int, int]) -> None:
+    """Require that a serialized model's triple is reachable by Exp417's formula."""
+    if not isinstance(horizons, tuple) or len(horizons) != 3:
+        raise ValueError("model horizons must match the frozen horizon definition")
+    final_horizon = horizons[-1]
+    if type(final_horizon) is not int or final_horizon < 1:
+        raise ValueError("model horizons must match the frozen horizon definition")
+    candidate_lengths = range(10 * (final_horizon - 1) + 1, 10 * final_horizon + 1)
+    if not any(build_horizons(length) == horizons for length in candidate_lengths):
+        raise ValueError("model horizons must match the frozen horizon definition")
 
 
 def _validate_device(device: torch.device) -> None:
