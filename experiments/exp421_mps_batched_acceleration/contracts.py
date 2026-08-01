@@ -2,21 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass
 from math import isclose, isfinite
 from numbers import Real
+import re
 from types import MappingProxyType
 
 import numpy as np
 
 from .config import Exp421Config, FROZEN_CONFIG
-
-
-def _integer(value: object, name: str, *, minimum: int = 0) -> int:
-    if type(value) is not int or value < minimum:
-        raise ValueError(f"{name} must be an integer >= {minimum}")
-    return value
 
 
 def _finite(value: object, name: str, *, minimum: float | None = None) -> float:
@@ -47,9 +42,27 @@ def _readonly_indices(value: object, name: str, *, require_readonly: bool = Fals
 
 
 def _no_test_token(value: object, name: str) -> str:
-    if not isinstance(value, str) or not value.strip() or "test" in value.lower():
+    if not isinstance(value, str) or not value.strip() or re.search(r"\btest\b", value, re.IGNORECASE):
         raise ValueError(f"{name} must be a non-TEST boundary string")
     return value
+
+
+_MANIFEST_PROVENANCE_FIELDS = frozenset(
+    {
+        "git_commit",
+        "database_sha256",
+        "config_sha256",
+        "device",
+        "runtime",
+        "source",
+        "fresh_no_clobber_attempt",
+        "train_only",
+        "mlx_availability",
+        "mlx_version",
+        "mlx_metal_version",
+        "mlx_eligibility_reason",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -59,7 +72,7 @@ class BatchKey:
     perturbation_seed: int
 
     def __post_init__(self) -> None:
-        if self.batch_size not in FROZEN_CONFIG.candidate_batch_sizes:
+        if type(self.batch_size) is not int or self.batch_size not in FROZEN_CONFIG.candidate_batch_sizes:
             raise ValueError("batch_size is not preregistered")
         if type(self.model_seed) is not int or self.model_seed not in FROZEN_CONFIG.frozen_model_seeds:
             raise ValueError("model_seed is not frozen")
@@ -79,7 +92,7 @@ class BackendMeasurement:
     candidate_coordinates_sha256: str
 
     def __post_init__(self) -> None:
-        if self.batch_size not in FROZEN_CONFIG.candidate_batch_sizes:
+        if type(self.batch_size) is not int or self.batch_size not in FROZEN_CONFIG.candidate_batch_sizes:
             raise ValueError("measurement batch_size is not preregistered")
         if self.backend not in {"cpu", "mlx"}:
             raise ValueError("measurement backend must be cpu or mlx")
@@ -125,38 +138,66 @@ class ParityReport:
 class MlxAssessment:
     batch_key: BatchKey
     cpu_measurement: BackendMeasurement
-    mlx_measurement: BackendMeasurement
-    parity_report: ParityReport
-    speedup: float
+    mlx_measurement: BackendMeasurement | None
+    parity_report: ParityReport | None
+    speedup: float | None
     uses_mlx: bool
     fallback_reason: str | None
+    mlx_available: bool = True
+    mlx_version: str = "unrecorded"
+    mlx_metal_version: str = "unrecorded"
+    eligibility_reason: str | None = None
 
     def __post_init__(self) -> None:
-        if not isinstance(self.batch_key, BatchKey) or not isinstance(self.parity_report, ParityReport):
-            raise ValueError("assessment must contain frozen batch and parity records")
-        if self.parity_report.batch_key != self.batch_key:
-            raise ValueError("assessment parity batch key mismatch")
+        if not isinstance(self.batch_key, BatchKey):
+            raise ValueError("assessment must contain a frozen batch key")
         if not isinstance(self.cpu_measurement, BackendMeasurement) or self.cpu_measurement.backend != "cpu":
             raise ValueError("cpu_measurement must be a CPU measurement")
+        if self.cpu_measurement.batch_size != self.batch_key.batch_size:
+            raise ValueError("measurement batch size mismatch")
+        if type(self.uses_mlx) is not bool:
+            raise ValueError("uses_mlx must be a bool")
+        if type(self.mlx_available) is not bool:
+            raise ValueError("mlx_available must be a bool")
+        _no_test_token(self.mlx_version, "mlx_version")
+        _no_test_token(self.mlx_metal_version, "mlx_metal_version")
+        if self.eligibility_reason is not None:
+            _no_test_token(self.eligibility_reason, "eligibility_reason")
+        if not self.mlx_available:
+            if any(value is not None for value in (self.mlx_measurement, self.parity_report, self.speedup)):
+                raise ValueError("unavailable MLX cannot have MLX measurement or parity evidence")
+            if self.uses_mlx or not isinstance(self.fallback_reason, str) or not self.fallback_reason.strip():
+                raise ValueError("unavailable MLX requires an explicit CPU fallback reason")
+            if not self.eligibility_reason:
+                raise ValueError("unavailable MLX requires an eligibility reason")
+            return
         if not isinstance(self.mlx_measurement, BackendMeasurement) or self.mlx_measurement.backend != "mlx":
-            raise ValueError("mlx_measurement must be an MLX measurement")
-        if self.cpu_measurement.batch_size != self.batch_key.batch_size or self.mlx_measurement.batch_size != self.batch_key.batch_size:
+            raise ValueError("available MLX requires an MLX measurement")
+        if not isinstance(self.parity_report, ParityReport) or self.parity_report.batch_key != self.batch_key:
+            raise ValueError("available MLX requires parity for the exact batch key")
+        if self.mlx_measurement.batch_size != self.batch_key.batch_size:
             raise ValueError("measurement batch size mismatch")
         if self.cpu_measurement.candidate_coordinates_sha256 != self.mlx_measurement.candidate_coordinates_sha256:
             raise ValueError("CPU and MLX candidate coordinates differ")
         speedup = _finite(self.speedup, "speedup", minimum=0.0)
+        if self.mlx_measurement.total_seconds <= 0.0:
+            raise ValueError("available MLX total_seconds must be positive")
         expected_speedup = self.cpu_measurement.total_seconds / self.mlx_measurement.total_seconds
         if not isclose(speedup, expected_speedup, rel_tol=1e-12, abs_tol=1e-12):
             raise ValueError("speedup must match complete measured timings")
-        if type(self.uses_mlx) is not bool:
-            raise ValueError("uses_mlx must be a bool")
-        passed = self.parity_report.passes and speedup >= FROZEN_CONFIG.min_speedup
-        if self.uses_mlx != passed:
+        eligible = (
+            self.batch_key.batch_size != 1
+            and self.parity_report.passes
+            and speedup >= FROZEN_CONFIG.min_speedup
+        )
+        if self.uses_mlx != eligible:
             raise ValueError("MLX selection must match all preregistered gates")
-        if passed and self.fallback_reason is not None:
+        if eligible and (self.fallback_reason is not None or self.eligibility_reason is not None):
             raise ValueError("passing MLX assessment cannot have a fallback reason")
-        if not passed and (not isinstance(self.fallback_reason, str) or not self.fallback_reason.strip()):
+        if not eligible and (not isinstance(self.fallback_reason, str) or not self.fallback_reason.strip()):
             raise ValueError("failed MLX assessment requires a fallback reason")
+        if not eligible and (not isinstance(self.eligibility_reason, str) or not self.eligibility_reason.strip()):
+            raise ValueError("failed MLX assessment requires an eligibility reason")
 
 
 @dataclass(frozen=True)
@@ -176,7 +217,7 @@ class Exp421Manifest:
     state: str
     policy: BackendPolicy
     cached_candidate_indices: np.ndarray
-    provenance: Mapping[str, str]
+    provenance: Mapping[str, object]
     config: Exp421Config = FROZEN_CONFIG
     experiment_id: str = "Exp421"
 
@@ -191,9 +232,28 @@ class Exp421Manifest:
         if self.experiment_id != self.config.experiment_id:
             raise ValueError("manifest experiment_id is invalid")
         cached = _readonly_indices(self.cached_candidate_indices, "cached_candidate_indices", require_readonly=True)
-        if not isinstance(self.provenance, Mapping) or not self.provenance:
-            raise ValueError("manifest provenance must be a non-empty mapping")
-        provenance = {_no_test_token(key, "provenance key"): _no_test_token(value, "provenance value") for key, value in self.provenance.items()}
+        if not isinstance(self.provenance, Mapping) or set(self.provenance) != _MANIFEST_PROVENANCE_FIELDS:
+            raise ValueError("manifest provenance must contain the exact required fields")
+        provenance = dict(self.provenance)
+        for name in ("git_commit", "config_sha256"):
+            _sha256(provenance[name], name) if name == "config_sha256" else _no_test_token(provenance[name], name)
+        if not (isinstance(provenance["git_commit"], str) and len(provenance["git_commit"]) in {40, 64} and all(c in "0123456789abcdef" for c in provenance["git_commit"])):
+            raise ValueError("git_commit must be a lowercase Git object digest")
+        if provenance["database_sha256"] != self.config.exp417_config.database_sha256:
+            raise ValueError("database_sha256 must bind to Exp417")
+        for name in ("device", "runtime", "source", "mlx_availability", "mlx_version", "mlx_metal_version", "mlx_eligibility_reason"):
+            _no_test_token(provenance[name], name)
+        if type(provenance["fresh_no_clobber_attempt"]) is not bool or not provenance["fresh_no_clobber_attempt"]:
+            raise ValueError("fresh_no_clobber_attempt must be true")
+        if type(provenance["train_only"]) is not bool or not provenance["train_only"]:
+            raise ValueError("train_only must be true")
+        availability = "available" if self.policy.assessment.mlx_available else "unavailable"
+        if provenance["mlx_availability"] != availability:
+            raise ValueError("manifest MLX availability must match the assessment")
+        if provenance["mlx_version"] != self.policy.assessment.mlx_version or provenance["mlx_metal_version"] != self.policy.assessment.mlx_metal_version:
+            raise ValueError("manifest MLX versions must match the assessment")
+        expected_reason = self.policy.assessment.eligibility_reason or "eligible"
+        if provenance["mlx_eligibility_reason"] != expected_reason:
+            raise ValueError("manifest MLX eligibility reason must match the assessment")
         object.__setattr__(self, "cached_candidate_indices", cached)
         object.__setattr__(self, "provenance", MappingProxyType(provenance))
-
