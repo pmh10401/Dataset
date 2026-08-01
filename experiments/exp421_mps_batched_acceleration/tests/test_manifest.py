@@ -106,9 +106,14 @@ class ManifestTests(unittest.TestCase):
             self.assertEqual(payload["candidate_batch_sizes"], [1, 4, 8, 16, 32])
             self.assertEqual(set(payload["measurements"]), {"1", "4", "8", "16", "32"})
             self.assertEqual(set(payload["parity"]), {"1", "4", "8", "16", "32"})
+            source_manifest_payload = json.loads(
+                (Path(__file__).resolve().parents[3] / "SOURCE_MANIFEST.json").read_text(
+                    encoding="utf-8"
+                )
+            )
             self.assertEqual(
                 payload["source_manifest_git_commit"],
-                "87587e1e7ae9742fb0dc5938da2c4412e33f9da2",
+                source_manifest_payload["git_commit"],
             )
 
     def test_payload_has_exact_required_fields_and_canonical_digest(self):
