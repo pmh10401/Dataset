@@ -231,6 +231,16 @@ class Exp421Manifest:
     provenance: Mapping[str, object]
     config: Exp421Config = FROZEN_CONFIG
     experiment_id: str = "Exp421"
+    # ``policy`` is retained as the original singular compatibility record.
+    # Task 5 introduced ``BackendPolicyBundle`` for the exact five-row hybrid
+    # decision.  The optional additive fields retain that aggregate and the
+    # evidence used to derive it without creating an import cycle from this
+    # contract module back into ``policy.py``.
+    policy_bundle: object | None = None
+    measurements: Mapping[int, Mapping[str, BackendMeasurement | None]] | None = None
+    parities: Mapping[int, ParityReport | None] | None = None
+    source_digests: Mapping[str, str] | None = None
+    attempt_root: str | None = None
 
     def __post_init__(self) -> None:
         if self.state not in {"draft", "passed", "failed"}:
@@ -285,5 +295,127 @@ class Exp421Manifest:
             _no_test_token(reason, "mlx_eligibility_reason")
             if reason.strip().lower() != _MLX_AVAILABLE_REASON:
                 raise ValueError("available MLX must have algorithm_rewrite_required reason")
+        if self.policy_bundle is not None:
+            # Import lazily: policy.py imports these contracts to construct
+            # its BackendPolicyBundle, so importing it at module load time
+            # would introduce a cycle.
+            try:
+                from .policy import BackendPolicyBundle
+
+                bundle = self.policy_bundle
+                if not isinstance(bundle, BackendPolicyBundle):
+                    raise ValueError("policy_bundle must be a BackendPolicyBundle")
+                if tuple(bundle.policies) != self.config.candidate_batch_sizes:
+                    raise ValueError("policy_bundle must cover the frozen batch schedule")
+                if not _policy_rows_equivalent(self.policy, bundle.policies[1]):
+                    raise ValueError("singular policy must reference the batch-one bundle row")
+            except ImportError as exc:
+                raise ValueError("policy bundle support is unavailable") from exc
+        if self.measurements is not None:
+            expected = self.config.candidate_batch_sizes
+            if not isinstance(self.measurements, Mapping) or tuple(self.measurements) != expected:
+                raise ValueError("measurements must cover the exact frozen batch schedule")
+            for batch_size in expected:
+                row = self.measurements[batch_size]
+                if not isinstance(row, Mapping) or set(row) != {"cpu", "mps"}:
+                    raise ValueError("measurements rows must contain CPU and MPS slots")
+                cpu = row["cpu"]
+                mps = row["mps"]
+                if not isinstance(cpu, BackendMeasurement) or cpu.backend != "cpu" or cpu.batch_size != batch_size:
+                    raise ValueError("measurements CPU row is invalid")
+                if mps is not None and (
+                    not isinstance(mps, BackendMeasurement)
+                    or mps.backend != "mps"
+                    or mps.batch_size != batch_size
+                ):
+                    raise ValueError("measurements MPS row is invalid")
+        if self.parities is not None:
+            expected = self.config.candidate_batch_sizes
+            if not isinstance(self.parities, Mapping) or tuple(self.parities) != expected:
+                raise ValueError("parities must cover the exact frozen batch schedule")
+            for batch_size in expected:
+                parity = self.parities[batch_size]
+                if parity is not None and (
+                    not isinstance(parity, ParityReport)
+                    or parity.batch_key.batch_size != batch_size
+                ):
+                    raise ValueError("parity row is invalid")
+        if self.source_digests is not None:
+            if not isinstance(self.source_digests, Mapping) or not self.source_digests:
+                raise ValueError("source_digests must be a nonempty mapping")
+            for path, digest in self.source_digests.items():
+                if not isinstance(path, str) or not path.strip():
+                    raise ValueError("source digest paths must be nonempty strings")
+                _sha256(digest, f"source_digests[{path}]")
+        if self.attempt_root is not None:
+            if not isinstance(self.attempt_root, str) or not self.attempt_root.strip():
+                raise ValueError("attempt_root must be a nonempty path")
+            if re.search(r"\btest\b|exp419_deterministic_cpu_parallel", self.attempt_root, re.IGNORECASE):
+                raise ValueError("attempt_root must not target TEST or Exp419 artifacts")
         object.__setattr__(self, "cached_candidate_indices", cached)
         object.__setattr__(self, "provenance", MappingProxyType(provenance))
+
+    def to_payload(self) -> dict[str, object]:
+        """Return canonical JSON-ready data through the manifest serializer."""
+        from .manifest import _manifest_to_payload
+
+        return _manifest_to_payload(self)
+
+
+def _policy_rows_equivalent(left: BackendPolicy, right: BackendPolicy) -> bool:
+    """Compare a compatibility policy row without NumPy truth ambiguity."""
+    if left.backend != right.backend:
+        return False
+    left_assessment = left.assessment
+    right_assessment = right.assessment
+    for name in (
+        "batch_key",
+        "speedup",
+        "uses_mps",
+        "fallback_reason",
+        "mps_available",
+        "device",
+    ):
+        if getattr(left_assessment, name) != getattr(right_assessment, name):
+            return False
+    for name in ("cpu_measurement", "mps_measurement"):
+        left_measurement = getattr(left_assessment, name)
+        right_measurement = getattr(right_assessment, name)
+        if left_measurement is None or right_measurement is None:
+            if left_measurement is not right_measurement:
+                return False
+            continue
+        for field in (
+            "batch_size",
+            "backend",
+            "transfer_seconds",
+            "compute_seconds",
+            "synchronize_seconds",
+            "total_seconds",
+            "finite",
+            "candidate_coordinates_sha256",
+        ):
+            if getattr(left_measurement, field) != getattr(right_measurement, field):
+                return False
+    left_parity = left_assessment.parity_report
+    right_parity = right_assessment.parity_report
+    if left_parity is None or right_parity is None:
+        return left_parity is right_parity
+    if (
+        left_parity.batch_key != right_parity.batch_key
+        or left_parity.max_normalized_error != right_parity.max_normalized_error
+        or left_parity.spearman != right_parity.spearman
+    ):
+        return False
+    for alpha in left_parity.cpu_candidate_indices_by_alpha:
+        if not np.array_equal(
+            left_parity.cpu_candidate_indices_by_alpha[alpha],
+            right_parity.cpu_candidate_indices_by_alpha[alpha],
+        ):
+            return False
+        if not np.array_equal(
+            left_parity.mps_candidate_indices_by_alpha[alpha],
+            right_parity.mps_candidate_indices_by_alpha[alpha],
+        ):
+            return False
+    return True
