@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
 from experiments.exp422_mps_numeric_delta.capability import DeviceCapability
 from experiments.exp422_mps_numeric_delta.config import FROZEN_CONFIG
+import experiments.exp422_mps_numeric_delta.core_parity as core_parity
 from experiments.exp422_mps_numeric_delta.core_parity import (
     candidate_coordinate_digest,
     compare_tensor,
@@ -38,6 +40,68 @@ class CoreParityTests(unittest.TestCase):
         self.assertFalse(delta.finite)
         self.assertFalse(delta.passes)
         self.assertEqual(delta.failing_index, 0)
+
+    def test_ulp_metric_collapses_signed_zero(self) -> None:
+        """A sign-bit implementation must not report a gap between -0 and +0."""
+        delta = compare_tensor(
+            np.array([-0.0], dtype=np.float32),
+            np.array([0.0], dtype=np.float32),
+            name="signed_zero",
+        )
+        self.assertEqual(delta.max_ulp, 0)
+        self.assertEqual(delta.max_absolute_error, 0.0)
+
+    def test_ulp_metric_counts_one_negative_float32_neighbor(self) -> None:
+        """Adjacent negative float32 values must have an ordered distance of one."""
+        left = np.array([-1.0], dtype=np.float32)
+        right = np.nextafter(left, np.array([-np.inf], dtype=np.float32))
+        delta = compare_tensor(left, right, name="negative_neighbor")
+        self.assertEqual(delta.max_ulp, 1)
+
+    def test_unexpected_mps_key_error_is_not_masked(self) -> None:
+        """A coding defect in the MPS branch must surface instead of becoming fallback."""
+        class FakeModel:
+            def __init__(self, horizons):
+                self.horizons = tuple(horizons)
+
+            def eval(self):
+                return self
+
+            def to(self, _device):
+                return self
+
+            def state_dict(self):
+                return {}
+
+            def load_state_dict(self, _state):
+                return None
+
+        def fake_forward(model, values, device):
+            if device.type == "mps":
+                raise KeyError("unexpected local defect")
+            outputs = {
+                horizon: np.zeros((values.shape[0], values.shape[2] - horizon), dtype=np.float32)
+                for horizon in model.horizons
+            }
+            from experiments.exp422_mps_numeric_delta.contracts import TimingEvidence
+
+            return outputs, TimingEvidence("cpu", 0.0, 0.0, 0.0, 0.0)
+
+        capability = DeviceCapability(
+            torch_version="2.13.0",
+            mps_built=True,
+            mps_available=True,
+            device_name="Darwin arm64 MPS",
+            mlx_version="unavailable",
+            mlx_metal_version="unavailable",
+            mlx_availability="unavailable",
+            fallback_reason=None,
+        )
+        with patch.object(core_parity, "CausalMultiHorizonCNN", FakeModel), patch.object(
+            core_parity, "_timed_forward", fake_forward
+        ):
+            with self.assertRaises(KeyError):
+                run_core_parity(FROZEN_CONFIG, capability)
 
     def test_candidate_digest_is_stable_for_tied_scores(self) -> None:
         """Replacing stable ordering changes the selected coordinate digest."""

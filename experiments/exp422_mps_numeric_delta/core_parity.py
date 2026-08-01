@@ -21,6 +21,10 @@ from .contracts import BatchKey, CoreParityReport, StageResult, TensorDelta, Tim
 _LENGTHS = (64, 128, 256, 512)
 
 
+class _NonfiniteOutputError(ValueError):
+    """Expected device-output validation failure kept distinct from coding defects."""
+
+
 @dataclass(frozen=True)
 class CoreStageResult:
     """All required core rows plus one conservative stage decision."""
@@ -36,8 +40,13 @@ def _sha256(values: np.ndarray) -> str:
 
 
 def _ordered_float32(values: np.ndarray) -> np.ndarray:
-    signed = np.ascontiguousarray(values, dtype=np.float32).view(np.int32).astype(np.int64)
-    return np.where(signed < 0, 0x80000000 - signed, signed)
+    bits = np.ascontiguousarray(values, dtype=np.float32).view(np.uint32).astype(np.uint64)
+    negative = ((~bits + np.uint64(1)) & np.uint64(0xFFFFFFFF)).astype(np.int64)
+    positive = (bits + np.uint64(0x80000000)).astype(np.int64)
+    # The two encodings of zero deliberately share one rank.  For negative
+    # values, two's-complement inversion-plus-one gives adjacent monotonic
+    # ranks up to that shared zero rank; positive values continue upward.
+    return np.where((bits & np.uint64(0x80000000)) != 0, negative, positive)
 
 
 def compare_tensor(cpu: np.ndarray, mps: np.ndarray, *, name: str) -> TensorDelta:
@@ -137,7 +146,7 @@ def _timed_forward(model: CausalMultiHorizonCNN, values: np.ndarray, device: tor
     packed = {horizon: output.detach().cpu().numpy().astype(np.float32, copy=False) for horizon, output in outputs.items()}
     transfer = transfer_in + (perf_counter() - output_start)
     if any(not np.isfinite(item).all() for item in packed.values()):
-        raise ValueError("nonfinite_output")
+        raise _NonfiniteOutputError("nonfinite_output")
     return packed, TimingEvidence(device.type, transfer, compute, synchronize, transfer + compute + synchronize)
 
 
@@ -190,9 +199,14 @@ def run_core_parity(config: Exp422Config, capability: DeviceCapability) -> CoreS
                     reports.append(report)
                     if not report.passes:
                         failure_reason = "core_parity_gate_failed"
-                except Exception as exc:
+                except _NonfiniteOutputError:
                     reports.append(_unavailable_report(key, name, cpu_timing))
-                    failure_reason = "nonfinite_output" if "nonfinite" in str(exc).lower() else "mps_runtime_error"
+                    failure_reason = "nonfinite_output"
+                except (MemoryError, OSError, RuntimeError) as exc:
+                    reports.append(_unavailable_report(key, name, cpu_timing))
+                    failure_reason = (
+                        "fixed_batch_memory_limit" if isinstance(exc, MemoryError) else "mps_runtime_error"
+                    )
     stage = StageResult.passed() if not failure_reason else StageResult.failed(failure_reason)
     return CoreStageResult(capability, tuple(reports), stage)
 
