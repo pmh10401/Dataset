@@ -49,7 +49,9 @@ class Exp422ContractTests(unittest.TestCase):
         delta = TensorDelta("scores", True, 0.0, 0.0, 0.0, 0, "a" * 64, "b" * 64, None)
         cpu_timing = TimingEvidence("cpu", 0.1, 0.2, 0.1, 0.4)
         mps_timing = TimingEvidence("mps", 0.05, 0.1, 0.05, 0.2)
-        report = CoreParityReport(BatchKey(16, 41701, 41711), (delta,), cpu_timing, mps_timing, True)
+        report = CoreParityReport(
+            BatchKey(16, 41701, 41711), (delta,), cpu_timing, mps_timing, True, 1.0
+        )
         self.assertTrue(report.passes)
         self.assertEqual(StageResult.failed("mps_unavailable").state, "failed")
         self.assertEqual(StageResult.skipped("core_failed").state, "skipped")
@@ -57,6 +59,23 @@ class Exp422ContractTests(unittest.TestCase):
             TensorDelta("scores", True, 0.0, 0.0, 0.0, 0, "A" * 64, "b" * 64, None)
         with self.assertRaises(ValueError):
             StageResult("pending", None)
+
+    def test_core_report_rejects_spearman_below_frozen_gate(self) -> None:
+        delta = TensorDelta("scores", True, 0.0, 0.0, 0.0, 0, "a" * 64, "b" * 64, None)
+        cpu_timing = TimingEvidence("cpu", 0.1, 0.2, 0.1, 0.4)
+        mps_timing = TimingEvidence("mps", 0.05, 0.1, 0.05, 0.2)
+        report = CoreParityReport(
+            BatchKey(16, 41701, 41711), (delta,), cpu_timing, mps_timing, True, 0.998
+        )
+        self.assertFalse(report.passes)
+
+    def test_stage_result_requires_reason_for_nonpassed_states(self) -> None:
+        with self.assertRaises(ValueError):
+            StageResult("passed", "unexpected")
+        with self.assertRaises(ValueError):
+            StageResult("failed", None)
+        with self.assertRaises(ValueError):
+            StageResult("skipped", None)
 
 
 if __name__ == "__main__":

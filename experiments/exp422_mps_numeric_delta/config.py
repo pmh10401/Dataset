@@ -19,9 +19,11 @@ class Exp422Config:
     experiment_id: str = "Exp422"
     exp417_config: Exp417FrozenConfig = EXP417_FROZEN_CONFIG
     candidate_batch_sizes: tuple[int, ...] = (16, 32, 64, 128, 256)
-    max_normalized_error: float = 1e-4
-    min_spearman: float = 0.999
-    min_speedup: float = 1.1
+    # These values deliberately bind to the canonical Exp417 gate fields at
+    # class definition time; they are not duplicated Exp422 literals.
+    max_normalized_error: float = EXP417_FROZEN_CONFIG.mps_max_error
+    min_spearman: float = EXP417_FROZEN_CONFIG.mps_min_spearman
+    min_speedup: float = EXP417_FROZEN_CONFIG.mps_min_speedup
     max_series: int = 64
     max_batch_bytes: int = 256 * 1024 * 1024
     model_seeds: tuple[int, ...] = (41701, 41702, 41703)
@@ -42,6 +44,14 @@ class Exp422Config:
             raise ValueError("Exp422 model seeds must bind to Exp417")
         if self.perturbation_seeds != self.exp417_config.perturbation_seeds:
             raise ValueError("Exp422 perturbation seeds must bind to Exp417")
+        canonical_gates = {
+            "max_normalized_error": self.exp417_config.mps_max_error,
+            "min_spearman": self.exp417_config.mps_min_spearman,
+            "min_speedup": self.exp417_config.mps_min_speedup,
+        }
+        for name, wanted in canonical_gates.items():
+            if getattr(self, name) != wanted:
+                raise ValueError(f"Exp422 {name} must bind to Exp417")
         if (
             self.candidate_batch_sizes != tuple(sorted(self.candidate_batch_sizes))
             or len(self.candidate_batch_sizes) != len(set(self.candidate_batch_sizes))

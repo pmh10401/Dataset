@@ -95,6 +95,7 @@ class CoreParityReport:
     cpu_timing: TimingEvidence
     mps_timing: TimingEvidence
     candidate_indices_match: bool
+    spearman: float
 
     def __post_init__(self) -> None:
         if not isinstance(self.batch_key, BatchKey):
@@ -107,6 +108,9 @@ class CoreParityReport:
             raise ValueError("mps_timing must be MPS TimingEvidence")
         if type(self.candidate_indices_match) is not bool:
             raise ValueError("candidate_indices_match must be a bool")
+        spearman = _finite(self.spearman, "spearman", minimum=-1.0)
+        if spearman > 1.0:
+            raise ValueError("spearman must be between -1.0 and 1.0")
 
     @property
     def speedup(self) -> float:
@@ -119,6 +123,7 @@ class CoreParityReport:
         return (
             self.candidate_indices_match
             and all(delta.passes for delta in self.tensor_deltas)
+            and self.spearman >= FROZEN_CONFIG.min_spearman
             and self.speedup >= FROZEN_CONFIG.min_speedup
         )
 

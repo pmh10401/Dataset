@@ -18,6 +18,12 @@ class Exp422ConfigTests(unittest.TestCase):
         self.assertEqual(FROZEN_CONFIG.max_series, 64)
         self.assertEqual(FROZEN_CONFIG.max_batch_bytes, 256 * 1024 * 1024)
 
+    def test_tolerance_defaults_are_canonical_exp417_gate_fields(self) -> None:
+        fields = Exp422Config.__dataclass_fields__
+        self.assertEqual(fields["max_normalized_error"].default, EXP417_CONFIG.mps_max_error)
+        self.assertEqual(fields["min_spearman"].default, EXP417_CONFIG.mps_min_spearman)
+        self.assertEqual(fields["min_speedup"].default, EXP417_CONFIG.mps_min_speedup)
+
     def test_config_rejects_modified_or_unsorted_boundaries(self) -> None:
         for changes in (
             {"candidate_batch_sizes": (16, 32, 64, 128)},
