@@ -24,8 +24,8 @@ _PRIMARY_PERTURBATIONS = (
 )
 _PERTURBATIONS = _PRIMARY_PERTURBATIONS + ("secondary_spike",)
 _FORBIDDEN_IDENTIFIER_TOKENS = ("test", "label", "location", "metric")
-_CACHE: dict[tuple[str, int, int, int], CachedPerturbations] = {}
-_PRIMARY_CACHE: dict[tuple[str, int, int], tuple[np.ndarray, ...]] = {}
+_CACHE: dict[tuple[str, int, int, bytes, int], CachedPerturbations] = {}
+_PRIMARY_CACHE: dict[tuple[str, int, int, bytes], tuple[np.ndarray, ...]] = {}
 
 
 def _readonly_float64(values: np.ndarray) -> np.ndarray:
@@ -62,6 +62,10 @@ def _scale(value: object) -> float:
     return float(value)
 
 
+def _canonical_scale(scale: float) -> bytes:
+    return np.asarray([scale], dtype="<f8").tobytes()
+
+
 @dataclass(frozen=True)
 class PerturbationCacheKey:
     """Exact TRAIN identity of a single frozen perturbation array."""
@@ -70,6 +74,7 @@ class PerturbationCacheKey:
     instance_index: int
     length: int
     perturbation: str
+    robust_scale: float
     seed: int
 
     def __post_init__(self) -> None:
@@ -79,6 +84,7 @@ class PerturbationCacheKey:
             raise ValueError("length must be a positive integer")
         if self.perturbation not in _PERTURBATIONS:
             raise ValueError("perturbation must be one of the frozen perturbations")
+        object.__setattr__(self, "robust_scale", _scale(self.robust_scale))
         if type(self.seed) is not int or self.seed not in FROZEN_CONFIG.frozen_perturbation_seeds:
             raise ValueError("seed must be one of the exact frozen perturbation seeds")
 
@@ -94,8 +100,16 @@ class CachedPerturbations(Mapping[str, np.ndarray]):
     def __post_init__(self) -> None:
         if len(self.arrays) != len(_PERTURBATIONS) or len(self.cache_keys) != len(_PERTURBATIONS):
             raise ValueError("cached perturbations must contain every frozen perturbation")
+        if not all(type(key) is PerturbationCacheKey for key in self.cache_keys):
+            raise ValueError("cache keys must be PerturbationCacheKey records")
         if tuple(key.perturbation for key in self.cache_keys) != _PERTURBATIONS:
             raise ValueError("cache keys must use the frozen perturbation order")
+        bundle_identity = {
+            (key.dataset, key.instance_index, key.length, key.robust_scale, key.seed)
+            for key in self.cache_keys
+        }
+        if len(bundle_identity) != 1:
+            raise ValueError("cache keys must share one exact TRAIN identity")
         if any(array.dtype != np.dtype("float64") or array.ndim != 1 or array.flags.writeable for array in self.arrays):
             raise ValueError("cached perturbation arrays must be read-only one-dimensional float64")
         if any(key.length != array.size for key, array in zip(self.cache_keys, self.arrays, strict=True)):
@@ -127,6 +141,7 @@ def _digest(keys: tuple[PerturbationCacheKey, ...], arrays: tuple[np.ndarray, ..
         hashed.update(key.length.to_bytes(8, "little", signed=False))
         hashed.update(key.perturbation.encode("ascii"))
         hashed.update(b"\x00")
+        hashed.update(_canonical_scale(key.robust_scale))
         hashed.update(key.seed.to_bytes(8, "little", signed=False))
         hashed.update(np.ascontiguousarray(array, dtype="<f8").tobytes())
     return hashed.hexdigest()
@@ -152,20 +167,21 @@ def build_cached_perturbations(
     scale = _scale(robust_scale)
     if type(seed) is not int or seed not in FROZEN_CONFIG.frozen_perturbation_seeds:
         raise ValueError("seed must be one of the exact frozen perturbation seeds")
-    identity = (frozen_dataset, frozen_index, int(values.size), seed)
+    scale_bytes = _canonical_scale(scale)
+    identity = (frozen_dataset, frozen_index, int(values.size), scale_bytes, seed)
     cached = _CACHE.get(identity)
     if cached is not None:
         return cached
 
     built = build_fixed_perturbations(values, scale, seed=seed)
-    primary_identity = identity[:3]
+    primary_identity = identity[:-1]
     primary = _PRIMARY_CACHE.get(primary_identity)
     if primary is None:
         primary = tuple(_readonly_float64(built[name]) for name in _PRIMARY_PERTURBATIONS)
         _PRIMARY_CACHE[primary_identity] = primary
     arrays = primary + (_readonly_float64(built["secondary_spike"]),)
     keys = tuple(
-        PerturbationCacheKey(frozen_dataset, frozen_index, int(values.size), name, seed)
+        PerturbationCacheKey(frozen_dataset, frozen_index, int(values.size), name, scale, seed)
         for name in _PERTURBATIONS
     )
     result = CachedPerturbations(arrays=arrays, cache_keys=keys, digest=_digest(keys, arrays))

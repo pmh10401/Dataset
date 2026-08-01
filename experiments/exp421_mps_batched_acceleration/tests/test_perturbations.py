@@ -12,6 +12,7 @@ from experiments.exp417_causal_multihorizon_shadow.qualification import (
     build_fixed_perturbations,
 )
 from experiments.exp421_mps_batched_acceleration.perturbations import (
+    _digest,
     CachedPerturbations,
     PerturbationCacheKey,
     build_cached_perturbations,
@@ -57,8 +58,8 @@ class PerturbationCacheTests(unittest.TestCase):
         self.assertEqual(repeat["secondary_spike"].tobytes(), cached[1]["secondary_spike"].tobytes())
         self.assertGreater(len({item["secondary_spike"].tobytes() for item in cached}), 1)
 
-    def test_cache_reuses_exact_key_and_source_mutation_cannot_change_cached_bytes(self) -> None:
-        """Catches source aliasing or a cache key that omits exact series identity fields."""
+    def test_cache_reuses_frozen_input_and_source_mutation_cannot_change_cached_bytes(self) -> None:
+        """Catches source aliasing that could alter retained frozen-input bytes."""
         series = _series()
         first = build_cached_perturbations("TRAIN_fixture", 7, series, 1.75, 41711)
         original = first["level_shift"].tobytes()
@@ -72,6 +73,16 @@ class PerturbationCacheTests(unittest.TestCase):
         self.assertIsNot(missed_dataset, first)
         self.assertIsNot(missed_instance, first)
         self.assertIsNot(missed_length, first)
+
+    def test_robust_scale_is_bound_to_cache_identity_and_digest(self) -> None:
+        """Catches reuse of first-scale perturbations for a later exact raw scale."""
+        first = build_cached_perturbations("TRAIN_fixture", 7, _series(), 1.75, 41711)
+        changed = build_cached_perturbations("TRAIN_fixture", 7, _series(), 2.25, 41711)
+        expected = build_fixed_perturbations(_series(), 2.25, seed=41711)
+        self.assertIsNot(first, changed)
+        self.assertNotEqual(first.digest, changed.digest)
+        self.assertEqual(changed["level_shift"].tobytes(), expected["level_shift"].tobytes())
+        self.assertTrue(all(key.robust_scale == 2.25 for key in changed.cache_keys))
 
     def test_keys_digest_and_fields_exclude_prohibited_evaluation_names(self) -> None:
         """Catches TEST, label, location, or metric material in cache keys or evidence."""
@@ -93,14 +104,29 @@ class PerturbationCacheTests(unittest.TestCase):
         """Catches injectable malformed identity evidence or unbound cache bytes."""
         cached = build_cached_perturbations("TRAIN_fixture", 7, _series(), 1.75, 41711)
         with self.assertRaisesRegex(ValueError, "TRAIN"):
-            PerturbationCacheKey("TEST_fixture", 7, 128, "level_shift", 41711)
+            PerturbationCacheKey("TEST_fixture", 7, 128, "level_shift", 1.75, 41711)
         with self.assertRaisesRegex(ValueError, "length"):
-            PerturbationCacheKey("TRAIN_fixture", 7, 0, "level_shift", 41711)
+            PerturbationCacheKey("TRAIN_fixture", 7, 0, "level_shift", 1.75, 41711)
         with self.assertRaisesRegex(ValueError, "digest"):
             CachedPerturbations(
                 arrays=cached.arrays,
                 cache_keys=cached.cache_keys,
                 digest="0" * 64,
+            )
+
+    def test_cache_rejects_a_mixed_valid_key_bundle(self) -> None:
+        """Catches a digest-valid record whose arrays have mixed TRAIN identities."""
+        cached = build_cached_perturbations("TRAIN_fixture", 7, _series(), 1.75, 41711)
+        mixed_keys = cached.cache_keys[:-1] + (
+            PerturbationCacheKey(
+                "TRAIN_other", 7, 128, "secondary_spike", 1.75, 41711
+            ),
+        )
+        with self.assertRaisesRegex(ValueError, "identity"):
+            CachedPerturbations(
+                arrays=cached.arrays,
+                cache_keys=mixed_keys,
+                digest=_digest(mixed_keys, cached.arrays),
             )
 
 
