@@ -1,7 +1,7 @@
 {
   "artifact_kind": "exp421_train_only_acceleration_source_manifest",
   "schema_version": 1,
-  "git_commit": "5741fb19609d7da4573fcb2dada2b448238959cb",
+  "git_commit": "2b543dafce53287ef54a1eaf890add56a6055bf3",
   "sources": [
     {
       "path": "docs/superpowers/plans/2026-08-01-exp421-mps-batched-acceleration.md",
@@ -21,7 +21,7 @@
     },
     {
       "path": "experiments/exp421_mps_batched_acceleration/benchmark.py",
-      "sha256": "624b1422ff36d2b07995a420dcfc789a65b7948391212b3a07dd3aef7331560b"
+      "sha256": "88b398fe116a10d95401d1ae9f618fa218e18d0583bcb86dcdc142639075ed3d"
     },
     {
       "path": "experiments/exp421_mps_batched_acceleration/calibration.py",
@@ -57,7 +57,7 @@
     },
     {
       "path": "experiments/exp421_mps_batched_acceleration/tests/test_benchmark_boundary.py",
-      "sha256": "f35bd4d26ecc2c483a7e4d19dae3087fb22b36920e45c8ddd41a9667c3530e90"
+      "sha256": "4970d76ea56e5d5b68e82dd1b8f0dd379eae9a895889e08a4f5978f6a2cfab66"
     },
     {
       "path": "experiments/exp421_mps_batched_acceleration/tests/test_calibration.py",
