@@ -264,6 +264,15 @@ class BackendPolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             BackendPolicyBundle(policies, result.reasons, fail_closed=True)
 
+    def test_bundle_rejects_swapped_mapping_keys_and_assessment_batch_sizes(self):
+        result = choose_backend(self._all_assessments(), Exp421Config())
+        policies = dict(result.policies)
+        reasons = dict(result.reasons)
+        policies[1], policies[4] = policies[4], policies[1]
+        reasons[1], reasons[4] = reasons[4], reasons[1]
+        with self.assertRaises(ValueError):
+            BackendPolicyBundle(policies, reasons, fail_closed=True)
+
     def test_nonfinite_mps_output_falls_back_to_cpu(self):
         measurements = self._all_assessments()
         source = measurements[4]
@@ -288,6 +297,27 @@ class BackendPolicyTests(unittest.TestCase):
         result = choose_backend(measurements, Exp421Config())
         self.assertEqual(result.policies[4].backend, "cpu")
         self.assertEqual(result.reasons[4], "nonfinite_output")
+
+    def test_policy_rejects_negative_normalized_error(self):
+        measurements = self._all_assessments()
+        source = measurements[4]
+        forged_report = object.__new__(ParityReport)
+        for field in (
+            "batch_key", "cpu_candidate_indices_by_alpha", "mps_candidate_indices_by_alpha",
+            "spearman",
+        ):
+            object.__setattr__(forged_report, field, getattr(source.parity_report, field))
+        object.__setattr__(forged_report, "max_normalized_error", -1.0)
+        malformed = object.__new__(MpsAssessment)
+        for field in (
+            "batch_key", "cpu_measurement", "mps_measurement", "speedup",
+            "uses_mps", "fallback_reason", "mps_available", "device",
+        ):
+            object.__setattr__(malformed, field, getattr(source, field))
+        object.__setattr__(malformed, "parity_report", forged_report)
+        measurements[4] = malformed
+        with self.assertRaises(ValueError):
+            choose_backend(measurements, Exp421Config())
 
     def test_config_and_assessment_fields_cannot_be_retrofitted_by_input(self):
         config = Exp421Config()
@@ -316,6 +346,11 @@ class BackendPolicyTests(unittest.TestCase):
         capability = assess_mps_capability()
         values = capability.__dict__.copy()
         values.update(mlx_availability="unavailable", mlx_version="0.0.0")
+        with self.assertRaises(ValueError):
+            type(capability)(**values)
+
+        values = capability.__dict__.copy()
+        values.update(mps_available=True, mps_built=False)
         with self.assertRaises(ValueError):
             type(capability)(**values)
         values = capability.__dict__.copy()

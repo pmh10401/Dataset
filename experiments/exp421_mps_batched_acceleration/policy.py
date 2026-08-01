@@ -92,6 +92,12 @@ class BackendPolicyBundle:
             assessment = getattr(policy, "assessment", _MISSING)
             if backend not in {"cpu", "mps"} or not isinstance(assessment, MpsAssessment):
                 raise ValueError("policy rows must contain valid CPU/MPS assessments")
+            assessment_key = _validate_batch_key(
+                getattr(assessment, "batch_key", None),
+                "policy assessment.batch_key",
+            )
+            if assessment_key.batch_size != batch_size:
+                raise ValueError("policy mapping key must match assessment batch size")
             uses_mps = getattr(assessment, "uses_mps", _MISSING)
             if type(uses_mps) is not bool or (backend == "mps") != uses_mps:
                 raise ValueError("policy backend must agree with its MPS assessment")
@@ -151,6 +157,8 @@ class MpsCapability:
                 raise ValueError(f"{name} must be absent or a non-test version string")
         if type(self.mps_built) is not bool or type(self.mps_available) is not bool:
             raise ValueError("MPS capability flags must be bools")
+        if self.mps_available and not self.mps_built:
+            raise ValueError("available MPS requires a built backend")
         if self.mlx_availability not in {"available", "unavailable"}:
             raise ValueError("MLX availability must be available or unavailable")
         if self.mlx_eligibility_reason not in _MLX_REASONS:
@@ -364,6 +372,8 @@ def _validate_parity_shape(report: Any, config: Exp421Config, batch_key: BatchKe
         value = getattr(report, name, None)
         if isinstance(value, bool) or not isinstance(value, Real) or not isfinite(float(value)):
             raise ValueError(f"parity {name} must be finite")
+        if name == "max_normalized_error" and float(value) < 0.0:
+            raise ValueError("parity max_normalized_error must be nonnegative")
     return report
 
 
