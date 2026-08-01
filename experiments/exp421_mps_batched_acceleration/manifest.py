@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
 import tempfile
 from typing import Any
 
@@ -46,6 +47,7 @@ _TOP_LEVEL_FIELDS = frozenset(
         "policy_bundle",
         "provenance",
         "source_digests",
+        "source_manifest_git_commit",
         "source_manifest_sha256",
         "attempt_root",
     }
@@ -99,6 +101,118 @@ _OFFICIAL_EXP419_MARKERS = (
     "exp419_prediction",
     "exp419_checkpoint",
 )
+_SOURCE_MANIFEST_FIELDS = frozenset({"artifact_kind", "schema_version", "git_commit", "sources"})
+_SOURCE_ENTRY_FIELDS = frozenset({"path", "sha256"})
+_PRIVATE_ARTIFACT_SUFFIXES = frozenset(
+    {
+        ".db",
+        ".sqlite",
+        ".sqlite3",
+        ".jsonl",
+        ".npz",
+        ".npy",
+        ".pt",
+        ".pth",
+        ".ckpt",
+        ".checkpoint",
+        ".csv",
+    }
+)
+
+
+def _repository_root() -> Path:
+    # manifest.py -> exp421 package -> experiments -> worktree root
+    return Path(__file__).resolve().parents[2]
+
+
+def _source_manifest_path() -> Path:
+    return _repository_root() / "SOURCE_MANIFEST.json"
+
+
+def _allowed_source_path(path: Path) -> bool:
+    root = _repository_root()
+    allowed_roots = (
+        root / "experiments" / "exp421_mps_batched_acceleration",
+        root / "docs",
+        root / "scratch",
+    )
+    try:
+        resolved = path.resolve(strict=True)
+    except OSError:
+        return False
+    if not any(resolved == allowed or allowed in resolved.parents for allowed in allowed_roots):
+        return False
+    if resolved.suffix.lower() in _PRIVATE_ARTIFACT_SUFFIXES:
+        return False
+    components = {component.lower() for component in resolved.parts}
+    if components.intersection({"dataset", "private", "checkpoints", "predictions", "outputs"}):
+        return False
+    return True
+
+
+def _git_tree_paths(commit: str) -> set[str]:
+    try:
+        result = subprocess.run(
+            ["git", "ls-tree", "-r", "--name-only", commit],
+            cwd=_repository_root(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return set()
+    if result.returncode != 0:
+        return set()
+    return {line for line in result.stdout.splitlines() if line}
+
+
+def _load_source_manifest() -> tuple[str, dict[str, str], str]:
+    """Read and independently verify the committed source trust root.
+
+    The source manifest itself is intentionally not one of ``sources``; its
+    complete bytes are hashed separately in the Exp421 payload, avoiding a
+    recursive self-digest while still detecting source-manifest tampering.
+    """
+    path = _source_manifest_path()
+    try:
+        raw = path.read_bytes()
+        payload = json.loads(raw.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("SOURCE_MANIFEST.json is unreadable or invalid") from exc
+    if not isinstance(payload, Mapping) or set(payload) != _SOURCE_MANIFEST_FIELDS:
+        raise ValueError("SOURCE_MANIFEST.json has an invalid schema")
+    if payload["artifact_kind"] != "exp421_train_only_acceleration_source_manifest":
+        raise ValueError("SOURCE_MANIFEST.json artifact kind is invalid")
+    if payload["schema_version"] != 1:
+        raise ValueError("SOURCE_MANIFEST.json schema version is invalid")
+    commit = _git_digest(payload["git_commit"])
+    entries = payload["sources"]
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("SOURCE_MANIFEST.json sources must be a nonempty list")
+    source_digests: dict[str, str] = {}
+    git_paths = _git_tree_paths(commit)
+    if not git_paths:
+        raise ValueError("SOURCE_MANIFEST git commit is unavailable")
+    for entry in entries:
+        if not isinstance(entry, Mapping) or set(entry) != _SOURCE_ENTRY_FIELDS:
+            raise ValueError("SOURCE_MANIFEST.json source entry schema is invalid")
+        relative = entry["path"]
+        if not isinstance(relative, str) or not relative or Path(relative).is_absolute():
+            raise ValueError("SOURCE_MANIFEST.json source paths must be relative")
+        resolved = (_repository_root() / relative).resolve(strict=False)
+        if not _allowed_source_path(resolved):
+            raise ValueError("SOURCE_MANIFEST.json contains an out-of-scope source path")
+        digest = _sha256_digest(entry["sha256"], f"SOURCE_MANIFEST.json[{relative}]")
+        if relative in source_digests:
+            raise ValueError("SOURCE_MANIFEST.json contains duplicate source paths")
+        source_digests[relative] = digest
+        if relative not in git_paths:
+            raise ValueError(f"SOURCE_MANIFEST git commit does not contain {relative}")
+        actual = _source_file_digest(str(resolved))
+        if actual != digest:
+            raise ValueError(f"SOURCE_MANIFEST source digest drift: {relative}")
+    return commit, dict(sorted(source_digests.items())), sha256(raw).hexdigest()
 
 
 def _is_official_exp419_path(value: str) -> bool:
@@ -192,10 +306,21 @@ def _validate_source_digests(source_digests: Mapping[str, str]) -> dict[str, str
         path_text = str(raw_path) if isinstance(raw_path, str) else ""
         allow_package_tests = "experiments/exp421_mps_batched_acceleration/" in path_text.replace("\\", "/")
         path = _path_text(raw_path, "source digest path", allow_package_tests=allow_package_tests)
+        declared_path = Path(path).expanduser()
+        resolved = (
+            declared_path
+            if declared_path.is_absolute()
+            else _repository_root() / declared_path
+        ).resolve(strict=False)
+        if not _allowed_source_path(resolved):
+            raise ValueError("source digest path must be inside an allowed Exp421/docs/scratch root")
         normalized[path] = _sha256_digest(digest, f"source_digests[{path}]")
-        actual = _source_file_digest(path)
+        actual = _source_file_digest(str(resolved))
         if actual != normalized[path]:
             raise ValueError(f"source digest drift: {path}")
+    _, committed_sources, _ = _load_source_manifest()
+    if dict(sorted(normalized.items())) != committed_sources:
+        raise ValueError("source_digests must exactly match SOURCE_MANIFEST.json")
     return dict(sorted(normalized.items()))
 
 
@@ -209,15 +334,9 @@ def _validate_provenance_boundary(provenance: Mapping[str, object]) -> None:
                 raise ValueError(f"provenance {name} contains a forbidden boundary token")
 
 
-def _source_manifest_digest(provenance: Mapping[str, object], source_digests: Mapping[str, str]) -> str:
-    return sha256(
-        _canonical_bytes(
-            {
-                "git_commit": provenance["git_commit"],
-                "source_digests": dict(sorted(source_digests.items())),
-            }
-        )
-    ).hexdigest()
+def _source_manifest_metadata() -> tuple[str, dict[str, str], str]:
+    """Return the independently validated source commit, entries, and bytes hash."""
+    return _load_source_manifest()
 
 
 def _serialize_batch_key(key: BatchKey) -> dict[str, int]:
@@ -436,6 +555,9 @@ def _manifest_to_payload(manifest: Exp421Manifest) -> dict[str, object]:
     if manifest.source_digests is None or manifest.attempt_root is None:
         raise ValueError("manifest must retain source digests and a fresh attempt root")
     source_digests = dict(sorted(manifest.source_digests.items()))
+    source_manifest_commit, committed_sources, source_manifest_sha256 = _source_manifest_metadata()
+    if source_digests != committed_sources:
+        raise ValueError("manifest source digests do not match SOURCE_MANIFEST.json")
     measurements, parities, policy_bundle = _mapping_rows(manifest.policy_bundle)
     # Validate that the explicit evidence fields have not diverged from the
     # policy's assessment rows before serializing either representation.
@@ -463,7 +585,8 @@ def _manifest_to_payload(manifest: Exp421Manifest) -> dict[str, object]:
         "policy_bundle": policy_bundle,
         "provenance": dict(manifest.provenance),
         "source_digests": source_digests,
-        "source_manifest_sha256": _source_manifest_digest(manifest.provenance, source_digests),
+        "source_manifest_git_commit": source_manifest_commit,
+        "source_manifest_sha256": source_manifest_sha256,
         "attempt_root": manifest.attempt_root,
     }
 
@@ -659,9 +782,13 @@ def validate_manifest(payload: Mapping[str, object]) -> Exp421Manifest:
         raise ValueError("provenance must be a mapping")
     _validate_provenance_boundary(provenance)
     source_digests = _validate_source_digests(payload["source_digests"])
-    expected_source_manifest = _source_manifest_digest(provenance, source_digests)
+    expected_source_commit, committed_sources, expected_source_manifest = _source_manifest_metadata()
+    if source_digests != committed_sources:
+        raise ValueError("source declarations do not match SOURCE_MANIFEST.json")
+    if payload["source_manifest_git_commit"] != expected_source_commit:
+        raise ValueError("source_manifest_git_commit does not match SOURCE_MANIFEST.json")
     if payload["source_manifest_sha256"] != expected_source_manifest:
-        raise ValueError("source_manifest_sha256 does not match source declarations")
+        raise ValueError("source_manifest_sha256 does not match SOURCE_MANIFEST.json bytes")
     attempt_root = _attempt_root(payload["attempt_root"])
     if attempt_root != payload["attempt_root"]:
         raise ValueError("attempt_root must use a canonical absolute path")

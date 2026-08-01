@@ -315,6 +315,7 @@ class Exp421Manifest:
             expected = self.config.candidate_batch_sizes
             if not isinstance(self.measurements, Mapping) or tuple(self.measurements) != expected:
                 raise ValueError("measurements must cover the exact frozen batch schedule")
+            frozen_measurements: dict[int, Mapping[str, BackendMeasurement | None]] = {}
             for batch_size in expected:
                 row = self.measurements[batch_size]
                 if not isinstance(row, Mapping) or set(row) != {"cpu", "mps"}:
@@ -329,10 +330,13 @@ class Exp421Manifest:
                     or mps.batch_size != batch_size
                 ):
                     raise ValueError("measurements MPS row is invalid")
+                frozen_measurements[batch_size] = MappingProxyType({"cpu": cpu, "mps": mps})
+            object.__setattr__(self, "measurements", MappingProxyType(frozen_measurements))
         if self.parities is not None:
             expected = self.config.candidate_batch_sizes
             if not isinstance(self.parities, Mapping) or tuple(self.parities) != expected:
                 raise ValueError("parities must cover the exact frozen batch schedule")
+            frozen_parities: dict[int, ParityReport | None] = {}
             for batch_size in expected:
                 parity = self.parities[batch_size]
                 if parity is not None and (
@@ -340,13 +344,18 @@ class Exp421Manifest:
                     or parity.batch_key.batch_size != batch_size
                 ):
                     raise ValueError("parity row is invalid")
+                frozen_parities[batch_size] = parity
+            object.__setattr__(self, "parities", MappingProxyType(frozen_parities))
         if self.source_digests is not None:
             if not isinstance(self.source_digests, Mapping) or not self.source_digests:
                 raise ValueError("source_digests must be a nonempty mapping")
+            frozen_source_digests: dict[str, str] = {}
             for path, digest in self.source_digests.items():
                 if not isinstance(path, str) or not path.strip():
                     raise ValueError("source digest paths must be nonempty strings")
                 _sha256(digest, f"source_digests[{path}]")
+                frozen_source_digests[path] = digest
+            object.__setattr__(self, "source_digests", MappingProxyType(dict(sorted(frozen_source_digests.items()))))
         if self.attempt_root is not None:
             if not isinstance(self.attempt_root, str) or not self.attempt_root.strip():
                 raise ValueError("attempt_root must be a nonempty path")

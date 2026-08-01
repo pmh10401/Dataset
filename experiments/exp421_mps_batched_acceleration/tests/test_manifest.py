@@ -58,9 +58,19 @@ class ManifestTests(unittest.TestCase):
         }
 
     def _source_file(self, root: Path) -> Path:
-        path = root / "exp421_source.py"
-        path.write_text("TRAIN_ONLY = True\n", encoding="utf-8")
-        return path
+        # Source declarations are intentionally rooted in the checked-out
+        # Exp421 package/docs/scratch allow-list.  The manifest source itself
+        # is supplied by SOURCE_MANIFEST.json rather than an arbitrary temp
+        # file outside the repository.
+        return Path(__file__).resolve().parents[1] / "manifest.py"
+
+    def _source_map(self):
+        payload = json.loads(
+            (Path(__file__).resolve().parents[3] / "SOURCE_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        return {row["path"]: row["sha256"] for row in payload["sources"]}
 
     def _build(self, root: Path):
         source = self._source_file(root)
@@ -70,7 +80,7 @@ class ManifestTests(unittest.TestCase):
             policy_bundle=self._policy_bundle(),
             cached_candidate_indices=cached,
             provenance=self._provenance(root),
-            source_digests={str(source): ""},
+            source_digests=self._source_map(),
             attempt_root=root / "attempt-001",
             state="draft",
         )
@@ -79,14 +89,11 @@ class ManifestTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = self._source_file(root)
-            from hashlib import sha256
-
-            digest = sha256(source.read_bytes()).hexdigest()
             manifest = build_manifest(
                 policy_bundle=self._policy_bundle(),
                 cached_candidate_indices=np.array([1, 4], dtype=np.int64),
                 provenance=self._provenance(root),
-                source_digests={str(source): digest},
+                source_digests=self._source_map(),
                 attempt_root=root / "attempt-001",
                 state="draft",
             )
@@ -99,19 +106,20 @@ class ManifestTests(unittest.TestCase):
             self.assertEqual(payload["candidate_batch_sizes"], [1, 4, 8, 16, 32])
             self.assertEqual(set(payload["measurements"]), {"1", "4", "8", "16", "32"})
             self.assertEqual(set(payload["parity"]), {"1", "4", "8", "16", "32"})
+            self.assertEqual(
+                payload["source_manifest_git_commit"],
+                "007bfaad037bccdff5d51574e112fb61cdfadc7c",
+            )
 
     def test_payload_has_exact_required_fields_and_canonical_digest(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = self._source_file(root)
-            from hashlib import sha256
-
-            digest = sha256(source.read_bytes()).hexdigest()
             manifest = build_manifest(
                 policy_bundle=self._policy_bundle(),
                 cached_candidate_indices=np.array([], dtype=np.int64),
                 provenance=self._provenance(root),
-                source_digests={str(source): digest},
+                source_digests=self._source_map(),
                 attempt_root=root / "attempt-001",
             )
             payload = manifest.to_payload()
@@ -119,7 +127,7 @@ class ManifestTests(unittest.TestCase):
                 "experiment_id", "state", "config", "candidate_batch_sizes",
                 "cached_candidate_indices", "measurements", "parity", "policy",
                 "policy_bundle", "provenance", "source_digests",
-                "source_manifest_sha256", "attempt_root",
+                "source_manifest_git_commit", "source_manifest_sha256", "attempt_root",
             }
             self.assertEqual(set(payload), required)
             self.assertEqual(canonical_manifest_sha256(payload), canonical_manifest_sha256(deepcopy(payload)))
@@ -131,13 +139,11 @@ class ManifestTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = self._source_file(root)
-            from hashlib import sha256
-
             manifest = build_manifest(
                 policy_bundle=self._policy_bundle(),
                 cached_candidate_indices=np.array([], dtype=np.int64),
                 provenance=self._provenance(root),
-                source_digests={str(source): sha256(source.read_bytes()).hexdigest()},
+                source_digests=self._source_map(),
                 attempt_root=root / "attempt-001",
             )
             payload = manifest.to_payload()
@@ -159,13 +165,11 @@ class ManifestTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = self._source_file(root)
-            from hashlib import sha256
-
             kwargs = {
                 "policy_bundle": self._policy_bundle(),
                 "cached_candidate_indices": np.array([], dtype=np.int64),
                 "provenance": self._provenance(root),
-                "source_digests": {str(source): sha256(source.read_bytes()).hexdigest()},
+                "source_digests": self._source_map(),
                 "attempt_root": root / "attempt-001",
             }
             for field, value in (
@@ -186,19 +190,45 @@ class ManifestTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = self._source_file(root)
-            from hashlib import sha256
-
             manifest = build_manifest(
                 policy_bundle=self._policy_bundle(),
                 cached_candidate_indices=np.array([], dtype=np.int64),
                 provenance=self._provenance(root),
-                source_digests={str(source): sha256(source.read_bytes()).hexdigest()},
+                source_digests=self._source_map(),
                 attempt_root=root / "attempt-001",
             )
             payload = manifest.to_payload()
-            source.write_text("DRIFTED = True\n", encoding="utf-8")
+            original = source.read_bytes()
+            try:
+                source.write_bytes(original + b"\nDRIFTED = True\n")
+                with self.assertRaises(ValueError):
+                    validate_manifest(payload)
+            finally:
+                source.write_bytes(original)
+
+    def test_source_manifest_bytes_and_commit_binding_reject_tampering(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            manifest = build_manifest(
+                policy_bundle=self._policy_bundle(),
+                cached_candidate_indices=np.array([], dtype=np.int64),
+                provenance=self._provenance(root),
+                source_digests=self._source_map(),
+                attempt_root=root / "attempt-001",
+            )
+            payload = manifest.to_payload()
+            altered = deepcopy(payload)
+            altered["source_manifest_git_commit"] = "a" * 40
             with self.assertRaises(ValueError):
-                validate_manifest(payload)
+                validate_manifest(altered)
+            source_manifest_path = Path(__file__).resolve().parents[3] / "SOURCE_MANIFEST.json"
+            original = source_manifest_path.read_bytes()
+            try:
+                source_manifest_path.write_bytes(original + b"\n")
+                with self.assertRaises(ValueError):
+                    validate_manifest(payload)
+            finally:
+                source_manifest_path.write_bytes(original)
 
     def test_write_is_atomic_and_no_clobber(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -210,7 +240,7 @@ class ManifestTests(unittest.TestCase):
                 policy_bundle=self._policy_bundle(),
                 cached_candidate_indices=np.array([], dtype=np.int64),
                 provenance=self._provenance(root),
-                source_digests={str(source): sha256(source.read_bytes()).hexdigest()},
+                source_digests=self._source_map(),
                 attempt_root=root / "attempt-001",
             )
             target = root / "attempt-001" / "manifest.json"
@@ -224,7 +254,7 @@ class ManifestTests(unittest.TestCase):
                 policy_bundle=self._policy_bundle(),
                 cached_candidate_indices=np.array([], dtype=np.int64),
                 provenance=self._provenance(root),
-                source_digests={str(source): sha256(source.read_bytes()).hexdigest()},
+                source_digests=self._source_map(),
                 attempt_root=root / "attempt-002",
             )
             write_manifest(target2, manifest2)
@@ -233,41 +263,89 @@ class ManifestTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             source = self._source_file(root)
-            from hashlib import sha256
-
             kwargs = {
                 "policy_bundle": self._policy_bundle(),
                 "cached_candidate_indices": np.array([], dtype=np.int64),
                 "provenance": self._provenance(root),
-                "source_digests": {str(source): sha256(source.read_bytes()).hexdigest()},
+                "source_digests": self._source_map(),
                 "attempt_root": root / "attempt-001",
             }
+            source_map = dict(kwargs["source_digests"])
             with self.assertRaises(ValueError):
-                build_manifest(**{**kwargs, "source_digests": {str(source): "g" * 64}})
+                source_map[source_map.keys().__iter__().__next__()] = "g" * 64
+                build_manifest(**{**kwargs, "source_digests": source_map})
             forbidden = root / "TEST_labels.json"
             forbidden.write_text("no", encoding="utf-8")
+            from hashlib import sha256
             with self.assertRaises(ValueError):
                 build_manifest(
                     **{
                         **kwargs,
-                        "source_digests": {str(forbidden): sha256(forbidden.read_bytes()).hexdigest()},
+                        "source_digests": {
+                            **kwargs["source_digests"],
+                            str(forbidden): sha256(forbidden.read_bytes()).hexdigest(),
+                        },
                     }
                 )
 
     def test_package_test_sources_are_allowed_but_source_drift_is_still_checked(self):
-        package_test = Path(__file__)
-        from hashlib import sha256
-
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             manifest = build_manifest(
                 policy_bundle=self._policy_bundle(),
                 cached_candidate_indices=np.array([], dtype=np.int64),
                 provenance=self._provenance(root),
-                source_digests={str(package_test): sha256(package_test.read_bytes()).hexdigest()},
+                source_digests=self._source_map(),
                 attempt_root=root / "attempt-001",
             )
-            self.assertIn(str(package_test), manifest.source_digests)
+            self.assertIn("experiments/exp421_mps_batched_acceleration/tests/test_manifest.py", manifest.source_digests)
+
+    def test_external_private_database_and_prediction_paths_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            kwargs = {
+                "policy_bundle": self._policy_bundle(),
+                "cached_candidate_indices": np.array([], dtype=np.int64),
+                "provenance": self._provenance(root),
+                "source_digests": self._source_map(),
+                "attempt_root": root / "attempt-001",
+            }
+            private = Path(temp) / "private_prediction.jsonl"
+            private.write_text("{}\n", encoding="utf-8")
+            from hashlib import sha256
+            for path in (
+                private,
+                Path("/Users/mac/Documents/Dataset/univariate_ts.db"),
+            ):
+                changed = dict(kwargs)
+                changed["source_digests"] = {
+                    **kwargs["source_digests"],
+                    str(path): sha256(path.read_bytes()).hexdigest() if path.exists() else "a" * 64,
+                }
+                with self.subTest(path=path):
+                    with self.assertRaises(ValueError):
+                        build_manifest(**changed)
+
+    def test_manifest_deep_freezes_additive_evidence_and_source_declarations(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source_map = self._source_map()
+            manifest = build_manifest(
+                policy_bundle=self._policy_bundle(),
+                cached_candidate_indices=np.array([], dtype=np.int64),
+                provenance=self._provenance(root),
+                source_digests=source_map,
+                attempt_root=root / "attempt-001",
+            )
+            source_map["mutated.py"] = "a" * 64
+            with self.assertRaises(TypeError):
+                manifest.source_digests["mutated.py"] = "a" * 64
+            with self.assertRaises(TypeError):
+                manifest.measurements[1]["cpu"] = None
+            with self.assertRaises(TypeError):
+                manifest.parities[1] = None
+            with self.assertRaises(TypeError):
+                manifest.measurements[1] = {}
 
 
 if __name__ == "__main__":
