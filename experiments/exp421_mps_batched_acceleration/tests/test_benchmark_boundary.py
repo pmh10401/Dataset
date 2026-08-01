@@ -413,6 +413,31 @@ class BenchmarkBoundaryTests(unittest.TestCase):
         self.assertTrue(matched)
         self.assertNotEqual(digest, "0" * 64)
 
+    def test_cpu_synthetic_failure_is_not_hidden_by_mps_unavailable(self):
+        sample = self._fake_measurement_sample()
+        for message, expected_status in (
+            ("synthetic qualification failed", "qualification_mismatch"),
+            ("model outputs must be finite", "nonfinite_output"),
+        ):
+            class FailingAdapter:
+                def predict_batch(self, channels):
+                    raise ValueError(message)
+
+            adapters = {
+                seed: FailingAdapter() for seed in FROZEN_CONFIG.frozen_model_seeds
+            }
+            digest, matched, status = benchmark._synthetic_qualification_parity(
+                sample,
+                cpu_adapters=adapters,
+                mps_adapters={},
+                oof_by_seed={},
+                config=FROZEN_CONFIG,
+            )
+            with self.subTest(message=message):
+                self.assertNotEqual(digest, "0" * 64)
+                self.assertFalse(matched)
+                self.assertEqual(status, expected_status)
+
     def test_official_exp419_root_is_rejected_before_opening_connection(self):
         opened = []
         with patch.object(benchmark, "verified_read_only_connection", side_effect=lambda *args, **kwargs: opened.append(True)):

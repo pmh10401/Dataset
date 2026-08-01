@@ -541,6 +541,8 @@ def _synthetic_qualification_parity(
     compare_mps = bool(mps_adapters)
     all_match = True
     nonfinite_output = False
+    cpu_failure = not bool(cpu_adapters)
+    qualification_failure = False
     index = sample.indices[0]
     series = next(item.values for item in sample.group.group.series if item.instance_index == index)
     identifier = "train_" + sha256(sample.dataset.encode("utf-8")).hexdigest()[:16]
@@ -560,6 +562,8 @@ def _synthetic_qualification_parity(
             ).astype(np.float32, copy=False)[None, ...]
             if not np.isfinite(channels).all():
                 all_match = False
+                cpu_failure = True
+                nonfinite_output = True
                 digest.update(perturbation_name.encode("ascii") + b"\x00nonfinite")
                 continue
             residuals_by_backend: dict[str, dict[int, Mapping[int, np.ndarray]]] = {}
@@ -573,9 +577,13 @@ def _synthetic_qualification_parity(
                     }
                 except Exception as exc:
                     digest.update(backend.encode("ascii") + b"\x00prediction_error\x00")
-                    if backend == "mps":
-                        all_match = False
-                        nonfinite_output = nonfinite_output or "finite" in str(exc).lower()
+                    all_match = False
+                    error_text = str(exc).lower()
+                    nonfinite_output = nonfinite_output or "finite" in error_text
+                    if backend == "cpu":
+                        cpu_failure = True
+                    else:
+                        qualification_failure = True
                     continue
             decisions_by_backend: dict[str, bool] = {}
             flattened: dict[str, np.ndarray] = {}
@@ -597,9 +605,13 @@ def _synthetic_qualification_parity(
                             residuals_by_seed[seed][horizon].reshape(-1)
                             for horizon in build_horizons(sample.group.group.length)
                         )
-                except (KeyError, TypeError, ValueError):
+                except (KeyError, TypeError, ValueError) as exc:
                     decisions = []
-                    all_match = False if compare_mps else all_match
+                    all_match = False
+                    qualification_failure = True
+                    nonfinite_output = nonfinite_output or "finite" in str(exc).lower()
+                    if backend == "cpu":
+                        cpu_failure = True
                 decisions_by_backend[backend] = bool(decisions) and consensus_candidate(decisions)
                 flattened[backend] = np.concatenate(flat_parts) if flat_parts else np.asarray([], dtype=np.float64)
                 digest.update(backend.encode("ascii"))
@@ -619,11 +631,13 @@ def _synthetic_qualification_parity(
                 ):
                     all_match = False
                 digest.update(np.asarray([error, rank], dtype="<f8").tobytes())
-    if not compare_mps:
+    if cpu_failure:
+        status = "nonfinite_output" if nonfinite_output else "qualification_mismatch"
+    elif not compare_mps:
         status = "mps_unavailable"
     elif nonfinite_output:
         status = "nonfinite_output"
-    elif all_match:
+    elif all_match and not qualification_failure:
         status = "compared_pass"
     else:
         status = "qualification_mismatch"
