@@ -1,7 +1,7 @@
 {
   "artifact_kind": "exp421_train_only_acceleration_source_manifest",
   "schema_version": 1,
-  "git_commit": "41aa949315e343b8c95ec97eb62e0f66d452dc2c",
+  "git_commit": "eb9733b12be6a25f14b62c9c8d988a5bd43d350b",
   "sources": [
     {
       "path": "docs/EXP421_PREREGISTRATION_KO.md",
@@ -25,7 +25,7 @@
     },
     {
       "path": "experiments/exp421_mps_batched_acceleration/batch_inference.py",
-      "sha256": "5cfc2352d1162fb546e5cd1211909b217e8140bfdc1bd84e9c834cc50634385b"
+      "sha256": "d50453c46ebe99800b3c7a2c197e1c35395dc065d54fb024ef920624095a33bb"
     },
     {
       "path": "experiments/exp421_mps_batched_acceleration/benchmark.py",
@@ -61,7 +61,7 @@
     },
     {
       "path": "experiments/exp421_mps_batched_acceleration/tests/test_batch_inference.py",
-      "sha256": "6235ac83539a7913e55c7c49a3b0dc062bd7ec43b2d3f17defaa3cb4351b49ae"
+      "sha256": "6df7ac452b3cef7136feb1e59d616de8f322f9bbae41e80f896855ce2f81e586"
     },
     {
       "path": "experiments/exp421_mps_batched_acceleration/tests/test_benchmark_boundary.py",
