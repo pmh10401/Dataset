@@ -36,7 +36,14 @@ from .contracts import (
     RunSummary,
     TestInstanceDecision,
 )
-from .model import OOFModelBundle, TrainedSeedModel, fit_final_seed_models, predict_residuals, train_oof_models
+from .model import (
+    OOFModelBundle,
+    ResidualBatchPredictor,
+    TrainedSeedModel,
+    fit_final_seed_models,
+    predict_residuals,
+    train_oof_models,
+)
 from .inputs import (
     assert_label_free_sql_contract, load_raw_test_values, load_raw_train_values,
     verify_input_snapshots,
@@ -680,6 +687,41 @@ def _production_qualify_train(
         synthetic: dict[str, list[tuple[Any, ...]]] = {
             name: [] for name in ("level_shift", "gradual_drift", "amplitude_scaling", "period_change", "secondary_spike")
         }
+        final_models_by_seed = {
+            model.seed: model for model in models.final_models[length]
+        }
+        predictors = {
+            seed: ResidualBatchPredictor(final_models_by_seed[seed])
+            for seed in FROZEN_CONFIG.model_seeds
+        }
+        pending_queries: list[tuple[int, str, np.ndarray]] = []
+        query_id = 0
+
+        def score_synthetic_batch(
+            records: Sequence[tuple[int, str, np.ndarray]],
+        ) -> None:
+            if not records:
+                return
+            channels_by_id = {record[0]: record[2] for record in records}
+            residuals_by_seed = {
+                seed: predictors[seed].predict(channels_by_id)
+                for seed in FROZEN_CONFIG.model_seeds
+            }
+            for current_id, name, _channels in records:
+                decisions = tuple(
+                    seed_decision(
+                        {
+                            horizon: models.score_calibrations[length][seed][horizon].score(
+                                residuals_by_seed[seed][current_id][horizon]
+                            )
+                            for horizon in bundle.horizons
+                        },
+                        seed=seed,
+                    )
+                    for seed in FROZEN_CONFIG.model_seeds
+                )
+                synthetic[name].append(decisions)
+
         for series in group.group.series:
             base = np.asarray(series.values, dtype=np.float64)
             for perturbation_seed in FROZEN_CONFIG.perturbation_seeds:
@@ -688,25 +730,12 @@ def _production_qualify_train(
                 )
                 for name, perturbation in perturbations.items():
                     channels = _channels_from_values(perturbation, group)
-                    # Qualification is deliberately based on a frozen final fit; all
-                    # scoring calibration remains normal OOF TRAIN residual evidence.
-                    by_seed = {
-                        seed: _prediction_residuals(models.final_models[length], seed, channels)
-                        for seed in FROZEN_CONFIG.model_seeds
-                    }
-                    decisions = tuple(
-                        seed_decision(
-                            {
-                                horizon: models.score_calibrations[length][seed][horizon].score(
-                                    by_seed[seed][horizon]
-                                )
-                                for horizon in bundle.horizons
-                            },
-                            seed=seed,
-                        )
-                        for seed in FROZEN_CONFIG.model_seeds
-                    )
-                    synthetic[name].append(decisions)
+                    pending_queries.append((query_id, name, channels))
+                    query_id += 1
+                    if len(pending_queries) >= 256:
+                        score_synthetic_batch(pending_queries)
+                        pending_queries.clear()
+        score_synthetic_batch(pending_queries)
         qualifications.append(qualify_group(
             length=length, normal_oof_decisions=normal, synthetic_decisions=synthetic,
             finite=True, backend_fallback=models.backend.fallback,
@@ -724,33 +753,59 @@ def _production_score_test(
     qualified_lengths = {
         group.length for group in contract.groups if group.status == "qualified"
     }
-    decisions: list[TestInstanceDecision] = []
-    for series in test.series:
+    entries_by_length: dict[
+        int, list[tuple[int, int, np.ndarray]]
+    ] = {}
+    for position, series in enumerate(test.series):
         if len(series.values) not in qualified_lengths:
             continue
         group = by_length.get(len(series.values))
         if group is None:
             raise ValueError("TEST length is absent from processed TRAIN")
-        length = group.group.length
+        entries_by_length.setdefault(group.group.length, []).append(
+            (
+                position,
+                series.instance_index,
+                _channels_from_values(np.asarray(series.values, dtype=np.float64), group),
+            )
+        )
+
+    decisions_by_position: dict[int, TestInstanceDecision] = {}
+    for length, entries in sorted(entries_by_length.items()):
         bundle = models.oof_bundles[length]
-        channels = _channels_from_values(np.asarray(series.values, dtype=np.float64), group)
-        residuals_by_seed = {
-            seed: _prediction_residuals(models.final_models[length], seed, channels)
+        final_models_by_seed = {
+            model.seed: model for model in models.final_models[length]
+        }
+        predictors = {
+            seed: ResidualBatchPredictor(final_models_by_seed[seed])
             for seed in FROZEN_CONFIG.model_seeds
         }
-        seeds = tuple(
-            seed_decision(
-                {
-                    horizon: models.score_calibrations[length][seed][horizon].score(
-                        residuals_by_seed[seed][horizon]
+        for start in range(0, len(entries), 256):
+            chunk = entries[start : start + 256]
+            channels_by_position = {
+                position: channels for position, _index, channels in chunk
+            }
+            residuals_by_seed = {
+                seed: predictors[seed].predict(channels_by_position)
+                for seed in FROZEN_CONFIG.model_seeds
+            }
+            for position, instance_index, _channels in chunk:
+                seeds = tuple(
+                    seed_decision(
+                        {
+                            horizon: models.score_calibrations[length][seed][horizon].score(
+                                residuals_by_seed[seed][position][horizon]
+                            )
+                            for horizon in bundle.horizons
+                        },
+                        seed=seed,
                     )
-                    for horizon in bundle.horizons
-                },
-                seed=seed,
-            )
-            for seed in FROZEN_CONFIG.model_seeds
-        )
-        decisions.append(TestInstanceDecision(test.dataset, series.instance_index, length, seeds))
+                    for seed in FROZEN_CONFIG.model_seeds
+                )
+                decisions_by_position[position] = TestInstanceDecision(
+                    test.dataset, instance_index, length, seeds
+                )
+    decisions = [decisions_by_position[position] for position in sorted(decisions_by_position)]
     hashes = {
         length: {model.seed: model.model_sha256 for model in models.final_models[length]}
         for length in sorted(qualified_lengths)
