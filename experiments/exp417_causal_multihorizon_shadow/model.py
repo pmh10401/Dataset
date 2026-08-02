@@ -878,13 +878,24 @@ def _validate_device(device: torch.device) -> None:
 
 
 def _assert_tensor_device(tensor: Tensor, device: torch.device) -> None:
-    if tensor.device != device:
+    if not _device_matches(tensor.device, device):
         raise ValueError("unexpected tensor device fallback")
 
 
 def _assert_model_device(model: nn.Module, device: torch.device) -> None:
-    if any(parameter.device != device for parameter in model.parameters()):
+    if any(not _device_matches(parameter.device, device) for parameter in model.parameters()):
         raise ValueError("unexpected model device fallback")
+
+
+def _device_matches(actual: torch.device, requested: torch.device) -> bool:
+    """Treat the canonical ``mps`` device and its ``mps:0`` alias equally."""
+    if not isinstance(actual, torch.device) or not isinstance(requested, torch.device):
+        return False
+    if actual.type != requested.type:
+        return False
+    if requested.type == "mps":
+        return actual.index in {None, 0} and requested.index in {None, 0}
+    return actual == requested
 
 
 def _assert_finite_parameters(model: nn.Module) -> None:

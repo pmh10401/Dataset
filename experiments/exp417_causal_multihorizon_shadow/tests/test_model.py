@@ -19,6 +19,7 @@ from experiments.exp417_causal_multihorizon_shadow.model import (
     CausalMultiHorizonCNN,
     OOFModelBundle,
     TrainedSeedModel,
+    _device_matches,
     _canonical_state_sha256,
     _serialize_state,
     fit_seed_oof_from_state,
@@ -125,6 +126,11 @@ def synthetic_oof_bundle() -> OOFModelBundle:
 
 
 class CausalArchitectureTests(unittest.TestCase):
+    def test_mps_device_aliases_are_equivalent_for_device_guard(self) -> None:
+        self.assertTrue(_device_matches(torch.device("mps:0"), torch.device("mps")))
+        self.assertTrue(_device_matches(torch.device("mps"), torch.device("mps:0")))
+        self.assertFalse(_device_matches(torch.device("cpu"), torch.device("mps")))
+
     def test_frozen_three_block_architecture_and_aligned_heads(self) -> None:
         network = model()
         self.assertEqual(len(network.blocks), 3)
