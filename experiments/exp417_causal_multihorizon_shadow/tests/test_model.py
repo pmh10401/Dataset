@@ -18,6 +18,7 @@ from experiments.exp417_causal_multihorizon_shadow.preprocessing import (
 from experiments.exp417_causal_multihorizon_shadow.model import (
     CausalMultiHorizonCNN,
     OOFModelBundle,
+    ResidualBatchPredictor,
     TrainedSeedModel,
     _device_matches,
     _canonical_state_sha256,
@@ -187,6 +188,25 @@ class ModelBatchPredictionTests(unittest.TestCase):
                 np.testing.assert_array_equal(
                     batched[index][horizon], reference[index][horizon]
                 )
+
+    def test_reusable_predictor_preserves_results_across_multiple_chunks(self) -> None:
+        group = synthetic_group(count=50, length=64)
+        universe = tuple(item.instance_index for item in group.group.series)
+        fold = synthetic_folds(universe)[0]
+        trained = synthetic_trained_model(41701, fold, build_horizons(64))
+        selected = {index: group.channels[index] for index in universe[:4]}
+        predictor = ResidualBatchPredictor(trained)
+
+        first = predictor.predict(dict(tuple(selected.items())[:2]), batch_size=1)
+        second = predictor.predict(dict(tuple(selected.items())[2:]), batch_size=1)
+        reference = predict_residuals_batch(trained, selected, batch_size=1)
+
+        for part in (first, second):
+            for index, residuals in part.items():
+                for horizon in build_horizons(64):
+                    np.testing.assert_array_equal(
+                        residuals[horizon], reference[index][horizon]
+                    )
 
 
 class DeterministicTrainingTests(unittest.TestCase):

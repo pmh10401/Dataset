@@ -318,8 +318,13 @@ def train_oof_models(
                 early_stop_validation_indices=fold.early_stop_validation_indices,
             )
             models.append(trained)
+            predictor = ResidualBatchPredictor(trained)
+            validation_channels = {
+                index: channels[index] for index in fold.validation_indices
+            }
+            predicted = predictor.predict(validation_channels)
             for index in fold.validation_indices:
-                mutable_residuals[seed][index] = dict(predict_residuals(trained, channels[index]))
+                mutable_residuals[seed][index] = dict(predicted[index])
     return OOFModelBundle(
         length=group.group.length,
         universe_indices=tuple(item.instance_index for item in group.group.series),
@@ -406,8 +411,13 @@ def fit_seed_oof_from_state(
             early_stop_validation_indices=fold.early_stop_validation_indices,
         )
         models.append(trained)
+        predictor = ResidualBatchPredictor(trained)
+        validation_channels = {
+            index: channels[index] for index in fold.validation_indices
+        }
+        predicted = predictor.predict(validation_channels)
         for index in fold.validation_indices:
-            residuals[index] = dict(predict_residuals(trained, channels[index]))
+            residuals[index] = dict(predicted[index])
     return SeedOOFTraining(
         seed=seed,
         length=group.group.length,
@@ -465,59 +475,80 @@ def predict_residuals_batch(
     *,
     batch_size: int = _BATCH_LIMIT,
 ) -> Mapping[int, Mapping[int, np.ndarray]]:
-    """Return immutable residuals while materializing one network per batch call."""
-    if not isinstance(model, TrainedSeedModel):
-        raise ValueError("model must be a TrainedSeedModel")
-    if not isinstance(channels_by_index, Mapping) or not channels_by_index:
-        raise ValueError("channels_by_index must be a non-empty mapping")
-    if type(batch_size) is not int or batch_size < 1:
-        raise ValueError("batch_size must be a positive integer")
-    indices = tuple(channels_by_index)
-    if (
-        any(type(index) is not int or index < 0 for index in indices)
-        or indices != tuple(sorted(indices))
-        or len(indices) != len(set(indices))
-    ):
-        raise ValueError("channels_by_index must use sorted unique non-negative indices")
-    values_by_index = {
-        index: _validated_channels_array(channels_by_index[index], expected_length=None)
-        for index in indices
-    }
-    lengths = {values.shape[1] for values in values_by_index.values()}
-    if len(lengths) != 1:
-        raise ValueError("channels_by_index must preserve one exact series length")
-    length = next(iter(lengths))
-    if length <= max(model.horizons):
-        raise ValueError("channels leave no aligned horizon targets")
-    device = torch.device(model.device)
-    _validate_device(device)
-    network = _materialize_model(model, device)
-    residuals_by_index: dict[int, Mapping[int, np.ndarray]] = {}
-    with torch.no_grad():
-        for start in range(0, len(indices), batch_size):
-            batch_indices = indices[start : start + batch_size]
-            batch_values = np.stack(
-                [values_by_index[index] for index in batch_indices], axis=0
-            )
-            # A fresh CPU copy avoids PyTorch's non-writeable-array behavior and
-            # prevents later caller mutation from affecting inference.
-            inputs = torch.from_numpy(
-                np.array(batch_values, dtype=np.float32, copy=True, order="C")
-            ).to(device)
-            _assert_tensor_device(inputs, device)
-            predictions = network(inputs)
-            for position, index in enumerate(batch_indices):
-                residuals = {
-                    horizon: np.abs(
-                        predictions[horizon][position, 0].detach().cpu().numpy()
-                        - values_by_index[index][0, horizon:]
-                    ).astype(np.float64, copy=False)
-                    for horizon in model.horizons
-                }
-                residuals_by_index[index] = _freeze_residual_mapping(
-                    residuals, model.horizons, length
+    """Return immutable residuals while materializing one network per call."""
+    return ResidualBatchPredictor(model).predict(
+        channels_by_index, batch_size=batch_size
+    )
+
+
+class ResidualBatchPredictor:
+    """Reuse one materialized network across bounded residual query batches."""
+
+    def __init__(self, model: TrainedSeedModel) -> None:
+        if not isinstance(model, TrainedSeedModel):
+            raise ValueError("model must be a TrainedSeedModel")
+        self.model = model
+        self.device = torch.device(model.device)
+        _validate_device(self.device)
+        self.network = _materialize_model(model, self.device)
+
+    def predict(
+        self,
+        channels_by_index: Mapping[int, np.ndarray],
+        *,
+        batch_size: int = _BATCH_LIMIT,
+    ) -> Mapping[int, Mapping[int, np.ndarray]]:
+        """Predict sorted query identities without rematerializing the network."""
+        model = self.model
+        device = self.device
+        network = self.network
+        if not isinstance(channels_by_index, Mapping) or not channels_by_index:
+            raise ValueError("channels_by_index must be a non-empty mapping")
+        if type(batch_size) is not int or batch_size < 1:
+            raise ValueError("batch_size must be a positive integer")
+        indices = tuple(channels_by_index)
+        if (
+            any(type(index) is not int or index < 0 for index in indices)
+            or indices != tuple(sorted(indices))
+            or len(indices) != len(set(indices))
+        ):
+            raise ValueError("channels_by_index must use sorted unique non-negative indices")
+        values_by_index = {
+            index: _validated_channels_array(channels_by_index[index], expected_length=None)
+            for index in indices
+        }
+        lengths = {values.shape[1] for values in values_by_index.values()}
+        if len(lengths) != 1:
+            raise ValueError("channels_by_index must preserve one exact series length")
+        length = next(iter(lengths))
+        if length <= max(model.horizons):
+            raise ValueError("channels leave no aligned horizon targets")
+        residuals_by_index: dict[int, Mapping[int, np.ndarray]] = {}
+        with torch.no_grad():
+            for start in range(0, len(indices), batch_size):
+                batch_indices = indices[start : start + batch_size]
+                batch_values = np.stack(
+                    [values_by_index[index] for index in batch_indices], axis=0
                 )
-    return MappingProxyType(dict(sorted(residuals_by_index.items())))
+                # A fresh CPU copy avoids PyTorch's non-writeable-array behavior and
+                # prevents later caller mutation from affecting inference.
+                inputs = torch.from_numpy(
+                    np.array(batch_values, dtype=np.float32, copy=True, order="C")
+                ).to(device)
+                _assert_tensor_device(inputs, device)
+                predictions = network(inputs)
+                for position, index in enumerate(batch_indices):
+                    residuals = {
+                        horizon: np.abs(
+                            predictions[horizon][position, 0].detach().cpu().numpy()
+                            - values_by_index[index][0, horizon:]
+                        ).astype(np.float64, copy=False)
+                        for horizon in model.horizons
+                    }
+                    residuals_by_index[index] = _freeze_residual_mapping(
+                        residuals, model.horizons, length
+                    )
+        return MappingProxyType(dict(sorted(residuals_by_index.items())))
 
 
 def canonical_model_sha256(model: nn.Module) -> str:
@@ -1096,6 +1127,7 @@ __all__ = [
     "CausalConv1d",
     "CausalMultiHorizonCNN",
     "OOFModelBundle",
+    "ResidualBatchPredictor",
     "SeedOOFTraining",
     "TrainedSeedModel",
     "canonical_model_sha256",
