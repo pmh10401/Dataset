@@ -8,6 +8,7 @@ import numpy as np
 from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
 from experiments.exp417_causal_multihorizon_shadow.contracts import HorizonScore, SeedDecision
 from experiments.exp417_causal_multihorizon_shadow.scoring import (
+    HorizonScoreCalibration,
     consensus_candidate,
     empirical_p_value,
     longest_true_run_fraction,
@@ -47,6 +48,31 @@ class PersistenceAndPValueTests(unittest.TestCase):
 
 
 class HorizonScoringTests(unittest.TestCase):
+    def test_cached_calibration_matches_reference_score(self) -> None:
+        oof = (
+            np.array([0.0, 1.0, 2.0, 3.0, 4.0]),
+            np.array([0.0, 1.0, 2.0, 3.0, 4.0]),
+        )
+        query = np.array([0.0, 3.0, 4.0, 4.0, 0.0])
+        reference = score_horizon(oof, query, horizon=2)
+        cached = HorizonScoreCalibration.from_oof(oof, horizon=2).score(query)
+        self.assertEqual(cached.horizon, reference.horizon)
+        self.assertEqual(cached.score, reference.score)
+        self.assertEqual(cached.p_value, reference.p_value)
+        self.assertEqual(cached.persistence, reference.persistence)
+
+    def test_cached_calibration_rejects_invalid_query(self) -> None:
+        calibration = HorizonScoreCalibration.from_oof(
+            (np.array([0.0, 1.0]), np.array([1.0, 2.0])), horizon=1
+        )
+        for query in (
+            np.array([0.0]),
+            np.array([0.0, np.nan]),
+            np.array([-1.0, 0.0]),
+        ):
+            with self.subTest(query=query), self.assertRaises(ValueError):
+                calibration.score(query)
+
     def test_horizon_score_uses_hand_calculated_mad_q95_persistence_and_p_value(self) -> None:
         # The pooled normal OOF center is 2, its MAD is 1, and its robust
         # scale is 1.4826.  The query's standardized Q95 is 2 / 1.4826;

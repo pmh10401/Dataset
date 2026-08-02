@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from math import isfinite
 from numbers import Real
 
@@ -14,6 +15,93 @@ from .contracts import HorizonScore, SeedDecision
 
 _MAD_TO_NORMAL_SCALE = 1.4826
 _MIN_ROBUST_SCALE = 1e-12
+
+
+@dataclass(frozen=True)
+class HorizonScoreCalibration:
+    """Immutable OOF-only calibration reused for many query residuals."""
+
+    horizon: int
+    oof_count: int
+    length: int
+    center: float
+    scale: float
+    threshold: float
+    oof_scores: np.ndarray
+
+    def __post_init__(self) -> None:
+        if type(self.horizon) is not int or self.horizon < 1:
+            raise ValueError("calibration horizon must be a positive integer")
+        if type(self.oof_count) is not int or self.oof_count < 1:
+            raise ValueError("calibration OOF count must be positive")
+        if type(self.length) is not int or self.length < 1:
+            raise ValueError("calibration length must be positive")
+        if any(not isfinite(float(value)) for value in (self.center, self.scale, self.threshold)):
+            raise ValueError("calibration statistics must be finite")
+        if self.scale <= _MIN_ROBUST_SCALE:
+            raise ValueError("calibration scale must be greater than 1e-12")
+        scores = np.asarray(self.oof_scores, dtype=np.float64)
+        if scores.ndim != 1 or scores.size != self.oof_count or not np.isfinite(scores).all():
+            raise ValueError("calibration OOF scores are invalid")
+        frozen = np.array(scores, dtype=np.float64, copy=True)
+        frozen.setflags(write=False)
+        object.__setattr__(self, "oof_scores", frozen)
+
+    @classmethod
+    def from_oof(
+        cls, oof_residuals: Sequence[np.ndarray], *, horizon: int
+    ) -> "HorizonScoreCalibration":
+        """Precompute the fixed OOF half of ``score_horizon`` exactly once."""
+        if type(horizon) is not int or horizon < 1:
+            raise ValueError("horizon must be a positive integer")
+        oof = _aligned_residual_series(oof_residuals, "oof_residuals")
+        length = oof[0].size
+        if any(values.size != length for values in oof):
+            raise ValueError("residuals must preserve the exact aligned length")
+        pooled = np.concatenate(oof)
+        center = float(np.median(pooled))
+        scale = float(_MAD_TO_NORMAL_SCALE * np.median(np.abs(pooled - center)))
+        if not isfinite(center) or not isfinite(scale) or scale <= _MIN_ROBUST_SCALE:
+            raise ValueError("OOF residual robust scale must be finite and greater than 1e-12")
+        normalized_oof = tuple((values - center) / scale for values in oof)
+        if not all(np.isfinite(values).all() for values in normalized_oof):
+            raise ValueError("standardized OOF residuals must be finite")
+        threshold = float(
+            np.percentile(np.concatenate(normalized_oof), 99, method="linear")
+        )
+        oof_scores = np.asarray(
+            tuple(_series_score(values, threshold)[0] for values in normalized_oof),
+            dtype=np.float64,
+        )
+        return cls(
+            horizon=horizon,
+            oof_count=len(oof),
+            length=length,
+            center=center,
+            scale=scale,
+            threshold=threshold,
+            oof_scores=oof_scores,
+        )
+
+    def score(self, query_residual: np.ndarray) -> HorizonScore:
+        """Score one query using this immutable OOF calibration."""
+        query = _residual_vector(query_residual, "query_residual")
+        if query.size != self.length:
+            raise ValueError("residuals must preserve the exact aligned length")
+        normalized_query = (query - self.center) / self.scale
+        if not np.isfinite(normalized_query).all():
+            raise ValueError("standardized query residuals must be finite")
+        query_score, query_persistence = _series_score(normalized_query, self.threshold)
+        p_value = float(
+            (1 + np.count_nonzero(self.oof_scores >= query_score))
+            / (1 + self.oof_scores.size)
+        )
+        return HorizonScore(
+            horizon=self.horizon,
+            score=query_score,
+            p_value=p_value,
+            persistence=query_persistence,
+        )
 
 
 def longest_true_run_fraction(mask: np.ndarray) -> float:
@@ -195,6 +283,7 @@ def _is_possible_frozen_horizon_triple(horizons: tuple[int, int, int]) -> bool:
 
 
 __all__ = [
+    "HorizonScoreCalibration",
     "consensus_candidate",
     "empirical_p_value",
     "longest_true_run_fraction",
