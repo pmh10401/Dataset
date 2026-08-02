@@ -456,31 +456,68 @@ def fit_seed_final_from_state(
 
 def predict_residuals(model: TrainedSeedModel, channels: np.ndarray) -> Mapping[int, np.ndarray]:
     """Return immutable aligned absolute residuals for one two-channel series."""
+    return predict_residuals_batch(model, {0: channels}, batch_size=1)[0]
+
+
+def predict_residuals_batch(
+    model: TrainedSeedModel,
+    channels_by_index: Mapping[int, np.ndarray],
+    *,
+    batch_size: int = _BATCH_LIMIT,
+) -> Mapping[int, Mapping[int, np.ndarray]]:
+    """Return immutable residuals while materializing one network per batch call."""
     if not isinstance(model, TrainedSeedModel):
         raise ValueError("model must be a TrainedSeedModel")
-    values = _validated_channels_array(channels, expected_length=None)
-    if values.shape[1] <= max(model.horizons):
+    if not isinstance(channels_by_index, Mapping) or not channels_by_index:
+        raise ValueError("channels_by_index must be a non-empty mapping")
+    if type(batch_size) is not int or batch_size < 1:
+        raise ValueError("batch_size must be a positive integer")
+    indices = tuple(channels_by_index)
+    if (
+        any(type(index) is not int or index < 0 for index in indices)
+        or indices != tuple(sorted(indices))
+        or len(indices) != len(set(indices))
+    ):
+        raise ValueError("channels_by_index must use sorted unique non-negative indices")
+    values_by_index = {
+        index: _validated_channels_array(channels_by_index[index], expected_length=None)
+        for index in indices
+    }
+    lengths = {values.shape[1] for values in values_by_index.values()}
+    if len(lengths) != 1:
+        raise ValueError("channels_by_index must preserve one exact series length")
+    length = next(iter(lengths))
+    if length <= max(model.horizons):
         raise ValueError("channels leave no aligned horizon targets")
     device = torch.device(model.device)
     _validate_device(device)
     network = _materialize_model(model, device)
+    residuals_by_index: dict[int, Mapping[int, np.ndarray]] = {}
     with torch.no_grad():
-        # The caller may hold an immutable NumPy view.  A fresh CPU copy both
-        # avoids PyTorch's non-writeable-array undefined behavior and ensures
-        # a later caller mutation cannot affect this inference.
-        inputs = torch.from_numpy(np.array(values[None, ...], dtype=np.float32, copy=True)).to(device)
-        _assert_tensor_device(inputs, device)
-        predictions = network(inputs)
-        residuals = {
-            horizon: np.abs(
-                predictions[horizon][0, 0].detach().cpu().numpy()
-                - values[0, horizon:]
-            ).astype(np.float64, copy=False)
-            for horizon in model.horizons
-        }
-    if any(not np.isfinite(residual).all() for residual in residuals.values()):
-        raise ValueError("model residuals must be finite")
-    return _freeze_residual_mapping(residuals, model.horizons, values.shape[1])
+        for start in range(0, len(indices), batch_size):
+            batch_indices = indices[start : start + batch_size]
+            batch_values = np.stack(
+                [values_by_index[index] for index in batch_indices], axis=0
+            )
+            # A fresh CPU copy avoids PyTorch's non-writeable-array behavior and
+            # prevents later caller mutation from affecting inference.
+            inputs = torch.from_numpy(
+                np.array(batch_values, dtype=np.float32, copy=True, order="C")
+            ).to(device)
+            _assert_tensor_device(inputs, device)
+            predictions = network(inputs)
+            for position, index in enumerate(batch_indices):
+                residuals = {
+                    horizon: np.abs(
+                        predictions[horizon][position, 0].detach().cpu().numpy()
+                        - values_by_index[index][0, horizon:]
+                    ).astype(np.float64, copy=False)
+                    for horizon in model.horizons
+                }
+                residuals_by_index[index] = _freeze_residual_mapping(
+                    residuals, model.horizons, length
+                )
+    return MappingProxyType(dict(sorted(residuals_by_index.items())))
 
 
 def canonical_model_sha256(model: nn.Module) -> str:
@@ -1067,6 +1104,7 @@ __all__ = [
     "fit_seed_oof_from_state",
     "prepare_seed_initial_states",
     "predict_residuals",
+    "predict_residuals_batch",
     "set_deterministic_seed",
     "train_oof_models",
 ]

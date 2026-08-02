@@ -26,6 +26,7 @@ from experiments.exp417_causal_multihorizon_shadow.model import (
     fit_final_seed_models,
     prepare_seed_initial_states,
     predict_residuals,
+    predict_residuals_batch,
     train_oof_models,
 )
 from experiments.exp417_causal_multihorizon_shadow.preprocessing import Fold
@@ -163,6 +164,29 @@ class CausalArchitectureTests(unittest.TestCase):
             network(torch.zeros(1, 1, 128))
         with self.assertRaisesRegex(ValueError, "finite"):
             network(torch.full((1, 2, 128), float("nan")))
+
+
+class ModelBatchPredictionTests(unittest.TestCase):
+    def test_batch_residuals_match_single_query_reference(self) -> None:
+        group = synthetic_group(count=50, length=64)
+        universe = tuple(item.instance_index for item in group.group.series)
+        fold = synthetic_folds(universe)[0]
+        trained = synthetic_trained_model(41701, fold, build_horizons(64))
+        selected = {index: group.channels[index] for index in universe[:4]}
+
+        reference = {
+            index: predict_residuals(trained, channels)
+            for index, channels in selected.items()
+        }
+        batched = predict_residuals_batch(trained, selected, batch_size=2)
+
+        self.assertEqual(tuple(batched), tuple(selected))
+        for index in selected:
+            for horizon in build_horizons(64):
+                self.assertFalse(batched[index][horizon].flags.writeable)
+                np.testing.assert_array_equal(
+                    batched[index][horizon], reference[index][horizon]
+                )
 
 
 class DeterministicTrainingTests(unittest.TestCase):
