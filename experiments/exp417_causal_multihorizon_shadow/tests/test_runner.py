@@ -179,7 +179,17 @@ def _typed_stage_evidence(
     )
     residuals = {
         seed: {
-            index: {horizon: np.zeros(100 - horizon, dtype=np.float64) for horizon in horizons}
+            index: {
+                horizon: np.linspace(
+                    0.1,
+                    1.0,
+                    100 - horizon,
+                    dtype=np.float64,
+                )
+                + (seed * 1e-6)
+                + (index * 1e-7)
+                for horizon in horizons
+            }
             for index in universe
         }
         for seed in FROZEN_CONFIG.model_seeds
@@ -204,6 +214,36 @@ def _typed_stage_evidence(
 
 
 class RunnerOrderTests(unittest.TestCase):
+    def test_model_evidence_builds_one_calibration_per_seed_and_horizon(self) -> None:
+        _train, _processed, models, _scoring = _typed_stage_evidence(_contract())
+        self.assertEqual(tuple(models.score_calibrations), (100,))
+        by_seed = models.score_calibrations[100]
+        self.assertEqual(tuple(by_seed), FROZEN_CONFIG.model_seeds)
+        for seed in FROZEN_CONFIG.model_seeds:
+            self.assertEqual(tuple(by_seed[seed]), (1, 2, 10))
+
+    def test_cached_residual_decisions_match_reference_decisions(self) -> None:
+        from experiments.exp417_causal_multihorizon_shadow import runner
+
+        _train, _processed, models, _scoring = _typed_stage_evidence(_contract())
+        bundle = models.oof_bundles[100]
+        query = {
+            seed: {
+                horizon: np.full(
+                    100 - horizon,
+                    1.0 + seed / 100000.0,
+                    dtype=np.float64,
+                )
+                for horizon in bundle.horizons
+            }
+            for seed in FROZEN_CONFIG.model_seeds
+        }
+        reference = runner._residual_decisions(bundle, query)
+        cached = runner._residual_decisions(
+            bundle, query, models.score_calibrations[100]
+        )
+        self.assertEqual(cached, reference)
+
     def test_production_runtime_requires_passing_task7_backend_audit(self) -> None:
         """Production cannot accept a caller-built passing audit as Task 7 provenance."""
         from experiments.exp417_causal_multihorizon_shadow import runner

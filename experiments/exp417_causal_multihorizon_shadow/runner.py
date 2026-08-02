@@ -55,7 +55,12 @@ from .qualification import (
     freeze_train_contract,
     qualify_group,
 )
-from .scoring import consensus_candidate, score_horizon, seed_decision
+from .scoring import (
+    HorizonScoreCalibration,
+    consensus_candidate,
+    score_horizon,
+    seed_decision,
+)
 
 
 @dataclass(frozen=True)
@@ -231,6 +236,9 @@ class TrainModelEvidence:
     backend: BackendAudit
     train_identity_sha256: str = field(init=False)
     processed_identity_sha256: str = field(init=False)
+    score_calibrations: Mapping[
+        int, Mapping[int, Mapping[int, HorizonScoreCalibration]]
+    ] = field(init=False)
 
     def __post_init__(self) -> None:
         processed = _processed_evidence_groups(self.processed)
@@ -271,6 +279,22 @@ class TrainModelEvidence:
         object.__setattr__(self, "processed", processed)
         object.__setattr__(self, "oof_bundles", MappingProxyType(bundles))
         object.__setattr__(self, "final_models", MappingProxyType(models))
+        calibrations: dict[int, Mapping[int, Mapping[int, HorizonScoreCalibration]]] = {}
+        for length, bundle in bundles.items():
+            by_seed: dict[int, Mapping[int, HorizonScoreCalibration]] = {}
+            for seed in FROZEN_CONFIG.model_seeds:
+                by_seed[seed] = MappingProxyType({
+                    horizon: HorizonScoreCalibration.from_oof(
+                        tuple(
+                            bundle.oof_residuals[seed][index][horizon]
+                            for index in bundle.universe_indices
+                        ),
+                        horizon=horizon,
+                    )
+                    for horizon in bundle.horizons
+                })
+            calibrations[length] = MappingProxyType(by_seed)
+        object.__setattr__(self, "score_calibrations", MappingProxyType(calibrations))
         object.__setattr__(self, "train_identity_sha256", identity)
         object.__setattr__(self, "processed_identity_sha256", processed_identity)
 
@@ -553,14 +577,24 @@ def _production_train_models(
 
 
 def _residual_decisions(
-    bundle: OOFModelBundle, residuals_by_seed: Mapping[int, Mapping[int, np.ndarray]]
+    bundle: OOFModelBundle,
+    residuals_by_seed: Mapping[int, Mapping[int, np.ndarray]],
+    calibrations: Mapping[int, Mapping[int, HorizonScoreCalibration]] | None = None,
 ) -> tuple[Any, ...]:
     decisions = []
     for seed in FROZEN_CONFIG.model_seeds:
         scores = {
-            horizon: score_horizon(
-                [bundle.oof_residuals[seed][index][horizon] for index in bundle.universe_indices],
-                residuals_by_seed[seed][horizon], horizon=horizon,
+            horizon: (
+                calibrations[seed][horizon].score(residuals_by_seed[seed][horizon])
+                if calibrations is not None
+                else score_horizon(
+                    [
+                        bundle.oof_residuals[seed][index][horizon]
+                        for index in bundle.universe_indices
+                    ],
+                    residuals_by_seed[seed][horizon],
+                    horizon=horizon,
+                )
             )
             for horizon in bundle.horizons
         }
@@ -606,6 +640,7 @@ def _production_qualify_train(
             _residual_decisions(
                 bundle,
                 {seed: bundle.oof_residuals[seed][index] for seed in FROZEN_CONFIG.model_seeds},
+                models.score_calibrations[length],
             )
             for index in bundle.universe_indices
         )
@@ -660,10 +695,15 @@ def _production_qualify_train(
                         for seed in FROZEN_CONFIG.model_seeds
                     }
                     decisions = tuple(
-                        seed_decision({horizon: score_horizon(
-                            [bundle.oof_residuals[seed][index][horizon] for index in bundle.universe_indices],
-                            by_seed[seed][horizon], horizon=horizon,
-                        ) for horizon in bundle.horizons}, seed=seed)
+                        seed_decision(
+                            {
+                                horizon: models.score_calibrations[length][seed][horizon].score(
+                                    by_seed[seed][horizon]
+                                )
+                                for horizon in bundle.horizons
+                            },
+                            seed=seed,
+                        )
                         for seed in FROZEN_CONFIG.model_seeds
                     )
                     synthetic[name].append(decisions)
@@ -694,11 +734,20 @@ def _production_score_test(
         length = group.group.length
         bundle = models.oof_bundles[length]
         channels = _channels_from_values(np.asarray(series.values, dtype=np.float64), group)
+        residuals_by_seed = {
+            seed: _prediction_residuals(models.final_models[length], seed, channels)
+            for seed in FROZEN_CONFIG.model_seeds
+        }
         seeds = tuple(
-            seed_decision({horizon: score_horizon(
-                [bundle.oof_residuals[seed][index][horizon] for index in bundle.universe_indices],
-                _prediction_residuals(models.final_models[length], seed, channels)[horizon], horizon=horizon,
-            ) for horizon in bundle.horizons}, seed=seed)
+            seed_decision(
+                {
+                    horizon: models.score_calibrations[length][seed][horizon].score(
+                        residuals_by_seed[seed][horizon]
+                    )
+                    for horizon in bundle.horizons
+                },
+                seed=seed,
+            )
             for seed in FROZEN_CONFIG.model_seeds
         )
         decisions.append(TestInstanceDecision(test.dataset, series.instance_index, length, seeds))
