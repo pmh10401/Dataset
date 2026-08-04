@@ -72,6 +72,30 @@ def _nonnegative_integer(payload: object, name: str) -> int:
     return value
 
 
+def _terminal_event_datasets(runtime: object) -> tuple[str, ...]:
+    """Read the already-preflight-validated terminal event prefix without writes."""
+    events_path = runtime.get("events_path")
+    run_identity = runtime.get("run_identity")
+    if not isinstance(events_path, str) or not isinstance(run_identity, str):
+        raise ValueError("runtime event path or identity is invalid")
+    raw = Path(events_path).read_bytes()
+    if not raw.endswith(b"\n"):
+        raise ValueError("runtime event log is truncated")
+    datasets: list[str] = []
+    seen: set[str] = set()
+    for line in raw.splitlines():
+        event = json.loads(line)
+        if not isinstance(event, dict) or event.get("schema") != "exp425.runtime-event.v1" or event.get("run_identity") != run_identity:
+            raise ValueError("runtime event log does not match this run")
+        if event.get("event") == "dataset_terminal":
+            dataset = event.get("dataset")
+            if not isinstance(dataset, str) or dataset in seen:
+                raise ValueError("runtime terminal event log is invalid")
+            seen.add(dataset)
+            datasets.append(dataset)
+    return tuple(datasets)
+
+
 def _validate_progress_payload(runtime: object, checkpoint: object) -> None:
     """Fail closed unless published progress exactly describes inspected records."""
     if not hasattr(runtime, "get"):
@@ -90,16 +114,21 @@ def _validate_progress_payload(runtime: object, checkpoint: object) -> None:
     summaries = checkpoint.record_summaries
     if checkpoint.completed_count != len(summaries):
         raise ValueError("checkpoint completion summaries are inconsistent")
+    terminal_datasets = _terminal_event_datasets(runtime)
+    prefix = summaries[:len(terminal_datasets)]
+    if len(prefix) != len(terminal_datasets) or terminal_datasets != tuple(dataset for dataset, _, _, _, _ in prefix):
+        raise ValueError("runtime terminal events are not a checkpoint prefix")
+    counter_summaries = summaries if state == "complete_review_only" else prefix
     expected = {
         "total_datasets": total,
-        "completed_datasets": len(summaries),
-        "remaining_datasets": total - len(summaries),
-        "imported_datasets": sum(origin == "exp424_import" for _, origin, _, _, _ in summaries),
-        "native_datasets": sum(origin == "exp425_native" for _, origin, _, _, _ in summaries),
-        "recomputed_datasets": sum(origin == "exp425_native" for _, origin, _, _, _ in summaries),
-        "abstained_datasets": sum(status == "abstained" for _, _, status, _, _ in summaries),
-        "oof_identity_insufficient_datasets": sum(reason == "oof_identity_insufficient" for _, _, _, reason, _ in summaries),
-        "failed_datasets": sum(status == "failed" for _, _, status, _, _ in summaries),
+        "completed_datasets": len(counter_summaries),
+        "remaining_datasets": total - len(counter_summaries),
+        "imported_datasets": sum(origin == "exp424_import" for _, origin, _, _, _ in counter_summaries),
+        "native_datasets": sum(origin == "exp425_native" for _, origin, _, _, _ in counter_summaries),
+        "recomputed_datasets": sum(origin == "exp425_native" for _, origin, _, _, _ in counter_summaries),
+        "abstained_datasets": sum(status == "abstained" for _, _, status, _, _ in counter_summaries),
+        "oof_identity_insufficient_datasets": sum(reason == "oof_identity_insufficient" for _, _, _, reason, _ in counter_summaries),
+        "failed_datasets": sum(status == "failed" for _, _, status, _, _ in counter_summaries),
     }
     actual = {name: _nonnegative_integer(runtime, name) for name in expected}
     if actual != expected:
@@ -117,7 +146,8 @@ def _validate_progress_payload(runtime: object, checkpoint: object) -> None:
         raise ValueError("runtime progress current dataset is invalid")
     if state == "complete_review_only":
         if (
-            actual["completed_datasets"] != total
+            len(terminal_datasets) != len(summaries)
+            or actual["completed_datasets"] != total
             or actual["remaining_datasets"] != 0
             or actual["failed_datasets"] != 0
             or current_dataset is not None

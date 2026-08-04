@@ -323,3 +323,24 @@ PASS — exit 0; no output
 ```
 JUDGMENT CALLS: Factory invocation is resource assembly rather than a validated runtime execution, so it returns 2. The CLI derives every persisted counter directly from the read-only checkpoint summaries; any difference is a contract error.
 GAPS: none
+
+## Task 5 CLI fix round 1 continuation — 2026-08-04
+
+STATUS: complete
+OBJECTIVE: Preserve legitimate nonterminal checkpoint-commit-to-event/progress crash recovery while retaining fail-closed inspection.
+CHANGES:
+- `scratch/run_exp425_selective_recovery.py`: reads the canonical terminal-event dataset prefix without writes after existing preflight has validated its detailed correspondence to the checkpoint. Nonterminal counters now reconcile to that event prefix, allowing only the preflight-authorized checkpoint suffix; complete-review-only still requires full event/checkpoint equality and exact terminal invariants.
+- `experiments/exp425_selective_recovery/tests/test_cli.py`: adds the real durable-checkpoint-ahead-of-progress fixture. Inspect returns validated incomplete (1) without tree mutation, and resume reaches the mocked factory/execution boundary. Counter-prefix and reordered-event inverse cases return 2 and leave the tree unchanged.
+VERIFIED:
+```text
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_cli -v
+PASS — 18 tests in 7.922s
+
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_runtime experiments.exp425_selective_recovery.tests.test_cli -v
+PASS — 38 tests in 8.135s
+
+python3 -m py_compile scratch/run_exp425_selective_recovery.py experiments/exp425_selective_recovery/tests/test_cli.py && git diff --check
+PASS — exit 0; no output
+```
+JUDGMENT CALLS: Existing read-only preflight remains the authority for matching terminal-event origin/status/reason details to checkpoint records; the CLI adds only the progress-counter-to-event-prefix check needed to admit the authorized durable suffix.
+GAPS: none

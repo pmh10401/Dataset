@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -57,6 +58,30 @@ def _corrupt_progress(output: Path, **changes: object) -> None:
     payload = json.loads(progress_path.read_text())
     payload.update(changes)
     progress_path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+
+
+def _checkpoint_ahead_of_progress_tree(directory: Path) -> tuple[Path, Path, str]:
+    """Simulate the allowed checkpoint-commit → terminal-event crash boundary."""
+    output, checkpoint, identity = _runtime_tree(directory, state="complete_review_only", complete=True)
+    events_path = output / "events.jsonl"
+    events = [json.loads(line) for line in events_path.read_text().splitlines()]
+    terminal_seen = 0
+    retained: list[dict[str, object]] = []
+    for event in events:
+        if event.get("event") == "dataset_terminal":
+            terminal_seen += 1
+            if terminal_seen == 3:
+                continue
+        retained.append(event)
+    events_path.write_text("".join(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n" for event in retained))
+    _corrupt_progress(
+        output,
+        state="running", stage="running", current_dataset=None, current_phase=None,
+        completed_datasets=2, remaining_datasets=1, imported_datasets=2,
+        native_datasets=0, recomputed_datasets=0, abstained_datasets=0,
+        oof_identity_insufficient_datasets=0, failed_datasets=0,
+    )
+    return output, checkpoint, identity
 
 
 @contextmanager
@@ -396,4 +421,58 @@ class Exp425CliTests(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertEqual(stdout, "")
             self.assertIn("counter", stderr)
+            self.assertEqual(before, _tree_state(Path(directory)))
+
+    def test_checkpoint_ahead_of_nonterminal_progress_is_resumable_and_inspectable(self) -> None:
+        with _tiny_runtime_config(), TemporaryDirectory() as directory:
+            output, checkpoint, identity = _checkpoint_ahead_of_progress_tree(Path(directory))
+            before = _tree_state(Path(directory))
+            code, stdout, stderr = self._direct_main([
+                "inspect", "--output-root", str(output), "--checkpoint-root", str(checkpoint), "--run-identity", identity,
+            ])
+            self.assertEqual(code, 1, stderr)
+            self.assertEqual(json.loads(stdout)["state"], "running")
+            self.assertEqual(before, _tree_state(Path(directory)))
+            module = _load_cli_module()
+            stdout, stderr = io.StringIO(), io.StringIO()
+            launch = {"provenance": object(), "context": object(), "snapshot": object(), "audit": object()}
+            with (
+                patch.object(module, "_factory", return_value=lambda: launch),
+                patch.object(module, "execute_runtime_command", return_value=SimpleNamespace(state="failed")) as execute,
+                redirect_stdout(stdout), redirect_stderr(stderr),
+            ):
+                code = module.main([
+                    "resume", "--output-root", str(output), "--checkpoint-root", str(checkpoint),
+                    "--run-identity", identity, "--launch-factory", "fixture:launch",
+                ])
+            self.assertEqual(code, 1, stderr.getvalue())
+            execute.assert_called_once()
+
+    def test_nonterminal_progress_rejects_event_prefix_accounting_mismatch(self) -> None:
+        with _tiny_runtime_config(), TemporaryDirectory() as directory:
+            output, checkpoint, identity = _checkpoint_ahead_of_progress_tree(Path(directory))
+            _corrupt_progress(output, completed_datasets=1, remaining_datasets=2, imported_datasets=1)
+            before = _tree_state(Path(directory))
+            code, stdout, stderr = self._direct_main([
+                "inspect", "--output-root", str(output), "--checkpoint-root", str(checkpoint), "--run-identity", identity,
+            ])
+            self.assertEqual(code, 2)
+            self.assertEqual(stdout, "")
+            self.assertIn("counter", stderr)
+            self.assertEqual(before, _tree_state(Path(directory)))
+
+    def test_nonterminal_progress_rejects_nonprefix_checkpoint_suffix(self) -> None:
+        with _tiny_runtime_config(), TemporaryDirectory() as directory:
+            output, checkpoint, identity = _checkpoint_ahead_of_progress_tree(Path(directory))
+            events_path = output / "events.jsonl"
+            events = [json.loads(line) for line in events_path.read_text().splitlines()]
+            terminals = [index for index, event in enumerate(events) if event.get("event") == "dataset_terminal"]
+            events[terminals[0]], events[terminals[1]] = events[terminals[1]], events[terminals[0]]
+            events_path.write_text("".join(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n" for event in events))
+            before = _tree_state(Path(directory))
+            code, stdout, _stderr = self._direct_main([
+                "inspect", "--output-root", str(output), "--checkpoint-root", str(checkpoint), "--run-identity", identity,
+            ])
+            self.assertEqual(code, 2)
+            self.assertEqual(stdout, "")
             self.assertEqual(before, _tree_state(Path(directory)))
