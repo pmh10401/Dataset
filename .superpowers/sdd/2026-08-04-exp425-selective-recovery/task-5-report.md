@@ -236,3 +236,45 @@ PASS
 
 No neural training, MLX decision, MPS/CPU parity claim, official population,
 or readiness/Task6 command was executed.
+
+## Global workload compact-adapter parity — 2026-08-04
+
+The compact global adapter now validates a complete, sorted one-record-per-
+context-dataset inventory before counting any coordinate.  It accepts only the
+effective statuses `scored` and `abstained`; terminal `failed` is a final-gate
+error.  Candidate coordinates are canonical `[dataset, index]` lists, sorted
+and unique, exact-dataset, non-bool integers, in the frozen TEST identity
+manifest, and outside every frozen lane.  Abstentions must be empty.
+
+Native records require the exact compact effective-result schema and its
+result-evidence/source bindings; imported records require the exact imported
+schema and a source-result digest matching the envelope.  The adapter obtains
+the cap from the same `qualification.FROZEN_CONFIG` module used by Exp417 and
+rejects a context whose cap differs.  Its count uses `sum(context.test_sizes)`,
+after requiring it to equal the frozen identity-manifest total, and Exp417's
+unchanged strict `>` comparison.  It returns `complete` or
+`global_workload_gate_failed`; the runtime converts the latter to its existing
+failed, non-review-only-publication terminal state.  Reconstructing full
+decision evidence is unnecessary because the validated coordinates are the
+only input to Exp417's global count; real synthetic `DatasetResult` populations
+exercise the equivalence directly.
+
+Coverage includes 3/4, 4/4, and 5/4 candidate boundaries (below, exact, and
+above cap), global-failure runtime status, terminal failed record, duplicate and
+unsorted coordinates, wrong dataset, bool/out-of-manifest index, lane overlap,
+candidate-bearing abstention, unknown status/key, missing/wrong native or
+imported source fields, incomplete/reordered coverage, store-universe total
+mismatch, and context-cap mismatch.
+
+Verification:
+
+```text
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_runtime -v
+PASS — 20 tests in 0.195s
+
+python3 -m unittest experiments.exp417_causal_multihorizon_shadow.tests.test_qualification -v
+PASS — 22 tests in 11.125s
+
+python3 -m compileall -q experiments/exp425_selective_recovery && git diff --check
+PASS
+```

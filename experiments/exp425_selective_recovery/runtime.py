@@ -35,7 +35,7 @@ from experiments.exp417_causal_multihorizon_shadow.contracts import (
     FrozenRunContext,
     GroupQualification,
 )
-from experiments.exp417_causal_multihorizon_shadow.qualification import apply_global_workload
+from experiments.exp417_causal_multihorizon_shadow import qualification as exp417_qualification
 from experiments.exp417_causal_multihorizon_shadow.runner import (
     RunnerRuntime,
     TrainModelEvidence,
@@ -1246,15 +1246,82 @@ def _counts_from_inspection(total: int, summaries: Sequence[tuple[str, str, str,
     )
 
 
+def _compact_sha256(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(character in "0123456789abcdef" for character in value)
+
+
+def _validated_compact_effective(record: object, dataset: str) -> Mapping[str, object]:
+    """Decode the complete origin-specific compact-result schema for one dataset."""
+    if getattr(record, "dataset", None) != dataset:
+        raise ValueError("checkpoint record dataset does not match frozen coverage")
+    origin = getattr(record, "origin", None)
+    payload = thaw_payload(getattr(record, "result_payload", None))
+    if not isinstance(payload, Mapping):
+        raise ValueError("checkpoint effective result is invalid")
+    if origin == "exp425_native":
+        if set(payload) != {"effective_result", "native_trace_body"}:
+            raise ValueError("native checkpoint result payload is invalid")
+        effective = payload.get("effective_result")
+        required = {"status", "candidate_coordinates", "result_evidence_sha256", "result_source_sha256"}
+        if not isinstance(effective, Mapping) or set(effective) != required:
+            raise ValueError("native checkpoint effective result schema is invalid")
+        if (
+            effective.get("result_evidence_sha256") != getattr(record, "result_evidence_sha256", None)
+            or not _compact_sha256(effective.get("result_evidence_sha256"))
+        ):
+            raise ValueError("native checkpoint result evidence is invalid")
+    elif origin == "exp424_import":
+        effective = payload
+        required = {"status", "candidate_coordinates", "source_result_sha256"}
+        if not isinstance(effective, Mapping) or set(effective) != required:
+            raise ValueError("imported checkpoint effective result schema is invalid")
+        if (
+            effective.get("source_result_sha256") != getattr(record, "source_result_sha256", None)
+            or not _compact_sha256(effective.get("source_result_sha256"))
+        ):
+            raise ValueError("imported checkpoint result source is invalid")
+    else:
+        raise ValueError("checkpoint record origin is invalid")
+    coordinates = effective.get("candidate_coordinates")
+    if not isinstance(coordinates, list):
+        raise ValueError("checkpoint candidate coordinates are invalid")
+    source_preimage = {"status": effective.get("status"), "candidate_coordinates": coordinates}
+    if origin == "exp425_native" and effective.get("result_source_sha256") != _digest(source_preimage):
+        raise ValueError("native checkpoint result source is invalid")
+    return effective
+
+
 def _apply_compact_global_workload(context: FrozenRunContext, store: Exp425CheckpointStore) -> str:
-    """Validated compact form of Exp417's exact global candidate-count gate."""
+    """Prove Exp417 global-gate parity from complete, validated compact records.
+
+    The compact records retain only the exact candidate coordinates, so rebuilding
+    full decision evidence here would add no gate information.  This validation
+    establishes a one-to-one mapping from each stored coordinate to Exp417's
+    countable candidate domain before applying the unchanged strict ``>`` cap.
+    """
+    if not isinstance(context, FrozenRunContext):
+        raise ValueError("context must be a FrozenRunContext")
+    frozen_cap = exp417_qualification.FROZEN_CONFIG.global_workload_rate
+    if context.config.global_workload_rate != frozen_cap:
+        raise ValueError("context global workload cap differs from frozen Exp417 cap")
+    if getattr(store, "context", None) != context or tuple(getattr(store, "expected_datasets", ())) != context.datasets:
+        raise ValueError("checkpoint universe does not match frozen context")
+    records = tuple(store.iter_records())
+    if tuple(getattr(record, "dataset", None) for record in records) != context.datasets:
+        raise ValueError("checkpoint records do not provide exact sorted frozen coverage")
     total = sum(context.test_sizes.values())
+    manifest_total = sum(len(context.test_identity_manifest[dataset]) for dataset in context.datasets)
+    if type(total) is not int or total <= 0 or total != manifest_total:
+        raise ValueError("frozen TEST population is invalid")
     candidates = 0
-    for dataset in context.datasets:
-        effective = _effective_record_payload(store.load_record(dataset))
-        status, coordinates = effective.get("status"), effective.get("candidate_coordinates")
-        if status not in {"scored", "abstained", "failed"} or not isinstance(coordinates, list):
-            raise ValueError("checkpoint effective result is invalid")
+    for dataset, record in zip(context.datasets, records, strict=True):
+        effective = _validated_compact_effective(record, dataset)
+        status, coordinates = effective.get("status"), effective["candidate_coordinates"]
+        if status == "failed":
+            raise ValueError("failed checkpoint result cannot pass the global workload gate")
+        if status not in {"scored", "abstained"}:
+            raise ValueError("checkpoint effective result status is invalid")
+        assert isinstance(coordinates, list)
         manifest = {index for index, _ in context.test_identity_manifest[dataset]}
         normalized: list[tuple[str, int]] = []
         for coordinate in coordinates:
@@ -1265,12 +1332,10 @@ def _apply_compact_global_workload(context: FrozenRunContext, store: Exp425Check
             normalized.append((dataset, coordinate[1]))
         if normalized != sorted(normalized) or len(set(normalized)) != len(normalized):
             raise ValueError("checkpoint candidates must be sorted and unique")
-        if status in {"abstained", "failed"} and normalized:
-            raise ValueError("abstained or failed checkpoint result has candidates")
+        if status == "abstained" and normalized:
+            raise ValueError("abstained checkpoint result has candidates")
         candidates += len(normalized)
-    if total <= 0 or candidates / total > context.config.global_workload_rate:
-        raise ValueError("frozen global workload gate failed")
-    return "complete"
+    return "global_workload_gate_failed" if candidates / total > frozen_cap else "complete"
 
 
 def run_selective_population(context: FrozenRunContext, store: Exp425CheckpointStore, runtime: Exp425RuntimeSession) -> Exp425RunResult:
@@ -1346,7 +1411,9 @@ def run_selective_population(context: FrozenRunContext, store: Exp425CheckpointS
             runtime.writer.write(progress, event="heartbeat")
         if progress.counts.completed != len(context.datasets) or progress.counts.failed:
             raise ValueError("runtime population accounting is incomplete or failed")
-        _apply_compact_global_workload(context, store)
+        global_gate_status = _apply_compact_global_workload(context, store)
+        if global_gate_status != "complete":
+            raise ValueError("frozen global workload gate failed")
         progress = replace(progress, state="finalizing", stage="finalizing", timestamp=_now())
         runtime.writer.write(progress, event="finalization")
         inspection = Exp425CheckpointStore.inspect_read_only(store.root, expected_run_identity=store.provenance.run_identity)

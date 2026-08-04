@@ -10,7 +10,7 @@ import pickle
 import time
 from collections import defaultdict
 from hashlib import sha256
-from types import SimpleNamespace
+from types import MappingProxyType, SimpleNamespace
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
@@ -23,6 +23,7 @@ from experiments.exp425_selective_recovery.runtime import (
     RuntimeProgress,
     _no_model_abstention,
     _effective_record_payload,
+    _apply_compact_global_workload,
     _HeartbeatPump,
     execute_runtime_command,
     inspect_runtime_output,
@@ -47,12 +48,22 @@ from experiments.exp425_selective_recovery.contracts import (
     SourceProvenGroupEvidence,
 )
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
+    DatasetDecisionEvidence,
+    DatasetResult,
+    FrozenTrainContract,
+    GroupQualification,
+    HorizonScore,
     LengthGroup,
     ProcessedGroup,
     RawSeries,
     RawTrainDataset,
+    SeedDecision,
+    ShadowCandidate,
+    TestInstanceDecision,
 )
-from experiments.exp417_causal_multihorizon_shadow.qualification import freeze_train_contract
+from experiments.exp417_causal_multihorizon_shadow import contracts as exp417_contracts
+from experiments.exp417_causal_multihorizon_shadow import qualification as exp417_qualification
+from experiments.exp417_causal_multihorizon_shadow.qualification import apply_global_workload, freeze_train_contract
 
 
 def _runtime_context(
@@ -129,6 +140,9 @@ def _runtime_native_record(
             "status": status,
             "candidate_coordinates": coordinates,
             "result_evidence_sha256": values["result_evidence_sha256"],
+            "result_source_sha256": sha256(checkpoints.canonical_json_bytes({
+                "status": status, "candidate_coordinates": coordinates,
+            })).hexdigest(),
         },
         "native_trace_body": trace_body,
     }
@@ -161,11 +175,14 @@ def _runtime_native_record(
 
 def _runtime_import_record(dataset: str) -> ImportedRecordEnvelope:
     evidence = {"dataset": dataset, "source": "sealed-exp424"}
+    source_result = sha256(f"{dataset}:result".encode()).hexdigest()
     return ImportedRecordEnvelope(
         dataset,
-        {"status": "scored", "candidate_coordinates": [[dataset, 0]]},
+        {"status": "scored", "candidate_coordinates": [[dataset, 0]], "source_result_sha256": source_result},
         SourceProvenGroupEvidence(evidence, sha256(checkpoints.canonical_json_bytes(evidence)).hexdigest()),
-        *(sha256(f"{dataset}:{part}".encode()).hexdigest() for part in ("root", "progress", "record", "result", "attestation")),
+        *(sha256(f"{dataset}:{part}".encode()).hexdigest() for part in ("root", "progress", "record")),
+        source_result,
+        sha256(f"{dataset}:attestation".encode()).hexdigest(),
         0.01,
         "sealed local exp424 import",
     )
@@ -201,6 +218,77 @@ def _commit_runtime_import(store: Exp425CheckpointStore, provenance: Exp425RunPr
         ), batch)
     finally:
         capabilities._close_authority(authority)
+
+
+def _global_parity_context(config: Exp417FrozenConfig) -> FrozenRunContext:
+    datasets = ("Alpha_normal_1", "Beta_normal_1")
+    lanes = FrozenLaneSnapshot({}, {}, {}, {}, config=config, population=datasets)
+    return FrozenRunContext(
+        database_sha256=config.database_sha256,
+        datasets=datasets,
+        lanes=lanes,
+        test_identity_manifest={dataset: tuple((index, 100) for index in range(4)) for dataset in datasets},
+        code_commit="c" * 40,
+        runtime_versions={"python": "test"},
+        config=config,
+    )
+
+
+def _global_parity_result(
+    context: FrozenRunContext, config: Exp417FrozenConfig, dataset: str, candidates: set[int],
+) -> DatasetResult:
+    group = GroupQualification(
+        100, 100, "qualified", 0.0, 0.0, 1.0,
+        {name: 1.0 for name in ("level_shift", "gradual_drift", "amplitude_scaling", "period_change")},
+        True, True, False,
+    )
+    audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+    contract = FrozenTrainContract(dataset, (group,), audit, "a" * 64)
+
+    def seed_decision(seed: int, candidate: bool) -> SeedDecision:
+        score = HorizonScore(1, 1.0, 0.001 if candidate else 0.5, 0.5 if candidate else 0.0)
+        scores = {horizon: HorizonScore(horizon, score.score, score.p_value, score.persistence) for horizon in (1, 2, 10)}
+        return SeedDecision(seed, scores, candidate, config=config)
+
+    decisions = tuple(
+        TestInstanceDecision(
+            dataset, index, 100,
+            tuple(seed_decision(seed, index in candidates) for seed in config.model_seeds),
+        )
+        for index, _ in context.test_identity_manifest[dataset]
+    )
+    evidence = DatasetDecisionEvidence(
+        dataset, context, contract, context.database_sha256, contract.train_identity_sha256, decisions,
+    )
+    shadows = tuple(
+        ShadowCandidate(dataset, decision.instance_index, decision.length, decision.seed_decisions)
+        for decision in decisions if decision.candidate
+    )
+    return DatasetResult(
+        dataset, context.test_sizes[dataset], 1, (group,), shadows, evidence,
+        context.lanes, context, "qualified",
+    )
+
+
+def _compact_import_record(result: DatasetResult) -> SimpleNamespace:
+    coordinates = [[candidate.dataset, candidate.instance_index] for candidate in result.candidates]
+    source = sha256(checkpoints.canonical_json_bytes({"status": "scored", "candidate_coordinates": coordinates})).hexdigest()
+    return SimpleNamespace(
+        dataset=result.dataset,
+        origin="exp424_import",
+        source_result_sha256=source,
+        result_payload={"status": "scored", "candidate_coordinates": coordinates, "source_result_sha256": source},
+    )
+
+
+def _compact_store(context: FrozenRunContext, records: list[object]) -> SimpleNamespace:
+    by_dataset = {getattr(record, "dataset"): record for record in records}
+    return SimpleNamespace(
+        context=context,
+        expected_datasets=context.datasets,
+        iter_records=lambda: iter(records),
+        load_record=lambda dataset: by_dataset[dataset],
+    )
 
 
 class AtomicProgressWriterTests(unittest.TestCase):
@@ -528,7 +616,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
                 "experiments.exp425_selective_recovery.runtime._compute_native", side_effect=deterministic_native
             ), patch(
                 "experiments.exp425_selective_recovery.runtime.capabilities._mint", wraps=capabilities._mint
-            ) as native_mint:
+            ) as native_mint, patch.object(exp417_qualification, "FROZEN_CONFIG", context.config):
                 session = build_exp425_runtime(snapshot, audit, writer)
                 result = run_selective_population(context, store, session)
 
@@ -760,7 +848,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
                     "experiments.exp425_selective_recovery.runtime._acquire_heavy_process_guard", return_value=second_lock
                 ), patch(
                     "experiments.exp425_selective_recovery.runtime._compute_native", side_effect=recompute
-                ):
+                ), patch.object(exp417_qualification, "FROZEN_CONFIG", context.config):
                     resumed_session = build_exp425_runtime(second_snapshot, audit, resumed_writer)
                     result = run_selective_population(context, resumed_store, resumed_session)
 
@@ -778,3 +866,195 @@ class AtomicProgressWriterTests(unittest.TestCase):
                 self.assertEqual(terminals[0]["remaining_datasets"], 0)
                 resumed_writer.close()
                 self.assertFalse(resumed_writer.paths.pid.exists())
+
+
+class CompactGlobalWorkloadParityTests(unittest.TestCase):
+    def _config(self, *, rate: float = 0.5, expected_hard: int = 0) -> Exp417FrozenConfig:
+        return replace(
+            FROZEN_CONFIG,
+            expected_datasets=2,
+            expected_hard=expected_hard,
+            expected_standard=0,
+            expected_priority=0,
+            expected_automatic_normal=0,
+            database_sha256="a" * 64,
+            dataset_workload_rate=1.0,
+            global_workload_rate=rate,
+        )
+
+    def test_compact_global_gate_matches_exp417_below_exact_and_above_boundaries(self) -> None:
+        """Changing compact candidate accounting, comparison, or status loses Exp417 parity."""
+        config = self._config()
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(
+            exp417_contracts, "FROZEN_CONFIG", config
+        ), patch.object(exp417_qualification, "FROZEN_CONFIG", config):
+            context = _global_parity_context(config)
+            cases = {
+                "below": ({0, 1}, {0}),
+                "exact": ({0, 1}, {0, 1}),
+                "above": ({0, 1, 2}, {0, 1}),
+            }
+            for name, (alpha, beta) in cases.items():
+                with self.subTest(name=name):
+                    results = (
+                        _global_parity_result(context, config, "Alpha_normal_1", alpha),
+                        _global_parity_result(context, config, "Beta_normal_1", beta),
+                    )
+                    expected = apply_global_workload(results, 8, context=context)
+                    store = _compact_store(context, [_compact_import_record(result) for result in results])
+                    self.assertEqual(_apply_compact_global_workload(context, store), expected.status)
+
+    def test_compact_global_gate_rejects_terminal_failed_result(self) -> None:
+        config = self._config()
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(
+            exp417_contracts, "FROZEN_CONFIG", config
+        ), patch.object(exp417_qualification, "FROZEN_CONFIG", config):
+            context = _global_parity_context(config)
+            results = tuple(_global_parity_result(context, config, dataset, set()) for dataset in context.datasets)
+            records = [_compact_import_record(result) for result in results]
+            records[0].result_payload["status"] = "failed"
+            with self.assertRaisesRegex(ValueError, "failed"):
+                _apply_compact_global_workload(context, _compact_store(context, records))
+
+    def test_global_gate_failure_blocks_review_only_runtime_publication(self) -> None:
+        """A compact global-failure status must become the existing terminal runtime failure."""
+        context = _runtime_context(("Alpha_normal_1", "Beta_normal_1"))
+        provenance = _runtime_provenance(context, "exp425-global-gate-failure")
+        context_decoder = patch.object(checkpoints, "_context_from_payload", return_value=context)
+        context_decoder.start()
+        self.addCleanup(context_decoder.stop)
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            writer = AtomicProgressWriter.create(
+                output_root=root / "output", run_identity=provenance.run_identity, command="new",
+                checkpoint_root=root / "checkpoints", total_datasets=2, backend="mps",
+            )
+            store = Exp425CheckpointStore.create(root / "checkpoints", provenance, context)
+            records = tuple(
+                _runtime_native_record(store, provenance, dataset, status="scored",
+                                       coordinates=[[dataset, 0], [dataset, 1]], reason="native_mps")
+                for dataset in context.datasets
+            )
+            snapshot = object.__new__(Exp425DatabaseSnapshot)
+            lock = os.open(root / "mps.lock", os.O_RDWR | os.O_CREAT, 0o600)
+            audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+            with patch("experiments.exp425_selective_recovery.runtime._require_mps"), patch(
+                "experiments.exp425_selective_recovery.runtime._acquire_heavy_process_guard", return_value=lock
+            ), patch.object(Exp425DatabaseSnapshot, "verify_boundary"), patch.object(
+                Exp425DatabaseSnapshot, "close"
+            ), patch.object(exp417_qualification, "FROZEN_CONFIG", context.config):
+                session = build_exp425_runtime(snapshot, audit, writer)
+                for record in records:
+                    claim = capabilities._mint(
+                        session, kind="native", run_identity=provenance.run_identity,
+                        dataset=record.dataset, context_sha256=store.run_context_sha256,
+                        trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256,
+                        backend_sha256=record.backend_audit_sha256, process_nonce=session.process_nonce,
+                    )
+                    store._commit_native(claim, record)
+                self.assertEqual(_apply_compact_global_workload(context, store), "global_workload_gate_failed")
+                result = run_selective_population(context, store, session)
+            self.assertEqual(result.state, "failed")
+            self.assertEqual(result.global_workload_status, "failed")
+            self.assertEqual(json.loads(writer.paths.progress.read_text())["state"], "failed")
+            writer.close()
+
+    def test_compact_global_gate_rejects_invalid_record_coverage_coordinates_and_schema(self) -> None:
+        config = self._config()
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(
+            exp417_contracts, "FROZEN_CONFIG", config
+        ), patch.object(exp417_qualification, "FROZEN_CONFIG", config):
+            context = _global_parity_context(config)
+            results = tuple(_global_parity_result(context, config, dataset, {0, 1}) for dataset in context.datasets)
+
+            def records() -> list[SimpleNamespace]:
+                return [_compact_import_record(result) for result in results]
+
+            mutations = {
+                "duplicate": lambda value: value[0].result_payload.__setitem__("candidate_coordinates", [["Alpha_normal_1", 0], ["Alpha_normal_1", 0]]),
+                "unsorted": lambda value: value[0].result_payload.__setitem__("candidate_coordinates", [["Alpha_normal_1", 1], ["Alpha_normal_1", 0]]),
+                "wrong dataset": lambda value: value[0].result_payload.__setitem__("candidate_coordinates", [["Beta_normal_1", 0]]),
+                "boolean index": lambda value: value[0].result_payload.__setitem__("candidate_coordinates", [["Alpha_normal_1", True]]),
+                "outside manifest": lambda value: value[0].result_payload.__setitem__("candidate_coordinates", [["Alpha_normal_1", 9]]),
+                "candidate on abstained": lambda value: value[0].result_payload.update(status="abstained"),
+                "unknown status": lambda value: value[0].result_payload.update(status="unknown"),
+                "unknown key": lambda value: value[0].result_payload.__setitem__("unexpected", True),
+                "missing source": lambda value: value[0].result_payload.pop("source_result_sha256"),
+                "wrong source": lambda value: value[0].result_payload.update(source_result_sha256="0" * 64),
+            }
+            for name, mutate in mutations.items():
+                with self.subTest(name=name):
+                    value = records()
+                    mutate(value)
+                    with self.assertRaises(ValueError):
+                        _apply_compact_global_workload(context, _compact_store(context, value))
+
+            with self.subTest(name="incomplete coverage"):
+                with self.assertRaises(ValueError):
+                    _apply_compact_global_workload(context, _compact_store(context, records()[:1]))
+            with self.subTest(name="wrong sorted coverage"):
+                value = records()
+                with self.assertRaises(ValueError):
+                    _apply_compact_global_workload(context, _compact_store(context, list(reversed(value))))
+            with self.subTest(name="store total mismatch"):
+                store = _compact_store(context, records())
+                store.expected_datasets = ("Alpha_normal_1",)
+                with self.assertRaises(ValueError):
+                    _apply_compact_global_workload(context, store)
+            with self.subTest(name="frozen TEST total mismatch"):
+                mismatched_total = replace(context)
+                object.__setattr__(mismatched_total, "_test_sizes", MappingProxyType({
+                    "Alpha_normal_1": 3, "Beta_normal_1": 4,
+                }))
+                with self.assertRaises(ValueError):
+                    _apply_compact_global_workload(mismatched_total, _compact_store(mismatched_total, records()))
+
+            source = sha256(checkpoints.canonical_json_bytes({"status": "scored", "candidate_coordinates": []})).hexdigest()
+            native = SimpleNamespace(
+                dataset="Alpha_normal_1", origin="exp425_native", result_evidence_sha256="c" * 64,
+                result_payload={"effective_result": {"status": "scored", "candidate_coordinates": [],
+                                                        "result_evidence_sha256": "c" * 64,
+                                                        "result_source_sha256": source},
+                                "native_trace_body": {}},
+            )
+            clean = records()[1]
+            with self.subTest(name="native missing source"):
+                native.result_payload["effective_result"].pop("result_source_sha256")
+                with self.assertRaises(ValueError):
+                    _apply_compact_global_workload(context, _compact_store(context, [native, clean]))
+            with self.subTest(name="native unknown key"):
+                native.result_payload["effective_result"]["result_source_sha256"] = source
+                native.result_payload["effective_result"]["unexpected"] = True
+                with self.assertRaises(ValueError):
+                    _apply_compact_global_workload(context, _compact_store(context, [native, clean]))
+
+    def test_compact_global_gate_rejects_lane_overlap_and_context_cap_mismatch(self) -> None:
+        config = self._config(expected_hard=1)
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(
+            exp417_contracts, "FROZEN_CONFIG", config
+        ), patch.object(exp417_qualification, "FROZEN_CONFIG", config):
+            context = FrozenRunContext(
+                database_sha256=config.database_sha256,
+                datasets=("Alpha_normal_1", "Beta_normal_1"),
+                lanes=FrozenLaneSnapshot({"Alpha_normal_1": (0,)}, {}, {}, {}, config=config, population=("Alpha_normal_1", "Beta_normal_1")),
+                test_identity_manifest={dataset: tuple((index, 100) for index in range(4)) for dataset in ("Alpha_normal_1", "Beta_normal_1")},
+                code_commit="c" * 40,
+                runtime_versions={"python": "test"},
+                config=config,
+            )
+            records = [
+                SimpleNamespace(dataset="Alpha_normal_1", origin="exp424_import", source_result_sha256="a" * 64,
+                                result_payload={"status": "scored", "candidate_coordinates": [["Alpha_normal_1", 0]], "source_result_sha256": "a" * 64}),
+                SimpleNamespace(dataset="Beta_normal_1", origin="exp424_import", source_result_sha256="b" * 64,
+                                result_payload={"status": "abstained", "candidate_coordinates": [], "source_result_sha256": "b" * 64}),
+            ]
+            with self.assertRaises(ValueError):
+                _apply_compact_global_workload(context, _compact_store(context, records))
+            mismatched = replace(context, config=replace(config, global_workload_rate=0.25))
+            clean_records = [
+                SimpleNamespace(dataset=dataset, origin="exp424_import", source_result_sha256=digest,
+                                result_payload={"status": "abstained", "candidate_coordinates": [], "source_result_sha256": digest})
+                for dataset, digest in (("Alpha_normal_1", "a" * 64), ("Beta_normal_1", "b" * 64))
+            ]
+            with self.assertRaisesRegex(ValueError, "cap"):
+                _apply_compact_global_workload(mismatched, _compact_store(mismatched, clean_records))
