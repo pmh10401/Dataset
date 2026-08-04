@@ -49,9 +49,13 @@ class Exp425CheckpointInspection:
     completed_count: int
     record_digests: Mapping[str, str]
     import_revalidation_required: tuple[tuple[str, str], ...] = ()
+    record_summaries: tuple[tuple[str, str, str, str | None, float], ...] = ()
+    provenance_payload: Mapping[str, object] = MappingProxyType({})
+    run_context_sha256: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "record_digests", MappingProxyType(dict(self.record_digests)))
+        object.__setattr__(self, "provenance_payload", MappingProxyType(dict(self.provenance_payload)))
 
 
 @dataclass(frozen=True)
@@ -141,10 +145,31 @@ class Exp425CheckpointStore:
             provenance, context_bytes, progress = _read_root_metadata(root, binding=binding)
             if expected_run_identity is not None and provenance["run_identity"] != expected_run_identity:
                 raise ValueError("checkpoint run identity does not match")
-            _validate_inventory(root, provenance, progress, allow_intents=True, binding=binding)
+            _validate_inventory(root, provenance, progress, allow_intents=True, full_records=True, binding=binding)
             pending = _import_intent_requirements(root, binding=binding)
+            datasets_fd, datasets_identity = _open_directory_at(binding, "datasets")
+            try:
+                summaries: list[tuple[str, str, str, str | None, float]] = []
+                for dataset in provenance["expected_datasets"]:
+                    digest = progress["record_digests"].get(dataset)
+                    if digest is None:
+                        continue
+                    record = _decode_record(
+                        _read_file(record_filename(dataset), dir_fd=datasets_fd), None,
+                        native_run_identity=provenance["run_identity"],
+                        native_context_sha256=provenance["run_context_sha256"],
+                    )
+                    effective = thaw_payload(record.result_payload)
+                    if record.origin == "exp425_native":
+                        effective = effective.get("effective_result") if isinstance(effective, Mapping) else None
+                    if not isinstance(effective, Mapping) or effective.get("status") not in _KNOWN_RESULT_STATUSES:
+                        raise ValueError("checkpoint compact effective result is invalid")
+                    summaries.append((dataset, record.origin, str(effective["status"]), record.reason, record.elapsed_seconds))
+                _verify_directory_at(binding, "datasets", datasets_identity)
+            finally:
+                os.close(datasets_fd)
             return Exp425CheckpointInspection(
-                provenance["run_identity"], tuple(provenance["expected_datasets"]), progress["completed_count"], progress["record_digests"], pending
+                provenance["run_identity"], tuple(provenance["expected_datasets"]), progress["completed_count"], progress["record_digests"], pending, tuple(summaries), provenance, provenance["run_context_sha256"]
             )
 
     @classmethod
@@ -749,6 +774,31 @@ def _validate_native_record_binding(payload: Mapping[str, object], trace: Mappin
     )
     if any(container.get(key) != trace.get(key) for container, key in evidence_locations):
         raise ValueError("native checkpoint evidence does not match trace")
+    contract = model_hashes.get("frozen_train_contract")
+    if contract is not None and (
+        not isinstance(contract, dict)
+        or set(contract) != {"dataset", "groups", "backend", "train_identity_sha256", "near_repeat_status"}
+        or contract.get("dataset") != payload.get("dataset")
+        or contract.get("train_identity_sha256") != trace.get("train_identity_sha256")
+        or sha256(canonical_json_bytes(contract)).hexdigest() != trace.get("frozen_train_contract_sha256")
+    ):
+        raise ValueError("native checkpoint frozen contract binding is invalid")
+    model_evidence = model_hashes.get("model_evidence")
+    scoring_evidence = calibration_hashes.get("scoring_evidence")
+    if model_evidence is None and scoring_evidence is None:
+        return
+    if not isinstance(model_evidence, dict) or not isinstance(scoring_evidence, dict) or sha256(canonical_json_bytes(model_evidence)).hexdigest() != trace.get("model_evidence_sha256") or sha256(canonical_json_bytes(scoring_evidence)).hexdigest() != trace.get("scoring_evidence_sha256"):
+        raise ValueError("native checkpoint nested evidence digest is invalid")
+    model_final = model_evidence.get("final_model_hashes")
+    scoring_final = scoring_evidence.get("final_model_hashes")
+    if model_evidence.get("status") == "captured":
+        if not isinstance(model_final, dict) or not isinstance(scoring_final, dict) or model_final != scoring_final:
+            raise ValueError("native checkpoint scoring final models do not match TRAIN")
+    elif model_evidence.get("status") == "not_applicable":
+        if scoring_evidence.get("status") != "not_applicable" or model_final != {}:
+            raise ValueError("native checkpoint no-model evidence is inconsistent")
+    else:
+        raise ValueError("native checkpoint model evidence status is invalid")
 
 
 def _import_record_body(context_sha256: str, record: ImportedRecordEnvelope) -> dict[str, object]:
@@ -929,10 +979,10 @@ def _provenance_from_payload(payload: Mapping[str, object]) -> Exp425RunProvenan
     )
 
 
-def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: Mapping[str, object], *, allow_intents: bool, binding: "_locked_root | None" = None) -> None:
+def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: Mapping[str, object], *, allow_intents: bool, full_records: bool = False, binding: "_locked_root | None" = None) -> None:
     if binding is None:
         with _locked_root(root, exclusive=False) as owned:
-            _validate_inventory(root, provenance, progress, allow_intents=allow_intents, binding=owned)
+            _validate_inventory(root, provenance, progress, allow_intents=allow_intents, full_records=full_records, binding=owned)
             return
     binding.verify()
     datasets_fd, datasets_identity = _open_directory_at(binding, "datasets")
@@ -972,6 +1022,19 @@ def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: 
         }
         expected_names = {record_filename(dataset) for dataset in progress["record_digests"]} | {record_filename(dataset) for dataset in pending_present}
         if names != expected_names: raise ValueError("checkpoint dataset inventory is invalid")
+        # The descriptor-safe inspector is a full-record validator, not just a
+        # filename/progress checker.  This remains strictly read-only: no
+        # reconciliation, quarantine, temporary file, fsync, or write occurs.
+        if full_records:
+            for dataset, digest in progress["record_digests"].items():
+                raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
+                if _record_digest_from_raw(raw) != digest:
+                    raise ValueError("checkpoint record digest does not match progress")
+                _decode_record(
+                    raw, None,
+                    native_run_identity=provenance["run_identity"],
+                    native_context_sha256=provenance["run_context_sha256"],
+                )
         for dataset, digest in pending_native.items():
             if dataset in progress["record_digests"] and progress["record_digests"][dataset] != digest:
                 raise ValueError("native checkpoint intent conflicts with progress")

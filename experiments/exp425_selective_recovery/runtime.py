@@ -26,7 +26,7 @@ from uuid import uuid4
 import numpy as np
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
-from experiments.exp417_causal_multihorizon_shadow.checkpoints import canonical_result_sha256
+from experiments.exp417_causal_multihorizon_shadow.checkpoints import canonical_result_sha256, _context_payload
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     BackendAudit,
     DatasetDecisionEvidence,
@@ -247,6 +247,11 @@ class AtomicProgressWriter:
         self.paths = paths
         self.run_identity = run_identity
         self.command = command
+        # This nonce makes a PID lease owner-bound.  A later process must not
+        # remove a lease it did not create merely because it happens to know
+        # the run directory.
+        self._pid_nonce = uuid4().hex
+        self._pid_claim: bytes | None = None
 
     @classmethod
     def create(cls, *, output_root: Path, run_identity: str, command: ExecutionCommand, checkpoint_root: Path, total_datasets: int, backend: str) -> "AtomicProgressWriter":
@@ -254,7 +259,7 @@ class AtomicProgressWriter:
         root.mkdir(mode=0o700, parents=True, exist_ok=True)
         paths = RuntimePaths(root, checkpoint_root, root / "progress.json", root / "events.jsonl", root / "parent.log", root / "run.pid")
         writer = cls(paths, run_identity, command)
-        writer._write_pid()
+        writer.claim_pid()
         return writer
 
     @classmethod
@@ -264,7 +269,9 @@ class AtomicProgressWriter:
     ) -> "AtomicProgressWriter":
         root = Path(output_root).absolute()
         paths = RuntimePaths(root, checkpoint_root, root / "progress.json", root / "events.jsonl", root / "parent.log", root / "run.pid")
-        if not root.is_dir() or not all(path.is_file() for path in (paths.progress, paths.events, paths.parent_log, paths.pid)):
+        # A completed or failed inactive run intentionally has no PID lease.
+        # It is therefore not part of the durable resume inventory.
+        if not root.is_dir() or not all(path.is_file() for path in (paths.progress, paths.events, paths.parent_log)):
             raise ValueError("runtime output is absent or incomplete for resume")
         payload = _read_canonical(paths.progress)
         if payload.get("run_identity") != run_identity or payload.get("checkpoint_root") != str(paths.checkpoint_root):
@@ -278,8 +285,38 @@ class AtomicProgressWriter:
             writer._write_pid()
         return writer
 
+    def _pid_payload(self) -> bytes:
+        return canonical_json_bytes({
+            "schema": "exp425.runtime-pid.v1", "run_identity": self.run_identity,
+            "pid": os.getpid(), "nonce": self._pid_nonce,
+        })
+
+    @staticmethod
+    def _pid_is_live(payload: Mapping[str, object]) -> bool:
+        pid = payload.get("pid")
+        if type(pid) is not int or pid <= 0:
+            return False
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True
+        return True
+
+    def _read_pid(self) -> tuple[dict[str, object], bytes]:
+        raw = self.paths.pid.read_bytes()
+        payload = _canonical_json_line(raw)
+        if set(payload) != {"schema", "run_identity", "pid", "nonce"} or payload.get("schema") != "exp425.runtime-pid.v1":
+            raise ValueError("runtime PID lease is invalid")
+        if payload.get("run_identity") != self.run_identity or not isinstance(payload.get("nonce"), str):
+            raise ValueError("runtime PID lease does not match this run")
+        return payload, raw
+
+    # Kept private for older focused tests; it has the same owner-bound claim
+    # semantics and never overwrites a live lease.
     def _write_pid(self) -> None:
-        _atomic_write(self.paths.pid, (str(os.getpid()) + "\n").encode("ascii"))
+        self.claim_pid()
 
     def write(self, progress: RuntimeProgress, *, event: str, detail: Mapping[str, object] | None = None) -> None:
         if not isinstance(progress, RuntimeProgress) or progress.paths != self.paths or progress.run_identity != self.run_identity:
@@ -324,6 +361,15 @@ class AtomicProgressWriter:
 
     def close(self) -> None:
         try:
+            if self._pid_claim is None:
+                return
+            # Compare exact bytes before unlinking.  This prevents an orderly
+            # old owner from deleting a newer owner's lease.
+            try:
+                if self.paths.pid.read_bytes() != self._pid_claim:
+                    return
+            except FileNotFoundError:
+                return
             self.paths.pid.unlink()
             _fsync_directory(self.paths.pid.parent)
         except FileNotFoundError:
@@ -331,7 +377,36 @@ class AtomicProgressWriter:
 
     def claim_pid(self) -> None:
         """Claim the live PID only after every resume validation has succeeded."""
-        self._write_pid()
+        if self._pid_claim is not None:
+            return
+        payload = self._pid_payload()
+        while True:
+            try:
+                descriptor = os.open(
+                    self.paths.pid,
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0),
+                    0o600,
+                )
+            except FileExistsError:
+                existing, _ = self._read_pid()
+                if self._pid_is_live(existing):
+                    raise ValueError("runtime PID lease is owned by a live process")
+                # Only a stale, fully validated lease for this exact run can
+                # be replaced.  Do not unlink malformed or foreign content.
+                try:
+                    self.paths.pid.unlink()
+                    _fsync_directory(self.paths.pid.parent)
+                except FileNotFoundError:
+                    pass
+                continue
+            try:
+                os.write(descriptor, payload)
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+            _fsync_directory(self.paths.pid.parent)
+            self._pid_claim = payload
+            return
 
 
 def _atomic_write(path: Path, data: bytes) -> None:
@@ -423,7 +498,7 @@ _SESSION_SENTINEL = object()
 class Exp425RuntimeSession:
     """Live registered native-write authority; construction is package-private."""
 
-    __slots__ = ("snapshot", "audit", "writer", "process_nonce", "runner", "_closed", "_lock_fd", "_eligibility", "_processed", "_models", "_scoring", "_active_dataset", "_fold_contract_sha256", "_sentinel")
+    __slots__ = ("_snapshot", "_audit", "_writer", "process_nonce", "_runner", "_closed", "_lock_fd", "_eligibility", "_processed", "_models", "_scoring", "_active_dataset", "_fold_contract_sha256", "_binding", "_sealed")
 
     def __init__(self, sentinel: object, snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, progress: AtomicProgressWriter) -> None:
         if sentinel is not _SESSION_SENTINEL:
@@ -433,7 +508,8 @@ class Exp425RuntimeSession:
         if audit.backend != "mps" or audit.fallback or not audit.candidate_identity:
             raise ValueError("Exp425 native execution requires a passing MPS audit")
         _require_mps()
-        self.snapshot, self.audit, self.writer = snapshot, audit, progress
+        object.__setattr__(self, "_sealed", False)
+        self._snapshot, self._audit, self._writer = snapshot, audit, progress
         self.process_nonce = uuid4().hex
         self._closed = False
         self._eligibility: dict[str, Mapping[int, object]] = {}
@@ -443,7 +519,7 @@ class Exp425RuntimeSession:
         self._active_dataset: str | None = None
         self._fold_contract_sha256: str | None = None
         self._lock_fd = _acquire_heavy_process_guard()
-        self.runner = RunnerRuntime(
+        self._runner = RunnerRuntime(
             verify=lambda context: self.snapshot.verify_boundary("runtime:dataset"),
             load_train=self.snapshot.load_train,
             preprocess=self._preprocess,
@@ -453,7 +529,30 @@ class Exp425RuntimeSession:
             load_test=self.snapshot.load_test,
             score=self._score,
         )
+        self._binding = (id(snapshot), id(audit), id(progress), id(self._runner), progress.run_identity)
         capabilities._register_authority(self, "exp425_native")
+        object.__setattr__(self, "_sealed", True)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if getattr(self, "_sealed", False) and name in {"snapshot", "audit", "writer", "runner", "_snapshot", "_audit", "_writer", "_runner", "_binding"}:
+            raise AttributeError("Exp425 authority-critical bindings are immutable")
+        object.__setattr__(self, name, value)
+
+    @property
+    def snapshot(self) -> Exp425DatabaseSnapshot:
+        return self._snapshot
+
+    @property
+    def audit(self) -> BackendAudit:
+        return self._audit
+
+    @property
+    def writer(self) -> AtomicProgressWriter:
+        return self._writer
+
+    @property
+    def runner(self) -> RunnerRuntime:
+        return self._runner
 
     def __copy__(self) -> object:
         raise TypeError("Exp425 runtime sessions cannot be copied")
@@ -467,6 +566,13 @@ class Exp425RuntimeSession:
     def _require_live(self) -> None:
         if self._closed:
             raise ValueError("Exp425 runtime session is closed")
+
+    def _verify_authority_binding(self) -> None:
+        self._require_live()
+        if self._binding != (id(self._snapshot), id(self._audit), id(self._writer), id(self._runner), self._writer.run_identity):
+            raise ValueError("Exp425 authority-critical binding was mutated")
+        if self._audit.backend != "mps" or self._audit.fallback or not self._audit.candidate_identity:
+            raise ValueError("Exp425 native authority no longer has a passing MPS audit")
 
     def _preprocess(self, train: object) -> Sequence[object]:
         if self._fold_contract_sha256 is None:
@@ -498,14 +604,30 @@ class Exp425RuntimeSession:
         if self._closed:
             return
         self._closed = True
-        capabilities._close_authority(self)
+        primary: BaseException | None = None
+        try:
+            capabilities._close_authority(self)
+        except BaseException as error:
+            primary = error
         try:
             fcntl.flock(self._lock_fd, fcntl.LOCK_UN)
-        finally:
+        except BaseException as error:
+            if primary is None:
+                primary = error
+        try:
             os.close(self._lock_fd)
+        except BaseException as error:
+            if primary is None:
+                primary = error
         close_snapshot = getattr(self.snapshot, "close", None)
         if callable(close_snapshot):
-            close_snapshot()
+            try:
+                close_snapshot()
+            except BaseException as error:
+                if primary is None:
+                    primary = error
+        if primary is not None:
+            raise primary
 
     def __enter__(self) -> "Exp425RuntimeSession":
         self._require_live()
@@ -561,6 +683,76 @@ def build_exp425_runtime(snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, 
     return Exp425RuntimeSession(_SESSION_SENTINEL, snapshot, audit, progress)
 
 
+def _terminal_event_details(paths: RuntimePaths, run_identity: str) -> tuple[Mapping[str, object], ...]:
+    raw = paths.events.read_bytes()
+    if not raw.endswith(b"\n"):
+        raise ValueError("runtime event log is truncated")
+    terminal: list[Mapping[str, object]] = []
+    seen: set[str] = set()
+    for line in raw.splitlines():
+        event = _canonical_json_line(line)
+        if event.get("schema") != "exp425.runtime-event.v1" or event.get("run_identity") != run_identity:
+            raise ValueError("runtime event log does not match this run")
+        if event.get("event") != "dataset_terminal":
+            continue
+        dataset = event.get("dataset")
+        if not isinstance(dataset, str) or dataset in seen:
+            raise ValueError("runtime terminal event log is invalid")
+        seen.add(dataset)
+        terminal.append(MappingProxyType(event))
+    return tuple(terminal)
+
+
+def _reconcile_runtime_events(runtime: Mapping[str, object], inspection: object, paths: RuntimePaths) -> None:
+    """Accept only a checkpoint-committed terminal suffix missing from JSONL."""
+    summaries = getattr(inspection, "record_summaries")
+    expected = getattr(inspection, "expected_datasets")
+    terminal = _terminal_event_details(paths, str(runtime["run_identity"]))
+    completed = tuple(summary[0] for summary in summaries)
+    logged = tuple(str(event["dataset"]) for event in terminal)
+    if logged != completed[:len(logged)]:
+        raise ValueError("runtime events do not match checkpoint completion order")
+    for event, summary in zip(terminal, summaries):
+        dataset, origin, status, reason, elapsed = summary
+        if (
+            event.get("ordinal") != expected.index(dataset) + 1
+            or event.get("origin") != origin or event.get("status") != status
+            or event.get("reason") != reason or event.get("elapsed_seconds") != elapsed
+        ):
+            raise ValueError("runtime terminal event does not match checkpoint record")
+    # The predecessor may legitimately import a sparse subset.  Within that
+    # frozen-order subset, missing events can only be the exact suffix caused
+    # by a checkpoint-commit→JSONL crash.
+    state = runtime.get("state")
+    if state == "complete_review_only" and (len(logged) != len(expected) or getattr(inspection, "import_revalidation_required")):
+        raise ValueError("complete runtime has unresolved events or checkpoint intents")
+
+
+def preflight_runtime_paths(command: ExecutionCommand, *, output_root: Path, checkpoint_root: Path, run_identity: str | None = None, provenance: object | None = None, context: FrozenRunContext | None = None) -> None:
+    """Validate command lifecycle before a CLI factory opens any live resource."""
+    output_root, checkpoint_root = Path(output_root).absolute(), Path(checkpoint_root).absolute()
+    if command == "new":
+        if output_root.exists() or checkpoint_root.exists():
+            raise ValueError("new runtime output or checkpoint root already exists")
+        return
+    if command != "resume":
+        raise ValueError("runtime command must be new or resume")
+    if not output_root.is_dir() or not checkpoint_root.is_dir():
+        raise ValueError("resume runtime output or checkpoint root is absent")
+    runtime = inspect_runtime_output(output_root, expected_run_identity=run_identity)
+    inspected = Exp425CheckpointStore.inspect_read_only(checkpoint_root, expected_run_identity=run_identity)
+    if runtime.get("checkpoint_root") != str(checkpoint_root):
+        raise ValueError("runtime output does not bind the requested checkpoint root")
+    if runtime.get("total_datasets") != len(inspected.expected_datasets):
+        raise ValueError("runtime output total does not match checkpoint universe")
+    if provenance is not None and context is not None:
+        expected_context_sha = sha256(canonical_json_bytes(_context_payload(context))).hexdigest()
+        expected_provenance = provenance.with_run_context_sha256(expected_context_sha).to_payload()
+        if inspected.provenance_payload != expected_provenance or inspected.run_context_sha256 != expected_context_sha:
+            raise ValueError("checkpoint provenance or frozen context does not match launch")
+    _reconcile_runtime_events(runtime, inspected, RuntimePaths(output_root, checkpoint_root, output_root / "progress.json", output_root / "events.jsonl", output_root / "parent.log", output_root / "run.pid"))
+
+
 def execute_runtime_command(
     command: ExecutionCommand,
     *,
@@ -582,15 +774,16 @@ def execute_runtime_command(
     if command not in {"new", "resume"}:
         raise ValueError("runtime command must be new or resume")
     output_root, checkpoint_root = Path(output_root).absolute(), Path(checkpoint_root).absolute()
-    if command == "new" and (output_root.exists() or checkpoint_root.exists()):
-        raise ValueError("new runtime output or checkpoint root already exists")
-    if command == "resume" and (not output_root.is_dir() or not checkpoint_root.is_dir()):
-        raise ValueError("resume runtime output or checkpoint root is absent")
+    preflight_runtime_paths(command, output_root=output_root, checkpoint_root=checkpoint_root)
     if not isinstance(context, FrozenRunContext) or not isinstance(snapshot, Exp425DatabaseSnapshot) or not isinstance(audit, BackendAudit):
         raise ValueError("runtime launch inputs are invalid")
     from .contracts import Exp425RunProvenance
     if not isinstance(provenance, Exp425RunProvenance):
         raise ValueError("runtime provenance is invalid")
+    preflight_runtime_paths(
+        command, output_root=output_root, checkpoint_root=checkpoint_root,
+        run_identity=provenance.run_identity, provenance=provenance, context=context,
+    )
     writer: AtomicProgressWriter | None = None
     output_claimed = False
     try:
@@ -602,20 +795,34 @@ def execute_runtime_command(
             if importer is not None:
                 if not callable(importer):
                     raise ValueError("runtime importer must be callable")
+                writer.write(replace(RuntimeProgress.initializing(writer.paths, provenance.run_identity, "new", len(context.datasets), audit.backend), state="importing", stage="importing"), event="phase_change", detail={"import_stage": "begin"})
                 importer(store, context)
+                if Exp425CheckpointStore.inspect_read_only(checkpoint_root, expected_run_identity=provenance.run_identity).import_revalidation_required:
+                    raise ValueError("pending import intents remain after source import")
         else:
             # This validation is intentionally complete before PID/progress
             # mutation.  Invalid resume consequently leaves the full output
             # tree byte/inode/metadata untouched.
             writer = AtomicProgressWriter.resume(output_root=output_root, run_identity=provenance.run_identity, checkpoint_root=checkpoint_root, claim_pid=False)
-            store = Exp425CheckpointStore.open(checkpoint_root, provenance, context)
             existing = inspect_runtime_output(output_root, expected_run_identity=provenance.run_identity)
-            if existing.get("state") == "complete_review_only" and store.completed_count == len(context.datasets):
-                counts = _restored_progress(RuntimeProgress.initializing(writer.paths, provenance.run_identity, "resume", len(context.datasets), audit.backend), store, writer.read_terminal_samples()).counts
-                assert counts is not None
+            inspection = Exp425CheckpointStore.inspect_read_only(checkpoint_root, expected_run_identity=provenance.run_identity)
+            if existing.get("checkpoint_root") != str(checkpoint_root) or existing.get("total_datasets") != len(context.datasets):
+                raise ValueError("runtime output does not match frozen checkpoint context")
+            if existing.get("state") == "complete_review_only" and inspection.completed_count == len(context.datasets):
+                if inspection.import_revalidation_required:
+                    raise ValueError("complete runtime has pending import revalidation")
+                counts = _counts_from_inspection(len(context.datasets), inspection.record_summaries)
                 return Exp425RunResult("complete_review_only", counts, (), provenance.run_identity, "complete")
             writer.claim_pid()
             output_claimed = True
+            store = Exp425CheckpointStore.open(checkpoint_root, provenance, context)
+            if inspection.import_revalidation_required or store.import_revalidation_required:
+                if not callable(importer):
+                    raise ValueError("resume requires importer revalidation for pending import intents")
+                writer.write(replace(RuntimeProgress.initializing(writer.paths, provenance.run_identity, "resume", len(context.datasets), audit.backend), state="importing", stage="importing"), event="phase_change", detail={"import_stage": "revalidation", "pending_imports": len(inspection.import_revalidation_required)})
+                importer(store, context)
+                if store.import_revalidation_required:
+                    raise ValueError("pending import intents remain after source revalidation")
     except Exception as error:
         if writer is not None and output_claimed:
             try:
@@ -713,7 +920,11 @@ def _model_and_calibration_evidence(
             },
         }
     scoring_payload = (
-        {"status": "not_applicable", "calibration": calibration_payload}
+        {
+            "status": "not_applicable_no_qualified_group" if models_trained else "not_applicable",
+            "calibration": calibration_payload,
+            "final_model_hashes": model_payload["final_model_hashes"],
+        }
         if scoring is None
         else {
             "status": "captured",
@@ -725,6 +936,34 @@ def _model_and_calibration_evidence(
         }
     )
     return model_payload, scoring_payload, _digest(model_payload), _digest(scoring_payload)
+
+
+def _frozen_contract_payload(contract: object) -> dict[str, object]:
+    """Persist every frozen TRAIN decision field, not a lossy status summary."""
+    if not hasattr(contract, "dataset") or not hasattr(contract, "groups"):
+        raise ValueError("native result has no frozen TRAIN contract")
+    groups = getattr(contract, "groups")
+    backend = getattr(contract, "backend")
+    payload = {
+        "dataset": getattr(contract, "dataset"),
+        "groups": [
+            {
+                "length": group.length, "series_count": group.series_count,
+                "status": group.status, "oof_candidate_rate": group.oof_candidate_rate,
+                "wilson_upper": group.wilson_upper,
+                "pooled_synthetic_sensitivity": group.pooled_synthetic_sensitivity,
+                "per_type_synthetic_sensitivity": dict(group.per_type_synthetic_sensitivity),
+                "seed_agreement": group.seed_agreement, "finite": group.finite,
+                "backend_fallback": group.backend_fallback,
+            }
+            for group in groups
+        ],
+        "backend": asdict(backend),
+        "train_identity_sha256": getattr(contract, "train_identity_sha256"),
+        "near_repeat_status": getattr(contract, "near_repeat_status"),
+    }
+    _assert_label_free(payload)
+    return payload
 
 
 def _native_record(
@@ -747,7 +986,8 @@ def _native_record(
         raise ValueError("native result has unexpected terminal evidence")
     processed_sha = models.processed_identity_sha256
     models_payload, calibration_payload, model_sha, scoring_sha = _model_and_calibration_evidence(models, scoring, models_trained=models_trained)
-    frozen_contract_sha = _digest({"dataset": result.dataset, "groups": [(group.length, group.status) for group in contract.groups], "train_identity_sha256": contract.train_identity_sha256})
+    frozen_contract = _frozen_contract_payload(contract)
+    frozen_contract_sha = _digest(frozen_contract)
     result_payload = _effective_payload(result)
     audit_sha = _audit_digest(runtime.audit)
     values = {
@@ -763,6 +1003,7 @@ def _native_record(
         "train_identity_sha256": values["train_identity_sha256"],
         "model_evidence_sha256": model_sha,
         "frozen_train_contract_sha256": frozen_contract_sha,
+        "frozen_train_contract": frozen_contract,
         "model_evidence": models_payload,
     }
     calibration = {"scoring_evidence_sha256": scoring_sha, "scoring_evidence": calibration_payload}
@@ -827,15 +1068,12 @@ def _compute_native(context: FrozenRunContext, store: Exp425CheckpointStore, run
             )
         original_loader = runtime.runner.load_train
         original_preprocess = runtime.runner.preprocess
-        runtime.runner = replace(
+        dataset_runner = replace(
             runtime.runner,
             load_train=lambda name, frozen: train if name == dataset and frozen is context else original_loader(name, frozen),
             preprocess=lambda supplied: processed if supplied is train else original_preprocess(supplied),
         )
-        try:
-            result = run_dataset(dataset, context, runtime=runtime.runner)
-        finally:
-            runtime.runner = replace(runtime.runner, load_train=original_loader, preprocess=original_preprocess)
+        result = run_dataset(dataset, context, runtime=dataset_runner)
         elapsed = perf_counter() - started
         if result.status == "failed" or result.decision_evidence.__class__.__name__ == "DatasetTerminalEvidence":
             raise ValueError("native frozen runtime returned unexpected terminal or failed result")
@@ -843,8 +1081,12 @@ def _compute_native(context: FrozenRunContext, store: Exp425CheckpointStore, run
         if models is None:
             raise ValueError("eligible native result lacks frozen model/calibration evidence")
         scoring = runtime._scoring.pop(dataset, None)
-        if scoring is None:
+        contract = result.decision_evidence.frozen_train_contract
+        qualified = contract is not None and any(group.status == "qualified" for group in contract.groups)
+        if scoring is None and qualified:
             raise ValueError("eligible native result lacks frozen TEST scoring evidence")
+        if scoring is None and result.status != "abstained":
+            raise ValueError("native result omitted TEST scoring without a valid abstention")
         return _native_record(store, runtime, result, elapsed, models=models, scoring=scoring, models_trained=True)
     finally:
         runtime._active_dataset = None
@@ -913,6 +1155,44 @@ def _restored_progress(
     )
 
 
+def _counts_from_inspection(total: int, summaries: Sequence[tuple[str, str, str, str | None, float]]) -> Exp425RunCounts:
+    imported = sum(origin == "exp424_import" for _, origin, _, _, _ in summaries)
+    native = sum(origin == "exp425_native" for _, origin, _, _, _ in summaries)
+    return Exp425RunCounts(
+        total=total, completed=len(summaries), imported=imported, native=native,
+        recomputed=native, abstained=sum(status == "abstained" for _, _, status, _, _ in summaries),
+        oof_identity_insufficient=sum(reason == "oof_identity_insufficient" for _, _, _, reason, _ in summaries),
+        failed=sum(status == "failed" for _, _, status, _, _ in summaries),
+    )
+
+
+def _apply_compact_global_workload(context: FrozenRunContext, store: Exp425CheckpointStore) -> str:
+    """Validated compact form of Exp417's exact global candidate-count gate."""
+    total = sum(context.test_sizes.values())
+    candidates = 0
+    for dataset in context.datasets:
+        effective = _effective_record_payload(store.load_record(dataset))
+        status, coordinates = effective.get("status"), effective.get("candidate_coordinates")
+        if status not in {"scored", "abstained", "failed"} or not isinstance(coordinates, list):
+            raise ValueError("checkpoint effective result is invalid")
+        manifest = {index for index, _ in context.test_identity_manifest[dataset]}
+        normalized: list[tuple[str, int]] = []
+        for coordinate in coordinates:
+            if not isinstance(coordinate, list) or len(coordinate) != 2 or coordinate[0] != dataset or type(coordinate[1]) is not int:
+                raise ValueError("checkpoint candidate coordinate is invalid")
+            if coordinate[1] not in manifest or context.lanes.contains(dataset, coordinate[1]):
+                raise ValueError("checkpoint candidate is outside frozen TEST identities")
+            normalized.append((dataset, coordinate[1]))
+        if normalized != sorted(normalized) or len(set(normalized)) != len(normalized):
+            raise ValueError("checkpoint candidates must be sorted and unique")
+        if status in {"abstained", "failed"} and normalized:
+            raise ValueError("abstained or failed checkpoint result has candidates")
+        candidates += len(normalized)
+    if total <= 0 or candidates / total > context.config.global_workload_rate:
+        raise ValueError("frozen global workload gate failed")
+    return "complete"
+
+
 def run_selective_population(context: FrozenRunContext, store: Exp425CheckpointStore, runtime: Exp425RuntimeSession) -> Exp425RunResult:
     """Run only absent records sequentially, preserving compact checkpoint semantics."""
     if not isinstance(context, FrozenRunContext) or not isinstance(store, Exp425CheckpointStore) or not isinstance(runtime, Exp425RuntimeSession):
@@ -968,6 +1248,7 @@ def run_selective_population(context: FrozenRunContext, store: Exp425CheckpointS
             runtime.writer.write(progress, event="dataset_start", detail={"dataset": dataset, "ordinal": ordinal, "total": len(context.datasets), "origin": "exp425_native", "phase": "train"})
             record, trace = _compute_native(context, store, runtime, dataset, train)
             elapsed = record.elapsed_seconds
+            runtime._verify_authority_binding()
             capability = capabilities._mint(runtime, kind="native", run_identity=store.provenance.run_identity, dataset=dataset, context_sha256=store.run_context_sha256, trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256, backend_sha256=record.backend_audit_sha256, process_nonce=runtime.process_nonce)
             store._commit_native(capability, record)
             traces.append(trace)
@@ -978,14 +1259,13 @@ def run_selective_population(context: FrozenRunContext, store: Exp425CheckpointS
             runtime.writer.write(progress, event="heartbeat")
         if progress.counts.completed != len(context.datasets) or progress.counts.failed:
             raise ValueError("runtime population accounting is incomplete or failed")
-        # Applying Exp417's exact workload rule requires the live DatasetResult
-        # objects.  Imported records have intentionally been compacted, so their
-        # persisted coordinate count is checked against the same frozen threshold.
-        candidate_count = sum(len(_effective_record_payload(store.load_record(dataset)).get("candidate_coordinates", [])) for dataset in context.datasets)
-        if candidate_count / sum(context.test_sizes.values()) > context.config.global_workload_rate:
-            raise ValueError("frozen global workload gate failed")
+        _apply_compact_global_workload(context, store)
         progress = replace(progress, state="finalizing", stage="finalizing", timestamp=_now())
         runtime.writer.write(progress, event="finalization")
+        inspection = Exp425CheckpointStore.inspect_read_only(store.root, expected_run_identity=store.provenance.run_identity)
+        if inspection.completed_count != len(context.datasets) or inspection.import_revalidation_required:
+            raise ValueError("final checkpoint integrity is incomplete")
+        runtime.close()
         progress = replace(progress, state="complete_review_only", stage="complete_review_only", timestamp=_now(), current_dataset=None, current_phase=None)
         runtime.writer.write(progress, event="finalization")
         return Exp425RunResult(progress.state, progress.counts, tuple(traces), store.provenance.run_identity, "complete")
@@ -1026,5 +1306,5 @@ __all__ = [
     "AtomicProgressWriter", "DatasetRuntimeTrace", "ExecutionCommand", "Exp425RunCounts",
     "Exp425RunResult", "Exp425RuntimeSession", "RuntimePaths", "RuntimeProgress",
     "build_exp425_runtime", "inspect_runtime_output", "run_selective_population",
-    "execute_runtime_command",
+    "execute_runtime_command", "preflight_runtime_paths",
 ]

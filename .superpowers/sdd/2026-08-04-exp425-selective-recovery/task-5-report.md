@@ -1,7 +1,55 @@
 # Task 5 — Selective MPS Runtime and Explicit Resume
 
-Status: implementation in progress; the official population and readiness gate
-were not started.
+Status: partial follow-up implementation; the official population and readiness
+gate were not started.
+
+## Follow-up hardening — 2026-08-04
+
+This follow-up adds owner-bound atomic PID leases; inactive complete/failed
+resume accepts an absent lease, while a live or foreign/malformed lease is never
+unlinked.  Complete resume is derived only from descriptor-safe checkpoint
+inspection and does not claim a PID or call mutating checkpoint open/recovery.
+The inspection now validates each completed record digest and exposes compact
+record summaries for exact JSONL reconciliation.  Resume preflight binds the
+full provenance/context digest before the lease claim, and permits only a
+checkpoint-commit-to-event exact suffix.
+
+Native session authority-critical snapshot/audit/writer/runner bindings are
+read-only after registration and are rechecked immediately before capability
+minting.  Cleanup releases broker, MPS guard, descriptor, and snapshot despite
+an earlier cleanup failure.  A final read-only inventory validation and snapshot
+close now occur before `complete_review_only` is published.  Native TRAIN-only
+abstentions after model qualification but with no qualified group accept absent
+TEST scoring and persist `not_applicable_no_qualified_group`.
+
+Focused verification after this change:
+
+```text
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_runtime \
+  experiments.exp425_selective_recovery.tests.test_checkpoints \
+  experiments.exp425_selective_recovery.tests.test_cli -v
+PASS — 54 tests in 6.038s
+
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_capabilities \
+  experiments.exp425_selective_recovery.tests.test_checkpoints \
+  experiments.exp425_selective_recovery.tests.test_predecessor \
+  experiments.exp425_selective_recovery.tests.test_database \
+  experiments.exp425_selective_recovery.tests.test_eligibility -v
+PASS — 95 tests in 9.814s; 256MiB snapshot=0.139s, verified_opens=2.636s
+
+python3 -m unittest experiments.exp417_causal_multihorizon_shadow.tests.test_runner \
+  experiments.exp417_causal_multihorizon_shadow.tests.test_model \
+  experiments.exp417_causal_multihorizon_shadow.tests.test_scoring \
+  experiments.exp417_causal_multihorizon_shadow.tests.test_qualification -q
+PASS (exit 0)
+```
+
+This does **not** yet satisfy the commitment review in full: no real mixed
+Task2/3 importer→runtime orchestration test, heartbeat implementation/test,
+complete CLI matrix, full nested evidence mutation matrix, or preregistered
+eligible MPS parity smoke was added.  The missing MPS smoke remains unavailable
+without a selected frozen eligible fixture/launch assembly; no TEST labels or
+official population was queried.
 
 ## TDD evidence
 

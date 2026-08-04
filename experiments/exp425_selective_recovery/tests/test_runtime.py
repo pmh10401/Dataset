@@ -134,6 +134,44 @@ class AtomicProgressWriterTests(unittest.TestCase):
             after = {path.name: (path.read_bytes(), path.stat().st_ino, path.stat().st_mtime_ns) for path in root.iterdir()}
             self.assertEqual(before, after)
 
+    def test_inactive_resume_accepts_absent_pid_but_rejects_live_owner(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            writer = AtomicProgressWriter.create(
+                output_root=root, run_identity="runtime-test", command="new",
+                checkpoint_root=root / "checkpoints", total_datasets=1, backend="mps",
+            )
+            state = RuntimeProgress.initializing(writer.paths, "runtime-test", "new", 1, "mps")
+            writer.write(state, event="phase_change")
+            writer.close()
+            self.assertFalse(writer.paths.pid.exists())
+            resumed = AtomicProgressWriter.resume(
+                output_root=root, run_identity="runtime-test", checkpoint_root=root / "checkpoints",
+                claim_pid=False,
+            )
+            resumed.claim_pid()
+            with self.assertRaisesRegex(ValueError, "live process"):
+                AtomicProgressWriter.resume(
+                    output_root=root, run_identity="runtime-test", checkpoint_root=root / "checkpoints",
+                    claim_pid=True,
+                )
+            resumed.close()
+
+    def test_close_never_removes_a_replaced_pid_lease(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            writer = AtomicProgressWriter.create(
+                output_root=root, run_identity="runtime-test", command="new",
+                checkpoint_root=root / "checkpoints", total_datasets=1, backend="mps",
+            )
+            replacement = json.dumps(
+                {"schema": "exp425.runtime-pid.v1", "run_identity": "runtime-test", "pid": os.getpid(), "nonce": "new-owner"},
+                sort_keys=True, separators=(",", ":"),
+            ).encode()
+            writer.paths.pid.write_bytes(replacement)
+            writer.close()
+            self.assertEqual(writer.paths.pid.read_bytes(), replacement)
+
     def test_no_model_oof_abstention_has_empty_decisions_and_explicit_na_evidence(self) -> None:
         dataset = "Insufficient_normal_1"
         config = replace(FROZEN_CONFIG, expected_datasets=1, expected_hard=0, expected_standard=0,
@@ -196,3 +234,23 @@ class AtomicProgressWriterTests(unittest.TestCase):
                 session._require_live()
             with self.assertRaisesRegex(ValueError, "MPS audit"):
                 build_exp425_runtime(snapshot, BackendAudit("cpu", True, 0.0, 1.0, 1.1, False), writer)
+
+    def test_runtime_session_rejects_public_and_private_binding_reassignment(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            writer = AtomicProgressWriter.create(
+                output_root=root, run_identity="runtime-test", command="new",
+                checkpoint_root=root / "checkpoints", total_datasets=1, backend="mps",
+            )
+            snapshot = object.__new__(Exp425DatabaseSnapshot)
+            audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+            lock = os.open(root / "lock", os.O_RDWR | os.O_CREAT, 0o600)
+            with patch("experiments.exp425_selective_recovery.runtime._require_mps"), patch(
+                "experiments.exp425_selective_recovery.runtime._acquire_heavy_process_guard", return_value=lock
+            ):
+                session = build_exp425_runtime(snapshot, audit, writer)
+            for name, value in (("snapshot", snapshot), ("audit", audit), ("writer", writer), ("runner", session.runner), ("_snapshot", snapshot), ("_runner", session.runner)):
+                with self.assertRaises(AttributeError, msg=name):
+                    setattr(session, name, value)
+            with patch.object(Exp425DatabaseSnapshot, "close"):
+                session.close()

@@ -24,6 +24,7 @@ from .runtime import (
     build_exp425_runtime,
     execute_runtime_command,
     inspect_runtime_output,
+    preflight_runtime_paths,
     run_selective_population,
 )
 
@@ -54,5 +55,6 @@ __all__ = [
     "build_exp425_runtime",
     "execute_runtime_command",
     "inspect_runtime_output",
+    "preflight_runtime_paths",
     "run_selective_population",
 ]

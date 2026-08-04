@@ -21,7 +21,7 @@ if str(_REPOSITORY_ROOT) not in sys.path:
 
 from experiments.exp425_selective_recovery.checkpoints import Exp425CheckpointStore
 from experiments.exp425_selective_recovery.runtime import inspect_runtime_output
-from experiments.exp425_selective_recovery.runtime import execute_runtime_command
+from experiments.exp425_selective_recovery.runtime import execute_runtime_command, preflight_runtime_paths
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -64,6 +64,16 @@ def main(argv: list[str] | None = None) -> int:
     if not args.launch_factory:
         print("new/resume require --launch-factory module:callable", file=sys.stderr)
         return 2
+    try:
+        # Reject lifecycle mistakes before importing a launch module that may
+        # open the frozen database or initialize MPS.
+        preflight_runtime_paths(
+            args.command, output_root=args.output_root,
+            checkpoint_root=args.checkpoint_root, run_identity=args.run_identity,
+        )
+    except (OSError, ValueError) as error:
+        print(f"{args.command} failed: {type(error).__name__}: {error}", file=sys.stderr)
+        return 2
     # These are printed before the factory can open a snapshot or invoke MPS.
     paths = {
         "checkpoint_root": str(args.checkpoint_root.absolute()),
@@ -88,7 +98,9 @@ def main(argv: list[str] | None = None) -> int:
         )
     except (KeyError, ImportError, OSError, ValueError) as error:
         print(f"{args.command} failed: {type(error).__name__}: {error}", file=sys.stderr)
-        return 2 if isinstance(error, (KeyError, ImportError, ValueError)) else 1
+        # Factory shape is an argument/contract error; failures after a valid
+        # factory launch (MPS, integrity, DB, guard) are runtime failures.
+        return 2 if isinstance(error, (KeyError, ImportError)) else 1
     return 0 if result.state == "complete_review_only" else 1
 
 

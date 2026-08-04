@@ -38,4 +38,4 @@ Task 4: fix round 3/5 (2 addressed, 0 open; commit 18159d6; final Sol/High scope
 Task 4: complete (commits 78580fc..18159d6; DB tests 25, DB+Exp417 50, Exp425 106; 256MiB 0.136s vs 2.593s)
 External readiness: removed 8 unreferenced stale Exp417 DB pin hardlinks; official DB inode 1048138 retained, nlink restored 9 -> 1.
 Task 5: in progress (base 18159d6)
-Task 5: complete (runtime/CLI commit pending; focused Task5 9 tests, Task1-4 95 tests, frozen Exp417 regression suite pass; no official run/readiness/parity smoke)
+Task 5: follow-up partial (owner-bound PID/read-only full inspection/preflight context binding/final-close ordering/native no-qualified abstention and authority sealing implemented; focused Task5+checkpoint 54 tests, Task1-4 95 tests, frozen Exp417 suite exit 0; orchestration/heartbeat/full CLI/nested-mutation/MPS parity evidence remain open; no official run/readiness)
