@@ -86,4 +86,3 @@ def _consume(capability: object, /, *, kind: str, **claims: object) -> Mapping[s
     # even if the caller's transaction later fails.
     del _capabilities[id(capability)]
     return frozen
-
