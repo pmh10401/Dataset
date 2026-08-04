@@ -384,7 +384,7 @@ class Exp425CheckpointStore:
                         names = set(os.listdir(batch_fd))
                         entries = cleanup["entries"]
                         assert isinstance(entries, dict)
-                        _validate_cleanup_plan_at(batch_fd, cleanup)
+                        _validate_cleanup_plan_at(batch_fd, cleanup, imports_fd=imports_fd)
                         expected_names = {entry[name_key] for entry in entries.values() if isinstance(entry, dict) and entry["entry_type"] == "file" for name_key in ("original_name", "isolated_name")}
                         if not names <= expected_names:
                             raise ValueError("import batch has unknown cleanup entries")
@@ -682,6 +682,8 @@ def _batch_name(batch_identity: str) -> str:
 
 
 def _batch_state(run_identity: str, context_sha256: str, batch_identity: str, attestation: str, staged: Mapping[str, str]) -> dict[str, object]:
+    if not _is_lower_sha256(attestation) or any(not isinstance(dataset, str) or not _is_lower_sha256(digest) for dataset, digest in staged.items()):
+        raise ValueError("import batch staged digests are invalid")
     body = {"schema": "exp425.import-batch.v1", "run_identity": run_identity, "run_context_sha256": context_sha256, "batch_identity": batch_identity, "source_attestation_sha256": attestation, "staged_record_digests": dict(sorted(staged.items()))}
     return body | {"payload_sha256": sha256(canonical_json_bytes(body)).hexdigest()}
 
@@ -695,6 +697,12 @@ def _cleanup_isolated_name(batch_identity: str, key: str, digest: str) -> str:
 
 
 def _cleanup_state(run_identity: str, context_sha256: str, batch_identity: str, attestation: str, staged: Mapping[str, str], final_attestation: str, entries: Mapping[str, object]) -> dict[str, object]:
+    if (
+        not _is_lower_sha256(attestation)
+        or not _is_lower_sha256(final_attestation)
+        or any(not isinstance(dataset, str) or not _is_lower_sha256(digest) for dataset, digest in staged.items())
+    ):
+        raise ValueError("import cleanup staged digests are invalid")
     body = {"schema": "exp425.import-cleanup.v2", "run_identity": run_identity, "run_context_sha256": context_sha256, "batch_identity": batch_identity, "source_attestation_sha256": attestation, "staged_record_digests": dict(sorted(staged.items())), "final_attestation_sha256": final_attestation, "entries": dict(sorted(entries.items()))}
     return body | {"payload_sha256": sha256(canonical_json_bytes(body)).hexdigest()}
 
@@ -722,7 +730,7 @@ def _read_cleanup_at(imports_fd: int, run_identity: str, context_sha256: str, ba
         raise ValueError("import cleanup durable state is invalid")
     if final != _import_final_attestation(batch_identity, attestation, staged):
         raise ValueError("import cleanup final attestation is invalid")
-    if any(not isinstance(dataset, str) or not isinstance(digest, str) or len(digest) != 64 for dataset, digest in staged.items()):
+    if not _is_lower_sha256(attestation) or not _is_lower_sha256(final) or any(not isinstance(dataset, str) or not _is_lower_sha256(digest) for dataset, digest in staged.items()):
         raise ValueError("import cleanup staged digests are invalid")
     required = {*("staged:" + dataset for dataset in staged), "batch.json", "batch-directory"}
     if set(entries) != required:
@@ -737,7 +745,7 @@ def _read_cleanup_at(imports_fd: int, run_identity: str, context_sha256: str, ba
             dataset = key[len("staged:"):]
             digest = staged.get(dataset)
             if (
-                not isinstance(digest, str)
+                not _is_lower_sha256(digest)
                 or entry["original_name"] != record_filename(dataset)
                 or entry["isolated_name"] != _cleanup_isolated_name(batch_identity, key, digest)
                 or entry["entry_type"] != "file" or entry["digest"] != digest
@@ -746,7 +754,7 @@ def _read_cleanup_at(imports_fd: int, run_identity: str, context_sha256: str, ba
         elif key == "batch.json":
             digest = entry["digest"]
             if (
-                not isinstance(digest, str) or len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest)
+                not _is_lower_sha256(digest)
                 or entry["original_name"] != "batch.json"
                 or entry["isolated_name"] != _cleanup_isolated_name(batch_identity, "batch.json", digest)
                 or entry["entry_type"] != "file"
@@ -876,6 +884,8 @@ def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: 
         for dataset, digest in pending_imported.items():
             if dataset in progress["record_digests"] and progress["record_digests"][dataset] != digest:
                 raise ValueError("import checkpoint intent conflicts with progress")
+        if set(pending_native) & set(pending_imported):
+            raise ValueError("native and import checkpoint intents duplicate a dataset")
         if not allow_intents and transaction_names: raise ValueError("checkpoint intents are present")
         _verify_directory_at(binding, "datasets", datasets_identity)
         _verify_directory_at(binding, "transactions", transactions_identity)
@@ -889,8 +899,8 @@ def _decode_record(raw: bytes, context: FrozenRunContext | None, *, native_run_i
     payload = _canonical_object(raw, "record")
     _reject_forbidden_keys(payload)
     origin = payload.get("origin")
-    digest = payload.pop("record_payload_sha256", None)
-    if not isinstance(digest, str) or sha256(canonical_json_bytes(payload)).hexdigest() != digest: raise ValueError("checkpoint record digest is invalid")
+    digest = _record_payload_digest(payload)
+    payload.pop("record_payload_sha256")
     if origin == "exp425_native":
         required = {"schema_version", "dataset", "origin", "run_context_sha256", "result_payload", "group_evidence", "trace_sha256", "model_hashes", "calibration_hashes", "backend_audit_sha256", "elapsed_seconds", "reason"}
         if set(payload) != required or payload["schema_version"] != "exp425.dataset.v1": raise ValueError("native checkpoint record keys are invalid")
@@ -932,7 +942,20 @@ def _decode_record(raw: bytes, context: FrozenRunContext | None, *, native_run_i
 
 
 def _record_digest_from_raw(raw: bytes) -> str:
-    return str(_canonical_object(raw, "record").get("record_payload_sha256", ""))
+    return _record_payload_digest(_canonical_object(raw, "record"))
+
+
+def _is_lower_sha256(value: object) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(character in "0123456789abcdef" for character in value)
+
+
+def _record_payload_digest(payload: Mapping[str, object]) -> str:
+    digest = payload.get("record_payload_sha256")
+    body = dict(payload)
+    body.pop("record_payload_sha256", None)
+    if not _is_lower_sha256(digest) or sha256(canonical_json_bytes(body)).hexdigest() != digest:
+        raise ValueError("checkpoint record digest is invalid")
+    return digest
 
 
 def _canonical_object(raw: bytes, name: str) -> dict[str, object]:
@@ -1191,7 +1214,7 @@ def _cleanup_entry_matches_at(parent_fd: int, entry: Mapping[str, object], name:
     return True
 
 
-def _validate_cleanup_plan_at(batch_fd: int, cleanup: Mapping[str, object]) -> None:
+def _validate_cleanup_plan_at(batch_fd: int, cleanup: Mapping[str, object], *, imports_fd: int | None = None) -> None:
     """Recheck every extant cleanup entry before any further deletion."""
     entries = cleanup.get("entries")
     staged = cleanup.get("staged_record_digests")
@@ -1242,6 +1265,41 @@ def _validate_cleanup_plan_at(batch_fd: int, cleanup: Mapping[str, object]) -> N
             str(cleanup["source_attestation_sha256"]), staged,
         ):
             raise ValueError("import batch cleanup metadata is invalid")
+    if imports_fd is not None:
+        directory_entry = entries.get("batch-directory")
+        if not isinstance(directory_entry, dict):
+            raise ValueError("import cleanup batch-directory entry is invalid")
+        original = directory_entry.get("original_name")
+        isolated = directory_entry.get("isolated_name")
+        phase = directory_entry.get("phase")
+        if not isinstance(original, str) or not isinstance(isolated, str):
+            raise ValueError("import cleanup batch-directory entry is invalid")
+        try:
+            os.stat(original, dir_fd=imports_fd, follow_symlinks=False)
+            original_exists = True
+        except FileNotFoundError:
+            original_exists = False
+        try:
+            os.stat(isolated, dir_fd=imports_fd, follow_symlinks=False)
+            isolated_exists = True
+        except FileNotFoundError:
+            isolated_exists = False
+        original_present = _cleanup_entry_matches_at(imports_fd, directory_entry, original)
+        isolated_present = _cleanup_entry_matches_at(imports_fd, directory_entry, isolated)
+        if phase == "planned":
+            # A crash may happen after the exclusive move but before its phase
+            # fsync.  Both legal planned representations remain exact-owned.
+            if not ((original_present and not isolated_exists) or (isolated_present and not original_exists)):
+                raise ValueError("import cleanup planned batch-directory inventory is invalid")
+        elif phase == "isolated":
+            # The all-absent form is the retained crash-after-removal boundary.
+            if original_exists or (isolated_exists and not isolated_present):
+                raise ValueError("import cleanup isolated batch-directory inventory is invalid")
+        elif phase == "removed":
+            if original_exists or isolated_exists:
+                raise ValueError("import cleanup removed batch-directory inventory is invalid")
+        else:
+            raise ValueError("import cleanup batch-directory phase is invalid")
 
 
 def _persist_cleanup_at(imports_fd: int, cleanup: Mapping[str, object]) -> dict[str, object]:
@@ -1369,7 +1427,7 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
     transactions_fd, transactions_identity = _open_directory_at(binding, "transactions")
     imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
     try:
-        batches: dict[str, str] = {}
+        batches: dict[str, tuple[str, Mapping[str, str]]] = {}
         cleanup: dict[str, dict[str, object]] = {}
         directories: set[str] = set()
         for name in sorted(os.listdir(imports_fd)):
@@ -1406,7 +1464,7 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                         raise ValueError("import batch directory was replaced before cleanup")
                     entries = pending_cleanup["entries"]
                     assert isinstance(entries, dict)
-                    _validate_cleanup_plan_at(batch_fd, pending_cleanup)
+                    _validate_cleanup_plan_at(batch_fd, pending_cleanup, imports_fd=imports_fd)
                     directory_entry = entries["batch-directory"]
                     assert isinstance(directory_entry, dict)
                     if not _cleanup_entry_matches_at(imports_fd, directory_entry, name):
@@ -1414,7 +1472,7 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                     current = os.stat(name, dir_fd=imports_fd, follow_symlinks=False)
                     if (current.st_dev, current.st_ino) != _cleanup_batch_inode(pending_cleanup):
                         raise ValueError("import batch directory was replaced before cleanup")
-                    batches[batch_identity] = str(pending_cleanup["final_attestation_sha256"])
+                    batches[batch_identity] = (str(pending_cleanup["final_attestation_sha256"]), staged)
                     continue
                 state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
                 batch_identity = state.get("batch_identity")
@@ -1427,7 +1485,7 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                 if set(os.listdir(batch_fd)) != {"batch.json"} | {record_filename(dataset) for dataset in staged}:
                     raise ValueError("import batch inventory is invalid")
                 for dataset, digest in staged.items():
-                    if not isinstance(dataset, str) or not isinstance(digest, str) or len(digest) != 64:
+                    if not isinstance(dataset, str) or not _is_lower_sha256(digest):
                         raise ValueError("import batch staged digests are invalid")
                     raw = _read_file(record_filename(dataset), dir_fd=batch_fd)
                     if _record_digest_from_raw(raw) != digest:
@@ -1438,25 +1496,33 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                     raise ValueError("import batch directory was replaced")
                 if batch_identity in batches:
                     raise ValueError("duplicate import batch identity")
-                batches[batch_identity] = _import_final_attestation(batch_identity, attestation, staged)
+                batches[batch_identity] = (_import_final_attestation(batch_identity, attestation, staged), staged)
             finally:
                 if batch_fd is not None: os.close(batch_fd)
         for batch_identity, state in cleanup.items():
             if batch_identity not in batches:
-                batches[batch_identity] = str(state["final_attestation_sha256"])
+                staged = state["staged_record_digests"]
+                assert isinstance(staged, dict)
+                batches[batch_identity] = (str(state["final_attestation_sha256"]), staged)
         result: set[tuple[str, str]] = set()
         for name in sorted(os.listdir(transactions_fd)):
             if not name.endswith(".json"):
                 raise ValueError("checkpoint transaction inventory is invalid")
             intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
             if intent.get("origin") == "exp424_import":
-                _, _, batch, final = _import_intent_claims(intent)
-                if batches.get(batch) != final:
+                dataset, digest, batch, final = _import_intent_claims(intent)
+                batch_state = batches.get(batch)
+                if (
+                    dataset not in stored["expected_datasets"]
+                    or batch_state is None
+                    or batch_state[0] != final
+                    or batch_state[1].get(dataset) != digest
+                ):
                     raise ValueError("import intent is invalid")
                 result.add((batch, final))
             elif intent.get("origin") != "exp425_native":
                 raise ValueError("checkpoint intent origin is invalid")
-        result.update(batches.items())
+        result.update((batch_identity, state[0]) for batch_identity, state in batches.items())
         _verify_directory_at(binding, "transactions", transactions_identity)
         _verify_directory_at(binding, "import_batches", imports_identity)
         return tuple(sorted(result))

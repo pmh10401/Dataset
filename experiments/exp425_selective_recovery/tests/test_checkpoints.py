@@ -576,6 +576,152 @@ class CheckpointStoreTests(unittest.TestCase):
                         store._reconcile_native_intents(binding=binding)
                 self.assertEqual(_checkpoint_snapshot(root), before)
 
+    def test_import_intent_preflight_rejects_wrong_staged_claims_and_cross_origin_duplicates_without_mutation(self) -> None:
+        """Every import intent is bound to its staged batch before native recovery can unlink."""
+        context = _context()
+        provenance = _provenance(context)
+        cases = ("wrong staged dataset", "wrong staged digest", "cross-origin duplicate")
+        for case in cases:
+            with self.subTest(case=case), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                attestation, batch_identity = _digest("a"), "all-intent-" + case.replace(" ", "-")
+                imported = _import_record_for(context.datasets[1], 1, attestation)
+                authority = object()
+                capabilities._register_authority(authority, "exp424_import")
+                try:
+                    _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, (imported,))
+                finally:
+                    capabilities._close_authority(authority)
+                staged_digest = _import_stage_digest(store, imported)
+                intent_dataset = imported.dataset
+                intent_digest = staged_digest
+                native_dataset = context.datasets[0]
+                if case == "wrong staged dataset":
+                    intent_dataset = context.datasets[2]
+                elif case == "wrong staged digest":
+                    intent_digest = _digest("b")
+                else:
+                    native_dataset = imported.dataset
+                final = _import_final_attestation(store, batch_identity, attestation, (imported,))
+                native = {
+                    "schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native",
+                    "dataset": native_dataset, "record_payload_sha256": _digest("c"),
+                    "run_identity": provenance.run_identity, "run_context_sha256": store.run_context_sha256,
+                    "backend_contract_sha256": provenance.backend_contract_sha256, "backend_audit_sha256": _digest("d"),
+                }
+                imported_intent = {
+                    "schema": "exp425.intent.v1", "origin": "exp424_import", "dataset": intent_dataset,
+                    "record_payload_sha256": intent_digest, "batch_identity": batch_identity,
+                    "final_attestation_sha256": final,
+                }
+                (root / "transactions" / "a-valid-record-absent-native.json").write_bytes(canonical_json_bytes(native))
+                (root / "transactions" / "z-invalid-import.json").write_bytes(canonical_json_bytes(imported_intent))
+                before = _checkpoint_snapshot(root)
+                with store._store_binding(exclusive=True) as binding:
+                    with self.assertRaises(ValueError):
+                        store._reconcile_native_intents(binding=binding)
+                self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_cleanup_preflight_rejects_stale_declared_staged_digest_without_mutation(self) -> None:
+        """Same-inode staged edits cannot retain a stale declared payload digest through cleanup."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            attestation, batch_identity = _digest("a"), "stale-cleanup-digest"
+            record = _import_record_for(context.datasets[0], 0, attestation)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,))
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda phase: (_ for _ in ()).throw(SimulatedProcessDeath()) if phase == "cleanup_tombstone_durable" else None):
+                    with self.assertRaises(SimulatedProcessDeath):
+                        _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,), batch)
+            finally:
+                capabilities._close_authority(authority)
+            staged = root / "import_batches" / batch_identity / checkpoints.record_filename(record.dataset)
+            payload = json.loads(staged.read_bytes())
+            payload["reason"] = "same inode but stale declared digest"
+            staged.write_bytes(canonical_json_bytes(payload))
+            before = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_cleanup_preflight_rejects_forged_batch_directory_phase_without_mutation(self) -> None:
+        """A removed directory phase cannot coexist with the exact owned batch directory."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            attestation, batch_identity = _digest("a"), "forged-directory-phase"
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, ())
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda phase: (_ for _ in ()).throw(SimulatedProcessDeath()) if phase == "cleanup_tombstone_durable" else None):
+                    with self.assertRaises(SimulatedProcessDeath):
+                        _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (), batch)
+            finally:
+                capabilities._close_authority(authority)
+            cleanup_path = root / "import_batches" / checkpoints._cleanup_name(batch_identity)
+            cleanup = json.loads(cleanup_path.read_bytes())
+            cleanup["entries"]["batch-directory"]["phase"] = "removed"
+            body = dict(cleanup)
+            body.pop("payload_sha256")
+            cleanup["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+            cleanup_path.write_bytes(canonical_json_bytes(cleanup))
+            before = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_cleanup_preflight_rejects_uppercase_staged_digest_syntax_without_mutation(self) -> None:
+        """Cleanup digest fields are canonical lowercase SHA-256 values, not merely 64-byte strings."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            attestation, batch_identity = _digest("a"), "uppercase-cleanup-digest"
+            record = _import_record_for(context.datasets[0], 0, attestation)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,))
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda phase: (_ for _ in ()).throw(SimulatedProcessDeath()) if phase == "cleanup_tombstone_durable" else None):
+                    with self.assertRaises(SimulatedProcessDeath):
+                        _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,), batch)
+            finally:
+                capabilities._close_authority(authority)
+            cleanup_path = root / "import_batches" / checkpoints._cleanup_name(batch_identity)
+            cleanup = json.loads(cleanup_path.read_bytes())
+            key = "staged:" + record.dataset
+            uppercase = cleanup["staged_record_digests"][record.dataset].upper()
+            cleanup["staged_record_digests"][record.dataset] = uppercase
+            cleanup["entries"][key]["digest"] = uppercase
+            cleanup["entries"][key]["isolated_name"] = checkpoints._cleanup_isolated_name(batch_identity, key, uppercase)
+            body = dict(cleanup)
+            body.pop("payload_sha256")
+            cleanup["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+            cleanup_path.write_bytes(canonical_json_bytes(cleanup))
+            before = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
     def test_native_load_rejects_trace_literals_and_cross_field_mutations(self) -> None:
         context = _context()
         provenance = _provenance(context)
