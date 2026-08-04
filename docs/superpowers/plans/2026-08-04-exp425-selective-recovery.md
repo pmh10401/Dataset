@@ -83,7 +83,7 @@ Expected: `ModuleNotFoundError: No module named 'experiments.exp425_selective_re
 
 - [ ] **Step 3: Implement immutable eligibility contracts**
 
-Use exact status values `eligible` and `oof_identity_insufficient`. `reason` is `None` for eligible evidence and the stable status string for insufficient evidence.
+Use exact evidence status values `eligible`, `oof_identity_insufficient`, and `preprocessing_abstained`. `reason` is `None` for eligible evidence, `"oof_identity_insufficient"` for insufficient evidence, and the original stable `ProcessedGroup.status` for preprocessing-abstained evidence.
 
 ```python
 @dataclass(frozen=True)
@@ -113,7 +113,7 @@ class EligibilityAssessment:
     evidence: Mapping[int, GroupEligibilityEvidence]
 ```
 
-Validate five folds, sorted unique group lengths, exact 64-character lowercase digests, nonnegative counts, and status/count consistency in `__post_init__`. Require final-fit/final-validation counts only when `processed_status == "candidate_eligible"`; require both to be `None` for `diagnostic_only`. Already preprocessing-abstained groups retain their original status and use a distinct `preprocessing_abstained` evidence status without OOF/final-fit applicability.
+Validate sorted unique group lengths, exact 64-character lowercase digests, nonnegative counts, and status/count consistency in `__post_init__`. `eligible` and `oof_identity_insufficient` evidence require exactly five folds. `preprocessing_abstained` evidence requires `folds == ()`, `final_fit is None`, and `final_validation is None`; it preserves the original processed status and performs no OOF construction. Require final-fit/final-validation counts only when `processed_status == "candidate_eligible"`; require both to be `None` for `diagnostic_only`.
 
 - [ ] **Step 4: Run contract tests and confirm they pass**
 
@@ -176,7 +176,7 @@ filtered = (
 )
 ```
 
-Do not catch or classify the Exp417 exception text. For eligible groups, call `identity_grouped_folds` in the parity test and require exact index equality.
+`channels=None` is the only constructor input used for a newly OOF-insufficient group; Exp417 `ProcessedGroup.__post_init__` canonically exposes that as an immutable empty mapping, so tests assert `dict(filtered.channels) == {}` rather than a `None` property value. Already preprocessing-abstained groups bypass the fold code entirely and retain their original `ProcessedGroup` byte-for-byte with `preprocessing_abstained`, empty folds, and unavailable final counts in evidence. Do not catch or classify the Exp417 exception text. For eligible groups, call `identity_grouped_folds` in the parity test and require exact index equality.
 
 - [ ] **Step 7: Run eligibility and frozen preprocessing regressions**
 
@@ -204,7 +204,8 @@ git commit -m "feat(exp425): classify OOF identity insufficiency"
 **Interfaces:**
 - Produces: `Exp425RunProvenance`, `SourceProvenGroupEvidence`, `NativeRecordEnvelope`, `ImportedRecordEnvelope`, and `Exp425Record`.
 - Produces: `Exp425CheckpointStore.create(root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> Exp425CheckpointStore`.
-- Produces: `Exp425CheckpointStore.open(root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> Exp425CheckpointStore`.
+- Produces: `Exp425CheckpointStore.open(root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> Exp425CheckpointStore` for mutating resume/reconciliation only.
+- Produces: `Exp425CheckpointStore.inspect_read_only(root: Path, *, expected_run_identity: str | None = None) -> Exp425CheckpointInspection`, a descriptor-safe metadata view that never creates files, acquires an exclusive lock, reconciles intents, quarantines, repairs, or changes timestamps.
 - Produces public read methods `completed_record_digests() -> Mapping[str, str]`, `load_record(dataset: str) -> Exp425Record`, and `iter_records() -> Iterator[Exp425Record]`.
 - Produces package-private native primitive `_commit_native(capability: object, record: NativeRecordEnvelope) -> str`, which accepts only the broker's exact one-use `_Capability` minted for Task 5's registered runtime authority after complete frozen execution.
 - Produces package-private import primitives `_begin_import_batch(capability: object, batch_identity: str)`, `_stage_imported(capability: object, batch: object, record: ImportedRecordEnvelope)`, and `_promote_import_batch(capability: object, batch: object)`. Each accepts a fresh broker `_Capability` minted for one exact operation by Task 3's registered live source authority; the authority object itself is never accepted.
@@ -227,6 +228,7 @@ Assert that:
 - a dataset record never contains keys `context`, `lanes`, `datasets`, or `test_identity_manifest` below the envelope root;
 - round-trip reconstruction injects the exact shared context;
 - `new` creation rejects an existing path and open rejects an absent path;
+- `inspect_read_only` validates only canonical root/progress metadata through retained descriptors and a shared lock, returns `Exp425CheckpointInspection`, leaves native/import intents unchanged, never quarantines corruption, and produces byte-for-byte identical files and metadata timestamps before/after inspection;
 - unknown files, symlinks, digest mismatch, duplicate dataset, path replacement, and concurrent writers fail closed;
 - simulated process death after intent fsync, record fsync, progress fsync, and intent removal has one deterministic recovery result at each boundary;
 - generic open reconciles native intents but leaves imported intents out of progress and reports `import_revalidation_required` with the exact batch/attestation digest;
@@ -258,19 +260,29 @@ record_body = {
     "dataset": record.dataset,
     "origin": record.origin,
     "run_context_sha256": self.run_context_sha256,
-    "evidence": record.evidence_payload(),
+    "result_payload": record.result_payload,
+    "group_evidence": record.group_evidence,
+    "trace_sha256": record.trace_sha256,
+    "model_hashes": record.model_hashes,
+    "calibration_hashes": record.calibration_hashes,
+    "backend_audit_sha256": record.backend_audit_sha256,
     "elapsed_seconds": record.elapsed_seconds,
+    "reason": record.reason,
 }
-record_body["payload_sha256"] = sha256(
-    canonical_json_bytes(record_body)
-).hexdigest()
+record_payload_sha256 = sha256(canonical_json_bytes(record_body)).hexdigest()
+serialized_envelope = {
+    **record_body,
+    "record_payload_sha256": record_payload_sha256,
+}
 ```
+
+The native record preimage is exactly `record_body` above: it has no `record_payload_sha256` or alias such as `payload_sha256`. Imported envelopes use their separately specified imported schema and may not be passed to the native digest/commit path.
 
 Reject duplicate JSON keys, extra keys, noncanonical bytes, nonfinite numbers, unknown statuses, and any embedded TEST-label or evaluation key.
 
 - [ ] **Step 4: Implement descriptor-safe creation, writes, progress, and lazy reads**
 
-Use `O_NOFOLLOW`, directory descriptors, `fcntl.flock`, exclusive temp creation, `fsync`, and atomic no-replace publication. `progress.json` contains sorted `record_digests`, completed/expected counts, current dataset, and a payload digest. Validate the root and progress once per `open`; `load_record` validates and decodes one requested dataset only. Never deserialize all completed records in the constructor.
+Use `O_NOFOLLOW`, directory descriptors, `fcntl.flock`, exclusive temp creation, `fsync`, and atomic no-replace publication. `progress.json` contains sorted `record_digests`, completed/expected counts, current dataset, and a payload digest. Validate the root and progress once per mutating `open`; `load_record` validates and decodes one requested dataset only. Never deserialize all completed records in the constructor. Implement `inspect_read_only` separately: retain no-follow root/file descriptors and a shared lock, validate canonical root/progress bytes and referenced inventory names/digests without opening a write-capable descriptor, and return immutable metadata. It must not call mutating `open`, recovery, quarantine, temp creation, `fsync`, or atomic replacement; corruption raises a read-only inspection error in place.
 
 ```python
 def iter_records(self) -> Iterator[Exp425Record]:
@@ -330,7 +342,7 @@ git commit -m "perf(exp425): compact provenance-bound checkpoints"
 
 - [ ] **Step 1: Write failing compatibility and mutation tests**
 
-Create a minimal valid Exp424-format source fixture and assert acceptance only when all of these match: exact source real path, preregistered root provenance SHA `f7526bf638f4c1051a5970271bdbbccd753986f7d067ec1260817da884c1b757`, progress SHA `5e9aa4a4b7240ac89c078bdc1dce4b41bda6b6dbc505dd9ad49782556da7bd84`, sorted record-set SHA `d74a0def7788db89a1d3e32f46662abf07c44c7cbbce5e02612b510e2fdf4258`, source commit `4a398374d880f859f285a271ad63de4a5e55b028`, entrypoint SHA256 `98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1`, entrypoint Git blob `da5374b0bf38803aa506dfda664d76395d7f28f9`, universe, DB/lane/config/fold/model/seed/runtime/backend/MPS device and device guard/batch/chunk/score-cache components and digest/device-transfer/synchronization/percentile/precision/threshold/alpha/candidate/routing contracts, candidate coordinates, and nonterminal evidence. Recalculate the record-set SHA only as `sha256(canonical_json_bytes(sorted(progress["completed_record_digests"].items())))`; separately prove hashing the mapping or a differently ordered array is rejected. Add an independent mismatch rejection test for every explicit compatibility field, a terminal result, a symlink, an unknown file, and source mutation between validation, staging, final revalidation, and promotion. Add tests rejecting direct construction, `copy.copy`, pickle, a forged duck-typed object, a closed source authority, wrong source/batch/attestation claims, and every imported-intent crash boundary; generic checkpoint open must only report `import_revalidation_required`. For every crash boundary, close and unregister the old source authority and invalidate all its capabilities, fully revalidate and register a new source authority with a different nonce, prove the durable batch attestation is unchanged, and prove fresh per-operation capabilities resume promotion successfully exactly once.
+Create a minimal valid two-record Exp424-format source fixture. Its contract uses fixture-derived exact real path, root-provenance digest, progress digest, and sorted record-set digest; never require that synthetic bytes reproduce production hashes. Against those derived values, assert acceptance only when source commit `4a398374d880f859f285a271ad63de4a5e55b028`, entrypoint SHA256 `98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1`, entrypoint Git blob `da5374b0bf38803aa506dfda664d76395d7f28f9`, universe, DB/lane/config/fold/model/seed/runtime/backend/MPS device and device guard/batch/chunk/score-cache components and digest/device-transfer/synchronization/percentile/precision/threshold/alpha/candidate/routing contracts, candidate coordinates, and nonterminal evidence match. Recalculate the fixture record-set SHA only as `sha256(canonical_json_bytes(sorted(progress["completed_record_digests"].items())))`; separately prove hashing the mapping or a differently ordered array is rejected. Add an independent mismatch rejection test for every explicit compatibility field, a terminal result, a symlink, an unknown file, and source mutation between validation, staging, final revalidation, and promotion. Add tests rejecting direct construction, `copy.copy`, pickle, a forged duck-typed object, a closed source authority, wrong source/batch/attestation claims, and every imported-intent crash boundary; generic checkpoint open must only report `import_revalidation_required`. For every crash boundary, close and unregister the old source authority and invalidate all its capabilities, fully revalidate and register a new source authority with a different nonce, prove the durable batch attestation is unchanged, and prove fresh per-operation capabilities resume promotion successfully exactly once. Verify the production root path and its fixed root/progress/record-set digests only in the read-only real-source smoke in Step 7 and the Task 6 readiness gate.
 
 ```python
 with open_validated_exp424_source(source_root, contract) as snapshot:
@@ -450,7 +462,7 @@ Expected: all tests pass.
 
 - [ ] **Step 7: Run a read-only real Exp424 inventory smoke**
 
-Run a new inspection command against `/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint` that validates root/progress/record accounting without writing a target. Require exactly 1,117 records, 983 importable nonterminal records, 134 rejected terminal records, one terminal reason code derived from structured source evidence, and zero source mutations.
+Run a new inspection command against `/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint` that validates root/progress/record accounting without writing a target. Here, and only here plus readiness, require the production root provenance SHA `f7526bf638f4c1051a5970271bdbbccd753986f7d067ec1260817da884c1b757`, progress SHA `5e9aa4a4b7240ac89c078bdc1dce4b41bda6b6dbc505dd9ad49782556da7bd84`, and sorted record-set SHA `d74a0def7788db89a1d3e32f46662abf07c44c7cbbce5e02612b510e2fdf4258`. Require exactly 1,117 records, 983 importable nonterminal records, 134 rejected terminal records, one terminal reason code derived from structured source evidence, and zero source mutations.
 
 Expected summary fields:
 
@@ -585,7 +597,8 @@ self.assertEqual(progress["state"], "complete_review_only")
 self.assertIsNone(progress["current_dataset"])
 self.assertEqual(progress["completed_datasets"], 3)
 self.assertEqual(progress["remaining_datasets"], 0)
-self.assertFalse(progress["test_labels_opened"])
+self.assertNotIn("test_labels_opened", progress)
+self.assertNotIn("contains_test_labels", progress)
 ```
 
 - [ ] **Step 3: Run runtime and CLI tests and confirm expected import failures**
@@ -615,7 +628,7 @@ Load only compact record digests at startup. Iterate the context's sorted univer
 
 - [ ] **Step 6: Implement atomic progress, parent logs, and explicit CLI modes**
 
-Write progress through temp-file `fsync` plus atomic replace. Flush one canonical JSON line per terminal dataset with ordinal, total, dataset, origin, stage, status, reason, elapsed/cumulative time, counters, PID, and run identity. `new` creates both roots, `resume` opens both exact roots and reconciles stale state, and `inspect` reads already-published status/checkpoint metadata without mutation or expensive gate computation. Do not use launchd restart semantics.
+Write progress through temp-file `fsync` plus atomic replace. Runtime progress contains no keys with `label`, `target`, or post-hoc evaluation semantics; the two false label-governance flags live only in Task 6 manifest/status. Flush one canonical JSON line per terminal dataset with ordinal, total, dataset, origin, stage, status, reason, elapsed/cumulative time, counters, PID, and run identity. `new` creates both roots, `resume` opens both exact roots and reconciles stale state, and `inspect` uses only Task 2 `inspect_read_only` plus already-published status metadata, without invoking mutating `open`, reconciliation, quarantine, hashes, benchmarks, model/DB computation, or any filesystem write. Do not use launchd restart semantics.
 
 ```python
 terminal_line = {

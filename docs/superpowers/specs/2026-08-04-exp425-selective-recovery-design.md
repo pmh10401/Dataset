@@ -115,6 +115,14 @@ invents them and remains visibly distinct from native Exp425 evidence.
 
 Human-readable exception text is diagnostic only and never the decision key.
 
+The native eligibility evidence status domain is exactly `eligible`,
+`oof_identity_insufficient`, and `preprocessing_abstained`. The first two carry
+exactly five OOF fold-count records. `preprocessing_abstained` bypasses fold
+construction, retains the original processed-group status as its stable reason,
+and carries empty folds plus non-applicable final counts. A newly OOF-insufficient
+`ProcessedGroup` is constructed with `channels=None`; Exp417 canonically exposes
+that state as an immutable empty mapping.
+
 ## 5. Selective Predecessor Import
 
 Exp425 may import only the 983 nonterminal Exp424 records. This is an explicit
@@ -357,6 +365,12 @@ A matching completed review-only run returns idempotently after validation.
 Existing unrelated, partial, or mismatched paths fail closed. The launcher is
 one-shot and does not automatically restart a failed or completed process.
 
+Checkpoint inspection has a dedicated descriptor-safe read-only opener. It uses
+only no-follow read descriptors and a shared lock, validates canonical root and
+progress metadata in place, and never invokes mutating resume/open, reconciliation,
+quarantine, repair, temporary-file creation, `fsync`, or atomic replacement.
+Corruption is reported without changing the checkpoint or its timestamps.
+
 The atomic runtime state machine is:
 
 `initializing -> importing -> running -> finalizing -> complete_review_only`
@@ -426,6 +440,10 @@ The manifest must state:
 - MPS/runtime versions and frozen numerical contract;
 - DB snapshot and hash accounting;
 - checkpoint size/resume benchmark and optimization decision.
+
+The two label-governance keys appear only in manifest and status governance
+objects and are the literal boolean `false`. Runtime progress and per-dataset
+logs contain neither key and contain no TEST-label or post-hoc evaluation fields.
 
 Priority-review and Shadow candidates cannot become automatic alerts. Confusion
 matrices or F1 metrics may be computed only by a separate post-hoc evaluator after
