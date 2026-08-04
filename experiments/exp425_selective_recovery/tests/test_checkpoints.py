@@ -335,6 +335,30 @@ class CheckpointStoreTests(unittest.TestCase):
             self.assertEqual(inspection.completed_count, 0)
             self.assertEqual(before, after)
 
+    def test_quarantine_import_batch_persists_exact_owned_evidence(self) -> None:
+        """A quarantine without durable batch/inode/attestation/reason binding is not recoverable evidence."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            store = Exp425CheckpointStore.create(Path(directory) / "checkpoints", provenance, context)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = store._begin_import_batch(capabilities._mint(authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="owned-batch", attestation_sha256=_digest("a"), process_nonce="nonce"), "owned-batch")
+                original_inode = batch.inode
+                reason = _digest("b")
+                evidence = store._quarantine_import_batch(batch, final_attestation_sha256=None, reason_sha256=reason)
+            finally:
+                capabilities._close_authority(authority)
+            self.assertEqual(evidence.batch_identity, "owned-batch")
+            self.assertEqual(evidence.identity, original_inode)
+            persisted = json.loads((evidence.directory / "quarantine.json").read_text())
+            self.assertEqual(persisted["batch_identity"], "owned-batch")
+            self.assertEqual(persisted["source_attestation_sha256"], _digest("a"))
+            self.assertEqual(persisted["reason_sha256"], reason)
+            self.assertEqual(tuple(persisted["original_inode"]), original_inode)
+            self.assertEqual(Exp425CheckpointStore.inspect_read_only(store.root).completed_count, 0)
+
     def test_inspect_read_only_preserves_all_observed_bytes_and_metadata_on_success_and_failure(self) -> None:
         """Any inspect write, reconciliation, or quarantine would change this complete snapshot."""
         context = _context()
