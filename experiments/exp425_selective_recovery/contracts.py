@@ -293,6 +293,69 @@ class Exp425RunProvenance(_DeepImmutable):
 
 
 @dataclass(frozen=True)
+class MPSAdoptionAssessment(_DeepImmutable):
+    """Immutable review finding; it is deliberately distinct from CPU science."""
+
+    source_path: str; source_sha256: str; candidate_identity: bool; max_normalized_error: float
+    spearman: float; observed_speedup: float; required_speedup: float; adopted: bool
+    reason: str; requested_device: str = "mps"
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "source_path", _nonempty_string(self.source_path, "source_path"))
+        object.__setattr__(self, "source_sha256", _sha256_digest(self.source_sha256, "source_sha256"))
+        if self.requested_device != "mps" or type(self.candidate_identity) is not bool or type(self.adopted) is not bool:
+            raise ValueError("MPS adoption assessment device or flags are invalid")
+        for name in ("max_normalized_error", "spearman", "observed_speedup", "required_speedup"):
+            object.__setattr__(self, name, _finite_elapsed(getattr(self, name)))
+        if self.reason != "speedup_below_threshold" or self.adopted or self.observed_speedup >= self.required_speedup:
+            raise ValueError("MPS adoption assessment must truthfully record non-adoption")
+
+    def payload(self) -> dict[str, object]:
+        return {"schema": "exp425.mps-adoption.v1", "source_path": self.source_path, "source_sha256": self.source_sha256, "candidate_identity": self.candidate_identity, "max_normalized_error": self.max_normalized_error, "spearman": self.spearman, "observed_speedup": self.observed_speedup, "required_speedup": self.required_speedup, "adopted": self.adopted, "reason": self.reason, "requested_device": self.requested_device}
+
+    @property
+    def sha256(self) -> str:
+        from hashlib import sha256
+        from experiments.exp403_408.artifact_io import canonical_json_bytes
+        return sha256(canonical_json_bytes(self.payload())).hexdigest()
+
+
+@dataclass(frozen=True)
+class MPSExecutionEvidence(_DeepImmutable):
+    """Actual native execution facts, never an acceleration-adoption claim."""
+
+    applicable: bool; requested_device: str; actual_device: str | None; mps_built: bool; mps_available: bool
+    fallback: bool; model_devices: Mapping[str, str]; torch_version: str; source_commit: str
+    source_hashes: Mapping[str, str]; executed_head: str; timer_scope: str; explicit_synchronize_calls: int
+
+    def __post_init__(self) -> None:
+        if type(self.applicable) is not bool or type(self.mps_built) is not bool or type(self.mps_available) is not bool or type(self.fallback) is not bool or self.requested_device != "mps" or self.explicit_synchronize_calls != 0:
+            raise ValueError("MPS execution evidence flags are invalid")
+        if self.applicable:
+            if self.actual_device != "mps" or self.fallback or not self.mps_built or not self.mps_available or not self.model_devices or any(device != "mps" for device in self.model_devices.values()):
+                raise ValueError("applicable MPS execution evidence is invalid")
+        elif self.actual_device is not None or self.model_devices:
+            raise ValueError("inapplicable MPS execution must not claim device work")
+        for name in ("torch_version", "source_commit", "executed_head", "timer_scope"):
+            object.__setattr__(self, name, _nonempty_string(getattr(self, name), name))
+        if any(len(getattr(self, name)) != 40 or any(character not in "0123456789abcdef" for character in getattr(self, name)) for name in ("source_commit", "executed_head")):
+            raise ValueError("MPS execution commits are invalid")
+        hashes = _frozen_mapping(self.source_hashes, "source_hashes")
+        if not hashes or any(not isinstance(key, str) or _sha256_digest(value, "source_hash") != value for key, value in hashes.items()):
+            raise ValueError("MPS execution source hashes are invalid")
+        object.__setattr__(self, "source_hashes", hashes); object.__setattr__(self, "model_devices", _frozen_mapping(self.model_devices, "model_devices"))
+
+    def payload(self) -> dict[str, object]:
+        return {"schema": "exp425.mps-execution.v1", "applicable": self.applicable, "requested_device": self.requested_device, "actual_device": self.actual_device, "mps_built": self.mps_built, "mps_available": self.mps_available, "fallback": self.fallback, "model_devices": dict(sorted(self.model_devices.items())), "torch_version": self.torch_version, "source_commit": self.source_commit, "source_hashes": dict(sorted(self.source_hashes.items())), "executed_head": self.executed_head, "timer_scope": self.timer_scope, "explicit_synchronize_calls": self.explicit_synchronize_calls}
+
+    @property
+    def sha256(self) -> str:
+        from hashlib import sha256
+        from experiments.exp403_408.artifact_io import canonical_json_bytes
+        return sha256(canonical_json_bytes(self.payload())).hexdigest()
+
+
+@dataclass(frozen=True)
 class SourceProvenGroupEvidence(_DeepImmutable):
     source_group_evidence: Mapping[str, object]
     source_group_evidence_sha256: str
@@ -309,6 +372,8 @@ class NativeRecordEnvelope(_DeepImmutable):
     frozen_train_contract_sha256: str; scoring_evidence_sha256: str; result_evidence_sha256: str
     model_hashes: Mapping[str, object]; calibration_hashes: Mapping[str, object]; backend_audit_sha256: str
     trace_sha256: str; record_payload_sha256: str; elapsed_seconds: float; reason: str | None; origin: str = "exp425_native"; context: object | None = field(default=None, compare=False, repr=False)
+    mps_adoption: MPSAdoptionAssessment | None = field(default=None, compare=False)
+    mps_execution: MPSExecutionEvidence | None = field(default=None, compare=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "dataset", _nonempty_string(self.dataset, "dataset"))
@@ -319,6 +384,12 @@ class NativeRecordEnvelope(_DeepImmutable):
             object.__setattr__(self, name, _freeze_payload_mapping(getattr(self, name), name))
         object.__setattr__(self, "elapsed_seconds", _finite_elapsed(self.elapsed_seconds))
         if self.reason is not None and not isinstance(self.reason, str): raise ValueError("reason must be a string or None")
+        if (self.mps_adoption is None) != (self.mps_execution is None):
+            raise ValueError("native MPS adoption/execution evidence must be paired")
+        if self.mps_adoption is not None and not isinstance(self.mps_adoption, MPSAdoptionAssessment):
+            raise ValueError("native MPS adoption evidence is invalid")
+        if self.mps_execution is not None and not isinstance(self.mps_execution, MPSExecutionEvidence):
+            raise ValueError("native MPS execution evidence is invalid")
 
 
 @dataclass(frozen=True)

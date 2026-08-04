@@ -22,7 +22,7 @@ from experiments.exp417_causal_multihorizon_shadow.checkpoints import _context_f
 from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenRunContext
 
 from . import capabilities
-from .contracts import Exp425Record, Exp425RunProvenance, ImportedRecordEnvelope, NativeRecordEnvelope, SourceProvenGroupEvidence, thaw_payload
+from .contracts import Exp425Record, Exp425RunProvenance, ImportedRecordEnvelope, MPSAdoptionAssessment, MPSExecutionEvidence, NativeRecordEnvelope, SourceProvenGroupEvidence, thaw_payload
 
 
 _ROOT_FILES = frozenset({"checkpoint_provenance.json", "run_context.json", "progress.json", "datasets", "transactions", "import_batches"})
@@ -697,6 +697,8 @@ class Exp425CheckpointStore:
 
 def _native_trace_sha256(run_identity: str, context_sha256: str, record: NativeRecordEnvelope) -> str:
     preimage = {"schema": "exp425.native-trace.v1", "run_identity": run_identity, "dataset": record.dataset, "run_context_sha256": context_sha256, "train_identity_sha256": record.train_identity_sha256, "eligibility_sha256": record.eligibility_sha256, "processed_groups_sha256": record.processed_groups_sha256, "model_evidence_sha256": record.model_evidence_sha256, "frozen_train_contract_sha256": record.frozen_train_contract_sha256, "scoring_evidence_sha256": record.scoring_evidence_sha256, "result_evidence_sha256": record.result_evidence_sha256, "backend_audit_sha256": record.backend_audit_sha256, "device": "mps"}
+    if record.mps_adoption is not None:
+        preimage |= {"schema": "exp425.native-trace.v2", "mps_adoption_sha256": record.mps_adoption.sha256, "mps_execution_sha256": record.mps_execution.sha256}
     payload = dict(record.result_payload)
     if set(payload) != {"effective_result", "native_trace_body"} or not isinstance(payload["effective_result"], Mapping) or not isinstance(payload["native_trace_body"], Mapping):
         raise ValueError("native result_payload schema is invalid")
@@ -706,7 +708,10 @@ def _native_trace_sha256(run_identity: str, context_sha256: str, record: NativeR
 
 
 def _native_record_body(context_sha256: str, record: NativeRecordEnvelope) -> dict[str, object]:
-    return {"schema_version": "exp425.dataset.v1", "dataset": record.dataset, "origin": record.origin, "run_context_sha256": context_sha256, "result_payload": thaw_payload(record.result_payload), "group_evidence": thaw_payload(record.group_evidence), "trace_sha256": record.trace_sha256, "model_hashes": thaw_payload(record.model_hashes), "calibration_hashes": thaw_payload(record.calibration_hashes), "backend_audit_sha256": record.backend_audit_sha256, "elapsed_seconds": record.elapsed_seconds, "reason": record.reason}
+    body = {"schema_version": "exp425.dataset.v1", "dataset": record.dataset, "origin": record.origin, "run_context_sha256": context_sha256, "result_payload": thaw_payload(record.result_payload), "group_evidence": thaw_payload(record.group_evidence), "trace_sha256": record.trace_sha256, "model_hashes": thaw_payload(record.model_hashes), "calibration_hashes": thaw_payload(record.calibration_hashes), "backend_audit_sha256": record.backend_audit_sha256, "elapsed_seconds": record.elapsed_seconds, "reason": record.reason}
+    if record.mps_adoption is not None:
+        body |= {"mps_adoption": record.mps_adoption.payload(), "mps_adoption_sha256": record.mps_adoption.sha256, "mps_execution": record.mps_execution.payload(), "mps_execution_sha256": record.mps_execution.sha256}
+    return body
 
 
 def _native_intent_claims(intent: Mapping[str, object]) -> tuple[str, str, str, str, str, str]:
@@ -741,7 +746,7 @@ def _import_intent_claims(intent: Mapping[str, object]) -> tuple[str, str, str, 
 
 def _validate_native_record_binding(payload: Mapping[str, object], trace: Mapping[str, object], *, native_run_identity: str | None, native_context_sha256: str | None) -> None:
     if (
-        trace.get("schema") != "exp425.native-trace.v1"
+        trace.get("schema") not in {"exp425.native-trace.v1", "exp425.native-trace.v2"}
         or trace.get("dataset") != payload.get("dataset")
         or trace.get("run_context_sha256") != payload.get("run_context_sha256")
         or trace.get("device") != "mps"
@@ -1162,7 +1167,8 @@ def _decode_record(raw: bytes, context: FrozenRunContext | None, *, native_run_i
     payload.pop("record_payload_sha256")
     if origin == "exp425_native":
         required = {"schema_version", "dataset", "origin", "run_context_sha256", "result_payload", "group_evidence", "trace_sha256", "model_hashes", "calibration_hashes", "backend_audit_sha256", "elapsed_seconds", "reason"}
-        if set(payload) != required or payload["schema_version"] != "exp425.dataset.v1": raise ValueError("native checkpoint record keys are invalid")
+        extended = required | {"mps_adoption", "mps_adoption_sha256", "mps_execution", "mps_execution_sha256"}
+        if set(payload) != required and set(payload) != extended or payload["schema_version"] != "exp425.dataset.v1": raise ValueError("native checkpoint record keys are invalid")
         result_payload = payload["result_payload"]
         if not isinstance(result_payload, dict) or set(result_payload) != {"effective_result", "native_trace_body"}:
             raise ValueError("native checkpoint result payload is invalid")
@@ -1178,10 +1184,18 @@ def _decode_record(raw: bytes, context: FrozenRunContext | None, *, native_run_i
         if "candidate_coordinates" in effective and not isinstance(effective["candidate_coordinates"], list):
             raise ValueError("native checkpoint candidate coordinates are invalid")
         trace = result_payload["native_trace_body"]
-        if not isinstance(trace, dict) or set(trace) != {"schema", "run_identity", "dataset", "run_context_sha256", "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256", "device"} or sha256(canonical_json_bytes(trace)).hexdigest() != payload["trace_sha256"]:
+        trace_keys = {"schema", "run_identity", "dataset", "run_context_sha256", "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256", "device"}
+        if not isinstance(trace, dict) or set(trace) != trace_keys and set(trace) != trace_keys | {"mps_adoption_sha256", "mps_execution_sha256"} or sha256(canonical_json_bytes(trace)).hexdigest() != payload["trace_sha256"]:
             raise ValueError("native checkpoint trace is invalid")
         _validate_native_record_binding(payload, trace, native_run_identity=native_run_identity, native_context_sha256=native_context_sha256)
-        return NativeRecordEnvelope(payload["dataset"], result_payload, payload["group_evidence"], trace["train_identity_sha256"], trace["eligibility_sha256"], trace["processed_groups_sha256"], trace["model_evidence_sha256"], trace["frozen_train_contract_sha256"], trace["scoring_evidence_sha256"], trace["result_evidence_sha256"], payload["model_hashes"], payload["calibration_hashes"], payload["backend_audit_sha256"], payload["trace_sha256"], digest, payload["elapsed_seconds"], payload["reason"], context=context)
+        adoption = execution = None
+        if set(payload) == extended:
+            adoption_raw, execution_raw = payload["mps_adoption"], payload["mps_execution"]
+            if not isinstance(adoption_raw, dict) or not isinstance(execution_raw, dict): raise ValueError("native MPS payload is invalid")
+            adoption = MPSAdoptionAssessment(adoption_raw["source_path"], adoption_raw["source_sha256"], adoption_raw["candidate_identity"], adoption_raw["max_normalized_error"], adoption_raw["spearman"], adoption_raw["observed_speedup"], adoption_raw["required_speedup"], adoption_raw["adopted"], adoption_raw["reason"], adoption_raw["requested_device"])
+            execution = MPSExecutionEvidence(execution_raw["applicable"], execution_raw["requested_device"], execution_raw["actual_device"], execution_raw["mps_built"], execution_raw["mps_available"], execution_raw["fallback"], execution_raw["model_devices"], execution_raw["torch_version"], execution_raw["source_commit"], execution_raw["source_hashes"], execution_raw["executed_head"], execution_raw["timer_scope"], execution_raw["explicit_synchronize_calls"])
+            if adoption.sha256 != payload["mps_adoption_sha256"] or execution.sha256 != payload["mps_execution_sha256"] or trace.get("mps_adoption_sha256") != adoption.sha256 or trace.get("mps_execution_sha256") != execution.sha256: raise ValueError("native MPS digest is invalid")
+        return NativeRecordEnvelope(payload["dataset"], result_payload, payload["group_evidence"], trace["train_identity_sha256"], trace["eligibility_sha256"], trace["processed_groups_sha256"], trace["model_evidence_sha256"], trace["frozen_train_contract_sha256"], trace["scoring_evidence_sha256"], trace["result_evidence_sha256"], payload["model_hashes"], payload["calibration_hashes"], payload["backend_audit_sha256"], payload["trace_sha256"], digest, payload["elapsed_seconds"], payload["reason"], context=context, mps_adoption=adoption, mps_execution=execution)
     if origin == "exp424_import":
         evidence = payload.get("group_evidence")
         required = {"schema_version", "dataset", "origin", "run_context_sha256", "result_payload", "group_evidence", "source_root_sha256", "source_progress_sha256", "source_record_sha256", "source_result_sha256", "compatibility_attestation_sha256", "elapsed_seconds", "reason"}

@@ -29,7 +29,7 @@ from experiments.exp425_selective_recovery.database import Exp425DatabaseSnapsho
 from experiments.exp425_selective_recovery.mps_parity import (
     DATABASE_SHA256, EXPECTED_LEGACY_OOF, EXPECTED_MODEL_HASHES, FIXTURE,
     GOLDEN_SOURCE_COMMIT, SmokeEvidenceWriter, compare_shared_science,
-    review_only_mps_audit, validate_golden_reference,
+    authenticated_cpu_audit, review_only_mps_assessment, validate_golden_reference,
 )
 from experiments.exp425_selective_recovery.runtime import AtomicProgressWriter, _compute_native, build_exp425_runtime
 
@@ -137,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
                 run_identity=writer.run_identity, git_commit=GOLDEN_SOURCE_COMMIT, database_sha256=DATABASE_SHA256,
                 lane_artifact_sha256={"hard": lanes.exp291_prediction_sha256, "standard": lanes.exp292_prediction_sha256, "priority": lanes.exp292_prediction_sha256, "automatic_normal": lanes.exp291_prediction_sha256},
                 frozen_config_sha256=_sha(asdict(FROZEN_CONFIG)), fold_contract_sha256=_sha({"runner": golden.source_hashes["experiments/exp417_causal_multihorizon_shadow/runner.py"]}),
-                model_contract_sha256=_sha(golden.source_hashes), backend_contract_sha256=_sha({"review_only": True, "audit": asdict(review_only_mps_audit())}),
+                model_contract_sha256=_sha(golden.source_hashes), backend_contract_sha256=_sha({"review_only": True, "cpu_audit": asdict(authenticated_cpu_audit()), "adoption": review_only_mps_assessment().payload()}),
                 model_seeds=FROZEN_CONFIG.model_seeds, perturbation_seeds=FROZEN_CONFIG.perturbation_seeds,
                 runtime_versions=context.runtime_versions, expected_datasets=context.datasets,
                 predecessor_compatibility_sha256=_sha({"golden": golden.record_sha256, "payload": golden.record["payload_sha256"]}),
@@ -145,8 +145,8 @@ def main(argv: list[str] | None = None) -> int:
             checkpoint_root = output / "checkpoint"
             store = Exp425CheckpointStore.create(checkpoint_root, provenance, context)
             runtime_writer = AtomicProgressWriter.create(output_root=output / "runtime", run_identity=writer.run_identity, command="new", checkpoint_root=checkpoint_root, total_datasets=len(context.datasets), backend="mps")
-            audit = review_only_mps_audit()
-            session = build_exp425_runtime(snapshot, audit, runtime_writer)
+            audit, adoption = authenticated_cpu_audit(), review_only_mps_assessment()
+            session = build_exp425_runtime(snapshot, audit, adoption, runtime_writer)
             session._fold_contract_sha256 = provenance.fold_contract_sha256
             counters = {"train": 0, "test_values": 0, "test_labels": 0}
             original_train = Exp425DatabaseSnapshot.load_train
@@ -173,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError("shared parity/status/candidate gate failed")
             capability = capabilities._mint(session, kind="native", run_identity=store.provenance.run_identity, dataset=FIXTURE, context_sha256=store.run_context_sha256, trace_sha256=native.trace_sha256, record_sha256=native.record_payload_sha256, backend_sha256=native.backend_audit_sha256, process_nonce=session.process_nonce)
             checkpoint_digest = store._commit_native(capability, native)
-            result = {"schema": "exp425.task5.mps-parity-result.v1", "success": True, "fixture": FIXTURE, "stage": "complete", "backend": "mps", "fallback": False, "loader_counts": counters, "wall_seconds": wall, "timer_scope": "_compute_native return after production implicit CPU/NumPy/serialization/calibration synchronization", "explicit_mps_synchronize_calls": 0, "torch": torch.__version__, "device": str(torch.device("mps")), "golden": {"record_sha256": golden.record_sha256, "payload_sha256": golden.record["payload_sha256"], "source_hashes": dict(golden.source_hashes)}, "review_only_backend_audit": asdict(audit), "actual": actual, "parity": parity, "native_trace": asdict(trace), "native_record_sha256": native.record_payload_sha256, "checkpoint_record_sha256": checkpoint_digest, "checkpoint_path": str(checkpoint_root), "limitation": "Exp424 retained no per-synthetic-query scores; direct historical per-query deltas are unavailable."}
+            result = {"schema": "exp425.task5.mps-parity-result.v1", "success": True, "fixture": FIXTURE, "stage": "complete", "backend": "mps", "fallback": False, "loader_counts": counters, "wall_seconds": wall, "timer_scope": "_compute_native return after production implicit CPU/NumPy/serialization/calibration synchronization", "explicit_mps_synchronize_calls": 0, "torch": torch.__version__, "device": str(torch.device("mps")), "golden": {"record_sha256": golden.record_sha256, "payload_sha256": golden.record["payload_sha256"], "source_hashes": dict(golden.source_hashes)}, "cpu_scientific_audit": asdict(audit), "mps_adoption": adoption.payload(), "actual": actual, "parity": parity, "native_trace": asdict(trace), "native_record_sha256": native.record_payload_sha256, "checkpoint_record_sha256": checkpoint_digest, "checkpoint_path": str(checkpoint_root), "limitation": "Exp424 retained no per-synthetic-query scores; direct historical per-query deltas are unavailable."}
             writer.result(result); writer.progress(stage="complete", current_dataset=None, success=True, completed=1, total=1, loader_counts=counters, wall_seconds=wall, checkpoint=str(checkpoint_root)); writer._append("parent.log", b"complete\n")
         return 0
     except BaseException as error:

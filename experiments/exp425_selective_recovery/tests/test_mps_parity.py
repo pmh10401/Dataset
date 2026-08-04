@@ -72,13 +72,13 @@ class MPSParityContractTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "no-clobber"):
                 SmokeEvidenceWriter.create(root, "other", "ECG200_normal_1")
 
-    def test_review_only_audit_preserves_the_authenticated_non_adoption_speed(self) -> None:
-        from experiments.exp425_selective_recovery.mps_parity import review_only_mps_audit
+    def test_review_only_assessment_preserves_the_authenticated_non_adoption_speed(self) -> None:
+        from experiments.exp425_selective_recovery.mps_parity import authenticated_cpu_audit, review_only_mps_assessment
 
-        audit = review_only_mps_audit()
-        self.assertEqual(audit.backend, "mps")
-        self.assertFalse(audit.fallback)
-        self.assertEqual(audit.speedup, 0.6709759390840965)
+        audit, assessment = authenticated_cpu_audit(), review_only_mps_assessment()
+        self.assertEqual(audit.backend, "cpu")
+        self.assertFalse(audit.fallback); self.assertFalse(assessment.adopted)
+        self.assertEqual(assessment.observed_speedup, 0.6709759390840965)
 
 
 if __name__ == "__main__":

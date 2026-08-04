@@ -254,6 +254,7 @@ def main(argv: list[str] | None = None) -> int:
         context = launch["context"]
         snapshot = launch["snapshot"]
         audit = launch["audit"]
+        adoption = launch.get("adoption")
     except KeyError as error:
         snapshot = launch.get("snapshot")
         close = getattr(snapshot, "close", None)
@@ -270,7 +271,7 @@ def main(argv: list[str] | None = None) -> int:
             output_root=args.output_root,
             checkpoint_root=args.checkpoint_root,
             provenance=provenance, context=context,
-            snapshot=snapshot, audit=audit, importer=launch.get("importer"),
+            snapshot=snapshot, audit=audit, adoption=adoption, importer=launch.get("importer"),
         )
     except (OSError, ValueError) as error:
         close = getattr(snapshot, "close", None)

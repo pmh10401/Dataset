@@ -47,6 +47,11 @@ from experiments.exp425_selective_recovery.contracts import (
     NativeRecordEnvelope,
     SourceProvenGroupEvidence,
 )
+from experiments.exp425_selective_recovery.contracts import MPSAdoptionAssessment
+
+
+def _mps_assessment() -> MPSAdoptionAssessment:
+    return MPSAdoptionAssessment("/tmp/task7.json", "f" * 64, True, 0.0, 1.0, 0.67, 1.1, False, "speedup_below_threshold")
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     DatasetDecisionEvidence,
     DatasetResult,
@@ -242,7 +247,7 @@ def _global_parity_result(
         {name: 1.0 for name in ("level_shift", "gradual_drift", "amplitude_scaling", "period_change")},
         True, True, False,
     )
-    audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+    audit = BackendAudit("cpu", True, 0.0, 1.0, 1.1, False)
     contract = FrozenTrainContract(dataset, (group,), audit, "a" * 64)
 
     def seed_decision(seed: int, candidate: bool) -> SeedDecision:
@@ -468,7 +473,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
         eligibility = GroupEligibilityEvidence(dataset, 8, "candidate_eligible", "a" * 64,
                                                "b" * 64, 1, folds, 4, 1,
                                                "oof_identity_insufficient", "oof_identity_insufficient")
-        audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+        audit = BackendAudit("cpu", True, 0.0, 1.0, 1.1, False)
         store = SimpleNamespace(provenance=SimpleNamespace(run_identity="runtime-test"), run_context_sha256="d" * 64)
         runtime = SimpleNamespace(
             audit=audit,
@@ -508,12 +513,12 @@ class AtomicProgressWriterTests(unittest.TestCase):
                 checkpoint_root=root / "checkpoints", total_datasets=1, backend="mps",
             )
             snapshot = object.__new__(Exp425DatabaseSnapshot)
-            audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+            audit = BackendAudit("cpu", True, 0.0, 1.0, 1.1, False)
             lock = os.open(root / "lock", os.O_RDWR | os.O_CREAT, 0o600)
             with patch("experiments.exp425_selective_recovery.runtime._require_mps"), patch(
                 "experiments.exp425_selective_recovery.runtime._acquire_heavy_process_guard", return_value=lock
             ):
-                session = build_exp425_runtime(snapshot, audit, writer)
+                session = build_exp425_runtime(snapshot, audit, _mps_assessment(), writer)
             with self.assertRaises(TypeError):
                 copy.copy(session)
             with self.assertRaises(TypeError):
@@ -523,7 +528,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "closed"):
                 session._require_live()
             with self.assertRaisesRegex(ValueError, "MPS audit"):
-                build_exp425_runtime(snapshot, BackendAudit("cpu", True, 0.0, 1.0, 1.1, False), writer)
+                build_exp425_runtime(snapshot, BackendAudit("mps", True, 0.0, 1.0, 1.1, False), _mps_assessment(), writer)
 
     def test_runtime_session_rejects_public_and_private_binding_reassignment(self) -> None:
         with TemporaryDirectory() as directory:
@@ -533,12 +538,12 @@ class AtomicProgressWriterTests(unittest.TestCase):
                 checkpoint_root=root / "checkpoints", total_datasets=1, backend="mps",
             )
             snapshot = object.__new__(Exp425DatabaseSnapshot)
-            audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+            audit = BackendAudit("cpu", True, 0.0, 1.0, 1.1, False)
             lock = os.open(root / "lock", os.O_RDWR | os.O_CREAT, 0o600)
             with patch("experiments.exp425_selective_recovery.runtime._require_mps"), patch(
                 "experiments.exp425_selective_recovery.runtime._acquire_heavy_process_guard", return_value=lock
             ):
-                session = build_exp425_runtime(snapshot, audit, writer)
+                session = build_exp425_runtime(snapshot, audit, _mps_assessment(), writer)
             for name, value in (("snapshot", snapshot), ("audit", audit), ("writer", writer), ("runner", session.runner), ("_snapshot", snapshot), ("_runner", session.runner)):
                 with self.assertRaises(AttributeError, msg=name):
                     setattr(session, name, value)
@@ -567,7 +572,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
             store = Exp425CheckpointStore.create(checkpoint_root, provenance, context)
             _commit_runtime_import(store, provenance, _runtime_import_record("Imported_normal_1"))
             snapshot = object.__new__(Exp425DatabaseSnapshot)
-            audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+            audit = BackendAudit("cpu", True, 0.0, 1.0, 1.1, False)
             lock = os.open(root / "mps.lock", os.O_RDWR | os.O_CREAT, 0o600)
 
             def verify_boundary(_snapshot: Exp425DatabaseSnapshot, phase: str) -> None:
@@ -617,7 +622,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
             ), patch(
                 "experiments.exp425_selective_recovery.runtime.capabilities._mint", wraps=capabilities._mint
             ) as native_mint, patch.object(exp417_qualification, "FROZEN_CONFIG", context.config):
-                session = build_exp425_runtime(snapshot, audit, writer)
+                session = build_exp425_runtime(snapshot, audit, _mps_assessment(), writer)
                 result = run_selective_population(context, store, session)
 
             self.assertEqual(result.state, "complete_review_only")
@@ -701,7 +706,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
             store = Exp425CheckpointStore.create(root / "checkpoints", provenance, context)
             snapshot = object.__new__(Exp425DatabaseSnapshot)
             lock = os.open(root / "mps.lock", os.O_RDWR | os.O_CREAT, 0o600)
-            audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+            audit = BackendAudit("cpu", True, 0.0, 1.0, 1.1, False)
             abstention = _runtime_native_record(
                 store, provenance, insufficient_dataset, status="abstained",
                 coordinates=[], reason="oof_identity_insufficient",
@@ -730,7 +735,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
                 "experiments.exp425_selective_recovery.runtime._no_model_abstention",
                 return_value=(abstention, object()),
             ) as no_model:
-                session = build_exp425_runtime(snapshot, audit, writer)
+                session = build_exp425_runtime(snapshot, audit, _mps_assessment(), writer)
                 session._fold_contract_sha256 = provenance.fold_contract_sha256
                 with self.assertRaises(ReachedEligibleRunner):
                     _compute_native(context, store, session, dataset, train)
@@ -772,13 +777,13 @@ class AtomicProgressWriterTests(unittest.TestCase):
                 )
                 first_snapshot = object.__new__(Exp425DatabaseSnapshot)
                 first_lock = os.open(root / "first-mps.lock", os.O_RDWR | os.O_CREAT, 0o600)
-                audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+                audit = BackendAudit("cpu", True, 0.0, 1.0, 1.1, False)
                 with patch.object(Exp425DatabaseSnapshot, "close"), patch(
                     "experiments.exp425_selective_recovery.runtime._require_mps"
                 ), patch(
                     "experiments.exp425_selective_recovery.runtime._acquire_heavy_process_guard", return_value=first_lock
                 ):
-                    first_session = build_exp425_runtime(first_snapshot, audit, writer)
+                    first_session = build_exp425_runtime(first_snapshot, audit, _mps_assessment(), writer)
                     claim = {
                         "kind": "native", "run_identity": provenance.run_identity,
                         "dataset": dataset, "context_sha256": store.run_context_sha256,
@@ -849,7 +854,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
                 ), patch(
                     "experiments.exp425_selective_recovery.runtime._compute_native", side_effect=recompute
                 ), patch.object(exp417_qualification, "FROZEN_CONFIG", context.config):
-                    resumed_session = build_exp425_runtime(second_snapshot, audit, resumed_writer)
+                    resumed_session = build_exp425_runtime(second_snapshot, audit, _mps_assessment(), resumed_writer)
                     result = run_selective_population(context, resumed_store, resumed_session)
 
                 self.assertEqual(recomputes, [dataset] if boundary == "intent_durable" else [])
@@ -937,13 +942,13 @@ class CompactGlobalWorkloadParityTests(unittest.TestCase):
             )
             snapshot = object.__new__(Exp425DatabaseSnapshot)
             lock = os.open(root / "mps.lock", os.O_RDWR | os.O_CREAT, 0o600)
-            audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+            audit = BackendAudit("cpu", True, 0.0, 1.0, 1.1, False)
             with patch("experiments.exp425_selective_recovery.runtime._require_mps"), patch(
                 "experiments.exp425_selective_recovery.runtime._acquire_heavy_process_guard", return_value=lock
             ), patch.object(Exp425DatabaseSnapshot, "verify_boundary"), patch.object(
                 Exp425DatabaseSnapshot, "close"
             ), patch.object(exp417_qualification, "FROZEN_CONFIG", context.config):
-                session = build_exp425_runtime(snapshot, audit, writer)
+                session = build_exp425_runtime(snapshot, audit, _mps_assessment(), writer)
                 for record in records:
                     claim = capabilities._mint(
                         session, kind="native", run_identity=provenance.run_identity,

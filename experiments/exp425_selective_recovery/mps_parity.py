@@ -20,6 +20,7 @@ from typing import Any
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp417_causal_multihorizon_shadow.checkpoints import _record_from_bytes
 from experiments.exp417_causal_multihorizon_shadow.contracts import BackendAudit
+from .contracts import MPSAdoptionAssessment
 
 
 FIXTURE = "ECG200_normal_1"
@@ -144,23 +145,13 @@ def compare_shared_science(golden: Mapping[str, object], actual: Mapping[str, ob
             "actual_normalized_digest": actual_digest, "mismatches": failures}
 
 
-def review_only_mps_audit() -> BackendAudit:
-    """Rehydrate the authenticated Exp424 review audit without claiming adoption.
+def authenticated_cpu_audit() -> BackendAudit:
+    """The frozen Task7 scientific audit remains truthfully CPU."""
+    return BackendAudit("cpu", True, 4.0948700075205124e-07, 0.9999999999845686, 0.6709759390840965, False)
 
-    The frozen public constructor intentionally enforces the >=1.1x *adoption*
-    gate.  Task 5 must preserve the lower authenticated speed as evidence, so
-    this narrow adapter creates no new metric and is accepted only by the
-    already-private review runtime (which independently requires mps/nonfallback).
-    """
-    audit = object.__new__(BackendAudit)
-    for name, value in {
-        "backend": "mps", "candidate_identity": True,
-        "max_normalized_error": 4.0948700075205124e-07,
-        "spearman": 0.9999999999845686, "speedup": 0.6709759390840965,
-        "fallback": False, "fallback_reason": None,
-    }.items():
-        object.__setattr__(audit, name, value)
-    return audit
+
+def review_only_mps_assessment() -> MPSAdoptionAssessment:
+    return MPSAdoptionAssessment("/Users/mac/Documents/Dataset/exp417_causal_multihorizon_shadow/task7_backend_audit.json", "f77efa941f6b33fe6687b8ac0c2b01c152dac9c15e8b0966e3d9bb41b119b592", True, 4.0948700075205124e-07, 0.9999999999845686, 0.6709759390840965, 1.1, False, "speedup_below_threshold")
 
 
 class SmokeEvidenceWriter:
