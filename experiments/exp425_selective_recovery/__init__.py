@@ -2,6 +2,7 @@
 
 from .contracts import EligibilityAssessment, FoldIdentityCounts, GroupEligibilityEvidence
 from .eligibility import apply_group_eligibility, evaluate_group_eligibility
+from .database import DatabaseSnapshotAudit, Exp425DatabaseSnapshot, open_database_snapshot
 from .predecessor import (
     Exp424CompatibilityContract,
     Exp424ImportReport,
@@ -18,6 +19,9 @@ __all__ = [
     "GroupEligibilityEvidence",
     "apply_group_eligibility",
     "evaluate_group_eligibility",
+    "DatabaseSnapshotAudit",
+    "Exp425DatabaseSnapshot",
+    "open_database_snapshot",
     "Exp424CompatibilityContract",
     "Exp424ImportReport",
     "ValidatedExp424Source",
