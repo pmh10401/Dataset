@@ -82,12 +82,15 @@ class Exp425CheckpointStore:
         bound = provenance.with_run_context_sha256(digest)
         try:
             root.mkdir(mode=0o700)
-            for name in ("datasets", "transactions", "import_batches"):
-                (root / name).mkdir(mode=0o700)
-            _write_new(root / "run_context.json", context_bytes)
-            _write_new(root / "checkpoint_provenance.json", canonical_json_bytes(bound.to_payload()))
-            _write_new(root / "progress.json", _progress_bytes(bound.expected_datasets, {}))
-            _fsync_directory(root)
+            with _locked_root(root, exclusive=True) as binding:
+                assert binding.descriptor is not None
+                for name in ("datasets", "transactions", "import_batches"):
+                    os.mkdir(name, 0o700, dir_fd=binding.descriptor)
+                os.fsync(binding.descriptor)
+                _write_new_at(binding.descriptor, "run_context.json", context_bytes)
+                _write_new_at(binding.descriptor, "checkpoint_provenance.json", canonical_json_bytes(bound.to_payload()))
+                _write_new_at(binding.descriptor, "progress.json", _progress_bytes(bound.expected_datasets, {}))
+                binding.verify()
         except BaseException:
             # A partially-created root remains fail-closed and is never adopted.
             raise
@@ -105,12 +108,12 @@ class Exp425CheckpointStore:
     def inspect_read_only(cls, root: Path, *, expected_run_identity: str | None = None) -> Exp425CheckpointInspection:
         """Validate metadata in place without recovery, quarantine, or writes."""
         root = Path(root)
-        with _locked_root(root, exclusive=False):
-            provenance, context_bytes, progress = _read_root_metadata(root)
+        with _locked_root(root, exclusive=False) as binding:
+            provenance, context_bytes, progress = _read_root_metadata(root, binding=binding)
             if expected_run_identity is not None and provenance["run_identity"] != expected_run_identity:
                 raise ValueError("checkpoint run identity does not match")
-            _validate_inventory(root, provenance, progress, allow_intents=True)
-            pending = _import_intent_requirements(root)
+            _validate_inventory(root, provenance, progress, allow_intents=True, binding=binding)
+            pending = _import_intent_requirements(root, binding=binding)
             return Exp425CheckpointInspection(
                 provenance["run_identity"], tuple(provenance["expected_datasets"]), progress["completed_count"], progress["record_digests"], pending
             )
@@ -119,15 +122,25 @@ class Exp425CheckpointStore:
     def _validated(cls, root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext, *, exclusive: bool) -> "Exp425CheckpointStore":
         if not isinstance(provenance, Exp425RunProvenance) or not isinstance(context, FrozenRunContext):
             raise ValueError("Exp425 checkpoint inputs are invalid")
-        with _locked_root(root, exclusive=exclusive):
-            stored, context_bytes, progress = _read_root_metadata(root)
-            expected_context = canonical_json_bytes(_context_payload(context))
-            digest = sha256(expected_context).hexdigest()
-            expected = provenance.with_run_context_sha256(digest).to_payload()
-            if stored != expected or context_bytes != expected_context:
-                raise ValueError("Exp425 checkpoint provenance or context does not match")
-            _validate_inventory(root, stored, progress, allow_intents=True)
-            return cls(root, provenance.with_run_context_sha256(digest), context, progress["record_digests"])
+        with _locked_root(root, exclusive=exclusive) as binding:
+            try:
+                stored, context_bytes, progress = _read_root_metadata(root, binding=binding)
+                expected_context = canonical_json_bytes(_context_payload(context))
+                digest = sha256(expected_context).hexdigest()
+                expected = provenance.with_run_context_sha256(digest).to_payload()
+                if stored != expected or context_bytes != expected_context:
+                    raise ValueError("Exp425 checkpoint provenance or context does not match")
+                _validate_inventory(root, stored, progress, allow_intents=True, binding=binding)
+                binding.verify()
+                return cls(root, provenance.with_run_context_sha256(digest), context, progress["record_digests"])
+            except ValueError as error:
+                if exclusive:
+                    try:
+                        quarantined = _quarantine_owned(root, binding)
+                    except ValueError:
+                        raise error
+                    raise ValueError(f"Exp425 checkpoint was quarantined at {quarantined}") from error
+                raise
 
     def completed_record_digests(self) -> Mapping[str, str]:
         return MappingProxyType(dict(self._record_digests))
@@ -135,7 +148,13 @@ class Exp425CheckpointStore:
     def load_record(self, dataset: str) -> Exp425Record:
         if dataset not in self._record_digests:
             raise ValueError("dataset is not completed")
-        raw = _read_file(self.root / "datasets" / record_filename(dataset))
+        with _locked_root(self.root, exclusive=False) as binding:
+            datasets_fd, _ = _open_directory_at(binding, "datasets")
+            try:
+                raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
+            finally:
+                os.close(datasets_fd)
+            binding.verify()
         record = _decode_record(raw, self.context)
         if record.dataset != dataset or _record_digest_from_raw(raw) != self._record_digests[dataset]:
             raise ValueError("checkpoint record digest does not match progress")
@@ -194,45 +213,68 @@ class Exp425CheckpointStore:
             raise ValueError("checkpoint dataset is invalid or already completed")
         encoded = canonical_json_bytes(body | {"record_payload_sha256": digest})
         _reject_forbidden_keys(body)
-        with _locked_root(self.root, exclusive=True):
-            _, _, progress = _read_root_metadata(self.root)
+        with _locked_root(self.root, exclusive=True) as binding:
+            _, _, progress = _read_root_metadata(self.root, binding=binding)
             if record.dataset in progress["record_digests"]:
                 raise ValueError("checkpoint dataset is already completed")
-            intent_name = uuid.uuid4().hex + ".json"
-            intent = {"schema": "exp425.intent.v1", "origin": record.origin, "dataset": record.dataset, "record_payload_sha256": digest, **dict(intent_extra)}
-            _write_new(self.root / "transactions" / intent_name, canonical_json_bytes(intent))
-            _write_new(self.root / "datasets" / record_filename(record.dataset), encoded)
-            digests = dict(progress["record_digests"]); digests[record.dataset] = digest
-            _atomic_replace(self.root / "progress.json", _progress_bytes(self.expected_datasets, digests, record.dataset))
-            (self.root / "transactions" / intent_name).unlink()
-            _fsync_directory(self.root / "transactions")
-            self._record_digests = MappingProxyType(digests)
+            datasets_fd, datasets_identity = _open_directory_at(binding, "datasets")
+            transactions_fd, transactions_identity = _open_directory_at(binding, "transactions")
+            try:
+                intent_name = uuid.uuid4().hex + ".json"
+                intent = {"schema": "exp425.intent.v1", "origin": record.origin, "dataset": record.dataset, "record_payload_sha256": digest, **dict(intent_extra)}
+                _write_new_at(transactions_fd, intent_name, canonical_json_bytes(intent))
+                _write_new_at(datasets_fd, record_filename(record.dataset), encoded)
+                digests = dict(progress["record_digests"]); digests[record.dataset] = digest
+                assert binding.descriptor is not None
+                _atomic_replace_at(binding.descriptor, "progress.json", _progress_bytes(self.expected_datasets, digests, record.dataset))
+                _verify_directory_at(binding, "transactions", transactions_identity)
+                os.unlink(intent_name, dir_fd=transactions_fd)
+                os.fsync(transactions_fd)
+                _verify_directory_at(binding, "datasets", datasets_identity)
+                binding.verify()
+                self._record_digests = MappingProxyType(digests)
+            finally:
+                os.close(transactions_fd); os.close(datasets_fd)
 
     def _reconcile_native_intents(self) -> None:
-        with _locked_root(self.root, exclusive=True):
-            _, _, progress = _read_root_metadata(self.root)
+        with _locked_root(self.root, exclusive=True) as binding:
+            _, _, progress = _read_root_metadata(self.root, binding=binding)
             digests = dict(progress["record_digests"])
             pending: list[tuple[str, str]] = []
             changed = False
-            for path in sorted((self.root / "transactions").glob("*.json")):
-                intent = _canonical_object(_read_file(path), "intent")
-                origin, dataset, digest = intent.get("origin"), intent.get("dataset"), intent.get("record_payload_sha256")
-                if origin == "exp424_import":
-                    pending.append((str(intent.get("batch_identity")), str(intent.get("attestation_sha256")))); continue
-                if origin != "exp425_native" or not isinstance(dataset, str) or not isinstance(digest, str):
-                    raise ValueError("checkpoint intent is invalid")
-                target = self.root / "datasets" / record_filename(dataset)
-                if not target.exists():
-                    path.unlink(); changed = True; continue
-                if _record_digest_from_raw(_read_file(target)) != digest:
-                    raise ValueError("native checkpoint intent conflicts with record")
-                if dataset not in digests:
-                    digests[dataset] = digest; changed = True
-                path.unlink(); changed = True
-            if changed:
-                _atomic_replace(self.root / "progress.json", _progress_bytes(self.expected_datasets, digests))
-            self._record_digests = MappingProxyType(digests)
-            self.import_revalidation_required = tuple(pending)
+            datasets_fd, datasets_identity = _open_directory_at(binding, "datasets")
+            transactions_fd, transactions_identity = _open_directory_at(binding, "transactions")
+            try:
+                for name in sorted(os.listdir(transactions_fd)):
+                    if not name.endswith(".json"):
+                        raise ValueError("checkpoint transaction inventory is invalid")
+                    intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
+                    origin, dataset, digest = intent.get("origin"), intent.get("dataset"), intent.get("record_payload_sha256")
+                    if origin == "exp424_import":
+                        pending.append((str(intent.get("batch_identity")), str(intent.get("attestation_sha256")))); continue
+                    if origin != "exp425_native" or not isinstance(dataset, str) or not isinstance(digest, str):
+                        raise ValueError("checkpoint intent is invalid")
+                    try:
+                        raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
+                    except FileNotFoundError:
+                        _verify_directory_at(binding, "transactions", transactions_identity)
+                        os.unlink(name, dir_fd=transactions_fd); changed = True; continue
+                    if _record_digest_from_raw(raw) != digest:
+                        raise ValueError("native checkpoint intent conflicts with record")
+                    if dataset not in digests:
+                        digests[dataset] = digest; changed = True
+                    _verify_directory_at(binding, "transactions", transactions_identity)
+                    os.unlink(name, dir_fd=transactions_fd); changed = True
+                if changed:
+                    assert binding.descriptor is not None
+                    _atomic_replace_at(binding.descriptor, "progress.json", _progress_bytes(self.expected_datasets, digests))
+                _verify_directory_at(binding, "datasets", datasets_identity)
+                _verify_directory_at(binding, "transactions", transactions_identity)
+                binding.verify()
+                self._record_digests = MappingProxyType(digests)
+                self.import_revalidation_required = tuple(pending)
+            finally:
+                os.close(transactions_fd); os.close(datasets_fd)
 
 
 def _native_trace_sha256(run_identity: str, context_sha256: str, record: NativeRecordEnvelope) -> str:
@@ -255,17 +297,23 @@ def _progress_bytes(expected: tuple[str, ...], digests: Mapping[str, str], curre
     return canonical_json_bytes(body | {"payload_sha256": sha256(canonical_json_bytes(body)).hexdigest()})
 
 
-def _read_root_metadata(root: Path) -> tuple[dict[str, object], bytes, dict[str, object]]:
-    if not root.is_dir() or root.is_symlink() or {item.name for item in root.iterdir()} != _ROOT_FILES:
+def _read_root_metadata(root: Path, *, binding: "_locked_root | None" = None) -> tuple[dict[str, object], bytes, dict[str, object]]:
+    if binding is None:
+        with _locked_root(root, exclusive=False) as owned:
+            return _read_root_metadata(root, binding=owned)
+    binding.verify()
+    assert binding.descriptor is not None
+    if set(os.listdir(binding.descriptor)) != _ROOT_FILES:
         raise ValueError("checkpoint root inventory is invalid")
-    provenance = _canonical_object(_read_file(root / "checkpoint_provenance.json"), "provenance")
-    context = _read_file(root / "run_context.json")
-    progress = _canonical_object(_read_file(root / "progress.json"), "progress")
+    provenance = _canonical_object(_read_file("checkpoint_provenance.json", dir_fd=binding.descriptor), "provenance")
+    context = _read_file("run_context.json", dir_fd=binding.descriptor)
+    progress = _canonical_object(_read_file("progress.json", dir_fd=binding.descriptor), "progress")
     required = {"schema", "run_identity", "git_commit", "database_sha256", "lane_artifact_sha256", "frozen_config_sha256", "fold_contract_sha256", "model_contract_sha256", "backend_contract_sha256", "model_seeds", "perturbation_seeds", "runtime_versions", "expected_datasets", "predecessor_compatibility_sha256", "run_context_sha256"}
     if set(provenance) != required or provenance["schema"] != "exp425.checkpoint.v1" or sha256(context).hexdigest() != provenance["run_context_sha256"]:
         raise ValueError("checkpoint provenance is invalid")
     _context_from_payload(_canonical_object(context, "run context"))
     _validate_progress(provenance, progress)
+    binding.verify()
     return provenance, context, progress
 
 
@@ -280,33 +328,50 @@ def _validate_progress(provenance: Mapping[str, object], progress: Mapping[str, 
     if not isinstance(expected, list) or set(records) - set(expected) or progress["completed_count"] != len(records) or progress["expected_count"] != len(expected): raise ValueError("checkpoint progress counts are invalid")
 
 
-def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: Mapping[str, object], *, allow_intents: bool) -> None:
-    for directory in ("datasets", "transactions", "import_batches"):
-        path = root / directory
-        if not path.is_dir() or path.is_symlink(): raise ValueError("checkpoint directory is invalid")
-    names = {item.name for item in (root / "datasets").iterdir()}
-    pending_native: dict[str, str] = {}
-    if allow_intents:
-        for path in (root / "transactions").glob("*.json"):
-            intent = _canonical_object(_read_file(path), "intent")
-            if intent.get("origin") == "exp425_native":
-                dataset, digest = intent.get("dataset"), intent.get("record_payload_sha256")
-                if not isinstance(dataset, str) or not isinstance(digest, str):
-                    raise ValueError("native checkpoint intent is invalid")
-                if dataset in pending_native:
-                    raise ValueError("duplicate native checkpoint intent")
-                pending_native[dataset] = digest
-    expected_names = {record_filename(dataset) for dataset in progress["record_digests"]} | {record_filename(dataset) for dataset in pending_native}
-    if names != expected_names: raise ValueError("checkpoint dataset inventory is invalid")
-    for dataset, digest in progress["record_digests"].items():
-        raw = _read_file(root / "datasets" / record_filename(dataset))
-        record = _decode_record(raw, None)
-        if record.dataset != dataset or _record_digest_from_raw(raw) != digest: raise ValueError("checkpoint dataset record is invalid")
-    for dataset, digest in pending_native.items():
-        path = root / "datasets" / record_filename(dataset)
-        if path.exists() and _record_digest_from_raw(_read_file(path)) != digest:
-            raise ValueError("checkpoint pending record is invalid")
-    if not allow_intents and any((root / "transactions").iterdir()): raise ValueError("checkpoint intents are present")
+def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: Mapping[str, object], *, allow_intents: bool, binding: "_locked_root | None" = None) -> None:
+    if binding is None:
+        with _locked_root(root, exclusive=False) as owned:
+            _validate_inventory(root, provenance, progress, allow_intents=allow_intents, binding=owned)
+            return
+    binding.verify()
+    datasets_fd, datasets_identity = _open_directory_at(binding, "datasets")
+    transactions_fd, transactions_identity = _open_directory_at(binding, "transactions")
+    imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
+    try:
+        names = set(os.listdir(datasets_fd))
+        transaction_names = sorted(os.listdir(transactions_fd))
+        if any(not name.endswith(".json") for name in transaction_names):
+            raise ValueError("checkpoint transaction inventory is invalid")
+        pending_native: dict[str, str] = {}
+        if allow_intents:
+            for name in transaction_names:
+                intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
+                if intent.get("origin") == "exp425_native":
+                    dataset, digest = intent.get("dataset"), intent.get("record_payload_sha256")
+                    if not isinstance(dataset, str) or not isinstance(digest, str):
+                        raise ValueError("native checkpoint intent is invalid")
+                    if dataset in pending_native:
+                        raise ValueError("duplicate native checkpoint intent")
+                    pending_native[dataset] = digest
+        expected_names = {record_filename(dataset) for dataset in progress["record_digests"]} | {record_filename(dataset) for dataset in pending_native}
+        if names != expected_names: raise ValueError("checkpoint dataset inventory is invalid")
+        for dataset, digest in progress["record_digests"].items():
+            raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
+            record = _decode_record(raw, None)
+            if record.dataset != dataset or _record_digest_from_raw(raw) != digest: raise ValueError("checkpoint dataset record is invalid")
+        for dataset, digest in pending_native.items():
+            try:
+                raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
+            except FileNotFoundError:
+                continue
+            if _record_digest_from_raw(raw) != digest: raise ValueError("checkpoint pending record is invalid")
+        if not allow_intents and transaction_names: raise ValueError("checkpoint intents are present")
+        _verify_directory_at(binding, "datasets", datasets_identity)
+        _verify_directory_at(binding, "transactions", transactions_identity)
+        _verify_directory_at(binding, "import_batches", imports_identity)
+        binding.verify()
+    finally:
+        os.close(imports_fd); os.close(transactions_fd); os.close(datasets_fd)
 
 
 def _decode_record(raw: bytes, context: FrozenRunContext | None) -> Exp425Record:
@@ -357,8 +422,8 @@ def _reject_forbidden_keys(value: object) -> None:
         raise ValueError("checkpoint record contains a nonfinite number")
 
 
-def _read_file(path: Path) -> bytes:
-    descriptor = os.open(path, _OPEN_FLAGS)
+def _read_file(path: Path | str, *, dir_fd: int | None = None) -> bytes:
+    descriptor = os.open(path, _OPEN_FLAGS, dir_fd=dir_fd)
     try:
         info = os.fstat(descriptor)
         if not stat.S_ISREG(info.st_mode): raise ValueError("checkpoint path is not a regular file")
@@ -367,7 +432,12 @@ def _read_file(path: Path) -> bytes:
             data = os.read(descriptor, 1024 * 1024)
             if not data: break
             chunks.append(data)
-        return b"".join(chunks)
+        result = b"".join(chunks)
+        if dir_fd is not None:
+            current = os.stat(path, dir_fd=dir_fd, follow_symlinks=False)
+            if (current.st_dev, current.st_ino) != (info.st_dev, info.st_ino):
+                raise ValueError("checkpoint entry was replaced during read")
+        return result
     finally:
         os.close(descriptor)
 
@@ -381,11 +451,30 @@ def _write_new(path: Path, data: bytes) -> None:
     _fsync_directory(path.parent)
 
 
+def _write_new_at(directory_fd: int, name: str, data: bytes) -> None:
+    descriptor = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0), 0o600, dir_fd=directory_fd)
+    try:
+        offset = 0
+        while offset < len(data):
+            offset += os.write(descriptor, data[offset:])
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    os.fsync(directory_fd)
+
+
 def _atomic_replace(path: Path, data: bytes) -> None:
     temporary = path.parent / ("." + path.name + "." + uuid.uuid4().hex)
     _write_new(temporary, data)
     os.replace(temporary, path)
     _fsync_directory(path.parent)
+
+
+def _atomic_replace_at(directory_fd: int, name: str, data: bytes) -> None:
+    temporary = "." + name + "." + uuid.uuid4().hex
+    _write_new_at(directory_fd, temporary, data)
+    os.replace(temporary, name, src_dir_fd=directory_fd, dst_dir_fd=directory_fd)
+    os.fsync(directory_fd)
 
 
 def _fsync_directory(path: Path) -> None:
@@ -400,23 +489,104 @@ def _inode(path: Path) -> tuple[int, int]:
     return info.st_dev, info.st_ino
 
 
+def _open_directory_at(binding: "_locked_root", name: str) -> tuple[int, tuple[int, int]]:
+    binding.verify()
+    assert binding.descriptor is not None
+    descriptor = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=binding.descriptor)
+    info = os.fstat(descriptor)
+    if not stat.S_ISDIR(info.st_mode):
+        os.close(descriptor)
+        raise ValueError("checkpoint directory is invalid")
+    identity = (info.st_dev, info.st_ino)
+    _verify_directory_at(binding, name, identity)
+    return descriptor, identity
+
+
+def _verify_directory_at(binding: "_locked_root", name: str, identity: tuple[int, int]) -> None:
+    binding.verify()
+    assert binding.descriptor is not None
+    info = os.stat(name, dir_fd=binding.descriptor, follow_symlinks=False)
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode) or (info.st_dev, info.st_ino) != identity:
+        raise ValueError("checkpoint directory was replaced")
+
+
 class _locked_root:
-    def __init__(self, root: Path, *, exclusive: bool) -> None: self.root = root; self.exclusive = exclusive; self.descriptor: int | None = None
+    def __init__(self, root: Path, *, exclusive: bool) -> None:
+        self.root = Path(root); self.exclusive = exclusive; self.descriptor: int | None = None
+        self.identity: tuple[int, int] | None = None
     def __enter__(self) -> "_locked_root":
         self.descriptor = os.open(self.root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0))
+        info = os.fstat(self.descriptor)
+        self.identity = (info.st_dev, info.st_ino)
         fcntl.flock(self.descriptor, fcntl.LOCK_EX if self.exclusive else fcntl.LOCK_SH)
+        self.verify()
         return self
+
+    def verify(self) -> None:
+        """Ensure the public pathname still resolves to this locked directory."""
+        if self.identity is None:
+            raise ValueError("checkpoint root lock is not live")
+        try:
+            info = os.stat(self.root, follow_symlinks=False)
+        except FileNotFoundError as error:
+            raise ValueError("checkpoint root pathname was replaced") from error
+        if stat.S_ISLNK(info.st_mode) or (info.st_dev, info.st_ino) != self.identity:
+            raise ValueError("checkpoint root pathname was replaced")
     def __exit__(self, *unused: object) -> None:
         assert self.descriptor is not None
         fcntl.flock(self.descriptor, fcntl.LOCK_UN); os.close(self.descriptor)
 
 
-def _import_intent_requirements(root: Path) -> tuple[tuple[str, str], ...]:
-    result: list[tuple[str, str]] = []
-    for path in sorted((root / "transactions").glob("*.json")):
-        intent = _canonical_object(_read_file(path), "intent")
-        if intent.get("origin") == "exp424_import":
-            batch, attestation = intent.get("batch_identity"), intent.get("attestation_sha256")
-            if not isinstance(batch, str) or not isinstance(attestation, str): raise ValueError("import intent is invalid")
-            result.append((batch, attestation))
-    return tuple(result)
+def _quarantine_owned(root: Path, binding: _locked_root, *, destination: Path | None = None) -> Path:
+    """Move only the exact locked root inode to an unused sibling quarantine."""
+    binding.verify()
+    root = Path(root)
+    if root != binding.root:
+        raise ValueError("quarantine root does not match locked root")
+    if destination is None:
+        destination = root.with_name(root.name + ".quarantine-" + uuid.uuid4().hex)
+    destination = Path(destination)
+    if destination.parent != root.parent or destination.exists() or destination.is_symlink():
+        raise ValueError("quarantine destination is unavailable")
+    parent_fd = os.open(root.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0))
+    try:
+        # The check is intentionally adjacent to the descriptor-relative rename.
+        binding.verify()
+        source = os.stat(root.name, dir_fd=parent_fd, follow_symlinks=False)
+        if (source.st_dev, source.st_ino) != binding.identity:
+            raise ValueError("checkpoint root pathname was replaced")
+        try:
+            os.stat(destination.name, dir_fd=parent_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            pass
+        else:
+            raise ValueError("quarantine destination is unavailable")
+        os.rename(root.name, destination.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        moved = os.stat(destination.name, dir_fd=parent_fd, follow_symlinks=False)
+        if (moved.st_dev, moved.st_ino) != binding.identity:
+            raise ValueError("quarantine move did not retain root identity")
+        os.fsync(parent_fd)
+    finally:
+        os.close(parent_fd)
+    return destination
+
+
+def _import_intent_requirements(root: Path, *, binding: _locked_root | None = None) -> tuple[tuple[str, str], ...]:
+    if binding is None:
+        with _locked_root(root, exclusive=False) as owned:
+            return _import_intent_requirements(root, binding=owned)
+    transactions_fd, identity = _open_directory_at(binding, "transactions")
+    try:
+        result: list[tuple[str, str]] = []
+        for name in sorted(os.listdir(transactions_fd)):
+            if not name.endswith(".json"):
+                raise ValueError("checkpoint transaction inventory is invalid")
+            intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
+            if intent.get("origin") == "exp424_import":
+                batch, attestation = intent.get("batch_identity"), intent.get("attestation_sha256")
+                if not isinstance(batch, str) or not isinstance(attestation, str): raise ValueError("import intent is invalid")
+                result.append((batch, attestation))
+        _verify_directory_at(binding, "transactions", identity)
+        return tuple(result)
+    finally:
+        os.close(transactions_fd)

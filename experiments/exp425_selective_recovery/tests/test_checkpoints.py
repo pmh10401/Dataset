@@ -5,16 +5,19 @@ from __future__ import annotations
 from dataclasses import asdict
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
 import unittest
+from unittest.mock import patch
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenRunContext
 from experiments.exp417_causal_multihorizon_shadow.checkpoints import _context_payload
 from experiments.exp417_causal_multihorizon_shadow.tests.test_checkpoints import _context
 from experiments.exp425_selective_recovery.checkpoints import Exp425CheckpointStore
+from experiments.exp425_selective_recovery import checkpoints
 from experiments.exp425_selective_recovery.contracts import Exp425RunProvenance, NativeRecordEnvelope
 from experiments.exp425_selective_recovery import capabilities
 
@@ -119,6 +122,90 @@ class CheckpointStoreTests(unittest.TestCase):
             raw = (store.root / "datasets" / __import__("experiments.exp425_selective_recovery.checkpoints", fromlist=["record_filename"]).record_filename(dataset)).read_bytes()
             self.assertNotIn(b'"test_identity_manifest"', raw)
             self.assertLess(len(raw), len(canonical_json_bytes(_context_payload(context))) // 5)
+
+    def test_quarantine_moves_only_the_exact_locked_root_inode(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            with checkpoints._locked_root(root, exclusive=True) as binding:
+                quarantined = checkpoints._quarantine_owned(root, binding)
+            self.assertFalse(root.exists())
+            self.assertTrue(quarantined.is_dir())
+
+    def test_quarantine_refuses_replaced_root_or_existing_destination(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            collision = Path(directory) / "collision"
+            collision.mkdir()
+            with checkpoints._locked_root(root, exclusive=True) as binding:
+                with self.assertRaises(ValueError):
+                    checkpoints._quarantine_owned(root, binding, destination=collision)
+            self.assertTrue(root.is_dir())
+            self.assertTrue(collision.is_dir())
+
+    def test_open_quarantines_corruption_only_while_the_owned_root_is_bound(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            (root / "progress.json").write_bytes(b"{}")
+            with self.assertRaisesRegex(ValueError, "quarantined"):
+                Exp425CheckpointStore.open(root, _provenance(context), context)
+            self.assertFalse(root.exists())
+            self.assertEqual(len(list(Path(directory).glob("checkpoints.quarantine-*"))), 1)
+
+    def test_root_and_child_directory_replacement_fail_before_mutation(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            with checkpoints._locked_root(root, exclusive=True) as binding:
+                for name in ("datasets", "transactions"):
+                    descriptor, identity = checkpoints._open_directory_at(binding, name)
+                    original = root / name
+                    displaced = root / (name + ".old")
+                    original.rename(displaced)
+                    original.mkdir()
+                    try:
+                        with self.assertRaises(ValueError):
+                            checkpoints._verify_directory_at(binding, name, identity)
+                    finally:
+                        os.close(descriptor)
+                        original.rmdir(); displaced.rename(original)
+                root.rename(Path(directory) / "owned")
+                root.mkdir()
+                with self.assertRaises(ValueError):
+                    binding.verify()
+
+    def test_descriptor_read_rejects_record_replaced_between_open_and_use(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            target = root / "datasets" / "record.json"
+            target.write_bytes(b"{}")
+            original_read = checkpoints.os.read
+            replaced = False
+
+            def replace_then_read(descriptor: int, size: int) -> bytes:
+                nonlocal replaced
+                if not replaced:
+                    replaced = True
+                    target.replace(root / "datasets" / "replacement.json")
+                    target.write_bytes(b"{}")
+                return original_read(descriptor, size)
+
+            with checkpoints._locked_root(root, exclusive=False) as binding:
+                descriptor, _ = checkpoints._open_directory_at(binding, "datasets")
+                try:
+                    with patch.object(checkpoints.os, "read", side_effect=replace_then_read):
+                        with self.assertRaises(ValueError):
+                            checkpoints._read_file("record.json", dir_fd=descriptor)
+                finally:
+                    os.close(descriptor)
 
 
 class CheckpointBenchmarkTests(unittest.TestCase):
