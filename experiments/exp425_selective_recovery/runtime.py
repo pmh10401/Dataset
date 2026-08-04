@@ -538,7 +538,52 @@ _SESSION_SENTINEL = object()
 _TASK7_AUDIT_PATH = "/Users/mac/Documents/Dataset/exp417_causal_multihorizon_shadow/task7_backend_audit.json"
 _TASK7_AUDIT_SHA256 = "f77efa941f6b33fe6687b8ac0c2b01c152dac9c15e8b0966e3d9bb41b119b592"
 _TASK7_METRICS = (4.0948700075205124e-07, 0.9999999999845686, 0.6709759390840965)
+_TASK7_SOURCE_COMMIT = "4a398374d880f859f285a271ad63de4a5e55b028"
 _SOURCE_HASHES = {"runner": "f784fb77805e353b7652582626672686f52a2fdc06d27f9c1ca58730d27b772c", "model": "422e096613be84ba77350b068e6bd837eebbb46169bb6e3e275f3f03ab2fcedd", "scoring": "06a92422ea7909efbb7354f1f0499329bd19c04642bbbd5a136fa3f2f5a39941", "entrypoint": "98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1"}
+_SOURCE_ARTIFACT_PATHS = {
+    "runner": "experiments/exp417_causal_multihorizon_shadow/runner.py",
+    "model": "experiments/exp417_causal_multihorizon_shadow/model.py",
+    "scoring": "experiments/exp417_causal_multihorizon_shadow/scoring.py",
+    "entrypoint": "scratch/run_exp424_mps_score_cache.py",
+}
+
+
+def _validate_task7_evidence(audit: BackendAudit, adoption: MPSAdoptionAssessment) -> None:
+    """Authenticate the frozen Task7 artifact before a native authority exists."""
+    try:
+        raw = Path(_TASK7_AUDIT_PATH).read_bytes()
+        task7 = json.loads(raw)
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("Task7 MPS audit artifact is unavailable") from error
+    expected_audit = {
+        "backend": "cpu", "candidate_identity": True, "fallback": False,
+        "fallback_reason": None, "max_normalized_error": _TASK7_METRICS[0],
+        "spearman": _TASK7_METRICS[1], "speedup": _TASK7_METRICS[2],
+    }
+    if (
+        sha256(raw).hexdigest() != _TASK7_AUDIT_SHA256
+        or not isinstance(task7, dict)
+        or task7.get("schema") != "exp417.task7-backend-audit.v1"
+        or task7.get("selected_backend") != "cpu"
+        or task7.get("execution_audit") != expected_audit
+        or audit.backend != "cpu" or audit.fallback or not audit.candidate_identity
+        or (audit.max_normalized_error, audit.spearman, audit.speedup) != _TASK7_METRICS
+        or adoption.payload() != MPSAdoptionAssessment(
+            _TASK7_AUDIT_PATH, _TASK7_AUDIT_SHA256, True, *_TASK7_METRICS,
+            1.1, False, "speedup_below_threshold",
+        ).payload()
+    ):
+        raise ValueError("Exp425 native execution requires authentic Task7 MPS audit evidence")
+
+
+def _validate_source_artifacts() -> None:
+    root = Path(__file__).resolve().parents[2]
+    observed = {
+        name: sha256((root / relative).read_bytes()).hexdigest()
+        for name, relative in _SOURCE_ARTIFACT_PATHS.items()
+    }
+    if observed != _SOURCE_HASHES:
+        raise ValueError("Exp425 native source artifacts do not match the frozen Task7 provenance")
 
 
 class Exp425RuntimeSession:
@@ -551,8 +596,10 @@ class Exp425RuntimeSession:
             raise TypeError("Exp425 runtime session construction is private")
         if not isinstance(snapshot, Exp425DatabaseSnapshot) or not isinstance(audit, BackendAudit) or not isinstance(adoption, MPSAdoptionAssessment) or not isinstance(progress, AtomicProgressWriter):
             raise ValueError("Exp425 runtime inputs are invalid")
-        if audit.backend != "cpu" or audit.fallback or not audit.candidate_identity or (audit.max_normalized_error, audit.spearman, audit.speedup) != _TASK7_METRICS or adoption.payload() != MPSAdoptionAssessment(_TASK7_AUDIT_PATH, _TASK7_AUDIT_SHA256, True, *_TASK7_METRICS, 1.1, False, "speedup_below_threshold").payload() or len(executed_head) != 40:
-            raise ValueError("Exp425 native execution requires a CPU scientific audit and non-adopted MPS audit assessment")
+        if not isinstance(executed_head, str) or len(executed_head) != 40 or any(char not in "0123456789abcdef" for char in executed_head):
+            raise ValueError("Exp425 native execution head is invalid")
+        _validate_task7_evidence(audit, adoption)
+        _validate_source_artifacts()
         _require_mps()
         object.__setattr__(self, "_sealed", False)
         self._snapshot, self._audit, self._adoption, self._writer, self._executed_head = snapshot, audit, adoption, progress, executed_head
@@ -581,7 +628,7 @@ class Exp425RuntimeSession:
         object.__setattr__(self, "_sealed", True)
 
     def __setattr__(self, name: str, value: object) -> None:
-        if getattr(self, "_sealed", False) and name in {"snapshot", "audit", "writer", "runner", "_snapshot", "_audit", "_writer", "_runner", "_binding"}:
+        if getattr(self, "_sealed", False) and name in {"snapshot", "audit", "adoption", "writer", "runner", "_snapshot", "_audit", "_adoption", "_writer", "_runner", "_binding"}:
             raise AttributeError("Exp425 authority-critical bindings are immutable")
         object.__setattr__(self, name, value)
 
@@ -622,8 +669,8 @@ class Exp425RuntimeSession:
         self._require_live()
         if self._binding != (id(self._snapshot), id(self._audit), id(self._adoption), id(self._writer), id(self._runner), self._writer.run_identity):
             raise ValueError("Exp425 authority-critical binding was mutated")
-        if self._audit.backend != "cpu" or self._audit.fallback or not self._audit.candidate_identity or self._adoption.adopted:
-            raise ValueError("Exp425 native authority no longer has valid split MPS evidence")
+        _validate_task7_evidence(self._audit, self._adoption)
+        _validate_source_artifacts()
 
     def _preprocess(self, train: object) -> Sequence[object]:
         if self._fold_contract_sha256 is None:
@@ -649,7 +696,7 @@ class Exp425RuntimeSession:
         dataset = self._active_dataset
         if dataset is None:
             raise ValueError("native model evidence is not bound to preprocessed TRAIN")
-        self._execution[dataset] = MPSExecutionEvidence(True, "mps", "mps", bool(torch.backends.mps.is_built()), bool(torch.backends.mps.is_available()), False, devices, torch.__version__, "4a398374d880f859f285a271ad63de4a5e55b028", _SOURCE_HASHES, self._executed_head, "_compute_native return after existing CPU/NumPy/serialization/calibration implicit synchronization", 0)
+        self._execution[dataset] = MPSExecutionEvidence(True, "mps", "mps", bool(torch.backends.mps.is_built()), bool(torch.backends.mps.is_available()), False, devices, torch.__version__, _TASK7_SOURCE_COMMIT, _SOURCE_HASHES, self._executed_head, "_compute_native return after existing CPU/NumPy/serialization/calibration implicit synchronization", 0)
         self._models[dataset] = models
         return models
 
@@ -850,6 +897,10 @@ def execute_runtime_command(
     output_claimed = False
     try:
         if command == "new":
+            if not isinstance(adoption, MPSAdoptionAssessment):
+                raise ValueError("runtime MPS adoption evidence is invalid")
+            _validate_task7_evidence(audit, adoption)
+            _validate_source_artifacts()
             writer = AtomicProgressWriter.create(output_root=output_root, run_identity=provenance.run_identity, command="new", checkpoint_root=checkpoint_root, total_datasets=len(context.datasets), backend=audit.backend)
             output_claimed = True
             writer.write(RuntimeProgress.initializing(writer.paths, provenance.run_identity, "new", len(context.datasets), audit.backend), event="phase_change")
@@ -866,6 +917,17 @@ def execute_runtime_command(
             # mutation.  Invalid resume consequently leaves the full output
             # tree byte/inode/metadata untouched.
             writer = AtomicProgressWriter.resume(output_root=output_root, run_identity=provenance.run_identity, checkpoint_root=checkpoint_root, claim_pid=False)
+            # Preserve the established precedence for an existing live or
+            # foreign lease.  This is a read-only check; valid launches still
+            # authenticate Task7 before taking any PID lease.
+            if writer.paths.pid.exists():
+                lease, _ = writer._read_pid()
+                if writer._pid_is_live(lease):
+                    raise ValueError("runtime PID lease is owned by a live process")
+            if not isinstance(adoption, MPSAdoptionAssessment):
+                raise ValueError("runtime MPS adoption evidence is invalid")
+            _validate_task7_evidence(audit, adoption)
+            _validate_source_artifacts()
             existing = inspect_runtime_output(output_root, expected_run_identity=provenance.run_identity)
             inspection = Exp425CheckpointStore.inspect_read_only(checkpoint_root, expected_run_identity=provenance.run_identity)
             if existing.get("checkpoint_root") != str(checkpoint_root) or existing.get("total_datasets") != len(context.datasets):
@@ -1089,11 +1151,9 @@ def _native_record(
     execution = getattr(runtime, "_execution", {}).pop(result.dataset, None)
     if execution is None:
         import torch
-        execution = MPSExecutionEvidence(False, "mps", None, bool(torch.backends.mps.is_built()), bool(torch.backends.mps.is_available()), False, {}, torch.__version__, "4a398374d880f859f285a271ad63de4a5e55b028", {"runner": "f784fb77805e353b7652582626672686f52a2fdc06d27f9c1ca58730d27b772c"}, getattr(store.provenance, "git_commit", "4a398374d880f859f285a271ad63de4a5e55b028"), "not applicable: OOF identity insufficiency before model execution", 0)
-    adoption = getattr(runtime, "adoption", None)
-    trace_body = {"schema": "exp425.native-trace.v1", "run_identity": store.provenance.run_identity, "dataset": result.dataset, "run_context_sha256": store.run_context_sha256, **values, "device": "mps"}
-    if adoption is not None:
-        trace_body |= {"schema": "exp425.native-trace.v2", "mps_adoption_sha256": adoption.sha256, "mps_execution_sha256": execution.sha256}
+        execution = MPSExecutionEvidence(False, "mps", None, bool(torch.backends.mps.is_built()), bool(torch.backends.mps.is_available()), False, {}, torch.__version__, _TASK7_SOURCE_COMMIT, _SOURCE_HASHES, getattr(store.provenance, "git_commit", _TASK7_SOURCE_COMMIT), "not applicable: OOF identity insufficiency before model execution", 0)
+    adoption = runtime.adoption
+    trace_body = {"schema": "exp425.native-trace.v2", "run_identity": store.provenance.run_identity, "dataset": result.dataset, "run_context_sha256": store.run_context_sha256, **values, "device": "mps", "mps_adoption_sha256": adoption.sha256, "mps_execution_sha256": execution.sha256}
     trace_sha = _digest(trace_body)
     payload = {"effective_result": result_payload, "native_trace_body": trace_body}
     model_hashes = {
@@ -1118,7 +1178,7 @@ def _native_record(
         "processed": {"manifest": processed_manifest, "manifest_sha256": _digest(processed_manifest),
                       "identity_sha256": processed_sha},
     }
-    provisional = NativeRecordEnvelope(result.dataset, payload, native_group_evidence, trace_sha256=trace_sha, record_payload_sha256="0" * 64, model_hashes=model_hashes, calibration_hashes=calibration, elapsed_seconds=elapsed, reason=reason, mps_adoption=adoption, mps_execution=execution if adoption is not None else None, **values)
+    provisional = NativeRecordEnvelope(result.dataset, payload, native_group_evidence, trace_sha256=trace_sha, record_payload_sha256="0" * 64, model_hashes=model_hashes, calibration_hashes=calibration, elapsed_seconds=elapsed, reason=reason, mps_adoption=adoption, mps_execution=execution, **values)
     record_sha = _digest(_native_record_body(store.run_context_sha256, provisional))
     record = replace(provisional, record_payload_sha256=record_sha)
     # Full decoded validation happens in the store before the capability is consumed.
@@ -1430,7 +1490,7 @@ def run_selective_population(context: FrozenRunContext, store: Exp425CheckpointS
                 heartbeat.close()
             elapsed = record.elapsed_seconds
             runtime._verify_authority_binding()
-            capability = capabilities._mint(runtime, kind="native", run_identity=store.provenance.run_identity, dataset=dataset, context_sha256=store.run_context_sha256, trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256, backend_sha256=record.backend_audit_sha256, process_nonce=runtime.process_nonce)
+            capability = capabilities._mint(runtime, kind="native", run_identity=store.provenance.run_identity, dataset=dataset, context_sha256=store.run_context_sha256, trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256, backend_sha256=record.backend_audit_sha256, mps_adoption_sha256=record.mps_adoption.sha256, mps_execution_sha256=record.mps_execution.sha256, process_nonce=runtime.process_nonce)
             store._commit_native(capability, record)
             traces.append(trace)
             status, reason = _record_status(record)

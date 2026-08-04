@@ -371,9 +371,9 @@ class NativeRecordEnvelope(_DeepImmutable):
     train_identity_sha256: str; eligibility_sha256: str; processed_groups_sha256: str; model_evidence_sha256: str
     frozen_train_contract_sha256: str; scoring_evidence_sha256: str; result_evidence_sha256: str
     model_hashes: Mapping[str, object]; calibration_hashes: Mapping[str, object]; backend_audit_sha256: str
-    trace_sha256: str; record_payload_sha256: str; elapsed_seconds: float; reason: str | None; origin: str = "exp425_native"; context: object | None = field(default=None, compare=False, repr=False)
-    mps_adoption: MPSAdoptionAssessment | None = None
-    mps_execution: MPSExecutionEvidence | None = None
+    trace_sha256: str; record_payload_sha256: str; elapsed_seconds: float; reason: str | None
+    mps_adoption: MPSAdoptionAssessment; mps_execution: MPSExecutionEvidence
+    origin: str = "exp425_native"; context: object | None = field(default=None, compare=False, repr=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "dataset", _nonempty_string(self.dataset, "dataset"))
@@ -384,11 +384,9 @@ class NativeRecordEnvelope(_DeepImmutable):
             object.__setattr__(self, name, _freeze_payload_mapping(getattr(self, name), name))
         object.__setattr__(self, "elapsed_seconds", _finite_elapsed(self.elapsed_seconds))
         if self.reason is not None and not isinstance(self.reason, str): raise ValueError("reason must be a string or None")
-        if (self.mps_adoption is None) != (self.mps_execution is None):
-            raise ValueError("native MPS adoption/execution evidence must be paired")
-        if self.mps_adoption is not None and not isinstance(self.mps_adoption, MPSAdoptionAssessment):
+        if not isinstance(self.mps_adoption, MPSAdoptionAssessment):
             raise ValueError("native MPS adoption evidence is invalid")
-        if self.mps_execution is not None and not isinstance(self.mps_execution, MPSExecutionEvidence):
+        if not isinstance(self.mps_execution, MPSExecutionEvidence):
             raise ValueError("native MPS execution evidence is invalid")
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from hashlib import sha256
 import unittest
 
@@ -17,6 +17,8 @@ from experiments.exp425_selective_recovery.contracts import (
     FoldIdentityCounts,
     GroupEligibilityEvidence,
     ImportedRecordEnvelope,
+    MPSAdoptionAssessment,
+    MPSExecutionEvidence,
     NativeRecordEnvelope,
     SourceProvenGroupEvidence,
 )
@@ -152,14 +154,16 @@ class CheckpointPayloadContractTests(unittest.TestCase):
             "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256",
         )}
         context = "c" * 64
-        trace_body = {"schema": "exp425.native-trace.v1", "run_identity": "run", "dataset": "dataset", "run_context_sha256": context, **digests, "device": "mps"}
+        adoption = MPSAdoptionAssessment("/sealed/task7.json", "a" * 64, True, 0.0, 1.0, 1.0, 1.1, False, "speedup_below_threshold")
+        execution = MPSExecutionEvidence(True, "mps", "mps", True, True, False, {"final:8:1": "mps"}, "2.0.0", "4" * 40, {"runner": "b" * 64}, "c" * 40, "synthetic timer", 0)
+        trace_body = {"schema": "exp425.native-trace.v2", "run_identity": "run", "dataset": "dataset", "run_context_sha256": context, **digests, "device": "mps", "mps_adoption_sha256": adoption.sha256, "mps_execution_sha256": execution.sha256}
         trace = sha256(canonical_json_bytes(trace_body)).hexdigest()
         result = {"effective_result": {"status": "abstained", "result_evidence_sha256": digests["result_evidence_sha256"], "nested": ["stable"]}, "native_trace_body": trace_body}
         group = {"eligibility_sha256": digests["eligibility_sha256"], "processed_groups_sha256": digests["processed_groups_sha256"], "nested": {"value": "stable"}}
         model = {"train_identity_sha256": digests["train_identity_sha256"], "model_evidence_sha256": digests["model_evidence_sha256"], "frozen_train_contract_sha256": digests["frozen_train_contract_sha256"]}
         calibration = {"scoring_evidence_sha256": digests["scoring_evidence_sha256"]}
-        body = {"schema_version": "exp425.dataset.v1", "dataset": "dataset", "origin": "exp425_native", "run_context_sha256": context, "result_payload": result, "group_evidence": group, "trace_sha256": trace, "model_hashes": model, "calibration_hashes": calibration, "backend_audit_sha256": digests["backend_audit_sha256"], "elapsed_seconds": 0.0, "reason": None}
-        record = NativeRecordEnvelope("dataset", result, group, trace_sha256=trace, record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(), model_hashes=model, calibration_hashes=calibration, elapsed_seconds=0.0, reason=None, **digests)
+        provisional = NativeRecordEnvelope("dataset", result, group, trace_sha256=trace, record_payload_sha256="0" * 64, model_hashes=model, calibration_hashes=calibration, elapsed_seconds=0.0, reason=None, mps_adoption=adoption, mps_execution=execution, **digests)
+        record = replace(provisional, record_payload_sha256=sha256(canonical_json_bytes(checkpoints._native_record_body(context, provisional))).hexdigest())
         before = canonical_json_bytes(checkpoints._native_record_body(context, record))
         result["effective_result"]["nested"].append("mutated")
         group["nested"]["value"] = "mutated"

@@ -44,6 +44,7 @@ from experiments.exp425_selective_recovery.contracts import (
     GroupEligibilityEvidence,
     EligibilityAssessment,
     ImportedRecordEnvelope,
+    MPSExecutionEvidence,
     NativeRecordEnvelope,
     SourceProvenGroupEvidence,
 )
@@ -52,6 +53,14 @@ from experiments.exp425_selective_recovery.contracts import MPSAdoptionAssessmen
 
 def _mps_assessment() -> MPSAdoptionAssessment:
     return MPSAdoptionAssessment("/Users/mac/Documents/Dataset/exp417_causal_multihorizon_shadow/task7_backend_audit.json", "f77efa941f6b33fe6687b8ac0c2b01c152dac9c15e8b0966e3d9bb41b119b592", True, 4.0948700075205124e-07, 0.9999999999845686, 0.6709759390840965, 1.1, False, "speedup_below_threshold")
+
+
+def _runtime_mps_execution(provenance: Exp425RunProvenance) -> MPSExecutionEvidence:
+    return MPSExecutionEvidence(
+        True, "mps", "mps", True, True, False, {"final:8:1": "mps"},
+        "2.0.0", "4" * 40, {"runner": "b" * 64}, provenance.git_commit,
+        "synthetic timer", 0,
+    )
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     DatasetDecisionEvidence,
     DatasetResult,
@@ -132,14 +141,13 @@ def _runtime_native_record(
         "result_evidence_sha256", "backend_audit_sha256",
     )}
     trace_body = {
-        "schema": "exp425.native-trace.v1",
+        "schema": "exp425.native-trace.v2",
         "run_identity": provenance.run_identity,
         "dataset": dataset,
         "run_context_sha256": store.run_context_sha256,
         **values,
         "device": "mps",
     }
-    trace = sha256(checkpoints.canonical_json_bytes(trace_body)).hexdigest()
     result_payload = {
         "effective_result": {
             "status": status,
@@ -161,21 +169,18 @@ def _runtime_native_record(
         "frozen_train_contract_sha256": values["frozen_train_contract_sha256"],
     }
     calibration_hashes = {"scoring_evidence_sha256": values["scoring_evidence_sha256"]}
-    body = {
-        "schema_version": "exp425.dataset.v1", "dataset": dataset,
-        "origin": "exp425_native", "run_context_sha256": store.run_context_sha256,
-        "result_payload": result_payload, "group_evidence": group_evidence,
-        "trace_sha256": trace, "model_hashes": model_hashes,
-        "calibration_hashes": calibration_hashes,
-        "backend_audit_sha256": values["backend_audit_sha256"],
-        "elapsed_seconds": 0.01, "reason": reason,
-    }
-    return NativeRecordEnvelope(
+    adoption, execution = _mps_assessment(), _runtime_mps_execution(provenance)
+    trace_body.update({"mps_adoption_sha256": adoption.sha256, "mps_execution_sha256": execution.sha256})
+    trace = sha256(checkpoints.canonical_json_bytes(trace_body)).hexdigest()
+    provisional = NativeRecordEnvelope(
         dataset, result_payload, group_evidence, trace_sha256=trace,
-        record_payload_sha256=sha256(checkpoints.canonical_json_bytes(body)).hexdigest(),
-        model_hashes=model_hashes, calibration_hashes=calibration_hashes,
-        elapsed_seconds=0.01, reason=reason, **values,
+        record_payload_sha256="0" * 64, model_hashes=model_hashes,
+        calibration_hashes=calibration_hashes, elapsed_seconds=0.01, reason=reason,
+        mps_adoption=adoption, mps_execution=execution, **values,
     )
+    return replace(provisional, record_payload_sha256=sha256(checkpoints.canonical_json_bytes(
+        checkpoints._native_record_body(store.run_context_sha256, provisional)
+    )).hexdigest())
 
 
 def _runtime_import_record(dataset: str) -> ImportedRecordEnvelope:
@@ -477,6 +482,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
         store = SimpleNamespace(provenance=SimpleNamespace(run_identity="runtime-test"), run_context_sha256="d" * 64)
         runtime = SimpleNamespace(
             audit=audit,
+            adoption=_mps_assessment(),
             _eligibility={dataset: {8: eligibility}},
             runner=SimpleNamespace(freeze=lambda name, qualification, models: freeze_train_contract(name, qualification.groups, qualification.backend, train_identity_sha256=models.train_identity_sha256)),
         )
@@ -647,6 +653,8 @@ class AtomicProgressWriterTests(unittest.TestCase):
                     "trace_sha256": record.trace_sha256,
                     "record_sha256": record.record_payload_sha256,
                     "backend_sha256": record.backend_audit_sha256,
+                    "mps_adoption_sha256": record.mps_adoption.sha256,
+                    "mps_execution_sha256": record.mps_execution.sha256,
                     "process_nonce": session.process_nonce,
                 }, native_claims)
 
@@ -790,6 +798,8 @@ class AtomicProgressWriterTests(unittest.TestCase):
                         "trace_sha256": record.trace_sha256,
                         "record_sha256": record.record_payload_sha256,
                         "backend_sha256": record.backend_audit_sha256,
+                        "mps_adoption_sha256": record.mps_adoption.sha256,
+                        "mps_execution_sha256": record.mps_execution.sha256,
                         "process_nonce": first_session.process_nonce,
                     }
                     modified = capabilities._mint(first_session, **claim)
@@ -800,6 +810,7 @@ class AtomicProgressWriterTests(unittest.TestCase):
                         ("run_identity", "other-run"), ("dataset", "other-dataset"),
                         ("context_sha256", "0" * 64), ("trace_sha256", "1" * 64),
                         ("record_sha256", "2" * 64), ("backend_sha256", "3" * 64),
+                        ("mps_adoption_sha256", "4" * 64), ("mps_execution_sha256", "5" * 64),
                     ):
                         wrong_claim = capabilities._mint(first_session, **(claim | {name: invalid}))
                         with self.assertRaises(ValueError, msg=name):
@@ -954,7 +965,10 @@ class CompactGlobalWorkloadParityTests(unittest.TestCase):
                         session, kind="native", run_identity=provenance.run_identity,
                         dataset=record.dataset, context_sha256=store.run_context_sha256,
                         trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256,
-                        backend_sha256=record.backend_audit_sha256, process_nonce=session.process_nonce,
+                        backend_sha256=record.backend_audit_sha256,
+                        mps_adoption_sha256=record.mps_adoption.sha256,
+                        mps_execution_sha256=record.mps_execution.sha256,
+                        process_nonce=session.process_nonce,
                     )
                     store._commit_native(claim, record)
                 self.assertEqual(_apply_compact_global_workload(context, store), "global_workload_gate_failed")
