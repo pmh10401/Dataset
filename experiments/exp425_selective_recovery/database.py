@@ -163,22 +163,28 @@ class Exp425DatabaseSnapshot:
 
     def freeze_context(self, lanes: FrozenLaneSnapshot, *, verified_code_commit: str) -> FrozenRunContext:
         self.verify_boundary("freeze_context:before")
-        if not isinstance(lanes, FrozenLaneSnapshot) or not re.fullmatch(r"[0-9a-f]{40}", verified_code_commit):
+        if not isinstance(lanes, FrozenLaneSnapshot) or lanes.config != FROZEN_CONFIG or not re.fullmatch(r"[0-9a-f]{40}", verified_code_commit):
             raise ValueError("frozen lanes or verified code commit is invalid")
         try:
             rows = self._connection.execute("SELECT name FROM datasets ORDER BY name").fetchall()
             database_datasets = tuple(row[0] for row in rows)
             if (not database_datasets or any(not isinstance(item, str) or not item for item in database_datasets) or database_datasets != tuple(sorted(database_datasets)) or len(database_datasets) != len(set(database_datasets))):
                 raise ValueError("database population is invalid")
-            selected = tuple(name for name in database_datasets if not lanes.population or name in set(lanes.population))
-            if lanes.population and set(lanes.population) - set(database_datasets):
+            frozen_population = set(lanes.population) if lanes.population else set(database_datasets)
+            if not lanes.population and len(frozen_population) != FROZEN_CONFIG.expected_datasets:
+                raise ValueError("database population does not match frozen dataset count")
+            if frozen_population - set(database_datasets):
                 raise ValueError("frozen lane references a dataset outside the database population")
+            selected = tuple(name for name in database_datasets if name in frozen_population)
+            if len(selected) != FROZEN_CONFIG.expected_datasets:
+                raise ValueError("database population does not cover frozen lane universe")
             manifest: dict[str, tuple[tuple[int, int], ...]] = {}
             for dataset in selected:
                 rows = self._connection.execute(exp417_inputs._TEST_IDENTITY_SQL, (dataset,)).fetchall()
                 identities = tuple((index, length // 4) for index, length in rows)
                 if (not identities or any(type(index) is not int or type(length) is not int or length <= 0 or length % 4 for index, length in rows) or tuple(index for index, _ in identities) != tuple(sorted(index for index, _ in identities)) or len({index for index, _ in identities}) != len(identities)):
                     raise ValueError("database TEST identity manifest is invalid")
+                manifest[dataset] = identities
         except sqlite3.Error as error:
             raise ValueError("Exp417 database population or identity query failed") from error
         context = FrozenRunContext(self._audit.sha256, selected, lanes, manifest, verified_code_commit, exp417_inputs._runtime_versions(), config=FROZEN_CONFIG)
@@ -188,19 +194,25 @@ class Exp425DatabaseSnapshot:
     def load_train(self, dataset: str, context: FrozenRunContext) -> RawTrainDataset:
         self.verify_boundary("load_train:before")
         try:
+            if not isinstance(context, FrozenRunContext) or context.database_sha256 != self._audit.sha256 or context.config != FROZEN_CONFIG or dataset not in context.datasets:
+                raise ValueError("TRAIN context does not bind this database snapshot")
             result = exp417_inputs.load_raw_train_values_from_connection(self._connection, dataset, database_sha256=context.database_sha256, datasets=context.datasets)
         except sqlite3.Error as error:
             raise ValueError("Exp417 TRAIN decoder query failed") from error
-        self.verify_boundary("load_train:after")
+        finally:
+            self.verify_boundary("load_train:after")
         return result
 
     def load_test(self, dataset: str, contract: FrozenTrainContract, context: FrozenRunContext) -> RawTestDataset:
         self.verify_boundary("load_test:before")
         try:
+            if not isinstance(context, FrozenRunContext) or context.database_sha256 != self._audit.sha256 or context.config != FROZEN_CONFIG or dataset not in context.datasets:
+                raise ValueError("TEST context does not bind this database snapshot")
             result = exp417_inputs.load_raw_test_values_from_connection(self._connection, dataset, contract, context)
         except sqlite3.Error as error:
             raise ValueError("Exp417 TEST decoder query failed") from error
-        self.verify_boundary("load_test:after")
+        finally:
+            self.verify_boundary("load_test:after")
         return result
 
     def close(self) -> None:
@@ -209,10 +221,16 @@ class Exp425DatabaseSnapshot:
         error: BaseException | None = None
         try:
             self.verify_boundary("close:before")
+        except BaseException as caught:
+            error = caught
+        try:
             self._connection.close()
             if self._owned_directory is not None and self._owned_name is not None:
                 directory_fd = os.open(self._owned_directory, _DIRECTORY_FLAGS, dir_fd=self._parent_fd)
                 try:
+                    owned = os.stat(self._owned_name, dir_fd=directory_fd, follow_symlinks=False)
+                    if _metadata(owned) != _metadata(self._operational):
+                        raise ValueError("owned database link was replaced before cleanup")
                     os.unlink(self._owned_name, dir_fd=directory_fd)
                 finally:
                     os.close(directory_fd)
@@ -221,11 +239,12 @@ class Exp425DatabaseSnapshot:
                 # properties and the published identity must remain exact.
                 current = os.fstat(self._database_fd)
                 published = self._published_info()
-                if _identity(current) != _identity(self._before) or current.st_size != self._before.st_size or current.st_mtime_ns != self._before.st_mtime_ns or _identity(published) != _identity(self._before) or published.st_size != self._before.st_size or published.st_mtime_ns != self._before.st_mtime_ns:
+                if _identity(current) != _identity(self._before) or current.st_size != self._before.st_size or current.st_mtime_ns != self._before.st_mtime_ns or current.st_nlink != self._before.st_nlink or _identity(published) != _identity(self._before) or published.st_size != self._before.st_size or published.st_mtime_ns != self._before.st_mtime_ns or published.st_nlink != self._before.st_nlink:
                     raise ValueError("database changed during owned-link cleanup")
                 self._sidecars_absent()
         except BaseException as caught:
-            error = caught
+            if error is None:
+                error = caught
         finally:
             self._closed = True
             try:
@@ -260,8 +279,8 @@ def open_database_snapshot(database: Path, *, expected_sha256: str) -> Iterator[
         parent_fd = os.open(path.parent, _DIRECTORY_FLAGS)
         database_fd = os.open(path.name, _FILE_FLAGS, dir_fd=parent_fd)
         before = os.fstat(database_fd)
-        if not stat.S_ISREG(before.st_mode) or before.st_nlink < 1:
-            raise ValueError("database must be a linked regular file")
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+            raise ValueError("database must be an unaliased regular file")
         # A temporary tiny owner directory prevents alias collisions and gives
         # cleanup an exact, capability-like pathname to remove.
         for suffix in _SIDECAR_SUFFIXES:
@@ -280,16 +299,21 @@ def open_database_snapshot(database: Path, *, expected_sha256: str) -> Iterator[
             owned_fd = os.open(owned_directory, _DIRECTORY_FLAGS, dir_fd=parent_fd)
             try:
                 os.link(path.name, owned_name, src_dir_fd=parent_fd, dst_dir_fd=owned_fd, follow_symlinks=False)
+                owned_info = os.stat(owned_name, dir_fd=owned_fd, follow_symlinks=False)
+                if _identity(owned_info) != _identity(before) or not stat.S_ISREG(owned_info.st_mode):
+                    raise ValueError("owned database link does not bind accepted inode")
             finally:
                 os.close(owned_fd)
         operational = os.fstat(database_fd)
-        if _identity(operational) != _identity(before) or operational.st_size != before.st_size or operational.st_mtime_ns != before.st_mtime_ns:
+        expected_links = 2 if sys.platform == "darwin" else 1
+        if _identity(operational) != _identity(before) or operational.st_size != before.st_size or operational.st_mtime_ns != before.st_mtime_ns or operational.st_nlink != expected_links:
             raise ValueError("database changed while creating snapshot")
         target = path if owned_directory is None else path.parent / owned_directory / owned_name
-        connection = sqlite3.connect("file:" + quote(str(target.resolve())) + "?mode=ro&immutable=1", uri=True)
+        connection = sqlite3.connect("file:" + quote(str(target)) + "?mode=ro&immutable=1", uri=True)
         connection.execute("PRAGMA query_only=ON")
         exp417_inputs.assert_label_free_sql_contract()
         snapshot = Exp425DatabaseSnapshot(path, path.name, parent_fd, database_fd, connection, before, operational, os.fstat(parent_fd), owned_directory, owned_name, actual)
+        snapshot.verify_boundary("open:accepted")
         parent_fd = database_fd = None
         connection = None
         yield snapshot

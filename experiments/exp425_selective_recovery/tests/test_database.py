@@ -48,7 +48,7 @@ class DatabaseSnapshotTests(unittest.TestCase):
             manager.__exit__(None, None, None)
         self.assertEqual(hashed.call_count, 1)
         self.assertEqual(snapshot.audit.full_hash_count, 1)
-        self.assertEqual(snapshot.audit.boundaries, ("first", "second", "third", "close:before"))
+        self.assertEqual(snapshot.audit.boundaries, ("open:accepted", "first", "second", "third", "close:before"))
 
     def test_boundary_rejects_path_replacement_without_rehashing(self) -> None:
         manager = open_database_snapshot(self.database, expected_sha256=self.digest)
@@ -82,3 +82,18 @@ class DatabaseSnapshotTests(unittest.TestCase):
         manager.__exit__(None, None, None)
         with self.assertRaisesRegex(ValueError, "closed"):
             snapshot.verify_boundary("after-close")
+
+    def test_hardlink_alias_is_rejected_before_and_after_acceptance(self) -> None:
+        alias = self.root / "preexisting-alias.sqlite"
+        os.link(self.database, alias)
+        with self.assertRaisesRegex(ValueError, "unaliased"):
+            with open_database_snapshot(self.database, expected_sha256=self.digest):
+                pass
+        alias.unlink()
+        manager = open_database_snapshot(self.database, expected_sha256=self.digest)
+        snapshot = manager.__enter__()
+        os.link(self.database, alias)
+        with self.assertRaisesRegex(ValueError, "metadata changed"):
+            snapshot.verify_boundary("alias")
+        with self.assertRaises(ValueError):
+            manager.__exit__(None, None, None)
