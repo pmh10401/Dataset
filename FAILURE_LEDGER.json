@@ -1,0 +1,45 @@
+{
+  "schema": "failure-ledger.v1",
+  "updated_at": "2026-08-04T17:00:00+09:00",
+  "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
+  "entries": [
+    {
+      "experiment": "Exp405",
+      "category": "research_gate_failed",
+      "evidence": "/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp405_demotion_evaluation.json",
+      "facts": {"passes_research_gate": false, "true_positive_count": 395, "false_positive_count": 78, "false_positive_fraction": 0.1649048625792812, "baseline_true_positive_retention": 0.793733681462141},
+      "lesson": "Demotion/recheck evidence did not justify an operational policy change."
+    },
+    {
+      "experiment": "Exp417",
+      "category": "interrupted_long_runtime",
+      "facts": {"preserved_checkpoint_records": 94},
+      "lesson": "Sequential runtime and heavyweight per-dataset validation required deterministic checkpoint/resume redesign."
+    },
+    {
+      "experiment": "Exp419",
+      "category": "runtime_recovery_failures",
+      "lesson": "Parallelism alone did not solve repeated source validation, parent-log, checkpoint, and environment integration failures. Preserve explicit modes and compact state."
+    },
+    {
+      "experiment": "Exp422-TEST-EVAL",
+      "category": "blocked_no_prediction",
+      "evidence": "/Users/mac/Documents/Dataset/exp422_test_eval_attempt_20260802-092039/MANIFEST.json",
+      "facts": {"test_labels_opened": false},
+      "lesson": "Never evaluate until both frozen prediction and manifest exist."
+    },
+    {
+      "experiment": "Exp424",
+      "category": "failed_summary_after_full_checkpoint_accounting",
+      "evidence": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831/manifest.json",
+      "facts": {"completed_datasets": 1117, "prediction_rows": 0, "verified_nonterminal_records": 983, "terminal_identity_insufficient": 134},
+      "lesson": "Preserve verified nonterminal evidence, selectively recompute/abstain terminal identity-insufficient records, and never rerun all expensive work blindly."
+    },
+    {
+      "experiment": "Exp425-engineering",
+      "category": "resolved_prelaunch_integrity_findings",
+      "facts": {"task3_fix_rounds": 4, "task4_fix_rounds": 3, "stale_db_pin_links_removed": 8},
+      "lesson": "Independent adversarial review is required before long execution; progress claims without exact context, inode, cleanup, and resume evidence are insufficient."
+    }
+  ]
+}

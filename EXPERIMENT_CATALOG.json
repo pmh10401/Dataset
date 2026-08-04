@@ -1,0 +1,82 @@
+{
+  "schema": "experiment-catalog.v1",
+  "updated_at": "2026-08-04T17:00:00+09:00",
+  "scope": "Verified active lineage; add every future experiment before execution.",
+  "experiments": [
+    {
+      "id": "Exp403-408",
+      "kind": "feature_ml_validation_and_retrospective_variants",
+      "status": "completed_review_only",
+      "prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70",
+      "documents": ["docs/EXP403_408_PREREGISTRATION_KO.md", "docs/EXP403_408_RUNBOOK_KO.md"],
+      "artifact_root": "/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation",
+      "notes": "Exp406-408 evidence is retrospective/review-only; no operational promotion."
+    },
+    {
+      "id": "Exp414",
+      "kind": "train_only_missing_aware_qualification",
+      "status": "completed_no_qualified_near_rule",
+      "git_commit": "03f0cfbe419fbea795f2969bbf6fc8746b2d9350",
+      "artifact": "/Users/mac/Documents/Dataset/exp414_missing_aware_near_repeat/exp414_summary.json",
+      "dataset_count": 1117,
+      "test_labels_used": false
+    },
+    {
+      "id": "Exp416",
+      "kind": "retrospective_exp404_hard_confusion_audit",
+      "status": "completed_evaluation_only",
+      "git_commit": "05391474800c61fd63044c6d25aa849112d465e0",
+      "artifact": "/Users/mac/Documents/Dataset/exp416_exp404_hard_test_confusion_audit/exp416_confusion_matrix.json",
+      "prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70",
+      "test_labels_loaded_after_prediction_freeze": true
+    },
+    {
+      "id": "Exp417",
+      "kind": "causal_multihorizon_shadow",
+      "status": "interrupted_predecessor",
+      "documents": ["docs/EXP417_PREREGISTRATION_KO.md", "docs/EXP417_RUNBOOK_KO.md"],
+      "notes": "Frozen label-free science source; 94-record interrupted checkpoint was evidence only."
+    },
+    {
+      "id": "Exp419",
+      "kind": "deterministic_cpu_parallel_runtime",
+      "status": "superseded_runtime_recovery_line",
+      "documents": ["docs/EXP419_PREREGISTRATION_KO.md", "docs/EXP419_RUNBOOK_KO.md"],
+      "notes": "Scientific contract inherited Exp417; repeated runtime/recovery bottlenecks motivated later work."
+    },
+    {
+      "id": "Exp422",
+      "kind": "cpu_mps_numeric_and_score_diagnostic",
+      "status": "diagnostic_only",
+      "documents": ["docs/EXP422_PREREGISTRATION_KO.md", "docs/EXP422_RUNBOOK_KO.md"],
+      "notes": "TEST evaluation attempt was blocked because a frozen prediction/manifest was absent."
+    },
+    {
+      "id": "Exp423",
+      "kind": "mps_full_test_value_evaluation",
+      "status": "interrupted_checkpoint_preserved",
+      "documents": ["docs/EXP423_MPS_FULL_TEST_EVAL_KO.md", "docs/EXP423_MPS_FULL_TEST_EVAL_RUNBOOK_KO.md"]
+    },
+    {
+      "id": "Exp424",
+      "kind": "mps_score_cache_optimization",
+      "status": "failed_summary_with_verified_checkpoint_evidence",
+      "git_commit": "4a398374d880f859f285a271ad63de4a5e55b028",
+      "documents": ["docs/EXP424_MPS_SCORE_CACHE_KO.md", "docs/EXP424_MPS_SCORE_CACHE_RUNBOOK_KO.md"],
+      "artifact_root": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831",
+      "checkpoint": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint",
+      "record_accounting": {"records": 1117, "verified_nonterminal": 983, "terminal_identity_insufficient": 134},
+      "review_only": true
+    },
+    {
+      "id": "Exp425",
+      "kind": "selective_recovery_from_verified_exp424_evidence",
+      "status": "implementation_task5_in_progress",
+      "branch": "codex/exp425-selective-recovery",
+      "base_commit": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee",
+      "documents": ["docs/superpowers/specs/2026-08-04-exp425-selective-recovery-design.md", "docs/superpowers/plans/2026-08-04-exp425-selective-recovery.md"],
+      "official_population_approved": true,
+      "prediction_phase_started": false
+    }
+  ]
+}

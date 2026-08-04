@@ -1,0 +1,54 @@
+{
+  "schema": "autonomous-research-state.v1",
+  "updated_at": "2026-08-04T17:00:00+09:00",
+  "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
+  "branch": "codex/exp425-selective-recovery",
+  "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
+  "last_verified_commit": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee",
+  "active_experiment": "Exp425",
+  "active_phase": "task5_runtime_implementation",
+  "status": "in_progress",
+  "dataset_count": 1117,
+  "active_documents": {
+    "design": "docs/superpowers/specs/2026-08-04-exp425-selective-recovery-design.md",
+    "plan": "docs/superpowers/plans/2026-08-04-exp425-selective-recovery.md",
+    "preregistration": null,
+    "runbook": null,
+    "sdd_progress": ".superpowers/sdd/2026-08-04-exp425-selective-recovery/progress.md",
+    "task_brief": ".superpowers/sdd/2026-08-04-exp425-selective-recovery/task-5-brief.md",
+    "task_report": ".superpowers/sdd/2026-08-04-exp425-selective-recovery/task-5-report.md"
+  },
+  "frozen_inputs": {
+    "database": "/Users/mac/Documents/Dataset/univariate_ts.db",
+    "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+    "database_inode": 1048138,
+    "database_nlink_after_stale_pin_cleanup": 1,
+    "predecessor_checkpoint": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint",
+    "predecessor_accounting": {
+      "records": 1117,
+      "importable": 983,
+      "terminal_identity_insufficient": 134,
+      "source_mutated": false
+    }
+  },
+  "active_process": {
+    "pid": null,
+    "checkpoint": null,
+    "output": null,
+    "progress_json": null,
+    "events_jsonl": null,
+    "parent_log": null,
+    "pid_file": null,
+    "last_error": null
+  },
+  "completed_engineering_tasks": {
+    "task1_eligibility": "a37e0b4d1e241a885c69b65b318fe77107b055c8",
+    "task2_checkpoint": "7ebe5384fa057f7eb82b0c8fb3bbded38665e7f4",
+    "task3_predecessor": "78580fcead5ffd276c274f938933637263f15b6c",
+    "task4_database": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee"
+  },
+  "next_action": "Complete and independently review Exp425 Task 5, then implement Task 6 preregistration, runbook, reporting, and readiness.",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && python3 -m unittest experiments.exp425_selective_recovery.tests.test_runtime experiments.exp425_selective_recovery.tests.test_cli -v",
+  "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
+  "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens."
+}

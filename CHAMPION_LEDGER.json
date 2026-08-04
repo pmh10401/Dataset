@@ -1,0 +1,40 @@
+{
+  "schema": "champion-ledger.v1",
+  "updated_at": "2026-08-04T17:00:00+09:00",
+  "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
+  "champion_status": "no_new_champion_verified_in_current_loop",
+  "verified_references": [
+    {
+      "name": "Exp404 Hard prediction audited by Exp416",
+      "role": "current_verified_full_population_reference_not_mandatory_code_base",
+      "prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70",
+      "evaluation_artifact": "/Users/mac/Documents/Dataset/exp416_exp404_hard_test_confusion_audit/exp416_confusion_matrix.json",
+      "dataset_count": 1117,
+      "prediction_coordinate_count": 2218,
+      "prediction_dataset_count": 888,
+      "micro": {"tp": 1915, "fp": 303, "fn": 2003, "tn": 191679, "precision": 0.8633904418394951, "recall": 0.4887697805002552, "f1": 0.6241851368970013, "false_positive_rate": 0.0015782729630902897},
+      "dataset_balanced_macro": {"precision": 0.8262807700918903, "recall": 0.591448835046688, "f1": 0.6089825086931719, "false_positive_rate": 0.002196457972318159},
+      "test_labels_loaded_after_prediction_freeze": true,
+      "operational_policy_changed": false
+    }
+  ],
+  "promotion_rule": {
+    "required": [
+      "new experiment number and preregistration before prediction",
+      "frozen prediction SHA256 before TEST labels",
+      "exact 1117-dataset paired evaluation",
+      "rescued previously missed datasets reported",
+      "false alarms and regressions on previously strong datasets reported",
+      "preregistered paired/bootstrap decision rule passes",
+      "no same-experiment TEST-informed reselection"
+    ],
+    "note": "The development base may be the current experiment or selected verified components; this ledger is a comparator, not a forced starting point."
+  },
+  "pending_candidate": {
+    "experiment": "Exp425",
+    "status": "implementation_before_prediction",
+    "prediction_sha256": null,
+    "evaluation": null
+  },
+  "history": []
+}
