@@ -554,6 +554,28 @@ class CheckpointStoreTests(unittest.TestCase):
                     store._reconcile_native_intents(binding=binding)
             self.assertEqual(_checkpoint_snapshot(root), before)
 
+    def test_native_reconciliation_preflights_every_intent_before_any_mutation(self) -> None:
+        """A later invalid intent must not let an earlier record-absent intent be removed."""
+        context = _context()
+        provenance = _provenance(context)
+        cases = (
+            ("unknown origin", {"schema": "exp425.intent.v1", "origin": "unrecognized"}),
+            ("malformed import", {"schema": "exp425.intent.v1", "origin": "exp424_import"}),
+            ("impossible native", {"schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native", "dataset": "outside-universe", "record_payload_sha256": _digest("a"), "run_identity": provenance.run_identity, "run_context_sha256": sha256(canonical_json_bytes(_context_payload(context))).hexdigest(), "backend_contract_sha256": provenance.backend_contract_sha256, "backend_audit_sha256": _digest("b")}),
+        )
+        for name, later_intent in cases:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                valid = {"schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native", "dataset": context.datasets[0], "record_payload_sha256": _digest("a"), "run_identity": provenance.run_identity, "run_context_sha256": store.run_context_sha256, "backend_contract_sha256": provenance.backend_contract_sha256, "backend_audit_sha256": _digest("b")}
+                (root / "transactions" / "a-valid-record-absent.json").write_bytes(canonical_json_bytes(valid))
+                (root / "transactions" / "z-later-invalid.json").write_bytes(canonical_json_bytes(later_intent))
+                before = _checkpoint_snapshot(root)
+                with store._store_binding(exclusive=True) as binding:
+                    with self.assertRaises(ValueError):
+                        store._reconcile_native_intents(binding=binding)
+                self.assertEqual(_checkpoint_snapshot(root), before)
+
     def test_native_load_rejects_trace_literals_and_cross_field_mutations(self) -> None:
         context = _context()
         provenance = _provenance(context)
@@ -574,6 +596,8 @@ class CheckpointStoreTests(unittest.TestCase):
             ("ground truth", lambda payload: payload["group_evidence"].__setitem__("ground_truth", "forbidden")),
             ("family test performance", lambda payload: payload["model_hashes"].__setitem__("family_TEST_performance", "forbidden")),
             ("nested evaluation", lambda payload: payload["calibration_hashes"].__setitem__("evaluation_summary", {"nested": ["forbidden"]})),
+            ("embedded evaluation", lambda payload: payload["calibration_hashes"].__setitem__("model_evaluation_summary", "forbidden")),
+            ("mixed case evaluation", lambda payload: payload["calibration_hashes"].__setitem__("TEST_Model_Evaluation_Summary", "forbidden")),
         )
         for name, mutate in mutations:
             with self.subTest(name=name), TemporaryDirectory() as directory:
@@ -1150,6 +1174,121 @@ class CheckpointStoreTests(unittest.TestCase):
             finally:
                 capabilities._close_authority(authority)
             self.assertEqual(target.read_bytes(), b"foreign-bytes-on-the-owned-inode")
+
+    def test_cleanup_rechecks_each_isolated_entry_after_the_pre_remove_hook(self) -> None:
+        """Replacing an isolated entry after validation must preserve it instead of deleting it."""
+        context = _context()
+        provenance = _provenance(context)
+        cases = (("staged", True), ("metadata", False), ("directory", False))
+        for label, with_record in cases:
+            with self.subTest(label=label), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                attestation, batch_identity = _digest("a"), "post-hook-" + label
+                records = (_import_record_for(context.datasets[0], 0, attestation),) if with_record else ()
+                authority = object()
+                capabilities._register_authority(authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, records)
+                    batch_path = root / "import_batches" / batch_identity
+
+                    def replace(reached: str) -> None:
+                        if reached != "cleanup_after_" + label + "_phase_before_remove":
+                            return
+                        cleanup = json.loads(next((root / "import_batches").glob("cleanup-*.json")).read_bytes())
+                        key = "staged:" + context.datasets[0] if label == "staged" else ("batch.json" if label == "metadata" else "batch-directory")
+                        entry = cleanup["entries"][key]
+                        parent = batch_path if label != "directory" else root / "import_batches"
+                        isolated = parent / entry["isolated_name"]
+                        isolated.rename(Path(directory) / ("owned-" + label))
+                        if label == "directory":
+                            isolated.mkdir()
+                            (isolated / "foreign").write_bytes(b"foreign-directory")
+                        else:
+                            isolated.write_bytes(("foreign-" + label).encode())
+
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=replace):
+                        with self.assertRaisesRegex(ValueError, "replaced"):
+                            _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, records, batch)
+                finally:
+                    capabilities._close_authority(authority)
+                if label == "staged":
+                    self.assertEqual((batch_path / checkpoints.record_filename(context.datasets[0])).read_bytes(), b"foreign-staged")
+                elif label == "metadata":
+                    self.assertEqual((batch_path / "batch.json").read_bytes(), b"foreign-metadata")
+                else:
+                    self.assertEqual((batch_path / "foreign").read_bytes(), b"foreign-directory")
+
+    def test_cleanup_resumes_after_delete_before_removed_phase_is_persisted(self) -> None:
+        """A crash after an unlink is resumed as removed for every cleanup entry kind."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        cases = (("staged", True), ("metadata", False), ("directory", False))
+        for label, with_record in cases:
+            with self.subTest(label=label), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                attestation, batch_identity = _digest("a"), "after-delete-" + label
+                records = (_import_record_for(context.datasets[0], 0, attestation),) if with_record else ()
+                old_authority = object()
+                capabilities._register_authority(old_authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records)
+                    crash_phase = "cleanup_after_" + label + "_remove_before_phase_update"
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda reached: (_ for _ in ()).throw(SimulatedProcessDeath(reached)) if reached == crash_phase else None):
+                        with self.assertRaisesRegex(SimulatedProcessDeath, crash_phase):
+                            _promote_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records, batch)
+                finally:
+                    capabilities._close_authority(old_authority)
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+                new_authority = object()
+                capabilities._register_authority(new_authority, "exp424_import")
+                try:
+                    resumed = _begin_and_stage_imports(reopened, provenance, new_authority, "new-nonce", batch_identity, attestation, records)
+                    _promote_imports(reopened, provenance, new_authority, "new-nonce", batch_identity, attestation, records, resumed)
+                finally:
+                    capabilities._close_authority(new_authority)
+                self.assertEqual(list((root / "import_batches").iterdir()), [])
+
+    def test_cleanup_rejects_each_forged_deterministic_plan_field_before_mutation(self) -> None:
+        """Changing a cleanup entry's deterministic plan must not authorize any deletion."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        for field, replacement in (("original_name", "forged.json"), ("isolated_name", ".cleanup-owned-forged"), ("entry_type", "directory"), ("digest", _digest("f")), ("metadata_digest", _digest("f"))):
+            with self.subTest(field=field), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                attestation, batch_identity = _digest("a"), "forged-plan-" + field
+                record = _import_record_for(context.datasets[0], 0, attestation)
+                authority = object()
+                capabilities._register_authority(authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,))
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda reached: (_ for _ in ()).throw(SimulatedProcessDeath()) if reached == "cleanup_tombstone_durable" else None):
+                        with self.assertRaises(SimulatedProcessDeath):
+                            _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,), batch)
+                finally:
+                    capabilities._close_authority(authority)
+                cleanup_path = next((root / "import_batches").glob("cleanup-*.json"))
+                cleanup = json.loads(cleanup_path.read_bytes())
+                entry = cleanup["entries"]["batch.json"] if field == "metadata_digest" else cleanup["entries"]["staged:" + context.datasets[0]]
+                entry["digest" if field == "metadata_digest" else field] = replacement
+                if field == "metadata_digest":
+                    entry["isolated_name"] = checkpoints._cleanup_isolated_name(batch_identity, "batch.json", replacement)
+                body = dict(cleanup)
+                body.pop("payload_sha256")
+                cleanup["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+                cleanup_path.write_bytes(canonical_json_bytes(cleanup))
+                before = _checkpoint_snapshot(root)
+                with self.assertRaises(ValueError):
+                    Exp425CheckpointStore.inspect_read_only(root)
+                self.assertEqual(_checkpoint_snapshot(root), before)
 
     def test_read_only_cleanup_inspection_rejects_foreign_isolated_metadata(self) -> None:
         """Readonly inspection reports a foreign pre-phase isolated entry without repairing it."""
