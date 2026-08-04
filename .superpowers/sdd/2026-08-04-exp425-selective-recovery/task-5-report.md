@@ -278,3 +278,27 @@ PASS — 22 tests in 11.125s
 python3 -m compileall -q experiments/exp425_selective_recovery && git diff --check
 PASS
 ```
+
+## Task 5 CLI/PID/inspect/lifecycle matrix — 2026-08-04
+
+STATUS: complete
+OBJECTIVE: Complete the bounded `new|resume|inspect` fail-closed CLI lifecycle matrix without changing the runtime implementation.
+CHANGES:
+- `scratch/run_exp425_selective_recovery.py`: added a read-only output/checkpoint pair validator that cross-binds run identity, all published absolute paths, dataset universe, and reconciled terminal evidence. `inspect` now returns 2 for malformed/mismatched resource contracts, 1 only for validated incomplete/failed state, and 0 only for matching complete review-only state. `resume` now performs the same read-only validation before launch assembly and returns 0 for a matching complete run without a launch factory, PID claim, snapshot, DB, or model work. Launch-path disclosure remains absolute and now shares one construction path.
+- `experiments/exp425_selective_recovery/tests/test_cli.py`: expanded from two subprocess checks to an 11-test matrix covering parser misuse/unknown mode; existing new roots; absent/mismatched resume roots; run-identity mismatch; incomplete/failed/complete inspect codes; complete-resume idempotence; live/foreign PID rejection; path disclosure; and inspect forbidden-call/tree byte-inode-mtime immutability. Fixtures exercise real checkpoint inspection with no DB/model/MPS activity.
+VERIFIED:
+```text
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_cli -v
+PASS — 11 tests in 9.318s
+
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_runtime experiments.exp425_selective_recovery.tests.test_cli -v
+PASS — 31 tests in 7.973s
+
+python3 -m py_compile scratch/run_exp425_selective_recovery.py experiments/exp425_selective_recovery/tests/test_cli.py && git diff --check
+PASS — exit 0; no output
+
+git diff 53f2e70 -- scratch/run_exp425_selective_recovery.py experiments/exp425_selective_recovery/tests/test_cli.py && git status --short
+INSPECTED — only the two owned implementation/test files were modified before append-only evidence updates; no output, checkpoint, or readiness artifacts were created.
+```
+JUDGMENT CALLS: Malformed or cross-root-mismatched inspect inputs are resource-contract failures and therefore exit 2; validated `initializing` and `failed` states return 1. A complete resume is determined solely from the matching durable output/checkpoint pair, so it does not need a launch factory.
+GAPS: none

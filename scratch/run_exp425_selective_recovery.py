@@ -47,43 +47,96 @@ def _factory(specification: str) -> object:
     return candidate
 
 
+def _launch_paths(output_root: Path, checkpoint_root: Path) -> dict[str, object]:
+    output_root, checkpoint_root = output_root.absolute(), checkpoint_root.absolute()
+    return {
+        "checkpoint_root": str(checkpoint_root),
+        "output_root": str(output_root),
+        "progress_path": str(output_root / "progress.json"),
+        "events_path": str(output_root / "events.jsonl"),
+        "parent_log_path": str(output_root / "parent.log"),
+        "pid_path": str(output_root / "run.pid"),
+        "pid": __import__("os").getpid(),
+    }
+
+
+def _inspect_pair(output_root: Path, checkpoint_root: Path, run_identity: str | None) -> tuple[object, object]:
+    """Read and cross-bind the only two durable roots without opening a run."""
+    output_root, checkpoint_root = output_root.absolute(), checkpoint_root.absolute()
+    # This existing preflight path uses only the read-only runtime/checkpoint
+    # validators and additionally proves the append-only terminal evidence is
+    # compatible with the checkpoint inventory.
+    preflight_runtime_paths(
+        "resume", output_root=output_root, checkpoint_root=checkpoint_root,
+        run_identity=run_identity,
+    )
+    checkpoint = Exp425CheckpointStore.inspect_read_only(
+        checkpoint_root, expected_run_identity=run_identity,
+    )
+    runtime = inspect_runtime_output(output_root, expected_run_identity=run_identity)
+    if runtime.get("run_identity") != checkpoint.run_identity:
+        raise ValueError("runtime output and checkpoint run identities do not match")
+    expected_paths = _launch_paths(output_root, checkpoint_root)
+    for name in ("checkpoint_root", "output_root", "progress_path", "events_path", "parent_log_path", "pid_path"):
+        if runtime.get(name) != expected_paths[name]:
+            raise ValueError(f"runtime output does not bind the requested {name}")
+    if runtime.get("total_datasets") != len(checkpoint.expected_datasets):
+        raise ValueError("runtime output total does not match checkpoint universe")
+    return runtime, checkpoint
+
+
+def _inspection_payload(runtime: object, checkpoint: object) -> dict[str, object]:
+    assert isinstance(runtime, dict) or hasattr(runtime, "get")
+    return {
+        "checkpoint_root": runtime.get("checkpoint_root"),
+        "output_root": runtime.get("output_root"),
+        "progress_path": runtime.get("progress_path"),
+        "events_path": runtime.get("events_path"),
+        "parent_log_path": runtime.get("parent_log_path"),
+        "pid_path": runtime.get("pid_path"),
+        "pid": runtime.get("pid"),
+        "completed_datasets": checkpoint.completed_count,
+        "expected_datasets": len(checkpoint.expected_datasets),
+        "state": runtime.get("state"),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.command == "inspect":
         try:
-            checkpoint = Exp425CheckpointStore.inspect_read_only(
-                args.checkpoint_root, expected_run_identity=args.run_identity
+            runtime, checkpoint = _inspect_pair(
+                args.output_root, args.checkpoint_root, args.run_identity,
             )
-            runtime = inspect_runtime_output(args.output_root, expected_run_identity=args.run_identity)
         except (OSError, ValueError) as error:
             print(f"inspect failed: {type(error).__name__}: {error}", file=sys.stderr)
-            return 1
+            return 2
         complete = runtime.get("state") == "complete_review_only" and checkpoint.completed_count == len(checkpoint.expected_datasets)
-        print(json.dumps({"checkpoint_root": str(args.checkpoint_root.absolute()), "output_root": str(args.output_root.absolute()), "completed_datasets": checkpoint.completed_count, "expected_datasets": len(checkpoint.expected_datasets), "state": runtime.get("state")}, sort_keys=True))
+        print(json.dumps(_inspection_payload(runtime, checkpoint), sort_keys=True))
         return 0 if complete else 1
-    if not args.launch_factory:
-        print("new/resume require --launch-factory module:callable", file=sys.stderr)
-        return 2
     try:
         # Reject lifecycle mistakes before importing a launch module that may
         # open the frozen database or initialize MPS.
-        preflight_runtime_paths(
-            args.command, output_root=args.output_root,
-            checkpoint_root=args.checkpoint_root, run_identity=args.run_identity,
-        )
+        if args.command == "resume":
+            runtime, checkpoint = _inspect_pair(
+                args.output_root, args.checkpoint_root, args.run_identity,
+            )
+            if runtime.get("state") == "complete_review_only" and checkpoint.completed_count == len(checkpoint.expected_datasets):
+                print(json.dumps(_inspection_payload(runtime, checkpoint), sort_keys=True))
+                return 0
+        else:
+            preflight_runtime_paths(
+                args.command, output_root=args.output_root,
+                checkpoint_root=args.checkpoint_root, run_identity=args.run_identity,
+            )
     except (OSError, ValueError) as error:
         print(f"{args.command} failed: {type(error).__name__}: {error}", file=sys.stderr)
         return 2
+    if not args.launch_factory:
+        print("new/resume require --launch-factory module:callable", file=sys.stderr)
+        return 2
     # These are printed before the factory can open a snapshot or invoke MPS.
-    paths = {
-        "checkpoint_root": str(args.checkpoint_root.absolute()),
-        "output_root": str(args.output_root.absolute()),
-        "progress_path": str((args.output_root / "progress.json").absolute()),
-        "events_path": str((args.output_root / "events.jsonl").absolute()),
-        "parent_log_path": str((args.output_root / "parent.log").absolute()),
-        "pid_path": str((args.output_root / "run.pid").absolute()),
-        "pid": __import__("os").getpid(),
-    }
+    paths = _launch_paths(args.output_root, args.checkpoint_root)
     print(json.dumps(paths, sort_keys=True), flush=True)
     launch: object | None = None
     try:
