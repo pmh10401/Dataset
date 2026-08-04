@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenRunContext
-from experiments.exp417_causal_multihorizon_shadow.checkpoints import _context_payload
+from experiments.exp417_causal_multihorizon_shadow.checkpoints import _context_payload, _context_from_payload
 from experiments.exp417_causal_multihorizon_shadow.tests.test_checkpoints import _context
 from experiments.exp425_selective_recovery.checkpoints import Exp425CheckpointStore
 from experiments.exp425_selective_recovery import checkpoints
@@ -214,23 +214,50 @@ class CheckpointBenchmarkTests(unittest.TestCase):
 
     def test_shared_context_is_compact_and_resumes_faster_than_repeated_context(self) -> None:
         context = _context()
-        repeated_record = canonical_json_bytes({"context": _context_payload(context), "candidate_coordinates": [["x", 0]]})
-        repeated_context_bytes = len(repeated_record) * 25
+        provenance = _provenance(context)
+        datasets = context.datasets[:25]
+
+        def record_for(dataset: str, index: int, store: Exp425CheckpointStore) -> NativeRecordEnvelope:
+            digest = lambda label: sha256(f"{dataset}:{label}".encode()).hexdigest()
+            values = {name: digest(name) for name in ("train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256")}
+            trace_body = {"schema": "exp425.native-trace.v1", "run_identity": provenance.run_identity, "dataset": dataset, "run_context_sha256": store.run_context_sha256, **values, "device": "mps"}
+            trace = sha256(canonical_json_bytes(trace_body)).hexdigest()
+            result = {"effective_result": {"candidate_coordinates": [[dataset, index]], "result_evidence_sha256": values["result_evidence_sha256"], "status": "abstained"}, "native_trace_body": trace_body}
+            body = {"schema_version": "exp425.dataset.v1", "dataset": dataset, "origin": "exp425_native", "run_context_sha256": store.run_context_sha256, "result_payload": result, "group_evidence": {"eligibility_sha256": values["eligibility_sha256"]}, "trace_sha256": trace, "model_hashes": {"model": values["model_evidence_sha256"]}, "calibration_hashes": {"score": values["scoring_evidence_sha256"]}, "backend_audit_sha256": values["backend_audit_sha256"], "elapsed_seconds": float(index), "reason": "benchmark"}
+            return NativeRecordEnvelope(dataset, result, {"eligibility_sha256": values["eligibility_sha256"]}, trace_sha256=trace, record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(), model_hashes={"model": values["model_evidence_sha256"]}, calibration_hashes={"score": values["scoring_evidence_sha256"]}, elapsed_seconds=float(index), reason="benchmark", **values)
+
         with TemporaryDirectory() as directory:
             root = Path(directory) / "checkpoints"
-            store = Exp425CheckpointStore.create(root, _provenance(context), context)
-            exp425_bytes = sum(path.stat().st_size for path in root.rglob("*") if path.is_file()) + 25 * len(canonical_json_bytes({"candidate_coordinates": [["x", 0]]}))
-            # Warm both paths; the old path must parse each embedded context,
-            # whereas a resumed compact root validates it once.
-            for _ in range(2):
-                [sha256(canonical_json_bytes(json.loads(repeated_record))).hexdigest() for _ in range(25)]
-                Exp425CheckpointStore.open(root, _provenance(context), context)
-            started = time.perf_counter()
-            for _ in range(2): [sha256(canonical_json_bytes(json.loads(repeated_record))).hexdigest() for _ in range(25)]
-            old_resume_seconds = time.perf_counter() - started
-            started = time.perf_counter()
-            for _ in range(2): Exp425CheckpointStore.open(root, _provenance(context), context)
-            exp425_resume_seconds = time.perf_counter() - started
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            authority = object(); capabilities._register_authority(authority, "exp425_native")
+            try:
+                records = [record_for(dataset, index, store) for index, dataset in enumerate(datasets)]
+                for record in records:
+                    token = capabilities._mint(authority, kind="native", run_identity=provenance.run_identity, dataset=record.dataset, context_sha256=store.run_context_sha256, trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256, backend_sha256=record.backend_audit_sha256)
+                    store._commit_native(token, record)
+            finally:
+                capabilities._close_authority(authority)
+            repeated_records = [canonical_json_bytes({"schema": "exp424.repeated-context.v1", "context": _context_payload(context), "dataset": record.dataset, "result_payload": dict(record.result_payload), "group_evidence": dict(record.group_evidence), "model_hashes": dict(record.model_hashes), "calibration_hashes": dict(record.calibration_hashes), "backend_audit_sha256": record.backend_audit_sha256, "record_payload_sha256": record.record_payload_sha256}) for record in records]
+            repeated_context_bytes = sum(map(len, repeated_records))
+            exp425_bytes = sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
+            def old_cycle() -> list[list[object]]:
+                payloads = [json.loads(raw) for raw in repeated_records]
+                for raw, payload in zip(repeated_records, payloads, strict=True):
+                    self.assertEqual(canonical_json_bytes(payload), raw)
+                    self.assertEqual(_context_from_payload(payload["context"]), context)
+                    self.assertEqual(sha256(canonical_json_bytes(payload["result_payload"]["native_trace_body"])).hexdigest(), sha256(canonical_json_bytes(payload["result_payload"]["native_trace_body"])).hexdigest())
+                return [payload["result_payload"]["effective_result"]["candidate_coordinates"] for payload in payloads]
+            def new_cycle() -> list[list[object]]:
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+                return [dict(record.result_payload)["effective_result"]["candidate_coordinates"] for record in reopened.iter_records()]
+            old_cycle(); new_cycle()
+            old_samples = []; new_samples = []
+            for _ in range(5):
+                started = time.perf_counter(); old_coordinates = old_cycle(); old_samples.append(time.perf_counter() - started)
+                started = time.perf_counter(); exp425_coordinates = new_cycle(); new_samples.append(time.perf_counter() - started)
+            old_resume_seconds = sorted(old_samples)[2]
+            exp425_resume_seconds = sorted(new_samples)[2]
             self.assertLess(exp425_bytes, repeated_context_bytes * 0.20)
             self.assertLess(exp425_resume_seconds, old_resume_seconds / 2.0)
-            self.assertEqual([["x", 0]], [["x", 0]])
+            self.assertEqual(exp425_coordinates, old_coordinates)
+            self.assertEqual(len(store.completed_record_digests()), 25)

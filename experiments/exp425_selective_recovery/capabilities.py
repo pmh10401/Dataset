@@ -67,6 +67,7 @@ def _mint(authority: object, /, *, kind: str, **claims: object) -> object:
     authority_kind = authority_entry[1]
     allowed = {
         "runtime": frozenset({"native"}),
+        "exp425_native": frozenset({"native"}),
         "source": frozenset({"import_begin", "import_stage", "import_promote"}),
         "exp424_import": frozenset({"import_begin", "import_stage", "import_promote"}),
         # The sealed local authority exists solely for broker mechanics tests.
