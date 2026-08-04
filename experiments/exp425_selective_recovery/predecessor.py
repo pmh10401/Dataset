@@ -602,8 +602,9 @@ def import_exp424_nonterminal(source: ValidatedExp424Source, target: Exp425Check
         for record, digest in pending:
             target._stage_imported(source._mint("import_stage", run_identity=target.provenance.run_identity, batch_identity=batch_id, dataset=record.dataset, source_sha256=record.source_record_sha256, attestation_sha256=attestation, record_sha256=digest), batch, record)
         source._revalidate()
+        promotion_capability = source._mint("import_promote", run_identity=target.provenance.run_identity, batch_identity=batch_id, attestation_sha256=attestation, final_attestation_sha256=final_attestation)
         promotion_started = True
-        target._promote_import_batch(source._mint("import_promote", run_identity=target.provenance.run_identity, batch_identity=batch_id, attestation_sha256=attestation, final_attestation_sha256=final_attestation), batch)
+        target._promote_import_batch(promotion_capability, batch)
     except ValueError as error:
         if not promotion_started:
             reason = _digest(canonical_json_bytes({"schema": "exp425.import-abort-reason.v1", "type": type(error).__name__}))

@@ -293,6 +293,46 @@ class Exp424PredecessorTests(unittest.TestCase):
                 self.assertEqual(len(reopened.completed_record_digests()), 1)
                 self.assertEqual(list((target_root / "import_batches").iterdir()), [])
 
+    def test_mint_time_promotion_revalidation_failure_quarantines_unpublished_batch(self) -> None:
+        """Setting the promotion flag before minting would strand a pre-promotion source failure."""
+        context = exp417_context()
+        dataset = context.datasets[0]
+        with TemporaryDirectory() as directory:
+            source_root = Path(directory) / "source"
+            source_store = Exp417CheckpointStore(source_root, exp417_provenance(), context.datasets)
+            exp417_write(source_store, exp417_result(context, dataset))
+            record_path = source_root / "datasets" / (sha256(dataset.encode()).hexdigest() + ".json")
+            digest = json.loads(record_path.read_text())["payload_sha256"]
+            source_provenance = {"schema_version": 3, "provenance": {}, "expected_datasets": [dataset]}
+            progress = {"expected_datasets": [dataset], "completed_datasets": 1, "completed_record_digests": {dataset: digest}, "current_dataset": None}
+            (source_root / "checkpoint_provenance.json").write_bytes(canonical_json_bytes(source_provenance) + b"\n")
+            (source_root / "progress.json").write_bytes(canonical_json_bytes(progress) + b"\n")
+            contract = _fixture_contract(source_root, root_provenance_sha256=sha256((source_root / "checkpoint_provenance.json").read_bytes()).hexdigest(), progress_sha256=sha256((source_root / "progress.json").read_bytes()).hexdigest(), record_set_sha256=sha256(canonical_json_bytes(sorted(progress["completed_record_digests"].items()))).hexdigest())
+            target_root = Path(directory) / "target"
+            provenance = replace(exp425_provenance(context), predecessor_compatibility_sha256=contract.attestation_sha256())
+            target = Exp425CheckpointStore.create(target_root, provenance, context)
+            with open_validated_exp424_source(source_root, contract) as source:
+                real_revalidate = type(source)._revalidate
+                calls = 0
+
+                def fail_only_at_promotion_mint(current: object) -> None:
+                    nonlocal calls
+                    calls += 1
+                    if current is source and calls == 2:
+                        raise ValueError("mint-time source revalidation failure")
+                    real_revalidate(current)
+
+                with patch.object(type(source), "_revalidate", autospec=True, side_effect=fail_only_at_promotion_mint):
+                    with self.assertRaisesRegex(ValueError, "mint-time source revalidation failure"):
+                        import_exp424_nonterminal(source, target, context)
+            self.assertEqual(target.completed_record_digests(), {})
+            self.assertEqual(list((target_root / "transactions").iterdir()), [])
+            self.assertEqual(list((target_root / "datasets").iterdir()), [])
+            self.assertEqual(len([path for path in (target_root / "import_batches").iterdir() if path.name.startswith(".quarantined-")]), 1)
+            reopened = Exp425CheckpointStore.open(target_root, provenance, context)
+            self.assertEqual(reopened.import_revalidation_required, ())
+            self.assertEqual(len(list((target_root / "import_batches").iterdir())), 1)
+
     def test_import_preserves_candidate_and_diagnostic_group_evidence_per_length(self) -> None:
         """OOF/calibration evidence is present for diagnostics, while model evidence is qualified-only."""
         base_context = exp417_context()
