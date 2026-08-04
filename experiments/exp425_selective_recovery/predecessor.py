@@ -95,6 +95,37 @@ def _canonical_object(raw: bytes, name: str) -> dict[str, object]:
     return value
 
 
+def _freeze_payload(value: object, name: str) -> object:
+    """Detach a JSON-compatible compatibility payload all the way to its leaves."""
+    if isinstance(value, Mapping):
+        if any(not isinstance(key, str) for key in value):
+            raise ValueError(f"{name} has non-string keys")
+        return MappingProxyType({key: _freeze_payload(item, name) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_payload(item, name) for item in value)
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    raise ValueError(f"{name} is not JSON-compatible")
+
+
+def _thaw_payload(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {key: _thaw_payload(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw_payload(item) for item in value]
+    return value
+
+
+def _canonical_payload(value: object, name: str) -> dict[str, object]:
+    frozen = _freeze_payload(value, name)
+    thawed = _thaw_payload(frozen)
+    if not isinstance(thawed, dict):
+        raise ValueError(f"{name} must be a mapping")
+    # Round-trip through canonical bytes to reject structures which are only
+    # incidentally serializable by a custom mapping implementation.
+    return _canonical_object(canonical_json_bytes(thawed) + b"\n", name)
+
+
 @dataclass(frozen=True)
 class Exp424CompatibilityContract:
     """Frozen source descriptor and numerical/runtime contract for Exp424."""
@@ -159,14 +190,17 @@ class Exp424CompatibilityContract:
             raise ValueError("Exp424 fixed contract digest is incompatible")
         if self.device_transfer_contract_sha256 != EXP424_DEVICE_TRANSFER_CONTRACT_SHA256:
             raise ValueError("Exp424 device transfer contract is incompatible")
-        if (_digest(canonical_json_bytes(dict(self.score_cache_contract_payload))) != self.score_cache_contract_sha256 or _digest(canonical_json_bytes(dict(self.synchronization_contract_payload))) != self.synchronization_contract_sha256 or _digest(canonical_json_bytes(dict(self.device_transfer_contract_payload))) != self.device_transfer_contract_sha256):
+        score_cache_payload = _canonical_payload(self.score_cache_contract_payload, "score cache contract payload")
+        synchronization_payload = _canonical_payload(self.synchronization_contract_payload, "synchronization contract payload")
+        device_transfer_payload = _canonical_payload(self.device_transfer_contract_payload, "device transfer contract payload")
+        if (_digest(canonical_json_bytes(score_cache_payload)) != self.score_cache_contract_sha256 or _digest(canonical_json_bytes(synchronization_payload)) != self.synchronization_contract_sha256 or _digest(canonical_json_bytes(device_transfer_payload)) != self.device_transfer_contract_sha256):
             raise ValueError("Exp424 contract payload digest is incompatible")
         object.__setattr__(self, "lane_hashes", MappingProxyType(dict(self.lane_hashes)))
         object.__setattr__(self, "runtime_versions", MappingProxyType(dict(self.runtime_versions)))
         object.__setattr__(self, "thresholds_payload", MappingProxyType(dict(self.thresholds_payload)))
-        object.__setattr__(self, "score_cache_contract_payload", MappingProxyType(dict(self.score_cache_contract_payload)))
-        object.__setattr__(self, "synchronization_contract_payload", MappingProxyType(dict(self.synchronization_contract_payload)))
-        object.__setattr__(self, "device_transfer_contract_payload", MappingProxyType(dict(self.device_transfer_contract_payload)))
+        object.__setattr__(self, "score_cache_contract_payload", _freeze_payload(score_cache_payload, "score cache contract payload"))
+        object.__setattr__(self, "synchronization_contract_payload", _freeze_payload(synchronization_payload, "synchronization contract payload"))
+        object.__setattr__(self, "device_transfer_contract_payload", _freeze_payload(device_transfer_payload, "device transfer contract payload"))
         object.__setattr__(self, "model_seeds", tuple(self.model_seeds))
         object.__setattr__(self, "perturbation_seeds", tuple(self.perturbation_seeds))
         object.__setattr__(self, "alpha_values", tuple(self.alpha_values))
@@ -205,6 +239,15 @@ class Exp424CompatibilityContract:
         )
 
     def attestation_sha256(self) -> str:
+        score_cache_payload = _canonical_payload(self.score_cache_contract_payload, "score cache contract payload")
+        synchronization_payload = _canonical_payload(self.synchronization_contract_payload, "synchronization contract payload")
+        device_transfer_payload = _canonical_payload(self.device_transfer_contract_payload, "device transfer contract payload")
+        if (
+            _digest(canonical_json_bytes(score_cache_payload)) != self.score_cache_contract_sha256
+            or _digest(canonical_json_bytes(synchronization_payload)) != self.synchronization_contract_sha256
+            or _digest(canonical_json_bytes(device_transfer_payload)) != self.device_transfer_contract_sha256
+        ):
+            raise ValueError("Exp424 contract payload digest is incompatible")
         payload = {
             "schema": "exp425.exp424-compatibility.v1", "source_experiment": "Exp424-MPS-SCORE-CACHE",
             "source_git_commit": self.source_git_commit, "entrypoint_sha256": self.entrypoint_sha256,
@@ -217,13 +260,13 @@ class Exp424CompatibilityContract:
             "device": self.device, "mps_device_guard": self.mps_device_guard, "batch_size": self.batch_size,
             "query_chunk_size": self.query_chunk_size, "score_formula": self.score_formula,
             "score_cache_contract_sha256": self.score_cache_contract_sha256, "percentile_method": self.percentile_method,
-            "score_cache_contract_payload": dict(self.score_cache_contract_payload),
+            "score_cache_contract_payload": score_cache_payload,
             "score_dtype": self.score_dtype, "thresholds": dict(self.thresholds_payload), "alpha_values": list(self.alpha_values),
             "candidate_formula_sha256": self.candidate_formula_sha256, "routing_contract_sha256": self.routing_contract_sha256,
             "synchronization_contract_sha256": self.synchronization_contract_sha256,
-            "synchronization_contract_payload": dict(self.synchronization_contract_payload),
+            "synchronization_contract_payload": synchronization_payload,
             "device_transfer_contract_sha256": self.device_transfer_contract_sha256,
-            "device_transfer_contract_payload": dict(self.device_transfer_contract_payload),
+            "device_transfer_contract_payload": device_transfer_payload,
             "dataset_universe_sha256": self.dataset_universe_sha256,
             "test_identity_manifest_sha256": self.test_identity_manifest_sha256,
         }

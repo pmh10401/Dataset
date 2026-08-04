@@ -1243,6 +1243,43 @@ class CheckpointStoreTests(unittest.TestCase):
                 self.assertEqual(list((root / "import_batches").iterdir()), [])
                 self.assertEqual(len(reopened.completed_record_digests()), 2)
 
+    def test_cleanup_tombstone_blocks_a_different_batch_until_resumed(self) -> None:
+        """Ignoring cleanup-owned state would allow two logical import batches to overlap."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        attestation = _digest("a")
+        records = (_import_record_for(context.datasets[0], 0, attestation),)
+        for phase in ("cleanup_after_directory_isolation_before_phase_update", "cleanup_directory_removed"):
+            with self.subTest(phase=phase), TemporaryDirectory() as directory:
+                batch_identity = "cleanup-active-" + phase
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                old_authority = object()
+                capabilities._register_authority(old_authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records)
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda reached: (_ for _ in ()).throw(SimulatedProcessDeath()) if reached == phase else None):
+                        with self.assertRaises(SimulatedProcessDeath):
+                            _promote_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records, batch)
+                finally:
+                    capabilities._close_authority(old_authority)
+                before = _checkpoint_snapshot(root)
+                new_authority = object()
+                capabilities._register_authority(new_authority, "exp424_import")
+                try:
+                    with self.assertRaisesRegex(ValueError, "different import batch"):
+                        store._begin_import_batch(capabilities._mint(new_authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="different-batch", attestation_sha256=_digest("b"), process_nonce="new-nonce"), "different-batch")
+                    self.assertEqual(_checkpoint_snapshot(root), before)
+                    resumed = _begin_and_stage_imports(store, provenance, new_authority, "new-nonce", batch_identity, attestation, records)
+                    _promote_imports(store, provenance, new_authority, "new-nonce", batch_identity, attestation, records, resumed)
+                    distinct = store._begin_import_batch(capabilities._mint(new_authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="different-batch", attestation_sha256=_digest("b"), process_nonce="newer-nonce"), "different-batch")
+                    self.assertEqual(distinct.identity, "different-batch")
+                finally:
+                    capabilities._close_authority(new_authority)
+
     def test_cleanup_rejects_a_replaced_batch_without_touching_it(self) -> None:
         class SimulatedProcessDeath(RuntimeError):
             pass

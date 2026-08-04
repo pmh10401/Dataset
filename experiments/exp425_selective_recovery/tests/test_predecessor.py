@@ -11,10 +11,13 @@ import os
 import pickle
 import unittest
 from unittest.mock import patch
+from types import MappingProxyType
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp425_selective_recovery.predecessor import (
     Exp424CompatibilityContract,
+    EXP424_SCORE_CACHE_CONTRACT,
+    EXP424_THRESHOLDS,
     _batch_identity,
     _durable_attestation,
     _fixture_contract,
@@ -33,6 +36,7 @@ from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
 from experiments.exp417_causal_multihorizon_shadow.contracts import BackendAudit
 from experiments.exp417_causal_multihorizon_shadow.contracts import DatasetResult, DatasetTerminalEvidence
 from experiments.exp425_selective_recovery.checkpoints import Exp425CheckpointStore
+from experiments.exp425_selective_recovery import checkpoints as exp425_checkpoints
 from experiments.exp425_selective_recovery.tests.test_checkpoints import _provenance as exp425_provenance
 from dataclasses import replace
 
@@ -152,6 +156,21 @@ class Exp424PredecessorTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 replace(contract, **{field: value})
 
+    def test_compatibility_payloads_are_recursively_detached_and_rechecked_for_attestation(self) -> None:
+        """Shallow mapping proxies would let a caller alter nested compatibility evidence after construction."""
+        supplied_score_payload = copy.deepcopy(EXP424_SCORE_CACHE_CONTRACT)
+        supplied_thresholds = copy.deepcopy(EXP424_THRESHOLDS)
+        contract = replace(Exp424CompatibilityContract.production(), score_cache_contract_payload=supplied_score_payload, thresholds_payload=supplied_thresholds)
+        before = contract.attestation_sha256()
+        supplied_score_payload["components"].append("caller mutation")
+        supplied_thresholds["candidate_alpha"] = 0.5
+        self.assertEqual(contract.score_cache_contract_payload["components"], tuple(EXP424_SCORE_CACHE_CONTRACT["components"]))
+        self.assertEqual(contract.thresholds_payload["candidate_alpha"], EXP424_THRESHOLDS["candidate_alpha"])
+        self.assertEqual(contract.attestation_sha256(), before)
+        object.__setattr__(contract, "score_cache_contract_payload", MappingProxyType({"schema": "tampered"}))
+        with self.assertRaisesRegex(ValueError, "payload digest"):
+            contract.attestation_sha256()
+
     def test_import_stages_only_a_verified_nonterminal_result(self) -> None:
         """Changing import to recompute or publish terminal evidence must fail this test."""
         context = exp417_context()
@@ -227,6 +246,52 @@ class Exp424PredecessorTests(unittest.TestCase):
             self.assertEqual(report.imported, (dataset,))
             self.assertEqual(reopened.completed_record_digests(), {dataset: reopened.completed_record_digests()[dataset]})
             self.assertEqual([path for path in (target_root / "import_batches").iterdir() if path.name.startswith(".quarantined-")], [])
+
+    def test_importer_value_errors_after_promotion_remain_resumable_without_quarantine(self) -> None:
+        """The importer wrapper must not recast post-promotion recovery as a pre-promotion abort."""
+        context = exp417_context()
+        dataset = context.datasets[0]
+        phases = (
+            ("promotion", "intent_durable"), ("promotion", "record_durable"),
+            ("promotion", "progress_durable"), ("promotion", "intent_removed"),
+            ("cleanup", "cleanup_tombstone_durable"),
+            ("cleanup", "cleanup_after_staged_isolation_before_phase_update"),
+            ("cleanup", "cleanup_staged_unlinked"),
+            ("cleanup", "cleanup_after_metadata_isolation_before_phase_update"),
+            ("cleanup", "cleanup_metadata_removed"),
+            ("cleanup", "cleanup_after_directory_isolation_before_phase_update"),
+            ("cleanup", "cleanup_directory_removed"), ("cleanup", "cleanup_directory_fsynced"),
+        )
+        for hook, phase in phases:
+            with self.subTest(hook=hook, phase=phase), TemporaryDirectory() as directory:
+                source_root = Path(directory) / "source"
+                source_store = Exp417CheckpointStore(source_root, exp417_provenance(), context.datasets)
+                exp417_write(source_store, exp417_result(context, dataset))
+                record_path = source_root / "datasets" / (sha256(dataset.encode()).hexdigest() + ".json")
+                digest = json.loads(record_path.read_text())["payload_sha256"]
+                provenance_payload = {"schema_version": 3, "provenance": {}, "expected_datasets": [dataset]}
+                progress = {"expected_datasets": [dataset], "completed_datasets": 1, "completed_record_digests": {dataset: digest}, "current_dataset": None}
+                (source_root / "checkpoint_provenance.json").write_bytes(canonical_json_bytes(provenance_payload) + b"\n")
+                (source_root / "progress.json").write_bytes(canonical_json_bytes(progress) + b"\n")
+                contract = _fixture_contract(source_root, root_provenance_sha256=sha256((source_root / "checkpoint_provenance.json").read_bytes()).hexdigest(), progress_sha256=sha256((source_root / "progress.json").read_bytes()).hexdigest(), record_set_sha256=sha256(canonical_json_bytes(sorted(progress["completed_record_digests"].items()))).hexdigest())
+                target_root = Path(directory) / "target"
+                provenance = replace(exp425_provenance(context), predecessor_compatibility_sha256=contract.attestation_sha256())
+                target = Exp425CheckpointStore.create(target_root, provenance, context)
+                checkpoint_hook = "_after_import_phase" if hook == "promotion" else "_after_import_cleanup_phase"
+                with open_validated_exp424_source(source_root, contract) as old_source:
+                    old_nonce = old_source.nonce
+                    with patch.object(exp425_checkpoints, checkpoint_hook, side_effect=lambda reached: (_ for _ in ()).throw(ValueError("injected promotion failure")) if reached == phase else None):
+                        with self.assertRaisesRegex(ValueError, "injected promotion failure"):
+                            import_exp424_nonterminal(old_source, target, context)
+                self.assertEqual([path for path in (target_root / "import_batches").iterdir() if path.name.startswith(".quarantined-")], [])
+                reopened = Exp425CheckpointStore.open(target_root, provenance, context)
+                self.assertEqual(len(reopened.import_revalidation_required), 1)
+                with open_validated_exp424_source(source_root, contract) as new_source:
+                    self.assertNotEqual(new_source.nonce, old_nonce)
+                    report = import_exp424_nonterminal(new_source, reopened, context)
+                self.assertEqual(report.imported, (dataset,))
+                self.assertEqual(len(reopened.completed_record_digests()), 1)
+                self.assertEqual(list((target_root / "import_batches").iterdir()), [])
 
     def test_import_preserves_candidate_and_diagnostic_group_evidence_per_length(self) -> None:
         """OOF/calibration evidence is present for diagnostics, while model evidence is qualified-only."""

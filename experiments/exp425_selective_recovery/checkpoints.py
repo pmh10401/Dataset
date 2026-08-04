@@ -222,6 +222,10 @@ class Exp425CheckpointStore:
 
     def _begin_import_batch(self, capability: object, batch_identity: str) -> object:
         with self._store_binding(exclusive=True) as binding:
+            # Validate all cleanup representations before deciding whether a
+            # second batch may start; a moved cleanup-owned directory is still
+            # durable work for its original logical batch.
+            _import_intent_requirements(self.root, binding=binding)
             claims = capabilities._consume(capability, kind="import_begin", run_identity=self.provenance.run_identity, batch_identity=batch_identity)
             attestation = claims.get("attestation_sha256")
             nonce = claims.get("process_nonce")
@@ -231,8 +235,21 @@ class Exp425CheckpointStore:
             imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
             try:
                 active: set[str] = set()
+                cleanup_states: dict[str, dict[str, object]] = {}
                 for entry in os.listdir(imports_fd):
-                    if entry.startswith(".quarantined-") or entry.startswith(".cleanup-owned-") or (entry.startswith("cleanup-") and entry.endswith(".json")):
+                    if entry.startswith(".quarantined-"):
+                        continue
+                    if entry.startswith("cleanup-") and entry.endswith(".json"):
+                        cleanup_identity = entry[len("cleanup-"):-len(".json")]
+                        if _cleanup_name(cleanup_identity) != entry or cleanup_identity in cleanup_states:
+                            raise ValueError("import cleanup inventory is invalid")
+                        cleanup = _read_cleanup_at(imports_fd, self.provenance.run_identity, self.run_context_sha256, cleanup_identity)
+                        if cleanup is None:
+                            raise ValueError("import cleanup inventory is invalid")
+                        cleanup_states[cleanup_identity] = cleanup
+                        active.add(cleanup_identity)
+                        continue
+                    if entry.startswith(".cleanup-owned-"):
                         continue
                     info = os.stat(entry, dir_fd=imports_fd, follow_symlinks=False)
                     if not stat.S_ISDIR(info.st_mode) or _batch_name(entry) != entry:
@@ -240,7 +257,7 @@ class Exp425CheckpointStore:
                     active.add(entry)
                 if active and active != {name}:
                     raise ValueError("a different import batch is already active")
-                cleanup = _read_cleanup_at(imports_fd, self.provenance.run_identity, self.run_context_sha256, batch_identity)
+                cleanup = cleanup_states.get(batch_identity)
                 if cleanup is not None:
                     if cleanup["source_attestation_sha256"] != attestation:
                         raise ValueError("import cleanup durable state does not match authority")
