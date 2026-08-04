@@ -253,6 +253,23 @@ must reacquire and fully revalidate the Exp424 source before it may resume any
 import promotion. Staging and promotion additionally require the newly minted,
 live opaque capability matching that exact source and batch.
 
+Native commits are capability-gated as well. The public checkpoint API exposes no
+generic native-write method. Only a live `Exp425RuntimeSession` that completed the
+frozen dataset state machine may mint a non-serializable, one-use native execution
+capability bound to run identity, dataset, shared-context digest, complete trace
+digest, MPS/backend audit, and process nonce. The package-private native commit
+checks and consumes that capability. Fabricated, imported/adapted, copied, closed,
+wrong-dataset, wrong-trace, and reused capabilities are rejected before a record
+or progress change.
+
+An import batch's durable attestation never contains the ephemeral validation
+nonce. It stably binds source root/progress/inventory/record digests, target batch,
+and staged record digests. Each process receives a new ephemeral nonce only as
+proof that it currently holds live validated descriptors/lock for the same durable
+attestation. After a crash, the old capability is closed; a newly minted capability
+with a different nonce may resume only after full source revalidation reproduces
+the durable attestation exactly.
+
 Targets for the checkpoint-only optimization are:
 
 - at least 80% reduction in total checkpoint bytes on a representative sample;
