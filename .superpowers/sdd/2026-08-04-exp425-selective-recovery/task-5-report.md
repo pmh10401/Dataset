@@ -302,3 +302,24 @@ INSPECTED — only the two owned implementation/test files were modified before 
 ```
 JUDGMENT CALLS: Malformed or cross-root-mismatched inspect inputs are resource-contract failures and therefore exit 2; validated `initializing` and `failed` states return 1. A complete resume is determined solely from the matching durable output/checkpoint pair, so it does not need a launch factory.
 GAPS: none
+
+## Task 5 CLI fix round 1/5 — 2026-08-04
+
+STATUS: complete
+OBJECTIVE: Fail closed on launch-assembly errors and validate inspect progress accounting before selecting an exit code.
+CHANGES:
+- `scratch/run_exp425_selective_recovery.py`: separates factory specification, import, invocation, mapping, and required-key assembly failures (all exit 2) from failures after a valid launch is passed to `execute_runtime_command` (exit 1). Adds a read-only progress validator for schema, state/stage, command, identity, non-negative exact counters, population conservation, checkpoint-summary reconciliation, and complete-review-only zero-remaining/zero-failed/no-current-work invariants.
+- `experiments/exp425_selective_recovery/tests/test_cli.py`: adds malformed/non-callable/raising/non-mapping factory coverage plus immutable adversarial inspect cases for unknown state, each named complete counter, and impossible incomplete accounting.
+VERIFIED:
+```text
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_cli -v
+PASS — 15 tests in 7.762s
+
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_runtime experiments.exp425_selective_recovery.tests.test_cli -v
+PASS — 35 tests in 7.992s
+
+python3 -m py_compile scratch/run_exp425_selective_recovery.py experiments/exp425_selective_recovery/tests/test_cli.py && git diff --check
+PASS — exit 0; no output
+```
+JUDGMENT CALLS: Factory invocation is resource assembly rather than a validated runtime execution, so it returns 2. The CLI derives every persisted counter directly from the read-only checkpoint summaries; any difference is a contract error.
+GAPS: none

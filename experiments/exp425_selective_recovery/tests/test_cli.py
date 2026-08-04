@@ -52,6 +52,13 @@ def _tree_state(root: Path) -> dict[str, tuple[bytes, int, int]]:
     }
 
 
+def _corrupt_progress(output: Path, **changes: object) -> None:
+    progress_path = output / "progress.json"
+    payload = json.loads(progress_path.read_text())
+    payload.update(changes)
+    progress_path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+
+
 @contextmanager
 def _tiny_runtime_config() -> object:
     """Keep the real checkpoint decoder on the tiny fixture's frozen lanes."""
@@ -305,3 +312,88 @@ class Exp425CliTests(unittest.TestCase):
                     self.assertIn(expected, stderr.getvalue())
                     self.assertEqual(json.loads(stdout.getvalue())["pid_path"], str((output / "run.pid").absolute()))
                     (output / "run.pid").unlink()
+
+    def test_launch_factory_contract_errors_return_two(self) -> None:
+        for specification, expected in (("not-a-factory", "module:callable"), ("math:pi", "not callable")):
+            with self.subTest(specification=specification), TemporaryDirectory() as directory:
+                code, _stdout, stderr = self._direct_main([
+                    "new", "--output-root", str(Path(directory) / "output"),
+                    "--checkpoint-root", str(Path(directory) / "checkpoint"),
+                    "--launch-factory", specification,
+                ])
+                self.assertEqual(code, 2)
+                self.assertIn(expected, stderr)
+        with TemporaryDirectory() as directory:
+            module = _load_cli_module()
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with (
+                patch.object(module, "_factory", return_value=lambda: ()),
+                redirect_stdout(stdout), redirect_stderr(stderr),
+            ):
+                code = module.main([
+                    "new", "--output-root", str(Path(directory) / "output"),
+                    "--checkpoint-root", str(Path(directory) / "checkpoint"),
+                    "--launch-factory", "fixture:launch",
+                ])
+            self.assertEqual(code, 2)
+            self.assertIn("must return a mapping", stderr.getvalue())
+        with TemporaryDirectory() as directory:
+            module = _load_cli_module()
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with (
+                patch.object(module, "_factory", return_value=lambda: (_ for _ in ()).throw(RuntimeError("assembly failed"))),
+                redirect_stdout(stdout), redirect_stderr(stderr),
+            ):
+                code = module.main([
+                    "new", "--output-root", str(Path(directory) / "output"),
+                    "--checkpoint-root", str(Path(directory) / "checkpoint"),
+                    "--launch-factory", "fixture:launch",
+                ])
+            self.assertEqual(code, 2)
+            self.assertIn("assembly failed", stderr.getvalue())
+
+    def test_inspect_rejects_unknown_state_without_mutating_tree(self) -> None:
+        with _tiny_runtime_config(), TemporaryDirectory() as directory:
+            output, checkpoint, identity = _runtime_tree(Path(directory), state="complete_review_only", complete=True)
+            _corrupt_progress(output, state="unknown_state", stage="unknown_state")
+            before = _tree_state(Path(directory))
+            code, stdout, stderr = self._direct_main([
+                "inspect", "--output-root", str(output), "--checkpoint-root", str(checkpoint), "--run-identity", identity,
+            ])
+            self.assertEqual(code, 2)
+            self.assertEqual(stdout, "")
+            self.assertIn("state", stderr)
+            self.assertEqual(before, _tree_state(Path(directory)))
+
+    def test_inspect_rejects_complete_counter_corruption_without_mutating_tree(self) -> None:
+        corruptions = {
+            "completed_datasets": 2, "remaining_datasets": 1, "imported_datasets": 2,
+            "native_datasets": 1, "recomputed_datasets": 1, "abstained_datasets": 1,
+            "oof_identity_insufficient_datasets": 1, "failed_datasets": 1,
+        }
+        with _tiny_runtime_config():
+            for field, value in corruptions.items():
+                with self.subTest(field=field), TemporaryDirectory() as directory:
+                    output, checkpoint, identity = _runtime_tree(Path(directory), state="complete_review_only", complete=True)
+                    _corrupt_progress(output, **{field: value})
+                    before = _tree_state(Path(directory))
+                    code, stdout, stderr = self._direct_main([
+                        "inspect", "--output-root", str(output), "--checkpoint-root", str(checkpoint), "--run-identity", identity,
+                    ])
+                    self.assertEqual(code, 2)
+                    self.assertEqual(stdout, "")
+                    self.assertIn("counter", stderr)
+                    self.assertEqual(before, _tree_state(Path(directory)))
+
+    def test_inspect_rejects_impossible_incomplete_accounting_without_mutating_tree(self) -> None:
+        with _tiny_runtime_config(), TemporaryDirectory() as directory:
+            output, checkpoint, identity = _runtime_tree(Path(directory), state="initializing", complete=False)
+            _corrupt_progress(output, completed_datasets=1, remaining_datasets=2, imported_datasets=0, native_datasets=0)
+            before = _tree_state(Path(directory))
+            code, stdout, stderr = self._direct_main([
+                "inspect", "--output-root", str(output), "--checkpoint-root", str(checkpoint), "--run-identity", identity,
+            ])
+            self.assertEqual(code, 2)
+            self.assertEqual(stdout, "")
+            self.assertIn("counter", stderr)
+            self.assertEqual(before, _tree_state(Path(directory)))

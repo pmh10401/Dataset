@@ -24,6 +24,11 @@ from experiments.exp425_selective_recovery.runtime import inspect_runtime_output
 from experiments.exp425_selective_recovery.runtime import execute_runtime_command, preflight_runtime_paths
 
 
+_RUNTIME_STATES = frozenset({
+    "initializing", "importing", "running", "finalizing", "complete_review_only", "failed",
+})
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="run_exp425_selective_recovery.py")
     parser.add_argument("command", choices=("new", "resume", "inspect"))
@@ -60,6 +65,67 @@ def _launch_paths(output_root: Path, checkpoint_root: Path) -> dict[str, object]
     }
 
 
+def _nonnegative_integer(payload: object, name: str) -> int:
+    value = payload.get(name)
+    if type(value) is not int or value < 0:
+        raise ValueError(f"runtime progress {name} is invalid")
+    return value
+
+
+def _validate_progress_payload(runtime: object, checkpoint: object) -> None:
+    """Fail closed unless published progress exactly describes inspected records."""
+    if not hasattr(runtime, "get"):
+        raise ValueError("runtime progress payload is invalid")
+    if runtime.get("schema") != "exp425.runtime-progress.v1":
+        raise ValueError("runtime progress schema is invalid")
+    state = runtime.get("state")
+    if state not in _RUNTIME_STATES or runtime.get("stage") != state:
+        raise ValueError("runtime progress state is invalid")
+    if runtime.get("command") not in {"new", "resume"}:
+        raise ValueError("runtime progress command is invalid")
+    if not isinstance(runtime.get("run_identity"), str) or not runtime.get("run_identity"):
+        raise ValueError("runtime progress identity is invalid")
+
+    total = len(checkpoint.expected_datasets)
+    summaries = checkpoint.record_summaries
+    if checkpoint.completed_count != len(summaries):
+        raise ValueError("checkpoint completion summaries are inconsistent")
+    expected = {
+        "total_datasets": total,
+        "completed_datasets": len(summaries),
+        "remaining_datasets": total - len(summaries),
+        "imported_datasets": sum(origin == "exp424_import" for _, origin, _, _, _ in summaries),
+        "native_datasets": sum(origin == "exp425_native" for _, origin, _, _, _ in summaries),
+        "recomputed_datasets": sum(origin == "exp425_native" for _, origin, _, _, _ in summaries),
+        "abstained_datasets": sum(status == "abstained" for _, _, status, _, _ in summaries),
+        "oof_identity_insufficient_datasets": sum(reason == "oof_identity_insufficient" for _, _, _, reason, _ in summaries),
+        "failed_datasets": sum(status == "failed" for _, _, status, _, _ in summaries),
+    }
+    actual = {name: _nonnegative_integer(runtime, name) for name in expected}
+    if actual != expected:
+        raise ValueError("runtime progress counters do not match checkpoint summaries")
+    if actual["imported_datasets"] + actual["native_datasets"] != actual["completed_datasets"]:
+        raise ValueError("runtime progress counters do not conserve population")
+    if actual["remaining_datasets"] + actual["completed_datasets"] != actual["total_datasets"]:
+        raise ValueError("runtime progress counters do not conserve population")
+    if actual["recomputed_datasets"] != actual["native_datasets"]:
+        raise ValueError("runtime progress recomputation counter is invalid")
+    if actual["oof_identity_insufficient_datasets"] > actual["abstained_datasets"]:
+        raise ValueError("runtime progress abstention counter is invalid")
+    current_dataset = runtime.get("current_dataset")
+    if current_dataset is not None and (not isinstance(current_dataset, str) or state != "running"):
+        raise ValueError("runtime progress current dataset is invalid")
+    if state == "complete_review_only":
+        if (
+            actual["completed_datasets"] != total
+            or actual["remaining_datasets"] != 0
+            or actual["failed_datasets"] != 0
+            or current_dataset is not None
+            or runtime.get("current_phase") is not None
+        ):
+            raise ValueError("complete runtime progress is inconsistent")
+
+
 def _inspect_pair(output_root: Path, checkpoint_root: Path, run_identity: str | None) -> tuple[object, object]:
     """Read and cross-bind the only two durable roots without opening a run."""
     output_root, checkpoint_root = output_root.absolute(), checkpoint_root.absolute()
@@ -82,6 +148,7 @@ def _inspect_pair(output_root: Path, checkpoint_root: Path, run_identity: str | 
             raise ValueError(f"runtime output does not bind the requested {name}")
     if runtime.get("total_datasets") != len(checkpoint.expected_datasets):
         raise ValueError("runtime output total does not match checkpoint universe")
+    _validate_progress_payload(runtime, checkpoint)
     return runtime, checkpoint
 
 
@@ -140,29 +207,50 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(paths, sort_keys=True), flush=True)
     launch: object | None = None
     try:
-        launch = _factory(args.launch_factory)()
-        if not isinstance(launch, dict):
-            raise ValueError("launch factory must return a mapping")
+        factory = _factory(args.launch_factory)
+    except (ImportError, ValueError) as error:
+        print(f"{args.command} failed: {type(error).__name__}: {error}", file=sys.stderr)
+        return 2
+    try:
+        launch = factory()
+    except Exception as error:
+        print(f"{args.command} failed: {type(error).__name__}: {error}", file=sys.stderr)
+        return 2
+    if not isinstance(launch, dict):
+        print(f"{args.command} failed: ValueError: launch factory must return a mapping", file=sys.stderr)
+        return 2
+    try:
+        provenance = launch["provenance"]
+        context = launch["context"]
+        snapshot = launch["snapshot"]
+        audit = launch["audit"]
+    except KeyError as error:
+        snapshot = launch.get("snapshot")
+        close = getattr(snapshot, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception:
+                pass
+        print(f"{args.command} failed: {type(error).__name__}: {error}", file=sys.stderr)
+        return 2
+    try:
         result = execute_runtime_command(
             args.command,
             output_root=args.output_root,
             checkpoint_root=args.checkpoint_root,
-            provenance=launch["provenance"], context=launch["context"],
-            snapshot=launch["snapshot"], audit=launch["audit"], importer=launch.get("importer"),
+            provenance=provenance, context=context,
+            snapshot=snapshot, audit=audit, importer=launch.get("importer"),
         )
-    except (KeyError, ImportError, OSError, ValueError) as error:
-        if isinstance(launch, dict):
-            snapshot = launch.get("snapshot")
-            close = getattr(snapshot, "close", None)
-            if callable(close):
-                try:
-                    close()
-                except Exception:
-                    pass
+    except (OSError, ValueError) as error:
+        close = getattr(snapshot, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception:
+                pass
         print(f"{args.command} failed: {type(error).__name__}: {error}", file=sys.stderr)
-        # Factory shape is an argument/contract error; failures after a valid
-        # factory launch (MPS, integrity, DB, guard) are runtime failures.
-        return 2 if isinstance(error, (KeyError, ImportError)) else 1
+        return 1
     return 0 if result.state == "complete_review_only" else 1
 
 
