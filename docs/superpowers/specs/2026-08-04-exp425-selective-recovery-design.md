@@ -122,7 +122,14 @@ predecessor import, not ordinary same-experiment resume.
 
 Every imported record must pass all of these gates:
 
-1. the source root is the exact preserved Exp424 checkpoint store;
+1. the source root is exactly
+   `/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint`
+   resolved without symlinks, with root provenance SHA256
+   `f7526bf638f4c1051a5970271bdbbccd753986f7d067ec1260817da884c1b757`,
+   progress SHA256
+   `5e9aa4a4b7240ac89c078bdc1dce4b41bda6b6dbc505dd9ad49782556da7bd84`,
+   and canonical sorted record-set SHA256
+   `d74a0def7788db89a1d3e32f46662abf07c44c7cbbce5e02612b510e2fdf4258`;
 2. source root provenance, progress digest, dataset inventory, record filename,
    record digest, and embedded payload digest agree;
 3. the exact source Git commit
@@ -257,10 +264,19 @@ Native commits are capability-gated as well. The public checkpoint API exposes n
 generic native-write method. Only a live `Exp425RuntimeSession` that completed the
 frozen dataset state machine may mint a non-serializable, one-use native execution
 capability bound to run identity, dataset, shared-context digest, complete trace
-digest, MPS/backend audit, and process nonce. The package-private native commit
+digest, complete native-record digest, MPS/backend audit, and process nonce. The
+native envelope is constructed and canonically validated before capability minting;
+the package-private native commit compares both trace and record digests, then
 checks and consumes that capability. Fabricated, imported/adapted, copied, closed,
 wrong-dataset, wrong-trace, and reused capabilities are rejected before a record
 or progress change.
+
+A private capability broker lives below the store, runtime, and predecessor
+modules to avoid circular imports. It owns the only internal capability type and a
+live identity registry. Runtime and predecessor authority objects register by
+object identity and kind; mint/validate/consume operations require the exact
+registered authority and exact claim set. Duck-typed objects and self-consistent
+caller-created values never satisfy the registry.
 
 An import batch's durable attestation never contains the ephemeral validation
 nonce. It stably binds source root/progress/inventory/record digests, target batch,
