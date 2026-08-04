@@ -51,3 +51,18 @@ class CapabilityBrokerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             capabilities._consume(capability, kind="native", run_identity="other")
         capabilities._consume(capability, kind="native", run_identity="run")
+
+    def test_runtime_and_source_authorities_cannot_cross_mint_operation_families(self) -> None:
+        runtime, source = object(), object()
+        capabilities._register_authority(runtime, "runtime")
+        capabilities._register_authority(source, "source")
+        try:
+            with self.assertRaises(ValueError):
+                capabilities._mint(runtime, kind="import_begin", run_identity="run", batch_identity="batch")
+            with self.assertRaises(ValueError):
+                capabilities._mint(source, kind="native", run_identity="run")
+            token = capabilities._mint(runtime, kind="native", run_identity="run")
+            capabilities._consume(token, kind="native", run_identity="run")
+        finally:
+            capabilities._close_authority(runtime)
+            capabilities._close_authority(source)

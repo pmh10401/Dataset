@@ -11,7 +11,7 @@ from typing import Mapping
 
 
 _SENTINEL = object()
-_authorities: dict[int, object] = {}
+_authorities: dict[int, tuple[object, str]] = {}
 _capabilities: dict[int, tuple["_Capability", int, Mapping[str, object]]] = {}
 
 
@@ -41,12 +41,13 @@ def _register_authority(authority: object, kind: str) -> None:
     identity = id(authority)
     if identity in _authorities or authority is None:
         raise ValueError("Exp425 authority is not registerable")
-    _authorities[identity] = authority
+    _authorities[identity] = (authority, kind)
 
 
 def _close_authority(authority: object) -> None:
     identity = id(authority)
-    if _authorities.get(identity) is not authority:
+    entry = _authorities.get(identity)
+    if entry is None or entry[0] is not authority:
         return
     del _authorities[identity]
     for token_id, (_, authority_id, _) in tuple(_capabilities.items()):
@@ -56,14 +57,24 @@ def _close_authority(authority: object) -> None:
 
 def _mint(authority: object, /, *, kind: str, **claims: object) -> object:
     authority_id = id(authority)
-    if _authorities.get(authority_id) is not authority:
+    authority_entry = _authorities.get(authority_id)
+    if authority_entry is None or authority_entry[0] is not authority:
         raise ValueError("Exp425 authority is not live")
     if type(kind) is not str or not kind:
         raise ValueError("Exp425 capability kind is invalid")
     if "kind" in claims or any(type(key) is not str for key in claims):
         raise ValueError("Exp425 capability claims are invalid")
+    authority_kind = authority_entry[1]
+    allowed = {
+        "runtime": frozenset({"native"}),
+        "source": frozenset({"import_begin", "import_stage", "import_promote"}),
+        # The sealed local authority exists solely for broker mechanics tests.
+        "local": frozenset({"native", "import_begin", "import_stage", "import_promote"}),
+    }.get(authority_kind, frozenset())
+    if kind not in allowed:
+        raise ValueError("Exp425 authority kind cannot mint this operation")
     token = _Capability(_SENTINEL)
-    frozen = MappingProxyType({"kind": kind, **claims})
+    frozen = MappingProxyType(_freeze_claims({"kind": kind, **claims}))
     _capabilities[id(token)] = (token, authority_id, frozen)
     return token
 
@@ -79,10 +90,23 @@ def _consume(capability: object, /, *, kind: str, **claims: object) -> Mapping[s
     if _authorities.get(authority_id) is None:
         del _capabilities[id(capability)]
         raise ValueError("Exp425 capability authority is no longer live")
-    requested = {"kind": kind, **claims}
+    requested = _freeze_claims({"kind": kind, **claims})
     if dict(frozen) != requested:
         raise ValueError("Exp425 capability claims do not match")
     # Deletion happens before returning authorization, preventing a second use
     # even if the caller's transaction later fails.
     del _capabilities[id(capability)]
     return frozen
+
+
+def _freeze_claims(value: object) -> object:
+    """Detach token claims from caller-owned mutable containers."""
+    if isinstance(value, Mapping):
+        return {str(key): _freeze_claims(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return tuple(_freeze_claims(item) for item in value)
+    if isinstance(value, tuple):
+        return tuple(_freeze_claims(item) for item in value)
+    if isinstance(value, set):
+        return frozenset(_freeze_claims(item) for item in value)
+    return value

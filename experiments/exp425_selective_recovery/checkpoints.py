@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from contextlib import nullcontext
 from hashlib import sha256
 import fcntl
 import json
@@ -100,9 +101,7 @@ class Exp425CheckpointStore:
     def open(cls, root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> "Exp425CheckpointStore":
         if not Path(root).exists():
             raise ValueError("Exp425 checkpoint root is absent")
-        store = cls._validated(Path(root), provenance, context, exclusive=True)
-        store._reconcile_native_intents()
-        return store
+        return cls._validated(Path(root), provenance, context, exclusive=True)
 
     @classmethod
     def inspect_read_only(cls, root: Path, *, expected_run_identity: str | None = None) -> Exp425CheckpointInspection:
@@ -131,8 +130,11 @@ class Exp425CheckpointStore:
                 if stored != expected or context_bytes != expected_context:
                     raise ValueError("Exp425 checkpoint provenance or context does not match")
                 _validate_inventory(root, stored, progress, allow_intents=True, binding=binding)
+                store = cls(root, provenance.with_run_context_sha256(digest), context, progress["record_digests"])
+                if exclusive:
+                    store._reconcile_native_intents(binding=binding)
                 binding.verify()
-                return cls(root, provenance.with_run_context_sha256(digest), context, progress["record_digests"])
+                return store
             except ValueError as error:
                 if exclusive:
                     try:
@@ -236,12 +238,17 @@ class Exp425CheckpointStore:
             finally:
                 os.close(transactions_fd); os.close(datasets_fd)
 
-    def _reconcile_native_intents(self) -> None:
-        with _locked_root(self.root, exclusive=True) as binding:
+    def _reconcile_native_intents(self, *, binding: "_locked_root | None" = None) -> None:
+        if binding is None:
+            with _locked_root(self.root, exclusive=True) as owned:
+                self._reconcile_native_intents(binding=owned)
+            return
+        with nullcontext(binding):
             _, _, progress = _read_root_metadata(self.root, binding=binding)
             digests = dict(progress["record_digests"])
             pending: list[tuple[str, str]] = []
             changed = False
+            remove_after_progress: list[str] = []
             datasets_fd, datasets_identity = _open_directory_at(binding, "datasets")
             transactions_fd, transactions_identity = _open_directory_at(binding, "transactions")
             try:
@@ -251,7 +258,10 @@ class Exp425CheckpointStore:
                     intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
                     origin, dataset, digest = intent.get("origin"), intent.get("dataset"), intent.get("record_payload_sha256")
                     if origin == "exp424_import":
-                        pending.append((str(intent.get("batch_identity")), str(intent.get("attestation_sha256")))); continue
+                        batch, final = intent.get("batch_identity"), intent.get("final_attestation_sha256")
+                        if not isinstance(batch, str) or not isinstance(final, str):
+                            raise ValueError("import checkpoint intent is invalid")
+                        pending.append((batch, final)); continue
                     if origin != "exp425_native" or not isinstance(dataset, str) or not isinstance(digest, str):
                         raise ValueError("checkpoint intent is invalid")
                     try:
@@ -261,13 +271,20 @@ class Exp425CheckpointStore:
                         os.unlink(name, dir_fd=transactions_fd); changed = True; continue
                     if _record_digest_from_raw(raw) != digest:
                         raise ValueError("native checkpoint intent conflicts with record")
+                    decoded = _decode_record(raw, self.context)
+                    if decoded.dataset != dataset:
+                        raise ValueError("native checkpoint record conflicts with intent")
                     if dataset not in digests:
                         digests[dataset] = digest; changed = True
-                    _verify_directory_at(binding, "transactions", transactions_identity)
-                    os.unlink(name, dir_fd=transactions_fd); changed = True
+                    remove_after_progress.append(name)
                 if changed:
                     assert binding.descriptor is not None
                     _atomic_replace_at(binding.descriptor, "progress.json", _progress_bytes(self.expected_datasets, digests))
+                for name in remove_after_progress:
+                    _verify_directory_at(binding, "transactions", transactions_identity)
+                    os.unlink(name, dir_fd=transactions_fd)
+                if remove_after_progress:
+                    os.fsync(transactions_fd)
                 _verify_directory_at(binding, "datasets", datasets_identity)
                 _verify_directory_at(binding, "transactions", transactions_identity)
                 binding.verify()
@@ -343,6 +360,7 @@ def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: 
         if any(not name.endswith(".json") for name in transaction_names):
             raise ValueError("checkpoint transaction inventory is invalid")
         pending_native: dict[str, str] = {}
+        pending_imported: dict[str, str] = {}
         if allow_intents:
             for name in transaction_names:
                 intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
@@ -353,13 +371,27 @@ def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: 
                     if dataset in pending_native:
                         raise ValueError("duplicate native checkpoint intent")
                     pending_native[dataset] = digest
-        expected_names = {record_filename(dataset) for dataset in progress["record_digests"]} | {record_filename(dataset) for dataset in pending_native}
+                elif intent.get("origin") == "exp424_import":
+                    dataset, digest = intent.get("dataset"), intent.get("record_payload_sha256")
+                    batch, final = intent.get("batch_identity"), intent.get("final_attestation_sha256")
+                    if not all(isinstance(value, str) for value in (dataset, digest, batch, final)):
+                        raise ValueError("import checkpoint intent is invalid")
+                    if dataset in pending_imported:
+                        raise ValueError("duplicate imported checkpoint intent")
+                    pending_imported[dataset] = digest
+        # A fsynced native intent may legitimately precede its record.  Only
+        # records actually present need inventory entries at validation time.
+        pending_present = {
+            dataset for dataset in (*pending_native, *pending_imported)
+            if record_filename(dataset) in names
+        }
+        expected_names = {record_filename(dataset) for dataset in progress["record_digests"]} | {record_filename(dataset) for dataset in pending_present}
         if names != expected_names: raise ValueError("checkpoint dataset inventory is invalid")
         for dataset, digest in progress["record_digests"].items():
             raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
             record = _decode_record(raw, None)
             if record.dataset != dataset or _record_digest_from_raw(raw) != digest: raise ValueError("checkpoint dataset record is invalid")
-        for dataset, digest in pending_native.items():
+        for dataset, digest in {**pending_native, **pending_imported}.items():
             try:
                 raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
             except FileNotFoundError:
@@ -583,9 +615,9 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                 raise ValueError("checkpoint transaction inventory is invalid")
             intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
             if intent.get("origin") == "exp424_import":
-                batch, attestation = intent.get("batch_identity"), intent.get("attestation_sha256")
-                if not isinstance(batch, str) or not isinstance(attestation, str): raise ValueError("import intent is invalid")
-                result.append((batch, attestation))
+                batch, final = intent.get("batch_identity"), intent.get("final_attestation_sha256")
+                if not isinstance(batch, str) or not isinstance(final, str): raise ValueError("import intent is invalid")
+                result.append((batch, final))
         _verify_directory_at(binding, "transactions", identity)
         return tuple(result)
     finally:
