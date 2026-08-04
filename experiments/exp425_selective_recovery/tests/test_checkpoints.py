@@ -18,7 +18,7 @@ from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenRunContext
 from experiments.exp417_causal_multihorizon_shadow.checkpoints import _context_payload, _context_from_payload
 from experiments.exp417_causal_multihorizon_shadow.tests.test_checkpoints import _context
-from experiments.exp425_selective_recovery.checkpoints import Exp425CheckpointStore
+from experiments.exp425_selective_recovery.checkpoints import Exp425CheckpointStore, record_filename
 from experiments.exp425_selective_recovery import checkpoints
 from experiments.exp425_selective_recovery.contracts import (
     Exp425RunProvenance,
@@ -375,6 +375,39 @@ class CheckpointStoreTests(unittest.TestCase):
                 self.assertEqual(_checkpoint_snapshot(store.root), before)
             finally:
                 capabilities._close_authority(authority)
+
+    def test_restart_rejects_tampered_quarantined_batch_content(self) -> None:
+        """A quarantine marker must not hide altered metadata, records, names, or identity."""
+        context = _context()
+        provenance = _provenance(context)
+        def quarantine(directory: str) -> tuple[Exp425CheckpointStore, Path, Path]:
+            store = Exp425CheckpointStore.create(Path(directory) / "checkpoints", provenance, context)
+            authority = object(); capabilities._register_authority(authority, "exp424_import")
+            try:
+                record = _import_record_for(context.datasets[0], 0, _digest("a"))
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", "tamper-batch", _digest("a"), (record,))
+                evidence = store._quarantine_import_batch(batch, final_attestation_sha256=None, reason_sha256=_digest("b"))
+            finally:
+                capabilities._close_authority(authority)
+            return store, evidence.directory, evidence.directory / record_filename(record.dataset)
+
+        for kind in ("quarantine-json", "batch-json", "staged-body", "staged-name", "directory-inode"):
+            with self.subTest(kind=kind), TemporaryDirectory() as directory:
+                store, quarantined, staged = quarantine(directory)
+                if kind == "quarantine-json":
+                    (quarantined / "quarantine.json").write_bytes(b"{}\n")
+                elif kind == "batch-json":
+                    (quarantined / "batch.json").write_bytes(b"{}\n")
+                elif kind == "staged-body":
+                    staged.write_bytes(staged.read_bytes() + b" ")
+                elif kind == "staged-name":
+                    staged.rename(quarantined / "renamed-record.json")
+                else:
+                    replacement = quarantined.with_name(quarantined.name + ".saved")
+                    quarantined.rename(replacement)
+                    quarantined.mkdir()
+                with self.assertRaises(ValueError):
+                    Exp425CheckpointStore.inspect_read_only(store.root)
 
     def test_inspect_read_only_preserves_all_observed_bytes_and_metadata_on_success_and_failure(self) -> None:
         """Any inspect write, reconciliation, or quarantine would change this complete snapshot."""
@@ -1078,6 +1111,7 @@ class CheckpointStoreTests(unittest.TestCase):
                     capabilities._close_authority(old_authority)
 
                 before_open = file_bytes(root)
+                self.assertEqual([path for path in (root / "import_batches").iterdir() if path.name.startswith(".quarantined-")], [])
                 reopened = Exp425CheckpointStore.open(root, provenance, context)
                 self.assertEqual(file_bytes(root), before_open)
                 self.assertEqual(

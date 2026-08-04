@@ -1515,6 +1515,8 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                     raise ValueError("import quarantine inventory is invalid")
                 quarantine_fd = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
                 try:
+                    if not {"quarantine.json", "batch.json"} <= set(os.listdir(quarantine_fd)):
+                        raise ValueError("import quarantine inventory is invalid")
                     evidence = _canonical_object(_read_file("quarantine.json", dir_fd=quarantine_fd), "import quarantine")
                     batch_identity = evidence.get("batch_identity")
                     attestation = evidence.get("source_attestation_sha256")
@@ -1528,6 +1530,17 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                         raise ValueError("import quarantine evidence is invalid")
                     if (info.st_dev, info.st_ino) != owned.inode:
                         raise ValueError("import quarantine directory was replaced")
+                    state = _canonical_object(_read_file("batch.json", dir_fd=quarantine_fd), "quarantined import batch")
+                    staged = state.get("staged_record_digests")
+                    if not isinstance(staged, dict) or state != _batch_state(str(stored["run_identity"]), str(stored["run_context_sha256"]), batch_identity, attestation, staged):
+                        raise ValueError("quarantined import batch state is invalid")
+                    if final != _import_final_attestation(batch_identity, attestation, staged):
+                        raise ValueError("quarantined import batch attestation is invalid")
+                    if set(os.listdir(quarantine_fd)) != {"quarantine.json", "batch.json"} | {record_filename(dataset) for dataset in staged}:
+                        raise ValueError("quarantined import batch inventory is invalid")
+                    for dataset, digest in staged.items():
+                        if not isinstance(dataset, str) or _record_digest_from_raw(_read_file(record_filename(dataset), dir_fd=quarantine_fd)) != digest:
+                            raise ValueError("quarantined import staged record is invalid")
                 finally:
                     os.close(quarantine_fd)
                 continue

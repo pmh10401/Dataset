@@ -15,6 +15,8 @@ from unittest.mock import patch
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp425_selective_recovery.predecessor import (
     Exp424CompatibilityContract,
+    _batch_identity,
+    _durable_attestation,
     _fixture_contract,
     import_exp424_nonterminal,
     open_validated_exp424_source,
@@ -22,10 +24,14 @@ from experiments.exp425_selective_recovery.predecessor import (
 from experiments.exp417_causal_multihorizon_shadow.checkpoints import Exp417CheckpointStore
 from experiments.exp417_causal_multihorizon_shadow.tests.test_checkpoints import (
     _context as exp417_context,
+    _mixed_result as exp417_mixed_result,
     _provenance as exp417_provenance,
     _result as exp417_result,
     _write as exp417_write,
 )
+from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG
+from experiments.exp417_causal_multihorizon_shadow.contracts import BackendAudit
+from experiments.exp417_causal_multihorizon_shadow.contracts import DatasetResult, DatasetTerminalEvidence
 from experiments.exp425_selective_recovery.checkpoints import Exp425CheckpointStore
 from experiments.exp425_selective_recovery.tests.test_checkpoints import _provenance as exp425_provenance
 from dataclasses import replace
@@ -59,6 +65,16 @@ class Exp424PredecessorTests(unittest.TestCase):
             )
             with open_validated_exp424_source(root, contract) as source:
                 self.assertEqual(source.datasets, ("Eligible_normal_1",))
+            (root / "unrecognized-entry").write_bytes(b"foreign")
+            with self.assertRaises(ValueError):
+                with open_validated_exp424_source(root, contract):
+                    pass
+            (root / "unrecognized-entry").unlink()
+            alias = Path(directory) / "source-alias"
+            alias.symlink_to(root, target_is_directory=True)
+            with self.assertRaisesRegex(ValueError, "contract path"):
+                with open_validated_exp424_source(alias, contract):
+                    pass
             wrong = _fixture_contract(
                 root,
                 root_provenance_sha256=contract.root_provenance_sha256,
@@ -116,6 +132,7 @@ class Exp424PredecessorTests(unittest.TestCase):
         contract = Exp424CompatibilityContract.production()
         mutations = {
             "database_sha256": "0" * 64, "lane_hashes": {}, "config_sha256": "0" * 64,
+            "preprocessing_contract_sha256": "0" * 64,
             "fold_contract_sha256": "0" * 64, "model_contract_sha256": "0" * 64,
             "backend_contract_sha256": "0" * 64, "model_seeds": (1,),
             "perturbation_seeds": (1,), "runtime_versions": {"python": "x"},
@@ -128,6 +145,8 @@ class Exp424PredecessorTests(unittest.TestCase):
             "query_chunk_size": 1, "score_formula": "other", "score_cache_contract_sha256": "0" * 64,
             "percentile_method": "nearest", "score_dtype": "float32",
             "synchronization_contract_sha256": "0" * 64,
+            "score_cache_contract_payload": {}, "synchronization_contract_payload": {},
+            "device_transfer_contract_payload": {},
         }
         for field, value in mutations.items():
             with self.subTest(field=field), self.assertRaises(ValueError):
@@ -207,6 +226,113 @@ class Exp424PredecessorTests(unittest.TestCase):
                 report = import_exp424_nonterminal(new_source, reopened, context)
             self.assertEqual(report.imported, (dataset,))
             self.assertEqual(reopened.completed_record_digests(), {dataset: reopened.completed_record_digests()[dataset]})
+            self.assertEqual([path for path in (target_root / "import_batches").iterdir() if path.name.startswith(".quarantined-")], [])
+
+    def test_import_preserves_candidate_and_diagnostic_group_evidence_per_length(self) -> None:
+        """OOF/calibration evidence is present for diagnostics, while model evidence is qualified-only."""
+        base_context = exp417_context()
+        result = exp417_mixed_result(base_context)
+        context = result.context
+        dataset = result.dataset
+        with TemporaryDirectory() as directory:
+            source_root = Path(directory) / "exp424"
+            source_store = Exp417CheckpointStore(source_root, exp417_provenance(), context.datasets)
+            source_store.write_dataset(
+                result,
+                raw_train_identity_sha256="a" * 64,
+                repaired_train_identity_sha256="b" * 64,
+                length_group_identity_sha256={64: "c" * 64, 100: "c" * 64},
+                canonical_model_hashes={100: {seed: "d" * 64 for seed in FROZEN_CONFIG.model_seeds}},
+                score_calibration_hashes={64: "e" * 64, 100: "e" * 64},
+                backend_audit=BackendAudit("cpu", True, 0.0, 1.0, 1.0, False),
+                elapsed_seconds=0.125,
+            )
+            record_path = source_root / "datasets" / (sha256(dataset.encode()).hexdigest() + ".json")
+            record_digest = json.loads(record_path.read_text())["payload_sha256"]
+            provenance = {"schema_version": 3, "provenance": {}, "expected_datasets": [dataset]}
+            progress = {"expected_datasets": [dataset], "completed_datasets": 1, "completed_record_digests": {dataset: record_digest}, "current_dataset": None}
+            (source_root / "checkpoint_provenance.json").write_bytes(canonical_json_bytes(provenance) + b"\n")
+            (source_root / "progress.json").write_bytes(canonical_json_bytes(progress) + b"\n")
+            contract = _fixture_contract(source_root, root_provenance_sha256=sha256((source_root / "checkpoint_provenance.json").read_bytes()).hexdigest(), progress_sha256=sha256((source_root / "progress.json").read_bytes()).hexdigest(), record_set_sha256=sha256(canonical_json_bytes(sorted(progress["completed_record_digests"].items()))).hexdigest())
+            target = Exp425CheckpointStore.create(Path(directory) / "exp425", replace(exp425_provenance(context), predecessor_compatibility_sha256=contract.attestation_sha256()), context)
+            with open_validated_exp424_source(source_root, contract) as source:
+                report = import_exp424_nonterminal(source, target, context)
+            self.assertEqual(report.imported, (dataset,))
+            groups = target.load_record(dataset).group_evidence.source_group_evidence["groups"]
+            self.assertEqual([dict(group) for group in groups], [
+                {"length": 64, "qualification_status": "diagnostic", "oof_evidence_present": True, "final_model_evidence_present": False, "calibration_evidence_present": True, "split_counts": "unavailable"},
+                {"length": 100, "qualification_status": "qualified", "oof_evidence_present": True, "final_model_evidence_present": True, "calibration_evidence_present": True, "split_counts": "unavailable"},
+            ])
+
+    def test_durable_attestation_excludes_ephemeral_source_nonce(self) -> None:
+        """A renewed source authority must bind the same durable import bytes, not its nonce."""
+        context = exp417_context()
+        dataset = context.datasets[0]
+        with TemporaryDirectory() as directory:
+            source_root = Path(directory) / "source"
+            source_store = Exp417CheckpointStore(source_root, exp417_provenance(), context.datasets)
+            exp417_write(source_store, exp417_result(context, dataset))
+            record_path = source_root / "datasets" / (sha256(dataset.encode()).hexdigest() + ".json")
+            digest = json.loads(record_path.read_text())["payload_sha256"]
+            provenance = {"schema_version": 3, "provenance": {}, "expected_datasets": [dataset]}
+            progress = {"expected_datasets": [dataset], "completed_datasets": 1, "completed_record_digests": {dataset: digest}, "current_dataset": None}
+            (source_root / "checkpoint_provenance.json").write_bytes(canonical_json_bytes(provenance) + b"\n")
+            (source_root / "progress.json").write_bytes(canonical_json_bytes(progress) + b"\n")
+            contract = _fixture_contract(source_root, root_provenance_sha256=sha256((source_root / "checkpoint_provenance.json").read_bytes()).hexdigest(), progress_sha256=sha256((source_root / "progress.json").read_bytes()).hexdigest(), record_set_sha256=sha256(canonical_json_bytes(sorted(progress["completed_record_digests"].items()))).hexdigest())
+            target = Exp425CheckpointStore.create(Path(directory) / "target", replace(exp425_provenance(context), predecessor_compatibility_sha256=contract.attestation_sha256()), context)
+            with open_validated_exp424_source(source_root, contract) as first, open_validated_exp424_source(source_root, contract) as second:
+                self.assertNotEqual(first.nonce, second.nonce)
+                batch = _batch_identity(first, target)
+                self.assertEqual(batch, _batch_identity(second, target))
+                self.assertEqual(_durable_attestation(first, target, batch, {dataset: digest}), _durable_attestation(second, target, batch, {dataset: digest}))
+
+    def test_terminal_source_record_is_reported_without_importing(self) -> None:
+        """Terminal Exp424 evidence remains inspectable but can never become an imported result."""
+        context = exp417_context()
+        dataset = context.datasets[0]
+        terminal = DatasetResult(dataset, context.test_sizes[dataset], 0, (), (), DatasetTerminalEvidence(dataset, context, "oof", "synthetic terminal"), context.lanes, context, "failed")
+        with TemporaryDirectory() as directory:
+            source_root = Path(directory) / "source"
+            source_store = Exp417CheckpointStore(source_root, exp417_provenance(), context.datasets)
+            source_store.write_dataset(terminal, raw_train_identity_sha256=None, repaired_train_identity_sha256=None, length_group_identity_sha256={}, canonical_model_hashes={}, score_calibration_hashes={}, backend_audit=None, elapsed_seconds=0.0)
+            record_path = source_root / "datasets" / (sha256(dataset.encode()).hexdigest() + ".json")
+            digest = json.loads(record_path.read_text())["payload_sha256"]
+            provenance = {"schema_version": 3, "provenance": {}, "expected_datasets": [dataset]}
+            progress = {"expected_datasets": [dataset], "completed_datasets": 1, "completed_record_digests": {dataset: digest}, "current_dataset": None}
+            (source_root / "checkpoint_provenance.json").write_bytes(canonical_json_bytes(provenance) + b"\n")
+            (source_root / "progress.json").write_bytes(canonical_json_bytes(progress) + b"\n")
+            contract = _fixture_contract(source_root, root_provenance_sha256=sha256((source_root / "checkpoint_provenance.json").read_bytes()).hexdigest(), progress_sha256=sha256((source_root / "progress.json").read_bytes()).hexdigest(), record_set_sha256=sha256(canonical_json_bytes(sorted(progress["completed_record_digests"].items()))).hexdigest())
+            target = Exp425CheckpointStore.create(Path(directory) / "target", replace(exp425_provenance(context), predecessor_compatibility_sha256=contract.attestation_sha256()), context)
+            with open_validated_exp424_source(source_root, contract) as source:
+                report = import_exp424_nonterminal(source, target, context)
+            self.assertEqual(report.imported, ())
+            self.assertEqual(report.rejected_terminal, (dataset,))
+            self.assertEqual(target.completed_record_digests(), {})
+
+    def test_context_incompatible_source_record_is_reported_without_importing(self) -> None:
+        """A verified source record with a different target TEST identity manifest is not portable."""
+        context = exp417_context()
+        dataset = context.datasets[0]
+        target_manifest = dict(context.test_identity_manifest)
+        target_manifest[dataset] = ((0, 100),)
+        target_context = replace(context, test_identity_manifest=target_manifest)
+        with TemporaryDirectory() as directory:
+            source_root = Path(directory) / "source"
+            source_store = Exp417CheckpointStore(source_root, exp417_provenance(), context.datasets)
+            exp417_write(source_store, exp417_result(context, dataset))
+            record_path = source_root / "datasets" / (sha256(dataset.encode()).hexdigest() + ".json")
+            digest = json.loads(record_path.read_text())["payload_sha256"]
+            provenance = {"schema_version": 3, "provenance": {}, "expected_datasets": [dataset]}
+            progress = {"expected_datasets": [dataset], "completed_datasets": 1, "completed_record_digests": {dataset: digest}, "current_dataset": None}
+            (source_root / "checkpoint_provenance.json").write_bytes(canonical_json_bytes(provenance) + b"\n")
+            (source_root / "progress.json").write_bytes(canonical_json_bytes(progress) + b"\n")
+            contract = _fixture_contract(source_root, root_provenance_sha256=sha256((source_root / "checkpoint_provenance.json").read_bytes()).hexdigest(), progress_sha256=sha256((source_root / "progress.json").read_bytes()).hexdigest(), record_set_sha256=sha256(canonical_json_bytes(sorted(progress["completed_record_digests"].items()))).hexdigest())
+            target = Exp425CheckpointStore.create(Path(directory) / "target", replace(exp425_provenance(target_context), predecessor_compatibility_sha256=contract.attestation_sha256()), target_context)
+            with open_validated_exp424_source(source_root, contract) as source:
+                report = import_exp424_nonterminal(source, target, target_context)
+            self.assertEqual(report.imported, ())
+            self.assertEqual(report.rejected_incompatible, (dataset,))
+            self.assertEqual(target.completed_record_digests(), {})
 
     def test_source_mutation_after_staging_aborts_then_fresh_authority_resumes(self) -> None:
         """Publishing after a staged-source mutation would import evidence not fully revalidated."""
