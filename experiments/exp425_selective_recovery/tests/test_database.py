@@ -97,3 +97,15 @@ class DatabaseSnapshotTests(unittest.TestCase):
             snapshot.verify_boundary("alias")
         with self.assertRaises(ValueError):
             manager.__exit__(None, None, None)
+
+    def test_boundary_rejects_parent_namespace_replacement(self) -> None:
+        manager = open_database_snapshot(self.database, expected_sha256=self.digest)
+        snapshot = manager.__enter__()
+        moved = self.root.with_name(self.root.name + "-moved")
+        self.root.rename(moved)
+        self.root.mkdir()
+        with self.assertRaisesRegex(ValueError, "parent (metadata|namespace)"):
+            snapshot.verify_boundary("parent-replaced")
+        with self.assertRaises(ValueError):
+            manager.__exit__(None, None, None)
+        shutil.rmtree(moved)

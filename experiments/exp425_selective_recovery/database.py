@@ -46,6 +46,10 @@ class DatabaseSnapshotAudit:
     size: int
     mtime_ns: int
     ctime_ns: int
+    operational_ctime_ns: int
+    operational_nlink: int
+    parent_device: int
+    parent_inode: int
     full_hash_count: int
     boundaries: tuple[str, ...]
 
@@ -72,7 +76,7 @@ class Exp425DatabaseSnapshot:
     """Opaque live owner of accepted DB/parent descriptors and immutable SQLite."""
 
     __slots__ = (
-        "_database", "_name", "_parent_fd", "_database_fd", "_connection",
+        "_database", "_name", "_parent_fd", "_grandparent_fd", "_parent_name", "_database_fd", "_connection",
         "_before", "_operational", "_parent_identity", "_parent_metadata",
         "_owned_directory", "_owned_name", "_closed", "_audit",
     )
@@ -82,6 +86,8 @@ class Exp425DatabaseSnapshot:
         database: Path,
         name: str,
         parent_fd: int,
+        grandparent_fd: int,
+        parent_name: str,
         database_fd: int,
         connection: sqlite3.Connection,
         before: os.stat_result,
@@ -94,6 +100,8 @@ class Exp425DatabaseSnapshot:
         self._database = database
         self._name = name
         self._parent_fd = parent_fd
+        self._grandparent_fd = grandparent_fd
+        self._parent_name = parent_name
         self._database_fd = database_fd
         self._connection = connection
         self._before = before
@@ -103,7 +111,7 @@ class Exp425DatabaseSnapshot:
         self._owned_directory = owned_directory
         self._owned_name = owned_name
         self._closed = False
-        self._audit = DatabaseSnapshotAudit(digest, before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns, 1, ())
+        self._audit = DatabaseSnapshotAudit(digest, before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns, operational.st_ctime_ns, operational.st_nlink, parent.st_dev, parent.st_ino, 1, ())
 
     @property
     def audit(self) -> DatabaseSnapshotAudit:
@@ -151,6 +159,12 @@ class Exp425DatabaseSnapshot:
         parent = os.fstat(self._parent_fd)
         if _identity(parent) != self._parent_identity or _metadata(parent) != self._parent_metadata:
             raise ValueError("database parent metadata changed")
+        try:
+            published_parent = os.stat(self._parent_name, dir_fd=self._grandparent_fd, follow_symlinks=False)
+        except FileNotFoundError as error:
+            raise ValueError("database parent namespace disappeared") from error
+        if stat.S_ISLNK(published_parent.st_mode) or _identity(published_parent) != self._parent_identity:
+            raise ValueError("database parent namespace was replaced")
         current = os.fstat(self._database_fd)
         if _metadata(current) != _metadata(self._operational):
             raise ValueError("database descriptor metadata changed")
@@ -252,6 +266,7 @@ class Exp425DatabaseSnapshot:
             finally:
                 os.close(self._database_fd)
                 os.close(self._parent_fd)
+                os.close(self._grandparent_fd)
         if error is not None:
             raise error
 
@@ -268,15 +283,16 @@ def open_database_snapshot(database: Path, *, expected_sha256: str) -> Iterator[
     """Accept one immutable, sidecar-free SQLite inode and hash it exactly once."""
     if not isinstance(expected_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None:
         raise ValueError("expected database SHA256 is invalid")
-    path = Path(database)
+    path = Path(database).absolute()
     if path.name in {"", ".", ".."} or path.is_symlink():
         raise ValueError("database path is invalid or a symlink")
-    parent_fd = database_fd = None
+    grandparent_fd = parent_fd = database_fd = None
     snapshot: Exp425DatabaseSnapshot | None = None
     owned_directory = owned_name = None
     connection: sqlite3.Connection | None = None
     try:
-        parent_fd = os.open(path.parent, _DIRECTORY_FLAGS)
+        grandparent_fd = os.open(path.parent.parent, _DIRECTORY_FLAGS)
+        parent_fd = os.open(path.parent.name, _DIRECTORY_FLAGS, dir_fd=grandparent_fd)
         database_fd = os.open(path.name, _FILE_FLAGS, dir_fd=parent_fd)
         before = os.fstat(database_fd)
         if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
@@ -312,9 +328,9 @@ def open_database_snapshot(database: Path, *, expected_sha256: str) -> Iterator[
         connection = sqlite3.connect("file:" + quote(str(target)) + "?mode=ro&immutable=1", uri=True)
         connection.execute("PRAGMA query_only=ON")
         exp417_inputs.assert_label_free_sql_contract()
-        snapshot = Exp425DatabaseSnapshot(path, path.name, parent_fd, database_fd, connection, before, operational, os.fstat(parent_fd), owned_directory, owned_name, actual)
+        snapshot = Exp425DatabaseSnapshot(path, path.name, parent_fd, grandparent_fd, path.parent.name, database_fd, connection, before, operational, os.fstat(parent_fd), owned_directory, owned_name, actual)
         snapshot.verify_boundary("open:accepted")
-        parent_fd = database_fd = None
+        grandparent_fd = parent_fd = database_fd = None
         connection = None
         yield snapshot
     finally:
@@ -338,3 +354,5 @@ def open_database_snapshot(database: Path, *, expected_sha256: str) -> Iterator[
                 os.close(database_fd)
             if parent_fd is not None:
                 os.close(parent_fd)
+            if grandparent_fd is not None:
+                os.close(grandparent_fd)
