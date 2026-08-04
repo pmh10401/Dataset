@@ -593,6 +593,21 @@ def _native_record(store: Exp425CheckpointStore, runtime: Exp425RuntimeSession, 
     return record, trace
 
 
+def _compute_native(context: FrozenRunContext, store: Exp425CheckpointStore, runtime: Exp425RuntimeSession, dataset: str, train: object) -> tuple[NativeRecordEnvelope, DatasetRuntimeTrace]:
+    """Private exact-signature seam; tests may replace it, public callers cannot."""
+    started = perf_counter()
+    original_loader = runtime.runner.load_train
+    runtime.runner = replace(runtime.runner, load_train=lambda name, frozen: train if name == dataset and frozen is context else original_loader(name, frozen))
+    try:
+        result = run_dataset(dataset, context, runtime=runtime.runner)
+    finally:
+        runtime.runner = replace(runtime.runner, load_train=original_loader)
+    elapsed = perf_counter() - started
+    if result.status == "failed" or result.decision_evidence.__class__.__name__ == "DatasetTerminalEvidence":
+        raise ValueError("native frozen runtime returned unexpected terminal or failed result")
+    return _native_record(store, runtime, result, elapsed)
+
+
 def _terminal_event(progress: RuntimeProgress, record: object, elapsed: float, *, ordinal: int, status: str, reason: str | None, origin: str) -> RuntimeProgress:
     counts = progress.counts
     assert counts is not None
@@ -638,23 +653,12 @@ def run_selective_population(context: FrozenRunContext, store: Exp425CheckpointS
                 runtime.writer.write(progress, event="heartbeat")
                 continue
             runtime.snapshot.verify_boundary("runtime:before_dataset")
-            started = perf_counter()
             train = runtime.snapshot.load_train(dataset, context)
             sizes = _size_summary(train)
             progress = replace(progress, timestamp=_now(), current_dataset=dataset, ordinal=ordinal, origin="exp425_native", current_phase="dataset", dataset_start_time=_now(), train_instance_count=len(train.series), test_instance_count=context.test_sizes[dataset], size_summary=sizes)
             runtime.writer.write(progress, event="dataset_start", detail={"dataset": dataset, "ordinal": ordinal, "total": len(context.datasets), "origin": "exp425_native", "phase": "train"})
-            # The runner must invoke the exact snapshot loader itself; use a narrow
-            # one-shot cache so the preflight load is never duplicated or re-hashed.
-            original_loader = runtime.runner.load_train
-            runtime.runner = replace(runtime.runner, load_train=lambda name, frozen: train if name == dataset and frozen is context else original_loader(name, frozen))
-            try:
-                result = run_dataset(dataset, context, runtime=runtime.runner)
-            finally:
-                runtime.runner = replace(runtime.runner, load_train=original_loader)
-            elapsed = perf_counter() - started
-            if result.status == "failed" or result.decision_evidence.__class__.__name__ == "DatasetTerminalEvidence":
-                raise ValueError("native frozen runtime returned unexpected terminal or failed result")
-            record, trace = _native_record(store, runtime, result, elapsed)
+            record, trace = _compute_native(context, store, runtime, dataset, train)
+            elapsed = record.elapsed_seconds
             capability = capabilities._mint(runtime, kind="native", run_identity=store.provenance.run_identity, dataset=dataset, context_sha256=store.run_context_sha256, trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256, backend_sha256=record.backend_audit_sha256, process_nonce=runtime.process_nonce)
             store._commit_native(capability, record)
             traces.append(trace)
