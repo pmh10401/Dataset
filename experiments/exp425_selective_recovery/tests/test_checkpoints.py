@@ -359,6 +359,24 @@ class CheckpointStoreTests(unittest.TestCase):
             self.assertEqual(tuple(persisted["original_inode"]), original_inode)
             self.assertEqual(Exp425CheckpointStore.inspect_read_only(store.root).completed_count, 0)
 
+    def test_quarantine_refuses_second_active_batch_without_mutation(self) -> None:
+        """Quarantining one batch while another is active would hide ambiguous import state."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            store = Exp425CheckpointStore.create(Path(directory) / "checkpoints", provenance, context)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                first = store._begin_import_batch(capabilities._mint(authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="first-batch", attestation_sha256=_digest("a"), process_nonce="nonce-a"), "first-batch")
+                store._begin_import_batch(capabilities._mint(authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="second-batch", attestation_sha256=_digest("b"), process_nonce="nonce-b"), "second-batch")
+                before = _checkpoint_snapshot(store.root)
+                with self.assertRaisesRegex(ValueError, "one exact active"):
+                    store._quarantine_import_batch(first, final_attestation_sha256=None, reason_sha256=_digest("c"))
+                self.assertEqual(_checkpoint_snapshot(store.root), before)
+            finally:
+                capabilities._close_authority(authority)
+
     def test_inspect_read_only_preserves_all_observed_bytes_and_metadata_on_success_and_failure(self) -> None:
         """Any inspect write, reconciliation, or quarantine would change this complete snapshot."""
         context = _context()
