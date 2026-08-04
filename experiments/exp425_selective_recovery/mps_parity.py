@@ -14,6 +14,7 @@ import json
 import math
 import os
 from pathlib import Path
+from threading import Event, RLock, Thread
 from time import time
 from typing import Any
 
@@ -162,6 +163,9 @@ class SmokeEvidenceWriter:
         self.root, self.run_identity, self.fixture = Path(root), run_identity, fixture
         self.events = self.root / "events.jsonl"
         self.parent_log = self.root / "parent.log"
+        self._lock = RLock()
+        self._heartbeat_sequence = 0
+        self._last_progress: dict[str, object] = {}
 
     @classmethod
     def create(cls, root: Path, run_identity: str, fixture: str) -> "SmokeEvidenceWriter":
@@ -184,20 +188,22 @@ class SmokeEvidenceWriter:
         self._sync_directory()
 
     def _replace(self, name: str, payload: Mapping[str, object]) -> None:
-        temporary = self.root / ("." + name + ".tmp")
-        descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        try:
-            os.write(descriptor, canonical_json_bytes(dict(payload)) + b"\n"); os.fsync(descriptor)
-        finally:
-            os.close(descriptor)
-        os.replace(temporary, self.root / name); self._sync_directory()
+        with self._lock:
+            temporary = self.root / ("." + name + ".tmp")
+            descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            try:
+                os.write(descriptor, canonical_json_bytes(dict(payload)) + b"\n"); os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+            os.replace(temporary, self.root / name); self._sync_directory()
 
     def _append(self, name: str, data: bytes) -> None:
-        descriptor = os.open(self.root / name, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
-        try:
-            os.write(descriptor, data); os.fsync(descriptor)
-        finally:
-            os.close(descriptor)
+        with self._lock:
+            descriptor = os.open(self.root / name, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+            try:
+                os.write(descriptor, data); os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
 
     def _sync_directory(self) -> None:
         descriptor = os.open(self.root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
@@ -205,22 +211,80 @@ class SmokeEvidenceWriter:
         finally: os.close(descriptor)
 
     def event(self, event: str, **detail: object) -> None:
-        payload = {"schema": "exp425.task5.event.v1", "run_identity": self.run_identity,
-                   "timestamp": time(), "event": event, **detail}
-        self._append("events.jsonl", canonical_json_bytes(payload) + b"\n")
+        with self._lock:
+            payload = {"schema": "exp425.task5.event.v1", "run_identity": self.run_identity,
+                       "timestamp": time(), "event": event, **detail}
+            self._append("events.jsonl", canonical_json_bytes(payload) + b"\n")
+
+    def _publish(self, event: str, *, stage: str, current_dataset: str | None, success: bool | None, **detail: object) -> None:
+        with self._lock:
+            payload = {"schema": "exp425.task5.progress.v1", "run_identity": self.run_identity,
+                       "pid": os.getpid(), "fixture": self.fixture, "stage": stage,
+                       "current_dataset": current_dataset, "success": success, "timestamp": time(),
+                       "heartbeat_sequence": self._heartbeat_sequence, **detail}
+            self._replace("progress.json", payload)
+            self._last_progress = dict(payload)
+            self.event(event, **{key: value for key, value in payload.items() if key not in {"schema", "run_identity", "pid", "fixture", "timestamp"}})
+            self._append(
+                "parent.log",
+                (f"event={event} stage={stage} dataset={current_dataset or '-'} "
+                 f"heartbeat={self._heartbeat_sequence} completed={payload.get('completed', 0)} "
+                 f"total={payload.get('total', 1)} elapsed={payload.get('elapsed_seconds', 0)} "
+                 f"backend={payload.get('backend', '-')} device={payload.get('device', '-')} "
+                 f"checkpoint={payload.get('checkpoint_path', '-')}\n").encode(),
+            )
 
     def progress(self, *, stage: str, current_dataset: str | None, success: bool | None, **detail: object) -> None:
-        payload = {"schema": "exp425.task5.progress.v1", "run_identity": self.run_identity,
-                   "pid": os.getpid(), "fixture": self.fixture, "stage": stage,
-                   "current_dataset": current_dataset, "success": success, "timestamp": time(), **detail}
-        self._replace("progress.json", payload)
-        self.event("progress", stage=stage, current_dataset=current_dataset, success=success)
+        self._publish("progress", stage=stage, current_dataset=current_dataset, success=success, **detail)
+
+    def heartbeat(self, *, stage: str, current_dataset: str, **detail: object) -> None:
+        with self._lock:
+            self._heartbeat_sequence += 1
+            self._publish("heartbeat", stage=stage, current_dataset=current_dataset, success=None, **detail)
+
+    def terminal_success(self, **detail: object) -> None:
+        detail = dict(detail) | {"throughput_per_second": 0, "eta_seconds": 0, "latest_error": None}
+        self._publish("complete", stage="complete", current_dataset=None, success=True, **detail)
 
     def failure(self, error: BaseException) -> None:
         message = str(error).replace("\n", " ")[:240]
-        self.progress(stage="failed", current_dataset=None, success=False,
-                      error_type=type(error).__name__, latest_error=message)
-        self._append("parent.log", f"failure={type(error).__name__}:{message}\n".encode())
+        carried = {
+            key: value for key, value in self._last_progress.items()
+            if key not in {"schema", "run_identity", "pid", "fixture", "stage", "current_dataset", "success", "timestamp", "latest_error", "heartbeat_sequence"}
+        }
+        terminal = carried | {
+            "error_type": type(error).__name__, "latest_error": message,
+            "throughput_per_second": 0, "eta_seconds": 0,
+        }
+        terminal.setdefault("elapsed_seconds", 0)
+        self._publish("failed", stage="failed", current_dataset=None, success=False, **terminal)
 
     def result(self, payload: Mapping[str, object]) -> None:
         self._replace("result.json", payload)
+
+
+class SmokeHeartbeat:
+    """One serialized, fsynced heartbeat stream during the long MPS stage."""
+
+    def __init__(self, writer: SmokeEvidenceWriter, detail: callable, *, interval_seconds: float = 30.0) -> None:
+        if interval_seconds <= 0 or interval_seconds > 30:
+            raise ValueError("smoke heartbeat interval must be in (0, 30] seconds")
+        self._writer, self._detail, self._interval = writer, detail, interval_seconds
+        self._stop = Event()
+        self._thread = Thread(target=self._run, name="exp425-smoke-heartbeat", daemon=True)
+
+    def _run(self) -> None:
+        while not self._stop.wait(self._interval):
+            detail = self._detail()
+            if not isinstance(detail, Mapping):
+                raise ValueError("smoke heartbeat detail must be a mapping")
+            self._writer.heartbeat(**dict(detail))
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set(); self._thread.join()
+
+    def is_alive(self) -> bool:
+        return self._thread.is_alive()

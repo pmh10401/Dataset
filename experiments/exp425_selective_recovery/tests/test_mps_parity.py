@@ -7,19 +7,123 @@ import importlib.util
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from threading import Event
+from time import sleep
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
 
 class MPSParityContractTests(unittest.TestCase):
-    def test_smoke_native_commit_claim_binds_both_mps_evidence_digests(self) -> None:
-        """The smoke's direct native commit must satisfy the v2 capability seam."""
+    @staticmethod
+    def _script_module() -> object:
         script = Path(__file__).resolve().parents[3] / "scratch/run_exp425_task5_mps_parity.py"
         spec = importlib.util.spec_from_file_location("exp425_task5_mps_parity_test", script)
         assert spec is not None and spec.loader is not None
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        return module
+
+    def test_smoke_binds_guarded_train_and_test_loaders_before_session_construction(self) -> None:
+        """Moving the loader patch below session construction would expose TEST values."""
+        module = self._script_module()
+        snapshot = object.__new__(module.Exp425DatabaseSnapshot)
+        context = SimpleNamespace()
+        counters = {"train": 0, "test_values": 0, "test_labels": 0}
+        train = object()
+
+        def fake_train(_snapshot, dataset, frozen):
+            self.assertEqual((dataset, frozen), (module.FIXTURE, context))
+            return train
+
+        with patch.object(module.Exp425DatabaseSnapshot, "load_train", fake_train):
+            with module._guarded_smoke_loaders(snapshot, counters) as guards:
+                session = module._build_smoke_session_with_guards(
+                    lambda: SimpleNamespace(runner=SimpleNamespace(
+                        load_train=snapshot.load_train, load_test=snapshot.load_test,
+                    )), guards,
+                )
+                self.assertIs(session.runner.load_test.__func__, guards.forbidden_test)
+                self.assertIs(session.runner.load_train.__func__, guards.counted_train)
+                self.assertIs(session.runner.load_train(module.FIXTURE, context), train)
+                with self.assertRaisesRegex(ValueError, "TEST value loader"):
+                    session.runner.load_test(module.FIXTURE, context)
+        self.assertEqual(counters, {"train": 1, "test_values": 1, "test_labels": 0})
+
+    def test_smoke_writer_heartbeats_during_blocked_compute_and_stops_before_terminal(self) -> None:
+        """Removing the heartbeat thread leaves the 94-second MPS phase invisible."""
+        from experiments.exp425_selective_recovery.mps_parity import SmokeEvidenceWriter, SmokeHeartbeat
+
+        with TemporaryDirectory() as directory:
+            writer = SmokeEvidenceWriter.create(Path(directory) / "smoke", "run", "ECG200_normal_1")
+            detail = {
+                "dataset": "ECG200_normal_1", "train_instance_count": 2,
+                "test_instance_count": 3, "train_length_groups": [{"length": 4, "series_count": 2}],
+                "train_value_count": 8, "train_value_bytes": 64,
+                "current_phase": "native_train_qualification", "backend": "mps", "device": "mps",
+                "completed": 0, "total": 1, "elapsed_seconds": 0.0,
+                "throughput_per_second": None, "eta_seconds": None,
+                "checkpoint_path": "/tmp/checkpoint", "loader_counters": {"train": 1, "test_values": 0, "test_labels": 0}, "loader_counts": {"train": 1, "test_values": 0, "test_labels": 0},
+                "latest_error": None,
+            }
+            started = Event()
+            heartbeat = SmokeHeartbeat(writer, lambda: {"stage": "native_train_qualification", "current_dataset": "ECG200_normal_1", **detail}, interval_seconds=0.01)
+            def fake_compute() -> None:
+                started.set(); sleep(0.04)
+            heartbeat.start(); fake_compute(); heartbeat.stop()
+            self.assertTrue(started.is_set())
+            writer.terminal_success(**(detail | {"elapsed_seconds": 0.04}))
+            events = [json.loads(line) for line in writer.events.read_text().splitlines()]
+            sequences = [event["heartbeat_sequence"] for event in events if event["event"] == "heartbeat"]
+            self.assertGreaterEqual(len(sequences), 2)
+            self.assertEqual(sequences, list(range(1, len(sequences) + 1)))
+            self.assertFalse(heartbeat.is_alive())
+            progress = json.loads((writer.root / "progress.json").read_bytes())
+            for key in ("dataset", "train_instance_count", "test_instance_count", "train_length_groups", "train_value_count", "train_value_bytes", "current_phase", "backend", "device", "checkpoint_path", "loader_counters", "loader_counts", "heartbeat_sequence", "latest_error"):
+                self.assertIn(key, progress)
+            self.assertIsNone(progress["current_dataset"])
+            self.assertEqual((progress["throughput_per_second"], progress["eta_seconds"]), (0, 0))
+            parent_log = writer.parent_log.read_text()
+            self.assertIn("heartbeat", parent_log)
+            self.assertIn("backend=mps", parent_log)
+            self.assertIn("checkpoint=/tmp/checkpoint", parent_log)
+
+    def test_train_only_loader_surface_rejects_label_and_evaluation_paths(self) -> None:
+        module = self._script_module()
+        module._assert_train_only_loader_surface({"load_raw_train_values": object()})
+        with self.assertRaisesRegex(ValueError, "label/evaluation"):
+            module._assert_train_only_loader_surface({"load_raw_test_labels": object()})
+
+    def test_smoke_writer_failure_preserves_last_operational_context(self) -> None:
+        """A failure after MPS starts must not erase its checkpoint and elapsed evidence."""
+        from experiments.exp425_selective_recovery.mps_parity import SmokeEvidenceWriter
+
+        with TemporaryDirectory() as directory:
+            writer = SmokeEvidenceWriter.create(Path(directory) / "smoke", "run", "ECG200_normal_1")
+            writer.progress(
+                stage="native_train_qualification", current_dataset="ECG200_normal_1", success=None,
+                checkpoint_path="/tmp/checkpoint", elapsed_seconds=1.25,
+                throughput_per_second=None, eta_seconds=None, latest_error=None,
+            )
+            writer.failure(ValueError("blocked"))
+            terminal = json.loads((writer.root / "progress.json").read_bytes())
+            self.assertEqual(terminal["checkpoint_path"], "/tmp/checkpoint")
+            self.assertEqual(terminal["elapsed_seconds"], 1.25)
+            self.assertEqual(terminal["current_dataset"], None)
+            self.assertEqual((terminal["throughput_per_second"], terminal["eta_seconds"]), (0, 0))
+
+    def test_smoke_writer_early_failure_records_zero_elapsed_terminal_fields(self) -> None:
+        from experiments.exp425_selective_recovery.mps_parity import SmokeEvidenceWriter
+
+        with TemporaryDirectory() as directory:
+            writer = SmokeEvidenceWriter.create(Path(directory) / "smoke", "run", "ECG200_normal_1")
+            writer.failure(ValueError("preflight"))
+            terminal = json.loads((writer.root / "progress.json").read_bytes())
+            self.assertEqual((terminal["elapsed_seconds"], terminal["throughput_per_second"], terminal["eta_seconds"]), (0, 0, 0))
+
+    def test_smoke_native_commit_claim_binds_both_mps_evidence_digests(self) -> None:
+        """The smoke's direct native commit must satisfy the v2 capability seam."""
+        module = self._script_module()
         session = SimpleNamespace(process_nonce="nonce")
         store = SimpleNamespace(
             provenance=SimpleNamespace(run_identity="run"), run_context_sha256="a" * 64,

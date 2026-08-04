@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 from dataclasses import asdict
 from hashlib import sha256
 import json
@@ -13,6 +14,7 @@ import subprocess
 import sys
 from time import perf_counter
 from unittest.mock import patch
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -29,6 +31,7 @@ from experiments.exp425_selective_recovery.database import Exp425DatabaseSnapsho
 from experiments.exp425_selective_recovery.mps_parity import (
     DATABASE_SHA256, EXPECTED_LEGACY_OOF, EXPECTED_MODEL_HASHES, FIXTURE,
     GOLDEN_SOURCE_COMMIT, SmokeEvidenceWriter, compare_shared_science,
+    SmokeHeartbeat,
     authenticated_cpu_audit, review_only_mps_assessment, validate_golden_reference,
 )
 from experiments.exp425_selective_recovery.runtime import AtomicProgressWriter, _compute_native, build_exp425_runtime
@@ -60,6 +63,71 @@ def _assert_clean_heavy_process() -> None:
     foreign = [line.strip() for line in listing.splitlines() if "exp42" in line.lower() and "mps" in line.lower() and str(os.getpid()) not in line]
     if foreign:
         raise ValueError("competing Exp42x MPS-heavy process is active")
+
+
+def _assert_train_only_loader_surface(namespace: object) -> None:
+    if not isinstance(namespace, dict):
+        raise ValueError("smoke loader namespace is invalid")
+    forbidden = {"load_raw_test_labels", "load_test_labels", "load_evaluation", "evaluate_predictions"}
+    if forbidden & set(namespace):
+        raise ValueError("smoke label/evaluation loader surface is forbidden")
+
+
+@contextmanager
+def _guarded_smoke_loaders(snapshot: Exp425DatabaseSnapshot, counters: dict[str, int]):
+    """Install TEST denial before the runtime captures bound loader methods."""
+    original_train = Exp425DatabaseSnapshot.load_train
+
+    def counted_train(instance: Exp425DatabaseSnapshot, dataset: str, frozen: object) -> object:
+        counters["train"] += 1
+        if dataset != FIXTURE or counters["train"] != 1:
+            raise ValueError("TRAIN loader gate failed")
+        return original_train(instance, dataset, frozen)  # type: ignore[arg-type]
+
+    def forbidden_test(*_args: object, **_kwargs: object) -> object:
+        counters["test_values"] += 1
+        raise ValueError("TEST value loader is forbidden")
+
+    with patch.object(Exp425DatabaseSnapshot, "load_train", counted_train), patch.object(
+        Exp425DatabaseSnapshot, "load_test", forbidden_test,
+    ):
+        yield SimpleNamespace(counted_train=counted_train, forbidden_test=forbidden_test)
+
+
+def _build_smoke_session_with_guards(build: object, guards: object) -> object:
+    if not callable(build):
+        raise ValueError("smoke session builder is invalid")
+    session = build()
+    runner = getattr(session, "runner", None)
+    if (
+        getattr(getattr(runner, "load_train", None), "__func__", None) is not getattr(guards, "counted_train", None)
+        or getattr(getattr(runner, "load_test", None), "__func__", None) is not getattr(guards, "forbidden_test", None)
+    ):
+        raise ValueError("smoke runtime did not bind guarded TRAIN/TEST loaders")
+    return session
+
+
+def _train_progress_detail(
+    context: object, train: object, *, checkpoint_root: Path, counters: dict[str, int], started: float,
+) -> dict[str, object]:
+    series = getattr(train, "series", ())
+    groups: dict[int, int] = {}
+    value_count = 0
+    for item in series:
+        length = len(item.values)
+        groups[length] = groups.get(length, 0) + 1
+        value_count += length
+    return {
+        "dataset": FIXTURE, "train_instance_count": len(series),
+        "test_instance_count": context.test_sizes[FIXTURE],
+        "train_length_groups": [{"length": length, "series_count": count} for length, count in sorted(groups.items())],
+        "train_value_count": value_count, "train_value_bytes": value_count * 8,
+        "current_phase": "native_train_qualification", "backend": "mps", "device": "mps",
+        "completed": 0, "total": 1, "elapsed_seconds": max(0.0, perf_counter() - started),
+        "throughput_per_second": None, "eta_seconds": None,
+        "checkpoint_path": str(checkpoint_root), "loader_counters": dict(counters), "loader_counts": dict(counters),
+        "latest_error": None,
+    }
 
 
 class _CapturingModels(dict[str, object]):
@@ -140,6 +208,7 @@ def main(argv: list[str] | None = None) -> int:
     output = args.output_dir.absolute()
     if not output.name.startswith("exp425_task5_mps_parity_") or output.parent != DATABASE.parent:
         raise ValueError("output must be a new exp425_task5_mps_parity_* directory beneath Dataset")
+    _assert_train_only_loader_surface(globals())
     writer = SmokeEvidenceWriter.create(output, "exp425-task5-" + str(os.getpid()), FIXTURE)
     runtime_writer: AtomicProgressWriter | None = None
     session = None
@@ -168,23 +237,25 @@ def main(argv: list[str] | None = None) -> int:
             checkpoint_root = output / "checkpoint"
             store = Exp425CheckpointStore.create(checkpoint_root, provenance, context)
             runtime_writer = AtomicProgressWriter.create(output_root=output / "runtime", run_identity=writer.run_identity, command="new", checkpoint_root=checkpoint_root, total_datasets=len(context.datasets), backend="mps")
-            audit, adoption = authenticated_cpu_audit(), review_only_mps_assessment()
-            session = build_exp425_runtime(snapshot, audit, adoption, runtime_writer, current_head)
-            session._fold_contract_sha256 = provenance.fold_contract_sha256
             counters = {"train": 0, "test_values": 0, "test_labels": 0}
-            original_train = Exp425DatabaseSnapshot.load_train
-            def counted_train(instance, dataset, frozen):
-                counters["train"] += 1
-                if dataset != FIXTURE or counters["train"] != 1: raise ValueError("TRAIN loader gate failed")
-                return original_train(instance, dataset, frozen)
-            def forbidden_test(*_args, **_kwargs):
-                counters["test_values"] += 1
-                raise ValueError("TEST value loader is forbidden")
-            captured = _CapturingModels(); session._models = captured
-            with patch.object(Exp425DatabaseSnapshot, "load_train", counted_train), patch.object(Exp425DatabaseSnapshot, "load_test", forbidden_test):
-                writer.progress(stage="native_train_qualification", current_dataset=FIXTURE, success=None, completed=0, total=1, loader_counts=counters)
-                train = snapshot.load_train(FIXTURE, context)
-                started = perf_counter(); native, trace = _compute_native(context, store, session, FIXTURE, train); wall = perf_counter() - started
+            audit, adoption = authenticated_cpu_audit(), review_only_mps_assessment()
+            with _guarded_smoke_loaders(snapshot, counters) as guards:
+                session = _build_smoke_session_with_guards(
+                    lambda: build_exp425_runtime(snapshot, audit, adoption, runtime_writer, current_head), guards,
+                )
+                session._fold_contract_sha256 = provenance.fold_contract_sha256
+                captured = _CapturingModels(); session._models = captured
+                train = session.runner.load_train(FIXTURE, context)
+                started = perf_counter()
+                detail = lambda: _train_progress_detail(context, train, checkpoint_root=checkpoint_root, counters=counters, started=started)
+                writer.progress(stage="native_train_qualification", current_dataset=FIXTURE, success=None, **detail())
+                heartbeat = SmokeHeartbeat(writer, lambda: {"stage": "native_train_qualification", "current_dataset": FIXTURE, **detail()})
+                heartbeat.start()
+                try:
+                    native, trace = _compute_native(context, store, session, FIXTURE, train)
+                finally:
+                    heartbeat.stop()
+                wall = perf_counter() - started
             models = captured.captured
             if models is None or counters != {"train": 1, "test_values": 0, "test_labels": 0}:
                 raise ValueError("loader or model-capture gate failed")
@@ -197,7 +268,7 @@ def main(argv: list[str] | None = None) -> int:
             capability = _native_commit_capability(session, store, native)
             checkpoint_digest = store._commit_native(capability, native)
             result = {"schema": "exp425.task5.mps-parity-result.v1", "success": True, "fixture": FIXTURE, "stage": "complete", "backend": "mps", "fallback": False, "loader_counts": counters, "wall_seconds": wall, "timer_scope": "_compute_native return after production implicit CPU/NumPy/serialization/calibration synchronization", "explicit_mps_synchronize_calls": 0, "torch": torch.__version__, "device": str(torch.device("mps")), "golden": {"record_sha256": golden.record_sha256, "payload_sha256": golden.record["payload_sha256"], "source_hashes": dict(golden.source_hashes)}, "cpu_scientific_audit": asdict(audit), "mps_adoption": adoption.payload(), "actual": actual, "parity": parity, "native_trace": asdict(trace), "native_record_sha256": native.record_payload_sha256, "checkpoint_record_sha256": checkpoint_digest, "checkpoint_path": str(checkpoint_root), "limitation": "Exp424 retained no per-synthetic-query scores; direct historical per-query deltas are unavailable."}
-            writer.result(result); writer.progress(stage="complete", current_dataset=None, success=True, completed=1, total=1, loader_counts=counters, wall_seconds=wall, checkpoint=str(checkpoint_root)); writer._append("parent.log", b"complete\n")
+            writer.result(result); writer.terminal_success(**(_train_progress_detail(context, train, checkpoint_root=checkpoint_root, counters=counters, started=started) | {"completed": 1, "elapsed_seconds": wall}))
         return 0
     except BaseException as error:
         writer.failure(error)
