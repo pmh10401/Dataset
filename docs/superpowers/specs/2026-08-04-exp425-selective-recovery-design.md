@@ -160,14 +160,16 @@ generic checkpoint opener must not reconcile. Only the predecessor importer may
 resume them, after reacquiring source descriptors/shared lock and repeating the
 entire source revalidation against the immutable batch attestation.
 
-`open_validated_exp424_source` is the only capability mint. It returns a
-non-serializable opaque source object whose private construction token, live
-descriptor identities, held lock, validation nonce, and source-attestation digest
-are checked by every import staging and promotion operation. The public
-checkpoint API exposes no caller-constructible import authorization. Closing the
-source context invalidates the capability. A crash/resume must open and fully
-validate the source again to mint a new capability; copied, forged, closed,
-wrong-source, and wrong-batch capabilities are rejected.
+`open_validated_exp424_source` is the only validated import-authority constructor.
+It returns a non-serializable opaque source authority whose private construction
+token, live descriptor identities, held lock, validation nonce, and source-
+attestation digest are registered with the shared broker. For every begin, stage,
+or promote operation, that authority asks the broker to mint a fresh exact-type,
+one-use `_Capability`; the authority itself is never passed as authorization.
+Closing the source context unregisters the authority and invalidates its remaining
+capabilities. A crash/resume must open and fully validate the source again to
+register a new authority; copied, forged, closed, wrong-source, and wrong-batch
+authorities/capabilities are rejected.
 
 The score-cache and synchronization contracts are not caller-supplied free-form
 digests. Exp425 embeds their exact canonical JSON payloads and requires these
@@ -261,9 +263,10 @@ import promotion. Staging and promotion additionally require the newly minted,
 live opaque capability matching that exact source and batch.
 
 Native commits are capability-gated as well. The public checkpoint API exposes no
-generic native-write method. Only a live `Exp425RuntimeSession` that completed the
-frozen dataset state machine may mint a non-serializable, one-use native execution
-capability bound to run identity, dataset, shared-context digest, complete trace
+generic native-write method. Only a live registered `Exp425RuntimeSession`
+authority that completed the frozen dataset state machine may ask the same broker
+to mint a fresh non-serializable, one-use `_Capability` bound to run identity,
+dataset, shared-context digest, complete trace
 digest, complete native-record digest, MPS/backend audit, and process nonce. The
 native envelope is constructed and canonically validated before capability minting;
 the package-private native commit compares both trace and record digests, then
@@ -278,13 +281,24 @@ object identity and kind; mint/validate/consume operations require the exact
 registered authority and exact claim set. Duck-typed objects and self-consistent
 caller-created values never satisfy the registry.
 
+Canonical digest preimages are fixed. `trace_sha256` is SHA256 of canonical JSON
+for the complete trace body without any `trace_sha256` field. A native record body
+contains that fixed `trace_sha256` but no `record_payload_sha256` field;
+`record_payload_sha256` is SHA256 of canonical JSON for that body, and the digest
+is appended only to the serialized envelope afterward. The frozen Exp424 record-
+set digest is SHA256 of canonical JSON for
+`sorted(progress["completed_record_digests"].items())`, represented as the ordered
+array of `[dataset, digest]` pairs. Tests recalculate each preimage and mutate every
+field.
+
 An import batch's durable attestation never contains the ephemeral validation
 nonce. It stably binds source root/progress/inventory/record digests, target batch,
 and staged record digests. Each process receives a new ephemeral nonce only as
 proof that it currently holds live validated descriptors/lock for the same durable
-attestation. After a crash, the old capability is closed; a newly minted capability
-with a different nonce may resume only after full source revalidation reproduces
-the durable attestation exactly.
+attestation. After a crash, the old source authority is closed and unregistered,
+which invalidates every capability minted for it. A newly registered authority
+with a different nonce may mint fresh per-operation capabilities only after full
+source revalidation reproduces the durable attestation exactly.
 
 Targets for the checkpoint-only optimization are:
 
