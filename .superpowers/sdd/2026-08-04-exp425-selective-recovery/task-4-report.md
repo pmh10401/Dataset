@@ -136,3 +136,52 @@ same OS identity can always deliberately bypass POSIX advisory locks by writing
 the file descriptor directly; boundaries fail closed on the resulting metadata
 or namespace mutation.  The supported SQLite writer path is prevented from
 committing by the retained SQLite-compatible read lock.
+
+## Fix round 2
+
+Round 2 closes the remaining review findings without changing Exp417/Exp424.
+SQLite now connects only through the retained kernel descriptor URI
+`file:/dev/fd/<database_fd>?mode=ro&immutable=1`; the private macOS hardlink is
+retained solely as namespace/cleanup attestation, never used as the SQLite
+source pathname. The connect-time ABA regression replaces both published and
+owned names during `sqlite3.connect`; acceptance fails closed after the
+replacement, while the observed SQLite URI proves it could not have opened
+either attacker-visible name.
+
+The first successful `freeze_context` stores one private object reference.
+TRAIN/TEST loaders require that exact object identity, rather than accepting
+an equal-valued/deserialised `FrozenRunContext`; a second freeze on the same
+snapshot is rejected. A resumed process opens a new snapshot and freezes its
+own context, which is covered by regression.
+
+On close, owned-link cleanup now precedes SQLite connection close so the
+retained POSIX SQLite read lock remains held through unlink/rmdir. Cleanup
+allows changed DB metadata only when the owned directory and hardlink still
+bind the accepted identities; it removes the owned link/directory, preserves
+the original boundary error, and records `cleanup_status="removed"`. A
+replaced owner is retained and audit instead records
+`cleanup_status="retained_after_cleanup_failure"` and
+`lifecycle="closed_cleanup_failed"`.
+
+Round-2 findings → resolved evidence:
+
+1. SQLite pathname ABA at connect: descriptor-only URI plus `test_connect_uses_retained_descriptor_during_path_aba`.
+2. Equal-but-foreign context acceptance: snapshot-private context identity, second-freeze rejection, and `test_each_new_snapshot_requires_its_own_context_identity`.
+3. Mutation cleanup/lock ordering: identity-only owned cleanup before connection close and `test_metadata_mutation_keeps_lock_through_owned_cleanup`.
+4. Inexact lane coordinates: selected-lane union must equal exact TEST indices; positive A:0/B:0 lane fixtures and `test_context_rejects_missing_extra_and_wrong_lane_coordinates`.
+5. WAL writer evidence: `test_wal_writer_is_blocked_and_loader_after_boundary_rejects_wal` proves WAL writer commit is blocked with no WAL/SHM residue, and proves a WAL artifact introduced during a loader is rejected at its after-boundary before any result returns.
+   `test_persistent_wal_mode_without_sidecars_fails_before_acceptance` additionally rejects the SQLite header's persistent WAL mode (`read/write version == 2`) even when an idle database has no `-wal`/`-shm` residue.
+
+Round-2 verification on macOS:
+
+- `python3 -m unittest experiments.exp425_selective_recovery.tests.test_database -q` — PASS, 23 tests in 3.342s; `snapshot=0.132s`, `verified_opens=2.593s`.
+- `python3 -m unittest experiments.exp425_selective_recovery.tests.test_database experiments.exp417_causal_multihorizon_shadow.tests.test_inputs -q` — PASS, 48 tests in 3.472s; `snapshot=0.133s`, `verified_opens=2.611s`.
+- `python3 -m unittest discover -s experiments/exp425_selective_recovery/tests -p 'test_*.py' -q` — PASS, 104 tests in 9.614s; `snapshot=0.133s`, `verified_opens=2.595s`.
+
+Persistent-WAL final verification:
+
+- `python3 -m unittest experiments.exp425_selective_recovery.tests.test_database -q` — PASS, 24 tests in 3.306s; `snapshot=0.130s`, `verified_opens=2.558s`.
+- `python3 -m unittest experiments.exp425_selective_recovery.tests.test_database experiments.exp417_causal_multihorizon_shadow.tests.test_inputs -q` — PASS, 49 tests in 3.407s; `snapshot=0.132s`, `verified_opens=2.575s`.
+- `python3 -m unittest discover -s experiments/exp425_selective_recovery/tests -p 'test_*.py' -q` — PASS, 105 tests in 9.640s; `snapshot=0.134s`, `verified_opens=2.587s`.
+- Explicit benchmark: `python3 -m unittest experiments.exp425_selective_recovery.tests.test_database.DatabaseBenchmarkTests.test_256mib_snapshot_reads_beat_twenty_full_descriptor_hashes -v` — PASS, 3.082s; `snapshot=0.131s`, `verified_opens=2.526s`.
+- `python3 -m compileall -q experiments/exp425_selective_recovery` and `git diff --check` — PASS.

@@ -90,6 +90,23 @@ class DatabaseSnapshotTests(unittest.TestCase):
                         pass
                 artifact.unlink()
 
+    def test_persistent_wal_mode_without_sidecars_fails_before_acceptance(self) -> None:
+        connection = sqlite3.connect(self.database)
+        try:
+            self.assertEqual(connection.execute("PRAGMA journal_mode=WAL").fetchone()[0], "wal")
+            connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        finally:
+            connection.close()
+        for suffix in ("-wal", "-shm"):
+            artifact = self.root / ("input.sqlite" + suffix)
+            if artifact.exists():
+                artifact.unlink()
+        self.assertEqual(self.database.read_bytes()[18:20], b"\x02\x02")
+        digest = sha256(self.database.read_bytes()).hexdigest()
+        with self.assertRaisesRegex(ValueError, "persistent WAL mode"):
+            with open_database_snapshot(self.database, expected_sha256=digest):
+                pass
+
     def test_close_and_invalid_digest_fail_closed(self) -> None:
         with self.assertRaisesRegex(ValueError, "SHA256"):
             with open_database_snapshot(self.database, expected_sha256="0" * 64):
@@ -141,15 +158,70 @@ class DatabaseSnapshotTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             manager.__exit__(None, None, None)
 
+    def test_wal_writer_is_blocked_and_loader_after_boundary_rejects_wal(self) -> None:
+        manager = open_database_snapshot(self.database, expected_sha256=self.digest)
+        snapshot = manager.__enter__()
+        writer = subprocess.run(
+            ("python3", "-c", "import sqlite3, sys; c=sqlite3.connect(sys.argv[1], timeout=0); c.execute('PRAGMA journal_mode=WAL'); c.execute(\"INSERT INTO datasets VALUES (3, 'writer')\"); c.commit()", str(self.database)),
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(writer.returncode, 0, writer.stderr)
+        self.assertFalse((self.root / "input.sqlite-wal").exists())
+        self.assertFalse((self.root / "input.sqlite-shm").exists())
+        manager.__exit__(None, None, None)
+        self.tearDown(); self.setUp()
+        config = self._synthetic_config()
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(snapshot_database, "FROZEN_CONFIG", config):
+            loader_manager = open_database_snapshot(self.database, expected_sha256=self.digest)
+            snapshot = loader_manager.__enter__()
+            context = snapshot.freeze_context(self._lanes(config), verified_code_commit="a" * 40)
+            original = snapshot_database.exp417_inputs.load_raw_train_values_from_connection
+
+            def insert_wal_then_decode(*args, **kwargs):
+                (self.root / "input.sqlite-wal").write_bytes(b"late writer")
+                return original(*args, **kwargs)
+
+            with patch.object(snapshot_database.exp417_inputs, "load_raw_train_values_from_connection", side_effect=insert_wal_then_decode):
+                with self.assertRaisesRegex(ValueError, "parent metadata|sidecar"):
+                    snapshot.load_train("A", context)
+            self.assertEqual(snapshot.audit.boundaries[-2:], ("load_train:before", "load_train:after"))
+            with self.assertRaises(ValueError):
+                loader_manager.__exit__(None, None, None)
+
+    def test_connect_uses_retained_descriptor_during_path_aba(self) -> None:
+        """SQLite is never pointed at the published or owned pathname."""
+        real_connect = snapshot_database.sqlite3.connect
+        seen: list[str] = []
+
+        def replace_published_during_connect(*args, **kwargs):
+            uri = args[0] if args else kwargs["database"]
+            seen.append(uri)
+            replacement = self.root / "connect-replacement.sqlite"
+            shutil.copyfile(self.database, replacement)
+            os.replace(replacement, self.database)
+            if sys.platform == "darwin":
+                owned = next(self.root.glob(".exp425-snapshot-*/database.sqlite"))
+                owned_replacement = owned.with_name("connect-owned-replacement.sqlite")
+                shutil.copyfile(self.database, owned_replacement)
+                os.replace(owned_replacement, owned)
+            return real_connect(*args, **kwargs)
+
+        with patch.object(snapshot_database.sqlite3, "connect", side_effect=replace_published_during_connect):
+            with self.assertRaises(ValueError):
+                with open_database_snapshot(self.database, expected_sha256=self.digest):
+                    pass
+        self.assertEqual(len(seen), 1)
+        self.assertIn("/dev/fd/", seen[0])
+
     def _contract(self, dataset: str) -> FrozenTrainContract:
         return FrozenTrainContract(dataset, (GroupQualification(2, 100, "qualified", 0.01, 0.05, 0.70, {"level_shift": .50, "gradual_drift": .50, "amplitude_scaling": .50, "period_change": .50}, True),), BackendAudit("cpu", True, 0.0, 1.0, 1.0, False), "a" * 64)
 
     def _synthetic_config(self):
-        return replace(FROZEN_CONFIG, expected_datasets=2, expected_hard=0, expected_standard=0, expected_priority=0, expected_automatic_normal=0, database_sha256=self.digest)
+        return replace(FROZEN_CONFIG, expected_datasets=2, expected_hard=0, expected_standard=0, expected_priority=0, expected_automatic_normal=2, database_sha256=self.digest)
 
     @staticmethod
     def _lanes(config):
-        return FrozenLaneSnapshot({}, {}, {}, {}, config=config, population=("A", "B"))
+        return FrozenLaneSnapshot({}, {}, {}, {"A": (0,), "B": (0,)}, config=config, population=("A", "B"))
 
     def test_one_hash_context_two_train_two_test_and_three_boundaries(self) -> None:
         """The exact Exp417 decoders run on one immutable descriptor snapshot."""
@@ -157,6 +229,11 @@ class DatabaseSnapshotTests(unittest.TestCase):
         with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(snapshot_database, "FROZEN_CONFIG", config), patch.object(snapshot_database, "_sha256_descriptor", wraps=snapshot_database._sha256_descriptor) as hashed:
             with open_database_snapshot(self.database, expected_sha256=self.digest) as snapshot:
                 context = snapshot.freeze_context(self._lanes(config), verified_code_commit="a" * 40)
+                equal_but_foreign = FrozenRunContext(context.database_sha256, context.datasets, context.lanes, context.test_identity_manifest, context.code_commit, context.runtime_versions, config=config)
+                with self.assertRaisesRegex(ValueError, "not this snapshot"):
+                    snapshot.load_train("A", equal_but_foreign)
+                with self.assertRaisesRegex(ValueError, "already frozen"):
+                    snapshot.freeze_context(self._lanes(config), verified_code_commit="a" * 40)
                 trains = tuple(snapshot.load_train(dataset, context) for dataset in context.datasets)
                 tests = tuple(snapshot.load_test(dataset, self._contract(dataset), context) for dataset in context.datasets)
                 for name in ("explicit:one", "explicit:two", "explicit:three"):
@@ -174,9 +251,33 @@ class DatabaseSnapshotTests(unittest.TestCase):
         with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(snapshot_database, "FROZEN_CONFIG", config), open_database_snapshot(self.database, expected_sha256=self.digest) as snapshot:
             with self.assertRaisesRegex(ValueError, "frozen lanes"):
                 snapshot.freeze_context(self._lanes(replace(config, candidate_alpha=.02)), verified_code_commit="a" * 40)
-            partial = FrozenLaneSnapshot({}, {}, {}, {}, config=config, population=("A", "C"))
+            partial = FrozenLaneSnapshot({}, {}, {}, {"A": (0,), "C": (0,)}, config=config, population=("A", "C"))
             with self.assertRaisesRegex(ValueError, "outside the database"):
                 snapshot.freeze_context(partial, verified_code_commit="a" * 40)
+
+    def test_context_rejects_missing_extra_and_wrong_lane_coordinates(self) -> None:
+        config = self._synthetic_config()
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(snapshot_database, "FROZEN_CONFIG", config), open_database_snapshot(self.database, expected_sha256=self.digest) as snapshot:
+            cases = (
+                FrozenLaneSnapshot({}, {}, {}, {"A": (0,), "B": (1,)}, config=config, population=("A", "B")),
+                FrozenLaneSnapshot({}, {}, {}, {"A": (0,), "outside": (0,)}, config=config, population=("A", "B")),
+            )
+            for lanes in cases:
+                with self.subTest(lanes=lanes):
+                    with self.assertRaisesRegex(ValueError, "coordinates|outside the selected"):
+                        snapshot.freeze_context(lanes, verified_code_commit="a" * 40)
+
+    def test_each_new_snapshot_requires_its_own_context_identity(self) -> None:
+        config = self._synthetic_config()
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(snapshot_database, "FROZEN_CONFIG", config):
+            with open_database_snapshot(self.database, expected_sha256=self.digest) as first:
+                first_context = first.freeze_context(self._lanes(config), verified_code_commit="a" * 40)
+            with open_database_snapshot(self.database, expected_sha256=self.digest) as second:
+                second_context = second.freeze_context(self._lanes(config), verified_code_commit="a" * 40)
+                self.assertIsNot(first_context, second_context)
+                with self.assertRaisesRegex(ValueError, "not this snapshot"):
+                    second.load_train("A", first_context)
+                self.assertEqual(second.load_train("A", second_context).dataset, "A")
 
     def test_mutation_matrix_fails_closed_at_a_boundary(self) -> None:
         for mutation in ("truncate", "byte", "chmod", "disappear", "sidecar", "unknown"):
@@ -242,6 +343,22 @@ class DatabaseSnapshotTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "descriptor metadata changed|owned database link was replaced"):
             snapshot.close()
         self.assertEqual(owned.read_bytes(), b"replacement")
+        self.assertEqual(snapshot.audit.cleanup_status, "retained_after_cleanup_failure")
+        self.assertEqual(snapshot.audit.lifecycle, "closed_cleanup_failed")
+
+    @unittest.skipUnless(sys.platform == "darwin", "owned hard-link behavior is macOS-only")
+    def test_metadata_mutation_keeps_lock_through_owned_cleanup(self) -> None:
+        manager = open_database_snapshot(self.database, expected_sha256=self.digest)
+        snapshot = manager.__enter__()
+        owned_directory = self.root / snapshot._owned_directory
+        with self.database.open("r+b") as output:
+            output.seek(100)
+            output.write(b"x")
+        with self.assertRaisesRegex(ValueError, "descriptor metadata changed"):
+            snapshot.close()
+        self.assertFalse(owned_directory.exists())
+        self.assertEqual(snapshot.audit.cleanup_status, "removed")
+        self.assertFalse(snapshot.audit.sqlite_read_lock_held)
 
     @unittest.skipUnless(sys.platform == "darwin", "owned hard-link behavior is macOS-only")
     def test_owned_directory_replacement_and_early_open_error_are_safe(self) -> None:
@@ -305,9 +422,9 @@ class DatabaseBenchmarkTests(unittest.TestCase):
                 connection.commit()
             finally: connection.close()
             digest = sha256(database.read_bytes()).hexdigest()
-            config = replace(FROZEN_CONFIG, expected_datasets=1, expected_hard=0, expected_standard=0, expected_priority=0, expected_automatic_normal=0, database_sha256=digest)
+            config = replace(FROZEN_CONFIG, expected_datasets=1, expected_hard=0, expected_standard=0, expected_priority=0, expected_automatic_normal=1, database_sha256=digest)
             with patch.object(Exp417FrozenConfig, "validate", lambda _self: None):
-                lanes = FrozenLaneSnapshot({}, {}, {}, {}, config=config, population=("A",))
+                lanes = FrozenLaneSnapshot({}, {}, {}, {"A": (0,)}, config=config, population=("A",))
             start = time.perf_counter()
             with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(snapshot_database, "FROZEN_CONFIG", config), patch.object(snapshot_database, "_sha256_descriptor", wraps=snapshot_database._sha256_descriptor) as hashed, open_database_snapshot(database, expected_sha256=digest) as snapshot:
                 context = snapshot.freeze_context(lanes, verified_code_commit="a" * 40)

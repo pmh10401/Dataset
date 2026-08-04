@@ -59,6 +59,7 @@ class DatabaseSnapshotAudit:
     full_hash_count: int
     boundaries: tuple[str, ...]
     sqlite_read_lock_held: bool = True
+    cleanup_status: str = "pending"
     lifecycle: str = "live"
 
 
@@ -89,6 +90,19 @@ def _accepted_path_info(parent_fd: int, name: str) -> os.stat_result:
     if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
         raise ValueError("database pathname is not an accepted regular file")
     return info
+
+
+def _descriptor_sqlite_uri(descriptor: int) -> str:
+    """Name the retained kernel descriptor, never an attacker-visible path."""
+    descriptor_root = Path("/dev/fd") if Path("/dev/fd").is_dir() else Path("/proc/self/fd")
+    return "file:" + quote(str(descriptor_root / str(descriptor)), safe="/") + "?mode=ro&immutable=1"
+
+
+def _reject_persistent_wal_mode(descriptor: int) -> None:
+    """A clean WAL header is still a mutable multi-file SQLite configuration."""
+    header = os.pread(descriptor, 20, 0)
+    if len(header) >= 20 and header[18:20] == b"\x02\x02":
+        raise ValueError("database persistent WAL mode is not accepted")
 
 
 def _safe_unlinked_owner(
@@ -141,7 +155,7 @@ class Exp425DatabaseSnapshot:
     __slots__ = (
         "_database", "_name", "_parent_fd", "_grandparent_fd", "_parent_name", "_database_fd", "_connection",
         "_before", "_operational", "_parent_identity", "_parent_metadata",
-        "_owned_directory", "_owned_name", "_owned_directory_identity", "_closed", "_audit",
+        "_owned_directory", "_owned_name", "_owned_directory_identity", "_context", "_closed", "_audit",
     )
 
     def __init__(
@@ -175,6 +189,7 @@ class Exp425DatabaseSnapshot:
         self._owned_directory = owned_directory
         self._owned_name = owned_name
         self._owned_directory_identity = owned_directory_identity
+        self._context: FrozenRunContext | None = None
         self._closed = False
         self._audit = DatabaseSnapshotAudit(digest, before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns, operational.st_ctime_ns, operational.st_nlink, parent.st_dev, parent.st_ino, 1, ())
 
@@ -234,6 +249,9 @@ class Exp425DatabaseSnapshot:
         self._require_live()
         if not isinstance(name, str) or not name:
             raise ValueError("database boundary name is invalid")
+        # Preserve attempted boundaries even when their integrity check fails;
+        # audit evidence must not imply that an operation was never reached.
+        self._audit = replace(self._audit, boundaries=self._audit.boundaries + (name,))
         parent = os.fstat(self._parent_fd)
         if _identity(parent) != self._parent_identity or _metadata(parent) != self._parent_metadata:
             raise ValueError("database parent metadata changed")
@@ -246,12 +264,13 @@ class Exp425DatabaseSnapshot:
         if _metadata(self._owned_info()) != _metadata(self._operational):
             raise ValueError("owned database link metadata changed")
         self._sidecars_absent()
-        self._audit = replace(self._audit, boundaries=self._audit.boundaries + (name,))
 
     def freeze_context(self, lanes: FrozenLaneSnapshot, *, verified_code_commit: str) -> FrozenRunContext:
         self.verify_boundary("freeze_context:before")
         primary: BaseException | None = None
         try:
+            if self._context is not None:
+                raise ValueError("database snapshot context is already frozen")
             if not isinstance(lanes, FrozenLaneSnapshot) or lanes.config != FROZEN_CONFIG or not re.fullmatch(r"[0-9a-f]{40}", verified_code_commit):
                 raise ValueError("frozen lanes or verified code commit is invalid")
             rows = self._connection.execute("SELECT name FROM datasets ORDER BY name").fetchall()
@@ -273,6 +292,17 @@ class Exp425DatabaseSnapshot:
                 if (not identities or any(type(index) is not int or type(length) is not int or length <= 0 or length % 4 for index, length in rows) or tuple(index for index, _ in identities) != tuple(sorted(index for index, _ in identities)) or len({index for index, _ in identities}) != len(identities)):
                     raise ValueError("database TEST identity manifest is invalid")
                 manifest[dataset] = identities
+            selected_set = set(selected)
+            lane_coordinates: dict[str, set[int]] = {dataset: set() for dataset in selected}
+            for lane in (lanes.hard, lanes.standard, lanes.priority, lanes.automatic_normal):
+                for dataset, coordinates in lane.items():
+                    if dataset not in selected_set:
+                        raise ValueError("frozen lane has a dataset outside the selected population")
+                    lane_coordinates[dataset].update(coordinates)
+            for dataset, identities in manifest.items():
+                expected_indices = {index for index, _ in identities}
+                if lane_coordinates[dataset] != expected_indices:
+                    raise ValueError("frozen lane coordinates do not exactly cover TEST identities")
         except sqlite3.Error as error:
             primary = ValueError("Exp417 database population or identity query failed")
             primary.__cause__ = error
@@ -291,14 +321,23 @@ class Exp425DatabaseSnapshot:
             raise
         if primary is not None:
             raise primary
+        # A context is a live authority for this snapshot, not just a value
+        # object carrying the same DB digest.  Resume opens a new snapshot and
+        # freezes a new context for that process.
+        self._context = context
         return context
+
+    def _require_context(self, context: FrozenRunContext, *, kind: str, dataset: str) -> None:
+        if context is not self._context:
+            raise ValueError(f"{kind} context is not this snapshot's frozen context")
+        if context.database_sha256 != self._audit.sha256 or context.config != FROZEN_CONFIG or dataset not in context.datasets:
+            raise ValueError(f"{kind} context does not bind this database snapshot")
 
     def load_train(self, dataset: str, context: FrozenRunContext) -> RawTrainDataset:
         self.verify_boundary("load_train:before")
         primary: BaseException | None = None
         try:
-            if not isinstance(context, FrozenRunContext) or context.database_sha256 != self._audit.sha256 or context.config != FROZEN_CONFIG or dataset not in context.datasets:
-                raise ValueError("TRAIN context does not bind this database snapshot")
+            self._require_context(context, kind="TRAIN", dataset=dataset)
             result = exp417_inputs.load_raw_train_values_from_connection(self._connection, dataset, database_sha256=context.database_sha256, datasets=context.datasets)
         except sqlite3.Error as error:
             primary = ValueError("Exp417 TRAIN decoder query failed")
@@ -319,8 +358,7 @@ class Exp425DatabaseSnapshot:
         self.verify_boundary("load_test:before")
         primary: BaseException | None = None
         try:
-            if not isinstance(context, FrozenRunContext) or context.database_sha256 != self._audit.sha256 or context.config != FROZEN_CONFIG or dataset not in context.datasets:
-                raise ValueError("TEST context does not bind this database snapshot")
+            self._require_context(context, kind="TEST", dataset=dataset)
             result = exp417_inputs.load_raw_test_values_from_connection(self._connection, dataset, contract, context)
         except sqlite3.Error as error:
             primary = ValueError("Exp417 TEST decoder query failed")
@@ -345,20 +383,21 @@ class Exp425DatabaseSnapshot:
             self.verify_boundary("close:before")
         except BaseException as caught:
             error = caught
+        cleanup_status = "not_required" if self._owned_directory is None else "pending"
         try:
-            self._connection.close()
             if self._owned_directory is not None and self._owned_name is not None:
                 directory_fd = os.open(self._owned_directory, _DIRECTORY_FLAGS, dir_fd=self._parent_fd)
                 try:
                     if self._owned_directory_identity is None or _identity(os.fstat(directory_fd)) != self._owned_directory_identity:
                         raise ValueError("owned database directory was replaced before cleanup")
                     owned = os.stat(self._owned_name, dir_fd=directory_fd, follow_symlinks=False)
-                    if _metadata(owned) != _metadata(self._operational):
+                    if stat.S_ISLNK(owned.st_mode) or _identity(owned) != _identity(self._before):
                         raise ValueError("owned database link was replaced before cleanup")
                     os.unlink(self._owned_name, dir_fd=directory_fd)
                 finally:
                     os.close(directory_fd)
                 os.rmdir(self._owned_directory, dir_fd=self._parent_fd)
+                cleanup_status = "removed"
                 # The owned link alone may change ctime/nlink. All other file
                 # properties and the published identity must remain exact.
                 current = os.fstat(self._database_fd)
@@ -368,11 +407,14 @@ class Exp425DatabaseSnapshot:
                 self._parent_namespace_is_bound()
                 self._sidecars_absent()
         except BaseException as caught:
+            if cleanup_status == "pending":
+                cleanup_status = "retained_after_cleanup_failure"
             if error is None:
                 error = caught
         finally:
             self._closed = True
-            self._audit = replace(self._audit, sqlite_read_lock_held=False, lifecycle="closed")
+            lifecycle = "closed" if cleanup_status in {"removed", "not_required"} else "closed_cleanup_failed"
+            self._audit = replace(self._audit, sqlite_read_lock_held=False, cleanup_status=cleanup_status, lifecycle=lifecycle)
             try:
                 self._connection.close()
             finally:
@@ -428,6 +470,7 @@ def open_database_snapshot(database: Path, *, expected_sha256: str) -> Iterator[
         actual = _sha256_descriptor(database_fd)
         if actual != expected_sha256:
             raise ValueError("database SHA256 does not match expected digest")
+        _reject_persistent_wal_mode(database_fd)
         # Close the acceptance race between descriptor hashing and SQLite open.
         # The pre-link state has exactly one name; on macOS the one owned link
         # below is the only permitted operational nlink/ctime transition.
@@ -457,8 +500,7 @@ def open_database_snapshot(database: Path, *, expected_sha256: str) -> Iterator[
         published_operational = _accepted_path_info(parent_fd, path.name)
         if _metadata(published_operational) != _metadata(operational):
             raise ValueError("database pathname changed while creating snapshot")
-        target = path if owned_directory is None else path.parent / owned_directory / owned_name
-        connection = sqlite3.connect("file:" + quote(str(target)) + "?mode=ro&immutable=1", uri=True)
+        connection = sqlite3.connect(_descriptor_sqlite_uri(database_fd), uri=True)
         connection.execute("PRAGMA query_only=ON")
         exp417_inputs.assert_label_free_sql_contract()
         snapshot = Exp425DatabaseSnapshot(path, path.name, parent_fd, grandparent_fd, path.parent.name, database_fd, connection, before, operational, os.fstat(parent_fd), owned_directory, owned_name, owned_directory_identity, actual)
