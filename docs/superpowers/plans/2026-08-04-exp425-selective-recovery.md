@@ -303,19 +303,20 @@ git commit -m "perf(exp425): compact provenance-bound checkpoints"
 
 **Interfaces:**
 - Produces: `Exp424CompatibilityContract`, `Exp424ValidatedSnapshot`, and `Exp424ImportReport`.
-- Produces: `validate_exp424_source(root: Path, contract: Exp424CompatibilityContract) -> Exp424ValidatedSnapshot`.
+- Produces context manager `open_validated_exp424_source(root: Path, contract: Exp424CompatibilityContract) -> Iterator[Exp424ValidatedSnapshot]`.
 - Produces: `import_exp424_nonterminal(source: Exp424ValidatedSnapshot, target: Exp425CheckpointStore, target_context: FrozenRunContext) -> Exp424ImportReport`.
 - Produces: `adapt_imported_result(source: DatasetResult, target_context: FrozenRunContext) -> DatasetResult`.
 - Consumes: Task 2 `write_imported`, the exact Exp424 checkpoint schema version 3, and frozen compatibility digests recorded in the Exp424 root.
 
-`Exp424CompatibilityContract` includes the exact source commit, entrypoint SHA256/blob, DB and four lane digests, config/fold/model/backend digests, runtime versions, seeds, MPS device, batch/chunk values, score formula, percentile method, score dtype, canonical thresholds payload, alpha tuple, candidate-formula digest, and routing-contract digest. `Exp424ValidatedSnapshot` retains descriptor-bound root/progress identities and digests plus a lazy sorted iterator of validated source records. `Exp424ImportReport` contains sorted imported, rejected-terminal, and rejected-incompatible dataset tuples and the source/attestation digests.
+`Exp424CompatibilityContract` includes the exact source commit, entrypoint SHA256/blob, DB and four lane digests, config/fold/model/backend digests, runtime versions, seeds, MPS device and device guard, batch/chunk values, score formula, score-cache component tuple and contract digest, percentile method, score dtype, canonical thresholds payload, alpha tuple, candidate-formula digest, routing-contract digest, device-transfer policy, and synchronization-policy digest. `Exp424ValidatedSnapshot` retains open descriptor-bound root/datasets handles, the held shared lock, root/progress identities and digests, per-record identities/digests, plus a lazy sorted iterator of validated source records. `Exp424ImportReport` contains sorted imported, rejected-terminal, and rejected-incompatible dataset tuples and the source/attestation digests.
 
 - [ ] **Step 1: Write failing compatibility and mutation tests**
 
-Create a minimal valid Exp424-format source fixture and assert acceptance only when all of these match: exact source commit `4a398374d880f859f285a271ad63de4a5e55b028`, entrypoint SHA256 `98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1`, entrypoint Git blob `da5374b0bf38803aa506dfda664d76395d7f28f9`, root/progress digest, record digest, universe, DB/lane/config/fold/model/seed/runtime/backend/MPS/batch/chunk/score-cache/percentile/precision/threshold/alpha/candidate/routing contracts, candidate coordinates, and nonterminal evidence. Add rejection tests for each changed field, a terminal result, a symlink, an unknown file, and source mutation between snapshot and import.
+Create a minimal valid Exp424-format source fixture and assert acceptance only when all of these match: exact source commit `4a398374d880f859f285a271ad63de4a5e55b028`, entrypoint SHA256 `98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1`, entrypoint Git blob `da5374b0bf38803aa506dfda664d76395d7f28f9`, root/progress digest, record digest, universe, DB/lane/config/fold/model/seed/runtime/backend/MPS device and device guard/batch/chunk/score-cache components and digest/device-transfer/synchronization/percentile/precision/threshold/alpha/candidate/routing contracts, candidate coordinates, and nonterminal evidence. Add an independent mismatch rejection test for every explicit compatibility field, a terminal result, a symlink, an unknown file, and source mutation between validation, staging, final revalidation, and promotion.
 
 ```python
-report = import_exp424_nonterminal(snapshot, target, target_context)
+with open_validated_exp424_source(source_root, contract) as snapshot:
+    report = import_exp424_nonterminal(snapshot, target, target_context)
 self.assertEqual(report.imported, ("Eligible_normal_1",))
 self.assertEqual(report.rejected_terminal, ("Small_normal_1",))
 self.assertEqual(target.load_record("Eligible_normal_1").origin, "exp424_import")
@@ -349,8 +350,16 @@ compatibility_payload = {
     "batch_size": 32,
     "query_chunk_size": 256,
     "score_formula": "Exp417.score_horizon.v1",
+    "score_cache_components": [
+        "oof_score_calibration_cache",
+        "reusable_batch_residual_predictor",
+    ],
+    "score_cache_contract_sha256": contract.score_cache_contract_sha256,
     "percentile_method": "linear",
     "score_dtype": "float64",
+    "mps_device_guard": "mps_and_mps0_equivalent",
+    "device_transfer_policy": "numpy_copy_to_mps_then_detach_cpu_numpy",
+    "synchronization_contract_sha256": contract.synchronization_contract_sha256,
     "thresholds": contract.thresholds_payload,
     "alpha_values": contract.alpha_values,
     "candidate_formula_sha256": contract.candidate_formula_sha256,
@@ -360,7 +369,9 @@ compatibility_payload = {
 
 - [ ] **Step 4: Implement one-pass descriptor-bound source validation**
 
-Lock the source shared, capture root/datasets directory identities, validate exact inventories, read root and progress once, then stream records in sorted dataset order. For each file, verify canonical JSON and progress digest before reconstructing the `DatasetResult`. Recheck both directory identities, inventories, root, and progress before returning the validated snapshot. Keep only compact source metadata and accepted nonterminal record bytes/digests; do not construct a 1,117-result mapping.
+Expose validation as a context manager that retains the shared lock plus open root/datasets descriptors through import. Capture identities, validate exact inventories, read root and progress once, then stream records in sorted dataset order. For each file, verify canonical JSON and progress digest before reconstructing the `DatasetResult`. Retain per-record descriptor identity, stable metadata, and digest; do not construct a 1,117-result mapping.
+
+Write converted compact envelopes only into an uncommitted target import-staging directory. Before publishing any staged envelope into the target dataset/progress inventory, re-read and verify source root, progress, inventories, and every source record digest through the retained descriptors. Promote only after this final revalidation. A crashed import batch remains staged and must repeat full source revalidation before promotion; mutation or cleanup failure aborts and quarantines only the owned target staging batch.
 
 - [ ] **Step 5: Implement imported-result adaptation and envelopes**
 
@@ -644,7 +655,7 @@ Copy the exact frozen boundaries, 983/134 source diagnosis, import gates, group-
 
 - [ ] **Step 5: Add a separate readiness subcommand and fail-closed launch gate**
 
-Add `readiness` as a separate CLI subcommand, not an `inspect` alias. It accepts an explicit `--readiness-output` path and may write only that artifact. Before full execution, require clean Git, MPS availability, exact input hashes, no other MPS-heavy process, real Exp424 inventory `1117/983/134`, compact checkpoint benchmark targets, DB one-hash smoke, focused regression success, and artifact round-trip success. Do not create or mutate an Exp425 run output/checkpoint root and do not launch if any gate is false.
+Add `readiness` as a separate CLI subcommand, not an `inspect` alias. It accepts an explicit `--readiness-output` path and may write that artifact plus, on macOS only, one hidden random owned DB hard link required by the exact snapshot smoke. The link must name the accepted inode, is recorded in readiness evidence, and must be removed and verified absent before readiness can pass; cleanup failure returns blocked and reports the path. Before full execution, require clean Git, MPS availability, exact input hashes, no other MPS-heavy process, real Exp424 inventory `1117/983/134`, compact checkpoint benchmark targets, DB one-hash smoke, focused regression success, and artifact round-trip success. Do not create or mutate an Exp425 run output/checkpoint root and do not launch if any gate is false.
 
 ```python
 if not all(gates.values()):

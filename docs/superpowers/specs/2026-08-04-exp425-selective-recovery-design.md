@@ -132,13 +132,24 @@ Every imported record must pass all of these gates:
    lane snapshot, dataset universe, TRAIN/TEST identity manifests, frozen
    configuration, folds, models, seeds, runtime versions, backend, MPS settings,
    batch size, query chunk size, score cache, percentile/precision, thresholds,
-   alpha values, candidate formula, and routing contracts match the preregistered
-   Exp425 compatibility declaration;
+   alpha values, candidate formula, routing, MPS device guard, device-transfer,
+   and synchronization contracts match the preregistered Exp425 compatibility
+   declaration;
 4. the source record contains complete decision, model, calibration, and backend
    evidence and contains no terminal evidence;
 5. candidate coordinates and result evidence reconstruct canonically;
 6. the source is read through descriptor-bound, no-follow validation and cannot
    change during import.
+
+Source root/dataset descriptors and the shared source lock remain open from
+validation through import staging. Imported envelopes are first written to a
+target staging area and are not added to the committed dataset/progress inventory.
+Before promotion, Exp425 revalidates source root/progress/inventory plus every
+source record identity, metadata, and digest through the retained descriptors.
+Only that final accepted snapshot may be promoted through the checkpoint intent
+protocol. A crash or mutation before promotion leaves no committed import; a
+crash during promotion requires the same source revalidation before resuming the
+batch.
 
 An imported Exp425 envelope records:
 
@@ -247,6 +258,14 @@ Exp425 exposes explicit modes:
 - `readiness`: performs preregistered hashes, benchmarks, and test/smoke gates and
   may write only the explicitly requested readiness artifact; it never creates
   or mutates an Exp425 checkpoint/output run.
+
+On macOS, readiness DB verification has one narrowly scoped temporary exception:
+it may create exactly one hidden, random, no-follow hard link to the already
+accepted DB inode in the DB directory, use it for the immutable SQLite view, and
+remove it before returning. The link path, inode checks, creation/removal results,
+and any cleanup failure are recorded in readiness evidence. No readiness success
+is possible while the owned link remains. Read-only `inspect` never uses this
+exception.
 
 A matching completed review-only run returns idempotently after validation.
 Existing unrelated, partial, or mismatched paths fail closed. The launcher is
