@@ -256,6 +256,36 @@ class Exp425CheckpointStore:
             record = _decode_record(raw_records[dataset], self.context)
             body = _import_record_body(self.run_context_sha256, record)
             self._promote_imported_record(record, body, sha256(canonical_json_bytes(body)).hexdigest(), batch.identity, final_digest)
+        self._finalize_import_batch(batch, staged, final_digest)
+
+    def _finalize_import_batch(self, batch: _ImportBatch, staged: Mapping[str, str], final_attestation: str) -> None:
+        with _locked_root(self.root, exclusive=True) as binding:
+            _, _, progress = _read_root_metadata(self.root, binding=binding)
+            imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
+            batch_fd = _open_batch_at(imports_fd, batch)
+            try:
+                state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                if state != _batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged):
+                    raise ValueError("import batch final state does not match")
+                expected_names = {"batch.json"} | {record_filename(dataset) for dataset in staged}
+                if set(os.listdir(batch_fd)) != expected_names:
+                    raise ValueError("import batch has unknown cleanup entries")
+                expected_final = sha256(canonical_json_bytes({"batch_identity": batch.identity, "record_digests": dict(sorted(staged.items())), "attestation_sha256": batch.attestation_sha256})).hexdigest()
+                if expected_final != final_attestation or any(progress["record_digests"].get(dataset) != digest for dataset, digest in staged.items()):
+                    raise ValueError("import batch promotion is incomplete")
+                for dataset in staged:
+                    os.unlink(record_filename(dataset), dir_fd=batch_fd)
+                os.unlink("batch.json", dir_fd=batch_fd)
+                os.fsync(batch_fd)
+            finally:
+                os.close(batch_fd)
+            _verify_directory_at(binding, "import_batches", imports_identity)
+            info = os.stat(_batch_name(batch.identity), dir_fd=imports_fd, follow_symlinks=False)
+            if (info.st_dev, info.st_ino) != batch.inode:
+                raise ValueError("import batch directory was replaced before cleanup")
+            os.rmdir(_batch_name(batch.identity), dir_fd=imports_fd)
+            os.fsync(imports_fd)
+            os.close(imports_fd)
 
     def _promote_imported_record(self, record: ImportedRecordEnvelope, body: dict[str, object], digest: str, batch_identity: str, final_attestation: str) -> None:
         """Advance one imported record through durable A→E publication phases."""
