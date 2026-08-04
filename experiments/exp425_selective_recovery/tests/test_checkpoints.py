@@ -7,6 +7,7 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import stat
 from tempfile import TemporaryDirectory
 import time
 import unittest
@@ -30,6 +31,16 @@ from experiments.exp425_selective_recovery import capabilities
 
 def _digest(letter: str) -> str:
     return letter * 64
+
+
+def _checkpoint_snapshot(root: Path) -> dict[str, tuple[bytes | None, tuple[int, int, int, int, int, int, int]]]:
+    """All application-observed metadata except atime, plus bytes for regular files."""
+    snapshot: dict[str, tuple[bytes | None, tuple[int, int, int, int, int, int, int]]] = {}
+    for path in (root, *sorted(root.rglob("*"))):
+        info = path.lstat()
+        metadata = (info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_nlink, info.st_mtime_ns, info.st_ctime_ns)
+        snapshot[str(path.relative_to(root)) if path != root else "."] = (path.read_bytes() if stat.S_ISREG(info.st_mode) else None, metadata)
+    return snapshot
 
 
 def _provenance(context: FrozenRunContext) -> Exp425RunProvenance:
@@ -324,6 +335,22 @@ class CheckpointStoreTests(unittest.TestCase):
             self.assertEqual(inspection.completed_count, 0)
             self.assertEqual(before, after)
 
+    def test_inspect_read_only_preserves_all_observed_bytes_and_metadata_on_success_and_failure(self) -> None:
+        """Any inspect write, reconciliation, or quarantine would change this complete snapshot."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, provenance, context)
+            before = _checkpoint_snapshot(root)
+            Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+            (root / "unexpected-entry").write_bytes(b"foreign")
+            before_failure = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before_failure)
+
     def test_new_and_open_enforce_root_lifecycle(self) -> None:
         context = _context()
         provenance = _provenance(context)
@@ -612,6 +639,27 @@ class CheckpointStoreTests(unittest.TestCase):
                     checkpoints._quarantine_owned(root, binding, destination=collision)
             self.assertTrue(root.is_dir())
             self.assertTrue(collision.is_dir())
+
+    def test_atomic_quarantine_destination_race_preserves_source_and_racing_destination(self) -> None:
+        """Replacing exclusive rename with overwrite rename would destroy the racer's destination."""
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            destination = Path(directory) / "race-destination"
+            source_before = _checkpoint_snapshot(root)
+
+            def race(parent_fd: int, source: str, target: str) -> None:
+                destination.mkdir()
+                (destination / "racer").write_bytes(b"racer-owned")
+                raise ValueError("quarantine destination is unavailable")
+
+            with checkpoints._locked_root(root, exclusive=True) as binding:
+                with patch.object(checkpoints, "_rename_exclusive_at", side_effect=race):
+                    with self.assertRaisesRegex(ValueError, "destination"):
+                        checkpoints._quarantine_owned(root, binding, destination=destination)
+            self.assertEqual(_checkpoint_snapshot(root), source_before)
+            self.assertEqual((destination / "racer").read_bytes(), b"racer-owned")
 
     def test_open_quarantines_corruption_only_while_the_owned_root_is_bound(self) -> None:
         context = _context()

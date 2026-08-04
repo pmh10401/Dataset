@@ -39,6 +39,8 @@ class CapabilityBrokerTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             copy.copy(capability)
         with self.assertRaises(TypeError):
+            copy.deepcopy(capability)
+        with self.assertRaises(TypeError):
             pickle.dumps(capability)
         capabilities._close_authority(self.authority)
         with self.assertRaises(ValueError):
@@ -51,6 +53,13 @@ class CapabilityBrokerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             capabilities._consume(capability, kind="native", run_identity="other")
         capabilities._consume(capability, kind="native", run_identity="run")
+
+    def test_mutable_claim_input_is_detached_before_mint(self) -> None:
+        """Removing recursive claim freezing would let a caller alter a live token's authority."""
+        claim = {"nested": ["original"]}
+        capability = capabilities._mint(self.authority, kind="native", run_identity="run", evidence=claim)
+        claim["nested"].append("mutated")
+        capabilities._consume(capability, kind="native", run_identity="run", evidence={"nested": ["original"]})
 
     def test_runtime_and_source_authorities_cannot_cross_mint_operation_families(self) -> None:
         runtime, source = object(), object()

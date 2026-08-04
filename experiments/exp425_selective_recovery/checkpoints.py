@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from contextlib import contextmanager, nullcontext
+import ctypes
+import errno
 from hashlib import sha256
 import fcntl
 import json
 import os
 from pathlib import Path
 import stat
+import sys
 from types import MappingProxyType
 from typing import Iterator, Mapping
 import uuid
@@ -1002,13 +1005,7 @@ def _quarantine_owned(root: Path, binding: _locked_root, *, destination: Path | 
         source = os.stat(root.name, dir_fd=parent_fd, follow_symlinks=False)
         if (source.st_dev, source.st_ino) != binding.identity:
             raise ValueError("checkpoint root pathname was replaced")
-        try:
-            os.stat(destination.name, dir_fd=parent_fd, follow_symlinks=False)
-        except FileNotFoundError:
-            pass
-        else:
-            raise ValueError("quarantine destination is unavailable")
-        os.rename(root.name, destination.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        _rename_exclusive_at(parent_fd, root.name, destination.name)
         moved = os.stat(destination.name, dir_fd=parent_fd, follow_symlinks=False)
         if (moved.st_dev, moved.st_ino) != binding.identity:
             raise ValueError("quarantine move did not retain root identity")
@@ -1016,6 +1013,24 @@ def _quarantine_owned(root: Path, binding: _locked_root, *, destination: Path | 
     finally:
         os.close(parent_fd)
     return destination
+
+
+def _rename_exclusive_at(parent_fd: int, source: str, destination: str) -> None:
+    """macOS-only atomic directory rename that refuses an occupied destination."""
+    if sys.platform != "darwin":
+        raise ValueError("atomic quarantine rename is unavailable")
+    try:
+        renameatx_np = ctypes.CDLL(None, use_errno=True).renameatx_np
+    except AttributeError as error:
+        raise ValueError("atomic quarantine rename is unavailable") from error
+    renameatx_np.argtypes = (ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint)
+    renameatx_np.restype = ctypes.c_int
+    if renameatx_np(parent_fd, os.fsencode(source), parent_fd, os.fsencode(destination), 0x00000004) == 0:
+        return
+    failure = ctypes.get_errno()
+    if failure in (errno.EEXIST, errno.ENOTEMPTY):
+        raise ValueError("quarantine destination is unavailable")
+    raise ValueError(f"atomic quarantine rename failed: {os.strerror(failure)}")
 
 
 def _import_intent_requirements(root: Path, *, binding: _locked_root | None = None) -> tuple[tuple[str, str], ...]:
