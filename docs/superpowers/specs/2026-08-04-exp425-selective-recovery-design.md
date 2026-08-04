@@ -153,6 +153,15 @@ generic checkpoint opener must not reconcile. Only the predecessor importer may
 resume them, after reacquiring source descriptors/shared lock and repeating the
 entire source revalidation against the immutable batch attestation.
 
+`open_validated_exp424_source` is the only capability mint. It returns a
+non-serializable opaque source object whose private construction token, live
+descriptor identities, held lock, validation nonce, and source-attestation digest
+are checked by every import staging and promotion operation. The public
+checkpoint API exposes no caller-constructible import authorization. Closing the
+source context invalidates the capability. A crash/resume must open and fully
+validate the source again to mint a new capability; copied, forged, closed,
+wrong-source, and wrong-batch capabilities are rejected.
+
 The score-cache and synchronization contracts are not caller-supplied free-form
 digests. Exp425 embeds their exact canonical JSON payloads and requires these
 fixed SHA256 values:
@@ -241,7 +250,8 @@ only `origin=exp425_native` intents. An imported intent must include import batc
 identity and final source-attestation digest; generic open reports
 `import_revalidation_required` without changing progress. The predecessor importer
 must reacquire and fully revalidate the Exp424 source before it may resume any
-import promotion.
+import promotion. Staging and promotion additionally require the newly minted,
+live opaque capability matching that exact source and batch.
 
 Targets for the checkpoint-only optimization are:
 
