@@ -536,6 +536,21 @@ class CheckpointStoreTests(unittest.TestCase):
             reopened = Exp425CheckpointStore.open(root, provenance, context)
             self.assertEqual(reopened.completed_record_digests(), {})
 
+    def test_create_and_open_reject_provenance_context_commit_mismatch_without_mutation(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        mismatch = replace(provenance, git_commit="d" * 40)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            with self.assertRaisesRegex(ValueError, "git commit"):
+                Exp425CheckpointStore.create(root, mismatch, context)
+            self.assertFalse(root.exists())
+            Exp425CheckpointStore.create(root, provenance, context)
+            before = _checkpoint_snapshot(root)
+            with self.assertRaisesRegex(ValueError, "git commit"):
+                Exp425CheckpointStore.open(root, mismatch, context)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
     def test_inspection_rejects_noncanonical_progress_without_repairing_it(self) -> None:
         context = _context()
         with TemporaryDirectory() as directory:

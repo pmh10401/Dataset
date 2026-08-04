@@ -3,13 +3,43 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import importlib.util
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 
 class MPSParityContractTests(unittest.TestCase):
+    def test_smoke_native_commit_claim_binds_both_mps_evidence_digests(self) -> None:
+        """The smoke's direct native commit must satisfy the v2 capability seam."""
+        script = Path(__file__).resolve().parents[3] / "scratch/run_exp425_task5_mps_parity.py"
+        spec = importlib.util.spec_from_file_location("exp425_task5_mps_parity_test", script)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        session = SimpleNamespace(process_nonce="nonce")
+        store = SimpleNamespace(
+            provenance=SimpleNamespace(run_identity="run"), run_context_sha256="a" * 64,
+        )
+        native = SimpleNamespace(
+            trace_sha256="b" * 64, record_payload_sha256="c" * 64,
+            backend_audit_sha256="d" * 64,
+            mps_adoption=SimpleNamespace(sha256="e" * 64),
+            mps_execution=SimpleNamespace(sha256="f" * 64),
+        )
+        with patch.object(module.capabilities, "_mint", return_value="capability") as mint:
+            self.assertEqual(module._native_commit_capability(session, store, native), "capability")
+        self.assertEqual(mint.call_args.kwargs, {
+            "kind": "native", "run_identity": "run", "dataset": module.FIXTURE,
+            "context_sha256": "a" * 64, "trace_sha256": "b" * 64,
+            "record_sha256": "c" * 64, "backend_sha256": "d" * 64,
+            "mps_adoption_sha256": "e" * 64,
+            "mps_execution_sha256": "f" * 64, "process_nonce": "nonce",
+        })
+
     def test_exact_golden_record_decodes_to_an_abstained_dataset_result(self) -> None:
         from experiments.exp425_selective_recovery.mps_parity import validate_golden_reference
 

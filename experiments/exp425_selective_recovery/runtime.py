@@ -591,7 +591,7 @@ class Exp425RuntimeSession:
 
     __slots__ = ("_snapshot", "_audit", "_adoption", "_writer", "_executed_head", "process_nonce", "_runner", "_closed", "_lock_fd", "_eligibility", "_processed", "_models", "_scoring", "_execution", "_active_dataset", "_fold_contract_sha256", "_binding", "_sealed")
 
-    def __init__(self, sentinel: object, snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, adoption: MPSAdoptionAssessment, progress: AtomicProgressWriter, executed_head: str = "0" * 40) -> None:
+    def __init__(self, sentinel: object, snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, adoption: MPSAdoptionAssessment, progress: AtomicProgressWriter, executed_head: str) -> None:
         if sentinel is not _SESSION_SENTINEL:
             raise TypeError("Exp425 runtime session construction is private")
         if not isinstance(snapshot, Exp425DatabaseSnapshot) or not isinstance(audit, BackendAudit) or not isinstance(adoption, MPSAdoptionAssessment) or not isinstance(progress, AtomicProgressWriter):
@@ -787,7 +787,7 @@ def _acquire_heavy_process_guard() -> int:
     return descriptor
 
 
-def build_exp425_runtime(snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, adoption: MPSAdoptionAssessment, progress: AtomicProgressWriter, executed_head: str = "0" * 40) -> Exp425RuntimeSession:
+def build_exp425_runtime(snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, adoption: MPSAdoptionAssessment, progress: AtomicProgressWriter, executed_head: str) -> Exp425RuntimeSession:
     return Exp425RuntimeSession(_SESSION_SENTINEL, snapshot, audit, adoption, progress, executed_head)
 
 
@@ -889,6 +889,8 @@ def execute_runtime_command(
     from .contracts import Exp425RunProvenance
     if not isinstance(provenance, Exp425RunProvenance):
         raise ValueError("runtime provenance is invalid")
+    if provenance.git_commit != context.code_commit:
+        raise ValueError("runtime provenance git commit does not match frozen context")
     preflight_runtime_paths(
         command, output_root=output_root, checkpoint_root=checkpoint_root,
         run_identity=provenance.run_identity, provenance=provenance, context=context,

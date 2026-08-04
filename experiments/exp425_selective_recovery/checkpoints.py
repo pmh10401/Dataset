@@ -37,6 +37,11 @@ _MPS_ADOPTION_KEYS = frozenset({"schema", "source_path", "source_sha256", "candi
 _MPS_EXECUTION_KEYS = frozenset({"schema", "applicable", "requested_device", "actual_device", "mps_built", "mps_available", "fallback", "model_devices", "torch_version", "source_commit", "source_hashes", "executed_head", "timer_scope", "explicit_synchronize_calls"})
 
 
+def _validate_provenance_context_commit(provenance: Exp425RunProvenance, context: FrozenRunContext) -> None:
+    if provenance.git_commit != context.code_commit:
+        raise ValueError("checkpoint provenance git commit does not match frozen context")
+
+
 def record_filename(dataset: str) -> str:
     """A deterministic filename that cannot be interpreted as a path."""
     if not isinstance(dataset, str) or not dataset:
@@ -105,6 +110,7 @@ class Exp425CheckpointStore:
     def create(cls, root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> "Exp425CheckpointStore":
         if not isinstance(provenance, Exp425RunProvenance) or not isinstance(context, FrozenRunContext):
             raise ValueError("Exp425 checkpoint inputs are invalid")
+        _validate_provenance_context_commit(provenance, context)
         root = Path(root)
         if root.exists() or root.is_symlink():
             raise ValueError("Exp425 checkpoint root already exists")
@@ -135,6 +141,9 @@ class Exp425CheckpointStore:
 
     @classmethod
     def open(cls, root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> "Exp425CheckpointStore":
+        if not isinstance(provenance, Exp425RunProvenance) or not isinstance(context, FrozenRunContext):
+            raise ValueError("Exp425 checkpoint inputs are invalid")
+        _validate_provenance_context_commit(provenance, context)
         if not Path(root).exists():
             raise ValueError("Exp425 checkpoint root is absent")
         return cls._validated(Path(root), provenance, context, exclusive=True)

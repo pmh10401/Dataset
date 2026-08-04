@@ -73,6 +73,20 @@ class _CapturingModels(dict[str, object]):
         return value
 
 
+def _native_commit_capability(session: object, store: object, native: object) -> object:
+    """Mint the exact v2 authority consumed by the smoke checkpoint commit."""
+    return capabilities._mint(
+        session, kind="native", run_identity=store.provenance.run_identity,
+        dataset=FIXTURE, context_sha256=store.run_context_sha256,
+        trace_sha256=native.trace_sha256,
+        record_sha256=native.record_payload_sha256,
+        backend_sha256=native.backend_audit_sha256,
+        mps_adoption_sha256=native.mps_adoption.sha256,
+        mps_execution_sha256=native.mps_execution.sha256,
+        process_nonce=session.process_nonce,
+    )
+
+
 def _golden_shared(record: object) -> dict[str, object]:
     assert isinstance(record, dict)
     qualification = record["qualification"]
@@ -180,7 +194,7 @@ def main(argv: list[str] | None = None) -> int:
             parity = compare_shared_science(_golden_shared(dict(golden.record)), actual, tolerance=0.0001)
             if not parity["passed"] or actual["status"] != "abstained" or actual["candidate_coordinates"] != []:
                 raise ValueError("shared parity/status/candidate gate failed")
-            capability = capabilities._mint(session, kind="native", run_identity=store.provenance.run_identity, dataset=FIXTURE, context_sha256=store.run_context_sha256, trace_sha256=native.trace_sha256, record_sha256=native.record_payload_sha256, backend_sha256=native.backend_audit_sha256, process_nonce=session.process_nonce)
+            capability = _native_commit_capability(session, store, native)
             checkpoint_digest = store._commit_native(capability, native)
             result = {"schema": "exp425.task5.mps-parity-result.v1", "success": True, "fixture": FIXTURE, "stage": "complete", "backend": "mps", "fallback": False, "loader_counts": counters, "wall_seconds": wall, "timer_scope": "_compute_native return after production implicit CPU/NumPy/serialization/calibration synchronization", "explicit_mps_synchronize_calls": 0, "torch": torch.__version__, "device": str(torch.device("mps")), "golden": {"record_sha256": golden.record_sha256, "payload_sha256": golden.record["payload_sha256"], "source_hashes": dict(golden.source_hashes)}, "cpu_scientific_audit": asdict(audit), "mps_adoption": adoption.payload(), "actual": actual, "parity": parity, "native_trace": asdict(trace), "native_record_sha256": native.record_payload_sha256, "checkpoint_record_sha256": checkpoint_digest, "checkpoint_path": str(checkpoint_root), "limitation": "Exp424 retained no per-synthetic-query scores; direct historical per-query deltas are unavailable."}
             writer.result(result); writer.progress(stage="complete", current_dataset=None, success=True, completed=1, total=1, loader_counts=counters, wall_seconds=wall, checkpoint=str(checkpoint_root)); writer._append("parent.log", b"complete\n")
