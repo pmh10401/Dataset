@@ -84,6 +84,26 @@ def _checkpoint_ahead_of_progress_tree(directory: Path) -> tuple[Path, Path, str
     return output, checkpoint, identity
 
 
+def _sparse_imported_resume_tree(directory: Path, *, command: str = "resume", state: str = "running") -> tuple[Path, Path, str]:
+    """A real sparse Exp424 import set after restore, before terminal replay."""
+    directory.mkdir(parents=True, exist_ok=True)
+    output, checkpoint = directory / "output", directory / "checkpoints"
+    context = _runtime_context()
+    provenance = _runtime_provenance(context, "sparse-import-resume")
+    store = Exp425CheckpointStore.create(checkpoint, provenance, context)
+    for dataset in (context.datasets[0], context.datasets[2]):
+        _commit_runtime_import(store, provenance, _runtime_import_record(dataset))
+    writer = AtomicProgressWriter.create(output_root=output, run_identity=provenance.run_identity,
+                                         command=command, checkpoint_root=checkpoint,
+                                         total_datasets=len(context.datasets), backend="mps")
+    records = tuple(store.iter_records())
+    counts = Exp425RunCounts(len(context.datasets), completed=len(records), imported=len(records))
+    writer.write(RuntimeProgress(writer.paths, provenance.run_identity, command, len(context.datasets), "mps",
+                                 state=state, stage=state, counts=counts), event="phase_change")
+    writer.close()
+    return output, checkpoint, provenance.run_identity
+
+
 @contextmanager
 def _tiny_runtime_config() -> object:
     """Keep the real checkpoint decoder on the tiny fixture's frozen lanes."""
@@ -139,6 +159,21 @@ def _runtime_tree(directory: Path, *, state: str, complete: bool) -> tuple[Path,
 
 
 class Exp425CliTests(unittest.TestCase):
+    def test_resume_accepts_restored_sparse_import_counters_without_terminal_events(self) -> None:
+        """A restore-published full checkpoint count is legitimate only for resume/running."""
+        with _tiny_runtime_config(), TemporaryDirectory() as directory:
+            output, checkpoint, identity = _sparse_imported_resume_tree(Path(directory))
+            module = _load_cli_module()
+            runtime, inspected = module._inspect_pair(output, checkpoint, identity)
+            self.assertEqual((runtime["command"], runtime["completed_datasets"], inspected.completed_count), ("resume", 2, 2))
+
+    def test_sparse_full_unlogged_counters_reject_new_and_importing_states(self) -> None:
+        with _tiny_runtime_config(), TemporaryDirectory() as directory:
+            module = _load_cli_module()
+            for command, state in (("new", "running"), ("resume", "importing")):
+                output, checkpoint, identity = _sparse_imported_resume_tree(Path(directory) / f"{command}-{state}", command=command, state=state)
+                with self.assertRaisesRegex(ValueError, "counters"):
+                    module._inspect_pair(output, checkpoint, identity)
     def _direct_main(self, argv: list[str]) -> tuple[int, str, str]:
         module = _load_cli_module()
         stdout, stderr = io.StringIO(), io.StringIO()

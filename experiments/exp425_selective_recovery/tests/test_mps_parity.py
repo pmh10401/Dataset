@@ -177,6 +177,21 @@ class MPSParityContractTests(unittest.TestCase):
             "mps_execution_sha256": "f" * 64, "process_nonce": "nonce",
         })
 
+    def test_smoke_requires_only_the_frozen_retry_root_before_writer_creation(self) -> None:
+        module = self._script_module()
+        old_failed_root = module.TASK5_RETRY_ROOT.with_name("exp425_task5_mps_parity_20260804_architecture_a")
+        with self.assertRaisesRegex(ValueError, "frozen retry root"):
+            module.main(["--output-dir", str(old_failed_root)])
+        with TemporaryDirectory() as directory:
+            arbitrary = Path(directory) / "exp425_task5_mps_parity_arbitrary"
+            with self.assertRaisesRegex(ValueError, "frozen retry root"):
+                module.main(["--output-dir", str(arbitrary)])
+            self.assertFalse(arbitrary.exists())
+        with patch.object(module.SmokeEvidenceWriter, "create", side_effect=RuntimeError("writer reached")) as create:
+            with self.assertRaisesRegex(RuntimeError, "writer reached"):
+                module.main(["--output-dir", str(module.TASK5_RETRY_ROOT)])
+        self.assertEqual(create.call_count, 1)
+
     def test_exact_golden_record_decodes_to_an_abstained_dataset_result(self) -> None:
         from experiments.exp425_selective_recovery.mps_parity import validate_golden_reference
 

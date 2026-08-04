@@ -38,6 +38,7 @@ from experiments.exp425_selective_recovery.runtime import AtomicProgressWriter, 
 
 
 DATABASE = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
+TASK5_RETRY_ROOT = Path("/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry")
 SOURCE_ROOT = Path("/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint")
 GOLDEN = SOURCE_ROOT / "datasets/0a19fece1acc72bd1fd0e2845ee962e54988940a96da37ba5c231fa52e551ce8.json"
 LANE_PATHS = (
@@ -206,8 +207,8 @@ def _actual_shared(native: object, models: object, train: object) -> dict[str, o
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     output = args.output_dir.absolute()
-    if not output.name.startswith("exp425_task5_mps_parity_") or output.parent != DATABASE.parent:
-        raise ValueError("output must be a new exp425_task5_mps_parity_* directory beneath Dataset")
+    if output != TASK5_RETRY_ROOT:
+        raise ValueError("output must equal the frozen retry root")
     _assert_train_only_loader_surface(globals())
     writer = SmokeEvidenceWriter.create(output, "exp425-task5-" + str(os.getpid()), FIXTURE)
     runtime_writer: AtomicProgressWriter | None = None

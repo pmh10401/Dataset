@@ -118,20 +118,29 @@ def _validate_progress_payload(runtime: object, checkpoint: object) -> None:
     prefix = summaries[:len(terminal_datasets)]
     if len(prefix) != len(terminal_datasets) or terminal_datasets != tuple(dataset for dataset, _, _, _, _ in prefix):
         raise ValueError("runtime terminal events are not a checkpoint prefix")
-    counter_summaries = summaries if state == "complete_review_only" else prefix
-    expected = {
-        "total_datasets": total,
-        "completed_datasets": len(counter_summaries),
-        "remaining_datasets": total - len(counter_summaries),
-        "imported_datasets": sum(origin == "exp424_import" for _, origin, _, _, _ in counter_summaries),
-        "native_datasets": sum(origin == "exp425_native" for _, origin, _, _, _ in counter_summaries),
-        "recomputed_datasets": sum(origin == "exp425_native" for _, origin, _, _, _ in counter_summaries),
-        "abstained_datasets": sum(status == "abstained" for _, _, status, _, _ in counter_summaries),
-        "oof_identity_insufficient_datasets": sum(reason == "oof_identity_insufficient" for _, _, _, reason, _ in counter_summaries),
-        "failed_datasets": sum(status == "failed" for _, _, status, _, _ in counter_summaries),
-    }
+    def counters_for(records: tuple[tuple[str, str, str, str | None, str], ...]) -> dict[str, int]:
+        return {
+            "total_datasets": total,
+            "completed_datasets": len(records),
+            "remaining_datasets": total - len(records),
+            "imported_datasets": sum(origin == "exp424_import" for _, origin, _, _, _ in records),
+            "native_datasets": sum(origin == "exp425_native" for _, origin, _, _, _ in records),
+            "recomputed_datasets": sum(origin == "exp425_native" for _, origin, _, _, _ in records),
+            "abstained_datasets": sum(status == "abstained" for _, _, status, _, _ in records),
+            "oof_identity_insufficient_datasets": sum(reason == "oof_identity_insufficient" for _, _, _, reason, _ in records),
+            "failed_datasets": sum(status == "failed" for _, _, status, _, _ in records),
+        }
+
+    expected_prefix = counters_for(prefix)
+    expected_full = counters_for(summaries)
+    expected = expected_full if state == "complete_review_only" else expected_prefix
     actual = {name: _nonnegative_integer(runtime, name) for name in expected}
-    if actual != expected:
+    restored_full_counters = (
+        runtime.get("command") == "resume"
+        and state in {"running", "failed"}
+        and actual == expected_full
+    )
+    if actual != expected and not restored_full_counters:
         raise ValueError("runtime progress counters do not match checkpoint summaries")
     if actual["imported_datasets"] + actual["native_datasets"] != actual["completed_datasets"]:
         raise ValueError("runtime progress counters do not conserve population")

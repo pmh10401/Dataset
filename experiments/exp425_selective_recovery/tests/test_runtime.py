@@ -370,6 +370,70 @@ class AtomicProgressWriterTests(unittest.TestCase):
             self.assertEqual([event["heartbeat_sequence"] for event in events], sorted(event["heartbeat_sequence"] for event in events))
             self.assertTrue(all(event["current_dataset"] == "dataset" for event in heartbeats))
 
+    def test_heartbeat_write_failure_is_reraised_when_closed(self) -> None:
+        """A background fsync failure must abort the foreground dataset before commit."""
+        progress = SimpleNamespace(current_phase="preprocess", stage="running")
+        writer = SimpleNamespace(write=lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("fsync failed")))
+        pump = _HeartbeatPump(writer, progress, interval=0.01)
+        pump.start(); time.sleep(0.02)
+        with self.assertRaisesRegex(OSError, "fsync failed"):
+            pump.close()
+        self.assertFalse(pump._thread.is_alive())
+
+    def test_heartbeat_failure_publishes_failed_progress_without_native_commit(self) -> None:
+        """A failed heartbeat cannot leave a native record or terminal completion behind."""
+        context = _runtime_context(("Eligible_normal_1",))
+        provenance = _runtime_provenance(context, "heartbeat-failure")
+        dataset = context.datasets[0]
+        train = RawTrainDataset(dataset, (RawSeries(10, tuple(float(index) for index in range(8))),))
+        audit = BackendAudit("cpu", True, 4.0948700075205124e-07, 0.9999999999845686, 0.6709759390840965, False)
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            output, checkpoint_root = root / "output", root / "checkpoints"
+            writer = AtomicProgressWriter.create(
+                output_root=output, run_identity=provenance.run_identity, command="new",
+                checkpoint_root=checkpoint_root, total_datasets=1, backend="mps",
+            )
+            writer.heartbeat_interval_seconds = 0.01
+            real_write = writer.write
+
+            def fail_heartbeat(progress: RuntimeProgress, *, event: str, detail: object = None) -> None:
+                if event == "heartbeat":
+                    raise OSError("heartbeat fsync failed")
+                real_write(progress, event=event, detail=detail)
+
+            writer.write = fail_heartbeat  # type: ignore[method-assign]
+            store = Exp425CheckpointStore.create(checkpoint_root, provenance, context)
+            record = _runtime_native_record(
+                store, provenance, dataset, status="scored", coordinates=[[dataset, 1]], reason="native_mps",
+            )
+            snapshot = object.__new__(Exp425DatabaseSnapshot)
+            lock = os.open(root / "mps.lock", os.O_RDWR | os.O_CREAT, 0o600)
+
+            def compute(*_args: object) -> tuple[NativeRecordEnvelope, object]:
+                time.sleep(0.03)
+                return record, object()
+
+            with patch.object(Exp425DatabaseSnapshot, "verify_boundary"), patch.object(
+                Exp425DatabaseSnapshot, "load_train", return_value=train
+            ), patch.object(Exp425DatabaseSnapshot, "close"), patch(
+                "experiments.exp425_selective_recovery.runtime._require_mps"
+            ), patch(
+                "experiments.exp425_selective_recovery.runtime._acquire_heavy_process_guard", return_value=lock
+            ), patch(
+                "experiments.exp425_selective_recovery.runtime._compute_native", side_effect=compute
+            ):
+                session = build_exp425_runtime(snapshot, audit, _mps_assessment(), writer, "c" * 40)
+                result = run_selective_population(context, store, session)
+
+            self.assertEqual(result.state, "failed")
+            self.assertEqual(result.counts, Exp425RunCounts(1))
+            self.assertEqual(tuple(store.iter_records()), ())
+            events = [json.loads(line) for line in writer.paths.events.read_text().splitlines()]
+            self.assertEqual([event["event"] for event in events if event["event"] == "dataset_terminal"], [])
+            self.assertEqual(events[-1]["event"], "failure")
+            self.assertEqual(events[-1]["state"], "failed")
+
     def test_new_and_resume_reject_their_wrong_root_lifecycle_before_launch(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)

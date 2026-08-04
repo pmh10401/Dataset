@@ -434,14 +434,19 @@ class _HeartbeatPump:
         if not isinstance(self._interval, (int, float)) or self._interval <= 0:
             raise ValueError("heartbeat interval must be positive")
         self._stop = Event()
+        self._error: BaseException | None = None
         self._thread = Thread(target=self._run, name="exp425-heartbeat", daemon=True)
 
     def start(self) -> None:
         self._thread.start()
 
     def _run(self) -> None:
-        while not self._stop.wait(float(self._interval)):
-            self._writer.write(self._progress, event="heartbeat", detail={"phase": self._progress.current_phase or self._progress.stage})
+        try:
+            while not self._stop.wait(float(self._interval)):
+                self._writer.write(self._progress, event="heartbeat", detail={"phase": self._progress.current_phase or self._progress.stage})
+        except BaseException as error:
+            self._error = error
+            self._stop.set()
 
     def close(self) -> None:
         self._stop.set()
@@ -449,6 +454,8 @@ class _HeartbeatPump:
             self._thread.join(timeout=max(1.0, float(self._interval) * 2.0))
         if self._thread.is_alive():
             raise RuntimeError("heartbeat thread did not stop")
+        if self._error is not None:
+            raise self._error
 
 
 def _atomic_write(path: Path, data: bytes) -> None:
