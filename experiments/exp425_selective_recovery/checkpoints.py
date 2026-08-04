@@ -25,6 +25,7 @@ from .contracts import Exp425Record, Exp425RunProvenance, ImportedRecordEnvelope
 _ROOT_FILES = frozenset({"checkpoint_provenance.json", "run_context.json", "progress.json", "datasets", "transactions", "import_batches"})
 _FORBIDDEN_RECORD_KEYS = frozenset({"context", "lanes", "datasets", "test_identity_manifest"})
 _OPEN_FLAGS = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+_after_import_phase = lambda phase: None
 
 
 def record_filename(dataset: str) -> str:
@@ -254,7 +255,50 @@ class Exp425CheckpointStore:
         for dataset in sorted(staged):
             record = _decode_record(raw_records[dataset], self.context)
             body = _import_record_body(self.run_context_sha256, record)
-            self._write_record(record, body, sha256(canonical_json_bytes(body)).hexdigest(), intent_extra={"batch_identity": batch.identity, "final_attestation_sha256": final_digest})
+            self._promote_imported_record(record, body, sha256(canonical_json_bytes(body)).hexdigest(), batch.identity, final_digest)
+
+    def _promote_imported_record(self, record: ImportedRecordEnvelope, body: dict[str, object], digest: str, batch_identity: str, final_attestation: str) -> None:
+        """Advance one imported record through durable A→E publication phases."""
+        if record.dataset not in self.expected_datasets:
+            raise ValueError("imported dataset is outside checkpoint universe")
+        intent_name = "import-" + sha256((batch_identity + "\0" + record.dataset).encode()).hexdigest() + ".json"
+        encoded = canonical_json_bytes(body | {"record_payload_sha256": digest})
+        with _locked_root(self.root, exclusive=True) as binding:
+            _, _, progress = _read_root_metadata(self.root, binding=binding)
+            datasets_fd, datasets_identity = _open_directory_at(binding, "datasets")
+            transactions_fd, transactions_identity = _open_directory_at(binding, "transactions")
+            try:
+                intent = {"schema": "exp425.intent.v1", "origin": "exp424_import", "dataset": record.dataset, "record_payload_sha256": digest, "batch_identity": batch_identity, "final_attestation_sha256": final_attestation}
+                try:
+                    existing = _canonical_object(_read_file(intent_name, dir_fd=transactions_fd), "import intent")
+                    if existing != intent:
+                        raise ValueError("import intent conflicts with durable state")
+                except FileNotFoundError:
+                    _write_new_at(transactions_fd, intent_name, canonical_json_bytes(intent))
+                    _after_import_phase("intent_durable")
+                try:
+                    raw = _read_file(record_filename(record.dataset), dir_fd=datasets_fd)
+                    if _record_digest_from_raw(raw) != digest:
+                        raise ValueError("import record conflicts with durable state")
+                except FileNotFoundError:
+                    _write_new_at(datasets_fd, record_filename(record.dataset), encoded)
+                    _after_import_phase("record_durable")
+                digests = dict(progress["record_digests"])
+                if record.dataset not in digests:
+                    digests[record.dataset] = digest
+                    assert binding.descriptor is not None
+                    _atomic_replace_at(binding.descriptor, "progress.json", _progress_bytes(self.expected_datasets, digests, record.dataset))
+                    _after_import_phase("progress_durable")
+                elif digests[record.dataset] != digest:
+                    raise ValueError("import progress conflicts with durable state")
+                _verify_directory_at(binding, "transactions", transactions_identity)
+                os.unlink(intent_name, dir_fd=transactions_fd)
+                os.fsync(transactions_fd)
+                _after_import_phase("intent_removed")
+                _verify_directory_at(binding, "datasets", datasets_identity)
+                self._record_digests = MappingProxyType(digests)
+            finally:
+                os.close(transactions_fd); os.close(datasets_fd)
 
     def _write_record(self, record: Exp425Record, body: dict[str, object], digest: str, *, intent_extra: Mapping[str, object]) -> None:
         if record.dataset not in self.expected_datasets or record.dataset in self._record_digests:
