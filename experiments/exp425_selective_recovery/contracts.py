@@ -180,6 +180,55 @@ def _frozen_mapping(value: object, name: str) -> Mapping[str, object]:
     return MappingProxyType(dict(value))
 
 
+def _freeze_payload(value: object, name: str) -> object:
+    """Detach a canonical JSON payload from all caller-owned containers."""
+    if value is None or isinstance(value, (str, bool)):
+        return value
+    if type(value) is int:
+        return value
+    if type(value) is float:
+        if not isfinite(value):
+            raise ValueError(f"{name} contains a nonfinite float")
+        return value
+    if isinstance(value, Mapping):
+        frozen: dict[str, object] = {}
+        for key, nested in value.items():
+            if not isinstance(key, str):
+                raise ValueError(f"{name} mapping keys must be strings")
+            frozen[key] = _freeze_payload(nested, name)
+        return MappingProxyType(frozen)
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_payload(nested, name) for nested in value)
+    raise ValueError(f"{name} contains a noncanonical payload value")
+
+
+def _freeze_payload_mapping(value: object, name: str) -> Mapping[str, object]:
+    frozen = _freeze_payload(value, name)
+    if not isinstance(frozen, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    return frozen
+
+
+def thaw_payload(value: object) -> object:
+    """Convert recursively-frozen canonical payload values back to JSON values."""
+    if isinstance(value, Mapping):
+        return {key: thaw_payload(nested) for key, nested in value.items()}
+    if isinstance(value, tuple):
+        return [thaw_payload(nested) for nested in value]
+    return value
+
+
+class _DeepImmutable:
+    """Frozen payload contracts are safe to share and therefore safe to deepcopy."""
+
+    def __copy__(self) -> object:
+        return self
+
+    def __deepcopy__(self, memo: dict[int, object]) -> object:
+        memo[id(self)] = self
+        return self
+
+
 def _finite_elapsed(value: object) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value) or value < 0:
         raise ValueError("elapsed_seconds must be finite and non-negative")
@@ -187,7 +236,7 @@ def _finite_elapsed(value: object) -> float:
 
 
 @dataclass(frozen=True)
-class Exp425RunProvenance:
+class Exp425RunProvenance(_DeepImmutable):
     """Immutable identity for a compact Exp425 checkpoint root."""
 
     run_identity: str
@@ -244,17 +293,17 @@ class Exp425RunProvenance:
 
 
 @dataclass(frozen=True)
-class SourceProvenGroupEvidence:
+class SourceProvenGroupEvidence(_DeepImmutable):
     source_group_evidence: Mapping[str, object]
     source_group_evidence_sha256: str
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "source_group_evidence", _frozen_mapping(self.source_group_evidence, "source_group_evidence"))
+        object.__setattr__(self, "source_group_evidence", _freeze_payload_mapping(self.source_group_evidence, "source_group_evidence"))
         object.__setattr__(self, "source_group_evidence_sha256", _sha256_digest(self.source_group_evidence_sha256, "source_group_evidence_sha256"))
 
 
 @dataclass(frozen=True)
-class NativeRecordEnvelope:
+class NativeRecordEnvelope(_DeepImmutable):
     dataset: str; result_payload: Mapping[str, object]; group_evidence: Mapping[str, object]
     train_identity_sha256: str; eligibility_sha256: str; processed_groups_sha256: str; model_evidence_sha256: str
     frozen_train_contract_sha256: str; scoring_evidence_sha256: str; result_evidence_sha256: str
@@ -267,13 +316,13 @@ class NativeRecordEnvelope:
         for name in ("train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256", "trace_sha256", "record_payload_sha256"):
             object.__setattr__(self, name, _sha256_digest(getattr(self, name), name))
         for name in ("result_payload", "group_evidence", "model_hashes", "calibration_hashes"):
-            object.__setattr__(self, name, _frozen_mapping(getattr(self, name), name))
+            object.__setattr__(self, name, _freeze_payload_mapping(getattr(self, name), name))
         object.__setattr__(self, "elapsed_seconds", _finite_elapsed(self.elapsed_seconds))
         if self.reason is not None and not isinstance(self.reason, str): raise ValueError("reason must be a string or None")
 
 
 @dataclass(frozen=True)
-class ImportedRecordEnvelope:
+class ImportedRecordEnvelope(_DeepImmutable):
     dataset: str; result_payload: Mapping[str, object]; group_evidence: SourceProvenGroupEvidence
     source_root_sha256: str; source_progress_sha256: str; source_record_sha256: str; source_result_sha256: str
     compatibility_attestation_sha256: str; elapsed_seconds: float; reason: str | None; origin: str = "exp424_import"; context: object | None = field(default=None, compare=False, repr=False)
@@ -282,7 +331,7 @@ class ImportedRecordEnvelope:
         object.__setattr__(self, "dataset", _nonempty_string(self.dataset, "dataset"))
         if self.origin != "exp424_import": raise ValueError("imported record origin is invalid")
         if not isinstance(self.group_evidence, SourceProvenGroupEvidence): raise ValueError("imported group evidence is invalid")
-        object.__setattr__(self, "result_payload", _frozen_mapping(self.result_payload, "result_payload"))
+        object.__setattr__(self, "result_payload", _freeze_payload_mapping(self.result_payload, "result_payload"))
         for name in ("source_root_sha256", "source_progress_sha256", "source_record_sha256", "source_result_sha256", "compatibility_attestation_sha256"):
             object.__setattr__(self, name, _sha256_digest(getattr(self, name), name))
         object.__setattr__(self, "elapsed_seconds", _finite_elapsed(self.elapsed_seconds))

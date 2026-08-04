@@ -11,6 +11,7 @@ from tempfile import TemporaryDirectory
 import time
 import unittest
 from unittest.mock import patch
+from collections.abc import Mapping
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenRunContext
@@ -200,17 +201,17 @@ def _measure_shared_context_checkpoint_benchmark() -> _CheckpointBenchmarkMetric
         payload = dict(record.result_payload)
         trace_body = payload.get("native_trace_body")
         effective = payload.get("effective_result")
-        if not isinstance(trace_body, dict) or not isinstance(effective, dict):
+        if not isinstance(trace_body, Mapping) or not isinstance(effective, Mapping):
             raise AssertionError("benchmark native result payload is invalid")
-        if sha256(canonical_json_bytes(trace_body)).hexdigest() != record.trace_sha256:
+        if sha256(canonical_json_bytes(checkpoints.thaw_payload(trace_body))).hexdigest() != record.trace_sha256:
             raise AssertionError("benchmark trace does not match its stored declared digest")
         result_evidence = effective.get("result_evidence_sha256")
         coordinates = effective.get("candidate_coordinates")
         if (
             not isinstance(result_evidence, str)
             or trace_body.get("result_evidence_sha256") != result_evidence
-            or not isinstance(coordinates, list)
-            or any(not isinstance(row, list) for row in coordinates)
+            or not isinstance(coordinates, tuple)
+            or any(not isinstance(row, tuple) for row in coordinates)
         ):
             raise AssertionError("benchmark effective result evidence is invalid")
         return tuple(tuple(row) for row in coordinates), result_evidence
@@ -349,6 +350,34 @@ class CheckpointStoreTests(unittest.TestCase):
                 Exp425CheckpointStore.inspect_read_only(root)
             self.assertEqual(progress.read_bytes(), before)
 
+    def test_progress_rejects_uppercase_digests_and_completed_current_dataset(self) -> None:
+        """Removing strict progress semantics would admit canonically rehashed invalid resume state."""
+        context = _context()
+        provenance = _provenance(context)
+        for name, mutate in (
+            ("uppercase digest", lambda progress, dataset: progress["record_digests"].__setitem__(dataset, "A" * 64)),
+            ("completed current", lambda progress, dataset: progress.__setitem__("current_dataset", dataset)),
+        ):
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                record = _native_record_for(store, provenance, context.datasets[0])
+                authority = object()
+                capabilities._register_authority(authority, "exp425_native")
+                try:
+                    store._commit_native(_native_capability(store, provenance, authority, record), record)
+                finally:
+                    capabilities._close_authority(authority)
+                path = root / "progress.json"
+                progress = json.loads(path.read_bytes())
+                mutate(progress, record.dataset)
+                body = dict(progress)
+                body.pop("payload_sha256")
+                progress["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+                path.write_bytes(canonical_json_bytes(progress))
+                with self.assertRaises(ValueError):
+                    Exp425CheckpointStore.inspect_read_only(root)
+
     def test_native_write_requires_live_exact_capability_and_injects_context_on_read(self) -> None:
         context = _context()
         provenance = _provenance(context)
@@ -454,6 +483,9 @@ class CheckpointStoreTests(unittest.TestCase):
             ("model", lambda payload: payload["model_hashes"].__setitem__("model_evidence_sha256", _digest("0"))),
             ("frozen train", lambda payload: payload["model_hashes"].__setitem__("frozen_train_contract_sha256", _digest("0"))),
             ("scoring", lambda payload: payload["calibration_hashes"].__setitem__("scoring_evidence_sha256", _digest("0"))),
+            ("test label", lambda payload: payload["result_payload"]["effective_result"].__setitem__("TEST_label", "forbidden")),
+            ("ground truth", lambda payload: payload["group_evidence"].__setitem__("ground_truth", "forbidden")),
+            ("family test performance", lambda payload: payload["model_hashes"].__setitem__("family_TEST_performance", "forbidden")),
         )
         for name, mutate in mutations:
             with self.subTest(name=name), TemporaryDirectory() as directory:
@@ -484,6 +516,38 @@ class CheckpointStoreTests(unittest.TestCase):
                 progress_path.write_bytes(canonical_json_bytes(progress))
                 with self.assertRaises(ValueError):
                     store.load_record(record.dataset)
+
+    def test_lazy_open_defers_unknown_native_result_status_to_explicit_load(self) -> None:
+        """Removing result-status validation would accept a canonically rehashed unknown outcome."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            record = _native_record_for(store, provenance, context.datasets[0])
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                store._commit_native(_native_capability(store, provenance, authority, record), record)
+            finally:
+                capabilities._close_authority(authority)
+            path = root / "datasets" / checkpoints.record_filename(record.dataset)
+            payload = json.loads(path.read_bytes())
+            payload["result_payload"]["effective_result"]["status"] = "invented_status"
+            body = dict(payload)
+            body.pop("record_payload_sha256")
+            payload["record_payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+            path.write_bytes(canonical_json_bytes(payload))
+            progress_path = root / "progress.json"
+            progress = json.loads(progress_path.read_bytes())
+            progress["record_digests"][record.dataset] = payload["record_payload_sha256"]
+            progress_body = dict(progress)
+            progress_body.pop("payload_sha256")
+            progress["payload_sha256"] = sha256(canonical_json_bytes(progress_body)).hexdigest()
+            progress_path.write_bytes(canonical_json_bytes(progress))
+            reopened = Exp425CheckpointStore.open(root, provenance, context)
+            with self.assertRaisesRegex(ValueError, "result status"):
+                reopened.load_record(record.dataset)
 
     def test_mutating_open_is_lazy_but_explicit_load_decodes_completed_record(self) -> None:
         context = _context()

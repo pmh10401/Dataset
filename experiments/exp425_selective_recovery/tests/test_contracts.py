@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import FrozenInstanceError
+from hashlib import sha256
 import unittest
 
+from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     LengthGroup,
     ProcessedGroup,
@@ -10,9 +13,14 @@ from experiments.exp417_causal_multihorizon_shadow.contracts import (
 )
 from experiments.exp425_selective_recovery.contracts import (
     EligibilityAssessment,
+    Exp425RunProvenance,
     FoldIdentityCounts,
     GroupEligibilityEvidence,
+    ImportedRecordEnvelope,
+    NativeRecordEnvelope,
+    SourceProvenGroupEvidence,
 )
+from experiments.exp425_selective_recovery import checkpoints
 
 
 class EligibilityContractTests(unittest.TestCase):
@@ -134,6 +142,39 @@ class EligibilityContractTests(unittest.TestCase):
                 groups=(abstained_group(65), abstained_group(64)),
                 evidence={64: abstained_evidence(64), 65: abstained_evidence(65)},
             )
+
+
+class CheckpointPayloadContractTests(unittest.TestCase):
+    def test_nested_caller_mutation_cannot_change_native_preimage_or_deepcopy(self) -> None:
+        """Removing recursive detachment would let caller-owned nested payloads change a record."""
+        digests = {name: sha256(name.encode()).hexdigest() for name in (
+            "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256",
+            "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256",
+        )}
+        context = "c" * 64
+        trace_body = {"schema": "exp425.native-trace.v1", "run_identity": "run", "dataset": "dataset", "run_context_sha256": context, **digests, "device": "mps"}
+        trace = sha256(canonical_json_bytes(trace_body)).hexdigest()
+        result = {"effective_result": {"status": "abstained", "result_evidence_sha256": digests["result_evidence_sha256"], "nested": ["stable"]}, "native_trace_body": trace_body}
+        group = {"eligibility_sha256": digests["eligibility_sha256"], "processed_groups_sha256": digests["processed_groups_sha256"], "nested": {"value": "stable"}}
+        model = {"train_identity_sha256": digests["train_identity_sha256"], "model_evidence_sha256": digests["model_evidence_sha256"], "frozen_train_contract_sha256": digests["frozen_train_contract_sha256"]}
+        calibration = {"scoring_evidence_sha256": digests["scoring_evidence_sha256"]}
+        body = {"schema_version": "exp425.dataset.v1", "dataset": "dataset", "origin": "exp425_native", "run_context_sha256": context, "result_payload": result, "group_evidence": group, "trace_sha256": trace, "model_hashes": model, "calibration_hashes": calibration, "backend_audit_sha256": digests["backend_audit_sha256"], "elapsed_seconds": 0.0, "reason": None}
+        record = NativeRecordEnvelope("dataset", result, group, trace_sha256=trace, record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(), model_hashes=model, calibration_hashes=calibration, elapsed_seconds=0.0, reason=None, **digests)
+        before = canonical_json_bytes(checkpoints._native_record_body(context, record))
+        result["effective_result"]["nested"].append("mutated")
+        group["nested"]["value"] = "mutated"
+        trace_body["device"] = "cpu"
+        self.assertEqual(canonical_json_bytes(checkpoints._native_record_body(context, record)), before)
+        self.assertEqual(canonical_json_bytes(checkpoints._native_record_body(context, deepcopy(record))), before)
+
+    def test_imported_evidence_detaches_nested_source_payload(self) -> None:
+        """Removing recursive detachment would change persisted import evidence after construction."""
+        source = {"groups": [{"identity": "stable"}]}
+        evidence = SourceProvenGroupEvidence(source, sha256(canonical_json_bytes(source)).hexdigest())
+        record = ImportedRecordEnvelope("dataset", {"status": "abstained", "nested": ["stable"]}, evidence, *("a" * 64,) * 5, 0.0, None)
+        before = canonical_json_bytes(checkpoints._import_record_body("b" * 64, record))
+        source["groups"][0]["identity"] = "mutated"
+        self.assertEqual(canonical_json_bytes(checkpoints._import_record_body("b" * 64, record)), before)
 
 
 if __name__ == "__main__":

@@ -19,11 +19,13 @@ from experiments.exp417_causal_multihorizon_shadow.checkpoints import _context_f
 from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenRunContext
 
 from . import capabilities
-from .contracts import Exp425Record, Exp425RunProvenance, ImportedRecordEnvelope, NativeRecordEnvelope, SourceProvenGroupEvidence
+from .contracts import Exp425Record, Exp425RunProvenance, ImportedRecordEnvelope, NativeRecordEnvelope, SourceProvenGroupEvidence, thaw_payload
 
 
 _ROOT_FILES = frozenset({"checkpoint_provenance.json", "run_context.json", "progress.json", "datasets", "transactions", "import_batches"})
-_FORBIDDEN_RECORD_KEYS = frozenset({"context", "lanes", "datasets", "test_identity_manifest"})
+_FORBIDDEN_RECORD_KEYS = frozenset({"context", "lanes", "datasets", "test_identity_manifest", "governance"})
+_FORBIDDEN_RECORD_KEY_TOKENS = frozenset({"target", "groundtruth", "anomalylocation", "confusion", "precision", "recall", "f1", "familytestperformance"})
+_KNOWN_RESULT_STATUSES = frozenset({"abstained", "scored", "failed"})
 _OPEN_FLAGS = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
 _after_import_phase = lambda phase: None
 _after_import_cleanup_phase = lambda phase: None
@@ -440,7 +442,7 @@ class Exp425CheckpointStore:
                 if record.dataset not in digests:
                     digests[record.dataset] = digest
                     assert binding.descriptor is not None
-                    _atomic_replace_at(binding.descriptor, "progress.json", _progress_bytes(self.expected_datasets, digests, record.dataset))
+                    _atomic_replace_at(binding.descriptor, "progress.json", _progress_bytes(self.expected_datasets, digests))
                     _after_import_phase("progress_durable")
                 elif digests[record.dataset] != digest:
                     raise ValueError("import progress conflicts with durable state")
@@ -477,7 +479,7 @@ class Exp425CheckpointStore:
                 _after_native_phase("record_durable")
                 digests = dict(progress["record_digests"]); digests[record.dataset] = digest
                 assert binding.descriptor is not None
-                _atomic_replace_at(binding.descriptor, "progress.json", _progress_bytes(self.expected_datasets, digests, record.dataset))
+                _atomic_replace_at(binding.descriptor, "progress.json", _progress_bytes(self.expected_datasets, digests))
                 _after_native_phase("progress_durable")
                 _verify_directory_at(binding, "transactions", transactions_identity)
                 os.unlink(intent_name, dir_fd=transactions_fd)
@@ -555,7 +557,7 @@ def _native_trace_sha256(run_identity: str, context_sha256: str, record: NativeR
 
 
 def _native_record_body(context_sha256: str, record: NativeRecordEnvelope) -> dict[str, object]:
-    return {"schema_version": "exp425.dataset.v1", "dataset": record.dataset, "origin": record.origin, "run_context_sha256": context_sha256, "result_payload": dict(record.result_payload), "group_evidence": dict(record.group_evidence), "trace_sha256": record.trace_sha256, "model_hashes": dict(record.model_hashes), "calibration_hashes": dict(record.calibration_hashes), "backend_audit_sha256": record.backend_audit_sha256, "elapsed_seconds": record.elapsed_seconds, "reason": record.reason}
+    return {"schema_version": "exp425.dataset.v1", "dataset": record.dataset, "origin": record.origin, "run_context_sha256": context_sha256, "result_payload": thaw_payload(record.result_payload), "group_evidence": thaw_payload(record.group_evidence), "trace_sha256": record.trace_sha256, "model_hashes": thaw_payload(record.model_hashes), "calibration_hashes": thaw_payload(record.calibration_hashes), "backend_audit_sha256": record.backend_audit_sha256, "elapsed_seconds": record.elapsed_seconds, "reason": record.reason}
 
 
 def _native_intent_claims(intent: Mapping[str, object]) -> tuple[str, str]:
@@ -594,6 +596,8 @@ def _validate_native_record_binding(payload: Mapping[str, object], trace: Mappin
     effective_result = result_payload.get("effective_result")
     if not isinstance(effective_result, dict):
         raise ValueError("native checkpoint result evidence is invalid")
+    if effective_result.get("status") not in _KNOWN_RESULT_STATUSES:
+        raise ValueError("native checkpoint result status is invalid")
     assert isinstance(group_evidence, dict) and isinstance(model_hashes, dict) and isinstance(calibration_hashes, dict)
     evidence_locations = (
         (effective_result, "result_evidence_sha256"),
@@ -609,7 +613,7 @@ def _validate_native_record_binding(payload: Mapping[str, object], trace: Mappin
 
 
 def _import_record_body(context_sha256: str, record: ImportedRecordEnvelope) -> dict[str, object]:
-    return {"schema_version": "exp425.imported-dataset.v1", "dataset": record.dataset, "origin": record.origin, "run_context_sha256": context_sha256, "result_payload": dict(record.result_payload), "group_evidence": {"source_group_evidence": dict(record.group_evidence.source_group_evidence), "source_group_evidence_sha256": record.group_evidence.source_group_evidence_sha256}, "source_root_sha256": record.source_root_sha256, "source_progress_sha256": record.source_progress_sha256, "source_record_sha256": record.source_record_sha256, "source_result_sha256": record.source_result_sha256, "compatibility_attestation_sha256": record.compatibility_attestation_sha256, "elapsed_seconds": record.elapsed_seconds, "reason": record.reason}
+    return {"schema_version": "exp425.imported-dataset.v1", "dataset": record.dataset, "origin": record.origin, "run_context_sha256": context_sha256, "result_payload": thaw_payload(record.result_payload), "group_evidence": {"source_group_evidence": thaw_payload(record.group_evidence.source_group_evidence), "source_group_evidence_sha256": record.group_evidence.source_group_evidence_sha256}, "source_root_sha256": record.source_root_sha256, "source_progress_sha256": record.source_progress_sha256, "source_record_sha256": record.source_record_sha256, "source_result_sha256": record.source_result_sha256, "compatibility_attestation_sha256": record.compatibility_attestation_sha256, "elapsed_seconds": record.elapsed_seconds, "reason": record.reason}
 
 
 def _progress_bytes(expected: tuple[str, ...], digests: Mapping[str, str], current: str | None = None) -> bytes:
@@ -694,8 +698,11 @@ def _read_root_metadata(root: Path, *, binding: "_locked_root | None" = None) ->
     provenance = _canonical_object(_read_file("checkpoint_provenance.json", dir_fd=binding.descriptor), "provenance")
     context = _read_file("run_context.json", dir_fd=binding.descriptor)
     progress = _canonical_object(_read_file("progress.json", dir_fd=binding.descriptor), "progress")
-    required = {"schema", "run_identity", "git_commit", "database_sha256", "lane_artifact_sha256", "frozen_config_sha256", "fold_contract_sha256", "model_contract_sha256", "backend_contract_sha256", "model_seeds", "perturbation_seeds", "runtime_versions", "expected_datasets", "predecessor_compatibility_sha256", "run_context_sha256"}
-    if set(provenance) != required or provenance["schema"] != "exp425.checkpoint.v1" or sha256(context).hexdigest() != provenance["run_context_sha256"]:
+    try:
+        persisted_provenance = _provenance_from_payload(provenance)
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("checkpoint provenance is invalid") from error
+    if persisted_provenance.to_payload() != provenance or sha256(context).hexdigest() != persisted_provenance.run_context_sha256:
         raise ValueError("checkpoint provenance is invalid")
     _context_from_payload(_canonical_object(context, "run context"))
     _validate_progress(provenance, progress)
@@ -709,9 +716,23 @@ def _validate_progress(provenance: Mapping[str, object], progress: Mapping[str, 
     body = {key: value for key, value in progress.items() if key != "payload_sha256"}
     if sha256(canonical_json_bytes(body)).hexdigest() != progress["payload_sha256"]: raise ValueError("checkpoint progress digest is invalid")
     records = progress["record_digests"]
-    if not isinstance(records, dict) or list(records) != sorted(records) or any(not isinstance(key, str) or not isinstance(value, str) or len(value) != 64 for key, value in records.items()): raise ValueError("checkpoint progress records are invalid")
+    if not isinstance(records, dict) or list(records) != sorted(records) or any(not isinstance(key, str) or not isinstance(value, str) or len(value) != 64 or any(character not in "0123456789abcdef" for character in value) for key, value in records.items()): raise ValueError("checkpoint progress records are invalid")
     expected = provenance["expected_datasets"]
-    if not isinstance(expected, list) or set(records) - set(expected) or progress["completed_count"] != len(records) or progress["expected_count"] != len(expected): raise ValueError("checkpoint progress counts are invalid")
+    current = progress["current_dataset"]
+    if not isinstance(expected, list) or any(not isinstance(dataset, str) for dataset in expected) or type(progress["completed_count"]) is not int or type(progress["expected_count"]) is not int or set(records) - set(expected) or progress["completed_count"] != len(records) or progress["expected_count"] != len(expected) or progress["completed_count"] > progress["expected_count"] or current is not None and (not isinstance(current, str) or current not in set(expected) - set(records)):
+        raise ValueError("checkpoint progress counts are invalid")
+
+
+def _provenance_from_payload(payload: Mapping[str, object]) -> Exp425RunProvenance:
+    required = {"schema", "run_identity", "git_commit", "database_sha256", "lane_artifact_sha256", "frozen_config_sha256", "fold_contract_sha256", "model_contract_sha256", "backend_contract_sha256", "model_seeds", "perturbation_seeds", "runtime_versions", "expected_datasets", "predecessor_compatibility_sha256", "run_context_sha256"}
+    if set(payload) != required or payload.get("schema") != "exp425.checkpoint.v1":
+        raise ValueError("checkpoint provenance is invalid")
+    return Exp425RunProvenance(
+        payload["run_identity"], payload["git_commit"], payload["database_sha256"], payload["lane_artifact_sha256"],
+        payload["frozen_config_sha256"], payload["fold_contract_sha256"], payload["model_contract_sha256"], payload["backend_contract_sha256"],
+        payload["model_seeds"], payload["perturbation_seeds"], payload["runtime_versions"], payload["expected_datasets"],
+        payload["predecessor_compatibility_sha256"], payload["run_context_sha256"],
+    )
 
 
 def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: Mapping[str, object], *, allow_intents: bool, binding: "_locked_root | None" = None) -> None:
@@ -781,6 +802,15 @@ def _decode_record(raw: bytes, context: FrozenRunContext | None, *, native_run_i
         result_payload = payload["result_payload"]
         if not isinstance(result_payload, dict) or set(result_payload) != {"effective_result", "native_trace_body"}:
             raise ValueError("native checkpoint result payload is invalid")
+        if not isinstance(payload["group_evidence"], dict) or set(payload["group_evidence"]) != {"eligibility_sha256", "processed_groups_sha256"}:
+            raise ValueError("native checkpoint group evidence is invalid")
+        if not isinstance(payload["model_hashes"], dict) or set(payload["model_hashes"]) != {"train_identity_sha256", "model_evidence_sha256", "frozen_train_contract_sha256"}:
+            raise ValueError("native checkpoint model evidence is invalid")
+        if not isinstance(payload["calibration_hashes"], dict) or set(payload["calibration_hashes"]) != {"scoring_evidence_sha256"}:
+            raise ValueError("native checkpoint calibration evidence is invalid")
+        effective = result_payload["effective_result"]
+        if not isinstance(effective, dict) or set(effective) not in ({"status", "result_evidence_sha256"}, {"status", "result_evidence_sha256", "candidate_coordinates"}):
+            raise ValueError("native checkpoint effective result is invalid")
         trace = result_payload["native_trace_body"]
         if not isinstance(trace, dict) or set(trace) != {"schema", "run_identity", "dataset", "run_context_sha256", "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256", "device"} or sha256(canonical_json_bytes(trace)).hexdigest() != payload["trace_sha256"]:
             raise ValueError("native checkpoint trace is invalid")
@@ -788,7 +818,18 @@ def _decode_record(raw: bytes, context: FrozenRunContext | None, *, native_run_i
         return NativeRecordEnvelope(payload["dataset"], result_payload, payload["group_evidence"], trace["train_identity_sha256"], trace["eligibility_sha256"], trace["processed_groups_sha256"], trace["model_evidence_sha256"], trace["frozen_train_contract_sha256"], trace["scoring_evidence_sha256"], trace["result_evidence_sha256"], payload["model_hashes"], payload["calibration_hashes"], payload["backend_audit_sha256"], payload["trace_sha256"], digest, payload["elapsed_seconds"], payload["reason"], context=context)
     if origin == "exp424_import":
         evidence = payload.get("group_evidence")
-        if not isinstance(evidence, dict): raise ValueError("import checkpoint evidence is invalid")
+        required = {"schema_version", "dataset", "origin", "run_context_sha256", "result_payload", "group_evidence", "source_root_sha256", "source_progress_sha256", "source_record_sha256", "source_result_sha256", "compatibility_attestation_sha256", "elapsed_seconds", "reason"}
+        if set(payload) != required or payload["schema_version"] != "exp425.imported-dataset.v1":
+            raise ValueError("import checkpoint record keys are invalid")
+        if native_context_sha256 is not None and payload["run_context_sha256"] != native_context_sha256:
+            raise ValueError("import checkpoint context binding is invalid")
+        if not isinstance(evidence, dict) or set(evidence) != {"source_group_evidence", "source_group_evidence_sha256"} or not isinstance(evidence["source_group_evidence"], dict):
+            raise ValueError("import checkpoint evidence is invalid")
+        if sha256(canonical_json_bytes(evidence["source_group_evidence"])).hexdigest() != evidence["source_group_evidence_sha256"]:
+            raise ValueError("import checkpoint source evidence digest is invalid")
+        result = payload["result_payload"]
+        if not isinstance(result, dict) or set(result) not in ({"status"}, {"status", "source_index"}) or result.get("status") not in _KNOWN_RESULT_STATUSES:
+            raise ValueError("import checkpoint result status is invalid")
         return ImportedRecordEnvelope(payload["dataset"], payload["result_payload"], SourceProvenGroupEvidence(evidence.get("source_group_evidence"), evidence.get("source_group_evidence_sha256")), payload["source_root_sha256"], payload["source_progress_sha256"], payload["source_record_sha256"], payload["source_result_sha256"], payload["compatibility_attestation_sha256"], payload["elapsed_seconds"], payload["reason"], context=context)
     raise ValueError("checkpoint record origin is invalid")
 
@@ -814,7 +855,11 @@ def _canonical_object(raw: bytes, name: str) -> dict[str, object]:
 
 def _reject_forbidden_keys(value: object) -> None:
     if isinstance(value, dict):
-        if set(value) & _FORBIDDEN_RECORD_KEYS: raise ValueError("checkpoint record embeds forbidden context")
+        for key in value:
+            if not isinstance(key, str): raise ValueError("checkpoint record keys must be strings")
+            normalized = "".join(character for character in key.lower() if character.isalnum())
+            if normalized in {"context", "lanes", "datasets", "testidentitymanifest", "governance", "test"} or "testlabel" in normalized or any(token in normalized for token in _FORBIDDEN_RECORD_KEY_TOKENS):
+                raise ValueError("checkpoint record embeds forbidden evaluation or context data")
         for nested in value.values(): _reject_forbidden_keys(nested)
     elif isinstance(value, list):
         for nested in value: _reject_forbidden_keys(nested)
