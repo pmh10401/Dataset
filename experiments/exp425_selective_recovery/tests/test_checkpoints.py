@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import dataclass
 from hashlib import sha256
 import json
 import os
@@ -41,6 +41,170 @@ def _provenance(context: FrozenRunContext) -> Exp425RunProvenance:
         model_seeds=(1,), perturbation_seeds=(2,), runtime_versions={"python": "test"},
         expected_datasets=context.datasets, predecessor_compatibility_sha256=_digest("3"),
     )
+
+
+@dataclass(frozen=True)
+class _CheckpointBenchmarkMetrics:
+    repeated_context_bytes: int
+    exp425_bytes: int
+    byte_reduction_fraction: float
+    old_median_validated_cycle_seconds: float
+    exp425_median_open_iter_validated_cycle_seconds: float
+    speedup: float
+    old_candidate_coordinates: tuple[tuple[object, ...], ...]
+    exp425_candidate_coordinates: tuple[tuple[object, ...], ...]
+    old_result_evidence_digests: tuple[str, ...]
+    exp425_result_evidence_digests: tuple[str, ...]
+    completed_record_count: int
+
+
+def _measure_shared_context_checkpoint_benchmark() -> _CheckpointBenchmarkMetrics:
+    """Measure two fully validated 25-record checkpoint representations."""
+    context = _context()
+    provenance = _provenance(context)
+    datasets = context.datasets[:25]
+
+    def record_for(dataset: str, index: int, store: Exp425CheckpointStore) -> NativeRecordEnvelope:
+        digest = lambda label: sha256(f"{dataset}:{label}".encode()).hexdigest()
+        values = {name: digest(name) for name in (
+            "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256",
+            "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256",
+            "result_evidence_sha256", "backend_audit_sha256",
+        )}
+        trace_body = {
+            "schema": "exp425.native-trace.v1", "run_identity": provenance.run_identity,
+            "dataset": dataset, "run_context_sha256": store.run_context_sha256,
+            **values, "device": "mps",
+        }
+        trace = sha256(canonical_json_bytes(trace_body)).hexdigest()
+        result = {
+            "effective_result": {
+                "candidate_coordinates": [[dataset, index]],
+                "result_evidence_sha256": values["result_evidence_sha256"],
+                "status": "abstained",
+            },
+            "native_trace_body": trace_body,
+        }
+        body = {
+            "schema_version": "exp425.dataset.v1", "dataset": dataset, "origin": "exp425_native",
+            "run_context_sha256": store.run_context_sha256, "result_payload": result,
+            "group_evidence": {"eligibility_sha256": values["eligibility_sha256"]},
+            "trace_sha256": trace, "model_hashes": {"model": values["model_evidence_sha256"]},
+            "calibration_hashes": {"score": values["scoring_evidence_sha256"]},
+            "backend_audit_sha256": values["backend_audit_sha256"], "elapsed_seconds": float(index),
+            "reason": "benchmark",
+        }
+        return NativeRecordEnvelope(
+            dataset, result, {"eligibility_sha256": values["eligibility_sha256"]},
+            trace_sha256=trace, record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(),
+            model_hashes={"model": values["model_evidence_sha256"]},
+            calibration_hashes={"score": values["scoring_evidence_sha256"]},
+            elapsed_seconds=float(index), reason="benchmark", **values,
+        )
+
+    def checked_native_result(record: NativeRecordEnvelope) -> tuple[tuple[tuple[object, ...], ...], str]:
+        payload = dict(record.result_payload)
+        trace_body = payload.get("native_trace_body")
+        effective = payload.get("effective_result")
+        if not isinstance(trace_body, dict) or not isinstance(effective, dict):
+            raise AssertionError("benchmark native result payload is invalid")
+        if sha256(canonical_json_bytes(trace_body)).hexdigest() != record.trace_sha256:
+            raise AssertionError("benchmark trace does not match its stored declared digest")
+        result_evidence = effective.get("result_evidence_sha256")
+        coordinates = effective.get("candidate_coordinates")
+        if (
+            not isinstance(result_evidence, str)
+            or trace_body.get("result_evidence_sha256") != result_evidence
+            or not isinstance(coordinates, list)
+            or any(not isinstance(row, list) for row in coordinates)
+        ):
+            raise AssertionError("benchmark effective result evidence is invalid")
+        return tuple(tuple(row) for row in coordinates), result_evidence
+
+    with TemporaryDirectory() as directory:
+        root = Path(directory) / "checkpoints"
+        store = Exp425CheckpointStore.create(root, provenance, context)
+        authority = object()
+        capabilities._register_authority(authority, "exp425_native")
+        try:
+            records = [record_for(dataset, index, store) for index, dataset in enumerate(datasets)]
+            for record in records:
+                token = capabilities._mint(
+                    authority, kind="native", run_identity=provenance.run_identity,
+                    dataset=record.dataset, context_sha256=store.run_context_sha256,
+                    trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256,
+                    backend_sha256=record.backend_audit_sha256,
+                )
+                store._commit_native(token, record)
+        finally:
+            capabilities._close_authority(authority)
+        repeated_records = [canonical_json_bytes({
+            "schema": "exp424.repeated-context.v1", "context": _context_payload(context),
+            "record": checkpoints._native_record_body(store.run_context_sha256, record) | {
+                "record_payload_sha256": record.record_payload_sha256,
+            },
+        }) for record in records]
+        repeated_context_bytes = sum(map(len, repeated_records))
+        exp425_bytes = sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
+
+        def old_cycle() -> tuple[tuple[tuple[object, ...], ...], tuple[str, ...]]:
+            coordinates: list[tuple[object, ...]] = []
+            result_evidence_digests: list[str] = []
+            for raw in repeated_records:
+                payload = checkpoints._canonical_object(raw, "repeated benchmark record")
+                if set(payload) != {"schema", "context", "record"} or payload["schema"] != "exp424.repeated-context.v1":
+                    raise AssertionError("repeated benchmark schema is invalid")
+                if _context_from_payload(payload["context"]) != context:
+                    raise AssertionError("repeated benchmark context is invalid")
+                persisted = payload["record"]
+                if not isinstance(persisted, dict):
+                    raise AssertionError("repeated benchmark record is invalid")
+                decoded = checkpoints._decode_record(canonical_json_bytes(persisted), context)
+                if not isinstance(decoded, NativeRecordEnvelope):
+                    raise AssertionError("repeated benchmark record origin is invalid")
+                rows, evidence = checked_native_result(decoded)
+                coordinates.extend(rows)
+                result_evidence_digests.append(evidence)
+            return tuple(coordinates), tuple(result_evidence_digests)
+
+        def new_cycle() -> tuple[tuple[tuple[object, ...], ...], tuple[str, ...], int]:
+            reopened = Exp425CheckpointStore.open(root, provenance, context)
+            coordinates: list[tuple[object, ...]] = []
+            result_evidence_digests: list[str] = []
+            for record in reopened.iter_records():
+                if not isinstance(record, NativeRecordEnvelope):
+                    raise AssertionError("Exp425 benchmark record origin is invalid")
+                rows, evidence = checked_native_result(record)
+                coordinates.extend(rows)
+                result_evidence_digests.append(evidence)
+            return tuple(coordinates), tuple(result_evidence_digests), len(reopened.completed_record_digests())
+
+        old_coordinates, old_evidence = old_cycle()
+        exp425_coordinates, exp425_evidence, completed_count = new_cycle()
+        old_samples: list[float] = []
+        exp425_samples: list[float] = []
+        for _ in range(5):
+            started = time.perf_counter()
+            old_coordinates, old_evidence = old_cycle()
+            old_samples.append(time.perf_counter() - started)
+            started = time.perf_counter()
+            exp425_coordinates, exp425_evidence, completed_count = new_cycle()
+            exp425_samples.append(time.perf_counter() - started)
+        old_seconds = sorted(old_samples)[2]
+        exp425_seconds = sorted(exp425_samples)[2]
+        return _CheckpointBenchmarkMetrics(
+            repeated_context_bytes=repeated_context_bytes,
+            exp425_bytes=exp425_bytes,
+            byte_reduction_fraction=1.0 - (exp425_bytes / repeated_context_bytes),
+            old_median_validated_cycle_seconds=old_seconds,
+            exp425_median_open_iter_validated_cycle_seconds=exp425_seconds,
+            speedup=old_seconds / exp425_seconds,
+            old_candidate_coordinates=old_coordinates,
+            exp425_candidate_coordinates=exp425_coordinates,
+            old_result_evidence_digests=old_evidence,
+            exp425_result_evidence_digests=exp425_evidence,
+            completed_record_count=completed_count,
+        )
 
 
 class CheckpointStoreTests(unittest.TestCase):
@@ -385,51 +549,10 @@ class CheckpointBenchmarkTests(unittest.TestCase):
     """The compact format must avoid revalidating the same frozen context 25 times."""
 
     def test_shared_context_is_compact_and_resumes_faster_than_repeated_context(self) -> None:
-        context = _context()
-        provenance = _provenance(context)
-        datasets = context.datasets[:25]
-
-        def record_for(dataset: str, index: int, store: Exp425CheckpointStore) -> NativeRecordEnvelope:
-            digest = lambda label: sha256(f"{dataset}:{label}".encode()).hexdigest()
-            values = {name: digest(name) for name in ("train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256")}
-            trace_body = {"schema": "exp425.native-trace.v1", "run_identity": provenance.run_identity, "dataset": dataset, "run_context_sha256": store.run_context_sha256, **values, "device": "mps"}
-            trace = sha256(canonical_json_bytes(trace_body)).hexdigest()
-            result = {"effective_result": {"candidate_coordinates": [[dataset, index]], "result_evidence_sha256": values["result_evidence_sha256"], "status": "abstained"}, "native_trace_body": trace_body}
-            body = {"schema_version": "exp425.dataset.v1", "dataset": dataset, "origin": "exp425_native", "run_context_sha256": store.run_context_sha256, "result_payload": result, "group_evidence": {"eligibility_sha256": values["eligibility_sha256"]}, "trace_sha256": trace, "model_hashes": {"model": values["model_evidence_sha256"]}, "calibration_hashes": {"score": values["scoring_evidence_sha256"]}, "backend_audit_sha256": values["backend_audit_sha256"], "elapsed_seconds": float(index), "reason": "benchmark"}
-            return NativeRecordEnvelope(dataset, result, {"eligibility_sha256": values["eligibility_sha256"]}, trace_sha256=trace, record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(), model_hashes={"model": values["model_evidence_sha256"]}, calibration_hashes={"score": values["scoring_evidence_sha256"]}, elapsed_seconds=float(index), reason="benchmark", **values)
-
-        with TemporaryDirectory() as directory:
-            root = Path(directory) / "checkpoints"
-            store = Exp425CheckpointStore.create(root, provenance, context)
-            authority = object(); capabilities._register_authority(authority, "exp425_native")
-            try:
-                records = [record_for(dataset, index, store) for index, dataset in enumerate(datasets)]
-                for record in records:
-                    token = capabilities._mint(authority, kind="native", run_identity=provenance.run_identity, dataset=record.dataset, context_sha256=store.run_context_sha256, trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256, backend_sha256=record.backend_audit_sha256)
-                    store._commit_native(token, record)
-            finally:
-                capabilities._close_authority(authority)
-            repeated_records = [canonical_json_bytes({"schema": "exp424.repeated-context.v1", "context": _context_payload(context), "dataset": record.dataset, "result_payload": dict(record.result_payload), "group_evidence": dict(record.group_evidence), "model_hashes": dict(record.model_hashes), "calibration_hashes": dict(record.calibration_hashes), "backend_audit_sha256": record.backend_audit_sha256, "record_payload_sha256": record.record_payload_sha256}) for record in records]
-            repeated_context_bytes = sum(map(len, repeated_records))
-            exp425_bytes = sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
-            def old_cycle() -> list[list[object]]:
-                payloads = [json.loads(raw) for raw in repeated_records]
-                for raw, payload in zip(repeated_records, payloads, strict=True):
-                    self.assertEqual(canonical_json_bytes(payload), raw)
-                    self.assertEqual(_context_from_payload(payload["context"]), context)
-                    self.assertEqual(sha256(canonical_json_bytes(payload["result_payload"]["native_trace_body"])).hexdigest(), sha256(canonical_json_bytes(payload["result_payload"]["native_trace_body"])).hexdigest())
-                return [payload["result_payload"]["effective_result"]["candidate_coordinates"] for payload in payloads]
-            def new_cycle() -> list[list[object]]:
-                reopened = Exp425CheckpointStore.open(root, provenance, context)
-                return [dict(record.result_payload)["effective_result"]["candidate_coordinates"] for record in reopened.iter_records()]
-            old_cycle(); new_cycle()
-            old_samples = []; new_samples = []
-            for _ in range(5):
-                started = time.perf_counter(); old_coordinates = old_cycle(); old_samples.append(time.perf_counter() - started)
-                started = time.perf_counter(); exp425_coordinates = new_cycle(); new_samples.append(time.perf_counter() - started)
-            old_resume_seconds = sorted(old_samples)[2]
-            exp425_resume_seconds = sorted(new_samples)[2]
-            self.assertLess(exp425_bytes, repeated_context_bytes * 0.20)
-            self.assertLess(exp425_resume_seconds, old_resume_seconds / 2.0)
-            self.assertEqual(exp425_coordinates, old_coordinates)
-            self.assertEqual(len(store.completed_record_digests()), 25)
+        metrics = _measure_shared_context_checkpoint_benchmark()
+        self.assertGreaterEqual(metrics.byte_reduction_fraction, 0.80)
+        self.assertGreaterEqual(metrics.speedup, 2.0)
+        self.assertEqual(metrics.exp425_candidate_coordinates, metrics.old_candidate_coordinates)
+        self.assertEqual(metrics.exp425_result_evidence_digests, metrics.old_result_evidence_digests)
+        self.assertEqual(len(metrics.exp425_candidate_coordinates), 25)
+        self.assertEqual(metrics.completed_record_count, 25)
