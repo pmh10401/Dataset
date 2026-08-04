@@ -58,6 +58,39 @@ Additional verification:
 - `python3 -m unittest discover -s experiments/exp425_selective_recovery/tests -p 'test_*.py' -q` — PASS, 87 tests in 6.366s.
 - `python3 -m compileall -q experiments/exp425_selective_recovery` and `git diff --check` — PASS.
 
+## Fix round 3
+
+Round 3 makes close audit state honest and adds the real restore-before-return
+macOS ABA proof. `DatabaseSnapshotAudit` now exposes immutable
+`integrity_status` and a stable, serialisable `failure_reason` code; it never
+stores exception representations. A clean close is `lifecycle="closed"`;
+an integrity failure whose owned cleanup succeeded is
+`lifecycle="closed_integrity_failed"`; retained/replaced owner cleanup is
+`lifecycle="closed_cleanup_failed"`. Cleanup status remains independent.
+
+The metadata-mutation close regression proves the primary
+`descriptor_metadata_changed` error remains raised while the private hardlink
+is removed, the lock is released only after cleanup, and audit records
+`cleanup_status="removed"`, `integrity_status="integrity_failed"`, and
+`closed_integrity_failed`.
+
+`test_connect_restore_aba_reads_accepted_inode_not_owned_path_attacker` stages
+a distinct valid SQLite attacker DB at the private owned pathname during
+`sqlite3.connect`, calls real SQLite, then restores the exact accepted name
+before returning. Acceptance succeeds after the ctime-only owned-link
+namespace transition is re-baselined; the descriptor URI is `/dev/fd/...` and
+the retained connection reads original `("A", "B")` rows, not attacker
+sentinel data. The former owned-path target would read `ATTACKER` and fail this
+regression.
+
+Round-3 verification on macOS:
+
+- `python3 -m unittest experiments.exp425_selective_recovery.tests.test_database -q` — PASS, 25 tests in 3.363s; `snapshot=0.134s`, `verified_opens=2.602s`.
+- `python3 -m unittest experiments.exp425_selective_recovery.tests.test_database experiments.exp417_causal_multihorizon_shadow.tests.test_inputs -q` — PASS, 50 tests in 3.439s; `snapshot=0.134s`, `verified_opens=2.591s`.
+- `python3 -m unittest discover -s experiments/exp425_selective_recovery/tests -p 'test_*.py' -q` — PASS, 106 tests in 9.660s; `snapshot=0.134s`, `verified_opens=2.600s`.
+- Explicit benchmark: `python3 -m unittest experiments.exp425_selective_recovery.tests.test_database.DatabaseBenchmarkTests.test_256mib_snapshot_reads_beat_twenty_full_descriptor_hashes -v` — PASS, 3.158s; `snapshot=0.136s`, `verified_opens=2.593s`.
+- `python3 -m compileall -q experiments/exp425_selective_recovery` and `git diff --check` — PASS.
+
 Residual risk remains: the full official population and all adversarial
 parent-namespace/live-writer scenarios were not run against the official DB.
 

@@ -60,6 +60,8 @@ class DatabaseSnapshotAudit:
     boundaries: tuple[str, ...]
     sqlite_read_lock_held: bool = True
     cleanup_status: str = "pending"
+    integrity_status: str = "live"
+    failure_reason: str | None = None
     lifecycle: str = "live"
 
 
@@ -103,6 +105,22 @@ def _reject_persistent_wal_mode(descriptor: int) -> None:
     header = os.pread(descriptor, 20, 0)
     if len(header) >= 20 and header[18:20] == b"\x02\x02":
         raise ValueError("database persistent WAL mode is not accepted")
+
+
+def _failure_reason(error: BaseException) -> str:
+    """Return a stable, serialisable audit code instead of exception text."""
+    message = str(error)
+    if message.startswith("database descriptor metadata changed"):
+        return "descriptor_metadata_changed"
+    if message.startswith("database pathname metadata changed"):
+        return "pathname_metadata_changed"
+    if message.startswith("owned database"):
+        return "owned_link_or_directory_changed"
+    if message.startswith("database parent"):
+        return "parent_namespace_or_metadata_changed"
+    if "sidecar" in message or "SQLite artifact" in message:
+        return "sqlite_artifact_present"
+    return "integrity_check_failed"
 
 
 def _safe_unlinked_owner(
@@ -379,10 +397,12 @@ class Exp425DatabaseSnapshot:
         if self._closed:
             raise ValueError("Exp425 database snapshot is closed")
         error: BaseException | None = None
+        integrity_error: BaseException | None = None
         try:
             self.verify_boundary("close:before")
         except BaseException as caught:
             error = caught
+            integrity_error = caught
         cleanup_status = "not_required" if self._owned_directory is None else "pending"
         try:
             if self._owned_directory is not None and self._owned_name is not None:
@@ -409,12 +429,27 @@ class Exp425DatabaseSnapshot:
         except BaseException as caught:
             if cleanup_status == "pending":
                 cleanup_status = "retained_after_cleanup_failure"
+            if integrity_error is None:
+                integrity_error = caught
             if error is None:
                 error = caught
         finally:
             self._closed = True
-            lifecycle = "closed" if cleanup_status in {"removed", "not_required"} else "closed_cleanup_failed"
-            self._audit = replace(self._audit, sqlite_read_lock_held=False, cleanup_status=cleanup_status, lifecycle=lifecycle)
+            integrity_status = "clean" if integrity_error is None else "integrity_failed"
+            if cleanup_status not in {"removed", "not_required"}:
+                lifecycle = "closed_cleanup_failed"
+            elif integrity_error is not None:
+                lifecycle = "closed_integrity_failed"
+            else:
+                lifecycle = "closed"
+            self._audit = replace(
+                self._audit,
+                sqlite_read_lock_held=False,
+                cleanup_status=cleanup_status,
+                integrity_status=integrity_status,
+                failure_reason=None if integrity_error is None else _failure_reason(integrity_error),
+                lifecycle=lifecycle,
+            )
             try:
                 self._connection.close()
             finally:
@@ -503,6 +538,28 @@ def open_database_snapshot(database: Path, *, expected_sha256: str) -> Iterator[
         connection = sqlite3.connect(_descriptor_sqlite_uri(database_fd), uri=True)
         connection.execute("PRAGMA query_only=ON")
         exp417_inputs.assert_label_free_sql_contract()
+        # A descriptor-only connection cannot change database bytes, but a
+        # same-user adversary can rename our owned hardlink while connect is in
+        # flight and restore it before this check.  That changes only ctime;
+        # re-baseline that one transition while requiring every data-bearing
+        # property and both namespace names to be exact.
+        post_connect = os.fstat(database_fd)
+        if (
+            _identity(post_connect) != _identity(operational)
+            or post_connect.st_size != operational.st_size
+            or post_connect.st_mtime_ns != operational.st_mtime_ns
+            or post_connect.st_nlink != operational.st_nlink
+            or _metadata(_accepted_path_info(parent_fd, path.name)) != _metadata(post_connect)
+        ):
+            raise ValueError("database changed during SQLite descriptor connect")
+        if owned_directory is not None and owned_name is not None:
+            owned_fd = os.open(owned_directory, _DIRECTORY_FLAGS, dir_fd=parent_fd)
+            try:
+                if _metadata(os.stat(owned_name, dir_fd=owned_fd, follow_symlinks=False)) != _metadata(post_connect):
+                    raise ValueError("owned database link changed during SQLite descriptor connect")
+            finally:
+                os.close(owned_fd)
+        operational = post_connect
         snapshot = Exp425DatabaseSnapshot(path, path.name, parent_fd, grandparent_fd, path.parent.name, database_fd, connection, before, operational, os.fstat(parent_fd), owned_directory, owned_name, owned_directory_identity, actual)
         snapshot.verify_boundary("open:accepted")
         grandparent_fd = parent_fd = database_fd = None

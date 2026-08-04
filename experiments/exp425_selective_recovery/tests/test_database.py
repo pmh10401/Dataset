@@ -213,6 +213,41 @@ class DatabaseSnapshotTests(unittest.TestCase):
         self.assertEqual(len(seen), 1)
         self.assertIn("/dev/fd/", seen[0])
 
+    @unittest.skipUnless(sys.platform == "darwin", "owned hard-link ABA target is macOS-only")
+    def test_connect_restore_aba_reads_accepted_inode_not_owned_path_attacker(self) -> None:
+        """Restoring names before connect returns cannot alter a descriptor URI."""
+        attacker_template = self.root / "attacker-template.sqlite"
+        attacker_connection = sqlite3.connect(attacker_template)
+        try:
+            attacker_connection.execute("CREATE TABLE datasets (id INTEGER PRIMARY KEY, name TEXT)")
+            attacker_connection.execute("INSERT INTO datasets VALUES (1, 'ATTACKER')")
+            attacker_connection.commit()
+        finally:
+            attacker_connection.close()
+        real_connect = snapshot_database.sqlite3.connect
+        seen: list[str] = []
+
+        def replace_open_restore_owned(*args, **kwargs):
+            seen.append(args[0] if args else kwargs["database"])
+            owned = next(self.root.glob(".exp425-snapshot-*/database.sqlite"))
+            backup = owned.with_name("accepted-backup.sqlite")
+            staged_attacker = owned.with_name("attacker.sqlite")
+            os.replace(owned, backup)
+            shutil.copyfile(attacker_template, staged_attacker)
+            os.replace(staged_attacker, owned)
+            try:
+                return real_connect(*args, **kwargs)
+            finally:
+                os.unlink(owned)
+                os.replace(backup, owned)
+
+        with patch.object(snapshot_database.sqlite3, "connect", side_effect=replace_open_restore_owned):
+            with open_database_snapshot(self.database, expected_sha256=self.digest) as snapshot:
+                names = tuple(row[0] for row in snapshot._connection.execute("SELECT name FROM datasets ORDER BY name"))
+                self.assertEqual(names, ("A", "B"))
+        self.assertEqual(len(seen), 1)
+        self.assertIn("/dev/fd/", seen[0])
+
     def _contract(self, dataset: str) -> FrozenTrainContract:
         return FrozenTrainContract(dataset, (GroupQualification(2, 100, "qualified", 0.01, 0.05, 0.70, {"level_shift": .50, "gradual_drift": .50, "amplitude_scaling": .50, "period_change": .50}, True),), BackendAudit("cpu", True, 0.0, 1.0, 1.0, False), "a" * 64)
 
@@ -359,6 +394,9 @@ class DatabaseSnapshotTests(unittest.TestCase):
         self.assertFalse(owned_directory.exists())
         self.assertEqual(snapshot.audit.cleanup_status, "removed")
         self.assertFalse(snapshot.audit.sqlite_read_lock_held)
+        self.assertEqual(snapshot.audit.integrity_status, "integrity_failed")
+        self.assertEqual(snapshot.audit.failure_reason, "descriptor_metadata_changed")
+        self.assertEqual(snapshot.audit.lifecycle, "closed_integrity_failed")
 
     @unittest.skipUnless(sys.platform == "darwin", "owned hard-link behavior is macOS-only")
     def test_owned_directory_replacement_and_early_open_error_are_safe(self) -> None:
