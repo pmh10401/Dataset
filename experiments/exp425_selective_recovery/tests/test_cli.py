@@ -316,7 +316,7 @@ class Exp425CliTests(unittest.TestCase):
                 audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
                 launch = {
                     "provenance": provenance, "context": context,
-                    "snapshot": object.__new__(_SnapshotProbe), "audit": audit,
+                    "snapshot": object.__new__(_SnapshotProbe), "audit": audit, "adoption": object(),
                 }
                 for lease_identity, expected in ((identity, "owned by a live process"), ("foreign-run", "does not match this run")):
                     (output / "run.pid").write_bytes(json.dumps({
@@ -435,7 +435,7 @@ class Exp425CliTests(unittest.TestCase):
             self.assertEqual(before, _tree_state(Path(directory)))
             module = _load_cli_module()
             stdout, stderr = io.StringIO(), io.StringIO()
-            launch = {"provenance": object(), "context": object(), "snapshot": object(), "audit": object()}
+            launch = {"provenance": object(), "context": object(), "snapshot": object(), "audit": object(), "adoption": object()}
             with (
                 patch.object(module, "_factory", return_value=lambda: launch),
                 patch.object(module, "execute_runtime_command", return_value=SimpleNamespace(state="failed")) as execute,

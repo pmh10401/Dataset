@@ -76,9 +76,15 @@ class _CapturingModels(dict[str, object]):
 def _golden_shared(record: object) -> dict[str, object]:
     assert isinstance(record, dict)
     qualification = record["qualification"]
-    assert isinstance(qualification, dict)
-    groups = qualification["groups"]
-    assert isinstance(groups, list)
+    groups = [
+        {"length": group.length, "series_count": group.series_count, "status": group.status,
+         "oof_candidate_rate": group.oof_candidate_rate, "wilson_upper": group.wilson_upper,
+         "pooled_synthetic_sensitivity": group.pooled_synthetic_sensitivity,
+         "per_type_synthetic_sensitivity": dict(group.per_type_synthetic_sensitivity),
+         "seed_agreement": group.seed_agreement, "finite": group.finite,
+         "backend_fallback": group.backend_fallback}
+        for group in qualification.groups
+    ]
     return {
         "dataset": record["dataset"], "database_sha256": DATABASE_SHA256,
         "raw_train_sha256": record["raw_train_identity_sha256"],
@@ -87,7 +93,7 @@ def _golden_shared(record: object) -> dict[str, object]:
         "config": {"alpha": 0.01, "model_seeds": [41701, 41702, 41703], "perturbation_seeds": [41711, 41712, 41713], "batch_size": 32, "query_chunk": 256},
         "series_count": 106, "lengths": [96], "final_model_hashes": record["canonical_model_hashes"],
         "legacy_oof_digest": record["score_calibration_hashes"], "qualification": groups,
-        "status": qualification["status"], "candidate_coordinates": record["candidate_coordinates"],
+        "status": qualification.status, "candidate_coordinates": [[item.dataset, item.instance_index] for item in qualification.candidates],
         "finiteness": all(group["finite"] for group in groups), "fallback": False,
     }
 
@@ -128,13 +134,16 @@ def main(argv: list[str] | None = None) -> int:
         if torch.__version__.split("+", 1)[0] != "2.13.0" or not torch.backends.mps.is_built() or not torch.backends.mps.is_available() or torch.device("mps").type != "mps":
             raise ValueError("actual MPS built/available/device gate failed")
         _assert_clean_heavy_process()
+        current_head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+        if subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain"], check=True, capture_output=True, text=True).stdout or len(current_head) != 40:
+            raise ValueError("clean current Exp425 commit is required")
         golden = validate_golden_reference(ROOT, SOURCE_ROOT, GOLDEN)
         writer.progress(stage="preflight", current_dataset=None, success=None, backend="mps", torch=torch.__version__, mps_built=True, mps_available=True, completed=0, total=1)
         lanes = freeze_lane_inputs(*LANE_PATHS)
         with open_database_snapshot(DATABASE, expected_sha256=DATABASE_SHA256) as snapshot:
-            context = snapshot.freeze_context(lanes, verified_code_commit=GOLDEN_SOURCE_COMMIT)
+            context = snapshot.freeze_context(lanes, verified_code_commit=current_head)
             provenance = Exp425RunProvenance(
-                run_identity=writer.run_identity, git_commit=GOLDEN_SOURCE_COMMIT, database_sha256=DATABASE_SHA256,
+                run_identity=writer.run_identity, git_commit=current_head, database_sha256=DATABASE_SHA256,
                 lane_artifact_sha256={"hard": lanes.exp291_prediction_sha256, "standard": lanes.exp292_prediction_sha256, "priority": lanes.exp292_prediction_sha256, "automatic_normal": lanes.exp291_prediction_sha256},
                 frozen_config_sha256=_sha(asdict(FROZEN_CONFIG)), fold_contract_sha256=_sha({"runner": golden.source_hashes["experiments/exp417_causal_multihorizon_shadow/runner.py"]}),
                 model_contract_sha256=_sha(golden.source_hashes), backend_contract_sha256=_sha({"review_only": True, "cpu_audit": asdict(authenticated_cpu_audit()), "adoption": review_only_mps_assessment().payload()}),
@@ -146,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
             store = Exp425CheckpointStore.create(checkpoint_root, provenance, context)
             runtime_writer = AtomicProgressWriter.create(output_root=output / "runtime", run_identity=writer.run_identity, command="new", checkpoint_root=checkpoint_root, total_datasets=len(context.datasets), backend="mps")
             audit, adoption = authenticated_cpu_audit(), review_only_mps_assessment()
-            session = build_exp425_runtime(snapshot, audit, adoption, runtime_writer)
+            session = build_exp425_runtime(snapshot, audit, adoption, runtime_writer, current_head)
             session._fold_contract_sha256 = provenance.fold_contract_sha256
             counters = {"train": 0, "test_values": 0, "test_labels": 0}
             original_train = Exp425DatabaseSnapshot.load_train

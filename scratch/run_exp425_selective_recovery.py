@@ -254,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
         context = launch["context"]
         snapshot = launch["snapshot"]
         audit = launch["audit"]
-        adoption = launch.get("adoption")
+        adoption = launch["adoption"]
     except KeyError as error:
         snapshot = launch.get("snapshot")
         close = getattr(snapshot, "close", None)

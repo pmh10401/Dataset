@@ -99,6 +99,17 @@ exclusive single-heavy-process lock.  CPU fallback is rejected.
 
 ## Verification to date
 
+## Architecture A pre-data failure and fix — 2026-08-04
+
+The first Task 5 root `exp425_task5_mps_parity_20260804_architecture_a` failed
+only in immutable golden decoding before DB snapshot/data/MPS work. PID 32415;
+TRAIN=0, TEST values=0, TEST labels=0. Preserved SHA256s: parent.log
+`35686f22ba4875bb6e3e6deab8209675c7d36064c4bad22b0cd778dc68a74ef8`,
+events `981b231d429ec20c542701aff30fa601ef14304566c13c88312e4db4fd29af78`,
+and progress `0523b34d67e338b67c8b86236549c18d18997d22465e53e8bb22a43099dee2b1`.
+The corrected harness decodes the reconstructed `DatasetResult` rather than
+treating it as raw JSON; it is prepared but not run at the frozen retry root.
+
 ```text
 python3 -m unittest experiments.exp425_selective_recovery.tests.test_runtime \
   experiments.exp425_selective_recovery.tests.test_cli \

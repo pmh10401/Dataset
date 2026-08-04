@@ -535,23 +535,27 @@ class Exp425RunResult:
 
 
 _SESSION_SENTINEL = object()
+_TASK7_AUDIT_PATH = "/Users/mac/Documents/Dataset/exp417_causal_multihorizon_shadow/task7_backend_audit.json"
+_TASK7_AUDIT_SHA256 = "f77efa941f6b33fe6687b8ac0c2b01c152dac9c15e8b0966e3d9bb41b119b592"
+_TASK7_METRICS = (4.0948700075205124e-07, 0.9999999999845686, 0.6709759390840965)
+_SOURCE_HASHES = {"runner": "f784fb77805e353b7652582626672686f52a2fdc06d27f9c1ca58730d27b772c", "model": "422e096613be84ba77350b068e6bd837eebbb46169bb6e3e275f3f03ab2fcedd", "scoring": "06a92422ea7909efbb7354f1f0499329bd19c04642bbbd5a136fa3f2f5a39941", "entrypoint": "98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1"}
 
 
 class Exp425RuntimeSession:
     """Live registered native-write authority; construction is package-private."""
 
-    __slots__ = ("_snapshot", "_audit", "_adoption", "_writer", "process_nonce", "_runner", "_closed", "_lock_fd", "_eligibility", "_processed", "_models", "_scoring", "_execution", "_active_dataset", "_fold_contract_sha256", "_binding", "_sealed")
+    __slots__ = ("_snapshot", "_audit", "_adoption", "_writer", "_executed_head", "process_nonce", "_runner", "_closed", "_lock_fd", "_eligibility", "_processed", "_models", "_scoring", "_execution", "_active_dataset", "_fold_contract_sha256", "_binding", "_sealed")
 
-    def __init__(self, sentinel: object, snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, adoption: MPSAdoptionAssessment, progress: AtomicProgressWriter) -> None:
+    def __init__(self, sentinel: object, snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, adoption: MPSAdoptionAssessment, progress: AtomicProgressWriter, executed_head: str = "0" * 40) -> None:
         if sentinel is not _SESSION_SENTINEL:
             raise TypeError("Exp425 runtime session construction is private")
         if not isinstance(snapshot, Exp425DatabaseSnapshot) or not isinstance(audit, BackendAudit) or not isinstance(adoption, MPSAdoptionAssessment) or not isinstance(progress, AtomicProgressWriter):
             raise ValueError("Exp425 runtime inputs are invalid")
-        if audit.backend != "cpu" or audit.fallback or not audit.candidate_identity or adoption.adopted:
+        if audit.backend != "cpu" or audit.fallback or not audit.candidate_identity or (audit.max_normalized_error, audit.spearman, audit.speedup) != _TASK7_METRICS or adoption.payload() != MPSAdoptionAssessment(_TASK7_AUDIT_PATH, _TASK7_AUDIT_SHA256, True, *_TASK7_METRICS, 1.1, False, "speedup_below_threshold").payload() or len(executed_head) != 40:
             raise ValueError("Exp425 native execution requires a CPU scientific audit and non-adopted MPS audit assessment")
         _require_mps()
         object.__setattr__(self, "_sealed", False)
-        self._snapshot, self._audit, self._adoption, self._writer = snapshot, audit, adoption, progress
+        self._snapshot, self._audit, self._adoption, self._writer, self._executed_head = snapshot, audit, adoption, progress, executed_head
         self.process_nonce = uuid4().hex
         self._closed = False
         self._eligibility: dict[str, Mapping[int, object]] = {}
@@ -642,11 +646,10 @@ class Exp425RuntimeSession:
         models = TrainModelEvidence(groups, bundles, final_models, self.audit)  # type: ignore[arg-type]
         devices = {f"oof:{length}:{item.seed}": item.device for length, bundle in bundles.items() for item in bundle.models}
         devices.update({f"final:{length}:{item.seed}": item.device for length, items in final_models.items() for item in items})
-        head = subprocess.run(["git", "-C", str(Path(__file__).resolve().parents[2]), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
-        self._execution[dataset] = MPSExecutionEvidence(True, "mps", "mps", bool(torch.backends.mps.is_built()), bool(torch.backends.mps.is_available()), False, devices, torch.__version__, "4a398374d880f859f285a271ad63de4a5e55b028", {"runner": "f784fb77805e353b7652582626672686f52a2fdc06d27f9c1ca58730d27b772c", "model": "422e096613be84ba77350b068e6bd837eebbb46169bb6e3e275f3f03ab2fcedd", "scoring": "06a92422ea7909efbb7354f1f0499329bd19c04642bbbd5a136fa3f2f5a39941", "entrypoint": "98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1"}, head, "_compute_native return after existing CPU/NumPy/serialization/calibration implicit synchronization", 0)
         dataset = self._active_dataset
         if dataset is None:
             raise ValueError("native model evidence is not bound to preprocessed TRAIN")
+        self._execution[dataset] = MPSExecutionEvidence(True, "mps", "mps", bool(torch.backends.mps.is_built()), bool(torch.backends.mps.is_available()), False, devices, torch.__version__, "4a398374d880f859f285a271ad63de4a5e55b028", _SOURCE_HASHES, self._executed_head, "_compute_native return after existing CPU/NumPy/serialization/calibration implicit synchronization", 0)
         self._models[dataset] = models
         return models
 
@@ -737,8 +740,8 @@ def _acquire_heavy_process_guard() -> int:
     return descriptor
 
 
-def build_exp425_runtime(snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, adoption: MPSAdoptionAssessment, progress: AtomicProgressWriter) -> Exp425RuntimeSession:
-    return Exp425RuntimeSession(_SESSION_SENTINEL, snapshot, audit, adoption, progress)
+def build_exp425_runtime(snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, adoption: MPSAdoptionAssessment, progress: AtomicProgressWriter, executed_head: str = "0" * 40) -> Exp425RuntimeSession:
+    return Exp425RuntimeSession(_SESSION_SENTINEL, snapshot, audit, adoption, progress, executed_head)
 
 
 def _terminal_event_details(paths: RuntimePaths, run_identity: str) -> tuple[Mapping[str, object], ...]:
@@ -895,7 +898,7 @@ def execute_runtime_command(
         raise
     session: Exp425RuntimeSession | None = None
     try:
-        session = build_exp425_runtime(snapshot, audit, adoption, writer)
+        session = build_exp425_runtime(snapshot, audit, adoption, writer, provenance.git_commit)
         return run_selective_population(context, store, session)
     finally:
         if session is not None:

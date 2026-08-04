@@ -372,8 +372,8 @@ class NativeRecordEnvelope(_DeepImmutable):
     frozen_train_contract_sha256: str; scoring_evidence_sha256: str; result_evidence_sha256: str
     model_hashes: Mapping[str, object]; calibration_hashes: Mapping[str, object]; backend_audit_sha256: str
     trace_sha256: str; record_payload_sha256: str; elapsed_seconds: float; reason: str | None; origin: str = "exp425_native"; context: object | None = field(default=None, compare=False, repr=False)
-    mps_adoption: MPSAdoptionAssessment | None = field(default=None, compare=False)
-    mps_execution: MPSExecutionEvidence | None = field(default=None, compare=False)
+    mps_adoption: MPSAdoptionAssessment | None = None
+    mps_execution: MPSExecutionEvidence | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "dataset", _nonempty_string(self.dataset, "dataset"))

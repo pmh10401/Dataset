@@ -10,6 +10,16 @@ import unittest
 
 
 class MPSParityContractTests(unittest.TestCase):
+    def test_exact_golden_record_decodes_to_an_abstained_dataset_result(self) -> None:
+        from experiments.exp425_selective_recovery.mps_parity import validate_golden_reference
+
+        source = Path("/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint")
+        golden = source / "datasets/0a19fece1acc72bd1fd0e2845ee962e54988940a96da37ba5c231fa52e551ce8.json"
+        reference = validate_golden_reference(Path.cwd(), source, golden)
+        result = reference.record["qualification"]
+        self.assertEqual(result.dataset, "ECG200_normal_1")
+        self.assertEqual(result.status, "abstained")
+        self.assertEqual(result.candidates, ())
     def test_source_hashes_reject_a_mutated_frozen_runner(self) -> None:
         from experiments.exp425_selective_recovery.mps_parity import verify_source_hashes
 

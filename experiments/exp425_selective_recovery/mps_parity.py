@@ -19,6 +19,7 @@ from typing import Any
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp417_causal_multihorizon_shadow.checkpoints import _record_from_bytes
+from experiments.exp417_causal_multihorizon_shadow.contracts import DatasetDecisionEvidence, DatasetResult
 from experiments.exp417_causal_multihorizon_shadow.contracts import BackendAudit
 from .contracts import MPSAdoptionAssessment
 
@@ -98,7 +99,7 @@ def validate_golden_reference(repository_root: Path, source_root: Path, record_p
     if record.get("score_calibration_hashes") != EXPECTED_LEGACY_OOF:
         raise ValueError("golden legacy OOF digest mismatch")
     qualification = record.get("qualification")
-    if not isinstance(qualification, Mapping) or qualification.get("status") != "abstained" or qualification.get("candidates") != []:
+    if not isinstance(qualification, DatasetResult) or qualification.dataset != FIXTURE or qualification.status != "abstained" or qualification.candidates or not isinstance(qualification.decision_evidence, DatasetDecisionEvidence) or qualification.decision_evidence.frozen_train_contract is None or any(group.status != "failed" or group.finite is not True for group in qualification.groups):
         raise ValueError("golden qualification is not a no-candidate abstention")
     return GoldenReference(record, GOLDEN_RECORD_SHA256, source_hashes, GOLDEN_ROOT_SHA256, GOLDEN_PROGRESS_SHA256)
 
