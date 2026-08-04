@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from hashlib import sha256
 import fcntl
 import json
@@ -26,6 +26,7 @@ _ROOT_FILES = frozenset({"checkpoint_provenance.json", "run_context.json", "prog
 _FORBIDDEN_RECORD_KEYS = frozenset({"context", "lanes", "datasets", "test_identity_manifest"})
 _OPEN_FLAGS = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
 _after_import_phase = lambda phase: None
+_after_native_phase = lambda phase: None
 
 
 def record_filename(dataset: str) -> str:
@@ -59,7 +60,7 @@ class _ImportBatch:
 class Exp425CheckpointStore:
     """A shared-context checkpoint root. Only private capability paths mutate it."""
 
-    def __init__(self, root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext, record_digests: Mapping[str, str]) -> None:
+    def __init__(self, root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext, record_digests: Mapping[str, str], root_identity: tuple[int, int]) -> None:
         self.root = Path(root)
         self.provenance = provenance
         self.context = context
@@ -68,7 +69,16 @@ class Exp425CheckpointStore:
         if self.run_context_sha256 is None:
             raise ValueError("checkpoint context digest is absent")
         self._record_digests = MappingProxyType(dict(record_digests))
+        self._root_identity = root_identity
         self.import_revalidation_required: tuple[tuple[str, str], ...] = ()
+
+    @contextmanager
+    def _store_binding(self, *, exclusive: bool) -> Iterator["_locked_root"]:
+        """Acquire this instance's root only if the original inode still owns its path."""
+        with _locked_root(self.root, exclusive=exclusive) as binding:
+            if binding.identity != self._root_identity:
+                raise ValueError("checkpoint store root identity was replaced")
+            yield binding
 
     @classmethod
     def create(cls, root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> "Exp425CheckpointStore":
@@ -82,6 +92,7 @@ class Exp425CheckpointStore:
         context_bytes = canonical_json_bytes(_context_payload(context))
         digest = sha256(context_bytes).hexdigest()
         bound = provenance.with_run_context_sha256(digest)
+        root_identity: tuple[int, int] | None = None
         try:
             root.mkdir(mode=0o700)
             with _locked_root(root, exclusive=True) as binding:
@@ -93,10 +104,13 @@ class Exp425CheckpointStore:
                 _write_new_at(binding.descriptor, "checkpoint_provenance.json", canonical_json_bytes(bound.to_payload()))
                 _write_new_at(binding.descriptor, "progress.json", _progress_bytes(bound.expected_datasets, {}))
                 binding.verify()
+                assert binding.identity is not None
+                root_identity = binding.identity
         except BaseException:
             # A partially-created root remains fail-closed and is never adopted.
             raise
-        return cls(root, bound, context, {})
+        assert root_identity is not None
+        return cls(root, bound, context, {}, root_identity)
 
     @classmethod
     def open(cls, root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> "Exp425CheckpointStore":
@@ -131,7 +145,8 @@ class Exp425CheckpointStore:
                 if stored != expected or context_bytes != expected_context:
                     raise ValueError("Exp425 checkpoint provenance or context does not match")
                 _validate_inventory(root, stored, progress, allow_intents=True, binding=binding)
-                store = cls(root, provenance.with_run_context_sha256(digest), context, progress["record_digests"])
+                assert binding.identity is not None
+                store = cls(root, provenance.with_run_context_sha256(digest), context, progress["record_digests"], binding.identity)
                 if exclusive:
                     store._reconcile_native_intents(binding=binding)
                 binding.verify()
@@ -146,38 +161,42 @@ class Exp425CheckpointStore:
                 raise
 
     def completed_record_digests(self) -> Mapping[str, str]:
-        return MappingProxyType(dict(self._record_digests))
+        with self._store_binding(exclusive=False):
+            return MappingProxyType(dict(self._record_digests))
 
     def load_record(self, dataset: str) -> Exp425Record:
-        if dataset not in self._record_digests:
-            raise ValueError("dataset is not completed")
-        with _locked_root(self.root, exclusive=False) as binding:
+        with self._store_binding(exclusive=False) as binding:
+            if dataset not in self._record_digests:
+                raise ValueError("dataset is not completed")
             datasets_fd, _ = _open_directory_at(binding, "datasets")
             try:
                 raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
             finally:
                 os.close(datasets_fd)
             binding.verify()
-        record = _decode_record(raw, self.context)
+        record = _decode_record(raw, self.context, native_run_identity=self.provenance.run_identity, native_context_sha256=self.run_context_sha256)
         if record.dataset != dataset or _record_digest_from_raw(raw) != self._record_digests[dataset]:
             raise ValueError("checkpoint record digest does not match progress")
         return record
 
     def iter_records(self) -> Iterator[Exp425Record]:
+        with self._store_binding(exclusive=False):
+            pass
         for dataset in self.expected_datasets:
             if dataset in self._record_digests:
                 yield self.load_record(dataset)
 
     def _commit_native(self, capability: object, record: NativeRecordEnvelope) -> str:
-        if not isinstance(record, NativeRecordEnvelope):
-            raise ValueError("native checkpoint record is invalid")
-        trace = _native_trace_sha256(self.provenance.run_identity, self.run_context_sha256, record)
-        body = _native_record_body(self.run_context_sha256, record)
-        digest = sha256(canonical_json_bytes(body)).hexdigest()
-        if trace != record.trace_sha256 or digest != record.record_payload_sha256:
-            raise ValueError("native record digest does not match its canonical preimage")
-        capabilities._consume(capability, kind="native", run_identity=self.provenance.run_identity, dataset=record.dataset, context_sha256=self.run_context_sha256, trace_sha256=trace, record_sha256=digest, backend_sha256=record.backend_audit_sha256)
-        self._write_record(record, body, digest, intent_extra={})
+        with self._store_binding(exclusive=True) as binding:
+            if not isinstance(record, NativeRecordEnvelope):
+                raise ValueError("native checkpoint record is invalid")
+            trace = _native_trace_sha256(self.provenance.run_identity, self.run_context_sha256, record)
+            body = _native_record_body(self.run_context_sha256, record)
+            digest = sha256(canonical_json_bytes(body)).hexdigest()
+            if trace != record.trace_sha256 or digest != record.record_payload_sha256:
+                raise ValueError("native record digest does not match its canonical preimage")
+            capabilities._consume(capability, kind="native", run_identity=self.provenance.run_identity, dataset=record.dataset, context_sha256=self.run_context_sha256, trace_sha256=trace, record_sha256=digest, backend_sha256=record.backend_audit_sha256)
+            self._write_record(record, body, digest, intent_extra={}, binding=binding)
         return digest
 
     def _begin_import_batch(self, capability: object, batch_identity: str) -> object:
@@ -330,12 +349,16 @@ class Exp425CheckpointStore:
             finally:
                 os.close(transactions_fd); os.close(datasets_fd)
 
-    def _write_record(self, record: Exp425Record, body: dict[str, object], digest: str, *, intent_extra: Mapping[str, object]) -> None:
+    def _write_record(self, record: Exp425Record, body: dict[str, object], digest: str, *, intent_extra: Mapping[str, object], binding: "_locked_root | None" = None) -> None:
         if record.dataset not in self.expected_datasets or record.dataset in self._record_digests:
             raise ValueError("checkpoint dataset is invalid or already completed")
+        if binding is None:
+            with self._store_binding(exclusive=True) as owned:
+                self._write_record(record, body, digest, intent_extra=intent_extra, binding=owned)
+            return
         encoded = canonical_json_bytes(body | {"record_payload_sha256": digest})
         _reject_forbidden_keys(body)
-        with _locked_root(self.root, exclusive=True) as binding:
+        with nullcontext(binding):
             _, _, progress = _read_root_metadata(self.root, binding=binding)
             if record.dataset in progress["record_digests"]:
                 raise ValueError("checkpoint dataset is already completed")
@@ -343,15 +366,19 @@ class Exp425CheckpointStore:
             transactions_fd, transactions_identity = _open_directory_at(binding, "transactions")
             try:
                 intent_name = uuid.uuid4().hex + ".json"
-                intent = {"schema": "exp425.intent.v1", "origin": record.origin, "dataset": record.dataset, "record_payload_sha256": digest, **dict(intent_extra)}
+                intent = {"schema": "exp425.intent.v1", "operation": "commit_native", "origin": record.origin, "dataset": record.dataset, "record_payload_sha256": digest, **dict(intent_extra)}
                 _write_new_at(transactions_fd, intent_name, canonical_json_bytes(intent))
+                _after_native_phase("intent_durable")
                 _write_new_at(datasets_fd, record_filename(record.dataset), encoded)
+                _after_native_phase("record_durable")
                 digests = dict(progress["record_digests"]); digests[record.dataset] = digest
                 assert binding.descriptor is not None
                 _atomic_replace_at(binding.descriptor, "progress.json", _progress_bytes(self.expected_datasets, digests, record.dataset))
+                _after_native_phase("progress_durable")
                 _verify_directory_at(binding, "transactions", transactions_identity)
                 os.unlink(intent_name, dir_fd=transactions_fd)
                 os.fsync(transactions_fd)
+                _after_native_phase("intent_removed")
                 _verify_directory_at(binding, "datasets", datasets_identity)
                 binding.verify()
                 self._record_digests = MappingProxyType(digests)
@@ -360,7 +387,7 @@ class Exp425CheckpointStore:
 
     def _reconcile_native_intents(self, *, binding: "_locked_root | None" = None) -> None:
         if binding is None:
-            with _locked_root(self.root, exclusive=True) as owned:
+            with self._store_binding(exclusive=True) as owned:
                 self._reconcile_native_intents(binding=owned)
             return
         with nullcontext(binding):
@@ -375,23 +402,26 @@ class Exp425CheckpointStore:
                     if not name.endswith(".json"):
                         raise ValueError("checkpoint transaction inventory is invalid")
                     intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
-                    origin, dataset, digest = intent.get("origin"), intent.get("dataset"), intent.get("record_payload_sha256")
+                    origin = intent.get("origin")
                     if origin == "exp424_import":
                         continue
-                    if origin != "exp425_native" or not isinstance(dataset, str) or not isinstance(digest, str):
-                        raise ValueError("checkpoint intent is invalid")
+                    dataset, digest = _native_intent_claims(intent)
                     try:
                         raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
                     except FileNotFoundError:
                         _verify_directory_at(binding, "transactions", transactions_identity)
-                        os.unlink(name, dir_fd=transactions_fd); changed = True; continue
+                        os.unlink(name, dir_fd=transactions_fd)
+                        os.fsync(transactions_fd)
+                        continue
                     if _record_digest_from_raw(raw) != digest:
                         raise ValueError("native checkpoint intent conflicts with record")
-                    decoded = _decode_record(raw, self.context)
+                    decoded = _decode_record(raw, self.context, native_run_identity=self.provenance.run_identity, native_context_sha256=self.run_context_sha256)
                     if decoded.dataset != dataset:
                         raise ValueError("native checkpoint record conflicts with intent")
                     if dataset not in digests:
                         digests[dataset] = digest; changed = True
+                    elif digests[dataset] != digest:
+                        raise ValueError("native checkpoint intent conflicts with progress")
                     remove_after_progress.append(name)
                 if changed:
                     assert binding.descriptor is not None
@@ -422,6 +452,56 @@ def _native_trace_sha256(run_identity: str, context_sha256: str, record: NativeR
 
 def _native_record_body(context_sha256: str, record: NativeRecordEnvelope) -> dict[str, object]:
     return {"schema_version": "exp425.dataset.v1", "dataset": record.dataset, "origin": record.origin, "run_context_sha256": context_sha256, "result_payload": dict(record.result_payload), "group_evidence": dict(record.group_evidence), "trace_sha256": record.trace_sha256, "model_hashes": dict(record.model_hashes), "calibration_hashes": dict(record.calibration_hashes), "backend_audit_sha256": record.backend_audit_sha256, "elapsed_seconds": record.elapsed_seconds, "reason": record.reason}
+
+
+def _native_intent_claims(intent: Mapping[str, object]) -> tuple[str, str]:
+    required = {"schema", "operation", "origin", "dataset", "record_payload_sha256"}
+    if (
+        set(intent) != required
+        or intent.get("schema") != "exp425.intent.v1"
+        or intent.get("operation") != "commit_native"
+        or intent.get("origin") != "exp425_native"
+    ):
+        raise ValueError("native checkpoint intent is invalid")
+    dataset, digest = intent["dataset"], intent["record_payload_sha256"]
+    if not isinstance(dataset, str) or not dataset or not isinstance(digest, str) or len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+        raise ValueError("native checkpoint intent is invalid")
+    return dataset, digest
+
+
+def _validate_native_record_binding(payload: Mapping[str, object], trace: Mapping[str, object], *, native_run_identity: str | None, native_context_sha256: str | None) -> None:
+    if (
+        trace.get("schema") != "exp425.native-trace.v1"
+        or trace.get("dataset") != payload.get("dataset")
+        or trace.get("run_context_sha256") != payload.get("run_context_sha256")
+        or trace.get("device") != "mps"
+        or trace.get("backend_audit_sha256") != payload.get("backend_audit_sha256")
+        or native_run_identity is not None and trace.get("run_identity") != native_run_identity
+        or native_context_sha256 is not None and payload.get("run_context_sha256") != native_context_sha256
+    ):
+        raise ValueError("native checkpoint trace literals are invalid")
+    result_payload = payload.get("result_payload")
+    group_evidence = payload.get("group_evidence")
+    model_hashes = payload.get("model_hashes")
+    calibration_hashes = payload.get("calibration_hashes")
+    if not all(isinstance(value, dict) for value in (result_payload, group_evidence, model_hashes, calibration_hashes)):
+        raise ValueError("native checkpoint evidence is invalid")
+    assert isinstance(result_payload, dict)
+    effective_result = result_payload.get("effective_result")
+    if not isinstance(effective_result, dict):
+        raise ValueError("native checkpoint result evidence is invalid")
+    assert isinstance(group_evidence, dict) and isinstance(model_hashes, dict) and isinstance(calibration_hashes, dict)
+    evidence_locations = (
+        (effective_result, "result_evidence_sha256"),
+        (group_evidence, "eligibility_sha256"),
+        (group_evidence, "processed_groups_sha256"),
+        (model_hashes, "train_identity_sha256"),
+        (model_hashes, "model_evidence_sha256"),
+        (model_hashes, "frozen_train_contract_sha256"),
+        (calibration_hashes, "scoring_evidence_sha256"),
+    )
+    if any(container.get(key) != trace.get(key) for container, key in evidence_locations):
+        raise ValueError("native checkpoint evidence does not match trace")
 
 
 def _import_record_body(context_sha256: str, record: ImportedRecordEnvelope) -> dict[str, object]:
@@ -506,9 +586,7 @@ def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: 
             for name in transaction_names:
                 intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
                 if intent.get("origin") == "exp425_native":
-                    dataset, digest = intent.get("dataset"), intent.get("record_payload_sha256")
-                    if not isinstance(dataset, str) or not isinstance(digest, str):
-                        raise ValueError("native checkpoint intent is invalid")
+                    dataset, digest = _native_intent_claims(intent)
                     if dataset in pending_native:
                         raise ValueError("duplicate native checkpoint intent")
                     pending_native[dataset] = digest
@@ -528,16 +606,12 @@ def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: 
         }
         expected_names = {record_filename(dataset) for dataset in progress["record_digests"]} | {record_filename(dataset) for dataset in pending_present}
         if names != expected_names: raise ValueError("checkpoint dataset inventory is invalid")
-        for dataset, digest in progress["record_digests"].items():
-            raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
-            record = _decode_record(raw, None)
-            if record.dataset != dataset or _record_digest_from_raw(raw) != digest: raise ValueError("checkpoint dataset record is invalid")
-        for dataset, digest in {**pending_native, **pending_imported}.items():
-            try:
-                raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
-            except FileNotFoundError:
-                continue
-            if _record_digest_from_raw(raw) != digest: raise ValueError("checkpoint pending record is invalid")
+        for dataset, digest in pending_native.items():
+            if dataset in progress["record_digests"] and progress["record_digests"][dataset] != digest:
+                raise ValueError("native checkpoint intent conflicts with progress")
+        for dataset, digest in pending_imported.items():
+            if dataset in progress["record_digests"] and progress["record_digests"][dataset] != digest:
+                raise ValueError("import checkpoint intent conflicts with progress")
         if not allow_intents and transaction_names: raise ValueError("checkpoint intents are present")
         _verify_directory_at(binding, "datasets", datasets_identity)
         _verify_directory_at(binding, "transactions", transactions_identity)
@@ -547,7 +621,7 @@ def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: 
         os.close(imports_fd); os.close(transactions_fd); os.close(datasets_fd)
 
 
-def _decode_record(raw: bytes, context: FrozenRunContext | None) -> Exp425Record:
+def _decode_record(raw: bytes, context: FrozenRunContext | None, *, native_run_identity: str | None = None, native_context_sha256: str | None = None) -> Exp425Record:
     payload = _canonical_object(raw, "record")
     _reject_forbidden_keys(payload)
     origin = payload.get("origin")
@@ -562,6 +636,7 @@ def _decode_record(raw: bytes, context: FrozenRunContext | None) -> Exp425Record
         trace = result_payload["native_trace_body"]
         if not isinstance(trace, dict) or set(trace) != {"schema", "run_identity", "dataset", "run_context_sha256", "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256", "device"} or sha256(canonical_json_bytes(trace)).hexdigest() != payload["trace_sha256"]:
             raise ValueError("native checkpoint trace is invalid")
+        _validate_native_record_binding(payload, trace, native_run_identity=native_run_identity, native_context_sha256=native_context_sha256)
         return NativeRecordEnvelope(payload["dataset"], result_payload, payload["group_evidence"], trace["train_identity_sha256"], trace["eligibility_sha256"], trace["processed_groups_sha256"], trace["model_evidence_sha256"], trace["frozen_train_contract_sha256"], trace["scoring_evidence_sha256"], trace["result_evidence_sha256"], payload["model_hashes"], payload["calibration_hashes"], payload["backend_audit_sha256"], payload["trace_sha256"], digest, payload["elapsed_seconds"], payload["reason"], context=context)
     if origin == "exp424_import":
         evidence = payload.get("group_evidence")

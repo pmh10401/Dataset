@@ -43,6 +43,55 @@ def _provenance(context: FrozenRunContext) -> Exp425RunProvenance:
     )
 
 
+def _native_record_for(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, dataset: str) -> NativeRecordEnvelope:
+    values = {name: sha256(f"{dataset}:{name}".encode()).hexdigest() for name in (
+        "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256",
+        "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256",
+        "result_evidence_sha256", "backend_audit_sha256",
+    )}
+    trace_body = {
+        "schema": "exp425.native-trace.v1", "run_identity": provenance.run_identity,
+        "dataset": dataset, "run_context_sha256": store.run_context_sha256,
+        **values, "device": "mps",
+    }
+    trace = sha256(canonical_json_bytes(trace_body)).hexdigest()
+    result_payload = {
+        "effective_result": {"status": "abstained", "result_evidence_sha256": values["result_evidence_sha256"]},
+        "native_trace_body": trace_body,
+    }
+    group_evidence = {
+        "eligibility_sha256": values["eligibility_sha256"],
+        "processed_groups_sha256": values["processed_groups_sha256"],
+    }
+    model_hashes = {
+        "train_identity_sha256": values["train_identity_sha256"],
+        "model_evidence_sha256": values["model_evidence_sha256"],
+        "frozen_train_contract_sha256": values["frozen_train_contract_sha256"],
+    }
+    calibration_hashes = {"scoring_evidence_sha256": values["scoring_evidence_sha256"]}
+    body = {
+        "schema_version": "exp425.dataset.v1", "dataset": dataset, "origin": "exp425_native",
+        "run_context_sha256": store.run_context_sha256, "result_payload": result_payload,
+        "group_evidence": group_evidence, "trace_sha256": trace, "model_hashes": model_hashes,
+        "calibration_hashes": calibration_hashes, "backend_audit_sha256": values["backend_audit_sha256"],
+        "elapsed_seconds": 0.0, "reason": "synthetic",
+    }
+    return NativeRecordEnvelope(
+        dataset, result_payload, group_evidence, trace_sha256=trace,
+        record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(),
+        model_hashes=model_hashes, calibration_hashes=calibration_hashes,
+        elapsed_seconds=0.0, reason="synthetic", **values,
+    )
+
+
+def _native_capability(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, authority: object, record: NativeRecordEnvelope) -> object:
+    return capabilities._mint(
+        authority, kind="native", run_identity=provenance.run_identity, dataset=record.dataset,
+        context_sha256=store.run_context_sha256, trace_sha256=record.trace_sha256,
+        record_sha256=record.record_payload_sha256, backend_sha256=record.backend_audit_sha256,
+    )
+
+
 @dataclass(frozen=True)
 class _CheckpointBenchmarkMetrics:
     repeated_context_bytes: int
@@ -88,17 +137,17 @@ def _measure_shared_context_checkpoint_benchmark() -> _CheckpointBenchmarkMetric
         body = {
             "schema_version": "exp425.dataset.v1", "dataset": dataset, "origin": "exp425_native",
             "run_context_sha256": store.run_context_sha256, "result_payload": result,
-            "group_evidence": {"eligibility_sha256": values["eligibility_sha256"]},
-            "trace_sha256": trace, "model_hashes": {"model": values["model_evidence_sha256"]},
-            "calibration_hashes": {"score": values["scoring_evidence_sha256"]},
+            "group_evidence": {"eligibility_sha256": values["eligibility_sha256"], "processed_groups_sha256": values["processed_groups_sha256"]},
+            "trace_sha256": trace, "model_hashes": {"train_identity_sha256": values["train_identity_sha256"], "model_evidence_sha256": values["model_evidence_sha256"], "frozen_train_contract_sha256": values["frozen_train_contract_sha256"]},
+            "calibration_hashes": {"scoring_evidence_sha256": values["scoring_evidence_sha256"]},
             "backend_audit_sha256": values["backend_audit_sha256"], "elapsed_seconds": float(index),
             "reason": "benchmark",
         }
         return NativeRecordEnvelope(
-            dataset, result, {"eligibility_sha256": values["eligibility_sha256"]},
+            dataset, result, {"eligibility_sha256": values["eligibility_sha256"], "processed_groups_sha256": values["processed_groups_sha256"]},
             trace_sha256=trace, record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(),
-            model_hashes={"model": values["model_evidence_sha256"]},
-            calibration_hashes={"score": values["scoring_evidence_sha256"]},
+            model_hashes={"train_identity_sha256": values["train_identity_sha256"], "model_evidence_sha256": values["model_evidence_sha256"], "frozen_train_contract_sha256": values["frozen_train_contract_sha256"]},
+            calibration_hashes={"scoring_evidence_sha256": values["scoring_evidence_sha256"]},
             elapsed_seconds=float(index), reason="benchmark", **values,
         )
 
@@ -269,13 +318,16 @@ class CheckpointStoreTests(unittest.TestCase):
             trace_body = {"schema": "exp425.native-trace.v1", "run_identity": provenance.run_identity, "dataset": dataset,
                 "run_context_sha256": store.run_context_sha256, **values, "device": "mps"}
             trace = sha256(canonical_json_bytes(trace_body)).hexdigest()
-            result_payload = {"effective_result": {"status": "abstained"}, "native_trace_body": trace_body}
+            result_payload = {"effective_result": {"status": "abstained", "result_evidence_sha256": values["result_evidence_sha256"]}, "native_trace_body": trace_body}
+            group_evidence = {"eligibility_sha256": values["eligibility_sha256"], "processed_groups_sha256": values["processed_groups_sha256"]}
+            model_hashes = {"train_identity_sha256": values["train_identity_sha256"], "model_evidence_sha256": values["model_evidence_sha256"], "frozen_train_contract_sha256": values["frozen_train_contract_sha256"]}
+            calibration_hashes = {"scoring_evidence_sha256": values["scoring_evidence_sha256"]}
             body = {"schema_version": "exp425.dataset.v1", "dataset": dataset, "origin": "exp425_native",
-                "run_context_sha256": store.run_context_sha256, "result_payload": result_payload, "group_evidence": {"groups": []},
-                "trace_sha256": trace, "model_hashes": {}, "calibration_hashes": {}, "backend_audit_sha256": values["backend_audit_sha256"],
+                "run_context_sha256": store.run_context_sha256, "result_payload": result_payload, "group_evidence": group_evidence,
+                "trace_sha256": trace, "model_hashes": model_hashes, "calibration_hashes": calibration_hashes, "backend_audit_sha256": values["backend_audit_sha256"],
                 "elapsed_seconds": 0.0, "reason": "synthetic"}
-            record = NativeRecordEnvelope(dataset, result_payload, {"groups": []}, trace_sha256=trace,
-                record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(), model_hashes={}, calibration_hashes={}, elapsed_seconds=0.0,
+            record = NativeRecordEnvelope(dataset, result_payload, group_evidence, trace_sha256=trace,
+                record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(), model_hashes=model_hashes, calibration_hashes=calibration_hashes, elapsed_seconds=0.0,
                 reason="synthetic", **values)
             with self.assertRaises(ValueError):
                 store._commit_native(object(), record)
@@ -292,6 +344,142 @@ class CheckpointStoreTests(unittest.TestCase):
             raw = (store.root / "datasets" / __import__("experiments.exp425_selective_recovery.checkpoints", fromlist=["record_filename"]).record_filename(dataset)).read_bytes()
             self.assertNotIn(b'"test_identity_manifest"', raw)
             self.assertLess(len(raw), len(canonical_json_bytes(_context_payload(context))) // 5)
+
+    def test_native_recovery_advances_each_durable_phase_once(self) -> None:
+        """Native B→E crash recovery removes or adopts only the durable state."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        for phase in ("intent_durable", "record_durable", "progress_durable", "intent_removed"):
+            with self.subTest(phase=phase), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                record = _native_record_for(store, provenance, context.datasets[0])
+                authority = object()
+                capabilities._register_authority(authority, "exp425_native")
+                try:
+                    with patch.object(checkpoints, "_after_native_phase", side_effect=lambda reached: (
+                        (_ for _ in ()).throw(SimulatedProcessDeath(reached)) if reached == phase else None
+                    )):
+                        with self.assertRaisesRegex(SimulatedProcessDeath, phase):
+                            store._commit_native(_native_capability(store, provenance, authority, record), record)
+                finally:
+                    capabilities._close_authority(authority)
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+                expected = {} if phase == "intent_durable" else {record.dataset: record.record_payload_sha256}
+                self.assertEqual(dict(reopened.completed_record_digests()), expected)
+                self.assertEqual(list((root / "transactions").iterdir()), [])
+
+    def test_native_intent_requires_exact_schema_origin_and_operation(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        dataset = context.datasets[0]
+        base = {
+            "schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native",
+            "dataset": dataset, "record_payload_sha256": _digest("a"),
+        }
+        malformed = (
+            {key: value for key, value in base.items() if key != "operation"},
+            base | {"operation": "other"},
+            base | {"extra": "rejected"},
+        )
+        for intent in malformed:
+            with self.subTest(intent=intent), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                Exp425CheckpointStore.create(root, provenance, context)
+                (root / "transactions" / "native.json").write_bytes(canonical_json_bytes(intent))
+                with self.assertRaises(ValueError):
+                    Exp425CheckpointStore.open(root, provenance, context)
+
+    def test_native_load_rejects_trace_literals_and_cross_field_mutations(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        mutations = (
+            ("run identity", lambda payload: payload["result_payload"]["native_trace_body"].__setitem__("run_identity", "other-run")),
+            ("dataset", lambda payload: payload["result_payload"]["native_trace_body"].__setitem__("dataset", "other-dataset")),
+            ("context", lambda payload: payload["result_payload"]["native_trace_body"].__setitem__("run_context_sha256", _digest("0"))),
+            ("device", lambda payload: payload["result_payload"]["native_trace_body"].__setitem__("device", "cpu")),
+            ("backend", lambda payload: payload["result_payload"]["native_trace_body"].__setitem__("backend_audit_sha256", _digest("0"))),
+            ("result", lambda payload: payload["result_payload"]["effective_result"].__setitem__("result_evidence_sha256", _digest("0"))),
+            ("eligibility", lambda payload: payload["group_evidence"].__setitem__("eligibility_sha256", _digest("0"))),
+            ("processed groups", lambda payload: payload["group_evidence"].__setitem__("processed_groups_sha256", _digest("0"))),
+            ("train", lambda payload: payload["model_hashes"].__setitem__("train_identity_sha256", _digest("0"))),
+            ("model", lambda payload: payload["model_hashes"].__setitem__("model_evidence_sha256", _digest("0"))),
+            ("frozen train", lambda payload: payload["model_hashes"].__setitem__("frozen_train_contract_sha256", _digest("0"))),
+            ("scoring", lambda payload: payload["calibration_hashes"].__setitem__("scoring_evidence_sha256", _digest("0"))),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                record = _native_record_for(store, provenance, context.datasets[0])
+                authority = object()
+                capabilities._register_authority(authority, "exp425_native")
+                try:
+                    store._commit_native(_native_capability(store, provenance, authority, record), record)
+                finally:
+                    capabilities._close_authority(authority)
+                path = root / "datasets" / checkpoints.record_filename(record.dataset)
+                payload = json.loads(path.read_bytes())
+                mutate(payload)
+                trace = payload["result_payload"]["native_trace_body"]
+                payload["trace_sha256"] = sha256(canonical_json_bytes(trace)).hexdigest()
+                body = dict(payload)
+                body.pop("record_payload_sha256")
+                payload["record_payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+                path.write_bytes(canonical_json_bytes(payload))
+                progress_path = root / "progress.json"
+                progress = json.loads(progress_path.read_bytes())
+                progress["record_digests"][record.dataset] = payload["record_payload_sha256"]
+                progress_body = dict(progress)
+                progress_body.pop("payload_sha256")
+                progress["payload_sha256"] = sha256(canonical_json_bytes(progress_body)).hexdigest()
+                progress_path.write_bytes(canonical_json_bytes(progress))
+                with self.assertRaises(ValueError):
+                    store.load_record(record.dataset)
+
+    def test_mutating_open_is_lazy_but_explicit_load_decodes_completed_record(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            record = _native_record_for(store, provenance, context.datasets[0])
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                store._commit_native(_native_capability(store, provenance, authority, record), record)
+            finally:
+                capabilities._close_authority(authority)
+            with patch.object(checkpoints, "_decode_record", side_effect=AssertionError("open decoded completed record")):
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+            self.assertEqual(dict(reopened.completed_record_digests()), {record.dataset: record.record_payload_sha256})
+            self.assertEqual(reopened.load_record(record.dataset).dataset, record.dataset)
+
+    def test_store_lifetime_root_binding_rejects_replacement_before_public_operation(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            reopened = Exp425CheckpointStore.open(root, provenance, context)
+            displaced = Path(directory) / "displaced"
+            root.rename(displaced)
+            root.mkdir()
+            for instance in (store, reopened):
+                with self.assertRaisesRegex(ValueError, "store root identity"):
+                    instance.completed_record_digests()
+            record = _native_record_for(store, provenance, context.datasets[0])
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                with self.assertRaisesRegex(ValueError, "store root identity"):
+                    store._commit_native(_native_capability(store, provenance, authority, record), record)
+            finally:
+                capabilities._close_authority(authority)
+            self.assertEqual(list(root.iterdir()), [])
 
     def test_quarantine_moves_only_the_exact_locked_root_inode(self) -> None:
         context = _context()
