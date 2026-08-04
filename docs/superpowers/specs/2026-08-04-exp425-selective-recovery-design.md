@@ -75,8 +75,12 @@ it records:
 - unique TRAIN identity count;
 - OOF fit and validation identity counts;
 - early-stop fit and validation identity counts;
-- final-fit and final-validation identity counts where applicable;
 - the frozen fold-contract digest.
+
+Candidate-eligible groups also record the final-fit and final-validation identity
+counts used by final-model early stopping. Diagnostic-only groups never fit final
+models, so their final-fit counts are explicitly non-applicable rather than being
+used as an additional eligibility gate.
 
 If any required split has fewer than five identities on either side, that group
 receives `oof_identity_insufficient`. No model is trained for that group, no TEST
@@ -101,6 +105,14 @@ Exp425 adds immutable group eligibility evidence with at least:
 - TRAIN identity digest;
 - evidence payload digest.
 
+Native evidence distinguishes candidate-eligible, diagnostic-only, and already
+preprocessing-abstained groups. Final-fit counts are required only for the
+candidate-eligible case. Imported records use a separate
+`source_proven_group_evidence` type containing source group status, qualification,
+model/calibration presence, source result/record digests, and compatibility
+attestation. Exp424 did not persist split counts, so imported evidence never
+invents them and remains visibly distinct from native Exp425 evidence.
+
 Human-readable exception text is diagnostic only and never the decision key.
 
 ## 5. Selective Predecessor Import
@@ -113,10 +125,15 @@ Every imported record must pass all of these gates:
 1. the source root is the exact preserved Exp424 checkpoint store;
 2. source root provenance, progress digest, dataset inventory, record filename,
    record digest, and embedded payload digest agree;
-3. the database, lane snapshot, dataset universe, TRAIN/TEST identity manifests,
-   frozen configuration, folds, models, seeds, runtime versions, backend, MPS
-   settings, batching, score cache, thresholds, and routing contracts match the
-   preregistered Exp425 compatibility declaration;
+3. the exact source Git commit
+   `4a398374d880f859f285a271ad63de4a5e55b028`, Exp424 entrypoint SHA256
+   `98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1`,
+   entrypoint Git blob `da5374b0bf38803aa506dfda664d76395d7f28f9`, database,
+   lane snapshot, dataset universe, TRAIN/TEST identity manifests, frozen
+   configuration, folds, models, seeds, runtime versions, backend, MPS settings,
+   batch size, query chunk size, score cache, percentile/precision, thresholds,
+   alpha values, candidate formula, and routing contracts match the preregistered
+   Exp425 compatibility declaration;
 4. the source record contains complete decision, model, calibration, and backend
    evidence and contains no terminal evidence;
 5. candidate coordinates and result evidence reconstruct canonically;
@@ -129,11 +146,15 @@ An imported Exp425 envelope records:
 - source experiment and root-provenance digest;
 - source record and result-evidence digests;
 - Exp425 compatibility-attestation digest;
+- source-proven group evidence without fabricated split counts;
 - the shared Exp425 run-context digest.
 
 Imported evidence is never represented as natively computed Exp425 evidence.
-Records failing any gate are not partially trusted; their datasets enter the
-native Exp425 work queue. The 134 terminal Exp424 records are never imported.
+A structurally valid record that is merely incompatible with the target contract
+is not partially trusted and enters the native Exp425 work queue with a recorded
+reason. Source corruption, digest/inventory disagreement, or mutation fails the
+entire import closed instead of being hidden by recomputation. The 134 terminal
+Exp424 records are never imported and enter the native queue.
 
 ## 6. Compact Checkpoint Schema
 
@@ -173,6 +194,15 @@ inventory, validates each record digest once, and decodes dataset evidence lazil
 Unknown files, duplicate datasets, mismatched digests, missing records, and
 pathname/inode changes fail closed.
 
+Dataset commits use a durable `transactions/` intent journal. The writer fsyncs
+an intent containing the dataset and record digest, publishes and fsyncs the
+dataset record, atomically publishes and fsyncs progress, then removes and fsyncs
+the intent. On open/resume, an exclusive descriptor-bound reconciliation may
+finish progress for an intent whose matching record is durable, remove an intent
+whose record was never published, or remove a leftover intent already reflected
+in progress. A record absent from both progress and a valid intent is corruption,
+not a recoverable orphan. Crash tests cover termination after every boundary.
+
 Targets for the checkpoint-only optimization are:
 
 - at least 80% reduction in total checkpoint bytes on a representative sample;
@@ -185,18 +215,23 @@ Failure to meet a speed target does not permit weaker validation.
 
 At each new or resumed process, Exp425:
 
-1. opens the DB with no-follow, read-only controls and captures descriptor
+1. opens the DB with no-follow, read-only controls and captures pre-link descriptor
    identity, size, and high-resolution timestamps;
-2. computes the full SHA256 exactly once through the accepted descriptor;
-3. verifies that descriptor and pathname still identify the accepted file;
-4. opens one query-only immutable SQLite view bound to that accepted identity;
-5. retains the identity descriptor for the process lifetime;
-6. verifies descriptor/path identity and metadata at transaction and finalization
-   boundaries.
+2. inventories and rejects existing SQLite `-wal`, `-shm`, and journal sidecars;
+3. computes the full SHA256 exactly once through the accepted descriptor;
+4. creates and verifies the owned macOS hard link, then captures operational
+   accepted metadata after the expected link-induced ctime/link-count change;
+5. opens one query-only immutable SQLite view bound to that accepted identity;
+6. retains the identity descriptor and sidecar-parent identity for the process
+   lifetime;
+7. verifies descriptor/path identity, operational metadata, and sidecar absence
+   at transaction and finalization boundaries.
 
 A new process, including a resume process, performs a new full hash. A pathname
-or stat cache is never trusted across processes. Any identity, size, timestamp,
-or digest mismatch closes the run without publication.
+or stat cache is never trusted across processes. Before owned-link cleanup, a
+final operational-metadata check must pass. Cleanup then permits only the expected
+owned link-count/ctime change and rechecks identity, size, mtime, pathname, and
+sidecar absence. Any other mismatch closes the run without publication.
 
 The manifest records the full-hash count, accepted identity metadata, digest,
 verification boundaries, and any failure reason.
@@ -209,6 +244,9 @@ Exp425 exposes explicit modes:
 - `resume`: both paths must contain an initialized Exp425 run with exactly the
   requested run identity and provenance;
 - `inspect`: read-only validation and status reporting, with no computation.
+- `readiness`: performs preregistered hashes, benchmarks, and test/smoke gates and
+  may write only the explicitly requested readiness artifact; it never creates
+  or mutates an Exp425 checkpoint/output run.
 
 A matching completed review-only run returns idempotently after validation.
 Existing unrelated, partial, or mismatched paths fail closed. The launcher is
@@ -293,17 +331,19 @@ the prediction manifest and prediction SHA256 are frozen.
 Implementation follows test-driven development and must cover:
 
 - exact group-level eligibility boundary tests, including fewer than five
-  identities on either split, mixed eligible/ineligible groups, and all-group
+  identities on either split, candidate-only final-fit applicability,
+  diagnostic-only OOF parity, mixed eligible/ineligible groups, and all-group
   abstention;
 - regression parity for eligible Exp424 groups and candidate coordinates;
 - all predecessor-import gates plus mutation, symlink, inventory, digest, and
   provenance rejection tests;
 - compact checkpoint canonical round trip, concurrent-writer exclusion, atomic
-  failure recovery, lazy resume, and corruption quarantine tests;
-- DB replacement/truncation/timestamp/inode mutation tests and exactly-one-hash
-  accounting per process;
+  intent-journal crash recovery at every commit boundary, lazy resume, and
+  corruption quarantine tests;
+- DB replacement/truncation/timestamp/inode mutation, hard-link ordering,
+  WAL/SHM/journal sidecar tests, and exactly-one-hash accounting per process;
 - `new`, `resume`, completed-idempotent, mismatched-path, stale-state, exit-code,
-  and terminal-progress tests;
+  terminal-progress, read-only inspect, and separate readiness tests;
 - no-label-open and review-only publication tests;
 - representative checkpoint byte-size and resume-time benchmarks;
 - full existing Exp417/Exp424 regression tests, compile checks, and

@@ -96,12 +96,13 @@ class FoldIdentityCounts:
 class GroupEligibilityEvidence:
     dataset: str
     length: int
+    processed_status: str
     train_identity_sha256: str
     fold_contract_sha256: str
     unique_identity_count: int
     folds: tuple[FoldIdentityCounts, ...]
-    final_fit: int
-    final_validation: int
+    final_fit: int | None
+    final_validation: int | None
     status: str
     reason: str | None
 
@@ -111,7 +112,7 @@ class EligibilityAssessment:
     evidence: Mapping[int, GroupEligibilityEvidence]
 ```
 
-Validate five folds, sorted unique group lengths, exact 64-character lowercase digests, nonnegative counts, final-fit/final-validation counts, and status/count consistency in `__post_init__`.
+Validate five folds, sorted unique group lengths, exact 64-character lowercase digests, nonnegative counts, and status/count consistency in `__post_init__`. Require final-fit/final-validation counts only when `processed_status == "candidate_eligible"`; require both to be `None` for `diagnostic_only`. Already preprocessing-abstained groups retain their original status and use a distinct `preprocessing_abstained` evidence status without OOF/final-fit applicability.
 
 - [ ] **Step 4: Run contract tests and confirm they pass**
 
@@ -126,7 +127,9 @@ Cover these fixtures:
 2. a group with fewer than five early-validation identities becomes `oof_identity_insufficient` without calling Exp417 model fitting;
 3. mixed eligible and insufficient exact-length groups retain the eligible group byte-for-byte and replace only the insufficient group with `status="insufficient_train_abstain"` and no channels;
 4. ordering is stable under input permutation;
-5. duplicate waveforms are one identity, matching the semiconductor repeated-normal interpretation.
+5. duplicate waveforms are one identity, matching the semiconductor repeated-normal interpretation;
+6. `diagnostic_only` groups require all five OOF early-stop splits but do not require or record a final-fit split;
+7. `candidate_eligible` groups require both all OOF splits and the one final-fit early-stop split.
 
 ```python
 assessment = apply_group_eligibility(
@@ -145,7 +148,7 @@ self.assertEqual(dict(assessment.groups[1].channels), {})
 
 - [ ] **Step 6: Implement exact preflight fold diagnostics and filtering**
 
-Build waveform identity groups with `canonical_waveform_sha256`. Assign sorted identities greedily to the currently smallest fold, breaking ties by fold index. For each validation fold, derive fit identities, select early validation with `int(identity, 16) % 10 == 0`, and derive early fit by complement. Apply the same hash split once across all identities for final-fit early stopping. Mark the group eligible only when all five OOF folds and the final-fit split have at least five early-stop identities on both sides. Compute `train_identity_sha256` from sorted identity plus sorted member-index records and include the preregistered fold-contract digest.
+Build waveform identity groups with `canonical_waveform_sha256`. Assign sorted identities greedily to the currently smallest fold, breaking ties by fold index. For each validation fold, derive fit identities, select early validation with `int(identity, 16) % 10 == 0`, and derive early fit by complement. For `candidate_eligible` only, apply the same hash split once across all identities for final-fit early stopping. Mark a usable group eligible only when all five OOF folds pass and, when applicable, the final-fit split also passes. Compute `train_identity_sha256` from sorted identity plus sorted member-index records and include the preregistered fold-contract digest.
 
 ```python
 status = (
@@ -154,8 +157,15 @@ status = (
         fold.early_stop_fit >= 5 and fold.early_stop_validation >= 5
         for fold in fold_counts
     )
-    and final_fit >= 5
-    and final_validation >= 5
+    and (
+        group.status == "diagnostic_only"
+        or (
+            final_fit is not None
+            and final_validation is not None
+            and final_fit >= 5
+            and final_validation >= 5
+        )
+    )
     else "oof_identity_insufficient"
 )
 filtered = (
@@ -189,24 +199,25 @@ git commit -m "feat(exp425): classify OOF identity insufficiency"
 - Create: `experiments/exp425_selective_recovery/tests/test_checkpoints.py`
 
 **Interfaces:**
-- Produces: `Exp425RunProvenance`, `NativeRecordEnvelope`, `ImportedRecordEnvelope`, and `Exp425Record`.
+- Produces: `Exp425RunProvenance`, `SourceProvenGroupEvidence`, `NativeRecordEnvelope`, `ImportedRecordEnvelope`, and `Exp425Record`.
 - Produces: `Exp425CheckpointStore.create(root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> Exp425CheckpointStore`.
 - Produces: `Exp425CheckpointStore.open(root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> Exp425CheckpointStore`.
 - Produces: `write_native(record: NativeRecordEnvelope) -> str`, `write_imported(record: ImportedRecordEnvelope) -> str`, `completed_record_digests() -> Mapping[str, str]`, `load_record(dataset: str) -> Exp425Record`, and `iter_records() -> Iterator[Exp425Record]`.
 - Consumes later: Task 3 predecessor envelopes and Task 5 native execution records.
 
-`Exp425RunProvenance` contains `run_identity`, `git_commit`, `database_sha256`, four lane artifact digests, frozen config/fold/model/backend digests, model and perturbation seeds, runtime versions, expected datasets, predecessor compatibility digest, and shared run-context digest. `NativeRecordEnvelope` contains dataset, native effective result, group eligibility evidence, model/calibration/backend audit hashes, elapsed time, reason, and `origin="exp425_native"`. `ImportedRecordEnvelope` contains dataset, adapted effective result, source root/progress/record/result digests, compatibility attestation, elapsed time, reason, and `origin="exp424_import"`. `Exp425Record` is the validated union of these two envelopes.
+`Exp425RunProvenance` contains `run_identity`, `git_commit`, `database_sha256`, four lane artifact digests, frozen config/fold/model/backend digests, model and perturbation seeds, runtime versions, expected datasets, predecessor compatibility digest, and shared run-context digest. `NativeRecordEnvelope` contains dataset, native effective result, native group eligibility evidence, model/calibration/backend audit hashes, elapsed time, reason, and `origin="exp425_native"`. `ImportedRecordEnvelope` contains dataset, adapted effective result, source-proven group evidence, source root/progress/record/result digests, compatibility attestation, elapsed time, reason, and `origin="exp424_import"`. `Exp425Record` is the validated union of these two envelopes.
 
 - [ ] **Step 1: Write failing root/context and compact-record tests**
 
 Assert that:
 
-- root creation writes exactly `checkpoint_provenance.json`, `run_context.json`, `progress.json`, and `datasets/`;
+- root creation writes exactly `checkpoint_provenance.json`, `run_context.json`, `progress.json`, `datasets/`, and `transactions/`;
 - `run_context.json` canonical SHA256 equals every dataset record's `run_context_sha256`;
 - a dataset record never contains keys `context`, `lanes`, `datasets`, or `test_identity_manifest` below the envelope root;
 - round-trip reconstruction injects the exact shared context;
 - `new` creation rejects an existing path and open rejects an absent path;
-- unknown files, symlinks, digest mismatch, duplicate dataset, path replacement, and concurrent writers fail closed.
+- unknown files, symlinks, digest mismatch, duplicate dataset, path replacement, and concurrent writers fail closed;
+- simulated process death after intent fsync, record fsync, progress fsync, and intent removal has one deterministic recovery result at each boundary.
 
 ```python
 raw = (root / "datasets" / record_filename("Tiny_normal_1")).read_bytes()
@@ -252,7 +263,7 @@ def iter_records(self) -> Iterator[Exp425Record]:
             yield self.load_record(dataset)
 ```
 
-On an interrupted committed write, either finish the matching progress update or remove only the inode owned by the failed transaction. Quarantine a corrupted store beside the original only when the exact root inode remains owned and the quarantine destination does not exist.
+Every write uses a durable intent file in `transactions/`: publish and fsync the canonical intent containing dataset and intended record digest; publish and fsync the dataset record; replace and fsync progress; remove and fsync the intent. Open/resume reconciles under an exclusive root lock: intent without record is removed; matching intent plus durable record absent from progress completes progress; matching intent plus record already in progress removes the intent. A record absent from progress and without a valid intent is corruption and must not be adopted. Quarantine a corrupted store beside the original only when the exact root inode remains owned and the quarantine destination does not exist.
 
 - [ ] **Step 5: Run checkpoint tests and the Exp417 checkpoint regression suite**
 
@@ -297,9 +308,11 @@ git commit -m "perf(exp425): compact provenance-bound checkpoints"
 - Produces: `adapt_imported_result(source: DatasetResult, target_context: FrozenRunContext) -> DatasetResult`.
 - Consumes: Task 2 `write_imported`, the exact Exp424 checkpoint schema version 3, and frozen compatibility digests recorded in the Exp424 root.
 
+`Exp424CompatibilityContract` includes the exact source commit, entrypoint SHA256/blob, DB and four lane digests, config/fold/model/backend digests, runtime versions, seeds, MPS device, batch/chunk values, score formula, percentile method, score dtype, canonical thresholds payload, alpha tuple, candidate-formula digest, and routing-contract digest. `Exp424ValidatedSnapshot` retains descriptor-bound root/progress identities and digests plus a lazy sorted iterator of validated source records. `Exp424ImportReport` contains sorted imported, rejected-terminal, and rejected-incompatible dataset tuples and the source/attestation digests.
+
 - [ ] **Step 1: Write failing compatibility and mutation tests**
 
-Create a minimal valid Exp424-format source fixture and assert acceptance only when all of these match: root/progress digest, record digest, universe, DB/lane/config/fold/model/seed/runtime/backend/MPS/batch/chunk/score-cache/threshold/routing contracts, candidate coordinates, and nonterminal evidence. Add rejection tests for each changed field, a terminal result, a symlink, an unknown file, and source mutation between snapshot and import.
+Create a minimal valid Exp424-format source fixture and assert acceptance only when all of these match: exact source commit `4a398374d880f859f285a271ad63de4a5e55b028`, entrypoint SHA256 `98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1`, entrypoint Git blob `da5374b0bf38803aa506dfda664d76395d7f28f9`, root/progress digest, record digest, universe, DB/lane/config/fold/model/seed/runtime/backend/MPS/batch/chunk/score-cache/percentile/precision/threshold/alpha/candidate/routing contracts, candidate coordinates, and nonterminal evidence. Add rejection tests for each changed field, a terminal result, a symlink, an unknown file, and source mutation between snapshot and import.
 
 ```python
 report = import_exp424_nonterminal(snapshot, target, target_context)
@@ -321,6 +334,9 @@ The compatibility payload explicitly names every frozen field; it does not rely 
 compatibility_payload = {
     "schema": "exp425.exp424-compatibility.v1",
     "source_experiment": "Exp424-MPS-SCORE-CACHE",
+    "source_git_commit": "4a398374d880f859f285a271ad63de4a5e55b028",
+    "entrypoint_sha256": "98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1",
+    "entrypoint_git_blob": "da5374b0bf38803aa506dfda664d76395d7f28f9",
     "database_sha256": contract.database_sha256,
     "lane_hashes": dict(contract.lane_hashes),
     "config_sha256": contract.config_sha256,
@@ -333,6 +349,12 @@ compatibility_payload = {
     "batch_size": 32,
     "query_chunk_size": 256,
     "score_formula": "Exp417.score_horizon.v1",
+    "percentile_method": "linear",
+    "score_dtype": "float64",
+    "thresholds": contract.thresholds_payload,
+    "alpha_values": contract.alpha_values,
+    "candidate_formula_sha256": contract.candidate_formula_sha256,
+    "routing_contract_sha256": contract.routing_contract_sha256,
 }
 ```
 
@@ -342,7 +364,7 @@ Lock the source shared, capture root/datasets directory identities, validate exa
 
 - [ ] **Step 5: Implement imported-result adaptation and envelopes**
 
-Require identical DB digest, lane snapshot, dataset universe, TEST identity manifest, test size, frozen TRAIN contract, decisions, candidates, and status. Rebuild only the context-bearing `DatasetDecisionEvidence` and `DatasetResult` with `target_context`; preserve the source result digest in an `ImportedRecordEnvelope` with `origin="exp424_import"` and a compatibility-attestation digest.
+Require identical DB digest, lane snapshot, dataset universe, TEST identity manifest, test size, frozen TRAIN contract, decisions, candidates, and status. Rebuild only the context-bearing `DatasetDecisionEvidence` and `DatasetResult` with `target_context`; preserve the source result digest in an `ImportedRecordEnvelope` with `origin="exp424_import"` and a compatibility-attestation digest. For each exact-length source group, create immutable `SourceProvenGroupEvidence` containing its source qualification status, whether OOF/final model and calibration evidence exists, source record/result digests, and compatibility attestation. Set split counts to unavailable rather than deriving or inventing them; the successfully validated nonterminal source execution is the evidence.
 
 ```python
 adapted_evidence = replace(source.decision_evidence, context=target_context)
@@ -356,7 +378,9 @@ if coordinates(adapted) != coordinates(source):
     raise ValueError("Exp424 imported candidate coordinates changed")
 ```
 
-Terminal Exp424 records are counted as `rejected_terminal` and never adapted. Any other invalid source record fails the whole import rather than silently recomputing from untrusted evidence.
+Terminal Exp424 records are counted as `rejected_terminal` and never adapted. A canonically valid nonterminal record that fails only target-compatibility gates is counted as `rejected_incompatible` and enters the native queue with its reason. Structural schema corruption, digest/inventory disagreement, or source mutation fails the whole import rather than silently recomputing from untrusted evidence.
+
+Imported datasets perform no DB or model work. The source-proven group evidence is derived exclusively from the fully validated checkpoint record and is visibly distinct from native count-bearing eligibility evidence.
 
 - [ ] **Step 6: Run predecessor, checkpoint, and reporting reconstruction tests**
 
@@ -399,7 +423,7 @@ git commit -m "feat(exp425): import compatible Exp424 evidence"
 
 - [ ] **Step 1: Write failing one-hash and mutation tests**
 
-Patch the descriptor hashing function with a counter. Freeze context, load two TRAIN datasets and two TEST datasets, verify three boundaries, and close. Assert hash count exactly one. Add fail-closed tests for replacement, truncation, byte mutation, mtime/ctime change, symlink input, journal-enabled write, and pathname disappearance.
+Patch the descriptor hashing function with a counter. Freeze context, load two TRAIN datasets and two TEST datasets, verify three boundaries, and close. Assert hash count exactly one. Add fail-closed tests for replacement, truncation, byte mutation, mtime/ctime change, symlink input, pathname disappearance, pre-existing or newly created `-wal`, `-shm`, and rollback-journal sidecars, and a journal-enabled writer. Add a macOS test proving the owned hard-link creation does not make the snapshot reject its own accepted metadata.
 
 ```python
 with open_database_snapshot(db, expected_sha256=expected) as snapshot:
@@ -417,7 +441,7 @@ Expected: `ModuleNotFoundError` for `experiments.exp425_selective_recovery.datab
 
 - [ ] **Step 3: Implement retained descriptor, full hash, and immutable SQLite view**
 
-Open with `O_RDONLY | O_CLOEXEC | O_NOFOLLOW`, require a linked regular file, capture stable metadata, hash through the descriptor once, and compare with the preregistered digest. On macOS, create a private hard link to the exact inode, open SQLite with `mode=ro&immutable=1`, set `PRAGMA query_only=ON`, retain both descriptor and connection, and remove only the owned hard link at close.
+Open with `O_RDONLY | O_CLOEXEC | O_NOFOLLOW`, require a linked regular file, capture pre-link identity metadata, bind the parent directory identity, inventory and reject the DB basename's `-wal`, `-shm`, and journal sidecars, hash through the descriptor once, and compare with the preregistered digest. On macOS, create a private hard link to the exact inode, verify it against the pre-link identity, then capture the operational accepted metadata after the expected ctime/link-count change. Open SQLite with `mode=ro&immutable=1`, set `PRAGMA query_only=ON`, and retain descriptor, parent descriptor, owned link, and connection.
 
 ```python
 audit = DatabaseSnapshotAudit(
@@ -431,6 +455,8 @@ audit = DatabaseSnapshotAudit(
     boundaries=(),
 )
 ```
+
+At every boundary, compare against the post-link operational metadata and verify the published pathname and owned link still name the same inode and all sidecars remain absent. Before cleanup, run one final operational check; after removing only the owned link, allow only the expected link-count/ctime transition and recheck identity, size, mtime, pathname, parent identity, and sidecar absence.
 
 - [ ] **Step 4: Implement context freezing and loaders on the retained connection**
 
@@ -469,11 +495,11 @@ git commit -m "perf(exp425): retain one verified database snapshot"
 - Modify: `experiments/exp425_selective_recovery/__init__.py`
 
 **Interfaces:**
-- Produces: `ExecutionMode = Literal["new", "resume", "inspect"]`, `RuntimeProgress`, and `Exp425RunResult`.
+- Produces: `ExecutionCommand = Literal["new", "resume", "inspect"]`, `RuntimeProgress`, and `Exp425RunResult`.
 - Produces: `AtomicProgressWriter` and `Exp425RuntimeSession`.
 - Produces: `build_exp425_runtime(snapshot: Exp425DatabaseSnapshot, audit: BackendAudit, progress: AtomicProgressWriter) -> Exp425RuntimeSession`.
 - Produces: `run_selective_population(context: FrozenRunContext, store: Exp425CheckpointStore, runtime: Exp425RuntimeSession) -> Exp425RunResult`.
-- Produces CLI exit codes: 0 validated `complete_review_only` or matching inspect; 1 validated failed/incomplete run; 2 CLI/contract misuse.
+- Produces CLI exit codes: 0 validated `complete_review_only` or matching read-only inspect; 1 validated failed/incomplete run; 2 CLI/contract misuse.
 - Consumes: Tasks 1–4, Exp417 `run_dataset`, Exp424 MPS training/scoring functions, and Exp417 global workload rule.
 
 - [ ] **Step 1: Write failing runtime tests for mixed import/native execution**
@@ -491,7 +517,7 @@ self.assertEqual(test_load_calls, ["Eligible_normal_1"])
 
 - [ ] **Step 2: Write failing state/progress and CLI mode tests**
 
-Test exact transitions `initializing -> importing -> running -> finalizing -> complete_review_only`, atomic failure transition, stale-running resume, current dataset clearing, per-dataset flushed JSON log lines, PID/run identity, and counters. Test `new` rejects existing paths, `resume` rejects absent/mismatched paths, `inspect` performs no writes, and a matching complete run returns idempotently.
+Test exact transitions `initializing -> importing -> running -> finalizing -> complete_review_only`, atomic failure transition, stale-running resume, current dataset clearing, per-dataset flushed JSON log lines, PID/run identity, and counters. Test `new` rejects existing paths, `resume` rejects absent/mismatched paths, `inspect` performs no writes, hashes, benchmarks, model/DB computation, or reconciliation, and a matching complete run returns idempotently. Readiness is not an alias for inspect and is added as a separate subcommand in Task 6.
 
 ```python
 self.assertEqual(progress["state"], "complete_review_only")
@@ -528,7 +554,7 @@ Load only compact record digests at startup. Iterate the context's sorted univer
 
 - [ ] **Step 6: Implement atomic progress, parent logs, and explicit CLI modes**
 
-Write progress through temp-file `fsync` plus atomic replace. Flush one canonical JSON line per terminal dataset with ordinal, total, dataset, origin, stage, status, reason, elapsed/cumulative time, counters, PID, and run identity. `new` creates both roots, `resume` opens both exact roots and reconciles stale state, and `inspect` validates without mutation. Do not use launchd restart semantics.
+Write progress through temp-file `fsync` plus atomic replace. Flush one canonical JSON line per terminal dataset with ordinal, total, dataset, origin, stage, status, reason, elapsed/cumulative time, counters, PID, and run identity. `new` creates both roots, `resume` opens both exact roots and reconciles stale state, and `inspect` reads already-published status/checkpoint metadata without mutation or expensive gate computation. Do not use launchd restart semantics.
 
 ```python
 terminal_line = {
@@ -610,15 +636,15 @@ Expected: `ModuleNotFoundError` for `experiments.exp425_selective_recovery.repor
 
 - [ ] **Step 3: Implement rendering and independent verification**
 
-Render canonical payloads from validated record envelopes. The import ledger records source root/progress/record/result digests and compatibility attestation. The eligibility artifact records every exact-length group and stable reason. Verify by reparsing every artifact, reconstructing effective results, checking checkpoint digests, recalculating prediction SHA256, checking population conservation, and rejecting forbidden content. A failed summary has no prediction rows; a complete review-only summary may contain rows but remains nonpublishable operationally.
+Render canonical payloads from validated record envelopes. The import ledger records source root/progress/record/result digests and compatibility attestation. The eligibility artifact records every exact-length group and stable reason, using count-bearing native evidence for Exp425 work and visibly distinct source-proven evidence with unavailable split counts for imported Exp424 work. Verify by reparsing every artifact, reconstructing effective results, checking checkpoint digests, recalculating prediction SHA256, checking population conservation, and rejecting forbidden content. A failed summary has no prediction rows; a complete review-only summary may contain rows but remains nonpublishable operationally.
 
 - [ ] **Step 4: Write preregistration and runbook documents**
 
 Copy the exact frozen boundaries, 983/134 source diagnosis, import gates, group-level abstention rule, one-hash DB contract, checkpoint targets, `new|resume|inspect` semantics, one-shot launch rule, log fields, artifact verification commands, and post-hoc separation from the approved design. Include commands with the actual DB and Exp424 checkpoint arguments but no command that starts the full run without `--mode new` and a user-approved output path.
 
-- [ ] **Step 5: Add CLI readiness mode and fail-closed launch gate**
+- [ ] **Step 5: Add a separate readiness subcommand and fail-closed launch gate**
 
-Before full execution, require clean Git, MPS availability, exact input hashes, no other MPS-heavy process, real Exp424 inventory `1117/983/134`, compact checkpoint benchmark targets, DB one-hash smoke, focused regression success, and artifact round-trip success. Write `readiness.json`; do not launch if any gate is false.
+Add `readiness` as a separate CLI subcommand, not an `inspect` alias. It accepts an explicit `--readiness-output` path and may write only that artifact. Before full execution, require clean Git, MPS availability, exact input hashes, no other MPS-heavy process, real Exp424 inventory `1117/983/134`, compact checkpoint benchmark targets, DB one-hash smoke, focused regression success, and artifact round-trip success. Do not create or mutate an Exp425 run output/checkpoint root and do not launch if any gate is false.
 
 ```python
 if not all(gates.values()):
@@ -642,9 +668,9 @@ git diff --check
 
 Expected: every test and compile command exits 0; `git diff --check` prints nothing.
 
-- [ ] **Step 7: Run real read-only readiness verification**
+- [ ] **Step 7: Run real readiness verification separately from inspect**
 
-Run `scratch/run_exp425_selective_recovery.py --mode inspect` against the frozen DB/lane inputs and Exp424 checkpoint root. Require:
+First run the read-only `inspect` subcommand against an existing synthetic completed fixture and prove its filesystem tree is unchanged. Then run `scratch/run_exp425_selective_recovery.py readiness --readiness-output /Users/mac/Documents/Dataset/exp425_readiness_20260804.json` against the frozen DB/lane inputs and Exp424 checkpoint root. Require:
 
 - Exp424 records/importable/terminal = `1117/983/134`;
 - terminal reason = OOF early-stop identity insufficiency only;
