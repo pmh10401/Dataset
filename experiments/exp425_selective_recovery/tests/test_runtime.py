@@ -7,6 +7,7 @@ from pathlib import Path
 import os
 import copy
 import pickle
+import time
 from types import SimpleNamespace
 from tempfile import TemporaryDirectory
 import unittest
@@ -17,6 +18,7 @@ from experiments.exp425_selective_recovery.runtime import (
     RuntimeProgress,
     _no_model_abstention,
     _effective_record_payload,
+    _HeartbeatPump,
     execute_runtime_command,
     inspect_runtime_output,
     build_exp425_runtime,
@@ -74,6 +76,29 @@ class AtomicProgressWriterTests(unittest.TestCase):
             self.assertEqual(events[0], json.dumps(json.loads(events[0]), sort_keys=True, separators=(",", ":")).encode())
             self.assertNotIn(b"label", writer.paths.progress.read_bytes().lower())
             self.assertNotIn(b"target", writer.paths.events.read_bytes().lower())
+
+    def test_periodic_heartbeat_writes_while_stage_is_blocked_and_stops(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            writer = AtomicProgressWriter.create(
+                output_root=root, run_identity="runtime-test", command="new",
+                checkpoint_root=root / "checkpoints", total_datasets=1, backend="mps",
+            )
+            progress = replace(
+                RuntimeProgress.initializing(writer.paths, "runtime-test", "new", 1, "mps"),
+                state="running", stage="running", current_dataset="dataset", current_phase="preprocess",
+            )
+            writer.write(progress, event="dataset_start")
+            pump = _HeartbeatPump(writer, progress, interval=0.01)
+            pump.start()
+            time.sleep(0.04)
+            pump.close()
+            self.assertFalse(pump._thread.is_alive())
+            events = [json.loads(line) for line in writer.paths.events.read_text().splitlines()]
+            heartbeats = [event for event in events if event["event"] == "heartbeat"]
+            self.assertGreaterEqual(len(heartbeats), 1)
+            self.assertEqual([event["heartbeat_sequence"] for event in events], sorted(event["heartbeat_sequence"] for event in events))
+            self.assertTrue(all(event["current_dataset"] == "dataset" for event in heartbeats))
 
     def test_new_and_resume_reject_their_wrong_root_lifecycle_before_launch(self) -> None:
         with TemporaryDirectory() as directory:

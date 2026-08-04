@@ -39,3 +39,4 @@ Task 4: complete (commits 78580fc..18159d6; DB tests 25, DB+Exp417 50, Exp425 10
 External readiness: removed 8 unreferenced stale Exp417 DB pin hardlinks; official DB inode 1048138 retained, nlink restored 9 -> 1.
 Task 5: in progress (base 18159d6)
 Task 5: follow-up partial (owner-bound PID/read-only full inspection/preflight context binding/final-close ordering/native no-qualified abstention and authority sealing implemented; focused Task5+checkpoint 54 tests, Task1-4 95 tests, frozen Exp417 suite exit 0; orchestration/heartbeat/full CLI/nested-mutation/MPS parity evidence remain open; no official run/readiness)
+Task 5: round 2 partial (serialized periodic heartbeat and first CLI preflight/cleanup evidence added; MPS itself available: torch 2.13.0, but exact Exp424 reference module/assembly absent from this worktree; real mixed orchestration, full CLI, nested mutation and exact parity remain open)

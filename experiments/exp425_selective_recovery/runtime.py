@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 import pickle
 from statistics import median
+from threading import Event, RLock, Thread
 from time import perf_counter, time
 from types import MappingProxyType
 from typing import Literal
@@ -56,6 +57,7 @@ from .eligibility import apply_group_eligibility
 ExecutionCommand = Literal["new", "resume", "inspect"]
 _STATES = frozenset({"initializing", "importing", "running", "finalizing", "complete_review_only", "failed"})
 _FORBIDDEN_KEY_TOKENS = ("label", "target", "groundtruth", "anomalylocation", "evaluation", "confusion", "precision", "recall", "familytestperformance")
+_HEARTBEAT_INTERVAL_SECONDS = 30.0
 
 
 def _now() -> float:
@@ -252,6 +254,8 @@ class AtomicProgressWriter:
         # the run directory.
         self._pid_nonce = uuid4().hex
         self._pid_claim: bytes | None = None
+        self._write_lock = RLock()
+        self._heartbeat_sequence = 0
 
     @classmethod
     def create(cls, *, output_root: Path, run_identity: str, command: ExecutionCommand, checkpoint_root: Path, total_datasets: int, backend: str) -> "AtomicProgressWriter":
@@ -321,21 +325,30 @@ class AtomicProgressWriter:
     def write(self, progress: RuntimeProgress, *, event: str, detail: Mapping[str, object] | None = None) -> None:
         if not isinstance(progress, RuntimeProgress) or progress.paths != self.paths or progress.run_identity != self.run_identity:
             raise ValueError("runtime progress writer binding is invalid")
-        state = progress.payload()
-        _atomic_write(self.paths.progress, canonical_json_bytes(state))
-        event_payload = {"schema": "exp425.runtime-event.v1", "event": event, "timestamp": _now(), "run_identity": self.run_identity, "pid": os.getpid(), "state": progress.state, "stage": progress.stage, "current_dataset": progress.current_dataset, **(dict(detail) if detail else {})}
-        _assert_label_free(event_payload)
-        line = canonical_json_bytes(event_payload) + b"\n"
-        _append_fsync(self.paths.events, line)
-        human = (
-            f"{event_payload['timestamp']:.6f} pid={os.getpid()} run={self.run_identity} "
-            f"state={progress.state} stage={progress.stage} event={event} "
-            f"dataset={event_payload.get('dataset', progress.current_dataset) or '-'} "
-            f"ordinal={event_payload.get('ordinal', progress.ordinal)} "
-            f"completed={event_payload.get('completed_datasets', progress.counts.completed)} "
-            f"remaining={event_payload.get('remaining_datasets', progress.counts.remaining)}\n"
-        )
-        _append_fsync(self.paths.parent_log, human.encode("utf-8"))
+        with self._write_lock:
+            sequence = max(self._heartbeat_sequence, progress.heartbeat_sequence)
+            if event == "heartbeat":
+                sequence += 1
+            self._heartbeat_sequence = sequence
+            progress = replace(progress, heartbeat_sequence=sequence, timestamp=_now())
+            state = progress.payload()
+            _atomic_write(self.paths.progress, canonical_json_bytes(state))
+            event_payload = {"schema": "exp425.runtime-event.v1", "event": event, "timestamp": _now(), "run_identity": self.run_identity, "pid": os.getpid(), "state": progress.state, "stage": progress.stage, "current_dataset": progress.current_dataset, "heartbeat_sequence": sequence, "elapsed_seconds": state["elapsed_seconds"], "cumulative_seconds": progress.cumulative_seconds, "backend": progress.backend, "checkpoint_root": str(progress.paths.checkpoint_root), **(dict(detail) if detail else {})}
+            _assert_label_free(event_payload)
+            line = canonical_json_bytes(event_payload) + b"\n"
+            _append_fsync(self.paths.events, line)
+            human = (
+                f"{event_payload['timestamp']:.6f} pid={os.getpid()} run={self.run_identity} "
+                f"state={progress.state} stage={progress.stage} event={event} "
+                f"dataset={event_payload.get('dataset', progress.current_dataset) or '-'} "
+                f"ordinal={event_payload.get('ordinal', progress.ordinal)} "
+                f"completed={event_payload.get('completed_datasets', progress.counts.completed)} "
+                f"remaining={event_payload.get('remaining_datasets', progress.counts.remaining)} "
+                f"elapsed={state['elapsed_seconds']:.3f} backend={progress.backend} "
+                f"checkpoint={progress.paths.checkpoint_root}\n"
+            )
+            _assert_label_free({"log": human})
+            _append_fsync(self.paths.parent_log, human.encode("utf-8"))
 
     def read_terminal_samples(self) -> tuple[float, ...]:
         return tuple(event[1] for event in self.read_terminal_events())
@@ -407,6 +420,33 @@ class AtomicProgressWriter:
             _fsync_directory(self.paths.pid.parent)
             self._pid_claim = payload
             return
+
+
+class _HeartbeatPump:
+    """One harmless periodic writer for a deliberately long dataset stage."""
+
+    def __init__(self, writer: AtomicProgressWriter, progress: RuntimeProgress, *, interval: float | None = None) -> None:
+        self._writer = writer
+        self._progress = progress
+        self._interval = _HEARTBEAT_INTERVAL_SECONDS if interval is None else interval
+        if not isinstance(self._interval, (int, float)) or self._interval <= 0:
+            raise ValueError("heartbeat interval must be positive")
+        self._stop = Event()
+        self._thread = Thread(target=self._run, name="exp425-heartbeat", daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def _run(self) -> None:
+        while not self._stop.wait(float(self._interval)):
+            self._writer.write(self._progress, event="heartbeat", detail={"phase": self._progress.current_phase or self._progress.stage})
+
+    def close(self) -> None:
+        self._stop.set()
+        if self._thread.is_alive():
+            self._thread.join(timeout=max(1.0, float(self._interval) * 2.0))
+        if self._thread.is_alive():
+            raise RuntimeError("heartbeat thread did not stop")
 
 
 def _atomic_write(path: Path, data: bytes) -> None:
@@ -1244,9 +1284,16 @@ def run_selective_population(context: FrozenRunContext, store: Exp425CheckpointS
             runtime.snapshot.verify_boundary("runtime:before_dataset")
             train = runtime.snapshot.load_train(dataset, context)
             sizes = _size_summary(train)
-            progress = replace(progress, timestamp=_now(), current_dataset=dataset, ordinal=ordinal, origin="exp425_native", current_phase="dataset", dataset_start_time=_now(), train_instance_count=len(train.series), test_instance_count=context.test_sizes[dataset], size_summary=sizes)
-            runtime.writer.write(progress, event="dataset_start", detail={"dataset": dataset, "ordinal": ordinal, "total": len(context.datasets), "origin": "exp425_native", "phase": "train"})
-            record, trace = _compute_native(context, store, runtime, dataset, train)
+            progress = replace(progress, timestamp=_now(), current_dataset=dataset, ordinal=ordinal, origin="exp425_native", current_phase="preprocess", dataset_start_time=_now(), train_instance_count=len(train.series), test_instance_count=context.test_sizes[dataset], size_summary=sizes, values_processed=progress.values_processed + sizes["train_values"], bytes_processed=progress.bytes_processed + sizes["train_bytes"])
+            runtime.writer.write(progress, event="dataset_start", detail={"dataset": dataset, "ordinal": ordinal, "total": len(context.datasets), "origin": "exp425_native", "phase": "train_loaded", "train_values": sizes["train_values"], "train_bytes": sizes["train_bytes"]})
+            heartbeat = _HeartbeatPump(runtime.writer, progress, interval=getattr(runtime.writer, "heartbeat_interval_seconds", None))
+            heartbeat.start()
+            try:
+                runtime.writer.write(replace(progress, current_phase="preprocess"), event="stage", detail={"dataset": dataset, "phase": "preprocess_before"})
+                record, trace = _compute_native(context, store, runtime, dataset, train)
+                runtime.writer.write(replace(progress, current_phase="commit"), event="stage", detail={"dataset": dataset, "phase": "commit_before"})
+            finally:
+                heartbeat.close()
             elapsed = record.elapsed_seconds
             runtime._verify_authority_binding()
             capability = capabilities._mint(runtime, kind="native", run_identity=store.provenance.run_identity, dataset=dataset, context_sha256=store.run_context_sha256, trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256, backend_sha256=record.backend_audit_sha256, process_nonce=runtime.process_nonce)

@@ -85,6 +85,7 @@ def main(argv: list[str] | None = None) -> int:
         "pid": __import__("os").getpid(),
     }
     print(json.dumps(paths, sort_keys=True), flush=True)
+    launch: object | None = None
     try:
         launch = _factory(args.launch_factory)()
         if not isinstance(launch, dict):
@@ -97,6 +98,14 @@ def main(argv: list[str] | None = None) -> int:
             snapshot=launch["snapshot"], audit=launch["audit"], importer=launch.get("importer"),
         )
     except (KeyError, ImportError, OSError, ValueError) as error:
+        if isinstance(launch, dict):
+            snapshot = launch.get("snapshot")
+            close = getattr(snapshot, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception:
+                    pass
         print(f"{args.command} failed: {type(error).__name__}: {error}", file=sys.stderr)
         # Factory shape is an argument/contract error; failures after a valid
         # factory launch (MPS, integrity, DB, guard) are runtime failures.

@@ -22,6 +22,15 @@ close now occur before `complete_review_only` is published.  Native TRAIN-only
 abstentions after model qualification but with no qualified group accept absent
 TEST scoring and persist `not_applicable_no_qualified_group`.
 
+Round 2 adds serialized writer ownership and a periodic heartbeat pump.  The
+pump writes canonical atomic progress, JSONL, and parent-log evidence during a
+blocked dataset stage, preserves the active dataset/phase, and joins on exit.
+Every emitted event now includes elapsed/cumulative timing, backend,
+checkpoint-root, and monotonic heartbeat sequence.  TRAIN load updates value
+and byte totals before preprocessing.  The CLI rejects an already-existing new
+root before importing a launch factory and closes a partially returned snapshot
+on later launch-shape errors.
+
 Focused verification after this change:
 
 ```text
@@ -50,6 +59,18 @@ complete CLI matrix, full nested evidence mutation matrix, or preregistered
 eligible MPS parity smoke was added.  The missing MPS smoke remains unavailable
 without a selected frozen eligible fixture/launch assembly; no TEST labels or
 official population was queried.
+
+Actual environment check for the requested MPS smoke:
+
+```text
+torch=2.13.0, mps_built=true, mps_available=true
+```
+
+The external blocker is not device availability: the Task 5 worktree has no
+`experiments/exp424_*` implementation or frozen Exp424 launch/fixture assembly
+to execute as the required exact reference path.  A synthetic torch-only MPS
+comparison would not meet the requested scientific parity contract, so it was
+not substituted.
 
 ## TDD evidence
 
