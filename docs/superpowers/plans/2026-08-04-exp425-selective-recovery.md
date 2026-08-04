@@ -199,25 +199,26 @@ git commit -m "feat(exp425): classify OOF identity insufficiency"
 - Create: `experiments/exp425_selective_recovery/tests/test_checkpoints.py`
 
 **Interfaces:**
-- Produces: `Exp425RunProvenance`, `SourceProvenGroupEvidence`, `NativeRecordEnvelope`, `ImportedRecordEnvelope`, and `Exp425Record`.
+- Produces: `Exp425RunProvenance`, `SourceProvenGroupEvidence`, `NativeRecordEnvelope`, `ImportedRecordEnvelope`, `ImportBatchHandle`, `ImportPromotionAuthorization`, and `Exp425Record`.
 - Produces: `Exp425CheckpointStore.create(root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> Exp425CheckpointStore`.
 - Produces: `Exp425CheckpointStore.open(root: Path, provenance: Exp425RunProvenance, context: FrozenRunContext) -> Exp425CheckpointStore`.
-- Produces: `write_native(record: NativeRecordEnvelope) -> str`, `write_imported(record: ImportedRecordEnvelope) -> str`, `completed_record_digests() -> Mapping[str, str]`, `load_record(dataset: str) -> Exp425Record`, and `iter_records() -> Iterator[Exp425Record]`.
+- Produces: `write_native(record: NativeRecordEnvelope) -> str`, `begin_import_batch(batch_identity: str, source_attestation_sha256: str) -> ImportBatchHandle`, `stage_imported(batch: ImportBatchHandle, record: ImportedRecordEnvelope) -> str`, `promote_import_batch(batch: ImportBatchHandle, authorization: ImportPromotionAuthorization) -> Mapping[str, str]`, `completed_record_digests() -> Mapping[str, str]`, `load_record(dataset: str) -> Exp425Record`, and `iter_records() -> Iterator[Exp425Record]`.
 - Consumes later: Task 3 predecessor envelopes and Task 5 native execution records.
 
-`Exp425RunProvenance` contains `run_identity`, `git_commit`, `database_sha256`, four lane artifact digests, frozen config/fold/model/backend digests, model and perturbation seeds, runtime versions, expected datasets, predecessor compatibility digest, and shared run-context digest. `NativeRecordEnvelope` contains dataset, native effective result, native group eligibility evidence, model/calibration/backend audit hashes, elapsed time, reason, and `origin="exp425_native"`. `ImportedRecordEnvelope` contains dataset, adapted effective result, source-proven group evidence, source root/progress/record/result digests, compatibility attestation, elapsed time, reason, and `origin="exp424_import"`. `Exp425Record` is the validated union of these two envelopes.
+`Exp425RunProvenance` contains `run_identity`, `git_commit`, `database_sha256`, four lane artifact digests, frozen config/fold/model/backend digests, model and perturbation seeds, runtime versions, expected datasets, predecessor compatibility digest, and shared run-context digest. `NativeRecordEnvelope` contains dataset, native effective result, native group eligibility evidence, model/calibration/backend audit hashes, elapsed time, reason, and `origin="exp425_native"`. `ImportedRecordEnvelope` contains dataset, adapted effective result, source-proven group evidence, source root/progress/record/result digests, compatibility attestation, elapsed time, reason, and `origin="exp424_import"`. `ImportBatchHandle` binds the owned staging directory inode, batch identity, source-attestation digest, and sorted staged record digests. `ImportPromotionAuthorization` binds a fresh full-source-revalidation digest, batch digest, source root/progress/inventory digests, and validation timestamp from Task 3. `Exp425Record` is the validated union of native and imported envelopes.
 
 - [ ] **Step 1: Write failing root/context and compact-record tests**
 
 Assert that:
 
-- root creation writes exactly `checkpoint_provenance.json`, `run_context.json`, `progress.json`, `datasets/`, and `transactions/`;
+- root creation writes exactly `checkpoint_provenance.json`, `run_context.json`, `progress.json`, `datasets/`, `transactions/`, and `import_batches/`;
 - `run_context.json` canonical SHA256 equals every dataset record's `run_context_sha256`;
 - a dataset record never contains keys `context`, `lanes`, `datasets`, or `test_identity_manifest` below the envelope root;
 - round-trip reconstruction injects the exact shared context;
 - `new` creation rejects an existing path and open rejects an absent path;
 - unknown files, symlinks, digest mismatch, duplicate dataset, path replacement, and concurrent writers fail closed;
-- simulated process death after intent fsync, record fsync, progress fsync, and intent removal has one deterministic recovery result at each boundary.
+- simulated process death after intent fsync, record fsync, progress fsync, and intent removal has one deterministic recovery result at each boundary;
+- generic open reconciles native intents but leaves imported intents out of progress and reports `import_revalidation_required` with the exact batch/attestation digest.
 
 ```python
 raw = (root / "datasets" / record_filename("Tiny_normal_1")).read_bytes()
@@ -263,7 +264,7 @@ def iter_records(self) -> Iterator[Exp425Record]:
             yield self.load_record(dataset)
 ```
 
-Every write uses a durable intent file in `transactions/`: publish and fsync the canonical intent containing dataset and intended record digest; publish and fsync the dataset record; replace and fsync progress; remove and fsync the intent. Open/resume reconciles under an exclusive root lock: intent without record is removed; matching intent plus durable record absent from progress completes progress; matching intent plus record already in progress removes the intent. A record absent from progress and without a valid intent is corruption and must not be adopted. Quarantine a corrupted store beside the original only when the exact root inode remains owned and the quarantine destination does not exist.
+Every write uses a durable intent file in `transactions/`: publish and fsync the canonical intent containing origin, dataset, and intended record digest; publish and fsync the dataset record; replace and fsync progress; remove and fsync the intent. For `origin="exp425_native"`, open/resume reconciles under an exclusive root lock: intent without record is removed; matching intent plus durable record absent from progress completes progress; matching intent plus record already in progress removes the intent. For `origin="exp424_import"`, the intent must also contain import batch and final source-attestation digests; generic open never completes it and instead reports `import_revalidation_required` for Task 3. A record absent from progress and without a valid intent is corruption and must not be adopted. Quarantine a corrupted store beside the original only when the exact root inode remains owned and the quarantine destination does not exist.
 
 - [ ] **Step 5: Run checkpoint tests and the Exp417 checkpoint regression suite**
 
@@ -306,9 +307,9 @@ git commit -m "perf(exp425): compact provenance-bound checkpoints"
 - Produces context manager `open_validated_exp424_source(root: Path, contract: Exp424CompatibilityContract) -> Iterator[Exp424ValidatedSnapshot]`.
 - Produces: `import_exp424_nonterminal(source: Exp424ValidatedSnapshot, target: Exp425CheckpointStore, target_context: FrozenRunContext) -> Exp424ImportReport`.
 - Produces: `adapt_imported_result(source: DatasetResult, target_context: FrozenRunContext) -> DatasetResult`.
-- Consumes: Task 2 `write_imported`, the exact Exp424 checkpoint schema version 3, and frozen compatibility digests recorded in the Exp424 root.
+- Consumes: Task 2 import-batch staging/promotion interfaces, the exact Exp424 checkpoint schema version 3, and frozen compatibility digests recorded in the Exp424 root.
 
-`Exp424CompatibilityContract` includes the exact source commit, entrypoint SHA256/blob, DB and four lane digests, config/fold/model/backend digests, runtime versions, seeds, MPS device and device guard, batch/chunk values, score formula, score-cache component tuple and contract digest, percentile method, score dtype, canonical thresholds payload, alpha tuple, candidate-formula digest, routing-contract digest, device-transfer policy, and synchronization-policy digest. `Exp424ValidatedSnapshot` retains open descriptor-bound root/datasets handles, the held shared lock, root/progress identities and digests, per-record identities/digests, plus a lazy sorted iterator of validated source records. `Exp424ImportReport` contains sorted imported, rejected-terminal, and rejected-incompatible dataset tuples and the source/attestation digests.
+`Exp424CompatibilityContract` includes the exact source commit, entrypoint SHA256/blob, DB and four lane digests, config/fold/model/backend digests, runtime versions, seeds, MPS device and device guard, batch/chunk values, score formula, fixed score-cache canonical payload/SHA256, percentile method, score dtype, canonical thresholds payload, alpha tuple, candidate-formula digest, routing-contract digest, fixed device-transfer/synchronization canonical payload/SHA256. `Exp424ValidatedSnapshot` retains open descriptor-bound root/datasets handles, the held shared lock, root/progress identities and digests, per-record identities/digests, plus a lazy sorted iterator of validated source records. `Exp424ImportReport` contains sorted imported, rejected-terminal, and rejected-incompatible dataset tuples and the source/attestation digests.
 
 - [ ] **Step 1: Write failing compatibility and mutation tests**
 
@@ -367,11 +368,41 @@ compatibility_payload = {
 }
 ```
 
+Define the exact canonical payload constants and assert their fixed digests at import time:
+
+```python
+EXP424_SCORE_CACHE_CONTRACT = {
+    "schema": "exp424.score-cache-contract.v1",
+    "components": ["oof_score_calibration_cache", "reusable_batch_residual_predictor"],
+    "score_formula": "Exp417.score_horizon.v1",
+    "oof_residual_dtype": "float64",
+    "percentile_method": "linear",
+    "residual_batch_size": 32,
+    "query_chunk_size": 256,
+    "model_materialization": "once_per_seed_predictor_per_scoring_stage",
+    "candidate_coordinates": "exact_exp417_parity",
+}
+EXP424_SCORE_CACHE_CONTRACT_SHA256 = "82d6f3b431b2d57f45f2aae33ee4f16729709b0090f8c4984bbdf5557baff257"
+EXP424_MPS_SYNC_CONTRACT = {
+    "schema": "exp424.mps-synchronization-contract.v1",
+    "device": "mps",
+    "device_guard": "mps_and_mps0_equivalent",
+    "input_transfer": "contiguous_float32_numpy_copy_to_torch_then_to_mps",
+    "output_transfer": "per_prediction_horizon_detach_cpu_numpy",
+    "implicit_sync_boundary": "mps_to_cpu_materialization",
+    "explicit_torch_mps_synchronize_calls": 0,
+    "output_residual_dtype": "float64",
+}
+EXP424_MPS_SYNC_CONTRACT_SHA256 = "e1e928ddde0a4793a63cb95a6a643888251e4ddabba9b2bbedd12859df95133a"
+```
+
+Tests recompute both SHA256 values with `canonical_json_bytes` and independently mutate every field to prove rejection; a caller cannot substitute a self-consistent digest.
+
 - [ ] **Step 4: Implement one-pass descriptor-bound source validation**
 
 Expose validation as a context manager that retains the shared lock plus open root/datasets descriptors through import. Capture identities, validate exact inventories, read root and progress once, then stream records in sorted dataset order. For each file, verify canonical JSON and progress digest before reconstructing the `DatasetResult`. Retain per-record descriptor identity, stable metadata, and digest; do not construct a 1,117-result mapping.
 
-Write converted compact envelopes only into an uncommitted target import-staging directory. Before publishing any staged envelope into the target dataset/progress inventory, re-read and verify source root, progress, inventories, and every source record digest through the retained descriptors. Promote only after this final revalidation. A crashed import batch remains staged and must repeat full source revalidation before promotion; mutation or cleanup failure aborts and quarantines only the owned target staging batch.
+Write converted compact envelopes only into an uncommitted target import-staging directory. Before publishing any staged envelope into the target dataset/progress inventory, re-read and verify source root, progress, inventories, and every source record digest through the retained descriptors. Persist the final source-attestation digest in the batch and each import intent, then promote. Generic `Exp425CheckpointStore.open` must never complete or add an imported intent to progress; it exposes `import_revalidation_required`. After a crash, only `open_validated_exp424_source` plus `import_exp424_nonterminal` may resume promotion, and they must reacquire the source lock/descriptors and repeat full source revalidation against the batch attestation first. Mutation or cleanup failure aborts and quarantines only the owned target staging batch.
 
 - [ ] **Step 5: Implement imported-result adaptation and envelopes**
 

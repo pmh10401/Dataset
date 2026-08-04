@@ -148,8 +148,28 @@ Before promotion, Exp425 revalidates source root/progress/inventory plus every
 source record identity, metadata, and digest through the retained descriptors.
 Only that final accepted snapshot may be promoted through the checkpoint intent
 protocol. A crash or mutation before promotion leaves no committed import; a
-crash during promotion requires the same source revalidation before resuming the
-batch.
+crash during promotion leaves source-attestation-aware import intents that the
+generic checkpoint opener must not reconcile. Only the predecessor importer may
+resume them, after reacquiring source descriptors/shared lock and repeating the
+entire source revalidation against the immutable batch attestation.
+
+The score-cache and synchronization contracts are not caller-supplied free-form
+digests. Exp425 embeds their exact canonical JSON payloads and requires these
+fixed SHA256 values:
+
+- Exp424 score-cache contract:
+  `82d6f3b431b2d57f45f2aae33ee4f16729709b0090f8c4984bbdf5557baff257`;
+- Exp424 MPS synchronization contract:
+  `e1e928ddde0a4793a63cb95a6a643888251e4ddabba9b2bbedd12859df95133a`.
+
+The score-cache payload fixes the two optimization components, Exp417 score
+formula, float64 OOF residuals, linear percentile, batch 32, chunk 256, one
+predictor materialization per seed/scoring stage, and exact candidate-coordinate
+parity. The synchronization payload fixes MPS/device guard, contiguous float32
+NumPy copy to MPS, per-prediction/horizon `detach().cpu().numpy()` output transfer,
+implicit MPS-to-CPU synchronization, zero explicit `torch.mps.synchronize()` calls,
+and float64 residual output. Tests recalculate the canonical digests and reject
+every one-field mutation.
 
 An imported Exp425 envelope records:
 
@@ -181,7 +201,9 @@ The checkpoint root stores once:
 - its canonical SHA256 digest;
 - expected dataset universe;
 - predecessor compatibility declaration;
-- execution mode and run identity.
+- execution mode and run identity;
+- empty `transactions/` and `import_batches/` roots for native intents and
+  source-revalidation-gated predecessor staging.
 
 ### 6.2 Dataset records
 
@@ -213,6 +235,13 @@ finish progress for an intent whose matching record is durable, remove an intent
 whose record was never published, or remove a leftover intent already reflected
 in progress. A record absent from both progress and a valid intent is corruption,
 not a recoverable orphan. Crash tests cover termination after every boundary.
+
+Native and imported transactions are distinct. Generic open/resume may reconcile
+only `origin=exp425_native` intents. An imported intent must include import batch
+identity and final source-attestation digest; generic open reports
+`import_revalidation_required` without changing progress. The predecessor importer
+must reacquire and fully revalidate the Exp424 source before it may resume any
+import promotion.
 
 Targets for the checkpoint-only optimization are:
 
