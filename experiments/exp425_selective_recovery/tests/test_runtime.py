@@ -7,6 +7,7 @@ from pathlib import Path
 import os
 import copy
 import pickle
+from types import SimpleNamespace
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
@@ -14,15 +15,42 @@ from unittest.mock import patch
 from experiments.exp425_selective_recovery.runtime import (
     AtomicProgressWriter,
     RuntimeProgress,
+    _no_model_abstention,
+    _effective_record_payload,
     execute_runtime_command,
     inspect_runtime_output,
     build_exp425_runtime,
 )
 from experiments.exp417_causal_multihorizon_shadow.contracts import BackendAudit
+from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenLaneSnapshot, FrozenRunContext
+from experiments.exp417_causal_multihorizon_shadow.config import FROZEN_CONFIG, Exp417FrozenConfig
+from dataclasses import replace
 from experiments.exp425_selective_recovery.database import Exp425DatabaseSnapshot
+from experiments.exp425_selective_recovery.contracts import FoldIdentityCounts, GroupEligibilityEvidence
+from experiments.exp417_causal_multihorizon_shadow.contracts import LengthGroup, ProcessedGroup, RawSeries
+from experiments.exp417_causal_multihorizon_shadow.qualification import freeze_train_contract
 
 
 class AtomicProgressWriterTests(unittest.TestCase):
+    def test_small_frozen_context_fixture_uses_real_three_dataset_universe(self) -> None:
+        config = replace(
+            FROZEN_CONFIG, expected_datasets=3, expected_hard=1, expected_standard=1,
+            expected_priority=1, expected_automatic_normal=0, database_sha256="a" * 64,
+        )
+        datasets = ("Eligible_normal_1", "Imported_normal_1", "Insufficient_normal_1")
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None):
+            lanes = FrozenLaneSnapshot(
+                hard={"Eligible_normal_1": (0,)}, standard={"Imported_normal_1": (0,)},
+                priority={"Insufficient_normal_1": (0,)}, automatic_normal={}, config=config,
+                population=datasets,
+            )
+            context = FrozenRunContext(
+                database_sha256="a" * 64, datasets=datasets, lanes=lanes,
+                test_identity_manifest={dataset: ((0, 8),) for dataset in datasets},
+                code_commit="c" * 40, runtime_versions={"python": "test"}, config=config,
+            )
+        self.assertEqual(context.datasets, datasets)
+        self.assertEqual(context.test_sizes["Eligible_normal_1"], 1)
     def test_write_is_atomic_and_events_are_canonical_and_label_free(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -88,6 +116,62 @@ class AtomicProgressWriterTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "terminal event"):
                 writer.read_terminal_samples()
 
+    def test_invalid_resume_does_not_claim_pid_or_mutate_output(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            writer = AtomicProgressWriter.create(
+                output_root=root, run_identity="runtime-test", command="new",
+                checkpoint_root=root / "checkpoints", total_datasets=2, backend="mps",
+            )
+            state = RuntimeProgress.initializing(writer.paths, "runtime-test", "new", 2, "mps")
+            writer.write(state, event="phase_change")
+            writer.close()
+            writer._write_pid()
+            writer.paths.events.write_bytes(writer.paths.events.read_bytes()[:-1])
+            before = {path.name: (path.read_bytes(), path.stat().st_ino, path.stat().st_mtime_ns) for path in root.iterdir()}
+            with self.assertRaisesRegex(ValueError, "truncated"):
+                AtomicProgressWriter.resume(output_root=root, run_identity="runtime-test", checkpoint_root=root / "checkpoints")
+            after = {path.name: (path.read_bytes(), path.stat().st_ino, path.stat().st_mtime_ns) for path in root.iterdir()}
+            self.assertEqual(before, after)
+
+    def test_no_model_oof_abstention_has_empty_decisions_and_explicit_na_evidence(self) -> None:
+        dataset = "Insufficient_normal_1"
+        config = replace(FROZEN_CONFIG, expected_datasets=1, expected_hard=0, expected_standard=0,
+                         expected_priority=0, expected_automatic_normal=0, database_sha256="a" * 64)
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None):
+            lanes = FrozenLaneSnapshot({}, {}, {}, {}, config=config, population=(dataset,))
+            context = FrozenRunContext("a" * 64, (dataset,), lanes, {dataset: ((0, 8),)}, "c" * 40, {"python": "test"}, config)
+        group = ProcessedGroup(LengthGroup(8, (RawSeries(0, tuple(float(i) for i in range(8))),)),
+                               0.0, 1.0, 0.0, 1.0, "insufficient_train_abstain")
+        folds = tuple(FoldIdentityCounts(5, 1, 4, 1) for _ in range(5))
+        eligibility = GroupEligibilityEvidence(dataset, 8, "candidate_eligible", "a" * 64,
+                                               "b" * 64, 1, folds, 4, 1,
+                                               "oof_identity_insufficient", "oof_identity_insufficient")
+        audit = BackendAudit("mps", True, 0.0, 1.0, 1.1, False)
+        store = SimpleNamespace(provenance=SimpleNamespace(run_identity="runtime-test"), run_context_sha256="d" * 64)
+        runtime = SimpleNamespace(
+            audit=audit,
+            _eligibility={dataset: {8: eligibility}},
+            runner=SimpleNamespace(freeze=lambda name, qualification, models: freeze_train_contract(name, qualification.groups, qualification.backend, train_identity_sha256=models.train_identity_sha256)),
+        )
+        record, trace = _no_model_abstention(context, store, runtime, dataset, (group,), 0.25)
+        effective = record.result_payload["effective_result"]
+        self.assertEqual(effective["status"], "abstained")
+        self.assertEqual(record.reason, "oof_identity_insufficient")
+        self.assertEqual(record.model_hashes["model_evidence"]["status"], "not_applicable")
+        self.assertEqual(record.calibration_hashes["scoring_evidence"]["status"], "not_applicable")
+        self.assertEqual(trace.processed_groups_sha256, record.processed_groups_sha256)
+
+    def test_effective_record_decoder_handles_native_and_imported_envelopes(self) -> None:
+        native = SimpleNamespace(origin="exp425_native", result_payload={
+            "effective_result": {"status": "scored", "candidate_coordinates": [["n", 1]]},
+        })
+        imported = SimpleNamespace(origin="exp424_import", result_payload={
+            "status": "abstained", "candidate_coordinates": [],
+        })
+        self.assertEqual(_effective_record_payload(native)["status"], "scored")
+        self.assertEqual(_effective_record_payload(imported)["status"], "abstained")
+
     def test_runtime_session_is_opaque_and_requires_a_passing_mps_audit(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -106,7 +190,8 @@ class AtomicProgressWriterTests(unittest.TestCase):
                 copy.copy(session)
             with self.assertRaises(TypeError):
                 pickle.dumps(session)
-            session.close()
+            with patch.object(Exp425DatabaseSnapshot, "close"):
+                session.close()
             with self.assertRaisesRegex(ValueError, "closed"):
                 session._require_live()
             with self.assertRaisesRegex(ValueError, "MPS audit"):

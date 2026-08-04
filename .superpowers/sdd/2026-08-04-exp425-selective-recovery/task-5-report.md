@@ -72,3 +72,53 @@ PASS
 git diff --check
 PASS
 ```
+
+## Completion update — 2026-08-04
+
+Task 5 completion work hardened the runtime's missing-record path without
+altering Exp417/Exp424 algorithm code.  A supplied TRAIN payload is
+preprocessed once and assessed once.  If all remaining work is identity
+insufficient (including a mix of preprocessing abstentions and newly
+identity-insufficient groups), the runtime builds a context-bound empty
+`DatasetDecisionEvidence` and an `abstained` `DatasetResult` from unchanged
+qualification/freeze logic.  It does not call `run_dataset`, model training,
+scoring, or the TEST loader.  Native envelopes bind the processed-input
+identity, complete captured OOF/final model hashes, canonical float64 OOF
+calibration bytes, TEST-scoring final-model hashes, and the backend audit;
+the no-model path instead records explicit `not_applicable` model/scoring
+evidence.
+
+Progress now has the exact phase sequence, atomic temp cleanup, canonical
+JSONL validation, terminal-event uniqueness, non-overlapping accounting
+(`imported + native == completed`, `recomputed <= native`), an explicit
+OOF-identity-insufficient counter, and resume validation before PID mutation.
+Committed-but-not-yet-logged terminal records are logged once on resume;
+already logged records are never replayed.  Inspection validates progress and
+events without opening a database/checkpoint writer or changing output state.
+
+Commands actually run:
+
+```text
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_runtime \
+  experiments.exp425_selective_recovery.tests.test_cli -v
+PASS — 9 tests
+
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_capabilities \
+  experiments.exp425_selective_recovery.tests.test_checkpoints \
+  experiments.exp425_selective_recovery.tests.test_predecessor \
+  experiments.exp425_selective_recovery.tests.test_database \
+  experiments.exp425_selective_recovery.tests.test_eligibility -v
+PASS — 95 tests (database benchmark: 256MiB snapshot=0.127s, verified_opens=2.489s)
+
+python3 -m unittest experiments.exp417_causal_multihorizon_shadow.tests.test_runner \
+  experiments.exp417_causal_multihorizon_shadow.tests.test_model \
+  experiments.exp417_causal_multihorizon_shadow.tests.test_scoring \
+  experiments.exp417_causal_multihorizon_shadow.tests.test_qualification -v
+PASS
+```
+
+The required TRAIN-only Exp424-versus-Exp425 MPS parity smoke remains
+intentionally unrun: Task 5 has no verified launch assembly or selected
+pre-registered eligible source fixture, and inventing either would violate the
+frozen contract.  No readiness task, official population run, or TEST-label
+query was performed.

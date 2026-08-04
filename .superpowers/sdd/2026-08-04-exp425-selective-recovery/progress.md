@@ -1,0 +1,41 @@
+# SDD ledger — plan: docs/superpowers/plans/2026-08-04-exp425-selective-recovery.md
+
+Pre-flight commitment review: ship at 4aa3fe142c043c55b4bdcabc1824b6cadd9e3bdc (Sol/High; no implementation blockers).
+Task 1: in progress (base 4aa3fe142c043c55b4bdcabc1824b6cadd9e3bdc)
+Task 1: complete (commits 4aa3fe1..a37e0b4, review clean)
+Task 2: in progress (base a37e0b4d1e241a885c69b65b318fe77107b055c8)
+Task 2: fix round 1/5 (3 addressed, 10 Critical/Important open including descriptor leaks; commits bfc221c..22b8b97)
+Task 2: minor (deferred): inspect proof does not yet snapshot bytes/root and broader metadata timestamps
+Task 2: fix round 2 in progress (base 22b8b97)
+Task 2: fix round 2/5 (4 addressed, 6 Critical/Important open including strict-decoder regression; commits 22b8b97..a638ce9)
+Task 2: minor (deferred): inspect proof excludes atime because read policy may update it although interface wording says timestamps
+Task 2: fix round 3 in progress (base a638ce9)
+Task 2: fix round 3/5 (2 addressed, 4 Critical/Important open including tombstone semantics; commits a638ce9..d2302d7)
+Task 2: fix round 4 in progress (base d2302d7; fresh Terra implementer)
+Task 2: fix round 4/5 (1 addressed, 3 Critical/Important open; commits d2302d7..096e83d)
+Task 2: minor (deferred): cleanup staged digest syntax validates length but not lowercase hex
+Task 2: fix round 5 in progress (base 096e83d; fresh Terra implementer, final round)
+Task 2: fix round 5/5 (3 addressed, 0 open; commits 096e83d..7ebe538)
+Task 2: complete (commits a37e0b4..7ebe538, final scoped review ship; historical deferred minor notes retained)
+Task 3: in progress (base 7ebe538)
+Task 3: fix round 1 in progress (base ea7ea85; initial review: 2 Critical, 5 Important open)
+Task 3: fix round 1/5 (2 addressed, 5 Critical/Important open including post-promotion quarantine; commits ea7ea85..16b5cdc)
+Task 3: fix round 2 in progress (base 16b5cdc)
+Task 3: fix round 2/5 (2 addressed, 3 Important open; commits 16b5cdc..1450716)
+Task 3: fix round 3 in progress (base 1450716)
+Task 3: fix round 3/5 (3 addressed, 1 new Important open: mint-time revalidation is misclassified post-promotion; commits 1450716..dc3f6d5)
+Task 3: fix round 4 in progress (base dc3f6d5)
+Task 3: fix round 4/5 (1 addressed, 0 open; commits dc3f6d5..78580fc; final scoped Sol/High review ship)
+Task 3: complete (commits 7ebe538..78580fc; production smoke 1117/983/134, source_mutated=false)
+Task 4: in progress (base 78580fc)
+Task 4: fix round 1 in progress (base 3cf9e49; review: 1 Critical, 8 Important open)
+Task 4: fix round 1 partial (commit 57fdb7f; package remains in progress; implementer reports parent binding/live-writer/malformed-row/benchmark coverage open)
+Task 4: fix round 1/5 (original 1 Critical addressed; 4 Important open after cumulative commits 3cf9e49..4d18e03)
+Task 4: fix round 2 in progress (base 4d18e03)
+Task 4: fix round 2/5 (4 addressed, 2 Important open: integrity audit lifecycle and real replace/open/restore ABA proof; commit 6081e2b)
+Task 4: fix round 3 in progress (base 6081e2b)
+Task 4: fix round 3/5 (2 addressed, 0 open; commit 18159d6; final Sol/High scoped review ship)
+Task 4: complete (commits 78580fc..18159d6; DB tests 25, DB+Exp417 50, Exp425 106; 256MiB 0.136s vs 2.593s)
+External readiness: removed 8 unreferenced stale Exp417 DB pin hardlinks; official DB inode 1048138 retained, nlink restored 9 -> 1.
+Task 5: in progress (base 18159d6)
+Task 5: complete (runtime/CLI commit pending; focused Task5 9 tests, Task1-4 95 tests, frozen Exp417 regression suite pass; no official run/readiness/parity smoke)
