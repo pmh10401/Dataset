@@ -366,7 +366,6 @@ class Exp425CheckpointStore:
         with nullcontext(binding):
             _, _, progress = _read_root_metadata(self.root, binding=binding)
             digests = dict(progress["record_digests"])
-            pending: list[tuple[str, str]] = []
             changed = False
             remove_after_progress: list[str] = []
             datasets_fd, datasets_identity = _open_directory_at(binding, "datasets")
@@ -378,10 +377,7 @@ class Exp425CheckpointStore:
                     intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
                     origin, dataset, digest = intent.get("origin"), intent.get("dataset"), intent.get("record_payload_sha256")
                     if origin == "exp424_import":
-                        batch, final = intent.get("batch_identity"), intent.get("final_attestation_sha256")
-                        if not isinstance(batch, str) or not isinstance(final, str):
-                            raise ValueError("import checkpoint intent is invalid")
-                        pending.append((batch, final)); continue
+                        continue
                     if origin != "exp425_native" or not isinstance(dataset, str) or not isinstance(digest, str):
                         raise ValueError("checkpoint intent is invalid")
                     try:
@@ -409,7 +405,7 @@ class Exp425CheckpointStore:
                 _verify_directory_at(binding, "transactions", transactions_identity)
                 binding.verify()
                 self._record_digests = MappingProxyType(digests)
-                self.import_revalidation_required = tuple(pending)
+                self.import_revalidation_required = _import_intent_requirements(self.root, binding=binding)
             finally:
                 os.close(transactions_fd); os.close(datasets_fd)
 
@@ -758,18 +754,55 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
     if binding is None:
         with _locked_root(root, exclusive=False) as owned:
             return _import_intent_requirements(root, binding=owned)
-    transactions_fd, identity = _open_directory_at(binding, "transactions")
+    stored, _, _ = _read_root_metadata(root, binding=binding)
+    transactions_fd, transactions_identity = _open_directory_at(binding, "transactions")
+    imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
     try:
-        result: list[tuple[str, str]] = []
+        batches: dict[str, str] = {}
+        for name in sorted(os.listdir(imports_fd)):
+            batch_fd = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
+            try:
+                state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                batch_identity = state.get("batch_identity")
+                attestation = state.get("source_attestation_sha256")
+                staged = state.get("staged_record_digests")
+                if not isinstance(batch_identity, str) or _batch_name(batch_identity) != name or not isinstance(attestation, str) or not isinstance(staged, dict):
+                    raise ValueError("import batch is invalid")
+                if state != _batch_state(str(stored["run_identity"]), str(stored["run_context_sha256"]), batch_identity, attestation, staged):
+                    raise ValueError("import batch durable state is invalid")
+                if set(os.listdir(batch_fd)) != {"batch.json"} | {record_filename(dataset) for dataset in staged}:
+                    raise ValueError("import batch inventory is invalid")
+                for dataset, digest in staged.items():
+                    if not isinstance(dataset, str) or not isinstance(digest, str) or len(digest) != 64:
+                        raise ValueError("import batch staged digests are invalid")
+                    raw = _read_file(record_filename(dataset), dir_fd=batch_fd)
+                    if _record_digest_from_raw(raw) != digest:
+                        raise ValueError("import batch staged record is invalid")
+                current = os.stat(name, dir_fd=imports_fd, follow_symlinks=False)
+                opened = os.fstat(batch_fd)
+                if (current.st_dev, current.st_ino) != (opened.st_dev, opened.st_ino):
+                    raise ValueError("import batch directory was replaced")
+                batches[batch_identity] = sha256(canonical_json_bytes({
+                    "batch_identity": batch_identity,
+                    "record_digests": dict(sorted(staged.items())),
+                    "attestation_sha256": attestation,
+                })).hexdigest()
+            finally:
+                os.close(batch_fd)
+        result: set[tuple[str, str]] = set()
         for name in sorted(os.listdir(transactions_fd)):
             if not name.endswith(".json"):
                 raise ValueError("checkpoint transaction inventory is invalid")
             intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
             if intent.get("origin") == "exp424_import":
                 batch, final = intent.get("batch_identity"), intent.get("final_attestation_sha256")
-                if not isinstance(batch, str) or not isinstance(final, str): raise ValueError("import intent is invalid")
-                result.append((batch, final))
-        _verify_directory_at(binding, "transactions", identity)
-        return tuple(result)
+                if not isinstance(batch, str) or not isinstance(final, str) or batches.get(batch) != final:
+                    raise ValueError("import intent is invalid")
+                result.add((batch, final))
+        result.update(batches.items())
+        _verify_directory_at(binding, "transactions", transactions_identity)
+        _verify_directory_at(binding, "import_batches", imports_identity)
+        return tuple(sorted(result))
     finally:
+        os.close(imports_fd)
         os.close(transactions_fd)

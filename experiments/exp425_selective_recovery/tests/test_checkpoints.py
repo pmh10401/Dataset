@@ -18,7 +18,12 @@ from experiments.exp417_causal_multihorizon_shadow.checkpoints import _context_p
 from experiments.exp417_causal_multihorizon_shadow.tests.test_checkpoints import _context
 from experiments.exp425_selective_recovery.checkpoints import Exp425CheckpointStore
 from experiments.exp425_selective_recovery import checkpoints
-from experiments.exp425_selective_recovery.contracts import Exp425RunProvenance, NativeRecordEnvelope
+from experiments.exp425_selective_recovery.contracts import (
+    Exp425RunProvenance,
+    ImportedRecordEnvelope,
+    NativeRecordEnvelope,
+    SourceProvenGroupEvidence,
+)
 from experiments.exp425_selective_recovery import capabilities
 
 
@@ -207,6 +212,173 @@ class CheckpointStoreTests(unittest.TestCase):
                             checkpoints._read_file("record.json", dir_fd=descriptor)
                 finally:
                     os.close(descriptor)
+
+    def test_import_promotion_revalidates_after_each_durable_phase_and_resumes_two_records_once(self) -> None:
+        """A new source authority alone may resume every durable A→E boundary."""
+        context = _context()
+        provenance = _provenance(context)
+        datasets = context.datasets[:2]
+        batch_identity = "sealed-exp424-import"
+        source_attestation = _digest("a")
+
+        def imported_record(dataset: str, index: int) -> ImportedRecordEnvelope:
+            evidence = {"dataset": dataset, "source_groups": [index]}
+            return ImportedRecordEnvelope(
+                dataset=dataset,
+                result_payload={"status": "abstained", "source_index": index},
+                group_evidence=SourceProvenGroupEvidence(
+                    evidence, sha256(canonical_json_bytes(evidence)).hexdigest()
+                ),
+                source_root_sha256=sha256(f"root:{dataset}".encode()).hexdigest(),
+                source_progress_sha256=sha256(f"progress:{dataset}".encode()).hexdigest(),
+                source_record_sha256=sha256(f"record:{dataset}".encode()).hexdigest(),
+                source_result_sha256=sha256(f"result:{dataset}".encode()).hexdigest(),
+                compatibility_attestation_sha256=source_attestation,
+                elapsed_seconds=float(index),
+                reason="sealed local exp424 import",
+            )
+
+        records = tuple(imported_record(dataset, index) for index, dataset in enumerate(datasets))
+
+        def stage_digest(store: Exp425CheckpointStore, record: ImportedRecordEnvelope) -> str:
+            return sha256(canonical_json_bytes(checkpoints._import_record_body(store.run_context_sha256, record))).hexdigest()
+
+        def final_attestation(store: Exp425CheckpointStore) -> str:
+            staged = {record.dataset: stage_digest(store, record) for record in records}
+            return sha256(canonical_json_bytes({
+                "batch_identity": batch_identity,
+                "record_digests": dict(sorted(staged.items())),
+                "attestation_sha256": source_attestation,
+            })).hexdigest()
+
+        def begin_and_stage(store: Exp425CheckpointStore, authority: object, nonce: str) -> object:
+            batch = store._begin_import_batch(capabilities._mint(
+                authority, kind="import_begin", run_identity=provenance.run_identity,
+                batch_identity=batch_identity, attestation_sha256=source_attestation,
+                process_nonce=nonce,
+            ), batch_identity)
+            for record in records:
+                store._stage_imported(capabilities._mint(
+                    authority, kind="import_stage", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, dataset=record.dataset,
+                    source_sha256=record.source_record_sha256,
+                    attestation_sha256=source_attestation, process_nonce=nonce,
+                    record_sha256=stage_digest(store, record),
+                ), batch, record)
+            return batch
+
+        def promote(store: Exp425CheckpointStore, authority: object, nonce: str, batch: object) -> None:
+            store._promote_import_batch(capabilities._mint(
+                authority, kind="import_promote", run_identity=provenance.run_identity,
+                batch_identity=batch_identity, attestation_sha256=source_attestation,
+                process_nonce=nonce, final_attestation_sha256=final_attestation(store),
+            ), batch)
+
+        def file_bytes(root: Path) -> dict[str, bytes]:
+            return {str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        for phase in ("intent_durable", "record_durable", "progress_durable", "intent_removed"):
+            with self.subTest(phase=phase), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                old_authority, old_nonce = object(), "old-nonce"
+                capabilities._register_authority(old_authority, "exp424_import")
+                try:
+                    old_batch = begin_and_stage(store, old_authority, old_nonce)
+                    with patch.object(checkpoints, "_after_import_phase", side_effect=lambda reached: (
+                        (_ for _ in ()).throw(SimulatedProcessDeath(reached)) if reached == phase else None
+                    )):
+                        with self.assertRaisesRegex(SimulatedProcessDeath, phase):
+                            promote(store, old_authority, old_nonce, old_batch)
+                finally:
+                    capabilities._close_authority(old_authority)
+
+                before_open = file_bytes(root)
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+                self.assertEqual(file_bytes(root), before_open)
+                self.assertEqual(
+                    reopened.import_revalidation_required,
+                    ((batch_identity, final_attestation(reopened)),),
+                )
+
+                new_authority, new_nonce = object(), "new-nonce"
+                capabilities._register_authority(new_authority, "exp424_import")
+                try:
+                    new_batch = begin_and_stage(reopened, new_authority, new_nonce)
+                    promote(reopened, new_authority, new_nonce, new_batch)
+                finally:
+                    capabilities._close_authority(new_authority)
+                expected_digests = {record.dataset: stage_digest(reopened, record) for record in records}
+                self.assertEqual(dict(reopened.completed_record_digests()), expected_digests)
+                self.assertEqual(json.loads((root / "progress.json").read_bytes())["record_digests"], expected_digests)
+                self.assertEqual(set(path.name for path in (root / "datasets").iterdir()), {
+                    checkpoints.record_filename(record.dataset) for record in records
+                })
+                self.assertEqual(list((root / "transactions").iterdir()), [])
+                self.assertEqual(list((root / "import_batches").iterdir()), [])
+
+    def test_invalid_import_capabilities_leave_the_checkpoint_unchanged(self) -> None:
+        """Wrong source, closed, batch, and final-attestation tokens cannot mutate state."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            record = ImportedRecordEnvelope(
+                context.datasets[0], {"status": "abstained"},
+                SourceProvenGroupEvidence({"source_groups": []}, _digest("b")),
+                _digest("c"), _digest("d"), _digest("e"), _digest("f"), _digest("a"),
+                0.0, "sealed local exp424 import",
+            )
+            batch_identity, attestation, nonce = "capability-batch", _digest("a"), "nonce"
+            try:
+                batch = store._begin_import_batch(capabilities._mint(
+                    authority, kind="import_begin", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, attestation_sha256=attestation, process_nonce=nonce,
+                ), batch_identity)
+                digest = sha256(canonical_json_bytes(checkpoints._import_record_body(store.run_context_sha256, record))).hexdigest()
+
+                def unchanged_after(action: object) -> None:
+                    before = {str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+                    with self.assertRaises(ValueError):
+                        action()
+                    self.assertEqual(
+                        {str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}, before
+                    )
+
+                unchanged_after(lambda: store._stage_imported(object(), batch, record))
+                wrong_source = capabilities._mint(authority, kind="import_stage", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, dataset=record.dataset, source_sha256=_digest("0"),
+                    attestation_sha256=attestation, process_nonce=nonce, record_sha256=digest)
+                unchanged_after(lambda: store._stage_imported(wrong_source, batch, record))
+                wrong_batch = capabilities._mint(authority, kind="import_stage", run_identity=provenance.run_identity,
+                    batch_identity="other-batch", dataset=record.dataset, source_sha256=record.source_record_sha256,
+                    attestation_sha256=attestation, process_nonce=nonce, record_sha256=digest)
+                unchanged_after(lambda: store._stage_imported(wrong_batch, batch, record))
+                store._stage_imported(capabilities._mint(authority, kind="import_stage", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, dataset=record.dataset, source_sha256=record.source_record_sha256,
+                    attestation_sha256=attestation, process_nonce=nonce, record_sha256=digest), batch, record)
+                final = sha256(canonical_json_bytes({
+                    "batch_identity": batch_identity,
+                    "record_digests": {record.dataset: digest},
+                    "attestation_sha256": attestation,
+                })).hexdigest()
+                wrong_final = capabilities._mint(authority, kind="import_promote", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, attestation_sha256=attestation, process_nonce=nonce,
+                    final_attestation_sha256=_digest("0"))
+                unchanged_after(lambda: store._promote_import_batch(wrong_final, batch))
+                closed = capabilities._mint(authority, kind="import_promote", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, attestation_sha256=attestation, process_nonce=nonce,
+                    final_attestation_sha256=final)
+                capabilities._close_authority(authority)
+                unchanged_after(lambda: store._promote_import_batch(closed, batch))
+            finally:
+                capabilities._close_authority(authority)
 
 
 class CheckpointBenchmarkTests(unittest.TestCase):
