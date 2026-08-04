@@ -271,20 +271,27 @@ class SmokeHeartbeat:
             raise ValueError("smoke heartbeat interval must be in (0, 30] seconds")
         self._writer, self._detail, self._interval = writer, detail, interval_seconds
         self._stop = Event()
+        self._error: BaseException | None = None
         self._thread = Thread(target=self._run, name="exp425-smoke-heartbeat", daemon=True)
 
     def _run(self) -> None:
-        while not self._stop.wait(self._interval):
-            detail = self._detail()
-            if not isinstance(detail, Mapping):
-                raise ValueError("smoke heartbeat detail must be a mapping")
-            self._writer.heartbeat(**dict(detail))
+        try:
+            while not self._stop.wait(self._interval):
+                detail = self._detail()
+                if not isinstance(detail, Mapping):
+                    raise ValueError("smoke heartbeat detail must be a mapping")
+                self._writer.heartbeat(**dict(detail))
+        except BaseException as error:
+            self._error = error
+            self._stop.set()
 
     def start(self) -> None:
         self._thread.start()
 
     def stop(self) -> None:
         self._stop.set(); self._thread.join()
+        if self._error is not None:
+            raise self._error
 
     def is_alive(self) -> bool:
         return self._thread.is_alive()

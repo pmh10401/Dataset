@@ -121,7 +121,7 @@ def _train_progress_detail(
         "dataset": FIXTURE, "train_instance_count": len(series),
         "test_instance_count": context.test_sizes[FIXTURE],
         "train_length_groups": [{"length": length, "series_count": count} for length, count in sorted(groups.items())],
-        "train_value_count": value_count, "train_value_bytes": value_count * 8,
+        "train_value_count": value_count, "train_raw_float32_bytes": value_count * 4,
         "current_phase": "native_train_qualification", "backend": "mps", "device": "mps",
         "completed": 0, "total": 1, "elapsed_seconds": max(0.0, perf_counter() - started),
         "throughput_per_second": None, "eta_seconds": None,

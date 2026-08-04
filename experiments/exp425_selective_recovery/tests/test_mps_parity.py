@@ -59,7 +59,7 @@ class MPSParityContractTests(unittest.TestCase):
             detail = {
                 "dataset": "ECG200_normal_1", "train_instance_count": 2,
                 "test_instance_count": 3, "train_length_groups": [{"length": 4, "series_count": 2}],
-                "train_value_count": 8, "train_value_bytes": 64,
+                "train_value_count": 8, "train_raw_float32_bytes": 32,
                 "current_phase": "native_train_qualification", "backend": "mps", "device": "mps",
                 "completed": 0, "total": 1, "elapsed_seconds": 0.0,
                 "throughput_per_second": None, "eta_seconds": None,
@@ -79,7 +79,7 @@ class MPSParityContractTests(unittest.TestCase):
             self.assertEqual(sequences, list(range(1, len(sequences) + 1)))
             self.assertFalse(heartbeat.is_alive())
             progress = json.loads((writer.root / "progress.json").read_bytes())
-            for key in ("dataset", "train_instance_count", "test_instance_count", "train_length_groups", "train_value_count", "train_value_bytes", "current_phase", "backend", "device", "checkpoint_path", "loader_counters", "loader_counts", "heartbeat_sequence", "latest_error"):
+            for key in ("dataset", "train_instance_count", "test_instance_count", "train_length_groups", "train_value_count", "train_raw_float32_bytes", "current_phase", "backend", "device", "checkpoint_path", "loader_counters", "loader_counts", "heartbeat_sequence", "latest_error"):
                 self.assertIn(key, progress)
             self.assertIsNone(progress["current_dataset"])
             self.assertEqual((progress["throughput_per_second"], progress["eta_seconds"]), (0, 0))
@@ -87,6 +87,39 @@ class MPSParityContractTests(unittest.TestCase):
             self.assertIn("heartbeat", parent_log)
             self.assertIn("backend=mps", parent_log)
             self.assertIn("checkpoint=/tmp/checkpoint", parent_log)
+
+    def test_smoke_train_telemetry_reports_float32_source_bytes(self) -> None:
+        """Using Python float storage would double the byte count recorded for the raw DB blobs."""
+        module = self._script_module()
+        train = SimpleNamespace(series=tuple(
+            SimpleNamespace(values=(0.0,) * 96) for _ in range(106)
+        ))
+        detail = module._train_progress_detail(
+            SimpleNamespace(test_sizes={module.FIXTURE: 100}), train,
+            checkpoint_root=Path("/tmp/checkpoint"),
+            counters={"train": 1, "test_values": 0, "test_labels": 0}, started=0.0,
+        )
+        self.assertEqual((detail["train_value_count"], detail["train_raw_float32_bytes"]), (10176, 40704))
+        self.assertNotIn("train_value_bytes", detail)
+
+    def test_smoke_heartbeat_writer_failure_is_reraised_for_terminal_failure_logging(self) -> None:
+        """A background write failure must abort the smoke instead of only killing its thread."""
+        from experiments.exp425_selective_recovery.mps_parity import SmokeEvidenceWriter, SmokeHeartbeat
+
+        with TemporaryDirectory() as directory:
+            writer = SmokeEvidenceWriter.create(Path(directory) / "smoke", "run", "ECG200_normal_1")
+            heartbeat = SmokeHeartbeat(
+                SimpleNamespace(heartbeat=lambda **_detail: (_ for _ in ()).throw(RuntimeError("disk full"))),
+                lambda: {"stage": "native_train_qualification", "current_dataset": "ECG200_normal_1"},
+                interval_seconds=0.01,
+            )
+            heartbeat.start(); sleep(0.02)
+            with self.assertRaisesRegex(RuntimeError, "disk full") as raised:
+                heartbeat.stop()
+            writer.failure(raised.exception)
+            terminal = json.loads((writer.root / "progress.json").read_bytes())
+            self.assertEqual(terminal["current_dataset"], None)
+            self.assertFalse(terminal["success"])
 
     def test_train_only_loader_surface_rejects_label_and_evaluation_paths(self) -> None:
         module = self._script_module()
