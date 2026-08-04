@@ -92,6 +92,51 @@ def _native_capability(store: Exp425CheckpointStore, provenance: Exp425RunProven
     )
 
 
+def _import_record_for(dataset: str, index: int, attestation: str) -> ImportedRecordEnvelope:
+    evidence = {"dataset": dataset, "source_groups": [index]}
+    return ImportedRecordEnvelope(
+        dataset, {"status": "abstained", "source_index": index},
+        SourceProvenGroupEvidence(evidence, sha256(canonical_json_bytes(evidence)).hexdigest()),
+        sha256(f"root:{dataset}".encode()).hexdigest(), sha256(f"progress:{dataset}".encode()).hexdigest(),
+        sha256(f"record:{dataset}".encode()).hexdigest(), sha256(f"result:{dataset}".encode()).hexdigest(),
+        attestation, float(index), "sealed local exp424 import",
+    )
+
+
+def _import_stage_digest(store: Exp425CheckpointStore, record: ImportedRecordEnvelope) -> str:
+    return sha256(canonical_json_bytes(checkpoints._import_record_body(store.run_context_sha256, record))).hexdigest()
+
+
+def _import_final_attestation(store: Exp425CheckpointStore, batch_identity: str, attestation: str, records: tuple[ImportedRecordEnvelope, ...]) -> str:
+    return sha256(canonical_json_bytes({
+        "batch_identity": batch_identity,
+        "record_digests": dict(sorted((record.dataset, _import_stage_digest(store, record)) for record in records)),
+        "attestation_sha256": attestation,
+    })).hexdigest()
+
+
+def _begin_and_stage_imports(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, authority: object, nonce: str, batch_identity: str, attestation: str, records: tuple[ImportedRecordEnvelope, ...]) -> object:
+    batch = store._begin_import_batch(capabilities._mint(
+        authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity=batch_identity,
+        attestation_sha256=attestation, process_nonce=nonce,
+    ), batch_identity)
+    for record in records:
+        store._stage_imported(capabilities._mint(
+            authority, kind="import_stage", run_identity=provenance.run_identity, batch_identity=batch_identity,
+            dataset=record.dataset, source_sha256=record.source_record_sha256,
+            attestation_sha256=attestation, process_nonce=nonce, record_sha256=_import_stage_digest(store, record),
+        ), batch, record)
+    return batch
+
+
+def _promote_imports(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, authority: object, nonce: str, batch_identity: str, attestation: str, records: tuple[ImportedRecordEnvelope, ...], batch: object) -> None:
+    store._promote_import_batch(capabilities._mint(
+        authority, kind="import_promote", run_identity=provenance.run_identity, batch_identity=batch_identity,
+        attestation_sha256=attestation, process_nonce=nonce,
+        final_attestation_sha256=_import_final_attestation(store, batch_identity, attestation, records),
+    ), batch)
+
+
 @dataclass(frozen=True)
 class _CheckpointBenchmarkMetrics:
     repeated_context_bytes: int
@@ -731,6 +776,116 @@ class CheckpointStoreTests(unittest.TestCase):
                 unchanged_after(lambda: store._promote_import_batch(closed, batch))
             finally:
                 capabilities._close_authority(authority)
+
+    def test_import_cleanup_crashes_are_revalidated_and_resumed_once(self) -> None:
+        """Every cleanup boundary leaves durable authority-gated restart state."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        batch_identity, attestation = "cleanup-batch", _digest("a")
+        records = tuple(_import_record_for(dataset, index, attestation) for index, dataset in enumerate(context.datasets[:2]))
+        cases = (("cleanup_tombstone_durable", 1), ("cleanup_staged_unlinked", 1), ("cleanup_staged_unlinked", 2), ("cleanup_metadata_removed", 1), ("cleanup_directory_removed", 1), ("cleanup_directory_fsynced", 1))
+        for phase, occurrence in cases:
+            with self.subTest(phase=phase, occurrence=occurrence), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                old_authority = object()
+                capabilities._register_authority(old_authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records)
+                    seen = 0
+
+                    def crash_after(reached: str) -> None:
+                        nonlocal seen
+                        if reached == phase:
+                            seen += 1
+                            if seen == occurrence:
+                                raise SimulatedProcessDeath(reached)
+
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=crash_after):
+                        with self.assertRaisesRegex(SimulatedProcessDeath, phase):
+                            _promote_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records, batch)
+                finally:
+                    capabilities._close_authority(old_authority)
+                before = {str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+                self.assertEqual({str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}, before)
+                self.assertEqual(reopened.import_revalidation_required, ((batch_identity, _import_final_attestation(reopened, batch_identity, attestation, records)),))
+                new_authority = object()
+                capabilities._register_authority(new_authority, "exp424_import")
+                try:
+                    resumed = _begin_and_stage_imports(reopened, provenance, new_authority, "new-nonce", batch_identity, attestation, records)
+                    _promote_imports(reopened, provenance, new_authority, "new-nonce", batch_identity, attestation, records, resumed)
+                finally:
+                    capabilities._close_authority(new_authority)
+                self.assertEqual(list((root / "transactions").iterdir()), [])
+                self.assertEqual(list((root / "import_batches").iterdir()), [])
+                self.assertEqual(len(reopened.completed_record_digests()), 2)
+
+    def test_cleanup_rejects_a_replaced_batch_without_touching_it(self) -> None:
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        batch_identity, attestation = "replaced-cleanup-batch", _digest("a")
+        records = (_import_record_for(context.datasets[0], 0, attestation),)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "old-nonce", batch_identity, attestation, records)
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda phase: (_ for _ in ()).throw(SimulatedProcessDeath()) if phase == "cleanup_tombstone_durable" else None):
+                    with self.assertRaises(SimulatedProcessDeath):
+                        _promote_imports(store, provenance, authority, "old-nonce", batch_identity, attestation, records, batch)
+            finally:
+                capabilities._close_authority(authority)
+            batch_path = root / "import_batches" / batch_identity
+            batch_path.rename(Path(directory) / "displaced-batch")
+            batch_path.mkdir()
+            foreign = batch_path / checkpoints.record_filename(context.datasets[0])
+            foreign.write_bytes(b"unrelated")
+            before = {str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+            with self.assertRaisesRegex(ValueError, "replaced"):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual({str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}, before)
+
+    def test_import_failures_do_not_leak_descriptors_or_follow_replaced_root(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                baseline = len(os.listdir("/dev/fd"))
+                for index in range(10):
+                    batch = _begin_and_stage_imports(store, provenance, authority, f"nonce-{index}", f"fd-batch-{index}", _digest("a"), ())
+                    token = capabilities._mint(authority, kind="import_stage", run_identity=provenance.run_identity,
+                        batch_identity=batch.identity, dataset=context.datasets[0], source_sha256=_digest("b"),
+                        attestation_sha256=_digest("a"), process_nonce=f"nonce-{index}", record_sha256=_digest("c"))
+                    with patch.object(checkpoints, "_open_batch_at", side_effect=ValueError("adversarial open failure")):
+                        with self.assertRaises(ValueError):
+                            store._stage_imported(token, batch, _import_record_for(context.datasets[0], 0, _digest("a")))
+                self.assertEqual(len(os.listdir("/dev/fd")), baseline)
+            finally:
+                capabilities._close_authority(authority)
+            displaced = Path(directory) / "displaced"
+            root.rename(displaced)
+            root.mkdir()
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                with self.assertRaisesRegex(ValueError, "store root identity"):
+                    _begin_and_stage_imports(store, provenance, authority, "replaced", "replacement-batch", _digest("a"), ())
+            finally:
+                capabilities._close_authority(authority)
+            self.assertEqual(list(root.iterdir()), [])
 
 
 class CheckpointBenchmarkTests(unittest.TestCase):

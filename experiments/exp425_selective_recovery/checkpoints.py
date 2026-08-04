@@ -26,6 +26,7 @@ _ROOT_FILES = frozenset({"checkpoint_provenance.json", "run_context.json", "prog
 _FORBIDDEN_RECORD_KEYS = frozenset({"context", "lanes", "datasets", "test_identity_manifest"})
 _OPEN_FLAGS = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
 _after_import_phase = lambda phase: None
+_after_import_cleanup_phase = lambda phase: None
 _after_native_phase = lambda phase: None
 
 
@@ -52,7 +53,7 @@ class Exp425CheckpointInspection:
 class _ImportBatch:
     identity: str
     directory: Path
-    inode: tuple[int, int]
+    inode: tuple[int, int] | None
     attestation_sha256: str
     nonce: str
 
@@ -200,31 +201,47 @@ class Exp425CheckpointStore:
         return digest
 
     def _begin_import_batch(self, capability: object, batch_identity: str) -> object:
-        claims = capabilities._consume(capability, kind="import_begin", run_identity=self.provenance.run_identity, batch_identity=batch_identity)
-        attestation = claims.get("attestation_sha256")
-        nonce = claims.get("process_nonce")
-        if not isinstance(attestation, str) or not isinstance(nonce, str):
-            raise ValueError("import batch authority lacks live attestation")
-        name = _batch_name(batch_identity)
-        with _locked_root(self.root, exclusive=True) as binding:
+        with self._store_binding(exclusive=True) as binding:
+            claims = capabilities._consume(capability, kind="import_begin", run_identity=self.provenance.run_identity, batch_identity=batch_identity)
+            attestation = claims.get("attestation_sha256")
+            nonce = claims.get("process_nonce")
+            if not isinstance(attestation, str) or not isinstance(nonce, str):
+                raise ValueError("import batch authority lacks live attestation")
+            name = _batch_name(batch_identity)
             imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
             try:
+                cleanup = _read_cleanup_at(imports_fd, self.provenance.run_identity, self.run_context_sha256, batch_identity)
+                if cleanup is not None:
+                    if cleanup["source_attestation_sha256"] != attestation:
+                        raise ValueError("import cleanup durable state does not match authority")
+                    try:
+                        info = os.stat(name, dir_fd=imports_fd, follow_symlinks=False)
+                        if not stat.S_ISDIR(info.st_mode):
+                            raise ValueError("import batch cleanup entry is invalid")
+                        identity = _cleanup_batch_inode(cleanup)
+                        if (info.st_dev, info.st_ino) != identity:
+                            raise ValueError("import batch directory was replaced before cleanup")
+                    except FileNotFoundError:
+                        identity = None
+                    _verify_directory_at(binding, "import_batches", imports_identity)
+                    return _ImportBatch(batch_identity, self.root / "import_batches" / name, identity, attestation, nonce)
                 try:
                     os.mkdir(name, 0o700, dir_fd=imports_fd)
-                    batch_fd = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
+                    batch_fd: int | None = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
                     try:
                         state = _batch_state(self.provenance.run_identity, self.run_context_sha256, batch_identity, attestation, {})
                         _write_new_at(batch_fd, "batch.json", canonical_json_bytes(state))
                     finally:
-                        os.close(batch_fd)
+                        if batch_fd is not None: os.close(batch_fd)
                     os.fsync(imports_fd)
                 except FileExistsError:
                     # A revalidated process resumes only an identical durable batch.
-                    batch_fd = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
+                    batch_fd = None
                     try:
+                        batch_fd = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
                         state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
                     finally:
-                        os.close(batch_fd)
+                        if batch_fd is not None: os.close(batch_fd)
                     if state != _batch_state(self.provenance.run_identity, self.run_context_sha256, batch_identity, attestation, state.get("staged_record_digests", {})):
                         raise ValueError("import batch durable state does not match authority")
                 info = os.stat(name, dir_fd=imports_fd, follow_symlinks=False)
@@ -240,79 +257,166 @@ class Exp425CheckpointStore:
             raise ValueError("import batch is invalid")
         payload = _import_record_body(self.run_context_sha256, record)
         digest = sha256(canonical_json_bytes(payload)).hexdigest()
-        capabilities._consume(capability, kind="import_stage", run_identity=self.provenance.run_identity, batch_identity=batch.identity, dataset=record.dataset, source_sha256=record.source_record_sha256, attestation_sha256=batch.attestation_sha256, process_nonce=batch.nonce, record_sha256=digest)
-        with _locked_root(self.root, exclusive=True) as binding:
+        with self._store_binding(exclusive=True) as binding:
+            capabilities._consume(capability, kind="import_stage", run_identity=self.provenance.run_identity, batch_identity=batch.identity, dataset=record.dataset, source_sha256=record.source_record_sha256, attestation_sha256=batch.attestation_sha256, process_nonce=batch.nonce, record_sha256=digest)
             imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
-            batch_fd = _open_batch_at(imports_fd, batch)
             try:
-                state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
-                staged = dict(state["staged_record_digests"])
-                if record.dataset in staged and staged[record.dataset] != digest:
-                    raise ValueError("import batch has conflicting staged dataset")
-                if record.dataset not in staged:
-                    _write_new_at(batch_fd, record_filename(record.dataset), canonical_json_bytes(payload | {"record_payload_sha256": digest}))
-                    staged[record.dataset] = digest
-                    _atomic_replace_at(batch_fd, "batch.json", canonical_json_bytes(_batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged)))
-                _verify_directory_at(binding, "import_batches", imports_identity)
+                cleanup = _read_cleanup_at(imports_fd, self.provenance.run_identity, self.run_context_sha256, batch.identity)
+                if cleanup is not None:
+                    staged_cleanup = cleanup["staged_record_digests"]
+                    if cleanup["source_attestation_sha256"] != batch.attestation_sha256 or staged_cleanup.get(record.dataset) != digest:
+                        raise ValueError("import cleanup durable state does not match staged record")
+                    _verify_directory_at(binding, "import_batches", imports_identity)
+                    return
+                batch_fd: int | None = None
+                try:
+                    batch_fd = _open_batch_at(imports_fd, batch)
+                    state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                    staged = dict(state["staged_record_digests"])
+                    if record.dataset in staged and staged[record.dataset] != digest:
+                        raise ValueError("import batch has conflicting staged dataset")
+                    if record.dataset not in staged:
+                        _write_new_at(batch_fd, record_filename(record.dataset), canonical_json_bytes(payload | {"record_payload_sha256": digest}))
+                        staged[record.dataset] = digest
+                        _atomic_replace_at(batch_fd, "batch.json", canonical_json_bytes(_batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged)))
+                    _verify_directory_at(binding, "import_batches", imports_identity)
+                finally:
+                    if batch_fd is not None: os.close(batch_fd)
             finally:
-                os.close(batch_fd); os.close(imports_fd)
+                os.close(imports_fd)
 
     def _promote_import_batch(self, capability: object, batch: object) -> None:
         if not isinstance(batch, _ImportBatch):
             raise ValueError("import batch is invalid")
-        with _locked_root(self.root, exclusive=False) as binding:
+        with self._store_binding(exclusive=True) as binding:
             imports_fd, _ = _open_directory_at(binding, "import_batches")
-            batch_fd = _open_batch_at(imports_fd, batch)
             try:
-                state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
-                staged = dict(state["staged_record_digests"])
-                raw_records = {dataset: _read_file(record_filename(dataset), dir_fd=batch_fd) for dataset in staged}
+                cleanup = _read_cleanup_at(imports_fd, self.provenance.run_identity, self.run_context_sha256, batch.identity)
+                if cleanup is None:
+                    batch_fd: int | None = None
+                    try:
+                        batch_fd = _open_batch_at(imports_fd, batch)
+                        state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                        staged = dict(state["staged_record_digests"])
+                        if state != _batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged):
+                            raise ValueError("import batch durable state does not match authority")
+                        raw_records = {dataset: _read_file(record_filename(dataset), dir_fd=batch_fd) for dataset in staged}
+                    finally:
+                        if batch_fd is not None: os.close(batch_fd)
+                else:
+                    if cleanup["source_attestation_sha256"] != batch.attestation_sha256:
+                        raise ValueError("import cleanup durable state does not match authority")
+                    staged = dict(cleanup["staged_record_digests"])
+                    raw_records = {}
             finally:
-                os.close(batch_fd); os.close(imports_fd)
-        final_digest = sha256(canonical_json_bytes({"batch_identity": batch.identity, "record_digests": dict(sorted(staged.items())), "attestation_sha256": batch.attestation_sha256})).hexdigest()
-        capabilities._consume(capability, kind="import_promote", run_identity=self.provenance.run_identity, batch_identity=batch.identity, attestation_sha256=batch.attestation_sha256, process_nonce=batch.nonce, final_attestation_sha256=final_digest)
-        for dataset in sorted(staged):
-            record = _decode_record(raw_records[dataset], self.context)
-            body = _import_record_body(self.run_context_sha256, record)
-            self._promote_imported_record(record, body, sha256(canonical_json_bytes(body)).hexdigest(), batch.identity, final_digest)
-        self._finalize_import_batch(batch, staged, final_digest)
+                os.close(imports_fd)
+            final_digest = _import_final_attestation(batch.identity, batch.attestation_sha256, staged)
+            capabilities._consume(capability, kind="import_promote", run_identity=self.provenance.run_identity, batch_identity=batch.identity, attestation_sha256=batch.attestation_sha256, process_nonce=batch.nonce, final_attestation_sha256=final_digest)
+            if cleanup is None:
+                for dataset in sorted(staged):
+                    record = _decode_record(raw_records[dataset], self.context)
+                    body = _import_record_body(self.run_context_sha256, record)
+                    self._promote_imported_record(record, body, sha256(canonical_json_bytes(body)).hexdigest(), batch.identity, final_digest, binding=binding)
+            self._finalize_import_batch(batch, staged, final_digest, binding=binding)
 
-    def _finalize_import_batch(self, batch: _ImportBatch, staged: Mapping[str, str], final_attestation: str) -> None:
-        with _locked_root(self.root, exclusive=True) as binding:
+    def _finalize_import_batch(self, batch: _ImportBatch, staged: Mapping[str, str], final_attestation: str, *, binding: "_locked_root | None" = None) -> None:
+        if binding is None:
+            with self._store_binding(exclusive=True) as owned:
+                self._finalize_import_batch(batch, staged, final_attestation, binding=owned)
+            return
+        with nullcontext(binding):
             _, _, progress = _read_root_metadata(self.root, binding=binding)
             imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
-            batch_fd = _open_batch_at(imports_fd, batch)
             try:
-                state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
-                if state != _batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged):
-                    raise ValueError("import batch final state does not match")
-                expected_names = {"batch.json"} | {record_filename(dataset) for dataset in staged}
-                if set(os.listdir(batch_fd)) != expected_names:
-                    raise ValueError("import batch has unknown cleanup entries")
-                expected_final = sha256(canonical_json_bytes({"batch_identity": batch.identity, "record_digests": dict(sorted(staged.items())), "attestation_sha256": batch.attestation_sha256})).hexdigest()
-                if expected_final != final_attestation or any(progress["record_digests"].get(dataset) != digest for dataset, digest in staged.items()):
+                cleanup = _read_cleanup_at(imports_fd, self.provenance.run_identity, self.run_context_sha256, batch.identity)
+                expected_cleanup: dict[str, object] | None = None
+                if cleanup is None:
+                    batch_fd: int | None = None
+                    try:
+                        batch_fd = _open_batch_at(imports_fd, batch)
+                        state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                        if state != _batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged):
+                            raise ValueError("import batch final state does not match")
+                        expected_names = {"batch.json"} | {record_filename(dataset) for dataset in staged}
+                        if set(os.listdir(batch_fd)) != expected_names:
+                            raise ValueError("import batch has unknown cleanup entries")
+                        if _import_final_attestation(batch.identity, batch.attestation_sha256, staged) != final_attestation or any(progress["record_digests"].get(dataset) != digest for dataset, digest in staged.items()):
+                            raise ValueError("import batch promotion is incomplete")
+                        if batch.inode is None:
+                            raise ValueError("import batch directory is absent before cleanup")
+                        expected_cleanup = _cleanup_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged, final_attestation, batch.inode)
+                        _write_new_at(imports_fd, _cleanup_name(batch.identity), canonical_json_bytes(expected_cleanup))
+                        _after_import_cleanup_phase("cleanup_tombstone_durable")
+                    finally:
+                        if batch_fd is not None: os.close(batch_fd)
+                elif (
+                    cleanup["source_attestation_sha256"] != batch.attestation_sha256
+                    or cleanup["staged_record_digests"] != dict(sorted(staged.items()))
+                    or cleanup["final_attestation_sha256"] != final_attestation
+                ):
+                    raise ValueError("import cleanup durable state does not match finalization")
+                if any(progress["record_digests"].get(dataset) != digest for dataset, digest in staged.items()):
                     raise ValueError("import batch promotion is incomplete")
-                for dataset in staged:
-                    os.unlink(record_filename(dataset), dir_fd=batch_fd)
-                os.unlink("batch.json", dir_fd=batch_fd)
-                os.fsync(batch_fd)
+                try:
+                    batch_fd = _open_batch_at(imports_fd, batch)
+                except FileNotFoundError:
+                    batch_fd = None
+                if batch_fd is not None:
+                    try:
+                        expected_inode = _cleanup_batch_inode(cleanup) if cleanup is not None else batch.inode
+                        opened = os.fstat(batch_fd)
+                        if expected_inode is None or (opened.st_dev, opened.st_ino) != expected_inode:
+                            raise ValueError("import batch directory was replaced before cleanup")
+                        names = set(os.listdir(batch_fd))
+                        expected_names = {"batch.json"} | {record_filename(dataset) for dataset in staged}
+                        if not names <= expected_names:
+                            raise ValueError("import batch has unknown cleanup entries")
+                        for dataset in sorted(staged):
+                            name = record_filename(dataset)
+                            if name in names:
+                                if _record_digest_from_raw(_read_file(name, dir_fd=batch_fd)) != staged[dataset]:
+                                    raise ValueError("import batch staged record was replaced before cleanup")
+                                os.unlink(name, dir_fd=batch_fd)
+                                os.fsync(batch_fd)
+                                _after_import_cleanup_phase("cleanup_staged_unlinked")
+                        if "batch.json" in names:
+                            state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                            if state != _batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged):
+                                raise ValueError("import batch metadata was replaced before cleanup")
+                            os.unlink("batch.json", dir_fd=batch_fd)
+                            os.fsync(batch_fd)
+                            _after_import_cleanup_phase("cleanup_metadata_removed")
+                        if os.listdir(batch_fd):
+                            raise ValueError("import batch has unknown cleanup entries")
+                    finally:
+                        os.close(batch_fd)
+                    _verify_directory_at(binding, "import_batches", imports_identity)
+                    info = os.stat(_batch_name(batch.identity), dir_fd=imports_fd, follow_symlinks=False)
+                    expected_inode = _cleanup_batch_inode(cleanup) if cleanup is not None else batch.inode
+                    if expected_inode is None or (info.st_dev, info.st_ino) != expected_inode:
+                        raise ValueError("import batch directory was replaced before cleanup")
+                    os.rmdir(_batch_name(batch.identity), dir_fd=imports_fd)
+                    _after_import_cleanup_phase("cleanup_directory_removed")
+                    os.fsync(imports_fd)
+                    _after_import_cleanup_phase("cleanup_directory_fsynced")
+                _verify_directory_at(binding, "import_batches", imports_identity)
+                os.unlink(_cleanup_name(batch.identity), dir_fd=imports_fd)
+                os.fsync(imports_fd)
+                binding.verify()
             finally:
-                os.close(batch_fd)
-            _verify_directory_at(binding, "import_batches", imports_identity)
-            info = os.stat(_batch_name(batch.identity), dir_fd=imports_fd, follow_symlinks=False)
-            if (info.st_dev, info.st_ino) != batch.inode:
-                raise ValueError("import batch directory was replaced before cleanup")
-            os.rmdir(_batch_name(batch.identity), dir_fd=imports_fd)
-            os.fsync(imports_fd)
-            os.close(imports_fd)
+                os.close(imports_fd)
 
-    def _promote_imported_record(self, record: ImportedRecordEnvelope, body: dict[str, object], digest: str, batch_identity: str, final_attestation: str) -> None:
+    def _promote_imported_record(self, record: ImportedRecordEnvelope, body: dict[str, object], digest: str, batch_identity: str, final_attestation: str, *, binding: "_locked_root | None" = None) -> None:
         """Advance one imported record through durable A→E publication phases."""
         if record.dataset not in self.expected_datasets:
             raise ValueError("imported dataset is outside checkpoint universe")
         intent_name = "import-" + sha256((batch_identity + "\0" + record.dataset).encode()).hexdigest() + ".json"
         encoded = canonical_json_bytes(body | {"record_payload_sha256": digest})
-        with _locked_root(self.root, exclusive=True) as binding:
+        if binding is None:
+            with self._store_binding(exclusive=True) as owned:
+                self._promote_imported_record(record, body, digest, batch_identity, final_attestation, binding=owned)
+            return
+        with nullcontext(binding):
             _, _, progress = _read_root_metadata(self.root, binding=binding)
             datasets_fd, datasets_identity = _open_directory_at(binding, "datasets")
             transactions_fd, transactions_identity = _open_directory_at(binding, "transactions")
@@ -526,10 +630,54 @@ def _batch_state(run_identity: str, context_sha256: str, batch_identity: str, at
     return body | {"payload_sha256": sha256(canonical_json_bytes(body)).hexdigest()}
 
 
+def _cleanup_name(batch_identity: str) -> str:
+    return "cleanup-" + _batch_name(batch_identity) + ".json"
+
+
+def _cleanup_state(run_identity: str, context_sha256: str, batch_identity: str, attestation: str, staged: Mapping[str, str], final_attestation: str, batch_inode: tuple[int, int]) -> dict[str, object]:
+    body = {"schema": "exp425.import-cleanup.v1", "run_identity": run_identity, "run_context_sha256": context_sha256, "batch_identity": batch_identity, "source_attestation_sha256": attestation, "staged_record_digests": dict(sorted(staged.items())), "final_attestation_sha256": final_attestation, "batch_directory_identity": list(batch_inode)}
+    return body | {"payload_sha256": sha256(canonical_json_bytes(body)).hexdigest()}
+
+
+def _import_final_attestation(batch_identity: str, attestation: str, staged: Mapping[str, str]) -> str:
+    return sha256(canonical_json_bytes({
+        "batch_identity": batch_identity,
+        "record_digests": dict(sorted(staged.items())),
+        "attestation_sha256": attestation,
+    })).hexdigest()
+
+
+def _read_cleanup_at(imports_fd: int, run_identity: str, context_sha256: str, batch_identity: str) -> dict[str, object] | None:
+    try:
+        cleanup = _canonical_object(_read_file(_cleanup_name(batch_identity), dir_fd=imports_fd), "import cleanup")
+    except FileNotFoundError:
+        return None
+    attestation = cleanup.get("source_attestation_sha256")
+    staged = cleanup.get("staged_record_digests")
+    final = cleanup.get("final_attestation_sha256")
+    inode = cleanup.get("batch_directory_identity")
+    if not isinstance(attestation, str) or not isinstance(staged, dict) or not isinstance(final, str) or not isinstance(inode, list) or len(inode) != 2 or any(not isinstance(value, int) or value < 0 for value in inode):
+        raise ValueError("import cleanup durable state is invalid")
+    if cleanup != _cleanup_state(run_identity, context_sha256, batch_identity, attestation, staged, final, (inode[0], inode[1])):
+        raise ValueError("import cleanup durable state is invalid")
+    if final != _import_final_attestation(batch_identity, attestation, staged):
+        raise ValueError("import cleanup final attestation is invalid")
+    if any(not isinstance(dataset, str) or not isinstance(digest, str) or len(digest) != 64 for dataset, digest in staged.items()):
+        raise ValueError("import cleanup staged digests are invalid")
+    return cleanup
+
+
+def _cleanup_batch_inode(cleanup: Mapping[str, object]) -> tuple[int, int]:
+    inode = cleanup.get("batch_directory_identity")
+    if not isinstance(inode, list) or len(inode) != 2 or any(not isinstance(value, int) or value < 0 for value in inode):
+        raise ValueError("import cleanup durable state is invalid")
+    return inode[0], inode[1]
+
+
 def _open_batch_at(imports_fd: int, batch: _ImportBatch) -> int:
     descriptor = os.open(_batch_name(batch.identity), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
     info = os.fstat(descriptor)
-    if (info.st_dev, info.st_ino) != batch.inode:
+    if batch.inode is not None and (info.st_dev, info.st_ino) != batch.inode:
         os.close(descriptor)
         raise ValueError("import batch directory was replaced")
     return descriptor
@@ -834,9 +982,51 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
     imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
     try:
         batches: dict[str, str] = {}
+        cleanup: dict[str, dict[str, object]] = {}
+        directories: set[str] = set()
         for name in sorted(os.listdir(imports_fd)):
-            batch_fd = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
+            if name.startswith("cleanup-") and name.endswith(".json"):
+                batch_identity = name[len("cleanup-"):-len(".json")]
+                if _cleanup_name(batch_identity) != name or batch_identity in cleanup:
+                    raise ValueError("import cleanup inventory is invalid")
+                cleanup[batch_identity] = _read_cleanup_at(imports_fd, str(stored["run_identity"]), str(stored["run_context_sha256"]), batch_identity) or {}
+                if not cleanup[batch_identity]:
+                    raise ValueError("import cleanup inventory is invalid")
+                continue
+            info = os.stat(name, dir_fd=imports_fd, follow_symlinks=False)
+            if not stat.S_ISDIR(info.st_mode) or _batch_name(name) != name:
+                raise ValueError("import batch inventory is invalid")
+            directories.add(name)
+        for name in sorted(directories):
+            batch_fd: int | None = None
             try:
+                batch_fd = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
+                batch_identity = name
+                pending_cleanup = cleanup.get(batch_identity)
+                if pending_cleanup is not None:
+                    staged = pending_cleanup["staged_record_digests"]
+                    attestation = pending_cleanup["source_attestation_sha256"]
+                    assert isinstance(staged, dict) and isinstance(attestation, str)
+                    opened = os.fstat(batch_fd)
+                    if (opened.st_dev, opened.st_ino) != _cleanup_batch_inode(pending_cleanup):
+                        raise ValueError("import batch directory was replaced before cleanup")
+                    names = set(os.listdir(batch_fd))
+                    expected_names = {"batch.json"} | {record_filename(dataset) for dataset in staged}
+                    if not names <= expected_names or "batch.json" not in names and names:
+                        raise ValueError("import batch cleanup inventory is invalid")
+                    if "batch.json" in names:
+                        state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                        if state != _batch_state(str(stored["run_identity"]), str(stored["run_context_sha256"]), batch_identity, attestation, staged):
+                            raise ValueError("import batch cleanup metadata is invalid")
+                    for dataset, digest in staged.items():
+                        filename = record_filename(dataset)
+                        if filename in names and _record_digest_from_raw(_read_file(filename, dir_fd=batch_fd)) != digest:
+                            raise ValueError("import batch staged record is invalid")
+                    current = os.stat(name, dir_fd=imports_fd, follow_symlinks=False)
+                    if (current.st_dev, current.st_ino) != _cleanup_batch_inode(pending_cleanup):
+                        raise ValueError("import batch directory was replaced before cleanup")
+                    batches[batch_identity] = str(pending_cleanup["final_attestation_sha256"])
+                    continue
                 state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
                 batch_identity = state.get("batch_identity")
                 attestation = state.get("source_attestation_sha256")
@@ -857,13 +1047,14 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                 opened = os.fstat(batch_fd)
                 if (current.st_dev, current.st_ino) != (opened.st_dev, opened.st_ino):
                     raise ValueError("import batch directory was replaced")
-                batches[batch_identity] = sha256(canonical_json_bytes({
-                    "batch_identity": batch_identity,
-                    "record_digests": dict(sorted(staged.items())),
-                    "attestation_sha256": attestation,
-                })).hexdigest()
+                if batch_identity in batches:
+                    raise ValueError("duplicate import batch identity")
+                batches[batch_identity] = _import_final_attestation(batch_identity, attestation, staged)
             finally:
-                os.close(batch_fd)
+                if batch_fd is not None: os.close(batch_fd)
+        for batch_identity, state in cleanup.items():
+            if batch_identity not in batches:
+                batches[batch_identity] = str(state["final_attestation_sha256"])
         result: set[tuple[str, str]] = set()
         for name in sorted(os.listdir(transactions_fd)):
             if not name.endswith(".json"):
