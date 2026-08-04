@@ -1061,6 +1061,70 @@ class CheckpointStoreTests(unittest.TestCase):
                 capabilities._close_authority(authority)
             self.assertEqual(list(root.iterdir()), [])
 
+    def test_descriptor_post_open_failures_do_not_leak_file_descriptors(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            baseline = len(os.listdir("/dev/fd"))
+            for _ in range(10):
+                with checkpoints._locked_root(root, exclusive=False) as binding:
+                    with patch.object(checkpoints, "_verify_directory_at", side_effect=ValueError("post-open failure")):
+                        with self.assertRaises(ValueError):
+                            checkpoints._open_directory_at(binding, "datasets")
+                self.assertEqual(len(os.listdir("/dev/fd")), baseline)
+            for _ in range(10):
+                with patch.object(checkpoints._locked_root, "verify", side_effect=ValueError("final root verification failure")):
+                    with self.assertRaises(ValueError):
+                        with checkpoints._locked_root(root, exclusive=False):
+                            pass
+                self.assertEqual(len(os.listdir("/dev/fd")), baseline)
+
+    def test_cleanup_isolation_preserves_replacements_at_each_delete_boundary(self) -> None:
+        """Replacing a validated basename before isolation must never make cleanup unlink it."""
+        context = _context()
+        provenance = _provenance(context)
+        cases = (("cleanup_before_staged_isolation", True), ("cleanup_before_metadata_isolation", False), ("cleanup_before_directory_isolation", False))
+        for phase, with_record in cases:
+            with self.subTest(phase=phase), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                attestation, batch_identity = _digest("a"), "isolation-" + phase
+                records = (_import_record_for(context.datasets[0], 0, attestation),) if with_record else ()
+                authority = object()
+                capabilities._register_authority(authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, records)
+                    batch_path = root / "import_batches" / batch_identity
+
+                    def replace(reached: str) -> None:
+                        if reached != phase:
+                            return
+                        if phase == "cleanup_before_staged_isolation":
+                            target = batch_path / checkpoints.record_filename(context.datasets[0])
+                            target.rename(Path(directory) / "owned-staged")
+                            target.write_bytes(b"foreign-staged")
+                        elif phase == "cleanup_before_metadata_isolation":
+                            target = batch_path / "batch.json"
+                            target.rename(Path(directory) / "owned-metadata")
+                            target.write_bytes(b"foreign-metadata")
+                        else:
+                            batch_path.rename(Path(directory) / "owned-batch")
+                            batch_path.mkdir()
+                            (batch_path / "foreign").write_bytes(b"foreign-directory")
+
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=replace):
+                        with self.assertRaisesRegex(ValueError, "replaced during isolation"):
+                            _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, records, batch)
+                finally:
+                    capabilities._close_authority(authority)
+                if phase == "cleanup_before_staged_isolation":
+                    self.assertEqual((batch_path / checkpoints.record_filename(context.datasets[0])).read_bytes(), b"foreign-staged")
+                elif phase == "cleanup_before_metadata_isolation":
+                    self.assertEqual((batch_path / "batch.json").read_bytes(), b"foreign-metadata")
+                else:
+                    self.assertEqual((batch_path / "foreign").read_bytes(), b"foreign-directory")
+
 
 class CheckpointBenchmarkTests(unittest.TestCase):
     """The compact format must avoid revalidating the same frozen context 25 times."""

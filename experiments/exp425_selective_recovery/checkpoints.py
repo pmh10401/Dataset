@@ -388,14 +388,20 @@ class Exp425CheckpointStore:
                             if name in names:
                                 if _record_digest_from_raw(_read_file(name, dir_fd=batch_fd)) != staged[dataset]:
                                     raise ValueError("import batch staged record was replaced before cleanup")
-                                os.unlink(name, dir_fd=batch_fd)
+                                expected_file_inode = _entry_inode_at(batch_fd, name)
+                                _after_import_cleanup_phase("cleanup_before_staged_isolation")
+                                owned = _isolate_owned_entry_at(batch_fd, name, expected_file_inode)
+                                os.unlink(owned, dir_fd=batch_fd)
                                 os.fsync(batch_fd)
                                 _after_import_cleanup_phase("cleanup_staged_unlinked")
                         if "batch.json" in names:
                             state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
                             if state != _batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged):
                                 raise ValueError("import batch metadata was replaced before cleanup")
-                            os.unlink("batch.json", dir_fd=batch_fd)
+                            expected_metadata_inode = _entry_inode_at(batch_fd, "batch.json")
+                            _after_import_cleanup_phase("cleanup_before_metadata_isolation")
+                            owned = _isolate_owned_entry_at(batch_fd, "batch.json", expected_metadata_inode)
+                            os.unlink(owned, dir_fd=batch_fd)
                             os.fsync(batch_fd)
                             _after_import_cleanup_phase("cleanup_metadata_removed")
                         if os.listdir(batch_fd):
@@ -407,7 +413,9 @@ class Exp425CheckpointStore:
                     expected_inode = _cleanup_batch_inode(cleanup) if cleanup is not None else batch.inode
                     if expected_inode is None or (info.st_dev, info.st_ino) != expected_inode:
                         raise ValueError("import batch directory was replaced before cleanup")
-                    os.rmdir(_batch_name(batch.identity), dir_fd=imports_fd)
+                    _after_import_cleanup_phase("cleanup_before_directory_isolation")
+                    owned = _isolate_owned_entry_at(imports_fd, _batch_name(batch.identity), expected_inode)
+                    os.rmdir(owned, dir_fd=imports_fd)
                     _after_import_cleanup_phase("cleanup_directory_removed")
                     os.fsync(imports_fd)
                     _after_import_cleanup_phase("cleanup_directory_fsynced")
@@ -961,13 +969,16 @@ def _open_directory_at(binding: "_locked_root", name: str) -> tuple[int, tuple[i
     binding.verify()
     assert binding.descriptor is not None
     descriptor = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=binding.descriptor)
-    info = os.fstat(descriptor)
-    if not stat.S_ISDIR(info.st_mode):
+    try:
+        info = os.fstat(descriptor)
+        if not stat.S_ISDIR(info.st_mode):
+            raise ValueError("checkpoint directory is invalid")
+        identity = (info.st_dev, info.st_ino)
+        _verify_directory_at(binding, name, identity)
+        return descriptor, identity
+    except BaseException:
         os.close(descriptor)
-        raise ValueError("checkpoint directory is invalid")
-    identity = (info.st_dev, info.st_ino)
-    _verify_directory_at(binding, name, identity)
-    return descriptor, identity
+        raise
 
 
 def _verify_directory_at(binding: "_locked_root", name: str, identity: tuple[int, int]) -> None:
@@ -984,11 +995,17 @@ class _locked_root:
         self.identity: tuple[int, int] | None = None
     def __enter__(self) -> "_locked_root":
         self.descriptor = os.open(self.root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0))
-        info = os.fstat(self.descriptor)
-        self.identity = (info.st_dev, info.st_ino)
-        fcntl.flock(self.descriptor, fcntl.LOCK_EX if self.exclusive else fcntl.LOCK_SH)
-        self.verify()
-        return self
+        try:
+            info = os.fstat(self.descriptor)
+            self.identity = (info.st_dev, info.st_ino)
+            fcntl.flock(self.descriptor, fcntl.LOCK_EX if self.exclusive else fcntl.LOCK_SH)
+            self.verify()
+            return self
+        except BaseException:
+            os.close(self.descriptor)
+            self.descriptor = None
+            self.identity = None
+            raise
 
     def verify(self) -> None:
         """Ensure the public pathname still resolves to this locked directory."""
@@ -1049,6 +1066,27 @@ def _rename_exclusive_at(parent_fd: int, source: str, destination: str) -> None:
     if failure in (errno.EEXIST, errno.ENOTEMPTY):
         raise ValueError("quarantine destination is unavailable")
     raise ValueError(f"atomic quarantine rename failed: {os.strerror(failure)}")
+
+
+def _entry_inode_at(directory_fd: int, name: str) -> tuple[int, int]:
+    info = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+    if stat.S_ISLNK(info.st_mode):
+        raise ValueError("cleanup entry is a symlink")
+    return info.st_dev, info.st_ino
+
+
+def _isolate_owned_entry_at(directory_fd: int, name: str, expected_inode: tuple[int, int]) -> str:
+    """Atomically move one expected inode away from its public cleanup basename."""
+    owned = ".cleanup-owned-" + uuid.uuid4().hex
+    _rename_exclusive_at(directory_fd, name, owned)
+    actual = _entry_inode_at(directory_fd, owned)
+    if actual == expected_inode:
+        return owned
+    try:
+        _rename_exclusive_at(directory_fd, owned, name)
+    except ValueError as error:
+        raise ValueError("cleanup entry was replaced during isolation") from error
+    raise ValueError("cleanup entry was replaced during isolation")
 
 
 def _import_intent_requirements(root: Path, *, binding: _locked_root | None = None) -> tuple[tuple[str, str], ...]:
