@@ -191,3 +191,48 @@ intentionally unrun: Task 5 has no verified launch assembly or selected
 pre-registered eligible source fixture, and inventing either would violate the
 frozen contract.  No readiness task, official population run, or TEST-label
 query was performed.
+
+## Mixed-store/session integration — 2026-08-04
+
+Task 5 plan step 1 now has a deterministic three-dataset integration fixture.
+It uses a real `FrozenRunContext` with a test-only replaced small config, a
+real `Exp425CheckpointStore`, an actual source-authorized
+begin/stage/promote import, real `AtomicProgressWriter`, and a real opaque
+`Exp425RuntimeSession`.  Only Task4 snapshot method bindings, MPS availability,
+the exclusive guard FD, and the private expensive native-compute seam are
+replaced.  The compact native factory makes the two native envelopes
+deterministic; a separate routing test uses real `EligibilityAssessment` and
+`GroupEligibilityEvidence` objects to prove the all-insufficient path reaches
+TRAIN preprocessing/eligibility and never enters the downstream runner.
+
+The mixed run asserts: ordered three-record coverage; imported=1, native=2,
+recomputed=2, abstained=1, OOF-insufficient=1, failed=0; imported work never
+reads TRAIN/TEST or invokes model/scoring; both valid imported/native candidates
+pass the compact global gate; and progress/events/heartbeats are canonical,
+label-free, terminal, and closed with the PID lease removed.  Captured native
+broker claims bind run, dataset, context, trace, record, backend, and the live
+session process nonce.  Modified records, every store-consumed wrong claim, and
+reused claims fail before a native intent is created.
+
+The session-minted native capability test injects Task2's existing
+`intent_durable`, `record_durable`, `progress_durable`, and `intent_removed`
+failpoints.  Each boundary is reopened once and resumed once: the intent-only
+case recomputes once; later durable-record cases do not recompute; all finish
+with exactly one record, terminal event, and complete counter.
+
+Verification:
+
+```text
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_runtime -v
+PASS — 15 tests in 0.178s
+
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_capabilities \
+  experiments.exp425_selective_recovery.tests.test_checkpoints -v
+PASS — 47 tests in 3.988s
+
+python3 -m compileall -q experiments/exp425_selective_recovery && git diff --check
+PASS
+```
+
+No neural training, MLX decision, MPS/CPU parity claim, official population,
+or readiness/Task6 command was executed.
