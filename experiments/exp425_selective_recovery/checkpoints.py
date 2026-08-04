@@ -356,8 +356,10 @@ class Exp425CheckpointStore:
                             raise ValueError("import batch promotion is incomplete")
                         if batch.inode is None:
                             raise ValueError("import batch directory is absent before cleanup")
-                        expected_cleanup = _cleanup_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged, final_attestation, batch.inode)
+                        entries = _cleanup_entries_at(imports_fd, batch_fd, batch.identity, staged, batch.inode)
+                        expected_cleanup = _cleanup_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged, final_attestation, entries)
                         _write_new_at(imports_fd, _cleanup_name(batch.identity), canonical_json_bytes(expected_cleanup))
+                        cleanup = expected_cleanup
                         _after_import_cleanup_phase("cleanup_tombstone_durable")
                     finally:
                         if batch_fd is not None: os.close(batch_fd)
@@ -380,45 +382,25 @@ class Exp425CheckpointStore:
                         if expected_inode is None or (opened.st_dev, opened.st_ino) != expected_inode:
                             raise ValueError("import batch directory was replaced before cleanup")
                         names = set(os.listdir(batch_fd))
-                        expected_names = {"batch.json"} | {record_filename(dataset) for dataset in staged}
+                        entries = cleanup["entries"]
+                        assert isinstance(entries, dict)
+                        expected_names = {entry[name_key] for entry in entries.values() if isinstance(entry, dict) and entry["entry_type"] == "file" for name_key in ("original_name", "isolated_name")}
                         if not names <= expected_names:
                             raise ValueError("import batch has unknown cleanup entries")
                         for dataset in sorted(staged):
                             name = record_filename(dataset)
-                            if name in names:
-                                if _record_digest_from_raw(_read_file(name, dir_fd=batch_fd)) != staged[dataset]:
-                                    raise ValueError("import batch staged record was replaced before cleanup")
-                                expected_file_inode = _entry_inode_at(batch_fd, name)
-                                _after_import_cleanup_phase("cleanup_before_staged_isolation")
-                                owned = _isolate_owned_entry_at(batch_fd, name, expected_file_inode)
-                                os.unlink(owned, dir_fd=batch_fd)
-                                os.fsync(batch_fd)
-                                _after_import_cleanup_phase("cleanup_staged_unlinked")
-                        if "batch.json" in names:
-                            state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
-                            if state != _batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged):
-                                raise ValueError("import batch metadata was replaced before cleanup")
-                            expected_metadata_inode = _entry_inode_at(batch_fd, "batch.json")
-                            _after_import_cleanup_phase("cleanup_before_metadata_isolation")
-                            owned = _isolate_owned_entry_at(batch_fd, "batch.json", expected_metadata_inode)
-                            os.unlink(owned, dir_fd=batch_fd)
-                            os.fsync(batch_fd)
-                            _after_import_cleanup_phase("cleanup_metadata_removed")
+                            cleanup = _advance_cleanup_entry_at(batch_fd, imports_fd, cleanup, "staged:" + dataset, phase_label="staged")
+                            _after_import_cleanup_phase("cleanup_staged_unlinked")
+                        cleanup = _advance_cleanup_entry_at(batch_fd, imports_fd, cleanup, "batch.json", phase_label="metadata")
+                        _after_import_cleanup_phase("cleanup_metadata_removed")
                         if os.listdir(batch_fd):
                             raise ValueError("import batch has unknown cleanup entries")
                     finally:
                         os.close(batch_fd)
-                    _verify_directory_at(binding, "import_batches", imports_identity)
-                    info = os.stat(_batch_name(batch.identity), dir_fd=imports_fd, follow_symlinks=False)
-                    expected_inode = _cleanup_batch_inode(cleanup) if cleanup is not None else batch.inode
-                    if expected_inode is None or (info.st_dev, info.st_ino) != expected_inode:
-                        raise ValueError("import batch directory was replaced before cleanup")
-                    _after_import_cleanup_phase("cleanup_before_directory_isolation")
-                    owned = _isolate_owned_entry_at(imports_fd, _batch_name(batch.identity), expected_inode)
-                    os.rmdir(owned, dir_fd=imports_fd)
-                    _after_import_cleanup_phase("cleanup_directory_removed")
-                    os.fsync(imports_fd)
-                    _after_import_cleanup_phase("cleanup_directory_fsynced")
+                cleanup = _advance_cleanup_entry_at(imports_fd, imports_fd, cleanup, "batch-directory", phase_label="directory")
+                _after_import_cleanup_phase("cleanup_directory_removed")
+                os.fsync(imports_fd)
+                _after_import_cleanup_phase("cleanup_directory_fsynced")
                 _verify_directory_at(binding, "import_batches", imports_identity)
                 os.unlink(_cleanup_name(batch.identity), dir_fd=imports_fd)
                 os.fsync(imports_fd)
@@ -663,8 +645,12 @@ def _cleanup_name(batch_identity: str) -> str:
     return "cleanup-" + _batch_name(batch_identity) + ".json"
 
 
-def _cleanup_state(run_identity: str, context_sha256: str, batch_identity: str, attestation: str, staged: Mapping[str, str], final_attestation: str, batch_inode: tuple[int, int]) -> dict[str, object]:
-    body = {"schema": "exp425.import-cleanup.v1", "run_identity": run_identity, "run_context_sha256": context_sha256, "batch_identity": batch_identity, "source_attestation_sha256": attestation, "staged_record_digests": dict(sorted(staged.items())), "final_attestation_sha256": final_attestation, "batch_directory_identity": list(batch_inode)}
+def _cleanup_isolated_name(batch_identity: str, key: str, digest: str) -> str:
+    return ".cleanup-owned-" + sha256((batch_identity + "\0" + key + "\0" + digest).encode()).hexdigest()
+
+
+def _cleanup_state(run_identity: str, context_sha256: str, batch_identity: str, attestation: str, staged: Mapping[str, str], final_attestation: str, entries: Mapping[str, object]) -> dict[str, object]:
+    body = {"schema": "exp425.import-cleanup.v2", "run_identity": run_identity, "run_context_sha256": context_sha256, "batch_identity": batch_identity, "source_attestation_sha256": attestation, "staged_record_digests": dict(sorted(staged.items())), "final_attestation_sha256": final_attestation, "entries": dict(sorted(entries.items()))}
     return body | {"payload_sha256": sha256(canonical_json_bytes(body)).hexdigest()}
 
 
@@ -684,20 +670,30 @@ def _read_cleanup_at(imports_fd: int, run_identity: str, context_sha256: str, ba
     attestation = cleanup.get("source_attestation_sha256")
     staged = cleanup.get("staged_record_digests")
     final = cleanup.get("final_attestation_sha256")
-    inode = cleanup.get("batch_directory_identity")
-    if not isinstance(attestation, str) or not isinstance(staged, dict) or not isinstance(final, str) or not isinstance(inode, list) or len(inode) != 2 or any(not isinstance(value, int) or value < 0 for value in inode):
+    entries = cleanup.get("entries")
+    if not isinstance(attestation, str) or not isinstance(staged, dict) or not isinstance(final, str) or not isinstance(entries, dict):
         raise ValueError("import cleanup durable state is invalid")
-    if cleanup != _cleanup_state(run_identity, context_sha256, batch_identity, attestation, staged, final, (inode[0], inode[1])):
+    if cleanup != _cleanup_state(run_identity, context_sha256, batch_identity, attestation, staged, final, entries):
         raise ValueError("import cleanup durable state is invalid")
     if final != _import_final_attestation(batch_identity, attestation, staged):
         raise ValueError("import cleanup final attestation is invalid")
     if any(not isinstance(dataset, str) or not isinstance(digest, str) or len(digest) != 64 for dataset, digest in staged.items()):
         raise ValueError("import cleanup staged digests are invalid")
+    required = {*("staged:" + dataset for dataset in staged), "batch.json", "batch-directory"}
+    if set(entries) != required:
+        raise ValueError("import cleanup entries are invalid")
+    for key, entry in entries.items():
+        if not isinstance(entry, dict) or set(entry) != {"original_name", "isolated_name", "expected_identity", "entry_type", "digest", "phase"}:
+            raise ValueError("import cleanup entry is invalid")
+        inode = entry["expected_identity"]
+        if not isinstance(inode, list) or len(inode) != 2 or any(type(value) is not int or value < 0 for value in inode) or entry["entry_type"] not in {"file", "directory"} or entry["phase"] not in {"planned", "isolated", "removed"} or not isinstance(entry["original_name"], str) or not isinstance(entry["isolated_name"], str):
+            raise ValueError("import cleanup entry is invalid")
     return cleanup
 
 
 def _cleanup_batch_inode(cleanup: Mapping[str, object]) -> tuple[int, int]:
-    inode = cleanup.get("batch_directory_identity")
+    entries = cleanup.get("entries")
+    inode = entries.get("batch-directory", {}).get("expected_identity") if isinstance(entries, dict) else None
     if not isinstance(inode, list) or len(inode) != 2 or any(not isinstance(value, int) or value < 0 for value in inode):
         raise ValueError("import cleanup durable state is invalid")
     return inode[0], inode[1]
@@ -1075,18 +1071,146 @@ def _entry_inode_at(directory_fd: int, name: str) -> tuple[int, int]:
     return info.st_dev, info.st_ino
 
 
-def _isolate_owned_entry_at(directory_fd: int, name: str, expected_inode: tuple[int, int]) -> str:
-    """Atomically move one expected inode away from its public cleanup basename."""
-    owned = ".cleanup-owned-" + uuid.uuid4().hex
-    _rename_exclusive_at(directory_fd, name, owned)
-    actual = _entry_inode_at(directory_fd, owned)
-    if actual == expected_inode:
-        return owned
+def _cleanup_entries_at(imports_fd: int, batch_fd: int, batch_identity: str, staged: Mapping[str, str], batch_inode: tuple[int, int]) -> dict[str, object]:
+    entries: dict[str, object] = {}
+    for dataset, digest in staged.items():
+        name = record_filename(dataset)
+        inode = _entry_inode_at(batch_fd, name)
+        key = "staged:" + dataset
+        entries[key] = {"original_name": name, "isolated_name": _cleanup_isolated_name(batch_identity, key, digest), "expected_identity": list(inode), "entry_type": "file", "digest": digest, "phase": "planned"}
+    metadata_inode = _entry_inode_at(batch_fd, "batch.json")
+    entries["batch.json"] = {"original_name": "batch.json", "isolated_name": _cleanup_isolated_name(batch_identity, "batch.json", "metadata"), "expected_identity": list(metadata_inode), "entry_type": "file", "digest": None, "phase": "planned"}
+    entries["batch-directory"] = {"original_name": batch_identity, "isolated_name": _cleanup_isolated_name(batch_identity, "batch-directory", "directory"), "expected_identity": list(batch_inode), "entry_type": "directory", "digest": None, "phase": "planned"}
+    return entries
+
+
+def _cleanup_entry_inode(entry: Mapping[str, object]) -> tuple[int, int]:
+    inode = entry.get("expected_identity")
+    if not isinstance(inode, list) or len(inode) != 2 or any(type(value) is not int for value in inode):
+        raise ValueError("import cleanup entry is invalid")
+    return inode[0], inode[1]
+
+
+def _cleanup_entry_matches_at(parent_fd: int, entry: Mapping[str, object], name: str) -> bool:
+    """Whether this exact directory entry still has the tombstoned identity and content."""
+    entry_type, digest = entry.get("entry_type"), entry.get("digest")
+    if entry_type not in {"file", "directory"} or digest is not None and not isinstance(digest, str):
+        raise ValueError("import cleanup entry is invalid")
     try:
-        _rename_exclusive_at(directory_fd, owned, name)
-    except ValueError as error:
-        raise ValueError("cleanup entry was replaced during isolation") from error
-    raise ValueError("cleanup entry was replaced during isolation")
+        current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return False
+    if stat.S_ISLNK(current.st_mode):
+        raise ValueError("cleanup entry is a symlink")
+    if (current.st_dev, current.st_ino) != _cleanup_entry_inode(entry):
+        return False
+    if entry_type == "file" and not stat.S_ISREG(current.st_mode):
+        return False
+    if entry_type == "directory" and not stat.S_ISDIR(current.st_mode):
+        return False
+    if digest is not None:
+        try:
+            return _record_digest_from_raw(_read_file(name, dir_fd=parent_fd)) == digest
+        except ValueError:
+            return False
+    return True
+
+
+def _persist_cleanup_at(imports_fd: int, cleanup: Mapping[str, object]) -> dict[str, object]:
+    entries = cleanup["entries"]
+    assert isinstance(entries, dict)
+    state = _cleanup_state(str(cleanup["run_identity"]), str(cleanup["run_context_sha256"]), str(cleanup["batch_identity"]), str(cleanup["source_attestation_sha256"]), cleanup["staged_record_digests"], str(cleanup["final_attestation_sha256"]), entries)
+    _atomic_replace_at(imports_fd, _cleanup_name(str(cleanup["batch_identity"])), canonical_json_bytes(state))
+    return state
+
+
+def _advance_cleanup_entry_at(parent_fd: int, imports_fd: int, cleanup: Mapping[str, object], key: str, *, phase_label: str) -> dict[str, object]:
+    """Advance one v2 tombstoned cleanup entry through planned→isolated→removed."""
+    entries = cleanup.get("entries")
+    if not isinstance(entries, dict) or not isinstance(entries.get(key), dict):
+        raise ValueError("import cleanup entry is invalid")
+    entry = entries[key]
+    assert isinstance(entry, dict)
+    original, isolated, expected = entry["original_name"], entry["isolated_name"], _cleanup_entry_inode(entry)
+    if not isinstance(original, str) or not isinstance(isolated, str):
+        raise ValueError("import cleanup entry is invalid")
+    entry_type = entry.get("entry_type")
+    if entry_type not in {"file", "directory"}:
+        raise ValueError("import cleanup entry is invalid")
+
+    def info(name: str) -> os.stat_result | None:
+        try:
+            result = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            return None
+        if stat.S_ISLNK(result.st_mode):
+            raise ValueError("cleanup entry is a symlink")
+        return result
+
+    def inode(name: str) -> tuple[int, int] | None:
+        current = info(name)
+        return None if current is None else (current.st_dev, current.st_ino)
+
+    def expected_entry(name: str) -> bool:
+        return _cleanup_entry_matches_at(parent_fd, entry, name)
+
+    def restore_foreign_isolated() -> None:
+        """Return an untrusted isolated object to its public name without deleting it."""
+        moved = info(isolated)
+        if moved is None or inode(original) is not None:
+            raise ValueError("cleanup replacement requires quarantine")
+        moved_identity = (moved.st_dev, moved.st_ino)
+        moved_mode = stat.S_IFMT(moved.st_mode)
+        moved_bytes = _read_file(isolated, dir_fd=parent_fd) if stat.S_ISREG(moved.st_mode) else None
+        try:
+            _rename_exclusive_at(parent_fd, isolated, original)
+        except ValueError as error:
+            raise ValueError("cleanup replacement requires quarantine") from error
+        restored = info(original)
+        if (restored is None or (restored.st_dev, restored.st_ino) != moved_identity
+                or stat.S_IFMT(restored.st_mode) != moved_mode or info(isolated) is not None
+                or moved_bytes is not None and _read_file(original, dir_fd=parent_fd) != moved_bytes):
+            raise ValueError("cleanup replacement restoration failed")
+        os.fsync(parent_fd)
+        raise ValueError("cleanup entry was replaced during isolation")
+
+    phase = entry.get("phase")
+    original_inode, isolated_inode = inode(original), inode(isolated)
+    if phase == "planned":
+        if original_inode is not None and isolated_inode is None:
+            _after_import_cleanup_phase("cleanup_before_" + phase_label + "_isolation")
+            # Persisted planned state names the deterministic isolated target before the move.
+            cleanup = _persist_cleanup_at(imports_fd, cleanup)
+            _rename_exclusive_at(parent_fd, original, isolated)
+            if not expected_entry(isolated):
+                restore_foreign_isolated()
+            _after_import_cleanup_phase("cleanup_after_" + phase_label + "_isolation_before_phase_update")
+        elif original_inode is None and isolated_inode is not None:
+            if not expected_entry(isolated):
+                restore_foreign_isolated()
+        else:
+            raise ValueError("import cleanup planned entry inventory is invalid")
+        entry["phase"] = "isolated"
+        cleanup = _persist_cleanup_at(imports_fd, cleanup)
+        entries = cleanup["entries"]; assert isinstance(entries, dict); entry = entries[key]; assert isinstance(entry, dict)
+        phase = "isolated"
+    if phase == "isolated":
+        if inode(original) is not None or not expected_entry(isolated):
+            raise ValueError("import cleanup isolated entry inventory is invalid")
+        _after_import_cleanup_phase("cleanup_after_" + phase_label + "_phase_before_remove")
+        if entry["entry_type"] == "directory":
+            os.rmdir(isolated, dir_fd=parent_fd)
+        else:
+            os.unlink(isolated, dir_fd=parent_fd)
+        os.fsync(parent_fd)
+        entry["phase"] = "removed"
+        cleanup = _persist_cleanup_at(imports_fd, cleanup)
+    elif phase == "removed":
+        if inode(original) is not None or inode(isolated) is not None:
+            raise ValueError("import cleanup removed entry inventory is invalid")
+    else:
+        raise ValueError("import cleanup phase is invalid")
+    return dict(cleanup)
 
 
 def _import_intent_requirements(root: Path, *, binding: _locked_root | None = None) -> tuple[tuple[str, str], ...]:
@@ -1110,7 +1234,7 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                     raise ValueError("import cleanup inventory is invalid")
                 continue
             info = os.stat(name, dir_fd=imports_fd, follow_symlinks=False)
-            if not stat.S_ISDIR(info.st_mode) or _batch_name(name) != name:
+            if not stat.S_ISDIR(info.st_mode) or not (name.startswith(".cleanup-owned-") or _batch_name(name) == name):
                 raise ValueError("import batch inventory is invalid")
             directories.add(name)
         for name in sorted(directories):
@@ -1119,6 +1243,12 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                 batch_fd = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
                 batch_identity = name
                 pending_cleanup = cleanup.get(batch_identity)
+                if pending_cleanup is None:
+                    for candidate, state in cleanup.items():
+                        entries = state.get("entries")
+                        if isinstance(entries, dict) and isinstance(entries.get("batch-directory"), dict) and entries["batch-directory"].get("isolated_name") == name:
+                            batch_identity, pending_cleanup = candidate, state
+                            break
                 if pending_cleanup is not None:
                     staged = pending_cleanup["staged_record_digests"]
                     attestation = pending_cleanup["source_attestation_sha256"]
@@ -1127,16 +1257,43 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
                     if (opened.st_dev, opened.st_ino) != _cleanup_batch_inode(pending_cleanup):
                         raise ValueError("import batch directory was replaced before cleanup")
                     names = set(os.listdir(batch_fd))
-                    expected_names = {"batch.json"} | {record_filename(dataset) for dataset in staged}
-                    if not names <= expected_names or "batch.json" not in names and names:
+                    entries = pending_cleanup["entries"]
+                    assert isinstance(entries, dict)
+                    expected_names = set()
+                    for entry in entries.values():
+                        assert isinstance(entry, dict)
+                        if entry["entry_type"] == "directory":
+                            continue
+                        phase = entry["phase"]
+                        if phase == "planned":
+                            original, isolated = entry["original_name"], entry["isolated_name"]
+                            if original in names and isolated not in names: expected_names.add(original)
+                            elif isolated in names and original not in names: expected_names.add(isolated)
+                            else: raise ValueError("import batch cleanup inventory is invalid")
+                        elif phase == "isolated": expected_names.add(entry["isolated_name"])
+                    if names != expected_names:
                         raise ValueError("import batch cleanup inventory is invalid")
-                    if "batch.json" in names:
+                    directory_entry = entries["batch-directory"]
+                    assert isinstance(directory_entry, dict)
+                    if not _cleanup_entry_matches_at(imports_fd, directory_entry, name):
+                        raise ValueError("import batch directory was replaced before cleanup")
+                    metadata = entries["batch.json"]
+                    assert isinstance(metadata, dict)
+                    if metadata["phase"] == "planned" and metadata["original_name"] in names:
                         state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
                         if state != _batch_state(str(stored["run_identity"]), str(stored["run_context_sha256"]), batch_identity, attestation, staged):
                             raise ValueError("import batch cleanup metadata is invalid")
+                    for entry in entries.values():
+                        assert isinstance(entry, dict)
+                        if entry["entry_type"] == "directory" or entry["phase"] == "removed":
+                            continue
+                        entry_name = entry["original_name"] if entry["original_name"] in names else entry["isolated_name"]
+                        if not _cleanup_entry_matches_at(batch_fd, entry, entry_name):
+                            raise ValueError("import batch cleanup entry was replaced")
                     for dataset, digest in staged.items():
-                        filename = record_filename(dataset)
-                        if filename in names and _record_digest_from_raw(_read_file(filename, dir_fd=batch_fd)) != digest:
+                        entry = entries["staged:" + dataset]; assert isinstance(entry, dict)
+                        filename = entry["original_name"] if entry["original_name"] in names else entry["isolated_name"]
+                        if entry["phase"] != "removed" and _record_digest_from_raw(_read_file(filename, dir_fd=batch_fd)) != digest:
                             raise ValueError("import batch staged record is invalid")
                     current = os.stat(name, dir_fd=imports_fd, follow_symlinks=False)
                     if (current.st_dev, current.st_ino) != _cleanup_batch_inode(pending_cleanup):

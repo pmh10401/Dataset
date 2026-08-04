@@ -960,7 +960,7 @@ class CheckpointStoreTests(unittest.TestCase):
         provenance = _provenance(context)
         batch_identity, attestation = "cleanup-batch", _digest("a")
         records = tuple(_import_record_for(dataset, index, attestation) for index, dataset in enumerate(context.datasets[:2]))
-        cases = (("cleanup_tombstone_durable", 1), ("cleanup_staged_unlinked", 1), ("cleanup_staged_unlinked", 2), ("cleanup_metadata_removed", 1), ("cleanup_directory_removed", 1), ("cleanup_directory_fsynced", 1))
+        cases = (("cleanup_tombstone_durable", 1), ("cleanup_after_staged_isolation_before_phase_update", 1), ("cleanup_after_staged_phase_before_remove", 1), ("cleanup_staged_unlinked", 1), ("cleanup_staged_unlinked", 2), ("cleanup_after_metadata_isolation_before_phase_update", 1), ("cleanup_after_metadata_phase_before_remove", 1), ("cleanup_metadata_removed", 1), ("cleanup_after_directory_isolation_before_phase_update", 1), ("cleanup_after_directory_phase_before_remove", 1), ("cleanup_directory_removed", 1), ("cleanup_directory_fsynced", 1))
         for phase, occurrence in cases:
             with self.subTest(phase=phase, occurrence=occurrence), TemporaryDirectory() as directory:
                 root = Path(directory) / "checkpoints"
@@ -1124,6 +1124,63 @@ class CheckpointStoreTests(unittest.TestCase):
                     self.assertEqual((batch_path / "batch.json").read_bytes(), b"foreign-metadata")
                 else:
                     self.assertEqual((batch_path / "foreign").read_bytes(), b"foreign-directory")
+
+    def test_cleanup_isolation_preserves_a_mutated_expected_inode(self) -> None:
+        """A staged file whose bytes change in place must not be mistaken for owned cleanup data."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            attestation, batch_identity = _digest("a"), "mutated-cleanup-entry"
+            record = _import_record_for(context.datasets[0], 0, attestation)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,))
+                target = root / "import_batches" / batch_identity / checkpoints.record_filename(context.datasets[0])
+
+                def mutate(reached: str) -> None:
+                    if reached == "cleanup_before_staged_isolation":
+                        target.write_bytes(b"foreign-bytes-on-the-owned-inode")
+
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=mutate):
+                    with self.assertRaisesRegex(ValueError, "replaced during isolation"):
+                        _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,), batch)
+            finally:
+                capabilities._close_authority(authority)
+            self.assertEqual(target.read_bytes(), b"foreign-bytes-on-the-owned-inode")
+
+    def test_read_only_cleanup_inspection_rejects_foreign_isolated_metadata(self) -> None:
+        """Readonly inspection reports a foreign pre-phase isolated entry without repairing it."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            attestation, batch_identity = _digest("a"), "foreign-isolated-metadata"
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, ())
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda reached: (_ for _ in ()).throw(SimulatedProcessDeath()) if reached == "cleanup_after_metadata_isolation_before_phase_update" else None):
+                    with self.assertRaises(SimulatedProcessDeath):
+                        _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (), batch)
+            finally:
+                capabilities._close_authority(authority)
+            cleanup_path = next((root / "import_batches").glob("cleanup-*.json"))
+            cleanup = json.loads(cleanup_path.read_bytes())
+            isolated = cleanup["entries"]["batch.json"]["isolated_name"]
+            target = root / "import_batches" / batch_identity / isolated
+            target.unlink()
+            target.write_bytes(b"foreign-metadata")
+            before = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before)
 
 
 class CheckpointBenchmarkTests(unittest.TestCase):
