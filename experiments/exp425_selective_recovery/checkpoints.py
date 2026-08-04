@@ -63,6 +63,15 @@ class _ImportBatch:
     nonce: str
 
 
+@dataclass(frozen=True)
+class _ImportBatchQuarantine:
+    batch_identity: str
+    source_attestation_sha256: str
+    reason_sha256: str
+    directory: Path
+    identity: tuple[int, int]
+
+
 class Exp425CheckpointStore:
     """A shared-context checkpoint root. Only private capability paths mutate it."""
 
@@ -294,6 +303,51 @@ class Exp425CheckpointStore:
                     _verify_directory_at(binding, "import_batches", imports_identity)
                 finally:
                     if batch_fd is not None: os.close(batch_fd)
+            finally:
+                os.close(imports_fd)
+
+    def _quarantine_import_batch(self, batch: object, *, final_attestation_sha256: str | None, reason_sha256: str) -> _ImportBatchQuarantine:
+        """Move only one verified owned staging directory aside after an aborted import."""
+        if not isinstance(batch, _ImportBatch) or not _is_lower_sha256(reason_sha256):
+            raise ValueError("import batch quarantine inputs are invalid")
+        with self._store_binding(exclusive=True) as binding:
+            imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
+            try:
+                active = {name for name in os.listdir(imports_fd) if not name.startswith(".quarantined-") and not name.startswith("cleanup-")}
+                if active != {_batch_name(batch.identity)}:
+                    raise ValueError("import batch quarantine requires one exact active batch")
+                batch_fd = _open_batch_at(imports_fd, batch)
+                try:
+                    state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                    staged = state.get("staged_record_digests")
+                    if not isinstance(staged, dict) or state != _batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged):
+                        raise ValueError("import batch quarantine state is invalid")
+                    expected_names = {"batch.json"} | {record_filename(dataset) for dataset in staged}
+                    if set(os.listdir(batch_fd)) != expected_names:
+                        raise ValueError("import batch quarantine inventory is invalid")
+                    for dataset, digest in staged.items():
+                        if not isinstance(dataset, str) or _record_digest_from_raw(_read_file(record_filename(dataset), dir_fd=batch_fd)) != digest:
+                            raise ValueError("import batch quarantine staged record is invalid")
+                    computed = _import_final_attestation(batch.identity, batch.attestation_sha256, staged)
+                    if final_attestation_sha256 is not None and final_attestation_sha256 != computed:
+                        raise ValueError("import batch quarantine attestation is invalid")
+                    opened = os.fstat(batch_fd)
+                finally:
+                    os.close(batch_fd)
+                if batch.inode is None or (opened.st_dev, opened.st_ino) != batch.inode:
+                    raise ValueError("import batch quarantine directory was replaced")
+                source_name = _batch_name(batch.identity)
+                path_state = os.stat(source_name, dir_fd=imports_fd, follow_symlinks=False)
+                if (path_state.st_dev, path_state.st_ino) != batch.inode:
+                    raise ValueError("import batch quarantine directory was replaced")
+                destination = ".quarantined-" + sha256(canonical_json_bytes({"schema": "exp425.import-quarantine.v1", "batch_identity": batch.identity, "inode": list(batch.inode), "reason_sha256": reason_sha256})).hexdigest()
+                _rename_exclusive_at(imports_fd, source_name, destination)
+                moved = os.stat(destination, dir_fd=imports_fd, follow_symlinks=False)
+                if (moved.st_dev, moved.st_ino) != batch.inode:
+                    raise ValueError("import batch quarantine move did not retain identity")
+                os.fsync(imports_fd)
+                _verify_directory_at(binding, "import_batches", imports_identity)
+                return _ImportBatchQuarantine(batch.identity, batch.attestation_sha256, reason_sha256, self.root / "import_batches" / destination, batch.inode)
             finally:
                 os.close(imports_fd)
 
@@ -1431,6 +1485,12 @@ def _import_intent_requirements(root: Path, *, binding: _locked_root | None = No
         cleanup: dict[str, dict[str, object]] = {}
         directories: set[str] = set()
         for name in sorted(os.listdir(imports_fd)):
+            if name.startswith(".quarantined-"):
+                digest = name[len(".quarantined-"):]
+                info = os.stat(name, dir_fd=imports_fd, follow_symlinks=False)
+                if not _is_lower_sha256(digest) or not stat.S_ISDIR(info.st_mode):
+                    raise ValueError("import quarantine inventory is invalid")
+                continue
             if name.startswith("cleanup-") and name.endswith(".json"):
                 batch_identity = name[len("cleanup-"):-len(".json")]
                 if _cleanup_name(batch_identity) != name or batch_identity in cleanup:
