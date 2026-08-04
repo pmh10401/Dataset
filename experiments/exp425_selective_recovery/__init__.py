@@ -12,6 +12,20 @@ from .predecessor import (
     inspect_exp424_source,
     open_validated_exp424_source,
 )
+from .runtime import (
+    AtomicProgressWriter,
+    DatasetRuntimeTrace,
+    ExecutionCommand,
+    Exp425RunCounts,
+    Exp425RunResult,
+    Exp425RuntimeSession,
+    RuntimePaths,
+    RuntimeProgress,
+    build_exp425_runtime,
+    execute_runtime_command,
+    inspect_runtime_output,
+    run_selective_population,
+)
 
 __all__ = [
     "EligibilityAssessment",
@@ -29,4 +43,16 @@ __all__ = [
     "import_exp424_nonterminal",
     "inspect_exp424_source",
     "open_validated_exp424_source",
+    "AtomicProgressWriter",
+    "DatasetRuntimeTrace",
+    "ExecutionCommand",
+    "Exp425RunCounts",
+    "Exp425RunResult",
+    "Exp425RuntimeSession",
+    "RuntimePaths",
+    "RuntimeProgress",
+    "build_exp425_runtime",
+    "execute_runtime_command",
+    "inspect_runtime_output",
+    "run_selective_population",
 ]
