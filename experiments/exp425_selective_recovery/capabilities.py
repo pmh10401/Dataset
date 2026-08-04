@@ -68,6 +68,7 @@ def _mint(authority: object, /, *, kind: str, **claims: object) -> object:
     allowed = {
         "runtime": frozenset({"native"}),
         "source": frozenset({"import_begin", "import_stage", "import_promote"}),
+        "exp424_import": frozenset({"import_begin", "import_stage", "import_promote"}),
         # The sealed local authority exists solely for broker mechanics tests.
         "local": frozenset({"native", "import_begin", "import_stage", "import_promote"}),
     }.get(authority_kind, frozenset())
@@ -91,7 +92,11 @@ def _consume(capability: object, /, *, kind: str, **claims: object) -> Mapping[s
         del _capabilities[id(capability)]
         raise ValueError("Exp425 capability authority is no longer live")
     requested = _freeze_claims({"kind": kind, **claims})
-    if dict(frozen) != requested:
+    # Store primitives name every security-relevant claim they know at the
+    # operation boundary.  Additional sealed source claims (attestation and
+    # fresh process nonce) remain broker-owned and are returned only after
+    # authentic token validation.
+    if any(frozen.get(key) != value for key, value in requested.items()):
         raise ValueError("Exp425 capability claims do not match")
     # Deletion happens before returning authorization, preventing a second use
     # even if the caller's transaction later fails.

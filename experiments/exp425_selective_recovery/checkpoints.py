@@ -185,28 +185,74 @@ class Exp425CheckpointStore:
         nonce = claims.get("process_nonce")
         if not isinstance(attestation, str) or not isinstance(nonce, str):
             raise ValueError("import batch authority lacks live attestation")
-        directory = self.root / "import_batches" / sha256(batch_identity.encode()).hexdigest()
-        directory.mkdir(mode=0o700)
-        identity = _inode(directory)
+        name = _batch_name(batch_identity)
+        with _locked_root(self.root, exclusive=True) as binding:
+            imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
+            try:
+                try:
+                    os.mkdir(name, 0o700, dir_fd=imports_fd)
+                    batch_fd = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
+                    try:
+                        state = _batch_state(self.provenance.run_identity, self.run_context_sha256, batch_identity, attestation, {})
+                        _write_new_at(batch_fd, "batch.json", canonical_json_bytes(state))
+                    finally:
+                        os.close(batch_fd)
+                    os.fsync(imports_fd)
+                except FileExistsError:
+                    # A revalidated process resumes only an identical durable batch.
+                    batch_fd = os.open(name, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
+                    try:
+                        state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                    finally:
+                        os.close(batch_fd)
+                    if state != _batch_state(self.provenance.run_identity, self.run_context_sha256, batch_identity, attestation, state.get("staged_record_digests", {})):
+                        raise ValueError("import batch durable state does not match authority")
+                info = os.stat(name, dir_fd=imports_fd, follow_symlinks=False)
+                identity = (info.st_dev, info.st_ino)
+                _verify_directory_at(binding, "import_batches", imports_identity)
+            finally:
+                os.close(imports_fd)
+        directory = self.root / "import_batches" / name
         return _ImportBatch(batch_identity, directory, identity, attestation, nonce)
 
     def _stage_imported(self, capability: object, batch: object, record: ImportedRecordEnvelope) -> None:
-        if not isinstance(batch, _ImportBatch) or not isinstance(record, ImportedRecordEnvelope) or _inode(batch.directory) != batch.inode:
+        if not isinstance(batch, _ImportBatch) or not isinstance(record, ImportedRecordEnvelope):
             raise ValueError("import batch is invalid")
         payload = _import_record_body(self.run_context_sha256, record)
         digest = sha256(canonical_json_bytes(payload)).hexdigest()
         capabilities._consume(capability, kind="import_stage", run_identity=self.provenance.run_identity, batch_identity=batch.identity, dataset=record.dataset, source_sha256=record.source_record_sha256, attestation_sha256=batch.attestation_sha256, process_nonce=batch.nonce, record_sha256=digest)
-        _write_new(batch.directory / record_filename(record.dataset), canonical_json_bytes(payload | {"record_payload_sha256": digest}))
+        with _locked_root(self.root, exclusive=True) as binding:
+            imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
+            batch_fd = _open_batch_at(imports_fd, batch)
+            try:
+                state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                staged = dict(state["staged_record_digests"])
+                if record.dataset in staged and staged[record.dataset] != digest:
+                    raise ValueError("import batch has conflicting staged dataset")
+                if record.dataset not in staged:
+                    _write_new_at(batch_fd, record_filename(record.dataset), canonical_json_bytes(payload | {"record_payload_sha256": digest}))
+                    staged[record.dataset] = digest
+                    _atomic_replace_at(batch_fd, "batch.json", canonical_json_bytes(_batch_state(self.provenance.run_identity, self.run_context_sha256, batch.identity, batch.attestation_sha256, staged)))
+                _verify_directory_at(binding, "import_batches", imports_identity)
+            finally:
+                os.close(batch_fd); os.close(imports_fd)
 
     def _promote_import_batch(self, capability: object, batch: object) -> None:
-        if not isinstance(batch, _ImportBatch) or _inode(batch.directory) != batch.inode:
+        if not isinstance(batch, _ImportBatch):
             raise ValueError("import batch is invalid")
-        staged = sorted(batch.directory.glob("*.json"))
-        digests = {path.name: _record_digest_from_raw(_read_file(path)) for path in staged}
-        final_digest = sha256(canonical_json_bytes({"batch_identity": batch.identity, "record_digests": digests, "attestation_sha256": batch.attestation_sha256})).hexdigest()
+        with _locked_root(self.root, exclusive=False) as binding:
+            imports_fd, _ = _open_directory_at(binding, "import_batches")
+            batch_fd = _open_batch_at(imports_fd, batch)
+            try:
+                state = _canonical_object(_read_file("batch.json", dir_fd=batch_fd), "import batch")
+                staged = dict(state["staged_record_digests"])
+                raw_records = {dataset: _read_file(record_filename(dataset), dir_fd=batch_fd) for dataset in staged}
+            finally:
+                os.close(batch_fd); os.close(imports_fd)
+        final_digest = sha256(canonical_json_bytes({"batch_identity": batch.identity, "record_digests": dict(sorted(staged.items())), "attestation_sha256": batch.attestation_sha256})).hexdigest()
         capabilities._consume(capability, kind="import_promote", run_identity=self.provenance.run_identity, batch_identity=batch.identity, attestation_sha256=batch.attestation_sha256, process_nonce=batch.nonce, final_attestation_sha256=final_digest)
-        for path in staged:
-            record = _decode_record(_read_file(path), self.context)
+        for dataset in sorted(staged):
+            record = _decode_record(raw_records[dataset], self.context)
             body = _import_record_body(self.run_context_sha256, record)
             self._write_record(record, body, sha256(canonical_json_bytes(body)).hexdigest(), intent_extra={"batch_identity": batch.identity, "final_attestation_sha256": final_digest})
 
@@ -317,6 +363,26 @@ def _progress_bytes(expected: tuple[str, ...], digests: Mapping[str, str], curre
         raise ValueError("progress contains an unknown dataset")
     body = {"schema": "exp425.progress.v1", "record_digests": dict(sorted(digests.items())), "completed_count": len(digests), "expected_count": len(expected), "current_dataset": current}
     return canonical_json_bytes(body | {"payload_sha256": sha256(canonical_json_bytes(body)).hexdigest()})
+
+
+def _batch_name(batch_identity: str) -> str:
+    if not isinstance(batch_identity, str) or not batch_identity or any(character not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for character in batch_identity):
+        raise ValueError("import batch identity is not a safe directory name")
+    return batch_identity
+
+
+def _batch_state(run_identity: str, context_sha256: str, batch_identity: str, attestation: str, staged: Mapping[str, str]) -> dict[str, object]:
+    body = {"schema": "exp425.import-batch.v1", "run_identity": run_identity, "run_context_sha256": context_sha256, "batch_identity": batch_identity, "source_attestation_sha256": attestation, "staged_record_digests": dict(sorted(staged.items()))}
+    return body | {"payload_sha256": sha256(canonical_json_bytes(body)).hexdigest()}
+
+
+def _open_batch_at(imports_fd: int, batch: _ImportBatch) -> int:
+    descriptor = os.open(_batch_name(batch.identity), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0), dir_fd=imports_fd)
+    info = os.fstat(descriptor)
+    if (info.st_dev, info.st_ino) != batch.inode:
+        os.close(descriptor)
+        raise ValueError("import batch directory was replaced")
+    return descriptor
 
 
 def _read_root_metadata(root: Path, *, binding: "_locked_root | None" = None) -> tuple[dict[str, object], bytes, dict[str, object]]:
