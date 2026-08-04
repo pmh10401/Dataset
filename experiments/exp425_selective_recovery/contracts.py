@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from math import isfinite
 from types import MappingProxyType
+from typing import TypeAlias
 
 from experiments.exp417_causal_multihorizon_shadow.contracts import ProcessedGroup
 
@@ -170,3 +172,121 @@ class EligibilityAssessment:
                 raise ValueError("evidence length must match its mapping key")
         object.__setattr__(self, "groups", groups)
         object.__setattr__(self, "evidence", MappingProxyType(evidence))
+
+
+def _frozen_mapping(value: object, name: str) -> Mapping[str, object]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{name} must be a mapping")
+    return MappingProxyType(dict(value))
+
+
+def _finite_elapsed(value: object) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value) or value < 0:
+        raise ValueError("elapsed_seconds must be finite and non-negative")
+    return float(value)
+
+
+@dataclass(frozen=True)
+class Exp425RunProvenance:
+    """Immutable identity for a compact Exp425 checkpoint root."""
+
+    run_identity: str
+    git_commit: str
+    database_sha256: str
+    lane_artifact_sha256: Mapping[str, str]
+    frozen_config_sha256: str
+    fold_contract_sha256: str
+    model_contract_sha256: str
+    backend_contract_sha256: str
+    model_seeds: tuple[int, ...]
+    perturbation_seeds: tuple[int, ...]
+    runtime_versions: Mapping[str, str]
+    expected_datasets: tuple[str, ...]
+    predecessor_compatibility_sha256: str
+    run_context_sha256: str | None = None
+
+    def __post_init__(self) -> None:
+        for name in ("run_identity", "git_commit"):
+            object.__setattr__(self, name, _nonempty_string(getattr(self, name), name))
+        for name in ("database_sha256", "frozen_config_sha256", "fold_contract_sha256", "model_contract_sha256", "backend_contract_sha256", "predecessor_compatibility_sha256"):
+            object.__setattr__(self, name, _sha256_digest(getattr(self, name), name))
+        if self.run_context_sha256 is not None:
+            object.__setattr__(self, "run_context_sha256", _sha256_digest(self.run_context_sha256, "run_context_sha256"))
+        lanes = _frozen_mapping(self.lane_artifact_sha256, "lane_artifact_sha256")
+        if set(lanes) != {"hard", "standard", "priority", "automatic_normal"}:
+            raise ValueError("lane_artifact_sha256 must contain exactly four lanes")
+        for name, digest in lanes.items():
+            _sha256_digest(digest, f"lane_artifact_sha256[{name}]")
+        object.__setattr__(self, "lane_artifact_sha256", lanes)
+        for name in ("model_seeds", "perturbation_seeds"):
+            values = tuple(getattr(self, name))
+            if not values or any(type(item) is not int for item in values):
+                raise ValueError(f"{name} must contain integers")
+            object.__setattr__(self, name, values)
+        versions = _frozen_mapping(self.runtime_versions, "runtime_versions")
+        if not versions or any(not isinstance(key, str) or not isinstance(value, str) for key, value in versions.items()):
+            raise ValueError("runtime_versions must contain strings")
+        object.__setattr__(self, "runtime_versions", versions)
+        datasets = tuple(self.expected_datasets)
+        if not datasets or datasets != tuple(sorted(datasets)) or len(datasets) != len(set(datasets)):
+            raise ValueError("expected_datasets must be sorted and unique")
+        if any(not isinstance(dataset, str) or not dataset for dataset in datasets):
+            raise ValueError("expected_datasets must contain names")
+        object.__setattr__(self, "expected_datasets", datasets)
+
+    def with_run_context_sha256(self, digest: str) -> "Exp425RunProvenance":
+        return Exp425RunProvenance(self.run_identity, self.git_commit, self.database_sha256, self.lane_artifact_sha256, self.frozen_config_sha256, self.fold_contract_sha256, self.model_contract_sha256, self.backend_contract_sha256, self.model_seeds, self.perturbation_seeds, self.runtime_versions, self.expected_datasets, self.predecessor_compatibility_sha256, digest)
+
+    def to_payload(self) -> dict[str, object]:
+        if self.run_context_sha256 is None:
+            raise ValueError("run_context_sha256 is required for checkpoint provenance")
+        return {"schema": "exp425.checkpoint.v1", "run_identity": self.run_identity, "git_commit": self.git_commit, "database_sha256": self.database_sha256, "lane_artifact_sha256": dict(sorted(self.lane_artifact_sha256.items())), "frozen_config_sha256": self.frozen_config_sha256, "fold_contract_sha256": self.fold_contract_sha256, "model_contract_sha256": self.model_contract_sha256, "backend_contract_sha256": self.backend_contract_sha256, "model_seeds": list(self.model_seeds), "perturbation_seeds": list(self.perturbation_seeds), "runtime_versions": dict(sorted(self.runtime_versions.items())), "expected_datasets": list(self.expected_datasets), "predecessor_compatibility_sha256": self.predecessor_compatibility_sha256, "run_context_sha256": self.run_context_sha256}
+
+
+@dataclass(frozen=True)
+class SourceProvenGroupEvidence:
+    source_group_evidence: Mapping[str, object]
+    source_group_evidence_sha256: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "source_group_evidence", _frozen_mapping(self.source_group_evidence, "source_group_evidence"))
+        object.__setattr__(self, "source_group_evidence_sha256", _sha256_digest(self.source_group_evidence_sha256, "source_group_evidence_sha256"))
+
+
+@dataclass(frozen=True)
+class NativeRecordEnvelope:
+    dataset: str; result_payload: Mapping[str, object]; group_evidence: Mapping[str, object]
+    train_identity_sha256: str; eligibility_sha256: str; processed_groups_sha256: str; model_evidence_sha256: str
+    frozen_train_contract_sha256: str; scoring_evidence_sha256: str; result_evidence_sha256: str
+    model_hashes: Mapping[str, object]; calibration_hashes: Mapping[str, object]; backend_audit_sha256: str
+    trace_sha256: str; record_payload_sha256: str; elapsed_seconds: float; reason: str | None; origin: str = "exp425_native"; context: object | None = field(default=None, compare=False, repr=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "dataset", _nonempty_string(self.dataset, "dataset"))
+        if self.origin != "exp425_native": raise ValueError("native record origin is invalid")
+        for name in ("train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256", "trace_sha256", "record_payload_sha256"):
+            object.__setattr__(self, name, _sha256_digest(getattr(self, name), name))
+        for name in ("result_payload", "group_evidence", "model_hashes", "calibration_hashes"):
+            object.__setattr__(self, name, _frozen_mapping(getattr(self, name), name))
+        object.__setattr__(self, "elapsed_seconds", _finite_elapsed(self.elapsed_seconds))
+        if self.reason is not None and not isinstance(self.reason, str): raise ValueError("reason must be a string or None")
+
+
+@dataclass(frozen=True)
+class ImportedRecordEnvelope:
+    dataset: str; result_payload: Mapping[str, object]; group_evidence: SourceProvenGroupEvidence
+    source_root_sha256: str; source_progress_sha256: str; source_record_sha256: str; source_result_sha256: str
+    compatibility_attestation_sha256: str; elapsed_seconds: float; reason: str | None; origin: str = "exp424_import"; context: object | None = field(default=None, compare=False, repr=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "dataset", _nonempty_string(self.dataset, "dataset"))
+        if self.origin != "exp424_import": raise ValueError("imported record origin is invalid")
+        if not isinstance(self.group_evidence, SourceProvenGroupEvidence): raise ValueError("imported group evidence is invalid")
+        object.__setattr__(self, "result_payload", _frozen_mapping(self.result_payload, "result_payload"))
+        for name in ("source_root_sha256", "source_progress_sha256", "source_record_sha256", "source_result_sha256", "compatibility_attestation_sha256"):
+            object.__setattr__(self, name, _sha256_digest(getattr(self, name), name))
+        object.__setattr__(self, "elapsed_seconds", _finite_elapsed(self.elapsed_seconds))
+        if self.reason is not None and not isinstance(self.reason, str): raise ValueError("reason must be a string or None")
+
+
+Exp425Record: TypeAlias = NativeRecordEnvelope | ImportedRecordEnvelope
