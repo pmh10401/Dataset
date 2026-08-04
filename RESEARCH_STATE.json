@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-04T17:00:00+09:00",
+  "updated_at": "2026-08-04T18:18:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
   "last_verified_commit": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee",
   "active_experiment": "Exp425",
-  "active_phase": "task5_runtime_implementation",
+  "active_phase": "task5_fix_round_2",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -47,7 +47,11 @@
     "task3_predecessor": "78580fcead5ffd276c274f938933637263f15b6c",
     "task4_database": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee"
   },
-  "next_action": "Complete and independently review Exp425 Task 5, then implement Task 6 preregistration, runbook, reporting, and readiness.",
+  "partial_engineering_commits": {
+    "task5_initial_runtime": "dc018ac9cc6e6dec13a93317df194d5e19200884",
+    "task5_fix_round_1": "d1c48b58fd7ebaaf2b79e8dd48e927e1220e7b49"
+  },
+  "next_action": "Complete Task 5 fix round 2 (mixed real-store orchestration, heartbeat/observability, CLI and mutation matrices, MPS parity), rerun parent verification, and obtain a fresh Sol/High ship review before Task 6.",
   "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && python3 -m unittest experiments.exp425_selective_recovery.tests.test_runtime experiments.exp425_selective_recovery.tests.test_cli -v",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens."
