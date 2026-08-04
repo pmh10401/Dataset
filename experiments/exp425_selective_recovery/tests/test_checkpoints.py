@@ -446,6 +446,48 @@ class CheckpointStoreTests(unittest.TestCase):
             self.assertNotIn(b'"test_identity_manifest"', raw)
             self.assertLess(len(raw), len(canonical_json_bytes(_context_payload(context))) // 5)
 
+    def test_complex_native_and_imported_envelopes_round_trip_without_narrowing_payloads(self) -> None:
+        """Restoring fixture-shaped nested checks would reject legitimate frozen result/evidence fields."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            base = _native_record_for(store, provenance, context.datasets[0])
+            result = checkpoints.thaw_payload(base.result_payload)
+            group = checkpoints.thaw_payload(base.group_evidence)
+            model = checkpoints.thaw_payload(base.model_hashes)
+            calibration = checkpoints.thaw_payload(base.calibration_hashes)
+            assert isinstance(result, dict) and isinstance(group, dict) and isinstance(model, dict) and isinstance(calibration, dict)
+            result["effective_result"]["provenance_notes"] = [{"fold": 0, "weight": 0.25}, {"fold": 1, "weight": 0.75}]
+            result["effective_result"]["candidate_coordinates"] = [["candidate", 1]]
+            group["frozen_exp417_evidence"] = {"groups": [64, 128], "sealed": True}
+            model["serialized_model_manifest"] = {"parts": ["encoder", "head"]}
+            calibration["calibration_diagnostics"] = {"bins": [0.1, 0.9]}
+            body = {"schema_version": "exp425.dataset.v1", "dataset": base.dataset, "origin": base.origin, "run_context_sha256": store.run_context_sha256, "result_payload": result, "group_evidence": group, "trace_sha256": base.trace_sha256, "model_hashes": model, "calibration_hashes": calibration, "backend_audit_sha256": base.backend_audit_sha256, "elapsed_seconds": base.elapsed_seconds, "reason": base.reason}
+            native = NativeRecordEnvelope(base.dataset, result, group, base.train_identity_sha256, base.eligibility_sha256, base.processed_groups_sha256, base.model_evidence_sha256, base.frozen_train_contract_sha256, base.scoring_evidence_sha256, base.result_evidence_sha256, model, calibration, base.backend_audit_sha256, base.trace_sha256, sha256(canonical_json_bytes(body)).hexdigest(), base.elapsed_seconds, base.reason)
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                store._commit_native(_native_capability(store, provenance, authority, native), native)
+            finally:
+                capabilities._close_authority(authority)
+            self.assertEqual(checkpoints.thaw_payload(store.load_record(native.dataset).result_payload), result)
+            source = {"source_groups": [{"group": 64, "weights": [0.3, 0.7]}], "compatibility": {"sealed": True}}
+            imported_result = {"status": "abstained", "source_index": 1, "exp424_artifacts": [{"name": "oof", "hashes": ["a", "b"]}]}
+            imported = ImportedRecordEnvelope(context.datasets[1], imported_result, SourceProvenGroupEvidence(source, sha256(canonical_json_bytes(source)).hexdigest()), *(_digest("a"), _digest("b"), _digest("c"), _digest("d"), _digest("e")), 1.0, "sealed local exp424 import")
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "roundtrip", "roundtrip-batch", _digest("e"), (imported,))
+                _promote_imports(store, provenance, authority, "roundtrip", "roundtrip-batch", _digest("e"), (imported,), batch)
+            finally:
+                capabilities._close_authority(authority)
+            loaded = store.load_record(imported.dataset)
+            self.assertIsInstance(loaded, ImportedRecordEnvelope)
+            self.assertEqual(checkpoints.thaw_payload(loaded.result_payload), imported_result)
+            self.assertEqual(checkpoints.thaw_payload(loaded.group_evidence.source_group_evidence), source)
+
     def test_native_recovery_advances_each_durable_phase_once(self) -> None:
         """Native B→E crash recovery removes or adopts only the durable state."""
         class SimulatedProcessDeath(RuntimeError):
@@ -479,7 +521,9 @@ class CheckpointStoreTests(unittest.TestCase):
         dataset = context.datasets[0]
         base = {
             "schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native",
-            "dataset": dataset, "record_payload_sha256": _digest("a"),
+            "dataset": dataset, "record_payload_sha256": _digest("a"), "run_identity": provenance.run_identity,
+            "run_context_sha256": sha256(canonical_json_bytes(_context_payload(context))).hexdigest(),
+            "backend_contract_sha256": provenance.backend_contract_sha256, "backend_audit_sha256": _digest("b"),
         }
         malformed = (
             {key: value for key, value in base.items() if key != "operation"},
@@ -493,6 +537,22 @@ class CheckpointStoreTests(unittest.TestCase):
                 (root / "transactions" / "native.json").write_bytes(canonical_json_bytes(intent))
                 with self.assertRaises(ValueError):
                     Exp425CheckpointStore.open(root, provenance, context)
+
+    def test_record_absent_unknown_native_intent_fails_without_unlinking_it(self) -> None:
+        """Removing the root-universe check would silently delete an impossible durable intent."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            intent = {"schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native", "dataset": "outside-universe", "record_payload_sha256": _digest("a"), "run_identity": provenance.run_identity, "run_context_sha256": store.run_context_sha256, "backend_contract_sha256": provenance.backend_contract_sha256, "backend_audit_sha256": _digest("b")}
+            path = root / "transactions" / "impossible.json"
+            path.write_bytes(canonical_json_bytes(intent))
+            before = _checkpoint_snapshot(root)
+            with store._store_binding(exclusive=True) as binding:
+                with self.assertRaises(ValueError):
+                    store._reconcile_native_intents(binding=binding)
+            self.assertEqual(_checkpoint_snapshot(root), before)
 
     def test_native_load_rejects_trace_literals_and_cross_field_mutations(self) -> None:
         context = _context()
@@ -513,6 +573,7 @@ class CheckpointStoreTests(unittest.TestCase):
             ("test label", lambda payload: payload["result_payload"]["effective_result"].__setitem__("TEST_label", "forbidden")),
             ("ground truth", lambda payload: payload["group_evidence"].__setitem__("ground_truth", "forbidden")),
             ("family test performance", lambda payload: payload["model_hashes"].__setitem__("family_TEST_performance", "forbidden")),
+            ("nested evaluation", lambda payload: payload["calibration_hashes"].__setitem__("evaluation_summary", {"nested": ["forbidden"]})),
         )
         for name, mutate in mutations:
             with self.subTest(name=name), TemporaryDirectory() as directory:
@@ -838,9 +899,10 @@ class CheckpointStoreTests(unittest.TestCase):
             store = Exp425CheckpointStore.create(root, provenance, context)
             authority = object()
             capabilities._register_authority(authority, "exp424_import")
+            source_evidence = {"source_groups": []}
             record = ImportedRecordEnvelope(
                 context.datasets[0], {"status": "abstained"},
-                SourceProvenGroupEvidence({"source_groups": []}, _digest("b")),
+                SourceProvenGroupEvidence(source_evidence, sha256(canonical_json_bytes(source_evidence)).hexdigest()),
                 _digest("c"), _digest("d"), _digest("e"), _digest("f"), _digest("a"),
                 0.0, "sealed local exp424 import",
             )

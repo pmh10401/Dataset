@@ -201,8 +201,14 @@ class Exp425CheckpointStore:
             digest = sha256(canonical_json_bytes(body)).hexdigest()
             if trace != record.trace_sha256 or digest != record.record_payload_sha256:
                 raise ValueError("native record digest does not match its canonical preimage")
+            _decode_record(canonical_json_bytes(body | {"record_payload_sha256": digest}), self.context, native_run_identity=self.provenance.run_identity, native_context_sha256=self.run_context_sha256)
             capabilities._consume(capability, kind="native", run_identity=self.provenance.run_identity, dataset=record.dataset, context_sha256=self.run_context_sha256, trace_sha256=trace, record_sha256=digest, backend_sha256=record.backend_audit_sha256)
-            self._write_record(record, body, digest, intent_extra={}, binding=binding)
+            self._write_record(record, body, digest, intent_extra={
+                "run_identity": self.provenance.run_identity,
+                "run_context_sha256": self.run_context_sha256,
+                "backend_contract_sha256": self.provenance.backend_contract_sha256,
+                "backend_audit_sha256": record.backend_audit_sha256,
+            }, binding=binding)
         return digest
 
     def _begin_import_batch(self, capability: object, batch_identity: str) -> object:
@@ -262,6 +268,7 @@ class Exp425CheckpointStore:
             raise ValueError("import batch is invalid")
         payload = _import_record_body(self.run_context_sha256, record)
         digest = sha256(canonical_json_bytes(payload)).hexdigest()
+        _decode_record(canonical_json_bytes(payload | {"record_payload_sha256": digest}), self.context, native_context_sha256=self.run_context_sha256)
         with self._store_binding(exclusive=True) as binding:
             capabilities._consume(capability, kind="import_stage", run_identity=self.provenance.run_identity, batch_identity=batch.identity, dataset=record.dataset, source_sha256=record.source_record_sha256, attestation_sha256=batch.attestation_sha256, process_nonce=batch.nonce, record_sha256=digest)
             imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
@@ -514,7 +521,14 @@ class Exp425CheckpointStore:
                     origin = intent.get("origin")
                     if origin == "exp424_import":
                         continue
-                    dataset, digest = _native_intent_claims(intent)
+                    dataset, digest, run_identity, context_sha256, backend_contract, backend_audit = _native_intent_claims(intent)
+                    if (
+                        dataset not in self.expected_datasets
+                        or run_identity != self.provenance.run_identity
+                        or context_sha256 != self.run_context_sha256
+                        or backend_contract != self.provenance.backend_contract_sha256
+                    ):
+                        raise ValueError("native checkpoint intent does not match root provenance")
                     try:
                         raw = _read_file(record_filename(dataset), dir_fd=datasets_fd)
                     except FileNotFoundError:
@@ -525,7 +539,7 @@ class Exp425CheckpointStore:
                     if _record_digest_from_raw(raw) != digest:
                         raise ValueError("native checkpoint intent conflicts with record")
                     decoded = _decode_record(raw, self.context, native_run_identity=self.provenance.run_identity, native_context_sha256=self.run_context_sha256)
-                    if decoded.dataset != dataset:
+                    if decoded.dataset != dataset or decoded.backend_audit_sha256 != backend_audit:
                         raise ValueError("native checkpoint record conflicts with intent")
                     if dataset not in digests:
                         digests[dataset] = digest; changed = True
@@ -563,8 +577,8 @@ def _native_record_body(context_sha256: str, record: NativeRecordEnvelope) -> di
     return {"schema_version": "exp425.dataset.v1", "dataset": record.dataset, "origin": record.origin, "run_context_sha256": context_sha256, "result_payload": thaw_payload(record.result_payload), "group_evidence": thaw_payload(record.group_evidence), "trace_sha256": record.trace_sha256, "model_hashes": thaw_payload(record.model_hashes), "calibration_hashes": thaw_payload(record.calibration_hashes), "backend_audit_sha256": record.backend_audit_sha256, "elapsed_seconds": record.elapsed_seconds, "reason": record.reason}
 
 
-def _native_intent_claims(intent: Mapping[str, object]) -> tuple[str, str]:
-    required = {"schema", "operation", "origin", "dataset", "record_payload_sha256"}
+def _native_intent_claims(intent: Mapping[str, object]) -> tuple[str, str, str, str, str, str]:
+    required = {"schema", "operation", "origin", "dataset", "record_payload_sha256", "run_identity", "run_context_sha256", "backend_contract_sha256", "backend_audit_sha256"}
     if (
         set(intent) != required
         or intent.get("schema") != "exp425.intent.v1"
@@ -572,10 +586,10 @@ def _native_intent_claims(intent: Mapping[str, object]) -> tuple[str, str]:
         or intent.get("origin") != "exp425_native"
     ):
         raise ValueError("native checkpoint intent is invalid")
-    dataset, digest = intent["dataset"], intent["record_payload_sha256"]
-    if not isinstance(dataset, str) or not dataset or not isinstance(digest, str) or len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+    dataset, digest, run_identity, context_sha256, backend_contract, backend_audit = (intent["dataset"], intent["record_payload_sha256"], intent["run_identity"], intent["run_context_sha256"], intent["backend_contract_sha256"], intent["backend_audit_sha256"])
+    if not isinstance(dataset, str) or not dataset or not isinstance(run_identity, str) or not run_identity or any(not isinstance(value, str) or len(value) != 64 or any(character not in "0123456789abcdef" for character in value) for value in (digest, context_sha256, backend_contract, backend_audit)):
         raise ValueError("native checkpoint intent is invalid")
-    return dataset, digest
+    return dataset, digest, run_identity, context_sha256, backend_contract, backend_audit
 
 
 def _validate_native_record_binding(payload: Mapping[str, object], trace: Mapping[str, object], *, native_run_identity: str | None, native_context_sha256: str | None) -> None:
@@ -758,7 +772,9 @@ def _validate_inventory(root: Path, provenance: Mapping[str, object], progress: 
             for name in transaction_names:
                 intent = _canonical_object(_read_file(name, dir_fd=transactions_fd), "intent")
                 if intent.get("origin") == "exp425_native":
-                    dataset, digest = _native_intent_claims(intent)
+                    dataset, digest, run_identity, context_sha256, backend_contract, _ = _native_intent_claims(intent)
+                    if dataset not in provenance["expected_datasets"] or run_identity != provenance["run_identity"] or context_sha256 != provenance["run_context_sha256"] or backend_contract != provenance["backend_contract_sha256"]:
+                        raise ValueError("native checkpoint intent does not match root provenance")
                     if dataset in pending_native:
                         raise ValueError("duplicate native checkpoint intent")
                     pending_native[dataset] = digest
@@ -805,15 +821,17 @@ def _decode_record(raw: bytes, context: FrozenRunContext | None, *, native_run_i
         result_payload = payload["result_payload"]
         if not isinstance(result_payload, dict) or set(result_payload) != {"effective_result", "native_trace_body"}:
             raise ValueError("native checkpoint result payload is invalid")
-        if not isinstance(payload["group_evidence"], dict) or set(payload["group_evidence"]) != {"eligibility_sha256", "processed_groups_sha256"}:
+        if not isinstance(payload["group_evidence"], dict):
             raise ValueError("native checkpoint group evidence is invalid")
-        if not isinstance(payload["model_hashes"], dict) or set(payload["model_hashes"]) != {"train_identity_sha256", "model_evidence_sha256", "frozen_train_contract_sha256"}:
+        if not isinstance(payload["model_hashes"], dict):
             raise ValueError("native checkpoint model evidence is invalid")
-        if not isinstance(payload["calibration_hashes"], dict) or set(payload["calibration_hashes"]) != {"scoring_evidence_sha256"}:
+        if not isinstance(payload["calibration_hashes"], dict):
             raise ValueError("native checkpoint calibration evidence is invalid")
         effective = result_payload["effective_result"]
-        if not isinstance(effective, dict) or set(effective) not in ({"status", "result_evidence_sha256"}, {"status", "result_evidence_sha256", "candidate_coordinates"}):
+        if not isinstance(effective, dict) or not {"status", "result_evidence_sha256"} <= set(effective):
             raise ValueError("native checkpoint effective result is invalid")
+        if "candidate_coordinates" in effective and not isinstance(effective["candidate_coordinates"], list):
+            raise ValueError("native checkpoint candidate coordinates are invalid")
         trace = result_payload["native_trace_body"]
         if not isinstance(trace, dict) or set(trace) != {"schema", "run_identity", "dataset", "run_context_sha256", "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256", "device"} or sha256(canonical_json_bytes(trace)).hexdigest() != payload["trace_sha256"]:
             raise ValueError("native checkpoint trace is invalid")
@@ -831,7 +849,7 @@ def _decode_record(raw: bytes, context: FrozenRunContext | None, *, native_run_i
         if sha256(canonical_json_bytes(evidence["source_group_evidence"])).hexdigest() != evidence["source_group_evidence_sha256"]:
             raise ValueError("import checkpoint source evidence digest is invalid")
         result = payload["result_payload"]
-        if not isinstance(result, dict) or set(result) not in ({"status"}, {"status", "source_index"}) or result.get("status") not in _KNOWN_RESULT_STATUSES:
+        if not isinstance(result, dict) or result.get("status") not in _KNOWN_RESULT_STATUSES:
             raise ValueError("import checkpoint result status is invalid")
         return ImportedRecordEnvelope(payload["dataset"], payload["result_payload"], SourceProvenGroupEvidence(evidence.get("source_group_evidence"), evidence.get("source_group_evidence_sha256")), payload["source_root_sha256"], payload["source_progress_sha256"], payload["source_record_sha256"], payload["source_result_sha256"], payload["compatibility_attestation_sha256"], payload["elapsed_seconds"], payload["reason"], context=context)
     raise ValueError("checkpoint record origin is invalid")
@@ -861,7 +879,7 @@ def _reject_forbidden_keys(value: object) -> None:
         for key in value:
             if not isinstance(key, str): raise ValueError("checkpoint record keys must be strings")
             normalized = "".join(character for character in key.lower() if character.isalnum())
-            if normalized in {"context", "lanes", "datasets", "testidentitymanifest", "governance", "test"} or "testlabel" in normalized or any(token in normalized for token in _FORBIDDEN_RECORD_KEY_TOKENS):
+            if normalized in {"context", "lanes", "datasets", "testidentitymanifest", "governance", "test"} or normalized.startswith("evaluation") or "testevaluation" in normalized or "testlabel" in normalized or any(token in normalized for token in _FORBIDDEN_RECORD_KEY_TOKENS):
                 raise ValueError("checkpoint record embeds forbidden evaluation or context data")
         for nested in value.values(): _reject_forbidden_keys(nested)
     elif isinstance(value, list):
