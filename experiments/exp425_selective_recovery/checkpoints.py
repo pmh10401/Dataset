@@ -230,6 +230,16 @@ class Exp425CheckpointStore:
             name = _batch_name(batch_identity)
             imports_fd, imports_identity = _open_directory_at(binding, "import_batches")
             try:
+                active: set[str] = set()
+                for entry in os.listdir(imports_fd):
+                    if entry.startswith(".quarantined-") or entry.startswith(".cleanup-owned-") or (entry.startswith("cleanup-") and entry.endswith(".json")):
+                        continue
+                    info = os.stat(entry, dir_fd=imports_fd, follow_symlinks=False)
+                    if not stat.S_ISDIR(info.st_mode) or _batch_name(entry) != entry:
+                        raise ValueError("import batch inventory is invalid")
+                    active.add(entry)
+                if active and active != {name}:
+                    raise ValueError("a different import batch is already active")
                 cleanup = _read_cleanup_at(imports_fd, self.provenance.run_identity, self.run_context_sha256, batch_identity)
                 if cleanup is not None:
                     if cleanup["source_attestation_sha256"] != attestation:

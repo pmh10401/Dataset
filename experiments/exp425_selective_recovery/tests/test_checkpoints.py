@@ -369,10 +369,9 @@ class CheckpointStoreTests(unittest.TestCase):
             capabilities._register_authority(authority, "exp424_import")
             try:
                 first = store._begin_import_batch(capabilities._mint(authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="first-batch", attestation_sha256=_digest("a"), process_nonce="nonce-a"), "first-batch")
-                store._begin_import_batch(capabilities._mint(authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="second-batch", attestation_sha256=_digest("b"), process_nonce="nonce-b"), "second-batch")
                 before = _checkpoint_snapshot(store.root)
-                with self.assertRaisesRegex(ValueError, "one exact active"):
-                    store._quarantine_import_batch(first, final_attestation_sha256=None, reason_sha256=_digest("c"))
+                with self.assertRaisesRegex(ValueError, "different import batch"):
+                    store._begin_import_batch(capabilities._mint(authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="second-batch", attestation_sha256=_digest("b"), process_nonce="nonce-b"), "second-batch")
                 self.assertEqual(_checkpoint_snapshot(store.root), before)
             finally:
                 capabilities._close_authority(authority)
@@ -1258,6 +1257,7 @@ class CheckpointStoreTests(unittest.TestCase):
                     with patch.object(checkpoints, "_open_batch_at", side_effect=ValueError("adversarial open failure")):
                         with self.assertRaises(ValueError):
                             store._stage_imported(token, batch, _import_record_for(context.datasets[0], 0, _digest("a")))
+                    store._quarantine_import_batch(batch, final_attestation_sha256=None, reason_sha256=_digest("d"))
                 self.assertEqual(len(os.listdir("/dev/fd")), baseline)
             finally:
                 capabilities._close_authority(authority)

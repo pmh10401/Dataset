@@ -106,6 +106,7 @@ class Exp424CompatibilityContract:
     database_sha256: str | None = None
     lane_hashes: Mapping[str, str] = field(default_factory=dict)
     config_sha256: str | None = None
+    preprocessing_contract_sha256: str | None = None
     fold_contract_sha256: str | None = None
     model_contract_sha256: str | None = None
     model_seeds: tuple[int, ...] = ()
@@ -118,6 +119,7 @@ class Exp424CompatibilityContract:
     query_chunk_size: int = 256
     score_formula: str = "Exp417.score_horizon.v1"
     score_cache_contract_sha256: str = EXP424_SCORE_CACHE_CONTRACT_SHA256
+    score_cache_contract_payload: Mapping[str, object] = field(default_factory=lambda: EXP424_SCORE_CACHE_CONTRACT)
     percentile_method: str = "linear"
     score_dtype: str = "float64"
     thresholds_payload: Mapping[str, object] = field(default_factory=dict)
@@ -125,7 +127,9 @@ class Exp424CompatibilityContract:
     candidate_formula_sha256: str | None = None
     routing_contract_sha256: str | None = None
     synchronization_contract_sha256: str = EXP424_MPS_SYNC_CONTRACT_SHA256
+    synchronization_contract_payload: Mapping[str, object] = field(default_factory=lambda: EXP424_MPS_SYNC_CONTRACT)
     device_transfer_contract_sha256: str = EXP424_DEVICE_TRANSFER_CONTRACT_SHA256
+    device_transfer_contract_payload: Mapping[str, object] = field(default_factory=lambda: EXP424_DEVICE_TRANSFER_CONTRACT)
     dataset_universe_sha256: str = EXP424_DATASET_UNIVERSE_SHA256
     test_identity_manifest_sha256: str = EXP424_TEST_IDENTITY_MANIFEST_SHA256
     entrypoint_sha256: str = "98c909f6100dd2814e3fe102c3f95054a3d6bb42f85657d19b17780ae4934fe1"
@@ -155,9 +159,14 @@ class Exp424CompatibilityContract:
             raise ValueError("Exp424 fixed contract digest is incompatible")
         if self.device_transfer_contract_sha256 != EXP424_DEVICE_TRANSFER_CONTRACT_SHA256:
             raise ValueError("Exp424 device transfer contract is incompatible")
+        if (_digest(canonical_json_bytes(dict(self.score_cache_contract_payload))) != self.score_cache_contract_sha256 or _digest(canonical_json_bytes(dict(self.synchronization_contract_payload))) != self.synchronization_contract_sha256 or _digest(canonical_json_bytes(dict(self.device_transfer_contract_payload))) != self.device_transfer_contract_sha256):
+            raise ValueError("Exp424 contract payload digest is incompatible")
         object.__setattr__(self, "lane_hashes", MappingProxyType(dict(self.lane_hashes)))
         object.__setattr__(self, "runtime_versions", MappingProxyType(dict(self.runtime_versions)))
         object.__setattr__(self, "thresholds_payload", MappingProxyType(dict(self.thresholds_payload)))
+        object.__setattr__(self, "score_cache_contract_payload", MappingProxyType(dict(self.score_cache_contract_payload)))
+        object.__setattr__(self, "synchronization_contract_payload", MappingProxyType(dict(self.synchronization_contract_payload)))
+        object.__setattr__(self, "device_transfer_contract_payload", MappingProxyType(dict(self.device_transfer_contract_payload)))
         object.__setattr__(self, "model_seeds", tuple(self.model_seeds))
         object.__setattr__(self, "perturbation_seeds", tuple(self.perturbation_seeds))
         object.__setattr__(self, "alpha_values", tuple(self.alpha_values))
@@ -165,7 +174,7 @@ class Exp424CompatibilityContract:
             frozen = {
                 "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
                 "lane_hashes": {"exp291_prediction": "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848", "exp291_manifest": "761466253cccbb7b91fe36cdbd6d298de5d141c90e01e9fe646a8ae242ca9c3e", "exp292_prediction": "f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b", "exp292_manifest": "0672b2f84a3b2883628bac3c12ad8a25ebfb48efd929e4c0a448c5418267b0d0"},
-                "config_sha256": "6da423d0135a9607f04751e5f145153a5c45bbb19ff8d30dcd7863b77373286e", "fold_contract_sha256": "ed67b46a7a777ba3e6ef319344338d5b2f72aa4bbdec678af1db7ef6f29e0998", "model_contract_sha256": "116a2ccf896b89da6ea21b10f822d53c18d936ee78b2e0a1b0005262e7906c8c", "backend_contract_sha256": "d6c62aaeb5f9b1c6e92eb515809e8ea3fb9b8c84b9165e3f9ced0e28690a0c1c",
+                "config_sha256": "6da423d0135a9607f04751e5f145153a5c45bbb19ff8d30dcd7863b77373286e", "preprocessing_contract_sha256": "064c8e7dc4b2b3b43e6c2cf4b07b2703ef87fdee3646ecd5f9ac07870dda114b", "fold_contract_sha256": "ed67b46a7a777ba3e6ef319344338d5b2f72aa4bbdec678af1db7ef6f29e0998", "model_contract_sha256": "116a2ccf896b89da6ea21b10f822d53c18d936ee78b2e0a1b0005262e7906c8c", "backend_contract_sha256": "d6c62aaeb5f9b1c6e92eb515809e8ea3fb9b8c84b9165e3f9ced0e28690a0c1c",
                 "model_seeds": (41701, 41702, 41703), "perturbation_seeds": (41711, 41712, 41713), "runtime_versions": {"numba": "0.66.0", "numpy": "2.4.6", "python": "3.14.6", "torch": "2.13.0"}, "thresholds_payload": EXP424_THRESHOLDS, "alpha_values": EXP424_ALPHA_VALUES, "candidate_formula_sha256": EXP424_CANDIDATE_FORMULA_SHA256, "routing_contract_sha256": EXP424_ROUTING_CONTRACT_SHA256, "dataset_universe_sha256": EXP424_DATASET_UNIVERSE_SHA256, "test_identity_manifest_sha256": EXP424_TEST_IDENTITY_MANIFEST_SHA256,
             }
             if any(getattr(self, name) != value for name, value in frozen.items()):
@@ -184,6 +193,7 @@ class Exp424CompatibilityContract:
                 "exp292_manifest": "0672b2f84a3b2883628bac3c12ad8a25ebfb48efd929e4c0a448c5418267b0d0",
             },
             config_sha256="6da423d0135a9607f04751e5f145153a5c45bbb19ff8d30dcd7863b77373286e",
+            preprocessing_contract_sha256="064c8e7dc4b2b3b43e6c2cf4b07b2703ef87fdee3646ecd5f9ac07870dda114b",
             fold_contract_sha256="ed67b46a7a777ba3e6ef319344338d5b2f72aa4bbdec678af1db7ef6f29e0998",
             model_contract_sha256="116a2ccf896b89da6ea21b10f822d53c18d936ee78b2e0a1b0005262e7906c8c",
             model_seeds=(41701, 41702, 41703), perturbation_seeds=(41711, 41712, 41713),
@@ -200,16 +210,20 @@ class Exp424CompatibilityContract:
             "source_git_commit": self.source_git_commit, "entrypoint_sha256": self.entrypoint_sha256,
             "entrypoint_git_blob": self.entrypoint_git_blob, "database_sha256": self.database_sha256,
             "lane_hashes": dict(sorted(self.lane_hashes.items())), "config_sha256": self.config_sha256,
+            "preprocessing_contract_sha256": self.preprocessing_contract_sha256,
             "fold_contract_sha256": self.fold_contract_sha256, "model_contract_sha256": self.model_contract_sha256,
             "model_seeds": list(self.model_seeds), "perturbation_seeds": list(self.perturbation_seeds),
             "backend_contract_sha256": self.backend_contract_sha256, "runtime_versions": dict(sorted(self.runtime_versions.items())),
             "device": self.device, "mps_device_guard": self.mps_device_guard, "batch_size": self.batch_size,
             "query_chunk_size": self.query_chunk_size, "score_formula": self.score_formula,
             "score_cache_contract_sha256": self.score_cache_contract_sha256, "percentile_method": self.percentile_method,
+            "score_cache_contract_payload": dict(self.score_cache_contract_payload),
             "score_dtype": self.score_dtype, "thresholds": dict(self.thresholds_payload), "alpha_values": list(self.alpha_values),
             "candidate_formula_sha256": self.candidate_formula_sha256, "routing_contract_sha256": self.routing_contract_sha256,
             "synchronization_contract_sha256": self.synchronization_contract_sha256,
+            "synchronization_contract_payload": dict(self.synchronization_contract_payload),
             "device_transfer_contract_sha256": self.device_transfer_contract_sha256,
+            "device_transfer_contract_payload": dict(self.device_transfer_contract_payload),
             "dataset_universe_sha256": self.dataset_universe_sha256,
             "test_identity_manifest_sha256": self.test_identity_manifest_sha256,
         }
@@ -409,7 +423,7 @@ def _validate_production_provenance(root: Mapping[str, object], contract: Exp424
     required = {
         "git_commit": contract.source_git_commit, "database_sha256": contract.database_sha256,
         "frozen_config_sha256": contract.config_sha256, "fold_contract_sha256": contract.fold_contract_sha256,
-        "model_contract_sha256": contract.model_contract_sha256, "backend_contract_sha256": contract.backend_contract_sha256,
+        "preprocessing_contract_sha256": contract.preprocessing_contract_sha256, "model_contract_sha256": contract.model_contract_sha256, "backend_contract_sha256": contract.backend_contract_sha256,
     }
     if any(value is not None and provenance.get(key) != value for key, value in required.items()):
         raise ValueError("Exp424 provenance compatibility mismatch")
@@ -523,7 +537,7 @@ def import_exp424_nonterminal(source: ValidatedExp424Source, target: Exp425Check
             "groups": [
                 {
                     "length": group.length, "qualification_status": group.status,
-                    "oof_evidence_present": str(group.length) in oof_hashes,
+                    "oof_evidence_present": str(group.length) in calibrations,
                     "final_model_evidence_present": str(group.length) in model_hashes,
                     "calibration_evidence_present": str(group.length) in calibrations,
                     "split_counts": "unavailable",
@@ -540,17 +554,20 @@ def import_exp424_nonterminal(source: ValidatedExp424Source, target: Exp425Check
     attestation = _durable_attestation(source, target, batch_id, dict((record.dataset, digest) for record, digest in pending))
     batch = target._begin_import_batch(source._mint("import_begin", run_identity=target.provenance.run_identity, batch_identity=batch_id, attestation_sha256=attestation), batch_id)
     final_attestation = _digest(canonical_json_bytes({"batch_identity": batch_id, "record_digests": dict(sorted((record.dataset, digest) for record, digest in pending)), "attestation_sha256": attestation}))
+    promotion_started = False
     try:
         for record, digest in pending:
             target._stage_imported(source._mint("import_stage", run_identity=target.provenance.run_identity, batch_identity=batch_id, dataset=record.dataset, source_sha256=record.source_record_sha256, attestation_sha256=attestation, record_sha256=digest), batch, record)
         source._revalidate()
+        promotion_started = True
         target._promote_import_batch(source._mint("import_promote", run_identity=target.provenance.run_identity, batch_identity=batch_id, attestation_sha256=attestation, final_attestation_sha256=final_attestation), batch)
     except ValueError as error:
-        reason = _digest(canonical_json_bytes({"schema": "exp425.import-abort-reason.v1", "type": type(error).__name__}))
-        try:
-            target._quarantine_import_batch(batch, final_attestation_sha256=None, reason_sha256=reason)
-        except BaseException:
-            pass
+        if not promotion_started:
+            reason = _digest(canonical_json_bytes({"schema": "exp425.import-abort-reason.v1", "type": type(error).__name__}))
+            try:
+                target._quarantine_import_batch(batch, final_attestation_sha256=None, reason_sha256=reason)
+            except BaseException:
+                pass
         raise
     return Exp424ImportReport(tuple(sorted(imported)), tuple(sorted(terminal)), tuple(sorted(incompatible)), source._contract.root_provenance_sha256, source._contract.progress_sha256, source._contract.record_set_sha256, compatibility, attestation)
 
