@@ -391,9 +391,16 @@ class AtomicProgressWriterTests(unittest.TestCase):
         effective = record.result_payload["effective_result"]
         self.assertEqual(effective["status"], "abstained")
         self.assertEqual(record.reason, "oof_identity_insufficient")
-        self.assertEqual(record.model_hashes["model_evidence"]["status"], "not_applicable")
-        self.assertEqual(record.calibration_hashes["scoring_evidence"]["status"], "not_applicable")
+        self.assertEqual(record.group_evidence["schema"], "exp425.runtime-group-evidence.v1")
+        self.assertEqual(record.model_hashes["model_evidence"]["status"], "not_applicable_oof_identity_insufficient")
+        self.assertEqual(record.calibration_hashes["scoring_evidence"]["status"], "not_applicable_oof_identity_insufficient")
         self.assertEqual(trace.processed_groups_sha256, record.processed_groups_sha256)
+        body = checkpoints._native_record_body(store.run_context_sha256, record)
+        decoded = checkpoints._decode_record(
+            checkpoints.canonical_json_bytes(body | {"record_payload_sha256": sha256(checkpoints.canonical_json_bytes(body)).hexdigest()}),
+            context, native_run_identity="runtime-test", native_context_sha256=store.run_context_sha256,
+        )
+        self.assertIsInstance(decoded, NativeRecordEnvelope)
 
     def test_effective_record_decoder_handles_native_and_imported_envelopes(self) -> None:
         native = SimpleNamespace(origin="exp425_native", result_payload={

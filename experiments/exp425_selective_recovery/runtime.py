@@ -891,7 +891,10 @@ def execute_runtime_command(
 
 def _effective_payload(result: DatasetResult) -> dict[str, object]:
     status = "scored" if result.status == "qualified" else result.status
-    return {"status": status, "candidate_coordinates": [[candidate.dataset, candidate.instance_index] for candidate in result.candidates], "result_evidence_sha256": canonical_result_sha256(result)}
+    coordinates = [[candidate.dataset, candidate.instance_index] for candidate in result.candidates]
+    return {"status": status, "candidate_coordinates": coordinates,
+            "result_evidence_sha256": canonical_result_sha256(result),
+            "result_source_sha256": _digest({"status": status, "candidate_coordinates": coordinates})}
 
 
 def _audit_digest(audit: BackendAudit) -> str:
@@ -919,60 +922,72 @@ def _model_and_calibration_evidence(
     eligible work, retain every OOF/final model hash and every cached OOF
     calibration identity used by the unmodified scorer.
     """
-    if not models_trained:
-        model_payload = {"status": "not_applicable", "oof_model_hashes": {}, "final_model_hashes": {}}
-        calibration_payload = {"status": "not_applicable", "score_calibration_hashes": {}}
-    else:
-        model_payload = {
-            "status": "captured",
-            "oof_model_hashes": {
-                str(length): [model.model_sha256 for model in bundle.models]
-                for length, bundle in sorted(models.oof_bundles.items())
-            },
-            "final_model_hashes": {
-                str(length): [model.model_sha256 for model in seed_models]
-                for length, seed_models in sorted(models.final_models.items())
-            },
-        }
-        calibration_payload = {
-            "status": "captured",
-            "score_calibration_hashes": {
-                str(length): {
-                    str(seed): {
-                        str(horizon): _digest({
-                            "horizon": calibration.horizon,
-                            "oof_count": calibration.oof_count,
-                            "length": calibration.length,
-                            "center": calibration.center,
-                            "scale": calibration.scale,
-                            "threshold": calibration.threshold,
-                            "oof_scores_dtype": "<f8",
-                            "oof_scores_shape": list(calibration.oof_scores.shape),
-                            "oof_scores_sha256": sha256(np.ascontiguousarray(
-                                calibration.oof_scores, dtype=np.dtype("<f8")
-                            ).tobytes(order="C")).hexdigest(),
-                        })
-                        for horizon, calibration in sorted(by_horizon.items())
+    def final_entries() -> list[dict[str, object]]:
+        return [
+            {"length": length, "seed": model.seed, "model_sha256": model.model_sha256}
+            for length, seed_models in sorted(models.final_models.items())
+            for model in sorted(seed_models, key=lambda item: item.seed)
+        ]
+
+    def calibration_entries() -> list[dict[str, object]]:
+        entries: list[dict[str, object]] = []
+        for length, by_seed in sorted(models.score_calibrations.items()):
+            for seed, by_horizon in sorted(by_seed.items()):
+                for horizon, calibration in sorted(by_horizon.items()):
+                    statistic = {
+                        "horizon": calibration.horizon, "oof_count": calibration.oof_count,
+                        "length": calibration.length, "center": calibration.center,
+                        "scale": calibration.scale, "threshold": calibration.threshold,
+                        "oof_scores_dtype": "<f8", "oof_scores_shape": list(calibration.oof_scores.shape),
+                        "oof_scores_sha256": sha256(np.ascontiguousarray(
+                            calibration.oof_scores, dtype=np.dtype("<f8")
+                        ).tobytes(order="C")).hexdigest(),
                     }
-                    for seed, by_horizon in sorted(by_seed.items())
-                }
-                for length, by_seed in sorted(models.score_calibrations.items())
-            },
+                    entries.append({"length": length, "seed": seed, "horizon": horizon,
+                                    "digest": _digest(statistic), "statistic": statistic})
+        return entries
+
+    if not models_trained:
+        model_payload = {
+            "schema": "exp425.runtime-model-evidence.v1",
+            "status": "not_applicable_oof_identity_insufficient",
+            "processed_identity_sha256": models.processed_identity_sha256,
+            "oof_models": [], "final_models": [],
         }
+        calibration = []
+    else:
+        oof_models: list[dict[str, object]] = []
+        for length, bundle in sorted(models.oof_bundles.items()):
+            fold_by_validation = {fold.validation_indices: index for index, fold in enumerate(bundle.folds)}
+            for model in bundle.models:
+                oof_models.append({"length": length, "seed": model.seed,
+                                   "fold": fold_by_validation[model.validation_indices],
+                                   "model_sha256": model.model_sha256})
+        model_payload = {
+            "schema": "exp425.runtime-model-evidence.v1",
+            "status": "captured",
+            "processed_identity_sha256": models.processed_identity_sha256,
+            "oof_models": sorted(oof_models, key=lambda item: (item["length"], item["seed"], item["fold"])),
+            "final_models": final_entries(),
+        }
+        calibration = calibration_entries()
     scoring_payload = (
         {
-            "status": "not_applicable_no_qualified_group" if models_trained else "not_applicable",
-            "calibration": calibration_payload,
-            "final_model_hashes": model_payload["final_model_hashes"],
+            "schema": "exp425.runtime-scoring-evidence.v1",
+            "status": "not_applicable_no_qualified_group" if models_trained else "not_applicable_oof_identity_insufficient",
+            "calibrations": calibration,
+            "final_models": [],
         }
         if scoring is None
         else {
+            "schema": "exp425.runtime-scoring-evidence.v1",
             "status": "captured",
-            "calibration": calibration_payload,
-            "final_model_hashes": {
-                str(length): {str(seed): digest for seed, digest in sorted(by_seed.items())}
+            "calibrations": calibration,
+            "final_models": [
+                {"length": length, "seed": seed, "model_sha256": model_sha}
                 for length, by_seed in sorted(scoring.final_model_hashes.items())
-            },
+                for seed, model_sha in sorted(by_seed.items())
+            ],
         }
     )
     return model_payload, scoring_payload, _digest(model_payload), _digest(scoring_payload)
@@ -1004,6 +1019,19 @@ def _frozen_contract_payload(contract: object) -> dict[str, object]:
     }
     _assert_label_free(payload)
     return payload
+
+
+def _processed_manifest(models: TrainModelEvidence) -> dict[str, object]:
+    """Compact identifiers only: model inputs remain outside the checkpoint."""
+    return {
+        "schema": "exp425.processed-manifest.v1",
+        "groups": [
+            {"length": group.group.length, "status": group.status,
+             "series_count": len(group.group.series),
+             "instance_indices": [series.instance_index for series in group.group.series]}
+            for group in models.processed
+        ],
+    }
 
 
 def _native_record(
@@ -1048,8 +1076,20 @@ def _native_record(
     }
     calibration = {"scoring_evidence_sha256": scoring_sha, "scoring_evidence": calibration_payload}
     statuses = {getattr(item, "status", None) for item in evidence.values()}
-    reason = "oof_identity_insufficient" if result.status == "abstained" and "oof_identity_insufficient" in statuses else "native_mps"
-    provisional = NativeRecordEnvelope(result.dataset, payload, {"eligibility_sha256": eligibility_sha, "processed_groups_sha256": processed_sha, "evidence": group_evidence}, trace_sha256=trace_sha, record_payload_sha256="0" * 64, model_hashes=model_hashes, calibration_hashes=calibration, elapsed_seconds=elapsed, reason=reason, **values)
+    reason = (
+        "oof_identity_insufficient" if not models_trained and result.status == "abstained"
+        and "oof_identity_insufficient" in statuses else
+        "native_no_qualified_group" if models_trained and scoring is None else "native_mps"
+    )
+    processed_manifest = _processed_manifest(models)
+    native_group_evidence = {
+        "schema": "exp425.runtime-group-evidence.v1",
+        "eligibility_sha256": eligibility_sha, "processed_groups_sha256": processed_sha,
+        "eligibility": {"payload": group_evidence, "sha256": eligibility_sha},
+        "processed": {"manifest": processed_manifest, "manifest_sha256": _digest(processed_manifest),
+                      "identity_sha256": processed_sha},
+    }
+    provisional = NativeRecordEnvelope(result.dataset, payload, native_group_evidence, trace_sha256=trace_sha, record_payload_sha256="0" * 64, model_hashes=model_hashes, calibration_hashes=calibration, elapsed_seconds=elapsed, reason=reason, **values)
     record_sha = _digest(_native_record_body(store.run_context_sha256, provisional))
     record = replace(provisional, record_payload_sha256=record_sha)
     # Full decoded validation happens in the store before the capability is consumed.

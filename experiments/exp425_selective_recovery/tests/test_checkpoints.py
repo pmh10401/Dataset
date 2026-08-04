@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from hashlib import sha256
 import json
 import os
@@ -94,6 +94,79 @@ def _native_record_for(store: Exp425CheckpointStore, provenance: Exp425RunProven
         model_hashes=model_hashes, calibration_hashes=calibration_hashes,
         elapsed_seconds=0.0, reason="synthetic", **values,
     )
+
+
+def _strict_native_record_for(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, dataset: str) -> NativeRecordEnvelope:
+    """A compact, independently assembled Task5 runtime-native envelope."""
+    digest = lambda label: sha256(f"{dataset}:{label}".encode()).hexdigest()
+    eligibility = {"8": {"dataset": dataset, "length": 8, "status": "candidate_eligible"}}
+    processed_manifest = {
+        "schema": "exp425.processed-manifest.v1",
+        "groups": [{"length": 8, "status": "candidate_eligible", "series_count": 2, "instance_indices": [0, 1]}],
+    }
+    backend = {"backend": "mps", "candidate_identity": True, "max_normalized_error": 0.0,
+               "spearman": 1.0, "speedup": 1.1, "fallback": False, "fallback_reason": None}
+    contract = {
+        "dataset": dataset,
+        "groups": [{"length": 8, "series_count": 2, "status": "qualified", "oof_candidate_rate": 0.0,
+                    "wilson_upper": 0.0, "pooled_synthetic_sensitivity": 1.0,
+                    "per_type_synthetic_sensitivity": {"level_shift": 1.0, "gradual_drift": 1.0,
+                                                         "amplitude_scaling": 1.0, "period_change": 1.0},
+                    "seed_agreement": True, "finite": True, "backend_fallback": False}],
+        "backend": backend, "train_identity_sha256": digest("train"), "near_repeat_status": "not_available",
+    }
+    models = {
+        "schema": "exp425.runtime-model-evidence.v1", "status": "captured",
+        "processed_identity_sha256": digest("processed"),
+        "oof_models": [{"length": 8, "seed": 1, "fold": 0, "model_sha256": digest("oof")}],
+        "final_models": [{"length": 8, "seed": 1, "model_sha256": digest("final")}],
+    }
+    statistic = {"horizon": 1, "oof_count": 2, "length": 8, "center": 0.0, "scale": 1.0,
+                 "threshold": 1.0, "oof_scores_dtype": "<f8", "oof_scores_shape": [2],
+                 "oof_scores_sha256": digest("oof-scores")}
+    calibration = {"length": 8, "seed": 1, "horizon": 1,
+                   "digest": sha256(canonical_json_bytes(statistic)).hexdigest(), "statistic": statistic}
+    scoring = {
+        "schema": "exp425.runtime-scoring-evidence.v1", "status": "captured",
+        "calibrations": [calibration],
+        "final_models": [{"length": 8, "seed": 1, "model_sha256": digest("final")}],
+    }
+    values = {
+        "train_identity_sha256": contract["train_identity_sha256"],
+        "eligibility_sha256": sha256(canonical_json_bytes(eligibility)).hexdigest(),
+        "processed_groups_sha256": models["processed_identity_sha256"],
+        "model_evidence_sha256": sha256(canonical_json_bytes(models)).hexdigest(),
+        "frozen_train_contract_sha256": sha256(canonical_json_bytes(contract)).hexdigest(),
+        "scoring_evidence_sha256": sha256(canonical_json_bytes(scoring)).hexdigest(),
+        "result_evidence_sha256": digest("result"),
+        "backend_audit_sha256": sha256(canonical_json_bytes(backend)).hexdigest(),
+    }
+    trace_body = {"schema": "exp425.native-trace.v1", "run_identity": provenance.run_identity,
+                  "dataset": dataset, "run_context_sha256": store.run_context_sha256, **values, "device": "mps"}
+    trace = sha256(canonical_json_bytes(trace_body)).hexdigest()
+    result_payload = {"effective_result": {"status": "scored", "candidate_coordinates": [[dataset, 0]],
+                                             "result_evidence_sha256": values["result_evidence_sha256"],
+                                             "result_source_sha256": sha256(canonical_json_bytes({"status": "scored", "candidate_coordinates": [[dataset, 0]]})).hexdigest()},
+                      "native_trace_body": trace_body}
+    group = {"schema": "exp425.runtime-group-evidence.v1", "eligibility_sha256": values["eligibility_sha256"],
+             "processed_groups_sha256": values["processed_groups_sha256"], "eligibility": {"payload": eligibility,
+             "sha256": values["eligibility_sha256"]}, "processed": {"manifest": processed_manifest,
+             "manifest_sha256": sha256(canonical_json_bytes(processed_manifest)).hexdigest(),
+             "identity_sha256": values["processed_groups_sha256"]}}
+    model_hashes = {"train_identity_sha256": values["train_identity_sha256"],
+                    "model_evidence_sha256": values["model_evidence_sha256"],
+                    "frozen_train_contract_sha256": values["frozen_train_contract_sha256"],
+                    "frozen_train_contract": contract, "model_evidence": models}
+    calibration_hashes = {"scoring_evidence_sha256": values["scoring_evidence_sha256"],
+                          "scoring_evidence": scoring}
+    body = {"schema_version": "exp425.dataset.v1", "dataset": dataset, "origin": "exp425_native",
+            "run_context_sha256": store.run_context_sha256, "result_payload": result_payload,
+            "group_evidence": group, "trace_sha256": trace, "model_hashes": model_hashes,
+            "calibration_hashes": calibration_hashes, "backend_audit_sha256": values["backend_audit_sha256"],
+            "elapsed_seconds": 0.0, "reason": "native_mps"}
+    return NativeRecordEnvelope(dataset, result_payload, group, trace_sha256=trace,
+        record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(), model_hashes=model_hashes,
+        calibration_hashes=calibration_hashes, elapsed_seconds=0.0, reason="native_mps", **values)
 
 
 def _native_capability(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, authority: object, record: NativeRecordEnvelope) -> object:
@@ -848,6 +921,111 @@ class CheckpointStoreTests(unittest.TestCase):
                 progress_path.write_bytes(canonical_json_bytes(progress))
                 with self.assertRaises(ValueError):
                     store.load_record(record.dataset)
+
+    def test_strict_runtime_native_eligibility_tamper_fails_before_commit(self) -> None:
+        """Rehashing an envelope cannot bless altered runtime-native eligibility evidence."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            store = Exp425CheckpointStore.create(Path(directory) / "checkpoints", provenance, context)
+            record = _strict_native_record_for(store, provenance, context.datasets[0])
+            body = checkpoints._native_record_body(store.run_context_sha256, record)
+            body["group_evidence"]["eligibility"]["payload"]["8"]["status"] = "altered"  # type: ignore[index]
+            mutated = replace(record, group_evidence=body["group_evidence"],
+                              record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest())
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                with self.assertRaises(ValueError):
+                    store._commit_native(_native_capability(store, provenance, authority, mutated), mutated)
+            finally:
+                capabilities._close_authority(authority)
+
+    def test_runtime_native_nested_evidence_mutation_matrix_fails_closed_before_intent(self) -> None:
+        """Each semantic Task5 branch rejects a canonically rehashed envelope."""
+        context = _context()
+        provenance = _provenance(context)
+        mutations = (
+            ("eligibility payload", lambda body: body["group_evidence"]["eligibility"]["payload"]["8"].__setitem__("status", "altered")),
+            ("processed manifest", lambda body: body["group_evidence"]["processed"]["manifest"]["groups"][0].__setitem__("status", "altered")),
+            ("processed identity", lambda body: body["group_evidence"]["processed"].__setitem__("identity_sha256", _digest("0"))),
+            ("contract numeric", lambda body: body["model_hashes"]["frozen_train_contract"]["groups"][0].__setitem__("wilson_upper", 0.2)),
+            ("contract bool", lambda body: body["model_hashes"]["frozen_train_contract"]["groups"][0].__setitem__("finite", False)),
+            ("contract map", lambda body: body["model_hashes"]["frozen_train_contract"]["groups"][0]["per_type_synthetic_sensitivity"].__setitem__("amplitude_scaling", 0.2)),
+            ("contract backend", lambda body: body["model_hashes"]["frozen_train_contract"]["backend"].__setitem__("speedup", 2.0)),
+            ("contract near repeat", lambda body: body["model_hashes"]["frozen_train_contract"].__setitem__("near_repeat_status", "altered")),
+            ("contract train identity", lambda body: body["model_hashes"]["frozen_train_contract"].__setitem__("train_identity_sha256", _digest("0"))),
+            ("oof model key", lambda body: body["model_hashes"]["model_evidence"]["oof_models"][0].__setitem__("fold", 1)),
+            ("oof model hash", lambda body: body["model_hashes"]["model_evidence"]["oof_models"][0].__setitem__("model_sha256", _digest("0"))),
+            ("final model key", lambda body: body["model_hashes"]["model_evidence"]["final_models"][0].__setitem__("seed", 2)),
+            ("final model hash", lambda body: body["model_hashes"]["model_evidence"]["final_models"][0].__setitem__("model_sha256", _digest("0"))),
+            ("model unknown key", lambda body: body["model_hashes"]["model_evidence"].__setitem__("unknown", True)),
+            ("calibration statistic", lambda body: body["calibration_hashes"]["scoring_evidence"]["calibrations"][0]["statistic"].__setitem__("center", 0.5)),
+            ("calibration oof digest", lambda body: body["calibration_hashes"]["scoring_evidence"]["calibrations"][0]["statistic"].__setitem__("oof_scores_sha256", _digest("0"))),
+            ("scoring final hash", lambda body: body["calibration_hashes"]["scoring_evidence"]["final_models"][0].__setitem__("model_sha256", _digest("0"))),
+            ("scoring status", lambda body: body["calibration_hashes"]["scoring_evidence"].__setitem__("status", "not_applicable_no_qualified_group")),
+            ("scoring reason", lambda body: body.__setitem__("reason", "altered")),
+            ("effective status", lambda body: body["result_payload"]["effective_result"].__setitem__("status", "abstained")),
+            ("effective coordinate", lambda body: body["result_payload"]["effective_result"]["candidate_coordinates"][0].__setitem__(1, 2)),
+            ("effective result digest", lambda body: body["result_payload"]["effective_result"].__setitem__("result_evidence_sha256", _digest("0"))),
+            ("trace literal", lambda body: body["result_payload"]["native_trace_body"].__setitem__("device", "cpu")),
+            ("backend audit", lambda body: body.__setitem__("backend_audit_sha256", _digest("0"))),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                record = _strict_native_record_for(store, provenance, context.datasets[0])
+                body = checkpoints._native_record_body(store.run_context_sha256, record)
+                mutate(body)
+                trace = body["result_payload"]["native_trace_body"]
+                body["trace_sha256"] = sha256(canonical_json_bytes(trace)).hexdigest()
+                mutated = replace(record, result_payload=body["result_payload"], group_evidence=body["group_evidence"],
+                                  model_hashes=body["model_hashes"], calibration_hashes=body["calibration_hashes"],
+                                  backend_audit_sha256=body["backend_audit_sha256"], trace_sha256=body["trace_sha256"],
+                                  reason=body["reason"], record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest())
+                before = _checkpoint_snapshot(root)
+                authority = object()
+                capabilities._register_authority(authority, "exp425_native")
+                try:
+                    with self.assertRaises(ValueError):
+                        store._commit_native(_native_capability(store, provenance, authority, mutated), mutated)
+                finally:
+                    capabilities._close_authority(authority)
+                self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_runtime_native_nested_tamper_is_rejected_by_read_only_inspection(self) -> None:
+        """The descriptor-safe inspector applies the same strict nested binding."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            record = _strict_native_record_for(store, provenance, context.datasets[0])
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                store._commit_native(_native_capability(store, provenance, authority, record), record)
+            finally:
+                capabilities._close_authority(authority)
+            path = root / "datasets" / record_filename(record.dataset)
+            payload = json.loads(path.read_bytes())
+            payload["calibration_hashes"]["scoring_evidence"]["calibrations"][0]["statistic"]["center"] = 0.5
+            body = dict(payload)
+            body.pop("record_payload_sha256")
+            payload["record_payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+            path.write_bytes(canonical_json_bytes(payload))
+            progress_path = root / "progress.json"
+            progress = json.loads(progress_path.read_bytes())
+            progress["record_digests"][record.dataset] = payload["record_payload_sha256"]
+            progress_body = dict(progress)
+            progress_body.pop("payload_sha256")
+            progress["payload_sha256"] = sha256(canonical_json_bytes(progress_body)).hexdigest()
+            progress_path.write_bytes(canonical_json_bytes(progress))
+            before = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root, expected_run_identity=provenance.run_identity)
+            self.assertEqual(_checkpoint_snapshot(root), before)
 
     def test_lazy_open_defers_unknown_native_result_status_to_explicit_load(self) -> None:
         """Removing result-status validation would accept a canonically rehashed unknown outcome."""

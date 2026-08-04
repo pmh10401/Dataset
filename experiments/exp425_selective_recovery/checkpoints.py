@@ -783,6 +783,9 @@ def _validate_native_record_binding(payload: Mapping[str, object], trace: Mappin
         or sha256(canonical_json_bytes(contract)).hexdigest() != trace.get("frozen_train_contract_sha256")
     ):
         raise ValueError("native checkpoint frozen contract binding is invalid")
+    if group_evidence.get("schema") == "exp425.runtime-group-evidence.v1":
+        _validate_runtime_native_evidence(payload, trace, effective_result, group_evidence, model_hashes, calibration_hashes)
+        return
     model_evidence = model_hashes.get("model_evidence")
     scoring_evidence = calibration_hashes.get("scoring_evidence")
     if model_evidence is None and scoring_evidence is None:
@@ -799,6 +802,105 @@ def _validate_native_record_binding(payload: Mapping[str, object], trace: Mappin
             raise ValueError("native checkpoint no-model evidence is inconsistent")
     else:
         raise ValueError("native checkpoint model evidence status is invalid")
+def _validate_runtime_native_evidence(
+    payload: Mapping[str, object], trace: Mapping[str, object], effective: Mapping[str, object],
+    group: Mapping[str, object], model_hashes: Mapping[str, object], calibration_hashes: Mapping[str, object],
+) -> None:
+    """Validate the explicit compact schema emitted only by runtime._native_record.
+
+    This deliberately recomputes each nested canonical preimage.  The older
+    compact envelope remains extensible; it has no runtime schema marker and is
+    therefore not mistaken for a complete native execution attestation.
+    """
+    def digest(value: object) -> str:
+        return sha256(canonical_json_bytes(value)).hexdigest()
+
+    def sha(value: object) -> bool:
+        return _is_lower_sha256(value)
+
+    if set(group) != {"schema", "eligibility_sha256", "processed_groups_sha256", "eligibility", "processed"}:
+        raise ValueError("runtime-native group evidence keys are invalid")
+    eligibility, processed = group.get("eligibility"), group.get("processed")
+    if not isinstance(eligibility, dict) or set(eligibility) != {"payload", "sha256"} or not isinstance(eligibility.get("payload"), dict):
+        raise ValueError("runtime-native eligibility evidence is invalid")
+    if eligibility.get("sha256") != digest(eligibility["payload"]) or eligibility.get("sha256") != group.get("eligibility_sha256") or eligibility.get("sha256") != trace.get("eligibility_sha256"):
+        raise ValueError("runtime-native eligibility digest is invalid")
+    if not isinstance(processed, dict) or set(processed) != {"manifest", "manifest_sha256", "identity_sha256"} or not isinstance(processed.get("manifest"), dict):
+        raise ValueError("runtime-native processed evidence is invalid")
+    manifest = processed["manifest"]
+    if set(manifest) != {"schema", "groups"} or manifest.get("schema") != "exp425.processed-manifest.v1" or not isinstance(manifest.get("groups"), list):
+        raise ValueError("runtime-native processed manifest is invalid")
+    groups = manifest["groups"]
+    if any(not isinstance(item, dict) or set(item) != {"length", "status", "series_count", "instance_indices"} or type(item["length"]) is not int or type(item["series_count"]) is not int or not isinstance(item["status"], str) or not isinstance(item["instance_indices"], list) or any(type(index) is not int for index in item["instance_indices"]) for item in groups) or groups != sorted(groups, key=lambda item: item["length"]) or len({item["length"] for item in groups}) != len(groups):
+        raise ValueError("runtime-native processed manifest groups are invalid")
+    if processed.get("manifest_sha256") != digest(manifest) or not sha(processed.get("identity_sha256")) or processed.get("identity_sha256") != group.get("processed_groups_sha256") or processed.get("identity_sha256") != trace.get("processed_groups_sha256"):
+        raise ValueError("runtime-native processed identity is invalid")
+
+    contract = model_hashes.get("frozen_train_contract")
+    if not isinstance(contract, dict) or set(contract) != {"dataset", "groups", "backend", "train_identity_sha256", "near_repeat_status"} or contract.get("dataset") != payload.get("dataset") or contract.get("near_repeat_status") != "not_available" or not isinstance(contract.get("groups"), list) or not isinstance(contract.get("backend"), dict):
+        raise ValueError("runtime-native frozen contract is invalid")
+    contract_groups = contract["groups"]
+    required_group = {"length", "series_count", "status", "oof_candidate_rate", "wilson_upper", "pooled_synthetic_sensitivity", "per_type_synthetic_sensitivity", "seed_agreement", "finite", "backend_fallback"}
+    required_types = {"level_shift", "gradual_drift", "amplitude_scaling", "period_change"}
+    if any(not isinstance(item, dict) or set(item) != required_group or type(item["length"]) is not int or type(item["series_count"]) is not int or not isinstance(item["status"], str) or set(item["per_type_synthetic_sensitivity"]) != required_types or any(value is not None and type(value) not in {int, float} for value in item["per_type_synthetic_sensitivity"].values()) or any(item[name] is not None and type(item[name]) not in {int, float} for name in {"oof_candidate_rate", "wilson_upper", "pooled_synthetic_sensitivity"}) or any(item[name] is not None and type(item[name]) is not bool for name in {"seed_agreement", "finite", "backend_fallback"}) for item in contract_groups) or contract_groups != sorted(contract_groups, key=lambda item: item["length"]) or len({item["length"] for item in contract_groups}) != len(contract_groups):
+        raise ValueError("runtime-native frozen contract groups are invalid")
+    backend = contract["backend"]
+    if set(backend) != {"backend", "candidate_identity", "max_normalized_error", "spearman", "speedup", "fallback", "fallback_reason"} or digest(backend) != payload.get("backend_audit_sha256") or contract.get("train_identity_sha256") != trace.get("train_identity_sha256") or digest(contract) != trace.get("frozen_train_contract_sha256"):
+        raise ValueError("runtime-native frozen contract binding is invalid")
+
+    models, scoring = model_hashes.get("model_evidence"), calibration_hashes.get("scoring_evidence")
+    if not isinstance(models, dict) or not isinstance(scoring, dict):
+        raise ValueError("runtime-native model or scoring evidence is invalid")
+    if set(models) != {"schema", "status", "processed_identity_sha256", "oof_models", "final_models"} or models.get("schema") != "exp425.runtime-model-evidence.v1" or not isinstance(models.get("oof_models"), list) or not isinstance(models.get("final_models"), list) or models.get("processed_identity_sha256") != trace.get("processed_groups_sha256"):
+        raise ValueError("runtime-native model evidence schema is invalid")
+    def model_entries(entries: object, *, oof: bool) -> bool:
+        fields = {"length", "seed", "fold", "model_sha256"} if oof else {"length", "seed", "model_sha256"}
+        return isinstance(entries, list) and all(isinstance(item, dict) and set(item) == fields and type(item["length"]) is int and type(item["seed"]) is int and (not oof or type(item["fold"]) is int) and sha(item["model_sha256"]) for item in entries) and entries == sorted(entries, key=lambda item: (item["length"], item["seed"], item.get("fold", -1))) and len({tuple(item[field] for field in ("length", "seed", "fold") if field in item) for item in entries}) == len(entries)
+    if not model_entries(models["oof_models"], oof=True) or not model_entries(models["final_models"], oof=False) or digest(models) != trace.get("model_evidence_sha256"):
+        raise ValueError("runtime-native model identities are invalid")
+    if set(scoring) != {"schema", "status", "calibrations", "final_models"} or scoring.get("schema") != "exp425.runtime-scoring-evidence.v1" or not isinstance(scoring.get("calibrations"), list) or not model_entries(scoring.get("final_models"), oof=False) or digest(scoring) != trace.get("scoring_evidence_sha256"):
+        raise ValueError("runtime-native scoring evidence schema is invalid")
+    calibrations = scoring["calibrations"]
+    calibration_keys: set[tuple[int, int, int]] = set()
+    for item in calibrations:
+        if not isinstance(item, dict) or set(item) != {"length", "seed", "horizon", "digest", "statistic"} or not all(type(item[name]) is int for name in ("length", "seed", "horizon")) or not isinstance(item["statistic"], dict) or item["digest"] != digest(item["statistic"]):
+            raise ValueError("runtime-native calibration evidence is invalid")
+        statistic = item["statistic"]
+        if set(statistic) != {"horizon", "oof_count", "length", "center", "scale", "threshold", "oof_scores_dtype", "oof_scores_shape", "oof_scores_sha256"} or statistic.get("length") != item["length"] or statistic.get("horizon") != item["horizon"] or not sha(statistic.get("oof_scores_sha256")):
+            raise ValueError("runtime-native calibration statistic is invalid")
+        key = (item["length"], item["seed"], item["horizon"])
+        if key in calibration_keys:
+            raise ValueError("runtime-native calibration keys are duplicate")
+        calibration_keys.add(key)
+    if calibrations != sorted(calibrations, key=lambda item: (item["length"], item["seed"], item["horizon"])):
+        raise ValueError("runtime-native calibration order is invalid")
+    oof_pairs = {(item["length"], item["seed"]) for item in models["oof_models"]}
+    if {(length, seed) for length, seed, _ in calibration_keys} != oof_pairs:
+        raise ValueError("runtime-native calibration seeds do not match OOF models")
+    if set(effective) != {"status", "candidate_coordinates", "result_evidence_sha256", "result_source_sha256"}:
+        raise ValueError("runtime-native effective result keys are invalid")
+    candidates = effective.get("candidate_coordinates")
+    if not isinstance(candidates, list) or any(not isinstance(item, list) or len(item) != 2 or item[0] != payload.get("dataset") or type(item[1]) is not int for item in candidates) or candidates != sorted(candidates, key=lambda item: item[1]) or len({item[1] for item in candidates}) != len(candidates) or effective.get("result_source_sha256") != digest({"status": effective.get("status"), "candidate_coordinates": candidates}):
+        raise ValueError("runtime-native effective candidates are invalid")
+    model_status, scoring_status = models.get("status"), scoring.get("status")
+    finals = {(item["length"], item["seed"], item["model_sha256"]) for item in models["final_models"]}
+    scored_finals = {(item["length"], item["seed"], item["model_sha256"]) for item in scoring["final_models"]}
+    if model_status == "not_applicable_oof_identity_insufficient":
+        if scoring_status != "not_applicable_oof_identity_insufficient" or models["oof_models"] or models["final_models"] or calibrations or scoring["final_models"] or effective.get("status") != "abstained" or candidates or payload.get("reason") != "oof_identity_insufficient":
+            raise ValueError("runtime-native no-model evidence is inconsistent")
+    elif model_status == "captured":
+        if not models["oof_models"] or not calibrations:
+            raise ValueError("runtime-native captured model evidence is incomplete")
+        if scoring_status == "not_applicable_no_qualified_group":
+            if scoring["final_models"] or candidates or payload.get("reason") != "native_no_qualified_group":
+                raise ValueError("runtime-native no-qualified scoring evidence is inconsistent")
+        elif scoring_status == "captured":
+            if finals != scored_finals or payload.get("reason") != "native_mps":
+                raise ValueError("runtime-native scoring final models do not match TRAIN")
+        else:
+            raise ValueError("runtime-native scoring status is invalid")
+    else:
+        raise ValueError("runtime-native model status is invalid")
 
 
 def _import_record_body(context_sha256: str, record: ImportedRecordEnvelope) -> dict[str, object]:
