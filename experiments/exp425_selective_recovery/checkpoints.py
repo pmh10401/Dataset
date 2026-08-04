@@ -208,7 +208,7 @@ class Exp425CheckpointStore:
         for path in staged:
             record = _decode_record(_read_file(path), self.context)
             body = _import_record_body(self.run_context_sha256, record)
-            self._write_record(record, body, sha256(canonical_json_bytes(body)).hexdigest(), intent_extra={"batch_identity": batch.identity, "attestation_sha256": batch.attestation_sha256})
+            self._write_record(record, body, sha256(canonical_json_bytes(body)).hexdigest(), intent_extra={"batch_identity": batch.identity, "final_attestation_sha256": final_digest})
 
     def _write_record(self, record: Exp425Record, body: dict[str, object], digest: str, *, intent_extra: Mapping[str, object]) -> None:
         if record.dataset not in self.expected_datasets or record.dataset in self._record_digests:
@@ -296,6 +296,11 @@ class Exp425CheckpointStore:
 
 def _native_trace_sha256(run_identity: str, context_sha256: str, record: NativeRecordEnvelope) -> str:
     preimage = {"schema": "exp425.native-trace.v1", "run_identity": run_identity, "dataset": record.dataset, "run_context_sha256": context_sha256, "train_identity_sha256": record.train_identity_sha256, "eligibility_sha256": record.eligibility_sha256, "processed_groups_sha256": record.processed_groups_sha256, "model_evidence_sha256": record.model_evidence_sha256, "frozen_train_contract_sha256": record.frozen_train_contract_sha256, "scoring_evidence_sha256": record.scoring_evidence_sha256, "result_evidence_sha256": record.result_evidence_sha256, "backend_audit_sha256": record.backend_audit_sha256, "device": "mps"}
+    payload = dict(record.result_payload)
+    if set(payload) != {"effective_result", "native_trace_body"} or not isinstance(payload["effective_result"], Mapping) or not isinstance(payload["native_trace_body"], Mapping):
+        raise ValueError("native result_payload schema is invalid")
+    if dict(payload["native_trace_body"]) != preimage:
+        raise ValueError("native trace body does not agree with record evidence")
     return sha256(canonical_json_bytes(preimage)).hexdigest()
 
 
@@ -415,7 +420,13 @@ def _decode_record(raw: bytes, context: FrozenRunContext | None) -> Exp425Record
     if origin == "exp425_native":
         required = {"schema_version", "dataset", "origin", "run_context_sha256", "result_payload", "group_evidence", "trace_sha256", "model_hashes", "calibration_hashes", "backend_audit_sha256", "elapsed_seconds", "reason"}
         if set(payload) != required or payload["schema_version"] != "exp425.dataset.v1": raise ValueError("native checkpoint record keys are invalid")
-        return NativeRecordEnvelope(payload["dataset"], payload["result_payload"], payload["group_evidence"], "0" * 64, "0" * 64, "0" * 64, "0" * 64, "0" * 64, "0" * 64, "0" * 64, payload["model_hashes"], payload["calibration_hashes"], payload["backend_audit_sha256"], payload["trace_sha256"], digest, payload["elapsed_seconds"], payload["reason"], context=context)
+        result_payload = payload["result_payload"]
+        if not isinstance(result_payload, dict) or set(result_payload) != {"effective_result", "native_trace_body"}:
+            raise ValueError("native checkpoint result payload is invalid")
+        trace = result_payload["native_trace_body"]
+        if not isinstance(trace, dict) or set(trace) != {"schema", "run_identity", "dataset", "run_context_sha256", "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256", "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256", "result_evidence_sha256", "backend_audit_sha256", "device"} or sha256(canonical_json_bytes(trace)).hexdigest() != payload["trace_sha256"]:
+            raise ValueError("native checkpoint trace is invalid")
+        return NativeRecordEnvelope(payload["dataset"], result_payload, payload["group_evidence"], trace["train_identity_sha256"], trace["eligibility_sha256"], trace["processed_groups_sha256"], trace["model_evidence_sha256"], trace["frozen_train_contract_sha256"], trace["scoring_evidence_sha256"], trace["result_evidence_sha256"], payload["model_hashes"], payload["calibration_hashes"], payload["backend_audit_sha256"], payload["trace_sha256"], digest, payload["elapsed_seconds"], payload["reason"], context=context)
     if origin == "exp424_import":
         evidence = payload.get("group_evidence")
         if not isinstance(evidence, dict): raise ValueError("import checkpoint evidence is invalid")

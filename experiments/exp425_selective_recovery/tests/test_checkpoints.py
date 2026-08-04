@@ -100,11 +100,12 @@ class CheckpointStoreTests(unittest.TestCase):
             trace_body = {"schema": "exp425.native-trace.v1", "run_identity": provenance.run_identity, "dataset": dataset,
                 "run_context_sha256": store.run_context_sha256, **values, "device": "mps"}
             trace = sha256(canonical_json_bytes(trace_body)).hexdigest()
+            result_payload = {"effective_result": {"status": "abstained"}, "native_trace_body": trace_body}
             body = {"schema_version": "exp425.dataset.v1", "dataset": dataset, "origin": "exp425_native",
-                "run_context_sha256": store.run_context_sha256, "result_payload": {"status": "abstained"}, "group_evidence": {"groups": []},
+                "run_context_sha256": store.run_context_sha256, "result_payload": result_payload, "group_evidence": {"groups": []},
                 "trace_sha256": trace, "model_hashes": {}, "calibration_hashes": {}, "backend_audit_sha256": values["backend_audit_sha256"],
                 "elapsed_seconds": 0.0, "reason": "synthetic"}
-            record = NativeRecordEnvelope(dataset, {"status": "abstained"}, {"groups": []}, trace_sha256=trace,
+            record = NativeRecordEnvelope(dataset, result_payload, {"groups": []}, trace_sha256=trace,
                 record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest(), model_hashes={}, calibration_hashes={}, elapsed_seconds=0.0,
                 reason="synthetic", **values)
             with self.assertRaises(ValueError):
