@@ -271,7 +271,10 @@ class SmokeEvidenceWriter:
         self._publish("failed", stage="failed", current_dataset=None, success=False, **terminal)
 
     def result(self, payload: Mapping[str, object]) -> None:
-        self._replace("result.json", payload)
+        normalized = _json_semantic(payload)
+        if not isinstance(normalized, dict):
+            raise ValueError("smoke result payload is invalid")
+        self._replace("result.json", normalized)
 
 
 class SmokeHeartbeat:

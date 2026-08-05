@@ -104,7 +104,8 @@ def _build_smoke_session_with_guards(build: object, guards: object) -> object:
         getattr(getattr(runner, "load_train", None), "__func__", None) is not getattr(guards, "counted_train", None)
         or getattr(getattr(runner, "load_test", None), "__func__", None) is not getattr(guards, "forbidden_test", None)
     ):
-        raise ValueError("smoke runtime did not bind guarded TRAIN/TEST loaders")
+        error = ValueError("smoke runtime did not bind guarded TRAIN/TEST loaders")
+        raise _attach_cleanup_error(error, _close_owned_resources(session, None))
     return session
 
 
@@ -266,9 +267,13 @@ def main(argv: list[str] | None = None) -> int:
             counters = {"train": 0, "test_values": 0, "test_labels": 0}
             audit, adoption = authenticated_cpu_audit(), review_only_mps_assessment()
             with _guarded_smoke_loaders(snapshot, counters) as guards:
-                session = _build_smoke_session_with_guards(
-                    lambda: build_exp425_runtime(snapshot, audit, adoption, runtime_writer, current_head), guards,
-                )
+                try:
+                    session = _build_smoke_session_with_guards(
+                        lambda: build_exp425_runtime(snapshot, audit, adoption, runtime_writer, current_head), guards,
+                    )
+                except BaseException as error:
+                    closing_runtime_writer, runtime_writer = runtime_writer, None
+                    raise _attach_cleanup_error(error, _close_owned_resources(None, closing_runtime_writer))
                 try:
                     session._fold_contract_sha256 = provenance.fold_contract_sha256
                     captured = _CapturingModels(); session._models = captured

@@ -428,3 +428,47 @@ PASS — 83 tests in 217.695s
 python3 -m py_compile experiments/exp425_selective_recovery/mps_parity.py scratch/run_exp425_task5_mps_parity.py experiments/exp425_selective_recovery/tests/test_mps_parity.py
 PASS
 ```
+
+## Task 5 retry3 prelaunch review fix — 2026-08-05
+
+The fresh Sol/High review of the first retry3 preparation returned `fix-first` with
+two High findings. First, comparison normalized immutable containers only in temporary
+copies, while the final result writer still received the raw `mappingproxy` payload
+and would fail after checkpoint commit. Second, a session returned by the runtime
+factory could fail loader-binding validation before assignment into `main`, leaking
+that session and allowing the snapshot context to unwind before runtime-writer
+cleanup.
+
+Both consumer-visible regressions were added first and observed RED:
+
+- the real `SmokeEvidenceWriter.result` rejected a nested immutable payload with the
+  same `mappingproxy is not JSON serializable` failure;
+- the guard-mismatch lifecycle reported close counts `(session, snapshot, runtime) =
+  (0, 1, 1)` and ordered snapshot-context exit before runtime-writer cleanup.
+
+The bounded correction applies the already-tested representation-only recursive
+normalizer at the final result-publication boundary. On guard mismatch, the helper
+closes its not-yet-transferred session and `main` closes the runtime writer inside the
+snapshot context while retaining the validation exception. The two tests are GREEN;
+the exact failure ordering is now `session.close`, `snapshot.close`, `runtime.close`,
+`snapshot_context.exit`, `writer.failure` with close counts `(1, 1, 1)`.
+
+Fresh verification after this correction:
+
+```text
+python3 -m unittest experiments.exp425_selective_recovery.tests.test_mps_parity
+PASS — 21 tests in 0.493s
+
+python3 -m unittest discover -s experiments/exp425_selective_recovery/tests -p 'test_*.py'
+PASS — 176 tests in 17.577s; 256MiB snapshot 0.123s vs verified opens 2.327s
+
+python3 -m unittest experiments.exp417_causal_multihorizon_shadow.tests.test_inputs experiments.exp417_causal_multihorizon_shadow.tests.test_contracts experiments.exp417_causal_multihorizon_shadow.tests.test_runner experiments.exp417_causal_multihorizon_shadow.tests.test_reporting
+PASS — 83 tests in 232.490s
+
+python3 -m py_compile experiments/exp425_selective_recovery/mps_parity.py scratch/run_exp425_task5_mps_parity.py experiments/exp425_selective_recovery/tests/test_mps_parity.py
+PASS
+```
+
+Retry3 remains absent and unconsumed. Retry2 progress/events/parent hashes remain
+exactly those frozen in the retry3 addendum. A new clean Sol/High verdict is required
+before the one authorized retry3 invocation.

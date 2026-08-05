@@ -449,6 +449,154 @@ class MPSParityContractTests(unittest.TestCase):
         self.assertEqual((session.close_calls, snapshot.close_calls, runtime_writer.close_calls), (1, 1, 1))
         self.assertFalse(any("cleanup error" in note for note in getattr(original, "__notes__", ())))
 
+    def test_guard_binding_failure_closes_all_owners_before_snapshot_context_exit(self) -> None:
+        """A live session rejected before assignment must not escape main's ownership scope."""
+        module = self._script_module()
+        case = self
+        events: list[str] = []
+        reported: list[BaseException] = []
+
+        class Snapshot:
+            closed = False
+            close_calls = 0
+
+            def freeze_context(self, _lanes: object, *, verified_code_commit: str) -> object:
+                case.assertEqual(verified_code_commit, "c" * 40)
+                return SimpleNamespace(
+                    test_sizes={module.FIXTURE: 3}, runtime_versions={"python": "test"},
+                    datasets=(module.FIXTURE,),
+                )
+
+            def close(self) -> None:
+                self.close_calls += 1
+                if self.closed:
+                    raise ValueError("snapshot closed twice")
+                self.closed = True
+                events.append("snapshot.close")
+
+        snapshot = Snapshot()
+
+        @contextmanager
+        def snapshot_context(*_args: object, **_kwargs: object):
+            try:
+                yield snapshot
+            finally:
+                if not snapshot.closed:
+                    snapshot.close()
+                events.append("snapshot_context.exit")
+
+        class RuntimeWriter:
+            close_calls = 0
+
+            def close(self) -> None:
+                self.close_calls += 1
+                if self.close_calls != 1:
+                    raise ValueError("runtime writer closed twice")
+                events.append("runtime.close")
+
+        runtime_writer = RuntimeWriter()
+
+        class Session:
+            close_calls = 0
+
+            def __init__(self) -> None:
+                self.runner = SimpleNamespace(
+                    load_train=lambda *_args: None,
+                    load_test=lambda *_args: None,
+                )
+
+            def close(self) -> None:
+                self.close_calls += 1
+                if self.close_calls != 1:
+                    raise ValueError("session closed twice")
+                events.append("session.close")
+                snapshot.close()
+
+        session = Session()
+
+        @contextmanager
+        def guarded_loaders(_snapshot: object, _counters: dict[str, int]):
+            def counted_train(*_args: object) -> None:
+                return None
+
+            def forbidden_test(*_args: object) -> None:
+                return None
+
+            yield SimpleNamespace(counted_train=counted_train, forbidden_test=forbidden_test)
+
+        writer = SimpleNamespace(
+            run_identity="smoke-run", progress=lambda **_detail: None,
+            failure=lambda error: (events.append("writer.failure"), reported.append(error)),
+        )
+        lanes = SimpleNamespace(exp291_prediction_sha256="a" * 64, exp292_prediction_sha256="b" * 64)
+        golden = SimpleNamespace(
+            record_sha256="d" * 64, record={"payload_sha256": "e" * 64},
+            source_hashes={"experiments/exp417_causal_multihorizon_shadow/runner.py": "f" * 64},
+        )
+        audit = SimpleNamespace()
+        adoption = SimpleNamespace(payload=lambda: {"adopted": False})
+        store = SimpleNamespace(provenance=SimpleNamespace(run_identity="smoke-run"), run_context_sha256="g" * 64)
+        torch = SimpleNamespace(
+            __version__="2.13.0",
+            backends=SimpleNamespace(mps=SimpleNamespace(is_built=lambda: True, is_available=lambda: True)),
+            device=lambda _name: SimpleNamespace(type="mps"),
+        )
+
+        with TemporaryDirectory() as directory, ExitStack() as patches:
+            patches.enter_context(patch.object(module, "TASK5_RETRY_ROOT", Path(directory) / "retry"))
+            patches.enter_context(patch.object(module.SmokeEvidenceWriter, "create", return_value=writer))
+            patches.enter_context(patch.object(module, "AtomicProgressWriter", SimpleNamespace(create=lambda **_kwargs: runtime_writer)))
+            patches.enter_context(patch.object(module, "open_database_snapshot", snapshot_context))
+            patches.enter_context(patch.object(module, "freeze_lane_inputs", return_value=lanes))
+            patches.enter_context(patch.object(module, "validate_golden_reference", return_value=golden))
+            patches.enter_context(patch.object(module, "Exp425RunProvenance", lambda **_kwargs: SimpleNamespace(fold_contract_sha256="j" * 64)))
+            patches.enter_context(patch.object(module.Exp425CheckpointStore, "create", return_value=store))
+            patches.enter_context(patch.object(module, "authenticated_cpu_audit", return_value=audit))
+            patches.enter_context(patch.object(module, "review_only_mps_assessment", return_value=adoption))
+            patches.enter_context(patch.object(module, "_guarded_smoke_loaders", guarded_loaders))
+            patches.enter_context(patch.object(module, "build_exp425_runtime", return_value=session))
+            patches.enter_context(patch.object(module, "_assert_clean_heavy_process"))
+            patches.enter_context(patch.object(module, "asdict", return_value={}))
+            patches.enter_context(patch.object(module, "FROZEN_CONFIG", SimpleNamespace(model_seeds=(1,), perturbation_seeds=(2,), candidate_alpha=0.01)))
+            patches.enter_context(patch.object(module.subprocess, "run", side_effect=[SimpleNamespace(stdout="c" * 40), SimpleNamespace(stdout="")]))
+            patches.enter_context(patch.dict("sys.modules", {"torch": torch}))
+            with self.assertRaisesRegex(ValueError, "did not bind guarded") as raised:
+                module.main(["--output-dir", str(module.TASK5_RETRY_ROOT)])
+
+        self.assertEqual(reported, [raised.exception])
+        self.assertEqual((session.close_calls, snapshot.close_calls, runtime_writer.close_calls), (1, 1, 1))
+        self.assertEqual(events, ["session.close", "snapshot.close", "runtime.close", "snapshot_context.exit", "writer.failure"])
+        self.assertFalse(any("cleanup error" in note for note in getattr(raised.exception, "__notes__", ())))
+
+    def test_result_writer_serializes_immutable_runtime_containers(self) -> None:
+        """The compared immutable payload must remain publishable as canonical JSON evidence."""
+        from experiments.exp425_selective_recovery.mps_parity import SmokeEvidenceWriter
+
+        payload = MappingProxyType({
+            "actual": MappingProxyType({
+                "qualification": (
+                    MappingProxyType({
+                        "length": 96,
+                        "per_type_synthetic_sensitivity": MappingProxyType({"spike": 1.0}),
+                    }),
+                ),
+            }),
+        })
+        with TemporaryDirectory() as directory:
+            writer = SmokeEvidenceWriter.create(Path(directory) / "smoke", "run", "ECG200_normal_1")
+            try:
+                writer.result(payload)
+            except TypeError as error:
+                self.fail(f"immutable result payload was not normalized: {error}")
+            self.assertEqual(json.loads((writer.root / "result.json").read_bytes()), {
+                "actual": {
+                    "qualification": [{
+                        "length": 96,
+                        "per_type_synthetic_sensitivity": {"spike": 1.0},
+                    }],
+                },
+            })
+
     def test_cleanup_failure_still_releases_runtime_writer_once(self) -> None:
         """A session-close failure cannot strand the runtime PID lease during failure publication."""
         module = self._script_module()
