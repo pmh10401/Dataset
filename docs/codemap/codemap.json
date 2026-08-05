@@ -1,11 +1,12 @@
 {
-  "generated_at": "2026-08-05T17:55:15Z",
-  "generated_from_commit": "85960e89807c9eccfe3f1d08e529c317e0b37632",
+  "generated_at": "2026-08-05T22:16:23Z",
+  "generated_from_commit": "cab27f1b40b8aed448256c7094bec075211340c0",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
     "Exp425 source validation, database snapshot, eligibility, runtime and checkpoints",
     "Exp426 verified-baseline contracts and checkpoint implementation",
+    "Exp435 approved design, preregistration, runbook and implementation plan",
     "Research control files and local external data stores"
   ],
   "nodes": [
@@ -29,7 +30,7 @@
       "evidence": [
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_experiment\": \"Exp426\""
+          "symbol": "\"active_experiment\": \"Exp435\""
         },
         {
           "path": "AUTONOMOUS_RESEARCH_LOOP.md",

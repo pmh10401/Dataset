@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-06T00:05:00+09:00",
+  "updated_at": "2026-08-06T07:15:19+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -87,7 +87,7 @@
     {
       "id": "Exp426",
       "kind": "verified_checkpoint_baseline_completion",
-      "status": "full_run_attempt1_parent_boundary_fix_pending_clean_verification",
+      "status": "completed_review_only",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "a86f333c1f3bc0c1c9d21bcca78e68cffb8e3751",
       "documents": [
@@ -100,9 +100,32 @@
       "workers": 12,
       "mps_adopted": false,
       "mlx_adopted": false,
+      "prediction_phase_started": true,
+      "prediction_phase_complete": true,
+      "prediction_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2",
+      "completed_accounting": {"completed": 1117, "imported": 983, "verified_train_abstentions": 134, "errors": 0},
+      "test_labels_opened": false,
+      "notes": "Attempt 1 is preserved as a parent-boundary failure. Attempt 2 completed 1,117/983/134/0 as a verified review-only baseline with an empty canonical prediction and no TEST-label access."
+    },
+    {
+      "id": "Exp435",
+      "kind": "train_only_normal_pattern_consensus_recovery",
+      "status": "design_approved_plan_ready_implementation_not_started",
+      "branch": "codex/exp425-selective-recovery",
+      "base_commit": "cab27f1b40b8aed448256c7094bec075211340c0",
+      "documents": [
+        "docs/superpowers/specs/2026-08-06-exp435-train-only-consensus-recovery-antigravity-design.md",
+        "docs/superpowers/plans/2026-08-06-exp435-train-only-consensus-recovery-antigravity.md",
+        "docs/EXP435_PREREGISTRATION_antigravity_KO.md",
+        "docs/EXP435_RUNBOOK_antigravity_KO.md"
+      ],
+      "dataset_count": 1117,
+      "candidate_budget": 100,
+      "review_only": true,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "Readiness passed at commit 6a9c240442975c3b0bcd62857fa8c630c8857ff4. Full-run attempt 1 imported 983 records, then failed before the first of 134 TRAIN abstention checks because output/checkpoint creation beside the live database changed the snapshot parent metadata. The failed roots are immutable and preserved; no publication or TEST access occurred. Attempt 2 keeps the science unchanged, isolates both runtime roots below a pre-existing child directory, and durably logs exception messages."
+      "notes": "Requires prototype distance AND gradient-or-ACF agreement outside all frozen lanes. Success requires at least 10 rescued datasets, at most 30 added false positives, and positive micro/macro F1 deltas with both paired 95% CI lower bounds above zero."
     }
   ]
 }

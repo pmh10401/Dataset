@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-04T17:00:00+09:00",
+  "updated_at": "2026-08-06T07:15:19+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -31,8 +31,8 @@
     "note": "The development base may be the current experiment or selected verified components; this ledger is a comparator, not a forced starting point."
   },
   "pending_candidate": {
-    "experiment": "Exp425",
-    "status": "implementation_before_prediction",
+    "experiment": "Exp435",
+    "status": "design_approved_plan_ready_implementation_not_started",
     "prediction_sha256": null,
     "evaluation": null
   },

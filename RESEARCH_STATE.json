@@ -1,19 +1,19 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T02:45:02+09:00",
+  "updated_at": "2026-08-06T07:15:19+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "6a9c240442975c3b0bcd62857fa8c630c8857ff4",
-  "active_experiment": "Exp426",
-  "active_phase": "full_run_attempt1_parent_boundary_fix_pending_clean_verification",
+  "last_verified_commit": "cab27f1b40b8aed448256c7094bec075211340c0",
+  "active_experiment": "Exp435",
+  "active_phase": "design_approved_plan_ready_implementation_not_started",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
-    "design": "docs/superpowers/specs/2026-08-05-exp426-verified-baseline-antigravity-design.md",
-    "plan": "docs/superpowers/plans/2026-08-05-exp426-verified-baseline-antigravity.md",
-    "preregistration": "docs/EXP426_PREREGISTRATION_antigravity_KO.md",
-    "runbook": "docs/EXP426_RUNBOOK_antigravity_KO.md",
+    "design": "docs/superpowers/specs/2026-08-06-exp435-train-only-consensus-recovery-antigravity-design.md",
+    "plan": "docs/superpowers/plans/2026-08-06-exp435-train-only-consensus-recovery-antigravity.md",
+    "preregistration": "docs/EXP435_PREREGISTRATION_antigravity_KO.md",
+    "runbook": "docs/EXP435_RUNBOOK_antigravity_KO.md",
     "sdd_progress": null,
     "task_brief": null,
     "task_report": null
@@ -23,23 +23,20 @@
     "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
     "database_inode": 1048138,
     "database_nlink_after_stale_pin_cleanup": 1,
-    "predecessor_checkpoint": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint",
-    "predecessor_accounting": {
-      "records": 1117,
-      "importable": 983,
-      "terminal_identity_insufficient": 134,
-      "source_mutated": false
-    }
+    "official_population": 1117,
+    "exp291_prediction_sha256": "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848",
+    "exp292_prediction_sha256": "f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b",
+    "hard_comparator_prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"
   },
   "active_process": {
     "pid": null,
-    "checkpoint": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/checkpoint_antigravity",
-    "output": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity",
-    "progress_json": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity/progress.json",
-    "events_jsonl": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity/events.jsonl",
-    "parent_log": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity/parent.log",
-    "pid_file": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity/run.pid",
-    "last_error": "Full-run attempt 1 failed after 983 imports because creating output/checkpoint beside the database changed the live snapshot parent metadata. Failed roots are preserved; retry paths are isolated below a pre-existing child directory and error messages are now durable."
+    "checkpoint": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/checkpoint_antigravity",
+    "output": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/output_antigravity",
+    "progress_json": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/output_antigravity/progress_antigravity.json",
+    "events_jsonl": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/output_antigravity/events_antigravity.jsonl",
+    "parent_log": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/output_antigravity/parent_antigravity.log",
+    "pid_file": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/output_antigravity/run_antigravity.pid",
+    "last_error": null
   },
   "completed_engineering_tasks": {
     "task1_eligibility": "a37e0b4d1e241a885c69b65b318fe77107b055c8",
@@ -59,8 +56,19 @@
     "task5_parity_serialization_lifecycle": "8043149c9c6e12bdae2b9c4996813a74ae2f941f",
     "task5_retry3_prelaunch_review_fix": "d02d9ae2bc848605ab2fa44c3914f14363f51771"
   },
-  "next_action": "Regenerate the code map, run focused/full regressions, commit the isolated-root and durable-error fix, obtain a fresh Sol/High ship verdict, create the attempt2 run parent, then run fresh readiness and the 1,117-dataset label-free execution.",
-  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && python3 -m unittest discover -s experiments/exp426_verified_baseline/tests -p 'test_*antigravity.py'",
+  "completed_runs": {
+    "exp426_attempt2": {
+      "state": "complete_review_only",
+      "completed": 1117,
+      "imported": 983,
+      "verified_train_abstentions": 134,
+      "errors": 0,
+      "prediction_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2"
+    }
+  },
+  "next_action": "Choose the approved Exp435 plan execution mode, then implement Task 1 with TDD. Prediction has not started and the fixed artifact root remains absent.",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && sed -n '1,220p' docs/superpowers/plans/2026-08-06-exp435-train-only-consensus-recovery-antigravity.md",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens."
 }
