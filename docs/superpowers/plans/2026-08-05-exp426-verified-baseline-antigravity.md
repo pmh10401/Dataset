@@ -132,7 +132,7 @@ git diff --check
 
 Expected: every command exits 0.
 
-- [ ] **Step 7: Commit Task 1**
+- [x] **Step 7: Commit Task 1**
 
 ```bash
 git add experiments/exp426_verified_baseline
@@ -155,7 +155,7 @@ git commit -m "feat(exp426): add frozen baseline checkpoint"
 - Produces: `run_ordered_workers(tasks, *, workers=12, prefetch=24) -> Iterator[WorkerEvidence]`.
 - Consumes: `experiments.exp425_selective_recovery.predecessor.open_validated_exp424_source`, its descriptor-bound records, `experiments.exp417_causal_multihorizon_shadow.preprocessing.preprocess_length_groups`, `experiments.exp425_selective_recovery.eligibility.apply_group_eligibility`, and Task 1 records.
 
-- [ ] **Step 1: Write source-intake RED tests**
+- [x] **Step 1: Write source-intake RED tests**
 
 Create a minimal real Exp424-format source fixture and assert exact `3/2/1` classification, stable record/result hashes, source mutation rejection before and after worker processing, terminal reason parsing, nonterminal imported candidate preservation, and zero write calls below the source root.
 
@@ -172,7 +172,7 @@ The production inspection test must require `1117/983/134` and these existing fi
 - progress `5e9aa4a4b7240ac89c078bdc1dce4b41bda6b6dbc505dd9ad49782556da7bd84`;
 - record set `d74a0def7788db89a1d3e32f46662abf07c44c7cbbce5e02612b510e2fdf4258`.
 
-- [ ] **Step 2: Write 12-worker RED tests**
+- [x] **Step 2: Write 12-worker RED tests**
 
 Use real `ProcessPoolExecutor` workers. Assert exactly 12 initializer calls/process identities when at least 24 blocking tasks are queued, environment thread limits all equal `1`, prefetch never exceeds 24, output order is dataset-name order despite reverse completion, worker exceptions retain dataset name, and worker processes never receive paths, DB connections, labels or checkpoint objects.
 
@@ -183,7 +183,7 @@ self.assertEqual([x.scientific_sha256 for x in single],
                  [x.scientific_sha256 for x in twelve])
 ```
 
-- [ ] **Step 3: Run Task 2 RED tests**
+- [x] **Step 3: Run Task 2 RED tests**
 
 ```bash
 python3 -m unittest \
@@ -193,7 +193,7 @@ python3 -m unittest \
 
 Expected: imports fail because Task 2 modules do not exist.
 
-- [ ] **Step 4: Implement descriptor-bound source intake**
+- [x] **Step 4: Implement descriptor-bound source intake**
 
 Parent process responsibilities:
 
@@ -205,7 +205,7 @@ Parent process responsibilities:
 
 Workers parse canonical bytes, reconstruct `DatasetResult`, and return either an imported compact record or a terminal dataset name/reason. They cannot open any path.
 
-- [ ] **Step 5: Implement fixed 12-core executor**
+- [x] **Step 5: Implement fixed 12-core executor**
 
 Use spawn-safe top-level functions:
 
@@ -220,11 +220,11 @@ with ProcessPoolExecutor(
 
 The production API rejects any worker count other than 12. A test-only private seam may run one worker for the readiness comparison; it is not exposed through CLI or config.
 
-- [ ] **Step 6: Implement TRAIN-only abstention verification**
+- [x] **Step 6: Implement TRAIN-only abstention verification**
 
 Parent loads `RawTrainDataset` from the retained DB snapshot and submits the object plus fixed metadata. Worker runs preprocessing and `apply_group_eligibility`. It succeeds only when every usable group is `oof_identity_insufficient` or preprocessing-abstained and no group is eligible. It returns full count-bearing eligibility evidence and no candidates. TEST loader symbols are absent from the worker module.
 
-- [ ] **Step 7: Run Task 2 verification**
+- [x] **Step 7: Run Task 2 verification**
 
 ```bash
 python3 -m unittest \

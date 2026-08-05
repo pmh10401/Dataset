@@ -1,7 +1,7 @@
 {
-  "current_commit": "0354c414440463d6fa6575051c1e6c91ea0b073d",
+  "current_commit": "c8f84a1865ef9dedaff4d093b3545592ba17ac3a",
   "working_tree_dirty": true,
-  "generated_at": "2026-08-05T13:58:47Z",
+  "generated_at": "2026-08-05T14:28:30Z",
   "scanned_scope": [
     "tracked root files",
     ".superpowers",
@@ -38,12 +38,12 @@
       "tracked_files": 30
     },
     "docs": {
-      "fingerprint": "1be88361a5ecf0ecd4b5783e168fc63934782a001c77846f802d0998dc6d6a55",
+      "fingerprint": "5ed5b3cbf4ad00d716e16d68b288e0177fc235c920faab3ec7622d547a73b7f2",
       "tracked_files": 314
     },
     "experiments": {
-      "fingerprint": "433a057a64b8ce1d2694bd7294435aaacba615a3283a6b0e4a8de970e95b793b",
-      "tracked_files": 1007
+      "fingerprint": "d6858e38ddb527d03891cbf7181e649b881597afd6d6ced7ded4b1d4ef5e7455",
+      "tracked_files": 1011
     },
     "operational": {
       "fingerprint": "3ff7c5214e60afedcc150e5a2a30a86823f0b03b67f5cf59b8f90615dc32070f",
@@ -62,7 +62,7 @@
       "tracked_files": 3
     },
     "root": {
-      "fingerprint": "898619c8a61107fdc917d6b0ff6f56fc3e9ea89b9590b31265269eefd5b878d2",
+      "fingerprint": "c24f49d8aab33c173e0c2b5e23dcc36c9540e7278bf0fe06ec4d94fefae0a1ee",
       "tracked_files": 210
     },
     "scratch": {

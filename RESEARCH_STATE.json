@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-05T22:22:55+09:00",
+  "updated_at": "2026-08-05T23:01:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "db6570b21d5fc76db8e06413cd98a5b2d3ca89ef",
+  "last_verified_commit": "c8f84a1865ef9dedaff4d093b3545592ba17ac3a",
   "active_experiment": "Exp426",
-  "active_phase": "task1_contract_checkpoint_implementation",
+  "active_phase": "task2_source_parallel_implementation",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -45,7 +45,8 @@
     "task1_eligibility": "a37e0b4d1e241a885c69b65b318fe77107b055c8",
     "task2_checkpoint": "7ebe5384fa057f7eb82b0c8fb3bbded38665e7f4",
     "task3_predecessor": "78580fcead5ffd276c274f938933637263f15b6c",
-    "task4_database": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee"
+    "task4_database": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee",
+    "exp426_task1_contract_checkpoint": "c8f84a1865ef9dedaff4d093b3545592ba17ac3a"
   },
   "partial_engineering_commits": {
     "task5_initial_runtime": "dc018ac9cc6e6dec13a93317df194d5e19200884",
@@ -55,8 +56,8 @@
     "task5_parity_serialization_lifecycle": "8043149c9c6e12bdae2b9c4996813a74ae2f941f",
     "task5_retry3_prelaunch_review_fix": "d02d9ae2bc848605ab2fa44c3914f14363f51771"
   },
-  "next_action": "Implement Exp426 Task 1 contracts and crash-safe checkpoint with tests first. Do not run readiness, prediction, TEST evaluation, or the 1,117-dataset population before Tasks 1-4, full verification, and fresh review pass.",
-  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && python3 -m unittest experiments.exp426_verified_baseline.tests.test_contracts_antigravity experiments.exp426_verified_baseline.tests.test_checkpoint_antigravity -v",
+  "next_action": "Implement Exp426 Task 2 read-only Exp424 source intake and fixed twelve-worker TRAIN-only verification with tests first. Do not run readiness, prediction, TEST evaluation, or the 1,117-dataset population before Tasks 1-4, full verification, and fresh review pass.",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && python3 -m unittest experiments.exp426_verified_baseline.tests.test_source_antigravity experiments.exp426_verified_baseline.tests.test_parallel_antigravity -v",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens."
 }

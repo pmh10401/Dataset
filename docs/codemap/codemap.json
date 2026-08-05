@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-05T13:58:47Z",
-  "generated_from_commit": "0354c414440463d6fa6575051c1e6c91ea0b073d",
+  "generated_at": "2026-08-05T14:28:30Z",
+  "generated_from_commit": "c8f84a1865ef9dedaff4d093b3545592ba17ac3a",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -532,34 +532,6 @@
       ]
     },
     {
-      "id": "exp425_cli",
-      "label": "Exp425 CLI",
-      "type": "interface",
-      "boundary": "Exp425 trusted boundary",
-      "layer": 5,
-      "path": "scratch/run_exp425_selective_recovery.py",
-      "role": "Validates command-line launch arguments and invokes the Exp425 runtime command.",
-      "entrypoints": [
-        "main"
-      ],
-      "tests": [
-        "experiments/exp425_selective_recovery/tests/test_cli.py"
-      ],
-      "constraints": [
-        "Preflight before external writes"
-      ],
-      "evidence": [
-        {
-          "path": "scratch/run_exp425_selective_recovery.py",
-          "symbol": "main"
-        },
-        {
-          "path": "scratch/run_exp425_selective_recovery.py",
-          "symbol": "execute_runtime_command"
-        }
-      ]
-    },
-    {
       "id": "exp426_contracts",
       "label": "Exp426 contracts",
       "type": "data",
@@ -589,6 +561,40 @@
         {
           "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
           "symbol": "Exp426DatasetRecord"
+        }
+      ]
+    },
+    {
+      "id": "exp426_intake_parallel",
+      "label": "Exp426 intake + 12 workers",
+      "type": "pipeline",
+      "boundary": "Exp426 verified baseline",
+      "layer": 3,
+      "path": "experiments/exp426_verified_baseline",
+      "role": "Reads descriptor-bound Exp424 bytes, classifies them, and rechecks terminal datasets from TRAIN on a bounded twelve-process CPU pool.",
+      "entrypoints": [
+        "read_verified_source_tasks",
+        "classify_exp424_record_bytes",
+        "verify_train_abstention",
+        "run_ordered_workers"
+      ],
+      "tests": [
+        "experiments/exp426_verified_baseline/tests/test_source_antigravity.py",
+        "experiments/exp426_verified_baseline/tests/test_parallel_antigravity.py"
+      ],
+      "constraints": [
+        "Workers receive bytes or RawTrainDataset, never paths or database handles",
+        "Exactly 12 production workers with at most 24 prefetched tasks",
+        "No TEST value or label loader"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "def read_verified_source_tasks"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/parallel_antigravity.py",
+          "symbol": "def run_ordered_workers"
         }
       ]
     },
@@ -870,13 +876,57 @@
       ]
     },
     {
-      "from": "exp425_cli",
-      "to": "exp425_runtime",
+      "from": "exp426_intake_parallel",
+      "to": "exp425_predecessor",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "ValidatedExp424Source"
+        }
+      ]
+    },
+    {
+      "from": "exp426_intake_parallel",
+      "to": "exp417_checkpoint",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "_record_from_bytes"
+        }
+      ]
+    },
+    {
+      "from": "exp426_intake_parallel",
+      "to": "exp417_preprocessing",
       "type": "calls",
       "evidence": [
         {
-          "path": "scratch/run_exp425_selective_recovery.py",
-          "symbol": "execute_runtime_command"
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "preprocess_length_groups"
+        }
+      ]
+    },
+    {
+      "from": "exp426_intake_parallel",
+      "to": "exp425_eligibility",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "apply_group_eligibility"
+        }
+      ]
+    },
+    {
+      "from": "exp426_intake_parallel",
+      "to": "exp426_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/parallel_antigravity.py",
+          "symbol": "WorkerEvidence"
         }
       ]
     },
@@ -943,18 +993,6 @@
       "outcome": "Eligible TRAIN groups are modeled or explicitly abstained and durably recorded."
     },
     {
-      "id": "exp425_cli_run",
-      "label": "Exp425 CLI launch",
-      "trigger": "Invoke the selective-recovery CLI after preflight.",
-      "steps": [
-        "exp425_cli",
-        "exp425_runtime",
-        "exp425_database",
-        "exp425_checkpoint"
-      ],
-      "outcome": "A resumable run publishes self-written progress and checkpoint state."
-    },
-    {
       "id": "exp426_task1",
       "label": "Exp426 Task 1 contracts",
       "trigger": "Resume Exp426 verified-baseline implementation.",
@@ -965,6 +1003,20 @@
         "exp426_checkpoint"
       ],
       "outcome": "Frozen 12-worker provenance and crash-safe per-dataset baseline records are available for Task 2."
+    },
+    {
+      "id": "exp426_task2",
+      "label": "Exp426 verified intake",
+      "trigger": "Open the frozen Exp424 authority and stream sorted source records.",
+      "steps": [
+        "exp424_source",
+        "exp425_predecessor",
+        "exp426_intake_parallel",
+        "exp417_preprocessing",
+        "exp425_eligibility",
+        "exp426_contracts"
+      ],
+      "outcome": "983 scored imports and 134 TRAIN-verified abstentions are produced in stable dataset order without TEST labels."
     }
   ]
 }
