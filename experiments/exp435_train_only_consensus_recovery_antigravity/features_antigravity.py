@@ -292,6 +292,22 @@ def _gradient_matrix(matrix: NDArray[np.float32]) -> NDArray[np.float32]:
     return np.ascontiguousarray(gradients, dtype=np.float32)
 
 
+def _acf_failure_reason(row: NDArray[np.float32]) -> str:
+    """Distinguish zero ACF energy from float32 overflow/non-finiteness."""
+
+    with np.errstate(over="ignore", invalid="ignore"):
+        mean = np.float32(np.mean(row, dtype=np.float32))
+        centered = np.asarray(row - mean, dtype=np.float32)
+        denominator = np.float32(np.sum(centered * centered, dtype=np.float32))
+    if (
+        not np.isfinite(mean)
+        or not np.isfinite(centered).all()
+        or not np.isfinite(denominator)
+    ):
+        return "nonfinite_train"
+    return "zero_acf_energy"
+
+
 def fit_calibrated_group(group: PreparedTrainGroup) -> CalibratedTrainGroup:
     """Fit all available TRAIN channels and deterministic LOO thresholds."""
 
@@ -321,14 +337,22 @@ def fit_calibrated_group(group: PreparedTrainGroup) -> CalibratedTrainGroup:
         gradients = None
         gradient = _unavailable("gradient", gradient_reason)
     else:
-        gradients = _standardize(gradient_matrix, gradient_center, gradient_scale)
-        gradient = _available_calibration(
-            "gradient",
-            gradients,
-            center=float(gradient_center),
-            scale=float(gradient_scale),
-            k=FROZEN_CONFIG.neighbor_count,
-        )
+        try:
+            gradients = _standardize(gradient_matrix, gradient_center, gradient_scale)
+            gradient = _available_calibration(
+                "gradient",
+                gradients,
+                center=float(gradient_center),
+                scale=float(gradient_scale),
+                k=FROZEN_CONFIG.neighbor_count,
+            )
+        except ValueError as exc:
+            # A secondary channel is optional.  Numerical overflow or a
+            # non-finite score therefore disables only this channel instead
+            # of turning a usable prototype/ACF group into a hard failure.
+            gradients = None
+            reason = "nonfinite_train" if "nonfinite" in str(exc) else "zero_scale"
+            gradient = _unavailable("gradient", reason)
 
     acf_vectors: NDArray[np.float32] | None
     acf: ChannelCalibration
@@ -337,6 +361,7 @@ def fit_calibrated_group(group: PreparedTrainGroup) -> CalibratedTrainGroup:
         acf = _unavailable("acf", "short_series")
     else:
         vectors: list[NDArray[np.float32]] = []
+        acf_failure_reason: str | None = None
         for row in matrix:
             vector = acf_vector(
                 row,
@@ -345,11 +370,12 @@ def fit_calibrated_group(group: PreparedTrainGroup) -> CalibratedTrainGroup:
             )
             if vector is None:
                 vectors = []
+                acf_failure_reason = _acf_failure_reason(row)
                 break
             vectors.append(vector)
         if len(vectors) != rows:
             acf_vectors = None
-            acf = _unavailable("acf", "zero_acf_energy")
+            acf = _unavailable("acf", acf_failure_reason or "zero_acf_energy")
         else:
             acf_vectors = np.asarray(vectors, dtype=np.float32)
             if not np.isfinite(acf_vectors).all():

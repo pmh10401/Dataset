@@ -190,6 +190,18 @@ class FeatureTests(unittest.TestCase):
         self.assertFalse(fitted.acf.available)
         self.assertIsNone(fitted.acf_values)
 
+    def test_acf_overflow_is_recorded_as_nonfinite_not_zero_energy(self) -> None:
+        row = np.asarray(
+            [1e38 if index % 2 else -1e38 for index in range(16)],
+            dtype=np.float32,
+        )
+        rows = [row, -row, row + np.float32(1e30), -row + np.float32(1e30)]
+        fitted = fit_calibrated_group(
+            prepared_group([value.tolist() for value in rows])
+        )
+        self.assertFalse(fitted.acf.available)
+        self.assertEqual(fitted.acf.reason, "nonfinite_train")
+
     def test_reference_digest_is_canonical_across_row_order(self) -> None:
         rows = [[0.0, 1.0, 2.0, 3.0], [3.0, 2.0, 1.0, 0.0], [0.5, 1.5, 2.5, 3.5], [2.0, 3.0, 4.0, 5.0]]
         first = fit_calibrated_group(prepared_group(rows))
