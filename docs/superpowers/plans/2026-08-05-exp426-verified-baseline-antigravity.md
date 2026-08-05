@@ -39,7 +39,7 @@
 - Produces: `Exp426CheckpointStore.create`, `.open`, `.inspect_read_only`, `.commit`, `.load_record`, `.completed_digests`.
 - Consumes: `FrozenRunContext`, canonical JSON and SHA256 helpers.
 
-- [ ] **Step 1: Write contract tests first**
+- [x] **Step 1: Write contract tests first**
 
 Add literal fixtures proving:
 
@@ -62,7 +62,7 @@ self.assertEqual(record.origin, "verified_train_abstention")
 
 Reject unknown keys/status/origin, bool indices, unsorted or duplicate candidates, wrong-dataset candidates, lane overlaps, non-lowercase hashes, imported records without source hashes, abstentions with candidates, and timing/runtime fields inside the scientific payload.
 
-- [ ] **Step 2: Run the contract tests and verify RED**
+- [x] **Step 2: Run the contract tests and verify RED**
 
 Run:
 
@@ -72,7 +72,7 @@ python3 -m unittest experiments.exp426_verified_baseline.tests.test_contracts_an
 
 Expected: import failure because `contracts_antigravity.py` does not exist.
 
-- [ ] **Step 3: Implement immutable contracts**
+- [x] **Step 3: Implement immutable contracts**
 
 Use frozen dataclasses and recursively frozen mappings. `Exp426DatasetRecord.scientific_payload()` must contain exactly:
 
@@ -93,7 +93,7 @@ Use frozen dataclasses and recursively frozen mappings. `Exp426DatasetRecord.sci
 
 `scientific_payload_sha256` is recalculated from that exact payload and is never caller-trusted.
 
-- [ ] **Step 4: Write checkpoint RED tests**
+- [x] **Step 4: Write checkpoint RED tests**
 
 Test no-clobber creation, exact provenance/context binding, one-writer lock, sorted universe, atomic intent → dataset → progress → intent cleanup, crash at each boundary, reopen/reconcile once, duplicate commit idempotence only for identical bytes, different-byte rejection, read-only inspect byte/inode/mtime immutability, corrupt/unknown/symlink file rejection, and completed/total conservation.
 
@@ -104,7 +104,7 @@ reopened = Exp426CheckpointStore.open(root, provenance, context)
 self.assertEqual(reopened.load_record("A_normal_1"), record)
 ```
 
-- [ ] **Step 5: Implement checkpoint store**
+- [x] **Step 5: Implement checkpoint store**
 
 The root inventory is exactly:
 
@@ -118,7 +118,7 @@ intents/
 
 Use same-directory temporary files, `fsync`, atomic rename and directory `fsync`. Only the parent process owns a writable store. A worker never receives a store/path/file descriptor.
 
-- [ ] **Step 6: Run Task 1 verification**
+- [x] **Step 6: Run Task 1 verification**
 
 ```bash
 python3 -m unittest \

@@ -1,0 +1,970 @@
+{
+  "generated_at": "2026-08-05T13:58:47Z",
+  "generated_from_commit": "0354c414440463d6fa6575051c1e6c91ea0b073d",
+  "scope": [
+    "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
+    "Exp424 frozen MPS score-cache authority",
+    "Exp425 source validation, database snapshot, eligibility, runtime and checkpoints",
+    "Exp426 verified-baseline contracts and checkpoint implementation",
+    "Research control files and local external data stores"
+  ],
+  "nodes": [
+    {
+      "id": "research_control",
+      "label": "Research control",
+      "type": "interface",
+      "boundary": "Research governance",
+      "layer": 0,
+      "path": "RESEARCH_STATE.json",
+      "role": "Records the active experiment, frozen inputs, phase, output paths, and exact continuation command.",
+      "entrypoints": [
+        "active_experiment",
+        "active_phase",
+        "next_action"
+      ],
+      "tests": [],
+      "constraints": [
+        "Must be updated when execution stops or phase changes"
+      ],
+      "evidence": [
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"active_experiment\": \"Exp426\""
+        },
+        {
+          "path": "AUTONOMOUS_RESEARCH_LOOP.md",
+          "symbol": "prediction hash"
+        }
+      ]
+    },
+    {
+      "id": "sqlite_store",
+      "label": "univariate_ts.db",
+      "type": "database",
+      "boundary": "External frozen data",
+      "layer": 0,
+      "path": "/Users/mac/Documents/Dataset/univariate_ts.db",
+      "role": "Frozen local SQLite dataset used through descriptor-bound read-only snapshots.",
+      "entrypoints": [
+        "datasets",
+        "instances"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_database.py"
+      ],
+      "constraints": [
+        "External to Git",
+        "No TEST values or labels in Exp426 prediction"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "open_database_snapshot"
+        }
+      ]
+    },
+    {
+      "id": "exp424_source",
+      "label": "Exp424 frozen checkpoint",
+      "type": "storage",
+      "boundary": "External frozen data",
+      "layer": 0,
+      "path": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint",
+      "role": "Read-only source authority containing 1,117 Exp424 records, of which 983 are importable and 134 terminal.",
+      "entrypoints": [
+        "root_provenance.json",
+        "progress.json",
+        "datasets"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_predecessor.py"
+      ],
+      "constraints": [
+        "Fixed root/progress/record-set hashes",
+        "Never mutated by successor experiments"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "EXP424_SOURCE_ROOT"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "class Exp424CompatibilityContract"
+        }
+      ]
+    },
+    {
+      "id": "python_runtime",
+      "label": "Python ML runtime",
+      "type": "external",
+      "boundary": "External runtime",
+      "layer": 5,
+      "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+      "role": "External Python, NumPy, PyTorch, Numba and scikit-learn execution environment.",
+      "entrypoints": [
+        "numpy",
+        "torch",
+        "numba"
+      ],
+      "tests": [
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_backend.py"
+      ],
+      "constraints": [
+        "Exp426 fixes outer CPU workers at 12 and inner threads at 1",
+        "No MPS or MLX for Exp426"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+          "symbol": "import torch"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/runtime.py",
+          "symbol": "import numpy as np"
+        }
+      ]
+    },
+    {
+      "id": "artifact_utils",
+      "label": "Canonical artifact I/O",
+      "type": "storage",
+      "boundary": "Shared research core",
+      "layer": 1,
+      "path": "experiments/exp403_408/artifact_io.py",
+      "role": "Provides canonical JSON bytes, SHA256 helpers, and atomic JSON/CSV/JSONL writes.",
+      "entrypoints": [
+        "canonical_json_bytes",
+        "write_json_atomic",
+        "write_jsonl_atomic",
+        "write_csv_atomic"
+      ],
+      "tests": [
+        "experiments/exp403_408/tests/test_prediction_boundary.py"
+      ],
+      "constraints": [
+        "Canonical bytes define scientific hashes"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp403_408/artifact_io.py",
+          "symbol": "canonical_json_bytes"
+        },
+        {
+          "path": "experiments/exp403_408/artifact_io.py",
+          "symbol": "write_json_atomic"
+        }
+      ]
+    },
+    {
+      "id": "exp417_contracts",
+      "label": "Exp417 scientific contracts",
+      "type": "data",
+      "boundary": "Exp417 foundation",
+      "layer": 1,
+      "path": "experiments/exp417_causal_multihorizon_shadow/contracts.py",
+      "role": "Defines frozen run context, raw TRAIN/TEST structures, processed groups, model evidence and dataset results.",
+      "entrypoints": [
+        "FrozenRunContext",
+        "RawTrainDataset",
+        "ProcessedGroup",
+        "DatasetResult"
+      ],
+      "tests": [
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_contracts.py"
+      ],
+      "constraints": [
+        "Frozen immutable scientific structures",
+        "TRAIN and TEST structures are distinct"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/contracts.py",
+          "symbol": "FrozenRunContext"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/contracts.py",
+          "symbol": "RawTrainDataset"
+        }
+      ]
+    },
+    {
+      "id": "exp417_inputs",
+      "label": "Exp417 input boundary",
+      "type": "data",
+      "boundary": "Exp417 foundation",
+      "layer": 1,
+      "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+      "role": "Freezes input identities and provides separate verified read-only TRAIN and TEST loaders.",
+      "entrypoints": [
+        "freeze_run_context",
+        "load_raw_train_values",
+        "load_raw_test_values",
+        "verified_read_only_connection"
+      ],
+      "tests": [
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_inputs.py"
+      ],
+      "constraints": [
+        "SQL label-free contract",
+        "Database and lane hashes verified"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "load_raw_train_values"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "assert_label_free_sql_contract"
+        }
+      ]
+    },
+    {
+      "id": "exp417_preprocessing",
+      "label": "Exp417 preprocessing",
+      "type": "model",
+      "boundary": "Exp417 foundation",
+      "layer": 2,
+      "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
+      "role": "Groups equal-length TRAIN series, builds identity-grouped folds, channels and deterministic abstentions.",
+      "entrypoints": [
+        "preprocess_length_groups",
+        "identity_grouped_folds",
+        "canonical_waveform_sha256"
+      ],
+      "tests": [
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_preprocessing.py"
+      ],
+      "constraints": [
+        "Identity groups remain within one fold",
+        "Deterministic TRAIN-only transforms"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
+          "symbol": "preprocess_length_groups"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
+          "symbol": "identity_grouped_folds"
+        }
+      ]
+    },
+    {
+      "id": "exp417_model",
+      "label": "Exp417 causal model",
+      "type": "model",
+      "boundary": "Exp417 foundation",
+      "layer": 3,
+      "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+      "role": "Trains out-of-fold and final causal multi-horizon CNN models and batch predictors.",
+      "entrypoints": [
+        "train_oof_models",
+        "fit_final_seed_models",
+        "ResidualBatchPredictor"
+      ],
+      "tests": [
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_model.py"
+      ],
+      "constraints": [
+        "Seed and fold contracts are frozen",
+        "MPS-heavy execution serialized"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+          "symbol": "train_oof_models"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+          "symbol": "fit_final_seed_models"
+        }
+      ]
+    },
+    {
+      "id": "exp417_checkpoint",
+      "label": "Exp417 checkpoint store",
+      "type": "storage",
+      "boundary": "Exp417 foundation",
+      "layer": 4,
+      "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+      "role": "Persists and verifies Exp417 contexts, dataset results, progress and crash-recovery state.",
+      "entrypoints": [
+        "Exp417CheckpointStore",
+        "canonical_result_sha256",
+        "_record_from_bytes"
+      ],
+      "tests": [
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_checkpoints.py"
+      ],
+      "constraints": [
+        "Descriptor and inode checks",
+        "Atomic no-clobber publication"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "Exp417CheckpointStore"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "canonical_result_sha256"
+        }
+      ]
+    },
+    {
+      "id": "exp425_capabilities",
+      "label": "Exp425 capabilities",
+      "type": "interface",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 1,
+      "path": "experiments/exp425_selective_recovery/capabilities.py",
+      "role": "Mints and consumes private single-use authorities for protected source, database and checkpoint operations.",
+      "entrypoints": [
+        "_register_authority",
+        "_mint",
+        "_consume"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_capabilities.py"
+      ],
+      "constraints": [
+        "Private API",
+        "Single-use capability claims"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/capabilities.py",
+          "symbol": "_mint"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/capabilities.py",
+          "symbol": "_consume"
+        }
+      ]
+    },
+    {
+      "id": "exp425_contracts",
+      "label": "Exp425 contracts",
+      "type": "data",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 1,
+      "path": "experiments/exp425_selective_recovery/contracts.py",
+      "role": "Defines eligibility evidence, provenance, imported/native record envelopes and backend assessments.",
+      "entrypoints": [
+        "EligibilityAssessment",
+        "Exp425RunProvenance",
+        "ImportedRecordEnvelope",
+        "NativeRecordEnvelope"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_contracts.py"
+      ],
+      "constraints": [
+        "Deep immutable payloads",
+        "Lowercase SHA256 values"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/contracts.py",
+          "symbol": "EligibilityAssessment"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/contracts.py",
+          "symbol": "ImportedRecordEnvelope"
+        }
+      ]
+    },
+    {
+      "id": "exp425_database",
+      "label": "Exp425 DB snapshot",
+      "type": "data",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 2,
+      "path": "experiments/exp425_selective_recovery/database.py",
+      "role": "Pins and verifies a read-only SQLite snapshot and loads data through a held descriptor.",
+      "entrypoints": [
+        "open_database_snapshot",
+        "Exp425DatabaseSnapshot",
+        "DatabaseSnapshotAudit"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_database.py"
+      ],
+      "constraints": [
+        "Expected database SHA required",
+        "Path/inode mutation rejected"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "open_database_snapshot"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "Exp425DatabaseSnapshot"
+        }
+      ]
+    },
+    {
+      "id": "exp425_predecessor",
+      "label": "Exp424 source validator",
+      "type": "pipeline",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 2,
+      "path": "experiments/exp425_selective_recovery/predecessor.py",
+      "role": "Authenticates Exp424 source descriptors, inspects 1,117 records and adapts valid nonterminal results.",
+      "entrypoints": [
+        "open_validated_exp424_source",
+        "inspect_exp424_source",
+        "import_exp424_nonterminal"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_predecessor.py"
+      ],
+      "constraints": [
+        "Read-only descriptor-bound source",
+        "Fixed production compatibility contract"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "open_validated_exp424_source"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "inspect_exp424_source"
+        }
+      ]
+    },
+    {
+      "id": "exp425_eligibility",
+      "label": "TRAIN eligibility",
+      "type": "model",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 3,
+      "path": "experiments/exp425_selective_recovery/eligibility.py",
+      "role": "Computes fold and identity support from current TRAIN data and decides whether a group is model-eligible.",
+      "entrypoints": [
+        "apply_group_eligibility",
+        "evaluate_group_eligibility"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_eligibility.py"
+      ],
+      "constraints": [
+        "TRAIN-only evidence",
+        "Insufficient identity support produces explicit abstention"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/eligibility.py",
+          "symbol": "apply_group_eligibility"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/eligibility.py",
+          "symbol": "evaluate_group_eligibility"
+        }
+      ]
+    },
+    {
+      "id": "exp425_checkpoint",
+      "label": "Exp425 checkpoint store",
+      "type": "storage",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 4,
+      "path": "experiments/exp425_selective_recovery/checkpoints.py",
+      "role": "Owns imported/native record publication, import batches, progress, intent recovery and inspection.",
+      "entrypoints": [
+        "Exp425CheckpointStore",
+        "Exp425CheckpointInspection",
+        "record_filename"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_checkpoints.py"
+      ],
+      "constraints": [
+        "One writable owner",
+        "Crash-safe atomic state machine"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/checkpoints.py",
+          "symbol": "Exp425CheckpointStore"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/checkpoints.py",
+          "symbol": "record_filename"
+        }
+      ]
+    },
+    {
+      "id": "exp425_runtime",
+      "label": "Exp425 runtime",
+      "type": "pipeline",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 4,
+      "path": "experiments/exp425_selective_recovery/runtime.py",
+      "role": "Coordinates source import, native TRAIN processing, progress logs, resume and terminal publication.",
+      "entrypoints": [
+        "execute_runtime_command",
+        "run_selective_population",
+        "inspect_runtime_output"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_runtime.py",
+        "experiments/exp425_selective_recovery/tests/test_cli.py"
+      ],
+      "constraints": [
+        "Parent owns checkpoint and logs",
+        "Exp425 native lane required MPS"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/runtime.py",
+          "symbol": "execute_runtime_command"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/runtime.py",
+          "symbol": "run_selective_population"
+        }
+      ]
+    },
+    {
+      "id": "exp425_cli",
+      "label": "Exp425 CLI",
+      "type": "interface",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 5,
+      "path": "scratch/run_exp425_selective_recovery.py",
+      "role": "Validates command-line launch arguments and invokes the Exp425 runtime command.",
+      "entrypoints": [
+        "main"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_cli.py"
+      ],
+      "constraints": [
+        "Preflight before external writes"
+      ],
+      "evidence": [
+        {
+          "path": "scratch/run_exp425_selective_recovery.py",
+          "symbol": "main"
+        },
+        {
+          "path": "scratch/run_exp425_selective_recovery.py",
+          "symbol": "execute_runtime_command"
+        }
+      ]
+    },
+    {
+      "id": "exp426_contracts",
+      "label": "Exp426 contracts",
+      "type": "data",
+      "boundary": "Exp426 verified baseline",
+      "layer": 2,
+      "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
+      "role": "Defines immutable provenance, dataset records, counts, progress and worker evidence for the verified baseline.",
+      "entrypoints": [
+        "Exp426Provenance",
+        "Exp426DatasetRecord",
+        "Exp426Counts",
+        "Exp426Progress",
+        "WorkerEvidence"
+      ],
+      "tests": [
+        "experiments/exp426_verified_baseline/tests/test_contracts_antigravity.py"
+      ],
+      "constraints": [
+        "Exactly 12 workers in provenance",
+        "Imported and verified-abstention records remain distinct"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
+          "symbol": "Exp426Provenance"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
+          "symbol": "Exp426DatasetRecord"
+        }
+      ]
+    },
+    {
+      "id": "exp426_checkpoint",
+      "label": "Exp426 checkpoint",
+      "type": "storage",
+      "boundary": "Exp426 verified baseline",
+      "layer": 3,
+      "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+      "role": "Creates, opens, inspects and commits Exp426 records against frozen provenance and context.",
+      "entrypoints": [
+        "Exp426CheckpointStore.create",
+        "Exp426CheckpointStore.open",
+        "Exp426CheckpointStore.commit",
+        "Exp426CheckpointStore.inspect_read_only"
+      ],
+      "tests": [
+        "experiments/exp426_verified_baseline/tests/test_checkpoint_antigravity.py"
+      ],
+      "constraints": [
+        "Parent-only writable store",
+        "Exact root inventory",
+        "Atomic intent and progress publication"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+          "symbol": "Exp426CheckpointStore"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+          "symbol": "_atomic_replace"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "exp417_inputs",
+      "to": "sqlite_store",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "verified_read_only_connection"
+        }
+      ]
+    },
+    {
+      "from": "exp417_inputs",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "from .contracts import"
+        }
+      ]
+    },
+    {
+      "from": "exp417_preprocessing",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
+          "symbol": "from .contracts import"
+        }
+      ]
+    },
+    {
+      "from": "exp417_model",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+          "symbol": "from .contracts import"
+        }
+      ]
+    },
+    {
+      "from": "exp417_model",
+      "to": "python_runtime",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+          "symbol": "import torch"
+        }
+      ]
+    },
+    {
+      "from": "exp417_checkpoint",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "from .contracts import"
+        }
+      ]
+    },
+    {
+      "from": "exp417_checkpoint",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ]
+    },
+    {
+      "from": "exp425_database",
+      "to": "sqlite_store",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "open_database_snapshot"
+        }
+      ]
+    },
+    {
+      "from": "exp425_database",
+      "to": "exp417_inputs",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "exp417_inputs"
+        }
+      ]
+    },
+    {
+      "from": "exp425_predecessor",
+      "to": "exp424_source",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "open_validated_exp424_source"
+        }
+      ]
+    },
+    {
+      "from": "exp425_predecessor",
+      "to": "exp417_checkpoint",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "_record_from_bytes"
+        }
+      ]
+    },
+    {
+      "from": "exp425_predecessor",
+      "to": "exp425_checkpoint",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "import_exp424_nonterminal"
+        }
+      ]
+    },
+    {
+      "from": "exp425_predecessor",
+      "to": "exp425_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "ImportedRecordEnvelope"
+        }
+      ]
+    },
+    {
+      "from": "exp425_eligibility",
+      "to": "exp417_preprocessing",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/eligibility.py",
+          "symbol": "identity_grouped_folds"
+        }
+      ]
+    },
+    {
+      "from": "exp425_eligibility",
+      "to": "exp425_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/eligibility.py",
+          "symbol": "EligibilityAssessment"
+        }
+      ]
+    },
+    {
+      "from": "exp425_checkpoint",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/checkpoints.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ]
+    },
+    {
+      "from": "exp425_checkpoint",
+      "to": "exp425_capabilities",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/checkpoints.py",
+          "symbol": "capabilities"
+        }
+      ]
+    },
+    {
+      "from": "exp425_runtime",
+      "to": "exp425_database",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/runtime.py",
+          "symbol": "Exp425DatabaseSnapshot"
+        }
+      ]
+    },
+    {
+      "from": "exp425_runtime",
+      "to": "exp425_checkpoint",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/runtime.py",
+          "symbol": "Exp425CheckpointStore"
+        }
+      ]
+    },
+    {
+      "from": "exp425_runtime",
+      "to": "exp425_eligibility",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/runtime.py",
+          "symbol": "apply_group_eligibility"
+        }
+      ]
+    },
+    {
+      "from": "exp425_runtime",
+      "to": "exp417_preprocessing",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/runtime.py",
+          "symbol": "preprocess_length_groups"
+        }
+      ]
+    },
+    {
+      "from": "exp425_runtime",
+      "to": "exp417_model",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/runtime.py",
+          "symbol": "train_oof_models"
+        }
+      ]
+    },
+    {
+      "from": "exp425_cli",
+      "to": "exp425_runtime",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "scratch/run_exp425_selective_recovery.py",
+          "symbol": "execute_runtime_command"
+        }
+      ]
+    },
+    {
+      "from": "exp426_contracts",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ]
+    },
+    {
+      "from": "exp426_checkpoint",
+      "to": "exp426_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+          "symbol": "Exp426DatasetRecord"
+        }
+      ]
+    },
+    {
+      "from": "exp426_checkpoint",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "exp424_import",
+      "label": "Exp424 verified import",
+      "trigger": "Open the frozen Exp424 source authority.",
+      "steps": [
+        "exp424_source",
+        "exp425_predecessor",
+        "exp425_contracts",
+        "exp425_checkpoint"
+      ],
+      "outcome": "Verified nonterminal records are adapted and committed without recomputation."
+    },
+    {
+      "id": "exp425_native",
+      "label": "Exp425 TRAIN processing",
+      "trigger": "The Exp425 runtime reaches a source-terminal dataset.",
+      "steps": [
+        "sqlite_store",
+        "exp425_database",
+        "exp417_preprocessing",
+        "exp425_eligibility",
+        "exp417_model",
+        "exp425_runtime",
+        "exp425_checkpoint"
+      ],
+      "outcome": "Eligible TRAIN groups are modeled or explicitly abstained and durably recorded."
+    },
+    {
+      "id": "exp425_cli_run",
+      "label": "Exp425 CLI launch",
+      "trigger": "Invoke the selective-recovery CLI after preflight.",
+      "steps": [
+        "exp425_cli",
+        "exp425_runtime",
+        "exp425_database",
+        "exp425_checkpoint"
+      ],
+      "outcome": "A resumable run publishes self-written progress and checkpoint state."
+    },
+    {
+      "id": "exp426_task1",
+      "label": "Exp426 Task 1 contracts",
+      "trigger": "Resume Exp426 verified-baseline implementation.",
+      "steps": [
+        "research_control",
+        "exp426_contracts",
+        "artifact_utils",
+        "exp426_checkpoint"
+      ],
+      "outcome": "Frozen 12-worker provenance and crash-safe per-dataset baseline records are available for Task 2."
+    }
+  ]
+}

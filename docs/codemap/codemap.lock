@@ -1,0 +1,91 @@
+{
+  "current_commit": "0354c414440463d6fa6575051c1e6c91ea0b073d",
+  "working_tree_dirty": true,
+  "generated_at": "2026-08-05T13:58:47Z",
+  "scanned_scope": [
+    "tracked root files",
+    ".superpowers",
+    "docs except docs/codemap",
+    "experiments",
+    "operational",
+    "reports",
+    "scratch",
+    "scripts",
+    "vercel-dashboard",
+    "current untracked experiments/exp426_verified_baseline"
+  ],
+  "excluded_directories": [
+    ".git",
+    ".worktrees",
+    "docs/codemap",
+    "vendor",
+    "node_modules",
+    "build",
+    "dist",
+    "cache",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".venv",
+    "venv",
+    "outputs",
+    "results"
+  ],
+  "fingerprint_algorithm": "sha256-v1: for each top-level module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Root-level tracked files are grouped as root. docs/codemap is excluded to prevent self-reference.",
+  "module_fingerprints": {
+    ".superpowers": {
+      "fingerprint": "6ad326315dbf8e2b9ebcd9e7bd1289ba6eb38c065eb9fe90d07fb217120ea098",
+      "tracked_files": 30
+    },
+    "docs": {
+      "fingerprint": "1be88361a5ecf0ecd4b5783e168fc63934782a001c77846f802d0998dc6d6a55",
+      "tracked_files": 314
+    },
+    "experiments": {
+      "fingerprint": "433a057a64b8ce1d2694bd7294435aaacba615a3283a6b0e4a8de970e95b793b",
+      "tracked_files": 1007
+    },
+    "operational": {
+      "fingerprint": "3ff7c5214e60afedcc150e5a2a30a86823f0b03b67f5cf59b8f90615dc32070f",
+      "tracked_files": 2
+    },
+    "outputs": {
+      "fingerprint": "0973d7855daffbf1d49334a663447597eb4678c922dcca37a6bd9aeb9992d70e",
+      "tracked_files": 269
+    },
+    "reports": {
+      "fingerprint": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
+      "tracked_files": 4
+    },
+    "results": {
+      "fingerprint": "9d1fbf221195826c63442f6b309e64fa753dfdac6f33b272e453b0fd2a3640b1",
+      "tracked_files": 3
+    },
+    "root": {
+      "fingerprint": "898619c8a61107fdc917d6b0ff6f56fc3e9ea89b9590b31265269eefd5b878d2",
+      "tracked_files": 210
+    },
+    "scratch": {
+      "fingerprint": "d3a4e7cf576c04faf4888bd69b344f5795f27db6bcaee8054722c35ef0dbf330",
+      "tracked_files": 135
+    },
+    "scripts": {
+      "fingerprint": "f4b764d442d0ba39e7af6ed519c08b6e3f49cd8183420fa41a15424279249899",
+      "tracked_files": 1
+    },
+    "vercel-dashboard": {
+      "fingerprint": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d",
+      "tracked_files": 81
+    }
+  },
+  "comparison": {
+    "previous_lock_found": true,
+    "new_modules": [],
+    "changed_modules": [
+      "docs",
+      "experiments",
+      "root"
+    ],
+    "removed_modules": []
+  }
+}

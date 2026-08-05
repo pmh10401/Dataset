@@ -36,3 +36,21 @@ Current Exp254 RandomInterval, MatrixProfile, SAX, and SFA transforms use the
 official sktime CPU implementations. Exp254 remains CPU-only for comparability.
 Future MLX-eligible stages include dense distance matrices, batched projections,
 tensor feature fusion, and neural embeddings when parity and speed gates pass.
+
+## File Naming Policy
+
+All newly created files across all tasks and experiments must include `antigravity` in their file name (e.g., `antigravity_<name>.<ext>`, `<name>_antigravity.<ext>`).
+
+## Code Map Synchronization
+
+At the start of every code-changing task, compare the current repo with docs/codemap/codemap.lock.
+
+Before modifying a module, use docs/codemap/codemap.json to answer three questions:
+
+1. What calls it?
+2. What does it affect?
+3. Which tests cover it?
+
+If the map is stale or cannot answer those questions, regenerate codemap.html, codemap.json, and codemap.lock before changing the code.
+
+Whenever module boundaries, dependencies, routes, databases, queues, or major data flows change, update the code map in the same commit as the code.
