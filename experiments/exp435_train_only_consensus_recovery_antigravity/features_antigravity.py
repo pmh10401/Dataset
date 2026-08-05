@@ -24,6 +24,8 @@ from .contracts_antigravity import (
     CalibratedTrainGroup,
     ChannelCalibration,
     PreparedTrainGroup,
+    TrainGroup,
+    UnavailableTrainGroup,
 )
 
 
@@ -111,59 +113,105 @@ def _canonical_matrix_digest(matrix: NDArray[np.float32]) -> str:
     return sha256(payload).hexdigest()
 
 
-def _validate_group(group: PreparedTrainGroup) -> tuple[NDArray[np.float32], int, int]:
-    if not isinstance(group, PreparedTrainGroup):
-        raise ValueError("group must be a PreparedTrainGroup")
-    matrix = _as_float32_matrix(group.values, "group values")
+def _unavailable_group(
+    dataset: str,
+    length: int,
+    instance_indices: tuple[int, ...],
+    reason: str,
+) -> UnavailableTrainGroup:
+    return UnavailableTrainGroup(
+        dataset=dataset,
+        length=max(1, int(length)),
+        instance_indices=tuple(instance_indices),
+        reason=reason,
+    )
+
+
+def _validate_group_matrix(
+    group: PreparedTrainGroup,
+) -> tuple[NDArray[np.float32], int, int] | UnavailableTrainGroup:
+    """Validate an in-memory group while preserving a structured failure."""
+
+    try:
+        matrix = _as_float32_matrix(group.values, "group values")
+    except ValueError:
+        return _unavailable_group(
+            group.dataset,
+            group.length,
+            group.instance_indices,
+            "nonfinite_train",
+        )
     rows, length = matrix.shape
     if length < FROZEN_CONFIG.min_series_length:
-        raise ValueError("insufficient_series_length")
+        return _unavailable_group(
+            group.dataset,
+            length,
+            group.instance_indices,
+            "insufficient_series_length",
+        )
     if rows != group.reference_count or rows != len(group.instance_indices):
         raise ValueError("group row count does not match instance indices")
     if rows < FROZEN_CONFIG.min_train_rows:
-        raise ValueError("insufficient_train_rows")
+        return _unavailable_group(
+            group.dataset,
+            length,
+            group.instance_indices,
+            "insufficient_train_rows",
+        )
     return matrix, rows, length
 
 
-def prepare_train_groups(train: RawTrainDataset) -> tuple[PreparedTrainGroup, ...]:
-    """Group finite TRAIN rows by exact raw length in deterministic order.
+def prepare_train_groups(train: RawTrainDataset) -> tuple[TrainGroup, ...]:
+    """Group TRAIN rows by exact raw length without suppressing siblings.
 
-    Length-one rows cannot satisfy the shared Exp435 group contract and are
-    rejected with the preregistered reason.  Groups with fewer than four rows
-    are retained so their exact TRAIN identity is still visible; calibration
-    fails closed with ``insufficient_train_rows`` when fitted.
+    Invalid groups are returned as immutable ``UnavailableTrainGroup`` records
+    so downstream scoring can abstain only their exact coordinates.  Valid
+    groups remain ordinary ``PreparedTrainGroup`` records.
     """
 
     if not isinstance(train, RawTrainDataset):
         raise ValueError("train must be a RawTrainDataset")
     FROZEN_CONFIG.validate()
-    by_length: dict[int, list[tuple[int, tuple[float, ...]]]] = {}
+    by_length: dict[int, list[tuple[int, tuple[float, ...], bool]]] = {}
     for series in train.series:
         length = len(series.values)
-        if length < FROZEN_CONFIG.min_series_length:
-            raise ValueError("insufficient_series_length")
         with np.errstate(over="ignore", invalid="ignore"):
             values = np.asarray(series.values, dtype=np.float32)
-        if values.ndim != 1 or len(values) != length or not np.isfinite(values).all():
-            raise ValueError("nonfinite_train")
+        finite = values.ndim == 1 and len(values) == length and bool(np.isfinite(values).all())
         by_length.setdefault(length, []).append(
-            (series.instance_index, tuple(float(value) for value in values))
+            (
+                series.instance_index,
+                tuple(float(value) for value in values),
+                finite,
+            )
         )
 
-    groups: list[PreparedTrainGroup] = []
+    groups: list[TrainGroup] = []
     for length in sorted(by_length):
         rows = sorted(by_length[length], key=lambda item: item[0])
-        indices = tuple(index for index, _ in rows)
-        matrix = np.asarray([values for _, values in rows], dtype=np.float32)
-        if matrix.shape != (len(rows), length) or not np.isfinite(matrix).all():
-            raise ValueError("nonfinite_train")
-        groups.append(
-            PreparedTrainGroup(
-                dataset=train.dataset,
-                length=length,
-                instance_indices=indices,
-                values=matrix,
+        indices = tuple(index for index, _, _ in rows)
+        if length < FROZEN_CONFIG.min_series_length:
+            groups.append(
+                _unavailable_group(
+                    train.dataset,
+                    length,
+                    indices,
+                    "insufficient_series_length",
+                )
             )
+            continue
+        if not all(finite for _, _, finite in rows):
+            groups.append(_unavailable_group(train.dataset, length, indices, "nonfinite_train"))
+            continue
+        if len(rows) < FROZEN_CONFIG.min_train_rows:
+            groups.append(_unavailable_group(train.dataset, length, indices, "insufficient_train_rows"))
+            continue
+        matrix = np.asarray([values for _, values, _ in rows], dtype=np.float32)
+        if matrix.shape != (len(rows), length) or not np.isfinite(matrix).all():
+            groups.append(_unavailable_group(train.dataset, length, indices, "nonfinite_train"))
+            continue
+        groups.append(
+            PreparedTrainGroup(dataset=train.dataset, length=length, instance_indices=indices, values=matrix)
         )
     return tuple(groups)
 
@@ -308,34 +356,58 @@ def _acf_failure_reason(row: NDArray[np.float32]) -> str:
     return "zero_acf_energy"
 
 
-def fit_calibrated_group(group: PreparedTrainGroup) -> CalibratedTrainGroup:
+def fit_calibrated_group(group: TrainGroup) -> CalibratedTrainGroup | UnavailableTrainGroup:
     """Fit all available TRAIN channels and deterministic LOO thresholds."""
 
-    matrix, rows, length = _validate_group(group)
+    if isinstance(group, UnavailableTrainGroup):
+        return group
+    if not isinstance(group, PreparedTrainGroup):
+        raise ValueError("group must be a PreparedTrainGroup or UnavailableTrainGroup")
+    validated = _validate_group_matrix(group)
+    if isinstance(validated, UnavailableTrainGroup):
+        return validated
+    matrix, rows, length = validated
     raw_center, raw_scale = _robust_center_scale(matrix)
     prototype_reason = _scale_reason(raw_scale)
     if prototype_reason is not None:
-        # CalibratedTrainGroup intentionally requires a usable prototype.  A
-        # group without one is therefore rejected rather than fabricating a
-        # terminal record with an unusable reference channel.
-        raise ValueError(prototype_reason)
-    standardized = _standardize(matrix, raw_center, raw_scale)
-    prototype = _available_calibration(
-        "prototype",
-        standardized,
-        center=float(raw_center),
-        scale=float(raw_scale),
-        k=FROZEN_CONFIG.neighbor_count,
-    )
+        return _unavailable_group(
+            group.dataset,
+            length,
+            group.instance_indices,
+            prototype_reason,
+        )
+    try:
+        standardized = _standardize(matrix, raw_center, raw_scale)
+        prototype = _available_calibration(
+            "prototype",
+            standardized,
+            center=float(raw_center),
+            scale=float(raw_scale),
+            k=FROZEN_CONFIG.neighbor_count,
+        )
+    except ValueError:
+        return _unavailable_group(
+            group.dataset,
+            length,
+            group.instance_indices,
+            "nonfinite_train",
+        )
 
     gradients: NDArray[np.float32] | None
     gradient: ChannelCalibration
-    gradient_matrix = _gradient_matrix(matrix)
-    gradient_center, gradient_scale = _robust_center_scale(gradient_matrix)
-    gradient_reason = _scale_reason(gradient_scale)
-    if gradient_reason is not None:
+    try:
+        gradient_matrix = _gradient_matrix(matrix)
+    except ValueError:
+        gradient_matrix = None
+        gradient_center = np.float32(0.0)
+        gradient_scale = np.float32(0.0)
+        gradient_reason = "nonfinite_train"
+    else:
+        gradient_center, gradient_scale = _robust_center_scale(gradient_matrix)
+        gradient_reason = _scale_reason(gradient_scale)
+    if gradient_reason is not None or gradient_matrix is None:
         gradients = None
-        gradient = _unavailable("gradient", gradient_reason)
+        gradient = _unavailable("gradient", gradient_reason or "nonfinite_train")
     else:
         try:
             gradients = _standardize(gradient_matrix, gradient_center, gradient_scale)

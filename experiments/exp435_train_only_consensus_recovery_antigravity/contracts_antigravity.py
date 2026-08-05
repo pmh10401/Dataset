@@ -31,6 +31,14 @@ if TYPE_CHECKING:  # Boundary-only imports; prediction never constructs them her
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _STATUSES = frozenset({"scored", "abstained", "failed"})
 _CHANNELS = frozenset({"prototype", "gradient", "acf"})
+_UNAVAILABLE_GROUP_REASONS = frozenset(
+    {
+        "insufficient_train_rows",
+        "insufficient_series_length",
+        "nonfinite_train",
+        "zero_scale",
+    }
+)
 
 
 def _name(value: object, label: str) -> str:
@@ -117,6 +125,82 @@ class PreparedTrainGroup:
     @property
     def reference_count(self) -> int:
         return len(self.instance_indices)
+
+
+@dataclass(frozen=True)
+class UnavailableTrainGroup:
+    """Immutable evidence for an exact-length TRAIN group that abstains.
+
+    This record intentionally contains no numerical array.  It preserves the
+    affected TRAIN instance coordinates and the deterministic reason so a
+    downstream scorer can abstain that exact length while continuing to score
+    valid sibling lengths.
+    """
+
+    dataset: str
+    length: int
+    instance_indices: tuple[int, ...]
+    reason: str
+    identity_digest: str | None = None
+
+    def __post_init__(self) -> None:
+        _name(self.dataset, "dataset")
+        _integer(self.length, "length", minimum=1)
+        indices = tuple(
+            _integer(index, "instance index")
+            for index in _tuple(self.instance_indices, "instance_indices")
+        )
+        if not indices or indices != tuple(sorted(indices)) or len(indices) != len(set(indices)):
+            raise ValueError("instance_indices must be sorted, unique, and non-empty")
+        object.__setattr__(self, "instance_indices", indices)
+        if self.reason not in _UNAVAILABLE_GROUP_REASONS:
+            raise ValueError("reason is not preregistered")
+        payload = self.to_payload(include_digest=False)
+        expected_digest = _canonical_digest(payload)
+        if self.identity_digest is None:
+            digest = expected_digest
+        else:
+            digest = _digest(self.identity_digest, "identity_digest")
+            if digest != expected_digest:
+                raise ValueError("identity_digest does not match canonical payload")
+        object.__setattr__(self, "identity_digest", digest)
+
+    @property
+    def available(self) -> bool:
+        return False
+
+    @property
+    def reference_count(self) -> int:
+        return len(self.instance_indices)
+
+    @property
+    def evidence_digest(self) -> str:
+        """Alias for consumers that call all group identity evidence a digest."""
+
+        assert self.identity_digest is not None
+        return self.identity_digest
+
+    @property
+    def identity_sha256(self) -> str:
+        """Readable SHA256 alias for publication/checkpoint adapters."""
+
+        assert self.identity_digest is not None
+        return self.identity_digest
+
+    def to_payload(self, *, include_digest: bool = True) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "schema": "exp435.unavailable-train-group.v1",
+            "dataset": self.dataset,
+            "length": self.length,
+            "instance_indices": list(self.instance_indices),
+            "reason": self.reason,
+        }
+        if include_digest:
+            payload["identity_digest"] = self.identity_digest
+        return payload
+
+
+TrainGroup = PreparedTrainGroup | UnavailableTrainGroup
 
 
 @dataclass(frozen=True)
@@ -288,6 +372,9 @@ class CalibratedTrainGroup:
         """Alias for the normalized ACF matrix."""
 
         return self.acf_values
+
+
+CalibratedTrainGroupResult = CalibratedTrainGroup | UnavailableTrainGroup
 
 
 @dataclass(frozen=True)

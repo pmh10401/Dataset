@@ -14,6 +14,7 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.contracts_anti
     CalibratedTrainGroup,
     ChannelCalibration,
     PreparedTrainGroup,
+    UnavailableTrainGroup,
 )
 from experiments.exp435_train_only_consensus_recovery_antigravity.features_antigravity import (
     acf_vector,
@@ -81,19 +82,23 @@ class FeatureTests(unittest.TestCase):
             dataset="Demo",
             series=(
                 RawSeries(0, (0.0, 1.0, 0.0, 1.0)),
-                RawSeries(1, (0.0, 1.0)),
-                RawSeries(2, (1.0, 0.0, 1.0, 0.0)),
-                RawSeries(3, (1.0, 0.0)),
+                RawSeries(1, (1.0, 0.0, 1.0, 0.0)),
+                RawSeries(2, (0.5, 1.5, 0.5, 1.5)),
+                RawSeries(3, (1.5, 0.5, 1.5, 0.5)),
+                RawSeries(4, (0.0, 1.0)),
+                RawSeries(5, (1.0, 0.0)),
+                RawSeries(6, (0.5, 1.5)),
+                RawSeries(7, (1.5, 0.5)),
             ),
         )
         groups = prepare_train_groups(train)
         self.assertEqual(tuple(group.length for group in groups), (2, 4))
-        self.assertEqual(groups[0].instance_indices, (1, 3))
-        self.assertEqual(groups[1].instance_indices, (0, 2))
+        self.assertEqual(groups[0].instance_indices, (4, 5, 6, 7))
+        self.assertEqual(groups[1].instance_indices, (0, 1, 2, 3))
         self.assertEqual(groups[1].values.dtype, np.dtype(np.float32))
         self.assertFalse(groups[1].values.flags.writeable)
 
-    def test_prepare_rejects_nonfinite_train_values(self) -> None:
+    def test_prepare_records_nonfinite_train_values(self) -> None:
         train = RawTrainDataset(
             dataset="Demo",
             series=(
@@ -103,8 +108,47 @@ class FeatureTests(unittest.TestCase):
                 RawSeries(3, (0.0, 1.0)),
             ),
         )
-        with self.assertRaisesRegex(ValueError, "nonfinite"):
-            prepare_train_groups(train)
+        groups = prepare_train_groups(train)
+        self.assertEqual(len(groups), 1)
+        self.assertIsInstance(groups[0], UnavailableTrainGroup)
+        self.assertEqual(groups[0].reason, "nonfinite_train")  # type: ignore[union-attr]
+
+    def test_prepare_returns_unavailable_outcomes_without_suppressing_valid_siblings(self) -> None:
+        series = [
+            RawSeries(index, (float(index), float(index + 1)))
+            for index in range(4)
+        ]
+        series.extend(
+            RawSeries(index, (float(index),))
+            for index in range(4, 8)
+        )
+        series.extend(
+            RawSeries(index, (np.nan, float(index), float(index + 1)))
+            for index in range(8, 12)
+        )
+        series.extend(
+            RawSeries(index, (float(index),) * 4)
+            for index in range(12, 15)
+        )
+        groups = prepare_train_groups(RawTrainDataset("Demo", tuple(series)))
+        self.assertEqual(tuple(group.length for group in groups), (1, 2, 3, 4))
+        self.assertIsInstance(groups[0], UnavailableTrainGroup)
+        self.assertIsInstance(groups[1], PreparedTrainGroup)
+        self.assertIsInstance(groups[2], UnavailableTrainGroup)
+        self.assertIsInstance(groups[3], UnavailableTrainGroup)
+        self.assertEqual(groups[0].reason, "insufficient_series_length")  # type: ignore[union-attr]
+        self.assertEqual(groups[2].reason, "nonfinite_train")  # type: ignore[union-attr]
+        self.assertEqual(groups[3].reason, "insufficient_train_rows")  # type: ignore[union-attr]
+        fitted = fit_calibrated_group(groups[1])
+        self.assertIsInstance(fitted, CalibratedTrainGroup)
+
+    def test_fit_returns_structured_unavailable_outcomes_for_invalid_prototype(self) -> None:
+        sparse = fit_calibrated_group(prepared_group([[0, 1], [1, 0], [0, 1]]))
+        self.assertIsInstance(sparse, UnavailableTrainGroup)
+        self.assertEqual(sparse.reason, "insufficient_train_rows")  # type: ignore[union-attr]
+        zero_scale = fit_calibrated_group(prepared_group([[1, 1], [1, 1], [1, 1], [1, 1]]))
+        self.assertIsInstance(zero_scale, UnavailableTrainGroup)
+        self.assertEqual(zero_scale.reason, "zero_scale")  # type: ignore[union-attr]
 
     def test_score_uses_float32_rms_and_nearest_three(self) -> None:
         query = np.asarray([0.0, 0.0], dtype=np.float32)
@@ -155,22 +199,25 @@ class FeatureTests(unittest.TestCase):
         self.assertEqual(vector.shape, (2,))
         self.assertIsNone(acf_vector(values, 32, np.inf))
 
-    def test_short_or_insufficient_groups_are_rejected_with_preregistered_reason(self) -> None:
-        with self.assertRaisesRegex(ValueError, "insufficient_train_rows"):
-            fit_calibrated_group(prepared_group([[0, 1], [1, 0], [0, 1]]))
+    def test_short_or_insufficient_groups_are_structured_with_preregistered_reason(self) -> None:
+        sparse = fit_calibrated_group(prepared_group([[0, 1], [1, 0], [0, 1]]))
+        self.assertIsInstance(sparse, UnavailableTrainGroup)
+        self.assertEqual(sparse.reason, "insufficient_train_rows")  # type: ignore[union-attr]
 
-        with self.assertRaisesRegex(ValueError, "insufficient_series_length"):
-            prepare_train_groups(
-                RawTrainDataset(
-                    "Demo",
-                    tuple(RawSeries(index, (float(index),)) for index in range(4)),
-                )
+        short = prepare_train_groups(
+            RawTrainDataset(
+                "Demo",
+                tuple(RawSeries(index, (float(index),)) for index in range(4)),
             )
+        )
+        self.assertIsInstance(short[0], UnavailableTrainGroup)
+        self.assertEqual(short[0].reason, "insufficient_series_length")  # type: ignore[union-attr]
 
     def test_zero_mad_is_rejected_without_fabricating_scale(self) -> None:
         group = prepared_group([[1, 1], [1, 1], [1, 1], [1, 1]])
-        with self.assertRaisesRegex(ValueError, "zero_scale"):
-            fit_calibrated_group(group)
+        fitted = fit_calibrated_group(group)
+        self.assertIsInstance(fitted, UnavailableTrainGroup)
+        self.assertEqual(fitted.reason, "zero_scale")  # type: ignore[union-attr]
 
     def test_gradient_unavailable_does_not_hide_available_acf(self) -> None:
         base = np.arange(16, dtype=np.float32)

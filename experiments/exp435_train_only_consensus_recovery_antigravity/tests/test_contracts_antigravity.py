@@ -16,6 +16,7 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.contracts_anti
     Exp435RunSummary,
     InstanceScoreEvidence,
     PreparedTrainGroup,
+    UnavailableTrainGroup,
 )
 
 
@@ -193,6 +194,39 @@ class Exp435ContractTests(unittest.TestCase):
             acf=ChannelCalibration.unavailable("acf", "not_fitted"),
         )
         self.assertFalse(calibrated.values.flags.writeable)
+
+    def test_unavailable_train_group_is_immutable_and_digest_bound(self) -> None:
+        outcome = UnavailableTrainGroup(
+            dataset="Demo",
+            length=1,
+            instance_indices=(4, 5),
+            reason="insufficient_series_length",
+        )
+        self.assertFalse(outcome.available)
+        self.assertEqual(outcome.reference_count, 2)
+        self.assertEqual(outcome, UnavailableTrainGroup("Demo", 1, (4, 5), "insufficient_series_length"))
+        self.assertEqual(len(outcome.identity_digest), 64)
+        self.assertEqual(outcome.evidence_digest, outcome.identity_digest)
+        with self.assertRaisesRegex(ValueError, "identity_digest"):
+            replace(outcome, reason="insufficient_train_rows")
+        with self.assertRaises(FrozenInstanceError):
+            outcome.reason = "changed"  # type: ignore[misc]
+
+    def test_unavailable_train_group_rejects_unknown_reason_and_bad_order(self) -> None:
+        for changes, message in (
+            ({"reason": "not_preregistered"}, "reason"),
+            ({"instance_indices": (2, 1)}, "sorted"),
+            ({"instance_indices": ()}, "non-empty"),
+        ):
+            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                fields: dict[str, object] = {
+                    "dataset": "Demo",
+                    "length": 1,
+                    "instance_indices": (1, 2),
+                    "reason": "insufficient_series_length",
+                }
+                fields.update(changes)
+                UnavailableTrainGroup(**fields)  # type: ignore[arg-type]
 
     def test_backend_and_run_summary_are_validated_and_immutable(self) -> None:
         backend = BackendDecision.cpu_fallback("mlx_unavailable")
