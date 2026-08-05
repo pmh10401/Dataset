@@ -160,7 +160,7 @@ class Exp426ParallelTests(unittest.TestCase):
                 [item.scientific_sha256 for item in twelve],
             )
             self.assertEqual(
-                sum(hasattr(item.value, "terminal_reason") for item in twelve), 1
+                sum(item.value.terminal_reason is not None for item in twelve), 1
             )
 
     def test_real_train_task_runs_in_worker_and_returns_verified_abstention(self) -> None:

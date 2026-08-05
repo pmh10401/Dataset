@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-05T14:28:30Z",
-  "generated_from_commit": "c8f84a1865ef9dedaff4d093b3545592ba17ac3a",
+  "generated_at": "2026-08-05T14:42:45Z",
+  "generated_from_commit": "14cbde223cfdfabb2673fdf3e874aafe1b59d0ea",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -314,37 +314,6 @@
       ]
     },
     {
-      "id": "exp425_capabilities",
-      "label": "Exp425 capabilities",
-      "type": "interface",
-      "boundary": "Exp425 trusted boundary",
-      "layer": 1,
-      "path": "experiments/exp425_selective_recovery/capabilities.py",
-      "role": "Mints and consumes private single-use authorities for protected source, database and checkpoint operations.",
-      "entrypoints": [
-        "_register_authority",
-        "_mint",
-        "_consume"
-      ],
-      "tests": [
-        "experiments/exp425_selective_recovery/tests/test_capabilities.py"
-      ],
-      "constraints": [
-        "Private API",
-        "Single-use capability claims"
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/capabilities.py",
-          "symbol": "_mint"
-        },
-        {
-          "path": "experiments/exp425_selective_recovery/capabilities.py",
-          "symbol": "_consume"
-        }
-      ]
-    },
-    {
       "id": "exp425_contracts",
       "label": "Exp425 contracts",
       "type": "data",
@@ -630,6 +599,43 @@
           "symbol": "_atomic_replace"
         }
       ]
+    },
+    {
+      "id": "exp426_runtime",
+      "label": "Exp426 resumable runtime",
+      "type": "orchestrator",
+      "boundary": "Exp426 verified baseline",
+      "layer": 4,
+      "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+      "role": "Coordinates frozen-source intake, TRAIN-only terminal verification, parent-owned checkpoint commits, crash recovery and self-written progress logs.",
+      "entrypoints": [
+        "run_exp426_new",
+        "run_exp426_resume",
+        "inspect_exp426"
+      ],
+      "tests": [
+        "experiments/exp426_verified_baseline/tests/test_runtime_antigravity.py"
+      ],
+      "constraints": [
+        "Exactly 12 CPU workers with bounded prefetch 24",
+        "Parent alone owns database, checkpoint and logs",
+        "No TEST value or label loader",
+        "Atomic progress, durable events and 30-second heartbeat"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "def run_exp426_new"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "def run_exp426_resume"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "class _RuntimeLogger"
+        }
+      ]
     }
   ],
   "edges": [
@@ -810,17 +816,6 @@
       ]
     },
     {
-      "from": "exp425_checkpoint",
-      "to": "exp425_capabilities",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/checkpoints.py",
-          "symbol": "capabilities"
-        }
-      ]
-    },
-    {
       "from": "exp425_runtime",
       "to": "exp425_database",
       "type": "calls",
@@ -962,6 +957,50 @@
           "symbol": "canonical_json_bytes"
         }
       ]
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp426_intake_parallel",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "run_ordered_workers"
+        }
+      ]
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp426_checkpoint",
+      "type": "writes",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "store.commit"
+        }
+      ]
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp425_database",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "database.load_train"
+        }
+      ]
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp426_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "Exp426Counts"
+        }
+      ]
     }
   ],
   "flows": [
@@ -993,18 +1032,6 @@
       "outcome": "Eligible TRAIN groups are modeled or explicitly abstained and durably recorded."
     },
     {
-      "id": "exp426_task1",
-      "label": "Exp426 Task 1 contracts",
-      "trigger": "Resume Exp426 verified-baseline implementation.",
-      "steps": [
-        "research_control",
-        "exp426_contracts",
-        "artifact_utils",
-        "exp426_checkpoint"
-      ],
-      "outcome": "Frozen 12-worker provenance and crash-safe per-dataset baseline records are available for Task 2."
-    },
-    {
       "id": "exp426_task2",
       "label": "Exp426 verified intake",
       "trigger": "Open the frozen Exp424 authority and stream sorted source records.",
@@ -1017,6 +1044,21 @@
         "exp426_contracts"
       ],
       "outcome": "983 scored imports and 134 TRAIN-verified abstentions are produced in stable dataset order without TEST labels."
+    },
+    {
+      "id": "exp426_runtime_flow",
+      "label": "Exp426 resumable verified baseline",
+      "trigger": "Start or resume the frozen Exp426 baseline population.",
+      "steps": [
+        "research_control",
+        "exp426_runtime",
+        "exp424_source",
+        "exp426_intake_parallel",
+        "exp425_database",
+        "sqlite_store",
+        "exp426_checkpoint"
+      ],
+      "outcome": "All 1,117 records are imported or TRAIN-verified, durably checkpointed and published as complete_review_only without TEST labels."
     }
   ]
 }

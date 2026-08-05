@@ -240,7 +240,7 @@ git diff --check
 
 Expected: all pass; production read-only smoke reports `1117/983/134`.
 
-- [ ] **Step 8: Commit Task 2**
+- [x] **Step 8: Commit Task 2**
 
 ```bash
 git add experiments/exp426_verified_baseline
@@ -260,7 +260,7 @@ git commit -m "feat(exp426): verify baseline on twelve CPU cores"
 - Produces: atomic `progress.json`, append-only `events.jsonl`, `parent.log`, and `run.pid`.
 - Consumes: Tasks 1–2 and `open_database_snapshot`.
 
-- [ ] **Step 1: Write mixed-run RED test**
+- [x] **Step 1: Write mixed-run RED test**
 
 Use a 15-dataset fixture: 12 imported and 3 terminal. Assert imported records never load DB/TRAIN, terminal records load TRAIN once, no TEST method is reachable, 12 workers are created, parent alone commits records, and final counts are exactly:
 
@@ -271,7 +271,7 @@ self.assertEqual(result.counts.verified_train_abstentions, 3)
 self.assertEqual(result.counts.failed, 0)
 ```
 
-- [ ] **Step 2: Write progress/resume RED tests**
+- [x] **Step 2: Write progress/resume RED tests**
 
 Test exact state transitions:
 
@@ -284,7 +284,7 @@ For every dataset, require current dataset, TRAIN/TEST sizes and lengths, backen
 
 Inject crashes after worker result, record commit, event append and progress replace. Resume must process each missing record once, never duplicate a terminal event, and never recompute a completed imported/abstention record.
 
-- [ ] **Step 3: Run Task 3 RED tests**
+- [x] **Step 3: Run Task 3 RED tests**
 
 ```bash
 python3 -m unittest experiments.exp426_verified_baseline.tests.test_runtime_antigravity -v
@@ -292,17 +292,17 @@ python3 -m unittest experiments.exp426_verified_baseline.tests.test_runtime_anti
 
 Expected: import failure because `runtime_antigravity.py` does not exist.
 
-- [ ] **Step 4: Implement parent-owned orchestration**
+- [x] **Step 4: Implement parent-owned orchestration**
 
 The parent opens one DB snapshot, freezes the context, validates source, dispatches source records to 12 workers, commits 983 imports in sorted order, then loads and dispatches the 134 TRAIN datasets. It never calls a TEST-value or label loader. It verifies the DB boundary before and after each TRAIN load.
 
 Keep two bounded queues of 24 tasks. Worker results may arrive in any order, but a small in-memory reorder map holds them until the next sorted dataset can be committed.
 
-- [ ] **Step 5: Implement durable progress**
+- [x] **Step 5: Implement durable progress**
 
 Every progress write uses temp + `fsync` + replace. Every JSONL/text append is flushed and `fsync`ed. A 30-second heartbeat thread writes without Codex monitoring and stops before terminal publication. `run.pid` is evidence, not a live lease after exit; live-process rejection uses PID plus run identity.
 
-- [ ] **Step 6: Run Task 3 verification**
+- [x] **Step 6: Run Task 3 verification**
 
 ```bash
 python3 -m unittest \

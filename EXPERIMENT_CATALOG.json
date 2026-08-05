@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-05T23:01:00+09:00",
+  "updated_at": "2026-08-06T00:05:00+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -87,7 +87,7 @@
     {
       "id": "Exp426",
       "kind": "verified_checkpoint_baseline_completion",
-      "status": "implementation_task2",
+      "status": "implementation_task3",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "a86f333c1f3bc0c1c9d21bcca78e68cffb8e3751",
       "documents": [
@@ -100,7 +100,7 @@
       "mlx_adopted": false,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "Task 1 frozen contracts and crash-safe checkpoint completed at c8f84a1865ef9dedaff4d093b3545592ba17ac3a. Task 2 now implements read-only Exp424 intake and fixed twelve-worker TRAIN-only verification; no prediction or TEST evaluation has started."
+      "notes": "Tasks 1-2 are complete through 14cbde223cfdfabb2673fdf3e874aafe1b59d0ea: frozen contracts/checkpoint plus read-only Exp424 intake and fixed twelve-worker TRAIN verification. Task 3 now adds resumable parent-owned orchestration and self-written progress logs; no prediction or TEST evaluation has started."
     }
   ]
 }

@@ -143,11 +143,7 @@ def _execute_task(ordinal: int, task: WorkerTask) -> Exp426OrderedWorkerResult:
         classification = classify_exp424_record_bytes(
             task.dataset, task.raw, task.expected_digest
         )
-        value = (
-            classification
-            if classification.imported_record is None
-            else WorkerEvidence(ordinal, task.dataset, classification.imported_record)
-        )
+        value = classification
     elif isinstance(task, Exp426TrainWorkerTask):
         from .source_antigravity import verify_train_abstention
 

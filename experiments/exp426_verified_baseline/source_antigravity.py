@@ -67,6 +67,10 @@ class Exp424SourceClassification:
     source_result_sha256: str
     imported_record: Exp426DatasetRecord | None
     terminal_reason: str | None
+    train_size: int
+    train_lengths: tuple[int, ...]
+    test_size: int
+    test_lengths: tuple[int, ...]
 
     def __post_init__(self) -> None:
         if not isinstance(self.dataset, str) or not self.dataset:
@@ -83,6 +87,20 @@ class Exp424SourceClassification:
             not isinstance(self.terminal_reason, str) or not self.terminal_reason
         ):
             raise ValueError("source terminal reason is invalid")
+        if (
+            type(self.train_size) is not int or self.train_size < 0
+            or type(self.test_size) is not int or self.test_size <= 0
+        ):
+            raise ValueError("source classification sizes are invalid")
+        for label, values in (
+            ("TRAIN", self.train_lengths), ("TEST", self.test_lengths),
+        ):
+            if (
+                not isinstance(values, tuple)
+                or any(type(value) is not int or value <= 0 for value in values)
+                or values != tuple(sorted(set(values)))
+            ):
+                raise ValueError(f"source classification {label} lengths are invalid")
 
     @property
     def scientific_sha256(self) -> str:
@@ -95,6 +113,10 @@ class Exp424SourceClassification:
                 None if self.imported_record is None else self.imported_record.sha256
             ),
             "terminal_reason": self.terminal_reason,
+            "train_size": self.train_size,
+            "train_lengths": list(self.train_lengths),
+            "test_size": self.test_size,
+            "test_lengths": list(self.test_lengths),
         }
         return sha256(canonical_json_bytes(payload)).hexdigest()
 
@@ -243,10 +265,13 @@ def classify_exp424_record_bytes(
     if not isinstance(result, DatasetResult) or result.dataset != dataset:
         raise ValueError("Exp424 source result dataset does not match")
     result_digest = canonical_result_sha256(result)
+    test_manifest = result.context.test_identity_manifest[dataset]
+    test_lengths = tuple(sorted({length for _index, length in test_manifest}))
     if isinstance(result.decision_evidence, DatasetTerminalEvidence):
         return Exp424SourceClassification(
             dataset, digest, result_digest, None,
             _canonical_terminal_reason(result.decision_evidence.reason),
+            0, (), result.test_size, test_lengths,
         )
     coordinates = tuple(
         (candidate.dataset, candidate.instance_index)
@@ -263,7 +288,13 @@ def classify_exp424_record_bytes(
         eligibility_sha256=None,
         reason="verified_exp424_nonterminal",
     )
-    return Exp424SourceClassification(dataset, digest, result_digest, record, None)
+    return Exp424SourceClassification(
+        dataset, digest, result_digest, record, None,
+        sum(group.series_count for group in result.groups),
+        tuple(group.length for group in result.groups),
+        result.test_size,
+        test_lengths,
+    )
 
 
 def verify_train_abstention(

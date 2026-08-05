@@ -109,6 +109,16 @@ class Exp426SourceTests(unittest.TestCase):
                 item.imported_record is None or item.imported_record.status == "scored"
                 for item in classified
             ))
+            self.assertEqual(
+                tuple(
+                    (item.train_size, item.train_lengths, item.test_size, item.test_lengths)
+                    for item in classified[:2]
+                ),
+                ((100, (100,), 2, (100,)), (100, (100,), 2, (100,))),
+            )
+            self.assertEqual(
+                (classified[2].train_size, classified[2].train_lengths), (0, ())
+            )
             self.assertEqual(before, after)
 
     def test_classification_rejects_dataset_digest_and_byte_mutation(self) -> None:
