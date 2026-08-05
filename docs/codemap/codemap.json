@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-05T15:34:40Z",
-  "generated_from_commit": "1595769b8a8ae10e3d16207ab73678e1cb54c513",
+  "generated_at": "2026-08-05T15:40:39Z",
+  "generated_from_commit": "a85674503832b86171e3d8d7dc2c768ac354334f",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -575,7 +575,7 @@
       "boundary": "Exp426 verified baseline",
       "layer": 4,
       "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
-      "role": "Coordinates frozen-source intake, TRAIN-only terminal verification, parent-owned checkpoint commits, crash recovery and self-written progress logs.",
+      "role": "Coordinates frozen-source intake, TRAIN-only terminal verification, parent-owned checkpoint commits, resumable interruption, immutable failure and self-written progress logs.",
       "entrypoints": [
         "run_exp426_new",
         "run_exp426_resume",
@@ -588,7 +588,8 @@
         "Exactly 12 CPU workers with bounded prefetch 24",
         "Parent alone owns database, checkpoint and logs",
         "No TEST value or label loader",
-        "Atomic progress, durable events and 30-second heartbeat"
+        "Atomic progress, durable events and 30-second heartbeat",
+        "Interrupted roots resume with zero errors; failed roots are immutable"
       ],
       "evidence": [
         {
@@ -612,7 +613,7 @@
       "boundary": "Exp426 verified baseline",
       "layer": 5,
       "path": "experiments/exp426_verified_baseline",
-      "role": "Exposes frozen new, resume, inspect and readiness commands and atomically publishes independently replayed label-free baseline artifacts.",
+      "role": "Exposes frozen new, resume, inspect and readiness commands, binds new execution to same-commit readiness, and atomically publishes independently replayed label-free baseline artifacts.",
       "entrypoints": [
         "build_parser",
         "main",
@@ -627,7 +628,8 @@
         "Only frozen external roots are accepted",
         "No worker-count option; exactly 12 CPU workers",
         "Publication is review-only and contains no TEST labels",
-        "Every artifact is replayed against checkpoint and runtime evidence"
+        "Every artifact is replayed against checkpoint and runtime evidence",
+        "New execution requires canonical readiness from the same clean commit"
       ],
       "evidence": [
         {
