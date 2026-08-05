@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-05T16:05:22Z",
-  "generated_from_commit": "4624f882fa98faa80538e7a59cf5dcd4a29ccd20",
+  "generated_at": "2026-08-05T17:55:15Z",
+  "generated_from_commit": "85960e89807c9eccfe3f1d08e529c317e0b37632",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -590,7 +590,8 @@
         "Parent alone owns database, checkpoint and logs",
         "No TEST value or label loader",
         "Atomic progress, durable events and 30-second heartbeat",
-        "Interrupted roots resume with zero errors; failed roots are immutable"
+        "Interrupted roots resume with zero errors; failed roots are immutable",
+        "Failures persist a normalized exception type and message in progress, events and text log"
       ],
       "evidence": [
         {
@@ -608,6 +609,10 @@
         {
           "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
           "symbol": "def _source_worker_tasks"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "def _latest_error_payload"
         }
       ]
     },
@@ -624,6 +629,7 @@
         "main",
         "publish_exp426",
         "verify_exp426_publication",
+        "_preflight_roots",
         "_revalidate_readiness_for_execution"
       ],
       "tests": [
@@ -632,6 +638,7 @@
       ],
       "constraints": [
         "Only frozen external roots are accepted",
+        "Runtime roots must be below a pre-existing parent isolated from the live database parent",
         "No worker-count option; exactly 12 CPU workers",
         "Publication is review-only and contains no TEST labels",
         "Every artifact is replayed against checkpoint and runtime evidence",
@@ -653,6 +660,10 @@
         {
           "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
           "symbol": "def _revalidate_readiness_for_execution"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "def _preflight_roots"
         }
       ]
     }
