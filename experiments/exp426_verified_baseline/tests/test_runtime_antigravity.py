@@ -349,6 +349,23 @@ class Exp426RuntimeTests(unittest.TestCase):
             progress = json.loads((output / "progress.json").read_text())
             self.assertEqual(progress["state"], "failed")
             self.assertEqual(progress["counts"]["error"], 1)
+            self.assertEqual(progress["latest_error"]["type"], "ValueError")
+            self.assertEqual(
+                progress["latest_error"].get("message"),
+                "scientific worker failure",
+            )
+            self.assertIn(
+                'error_message="scientific worker failure"',
+                (output / "parent.log").read_text(),
+            )
+            events = [
+                json.loads(line)
+                for line in (output / "events.jsonl").read_text().splitlines()
+            ]
+            self.assertEqual(
+                events[-1]["latest_error"]["message"],
+                "scientific worker failure",
+            )
 
             with self.assertRaisesRegex(ValueError, "failed runtime root"):
                 run_exp426_resume(

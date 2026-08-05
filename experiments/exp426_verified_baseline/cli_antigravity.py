@@ -62,10 +62,11 @@ from .source_antigravity import (
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DATA_ROOT = Path("/Users/mac/Documents/Dataset")
 DATABASE_PATH = DATA_ROOT / "univariate_ts.db"
-FROZEN_OUTPUT = DATA_ROOT / "exp426_verified_baseline_antigravity_20260805"
-FROZEN_CHECKPOINT = DATA_ROOT / "exp426_verified_baseline_antigravity_20260805.checkpoint"
-FROZEN_READINESS = DATA_ROOT / "exp426_verified_baseline_antigravity_readiness_20260805.json"
-RUN_IDENTITY = "exp426-verified-baseline-antigravity-20260805"
+FROZEN_RUN_PARENT = DATA_ROOT / "exp426_verified_baseline_antigravity_20260806_attempt2"
+FROZEN_OUTPUT = FROZEN_RUN_PARENT / "output_antigravity"
+FROZEN_CHECKPOINT = FROZEN_RUN_PARENT / "checkpoint_antigravity"
+FROZEN_READINESS = FROZEN_RUN_PARENT / "readiness_antigravity.json"
+RUN_IDENTITY = "exp426-verified-baseline-antigravity-20260806-attempt2"
 LANE_PATHS = (
     DATA_ROOT / "exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl",
     DATA_ROOT / "exp291_final_operational_routing_freeze/exp291_prediction_manifest.json",
@@ -142,6 +143,9 @@ def _require_frozen_path(value: Path, frozen: Path, label: str) -> Path:
 
 
 def _preflight_roots(command: str, output: Path, checkpoint: Path) -> None:
+    database_parent = DATABASE_PATH.parent.absolute()
+    if output.parent.absolute() == database_parent or checkpoint.parent.absolute() == database_parent:
+        raise ValueError("runtime roots cannot share the live database parent")
     if command == "new":
         if output.exists() or output.is_symlink() or checkpoint.exists() or checkpoint.is_symlink():
             raise ValueError("new output and checkpoint roots must both be absent")

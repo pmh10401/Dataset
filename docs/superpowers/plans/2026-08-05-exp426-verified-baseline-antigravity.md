@@ -1,5 +1,11 @@
 # Exp426 Verified Baseline Implementation Plan
 
+> 2026-08-06 engineering retry: the first full run preserved 983 imported
+> records but failed before TRAIN verification because its runtime roots shared
+> the database parent. The science is unchanged. Attempt 2 uses the isolated
+> paths frozen in `docs/EXP426_PREREGISTRATION_antigravity_KO.md`; the original
+> paths below remain historical planning evidence.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Exp424의 검증된 983개 결과와 TRAIN-only로 다시 확인한 134개 판단 보류를 합쳐, TEST 정답 없이 1,117개 전체 연구 기준 결과를 완성하고 고정한다.

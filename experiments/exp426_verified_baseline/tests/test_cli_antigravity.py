@@ -11,7 +11,11 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from experiments.exp426_verified_baseline.cli_antigravity import (
+    DATABASE_PATH,
+    FROZEN_CHECKPOINT,
+    FROZEN_OUTPUT,
     _CliDependencies,
+    _preflight_roots,
     _revalidate_readiness_for_execution,
     build_parser,
     main,
@@ -128,6 +132,16 @@ class Exp426CliTests(unittest.TestCase):
         with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
             parser.parse_args(["new", "--workers", "1"])
         self.assertEqual(raised.exception.code, 2)
+
+    def test_production_runtime_roots_do_not_mutate_the_live_database_parent(self) -> None:
+        self.assertEqual(FROZEN_OUTPUT.parent, FROZEN_CHECKPOINT.parent)
+        self.assertNotEqual(FROZEN_OUTPUT.parent, DATABASE_PATH.parent)
+        with self.assertRaisesRegex(ValueError, "database parent"):
+            _preflight_roots(
+                "new",
+                DATABASE_PATH.parent / "unused_output_antigravity",
+                DATABASE_PATH.parent / "unused_checkpoint_antigravity",
+            )
 
     def test_new_rejects_arbitrary_or_existing_roots_before_execution(self) -> None:
         with TemporaryDirectory() as directory:

@@ -199,6 +199,17 @@ def _counts_payload(counts: Exp426Counts, errors: int) -> dict[str, int]:
     }
 
 
+def _latest_error_payload(error: BaseException, state: object) -> dict[str, object]:
+    message = " ".join(str(error).split()).strip()
+    if not message:
+        message = type(error).__name__
+    return {
+        "type": type(error).__name__,
+        "message": message[:1000],
+        "state": state,
+    }
+
+
 class _RuntimeLogger:
     def __init__(
         self, output: Path, run_identity: str, checkpoint: Path,
@@ -331,8 +342,17 @@ class _RuntimeLogger:
             state, counts, current_dataset=current_dataset,
             metadata=metadata, latest_error=latest_error,
         )
-        self.append_event({"kind": "state", "state": state})
-        self.append_log(f"state={state} completed={counts.completed}/{counts.total}")
+        event: dict[str, object] = {"kind": "state", "state": state}
+        log_message = f"state={state} completed={counts.completed}/{counts.total}"
+        if latest_error is not None:
+            error_payload = dict(latest_error)
+            event["latest_error"] = error_payload
+            log_message += (
+                f" error_type={error_payload.get('type')}"
+                f" error_message={json.dumps(error_payload.get('message'), ensure_ascii=False)}"
+            )
+        self.append_event(event)
+        self.append_log(log_message)
 
     def start_heartbeat(self) -> None:
         if self.heartbeat_seconds is None:
@@ -600,7 +620,7 @@ def _run_session(
         raise injected.cause.with_traceback(injected.cause.__traceback__)
     except (KeyboardInterrupt, SystemExit) as error:
         logger.stop_heartbeat()
-        latest = {"type": type(error).__name__, "state": logger.progress.get("state")}
+        latest = _latest_error_payload(error, logger.progress.get("state"))
         logger.transition(
             "interrupted", _counts_from_store(store),
             current_dataset=current_dataset,
@@ -611,7 +631,7 @@ def _run_session(
     except Exception as error:
         logger.stop_heartbeat()
         logger.errors += 1
-        latest = {"type": type(error).__name__, "state": logger.progress.get("state")}
+        latest = _latest_error_payload(error, logger.progress.get("state"))
         logger.transition(
             "failed", _counts_from_store(store),
             current_dataset=current_dataset,

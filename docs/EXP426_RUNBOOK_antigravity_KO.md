@@ -23,13 +23,16 @@ worker 수는 12로 고정되어 있고 명령행 옵션으로 바꿀 수 없다
 ```text
 DB=/Users/mac/Documents/Dataset/univariate_ts.db
 SOURCE=/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint
-OUTPUT=/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805
-CHECKPOINT=/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805.checkpoint
-READINESS=/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_readiness_20260805.json
+RUN_PARENT=/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2
+OUTPUT=/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity
+CHECKPOINT=/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/checkpoint_antigravity
+READINESS=/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/readiness_antigravity.json
 ```
 
 다른 경로는 CLI가 거부한다. 기존 output, checkpoint 또는 readiness 파일을
-덮어쓰지 않는다.
+덮어쓰지 않는다. `RUN_PARENT`만 DB snapshot을 열기 전에 한 번 만들고, output과
+checkpoint는 프로그램이 직접 새로 만든다. DB 파일과 같은 부모 디렉터리에
+output/checkpoint를 두면 보호 검사가 실행 전에 거부한다.
 
 ## 3. 실행 전 확인
 
@@ -50,11 +53,13 @@ DB 1회 해시 수명주기와 집중 테스트를 다시 기록한다.
 ## 4. readiness
 
 readiness 파일과 실제 output/checkpoint가 모두 없을 때 한 번만 실행한다.
+첫 실패 root는 그대로 보존하고, 재시도용 부모 디렉터리만 먼저 만든다.
 
 ```bash
+mkdir /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2
 python3 scratch/run_exp426_verified_baseline_antigravity.py readiness \
   --readiness-output \
-  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_readiness_20260805.json
+  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/readiness_antigravity.json
 ```
 
 성공 조건은 다음과 같다.
@@ -85,9 +90,9 @@ fresh Sol/High 검토와 readiness가 통과한 뒤에만 실행한다.
 ```bash
 python3 scratch/run_exp426_verified_baseline_antigravity.py new \
   --output-root \
-  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805 \
+  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity \
   --checkpoint-root \
-  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805.checkpoint
+  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/checkpoint_antigravity
 ```
 
 프로그램은 먼저 Exp424 1,117개를 12 CPU worker로 확인하고 983개를 가져온다.
@@ -100,19 +105,19 @@ python3 scratch/run_exp426_verified_baseline_antigravity.py new \
 Codex가 반복 감시하지 않아도 프로그램이 30초마다 진행 파일을 갱신한다.
 
 ```text
-/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805/progress.json
-/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805/events.jsonl
-/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805/parent.log
-/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805/run.pid
+/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity/progress.json
+/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity/events.jsonl
+/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity/parent.log
+/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity/run.pid
 ```
 
 사람이 볼 때는 다음처럼 읽으면 된다.
 
 ```bash
 python3 -m json.tool \
-  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805/progress.json
+  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity/progress.json
 tail -n 30 \
-  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805/parent.log
+  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity/parent.log
 ```
 
 `progress.json`의 핵심은 `state`, `current_dataset`, `dataset_metadata`,
@@ -129,9 +134,9 @@ tail -n 30 \
 ```bash
 python3 scratch/run_exp426_verified_baseline_antigravity.py resume \
   --output-root \
-  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805 \
+  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity \
   --checkpoint-root \
-  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805.checkpoint
+  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/checkpoint_antigravity
 ```
 
 이미 checkpoint에 확정된 데이터셋은 다시 계산하지 않는다. record 저장 뒤 event
@@ -149,9 +154,9 @@ python3 scratch/run_exp426_verified_baseline_antigravity.py resume \
 ```bash
 python3 scratch/run_exp426_verified_baseline_antigravity.py inspect \
   --output-root \
-  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805 \
+  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity \
   --checkpoint-root \
-  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805.checkpoint
+  /Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/checkpoint_antigravity
 ```
 
 완료 시 다음을 요구한다.

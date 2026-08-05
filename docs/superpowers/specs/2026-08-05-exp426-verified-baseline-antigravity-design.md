@@ -1,5 +1,10 @@
 # Exp426 검증 기준 결과 완성 설계
 
+> 2026-08-06 engineering retry: 첫 전체 실행은 983개 import를 보존했지만 runtime
+> root가 DB 부모와 같아 TRAIN 확인 전에 보호 검사로 중단됐다. 과학 규칙은 바꾸지
+> 않는다. Attempt 2는 `docs/EXP426_PREREGISTRATION_antigravity_KO.md`에 고정한
+> 격리 경로를 사용하며, 아래 최초 경로는 과거 설계 근거로 남긴다.
+
 ## 1. 쉬운 설명
 
 Exp426의 목적은 새 탐지 방법을 시험하는 것이 아니다. 이전 Exp424 실행에서

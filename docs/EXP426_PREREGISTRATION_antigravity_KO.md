@@ -82,7 +82,7 @@ MLX로 옮길 대상이 없으므로 MLX를 채택하지 않는다. MPS로 새 �
 않는다. readiness에서 1-worker와 12-worker 결과 SHA256이 같아야 하며 속도는
 기록만 하고 worker 수 선택에 사용하지 않는다.
 
-## 5. 고정 경로와 명령
+## 5. 첫 실행 경로와 실패 보존
 
 - output root:
   `/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805`
@@ -91,6 +91,33 @@ MLX로 옮길 대상이 없으므로 MLX를 채택하지 않는다. MPS로 새 �
 - readiness artifact:
   `/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_readiness_20260805.json`
 - run identity: `exp426-verified-baseline-antigravity-20260805`
+
+이 첫 실행은 983개 import를 저장한 뒤 첫 TRAIN 재확인 직전에 실패했다. 원인은
+output과 checkpoint가 DB 파일과 같은 부모 디렉터리에 만들어져, DB snapshot의
+부모 디렉터리 변경 방지 검사가 이를 외부 변경으로 올바르게 차단한 것이다.
+실패한 두 root는 변경·삭제·재개하지 않고 실패 근거로 보존한다. TEST 값과 정답은
+열지 않았고 publication도 만들지 않았다.
+
+### 5.1 과학 규칙을 바꾸지 않는 engineering retry
+
+모델, 입력, 983/134 구성, CPU 12 worker, 임계값 및 결과 규칙은 전혀 바꾸지
+않는다. DB 보호 검사를 느슨하게 만들지 않기 위해 재시도 root만 DB 부모와 다른,
+미리 존재하는 전용 하위 디렉터리로 옮긴다.
+
+- run parent:
+  `/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2`
+- output root:
+  `/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/output_antigravity`
+- checkpoint root:
+  `/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/checkpoint_antigravity`
+- readiness artifact:
+  `/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2/readiness_antigravity.json`
+- run identity: `exp426-verified-baseline-antigravity-20260806-attempt2`
+
+전용 run parent는 DB snapshot을 열기 전에 생성되어 있어야 한다. readiness와
+실행 중에는 그 안의 파일만 바뀌므로 DB가 있는 `/Users/mac/Documents/Dataset`
+자체의 디렉터리 메타데이터를 바꾸지 않는다. CLI는 output 또는 checkpoint를 DB와
+같은 부모에 두는 구성을 실행 전에 거부한다.
 
 허용 명령은 `readiness`, `new`, `resume`, `inspect` 네 개뿐이다. `new`는 두
 root가 모두 없고, 현재 clean Git commit과 같은 commit으로 만든 readiness가

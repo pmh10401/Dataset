@@ -1,6 +1,6 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-06T01:04:32+09:00",
+  "updated_at": "2026-08-06T02:45:02+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
     {
@@ -97,6 +97,27 @@
         "test_labels_opened": false
       },
       "lesson": "Production readiness must use the same shared Exp424SourceTask-to-Exp426SourceWorkerTask adapter as the runtime. A test that performs the conversion locally can hide a production wiring defect."
+    },
+    {
+      "experiment": "Exp426-full-run-attempt-1",
+      "category": "failed_database_parent_boundary",
+      "evidence": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805/progress.json",
+      "facts": {
+        "git_commit": "6a9c240442975c3b0bcd62857fa8c630c8857ff4",
+        "pid": 16829,
+        "completed": 983,
+        "imported": 983,
+        "remaining_train_abstentions": 134,
+        "failed_datasets": 0,
+        "state": "failed",
+        "root_cause": "output and checkpoint directory creation changed the live database snapshot parent metadata before the first TRAIN load",
+        "output_root_preserved": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805",
+        "checkpoint_root_preserved": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805.checkpoint",
+        "publication_created": false,
+        "test_values_opened": false,
+        "test_labels_opened": false
+      },
+      "lesson": "Keep runtime roots below a pre-existing dedicated child directory instead of beside the live database. Preserve the strict database parent boundary, fail preflight when roots share the database parent, and persist the actual exception message in every runtime log."
     }
   ]
 }
