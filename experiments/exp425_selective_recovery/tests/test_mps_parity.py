@@ -180,9 +180,13 @@ class MPSParityContractTests(unittest.TestCase):
 
     def test_smoke_requires_only_the_frozen_retry_root_before_writer_creation(self) -> None:
         module = self._script_module()
-        old_failed_root = module.TASK5_RETRY_ROOT.with_name("exp425_task5_mps_parity_20260804_architecture_a")
-        with self.assertRaisesRegex(ValueError, "frozen retry root"):
-            module.main(["--output-dir", str(old_failed_root)])
+        old_failed_roots = (
+            module.TASK5_RETRY_ROOT.with_name("exp425_task5_mps_parity_20260804_architecture_a"),
+            module.TASK5_RETRY_ROOT.with_name("exp425_task5_mps_parity_20260804_architecture_a_retry"),
+        )
+        for old_failed_root in old_failed_roots:
+            with self.subTest(old_failed_root=old_failed_root), self.assertRaisesRegex(ValueError, "frozen retry root"):
+                module.main(["--output-dir", str(old_failed_root)])
         with TemporaryDirectory() as directory:
             arbitrary = Path(directory) / "exp425_task5_mps_parity_arbitrary"
             with self.assertRaisesRegex(ValueError, "frozen retry root"):

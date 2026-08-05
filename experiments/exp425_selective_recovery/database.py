@@ -319,8 +319,8 @@ class Exp425DatabaseSnapshot:
                     lane_coordinates[dataset].update(coordinates)
             for dataset, identities in manifest.items():
                 expected_indices = {index for index, _ in identities}
-                if lane_coordinates[dataset] != expected_indices:
-                    raise ValueError("frozen lane coordinates do not exactly cover TEST identities")
+                if not lane_coordinates[dataset].issubset(expected_indices):
+                    raise ValueError("frozen lane coordinate is outside TEST identities")
         except sqlite3.Error as error:
             primary = ValueError("Exp417 database population or identity query failed")
             primary.__cause__ = error

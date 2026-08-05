@@ -1,6 +1,6 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-04T17:00:00+09:00",
+  "updated_at": "2026-08-05T21:30:00+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
     {
@@ -40,6 +40,25 @@
       "category": "resolved_prelaunch_integrity_findings",
       "facts": {"task3_fix_rounds": 4, "task4_fix_rounds": 3, "stale_db_pin_links_removed": 8},
       "lesson": "Independent adversarial review is required before long execution; progress claims without exact context, inode, cleanup, and resume evidence are insufficient."
+    },
+    {
+      "experiment": "Exp425-task5-mps-parity-smoke",
+      "category": "predata_smoke_failures_preserved",
+      "evidence": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry/progress.json",
+      "facts": {
+        "first_failure_pid": 32415,
+        "first_retry_pid": 79638,
+        "first_retry_completed": 0,
+        "first_retry_train_loaded": false,
+        "first_retry_test_values_loaded": false,
+        "first_retry_test_labels_loaded": false,
+        "first_retry_mps_model_started": false,
+        "test_identity_count": 195900,
+        "frozen_lane_coordinate_count": 3090,
+        "intentionally_unrouted_identity_count": 192810,
+        "lane_coordinates_outside_test_identity": 0
+      },
+      "lesson": "Frozen operational lanes are sparse routed-coordinate exclusions, not complete TEST coverage. Validate each lane coordinate as a member of the descriptor-bound TEST identity set without requiring equality, and preserve every no-clobber smoke root."
     }
   ]
 }

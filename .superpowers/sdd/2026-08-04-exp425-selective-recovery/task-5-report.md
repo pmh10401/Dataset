@@ -355,3 +355,39 @@ PASS — exit 0; no output
 ```
 JUDGMENT CALLS: Existing read-only preflight remains the authority for matching terminal-event origin/status/reason details to checkpoint records; the CLI adds only the progress-counter-to-event-prefix check needed to admit the authorized durable suffix.
 GAPS: none
+
+## Task 5 MPS smoke lifecycle and sparse-lane preflight — 2026-08-05
+
+A fresh Sol/High review found that the nominal smoke path published success before
+closing the session-owned non-idempotent database snapshot and runtime PID writer.
+Commit `5b5e160` moved both cleanups before result/terminal-success publication,
+retains the first cleanup exception, attempts both releases, and publishes cleanup
+failure rather than success. The new lifecycle regression was observed RED on the old
+flow (`snapshot.closed == false` at result publication followed by `snapshot closed
+twice`) and GREEN on the corrected flow. Focused runtime/CLI/parity tests passed 61,
+and the full Exp425 suite passed 171. A fresh Sol/High review returned `ship`.
+
+The authorized retry root then failed closed at PID 79638 during
+`Exp425DatabaseSnapshot.freeze_context`, before TRAIN, TEST values, TEST labels, MPS
+models, candidates, checkpoint creation, or prediction. Preserved SHA256s are:
+
+- progress `053a1553a8facaa75a8033c952968e7f905bec379ae55dab1bedf094e2cd17f5`;
+- events `f6f42551970d255f0733191346320a1a494b4b209453df9f7355011db36facbc`;
+- parent `1212d8b6f6ea3f6b47a11d2dec15409d7bad740dbb6343014a31fcca5be48d7d`;
+- PID evidence `8b2aa31b7f96b2c561ca99e3994a94bda4b1b4385ede74b19aa59911cfd14770`.
+
+Root-cause enumeration against the immutable production DB and pinned Exp291/292
+artifacts found 1,117/1,117 datasets rejected, 195,900 TEST identities, 3,090 routed
+lane coordinates, 192,810 intentionally unrouted identities, and zero lane
+coordinates outside the DB identity sets. Exp417 uses these lanes as sparse exclusion
+sets; Task 4's equality check was therefore overstrict. A new test with two TEST
+identities and one routed coordinate per dataset was observed RED on equality and
+GREEN after changing only the DB-bound rule to subset containment. The existing
+out-of-manifest coordinate rejection remains covered.
+
+The actual production context smoke now reports 1,117 datasets, 195,900 TEST
+identities, 3,090 lane coordinates, `full_hash_count=1`, lifecycle `closed`, and owned
+link cleanup `removed`. No output/checkpoint root or TEST value/label was opened.
+The exact retry2 root is frozen in
+`task-5-mps-parity-antigravity-retry2-addendum.md`; it remains unexecuted until full
+verification and fresh Sol/High review.

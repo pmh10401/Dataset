@@ -299,8 +299,34 @@ class DatabaseSnapshotTests(unittest.TestCase):
             )
             for lanes in cases:
                 with self.subTest(lanes=lanes):
-                    with self.assertRaisesRegex(ValueError, "coordinates|outside the selected"):
+                    with self.assertRaisesRegex(ValueError, "coordinate|outside the selected"):
                         snapshot.freeze_context(lanes, verified_code_commit="a" * 40)
+
+    def test_context_accepts_sparse_routing_lanes_within_full_test_identity_manifest(self) -> None:
+        """Frozen lanes route a sparse subset; they are not the complete TEST population."""
+        connection = sqlite3.connect(self.database)
+        try:
+            values = struct.pack("<2f", 3.0, 4.0)
+            connection.executemany(
+                "INSERT INTO instances VALUES (?, ?, ?, ?, ?)",
+                ((1, 1, "TEST", "hidden", values), (2, 1, "TEST", "hidden", values)),
+            )
+            connection.commit()
+        finally:
+            connection.close()
+        digest = sha256(self.database.read_bytes()).hexdigest()
+        config = replace(self._synthetic_config(), database_sha256=digest)
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(
+            snapshot_database, "FROZEN_CONFIG", config
+        ):
+            lanes = self._lanes(config)
+            with open_database_snapshot(self.database, expected_sha256=digest) as snapshot:
+                context = snapshot.freeze_context(lanes, verified_code_commit="a" * 40)
+        self.assertEqual(context.test_identity_manifest["A"], ((0, 2), (1, 2)))
+        self.assertEqual(context.test_identity_manifest["B"], ((0, 2), (1, 2)))
+        self.assertEqual(context.test_sizes, {"A": 2, "B": 2})
+        self.assertTrue(context.lanes.contains("A", 0))
+        self.assertFalse(context.lanes.contains("A", 1))
 
     def test_each_new_snapshot_requires_its_own_context_identity(self) -> None:
         config = self._synthetic_config()

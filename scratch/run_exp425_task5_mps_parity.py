@@ -38,7 +38,7 @@ from experiments.exp425_selective_recovery.runtime import AtomicProgressWriter, 
 
 
 DATABASE = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
-TASK5_RETRY_ROOT = Path("/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry")
+TASK5_RETRY_ROOT = Path("/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry2")
 SOURCE_ROOT = Path("/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint")
 GOLDEN = SOURCE_ROOT / "datasets/0a19fece1acc72bd1fd0e2845ee962e54988940a96da37ba5c231fa52e551ce8.json"
 LANE_PATHS = (
