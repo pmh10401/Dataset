@@ -136,6 +136,17 @@ class FeatureTests(unittest.TestCase):
         self.assertEqual(vector.shape, (4,))
         self.assertTrue(np.isfinite(vector).all())
 
+    def test_acf_values_match_float32_golden_vector(self) -> None:
+        values = np.arange(16, dtype=np.float32)
+        expected = np.asarray(
+            [0.8125, 0.6279411911964417, 0.4492647051811218, 0.27941176295280457],
+            dtype=np.float32,
+        )
+        vector = acf_vector(values, 32, 1e-12)
+        self.assertIsNotNone(vector)
+        assert vector is not None
+        np.testing.assert_array_equal(vector, expected)
+
     def test_acf_respects_requested_lag_cap_and_floor(self) -> None:
         values = np.sin(np.arange(128, dtype=np.float32))
         vector = acf_vector(values, 2, 1e-12)
@@ -192,6 +203,14 @@ class FeatureTests(unittest.TestCase):
             )
         )
         self.assertEqual(first.prototype.reference_digest, second.prototype.reference_digest)
+
+    def test_reference_digest_is_sha256_of_canonical_float32_references(self) -> None:
+        rows = [[0.0, 1.0, 0.0, 1.0], [1.0, 0.0, 1.0, 0.0], [0.5, 1.5, 1.0, 0.0], [1.0, 1.0, 0.0, 0.0]]
+        fitted = fit_calibrated_group(prepared_group(rows))
+        self.assertEqual(
+            fitted.prototype.reference_digest,
+            "8788dce3d35dae25ef7f49b4ad74e99ede5905947b229b0ad336f277e3c3f50b",
+        )
 
     def test_fit_returns_readonly_float32_terminal_arrays(self) -> None:
         fitted = fit_calibrated_group(
