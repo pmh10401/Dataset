@@ -1,6 +1,6 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-05T22:08:34+09:00",
+  "updated_at": "2026-08-06T01:04:32+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
     {
@@ -82,6 +82,21 @@
         "lane_coordinates_outside_test_identity": 0
       },
       "lesson": "Frozen operational lanes are sparse routed-coordinate exclusions, not complete TEST coverage. Immutable runtime mappings must be normalized before JSON publication, and session-owned cleanup must occur inside snapshot scope. A failed combined scientific gate must persist its exact mismatch evidence before raising; preserve every no-clobber smoke root."
+    },
+    {
+      "experiment": "Exp426-readiness-attempt-1",
+      "category": "resolved_prelaunch_task_adapter_failure",
+      "facts": {
+        "git_commit": "337be3e069610b8e347814b7a1c98c78179ee594",
+        "error": "worker task type is invalid",
+        "output_root_created": false,
+        "checkpoint_root_created": false,
+        "readiness_artifact_created": false,
+        "database_sha256_unchanged": true,
+        "test_values_opened": false,
+        "test_labels_opened": false
+      },
+      "lesson": "Production readiness must use the same shared Exp424SourceTask-to-Exp426SourceWorkerTask adapter as the runtime. A test that performs the conversion locally can hide a production wiring defect."
     }
   ]
 }

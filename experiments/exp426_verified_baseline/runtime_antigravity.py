@@ -87,11 +87,12 @@ class Exp426RuntimeInspection:
         object.__setattr__(self, "progress", MappingProxyType(dict(self.progress)))
 
 
-def _production_dependencies() -> _RuntimeDependencies:
-    def source_tasks(source: object) -> Iterator[Exp426SourceWorkerTask]:
-        for item in read_verified_source_tasks(source):  # type: ignore[arg-type]
-            yield Exp426SourceWorkerTask(item.dataset, item.raw, item.expected_digest)
+def _source_worker_tasks(source: object) -> Iterator[Exp426SourceWorkerTask]:
+    for item in read_verified_source_tasks(source):  # type: ignore[arg-type]
+        yield Exp426SourceWorkerTask(item.dataset, item.raw, item.expected_digest)
 
+
+def _production_dependencies() -> _RuntimeDependencies:
     def load_train(database: object, dataset: str, context: object) -> object:
         return database.load_train(dataset, context)  # type: ignore[attr-defined]
 
@@ -99,7 +100,7 @@ def _production_dependencies() -> _RuntimeDependencies:
         database.verify_boundary(name)  # type: ignore[attr-defined]
 
     return _RuntimeDependencies(
-        source_tasks=source_tasks,
+        source_tasks=_source_worker_tasks,
         source_revalidate=lambda source: revalidate_verified_source(source),  # type: ignore[arg-type]
         worker_runner=run_ordered_workers,
         load_train=load_train,

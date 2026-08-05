@@ -23,9 +23,16 @@ from experiments.exp426_verified_baseline.source_antigravity import (
 )
 from experiments.exp426_verified_baseline.runtime_antigravity import (
     _RuntimeDependencies,
+    _source_worker_tasks,
     inspect_exp426,
     run_exp426_new,
     run_exp426_resume,
+)
+from experiments.exp426_verified_baseline.tests.test_source_antigravity import (
+    _source_fixture,
+)
+from experiments.exp425_selective_recovery.predecessor import (
+    open_validated_exp424_source,
 )
 
 
@@ -164,6 +171,17 @@ class Exp426RuntimeTests(unittest.TestCase):
             )
             for dataset in datasets
         }
+
+    def test_shared_source_adapter_produces_exp426_worker_tasks(self) -> None:
+        with TemporaryDirectory() as directory:
+            root, contract, datasets = _source_fixture(Path(directory))
+            with open_validated_exp424_source(root, contract) as source:
+                tasks = tuple(_source_worker_tasks(source))
+            self.assertEqual(tuple(task.dataset for task in tasks), datasets)
+            self.assertTrue(tasks)
+            self.assertTrue(all(
+                type(task).__name__ == "Exp426SourceWorkerTask" for task in tasks
+            ))
 
     def test_mixed_run_imports_twelve_and_loads_train_only_for_three_terminals(self) -> None:
         datasets = self.datasets(15)

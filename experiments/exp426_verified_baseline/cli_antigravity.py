@@ -45,6 +45,7 @@ from .reporting_antigravity import (
     verify_exp426_publication,
 )
 from .runtime_antigravity import (
+    _source_worker_tasks,
     _canonical_object as _runtime_object,
     _load_events,
     _process_is_live,
@@ -54,7 +55,6 @@ from .runtime_antigravity import (
 )
 from .source_antigravity import (
     inspect_production_source_authority,
-    read_verified_source_tasks,
     revalidate_verified_source,
 )
 
@@ -605,7 +605,7 @@ def _production_readiness() -> Mapping[str, object]:
     source_seconds = perf_counter() - source_started
     contract = Exp424CompatibilityContract.production()
     with open_validated_exp424_source(EXP424_SOURCE_ROOT, contract) as source:
-        tasks = tuple(islice(read_verified_source_tasks(source), 48))
+        tasks = tuple(islice(_source_worker_tasks(source), 48))
         if len(tasks) != 48:
             raise ValueError("readiness source parity sample is incomplete")
         one_started = perf_counter()

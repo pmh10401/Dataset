@@ -87,7 +87,7 @@
     {
       "id": "Exp426",
       "kind": "verified_checkpoint_baseline_completion",
-      "status": "readiness_handoff_fix_pending_clean_verification",
+      "status": "readiness_source_adapter_fix_pending_clean_verification",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "a86f333c1f3bc0c1c9d21bcca78e68cffb8e3751",
       "documents": [
@@ -102,7 +102,7 @@
       "mlx_adopted": false,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "Tasks 1-4 and the first final-review fixes are committed through c265a5656cd43e2864e0c21fd92844b1f0685b36. The current fix passes the validated readiness commit into execution and revalidates clean HEAD plus the readiness bytes at that boundary. Clean verification and a fresh Sol/High verdict remain; no readiness, prediction, full population, or TEST evaluation has started."
+      "notes": "Final review shipped commit 337be3e069610b8e347814b7a1c98c78179ee594. Readiness attempt 1 then failed safely before creating artifacts because it passed Exp424SourceTask directly to the Exp426 worker pool. The shared production adapter fix and regression test are pending clean verification/review; no prediction, full population, or TEST evaluation has started."
     }
   ]
 }
