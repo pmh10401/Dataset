@@ -204,6 +204,31 @@ def _actual_shared(native: object, models: object, train: object) -> dict[str, o
     }
 
 
+def _close_owned_resources(session: object | None, runtime_writer: AtomicProgressWriter | None) -> BaseException | None:
+    """Close each live owner once, retaining the first cleanup failure."""
+    primary: BaseException | None = None
+    if session is not None:
+        try:
+            session.close()
+        except BaseException as error:
+            primary = error
+    if runtime_writer is not None:
+        try:
+            runtime_writer.close()
+        except BaseException as error:
+            if primary is None:
+                primary = error
+            else:
+                primary.add_note(f"additional runtime-writer cleanup error: {type(error).__name__}: {error}")
+    return primary
+
+
+def _attach_cleanup_error(primary: BaseException, cleanup: BaseException | None) -> BaseException:
+    if cleanup is not None:
+        primary.add_note(f"cleanup error: {type(cleanup).__name__}: {cleanup}")
+    return primary
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     output = args.output_dir.absolute()
@@ -269,14 +294,24 @@ def main(argv: list[str] | None = None) -> int:
             capability = _native_commit_capability(session, store, native)
             checkpoint_digest = store._commit_native(capability, native)
             result = {"schema": "exp425.task5.mps-parity-result.v1", "success": True, "fixture": FIXTURE, "stage": "complete", "backend": "mps", "fallback": False, "loader_counts": counters, "wall_seconds": wall, "timer_scope": "_compute_native return after production implicit CPU/NumPy/serialization/calibration synchronization", "explicit_mps_synchronize_calls": 0, "torch": torch.__version__, "device": str(torch.device("mps")), "golden": {"record_sha256": golden.record_sha256, "payload_sha256": golden.record["payload_sha256"], "source_hashes": dict(golden.source_hashes)}, "cpu_scientific_audit": asdict(audit), "mps_adoption": adoption.payload(), "actual": actual, "parity": parity, "native_trace": asdict(trace), "native_record_sha256": native.record_payload_sha256, "checkpoint_record_sha256": checkpoint_digest, "checkpoint_path": str(checkpoint_root), "limitation": "Exp424 retained no per-synthetic-query scores; direct historical per-query deltas are unavailable."}
-            writer.result(result); writer.terminal_success(**(_train_progress_detail(context, train, checkpoint_root=checkpoint_root, counters=counters, started=started) | {"completed": 1, "elapsed_seconds": wall}))
+            closing_session, session = session, None
+            closing_runtime_writer, runtime_writer = runtime_writer, None
+            cleanup_error = _close_owned_resources(closing_session, closing_runtime_writer)
+            if cleanup_error is not None:
+                raise cleanup_error
+        writer.result(result)
+        writer.terminal_success(**(_train_progress_detail(context, train, checkpoint_root=checkpoint_root, counters=counters, started=started) | {"completed": 1, "elapsed_seconds": wall}))
         return 0
     except BaseException as error:
-        writer.failure(error)
-        raise
-    finally:
-        if session is not None: session.close()
-        if runtime_writer is not None: runtime_writer.close()
+        closing_session, session = session, None
+        closing_runtime_writer, runtime_writer = runtime_writer, None
+        reported = _attach_cleanup_error(error, _close_owned_resources(closing_session, closing_runtime_writer))
+        try:
+            writer.failure(reported)
+        except BaseException as writer_error:
+            reported.add_note(f"smoke failure publication error: {type(writer_error).__name__}: {writer_error}")
+            raise reported from writer_error
+        raise reported
 
 
 if __name__ == "__main__":
