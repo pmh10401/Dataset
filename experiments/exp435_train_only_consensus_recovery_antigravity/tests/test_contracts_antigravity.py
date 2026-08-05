@@ -242,6 +242,35 @@ class Exp435ContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "reason"):
             BackendDecision(backend="cpu", adopted=False, reason="")
 
+    def test_backend_timing_evidence_is_canonical_and_self_consistent(self) -> None:
+        valid = self._adopted_backend()
+        self.assertEqual(valid.selected_batch_size, 16)
+        self.assertEqual(valid.batch_size, valid.selected_batch_size)
+        with self.assertRaisesRegex(ValueError, "speedup"):
+            self._adopted_backend(
+                speedup=99.0,
+                cpu_median_seconds=0.10,
+                mlx_median_seconds=0.20,
+                timings=((16, 0.10, 0.20),),
+            )
+        with self.assertRaisesRegex(ValueError, "median"):
+            self._adopted_backend(timings=((16, 0.11, 0.10),))
+        with self.assertRaisesRegex(ValueError, "selected"):
+            self._adopted_backend(timings=((8, 0.12, 0.10),))
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            self._adopted_backend(timings=((16, 0.12, 0.10), (16, 0.12, 0.10)))
+        with self.assertRaisesRegex(ValueError, "speedup"):
+            BackendDecision(
+                backend="cpu",
+                adopted=False,
+                speedup=99.0,
+                cpu_median_seconds=0.10,
+                mlx_median_seconds=0.20,
+                selected_batch_size=16,
+                timings=((16, 0.10, 0.20),),
+                reason="recorded_benchmark_not_adopted",
+            )
+
     def test_available_calibration_matches_train_count_and_higher_quantile(self) -> None:
         loo_scores = (0.0, 0.1, 0.2, 0.3)
         threshold = float(np.quantile(np.asarray(loo_scores, dtype=np.float32), 0.99, method="higher"))

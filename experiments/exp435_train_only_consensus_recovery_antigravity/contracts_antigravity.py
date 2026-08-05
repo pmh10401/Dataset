@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+from math import isclose
 import re
 from numbers import Real
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
@@ -562,6 +563,7 @@ class BackendDecision:
     absolute_error_max: float | None = 0.0
     speedup: float | None = None
     batch_size: int | None = None
+    selected_batch_size: int | None = None
     cpu_median_seconds: float | None = None
     mlx_median_seconds: float | None = None
     mlx_version: str | None = None
@@ -586,6 +588,13 @@ class BackendDecision:
             object.__setattr__(self, name, value)
         if self.batch_size is not None:
             _integer(self.batch_size, "batch_size", minimum=1)
+        if self.selected_batch_size is not None:
+            _integer(self.selected_batch_size, "selected_batch_size", minimum=1)
+        if self.batch_size is not None and self.selected_batch_size is not None and self.batch_size != self.selected_batch_size:
+            raise ValueError("batch_size and selected_batch_size disagree")
+        selected_batch_size = self.selected_batch_size if self.selected_batch_size is not None else self.batch_size
+        object.__setattr__(self, "batch_size", selected_batch_size)
+        object.__setattr__(self, "selected_batch_size", selected_batch_size)
         for name in ("mlx_version", "mlx_metal_version", "device"):
             value = getattr(self, name)
             if value is not None:
@@ -599,6 +608,31 @@ class BackendDecision:
             timings.append((batch, _finite(cpu_seconds, "cpu timing"), _finite(mlx_seconds, "mlx timing")))
         object.__setattr__(self, "timings", tuple(timings))
         object.__setattr__(self, "reason", _name(self.reason, "reason"))
+        medians_present = self.cpu_median_seconds is not None or self.mlx_median_seconds is not None
+        if medians_present:
+            if self.cpu_median_seconds is None or self.mlx_median_seconds is None:
+                raise ValueError("CPU and MLX medians must be supplied together")
+            if self.cpu_median_seconds <= 0 or self.mlx_median_seconds <= 0:
+                raise ValueError("CPU and MLX medians must be positive")
+            if self.speedup is None:
+                raise ValueError("speedup is required with benchmark medians")
+            recorded_speedup = self.cpu_median_seconds / self.mlx_median_seconds
+            if not isclose(self.speedup, recorded_speedup, rel_tol=1e-12, abs_tol=0.0):
+                raise ValueError("declared speedup does not match recorded medians")
+            if self.selected_batch_size is None:
+                raise ValueError("selected batch size is required with benchmark medians")
+            selected_timings = [item for item in self.timings if item[0] == self.selected_batch_size]
+            if not selected_timings:
+                raise ValueError("selected batch timing is missing")
+            if len(selected_timings) != 1:
+                raise ValueError("duplicate selected batch timing entries")
+            _, selected_cpu, selected_mlx = selected_timings[0]
+            if not isclose(selected_cpu, self.cpu_median_seconds, rel_tol=1e-12, abs_tol=0.0):
+                raise ValueError("selected timing CPU median does not match top-level median")
+            if not isclose(selected_mlx, self.mlx_median_seconds, rel_tol=1e-12, abs_tol=0.0):
+                raise ValueError("selected timing MLX median does not match top-level median")
+        elif self.speedup is not None or self.selected_batch_size is not None or self.timings:
+            raise ValueError("benchmark evidence requires CPU/MLX medians")
         if self.adopted and self.backend != "mlx":
             raise ValueError("adopted backend must be mlx")
         if self.adopted:
@@ -614,11 +648,12 @@ class BackendDecision:
                 raise ValueError("adopted MLX normalized error exceeds 1e-5")
             if self.absolute_error_max is None or self.absolute_error_max > FROZEN_CONFIG.score_tolerance:
                 raise ValueError("adopted MLX absolute error exceeds 1e-5")
-            if self.speedup is None or self.speedup < FROZEN_CONFIG.mlx_min_speedup:
-                raise ValueError("adopted MLX speedup must be at least 1.1")
+            recorded_speedup = self.cpu_median_seconds / self.mlx_median_seconds  # type: ignore[operator]
+            if recorded_speedup < FROZEN_CONFIG.mlx_min_speedup:
+                raise ValueError("adopted MLX speedup from recorded medians must be at least 1.1")
             if self.mlx_version is None or self.mlx_metal_version is None or self.device is None:
                 raise ValueError("adopted MLX requires mlx_version, mlx_metal_version, and device")
-            if self.batch_size is None or not self.timings:
+            if self.selected_batch_size is None or not self.timings:
                 raise ValueError("adopted MLX requires benchmark timings")
             if self.cpu_median_seconds is None or self.cpu_median_seconds <= 0:
                 raise ValueError("adopted MLX requires positive CPU timing")
@@ -655,6 +690,7 @@ class BackendDecision:
             "absolute_error_max": self.absolute_error_max,
             "speedup": self.speedup,
             "batch_size": self.batch_size,
+            "selected_batch_size": self.selected_batch_size,
             "cpu_median_seconds": self.cpu_median_seconds,
             "mlx_median_seconds": self.mlx_median_seconds,
             "mlx_version": self.mlx_version,
