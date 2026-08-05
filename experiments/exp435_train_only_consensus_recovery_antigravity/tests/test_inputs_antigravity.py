@@ -12,19 +12,26 @@ from experiments.exp435_train_only_consensus_recovery_antigravity import inputs_
 
 
 class _SyntheticConfig:
-    expected_datasets = 2
     database_sha256 = "db"
     exp291_prediction_sha256 = "p291"
     exp291_manifest_sha256 = "m291"
     exp292_prediction_sha256 = "p292"
     exp292_manifest_sha256 = "m292"
 
+    def __init__(self, expected_datasets: int = 2) -> None:
+        self.expected_datasets = expected_datasets
+
     def validate(self) -> None:
         return None
 
 
 class _Snapshot:
-    def __init__(self, context: object | None = None) -> None:
+    def __init__(
+        self,
+        database_names: tuple[str, ...],
+        context: object | None = None,
+    ) -> None:
+        self.database_names = tuple(database_names)
         self.context = context
         self.closed = False
         self.loaded: list[tuple[str, str]] = []
@@ -37,8 +44,16 @@ class _Snapshot:
 
     def freeze_context(self, lanes: object, *, verified_code_commit: str) -> object:
         if self.context is None:
+            frozen = tuple(lanes.population)
+            database_names = tuple(sorted(self.database_names))
+            database_set = set(database_names)
+            missing = tuple(name for name in frozen if name not in database_set)
+            if missing:
+                raise ValueError(
+                    "frozen lane references dataset outside modeled database"
+                )
             self.context = SimpleNamespace(
-                datasets=tuple(lanes.population),
+                datasets=tuple(name for name in frozen if name in database_set),
                 code_commit=verified_code_commit,
             )
         return self.context
@@ -59,8 +74,9 @@ class InputBoundaryTests(unittest.TestCase):
         database_names: tuple[str, ...],
         frozen: tuple[str, ...],
         context_datasets: tuple[str, ...] | None = None,
+        expected_datasets: int = 2,
     ):
-        snapshot = _Snapshot()
+        snapshot = _Snapshot(database_names)
         lanes = SimpleNamespace(population=tuple(sorted(frozen)))
 
         if context_datasets is not None:
@@ -75,15 +91,19 @@ class InputBoundaryTests(unittest.TestCase):
 
         return patch.multiple(
             inputs_antigravity,
-            FROZEN_CONFIG=_SyntheticConfig(),
-            EXP417_FROZEN_CONFIG=_SyntheticConfig(),
+            FROZEN_CONFIG=_SyntheticConfig(expected_datasets),
+            EXP417_FROZEN_CONFIG=_SyntheticConfig(expected_datasets),
             freeze_lane_inputs=lambda *args, **kwargs: lanes,
             open_database_snapshot=manager,
         ), snapshot
 
     def test_session_uses_frozen_1117_population_not_all_db_names(self):
+        frozen = tuple(f"Dataset{i:04d}" for i in range(1117))
+        database_names = frozen + ("DBOnlyExtra",)
         patcher, _snapshot = self.fixture_session(
-            database_names=("A", "B", "DBOnlyExtra"), frozen=("A", "B")
+            database_names=database_names,
+            frozen=frozen,
+            expected_datasets=1117,
         )
         with patcher:
             with inputs_antigravity.open_exp435_input_session(
@@ -94,7 +114,17 @@ class InputBoundaryTests(unittest.TestCase):
                 exp292_manifest=Path("m292"),
                 verified_code_commit="f" * 40,
             ) as session:
-                self.assertEqual(session.context.datasets, ("A", "B"))
+                self.assertIn("DBOnlyExtra", _snapshot.database_names)
+                self.assertNotIn("DBOnlyExtra", session.context.datasets)
+                self.assertEqual(session.context.datasets, frozen)
+                self.assertEqual(
+                    session.context.datasets,
+                    tuple(name for name in frozen if name in _snapshot.database_names),
+                )
+                self.assertEqual(len(session.context.datasets), 1117)
+                self.assertEqual(
+                    session.context.datasets, tuple(sorted(session.context.datasets))
+                )
 
     def test_prediction_sql_never_selects_test_labels(self):
         source = Path(inputs_antigravity.__file__).read_text(encoding="utf-8")
@@ -189,6 +219,24 @@ class InputBoundaryTests(unittest.TestCase):
                 verified_code_commit="f" * 40,
             ):
                 pass
+
+    def test_frozen_dataset_missing_from_modeled_database_fails_closed(self):
+        patcher, snapshot = self.fixture_session(
+            database_names=("A", "B"),
+            frozen=("A", "B", "Missing"),
+            expected_datasets=3,
+        )
+        with patcher, self.assertRaisesRegex(ValueError, "outside modeled database"):
+            with inputs_antigravity.open_exp435_input_session(
+                database=Path("db.sqlite"),
+                exp291_prediction=Path("p291"),
+                exp291_manifest=Path("m291"),
+                exp292_prediction=Path("p292"),
+                exp292_manifest=Path("m292"),
+                verified_code_commit="f" * 40,
+            ):
+                pass
+        self.assertTrue(snapshot.closed)
 
 
 if __name__ == "__main__":
