@@ -109,7 +109,16 @@ def normalized_digest(payload: Mapping[str, object]) -> str:
     """Digest precisely the allowlisted shared scientific semantic payload."""
     if set(payload) != NORMALIZED_SHARED_KEYS:
         raise ValueError("normalized digest allowlist mismatch")
-    return _digest_bytes(canonical_json_bytes(dict(payload)))
+    return _digest_bytes(canonical_json_bytes(_json_semantic(payload)))
+
+
+def _json_semantic(value: object) -> object:
+    """Normalize immutable runtime containers without changing their values."""
+    if isinstance(value, Mapping):
+        return {key: _json_semantic(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_semantic(item) for item in value]
+    return value
 
 
 def _compare(left: object, right: object, tolerance: float, path: str, failures: list[str]) -> None:
@@ -140,8 +149,10 @@ def compare_shared_science(golden: Mapping[str, object], actual: Mapping[str, ob
     if not isinstance(tolerance, float) or tolerance < 0:
         raise ValueError("comparison tolerance is invalid")
     golden_digest, actual_digest = normalized_digest(golden), normalized_digest(actual)
+    normalized_golden = _json_semantic(golden)
+    normalized_actual = _json_semantic(actual)
     failures: list[str] = []
-    _compare(golden, actual, tolerance, "shared", failures)
+    _compare(normalized_golden, normalized_actual, tolerance, "shared", failures)
     return {"schema": "exp425.task5.shared-parity.v1", "passed": not failures,
             "tolerance": tolerance, "golden_normalized_digest": golden_digest,
             "actual_normalized_digest": actual_digest, "mismatches": failures}

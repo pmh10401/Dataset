@@ -38,7 +38,7 @@ from experiments.exp425_selective_recovery.runtime import AtomicProgressWriter, 
 
 
 DATABASE = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
-TASK5_RETRY_ROOT = Path("/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry2")
+TASK5_RETRY_ROOT = Path("/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry3")
 SOURCE_ROOT = Path("/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint")
 GOLDEN = SOURCE_ROOT / "datasets/0a19fece1acc72bd1fd0e2845ee962e54988940a96da37ba5c231fa52e551ce8.json"
 LANE_PATHS = (
@@ -269,36 +269,42 @@ def main(argv: list[str] | None = None) -> int:
                 session = _build_smoke_session_with_guards(
                     lambda: build_exp425_runtime(snapshot, audit, adoption, runtime_writer, current_head), guards,
                 )
-                session._fold_contract_sha256 = provenance.fold_contract_sha256
-                captured = _CapturingModels(); session._models = captured
-                train = session.runner.load_train(FIXTURE, context)
-                started = perf_counter()
-                detail = lambda: _train_progress_detail(context, train, checkpoint_root=checkpoint_root, counters=counters, started=started)
-                writer.progress(stage="native_train_qualification", current_dataset=FIXTURE, success=None, **detail())
-                heartbeat = SmokeHeartbeat(writer, lambda: {"stage": "native_train_qualification", "current_dataset": FIXTURE, **detail()})
-                heartbeat.start()
                 try:
-                    native, trace = _compute_native(context, store, session, FIXTURE, train)
-                finally:
-                    heartbeat.stop()
-                wall = perf_counter() - started
-            models = captured.captured
-            if models is None or counters != {"train": 1, "test_values": 0, "test_labels": 0}:
-                raise ValueError("loader or model-capture gate failed")
-            actual = _actual_shared(native, models, train)
-            if actual["final_model_hashes"] != EXPECTED_MODEL_HASHES or actual["legacy_oof_digest"] != EXPECTED_LEGACY_OOF:
-                raise ValueError("exact model or legacy OOF gate failed")
-            parity = compare_shared_science(_golden_shared(dict(golden.record)), actual, tolerance=0.0001)
-            if not parity["passed"] or actual["status"] != "abstained" or actual["candidate_coordinates"] != []:
-                raise ValueError("shared parity/status/candidate gate failed")
-            capability = _native_commit_capability(session, store, native)
-            checkpoint_digest = store._commit_native(capability, native)
-            result = {"schema": "exp425.task5.mps-parity-result.v1", "success": True, "fixture": FIXTURE, "stage": "complete", "backend": "mps", "fallback": False, "loader_counts": counters, "wall_seconds": wall, "timer_scope": "_compute_native return after production implicit CPU/NumPy/serialization/calibration synchronization", "explicit_mps_synchronize_calls": 0, "torch": torch.__version__, "device": str(torch.device("mps")), "golden": {"record_sha256": golden.record_sha256, "payload_sha256": golden.record["payload_sha256"], "source_hashes": dict(golden.source_hashes)}, "cpu_scientific_audit": asdict(audit), "mps_adoption": adoption.payload(), "actual": actual, "parity": parity, "native_trace": asdict(trace), "native_record_sha256": native.record_payload_sha256, "checkpoint_record_sha256": checkpoint_digest, "checkpoint_path": str(checkpoint_root), "limitation": "Exp424 retained no per-synthetic-query scores; direct historical per-query deltas are unavailable."}
-            closing_session, session = session, None
-            closing_runtime_writer, runtime_writer = runtime_writer, None
-            cleanup_error = _close_owned_resources(closing_session, closing_runtime_writer)
-            if cleanup_error is not None:
-                raise cleanup_error
+                    session._fold_contract_sha256 = provenance.fold_contract_sha256
+                    captured = _CapturingModels(); session._models = captured
+                    train = session.runner.load_train(FIXTURE, context)
+                    started = perf_counter()
+                    detail = lambda: _train_progress_detail(context, train, checkpoint_root=checkpoint_root, counters=counters, started=started)
+                    writer.progress(stage="native_train_qualification", current_dataset=FIXTURE, success=None, **detail())
+                    heartbeat = SmokeHeartbeat(writer, lambda: {"stage": "native_train_qualification", "current_dataset": FIXTURE, **detail()})
+                    heartbeat.start()
+                    try:
+                        native, trace = _compute_native(context, store, session, FIXTURE, train)
+                    finally:
+                        heartbeat.stop()
+                    wall = perf_counter() - started
+                    models = captured.captured
+                    if models is None or counters != {"train": 1, "test_values": 0, "test_labels": 0}:
+                        raise ValueError("loader or model-capture gate failed")
+                    actual = _actual_shared(native, models, train)
+                    if actual["final_model_hashes"] != EXPECTED_MODEL_HASHES or actual["legacy_oof_digest"] != EXPECTED_LEGACY_OOF:
+                        raise ValueError("exact model or legacy OOF gate failed")
+                    parity = compare_shared_science(_golden_shared(dict(golden.record)), actual, tolerance=0.0001)
+                    if not parity["passed"] or actual["status"] != "abstained" or actual["candidate_coordinates"] != []:
+                        raise ValueError("shared parity/status/candidate gate failed")
+                    capability = _native_commit_capability(session, store, native)
+                    checkpoint_digest = store._commit_native(capability, native)
+                    result = {"schema": "exp425.task5.mps-parity-result.v1", "success": True, "fixture": FIXTURE, "stage": "complete", "backend": "mps", "fallback": False, "loader_counts": counters, "wall_seconds": wall, "timer_scope": "_compute_native return after production implicit CPU/NumPy/serialization/calibration synchronization", "explicit_mps_synchronize_calls": 0, "torch": torch.__version__, "device": str(torch.device("mps")), "golden": {"record_sha256": golden.record_sha256, "payload_sha256": golden.record["payload_sha256"], "source_hashes": dict(golden.source_hashes)}, "cpu_scientific_audit": asdict(audit), "mps_adoption": adoption.payload(), "actual": actual, "parity": parity, "native_trace": asdict(trace), "native_record_sha256": native.record_payload_sha256, "checkpoint_record_sha256": checkpoint_digest, "checkpoint_path": str(checkpoint_root), "limitation": "Exp424 retained no per-synthetic-query scores; direct historical per-query deltas are unavailable."}
+                except BaseException as error:
+                    closing_session, session = session, None
+                    closing_runtime_writer, runtime_writer = runtime_writer, None
+                    raise _attach_cleanup_error(error, _close_owned_resources(closing_session, closing_runtime_writer))
+                else:
+                    closing_session, session = session, None
+                    closing_runtime_writer, runtime_writer = runtime_writer, None
+                    cleanup_error = _close_owned_resources(closing_session, closing_runtime_writer)
+                    if cleanup_error is not None:
+                        raise cleanup_error
         writer.result(result)
         writer.terminal_success(**(_train_progress_detail(context, train, checkpoint_root=checkpoint_root, counters=counters, started=started) | {"completed": 1, "elapsed_seconds": wall}))
         return 0

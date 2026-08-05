@@ -11,7 +11,7 @@ from tempfile import TemporaryDirectory
 from threading import Event
 from time import sleep
 import unittest
-from types import SimpleNamespace
+from types import MappingProxyType, SimpleNamespace
 from unittest.mock import patch
 
 
@@ -183,6 +183,7 @@ class MPSParityContractTests(unittest.TestCase):
         old_failed_roots = (
             module.TASK5_RETRY_ROOT.with_name("exp425_task5_mps_parity_20260804_architecture_a"),
             module.TASK5_RETRY_ROOT.with_name("exp425_task5_mps_parity_20260804_architecture_a_retry"),
+            module.TASK5_RETRY_ROOT.with_name("exp425_task5_mps_parity_20260804_architecture_a_retry2"),
         )
         for old_failed_root in old_failed_roots:
             with self.subTest(old_failed_root=old_failed_root), self.assertRaisesRegex(ValueError, "frozen retry root"):
@@ -332,6 +333,122 @@ class MPSParityContractTests(unittest.TestCase):
         self.assertEqual(events[-5:], ["session.close", "snapshot.close", "runtime.close", "writer.result", "writer.success"])
         self.assertEqual((session.close_calls, snapshot.close_calls, runtime_writer.close_calls), (1, 1, 1))
 
+    def test_failure_after_session_closes_resources_before_snapshot_context_once(self) -> None:
+        """A post-compute harness failure must not close the snapshot a second time."""
+        module = self._script_module()
+        case = self
+        reported: list[BaseException] = []
+
+        class Snapshot:
+            closed = False
+            close_calls = 0
+
+            def freeze_context(self, _lanes: object, *, verified_code_commit: str) -> object:
+                case.assertEqual(verified_code_commit, "c" * 40)
+                return SimpleNamespace(
+                    test_sizes={module.FIXTURE: 3}, runtime_versions={"python": "test"},
+                    datasets=(module.FIXTURE,),
+                )
+
+            def close(self) -> None:
+                self.close_calls += 1
+                if self.closed:
+                    raise ValueError("snapshot closed twice")
+                self.closed = True
+
+        snapshot = Snapshot()
+
+        @contextmanager
+        def snapshot_context(*_args: object, **_kwargs: object):
+            try:
+                yield snapshot
+            finally:
+                if not snapshot.closed:
+                    snapshot.close()
+
+        class RuntimeWriter:
+            close_calls = 0
+
+            def close(self) -> None:
+                self.close_calls += 1
+                if self.close_calls != 1:
+                    raise ValueError("runtime writer closed twice")
+
+        runtime_writer = RuntimeWriter()
+
+        class Session:
+            close_calls = 0
+            _fold_contract_sha256 = None
+            _models: object = None
+
+            def __init__(self) -> None:
+                self.runner = SimpleNamespace(load_train=lambda dataset, _context: SimpleNamespace(dataset=dataset, series=()))
+
+            def close(self) -> None:
+                self.close_calls += 1
+                if self.close_calls != 1:
+                    raise ValueError("session closed twice")
+                snapshot.close()
+
+        session = Session()
+
+        @contextmanager
+        def guarded_loaders(_snapshot: object, counters: dict[str, int]):
+            def counted_train(dataset: str, _context: object) -> object:
+                counters["train"] += 1
+                return SimpleNamespace(dataset=dataset, series=())
+
+            session.runner.load_train = counted_train
+            yield SimpleNamespace()
+
+        writer = SimpleNamespace(
+            run_identity="smoke-run", progress=lambda **_detail: None,
+            failure=lambda error: reported.append(error),
+        )
+        lanes = SimpleNamespace(exp291_prediction_sha256="a" * 64, exp292_prediction_sha256="b" * 64)
+        golden = SimpleNamespace(
+            record_sha256="d" * 64, record={"payload_sha256": "e" * 64},
+            source_hashes={"experiments/exp417_causal_multihorizon_shadow/runner.py": "f" * 64},
+        )
+        audit = SimpleNamespace()
+        adoption = SimpleNamespace(payload=lambda: {"adopted": False})
+        store = SimpleNamespace(provenance=SimpleNamespace(run_identity="smoke-run"), run_context_sha256="g" * 64)
+        captured_models = SimpleNamespace(captured=object())
+        torch = SimpleNamespace(
+            __version__="2.13.0",
+            backends=SimpleNamespace(mps=SimpleNamespace(is_built=lambda: True, is_available=lambda: True)),
+            device=lambda _name: SimpleNamespace(type="mps"),
+        )
+        original = TypeError("mappingproxy is not JSON serializable")
+
+        with TemporaryDirectory() as directory, ExitStack() as patches:
+            patches.enter_context(patch.object(module, "TASK5_RETRY_ROOT", Path(directory) / "retry"))
+            patches.enter_context(patch.object(module.SmokeEvidenceWriter, "create", return_value=writer))
+            patches.enter_context(patch.object(module, "AtomicProgressWriter", SimpleNamespace(create=lambda **_kwargs: runtime_writer)))
+            patches.enter_context(patch.object(module, "open_database_snapshot", snapshot_context))
+            patches.enter_context(patch.object(module, "freeze_lane_inputs", return_value=lanes))
+            patches.enter_context(patch.object(module, "validate_golden_reference", return_value=golden))
+            patches.enter_context(patch.object(module, "Exp425RunProvenance", lambda **_kwargs: SimpleNamespace(fold_contract_sha256="j" * 64)))
+            patches.enter_context(patch.object(module.Exp425CheckpointStore, "create", return_value=store))
+            patches.enter_context(patch.object(module, "authenticated_cpu_audit", return_value=audit))
+            patches.enter_context(patch.object(module, "review_only_mps_assessment", return_value=adoption))
+            patches.enter_context(patch.object(module, "_guarded_smoke_loaders", guarded_loaders))
+            patches.enter_context(patch.object(module, "_build_smoke_session_with_guards", return_value=session))
+            patches.enter_context(patch.object(module, "_CapturingModels", lambda: captured_models))
+            patches.enter_context(patch.object(module, "_compute_native", side_effect=original))
+            patches.enter_context(patch.object(module, "_assert_clean_heavy_process"))
+            patches.enter_context(patch.object(module, "asdict", return_value={}))
+            patches.enter_context(patch.object(module, "FROZEN_CONFIG", SimpleNamespace(model_seeds=(1,), perturbation_seeds=(2,), candidate_alpha=0.01)))
+            patches.enter_context(patch.object(module.subprocess, "run", side_effect=[SimpleNamespace(stdout="c" * 40), SimpleNamespace(stdout="")]))
+            patches.enter_context(patch.dict("sys.modules", {"torch": torch}))
+            with self.assertRaises(TypeError) as raised:
+                module.main(["--output-dir", str(module.TASK5_RETRY_ROOT)])
+
+        self.assertIs(raised.exception, original)
+        self.assertEqual(reported, [original])
+        self.assertEqual((session.close_calls, snapshot.close_calls, runtime_writer.close_calls), (1, 1, 1))
+        self.assertFalse(any("cleanup error" in note for note in getattr(original, "__notes__", ())))
+
     def test_cleanup_failure_still_releases_runtime_writer_once(self) -> None:
         """A session-close failure cannot strand the runtime PID lease during failure publication."""
         module = self._script_module()
@@ -378,6 +495,23 @@ class MPSParityContractTests(unittest.TestCase):
             normalized_digest(payload | {"timing": 1})
         with self.assertRaisesRegex(ValueError, "allowlist"):
             normalized_digest({key: value for key, value in payload.items() if key != "fallback"})
+
+    def test_normalized_digest_is_representation_neutral_for_immutable_containers(self) -> None:
+        """Runtime mapping proxies and tuples must match their JSON list/dict equivalents."""
+        from experiments.exp425_selective_recovery.mps_parity import (
+            NORMALIZED_SHARED_KEYS,
+            compare_shared_science,
+            normalized_digest,
+        )
+
+        golden = {key: "x" for key in NORMALIZED_SHARED_KEYS}
+        golden["qualification"] = [{"length": 96, "per_type": {"spike": 1.0}}]
+        actual = dict(golden)
+        actual["qualification"] = (
+            MappingProxyType({"length": 96, "per_type": MappingProxyType({"spike": 1.0})}),
+        )
+        self.assertEqual(normalized_digest(golden), normalized_digest(actual))
+        self.assertTrue(compare_shared_science(golden, actual, tolerance=0.0001)["passed"])
 
     def test_comparison_rejects_model_digest_loader_and_qualification_mutations(self) -> None:
         from experiments.exp425_selective_recovery.mps_parity import compare_shared_science

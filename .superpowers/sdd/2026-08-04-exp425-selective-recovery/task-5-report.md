@@ -389,5 +389,42 @@ The actual production context smoke now reports 1,117 datasets, 195,900 TEST
 identities, 3,090 lane coordinates, `full_hash_count=1`, lifecycle `closed`, and owned
 link cleanup `removed`. No output/checkpoint root or TEST value/label was opened.
 The exact retry2 root is frozen in
-`task-5-mps-parity-antigravity-retry2-addendum.md`; it remains unexecuted until full
-verification and fresh Sol/High review.
+`task-5-mps-parity-antigravity-retry2-addendum.md`. It was executed only after full
+verification and a fresh Sol/High `ship` review.
+
+## Task 5 retry2 serialization and failure-lifecycle correction — 2026-08-05
+
+Retry2 PID 80796 completed the one-fixture MPS TRAIN computation in 120.025 seconds
+and emitted four periodic heartbeats. It then failed before parity comparison,
+dataset-record commit, result publication, or success publication because the
+allowlisted semantic digest could not serialize nested immutable `mappingproxy`
+containers. The exception path also asked the session to close a database snapshot
+that the surrounding snapshot context had already closed. Loader counts remained
+exactly TRAIN 1, TEST values 0, TEST labels 0; checkpoint completed count remained
+zero. No parity outcome or evaluation feedback was observed.
+
+Both defects were reproduced before correction. The immutable-container test raised
+the same JSON `TypeError`; the failure-lifecycle test observed snapshot close counts
+`(session, snapshot, runtime) = (1, 2, 1)`. The corrected comparison recursively
+normalizes only mapping/list/tuple representation while retaining every allowlisted
+key and value. The smoke now closes session/runtime owners inside the snapshot scope
+on both success and failure. Focused tests are GREEN with close counts `(1, 1, 1)`.
+
+The preserved retry2 hashes and exact retry3 root are frozen in
+`task-5-mps-parity-antigravity-retry3-addendum.md`. No frozen scientific setting,
+model hash, score source, threshold, alpha, seed, fixture, tolerance, or routing rule
+changed. Retry3 remains TRAIN-only and may run once only after complete verification
+and fresh Sol/High review.
+
+Pre-review verification:
+
+```text
+python3 -m unittest discover -s experiments/exp425_selective_recovery/tests -p 'test_*.py'
+PASS — 174 tests in 17.285s; 256MiB snapshot 0.123s vs verified opens 2.318s
+
+python3 -m unittest experiments.exp417_causal_multihorizon_shadow.tests.test_inputs experiments.exp417_causal_multihorizon_shadow.tests.test_contracts experiments.exp417_causal_multihorizon_shadow.tests.test_runner experiments.exp417_causal_multihorizon_shadow.tests.test_reporting
+PASS — 83 tests in 217.695s
+
+python3 -m py_compile experiments/exp425_selective_recovery/mps_parity.py scratch/run_exp425_task5_mps_parity.py experiments/exp425_selective_recovery/tests/test_mps_parity.py
+PASS
+```

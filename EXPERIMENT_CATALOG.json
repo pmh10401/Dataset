@@ -71,17 +71,18 @@
     {
       "id": "Exp425",
       "kind": "selective_recovery_from_verified_exp424_evidence",
-      "status": "implementation_task5_retry2_prepared",
+      "status": "implementation_task5_retry3_prepared",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee",
       "documents": [
         "docs/superpowers/specs/2026-08-04-exp425-selective-recovery-design.md",
         "docs/superpowers/plans/2026-08-04-exp425-selective-recovery.md",
-        ".superpowers/sdd/2026-08-04-exp425-selective-recovery/task-5-mps-parity-antigravity-retry2-addendum.md"
+        ".superpowers/sdd/2026-08-04-exp425-selective-recovery/task-5-mps-parity-antigravity-retry2-addendum.md",
+        ".superpowers/sdd/2026-08-04-exp425-selective-recovery/task-5-mps-parity-antigravity-retry3-addendum.md"
       ],
       "official_population_approved": true,
       "prediction_phase_started": false,
-      "notes": "Task5 first retry failed before TRAIN/model/prediction because sparse frozen lanes were incorrectly required to equal all TEST identities. TDD correction and exact retry2 root are prepared; retry2 is not yet executed."
+      "notes": "Task5 retry2 completed the one-fixture TRAIN-only MPS computation but failed before parity/commit/result because immutable runtime mappings were not JSON-normalized; its exception path also double-closed the snapshot. Both harness defects were reproduced and corrected without changing frozen science. Exact retry3 is prepared but not yet executed."
     }
   ]
 }
