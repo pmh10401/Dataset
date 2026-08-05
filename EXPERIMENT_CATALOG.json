@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-05T21:30:00+09:00",
+  "updated_at": "2026-08-05T22:22:55+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -83,6 +83,24 @@
       "official_population_approved": true,
       "prediction_phase_started": false,
       "notes": "Task5 retry3 completed the one-fixture TRAIN-only MPS computation with TRAIN=1 and zero TEST values/labels, then failed closed at the combined shared-parity/status/candidate gate after exact model and legacy OOF hashes passed. No dataset record/result was committed; detailed mismatch was not persisted. Research is paused for direction review before any new root, Task6, or 1,117 run."
+    },
+    {
+      "id": "Exp426",
+      "kind": "verified_checkpoint_baseline_completion",
+      "status": "implementation_task1",
+      "branch": "codex/exp425-selective-recovery",
+      "base_commit": "a86f333c1f3bc0c1c9d21bcca78e68cffb8e3751",
+      "documents": [
+        "docs/superpowers/specs/2026-08-05-exp426-verified-baseline-antigravity-design.md",
+        "docs/superpowers/plans/2026-08-05-exp426-verified-baseline-antigravity.md"
+      ],
+      "source_accounting": {"records": 1117, "importable": 983, "terminal": 134},
+      "workers": 12,
+      "mps_adopted": false,
+      "mlx_adopted": false,
+      "prediction_phase_started": false,
+      "test_labels_opened": false,
+      "notes": "Complete a trusted 1,117-dataset research baseline without new GPU computation: preserve 983 verified Exp424/MPS-origin records and verify 134 TRAIN-only identity-insufficient abstentions on twelve fixed CPU workers."
     }
   ]
 }
