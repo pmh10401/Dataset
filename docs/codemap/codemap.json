@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-05T14:42:45Z",
-  "generated_from_commit": "14cbde223cfdfabb2673fdf3e874aafe1b59d0ea",
+  "generated_at": "2026-08-05T15:03:58Z",
+  "generated_from_commit": "bab628d2998269b9cd9a27be7d22f7f32128dd88",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -469,38 +469,6 @@
       ]
     },
     {
-      "id": "exp425_runtime",
-      "label": "Exp425 runtime",
-      "type": "pipeline",
-      "boundary": "Exp425 trusted boundary",
-      "layer": 4,
-      "path": "experiments/exp425_selective_recovery/runtime.py",
-      "role": "Coordinates source import, native TRAIN processing, progress logs, resume and terminal publication.",
-      "entrypoints": [
-        "execute_runtime_command",
-        "run_selective_population",
-        "inspect_runtime_output"
-      ],
-      "tests": [
-        "experiments/exp425_selective_recovery/tests/test_runtime.py",
-        "experiments/exp425_selective_recovery/tests/test_cli.py"
-      ],
-      "constraints": [
-        "Parent owns checkpoint and logs",
-        "Exp425 native lane required MPS"
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/runtime.py",
-          "symbol": "execute_runtime_command"
-        },
-        {
-          "path": "experiments/exp425_selective_recovery/runtime.py",
-          "symbol": "run_selective_population"
-        }
-      ]
-    },
-    {
       "id": "exp426_contracts",
       "label": "Exp426 contracts",
       "type": "data",
@@ -634,6 +602,45 @@
         {
           "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
           "symbol": "class _RuntimeLogger"
+        }
+      ]
+    },
+    {
+      "id": "exp426_publication",
+      "label": "Exp426 CLI + publication",
+      "type": "interface",
+      "boundary": "Exp426 verified baseline",
+      "layer": 5,
+      "path": "experiments/exp426_verified_baseline",
+      "role": "Exposes frozen new, resume, inspect and readiness commands and atomically publishes independently replayed label-free baseline artifacts.",
+      "entrypoints": [
+        "build_parser",
+        "main",
+        "publish_exp426",
+        "verify_exp426_publication"
+      ],
+      "tests": [
+        "experiments/exp426_verified_baseline/tests/test_cli_antigravity.py",
+        "experiments/exp426_verified_baseline/tests/test_reporting_antigravity.py"
+      ],
+      "constraints": [
+        "Only frozen external roots are accepted",
+        "No worker-count option; exactly 12 CPU workers",
+        "Publication is review-only and contains no TEST labels",
+        "Every artifact is replayed against checkpoint and runtime evidence"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "def main"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
+          "symbol": "def publish_exp426"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
+          "symbol": "def verify_exp426_publication"
         }
       ]
     }
@@ -816,61 +823,6 @@
       ]
     },
     {
-      "from": "exp425_runtime",
-      "to": "exp425_database",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/runtime.py",
-          "symbol": "Exp425DatabaseSnapshot"
-        }
-      ]
-    },
-    {
-      "from": "exp425_runtime",
-      "to": "exp425_checkpoint",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/runtime.py",
-          "symbol": "Exp425CheckpointStore"
-        }
-      ]
-    },
-    {
-      "from": "exp425_runtime",
-      "to": "exp425_eligibility",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/runtime.py",
-          "symbol": "apply_group_eligibility"
-        }
-      ]
-    },
-    {
-      "from": "exp425_runtime",
-      "to": "exp417_preprocessing",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/runtime.py",
-          "symbol": "preprocess_length_groups"
-        }
-      ]
-    },
-    {
-      "from": "exp425_runtime",
-      "to": "exp417_model",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/runtime.py",
-          "symbol": "train_oof_models"
-        }
-      ]
-    },
-    {
       "from": "exp426_intake_parallel",
       "to": "exp425_predecessor",
       "type": "imports",
@@ -1001,6 +953,61 @@
           "symbol": "Exp426Counts"
         }
       ]
+    },
+    {
+      "from": "exp426_publication",
+      "to": "exp426_runtime",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "run_exp426_new"
+        }
+      ]
+    },
+    {
+      "from": "exp426_publication",
+      "to": "exp426_checkpoint",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
+          "symbol": "Exp426CheckpointStore.inspect_read_only"
+        }
+      ]
+    },
+    {
+      "from": "exp426_publication",
+      "to": "exp425_database",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "open_database_snapshot"
+        }
+      ]
+    },
+    {
+      "from": "exp426_publication",
+      "to": "exp426_intake_parallel",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "inspect_production_source_authority"
+        }
+      ]
+    },
+    {
+      "from": "exp426_publication",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ]
     }
   ],
   "flows": [
@@ -1015,21 +1022,6 @@
         "exp425_checkpoint"
       ],
       "outcome": "Verified nonterminal records are adapted and committed without recomputation."
-    },
-    {
-      "id": "exp425_native",
-      "label": "Exp425 TRAIN processing",
-      "trigger": "The Exp425 runtime reaches a source-terminal dataset.",
-      "steps": [
-        "sqlite_store",
-        "exp425_database",
-        "exp417_preprocessing",
-        "exp425_eligibility",
-        "exp417_model",
-        "exp425_runtime",
-        "exp425_checkpoint"
-      ],
-      "outcome": "Eligible TRAIN groups are modeled or explicitly abstained and durably recorded."
     },
     {
       "id": "exp426_task2",
@@ -1056,9 +1048,21 @@
         "exp426_intake_parallel",
         "exp425_database",
         "sqlite_store",
-        "exp426_checkpoint"
+        "exp426_checkpoint",
+        "exp426_publication"
       ],
       "outcome": "All 1,117 records are imported or TRAIN-verified, durably checkpointed and published as complete_review_only without TEST labels."
+    },
+    {
+      "id": "exp426_publication_flow",
+      "label": "Exp426 independent publication replay",
+      "trigger": "A complete Exp426 checkpoint and terminal runtime log are available.",
+      "steps": [
+        "exp426_checkpoint",
+        "exp426_publication",
+        "artifact_utils"
+      ],
+      "outcome": "Prediction, ledgers, backend decision, manifest, status and artifact SHA256 map are atomically published and independently reproducible."
     }
   ]
 }

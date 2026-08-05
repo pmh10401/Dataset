@@ -87,7 +87,7 @@
     {
       "id": "Exp426",
       "kind": "verified_checkpoint_baseline_completion",
-      "status": "implementation_task3",
+      "status": "task4_verified_pending_commit",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "a86f333c1f3bc0c1c9d21bcca78e68cffb8e3751",
       "documents": [
@@ -100,7 +100,7 @@
       "mlx_adopted": false,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "Tasks 1-2 are complete through 14cbde223cfdfabb2673fdf3e874aafe1b59d0ea: frozen contracts/checkpoint plus read-only Exp424 intake and fixed twelve-worker TRAIN verification. Task 3 now adds resumable parent-owned orchestration and self-written progress logs; no prediction or TEST evaluation has started."
+      "notes": "Tasks 1-3 are complete through bab628d2998269b9cd9a27be7d22f7f32128dd88. Task 4 adds deterministic publication, frozen new/resume/inspect/readiness commands, preregistration and runbook before full clean verification; no readiness, prediction, full population, or TEST evaluation has started."
     }
   ]
 }

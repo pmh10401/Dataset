@@ -315,7 +315,7 @@ git diff --check
 
 Expected: all pass and no label-bearing field exists in runtime progress/events.
 
-- [ ] **Step 7: Commit Task 3**
+- [x] **Step 7: Commit Task 3**
 
 ```bash
 git add experiments/exp426_verified_baseline
@@ -340,7 +340,7 @@ git commit -m "feat(exp426): add resumable baseline runtime"
 - Produces canonical prediction JSONL, dataset summary, import ledger, TRAIN abstention ledger, backend decision, manifest, status and artifact SHA256 map.
 - Consumes: complete Task 1–3 checkpoint and runtime evidence.
 
-- [ ] **Step 1: Write reporting RED tests**
+- [x] **Step 1: Write reporting RED tests**
 
 Require exact population conservation and governance:
 
@@ -358,7 +358,7 @@ self.assertEqual(manifest["workers"], 12)
 
 Prediction rows must be canonical, sorted and unique; abstentions produce none. Reparse every output and independently recalculate checkpoint record hashes, prediction SHA256 and manifest artifact hashes. Recursively reject label/target/ground-truth/confusion/precision/recall/F1/anomaly-location/family-TEST keys except the two literal false governance flags in manifest/status only.
 
-- [ ] **Step 2: Write CLI/readiness RED tests**
+- [x] **Step 2: Write CLI/readiness RED tests**
 
 Assert:
 
@@ -371,7 +371,7 @@ Assert:
 - label/test-evaluation imports are forbidden;
 - complete `resume` returns without DB/source/worker work.
 
-- [ ] **Step 3: Run Task 4 RED tests**
+- [x] **Step 3: Run Task 4 RED tests**
 
 ```bash
 python3 -m unittest \
@@ -381,17 +381,17 @@ python3 -m unittest \
 
 Expected: imports fail because Task 4 modules do not exist.
 
-- [ ] **Step 4: Implement reporting and CLI**
+- [x] **Step 4: Implement reporting and CLI**
 
 `readiness` checks clean Git, exact DB/lane/source hashes, source `1117/983/134`, output/checkpoint absence, no competing Exp426 process, 1-vs-12 scientific SHA parity, 12-worker process creation, DB one-hash lifecycle, focused test evidence and artifact round trip. It records 1-worker and 12-worker timing but never changes the frozen worker count.
 
 `new` and `resume` invoke only the exact frozen paths. `inspect` uses read-only checkpoint/log readers. Exit codes are 0 complete/ready, 1 validated incomplete/failed, 2 command/contract misuse.
 
-- [ ] **Step 5: Write preregistration and runbook**
+- [x] **Step 5: Write preregistration and runbook**
 
 Copy the approved design exactly, including source hashes, `983/134`, fixed 12 workers, thread limits, queue 24, TEST firewall, frozen roots, no-clobber rule, progress fields, exact commands, prediction freeze and separate post-hoc evaluation boundary.
 
-- [ ] **Step 6: Run Task 4 verification**
+- [x] **Step 6: Run Task 4 verification**
 
 ```bash
 python3 -m unittest discover -s experiments/exp426_verified_baseline/tests -p 'test_*antigravity.py'
