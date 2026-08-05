@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T00:34:29+09:00",
+  "updated_at": "2026-08-06T00:51:40+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "1595769b8a8ae10e3d16207ab73678e1cb54c513",
+  "last_verified_commit": "c265a5656cd43e2864e0c21fd92844b1f0685b36",
   "active_experiment": "Exp426",
-  "active_phase": "final_review_fix_pending_clean_verification",
+  "active_phase": "readiness_handoff_fix_pending_clean_verification",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -59,7 +59,7 @@
     "task5_parity_serialization_lifecycle": "8043149c9c6e12bdae2b9c4996813a74ae2f941f",
     "task5_retry3_prelaunch_review_fix": "d02d9ae2bc848605ab2fa44c3914f14363f51771"
   },
-  "next_action": "Commit the final-review fixes, regenerate the code map, rerun all tests from clean Git, and obtain a fresh Sol/High ship verdict before readiness or the 1,117-dataset run.",
+  "next_action": "Commit the readiness handoff fix, regenerate the code map, rerun clean verification, and obtain a fresh Sol/High ship verdict before readiness or the 1,117-dataset run.",
   "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && python3 -m unittest discover -s experiments/exp426_verified_baseline/tests -p 'test_*antigravity.py'",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens."

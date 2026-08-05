@@ -385,7 +385,7 @@ Expected: imports fail because Task 4 modules do not exist.
 
 `readiness` checks clean Git, exact DB/lane/source hashes, source `1117/983/134`, output/checkpoint absence, no competing Exp426 process, 1-vs-12 scientific SHA parity, 12-worker process creation, DB one-hash lifecycle, focused test evidence and artifact round trip. It records 1-worker and 12-worker timing but never changes the frozen worker count.
 
-`new` and `resume` invoke only the exact frozen paths. `new` requires a canonical readiness artifact made by the same clean Git commit. Operator interruption is recorded as resumable `interrupted` with zero errors; a calculation/integrity `failed` root is immutable and rejected by `resume`. The frozen context and publication manifest retain runtime package versions. `inspect` uses read-only checkpoint/log readers. Exit codes are 0 complete/ready, 1 validated incomplete, 2 command/contract misuse.
+`new` and `resume` invoke only the exact frozen paths. `new` requires a canonical readiness artifact made by the same clean Git commit, passes that validated commit into the execution boundary, and re-reads both clean HEAD and the readiness artifact before opening production inputs. Operator interruption is recorded as resumable `interrupted` with zero errors; a calculation/integrity `failed` root is immutable and rejected by `resume`. The frozen context and publication manifest retain runtime package versions. `inspect` uses read-only checkpoint/log readers. Exit codes are 0 complete/ready, 1 validated incomplete, 2 command/contract misuse.
 
 - [x] **Step 5: Write preregistration and runbook**
 

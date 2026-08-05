@@ -87,7 +87,7 @@
     {
       "id": "Exp426",
       "kind": "verified_checkpoint_baseline_completion",
-      "status": "final_review_fix_pending_clean_verification",
+      "status": "readiness_handoff_fix_pending_clean_verification",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "a86f333c1f3bc0c1c9d21bcca78e68cffb8e3751",
       "documents": [
@@ -102,7 +102,7 @@
       "mlx_adopted": false,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "Tasks 1-4 are committed through 1595769b8a8ae10e3d16207ab73678e1cb54c513. Final-review fixes bind new execution to same-commit readiness, separate resumable interruption from immutable failure, and preserve runtime versions. Clean verification and a fresh Sol/High verdict remain; no readiness, prediction, full population, or TEST evaluation has started."
+      "notes": "Tasks 1-4 and the first final-review fixes are committed through c265a5656cd43e2864e0c21fd92844b1f0685b36. The current fix passes the validated readiness commit into execution and revalidates clean HEAD plus the readiness bytes at that boundary. Clean verification and a fresh Sol/High verdict remain; no readiness, prediction, full population, or TEST evaluation has started."
     }
   ]
 }

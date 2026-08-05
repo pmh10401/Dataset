@@ -94,7 +94,9 @@ MLX로 옮길 대상이 없으므로 MLX를 채택하지 않는다. MPS로 새 �
 
 허용 명령은 `readiness`, `new`, `resume`, `inspect` 네 개뿐이다. `new`는 두
 root가 모두 없고, 현재 clean Git commit과 같은 commit으로 만든 readiness가
-검증될 때만 실행한다. `resume`은 같은 지문의 재개 가능한 미완료 root만 잇는다.
+검증될 때만 실행한다. 검증한 commit은 실행 함수에 전달되고, 실행 함수가 clean
+HEAD와 readiness 원본을 다시 대조한다. `resume`은 같은 지문의 재개 가능한
+미완료 root만 잇는다.
 완료된 `resume`과 `inspect`는 DB와 Exp424 출처를 열지 않는다. 임의 경로와
 덮어쓰기는 허용하지 않는다.
 

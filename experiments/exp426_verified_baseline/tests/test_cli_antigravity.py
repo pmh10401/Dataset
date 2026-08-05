@@ -12,6 +12,7 @@ import unittest
 
 from experiments.exp426_verified_baseline.cli_antigravity import (
     _CliDependencies,
+    _revalidate_readiness_for_execution,
     build_parser,
     main,
 )
@@ -81,13 +82,20 @@ class Exp426CliTests(unittest.TestCase):
 
     @staticmethod
     def _dependencies(parent: Path, calls: list[str]) -> _CliDependencies:
-        def execute(command: str, _output: Path, _checkpoint: Path):
+        execution_commits: list[str | None] = []
+
+        def execute(
+            command: str, _output: Path, _checkpoint: Path,
+            readiness_commit: str | None,
+        ):
             calls.append(command)
+            execution_commits.append(readiness_commit)
             return {
                 "state": "complete_review_only",
                 "completed_datasets": 3,
                 "workers": 12,
             }
+        execute.execution_commits = execution_commits  # type: ignore[attr-defined]
 
         def readiness():
             calls.append("readiness")
@@ -169,6 +177,10 @@ class Exp426CliTests(unittest.TestCase):
             ], dependencies)
             self.assertEqual((code, stderr), (0, ""))
             self.assertEqual(calls, ["new"])
+            self.assertEqual(
+                dependencies.execute.execution_commits,  # type: ignore[attr-defined]
+                [self.HEAD],
+            )
             self.assertEqual(json.loads(stdout)["workers"], 12)
 
     def test_new_rejects_missing_readiness_before_execution(self) -> None:
@@ -197,6 +209,23 @@ class Exp426CliTests(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertIn("commit", stderr)
             self.assertEqual(calls, [])
+
+    def test_execution_revalidates_readiness_after_head_handoff(self) -> None:
+        with TemporaryDirectory() as directory:
+            readiness = Path(directory) / "readiness_antigravity.json"
+            self._write_readiness(readiness)
+            verified = _revalidate_readiness_for_execution(
+                readiness,
+                validated_commit=self.HEAD,
+                current_head=self.HEAD,
+            )
+            self.assertEqual(verified["git_commit"], self.HEAD)
+            with self.assertRaisesRegex(ValueError, "changed before execution"):
+                _revalidate_readiness_for_execution(
+                    readiness,
+                    validated_commit=self.HEAD,
+                    current_head="2" * 40,
+                )
 
     def test_matching_incomplete_resume_executes_and_inspect_is_read_only(self) -> None:
         with TemporaryDirectory() as directory:

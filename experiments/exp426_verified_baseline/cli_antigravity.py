@@ -93,7 +93,7 @@ class _CliDependencies:
     frozen_output: Path
     frozen_checkpoint: Path
     frozen_readiness: Path
-    execute: Callable[[str, Path, Path], Mapping[str, object]]
+    execute: Callable[[str, Path, Path, str | None], Mapping[str, object]]
     readiness: Callable[[], Mapping[str, object]]
     publication_expectations: _PublicationExpectations = _PublicationExpectations()
     current_head: Callable[[], str] | None = None
@@ -238,6 +238,23 @@ def _validate_readiness_payload(
     _nonnegative_seconds(value.get("one_worker_seconds"), "one-worker timing")
     _nonnegative_seconds(value.get("twelve_worker_seconds"), "twelve-worker timing")
     return value
+
+
+def _revalidate_readiness_for_execution(
+    readiness: Path,
+    *,
+    validated_commit: str | None,
+    current_head: str,
+) -> dict[str, object]:
+    if validated_commit is None or validated_commit != current_head:
+        raise ValueError("readiness commit changed before execution")
+    if not readiness.is_file() or readiness.is_symlink():
+        raise ValueError("readiness input is absent or invalid")
+    payload = _runtime_object(readiness, "readiness input")
+    verified = _validate_readiness_payload(payload, expected_commit=current_head)
+    if verified.get("git_commit") != validated_commit:
+        raise ValueError("readiness commit changed before execution")
+    return verified
 
 
 def _checkpoint_binding(checkpoint: Path) -> tuple[Exp426Provenance, dict[str, object]]:
@@ -453,10 +470,19 @@ def _provenance(
 
 def _production_execute(
     command: str, output: Path, checkpoint: Path,
+    readiness_commit: str | None,
 ) -> Mapping[str, object]:
     if command not in {"new", "resume"}:
         raise ValueError("execution command is invalid")
     head = _clean_head()
+    if command == "new":
+        _revalidate_readiness_for_execution(
+            FROZEN_READINESS,
+            validated_commit=readiness_commit,
+            current_head=head,
+        )
+    elif readiness_commit is not None:
+        raise ValueError("resume cannot receive a readiness commit")
     lanes = freeze_lane_inputs(*LANE_PATHS)
     provenance: Exp426Provenance | None = None
     checkpoint_context: dict[str, object] | None = None
@@ -689,6 +715,7 @@ def main(
             args.checkpoint_root, dependencies.frozen_checkpoint, "checkpoint root",
         )
         _preflight_roots(args.command, output, checkpoint)
+        readiness_commit: str | None = None
         if args.command == "new":
             readiness = _require_frozen_path(
                 dependencies.frozen_readiness, dependencies.frozen_readiness,
@@ -697,9 +724,10 @@ def main(
             if not readiness.is_file() or readiness.is_symlink():
                 raise ValueError("readiness input is absent or invalid")
             readiness_payload = _runtime_object(readiness, "readiness input")
-            _validate_readiness_payload(
+            readiness_payload = _validate_readiness_payload(
                 readiness_payload, expected_commit=_readiness_head(dependencies),
             )
+            readiness_commit = readiness_payload["git_commit"]  # type: ignore[assignment]
         if args.command == "inspect":
             payload = _inspection_payload(
                 output, checkpoint, dependencies.publication_expectations,
@@ -713,7 +741,9 @@ def main(
             if before.get("state") == "complete_review_only":
                 print(json.dumps(before, sort_keys=True))
                 return 0
-        result = dict(dependencies.execute(args.command, output, checkpoint))
+        result = dict(dependencies.execute(
+            args.command, output, checkpoint, readiness_commit,
+        ))
         if result.get("workers") != 12:
             raise ValueError("execution did not preserve twelve workers")
         print(json.dumps(result, sort_keys=True))

@@ -33,7 +33,7 @@ READINESS=/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_read
 
 ## 3. 실행 전 확인
 
-먼저 branch가 깨끗하고 Task 4 commit에 있는지 확인한다.
+먼저 branch가 깨끗하고 최종 리뷰를 통과한 commit에 있는지 확인한다.
 
 ```bash
 git status --short --branch
@@ -70,6 +70,10 @@ python3 scratch/run_exp426_verified_baseline_antigravity.py readiness \
 readiness는 지정한 JSON 하나만 남긴다. DB snapshot이 잠시 만드는 private owner
 link와 directory는 종료 전에 제거되어야 한다. readiness 실패 시 실제 실행을
 시작하지 않는다.
+
+`new`는 명령 경계에서 검증한 readiness commit을 실행 함수에 전달한다. 실행
+함수는 clean HEAD를 다시 읽고 readiness 원본을 다시 검증하므로, 두 시점 사이에
+commit이 바뀌면 output/checkpoint를 만들기 전에 중단한다.
 
 실제 실행에서 확인한 Python, NumPy, Numba, Torch 버전은 checkpoint의
 `run_context.json`과 최종 `manifest_antigravity.json`에서 다시 확인할 수 있다.
