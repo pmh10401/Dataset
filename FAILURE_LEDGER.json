@@ -1,6 +1,6 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-05T21:33:31+09:00",
+  "updated_at": "2026-08-05T22:08:34+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
     {
@@ -63,12 +63,25 @@
         "second_retry_checkpoint_record_committed": false,
         "second_retry_elapsed_seconds": 120.02529912500177,
         "second_retry_progress_sha256": "861794bd14c833664bf2d1a02682e0a6e57e36661472a367744d16a37c65097c",
+        "third_retry_pid": 42332,
+        "third_retry_completed": 0,
+        "third_retry_train_loaded": true,
+        "third_retry_test_values_loaded": false,
+        "third_retry_test_labels_loaded": false,
+        "third_retry_mps_model_completed": true,
+        "third_retry_exact_model_hash_gate_passed": true,
+        "third_retry_exact_legacy_oof_gate_passed": true,
+        "third_retry_shared_parity_status_candidate_gate_passed": false,
+        "third_retry_detailed_mismatch_persisted": false,
+        "third_retry_checkpoint_record_committed": false,
+        "third_retry_elapsed_seconds": 120.03315816598479,
+        "third_retry_progress_sha256": "f2f1d918df5e84e5d4d67777fd9653dda00105e029416e6b563d6a33bf2b52c0",
         "test_identity_count": 195900,
         "frozen_lane_coordinate_count": 3090,
         "intentionally_unrouted_identity_count": 192810,
         "lane_coordinates_outside_test_identity": 0
       },
-      "lesson": "Frozen operational lanes are sparse routed-coordinate exclusions, not complete TEST coverage. Immutable runtime mappings must be recursively normalized before canonical semantic JSON, and session-owned snapshot cleanup must occur inside the snapshot scope on every path. Preserve every no-clobber smoke root."
+      "lesson": "Frozen operational lanes are sparse routed-coordinate exclusions, not complete TEST coverage. Immutable runtime mappings must be normalized before JSON publication, and session-owned cleanup must occur inside snapshot scope. A failed combined scientific gate must persist its exact mismatch evidence before raising; preserve every no-clobber smoke root."
     }
   ]
 }

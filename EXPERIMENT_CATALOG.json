@@ -71,7 +71,7 @@
     {
       "id": "Exp425",
       "kind": "selective_recovery_from_verified_exp424_evidence",
-      "status": "implementation_task5_retry3_prepared",
+      "status": "paused_task5_retry3_parity_failed",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee",
       "documents": [
@@ -82,7 +82,7 @@
       ],
       "official_population_approved": true,
       "prediction_phase_started": false,
-      "notes": "Task5 retry2 completed the one-fixture TRAIN-only MPS computation but failed before parity/commit/result because immutable runtime mappings were not JSON-normalized; its exception path also double-closed the snapshot. Both harness defects were reproduced and corrected without changing frozen science. Exact retry3 is prepared but not yet executed."
+      "notes": "Task5 retry3 completed the one-fixture TRAIN-only MPS computation with TRAIN=1 and zero TEST values/labels, then failed closed at the combined shared-parity/status/candidate gate after exact model and legacy OOF hashes passed. No dataset record/result was committed; detailed mismatch was not persisted. Research is paused for direction review before any new root, Task6, or 1,117 run."
     }
   ]
 }

@@ -1,13 +1,13 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-05T21:57:38+09:00",
+  "updated_at": "2026-08-05T22:08:34+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
   "last_verified_commit": "d02d9ae2bc848605ab2fa44c3914f14363f51771",
   "active_experiment": "Exp425",
-  "active_phase": "task5_retry3_rereview",
-  "status": "in_progress",
+  "active_phase": "task5_retry3_parity_failed",
+  "status": "paused_for_direction_review",
   "dataset_count": 1117,
   "active_documents": {
     "design": "docs/superpowers/specs/2026-08-04-exp425-selective-recovery-design.md",
@@ -33,13 +33,13 @@
   },
   "active_process": {
     "pid": null,
-    "checkpoint": null,
-    "output": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry2",
-    "progress_json": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry2/progress.json",
-    "events_jsonl": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry2/events.jsonl",
-    "parent_log": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry2/parent.log",
-    "pid_file": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry2/run.pid",
-    "last_error": "PID 80796 completed the one-fixture TRAIN-only MPS computation, then failed before parity/commit/result because nested mappingproxy values were not JSON serializable. Loader counts were TRAIN=1, TEST values=0, TEST labels=0; no parity outcome was observed. Root preserved; harness corrected by verified commit 8043149c9c6e12bdae2b9c4996813a74ae2f941f."
+    "checkpoint": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry3/checkpoint",
+    "output": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry3",
+    "progress_json": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry3/progress.json",
+    "events_jsonl": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry3/events.jsonl",
+    "parent_log": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry3/parent.log",
+    "pid_file": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry3/run.pid",
+    "last_error": "PID 42332 completed the one-fixture TRAIN-only MPS computation in 120.033 seconds, with TRAIN=1, TEST values=0, TEST labels=0. Exact model and legacy OOF hashes passed, then the combined shared-parity/status/candidate gate failed before checkpoint record/result publication. Detailed mismatch was not persisted. Root is immutable and must not be reused."
   },
   "completed_engineering_tasks": {
     "task1_eligibility": "a37e0b4d1e241a885c69b65b318fe77107b055c8",
@@ -55,8 +55,8 @@
     "task5_parity_serialization_lifecycle": "8043149c9c6e12bdae2b9c4996813a74ae2f941f",
     "task5_retry3_prelaunch_review_fix": "d02d9ae2bc848605ab2fa44c3914f14363f51771"
   },
-  "next_action": "Obtain a new fresh Sol/High ship review for d02d9ae after the first review's two High findings were fixed by RED/GREEN tests. Verify retry2 hashes remain immutable and retry3 is absent, then invoke the exact preregistered TRAIN-only retry3 smoke once. After its result, stop before Task 6 or any 1,117-dataset run and discuss research direction with the user.",
-  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && python3 scratch/run_exp425_task5_mps_parity.py --output-dir /Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry3",
+  "next_action": "Stop research execution and discuss direction with the user. Do not reuse retry3 or allocate/run a diagnostic retry, Task 6, readiness command, TEST evaluation, or 1,117-dataset population until a new direction is explicitly chosen.",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && python3 -m json.tool /Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry3/progress.json",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens."
 }

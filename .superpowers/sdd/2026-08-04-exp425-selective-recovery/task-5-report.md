@@ -472,3 +472,35 @@ PASS
 Retry3 remains absent and unconsumed. Retry2 progress/events/parent hashes remain
 exactly those frozen in the retry3 addendum. A new clean Sol/High verdict is required
 before the one authorized retry3 invocation.
+
+## Task 5 retry3 outcome and user-directed pause — 2026-08-05
+
+A new fresh Sol/High review returned `ship` after independently checking both prior
+High fixes, all 21 parity tests, all 176 Exp425 tests, the 83 frozen Exp417 boundary
+tests, retry2 hashes, clean Git, and the absent retry3 root. The review observed the
+host's broader `danger-full-access` / disabled-permission profile, remained
+behaviorally read-only, and left repository and artifacts unchanged.
+
+The one authorized retry3 invocation then ran as PID 42332 for 120.033 seconds. It
+loaded TRAIN exactly once, loaded zero TEST values, loaded zero TEST labels, emitted
+four 30-second heartbeats, and completed the MPS TRAIN computation. Exact final model
+hashes and exact legacy OOF hashes passed their earlier dedicated gate. The next
+combined gate failed with `shared parity/status/candidate gate failed`, before dataset
+checkpoint commit, result publication, or success publication. The checkpoint has
+zero dataset records and retry3 must not be resumed or reused.
+
+Frozen retry3 artifact hashes:
+
+- progress `f2f1d918df5e84e5d4d67777fd9653dda00105e029416e6b563d6a33bf2b52c0`;
+- events `c877e1ebd4df6d72d4250b2913a750d73ba29a8682cfafa30b9800d8c4dfa614`;
+- parent log `fb51ef14b63a0dffb41d9606cba4f73b3eec357d1a6c1bd8a08deed014ecafb0`;
+- PID evidence `6d61d20514986ff5e89c936260b6c9c1b05396d2c8de4de6986de4a548e92580`;
+- checkpoint provenance `dad19f64e00aa3531658010225075c5cfe6af5088143e3f3afa8c1332a0cf6d5`;
+- run context `fdf77b4ff6ee4417e9c6fd1396962844d17d4cbc19f5f0e8b786185069ac032f`;
+- checkpoint progress `b97303d898e743cc7189189ebfde160e9eb5d7b2cf14089b8dca486b948e92e3`.
+
+The combined gate did not persist the detailed mismatch list, so the immutable
+artifacts do not distinguish shared-field numerical drift from a status/candidate
+difference. No new root, diagnostic rerun, Task 6 work, readiness command, or
+1,117-dataset execution is authorized here. Per the user's instruction, research is
+paused for direction review.
