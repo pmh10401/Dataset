@@ -188,12 +188,16 @@ alpha, 최소 TRAIN 수, 이웃 수, ACF lag와 수치 허용오차는 다음 �
 새 점수원 실험이므로 전체 실행 전에 MLX 가능성을 반드시 평가한다. 대표 패턴,
 기울기와 ACF의 dense distance 계산은 MLX 후보 단계다.
 
-같은 입력과 seed로 CPU와 MLX를 비교하고 다음을 모두 만족할 때만 MLX를 채택한다.
+smoke seed `43501`로 만든 동일한 float32 입력과 동일한 seed를 CPU와 MLX에
+그대로 전달해 비교하고 다음을 모두 만족할 때만 MLX를 채택한다. 이 seed는
+사후 bootstrap seed와 분리된 MLX parity 계약의 일부다.
 
 1. 점수식, threshold, alpha와 routing이 바뀌지 않는다.
 2. 모든 출력이 유한하다.
 3. 공식 alpha에서 후보 좌표가 완전히 같다.
-4. 점수 차이가 사전등록 허용오차 안이다.
+4. 각 유한 score 쌍의 정규화오차를
+   `abs(cpu_score - mlx_score) / max(abs(cpu_score), abs(mlx_score), 1e-12)`로
+   계산했을 때 모든 쌍의 최댓값이 `1e-5` 이하이고, 최대 절대오차도 `1e-5` 이하이다.
 5. 전송과 동기화 시간을 포함해 정확히 같은 단계가 1.1배 이상 빠르다.
 
 하나라도 실패하면 CPU를 사용한다. CPU 경로는 저장소 정책에 따라 최대 7개의

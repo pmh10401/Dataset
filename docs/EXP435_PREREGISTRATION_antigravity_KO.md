@@ -157,14 +157,18 @@ AND outside_all_frozen_lanes
 ## 8. MLX/CPU 결정
 
 MLX 후보 단계는 amplitude, gradient와 ACF의 batched dense distance 계산이다.
-TRAIN-only 고정 smoke에서 CPU와 MLX를 같은 float32 입력으로 비교한다.
+TRAIN-only 고정 smoke에서 seed `43501`을 사용해 같은 float32 입력을 만들고,
+그 입력과 seed를 CPU와 MLX에 그대로 전달해 비교한다. 이 smoke seed는 사후
+bootstrap seed(`43520260806`)와 다르며, TEST 결과로 바꾸지 않는다.
 
 - benchmark batch sizes: `16, 32, 64, 128, 256`
 - warm-up: 2회
 - 측정: 각 batch 5회, median wall time
 - 동기화와 device transfer 시간 포함
 - 점수 최대 절대오차: `1e-5`
-- 점수 최대 정규화오차: `1e-5`
+- 각 유한 score 쌍의 정규화오차:
+  `abs(cpu_score - mlx_score) / max(abs(cpu_score), abs(mlx_score), 1e-12)`
+- 정규화오차 gate: 비교한 모든 유한 score 쌍에서 위 값의 최댓값이 `1e-5` 이하
 - 공식 alpha 후보 좌표: 완전 동일
 - 최소 속도 향상: 1.1배
 - finite 출력: 필수

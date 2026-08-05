@@ -70,6 +70,13 @@ readiness는 다음을 확인한다.
 - candidate 규칙의 고정 synthetic fixture 결과
 - output/checkpoint root 부재
 
+MLX smoke는 seed `43501`로 만든 동일한 float32 입력을 CPU와 MLX에 전달한다.
+각 유한 score 쌍의 정규화오차는
+`abs(cpu_score - mlx_score) / max(abs(cpu_score), abs(mlx_score), 1e-12)`이고,
+그 최댓값과 최대 절대오차가 각각 `1e-5` 이하여야 한다. parity, 공식 alpha 후보
+좌표와 전송·동기화를 포함한 1.1배 속도 향상을 모두 만족하지 못하면 CPU로
+고정한다.
+
 성공하면 `readiness_antigravity.json`의 `state`가 `ready`이고 backend가 `cpu` 또는
 `mlx`로 한 번 고정된다. 실패하면 `new`를 실행하지 않는다.
 

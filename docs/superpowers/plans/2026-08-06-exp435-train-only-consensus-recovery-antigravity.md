@@ -19,7 +19,9 @@
 - Global new-candidate count is at most 100; 101 fails closed without top-N trimming.
 - Task 0 frozen-value summary: candidate budget `100개`, rescued-dataset minimum `10개`, added-false-positive maximum `30개`, paired bootstrap `20,000` replicates with seed `43520260806`.
 - Results remain `review_only=true` and `operational_alert_eligible=false`.
-- MLX is adopted only with finite outputs, score tolerance `1e-5`, exact candidate identity, and at least 1.1x stage speedup including transfer and synchronization.
+- MLX smoke seed is exactly `43501`; CPU and MLX receive the same seed and float32 input.
+- Per-score normalized error is `abs(cpu_score - mlx_score) / max(abs(cpu_score), abs(mlx_score), 1e-12)`; the gate is the maximum of this quantity over all compared finite scores being `<= 1e-5` (with maximum absolute error also `<= 1e-5`).
+- MLX is adopted only with finite outputs, the frozen error gates, exact candidate identity, and at least 1.1x stage speedup including transfer and synchronization.
 - CPU fallback uses at most seven dataset workers and one inner numerical thread per worker.
 - Success requires at least 10 rescued datasets, no more than 30 added false positives, and positive micro and macro F1 deltas whose paired 95% bootstrap lower bounds are both above zero.
 - Before changing an existing module, read `docs/codemap/codemap.json` and record its callers, downstream effects, and tests. If stale, regenerate all three code-map files first.
@@ -139,6 +141,7 @@ def test_frozen_config_has_preregistered_values(self):
     self.assertEqual(FROZEN_CONFIG.candidate_alpha, 0.01)
     self.assertEqual(FROZEN_CONFIG.train_quantile, 0.99)
     self.assertEqual(FROZEN_CONFIG.global_candidate_budget, 100)
+    self.assertEqual(FROZEN_CONFIG.mlx_smoke_seed, 43501)
     self.assertEqual(FROZEN_CONFIG.cpu_workers, 7)
     FROZEN_CONFIG.validate()
 
@@ -174,6 +177,7 @@ class Exp435FrozenConfig:
     max_acf_lag: int = 32
     numeric_floor: float = 1e-12
     score_tolerance: float = 1e-5
+    mlx_smoke_seed: int = 43501
     global_candidate_budget: int = 100
     cpu_workers: int = 7
     mlx_min_speedup: float = 1.1
@@ -510,7 +514,7 @@ git commit -m "feat(exp435): enforce conservative candidate consensus"
 
 **Interfaces:**
 - Consumes: float32 query/reference batches and CPU scorer.
-- Produces: `score_channel_mlx(...) -> NDArray[np.float32]`, `benchmark_mlx_adoption(fixtures, clock=perf_counter) -> BackendDecision`, and `score_with_backend(decision, ...) -> float`.
+- Produces: `score_channel_mlx(...) -> NDArray[np.float32]`, `benchmark_mlx_adoption(fixtures, smoke_seed=FROZEN_CONFIG.mlx_smoke_seed, clock=perf_counter) -> BackendDecision`, and `score_with_backend(decision, ...) -> float`.
 
 - [ ] **Step 1: Write gate tests with a fake MLX engine**
 
@@ -522,6 +526,7 @@ def test_adopts_only_exact_candidate_identity_and_speed(self):
     )
     self.assertTrue(decision.adopted)
     self.assertEqual(decision.backend, "mlx")
+    self.assertEqual(decision.smoke_seed, 43501)
 
 def test_candidate_flip_forces_cpu_even_when_fast(self):
     decision = benchmark_mlx_adoption(
@@ -549,16 +554,20 @@ decision rather than raising during normal readiness.
 
 - [ ] **Step 4: Implement preregistered benchmarking**
 
-Measure batch sizes `(16, 32, 64, 128, 256)` with two warm-ups and five timed runs. Include
-transfer and synchronization. Require finite scores, max absolute and normalized errors at most
+Use the frozen smoke seed `43501` to construct and order one float32 fixture, and pass that same
+seed/input to CPU and MLX. Measure batch sizes `(16, 32, 64, 128, 256)` with two warm-ups and five
+timed runs. Include transfer and synchronization. For every compared finite score pair define
+`normalized_error = abs(cpu_score - mlx_score) / max(abs(cpu_score), abs(mlx_score), 1e-12)`;
+require the maximum normalized error over all pairs and the maximum absolute error to be at most
 `1e-5`, exact candidate coordinates, and speedup at least 1.1. Choose the fastest passing batch
 by median time; stable tie-breaker is smaller batch size.
 
 - [ ] **Step 5: Add fallback tests**
 
-Cover unavailable MLX, non-finite output, error `1.0001e-5`, speedup 1.099, all batches failing,
-and deterministic fastest-batch tie-breaking. Assert versions/device/timings/parity/reason appear
-in `BackendDecision.to_dict()`.
+Cover unavailable MLX, non-finite output, error `1.0001e-5`, normalized error `1.0001e-5`,
+near-zero scores that exercise the `1e-12` denominator floor, speedup 1.099, all batches failing,
+and deterministic fastest-batch tie-breaking. Assert the frozen seed `43501`, versions/device/
+timings/parity/reason and normalized-error maximum appear in `BackendDecision.to_dict()`.
 
 - [ ] **Step 6: Run MLX and scoring tests**
 
