@@ -153,7 +153,7 @@ class UnavailableTrainGroup:
         if not indices or indices != tuple(sorted(indices)) or len(indices) != len(set(indices)):
             raise ValueError("instance_indices must be sorted, unique, and non-empty")
         object.__setattr__(self, "instance_indices", indices)
-        if self.reason not in _UNAVAILABLE_GROUP_REASONS:
+        if not isinstance(self.reason, str) or self.reason not in _UNAVAILABLE_GROUP_REASONS:
             raise ValueError("reason is not preregistered")
         payload = self.to_payload(include_digest=False)
         expected_digest = _canonical_digest(payload)
@@ -176,6 +176,13 @@ class UnavailableTrainGroup:
     @property
     def evidence_digest(self) -> str:
         """Alias for consumers that call all group identity evidence a digest."""
+
+        assert self.identity_digest is not None
+        return self.identity_digest
+
+    @property
+    def reference_digest(self) -> str:
+        """Digest alias matching channel calibration terminology."""
 
         assert self.identity_digest is not None
         return self.identity_digest
