@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-05T21:39:13+09:00",
+  "updated_at": "2026-08-05T21:57:38+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "8043149c9c6e12bdae2b9c4996813a74ae2f941f",
+  "last_verified_commit": "d02d9ae2bc848605ab2fa44c3914f14363f51771",
   "active_experiment": "Exp425",
-  "active_phase": "task5_retry3_review",
+  "active_phase": "task5_retry3_rereview",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -52,9 +52,10 @@
     "task5_fix_round_1": "d1c48b58fd7ebaaf2b79e8dd48e927e1220e7b49",
     "task5_smoke_cleanup": "5b5e16093338dbf8e96e7deb968856af69c78ebb",
     "task5_sparse_lane_preflight": "ec76aa988085e76b0d264d031aeda5d59cf0581b",
-    "task5_parity_serialization_lifecycle": "8043149c9c6e12bdae2b9c4996813a74ae2f941f"
+    "task5_parity_serialization_lifecycle": "8043149c9c6e12bdae2b9c4996813a74ae2f941f",
+    "task5_retry3_prelaunch_review_fix": "d02d9ae2bc848605ab2fa44c3914f14363f51771"
   },
-  "next_action": "Obtain a fresh Sol/High ship review for 8043149, verify retry2 hashes remain immutable and retry3 is absent, then invoke the exact preregistered TRAIN-only retry3 smoke once. If it passes, freeze Task 5 evidence and proceed to Task 6 readiness; if it fails, preserve the root and diagnose without reuse.",
+  "next_action": "Obtain a new fresh Sol/High ship review for d02d9ae after the first review's two High findings were fixed by RED/GREEN tests. Verify retry2 hashes remain immutable and retry3 is absent, then invoke the exact preregistered TRAIN-only retry3 smoke once. After its result, stop before Task 6 or any 1,117-dataset run and discuss research direction with the user.",
   "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && python3 scratch/run_exp425_task5_mps_parity.py --output-dir /Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry3",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens."
