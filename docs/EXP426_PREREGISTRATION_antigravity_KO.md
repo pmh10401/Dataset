@@ -35,6 +35,8 @@ Exp426은 새 탐지 모델을 시험하는 실험이 아니다. Exp424에서 �
 - fold contract SHA256:
   `ed67b46a7a777ba3e6ef319344338d5b2f72aa4bbdec678af1db7ef6f29e0998`
 - 실행 코드는 readiness와 실제 실행 시점의 동일한 clean Git commit으로 고정한다.
+- 실행 환경의 Python, NumPy, Numba, Torch 버전은 checkpoint context와 최종
+  manifest에 함께 고정한다.
 
 동결 lane 수는 Hard 2,218, Standard 806, Priority 31,
 automatic-normal 35다. Exp424 출처 구성은 정확히 전체 1,117개, 가져오기 983개,
@@ -91,7 +93,8 @@ MLX로 옮길 대상이 없으므로 MLX를 채택하지 않는다. MPS로 새 �
 - run identity: `exp426-verified-baseline-antigravity-20260805`
 
 허용 명령은 `readiness`, `new`, `resume`, `inspect` 네 개뿐이다. `new`는 두
-root가 모두 없을 때만 실행한다. `resume`은 같은 지문의 미완료 root만 잇는다.
+root가 모두 없고, 현재 clean Git commit과 같은 commit으로 만든 readiness가
+검증될 때만 실행한다. `resume`은 같은 지문의 재개 가능한 미완료 root만 잇는다.
 완료된 `resume`과 `inspect`는 DB와 Exp424 출처를 열지 않는다. 임의 경로와
 덮어쓰기는 허용하지 않는다.
 
@@ -110,6 +113,10 @@ root가 모두 없을 때만 실행한다. `resume`은 같은 지문의 미완�
 initializing -> validating_source -> importing -> verifying_train ->
 finalizing -> complete_review_only
 ```
+
+사용자가 정상적으로 중단하면 상태를 `interrupted`로 기록하고 오류 수를 늘리지
+않는다. 이 상태와 강제 종료로 마지막 안전 상태에 머문 root만 재개할 수 있다.
+계산·무결성 오류로 `failed`가 된 root는 재개하지 않고 그대로 보존한다.
 
 로그에는 현재 데이터셋, TRAIN/TEST 개수와 길이, CPU/12 workers, 완료/전체,
 가져오기/재확인/판단 보류/오류 수, 처리속도, 경과시간, ETA, checkpoint와 최신

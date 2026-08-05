@@ -385,7 +385,7 @@ Expected: imports fail because Task 4 modules do not exist.
 
 `readiness` checks clean Git, exact DB/lane/source hashes, source `1117/983/134`, output/checkpoint absence, no competing Exp426 process, 1-vs-12 scientific SHA parity, 12-worker process creation, DB one-hash lifecycle, focused test evidence and artifact round trip. It records 1-worker and 12-worker timing but never changes the frozen worker count.
 
-`new` and `resume` invoke only the exact frozen paths. `inspect` uses read-only checkpoint/log readers. Exit codes are 0 complete/ready, 1 validated incomplete/failed, 2 command/contract misuse.
+`new` and `resume` invoke only the exact frozen paths. `new` requires a canonical readiness artifact made by the same clean Git commit. Operator interruption is recorded as resumable `interrupted` with zero errors; a calculation/integrity `failed` root is immutable and rejected by `resume`. The frozen context and publication manifest retain runtime package versions. `inspect` uses read-only checkpoint/log readers. Exit codes are 0 complete/ready, 1 validated incomplete, 2 command/contract misuse.
 
 - [x] **Step 5: Write preregistration and runbook**
 
@@ -408,7 +408,7 @@ git diff --check
 
 Expected: every command exits 0.
 
-- [ ] **Step 7: Commit Task 4**
+- [x] **Step 7: Commit Task 4**
 
 ```bash
 git add experiments/exp426_verified_baseline \

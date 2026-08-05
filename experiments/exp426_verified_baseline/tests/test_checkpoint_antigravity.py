@@ -49,6 +49,7 @@ class Exp426CheckpointTests(unittest.TestCase):
             "test_sizes": {"A_normal_1": 3, "B_normal_1": 2},
             "lane_coordinates": [],
             "code_commit": "1" * 40,
+            "runtime_versions": {"numpy": "test", "python": "3.14-test"},
         }
 
     @staticmethod
@@ -112,6 +113,15 @@ class Exp426CheckpointTests(unittest.TestCase):
             (root / "progress.json").write_text(json.dumps({"broken": True}))
             with self.assertRaises(ValueError):
                 Exp426CheckpointStore.inspect_read_only(root)
+
+    def test_context_requires_nonempty_string_runtime_versions(self) -> None:
+        with TemporaryDirectory() as directory:
+            context = self.context()
+            context["runtime_versions"] = {}
+            with self.assertRaisesRegex(ValueError, "runtime versions"):
+                Exp426CheckpointStore.create(
+                    Path(directory) / "checkpoint", self.provenance(), context,
+                )
 
     def test_record_outside_universe_and_lane_overlap_are_rejected_before_write(self) -> None:
         with TemporaryDirectory() as directory:

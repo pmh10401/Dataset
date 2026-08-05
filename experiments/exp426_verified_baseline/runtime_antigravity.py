@@ -37,6 +37,14 @@ from .source_antigravity import (
 _OUTPUT_FILES = ("progress.json", "events.jsonl", "parent.log", "run.pid")
 
 
+class _InjectedCrash(BaseException):
+    """Test-only abrupt-crash marker that must not create a failed root."""
+
+    def __init__(self, cause: Exception) -> None:
+        super().__init__(str(cause))
+        self.cause = cause
+
+
 @dataclass(frozen=True)
 class _RuntimeDependencies:
     source_tasks: Callable[[object], Iterable[object]]
@@ -410,7 +418,12 @@ def _hook_call(
     name: str, dataset: str | None,
 ) -> None:
     if hook is not None:
-        hook(name, dataset)
+        try:
+            hook(name, dataset)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception as error:
+            raise _InjectedCrash(error) from error
 
 
 def _commit_with_logs(
@@ -581,7 +594,20 @@ def _run_session(
         logger.stop_heartbeat()
         logger.transition("complete_review_only", counts)
         return Exp426RuntimeResult("complete_review_only", counts, logger.output, store.root)
-    except BaseException as error:
+    except _InjectedCrash as injected:
+        logger.stop_heartbeat()
+        raise injected.cause.with_traceback(injected.cause.__traceback__)
+    except (KeyboardInterrupt, SystemExit) as error:
+        logger.stop_heartbeat()
+        latest = {"type": type(error).__name__, "state": logger.progress.get("state")}
+        logger.transition(
+            "interrupted", _counts_from_store(store),
+            current_dataset=current_dataset,
+            metadata=current_metadata,
+            latest_error=latest,
+        )
+        raise
+    except Exception as error:
         logger.stop_heartbeat()
         logger.errors += 1
         latest = {"type": type(error).__name__, "state": logger.progress.get("state")}
@@ -641,11 +667,13 @@ def run_exp426_resume(
 ) -> Exp426RuntimeResult:
     output = Path(output)
     checkpoint = Path(checkpoint)
+    progress = _canonical_object(output / "progress.json", "runtime progress")
+    if progress.get("state") == "failed":
+        raise ValueError("failed runtime root cannot be resumed")
     dependencies = _production_dependencies() if _dependencies is None else _dependencies
     if not isinstance(dependencies, _RuntimeDependencies):
         raise ValueError("runtime dependencies are invalid")
     store = Exp426CheckpointStore.open(checkpoint, provenance, checkpoint_context)
-    progress = _canonical_object(output / "progress.json", "runtime progress")
     counts = _counts_from_store(store)
     if counts.completed == counts.total and progress.get("state") == "complete_review_only":
         return Exp426RuntimeResult("complete_review_only", counts, output, checkpoint)

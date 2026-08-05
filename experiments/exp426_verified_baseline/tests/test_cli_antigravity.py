@@ -23,6 +23,62 @@ from experiments.exp426_verified_baseline.runtime_antigravity import run_exp426_
 
 
 class Exp426CliTests(unittest.TestCase):
+    HEAD = "1" * 40
+
+    @classmethod
+    def _readiness_payload(cls, *, git_commit: str | None = None) -> dict[str, object]:
+        return {
+            "schema": "exp426.readiness.v1",
+            "state": "ready",
+            "git_commit": cls.HEAD if git_commit is None else git_commit,
+            "workers": 12,
+            "prefetch": 24,
+            "inner_threads": 1,
+            "backend": "cpu",
+            "mlx_adopted": False,
+            "mps_adopted": False,
+            "output_root_absent": True,
+            "checkpoint_root_absent": True,
+            "database": {
+                "sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+                "full_hash_count": 1,
+                "cleanup_status": "removed",
+                "elapsed_seconds": 1.0,
+            },
+            "lanes": {
+                "hard": "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848",
+                "standard": "f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b",
+                "priority": "f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b",
+                "automatic_normal": "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848",
+                "elapsed_seconds": 1.0,
+            },
+            "source": {
+                "records": 1117,
+                "importable": 983,
+                "terminal": 134,
+                "root_sha256": "f7526bf638f4c1051a5970271bdbbccd753986f7d067ec1260817da884c1b757",
+                "progress_sha256": "5e9aa4a4b7240ac89c078bdc1dce4b41bda6b6dbc505dd9ad49782556da7bd84",
+                "record_set_sha256": "d74a0def7788db89a1d3e32f46662abf07c44c7cbbce5e02612b510e2fdf4258",
+                "elapsed_seconds": 1.0,
+            },
+            "scientific_parity": True,
+            "one_worker_seconds": 2.0,
+            "twelve_worker_seconds": 1.0,
+            "observed_worker_processes": 12,
+            "one_worker_processes": 1,
+            "test_values_opened": 0,
+            "test_labels_opened": 0,
+            "focused_tests": {"returncode": 0},
+            "artifact_round_trip": True,
+        }
+
+    @classmethod
+    def _write_readiness(cls, path: Path, *, git_commit: str | None = None) -> None:
+        path.write_text(json.dumps(
+            cls._readiness_payload(git_commit=git_commit),
+            sort_keys=True, separators=(",", ":"),
+        ))
+
     @staticmethod
     def _dependencies(parent: Path, calls: list[str]) -> _CliDependencies:
         def execute(command: str, _output: Path, _checkpoint: Path):
@@ -35,14 +91,7 @@ class Exp426CliTests(unittest.TestCase):
 
         def readiness():
             calls.append("readiness")
-            return {
-                "state": "ready",
-                "source": {"records": 1117, "importable": 983, "terminal": 134},
-                "workers": 12,
-                "scientific_parity": True,
-                "test_values_opened": 0,
-                "test_labels_opened": 0,
-            }
+            return Exp426CliTests._readiness_payload()
 
         return _CliDependencies(
             frozen_output=parent / "output_antigravity",
@@ -50,6 +99,7 @@ class Exp426CliTests(unittest.TestCase):
             frozen_readiness=parent / "readiness_antigravity.json",
             execute=execute,
             readiness=readiness,
+            current_head=lambda: Exp426CliTests.HEAD,
         )
 
     @staticmethod
@@ -112,6 +162,7 @@ class Exp426CliTests(unittest.TestCase):
             parent = Path(directory)
             calls: list[str] = []
             dependencies = self._dependencies(parent, calls)
+            self._write_readiness(dependencies.frozen_readiness)
             code, stdout, stderr = self._main([
                 "new", "--output-root", str(dependencies.frozen_output),
                 "--checkpoint-root", str(dependencies.frozen_checkpoint),
@@ -119,6 +170,33 @@ class Exp426CliTests(unittest.TestCase):
             self.assertEqual((code, stderr), (0, ""))
             self.assertEqual(calls, ["new"])
             self.assertEqual(json.loads(stdout)["workers"], 12)
+
+    def test_new_rejects_missing_readiness_before_execution(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            calls: list[str] = []
+            dependencies = self._dependencies(parent, calls)
+            code, _stdout, stderr = self._main([
+                "new", "--output-root", str(dependencies.frozen_output),
+                "--checkpoint-root", str(dependencies.frozen_checkpoint),
+            ], dependencies)
+            self.assertEqual(code, 2)
+            self.assertIn("readiness", stderr)
+            self.assertEqual(calls, [])
+
+    def test_new_rejects_readiness_from_a_different_commit(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            calls: list[str] = []
+            dependencies = self._dependencies(parent, calls)
+            self._write_readiness(dependencies.frozen_readiness, git_commit="2" * 40)
+            code, _stdout, stderr = self._main([
+                "new", "--output-root", str(dependencies.frozen_output),
+                "--checkpoint-root", str(dependencies.frozen_checkpoint),
+            ], dependencies)
+            self.assertEqual(code, 2)
+            self.assertIn("commit", stderr)
+            self.assertEqual(calls, [])
 
     def test_matching_incomplete_resume_executes_and_inspect_is_read_only(self) -> None:
         with TemporaryDirectory() as directory:
@@ -155,7 +233,7 @@ class Exp426CliTests(unittest.TestCase):
             ], dependencies)
             after_inspect = reporting_fixtures.Exp426ReportingTests._tree_state(parent)
             self.assertEqual((inspect_code, inspect_stderr), (1, ""))
-            self.assertEqual(json.loads(inspect_stdout)["state"], "failed")
+            self.assertNotEqual(json.loads(inspect_stdout)["state"], "failed")
             self.assertEqual(before, after_inspect)
             resume_code, _resume_stdout, resume_stderr = self._main([
                 "resume", "--output-root", str(output),
@@ -163,6 +241,34 @@ class Exp426CliTests(unittest.TestCase):
             ], dependencies)
             self.assertEqual((resume_code, resume_stderr), (0, ""))
             self.assertEqual(calls, ["resume"])
+
+    def test_resume_rejects_a_failed_root_before_execution(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            calls: list[str] = []
+            _datasets, _provenance, _context, output, checkpoint = (
+                reporting_fixtures.Exp426ReportingTests._fixture(parent)
+            )
+            progress_path = output / "progress.json"
+            progress = json.loads(progress_path.read_text())
+            progress["state"] = "failed"
+            progress["counts"]["error"] = 1
+            progress_path.write_text(json.dumps(
+                progress, sort_keys=True, separators=(",", ":"),
+            ))
+            base = self._dependencies(parent, calls)
+            dependencies = _CliDependencies(
+                output, checkpoint, base.frozen_readiness,
+                base.execute, base.readiness,
+                reporting_fixtures.Exp426ReportingTests.expectations,
+            )
+            code, _stdout, stderr = self._main([
+                "resume", "--output-root", str(output),
+                "--checkpoint-root", str(checkpoint),
+            ], dependencies)
+            self.assertEqual(code, 2)
+            self.assertIn("failed runtime root", stderr)
+            self.assertEqual(calls, [])
 
     def test_resume_allows_checkpoint_one_record_ahead_of_runtime_progress(self) -> None:
         with TemporaryDirectory() as directory:

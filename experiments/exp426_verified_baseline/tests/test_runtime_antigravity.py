@@ -124,6 +124,7 @@ class Exp426RuntimeTests(unittest.TestCase):
             "test_sizes": {dataset: 4 for dataset in datasets},
             "lane_coordinates": [],
             "code_commit": "1" * 40,
+            "runtime_versions": {"numpy": "test", "python": "3.14-test"},
         }
 
     @staticmethod
@@ -231,6 +232,11 @@ class Exp426RuntimeTests(unittest.TestCase):
                         object(), database, object(),
                         _dependencies=fake.dependencies(), _hook=crash,
                     )
+                interrupted_progress = json.loads(
+                    (parent / "output" / "progress.json").read_text()
+                )
+                self.assertNotEqual(interrupted_progress["state"], "failed")
+                self.assertEqual(interrupted_progress["counts"]["error"], 0)
                 before_resume_calls = fake.worker_datasets.count(datasets[0])
 
                 result = run_exp426_resume(
@@ -253,6 +259,85 @@ class Exp426RuntimeTests(unittest.TestCase):
                 ]
                 self.assertEqual(len(dataset_events), 1)
                 self.assertGreaterEqual(before_resume_calls, 1)
+
+    def test_keyboard_interrupt_resumes_with_zero_errors_and_can_publish(self) -> None:
+        datasets = self.datasets(2)
+        fake = _FakeRuntime(self.classifications(datasets, imported=1))
+        database = _FakeDatabase(self.trains((datasets[1],)))
+        interrupted = False
+
+        def interrupt(name: str, _dataset: str | None) -> None:
+            nonlocal interrupted
+            if not interrupted and name == "after_worker_result":
+                interrupted = True
+                raise KeyboardInterrupt("operator interruption")
+
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            output, checkpoint = parent / "output", parent / "checkpoint"
+            provenance = self.provenance(datasets)
+            context = self.checkpoint_context(datasets)
+            with self.assertRaisesRegex(KeyboardInterrupt, "operator interruption"):
+                run_exp426_new(
+                    output, checkpoint, provenance, context,
+                    object(), database, object(),
+                    _dependencies=fake.dependencies(), _hook=interrupt,
+                )
+            progress = json.loads((output / "progress.json").read_text())
+            self.assertEqual(progress["state"], "interrupted")
+            self.assertEqual(progress["counts"]["error"], 0)
+
+            result = run_exp426_resume(
+                output, checkpoint, provenance, context,
+                object(), database, object(), _dependencies=fake.dependencies(),
+            )
+            self.assertEqual(result.state, "complete_review_only")
+            final_progress = json.loads((output / "progress.json").read_text())
+            self.assertEqual(final_progress["counts"]["error"], 0)
+
+            from experiments.exp426_verified_baseline.reporting_antigravity import (
+                _PublicationExpectations,
+                publish_exp426,
+            )
+
+            publication = publish_exp426(
+                output, checkpoint, provenance, context,
+                _expectations=_PublicationExpectations(2, 1, 1),
+            )
+            self.assertEqual(publication.manifest["failed_datasets"], 0)
+
+    def test_failed_runtime_root_is_immutable_and_cannot_resume(self) -> None:
+        datasets = self.datasets(1)
+        fake = _FakeRuntime(self.classifications(datasets, imported=1))
+        base = fake.dependencies()
+
+        def fail_workers(_tasks, *, workers: int, prefetch: int):
+            self.assertEqual((workers, prefetch), (12, 24))
+            raise ValueError("scientific worker failure")
+            yield  # pragma: no cover - keep this callable an iterator
+
+        dependencies = replace(base, worker_runner=fail_workers)
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            output, checkpoint = parent / "output", parent / "checkpoint"
+            provenance = self.provenance(datasets)
+            context = self.checkpoint_context(datasets)
+            with self.assertRaisesRegex(ValueError, "scientific worker failure"):
+                run_exp426_new(
+                    output, checkpoint, provenance, context,
+                    object(), _FakeDatabase({}), object(),
+                    _dependencies=dependencies,
+                )
+            progress = json.loads((output / "progress.json").read_text())
+            self.assertEqual(progress["state"], "failed")
+            self.assertEqual(progress["counts"]["error"], 1)
+
+            with self.assertRaisesRegex(ValueError, "failed runtime root"):
+                run_exp426_resume(
+                    output, checkpoint, provenance, context,
+                    object(), _FakeDatabase({}), object(),
+                    _dependencies=fake.dependencies(),
+                )
 
     def test_inspect_is_read_only_and_progress_contains_required_monitoring_fields(self) -> None:
         datasets = self.datasets(2)

@@ -239,7 +239,7 @@ class Exp426Progress:
     def __post_init__(self) -> None:
         if self.state not in {
             "initializing", "validating_source", "importing", "verifying_train",
-            "finalizing", "complete_review_only", "failed",
+            "finalizing", "interrupted", "complete_review_only", "failed",
         }:
             raise ValueError("progress state is invalid")
         if not isinstance(self.counts, Exp426Counts) or self.workers != 12:

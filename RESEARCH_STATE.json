@@ -1,19 +1,19 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T00:05:00+09:00",
+  "updated_at": "2026-08-06T00:34:29+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "bab628d2998269b9cd9a27be7d22f7f32128dd88",
+  "last_verified_commit": "1595769b8a8ae10e3d16207ab73678e1cb54c513",
   "active_experiment": "Exp426",
-  "active_phase": "task4_verified_pending_commit",
+  "active_phase": "final_review_fix_pending_clean_verification",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
     "design": "docs/superpowers/specs/2026-08-05-exp426-verified-baseline-antigravity-design.md",
     "plan": "docs/superpowers/plans/2026-08-05-exp426-verified-baseline-antigravity.md",
-    "preregistration": null,
-    "runbook": null,
+    "preregistration": "docs/EXP426_PREREGISTRATION_antigravity_KO.md",
+    "runbook": "docs/EXP426_RUNBOOK_antigravity_KO.md",
     "sdd_progress": null,
     "task_brief": null,
     "task_report": null
@@ -48,7 +48,8 @@
     "task4_database": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee",
     "exp426_task1_contract_checkpoint": "c8f84a1865ef9dedaff4d093b3545592ba17ac3a",
     "exp426_task2_source_parallel": "14cbde223cfdfabb2673fdf3e874aafe1b59d0ea",
-    "exp426_task3_runtime_progress": "bab628d2998269b9cd9a27be7d22f7f32128dd88"
+    "exp426_task3_runtime_progress": "bab628d2998269b9cd9a27be7d22f7f32128dd88",
+    "exp426_task4_reporting_cli_docs": "1595769b8a8ae10e3d16207ab73678e1cb54c513"
   },
   "partial_engineering_commits": {
     "task5_initial_runtime": "dc018ac9cc6e6dec13a93317df194d5e19200884",
@@ -58,7 +59,7 @@
     "task5_parity_serialization_lifecycle": "8043149c9c6e12bdae2b9c4996813a74ae2f941f",
     "task5_retry3_prelaunch_review_fix": "d02d9ae2bc848605ab2fa44c3914f14363f51771"
   },
-  "next_action": "Commit verified Exp426 Task 4, then rerun all tests from clean Git and obtain the required fresh Sol/High review before readiness or the 1,117-dataset run.",
+  "next_action": "Commit the final-review fixes, regenerate the code map, rerun all tests from clean Git, and obtain a fresh Sol/High ship verdict before readiness or the 1,117-dataset run.",
   "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && python3 -m unittest discover -s experiments/exp426_verified_baseline/tests -p 'test_*antigravity.py'",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens."

@@ -295,6 +295,7 @@ def _build_publication_bytes(
         name: _digest(raw) for name, raw in sorted(semantic.items())
     }
     record_set_sha256 = _digest(canonical_json_bytes(dict(record_digests)))
+    context_payload = _context_payload(checkpoint_context, provenance)
     manifest = {
         "schema": "exp426.publication-manifest.v1",
         "run_identity": provenance.run_identity,
@@ -306,6 +307,7 @@ def _build_publication_bytes(
         "checkpoint_record_set_sha256": record_set_sha256,
         "lane_artifact_sha256": dict(provenance.lane_artifact_sha256),
         "fold_contract_sha256": provenance.fold_contract_sha256,
+        "runtime_versions": dict(context_payload["runtime_versions"]),
         "prediction_sha256": semantic_hashes[PREDICTION_FILE],
         "completed_datasets": len(records),
         "imported_datasets": imported,

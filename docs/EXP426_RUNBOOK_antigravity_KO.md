@@ -71,6 +71,9 @@ readiness는 지정한 JSON 하나만 남긴다. DB snapshot이 잠시 만드는
 link와 directory는 종료 전에 제거되어야 한다. readiness 실패 시 실제 실행을
 시작하지 않는다.
 
+실제 실행에서 확인한 Python, NumPy, Numba, Torch 버전은 checkpoint의
+`run_context.json`과 최종 `manifest_antigravity.json`에서 다시 확인할 수 있다.
+
 ## 5. 새 실행
 
 fresh Sol/High 검토와 readiness가 통과한 뒤에만 실행한다.
@@ -115,7 +118,9 @@ tail -n 30 \
 
 ## 7. 중단 후 재개
 
-프로세스가 끝났고 root가 미완료일 때만 다음 명령을 쓴다.
+프로세스가 끝났고 `progress.json`이 `interrupted` 또는 재개 가능한 미완료 단계일
+때만 다음 명령을 쓴다. 계산·무결성 오류로 `failed`가 된 root에는 이 명령을
+사용할 수 없다.
 
 ```bash
 python3 scratch/run_exp426_verified_baseline_antigravity.py resume \

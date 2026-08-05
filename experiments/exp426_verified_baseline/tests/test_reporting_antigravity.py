@@ -108,6 +108,9 @@ class Exp426ReportingTests(unittest.TestCase):
             self.assertFalse(manifest["contains_test_labels"])
             self.assertFalse(manifest["test_labels_opened"])
             self.assertEqual(manifest["workers"], 12)
+            self.assertEqual(manifest["runtime_versions"], {
+                "numpy": "test", "python": "3.14-test",
+            })
 
             predictions = [
                 json.loads(line) for line in

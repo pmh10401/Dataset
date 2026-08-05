@@ -69,19 +69,32 @@ def _context_payload(value: object, provenance: Exp426Provenance) -> dict[str, o
     if not isinstance(value, Mapping):
         raise ValueError("frozen context is invalid")
     payload = dict(value)
-    if set(payload) != {"schema", "database_sha256", "datasets", "test_sizes", "lane_coordinates", "code_commit"}:
+    if set(payload) != {
+        "schema", "database_sha256", "datasets", "test_sizes",
+        "lane_coordinates", "code_commit", "runtime_versions",
+    }:
         raise ValueError("frozen context fields are invalid")
     if payload.get("schema") != "exp426.frozen-context.v1":
         raise ValueError("frozen context schema is invalid")
     datasets = payload.get("datasets")
     sizes = payload.get("test_sizes")
     lanes = payload.get("lane_coordinates")
+    runtime_versions = payload.get("runtime_versions")
     if datasets != list(provenance.expected_datasets) or payload.get("database_sha256") != provenance.database_sha256 or payload.get("code_commit") != provenance.git_commit:
         raise ValueError("frozen context does not match provenance")
     if not isinstance(sizes, dict) or set(sizes) != set(provenance.expected_datasets) or any(type(item) is not int or item <= 0 for item in sizes.values()):
         raise ValueError("frozen context TEST sizes are invalid")
     if not isinstance(lanes, list):
         raise ValueError("frozen context lane coordinates are invalid")
+    if (
+        not isinstance(runtime_versions, dict) or not runtime_versions
+        or any(
+            not isinstance(name, str) or not name
+            or not isinstance(version, str) or not version
+            for name, version in runtime_versions.items()
+        )
+    ):
+        raise ValueError("frozen context runtime versions are invalid")
     checked_lanes: list[list[object]] = []
     for item in lanes:
         if not isinstance(item, list) or len(item) != 2 or item[0] not in sizes or type(item[1]) is not int or item[1] < 0 or item[1] >= sizes[item[0]]:
@@ -96,6 +109,7 @@ def _context_payload(value: object, provenance: Exp426Provenance) -> dict[str, o
         "test_sizes": dict(sorted(sizes.items())),
         "lane_coordinates": checked_lanes,
         "code_commit": payload["code_commit"],
+        "runtime_versions": dict(sorted(runtime_versions.items())),
     }
 
 

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 from itertools import islice
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -71,6 +72,20 @@ LANE_PATHS = (
     DATA_ROOT / "exp292_standard_review_evidence_tiering/exp292_frozen_review_tiers.jsonl",
     DATA_ROOT / "exp292_standard_review_evidence_tiering/exp292_prediction_manifest.json",
 )
+_READINESS_KEYS = frozenset({
+    "schema", "state", "git_commit", "workers", "prefetch", "inner_threads",
+    "backend", "mlx_adopted", "mps_adopted", "output_root_absent",
+    "checkpoint_root_absent", "database", "lanes", "source",
+    "scientific_parity", "one_worker_seconds", "twelve_worker_seconds",
+    "observed_worker_processes", "one_worker_processes", "test_values_opened",
+    "test_labels_opened", "focused_tests", "artifact_round_trip",
+})
+_FROZEN_LANE_SHA256 = {
+    "hard": "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848",
+    "standard": "f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b",
+    "priority": "f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b",
+    "automatic_normal": "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848",
+}
 
 
 @dataclass(frozen=True)
@@ -81,6 +96,7 @@ class _CliDependencies:
     execute: Callable[[str, Path, Path], Mapping[str, object]]
     readiness: Callable[[], Mapping[str, object]]
     publication_expectations: _PublicationExpectations = _PublicationExpectations()
+    current_head: Callable[[], str] | None = None
 
     def __post_init__(self) -> None:
         for name in ("frozen_output", "frozen_checkpoint", "frozen_readiness"):
@@ -88,6 +104,8 @@ class _CliDependencies:
             object.__setattr__(self, name, value)
         if not callable(self.execute) or not callable(self.readiness):
             raise ValueError("CLI dependencies are invalid")
+        if self.current_head is not None and not callable(self.current_head):
+            raise ValueError("CLI current-head dependency is invalid")
         if not isinstance(self.publication_expectations, _PublicationExpectations):
             raise ValueError("CLI publication expectations are invalid")
 
@@ -131,6 +149,95 @@ def _preflight_roots(command: str, output: Path, checkpoint: Path) -> None:
     for path in (output, checkpoint):
         if not path.is_dir() or path.is_symlink():
             raise ValueError("resume/inspect output and checkpoint roots are absent or invalid")
+
+
+def _readiness_head(dependencies: _CliDependencies) -> str:
+    head = (
+        _clean_head() if dependencies.current_head is None
+        else dependencies.current_head()
+    )
+    if (
+        not isinstance(head, str) or len(head) != 40
+        or any(character not in "0123456789abcdef" for character in head)
+    ):
+        raise ValueError("current Git commit is invalid")
+    return head
+
+
+def _nonnegative_seconds(value: object, label: str) -> None:
+    if (
+        isinstance(value, bool) or not isinstance(value, (int, float))
+        or not math.isfinite(value) or value < 0
+    ):
+        raise ValueError(f"readiness {label} is invalid")
+
+
+def _validate_readiness_payload(
+    payload: Mapping[str, object], *, expected_commit: str,
+) -> dict[str, object]:
+    value = dict(payload)
+    if set(value) != _READINESS_KEYS:
+        raise ValueError("readiness fields are invalid")
+    exact = {
+        "schema": "exp426.readiness.v1",
+        "state": "ready",
+        "git_commit": expected_commit,
+        "workers": 12,
+        "prefetch": 24,
+        "inner_threads": 1,
+        "backend": "cpu",
+        "mlx_adopted": False,
+        "mps_adopted": False,
+        "output_root_absent": True,
+        "checkpoint_root_absent": True,
+        "scientific_parity": True,
+        "observed_worker_processes": 12,
+        "one_worker_processes": 1,
+        "test_values_opened": 0,
+        "test_labels_opened": 0,
+        "artifact_round_trip": True,
+    }
+    if any(value.get(name) != expected for name, expected in exact.items()):
+        if value.get("git_commit") != expected_commit:
+            raise ValueError("readiness commit does not match the clean Git commit")
+        raise ValueError("readiness fixed evidence is invalid")
+    database = value.get("database")
+    if not isinstance(database, dict) or set(database) != {
+        "sha256", "full_hash_count", "cleanup_status", "elapsed_seconds",
+    } or database.get("sha256") != FROZEN_CONFIG.database_sha256 or (
+        database.get("full_hash_count"), database.get("cleanup_status")
+    ) != (1, "removed"):
+        raise ValueError("readiness database evidence is invalid")
+    lanes = value.get("lanes")
+    if not isinstance(lanes, dict) or set(lanes) != {
+        *_FROZEN_LANE_SHA256, "elapsed_seconds",
+    } or any(lanes.get(name) != digest for name, digest in _FROZEN_LANE_SHA256.items()):
+        raise ValueError("readiness lane evidence is invalid")
+    source = value.get("source")
+    expected_source = {
+        "records": 1117,
+        "importable": 983,
+        "terminal": 134,
+        "root_sha256": EXP424_ROOT_PROVENANCE_SHA256,
+        "progress_sha256": EXP424_PROGRESS_SHA256,
+        "record_set_sha256": EXP424_RECORD_SET_SHA256,
+    }
+    if not isinstance(source, dict) or set(source) != {
+        *expected_source, "elapsed_seconds",
+    } or any(source.get(name) != expected for name, expected in expected_source.items()):
+        raise ValueError("readiness source evidence is invalid")
+    tests = value.get("focused_tests")
+    if not isinstance(tests, dict) or tests.get("returncode") != 0:
+        raise ValueError("readiness focused-test evidence is invalid")
+    for container, name in (
+        (database, "database elapsed_seconds"),
+        (lanes, "lane elapsed_seconds"),
+        (source, "source elapsed_seconds"),
+    ):
+        _nonnegative_seconds(container.get("elapsed_seconds"), name)
+    _nonnegative_seconds(value.get("one_worker_seconds"), "one-worker timing")
+    _nonnegative_seconds(value.get("twelve_worker_seconds"), "twelve-worker timing")
+    return value
 
 
 def _checkpoint_binding(checkpoint: Path) -> tuple[Exp426Provenance, dict[str, object]]:
@@ -226,9 +333,11 @@ def _resume_preflight_payload(
                 _expectations=expectations,
             )
         return _inspection_payload(output, checkpoint, expectations)
+    if state == "failed":
+        raise ValueError("failed runtime root cannot be resumed")
     if state not in {
         "initializing", "validating_source", "importing", "verifying_train",
-        "finalizing", "failed",
+        "finalizing", "interrupted",
     }:
         raise ValueError("resume runtime state is invalid")
     if (output / PUBLICATION_DIRECTORY).exists() or (output / PUBLICATION_DIRECTORY).is_symlink():
@@ -315,6 +424,7 @@ def _checkpoint_context(context: FrozenRunContext) -> dict[str, object]:
         "test_sizes": dict(context.test_sizes),
         "lane_coordinates": _lane_coordinates(context),
         "code_commit": context.code_commit,
+        "runtime_versions": dict(context.runtime_versions),
     }
 
 
@@ -565,8 +675,9 @@ def main(
             if dependencies.frozen_checkpoint.exists() or dependencies.frozen_checkpoint.is_symlink():
                 raise ValueError("frozen checkpoint root must be absent")
             payload = dict(dependencies.readiness())
-            if payload.get("state") != "ready" or payload.get("workers") != 12:
-                raise ValueError("readiness probe did not produce a ready twelve-worker result")
+            payload = _validate_readiness_payload(
+                payload, expected_commit=_readiness_head(dependencies),
+            )
             _write_new(readiness, canonical_json_bytes(payload))
             print(json.dumps(payload, sort_keys=True))
             return 0
@@ -578,6 +689,17 @@ def main(
             args.checkpoint_root, dependencies.frozen_checkpoint, "checkpoint root",
         )
         _preflight_roots(args.command, output, checkpoint)
+        if args.command == "new":
+            readiness = _require_frozen_path(
+                dependencies.frozen_readiness, dependencies.frozen_readiness,
+                "readiness input",
+            )
+            if not readiness.is_file() or readiness.is_symlink():
+                raise ValueError("readiness input is absent or invalid")
+            readiness_payload = _runtime_object(readiness, "readiness input")
+            _validate_readiness_payload(
+                readiness_payload, expected_commit=_readiness_head(dependencies),
+            )
         if args.command == "inspect":
             payload = _inspection_payload(
                 output, checkpoint, dependencies.publication_expectations,
