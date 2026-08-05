@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-05T15:40:39Z",
-  "generated_from_commit": "a85674503832b86171e3d8d7dc2c768ac354334f",
+  "generated_at": "2026-08-05T15:52:18Z",
+  "generated_from_commit": "83a3beea176b0e786056042e6862cb48641ffb21",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -618,7 +618,8 @@
         "build_parser",
         "main",
         "publish_exp426",
-        "verify_exp426_publication"
+        "verify_exp426_publication",
+        "_revalidate_readiness_for_execution"
       ],
       "tests": [
         "experiments/exp426_verified_baseline/tests/test_cli_antigravity.py",
@@ -643,6 +644,10 @@
         {
           "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
           "symbol": "def verify_exp426_publication"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "def _revalidate_readiness_for_execution"
         }
       ]
     }
