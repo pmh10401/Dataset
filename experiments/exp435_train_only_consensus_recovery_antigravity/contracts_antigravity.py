@@ -153,6 +153,17 @@ class ChannelCalibration:
         if self.available:
             if threshold is None or len(scores) < FROZEN_CONFIG.min_train_rows:
                 raise ValueError("available calibration requires threshold and four LOO scores")
+            if self.reference_count != len(scores):
+                raise ValueError("available calibration reference_count must equal LOO score count")
+            expected_threshold = float(
+                np.quantile(
+                    np.asarray(scores, dtype=np.float32),
+                    FROZEN_CONFIG.train_quantile,
+                    method=FROZEN_CONFIG.quantile_method,
+                )
+            )
+            if threshold != expected_threshold:
+                raise ValueError("available calibration threshold must equal higher quantile")
             if scale is None or scale <= FROZEN_CONFIG.numeric_floor:
                 raise ValueError("available calibration requires a positive scale")
             if self.reason is not None:
@@ -160,8 +171,10 @@ class ChannelCalibration:
         else:
             if self.reason is None:
                 raise ValueError("unavailable calibration requires a reason")
-            if threshold is not None:
-                raise ValueError("unavailable calibration cannot have a threshold")
+            if self.reference_count != 0:
+                raise ValueError("unavailable calibration reference_count must be zero")
+            if scores or threshold is not None or center is not None or scale is not None:
+                raise ValueError("unavailable calibration cannot contain usable scores or transform")
 
     @classmethod
     def unavailable(cls, channel: str, reason: str) -> "ChannelCalibration":
@@ -224,21 +237,6 @@ class CalibratedTrainGroup:
         object.__setattr__(self, "instance_indices", indices)
         rows = len(indices)
         object.__setattr__(self, "values", _readonly_matrix(self.values, "values", rows=rows, columns=self.length))
-        object.__setattr__(
-            self,
-            "gradients",
-            _readonly_optional_matrix(self.gradients, "gradients", rows=rows, columns=self.length),
-        )
-        acf_columns = max(1, min(FROZEN_CONFIG.max_acf_lag, self.length // 4))
-        if self.acf_values is not None:
-            acf_array = np.asarray(self.acf_values, dtype=np.float32)
-            if acf_array.ndim != 2 or acf_array.shape[0] != rows or acf_array.shape[1] != acf_columns:
-                raise ValueError(f"acf must have shape ({rows}, {acf_columns})")
-            if not np.isfinite(acf_array).all():
-                raise ValueError("acf must contain finite values")
-            acf_copy = np.array(acf_array, dtype=np.float32, order="C", copy=True)
-            acf_copy.flags.writeable = False
-            object.__setattr__(self, "acf_values", acf_copy)
         for name, calibration in (
             ("prototype", self.prototype),
             ("gradient", self.gradient),
@@ -248,6 +246,35 @@ class CalibratedTrainGroup:
                 raise ValueError(f"{name} must be a ChannelCalibration")
         if self.prototype.channel != "prototype" or self.gradient.channel != "gradient" or self.acf.channel != "acf":
             raise ValueError("calibration channels do not match group")
+        if not self.prototype.available:
+            raise ValueError("prototype calibration must be available")
+        if self.prototype.reference_count != rows:
+            raise ValueError("prototype reference_count must match group rows")
+        object.__setattr__(
+            self,
+            "gradients",
+            _readonly_optional_matrix(self.gradients, "gradients", rows=rows, columns=self.length),
+        )
+        if (self.gradients is None) != (not self.gradient.available):
+            raise ValueError("gradient calibration availability must match gradient array")
+        if self.gradients is not None and self.gradient.reference_count != rows:
+            raise ValueError("gradient reference_count must match group rows")
+        if self.length < FROZEN_CONFIG.min_acf_length and (self.acf_values is not None or self.acf.available):
+            raise ValueError("ACF channel unavailable below min_acf_length=16")
+        if (self.acf_values is None) != (not self.acf.available):
+            raise ValueError("acf calibration availability must match acf array")
+        if self.acf_values is not None and self.acf.reference_count != rows:
+            raise ValueError("acf reference_count must match group rows")
+        acf_columns = min(FROZEN_CONFIG.max_acf_lag, self.length // 4)
+        if self.acf_values is not None:
+            acf_array = np.asarray(self.acf_values, dtype=np.float32)
+            if acf_array.ndim != 2 or acf_array.shape[0] != rows or acf_array.shape[1] != acf_columns:
+                raise ValueError(f"acf must have shape ({rows}, {acf_columns})")
+            if not np.isfinite(acf_array).all():
+                raise ValueError("acf must contain finite values")
+            acf_copy = np.array(acf_array, dtype=np.float32, order="C", copy=True)
+            acf_copy.flags.writeable = False
+            object.__setattr__(self, "acf_values", acf_copy)
 
     @property
     def acf_calibration(self) -> ChannelCalibration:
@@ -315,7 +342,13 @@ class InstanceScoreEvidence:
         if self.exclusion_reason is not None:
             object.__setattr__(self, "exclusion_reason", _name(self.exclusion_reason, "exclusion_reason"))
         payload = self.to_payload(include_digest=False)
-        digest = _canonical_digest(payload) if self.evidence_digest is None else _digest(self.evidence_digest, "evidence_digest")
+        expected_digest = _canonical_digest(payload)
+        if self.evidence_digest is None:
+            digest = expected_digest
+        else:
+            digest = _digest(self.evidence_digest, "evidence_digest")
+            if digest != expected_digest:
+                raise ValueError("evidence_digest does not match canonical payload")
         object.__setattr__(self, "evidence_digest", digest)
 
     @classmethod
@@ -447,6 +480,21 @@ class Exp435DatasetResult:
         if any(index >= self.test_size for index in evidence_indices):
             raise ValueError("evidence index is outside TEST bounds")
         object.__setattr__(self, "evidence", tuple(evidence))
+        evidence_by_coordinate = {
+            (item.dataset, item.instance_index): item for item in evidence
+        }
+        for candidate in candidates:
+            matched = evidence_by_coordinate.get(candidate.coordinate)
+            if matched is None:
+                raise ValueError("candidate coordinate has no matching evidence")
+            if matched.status != "scored" or not matched.consensus_candidate:
+                raise ValueError("candidate evidence must be a scored consensus")
+            if matched.exclusion_reason is not None:
+                raise ValueError("candidate evidence has an exclusion reason")
+            if candidate.length != matched.length:
+                raise ValueError("candidate length does not match evidence")
+            if candidate.evidence_digest != matched.evidence_digest:
+                raise ValueError("candidate evidence digest mismatch")
         if self.status in {"abstained", "failed"} and candidates:
             raise ValueError("abstained or failed result cannot contain candidates")
         if self.status == "abstained":
@@ -550,11 +598,36 @@ class BackendDecision:
             _integer(batch, "timing batch size", minimum=1)
             timings.append((batch, _finite(cpu_seconds, "cpu timing"), _finite(mlx_seconds, "mlx timing")))
         object.__setattr__(self, "timings", tuple(timings))
-        object.__setattr__(self, "reason", _name(self.reason or "unspecified", "reason"))
+        object.__setattr__(self, "reason", _name(self.reason, "reason"))
         if self.adopted and self.backend != "mlx":
             raise ValueError("adopted backend must be mlx")
-        if self.backend == "mlx" and not self.adopted and self.reason == "unspecified":
-            raise ValueError("an MLX rejection requires a reason")
+        if self.adopted:
+            if self.smoke_seed != FROZEN_CONFIG.mlx_smoke_seed:
+                raise ValueError("adopted MLX smoke seed must equal frozen seed 43501")
+            if not self.finite_outputs:
+                raise ValueError("adopted MLX output must be finite")
+            if not self.candidate_identity_match:
+                raise ValueError("adopted MLX candidate identity mismatch")
+            if not self.parity_passed:
+                raise ValueError("adopted MLX parity gate failed")
+            if self.normalized_error_max is None or self.normalized_error_max > FROZEN_CONFIG.score_tolerance:
+                raise ValueError("adopted MLX normalized error exceeds 1e-5")
+            if self.absolute_error_max is None or self.absolute_error_max > FROZEN_CONFIG.score_tolerance:
+                raise ValueError("adopted MLX absolute error exceeds 1e-5")
+            if self.speedup is None or self.speedup < FROZEN_CONFIG.mlx_min_speedup:
+                raise ValueError("adopted MLX speedup must be at least 1.1")
+            if self.mlx_version is None or self.mlx_metal_version is None or self.device is None:
+                raise ValueError("adopted MLX requires mlx_version, mlx_metal_version, and device")
+            if self.batch_size is None or not self.timings:
+                raise ValueError("adopted MLX requires benchmark timings")
+            if self.cpu_median_seconds is None or self.cpu_median_seconds <= 0:
+                raise ValueError("adopted MLX requires positive CPU timing")
+            if self.mlx_median_seconds is None or self.mlx_median_seconds <= 0:
+                raise ValueError("adopted MLX requires positive MLX timing")
+            if any(cpu_seconds <= 0 or mlx_seconds <= 0 for _, cpu_seconds, mlx_seconds in self.timings):
+                raise ValueError("adopted MLX timings must be positive")
+            if not any(item[0] == self.batch_size for item in self.timings):
+                raise ValueError("adopted MLX batch size is absent from timings")
 
     @classmethod
     def cpu_fallback(cls, reason: str) -> "BackendDecision":
@@ -607,6 +680,7 @@ class Exp435RunSummary:
     backend: BackendDecision
     prediction_sha256: str | None = None
     manifest_sha256: str | None = None
+    artifact_sha256: str | None = None
 
     def __post_init__(self) -> None:
         _name(self.run_identity, "run_identity")
@@ -624,13 +698,26 @@ class Exp435RunSummary:
         )
         for label, value in values:
             _integer(value, label)
-        if self.completed_datasets > self.total_datasets:
-            raise ValueError("completed_datasets exceeds total_datasets")
-        if self.successful_datasets + self.abstained_datasets + self.failed_datasets != self.completed_datasets:
-            raise ValueError("dataset count conservation is invalid")
         if not isinstance(self.backend, BackendDecision):
             raise ValueError("backend must be a BackendDecision")
-        for label in ("prediction_sha256", "manifest_sha256"):
+        terminal_complete = self.status in {"complete", "complete_review_only"}
+        if terminal_complete:
+            if self.total_datasets != FROZEN_CONFIG.expected_datasets:
+                raise ValueError("complete summary total must equal frozen population 1117")
+            if self.completed_datasets != FROZEN_CONFIG.expected_datasets:
+                raise ValueError("complete summary must process all 1117 datasets")
+            if self.failed_datasets != 0 or self.successful_datasets + self.abstained_datasets != self.completed_datasets:
+                raise ValueError("complete summary requires zero errors and conserved success/abstention counts")
+            if self.candidate_count > FROZEN_CONFIG.global_candidate_budget:
+                raise ValueError("complete summary candidate budget exceeded")
+            if any(getattr(self, label) is None for label in ("prediction_sha256", "manifest_sha256", "artifact_sha256")):
+                raise ValueError("complete summary requires prediction, manifest, and artifact hashes")
+        else:
+            if self.completed_datasets > self.total_datasets:
+                raise ValueError("completed_datasets exceeds total_datasets")
+            if self.successful_datasets + self.abstained_datasets + self.failed_datasets != self.completed_datasets:
+                raise ValueError("dataset count conservation is invalid")
+        for label in ("prediction_sha256", "manifest_sha256", "artifact_sha256"):
             value = getattr(self, label)
             if value is not None:
                 object.__setattr__(self, label, _digest(value, label))
@@ -652,6 +739,7 @@ class Exp435RunSummary:
             "backend": self.backend.to_dict(),
             "prediction_sha256": self.prediction_sha256,
             "manifest_sha256": self.manifest_sha256,
+            "artifact_sha256": self.artifact_sha256,
         }
 
 
