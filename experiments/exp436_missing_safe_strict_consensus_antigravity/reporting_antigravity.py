@@ -107,9 +107,6 @@ class _PublicationExpectations:
             raise ValueError("publication total exceeds the frozen population")
 
 
-PublicationExpectations = _PublicationExpectations
-
-
 @dataclass(frozen=True)
 class FrozenPublication:
     """A verified publication root and its immutable manifest."""
@@ -703,7 +700,7 @@ def _verify_bytes(
     return FrozenPublication(publication, manifest)
 
 
-def inspect_publication(
+def _inspect_publication(
     output: Path,
     completed_store: object,
     *,
@@ -715,6 +712,11 @@ def inspect_publication(
         raise ValueError("publication expectations are invalid")
     store = _open_store(completed_store)
     return _verify_bytes(Path(output), store, _expectations)
+
+
+def inspect_publication(output: Path, completed_store: object) -> FrozenPublication:
+    """Replay the exact frozen publication; public inspection has no tuning seam."""
+    return _inspect_publication(output, completed_store)
 
 
 def _publish_exp436(
@@ -783,7 +785,6 @@ __all__ = [
     "MANIFEST_FILE",
     "PUBLICATION_DIRECTORY",
     "PREDICTION_FILE",
-    "PublicationExpectations",
     "STATUS_FILE",
     "SUMMARY_FILE",
     "TRAIN_AUDIT_FILE",

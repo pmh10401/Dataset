@@ -104,6 +104,20 @@ and cannot leave an empty parent; an existing or symlinked parent is rejected.
   emitting a contradictory hard-coded empty list.  The public readiness test
   invokes the real helper and fakes only backend availability/benchmark calls.
 
+## Third repair review
+
+- Public publication inspection is now exactly `(output, completed_store)`;
+  population expectations are private fixture-only machinery and are not
+  exported.  Production callers therefore cannot redirect frozen replay.
+- Existing public evaluation replay recomputes the exact production paired
+  bootstrap from all parsed 1,117 dataset rows (20,000 repetitions, seed
+  `43520260806`, NumPy linear percentiles), and requires equality with both
+  stored bootstrap and top-level confidence intervals.  It also binds every
+  ordered `(dataset, test_size)` row to publication summaries and derives
+  predicted-positive accounting from per-dataset confusion deltas.  Forged CI,
+  summary identity, and candidate-accounting artifacts fail before any label
+  or write route.
+
 ## Verification evidence
 
 Fresh commands completed with exit status zero:
@@ -116,7 +130,7 @@ python3 -m unittest experiments.exp436_missing_safe_strict_consensus_antigravity
 # 75 tests: reporting 24, evaluation 26, CLI 25
 
 python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py' -q
-# 278 discovered tests
+# 279 discovered tests
 
 python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*_antigravity.py' -q
 # 187 tests

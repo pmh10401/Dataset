@@ -6,6 +6,7 @@ from dataclasses import replace
 import json
 import os
 from pathlib import Path
+import inspect
 import shutil
 import stat
 from tempfile import TemporaryDirectory
@@ -150,6 +151,11 @@ class ReportingAntigravityTests(unittest.TestCase):
         self.assertEqual({item.name for item in publication.publication.iterdir()}, _FILES)
         self.assertEqual(publication.manifest["completed_datasets"], 1117)
         self.assertEqual(inspect_publication(output, self.store).manifest_sha256, publication.manifest_sha256)
+
+    def test_public_inspection_has_no_expectation_override(self) -> None:
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import reporting_antigravity
+        self.assertEqual(tuple(inspect.signature(inspect_publication).parameters), ("output", "completed_store"))
+        self.assertNotIn("PublicationExpectations", reporting_antigravity.__all__)
 
     def test_prediction_is_globally_sorted_unique_and_within_frozen_budget(self) -> None:
         _, publication = self._publication()
@@ -326,12 +332,29 @@ class ReportingAntigravityTests(unittest.TestCase):
             label_rows=1116, label_identity_sha256=base.label_identity_sha256, database_sha256=base.database_sha256, code_commit=base.code_commit,
             bootstrap=short_bootstrap,
         )
+        forged_rows = tuple(
+            replace(row, dataset=f"X{index:04d}") for index, row in enumerate(base.dataset_rows)
+        )
+        no_new_rows = tuple(
+            replace(row, combined=row.baseline) if row.dataset == "D0000" else row for row in base.dataset_rows
+        )
+        no_new_baseline = evaluation_antigravity._aggregate_counts(no_new_rows, combined=False)
+        no_new_combined = evaluation_antigravity._aggregate_counts(no_new_rows, combined=True)
+        no_new = replace(
+            base, dataset_rows=no_new_rows, baseline_confusion=no_new_baseline,
+            combined_confusion=no_new_combined, added_fp=0,
+            micro_f1_delta=no_new_combined.f1 - no_new_baseline.f1,
+            macro_f1_delta=sum(row.combined_f1 - row.baseline_f1 for row in no_new_rows) / len(no_new_rows),
+        )
         variants = {
             "population": short,
             "candidate": replace(base, candidate_count=0),
             "database": replace(base, database_sha256="d" * 64),
             "commit": replace(base, code_commit="e" * 40),
             "bootstrap": replace(base, bootstrap=evaluation_antigravity._paired_dataset_bootstrap_for_test(base.dataset_rows, repetitions=8, seed=123)),
+            "bootstrap_ci": replace(base, micro_f1_ci=evaluation_antigravity.ConfidenceInterval(1.0, 1.0)),
+            "summary": replace(base, dataset_rows=forged_rows),
+            "candidate_accounting": no_new,
         }
         for name, existing in variants.items():
             with self.subTest(name=name):

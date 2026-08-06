@@ -39,7 +39,8 @@ from .reporting_antigravity import (
     STATUS_FILE,
     SUMMARY_FILE,
     FrozenPublication,
-    PublicationExpectations,
+    _PublicationExpectations,
+    _inspect_publication,
     _exclusive_rename,
     inspect_publication,
 )
@@ -1087,10 +1088,10 @@ def _verify_frozen_source(
     """Replay publication and compare the complete source tree before publish."""
 
     try:
-        inspect_publication(
+        _inspect_publication(
             Path(output),
             store,
-            _expectations=PublicationExpectations(total=expected_total),
+            _expectations=_PublicationExpectations(total=expected_total),
         )
     except ValueError as error:
         raise ValueError(f"frozen output source replay failed: {error}") from error
@@ -1190,10 +1191,10 @@ def _evaluate_frozen_prediction_for_test(
     # This is intentionally the first operation that can inspect publication
     # bytes.  No TEST-label loader is reachable before this replay completes.
     try:
-        verified = inspect_publication(
+        verified = _inspect_publication(
             output,
             store,
-            _expectations=PublicationExpectations(total=expected_total),
+            _expectations=_PublicationExpectations(total=expected_total),
         )
     except ValueError as error:
         # Keep the first post-freeze failure stable and make the hash-gate
@@ -1461,12 +1462,22 @@ def _read_existing_evaluation(root: Path) -> Exp436Evaluation:
     return result
 
 
-def _validate_existing_evaluation(result: Exp436Evaluation, publication: FrozenPublication) -> None:
+def _validate_existing_evaluation(
+    result: Exp436Evaluation,
+    publication: FrozenPublication,
+    summary_rows: Sequence[Mapping[str, object]],
+) -> None:
     """Require a stored evaluation to be the exact frozen full-population result."""
     if result.dataset_count != FROZEN_CONFIG.expected_datasets or len(result.dataset_rows) != FROZEN_CONFIG.expected_datasets:
         raise ValueError("existing evaluation population is not frozen")
     if result.candidate_count != publication.manifest.get("candidate_count"):
         raise ValueError("existing evaluation candidate count does not bind publication")
+    expected_identity = tuple((str(row.get("dataset")), row.get("test_size")) for row in summary_rows)
+    actual_identity = tuple((row.dataset, row.test_size) for row in result.dataset_rows)
+    if (len(expected_identity) != FROZEN_CONFIG.expected_datasets
+            or any(type(test_size) is not int for _dataset, test_size in expected_identity)
+            or actual_identity != expected_identity):
+        raise ValueError("existing evaluation rows do not bind publication summaries")
     if result.label_rows != sum(row.test_size for row in result.dataset_rows) or result.prediction_label_access_count != 0:
         raise ValueError("existing evaluation label accounting is invalid")
     if _HEX64.fullmatch(result.label_identity_sha256) is None:
@@ -1475,6 +1486,14 @@ def _validate_existing_evaluation(result: Exp436Evaluation, publication: FrozenP
     combined = _aggregate_counts(result.dataset_rows, combined=True)
     if baseline != result.baseline_confusion or combined != result.combined_confusion or result.added_fp != combined.fp - baseline.fp:
         raise ValueError("existing evaluation confusion accounting is invalid")
+    positives = 0
+    for row in result.dataset_rows:
+        tp_delta, fp_delta = row.combined.tp - row.baseline.tp, row.combined.fp - row.baseline.fp
+        if tp_delta < 0 or fp_delta < 0:
+            raise ValueError("existing evaluation candidate accounting is invalid")
+        positives += tp_delta + fp_delta
+    if positives != result.candidate_count:
+        raise ValueError("existing evaluation candidate accounting does not bind publication")
     expected_micro = combined.f1 - baseline.f1
     expected_macro = float(np.mean([row.combined_f1 - row.baseline_f1 for row in result.dataset_rows]))
     if not math.isclose(result.micro_f1_delta, expected_micro, rel_tol=0.0, abs_tol=1e-15) or not math.isclose(result.macro_f1_delta, expected_macro, rel_tol=0.0, abs_tol=1e-15):
@@ -1487,6 +1506,10 @@ def _validate_existing_evaluation(result: Exp436Evaluation, publication: FrozenP
     bootstrap = result.bootstrap
     if bootstrap is None or bootstrap.repetitions != FROZEN_CONFIG.bootstrap_repetitions or bootstrap.seed != FROZEN_CONFIG.bootstrap_seed:
         raise ValueError("existing evaluation bootstrap is not frozen")
+    if result.micro_f1_ci != bootstrap.micro_f1_ci or result.macro_f1_ci != bootstrap.macro_f1_ci:
+        raise ValueError("existing evaluation confidence intervals do not bind bootstrap")
+    if _paired_dataset_bootstrap(result.dataset_rows) != bootstrap:
+        raise ValueError("existing evaluation bootstrap intervals are not reproducible")
 
 
 def evaluate_exp436(
@@ -1521,11 +1544,13 @@ def evaluate_exp436(
         if evaluation_root.is_symlink() or not evaluation_root.is_dir():
             raise ValueError("evaluation root is invalid")
         publication = inspect_publication(output_root, store)
-        _validate_verified_publication(publication, store, expected_total=FROZEN_CONFIG.expected_datasets, config=FROZEN_CONFIG)
+        _manifest, summary_rows, _prediction_rows = _validate_verified_publication(
+            publication, store, expected_total=FROZEN_CONFIG.expected_datasets, config=FROZEN_CONFIG,
+        )
         snapshot = _snapshot_frozen_tree(output_root)
         _verify_frozen_source(output_root, store, expected_total=FROZEN_CONFIG.expected_datasets, snapshot=snapshot)
         result = _read_existing_evaluation(evaluation_root)
-        _validate_existing_evaluation(result, publication)
+        _validate_existing_evaluation(result, publication, summary_rows)
         if (result.prediction_sha256 != publication.prediction_sha256
                 or result.manifest_sha256 != publication.manifest_sha256):
             raise ValueError("existing evaluation does not bind the verified publication")
