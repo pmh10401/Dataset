@@ -1,6 +1,6 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-07T06:55:00+09:00",
+  "updated_at": "2026-08-07T07:01:42+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",

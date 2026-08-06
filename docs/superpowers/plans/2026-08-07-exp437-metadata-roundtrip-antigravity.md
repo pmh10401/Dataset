@@ -18,7 +18,7 @@
 - Exp437 recomputes all 1,117 datasets; none of Exp436's 47 committed records are reused.
 - The official CPU policy is `max(1, logical_cpus - 1)`, currently 11 workers, with one numerical thread per worker.
 - MLX/MPS is adopted only if the existing exact-candidate parity and 1.1x end-to-end speed gates pass; only one accelerator-heavy process may run.
-- Every newly created filename contains `antigravity`; never create `__init__.py`.
+- Every newly created project filename contains `antigravity`; never create `__init__.py`. The only filename exception is the Git-ignored `.superpowers/sdd/<plan-basename>/` control workspace required by `subagent-driven-development` (`progress.md`, generated task briefs/reports, and review packages); these files are temporary, untracked, and deleted after final review.
 - Long execution writes atomic JSON progress, JSONL events, text logs, PID, current dataset metadata, checkpoint state, speed, elapsed time, ETA, and latest error itself.
 - Regenerate `docs/codemap/codemap.html`, `docs/codemap/codemap.json`, and `docs/codemap/codemap.lock` together whenever the module boundary changes.
 
@@ -649,11 +649,20 @@ def test_exp437_parser_and_dependencies_are_bound_to_the_new_profile(self):
     with self.assertRaises(SystemExit):
         parser.parse_args(["new", "--workers", "1"])
 
-def test_exp437_wrapper_mentions_only_the_exp437_profile_entrypoint(self):
-    source = Path("scratch/run_exp437_metadata_roundtrip_antigravity.py").read_text()
-    self.assertIn("EXP437_PROFILE", source)
-    self.assertIn("main_for_profile_antigravity", source)
-    self.assertNotIn("argparse", source)
+def test_exp437_wrapper_runs_from_outside_repository_with_no_override_flags(self):
+    wrapper = Path(__file__).resolve().parents[3] / "scratch/run_exp437_metadata_roundtrip_antigravity.py"
+    completed = subprocess.run(
+        [sys.executable, str(wrapper), "--help"],
+        cwd="/tmp",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    self.assertEqual(completed.returncode, 0, completed.stderr)
+    self.assertIn("run_exp437_metadata_roundtrip_antigravity.py", completed.stdout)
+    self.assertIn("{readiness,new,resume,inspect,evaluate}", completed.stdout)
+    self.assertNotIn("--workers", completed.stdout)
+    self.assertNotIn("--backend", completed.stdout)
 ```
 
 - [ ] **Step 2: Run CLI tests and verify the profile-aware entrypoint is absent**
