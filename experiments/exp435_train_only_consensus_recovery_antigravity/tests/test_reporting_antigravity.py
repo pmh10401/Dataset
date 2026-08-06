@@ -203,6 +203,42 @@ class Exp435ReportingTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 publish_exp435(store, root / "output", _expectations=self.expectations)
 
+    def test_publication_requires_idle_allowlisted_terminal_progress_stage(self) -> None:
+        """Catches terminal publication accepting a missing, invalid, or busy stage."""
+
+        from experiments.exp403_408.artifact_io import canonical_json_bytes
+
+        for stage in (None, "corrupt", "dispatching"):
+            with self.subTest(stage=stage), TemporaryDirectory() as directory:
+                root = Path(directory)
+                store = _runtime(root / "output", root / "checkpoint")
+                progress = root / "output" / "progress_antigravity.json"
+                payload = json.loads(progress.read_bytes())
+                if stage is None:
+                    del payload["stage"]
+                else:
+                    payload["stage"] = stage
+                progress.write_bytes(canonical_json_bytes(payload))
+
+                with self.assertRaises(ValueError):
+                    publish_exp435(store, root / "output", _expectations=self.expectations)
+
+    def test_publication_rejects_invalid_staged_event_stage(self) -> None:
+        """Catches publication bypassing the durable event-stage allowlist."""
+
+        from experiments.exp403_408.artifact_io import canonical_json_bytes
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = _runtime(root / "output", root / "checkpoint")
+            events = root / "output" / "events_antigravity.jsonl"
+            rows = [json.loads(line) for line in events.read_bytes().splitlines()]
+            rows[0]["stage"] = "corrupt"
+            events.write_bytes(b"".join(canonical_json_bytes(row) + b"\n" for row in rows))
+
+            with self.assertRaisesRegex(ValueError, "runtime event stage is invalid"):
+                publish_exp435(store, root / "output", _expectations=self.expectations)
+
     def test_publication_requires_checkpoint_counter_conservation(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -239,6 +275,60 @@ class Exp435ReportingTests(unittest.TestCase):
             self.assertTrue(destination.is_dir())
             self.assertEqual(tuple(destination.iterdir()), ())
             self.assertEqual(tuple(root.joinpath("output").glob(".publication_antigravity.*.tmp")), ())
+
+    def test_publication_rejects_identical_destination_appearing_during_payload_replay(self) -> None:
+        """Catches a race being mistaken for an entry-time idempotent replay."""
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = _runtime(root / "output", root / "checkpoint")
+            output = root / "output"
+            destination = output / "publication_antigravity"
+            from experiments.exp435_train_only_consensus_recovery_antigravity import reporting_antigravity
+
+            original = reporting_antigravity._build_payloads
+            appeared = False
+
+            def race(*args, **kwargs):
+                nonlocal appeared
+                payloads = original(*args, **kwargs)
+                if not appeared:
+                    appeared = True
+                    destination.mkdir()
+                    for name, payload in payloads.items():
+                        (destination / name).write_bytes(payload)
+                return payloads
+
+            with patch.object(reporting_antigravity, "_build_payloads", side_effect=race):
+                with self.assertRaisesRegex(ValueError, "appeared"):
+                    publish_exp435(store, output, _expectations=self.expectations)
+
+            expected = original(store, output, self.expectations)
+            self.assertEqual(
+                {path.name: path.read_bytes() for path in destination.iterdir()},
+                expected,
+            )
+            self.assertEqual(tuple(output.glob(".publication_antigravity.*.tmp")), ())
+
+    def test_publication_at_entry_replays_identical_existing_publication(self) -> None:
+        """Catches entry-time idempotence being treated as a publication race."""
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = _runtime(root / "output", root / "checkpoint")
+            first = publish_exp435(store, root / "output", _expectations=self.expectations)
+            before = {
+                path.name: path.read_bytes()
+                for path in first.publication.iterdir()
+            }
+
+            replay = publish_exp435(store, root / "output", _expectations=self.expectations)
+
+            self.assertEqual(replay.manifest_sha256, first.manifest_sha256)
+            self.assertEqual(
+                {path.name: path.read_bytes() for path in replay.publication.iterdir()},
+                before,
+            )
 
     def test_manifest_status_and_hash_map_bind_all_terminal_runtime_files(self) -> None:
         with TemporaryDirectory() as directory:

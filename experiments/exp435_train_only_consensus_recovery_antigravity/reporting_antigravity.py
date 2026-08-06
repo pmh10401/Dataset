@@ -32,6 +32,7 @@ from .contracts_antigravity import (
 from .progress_antigravity import (
     _assert_label_free,
     _canonical_checkpoint,
+    _require_persisted_stage,
     _validate_binding,
     _validate_events,
     _validate_output_inventory,
@@ -428,11 +429,14 @@ def _validate_runtime(
         source="runtime progress",
         require_total=True,
     )
+    _require_persisted_stage(progress.get("stage"), source="runtime progress stage")
     # ``complete_review_only`` is a publication/result state, never a runtime
     # checkpoint state.  Accepting it here would allow a second publication
     # pass to masquerade as the first checkpoint-complete boundary.
     if progress.get("state") != "checkpoint_complete":
         raise ValueError("runtime is not checkpoint-complete")
+    if progress["stage"] != "idle":
+        raise ValueError("runtime checkpoint-complete stage is not idle")
     if progress.get("current_dataset") is not None:
         raise ValueError("runtime current dataset is not null")
     if progress.get("eta_seconds") not in {0, 0.0}:
@@ -708,13 +712,15 @@ def publish_exp435(
         raise ValueError("publication expectations are invalid")
     store = _open_store(completed_store)
     output = Path(output)
+    publication = output / PUBLICATION_DIRECTORY
+    # An existing root is idempotent only when it was present on entry.  Any
+    # later appearance is a concurrent publisher and must fail no-clobber.
+    if publication.exists() or publication.is_symlink():
+        return _verify_bytes(output, store, _expectations)
     # Validate every precondition, including budget, before allocating a
     # publication staging directory.  A failed run can therefore never leave
     # a partial publication behind.
     payloads = _build_payloads(store, output, _expectations)
-    publication = output / PUBLICATION_DIRECTORY
-    if publication.exists() or publication.is_symlink():
-        return _verify_bytes(output, store, _expectations)
     if output.is_symlink() or not output.is_dir():
         raise ValueError("runtime output root is absent or invalid")
     staging = output / f".{PUBLICATION_DIRECTORY}.{uuid4().hex}.tmp"

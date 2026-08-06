@@ -130,8 +130,7 @@ def _normalise_error(error: object | None, stage: str | None = None) -> dict[str
 
 
 def _validate_output_inventory(output: Path, *, mutable: bool) -> None:
-    if not output.is_dir() or output.is_symlink():
-        raise ValueError("runtime output inventory is invalid")
+    _validate_durable_output_files(output)
     extras = {item.name for item in output.iterdir()} - set(_OUTPUT_FILES)
     for name in extras:
         path = output / name
@@ -145,6 +144,13 @@ def _validate_output_inventory(output: Path, *, mutable: bool) -> None:
     if extras:
         _fsync_directory(output)
     if set(item.name for item in output.iterdir()) != set(_OUTPUT_FILES):
+        raise ValueError("runtime output inventory is invalid")
+
+
+def _validate_durable_output_files(output: Path) -> None:
+    """Validate required durable paths without reconciling atomic leftovers."""
+
+    if not output.is_dir() or output.is_symlink():
         raise ValueError("runtime output inventory is invalid")
     for name in _OUTPUT_FILES:
         path = output / name
@@ -362,10 +368,10 @@ class ProgressWriter:
         # before reconciliation can remove an internal temporary or rewrite a
         # PID, so even a direct caller cannot mutate a failed root.
         cls.reject_failed_resume(output)
+        _validate_durable_output_files(output)
         progress_path = output / "progress_antigravity.json"
         progress = _canonical_object(progress_path, "runtime progress")
         _require_persisted_stage(progress.get("stage"), source="runtime progress stage")
-        _validate_output_inventory(output, mutable=True)
         pid_payload = _canonical_object(output / "run_antigravity.pid", "runtime PID")
         stored_total = progress.get("total_datasets", progress.get("total"))
         stored_backend = progress.get("backend")
@@ -411,6 +417,9 @@ class ProgressWriter:
             total_datasets=expected_total,
             context_fingerprint=expected_fingerprint,
         )
+        # All immutable durable records now agree.  Only this success path may
+        # remove a recognized interrupted atomic write or claim the PID.
+        _validate_output_inventory(output, mutable=True)
         writer = cls(
             output,
             run_identity=run_identity,

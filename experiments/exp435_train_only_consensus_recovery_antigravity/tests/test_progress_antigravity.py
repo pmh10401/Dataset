@@ -241,6 +241,42 @@ class ProgressWriterTests(unittest.TestCase):
             }
             self.assertEqual(after, before)
 
+    def test_resume_rejects_invalid_event_stage_before_reconciling_atomic_temp(self) -> None:
+        """Catches recovery deleting a recognized temp before rejecting corruption."""
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "output"
+            checkpoint = Path(directory) / "cp"
+            writer = ProgressWriter.create(
+                root, run_identity="exp435-fixture", checkpoint=checkpoint,
+                total_datasets=1, backend="cpu", heartbeat_seconds=None,
+            )
+            writer.close()
+            event_path = root / "events_antigravity.jsonl"
+            event = json.loads(event_path.read_bytes().splitlines()[0])
+            event["stage"] = "corrupt"
+            event_path.write_bytes(
+                json.dumps(event, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+            )
+            temporary = root / (".progress_antigravity.json." + "d" * 32 + ".tmp")
+            temporary.write_bytes(b"interrupted atomic write")
+            before = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.rglob("*")) if path.is_file()
+            }
+
+            with self.assertRaisesRegex(ValueError, "runtime event stage is invalid"):
+                ProgressWriter.open_existing(
+                    root, run_identity="exp435-fixture", checkpoint=checkpoint,
+                    process_is_live=lambda pid: False,
+                )
+
+            after = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.rglob("*")) if path.is_file()
+            }
+            self.assertEqual(after, before)
+
     def test_resume_removes_only_internal_atomic_temp_and_rejects_unknown_files(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory) / "output"
