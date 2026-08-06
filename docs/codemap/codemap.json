@@ -1,14 +1,15 @@
 {
-  "generated_at": "2026-08-06T00:33:14Z",
-  "generated_from_commit": "e93baf9f1a52656252936fcdf0564ec8eede61dd",
+  "generated_at": "2026-08-06T01:17:35Z",
+  "generated_from_commit": "24cc20d742017b6828491e54032a247e7982dbb8",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
     "Exp425 source validation, descriptor-bound database snapshot, eligibility, runtime and checkpoints",
     "Exp426 verified-baseline contracts, intake, runtime, checkpoint and publication",
     "Exp435 frozen prediction configuration/contracts and label-free input boundary",
-    "Research control files and local external data stores",
-    "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups"
+    "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
+    "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
+    "Research control files and local external data stores"
   ],
   "nodes": [
     {
@@ -645,7 +646,7 @@
       "boundary": "Exp435 label-free prediction",
       "layer": 1,
       "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
-      "role": "Groups the frozen Exp435 configuration, immutable prediction contracts, descriptor-bound TRAIN/TEST-value intake, deterministic TRAIN-only feature calibration, and the uninvoked CPU scoring/candidate-budget capability; invalid exact-length groups become structured unavailable outcomes while valid sibling lengths continue. Scoring routes TEST values by exact raw length, requires prototype AND (gradient OR ACF), excludes frozen-lane coordinates, and fails closed above 100 candidates. TEST labels are outside this boundary and no runtime caller is registered yet.",
+      "role": "Groups the frozen Exp435 configuration, immutable prediction contracts, descriptor-bound TRAIN/TEST-value intake, deterministic TRAIN-only feature calibration, CPU scoring/candidate-budget capability and optional MLX dense-scoring readiness gate; invalid exact-length groups become structured unavailable outcomes while valid sibling lengths continue. Scoring routes TEST values by exact raw length, requires prototype AND (gradient OR ACF), excludes frozen-lane coordinates, and fails closed above 100 candidates. MLX is benchmark-gated only; no runtime caller or end-to-end scoring flow is registered yet.",
       "entrypoints": [
         "Exp435FrozenConfig",
         "FROZEN_CONFIG",
@@ -670,14 +671,22 @@
         "CandidateBudgetExceeded",
         "score_test_instance_cpu",
         "score_dataset_cpu",
-        "validate_global_candidates"
+        "validate_global_candidates",
+        "BackendBatchEvidence",
+        "MlxUnavailable",
+        "MlxFixture",
+        "MlxEngine",
+        "score_channel_mlx",
+        "benchmark_mlx_adoption",
+        "score_with_backend"
       ],
       "tests": [
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_config_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
-        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py"
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py"
       ],
       "constraints": [
         "FROZEN_CONFIG.validate() must pass before input access",
@@ -691,7 +700,12 @@
         "CPU scoring routes each TEST value row to one exact raw-length TRAIN group; missing or unavailable lengths abstain without concatenation or tail replacement",
         "A candidate requires prototype AND (gradient OR ACF) with strict score > threshold; frozen-lane coordinates are excluded",
         "Global candidate validation sorts coordinates and fails closed above 100; it never truncates or auto-promotes",
-        "Scoring is a source-backed capability only; no end-to-end runtime caller is registered yet"
+        "Scoring is a source-backed capability only; no end-to-end runtime caller is registered yet",
+        "MLX is optional and lazy; bundled Metal discovery, version/device provenance and runtime errors fall back to the CPU path",
+        "MLX dense scoring keeps exact float32 inputs and checks finite outputs, normalized/absolute score error <=1e-5 and exact candidate coordinates for every batch size 16, 32, 64, 128 and 256",
+        "Each MLX gate batch records 2 warmups and 5 CPU/MLX timings including evaluation and synchronization; adoption requires speedup >=1.1",
+        "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance",
+        "MLX readiness and backend scoring are source-backed capabilities only; no runtime caller or end-to-end scoring flow is registered yet"
       ],
       "evidence": [
         {
@@ -833,6 +847,34 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
           "symbol": "def test_global_candidates_are_canonical_sorted_and_duplicate_checked"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendBatchEvidence:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "class MlxUnavailable("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "class MlxFixture:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "class MlxEngine:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "def score_channel_mlx("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "def benchmark_mlx_adoption("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "def score_with_backend("
         }
       ]
     }
