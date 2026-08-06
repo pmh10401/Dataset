@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T07:41:37Z",
-  "generated_from_commit": "a35a6bd35bbfedc21a513b35fbba94a3518bc2a3",
+  "generated_at": "2026-08-06T07:50:29Z",
+  "generated_from_commit": "16ab987e27e8427602b1434e5c708dd90f8208f6",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -9,7 +9,7 @@
     "Exp435 frozen label-free prediction boundary, resumable runtime, checkpoint/progress outputs and MLX readiness",
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
-    "Research control files, Exp435 preserved failure evidence, Exp436 approved design-only state, and local external data stores",
+    "Research control files, Exp435 preserved failure evidence, Exp436 approved design and implementation-plan-only state, and local external data stores",
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation"
   ],
   "nodes": [
@@ -29,7 +29,7 @@
       "tests": [],
       "constraints": [
         "Must be updated when execution stops or phase changes",
-        "Exp435 failed before prediction freeze at progress count 179 and is preserved; Exp436 is design-only with no implemented module or run root yet. TEST labels remain unopened and PID is null."
+        "Exp435 failed before prediction freeze at progress count 179 and is preserved; Exp436 has an approved design and implementation plan but no implemented module or run root yet. TEST labels remain unopened and PID is null."
       ],
       "evidence": [
         {
@@ -42,7 +42,7 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"design_approved_spec_review\""
+          "symbol": "\"active_phase\": \"implementation_plan_ready\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -62,11 +62,15 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"design_approved_spec_review\""
+          "symbol": "\"status\": \"implementation_plan_ready\""
         },
         {
           "path": "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
           "symbol": "# Exp436 결측 안전 3중 합의 복구 설계"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md",
+          "symbol": "# Exp436 Missing-Safe Strict Consensus Implementation Plan"
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
