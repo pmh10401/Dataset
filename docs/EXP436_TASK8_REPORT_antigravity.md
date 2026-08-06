@@ -81,6 +81,29 @@ and cannot leave an empty parent; an existing or symlinked parent is rejected.
   parameters.  Their private test seams remain internal; public evaluation
   continues to require its exact fixed sibling paths.
 
+## Second repair review
+
+- Publication/inspect replay now validates the exact four progress artifacts
+  from immutable in-memory bytes.  It never creates the former sibling
+  `.runtime-replay-*` directory or writes a transient copy; the runtime
+  inventory itself remains strict.
+- Existing evaluation replay now requires the frozen 1,117-row population,
+  publication candidate count, label accounting and identity digest, exact
+  aggregate confusion/F1/report projections, frozen 20,000-repetition
+  bootstrap seed `43520260806`, frozen database hash, and reviewed commit.
+  It remains a no-label/no-write route.  The production-shaped test fixture
+  computes the genuine 20,000-repetition bootstrap once; the inspector checks
+  frozen metadata and derived consistency rather than recomputing all 20,000
+  samples on every immutable replay.
+- After labels are loaded, source revalidation now completes before evaluation
+  staging allocation and again immediately before exclusive rename.  A test
+  makes any staging write fail, proving a post-label source mutation leaves no
+  evaluation root or staged artifact.
+- Readiness derives candidate evidence from the same scalar CPU score as the
+  MLX/MPS fixture (`threshold=0.0`, candidate index `[0]`), rather than
+  emitting a contradictory hard-coded empty list.  The public readiness test
+  invokes the real helper and fakes only backend availability/benchmark calls.
+
 ## Verification evidence
 
 Fresh commands completed with exit status zero:
@@ -90,10 +113,10 @@ python3 -m unittest experiments.exp436_missing_safe_strict_consensus_antigravity
 # 60 tests
 
 python3 -m unittest experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_reporting_antigravity experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_evaluation_antigravity experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_cli_antigravity -q
-# 72 tests: reporting 22, evaluation 25, CLI 25
+# 75 tests: reporting 24, evaluation 26, CLI 25
 
 python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py' -q
-# 275 discovered tests
+# 278 discovered tests
 
 python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*_antigravity.py' -q
 # 187 tests

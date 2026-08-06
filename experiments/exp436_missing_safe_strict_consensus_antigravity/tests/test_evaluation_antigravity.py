@@ -15,10 +15,12 @@ import os
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 from experiments.exp436_missing_safe_strict_consensus_antigravity import evaluation_antigravity as module
+from experiments.exp436_missing_safe_strict_consensus_antigravity.config_antigravity import FROZEN_CONFIG
 from experiments.exp436_missing_safe_strict_consensus_antigravity.reporting_antigravity import (
     PUBLICATION_DIRECTORY,
     FrozenPublication,
@@ -254,6 +256,31 @@ class EvaluationAntigravityTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "source|checkpoint"):
                 module._verify_frozen_source(output, type("Store", (), {"root": checkpoint})(), expected_total=1, snapshot={})
             self.assertFalse(target.exists())
+
+    def test_postlabel_source_revalidation_happens_before_any_evaluation_staging_write(self):
+        """A source change after labels must fail before mkdir/create-only staging."""
+        with TemporaryDirectory() as temporary:
+            output, checkpoint, publication = self._source(Path(temporary))
+            manifest = {"prediction_sha256": "a" * 64, "database_sha256": FROZEN_CONFIG.database_sha256,
+                        "label_access_count": 0, "reviewed_commit": "c" * 40}
+            verifications = iter((None, ValueError("source changed after labels")))
+            def verify(*_args, **_kwargs):
+                outcome = next(verifications)
+                if outcome is not None:
+                    raise outcome
+            verified = SimpleNamespace(manifest_sha256="b" * 64, publication=publication.publication)
+            with patch.object(module, "inspect_publication", return_value=verified), \
+                    patch.object(module, "_validate_verified_publication", return_value=(manifest, ({"dataset": "Demo", "test_size": 1},), ())), \
+                    patch.object(module, "_snapshot_frozen_tree", return_value={".": ("directory", None)}), \
+                    patch.object(module, "_verify_frozen_source", side_effect=verify), \
+                    patch.object(module, "_write_new", side_effect=AssertionError("evaluation staging began")):
+                with self.assertRaisesRegex(ValueError, "source changed after labels"):
+                    module._evaluate_frozen_prediction_for_test(
+                        publication, hard_coordinates={"Demo": ()},
+                        label_loader=lambda _dataset: {"instance_indices": [0], "labels": [0]},
+                        checkpoint=type("Store", (), {"root": checkpoint})(),
+                        expected_datasets=("Demo",), evaluation_root=Path(temporary) / "evaluation_antigravity",
+                    )
 
     def test_public_exports_are_only_the_two_production_apis(self):
         self.assertEqual(module.__all__, ["evaluate_exp436", "decide_exp436_success"])

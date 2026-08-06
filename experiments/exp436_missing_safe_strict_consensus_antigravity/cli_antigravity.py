@@ -254,6 +254,7 @@ def _focused_test_evidence() -> dict[str, object]:
 def _backend_decision_and_fixture() -> tuple[object, dict[str, object]]:
     import numpy as np
     from .backend_antigravity import select_backend
+    from .features_antigravity import score_channel_cpu
     from .mlx_antigravity import MlxFixture, benchmark_mlx_adoption
     from .mps_antigravity import MpsFixture, benchmark_mps_adoption
     generator = np.random.default_rng(FROZEN_CONFIG.backend_smoke_seed)
@@ -264,7 +265,9 @@ def _backend_decision_and_fixture() -> tuple[object, dict[str, object]]:
     threshold = float(np.float32(0.0))
     mlx_fixture, mps_fixture = MlxFixture(query, references, threshold), MpsFixture(query, references, threshold)
     decision = select_backend(benchmark_mlx_adoption((mlx_fixture,)), benchmark_mps_adoption((mps_fixture,)))
-    return decision, {"sha256": sha256(canonical_json_bytes({"query": query.tolist(), "references": references.tolist(), "threshold": threshold})).hexdigest(), "candidate_indices": []}
+    cpu_score = float(score_channel_cpu(query, references, FROZEN_CONFIG.neighbor_count))
+    candidates = [0] if cpu_score > threshold else []
+    return decision, {"sha256": sha256(canonical_json_bytes({"query": query.tolist(), "references": references.tolist(), "threshold": threshold})).hexdigest(), "candidate_indices": candidates}
 
 
 def _production_readiness() -> dict[str, object]:

@@ -186,8 +186,7 @@ def _validate_event(event: object, *, previous: str, sequence: int, run_identity
     return value
 
 
-def _read_events(output: Path, *, run_identity: str, context_sha256: str) -> tuple[dict[str, object], ...]:
-    raw = (output / "events_antigravity.jsonl").read_bytes()
+def _read_events_raw(raw: bytes, *, run_identity: str, context_sha256: str) -> tuple[dict[str, object], ...]:
     if raw and not raw.endswith(b"\n"):
         raise ValueError("runtime events contain a partial record")
     values: list[dict[str, object]] = []
@@ -216,6 +215,20 @@ def _read_events(output: Path, *, run_identity: str, context_sha256: str) -> tup
     if not values or values[0]["kind"] != "runtime_started":
         raise ValueError("runtime events lack start record")
     return tuple(values)
+
+
+def _read_events(output: Path, *, run_identity: str, context_sha256: str) -> tuple[dict[str, object], ...]:
+    return _read_events_raw((output / "events_antigravity.jsonl").read_bytes(), run_identity=run_identity, context_sha256=context_sha256)
+
+
+def _canonical_raw(raw: bytes, label: str) -> dict[str, object]:
+    try:
+        value = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"{label} is invalid") from error
+    if not isinstance(value, dict) or canonical_json_bytes(value) != raw:
+        raise ValueError(f"{label} is not canonical JSON")
+    return value
 
 
 def _checkpoint_prefix(inspection: object) -> tuple[tuple[str, ...], Mapping[str, str]]:
@@ -296,15 +309,16 @@ def _validate_output_inventory(output: Path, *, mutable: bool = False) -> None:
     _inventory(Path(output), allow_temps=mutable)
 
 
-def inspect_progress(output: Path, *, run_identity: str, checkpoint: Path, context_fingerprint: str, checkpoint_inspection: Mapping[str, object], process_is_live: Callable[[int], bool] | None = None, _allow_owned_temps: bool = False) -> Mapping[str, object]:
-    """Strictly inspect four artifacts without changing a byte."""
-    output = Path(output); checkpoint_path = str(Path(checkpoint).resolve())
-    _inventory(output, allow_temps=_allow_owned_temps)
+def inspect_progress_bytes(runtime_bytes: Mapping[str, bytes], *, run_identity: str, checkpoint: Path, context_fingerprint: str, checkpoint_inspection: Mapping[str, object], process_is_live: Callable[[int], bool] | None = None) -> Mapping[str, object]:
+    """Validate exactly the four runtime artifacts without filesystem writes."""
+    if set(runtime_bytes) != _ARTIFACTS or any(not isinstance(raw, bytes) for raw in runtime_bytes.values()):
+        raise ValueError("runtime output inventory is invalid")
+    checkpoint_path = str(Path(checkpoint).resolve())
     if not _SHA.fullmatch(context_fingerprint):
         raise ValueError("runtime progress binding is invalid")
-    events = _read_events(output, run_identity=run_identity, context_sha256=context_fingerprint)
-    progress = _validate_progress(_canonical(output / "progress_antigravity.json", "runtime progress"), run_identity=run_identity, checkpoint=checkpoint_path, context_sha256=context_fingerprint, events=events)
-    pid = _validate_pid(_canonical(output / "run_antigravity.pid", "runtime PID"), run_identity=run_identity, checkpoint=checkpoint_path, context_sha256=context_fingerprint, progress=progress)
+    events = _read_events_raw(runtime_bytes["events_antigravity.jsonl"], run_identity=run_identity, context_sha256=context_fingerprint)
+    progress = _validate_progress(_canonical_raw(runtime_bytes["progress_antigravity.json"], "runtime progress"), run_identity=run_identity, checkpoint=checkpoint_path, context_sha256=context_fingerprint, events=events)
+    pid = _validate_pid(_canonical_raw(runtime_bytes["run_antigravity.pid"], "runtime PID"), run_identity=run_identity, checkpoint=checkpoint_path, context_sha256=context_fingerprint, progress=progress)
     datasets, digests = _checkpoint_prefix(checkpoint_inspection)
     completions = [event for event in events if event["kind"] == "dataset_complete"]
     if len(completions) > len(datasets):
@@ -328,6 +342,13 @@ def inspect_progress(output: Path, *, run_identity: str, checkpoint: Path, conte
     completion_payloads = tuple(MappingProxyType(dict(event["payload"])) for event in completions)
     terminal_payload = MappingProxyType(dict(events[-1]["payload"])) if lifecycle_state in _TERMINAL else None
     return MappingProxyType({"progress": MappingProxyType(progress), "pid": MappingProxyType(pid), "event_completed": len(completions), "checkpoint_completed": len(datasets), "reconciliation_required": missing, "progress_reconciliation_required": int(progress["completed_datasets"]) < len(completions), "lifecycle_state": lifecycle_state, "terminal_payload": terminal_payload, "completion_payloads": completion_payloads})
+
+
+def inspect_progress(output: Path, *, run_identity: str, checkpoint: Path, context_fingerprint: str, checkpoint_inspection: Mapping[str, object], process_is_live: Callable[[int], bool] | None = None, _allow_owned_temps: bool = False) -> Mapping[str, object]:
+    """Strictly inspect four artifacts without changing a byte."""
+    output = Path(output)
+    _inventory(output, allow_temps=_allow_owned_temps)
+    return inspect_progress_bytes({name: (output / name).read_bytes() for name in _ARTIFACTS}, run_identity=run_identity, checkpoint=checkpoint, context_fingerprint=context_fingerprint, checkpoint_inspection=checkpoint_inspection, process_is_live=process_is_live)
 
 
 class ProgressWriter:

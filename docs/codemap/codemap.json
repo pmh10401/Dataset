@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T17:04:41Z",
-  "generated_from_commit": "84fd171a49380bbfa8db98c07d9203a5921658e5",
+  "generated_at": "2026-08-06T17:25:19Z",
+  "generated_from_commit": "031b0ab4a509938b33f56e377133ee16f0a9ef26",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1772,7 +1772,7 @@
         "Exp436 scoring imports only local config, contracts, and features; it injects only dense scoring backends and contains no label, evaluation, metric, or database route",
         "Checkpoint is the sole ordered-prefix authority; checkpoint record -> completion event -> progress snapshot. Phase B progress owns exactly progress JSON, event JSONL, parent log, and PID JSON under one O_DIRECTORY|O_NOFOLLOW directory flock, validates canonical hash-chain/schema/binding/metadata/PID state read-only, and reconciles only an authoritative ordered checkpoint tail. Failed roots are non-resumable; complete/inspect read-only routes bind stored context to readiness before any external resource, and no Exp435 record/runtime import is permitted. Inspection first validates every checkpoint authority with lstat/O_NOFOLLOW/fstat while one shared root flock is held; only one exact canonical record-set temp may equal the current set or the valid next intent/record prospective set. Mutable checkpoint recovery uses one exclusive root flock across full scan, recognized repair/fsync, and pristine rescan; contexts and inspections are deeply immutable.",
         "Readiness computes source/backend/test/CPU/version evidence before RUN_PARENT exists, then fsyncs a create-only canonical readiness file in a same-parent staging directory and Darwin RENAME_EXCL-renames it; CLI exposes only readiness/new/resume/inspect/evaluate, imports evaluation only in evaluate, and binds all runtime calls to readiness_path, fixed roots, reviewed_commit, and input_session_factory.",
-        "Publication verifies every staged byte and replays checkpoint/runtime source authorities before RENAME_EXCL; evaluator uses the publication reviewed_commit and reviewed_commit_sha256 before labels, revalidates the full source after labels, and existing evaluation replay is allowed only when immutable artifacts bind the reviewed publication and frozen database."
+        "Publication verifies every staged byte and replays checkpoint/runtime source authorities before RENAME_EXCL; progress replay validates strict runtime bytes in memory and never creates a sibling copy. Evaluator uses the publication reviewed_commit and reviewed_commit_sha256 before labels, revalidates the full source before staging and before rename, and existing evaluation replay is allowed only when its 1,117-row frozen bootstrap/report artifacts bind the reviewed publication and frozen database."
       ],
       "evidence": [
         {
@@ -2022,6 +2022,10 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
           "symbol": "def _exclusive_rename("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/progress_antigravity.py",
+          "symbol": "def inspect_progress_bytes("
         },
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",

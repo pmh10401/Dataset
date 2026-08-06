@@ -29,7 +29,7 @@ from .contracts_antigravity import (
     BackendDecision,
     Exp436DatasetResult,
 )
-from .progress_antigravity import inspect_progress
+from .progress_antigravity import inspect_progress_bytes
 
 
 class CandidateBudgetExceeded(ValueError):
@@ -447,42 +447,19 @@ def _validate_runtime(
     if not isinstance(context_fingerprint, str):
         context_fingerprint = _context_hash(context)
     inspection = store.inspect()
-    # The progress authority intentionally rejects the publication directory
-    # as an unknown runtime artifact.  Replay therefore validates the exact
-    # four runtime bytes in an isolated same-parent view once publication is
-    # present, without weakening the runtime inventory rule.
-    validation_root: Path | None = None
-    if publication.exists() or owned_staging is not None:
-        validation_root = output.parent / f".runtime-replay-{uuid4().hex}-antigravity"
-        validation_root.mkdir(mode=0o700)
-        try:
-            for name, raw in runtime_raw.items():
-                _write_new(validation_root / name, raw)
-            runtime_for_progress = validation_root
-        except BaseException:
-            for child in tuple(validation_root.iterdir()):
-                child.unlink()
-            validation_root.rmdir()
-            raise
-    else:
-        runtime_for_progress = output
-    try:
-        progress_view = inspect_progress(
-            runtime_for_progress,
-            run_identity=str(getattr(store, "run_identity")),
-            checkpoint=root,
-            context_fingerprint=context_fingerprint,
-            checkpoint_inspection={
-                "completed": inspection.completed,
-                "datasets": tuple(getattr(store, "datasets")),
-                "record_digests": dict(record_digests),
-            },
-        )
-    finally:
-        if validation_root is not None and validation_root.exists():
-            for child in tuple(validation_root.iterdir()):
-                child.unlink()
-            validation_root.rmdir()
+    # Progress owns a strict four-file inventory.  Publication/staging entries
+    # are excluded by validating the already-opened runtime bytes in memory.
+    progress_view = inspect_progress_bytes(
+        runtime_raw,
+        run_identity=str(getattr(store, "run_identity")),
+        checkpoint=root,
+        context_fingerprint=context_fingerprint,
+        checkpoint_inspection={
+            "completed": inspection.completed,
+            "datasets": tuple(getattr(store, "datasets")),
+            "record_digests": dict(record_digests),
+        },
+    )
     progress = dict(progress_view["progress"])
     # ``complete_review_only`` is a publication/result state, never a runtime
     # checkpoint state.  Accepting it here would allow a second publication

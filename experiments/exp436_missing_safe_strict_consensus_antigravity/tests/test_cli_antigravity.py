@@ -178,18 +178,18 @@ class CliAntigravityTests(unittest.TestCase):
     def test_readiness_fixture_construction_uses_scalar_queries_and_frozen_threshold(self):
         """A 2-D/missing-threshold smoke fixture must fail before any backend run."""
         from experiments.exp436_missing_safe_strict_consensus_antigravity.contracts_antigravity import BackendBenchmarkEvidence
-        seen = []
+        seen, mps_seen = [], []
         def observe(fixtures):
             seen.extend(fixtures)
             return BackendBenchmarkEvidence.unavailable("mlx", "fixture")
         with patch("experiments.exp436_missing_safe_strict_consensus_antigravity.mlx_antigravity.benchmark_mlx_adoption", side_effect=observe), \
-                patch("experiments.exp436_missing_safe_strict_consensus_antigravity.mps_antigravity.benchmark_mps_adoption", side_effect=lambda fixtures: BackendBenchmarkEvidence.unavailable("mps", "fixture")):
+                patch("experiments.exp436_missing_safe_strict_consensus_antigravity.mps_antigravity.benchmark_mps_adoption", side_effect=lambda fixtures: mps_seen.extend(fixtures) or BackendBenchmarkEvidence.unavailable("mps", "fixture")):
             decision, fixture = module._backend_decision_and_fixture()
         self.assertEqual(decision.backend, "cpu")
-        self.assertEqual(len(seen), 1)
-        self.assertEqual(seen[0].query.ndim, 1)
-        self.assertEqual(float(seen[0].threshold), 0.0)
-        self.assertEqual(fixture["candidate_indices"], [])
+        self.assertEqual((len(seen), len(mps_seen)), (1, 1))
+        for observed in (*seen, *mps_seen):
+            self.assertEqual((observed.query.ndim, observed.k, float(observed.threshold)), (1, 3, 0.0))
+        self.assertEqual(fixture["candidate_indices"], [0])
 
     def test_readiness_uses_exclusive_rename_helper_not_replacing_os_rename(self):
         with TemporaryDirectory() as directory:
@@ -227,22 +227,23 @@ class CliAntigravityTests(unittest.TestCase):
                 module.LANE_PATHS[2]: FROZEN_CONFIG.exp292_prediction_sha256,
                 module.LANE_PATHS[3]: FROZEN_CONFIG.exp292_manifest_sha256,
             }
-            decision = BackendDecision.cpu_fallback()
-            fixture = {"sha256": "c" * 64, "candidate_indices": []}
+            from experiments.exp436_missing_safe_strict_consensus_antigravity.contracts_antigravity import BackendBenchmarkEvidence
             with patch.object(module, "RUN_PARENT", parent), \
                     patch.object(module, "FROZEN_OUTPUT", output), \
                     patch.object(module, "FROZEN_CHECKPOINT", checkpoint), \
                     patch.object(module, "FROZEN_EVALUATION", evaluation), \
                     patch.object(module, "FROZEN_READINESS", readiness), \
                     patch.object(module, "_clean_head", return_value=HEAD), \
-                    patch.object(module, "_backend_decision_and_fixture", return_value=(decision, fixture)), \
+                    patch("experiments.exp436_missing_safe_strict_consensus_antigravity.mlx_antigravity.benchmark_mlx_adoption", return_value=BackendBenchmarkEvidence.unavailable("mlx", "test_unavailable")), \
+                    patch("experiments.exp436_missing_safe_strict_consensus_antigravity.mps_antigravity.benchmark_mps_adoption", return_value=BackendBenchmarkEvidence.unavailable("mps", "test_unavailable")), \
                     patch.object(module, "_focused_test_evidence", return_value={"returncode": 0, "command": ["unittest"]}), \
                     patch.object(module, "_runtime_versions", return_value={"python": "test", "numpy": "test", "torch": "test", "mlx": "test"}), \
                     patch.object(module, "_sha256_file", side_effect=lambda path: digests[Path(path)]), \
                     patch("experiments.exp436_missing_safe_strict_consensus_antigravity.inputs_antigravity.open_exp436_input_session", session):
                 payload = module.run_readiness()
             self.assertEqual(payload["reviewed_commit"], HEAD)
-            self.assertEqual(json.loads(readiness.read_bytes())["candidate_fixture"], fixture)
+            self.assertEqual(json.loads(readiness.read_bytes())["candidate_fixture"], payload["candidate_fixture"])
+            self.assertEqual(payload["candidate_fixture"]["candidate_indices"], [0])
             self.assertEqual(tuple(path.name for path in parent.iterdir()), ("readiness_antigravity.json",))
 
     def test_readiness_payload_binds_evidence_and_absent_evaluation_root(self):

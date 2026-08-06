@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from dataclasses import replace
 import json
 import os
 from pathlib import Path
@@ -119,6 +120,30 @@ class ReportingAntigravityTests(unittest.TestCase):
     def _publication(self) -> tuple[Path, object]:
         output = self._runtime_copy()
         return output, publish_exp436(self.store, output)
+
+    def _frozen_existing_evaluation(self, publication: object, evaluation_antigravity: object):
+        rows = tuple(
+            evaluation_antigravity.DatasetComparison(
+                dataset, 1,
+                evaluation_antigravity.ConfusionCounts(0, 0, 0, 1),
+                evaluation_antigravity.ConfusionCounts(0, 1, 0, 0) if dataset == "D0000"
+                else evaluation_antigravity.ConfusionCounts(0, 0, 0, 1),
+            ) for dataset in self.store.datasets
+        )
+        baseline = evaluation_antigravity._aggregate_counts(rows, combined=False)
+        combined = evaluation_antigravity._aggregate_counts(rows, combined=True)
+        bootstrap = evaluation_antigravity._paired_dataset_bootstrap(rows)
+        return evaluation_antigravity.Exp436Evaluation(
+            dataset_count=FROZEN_CONFIG.expected_datasets, candidate_count=1, added_fp=1, dataset_rows=rows,
+            baseline_confusion=baseline, combined_confusion=combined,
+            micro_f1_delta=combined.f1 - baseline.f1,
+            macro_f1_delta=sum(row.combined_f1 - row.baseline_f1 for row in rows) / len(rows),
+            micro_f1_ci=bootstrap.micro_f1_ci, macro_f1_ci=bootstrap.macro_f1_ci,
+            rescued_datasets=(), regressed_datasets=(), strong_baseline_regressions=(),
+            prediction_sha256=publication.prediction_sha256, manifest_sha256=publication.manifest_sha256,
+            label_rows=FROZEN_CONFIG.expected_datasets, label_identity_sha256="f" * 64, database_sha256=FROZEN_CONFIG.database_sha256,
+            code_commit=str(publication.manifest["reviewed_commit"]), bootstrap=bootstrap,
+        )
 
     def test_replays_a_real_1117_record_checkpoint_into_exact_nine_file_inventory(self) -> None:
         output, publication = self._publication()
@@ -241,6 +266,18 @@ class ReportingAntigravityTests(unittest.TestCase):
         self.assertEqual(inspected["state"], "complete_review_only")
         self.assertEqual(before, {path: path.read_bytes() for path in output.rglob("*") if path.is_file()})
 
+    def test_published_replay_never_creates_a_sibling_runtime_copy(self) -> None:
+        """Inspecting a publication must not write even a transient parent artifact."""
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import reporting_antigravity
+        output, publication = self._publication()
+        parent = output.parent
+        before = {path.relative_to(parent): path.read_bytes() for path in parent.rglob("*") if path.is_file()}
+        with patch.object(reporting_antigravity, "_write_new", side_effect=AssertionError("replay wrote a file")):
+            replayed = inspect_publication(output, self.store)
+        self.assertEqual(replayed.manifest_sha256, publication.manifest_sha256)
+        self.assertEqual(before, {path.relative_to(parent): path.read_bytes() for path in parent.rglob("*") if path.is_file()})
+        self.assertEqual(tuple(parent.glob(".runtime-replay-*-antigravity")), ())
+
     def test_real_1117_record_publication_passes_evaluator_prelabel_commit_handoff(self) -> None:
         """Publisher and evaluator must agree before any TEST-label route exists."""
         from experiments.exp436_missing_safe_strict_consensus_antigravity import evaluation_antigravity
@@ -258,25 +295,7 @@ class ReportingAntigravityTests(unittest.TestCase):
         from experiments.exp436_missing_safe_strict_consensus_antigravity import evaluation_antigravity
         output, publication = self._publication()
         evaluation_root = output.parent / "evaluation_antigravity"
-        rows = (
-            evaluation_antigravity.DatasetComparison(
-                "D0000", 1,
-                evaluation_antigravity.ConfusionCounts(0, 0, 0, 1),
-                evaluation_antigravity.ConfusionCounts(0, 0, 0, 1),
-            ),
-        )
-        bootstrap = evaluation_antigravity._paired_dataset_bootstrap_for_test(rows, repetitions=8, seed=123)
-        existing = evaluation_antigravity.Exp436Evaluation(
-            dataset_count=1, candidate_count=0, added_fp=0, dataset_rows=rows,
-            baseline_confusion=rows[0].baseline, combined_confusion=rows[0].combined,
-            micro_f1_delta=0.0, macro_f1_delta=0.0,
-            micro_f1_ci=bootstrap.micro_f1_ci, macro_f1_ci=bootstrap.macro_f1_ci,
-            rescued_datasets=(), regressed_datasets=(), strong_baseline_regressions=(),
-            prediction_sha256=publication.prediction_sha256,
-            manifest_sha256=publication.manifest_sha256,
-            database_sha256=FROZEN_CONFIG.database_sha256,
-            code_commit=str(publication.manifest["reviewed_commit"]), bootstrap=bootstrap,
-        )
+        existing = self._frozen_existing_evaluation(publication, evaluation_antigravity)
         evaluation_antigravity._write_evaluation_artifacts(evaluation_root, existing)
         before = {path: path.read_bytes() for path in output.rglob("*") if path.is_file()}
         with patch.object(cli_antigravity, "RUN_PARENT", output.parent), \
@@ -286,6 +305,48 @@ class ReportingAntigravityTests(unittest.TestCase):
             replayed = evaluation_antigravity.evaluate_exp436(output, evaluation_root)
         self.assertEqual(replayed, existing)
         self.assertEqual(before, {path: path.read_bytes() for path in output.rglob("*") if path.is_file()})
+
+    def test_existing_evaluation_replay_rejects_any_frozen_coherence_mismatch_without_writes(self) -> None:
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import cli_antigravity
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import evaluation_antigravity
+        output, publication = self._publication()
+        base = self._frozen_existing_evaluation(publication, evaluation_antigravity)
+        short_rows = base.dataset_rows[:-1]
+        short_baseline = evaluation_antigravity._aggregate_counts(short_rows, combined=False)
+        short_combined = evaluation_antigravity._aggregate_counts(short_rows, combined=True)
+        short_bootstrap = evaluation_antigravity._paired_dataset_bootstrap_for_test(short_rows, repetitions=8, seed=123)
+        short = evaluation_antigravity.Exp436Evaluation(
+            dataset_count=1116, candidate_count=1, added_fp=1, dataset_rows=short_rows,
+            baseline_confusion=short_baseline, combined_confusion=short_combined,
+            micro_f1_delta=short_combined.f1 - short_baseline.f1,
+            macro_f1_delta=sum(row.combined_f1 - row.baseline_f1 for row in short_rows) / len(short_rows),
+            micro_f1_ci=short_bootstrap.micro_f1_ci, macro_f1_ci=short_bootstrap.macro_f1_ci,
+            rescued_datasets=(), regressed_datasets=(), strong_baseline_regressions=(),
+            prediction_sha256=base.prediction_sha256, manifest_sha256=base.manifest_sha256,
+            label_rows=1116, label_identity_sha256=base.label_identity_sha256, database_sha256=base.database_sha256, code_commit=base.code_commit,
+            bootstrap=short_bootstrap,
+        )
+        variants = {
+            "population": short,
+            "candidate": replace(base, candidate_count=0),
+            "database": replace(base, database_sha256="d" * 64),
+            "commit": replace(base, code_commit="e" * 40),
+            "bootstrap": replace(base, bootstrap=evaluation_antigravity._paired_dataset_bootstrap_for_test(base.dataset_rows, repetitions=8, seed=123)),
+        }
+        for name, existing in variants.items():
+            with self.subTest(name=name):
+                evaluation_root = output.parent / f"evaluation_{name}_antigravity"
+                evaluation_antigravity._write_evaluation_artifacts(evaluation_root, existing)
+                before = {path: path.read_bytes() for path in output.parent.rglob("*") if path.is_file()}
+                with patch.object(cli_antigravity, "RUN_PARENT", output.parent), \
+                        patch.object(cli_antigravity, "FROZEN_OUTPUT", output), \
+                        patch.object(cli_antigravity, "FROZEN_CHECKPOINT", self.checkpoint), \
+                        patch.object(cli_antigravity, "FROZEN_EVALUATION", evaluation_root), \
+                        patch.object(evaluation_antigravity, "_write_new", side_effect=AssertionError("existing replay wrote")), \
+                        patch.object(evaluation_antigravity, "_load_frozen_hard_coordinates", side_effect=AssertionError("existing replay opened labels")):
+                    with self.assertRaises(ValueError):
+                        evaluation_antigravity.evaluate_exp436(output, evaluation_root)
+                self.assertEqual(before, {path: path.read_bytes() for path in output.parent.rglob("*") if path.is_file()})
 
     def test_destination_appearing_during_staging_fails_without_clobbering_it(self) -> None:
         output = self._runtime_copy()
