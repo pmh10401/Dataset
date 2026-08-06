@@ -871,17 +871,18 @@ def inspect_exp435(
     """Inspect only canonical files; this function opens neither DB nor workers."""
 
     expected_base = context_payload(expected_context)
+    if expected_base.get("run_identity") != FROZEN_CONFIG.run_identity:
+        raise ValueError("expected context run identity does not match frozen identity")
     stored_context = Exp435CheckpointStore.read_context_projection(checkpoint_root)
+    if stored_context.get("run_identity") != FROZEN_CONFIG.run_identity:
+        raise ValueError("stored context run identity does not match frozen identity")
     backend = _backend_from_payload(stored_context.get("backend_decision"))
     expected_runtime = _runtime_context(type("_Session", (), {"context": expected_base})(), backend)
     if dict(stored_context) != expected_runtime:
         raise ValueError("context fingerprint does not match verified context")
-    expected_run_identity = expected_runtime.get("run_identity")
-    if not isinstance(expected_run_identity, str) or not expected_run_identity:
-        expected_run_identity = f"exp435-{sha256(canonical_json_bytes(expected_runtime)).hexdigest()[:24]}"
     store = Exp435CheckpointStore.open_read_only(
         checkpoint_root,
-        expected_run_identity=expected_run_identity,
+        expected_run_identity=FROZEN_CONFIG.run_identity,
         expected_context=expected_runtime,
     )
     output = Path(run_root)

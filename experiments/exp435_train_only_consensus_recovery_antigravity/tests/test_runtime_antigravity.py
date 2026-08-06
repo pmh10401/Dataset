@@ -311,7 +311,9 @@ print(json.dumps(observed, sort_keys=True))
             summary = inspect_exp435(
                 run_root=root / "output",
                 checkpoint_root=root / "checkpoint",
-                expected_context=session.context,
+                expected_context=_runtime_context(
+                    session, BackendDecision.cpu_fallback("backend decision not supplied")
+                ),
             )
             self.assertEqual(summary.completed_datasets, 2)
             after = {
@@ -319,6 +321,45 @@ print(json.dumps(observed, sort_keys=True))
                 for path in sorted(path for path in root.rglob("*") if path.is_file())
             }
             self.assertEqual(before, after)
+
+    def test_inspect_requires_exact_frozen_identity_without_mutating_roots(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            session = _Session(("A",))
+            session.load_train = lambda dataset: {"dataset": dataset}  # type: ignore[attr-defined]
+            session.load_test_values = lambda dataset, train: {"dataset": dataset}  # type: ignore[attr-defined]
+            run_exp435_new(
+                run_root=root / "output",
+                checkpoint_root=root / "checkpoint",
+                input_session=session,
+                backend_decision=None,
+                dataset_scorer=_score,
+                worker_count=1,
+            )
+            expected = _runtime_context(
+                session, BackendDecision.cpu_fallback("backend decision not supplied")
+            )
+            before = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.rglob("*")) if path.is_file()
+            }
+            for run_identity in (None, "exp435-not-the-frozen-identity"):
+                invalid = dict(expected)
+                if run_identity is None:
+                    invalid.pop("run_identity")
+                else:
+                    invalid["run_identity"] = run_identity
+                with self.subTest(run_identity=run_identity), self.assertRaisesRegex(ValueError, "run identity"):
+                    inspect_exp435(
+                        run_root=root / "output",
+                        checkpoint_root=root / "checkpoint",
+                        expected_context=invalid,
+                    )
+                after = {
+                    path.relative_to(root): path.read_bytes()
+                    for path in sorted(root.rglob("*")) if path.is_file()
+                }
+                self.assertEqual(after, before)
 
     def test_adopted_default_mlx_path_is_serial_and_uses_one_engine(self) -> None:
         with TemporaryDirectory() as directory:
@@ -365,7 +406,9 @@ print(json.dumps(observed, sort_keys=True))
                 inspect_exp435(
                     run_root=root / "output",
                     checkpoint_root=root / "checkpoint-mlx",
-                    expected_context=session.context,
+                    expected_context=_runtime_context(
+                        session, BackendDecision.cpu_fallback("backend decision not supplied")
+                    ),
                 )
 
     def test_candidate_budget_failure_is_recorded_before_no_record_is_published(self) -> None:
@@ -397,7 +440,9 @@ print(json.dumps(observed, sort_keys=True))
             inspected = inspect_exp435(
                 run_root=root / "output",
                 checkpoint_root=root / "checkpoint",
-                expected_context=session.context,
+                expected_context=_runtime_context(
+                    session, BackendDecision.cpu_fallback("backend decision not supplied")
+                ),
             )
             self.assertEqual(inspected.status, "failed")
             self.assertEqual(inspected.completed_datasets, 1)
@@ -530,7 +575,9 @@ print(json.dumps(observed, sort_keys=True))
             inspected = inspect_exp435(
                 run_root=root / "output",
                 checkpoint_root=root / "checkpoint",
-                expected_context=session.context,
+                expected_context=_runtime_context(
+                    session, BackendDecision.cpu_fallback("backend decision not supplied")
+                ),
             )
             self.assertEqual(inspected.status, "interrupted")
             self.assertEqual(inspected.completed_datasets, 0)
