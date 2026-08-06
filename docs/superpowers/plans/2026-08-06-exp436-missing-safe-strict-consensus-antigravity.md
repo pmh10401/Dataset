@@ -194,7 +194,7 @@ git commit -m "feat(inputs): expose pinned values-only blobs for exp436"
 - Create: `experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_config_antigravity.py`
 - Create: `experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py`
 
-**Interfaces:** `Exp436FrozenConfig`, `FROZEN_CONFIG`, `RawValueSeries`, `MissingSafeRawDataset`, `ExcludedTrainRowAudit`, `TrainPreparation`, `PreparedTrainGroup`, `UnavailableTrainGroup`, `ChannelCalibration`, `CalibratedTrainGroup`, `InstanceScoreEvidence`, `Exp436Candidate`, `Exp436DatasetResult`, `BackendDecision`, and `Exp436RunSummary`.
+**Interfaces:** `Exp436FrozenConfig`, `FROZEN_CONFIG`, `RawValueSeries`, `MissingSafeRawDataset`, `ExcludedTrainRowAudit`, `TrainPreparation`, `PreparedTrainGroup`, `UnavailableTrainGroup`, `ChannelCalibration`, `CalibratedTrainGroup`, `InstanceScoreEvidence`, `Exp436Candidate`, `Exp436DatasetResult`, `BackendBatchEvidence`, `BackendBenchmarkEvidence`, `BackendDecision`, and `Exp436RunSummary`. Public records provide deterministic JSON-safe payloads; matrix records carry immutable float32 metadata/digests rather than mutable NumPy arrays. The three-level backend evidence retains raw five-pair synchronized timings, the frozen `paired-synchronized-v1` protocol, recomputed medians/speed/parity gates, all five frozen batches and backend provenance, then the dual-backend selection/fallback. Lifecycle proceeds through `initializing`, `running`, `interrupted`/`failed`, `checkpoint_complete`, and `complete_review_only`; it does not change any frozen scientific constant.
 
 - [ ] **Step 1: Write failing config tests.**
 
@@ -218,7 +218,7 @@ def test_mutated_config_fails_closed(self):
         replace(FROZEN_CONFIG, neighbor_count=2).validate()
 ```
 
-- [ ] **Step 2: Write failing raw-container and strict-consensus tests.**
+- [ ] **Step 2: Write failing raw-container, immutable-byte matrix, exact TEST identity-coverage, strict-consensus, and backend-evidence tests.**
 
 ```python
 def test_test_container_accepts_nonfinite_values_and_preserves_digest(self):
@@ -245,7 +245,7 @@ python3 -m unittest \
 
 - [ ] **Step 4: Implement validated immutable contracts.**
 
-`RawValueSeries` accepts numeric finite or nonfinite values but validates sorted identity at the container level and requires an exact 64-character lowercase blob digest. `MissingSafeRawDataset` accepts only `TRAIN` or `TEST`. `ExcludedTrainRowAudit` stores dataset, instance index, length, nonfinite count, and blob digest. `InstanceScoreEvidence.__post_init__` recomputes `prototype_abnormal and gradient_abnormal and acf_abnormal`. No published scalar score may be nonfinite.
+`RawValueSeries` accepts numeric finite or nonfinite values but validates sorted identity at the container level and requires an exact 64-character lowercase blob digest. `MissingSafeRawDataset` accepts only `TRAIN` or `TEST`. `ExcludedTrainRowAudit` stores dataset, instance index, length, nonfinite count, and blob digest. `PreparedTrainGroup` and `CalibratedTrainGroup` copy finite float32 C-order arrays into immutable bytes-backed storage, so `setflags(write=True)` fails. `Exp436DatasetResult` carries exact sorted TEST identities and exactly one evidence record for each, including non-contiguous identities. `InstanceScoreEvidence.__post_init__` recomputes `prototype_abnormal and gradient_abnormal and acf_abnormal`; nonfinite TEST abstention cannot be a candidate. No published scalar score/timing/calibration value may be nonfinite. Backend tests reject malformed timing pairs and caller-supplied derived median/speed values, incomplete batches, and inconsistent batch/backend tie or CPU fallback decisions.
 
 - [ ] **Step 5: Run tests and commit.**
 
@@ -327,7 +327,7 @@ git commit -m "feat(exp436): preserve missing-safe label-free inputs"
 - Create: `experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py`
 - Create: `experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_features_antigravity.py`
 
-**Interfaces:** `prepare_train_groups(train) -> TrainPreparation`, `fit_calibrated_group(group) -> CalibratedTrainGroup | UnavailableTrainGroup`, `acf_vector`, and `score_channel_cpu`. `TrainPreparation` returns ordered exact-length groups plus ordered excluded-row audits.
+**Interfaces:** `prepare_train_groups(train) -> TrainPreparation`, `fit_calibrated_group(group) -> CalibratedTrainGroup | UnavailableTrainGroup`, `acf_vector`, and `score_channel_cpu`. `TrainPreparation(dataset, train_identity_lengths, groups, excluded_rows)` returns ordered exact-length groups plus ordered excluded-row audits and binds the exact sorted source `(instance_index, length)` manifest: surviving group rows and excluded rows are disjoint and their union must cover every source identity exactly. An all-nonfinite length therefore uses `UnavailableTrainGroup(..., instance_indices=())`.
 
 - [ ] **Step 1: Write failing row-local filtering tests.**
 

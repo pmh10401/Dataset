@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T08:45:07Z",
-  "generated_from_commit": "0762b7b3e1340eb7e3e9a40d8747705aa840f7a0",
+  "generated_at": "2026-08-06T09:31:19Z",
+  "generated_from_commit": "266959b5c586e593f5f30d94cb3b876ce3438e20",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -10,7 +10,8 @@
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
     "Research control files, Exp435 preserved failure evidence, Exp436 corrected readiness-owned lifecycle, strict scoring/benchmark/publication contract, and product-implementation-pending state",
-    "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation"
+    "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
+    "Exp436 frozen missing-safe contracts: values-only raw identities, immutable TRAIN matrices, strict three-channel AND, exact TEST evidence coverage, and dual-backend timing/selection evidence"
   ],
   "nodes": [
     {
@@ -665,14 +666,38 @@
       ]
     },
     {
-      "id": "exp435_prediction_boundary",
-      "label": "Exp435 prediction boundary",
-      "type": "interface",
-      "boundary": "Exp435 label-free prediction",
-      "layer": 1,
+      "id": "exp435_runtime",
+      "label": "Exp435 prediction + runtime boundary",
+      "type": "pipeline",
+      "boundary": "Exp435 deterministic runtime",
+      "layer": 4,
       "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
-      "role": "Groups the frozen Exp435 configuration/contracts, descriptor-bound label-free input session, TRAIN-only feature calibration, CPU consensus scoring, candidate budget and optional exact reference-batched MLX readiness gate.",
+      "role": "Owns the label-free Exp435 prediction boundary, resumable runtime, CLI routing, backend readiness, and ordered dataset execution.",
       "entrypoints": [
+        "run_exp435_new",
+        "resume_exp435",
+        "inspect_exp435",
+        "_run",
+        "_load_values",
+        "LaneMembershipSnapshot",
+        "_score_worker",
+        "run_new",
+        "run_resume",
+        "main",
+        "_production_inspect",
+        "_publication_summary",
+        "build_parser",
+        "_clean_head",
+        "_preflight_roots",
+        "_validate_readiness_payload",
+        "_revalidate_readiness_for_execution",
+        "_ensure_run_parent",
+        "_production_readiness",
+        "run_readiness",
+        "_run_prediction",
+        "run_inspect",
+        "run_evaluate",
+        "scratch wrapper",
         "Exp435FrozenConfig",
         "FROZEN_CONFIG",
         "cpu_worker_count_antigravity",
@@ -708,312 +733,15 @@
         "CalibratedTrainGroupResult"
       ],
       "tests": [
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_config_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py"
-      ],
-      "constraints": [
-        "FROZEN_CONFIG.validate() must pass before input access",
-        "CPU parallelism always uses max(1, detected logical CPU count - 1); the current 12-logical-CPU Mac therefore uses 11 workers",
-        "Exactly 1,117 sorted unique datasets come from the frozen Exp291/292 lane population",
-        "The held Exp425 descriptor is read-only and closes on every exit path",
-        "Prediction intake exposes TRAIN values and TEST values only; no TEST labels are loaded",
-        "Exp435 TEST values are requested only after a concrete RawTrainDataset is loaded",
-        "Published records and backend evidence are immutable and fail closed on contract mismatch",
-        "Exact-length TRAIN groups retain duplicate rows and sorted instance coordinates",
-        "Invalid TRAIN groups emit immutable UnavailableTrainGroup records with preregistered reasons; valid sibling groups continue",
-        "Prototype uses TRAIN-only float32 robust scaling and leave-one-out higher-quantile calibration; gradient and ACF are optional channels",
-        "CPU scoring routes each TEST value row to one exact raw-length TRAIN group; missing or unavailable lengths abstain without concatenation or tail replacement",
-        "A candidate requires prototype AND (gradient OR ACF) with strict score > threshold; frozen-lane coordinates are excluded",
-        "Global candidate validation sorts coordinates and fails closed above 100; it never truncates or auto-promotes",
-        "Each MLX gate batch performs 2 warmups and 5 timed measurements including evaluation and synchronization; adoption requires speedup >=1.1",
-        "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance",
-        "UnavailableTrainGroup, TrainGroup and CalibratedTrainGroupResult remain public contract exports for feature/scoring consumers.",
-        "Exp435FrozenConfig supplies the sole canonical run identity exp435-train-only-consensus-recovery-antigravity-20260806 for readiness and all runtime artifacts.",
-        "Each MLX reference chunk contributes nearest-k values to a rolling exact global nearest-k set, bounding dense allocation without changing the float32 RMS k-median score.",
-        "MLX adoption requires finite outputs, normalized/absolute score error <=1e-5, exact candidate coordinates for every reference batch size and speedup >=1.1; runtime failures fail closed without CPU-score mixing.",
-        "MLX is optional and lazy; readiness and production use exact reference-axis batching, while device provenance prefers modern mx.device_info and falls back to legacy mx.metal.device_info only for older MLX."
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
-          "symbol": "class Exp435FrozenConfig"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
-          "symbol": "def cpu_worker_count_antigravity()"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
-          "symbol": "FROZEN_CONFIG = Exp435FrozenConfig()"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "class PreparedTrainGroup"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "class ChannelCalibration"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "class CalibratedTrainGroup"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "class InstanceScoreEvidence"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "class Exp435Candidate"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "class Exp435DatasetResult"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "class BackendDecision"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "class Exp435RunSummary"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
-          "symbol": "class Exp435InputSession"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
-          "symbol": "def open_exp435_input_session("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
-          "symbol": "def load_train("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
-          "symbol": "def load_test_values("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
-          "symbol": "def test_prediction_sql_never_selects_test_labels"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
-          "symbol": "def test_session_uses_frozen_1117_population_not_all_db_names"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "class UnavailableTrainGroup"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
-          "symbol": "def prepare_train_groups"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
-          "symbol": "def fit_calibrated_group"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
-          "symbol": "def acf_vector"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
-          "symbol": "def score_channel_cpu"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
-          "symbol": "def test_prepare_returns_unavailable_outcomes_without_suppressing_valid_siblings"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
-          "symbol": "def test_fit_returns_structured_unavailable_outcomes_for_invalid_prototype"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
-          "symbol": "def test_unavailable_train_group_is_immutable_and_digest_bound"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
-          "symbol": "class CandidateBudgetExceeded"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
-          "symbol": "def score_test_instance_cpu"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
-          "symbol": "def score_dataset_cpu"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
-          "symbol": "def validate_global_candidates"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
-          "symbol": "class ScoringTests"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
-          "symbol": "def test_exact_length_groups_do_not_concatenate"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
-          "symbol": "def test_prototype_is_mandatory"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
-          "symbol": "def test_one_secondary_channel_is_enough"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
-          "symbol": "def test_frozen_lane_coordinate_is_never_published"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
-          "symbol": "def test_candidate_budget_accepts_100_and_rejects_101_without_truncating"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
-          "symbol": "def test_global_candidates_are_canonical_sorted_and_duplicate_checked"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "class BackendBatchEvidence:"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
-          "symbol": "class MlxUnavailable("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
-          "symbol": "class MlxFixture:"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
-          "symbol": "class MlxEngine:"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
-          "symbol": "def score_channel_mlx("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
-          "symbol": "def benchmark_mlx_adoption("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
-          "symbol": "def score_with_backend("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "TrainGroup = PreparedTrainGroup | UnavailableTrainGroup"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "CalibratedTrainGroupResult = CalibratedTrainGroup | UnavailableTrainGroup"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
-          "symbol": "\"CalibratedTrainGroupResult\""
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
-          "symbol": "def test_train_group_contracts_are_public_star_exports"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
-          "symbol": "def test_lane_population_count_mismatch_is_rejected_before_database_open"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
-          "symbol": "self.assertNotIn(\"evaluation_antigravity\", source)"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
-          "symbol": "run_identity: str = \"exp435-train-only-consensus-recovery-antigravity-20260806\""
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
-          "symbol": "raise MlxUnavailable(_runtime_failure_reason(exc)) from exc"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
-          "symbol": "def test_readiness_fixture_uses_one_query_row_per_production_score_call"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
-          "symbol": "for start in range(0, refs.shape[0], int(batch_size)):"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
-          "symbol": "nearest = mx.sort(mx.concatenate((nearest, chunk_nearest), axis=1), axis=1)"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
-          "symbol": "def test_mlx_reference_batches_are_exact_in_readiness_and_production"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
-          "symbol": "def test_selected_batch_size_reaches_production_engine"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
-          "symbol": "modern_device_info_call = getattr(mx, \"device_info\", None)"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
-          "symbol": "def test_mlx_engine_prefers_core_device_info_over_legacy_metal_probe"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
-          "symbol": "def test_mlx_engine_uses_legacy_device_info_when_modern_api_is_absent"
-        }
-      ]
-    },
-    {
-      "id": "exp435_runtime",
-      "label": "Exp435 five-mode CLI + resumable runtime",
-      "type": "pipeline",
-      "boundary": "Exp435 deterministic runtime",
-      "layer": 4,
-      "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
-      "role": "Fixed five-mode CLI (readiness/new/resume/inspect/evaluate) validates clean HEAD and delayed imports, runs or resumes the label-free scorer with parent-owned inputs, and delegates evaluate only at a lazy boundary; publication and replay remain verified read-only operations.",
-      "entrypoints": [
-        "run_exp435_new",
-        "resume_exp435",
-        "inspect_exp435",
-        "_run",
-        "_load_values",
-        "LaneMembershipSnapshot",
-        "_score_worker",
-        "run_new",
-        "run_resume",
-        "main",
-        "_production_inspect",
-        "_publication_summary",
-        "build_parser",
-        "_clean_head",
-        "_preflight_roots",
-        "_validate_readiness_payload",
-        "_revalidate_readiness_for_execution",
-        "_ensure_run_parent",
-        "_production_readiness",
-        "run_readiness",
-        "_run_prediction",
-        "run_inspect",
-        "run_evaluate",
-        "scratch wrapper"
-      ],
-      "tests": [
-        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
-        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
-        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py"
       ],
       "constraints": [
         "CLI parser accepts exactly readiness, new, resume, inspect and evaluate; alternate paths are rejected",
@@ -1035,7 +763,27 @@
         "Failed roots are rejected from durable progress by a read-only gate before mutable checkpoint reconciliation, input access, PID/progress/event mutation or temp/intent cleanup; interrupted roots remain resumable after binding checks.",
         "Every persisted progress/event stage, including initial, reconciliation, failure and terminal lifecycle records, is centrally restricted to loading, dispatching, awaiting_worker_result, committing or idle; lifecycle records without a dataset use idle.",
         "Production resume rejects an existing or symlink evaluation root before checkpoint/publication replay, delayed imports or mutable runtime access; inspect remains read-only after evaluation.",
-        "Integrated runtime resume calls shared ProgressWriter.preflight_existing to validate durable progress, PID, live-process state, events, bindings and stages read-only before any mutable checkpoint temp/intent reconciliation; invalid runtime records leave the complete output+checkpoint tree unchanged."
+        "Integrated runtime resume calls shared ProgressWriter.preflight_existing to validate durable progress, PID, live-process state, events, bindings and stages read-only before any mutable checkpoint temp/intent reconciliation; invalid runtime records leave the complete output+checkpoint tree unchanged.",
+        "FROZEN_CONFIG.validate() must pass before input access",
+        "CPU parallelism always uses max(1, detected logical CPU count - 1); the current 12-logical-CPU Mac therefore uses 11 workers",
+        "Exactly 1,117 sorted unique datasets come from the frozen Exp291/292 lane population",
+        "The held Exp425 descriptor is read-only and closes on every exit path",
+        "Prediction intake exposes TRAIN values and TEST values only; no TEST labels are loaded",
+        "Exp435 TEST values are requested only after a concrete RawTrainDataset is loaded",
+        "Published records and backend evidence are immutable and fail closed on contract mismatch",
+        "Exact-length TRAIN groups retain duplicate rows and sorted instance coordinates",
+        "Invalid TRAIN groups emit immutable UnavailableTrainGroup records with preregistered reasons; valid sibling groups continue",
+        "Prototype uses TRAIN-only float32 robust scaling and leave-one-out higher-quantile calibration; gradient and ACF are optional channels",
+        "CPU scoring routes each TEST value row to one exact raw-length TRAIN group; missing or unavailable lengths abstain without concatenation or tail replacement",
+        "A candidate requires prototype AND (gradient OR ACF) with strict score > threshold; frozen-lane coordinates are excluded",
+        "Global candidate validation sorts coordinates and fails closed above 100; it never truncates or auto-promotes",
+        "Each MLX gate batch performs 2 warmups and 5 timed measurements including evaluation and synchronization; adoption requires speedup >=1.1",
+        "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance",
+        "UnavailableTrainGroup, TrainGroup and CalibratedTrainGroupResult remain public contract exports for feature/scoring consumers.",
+        "Exp435FrozenConfig supplies the sole canonical run identity exp435-train-only-consensus-recovery-antigravity-20260806 for readiness and all runtime artifacts.",
+        "Each MLX reference chunk contributes nearest-k values to a rolling exact global nearest-k set, bounding dense allocation without changing the float32 RMS k-median score.",
+        "MLX adoption requires finite outputs, normalized/absolute score error <=1e-5, exact candidate coordinates for every reference batch size and speedup >=1.1; runtime failures fail closed without CPU-score mixing.",
+        "MLX is optional and lazy; readiness and production use exact reference-axis batching, while device provenance prefers modern mx.device_info and falls back to legacy mx.metal.device_info only for older MLX."
       ],
       "evidence": [
         {
@@ -1281,6 +1029,242 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
           "symbol": "def test_invalid_event_resume_rejects_before_checkpoint_reconciliation"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
+          "symbol": "class Exp435FrozenConfig"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
+          "symbol": "def cpu_worker_count_antigravity()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
+          "symbol": "FROZEN_CONFIG = Exp435FrozenConfig()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class PreparedTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class ChannelCalibration"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class CalibratedTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class InstanceScoreEvidence"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class Exp435Candidate"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class Exp435DatasetResult"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendDecision"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class Exp435RunSummary"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "class Exp435InputSession"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "def open_exp435_input_session("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "def load_train("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "def load_test_values("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "def test_prediction_sql_never_selects_test_labels"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "def test_session_uses_frozen_1117_population_not_all_db_names"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class UnavailableTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def prepare_train_groups"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def fit_calibrated_group"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def acf_vector"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def score_channel_cpu"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
+          "symbol": "def test_prepare_returns_unavailable_outcomes_without_suppressing_valid_siblings"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
+          "symbol": "def test_fit_returns_structured_unavailable_outcomes_for_invalid_prototype"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_unavailable_train_group_is_immutable_and_digest_bound"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "class CandidateBudgetExceeded"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "def score_test_instance_cpu"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "def score_dataset_cpu"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "def validate_global_candidates"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "class ScoringTests"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_exact_length_groups_do_not_concatenate"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_prototype_is_mandatory"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_one_secondary_channel_is_enough"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_frozen_lane_coordinate_is_never_published"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_candidate_budget_accepts_100_and_rejects_101_without_truncating"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_global_candidates_are_canonical_sorted_and_duplicate_checked"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendBatchEvidence:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "class MlxUnavailable("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "class MlxFixture:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "class MlxEngine:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "def score_channel_mlx("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "def benchmark_mlx_adoption("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "def score_with_backend("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "TrainGroup = PreparedTrainGroup | UnavailableTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "CalibratedTrainGroupResult = CalibratedTrainGroup | UnavailableTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "\"CalibratedTrainGroupResult\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_train_group_contracts_are_public_star_exports"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "def test_lane_population_count_mismatch_is_rejected_before_database_open"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "self.assertNotIn(\"evaluation_antigravity\", source)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
+          "symbol": "run_identity: str = \"exp435-train-only-consensus-recovery-antigravity-20260806\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "raise MlxUnavailable(_runtime_failure_reason(exc)) from exc"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_readiness_fixture_uses_one_query_row_per_production_score_call"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "for start in range(0, refs.shape[0], int(batch_size)):"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "nearest = mx.sort(mx.concatenate((nearest, chunk_nearest), axis=1), axis=1)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_mlx_reference_batches_are_exact_in_readiness_and_production"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_selected_batch_size_reaches_production_engine"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "modern_device_info_call = getattr(mx, \"device_info\", None)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_mlx_engine_prefers_core_device_info_over_legacy_metal_probe"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_mlx_engine_uses_legacy_device_info_when_modern_api_is_absent"
         }
       ]
     },
@@ -1698,6 +1682,78 @@
           "symbol": "def test_publication_at_entry_replays_identical_existing_publication"
         }
       ]
+    },
+    {
+      "id": "exp436_contract_boundary",
+      "label": "Exp436 frozen missing-safe contracts",
+      "type": "data",
+      "boundary": "Exp436 missing-safe strict consensus",
+      "layer": 3,
+      "path": "experiments/exp436_missing_safe_strict_consensus_antigravity",
+      "role": "Freezes label-free raw/TRAIN calibration/scoring/result contracts, exact source-identity preparation accounting, immutable bytes-backed matrices, strict three-channel AND evidence, and auditable MLX/MPS/CPU selection and lifecycle evidence.",
+      "entrypoints": [
+        "Exp436FrozenConfig",
+        "FROZEN_CONFIG",
+        "RawValueSeries",
+        "MissingSafeRawDataset",
+        "TrainPreparation",
+        "InstanceScoreEvidence",
+        "Exp436DatasetResult",
+        "BackendBatchEvidence",
+        "BackendBenchmarkEvidence",
+        "BackendDecision",
+        "Exp436RunSummary"
+      ],
+      "tests": [
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py"
+      ],
+      "constraints": [
+        "No TEST labels, anomaly positions, metrics, imputation, padding, truncation, copied values, or tail replacement",
+        "Raw values may be nonfinite; every published calibration, score, threshold and timing scalar is finite",
+        "Candidates require prototype AND gradient AND ACF and exact TEST identity evidence coverage; nonfinite_test is scalar-free abstained evidence",
+        "TRAIN source identity-length manifest is exactly partitioned by surviving groups and excluded-row audits; matrices are finite float32 C-order arrays owned by immutable bytes",
+        "Backend protocol is paired-synchronized-v1; a selected accelerator requires Metal availability and all accepted raw/derived timing fields are canonical native Python JSON values recomputed from the five pairs",
+        "Complete review-only publication is explicit after checkpoint_complete; no source-evidenced callers or dependencies outside the internal config import exist yet"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/config_antigravity.py",
+          "symbol": "class Exp436FrozenConfig"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/config_antigravity.py",
+          "symbol": "FROZEN_CONFIG = Exp436FrozenConfig()"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class TrainPreparation"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class InstanceScoreEvidence"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendBatchEvidence"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendBenchmarkEvidence"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendDecision"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class Exp436RunSummary"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_backend_evidence_recomputes_native_scalars_for_strict_json"
+        }
+      ]
     }
   ],
   "edges": [
@@ -2090,7 +2146,7 @@
       "id": "edge_033_exp425_database_calls_exp417_inputs"
     },
     {
-      "from": "exp435_prediction_boundary",
+      "from": "exp435_runtime",
       "to": "exp417_inputs",
       "type": "imports",
       "evidence": [
@@ -2102,7 +2158,7 @@
       "id": "edge_034_exp435_prediction_boundary_imports_exp417_inputs"
     },
     {
-      "from": "exp435_prediction_boundary",
+      "from": "exp435_runtime",
       "to": "exp417_inputs",
       "type": "calls",
       "evidence": [
@@ -2114,7 +2170,7 @@
       "id": "edge_035_exp435_prediction_boundary_calls_exp417_inputs"
     },
     {
-      "from": "exp435_prediction_boundary",
+      "from": "exp435_runtime",
       "to": "exp425_database",
       "type": "imports",
       "evidence": [
@@ -2126,7 +2182,7 @@
       "id": "edge_036_exp435_prediction_boundary_imports_exp425_database"
     },
     {
-      "from": "exp435_prediction_boundary",
+      "from": "exp435_runtime",
       "to": "exp425_database",
       "type": "calls",
       "evidence": [
@@ -2146,7 +2202,7 @@
       "id": "edge_037_exp435_prediction_boundary_calls_exp425_database"
     },
     {
-      "from": "exp435_prediction_boundary",
+      "from": "exp435_runtime",
       "to": "exp417_contracts",
       "type": "imports",
       "evidence": [
@@ -2192,70 +2248,6 @@
         }
       ],
       "id": "edge_039_exp435_runtime_writes_exp435_checkpoint_progress"
-    },
-    {
-      "from": "exp435_runtime",
-      "to": "exp435_prediction_boundary",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
-          "symbol": "def _load_values("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
-          "symbol": "def load_train("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
-          "symbol": "def load_test_values("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
-          "symbol": "def _default_dataset_scorer("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
-          "symbol": "def _default_mlx_dataset_scorer("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
-          "symbol": "open_exp435_input_session("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
-          "symbol": "def _run_prediction("
-        }
-      ],
-      "id": "edge_040_exp435_runtime_calls_exp435_prediction_boundary"
-    },
-    {
-      "from": "exp435_runtime",
-      "to": "exp435_prediction_boundary",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
-          "symbol": "from .contracts_antigravity import"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
-          "symbol": "from .features_antigravity import fit_calibrated_group, prepare_train_groups"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
-          "symbol": "from .scoring_antigravity import score_dataset_cpu"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
-          "symbol": "from .inputs_antigravity import ("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
-          "symbol": "from .runtime_antigravity import inspect_exp435, resume_exp435"
-        }
-      ],
-      "id": "edge_041_exp435_runtime_imports_exp435_prediction_boundary"
     },
     {
       "from": "exp435_runtime",
@@ -2387,7 +2379,6 @@
       "trigger": "Invoke new after readiness or resume an unfinished checkpoint.",
       "steps": [
         "exp435_runtime",
-        "exp435_prediction_boundary",
         "exp425_database",
         "exp417_inputs",
         "sqlite_store",
