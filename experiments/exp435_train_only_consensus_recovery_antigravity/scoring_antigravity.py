@@ -61,8 +61,6 @@ def _normalise_groups(
 def _as_test_vector(series: RawSeries) -> np.ndarray:
     if not isinstance(series, RawSeries):
         raise ValueError("test_series must be a RawSeries")
-    if len(series.values) < FROZEN_CONFIG.min_series_length:
-        raise ValueError("TEST series is shorter than the minimum score length")
     with np.errstate(over="ignore", invalid="ignore"):
         values = np.asarray(series.values, dtype=np.float32)
     if values.ndim != 1 or not np.isfinite(values).all():
@@ -214,12 +212,22 @@ def score_test_instance_cpu(
     except (TypeError, ValueError, FloatingPointError):
         gradient_values = None
 
-    gradient_score, gradient_threshold, gradient_abnormal, gradient_reason = _score_channel(
-        gradient_values if gradient_values is not None else values,
-        group.gradients,
-        group.gradient,
-        transform=gradient_values is not None,
-    )
+    if gradient_values is None:
+        # A failed TEST transform is an unavailable gradient channel.  Never
+        # compare the raw waveform with the TRAIN gradient references.
+        gradient_score, gradient_threshold, gradient_abnormal, gradient_reason = (
+            None,
+            None,
+            False,
+            "gradient_unavailable",
+        )
+    else:
+        gradient_score, gradient_threshold, gradient_abnormal, gradient_reason = _score_channel(
+            gradient_values,
+            group.gradients,
+            group.gradient,
+            transform=True,
+        )
 
     acf_values = acf_vector(
         values,
@@ -300,11 +308,6 @@ def score_dataset_cpu(
 
     evidence: list[InstanceScoreEvidence] = []
     for series in test.series:
-        # RawTestDataset guarantees finite values; a short row cannot be
-        # represented by the immutable evidence contract and is rejected
-        # before a mixed/concatenated shape can cross this API.
-        if len(series.values) < FROZEN_CONFIG.min_series_length:
-            raise ValueError("TEST series is shorter than the minimum score length")
         evidence.append(score_test_instance_cpu(series, calibrated_groups, lanes))
     ordered_evidence = tuple(sorted(evidence, key=lambda item: item.instance_index))
     candidates = tuple(

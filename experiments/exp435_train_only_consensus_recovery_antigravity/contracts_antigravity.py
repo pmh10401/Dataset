@@ -408,9 +408,15 @@ class InstanceScoreEvidence:
     def __post_init__(self) -> None:
         _name(self.dataset, "dataset")
         _integer(self.instance_index, "instance_index")
-        _integer(self.length, "length", minimum=FROZEN_CONFIG.min_series_length)
         if self.status not in _STATUSES:
             raise ValueError("status is invalid")
+        # A length-one row can only be retained as explicit abstention/failure
+        # evidence.  A scored row still requires the frozen minimum length, so
+        # no short row can become a candidate through this exception.
+        minimum_length = (
+            1 if self.status in {"abstained", "failed"} else FROZEN_CONFIG.min_series_length
+        )
+        _integer(self.length, "length", minimum=minimum_length)
         for channel, score, threshold, abnormal in (
             ("prototype", self.prototype_score, self.prototype_threshold, self.prototype_abnormal),
             ("gradient", self.gradient_score, self.gradient_threshold, self.gradient_abnormal),

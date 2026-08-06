@@ -228,6 +228,23 @@ class Exp435ContractTests(unittest.TestCase):
                 fields.update(changes)
                 UnavailableTrainGroup(**fields)  # type: ignore[arg-type]
 
+    def test_short_length_is_allowed_only_for_explicit_abstention_or_failure(self) -> None:
+        short = InstanceScoreEvidence.fixture(
+            instance_index=0,
+            length=1,
+            status="abstained",
+            exclusion_reason="insufficient_series_length",
+        )
+        self.assertEqual(short.length, 1)
+        failed = InstanceScoreEvidence.fixture(
+            instance_index=1, length=1, status="failed", exclusion_reason="source_failure"
+        )
+        self.assertEqual(failed.length, 1)
+        with self.assertRaisesRegex(ValueError, "length"):
+            InstanceScoreEvidence.fixture(instance_index=0, length=1, status="scored")
+        with self.assertRaisesRegex(ValueError, "length"):
+            Exp435Candidate("Demo", 0, 1, evidence_digest=short.evidence_digest)
+
     def test_backend_and_run_summary_are_validated_and_immutable(self) -> None:
         backend = BackendDecision.cpu_fallback("mlx_unavailable")
         self.assertEqual(backend.backend, "cpu")

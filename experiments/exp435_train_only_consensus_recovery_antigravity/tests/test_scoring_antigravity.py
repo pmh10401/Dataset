@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -125,20 +127,69 @@ class ScoringTests(unittest.TestCase):
         self.assertEqual(result.evidence[0].status, "abstained")
         self.assertEqual(result.evidence[0].exclusion_reason, "missing_length")
 
+    def test_short_unavailable_group_is_explicit_per_instance_abstention(self) -> None:
+        group = UnavailableTrainGroup(
+            "Demo", 1, (0, 1, 2, 3), "insufficient_series_length"
+        )
+        result = score_dataset_cpu(
+            (group,), RawTestDataset("Demo", (RawSeries(0, (1.0,)),)), _Lanes()
+        )
+        self.assertEqual(result.status, "abstained")
+        self.assertEqual(result.evidence[0].length, 1)
+        self.assertEqual(result.evidence[0].exclusion_reason, "insufficient_series_length")
+
+    def test_strict_greater_than_threshold_is_required(self) -> None:
+        group = calibrated_group()
+        assert isinstance(group, CalibratedTrainGroup)
+        exact = replace(group, prototype=_calibration("prototype", threshold=2.0))
+        result = score_dataset_cpu(
+            (exact,), RawTestDataset("Demo", (self._test_row(),)), _Lanes()
+        )
+        evidence = result.evidence[0]
+        self.assertEqual(evidence.prototype_score, evidence.prototype_threshold)
+        self.assertFalse(evidence.prototype_abnormal)
+        self.assertFalse(evidence.consensus_candidate)
+
     def test_unavailable_secondary_channels_are_explicit_abstention(self) -> None:
         group = calibrated_group(gradient=False, acf=False)
         result = score_dataset_cpu((group,), RawTestDataset("Demo", (self._test_row(),)), _Lanes())
         self.assertEqual(result.evidence[0].status, "abstained")
         self.assertEqual(result.evidence[0].exclusion_reason, "secondary_channels_unavailable")
 
+    def test_failed_test_gradient_is_unavailable_not_raw_waveform_scored(self) -> None:
+        group = calibrated_group(gradient=True, acf=False)
+        test = RawTestDataset("Demo", (self._test_row(),))
+        with patch(
+            "experiments.exp435_train_only_consensus_recovery_antigravity.scoring_antigravity.np.diff",
+            side_effect=ValueError("forced gradient failure"),
+        ):
+            result = score_dataset_cpu((group,), test, _Lanes())
+        evidence = result.evidence[0]
+        self.assertEqual(evidence.status, "abstained")
+        self.assertIsNone(evidence.gradient_score)
+        self.assertIsNone(evidence.gradient_threshold)
+        self.assertEqual(evidence.exclusion_reason, "secondary_channels_unavailable")
+
+    def test_concatenated_rows_are_not_accepted_as_two_instances(self) -> None:
+        group = calibrated_group(length=16)
+        first = self._test_row(0, 16)
+        second = self._test_row(1, 16)
+        separate = score_dataset_cpu(
+            (group,), RawTestDataset("Demo", (first, second)), _Lanes()
+        )
+        self.assertEqual(tuple(item.length for item in separate.evidence), (16, 16))
+        joined = RawSeries(0, first.values + second.values)
+        concatenated = score_dataset_cpu(
+            (group,), RawTestDataset("Demo", (joined,)), _Lanes()
+        )
+        self.assertEqual(concatenated.status, "abstained")
+        self.assertEqual(concatenated.evidence[0].length, 32)
+        self.assertEqual(concatenated.evidence[0].exclusion_reason, "missing_length")
+
     def test_candidate_budget_accepts_100_and_rejects_101_without_truncating(self) -> None:
         evidence = tuple(
             InstanceScoreEvidence.fixture(dataset=f"D{i:03d}", instance_index=0, length=16, prototype_abnormal=True, gradient_abnormal=True)
             for i in range(101)
-        )
-        results = tuple(
-            Exp435DatasetResult.fixture(dataset=item.dataset, test_size=1, candidates=(), evidence=(item,))
-            for item in evidence
         )
         # Build candidate-bearing records independently so each result remains valid.
         candidate_results = tuple(
@@ -157,6 +208,30 @@ class ScoringTests(unittest.TestCase):
             validate_global_candidates(candidate_results)
         self.assertEqual(context.exception.observed, 101)
         self.assertEqual(context.exception.budget, 100)
+
+    def test_global_candidates_are_canonical_sorted_and_duplicate_checked(self) -> None:
+        evidence_a = InstanceScoreEvidence.fixture(
+            dataset="A", instance_index=1, length=16, prototype_abnormal=True, gradient_abnormal=True
+        )
+        evidence_b = InstanceScoreEvidence.fixture(
+            dataset="B", instance_index=0, length=16, prototype_abnormal=True, gradient_abnormal=True
+        )
+        result_a = Exp435DatasetResult.fixture(
+            dataset="A",
+            test_size=2,
+            candidates=(Exp435Candidate("A", 1, 16, evidence_a.evidence_digest),),
+            evidence=(evidence_a,),
+        )
+        result_b = Exp435DatasetResult.fixture(
+            dataset="B",
+            test_size=1,
+            candidates=(Exp435Candidate("B", 0, 16, evidence_b.evidence_digest),),
+            evidence=(evidence_b,),
+        )
+        ordered = validate_global_candidates((result_b, result_a))
+        self.assertEqual(tuple(item.coordinate for item in ordered), (("A", 1), ("B", 0)))
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            validate_global_candidates((result_a, result_a))
 
 
 if __name__ == "__main__":
