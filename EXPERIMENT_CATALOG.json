@@ -131,19 +131,21 @@
     {
       "id": "Exp436",
       "kind": "missing_safe_strict_three_channel_consensus_recovery",
-      "status": "implementation_plan_ready",
+      "status": "governance_frozen_product_implementation_pending",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "c33753ab6e608c0a4dfd414a2a169b016096f913",
       "documents": [
         "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
-        "docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md"
+        "docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md",
+        "docs/EXP436_PREREGISTRATION_antigravity_KO.md",
+        "docs/EXP436_RUNBOOK_antigravity_KO.md"
       ],
       "dataset_count": 1117,
       "candidate_budget": 100,
       "review_only": true,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "User-approved design and TDD implementation plan: exclude only nonfinite normal TRAIN rows, abstain only nonfinite TEST rows without imputation, require prototype AND gradient AND ACF outside all frozen lanes, and recompute all 1,117 datasets in a new root. Product implementation and preregistration have not started."
+      "notes": "Scientific preregistration and operator runbook are frozen: exclude only nonfinite normal TRAIN rows, abstain only nonfinite TEST rows without imputation, require prototype AND gradient AND ACF outside all frozen lanes, and recompute all 1,117 datasets in a new root. Product implementation, readiness, prediction, and evaluation have not started; TEST labels remain unopened."
     }
   ]
 }

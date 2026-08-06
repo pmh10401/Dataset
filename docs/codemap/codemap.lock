@@ -1,7 +1,7 @@
 {
-  "current_commit": "c361fd011718b235048248ceaa94cf01bc4a25fc",
-  "working_tree_dirty": false,
-  "generated_at": "2026-08-06T07:55:57Z",
+  "current_commit": "8ca235f7a419e5b9761e94b2f2c654b5b4f0239f",
+  "working_tree_dirty": true,
+  "generated_at": "2026-08-06T08:06:09Z",
   "changed_modules_since_prior_lock": [
     "docs",
     "root"
@@ -41,8 +41,8 @@
       "tracked_files": 30
     },
     "docs": {
-      "fingerprint": "57c4139a830b5301aeff01d4992d09c19ac9c693c41474fa05c0cf01f42f146a",
-      "tracked_files": 322
+      "fingerprint": "c3dd074ef8ca16edd320691571b41134158097453d2612d8cacd8f988da385e7",
+      "tracked_files": 324
     },
     "experiments": {
       "fingerprint": "abe83771e75fa614c18eb983ba8d2803650beb696a7669222705467e138f7bf8",
@@ -57,7 +57,7 @@
       "tracked_files": 4
     },
     "root": {
-      "fingerprint": "afa978e8d744310b397d66c45c7cd37e194e17cb8da64f09889504b71ecd0176",
+      "fingerprint": "07438c935e79b29f64d0a52af20e919a23dddc29b03c59cd62a8dac23641a894",
       "tracked_files": 210
     },
     "scratch": {

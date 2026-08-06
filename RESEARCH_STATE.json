@@ -1,19 +1,19 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T17:11:00+09:00",
+  "updated_at": "2026-08-06T17:20:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
   "last_verified_commit": "bc3a696602bd3e8688ada46d9e31e3221f439a96",
   "active_experiment": "Exp436",
-  "active_phase": "implementation_plan_ready",
+  "active_phase": "governance_frozen_product_implementation_pending",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
     "design": "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
     "plan": "docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md",
-    "preregistration": null,
-    "runbook": null
+    "preregistration": "docs/EXP436_PREREGISTRATION_antigravity_KO.md",
+    "runbook": "docs/EXP436_RUNBOOK_antigravity_KO.md"
   },
   "frozen_inputs": {
     "database": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -131,7 +131,7 @@
       "root": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806"
     }
   },
-  "next_action": "Execute the approved Exp436 TDD implementation plan beginning with preregistration and the add-only values-only raw-blob boundary. Exp435 remains failed and preserved; Exp436 prediction has not started and TEST labels remain unopened.",
+  "next_action": "Execute the approved Exp436 TDD implementation plan at Task 1, the add-only values-only raw-blob boundary. Exp436 preregistration/runbook and research-control baseline are frozen; Exp435 remains failed and preserved; Exp436 prediction has not started and TEST labels remain unopened.",
   "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && sed -n '1,220p' docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md && python3 -m json.tool RESEARCH_STATE.json",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
