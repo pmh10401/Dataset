@@ -168,12 +168,15 @@ python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py resume
 `resume`은 failed durable state를 input session open, PID rewrite, progress write,
 event append 전에 read-only로 거절하므로 root tree bytes는 불변이다. 파일을 직접
 고치거나 삭제하지 않는다. `interrupted` root만 frozen identity와 binding을 다시
-검증한 뒤 재개할 수 있다.
+검증한 뒤 재개할 수 있다. progress/PID/event stage와 binding 검사가 먼저 끝난 뒤에만
+허용된 crash temp를 정리하며, invalid event가 있으면 temp도 그대로 둔다.
 
 완료 checkpoint가 이미 있으면 `resume`은 DB나 worker를 다시 열지 않고 publication을
 검증한다. 이미 존재하는 publication이 완전히 같으면 읽기 전용으로 검증해 그대로
 반환한다. publication이 다르거나 게시 경쟁 중 destination이 새로 생긴 경우, 또는
 evaluation destination이 이미 존재하는 경우에는 no-clobber 규칙으로 실패한다.
+재사용 가능한 publication은 publish 함수 호출 시작 때 이미 있던 것뿐이다. 호출 뒤
+replay/staging 중 나타난 destination은 bytes가 같아도 경주로 실패한다.
 
 ## 8. 읽기 전용 완료 확인
 

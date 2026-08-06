@@ -258,6 +258,15 @@ progress와 event에 저장되는 모든 stage는 `loading`, `dispatching`,
 실제로 scoring 중이라고 parent가 증명할 event는 없으므로 parallel progress에서
 `scoring`을 사용하지 않는다.
 
+resume은 durable progress, PID, event의 binding과 stage를 모두 읽기 전용으로 먼저
+검증한 뒤에만 허용된 crash temp를 정리한다. invalid event가 하나라도 있으면 temp를
+포함한 전체 tree의 경로와 bytes를 바꾸지 않는다. checkpoint-complete publication은
+progress stage가 정확히 `idle`이어야 한다.
+
+publication이 publish 호출 시작 때 이미 존재하면 동일한 bytes/hash인지 읽기 전용으로
+검증해 재사용할 수 있다. 시작 때 없었는데 replay 또는 staging 중 나타난 destination은
+내용이 같아도 동시 게시 경주이므로 no-clobber 실패다.
+
 허용 모드는 `readiness`, `new`, `resume`, `inspect`, `evaluate`다. `evaluate`는
 완료된 prediction/manifest/artifact SHA256을 독립 검증한 뒤에만 TEST label을 연다.
 

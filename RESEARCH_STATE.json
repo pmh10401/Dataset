@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T15:29:28+09:00",
+  "updated_at": "2026-08-06T15:45:58+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "c8269e1f59f3987d557bbec4b76975ddfce0b4f3",
+  "last_verified_commit": "f3191b345054c95a4a40504ce5273f2c47ff2bc8",
   "active_experiment": "Exp435",
-  "active_phase": "second_final_review_corrections_complete_codemap_and_ship_review_pending",
+  "active_phase": "third_final_review_corrections_complete_codemap_and_ship_review_pending",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -61,7 +61,9 @@
     "exp435_exact_mlx_reference_batching_fix": "f7623259b30a69be2aeffc71d6ebf20b5ea2e360",
     "exp435_failed_resume_identity_stage_fix": "947754df26f54d847dac9c44c4d8d2a84f07c10b",
     "exp435_modern_mlx_device_info_fix": "1fe069db32a7d399b898780cbca19d5e845a5ea9",
-    "exp435_exact_five_stage_enforcement_fix": "c8269e1f59f3987d557bbec4b76975ddfce0b4f3"
+    "exp435_exact_five_stage_enforcement_fix": "c8269e1f59f3987d557bbec4b76975ddfce0b4f3",
+    "exp435_resume_evaluation_root_guard": "dcb0621cac986b111fb16c8fac502400a44882f9",
+    "exp435_resume_publication_race_safety": "f3191b345054c95a4a40504ce5273f2c47ff2bc8"
   },
   "partial_engineering_commits": {
     "task5_initial_runtime": "dc018ac9cc6e6dec13a93317df194d5e19200884",
@@ -99,7 +101,7 @@
     "reason": "speedup_below_threshold",
     "official_readiness": false
   },
-  "next_action": "Commit the second final-review documentation, synchronize all three code-map files, then obtain a fresh Sol/High ship verdict before readiness. Prediction has not started, TEST labels have not been opened, and all fixed Exp435 artifact roots remain absent.",
+  "next_action": "Commit the third final-review documentation, synchronize all three code-map files, then obtain a fresh Sol/High ship verdict before readiness. Prediction has not started, TEST labels have not been opened, and all fixed Exp435 artifact roots remain absent.",
   "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*antigravity.py' && python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py --help",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
