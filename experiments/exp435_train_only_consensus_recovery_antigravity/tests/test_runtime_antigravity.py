@@ -318,7 +318,7 @@ print(json.dumps(observed, sort_keys=True))
 
     def test_serial_and_parallel_checkpoint_order_and_digest_are_equal(self) -> None:
         datasets = ("A", "B")
-        for worker_count in (1, 7):
+        for worker_count in (1, FROZEN_CONFIG.cpu_workers):
             with self.subTest(worker_count=worker_count), TemporaryDirectory() as directory:
                 root = Path(directory)
                 session = _Session(datasets)
@@ -514,7 +514,7 @@ print(json.dumps(observed, sort_keys=True))
                     input_session=session,
                     backend_decision=None,
                     dataset_scorer=_parallel_failure_score,
-                    worker_count=7,
+                    worker_count=FROZEN_CONFIG.cpu_workers,
                 )
             self.assertLess(time.monotonic() - started, 2.5)
             events = [
@@ -693,8 +693,10 @@ print(json.dumps(observed, sort_keys=True))
             self.assertFalse(checkpoint_temp.exists())
             self.assertFalse(intent.exists())
 
-    def test_parallel_progress_never_reports_or_submits_an_eighth_blocked_dataset(self) -> None:
-        datasets = tuple(f"Dataset-{index}" for index in range(1, 9))
+    def test_parallel_progress_never_submits_beyond_frozen_worker_count(self) -> None:
+        datasets = tuple(
+            f"Dataset-{index:02d}" for index in range(1, FROZEN_CONFIG.cpu_workers + 2)
+        )
         with TemporaryDirectory() as directory:
             root = Path(directory)
             session = _Session(datasets)
@@ -727,10 +729,19 @@ print(json.dumps(observed, sort_keys=True))
                 executor = _BlockedExecutor.instances[0]
                 submitted = [args[2] for _future, args in executor.submitted]
                 if waits == 1:
-                    self.assertEqual(submitted, list(datasets[:7]))
-                    self.assertEqual(loaded, list(datasets[:7]))
+                    self.assertEqual(
+                        submitted,
+                        list(datasets[: FROZEN_CONFIG.cpu_workers]),
+                    )
+                    self.assertEqual(
+                        loaded,
+                        list(datasets[: FROZEN_CONFIG.cpu_workers]),
+                    )
                     payload = json.loads((root / "output" / "progress_antigravity.json").read_text())
-                    self.assertNotEqual(payload["current_dataset"], datasets[7])
+                    self.assertNotEqual(
+                        payload["current_dataset"],
+                        datasets[FROZEN_CONFIG.cpu_workers],
+                    )
                     self.assertEqual(payload["stage"], "awaiting_worker_result")
                     future = next(iter(pending))
                     worker, scorer, dataset, train, test, lanes, backend = executor.submitted[0][1]
@@ -760,7 +771,7 @@ print(json.dumps(observed, sort_keys=True))
                     input_session=session,
                     backend_decision=None,
                     dataset_scorer=_score,
-                    worker_count=7,
+                    worker_count=FROZEN_CONFIG.cpu_workers,
                 )
             _BlockedExecutor.on_submit = None
             self.assertEqual(summary.completed_datasets, len(datasets))
@@ -782,7 +793,7 @@ print(json.dumps(observed, sort_keys=True))
                     input_session=session,
                     backend_decision=None,
                     dataset_scorer=_interrupt_score,
-                    worker_count=7,
+                    worker_count=FROZEN_CONFIG.cpu_workers,
                 )
             events = [
                 json.loads(line)
@@ -816,7 +827,7 @@ print(json.dumps(observed, sort_keys=True))
                     input_session=session,
                     backend_decision=None,
                     dataset_scorer=_parallel_budget_score,
-                    worker_count=7,
+                    worker_count=FROZEN_CONFIG.cpu_workers,
                 )
             self.assertLess(time.monotonic() - started, 1.4)
             events = [

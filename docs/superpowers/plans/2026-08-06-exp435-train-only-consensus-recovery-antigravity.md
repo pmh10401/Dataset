@@ -22,7 +22,7 @@
 - MLX smoke seed is exactly `43501`; CPU and MLX receive the same seed and float32 input.
 - Per-score normalized error is `abs(cpu_score - mlx_score) / max(abs(cpu_score), abs(mlx_score), 1e-12)`; the gate is the maximum of this quantity over all compared finite scores being `<= 1e-5` (with maximum absolute error also `<= 1e-5`).
 - MLX is adopted only with finite outputs, the frozen error gates, exact candidate identity, and at least 1.1x stage speedup including transfer and synchronization.
-- CPU fallback uses at most seven dataset workers and one inner numerical thread per worker.
+- CPU fallback uses the detected logical CPU count minus one dataset worker (minimum one) and one inner numerical thread per worker.
 - Success requires at least 10 rescued datasets, no more than 30 added false positives, and positive micro and macro F1 deltas whose paired 95% bootstrap lower bounds are both above zero.
 - Before changing an existing module, read `docs/codemap/codemap.json` and record its callers, downstream effects, and tests. If stale, regenerate all three code-map files first.
 - Use TDD for every behavior change and commit each independently reviewable task.
@@ -650,13 +650,14 @@ inactive PID cleanup.
 
 - [ ] **Step 6: Write serial/parallel identity tests**
 
-Run a fixed multi-dataset fixture with one worker and seven workers. Require identical ordered
+Run a fixed multi-dataset fixture with one worker and the detected logical CPU count minus one. Require identical ordered
 dataset-record SHA256 and prediction coordinates. Simulate out-of-order completion and verify
 commit order remains dataset-name order.
 
 - [ ] **Step 7: Implement the runtime scheduler**
 
-CPU uses `ProcessPoolExecutor(max_workers=7)` and a bounded prefetch queue of 14. Set numerical
+CPU uses `ProcessPoolExecutor(max_workers=max(1, logical_cpu_count - 1))` and a bounded
+prefetch queue equal to that worker count. Set numerical
 thread environment variables to `1` before worker imports. Parent alone owns DB snapshot,
 checkpoint, logs, and ordered commits. MLX backend uses one process and no outer scoring pool.
 On candidate count 101, persist the exact failure event and stop before publication.

@@ -1,5 +1,13 @@
 # Project Execution Rules
 
+## CPU worker policy
+
+CPU-parallel experiment stages must always use the detected logical CPU count
+minus one worker, with a minimum of one worker. Record the detected CPU count
+and resulting worker count in the run provenance. Historical frozen experiments
+keep their recorded worker counts; apply this policy to new or not-yet-started
+official runs.
+
 ## PyTorch, MLX, and MPS acceleration assessment policy
 
 Every experiment design must explicitly assess PyTorch, MLX, and MPS. Record
@@ -24,8 +32,8 @@ Use MLX by default only when all of the following are true:
 5. The manifest records MLX and mlx-metal versions, device, benchmark timing,
    parity result, and fallback reason.
 
-If any condition fails, retain the existing CPU implementation and use up to
-seven dataset workers where valid. Do not rewrite an official third-party CPU
+If any condition fails, retain the existing CPU implementation and use the CPU
+worker policy above where valid. Do not rewrite an official third-party CPU
 transformer merely to claim GPU use because that changes the experiment.
 
 Run only one MLX/MPS-heavy process at a time. Do not combine outer multi-process

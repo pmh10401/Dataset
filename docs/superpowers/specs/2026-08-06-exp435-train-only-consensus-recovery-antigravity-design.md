@@ -205,8 +205,9 @@ reference를 한 번에 계산한 것과 같은 k-neighbor median을 만든다. 
    계산했을 때 모든 쌍의 최댓값이 `1e-5` 이하이고, 최대 절대오차도 `1e-5` 이하이다.
 5. 전송과 동기화 시간을 포함해 정확히 같은 단계가 1.1배 이상 빠르다.
 
-하나라도 실패하면 CPU를 사용한다. CPU 경로는 저장소 정책에 따라 최대 7개의
-dataset worker를 사용하고 worker 내부의 BLAS·Numba thread 경쟁을 제한한다.
+하나라도 실패하면 CPU를 사용한다. CPU 경로는 저장소 정책에 따라 감지된 논리
+CPU 수보다 하나 적은 dataset worker(최소 1)를 사용하고 worker 내부의
+BLAS·Numba thread 경쟁을 제한한다.
 MLX/MPS-heavy 프로세스는 동시에 하나만 실행한다. backend 결정과 버전, 장치,
 시간, parity, fallback 이유를 manifest에 남긴다.
 

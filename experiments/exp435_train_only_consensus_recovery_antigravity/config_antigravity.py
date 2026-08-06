@@ -3,6 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
+import os
+
+
+def cpu_worker_count_antigravity() -> int:
+    """Leave one detected logical CPU available for the parent and OS."""
+
+    return max(1, (os.cpu_count() or 1) - 1)
 
 
 @dataclass(frozen=True)
@@ -29,7 +36,7 @@ class Exp435FrozenConfig:
     score_tolerance: float = 1e-5
     mlx_smoke_seed: int = 43501
     global_candidate_budget: int = 100
-    cpu_workers: int = 7
+    cpu_workers: int = cpu_worker_count_antigravity()
     mlx_min_speedup: float = 1.1
     bootstrap_repetitions: int = 20_000
     bootstrap_seed: int = 43_520_260_806

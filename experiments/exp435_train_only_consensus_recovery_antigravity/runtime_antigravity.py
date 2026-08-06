@@ -439,7 +439,10 @@ def _run(
     if worker_count is None:
         worker_count = 1 if backend.adopted else FROZEN_CONFIG.cpu_workers
     if type(worker_count) is not int or worker_count not in {1, FROZEN_CONFIG.cpu_workers}:
-        raise ValueError("worker_count must be 1 or the frozen CPU worker count 7")
+        raise ValueError(
+            "worker_count must be 1 or the detected logical CPU count minus one "
+            f"({FROZEN_CONFIG.cpu_workers})"
+        )
     if backend.adopted and worker_count != 1:
         raise ValueError("MLX backend must use one process without an outer pool")
     lane_snapshot = _lane_snapshot(
@@ -519,7 +522,8 @@ def _run(
         )
 
         # MLX is explicitly serial.  CPU serial mode is useful for the
-        # deterministic identity fixture; production defaults to seven.
+        # deterministic identity fixture; production leaves one logical CPU
+        # available for the parent process and operating system.
         if backend.adopted or worker_count == 1:
             ready: dict[str, tuple[Exp435DatasetResult, Mapping[str, object]]] = {}
             for dataset in missing:

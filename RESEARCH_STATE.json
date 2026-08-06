@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T16:16:00+09:00",
+  "updated_at": "2026-08-06T17:10:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
   "last_verified_commit": "bc3a696602bd3e8688ada46d9e31e3221f439a96",
   "active_experiment": "Exp435",
-  "active_phase": "ship_approved_readiness_next",
+  "active_phase": "cpu_max_minus_one_revalidation",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -114,7 +114,14 @@
     "reason": "speedup_below_threshold",
     "official_readiness": false
   },
-  "next_action": "Synchronize the code map with the ship verdict, then run the fixed Exp435 readiness command from a clean final HEAD. Prediction has not started, TEST labels have not been opened, and the fixed Exp435 run parent remains absent.",
+  "cpu_worker_policy": {
+    "rule": "detected_logical_cpu_count_minus_one",
+    "minimum_workers": 1,
+    "detected_logical_cpu_count": 12,
+    "official_worker_count": 11,
+    "applies_to": "new and not-yet-started official CPU-parallel runs"
+  },
+  "next_action": "Commit the Exp435 CPU max-minus-one policy, synchronize the code map, rerun readiness from a clean final HEAD, then launch the 1,117-dataset label-free prediction with 11 CPU workers. Prediction has not started and TEST labels have not been opened.",
   "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*antigravity.py' && python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py --help",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",

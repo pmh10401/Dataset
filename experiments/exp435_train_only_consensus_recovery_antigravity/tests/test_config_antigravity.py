@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError, fields, replace
+import os
 import unittest
 
 from experiments.exp435_train_only_consensus_recovery_antigravity.config_antigravity import (
@@ -24,7 +25,10 @@ class Exp435ConfigTests(unittest.TestCase):
         self.assertEqual(FROZEN_CONFIG.train_quantile, 0.99)
         self.assertEqual(FROZEN_CONFIG.global_candidate_budget, 100)
         self.assertEqual(FROZEN_CONFIG.mlx_smoke_seed, 43501)
-        self.assertEqual(FROZEN_CONFIG.cpu_workers, 7)
+        self.assertEqual(
+            FROZEN_CONFIG.cpu_workers,
+            max(1, (os.cpu_count() or 1) - 1),
+        )
         self.assertEqual(FROZEN_CONFIG.bootstrap_repetitions, 20_000)
         self.assertEqual(FROZEN_CONFIG.bootstrap_seed, 43_520_260_806)
         self.assertEqual(FROZEN_CONFIG.rescued_dataset_minimum, 10)

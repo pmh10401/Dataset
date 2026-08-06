@@ -146,7 +146,8 @@ tail -n 40 \
 `current_dataset`, `dataset_metadata`, `stage`, `backend`, `counts`, `throughput`,
 `elapsed_seconds`, `eta_seconds`, `checkpoint`와 `latest_error`를 확인한다.
 
-CPU parallel에서는 submitted/in-flight future가 최대 7개다. `current_dataset`은
+CPU parallel에서는 submitted/in-flight future가 감지된 논리 CPU 수보다 하나 적다.
+현재 공식 실행 Mac에서는 최대 11개다. `current_dataset`은
 parent가 loading/dispatching 중이거나 아직 result를 수집하지 않은
 `awaiting_worker_result`, 또는 `committing` 중인 dataset만 가리킨다. queued dataset과
 이미 complete/commit된 dataset을 `scoring`으로 표시하지 않으며 parent가 worker

@@ -210,10 +210,11 @@ readiness에서 채택한 MLX는 실행 중 device/version/parity/output 오류�
 점수로 조용히 바꾸지 않고 전체 run을 실패시킨다. 따라서 manifest가 MLX인데 CPU
 score가 섞이는 경우는 없다.
 
-CPU는 최대 7 dataset worker를 사용한다. 각 worker 내부 OMP, OpenBLAS, MKL,
+CPU는 감지된 논리 CPU 수에서 1을 뺀 dataset worker를 사용한다(최소 1). 현재
+공식 실행 Mac은 12개를 감지하므로 11 worker를 사용한다. 각 worker 내부 OMP, OpenBLAS, MKL,
 VecLib, NumExpr와 Numba thread는 1개로 제한한다. MLX-heavy process는 하나만
 실행하며 MLX와 외부 multiprocess scoring을 동시에 사용하지 않는다.
-CPU parallel path는 submitted/in-flight future도 최대 7개다. parent가 worker event를
+CPU parallel path는 submitted/in-flight future도 worker 수를 넘지 않는다. parent가 worker event를
 받지 않으므로 `current_dataset`은 loading, dispatching, parent가 아직 result를
 수집하지 않은 `awaiting_worker_result`, 또는 committing 중인 dataset만 가리킨다;
 queued 또는 이미 completed/committed dataset을 `scoring`으로 표시하지 않는다.
