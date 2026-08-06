@@ -832,11 +832,11 @@ def _validate_verified_publication(
             raise ValueError("prediction input SHA256 map is invalid")
         for value in input_hashes.values():
             _require_digest(value, "prediction input SHA256")
-    code_commit = manifest.get("code_commit", manifest.get("git_commit"))
-    if not isinstance(code_commit, str) or _HEX40.fullmatch(code_commit) is None:
-        raise ValueError("prediction code commit is invalid")
-    if manifest.get("code_commit_sha256") != _digest(code_commit.encode("utf-8")):
-        raise ValueError("prediction code commit SHA256 does not match")
+    reviewed_commit = manifest.get("reviewed_commit")
+    if not isinstance(reviewed_commit, str) or _HEX40.fullmatch(reviewed_commit) is None:
+        raise ValueError("prediction reviewed commit is invalid")
+    if manifest.get("reviewed_commit_sha256") != _digest(reviewed_commit.encode("utf-8")):
+        raise ValueError("prediction reviewed commit SHA256 does not match")
     candidate_count = manifest.get("candidate_count")
     if type(candidate_count) is not int or candidate_count < 0:
         raise ValueError("prediction candidate count is invalid")
@@ -1288,7 +1288,7 @@ def _evaluate_frozen_prediction_for_test(
         label_rows=sum(len(values) for values in labels_by_dataset.values()),
         label_identity_sha256=_label_identity_hash(identities),
         database_sha256=database_sha,
-        code_commit=str(manifest.get("code_commit")),
+        code_commit=str(manifest.get("reviewed_commit")),
         bootstrap=bootstrap,
     )
     if evaluation_root is not None:
@@ -1429,6 +1429,34 @@ def _write_evaluation_artifacts(
     return evaluation
 
 
+def _read_existing_evaluation(root: Path) -> Exp436Evaluation:
+    """Reconstruct and byte-verify a prior immutable evaluation without labels."""
+    raw, _ = _read_pinned_bytes(root / EVALUATION_FILE)
+    dataset_raw, _ = _read_pinned_bytes(root / DATASET_FILE)
+    bootstrap_raw, _ = _read_pinned_bytes(root / BOOTSTRAP_FILE)
+    try:
+        payload = json.loads(raw)
+        rows = tuple(_normalise_comparison(json.loads(line)) for line in dataset_raw.decode("utf-8").splitlines() if line)
+        bootstrap_payload = json.loads(bootstrap_raw)
+        bootstrap = BootstrapResult(
+            int(bootstrap_payload["repetitions"]), int(bootstrap_payload["seed"]),
+            ConfidenceInterval(**bootstrap_payload["micro_f1_delta_ci"]), ConfidenceInterval(**bootstrap_payload["macro_f1_delta_ci"]),
+        )
+        result = Exp436Evaluation(
+            dataset_count=int(payload["dataset_count"]), candidate_count=int(payload["candidate_count"]), added_fp=int(payload["added_fp"]),
+            dataset_rows=rows, baseline_confusion=ConfusionCounts(**payload["baseline_confusion"]), combined_confusion=ConfusionCounts(**payload["combined_confusion"]),
+            micro_f1_delta=float(payload["micro_f1_delta"]), macro_f1_delta=float(payload["macro_f1_delta"]),
+            micro_f1_ci=ConfidenceInterval(**payload["micro_f1_ci"]), macro_f1_ci=ConfidenceInterval(**payload["macro_f1_ci"]),
+            rescued_datasets=tuple(payload["rescued_datasets"]), regressed_datasets=tuple(payload["regressed_datasets"]), strong_baseline_regressions=tuple(payload["strong_baseline_regressions"]),
+            prediction_sha256=str(payload["prediction_sha256"]), manifest_sha256=str(payload["manifest_sha256"]), prediction_label_access_count=int(payload["prediction_label_access_count"]),
+            label_rows=int(payload["label_rows"]), label_identity_sha256=str(payload["label_identity_sha256"]), database_sha256=str(payload["database_sha256"]), code_commit=str(payload["code_commit"]), bootstrap=bootstrap,
+        )
+    except (KeyError, TypeError, UnicodeDecodeError, ValueError, json.JSONDecodeError) as error:
+        raise ValueError("existing evaluation is invalid") from error
+    _verify_evaluation_artifacts(root, _evaluation_payloads(result))
+    return result
+
+
 def evaluate_exp436(
     output_root: Path,
     evaluation_root: Path,
@@ -1456,9 +1484,23 @@ def evaluate_exp436(
         raise ValueError("production checkpoint path is not fixed")
     if fixed_output == fixed_evaluation or fixed_evaluation in fixed_output.parents or fixed_output in fixed_evaluation.parents:
         raise ValueError("production evaluation paths must be fixed siblings")
-    if evaluation_root.exists() or evaluation_root.is_symlink():
-        raise ValueError("evaluation root already exists")
     store = Exp436CheckpointStore.open_read_only(fixed_checkpoint)
+    if evaluation_root.exists() or evaluation_root.is_symlink():
+        if evaluation_root.is_symlink() or not evaluation_root.is_dir():
+            raise ValueError("evaluation root is invalid")
+        publication = inspect_publication(output_root, store)
+        _validate_verified_publication(publication, store, expected_total=FROZEN_CONFIG.expected_datasets, config=FROZEN_CONFIG)
+        snapshot = _snapshot_frozen_tree(output_root)
+        _verify_frozen_source(output_root, store, expected_total=FROZEN_CONFIG.expected_datasets, snapshot=snapshot)
+        result = _read_existing_evaluation(evaluation_root)
+        if (result.prediction_sha256 != publication.prediction_sha256
+                or result.manifest_sha256 != publication.manifest_sha256):
+            raise ValueError("existing evaluation does not bind the verified publication")
+        if result.database_sha256 != FROZEN_CONFIG.database_sha256:
+            raise ValueError("existing evaluation database hash is not frozen")
+        if result.code_commit != str(publication.manifest["reviewed_commit"]):
+            raise ValueError("existing evaluation code commit is not the reviewed publication commit")
+        return result
     publication = FrozenPublication(output_root / PUBLICATION_DIRECTORY, {})
     # The placeholder object above is intentionally not trusted; the evaluator
     # performs a fresh inspect_publication replay from disk before labels.

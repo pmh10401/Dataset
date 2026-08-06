@@ -8,7 +8,9 @@ evaluator; evaluation imports it lazily after publication is frozen.
 from __future__ import annotations
 
 import argparse
+import ctypes
 from dataclasses import asdict, dataclass
+import errno
 from hashlib import sha256
 import importlib
 import importlib.metadata
@@ -190,6 +192,21 @@ def _fsync_directory(path: Path) -> None:
     finally: os.close(fd)
 
 
+def _exclusive_rename(source: Path, destination: Path) -> None:
+    """Darwin no-clobber directory rename for readiness ownership."""
+    if sys.platform != "darwin":
+        raise RuntimeError("exclusive directory rename is unsupported on this platform")
+    try:
+        renamex_np = ctypes.CDLL(None, use_errno=True).renamex_np
+    except (AttributeError, OSError) as error:
+        raise RuntimeError("Darwin renamex_np is unavailable") from error
+    renamex_np.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+    renamex_np.restype = ctypes.c_int
+    if renamex_np(os.fsencode(source), os.fsencode(destination), ctypes.c_uint(0x00000004)) != 0:
+        code = ctypes.get_errno() or errno.EIO
+        raise OSError(code, os.strerror(code), str(destination))
+
+
 def _publish_readiness_atomically(readiness: Path, payload: Mapping[str, object]) -> None:
     """No-clobber creation of an absent run parent and its sole artifact."""
     readiness = Path(readiness)
@@ -208,9 +225,8 @@ def _publish_readiness_atomically(readiness: Path, payload: Mapping[str, object]
         if staged_readiness.read_bytes() != raw:
             raise ValueError("staged readiness verification failed")
         _fsync_directory(staging)
-        # POSIX directory rename is exclusive when destination is absent and
-        # fails if a concurrent owner created a non-empty destination.
-        os.rename(staging, parent)
+        # Darwin RENAME_EXCL refuses any concurrently created destination.
+        _exclusive_rename(staging, parent)
         _fsync_directory(container)
         if (parent / readiness.name).read_bytes() != raw or tuple(item.name for item in parent.iterdir()) != (readiness.name,):
             raise ValueError("published readiness verification failed")
@@ -241,10 +257,14 @@ def _backend_decision_and_fixture() -> tuple[object, dict[str, object]]:
     from .mlx_antigravity import MlxFixture, benchmark_mlx_adoption
     from .mps_antigravity import MpsFixture, benchmark_mps_adoption
     generator = np.random.default_rng(FROZEN_CONFIG.backend_smoke_seed)
-    references = generator.normal(size=(32, 16)).astype(np.float32); queries = generator.normal(size=(1, 16)).astype(np.float32)
-    mlx_fixture, mps_fixture = MlxFixture(queries, references), MpsFixture(queries, references)
+    references = generator.normal(size=(32, 16)).astype(np.float32)
+    query = generator.normal(size=16).astype(np.float32)
+    # Task6's scalar fixture is the production dense-score primitive: exactly
+    # one query vector, frozen k=3 references, and a finite threshold.
+    threshold = float(np.float32(0.0))
+    mlx_fixture, mps_fixture = MlxFixture(query, references, threshold), MpsFixture(query, references, threshold)
     decision = select_backend(benchmark_mlx_adoption((mlx_fixture,)), benchmark_mps_adoption((mps_fixture,)))
-    return decision, {"sha256": sha256(canonical_json_bytes({"queries": queries.tolist(), "references": references.tolist()})).hexdigest(), "candidate_indices": []}
+    return decision, {"sha256": sha256(canonical_json_bytes({"query": query.tolist(), "references": references.tolist(), "threshold": threshold})).hexdigest(), "candidate_indices": []}
 
 
 def _production_readiness() -> dict[str, object]:
@@ -349,6 +369,14 @@ def run_resume() -> Mapping[str, object]:
 
 def run_inspect() -> Mapping[str, object]:
     _preflight_roots("inspect", FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, FROZEN_EVALUATION)
+    from .reporting_antigravity import PUBLICATION_DIRECTORY, inspect_publication
+    if (FROZEN_OUTPUT / PUBLICATION_DIRECTORY).is_dir():
+        from .checkpoint_antigravity import Exp436CheckpointStore
+        publication = inspect_publication(FROZEN_OUTPUT, Exp436CheckpointStore.open_read_only(FROZEN_CHECKPOINT))
+        manifest = publication.manifest
+        return {"state": "complete_review_only", "run_identity": manifest.get("run_identity"),
+                "completed_datasets": manifest.get("completed_datasets"), "candidate_count": manifest.get("candidate_count"),
+                "prediction_sha256": publication.prediction_sha256, "manifest_sha256": publication.manifest_sha256}
     from .runtime_antigravity import inspect_exp436
     summary = inspect_exp436(readiness_path=FROZEN_READINESS, run_root=FROZEN_OUTPUT, checkpoint_root=FROZEN_CHECKPOINT, reviewed_commit=_clean_head())
     return _summary_payload(summary)
@@ -365,8 +393,8 @@ def _production_dependencies() -> _CliDependencies:
                             lambda command: run_new() if command == "new" else run_resume(), run_inspect, run_evaluate)
 
 
-def main(argv: list[str] | None = None, *, _dependencies: _CliDependencies | None = None) -> int:
-    deps = _production_dependencies() if _dependencies is None else _dependencies
+def _main_with_dependencies(argv: list[str] | None, deps: _CliDependencies) -> int:
+    """Private test seam; the exported CLI cannot accept dependency overrides."""
     try: args = build_parser().parse_args(argv)
     except SystemExit as error: return int(error.code) if isinstance(error.code, int) else 2
     try:
@@ -393,7 +421,11 @@ def main(argv: list[str] | None = None, *, _dependencies: _CliDependencies | Non
         print(f"{args.command} failed: {type(error).__name__}: {error}", file=sys.stderr); return 2
 
 
-__all__ = ["DATABASE_PATH", "FROZEN_CHECKPOINT", "FROZEN_EVALUATION", "FROZEN_OUTPUT", "FROZEN_READINESS", "LANE_PATHS", "RUN_IDENTITY", "_CliDependencies", "_publish_readiness_atomically", "_revalidate_readiness_for_execution", "_validate_readiness_payload", "build_parser", "main", "run_evaluate", "run_inspect", "run_new", "run_readiness", "run_resume"]
+def main(argv: list[str] | None = None) -> int:
+    return _main_with_dependencies(argv, _production_dependencies())
+
+
+__all__ = ["DATABASE_PATH", "FROZEN_CHECKPOINT", "FROZEN_EVALUATION", "FROZEN_OUTPUT", "FROZEN_READINESS", "LANE_PATHS", "RUN_IDENTITY", "build_parser", "main", "run_evaluate", "run_inspect", "run_new", "run_readiness", "run_resume"]
 
 
 def _revalidate_readiness_for_execution(readiness: Path, *, validated_commit: str | None, current_head: str) -> dict[str, object]:

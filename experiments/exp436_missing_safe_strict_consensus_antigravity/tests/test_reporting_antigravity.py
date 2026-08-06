@@ -37,6 +37,17 @@ _METADATA = {"train_count": 4, "test_count": 1, "train_length_histogram": {"16":
 def _frozen_context() -> Exp436RunContext:
     payload = _context().to_payload()
     payload["database_sha256"] = FROZEN_CONFIG.database_sha256
+    for name, digest in {
+        "exp291_prediction": FROZEN_CONFIG.exp291_prediction_sha256,
+        "exp291_manifest": FROZEN_CONFIG.exp291_manifest_sha256,
+        "exp292_prediction": FROZEN_CONFIG.exp292_prediction_sha256,
+        "exp292_manifest": FROZEN_CONFIG.exp292_manifest_sha256,
+    }.items():
+        payload["lane_artifacts"][name]["sha256"] = digest
+    payload["lane_snapshot_sha256"] = sha256(canonical_json_bytes({
+        "artifacts": payload["lane_artifacts"], "mappings": payload["lane_mappings"],
+        "datasets": payload["datasets"],
+    })).hexdigest()
     payload["context_sha256"] = sha256(canonical_json_bytes(
         {key: value for key, value in payload.items() if key != "context_sha256"}
     )).hexdigest()
@@ -214,6 +225,68 @@ class ReportingAntigravityTests(unittest.TestCase):
         self.assertEqual(replay.manifest_sha256, first.manifest_sha256)
         self.assertEqual({path.name: path.read_bytes() for path in replay.publication.iterdir()}, before)
 
+    def test_production_cli_inspect_replays_published_tree_without_progress_mutation(self) -> None:
+        """A publication directory is not an invalid progress inventory entry."""
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import cli_antigravity
+        output, publication = self._publication()
+        readiness = output.parent / "readiness_antigravity.json"; readiness.write_bytes(b"{}")
+        before = {path: path.read_bytes() for path in output.rglob("*") if path.is_file()}
+        with patch.object(cli_antigravity, "RUN_PARENT", output.parent), \
+                patch.object(cli_antigravity, "FROZEN_OUTPUT", output), \
+                patch.object(cli_antigravity, "FROZEN_CHECKPOINT", self.checkpoint), \
+                patch.object(cli_antigravity, "FROZEN_READINESS", readiness), \
+                patch.object(cli_antigravity, "FROZEN_EVALUATION", output.parent / "evaluation_antigravity"), \
+                patch.object(cli_antigravity, "_clean_head", return_value="b" * 40):
+            inspected = cli_antigravity.run_inspect()
+        self.assertEqual(inspected["state"], "complete_review_only")
+        self.assertEqual(before, {path: path.read_bytes() for path in output.rglob("*") if path.is_file()})
+
+    def test_real_1117_record_publication_passes_evaluator_prelabel_commit_handoff(self) -> None:
+        """Publisher and evaluator must agree before any TEST-label route exists."""
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import evaluation_antigravity
+        output, publication = self._publication()
+        manifest, summaries, predictions = evaluation_antigravity._validate_verified_publication(
+            publication, self.store, expected_total=FROZEN_CONFIG.expected_datasets, config=FROZEN_CONFIG,
+        )
+        self.assertEqual(manifest["reviewed_commit"], self.store.context["reviewed_commit"])
+        self.assertEqual(len(summaries), FROZEN_CONFIG.expected_datasets)
+        self.assertEqual(len(predictions), 1)
+
+    def test_public_evaluate_replays_an_existing_bound_evaluation_without_labels(self) -> None:
+        """The production evaluate route reuses only a fully bound immutable result."""
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import cli_antigravity
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import evaluation_antigravity
+        output, publication = self._publication()
+        evaluation_root = output.parent / "evaluation_antigravity"
+        rows = (
+            evaluation_antigravity.DatasetComparison(
+                "D0000", 1,
+                evaluation_antigravity.ConfusionCounts(0, 0, 0, 1),
+                evaluation_antigravity.ConfusionCounts(0, 0, 0, 1),
+            ),
+        )
+        bootstrap = evaluation_antigravity._paired_dataset_bootstrap_for_test(rows, repetitions=8, seed=123)
+        existing = evaluation_antigravity.Exp436Evaluation(
+            dataset_count=1, candidate_count=0, added_fp=0, dataset_rows=rows,
+            baseline_confusion=rows[0].baseline, combined_confusion=rows[0].combined,
+            micro_f1_delta=0.0, macro_f1_delta=0.0,
+            micro_f1_ci=bootstrap.micro_f1_ci, macro_f1_ci=bootstrap.macro_f1_ci,
+            rescued_datasets=(), regressed_datasets=(), strong_baseline_regressions=(),
+            prediction_sha256=publication.prediction_sha256,
+            manifest_sha256=publication.manifest_sha256,
+            database_sha256=FROZEN_CONFIG.database_sha256,
+            code_commit=str(publication.manifest["reviewed_commit"]), bootstrap=bootstrap,
+        )
+        evaluation_antigravity._write_evaluation_artifacts(evaluation_root, existing)
+        before = {path: path.read_bytes() for path in output.rglob("*") if path.is_file()}
+        with patch.object(cli_antigravity, "RUN_PARENT", output.parent), \
+                patch.object(cli_antigravity, "FROZEN_OUTPUT", output), \
+                patch.object(cli_antigravity, "FROZEN_CHECKPOINT", self.checkpoint), \
+                patch.object(cli_antigravity, "FROZEN_EVALUATION", evaluation_root):
+            replayed = evaluation_antigravity.evaluate_exp436(output, evaluation_root)
+        self.assertEqual(replayed, existing)
+        self.assertEqual(before, {path: path.read_bytes() for path in output.rglob("*") if path.is_file()})
+
     def test_destination_appearing_during_staging_fails_without_clobbering_it(self) -> None:
         output = self._runtime_copy()
         from experiments.exp436_missing_safe_strict_consensus_antigravity import reporting_antigravity
@@ -232,6 +305,24 @@ class ReportingAntigravityTests(unittest.TestCase):
         output, _ = self._publication()
         event = output / "events_antigravity.jsonl"; event.write_bytes(event.read_bytes() + b"\n")
         with self.assertRaises(ValueError): inspect_publication(output, self.store)
+
+    def test_source_mutation_during_staging_blocks_exclusive_rename(self) -> None:
+        """The source authorities are replayed again after staged-byte verification."""
+        output = self._runtime_copy()
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import reporting_antigravity
+        original = reporting_antigravity._write_new
+        writes = {"count": 0}
+        def mutate(path: Path, payload: bytes) -> None:
+            original(path, payload); writes["count"] += 1
+            if writes["count"] == 1:
+                event = output / "events_antigravity.jsonl"
+                event.write_bytes(event.read_bytes() + b"\n")
+        with patch.object(reporting_antigravity, "_write_new", side_effect=mutate), \
+                patch.object(reporting_antigravity, "_exclusive_rename", wraps=reporting_antigravity._exclusive_rename) as renamed:
+            with self.assertRaises(ValueError):
+                publish_exp436(self.store, output)
+        self.assertEqual(renamed.call_count, 0)
+        self.assertFalse((output / PUBLICATION_DIRECTORY).exists())
 
     def test_staging_files_are_create_only_and_private(self) -> None:
         output = self._runtime_copy()

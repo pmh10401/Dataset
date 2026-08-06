@@ -452,7 +452,7 @@ def _validate_runtime(
     # four runtime bytes in an isolated same-parent view once publication is
     # present, without weakening the runtime inventory rule.
     validation_root: Path | None = None
-    if publication.exists():
+    if publication.exists() or owned_staging is not None:
         validation_root = output.parent / f".runtime-replay-{uuid4().hex}-antigravity"
         validation_root.mkdir(mode=0o700)
         try:
@@ -740,7 +740,7 @@ def inspect_publication(
     return _verify_bytes(Path(output), store, _expectations)
 
 
-def publish_exp436(
+def _publish_exp436(
     completed_store: object,
     output: Path,
     *,
@@ -771,6 +771,12 @@ def publish_exp436(
         for name in sorted(payloads):
             _write_new(staging / name, payloads[name])
         _fsync_directory(staging)
+        if any((staging / name).read_bytes() != raw for name, raw in payloads.items()):
+            raise ValueError("staged publication bytes changed before rename")
+        # Rebuild from the checkpoint and terminal runtime authorities after
+        # staging.  A source mutation in that interval must prevent publish.
+        if _build_payloads(store, output, _expectations, _owned_staging=staging) != payloads:
+            raise ValueError("publication source authorities changed during staging")
         if publication.exists() or publication.is_symlink():
             raise ValueError("publication appeared during atomic staging")
         _exclusive_rename(staging, publication)
@@ -784,6 +790,11 @@ def publish_exp436(
             staging.rmdir()
             _fsync_directory(output)
     return _verify_bytes(output, store, _expectations)
+
+
+def publish_exp436(completed_store: object, output: Path) -> FrozenPublication:
+    """Publish only the frozen full-population artifact; no public tuning seam."""
+    return _publish_exp436(completed_store, output)
 
 
 __all__ = [

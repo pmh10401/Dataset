@@ -22,7 +22,7 @@ The initial RED command was:
 python3 -m unittest experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_cli_antigravity experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_runtime_antigravity -v
 ```
 
-It ran 57 tests and failed as intended: no atomic readiness staging helper,
+It ran 60 tests and failed as intended: no atomic readiness staging helper,
 no exclusive parent-rename path, no resume-state guard, the old readiness
 schema rejected the new evidence binding, the old CLI schema was incompatible
 with the Task7 runtime, and the direct wrapper could not import outside the
@@ -30,7 +30,7 @@ repository.  The test fixture's initial obsolete `cpu_fallback` argument was
 corrected before implementation; the subsequent RED failures were all missing
 or incompatible required behavior.
 
-The GREEN rerun of that same command passed all 57 tests.  The replacement
+The GREEN rerun of that same command passed all 60 tests.  The replacement
 CLI now stages `readiness_antigravity.json` in a same-parent antigravity
 directory, fsyncs and byte-verifies it, and only then exclusively renames the
 directory into an absent fixed `RUN_PARENT`.  Failure cleanup removes staging
@@ -55,19 +55,45 @@ and cannot leave an empty parent; an existing or symlinked parent is rejected.
   evaluator is imported only by `evaluate`; an evaluated run exits zero even
   when `success`/champion is false.
 
+## Final repair review
+
+- The production backend smoke now constructs the Task6 scalar fixtures
+  correctly: one one-dimensional float32 query, 32 references, and the frozen
+  finite threshold `0.0`.  A deterministic test observes both MLX/MPS calls;
+  it does not run a hardware benchmark.
+- Readiness publication uses Darwin `renamex_np(..., RENAME_EXCL)` after
+  staged-byte verification.  A public `run_readiness()` integration test uses
+  no CLI dependency injection and exercises the fixed-path, source-binding,
+  canonical-publish route with only git/database/hardware boundaries faked.
+- Publication now checks every staged byte and replays checkpoint/runtime
+  source authorities again before rename.  Empty-destination and source-change
+  races are rejection-tested.  Published-tree `inspect` selects immutable
+  publication replay rather than treating `publication_antigravity` as a
+  progress-inventory violation.
+- Evaluator pre-label validation now consumes the publisher's canonical
+  `reviewed_commit` and `reviewed_commit_sha256`.  A real 1,117-record
+  publisher-to-evaluator handoff test covers this contract without patching
+  inspection or validation.  An existing evaluation root is replayed only
+  after full publication/source validation and must bind the publication
+  prediction/manifest hashes, frozen database hash, and reviewed commit; this
+  path opens no labels and creates no artifacts.
+- Public `publish_exp436` and `main` no longer accept test override
+  parameters.  Their private test seams remain internal; public evaluation
+  continues to require its exact fixed sibling paths.
+
 ## Verification evidence
 
 Fresh commands completed with exit status zero:
 
 ```text
 python3 -m unittest experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_cli_antigravity experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_runtime_antigravity -v
-# 57 tests
+# 60 tests
 
 python3 -m unittest experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_reporting_antigravity experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_evaluation_antigravity experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_cli_antigravity -q
-# 65 tests: reporting 18, evaluation 25, CLI 22
+# 72 tests: reporting 22, evaluation 25, CLI 25
 
 python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py' -q
-# 268 discovered tests
+# 275 discovered tests
 
 python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*_antigravity.py' -q
 # 187 tests
