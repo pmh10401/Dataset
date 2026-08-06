@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T05:03:04Z",
-  "generated_from_commit": "d64275f2a2767ecaea716c5f7f52dffa7805a47c",
+  "generated_at": "2026-08-06T05:15:07Z",
+  "generated_from_commit": "fe59b526b0628ec0a1859faae4109a78afd89f20",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -10,7 +10,7 @@
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
     "Research control files and local external data stores",
-    "Exp435 fixed five-mode CLI, clean-HEAD readiness, resumable runtime, atomic review-only publication, verified replay, hash-gated retrospective evaluation and fixed sibling publication"
+    "Exp435 fixed five-mode CLI, direct scratch bootstrap, clean-HEAD readiness, resumable runtime, atomic review-only publication, verified replay, hash-gated retrospective evaluation, fixed sibling publication and readiness-pending governance"
   ],
   "nodes": [
     {
@@ -28,7 +28,8 @@
       ],
       "tests": [],
       "constraints": [
-        "Must be updated when execution stops or phase changes"
+        "Must be updated when execution stops or phase changes",
+        "Exp435 remains implementation-complete with readiness pending; prediction has not started, TEST labels are unopened, PID is null and fixed roots are absent."
       ],
       "evidence": [
         {
@@ -38,6 +39,26 @@
         {
           "path": "AUTONOMOUS_RESEARCH_LOOP.md",
           "symbol": "prediction hash"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"active_phase\": \"implementation_complete_readiness_pending\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"last_verified_commit\": \"595417d773c432f0471d6c6445aea1f46a9b2668\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"pid\": null"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"fixed_roots_absent\": true"
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"status\": \"implementation_complete_prediction_not_started\""
         }
       ]
     },
@@ -923,7 +944,9 @@
         "Runtime outputs are bound to checkpoint path, backend, dataset total, run identity and context fingerprint",
         "Workers receive values-only objects and never access labels, SQLite descriptors or durable outputs",
         "Existing publications are inspected read-only and summarized without reopening the database",
-        "Production evaluate is bound to the exact FROZEN_OUTPUT and FROZEN_EVALUATION sibling paths under RUN_PARENT; helper evaluation roots must also be absent, separate and outside output/publication/checkpoint."
+        "Production evaluate is bound to the exact FROZEN_OUTPUT and FROZEN_EVALUATION sibling paths under RUN_PARENT; helper evaluation roots must also be absent, separate and outside output/publication/checkpoint.",
+        "The direct scratch runner bootstraps the repository root before importing experiments and exposes exactly five modes; an outside-cwd --help subprocess regression protects the documented entrypoint.",
+        "The runbook records readiness, prediction, replay, evaluation, interrupted and failed states with fixed CLI return-code behavior."
       ],
       "evidence": [
         {
@@ -1073,6 +1096,30 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
           "symbol": "fixed_evaluation = Path(cli_antigravity.FROZEN_EVALUATION)"
+        },
+        {
+          "path": "scratch/run_exp435_train_only_consensus_recovery_antigravity.py",
+          "symbol": "REPO_ROOT = Path(__file__).resolve().parents[1]"
+        },
+        {
+          "path": "scratch/run_exp435_train_only_consensus_recovery_antigravity.py",
+          "symbol": "sys.path.insert(0, str(REPO_ROOT))"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_absolute_scratch_runner_help_works_outside_repo_without_pythonpath"
+        },
+        {
+          "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
+          "symbol": "python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py --help"
+        },
+        {
+          "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
+          "symbol": "`readiness`, `new`, `resume`, `inspect`, `evaluate` 외의 모드는 없다."
+        },
+        {
+          "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
+          "symbol": "argparse 오류나 처리 실패는 2, 미완료 상태는 1을 반환한다."
         }
       ]
     },
@@ -1398,6 +1445,26 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
           "symbol": "def test_evaluation_payload_has_stable_evaluated_state"
+        },
+        {
+          "path": "docs/EXP435_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "output 전체 바이트 재검사와 evaluation no-clobber publish 통과"
+        },
+        {
+          "path": "docs/EXP435_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "micro F1 point delta > 0이고 paired 95% CI lower > 0"
+        },
+        {
+          "path": "docs/EXP435_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "dataset-balanced macro F1 point delta > 0이고 paired 95% CI lower > 0"
+        },
+        {
+          "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
+          "symbol": "`mode=ro` SQLite 연결 하나만 열어"
+        },
+        {
+          "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
+          "symbol": "`artifact_sha256_antigravity.json`"
         }
       ]
     }
