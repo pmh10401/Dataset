@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-06T16:16:00+09:00",
+  "updated_at": "2026-08-06T16:38:15+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -111,7 +111,7 @@
     {
       "id": "Exp435",
       "kind": "train_only_normal_pattern_consensus_recovery",
-      "status": "cpu_max_minus_one_revalidation",
+      "status": "failed_prediction_preserved",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "cab27f1b40b8aed448256c7094bec075211340c0",
       "documents": [
@@ -123,10 +123,26 @@
       "dataset_count": 1117,
       "candidate_budget": 100,
       "review_only": true,
+      "prediction_phase_started": true,
+      "test_labels_opened": false,
+      "notes": "The official 11-worker label-free run failed at progress count 179 on DodgerLoopDay_normal_1 because the shared RawTestDataset rejected nonfinite TEST values before Exp435's row-level abstention path. The failed root and 178 checkpoint records are preserved; 97 candidates had already accumulated over 40,200 checkpoint TEST rows. No publication or TEST-label access occurred. Exp435 remains frozen and will not be retuned.",
+      "implementation_commit": "bc3a696602bd3e8688ada46d9e31e3221f439a96"
+    },
+    {
+      "id": "Exp436",
+      "kind": "missing_safe_strict_three_channel_consensus_recovery",
+      "status": "design_approved_spec_review",
+      "branch": "codex/exp425-selective-recovery",
+      "base_commit": "c33753ab6e608c0a4dfd414a2a169b016096f913",
+      "documents": [
+        "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md"
+      ],
+      "dataset_count": 1117,
+      "candidate_budget": 100,
+      "review_only": true,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "Implementation and focused/full regression are complete at the fixed five-mode CLI boundary; prediction has not started. The run remains review_only for exactly 1,117 datasets (195,900 TEST rows), with a 100-candidate budget, frozen Exp291/292 lanes, and no TEST-label access before prediction freeze. CPU parallelism now follows the project-wide detected logical CPU count minus one rule (12 detected, 11 official workers on this Mac); Exp435 regression and readiness must be rerun from a clean commit before prediction. The earlier Sol/High ship review at cc4135fc predates this execution-policy change.",
-      "implementation_commit": "bc3a696602bd3e8688ada46d9e31e3221f439a96"
+      "notes": "User-approved design: exclude only nonfinite normal TRAIN rows, abstain only nonfinite TEST rows without imputation, require prototype AND gradient AND ACF outside all frozen lanes, and recompute all 1,117 datasets in a new root. Implementation and preregistration have not started."
     }
   ]
 }

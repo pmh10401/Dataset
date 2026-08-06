@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-06T07:15:19+09:00",
+  "updated_at": "2026-08-06T16:38:15+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -31,10 +31,18 @@
     "note": "The development base may be the current experiment or selected verified components; this ledger is a comparator, not a forced starting point."
   },
   "pending_candidate": {
-    "experiment": "Exp435",
-    "status": "design_approved_plan_ready_implementation_not_started",
+    "experiment": "Exp436",
+    "status": "design_approved_spec_review",
     "prediction_sha256": null,
     "evaluation": null
   },
-  "history": []
+  "history": [
+    {
+      "experiment": "Exp435",
+      "status": "failed_before_prediction_freeze",
+      "prediction_sha256": null,
+      "test_labels_opened": false,
+      "reason": "Dataset-wide TEST finite contract rejected known nonfinite raw values at progress count 179; no publication was created."
+    }
+  ]
 }
