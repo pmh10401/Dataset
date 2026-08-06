@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-06T16:03:24+09:00",
+  "updated_at": "2026-08-06T16:16:00+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -111,7 +111,7 @@
     {
       "id": "Exp435",
       "kind": "train_only_normal_pattern_consensus_recovery",
-      "status": "implementation_complete_prediction_not_started",
+      "status": "ship_review_passed_readiness_next",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "cab27f1b40b8aed448256c7094bec075211340c0",
       "documents": [
@@ -125,7 +125,7 @@
       "review_only": true,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "Implementation and focused/full regression are complete at the fixed five-mode CLI boundary; prediction has not started. The run remains review_only for exactly 1,117 datasets (195,900 TEST rows), with a 100-candidate budget, frozen Exp291/292 lanes, and no TEST-label access before prediction freeze. Final-review corrections include exact reference-axis MLX batching, frozen checkpoint identity, modern MLX discovery, the exact five-value persisted-stage contract, resume rejection after evaluation, terminal idle enforcement, entry-time publication race separation, and an integrated read-only runtime preflight before mutable checkpoint reconciliation (bc3a6966). Fresh Sol/High ship review and readiness remain the next gates.",
+      "notes": "Implementation and focused/full regression are complete at the fixed five-mode CLI boundary; prediction has not started. The run remains review_only for exactly 1,117 datasets (195,900 TEST rows), with a 100-candidate budget, frozen Exp291/292 lanes, and no TEST-label access before prediction freeze. Final-review corrections include exact reference-axis MLX batching, frozen checkpoint identity, modern MLX discovery, the exact five-value persisted-stage contract, resume rejection after evaluation, terminal idle enforcement, entry-time publication race separation, and integrated read-only resume preflight before mutable checkpoint reconciliation. Fresh Sol/High review at cc4135fc returned ship with no findings; fixed readiness is next.",
       "implementation_commit": "bc3a696602bd3e8688ada46d9e31e3221f439a96"
     }
   ]

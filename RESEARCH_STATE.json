@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T16:03:24+09:00",
+  "updated_at": "2026-08-06T16:16:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
   "last_verified_commit": "bc3a696602bd3e8688ada46d9e31e3221f439a96",
   "active_experiment": "Exp435",
-  "active_phase": "integrated_resume_preflight_complete_codemap_and_ship_review_pending",
+  "active_phase": "ship_approved_readiness_next",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -85,6 +85,18 @@
       "artifact_root": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2"
     }
   },
+  "final_review": {
+    "reviewed_head": "cc4135fc081390fd0998ee2860279d5df3f5fb40",
+    "verdict": "ship",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "exp435_tests": 187,
+    "exp426_tests": 58,
+    "exp426_skips": 1,
+    "exp425_tests": 177,
+    "exp417_focused_tests": 63
+  },
   "local_mlx_probe": {
     "python": "3.14.6",
     "mlx": "0.32.0",
@@ -102,7 +114,7 @@
     "reason": "speedup_below_threshold",
     "official_readiness": false
   },
-  "next_action": "Commit the integrated resume-preflight state, synchronize all three code-map files, then obtain a fresh Sol/High ship verdict before readiness. Prediction has not started, TEST labels have not been opened, and the fixed Exp435 run parent remains absent.",
+  "next_action": "Synchronize the code map with the ship verdict, then run the fixed Exp435 readiness command from a clean final HEAD. Prediction has not started, TEST labels have not been opened, and the fixed Exp435 run parent remains absent.",
   "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*antigravity.py' && python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py --help",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
