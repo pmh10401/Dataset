@@ -137,7 +137,9 @@ def test_raw_blob_loader_preserves_nonfinite_test_bytes(self):
 def test_test_blob_loader_requires_bound_train_and_never_selects_labels(self):
     with self.assertRaisesRegex(ValueError, "TRAIN"):
         snapshot.load_test_value_blobs_after_train("Demo", foreign_train, context)
-    self.assertNotIn("labels_blob", snapshot.last_values_query.lower())
+    test_sql = " ".join(statement.lower().split() for statement in traced_statements if "'test'" in statement.lower())
+    self.assertNotIn("labels_blob", test_sql)
+    self.assertNotRegex(test_sql, r"select .*\blabel\b")
 ```
 
 - [ ] **Step 3: Run the focused tests and observe failure.**
@@ -335,7 +337,7 @@ def test_one_nonfinite_train_row_is_excluded_but_four_finite_siblings_continue(s
 def test_three_finite_rows_after_filter_abstain_only_that_length(self):
     prepared = prepare_train_groups(raw_train_with_two_lengths())
     self.assertEqual(prepared.groups[0].reason, "insufficient_finite_train_rows")
-    self.assertTrue(prepared.groups[1].available)
+    self.assertIsInstance(prepared.groups[1], PreparedTrainGroup)
 ```
 
 Add assertions that retained arrays equal the original finite rows exactly and no output length changes.
@@ -484,16 +486,15 @@ python3 -m unittest \
 
 Do not move normalization, ACF, thresholds, consensus, lanes, or candidate limits to a device. MLX uses `mx.eval`; MPS uses `torch.mps.synchronize()` before stopping the timer. Record Python, NumPy, MLX, mlx-metal, PyTorch, device, Metal availability, seed, fixture hashes, timings, batch evidence, maximum errors, candidate identity, selected batch, speedup, and fallback reason.
 
-- [ ] **Step 4: Run tests and a real local readiness smoke.**
+- [ ] **Step 4: Run both backend test suites.**
 
 ```bash
 python3 -m unittest \
   experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_mlx_antigravity \
   experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_mps_antigravity -v
-python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py readiness
 ```
 
-Expected: a canonical readiness JSON chooses a backend only if every gate passes. Exp435's prior MLX result (~0.10x CPU) is provenance, not a forced Exp436 outcome.
+Expected: PASS. The real hardware smoke runs in Task 9 after the fixed CLI wrapper exists. Exp435's prior MLX result (~0.10x CPU) is provenance, not a forced Exp436 outcome.
 
 - [ ] **Step 5: Commit.**
 
@@ -707,10 +708,9 @@ Expected: clean worktree after the commit.
 
 ```bash
 python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py readiness
-python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py inspect
 ```
 
-`inspect` may report no prediction root yet, but readiness must bind the clean commit, DB/lane hashes, focused test evidence, CPU/MLX/MPS benchmark evidence, selected backend, and fallback reason.
+Readiness must bind the clean commit, DB/lane hashes, focused test evidence, CPU/MLX/MPS benchmark evidence, selected backend, and fallback reason. `inspect` is not called until a prediction root exists.
 
 ---
 
@@ -723,10 +723,13 @@ python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py inspect
 
 ```bash
 test ! -e /Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806
-python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py new
+nohup python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py new \
+  >/tmp/exp436_new_antigravity.log 2>&1 &
+exp436_launcher_pid=$!
+ps -p "$exp436_launcher_pid" -o pid=,command=
 ```
 
-The process writes its own PID, progress JSON, events JSONL, parent text log, checkpoint, current dataset, sizes/lengths, stage/backend, counts, missing-row audits, speed, elapsed time, ETA, and latest error. Do not spend model tokens polling it.
+The background process writes its own authoritative PID, progress JSON, events JSONL, parent text log, checkpoint, current dataset, sizes/lengths, stage/backend, counts, missing-row audits, speed, elapsed time, ETA, and latest error. `/tmp/exp436_new_antigravity.log` captures only launcher-level stdout/stderr. Do not spend model tokens polling it.
 
 - [ ] **Step 2: If interrupted, validate then resume; if failed, stop.**
 
