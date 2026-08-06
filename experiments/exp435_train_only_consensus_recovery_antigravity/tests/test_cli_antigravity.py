@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import io
 import json
+import builtins
+from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -11,8 +13,18 @@ from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 from dataclasses import asdict
 from hashlib import sha256
+from types import SimpleNamespace
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
+from experiments.exp435_train_only_consensus_recovery_antigravity import cli_antigravity as cli_module
+from experiments.exp435_train_only_consensus_recovery_antigravity import reporting_antigravity as reporting_module
+from experiments.exp435_train_only_consensus_recovery_antigravity.checkpoint_antigravity import Exp435CheckpointStore
+from experiments.exp435_train_only_consensus_recovery_antigravity.contracts_antigravity import (
+    Exp435Candidate,
+    Exp435DatasetResult,
+    InstanceScoreEvidence,
+    BackendDecision,
+)
 from experiments.exp435_train_only_consensus_recovery_antigravity.cli_antigravity import (
     _CliDependencies,
     _write_new,
@@ -20,6 +32,7 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.cli_antigravit
     main,
 )
 from experiments.exp435_train_only_consensus_recovery_antigravity.config_antigravity import FROZEN_CONFIG
+from experiments.exp435_train_only_consensus_recovery_antigravity.progress_antigravity import ProgressWriter
 
 
 class Exp435CliTests(unittest.TestCase):
@@ -30,6 +43,7 @@ class Exp435CliTests(unittest.TestCase):
             "exp292_prediction": FROZEN_CONFIG.exp292_prediction_sha256,
             "exp292_manifest": FROZEN_CONFIG.exp292_manifest_sha256,
         }
+
         return {
             "schema": "exp435.readiness.v1",
             "state": "ready",
@@ -41,7 +55,7 @@ class Exp435CliTests(unittest.TestCase):
             "database_sha256": FROZEN_CONFIG.database_sha256,
             "lane_artifact_sha256": lanes,
             "backend": "cpu",
-            "backend_decision": {"backend": "cpu"},
+            "backend_decision": BackendDecision.cpu_fallback("fixture").to_dict(),
             "runtime_versions": {"python": "test"},
             "scientific_parity": True,
             "output_root_absent": True,
@@ -52,6 +66,54 @@ class Exp435CliTests(unittest.TestCase):
             "label_access_count": 0,
             "focused_tests": {"returncode": 0},
         }
+
+    def _completed_runtime(self, parent: Path) -> tuple[Path, Path, Exp435CheckpointStore]:
+        output = parent / "output_antigravity"
+        checkpoint = parent / "checkpoint_antigravity"
+        context = {
+            "schema": "fixture.context.v1",
+            "datasets": ["Demo"],
+            "test_sizes": {"Demo": 101},
+            "database_sha256": "d" * 64,
+            "code_commit": "f" * 40,
+            "runtime_versions": {"python": "test"},
+            "backend_decision": BackendDecision.cpu_fallback("fixture").to_dict(),
+        }
+        store = Exp435CheckpointStore.create(checkpoint, context)
+        evidence = InstanceScoreEvidence.fixture(
+            dataset="Demo", instance_index=0, length=16,
+            prototype_abnormal=True, gradient_abnormal=True,
+        )
+        digest = store.commit(Exp435DatasetResult(
+            dataset="Demo", status="scored", test_size=101,
+            candidates=(Exp435Candidate("Demo", 0, 16, evidence.evidence_digest),),
+            evidence=(evidence,),
+        ))
+        writer = ProgressWriter.create(
+            output,
+            run_identity=store.run_identity,
+            checkpoint=checkpoint,
+            total_datasets=1,
+            backend="cpu",
+            context_fingerprint=store.context_fingerprint,
+            heartbeat_seconds=None,
+        )
+        writer.update(
+            stage="scoring", current_dataset="Demo", dataset_metadata=None,
+            completed=1, success=1, abstention=0, error=0, candidate_count=1,
+        )
+        writer.append_event({"kind": "dataset_complete", "dataset": "Demo", "record_sha256": digest})
+        writer.mark_complete(candidate_count=1)
+        writer.close()
+        reporting_module.publish_exp435(
+            store, output, _expectations=reporting_module._PublicationExpectations(total=1),
+        )
+        return output, checkpoint, store
+
+    def _local_publication(self, output: Path, store: Exp435CheckpointStore):
+        return reporting_module.inspect_publication(
+            output, store, _expectations=reporting_module._PublicationExpectations(total=1),
+        )
 
     def _dependencies(self, parent: Path, calls: list[str]) -> _CliDependencies:
         output = parent / "output_antigravity"
@@ -169,6 +231,184 @@ class Exp435CliTests(unittest.TestCase):
                 code, _stdout, stderr = self._main(["inspect"], dependencies)
             self.assertEqual(code, 2)
             self.assertNotIn("evaluation", stderr.lower())
+
+    def test_new_preflight_requires_evaluation_root_absent(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            calls: list[str] = []
+            dependencies = self._dependencies(parent, calls)
+            (parent / "evaluation_antigravity").mkdir()
+            code, _stdout, stderr = self._main(["new"], dependencies)
+            self.assertEqual(code, 2)
+            self.assertIn("new", stderr)
+            self.assertEqual(calls, [])
+
+    def test_ensure_run_parent_creates_empty_parent_and_rejects_unknown_content(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory) / "run_parent"
+            cli_module._ensure_run_parent(parent)
+            self.assertTrue(parent.is_dir())
+            cli_module._ensure_run_parent(parent)
+            (parent / "unknown.txt").write_text("do not accept", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                cli_module._ensure_run_parent(parent)
+
+    def test_inspect_after_publication_replays_without_runtime_imports(self) -> None:
+        with TemporaryDirectory() as directory:
+            output, checkpoint, _store = self._completed_runtime(Path(directory))
+            with patch.object(cli_module, "FROZEN_OUTPUT", output), \
+                    patch.object(cli_module, "FROZEN_CHECKPOINT", checkpoint), \
+                    patch.object(cli_module, "inspect_publication", self._local_publication), \
+                    patch.dict("sys.modules", {
+                        "experiments.exp435_train_only_consensus_recovery_antigravity.inputs_antigravity": None,
+                        "experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity": None,
+                    }):
+                # Bind the store argument through the production callback shape.
+                with patch.object(cli_module, "inspect_publication", side_effect=lambda out, store: self._local_publication(out, store)):
+                    result = cli_module.run_inspect()
+            self.assertEqual(result["state"], "complete_review_only")
+            self.assertEqual(result["prediction_sha256"], json.loads(
+                (output / "publication_antigravity" / "manifest_antigravity.json").read_bytes()
+            )["prediction_sha256"])
+
+    def test_repeated_resume_replays_publication_without_database_or_workers(self) -> None:
+        with TemporaryDirectory() as directory:
+            output, checkpoint, _store = self._completed_runtime(Path(directory))
+            with patch.object(cli_module, "FROZEN_OUTPUT", output), \
+                    patch.object(cli_module, "FROZEN_CHECKPOINT", checkpoint), \
+                    patch.object(cli_module, "_clean_head", return_value="f" * 40), \
+                    patch.object(cli_module, "inspect_publication", side_effect=lambda out, store: self._local_publication(out, store)), \
+                    patch.dict("sys.modules", {
+                        "experiments.exp435_train_only_consensus_recovery_antigravity.inputs_antigravity": None,
+                        "experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity": None,
+                    }):
+                result = cli_module.run_resume()
+            self.assertEqual(result["state"], "complete_review_only")
+            self.assertEqual(result["prediction_sha256"], json.loads(
+                (output / "publication_antigravity" / "manifest_antigravity.json").read_bytes()
+            )["prediction_sha256"])
+
+    def test_new_rejects_head_changed_by_delayed_imports_before_session(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            readiness = parent / "readiness_antigravity.json"
+            readiness.write_bytes(canonical_json_bytes(self._valid_readiness("a" * 40)))
+            state = {"imports_done": False, "session_opened": False}
+
+            def clean_head() -> str:
+                return "b" * 40 if state["imports_done"] else "a" * 40
+
+            original_import = builtins.__import__
+
+            def import_hook(name, globals=None, locals=None, fromlist=(), level=0):
+                result = original_import(name, globals, locals, fromlist, level)
+                if name.endswith("inputs_antigravity") or name.endswith("runtime_antigravity"):
+                    state["imports_done"] = True
+                return result
+
+            inputs_module = __import__(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.inputs_antigravity",
+                fromlist=["open_exp435_input_session"],
+            )
+
+            def fail_session(*args, **kwargs):
+                state["session_opened"] = True
+                raise AssertionError("input session must not open after a HEAD change")
+
+            with patch.object(cli_module, "FROZEN_READINESS", readiness), \
+                    patch.object(cli_module, "_clean_head", side_effect=clean_head), \
+                    patch.object(inputs_module, "open_exp435_input_session", fail_session), \
+                    patch("builtins.__import__", side_effect=import_hook):
+                with self.assertRaises(ValueError):
+                    cli_module._run_prediction("new")
+            self.assertFalse(state["session_opened"])
+
+    def test_new_passes_exact_final_head_to_input_session(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            readiness = parent / "readiness_antigravity.json"
+            readiness.write_bytes(canonical_json_bytes(self._valid_readiness("a" * 40)))
+            received: list[str] = []
+
+            @contextmanager
+            def fake_session(*args, **kwargs):
+                received.append(kwargs["verified_code_commit"])
+                yield SimpleNamespace(context={})
+
+            class Summary:
+                status = "running"
+
+                def to_payload(self):
+                    return {"state": "running"}
+
+            inputs_module = __import__(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.inputs_antigravity",
+                fromlist=["open_exp435_input_session"],
+            )
+            runtime_module = __import__(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity",
+                fromlist=["run_exp435_new"],
+            )
+            with patch.object(cli_module, "FROZEN_READINESS", readiness), \
+                    patch.object(cli_module, "_clean_head", side_effect=["a" * 40, "a" * 40]), \
+                    patch.object(inputs_module, "open_exp435_input_session", fake_session), \
+                    patch.object(runtime_module, "_runtime_context", return_value={}), \
+                    patch.object(runtime_module, "run_exp435_new", return_value=Summary()):
+                result = cli_module._run_prediction("new")
+            self.assertEqual(result["state"], "running")
+            self.assertEqual(received, ["a" * 40])
+
+    def test_production_readiness_head_change_writes_no_artifact(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory) / "run_parent"
+            readiness = parent / "readiness_antigravity.json"
+            lane_hashes = [
+                FROZEN_CONFIG.database_sha256,
+                FROZEN_CONFIG.exp291_prediction_sha256,
+                FROZEN_CONFIG.exp291_manifest_sha256,
+                FROZEN_CONFIG.exp292_prediction_sha256,
+                FROZEN_CONFIG.exp292_manifest_sha256,
+            ]
+            with patch.object(cli_module, "RUN_PARENT", parent), \
+                    patch.object(cli_module, "FROZEN_READINESS", readiness), \
+                    patch.object(cli_module, "FROZEN_OUTPUT", parent / "output_antigravity"), \
+                    patch.object(cli_module, "FROZEN_CHECKPOINT", parent / "checkpoint_antigravity"), \
+                    patch.object(cli_module, "FROZEN_EVALUATION", parent / "evaluation_antigravity"), \
+                    patch.object(cli_module, "_clean_head", side_effect=["a" * 40, "b" * 40]), \
+                    patch.object(cli_module, "_sha256_file", side_effect=lane_hashes), \
+                    patch.object(cli_module, "_synthetic_mlx_decision", return_value=BackendDecision.cpu_fallback("test")), \
+                    patch.object(cli_module, "_focused_test_evidence", return_value={"returncode": 0}), \
+                    patch.object(cli_module, "_runtime_versions", return_value={"python": "test"}):
+                with self.assertRaises(ValueError):
+                    cli_module.run_readiness()
+            self.assertFalse(readiness.exists())
+            self.assertTrue(parent.is_dir())
+            self.assertEqual(tuple(parent.iterdir()), ())
+
+    def test_production_readiness_stable_head_writes_only_canonical_readiness(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory) / "run_parent"
+            readiness = parent / "readiness_antigravity.json"
+            lane_hashes = [
+                FROZEN_CONFIG.database_sha256,
+                FROZEN_CONFIG.exp291_prediction_sha256,
+                FROZEN_CONFIG.exp291_manifest_sha256,
+                FROZEN_CONFIG.exp292_prediction_sha256,
+                FROZEN_CONFIG.exp292_manifest_sha256,
+            ]
+            with patch.object(cli_module, "RUN_PARENT", parent), \
+                    patch.object(cli_module, "FROZEN_READINESS", readiness), \
+                    patch.object(cli_module, "FROZEN_OUTPUT", parent / "output_antigravity"), \
+                    patch.object(cli_module, "FROZEN_CHECKPOINT", parent / "checkpoint_antigravity"), \
+                    patch.object(cli_module, "FROZEN_EVALUATION", parent / "evaluation_antigravity"), \
+                    patch.object(cli_module, "_clean_head", return_value="a" * 40), \
+                    patch.object(cli_module, "_sha256_file", side_effect=lane_hashes), \
+                    patch.object(cli_module, "_synthetic_mlx_decision", return_value=BackendDecision.cpu_fallback("test")), \
+                    patch.object(cli_module, "_focused_test_evidence", return_value={"returncode": 0}), \
+                    patch.object(cli_module, "_runtime_versions", return_value={"python": "test"}):
+                payload = cli_module.run_readiness()
+            self.assertEqual(readiness.read_bytes(), canonical_json_bytes(payload))
+            self.assertEqual(tuple(item.name for item in parent.iterdir()), ("readiness_antigravity.json",))
 
 
 if __name__ == "__main__":

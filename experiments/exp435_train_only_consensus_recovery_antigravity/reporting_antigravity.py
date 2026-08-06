@@ -16,6 +16,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import stat
 from types import MappingProxyType
 from typing import Iterable, Mapping
 from uuid import uuid4
@@ -56,6 +57,12 @@ _SEMANTIC_FILES = (
     BACKEND_FILE,
 )
 _PUBLICATION_FILES = frozenset((*_SEMANTIC_FILES, MANIFEST_FILE, STATUS_FILE, HASH_FILE))
+_RUNTIME_FILES = (
+    "progress_antigravity.json",
+    "events_antigravity.jsonl",
+    "parent_antigravity.log",
+    "run_antigravity.pid",
+)
 _GOVERNANCE_KEYS = frozenset({
     "contains_test_labels",
     "test_labels_opened",
@@ -353,30 +360,41 @@ def _record_data(
     return tuple(records), dict(sorted(digests.items())), dict(context)
 
 
+def _runtime_file_bytes(output: Path) -> dict[str, bytes]:
+    """Read the four terminal runtime files as regular, nonsymlink files."""
+
+    snapshot: dict[str, bytes] = {}
+    for name in _RUNTIME_FILES:
+        path = Path(output) / name
+        try:
+            metadata = path.stat(follow_symlinks=False)
+        except (OSError, ValueError) as error:
+            raise ValueError("runtime output inventory is invalid") from error
+        if path.is_symlink() or not stat.S_ISREG(metadata.st_mode):
+            raise ValueError("runtime output inventory contains a non-regular file")
+        try:
+            snapshot[name] = path.read_bytes()
+        except OSError as error:
+            raise ValueError("runtime output inventory cannot be read") from error
+    return snapshot
+
+
 def _validate_runtime(
     output: Path,
     store: object,
     records: tuple[Exp435DatasetResult, ...],
     record_digests: Mapping[str, str],
     context: Mapping[str, object],
-) -> Mapping[str, object]:
+) -> tuple[Mapping[str, object], Mapping[str, bytes]]:
     output = Path(output)
     if output.is_symlink() or not output.is_dir():
         raise ValueError("runtime output inventory is invalid")
-    runtime_names = {
-        "progress_antigravity.json",
-        "events_antigravity.jsonl",
-        "parent_antigravity.log",
-        "run_antigravity.pid",
-    }
+    runtime_names = set(_RUNTIME_FILES)
     names = {item.name for item in output.iterdir()}
     extras = names - runtime_names - {PUBLICATION_DIRECTORY}
     if extras:
         raise ValueError("runtime output inventory is invalid")
-    for name in runtime_names:
-        path = output / name
-        if path.is_symlink() or not path.is_file():
-            raise ValueError("runtime output inventory is invalid")
+    runtime_raw = _runtime_file_bytes(output)
     publication = output / PUBLICATION_DIRECTORY
     if publication.exists() and (publication.is_symlink() or not publication.is_dir()):
         raise ValueError("publication directory is invalid")
@@ -459,7 +477,7 @@ def _validate_runtime(
     )
     if pid.get("active") is not False:
         raise ValueError("runtime PID is still active")
-    return progress
+    return progress, runtime_raw
 
 
 def _build_payloads(
@@ -468,7 +486,10 @@ def _build_payloads(
     expectations: _PublicationExpectations,
 ) -> dict[str, bytes]:
     records, record_digests, context = _record_data(store, expectations)
-    progress = _validate_runtime(output, store, records, record_digests, context)
+    progress, runtime_raw = _validate_runtime(output, store, records, record_digests, context)
+    runtime_hashes = {
+        name: _digest(raw) for name, raw in sorted(runtime_raw.items())
+    }
     backend = _backend_from_context(context)
     run_identity = str(getattr(store, "run_identity"))
     candidate_rows: list[dict[str, object]] = []
@@ -564,6 +585,7 @@ def _build_payloads(
         "label_access_count": 0,
         "artifact_sha256": semantic_hashes,
         "artifact_sha256_self_excluded": HASH_FILE,
+        "runtime_sha256": runtime_hashes,
     }
     _reject_forbidden_keys(manifest, artifact=MANIFEST_FILE)
     manifest_raw = _json_raw(manifest)
@@ -577,7 +599,8 @@ def _build_payloads(
         "backend": backend.backend,
         "prediction_sha256": semantic_hashes[PREDICTION_FILE],
         "manifest_sha256": _digest(manifest_raw),
-        "runtime_progress_sha256": _digest((Path(output) / "progress_antigravity.json").read_bytes()),
+        "runtime_progress_sha256": _digest(runtime_raw["progress_antigravity.json"]),
+        "runtime_sha256": runtime_hashes,
         "review_only": True,
         "operational_alert_eligible": False,
         "contains_test_labels": False,
@@ -590,6 +613,7 @@ def _build_payloads(
     artifact_map = {
         "schema": "exp435.artifact-sha256.v1",
         "artifact_sha256": {name: _digest(raw) for name, raw in sorted(before_hash_map.items())},
+        "runtime_sha256": runtime_hashes,
         "self_excluded": HASH_FILE,
         "self_hash_excluded": True,
     }
@@ -628,6 +652,11 @@ def _verify_bytes(
     hashes = artifact_map.get("artifact_sha256")
     if not isinstance(hashes, dict) or set(hashes) != _PUBLICATION_FILES - {HASH_FILE}:
         raise ValueError("artifact SHA256 map inventory is invalid")
+    runtime_hashes = artifact_map.get("runtime_sha256")
+    expected_manifest = json.loads(expected[MANIFEST_FILE])
+    expected_runtime_hashes = expected_manifest.get("runtime_sha256")
+    if runtime_hashes != expected_runtime_hashes:
+        raise ValueError("artifact runtime SHA256 map does not match replay")
     if artifact_map.get("self_excluded") != HASH_FILE or artifact_map.get("self_hash_excluded") is not True:
         raise ValueError("artifact SHA256 map self-exclusion is invalid")
     for name in sorted(_PUBLICATION_FILES):

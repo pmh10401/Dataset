@@ -226,6 +226,56 @@ class Exp435ReportingTests(unittest.TestCase):
             self.assertEqual(tuple(destination.iterdir()), ())
             self.assertEqual(tuple(root.joinpath("output").glob(".publication_antigravity.*.tmp")), ())
 
+    def test_manifest_status_and_hash_map_bind_all_terminal_runtime_files(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = _runtime(root / "output", root / "checkpoint")
+            publication = publish_exp435(store, root / "output", _expectations=self.expectations)
+            runtime_names = {
+                "progress_antigravity.json",
+                "events_antigravity.jsonl",
+                "run_antigravity.pid",
+                "parent_antigravity.log",
+            }
+            expected = {
+                name: sha256((root / "output" / name).read_bytes()).hexdigest()
+                for name in runtime_names
+            }
+            manifest = json.loads((publication.publication / "manifest_antigravity.json").read_bytes())
+            status = json.loads((publication.publication / "status_antigravity.json").read_bytes())
+            artifact_map = json.loads((publication.publication / "artifact_sha256_antigravity.json").read_bytes())
+            self.assertEqual(manifest["runtime_sha256"], expected)
+            self.assertEqual(status["runtime_sha256"], expected)
+            self.assertEqual(artifact_map["runtime_sha256"], expected)
+
+    def test_mutating_any_terminal_runtime_file_invalidates_replay(self) -> None:
+        runtime_names = (
+            "progress_antigravity.json",
+            "events_antigravity.jsonl",
+            "run_antigravity.pid",
+            "parent_antigravity.log",
+        )
+        for name in runtime_names:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                root = Path(directory)
+                store = _runtime(root / "output", root / "checkpoint")
+                publish_exp435(store, root / "output", _expectations=self.expectations)
+                path = root / "output" / name
+                if name == "events_antigravity.jsonl":
+                    first = path.read_bytes().splitlines()[0]
+                    path.write_bytes(path.read_bytes() + first + b"\n")
+                elif name == "parent_antigravity.log":
+                    with path.open("ab") as handle:
+                        handle.write(b"2026-08-06T00:00:00Z valid post-publication line\n")
+                else:
+                    from experiments.exp403_408.artifact_io import canonical_json_bytes
+
+                    payload = json.loads(path.read_bytes())
+                    payload["updated_at"] = "2026-08-06T00:00:00Z"
+                    path.write_bytes(canonical_json_bytes(payload))
+                with self.assertRaises(ValueError):
+                    inspect_publication(root / "output", store, _expectations=self.expectations)
+
 
 if __name__ == "__main__":
     unittest.main()

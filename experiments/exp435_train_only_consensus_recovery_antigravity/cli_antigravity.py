@@ -124,6 +124,12 @@ def _head(dependencies: _CliDependencies) -> str:
     return value
 
 
+def _validate_commit(value: object, label: str = "Git commit") -> str:
+    if not isinstance(value, str) or len(value) != 40 or any(character not in "0123456789abcdef" for character in value):
+        raise ValueError(f"{label} is invalid")
+    return value
+
+
 def _sha256_file(path: Path) -> str:
     if path.is_symlink() or not path.is_file():
         raise ValueError(f"input file is absent or invalid: {path}")
@@ -189,8 +195,10 @@ def _preflight_roots(command: str, output: Path, checkpoint: Path, readiness: Pa
             raise ValueError("readiness parent container is absent or invalid")
         return
     if command == "new":
-        if output.exists() or checkpoint.exists():
-            raise ValueError("new output and checkpoint roots must be absent")
+        if output.exists() or checkpoint.exists() or evaluation.exists():
+            raise ValueError("new output, checkpoint, and evaluation roots must be absent")
+        if readiness.is_symlink() or not readiness.is_file():
+            raise ValueError("new readiness input is absent or invalid")
         return
     if command in {"resume", "inspect", "evaluate"}:
         if not output.is_dir() or not checkpoint.is_dir():
@@ -206,6 +214,7 @@ def _validate_sha(value: object, label: str, *, length: int = 64) -> str:
 
 
 def _validate_readiness_payload(payload: Mapping[str, object], *, expected_commit: str) -> dict[str, object]:
+    expected_commit = _validate_commit(expected_commit, "readiness Git commit")
     value = dict(payload)
     if set(value) != _READINESS_KEYS:
         raise ValueError("readiness fields are invalid")
@@ -336,6 +345,9 @@ def _production_readiness() -> Mapping[str, object]:
     decision = _synthetic_mlx_decision()
     config_hash = sha256(canonical_json_bytes(asdict(FROZEN_CONFIG))).hexdigest()
     elapsed = perf_counter() - started
+    final_head = _clean_head()
+    if final_head != head:
+        raise ValueError("clean HEAD changed during readiness")
     payload: dict[str, object] = {
         "schema": "exp435.readiness.v1",
         "state": "ready",
@@ -363,7 +375,11 @@ def _production_readiness() -> Mapping[str, object]:
 
 def run_readiness() -> Mapping[str, object]:
     payload = dict(_production_readiness())
-    _validate_readiness_payload(payload, expected_commit=str(payload.get("git_commit")))
+    bound_commit = _validate_commit(payload.get("git_commit"), "readiness Git commit")
+    _validate_readiness_payload(payload, expected_commit=bound_commit)
+    final_head = _clean_head()
+    if final_head != bound_commit:
+        raise ValueError("clean HEAD changed before readiness write")
     _write_new(FROZEN_READINESS, canonical_json_bytes(payload))
     return payload
 
@@ -421,11 +437,24 @@ def _run_prediction(command: str) -> Mapping[str, object]:
             validated_commit=head,
             current_head=head,
         )
+        backend = _backend_from_readiness(readiness_payload)
+        # Import every input/runtime dependency before the final HEAD read.
+        # Import hooks and module initialization are part of the race window;
+        # a commit change during that work must prevent the input session.
+        from .inputs_antigravity import (
+            DEFAULT_DATABASE,
+            DEFAULT_EXP291_MANIFEST,
+            DEFAULT_EXP291_PREDICTION,
+            DEFAULT_EXP292_MANIFEST,
+            DEFAULT_EXP292_PREDICTION,
+            open_exp435_input_session,
+        )
+        from .runtime_antigravity import _runtime_context, run_exp435_new
+
         final_head = _clean_head()
         if final_head != head or final_head != readiness_payload.get("git_commit"):
             raise ValueError("clean HEAD changed before input session")
         head = final_head
-        backend = _backend_from_readiness(readiness_payload)
     else:
         stored_context = Exp435CheckpointStore.read_context_projection(FROZEN_CHECKPOINT)
         stored_commit = stored_context.get("code_commit")
@@ -453,16 +482,15 @@ def _run_prediction(command: str) -> Mapping[str, object]:
             store = Exp435CheckpointStore.open_read_only(FROZEN_CHECKPOINT)
             publication = publish_exp435(store, FROZEN_OUTPUT)
             return _summary_payload(summary, publication)
-
-    from .inputs_antigravity import (
-        DEFAULT_DATABASE,
-        DEFAULT_EXP291_MANIFEST,
-        DEFAULT_EXP291_PREDICTION,
-        DEFAULT_EXP292_MANIFEST,
-        DEFAULT_EXP292_PREDICTION,
-        open_exp435_input_session,
-    )
-    from .runtime_antigravity import _runtime_context, resume_exp435, run_exp435_new
+        from .inputs_antigravity import (
+            DEFAULT_DATABASE,
+            DEFAULT_EXP291_MANIFEST,
+            DEFAULT_EXP291_PREDICTION,
+            DEFAULT_EXP292_MANIFEST,
+            DEFAULT_EXP292_PREDICTION,
+            open_exp435_input_session,
+        )
+        from .runtime_antigravity import _runtime_context, resume_exp435
 
     with open_exp435_input_session(
         DEFAULT_DATABASE,
@@ -592,8 +620,8 @@ def main(
         )
         if args.command == "readiness":
             payload = dict(dependencies.readiness_call())
-            validated_head = _head(dependencies)
-            verified = _validate_readiness_payload(payload, expected_commit=validated_head)
+            bound_commit = _validate_commit(payload.get("git_commit"), "readiness Git commit")
+            verified = _validate_readiness_payload(payload, expected_commit=bound_commit)
             # The injected/production action is the sole writer.  Re-read the
             # artifact and require byte identity with the canonical returned
             # payload; the CLI must never perform a second write.
