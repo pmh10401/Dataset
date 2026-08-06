@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T00:11:34Z",
-  "generated_from_commit": "3498ecdb7f35e28c259777f42ee2357543e3947d",
+  "generated_at": "2026-08-06T00:33:14Z",
+  "generated_from_commit": "e93baf9f1a52656252936fcdf0564ec8eede61dd",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -8,7 +8,7 @@
     "Exp426 verified-baseline contracts, intake, runtime, checkpoint and publication",
     "Exp435 frozen prediction configuration/contracts and label-free input boundary",
     "Research control files and local external data stores",
-    "Exp435 TRAIN-only feature preparation, calibration and structured unavailable groups"
+    "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups"
   ],
   "nodes": [
     {
@@ -645,7 +645,7 @@
       "boundary": "Exp435 label-free prediction",
       "layer": 1,
       "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
-      "role": "Groups the frozen Exp435 configuration, immutable prediction contracts, descriptor-bound TRAIN/TEST-value intake, and deterministic TRAIN-only feature calibration; invalid exact-length groups become structured unavailable outcomes while valid sibling lengths continue. TEST labels are outside this boundary.",
+      "role": "Groups the frozen Exp435 configuration, immutable prediction contracts, descriptor-bound TRAIN/TEST-value intake, deterministic TRAIN-only feature calibration, and the uninvoked CPU scoring/candidate-budget capability; invalid exact-length groups become structured unavailable outcomes while valid sibling lengths continue. Scoring routes TEST values by exact raw length, requires prototype AND (gradient OR ACF), excludes frozen-lane coordinates, and fails closed above 100 candidates. TEST labels are outside this boundary and no runtime caller is registered yet.",
       "entrypoints": [
         "Exp435FrozenConfig",
         "FROZEN_CONFIG",
@@ -666,13 +666,18 @@
         "prepare_train_groups",
         "fit_calibrated_group",
         "acf_vector",
-        "score_channel_cpu"
+        "score_channel_cpu",
+        "CandidateBudgetExceeded",
+        "score_test_instance_cpu",
+        "score_dataset_cpu",
+        "validate_global_candidates"
       ],
       "tests": [
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_config_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
-        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py"
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py"
       ],
       "constraints": [
         "FROZEN_CONFIG.validate() must pass before input access",
@@ -682,7 +687,11 @@
         "Published records and backend evidence are immutable and fail closed on contract mismatch",
         "Exact-length TRAIN groups retain duplicate rows and sorted instance coordinates",
         "Invalid TRAIN groups emit immutable UnavailableTrainGroup records with preregistered reasons; valid sibling groups continue",
-        "Prototype uses TRAIN-only float32 robust scaling and leave-one-out higher-quantile calibration; gradient and ACF are optional channels"
+        "Prototype uses TRAIN-only float32 robust scaling and leave-one-out higher-quantile calibration; gradient and ACF are optional channels",
+        "CPU scoring routes each TEST value row to one exact raw-length TRAIN group; missing or unavailable lengths abstain without concatenation or tail replacement",
+        "A candidate requires prototype AND (gradient OR ACF) with strict score > threshold; frozen-lane coordinates are excluded",
+        "Global candidate validation sorts coordinates and fails closed above 100; it never truncates or auto-promotes",
+        "Scoring is a source-backed capability only; no end-to-end runtime caller is registered yet"
       ],
       "evidence": [
         {
@@ -780,6 +789,50 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
           "symbol": "def test_unavailable_train_group_is_immutable_and_digest_bound"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "class CandidateBudgetExceeded"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "def score_test_instance_cpu"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "def score_dataset_cpu"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "def validate_global_candidates"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "class ScoringTests"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_exact_length_groups_do_not_concatenate"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_prototype_is_mandatory"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_one_secondary_channel_is_enough"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_frozen_lane_coordinate_is_never_published"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_candidate_budget_accepts_100_and_rejects_101_without_truncating"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_global_candidates_are_canonical_sorted_and_duplicate_checked"
         }
       ]
     }
@@ -1245,6 +1298,10 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
           "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import RawSeries, RawTestDataset"
         }
       ],
       "id": "edge_038_exp435_prediction_boundary_imports_exp417_contracts"
