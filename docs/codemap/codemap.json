@@ -1,13 +1,14 @@
 {
-  "generated_at": "2026-08-05T23:33:41Z",
-  "generated_from_commit": "df8eb5a61245d190d6107133ce6d5858a990300c",
+  "generated_at": "2026-08-06T00:06:06Z",
+  "generated_from_commit": "350330308364de21b410260ddca01167d90b4d41",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
     "Exp425 source validation, descriptor-bound database snapshot, eligibility, runtime and checkpoints",
     "Exp426 verified-baseline contracts, intake, runtime, checkpoint and publication",
     "Exp435 frozen prediction configuration/contracts and label-free input boundary",
-    "Research control files and local external data stores"
+    "Research control files and local external data stores",
+    "Exp435 TRAIN-only feature preparation, calibration and structured unavailable groups"
   ],
   "nodes": [
     {
@@ -644,7 +645,7 @@
       "boundary": "Exp435 label-free prediction",
       "layer": 1,
       "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
-      "role": "Groups the frozen Exp435 configuration, immutable prediction contracts, and descriptor-bound TRAIN/TEST-value intake; TEST labels are outside this boundary.",
+      "role": "Groups the frozen Exp435 configuration, immutable prediction contracts, descriptor-bound TRAIN/TEST-value intake, and deterministic TRAIN-only feature calibration; invalid exact-length groups become structured unavailable outcomes while valid sibling lengths continue. TEST labels are outside this boundary.",
       "entrypoints": [
         "Exp435FrozenConfig",
         "FROZEN_CONFIG",
@@ -659,19 +660,29 @@
         "Exp435InputSession",
         "open_exp435_input_session",
         "load_train",
-        "load_test_values"
+        "load_test_values",
+        "UnavailableTrainGroup",
+        "TrainGroup",
+        "prepare_train_groups",
+        "fit_calibrated_group",
+        "acf_vector",
+        "score_channel_cpu"
       ],
       "tests": [
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_config_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
-        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py"
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py"
       ],
       "constraints": [
         "FROZEN_CONFIG.validate() must pass before input access",
         "Exactly 1,117 sorted unique datasets come from the frozen Exp291/292 lane population",
         "The held Exp425 descriptor is read-only and closes on every exit path",
         "Prediction intake exposes TRAIN values and TEST values only; no TEST labels are loaded",
-        "Published records and backend evidence are immutable and fail closed on contract mismatch"
+        "Published records and backend evidence are immutable and fail closed on contract mismatch",
+        "Exact-length TRAIN groups retain duplicate rows and sorted instance coordinates",
+        "Invalid TRAIN groups emit immutable UnavailableTrainGroup records with preregistered reasons; valid sibling groups continue",
+        "Prototype uses TRAIN-only float32 robust scaling and leave-one-out higher-quantile calibration; gradient and ACF are optional channels"
       ],
       "evidence": [
         {
@@ -737,6 +748,38 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
           "symbol": "def test_session_uses_frozen_1117_population_not_all_db_names"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class UnavailableTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def prepare_train_groups"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def fit_calibrated_group"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def acf_vector"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def score_channel_cpu"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
+          "symbol": "def test_prepare_returns_unavailable_outcomes_without_suppressing_valid_siblings"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
+          "symbol": "def test_fit_returns_structured_unavailable_outcomes_for_invalid_prototype"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_unavailable_train_group_is_immutable_and_digest_bound"
         }
       ]
     }
@@ -1198,6 +1241,10 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
           "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import"
         }
       ],
       "id": "edge_038_exp435_prediction_boundary_imports_exp417_contracts"
@@ -1268,7 +1315,7 @@
         "exp417_inputs",
         "sqlite_store"
       ],
-      "outcome": "The frozen 1,117-dataset lane population is admitted through one descriptor-bound Exp425 snapshot and the Exp417 values-only boundary; database extras and TEST labels remain inaccessible to prediction."
+      "outcome": "The frozen 1,117-dataset lane population is admitted through one descriptor-bound Exp425 snapshot and the Exp417 values-only boundary; TRAIN groups are prepared and calibrated with deterministic feature channels, invalid lengths become structured unavailable outcomes while valid siblings continue, and database extras and TEST labels remain inaccessible to prediction."
     }
   ]
 }
