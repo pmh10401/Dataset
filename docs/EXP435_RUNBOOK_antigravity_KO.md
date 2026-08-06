@@ -151,8 +151,9 @@ parent가 loading/dispatching 중이거나 아직 result를 수집하지 않은
 `awaiting_worker_result`, 또는 `committing` 중인 dataset만 가리킨다. queued dataset과
 이미 complete/commit된 dataset을 `scoring`으로 표시하지 않으며 parent가 worker
 activity event를 받지 않으므로 parallel stage는 `scoring`을 주장하지 않는다.
-허용되는 parallel stage는 `loading`, `dispatching`, `awaiting_worker_result`,
-`committing`, `idle`의 다섯 가지뿐이다.
+progress와 event에 저장되는 모든 stage는 `loading`, `dispatching`,
+`awaiting_worker_result`, `committing`, `idle`의 다섯 가지뿐이다. 시작·복구·완료는
+현재 dataset이 없으므로 `idle`로 기록하며, 다른 값은 파일을 쓰기 전에 거절한다.
 
 ## 7. 중단과 재개
 
@@ -170,8 +171,9 @@ event append 전에 read-only로 거절하므로 root tree bytes는 불변이다
 검증한 뒤 재개할 수 있다.
 
 완료 checkpoint가 이미 있으면 `resume`은 DB나 worker를 다시 열지 않고 publication을
-검증한다. publication/evaluation destination이 이미 나타난 경우 기존 파일을
-교체하지 않는 no-clobber 규칙으로 실패한다.
+검증한다. 이미 존재하는 publication이 완전히 같으면 읽기 전용으로 검증해 그대로
+반환한다. publication이 다르거나 게시 경쟁 중 destination이 새로 생긴 경우, 또는
+evaluation destination이 이미 존재하는 경우에는 no-clobber 규칙으로 실패한다.
 
 ## 8. 읽기 전용 완료 확인
 

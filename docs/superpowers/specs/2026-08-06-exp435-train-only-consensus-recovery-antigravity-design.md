@@ -210,6 +210,10 @@ dataset worker를 사용하고 worker 내부의 BLAS·Numba thread 경쟁을 제
 MLX/MPS-heavy 프로세스는 동시에 하나만 실행한다. backend 결정과 버전, 장치,
 시간, parity, fallback 이유를 manifest에 남긴다.
 
+runtime progress와 event의 stage는 `loading`, `dispatching`,
+`awaiting_worker_result`, `committing`, `idle`만 허용한다. 초기화·복구·완료처럼 현재
+dataset이 없는 상태는 `idle`이며, writer는 다른 stage를 저장 전에 거절한다.
+
 ## 11. 실행 상태와 재개
 
 Exp426의 검증된 구조를 참고해 `readiness`, `new`, `resume`, `inspect`를 분리한다.

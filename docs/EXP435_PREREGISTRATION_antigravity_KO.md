@@ -252,8 +252,9 @@ evaluation의 네 고정 root가 모두 없을 때만 `ready`를 기록한다. p
 필수 필드는 PID, heartbeat, current dataset, TRAIN/TEST 수와 길이, stage, backend,
 completed/total, success/abstention/error, 후보 수, 처리속도, 경과시간, ETA,
 checkpoint와 latest error다. 데이터셋 결과 저장 순서는 이름 순서로 고정한다.
-parallel stage는 parent가 관찰한 `loading`, `dispatching`, `awaiting_worker_result`,
-`committing`, `idle`의 다섯 값만 사용한다. worker가
+progress와 event에 저장되는 모든 stage는 `loading`, `dispatching`,
+`awaiting_worker_result`, `committing`, `idle`의 다섯 값만 사용한다. 시작·복구·완료처럼
+현재 dataset이 없는 lifecycle은 `idle`로 기록한다. worker가
 실제로 scoring 중이라고 parent가 증명할 event는 없으므로 parallel progress에서
 `scoring`을 사용하지 않는다.
 
