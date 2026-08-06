@@ -31,6 +31,13 @@ from experiments.exp417_causal_multihorizon_shadow.inputs import (
 
 from .checkpoint_antigravity import Exp436CheckpointStore
 from .config_antigravity import FROZEN_CONFIG, Exp436FrozenConfig
+from .execution_profile_antigravity import (
+    EXP436_PROFILE,
+    ExecutionProfileAntigravity,
+    frozen_config_for_profile_antigravity,
+    validate_frozen_config_for_profile_antigravity,
+    validated_profile_antigravity,
+)
 from .reporting_antigravity import (
     HASH_FILE as PUBLICATION_HASH_FILE,
     MANIFEST_FILE,
@@ -741,10 +748,12 @@ def _parse_exp404_hard_payload(payload: bytes) -> dict[str, tuple[int, ...]]:
 def _load_frozen_hard_coordinates(
     *,
     config: Exp436FrozenConfig = FROZEN_CONFIG,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
 ) -> dict[str, tuple[int, ...]]:
     """Verify Exp404 and Exp291 identities and return their exact shared map."""
 
-    config.validate()
+    selected = validated_profile_antigravity(profile)
+    validate_frozen_config_for_profile_antigravity(config, selected)
     exp404_payload, exp404_sha = _read_pinned_bytes(EXP404_HARD_PATH)
     if exp404_sha != config.hard_prediction_sha256:
         raise ValueError("Exp404 Hard prediction SHA256 does not match frozen input")
@@ -802,6 +811,11 @@ def _validate_verified_publication(
         raise ValueError("publication manifest governance is invalid")
     if manifest.get("contains_test_labels") is not False or manifest.get("test_labels_opened") is not False or type(manifest.get("label_access_count")) is not int or manifest.get("label_access_count") != 0:
         raise ValueError("publication manifest label governance is invalid")
+    if (
+        manifest.get("experiment_id") != config.experiment_id
+        or manifest.get("run_identity") != config.run_identity
+    ):
+        raise ValueError("publication identity does not match frozen execution profile")
     if manifest.get("completed_datasets") != expected_total or manifest.get("failed_datasets") != 0:
         raise ValueError("publication population is invalid")
     if not isinstance(manifest.get("prediction_sha256"), str) or manifest["prediction_sha256"] != _digest((publication.publication / PREDICTION_FILE).read_bytes()):
@@ -1016,7 +1030,13 @@ def _counts(selected: Iterable[int], labels: Mapping[int, int]) -> ConfusionCoun
     return ConfusionCounts(tp, fp, fn, tn)
 
 
-def _resolve_store(publication: FrozenPublication | Path | str, checkpoint: object | None) -> tuple[Path, object]:
+def _resolve_store(
+    publication: FrozenPublication | Path | str,
+    checkpoint: object | None,
+    *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> tuple[Path, object]:
+    selected = validated_profile_antigravity(profile)
     if checkpoint is None:
         if isinstance(publication, FrozenPublication):
             checkpoint = publication.publication.parent.parent / "checkpoint_antigravity"
@@ -1026,7 +1046,7 @@ def _resolve_store(publication: FrozenPublication | Path | str, checkpoint: obje
             checkpoint = output.parent / "checkpoint_antigravity"
     store: object
     if isinstance(checkpoint, (Path, str)):
-        store = Exp436CheckpointStore.open_read_only(Path(checkpoint))
+        store = Exp436CheckpointStore.open_read_only(Path(checkpoint), profile=selected)
     else:
         store = checkpoint
     if isinstance(publication, FrozenPublication):
@@ -1084,13 +1104,16 @@ def _verify_frozen_source(
     *,
     expected_total: int,
     snapshot: Mapping[str, tuple[str, bytes | str | None]],
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
 ) -> None:
     """Replay publication and compare the complete source tree before publish."""
 
+    selected = validated_profile_antigravity(profile)
     try:
         _inspect_publication(
             Path(output),
             store,
+            profile=selected,
             _expectations=_PublicationExpectations(total=expected_total),
         )
     except ValueError as error:
@@ -1157,6 +1180,7 @@ def _evaluate_frozen_prediction_for_test(
     database_path: Path = DATABASE_PATH,
     config: Exp436FrozenConfig = FROZEN_CONFIG,
     before_publish: Callable[[], None] | None = None,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
 ) -> Exp436Evaluation:
     """Replay and evaluate a frozen publication after the hash gate.
 
@@ -1166,13 +1190,18 @@ def _evaluate_frozen_prediction_for_test(
     frozen 1,117 value.
     """
 
-    config.validate()
+    selected = validated_profile_antigravity(profile)
+    validate_frozen_config_for_profile_antigravity(config, selected)
     if before_publish is not None and not callable(before_publish):
         raise ValueError("before_publish callback is invalid")
     if checkpoint is not None and completed_store is not None:
         raise ValueError("checkpoint and completed_store are mutually exclusive")
     store_argument = completed_store if completed_store is not None else checkpoint
-    output, store = _resolve_store(publication, store_argument)
+    output, store = _resolve_store(
+        publication,
+        store_argument,
+        profile=selected,
+    )
     if evaluation_root is None and output_root is not None:
         evaluation_root = Path(output_root)
     if evaluation_root is not None:
@@ -1194,6 +1223,7 @@ def _evaluate_frozen_prediction_for_test(
         verified = _inspect_publication(
             output,
             store,
+            profile=selected,
             _expectations=_PublicationExpectations(total=expected_total),
         )
     except ValueError as error:
@@ -1217,7 +1247,7 @@ def _evaluate_frozen_prediction_for_test(
     if hard_coordinates is None:
         if expected_total != config.expected_datasets:
             raise ValueError("fixture evaluation must provide Hard coordinates")
-        hard_coordinates = _load_frozen_hard_coordinates(config=config)
+        hard_coordinates = _load_frozen_hard_coordinates(config=config, profile=selected)
     hard_source = _normalise_hard_coordinates(hard_coordinates)
     hard = {str(dataset): tuple(sorted(set(int(index) for index in indices))) for dataset, indices in hard_source.items()}
     if tuple(sorted(hard)) != datasets:
@@ -1231,7 +1261,13 @@ def _evaluate_frozen_prediction_for_test(
         raise ValueError("Exp436 candidate overlaps frozen Hard")
     # Exp404/Exp291 pinning and equality checks occur after the complete source
     # snapshot.  Replay once more before the single label-bearing connection.
-    _verify_frozen_source(output, store, expected_total=expected_total, snapshot=source_snapshot)
+    _verify_frozen_source(
+        output,
+        store,
+        expected_total=expected_total,
+        snapshot=source_snapshot,
+        profile=selected,
+    )
     loader = label_loader
     private_loader = loader is None
     if loader is None:
@@ -1301,6 +1337,7 @@ def _evaluate_frozen_prediction_for_test(
                 store,
                 expected_total=expected_total,
                 snapshot=source_snapshot,
+                profile=selected,
             )
 
         # This gate must complete before the writer allocates its staging
@@ -1318,6 +1355,7 @@ def _evaluate_frozen_prediction_for_test(
             store,
             expected_total=expected_total,
             snapshot=source_snapshot,
+            profile=selected,
         )
     return evaluation
 
@@ -1466,15 +1504,17 @@ def _validate_existing_evaluation(
     result: Exp436Evaluation,
     publication: FrozenPublication,
     summary_rows: Sequence[Mapping[str, object]],
+    *,
+    config: Exp436FrozenConfig = FROZEN_CONFIG,
 ) -> None:
     """Require a stored evaluation to be the exact frozen full-population result."""
-    if result.dataset_count != FROZEN_CONFIG.expected_datasets or len(result.dataset_rows) != FROZEN_CONFIG.expected_datasets:
+    if result.dataset_count != config.expected_datasets or len(result.dataset_rows) != config.expected_datasets:
         raise ValueError("existing evaluation population is not frozen")
     if result.candidate_count != publication.manifest.get("candidate_count"):
         raise ValueError("existing evaluation candidate count does not bind publication")
     expected_identity = tuple((str(row.get("dataset")), row.get("test_size")) for row in summary_rows)
     actual_identity = tuple((row.dataset, row.test_size) for row in result.dataset_rows)
-    if (len(expected_identity) != FROZEN_CONFIG.expected_datasets
+    if (len(expected_identity) != config.expected_datasets
             or any(type(test_size) is not int for _dataset, test_size in expected_identity)
             or actual_identity != expected_identity):
         raise ValueError("existing evaluation rows do not bind publication summaries")
@@ -1504,7 +1544,7 @@ def _validate_existing_evaluation(
     if (result.rescued_datasets, result.regressed_datasets, result.strong_baseline_regressions) != (rescued, regressed, strong):
         raise ValueError("existing evaluation dataset reports are invalid")
     bootstrap = result.bootstrap
-    if bootstrap is None or bootstrap.repetitions != FROZEN_CONFIG.bootstrap_repetitions or bootstrap.seed != FROZEN_CONFIG.bootstrap_seed:
+    if bootstrap is None or bootstrap.repetitions != config.bootstrap_repetitions or bootstrap.seed != config.bootstrap_seed:
         raise ValueError("existing evaluation bootstrap is not frozen")
     if result.micro_f1_ci != bootstrap.micro_f1_ci or result.macro_f1_ci != bootstrap.macro_f1_ci:
         raise ValueError("existing evaluation confidence intervals do not bind bootstrap")
@@ -1515,9 +1555,13 @@ def _validate_existing_evaluation(
 def evaluate_exp436(
     output_root: Path,
     evaluation_root: Path,
+    *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
 ) -> Exp436Evaluation:
     """Fixed CLI entrypoint for the post-freeze ``evaluate`` mode."""
 
+    selected = validated_profile_antigravity(profile)
+    config = frozen_config_for_profile_antigravity(selected)
     # Import the CLI constants lazily so prediction modes never import this
     # evaluator, while this production entrypoint cannot be redirected to a
     # fixture or an alternate output directory.
@@ -1525,10 +1569,10 @@ def evaluate_exp436(
 
     output_root = Path(output_root)
     evaluation_root = Path(evaluation_root)
-    fixed_output = Path(cli_antigravity.FROZEN_OUTPUT)
-    fixed_checkpoint = Path(cli_antigravity.FROZEN_CHECKPOINT)
-    fixed_evaluation = Path(cli_antigravity.FROZEN_EVALUATION)
-    run_parent = Path(cli_antigravity.RUN_PARENT)
+    fixed_output = selected.output
+    fixed_checkpoint = selected.checkpoint
+    fixed_evaluation = selected.evaluation
+    run_parent = selected.run_parent
     if any(path.is_symlink() for path in (run_parent, fixed_output, fixed_checkpoint, fixed_evaluation)):
         raise ValueError("production evaluation paths cannot be symlinks")
     if output_root != fixed_output or evaluation_root != fixed_evaluation:
@@ -1539,22 +1583,28 @@ def evaluate_exp436(
         raise ValueError("production checkpoint path is not fixed")
     if fixed_output == fixed_evaluation or fixed_evaluation in fixed_output.parents or fixed_output in fixed_evaluation.parents:
         raise ValueError("production evaluation paths must be fixed siblings")
-    store = Exp436CheckpointStore.open_read_only(fixed_checkpoint)
+    store = Exp436CheckpointStore.open_read_only(fixed_checkpoint, profile=selected)
     if evaluation_root.exists() or evaluation_root.is_symlink():
         if evaluation_root.is_symlink() or not evaluation_root.is_dir():
             raise ValueError("evaluation root is invalid")
-        publication = inspect_publication(output_root, store)
+        publication = inspect_publication(output_root, store, profile=selected)
         _manifest, summary_rows, _prediction_rows = _validate_verified_publication(
-            publication, store, expected_total=FROZEN_CONFIG.expected_datasets, config=FROZEN_CONFIG,
+            publication, store, expected_total=config.expected_datasets, config=config,
         )
         snapshot = _snapshot_frozen_tree(output_root)
-        _verify_frozen_source(output_root, store, expected_total=FROZEN_CONFIG.expected_datasets, snapshot=snapshot)
+        _verify_frozen_source(
+            output_root,
+            store,
+            expected_total=config.expected_datasets,
+            snapshot=snapshot,
+            profile=selected,
+        )
         result = _read_existing_evaluation(evaluation_root)
-        _validate_existing_evaluation(result, publication, summary_rows)
+        _validate_existing_evaluation(result, publication, summary_rows, config=config)
         if (result.prediction_sha256 != publication.prediction_sha256
                 or result.manifest_sha256 != publication.manifest_sha256):
             raise ValueError("existing evaluation does not bind the verified publication")
-        if result.database_sha256 != FROZEN_CONFIG.database_sha256:
+        if result.database_sha256 != config.database_sha256:
             raise ValueError("existing evaluation database hash is not frozen")
         if result.code_commit != str(publication.manifest["reviewed_commit"]):
             raise ValueError("existing evaluation code commit is not the reviewed publication commit")
@@ -1566,6 +1616,8 @@ def evaluate_exp436(
         publication,
         checkpoint=store,
         evaluation_root=Path(evaluation_root),
+        profile=selected,
+        config=config,
     )
 
 

@@ -18,6 +18,10 @@ from experiments.exp436_missing_safe_strict_consensus_antigravity.checkpoint_ant
     Exp436CheckpointStore, Exp436RunContext, _name, _result_payload,
 )
 from experiments.exp436_missing_safe_strict_consensus_antigravity.config_antigravity import FROZEN_CONFIG
+from experiments.exp436_missing_safe_strict_consensus_antigravity.execution_profile_antigravity import (
+    EXP436_PROFILE,
+    EXP437_PROFILE,
+)
 from experiments.exp436_missing_safe_strict_consensus_antigravity.contracts_antigravity import (
     ExcludedTrainRowAudit, Exp436Candidate, Exp436DatasetResult, InstanceScoreEvidence,
 )
@@ -36,8 +40,8 @@ _METADATA = {"train_count": 4, "test_count": 1, "train_length_histogram": {"16":
              "test_length_histogram": {"16": 1}}
 
 
-def _frozen_context() -> Exp436RunContext:
-    payload = _context().to_payload()
+def _frozen_context(profile=EXP436_PROFILE) -> Exp436RunContext:
+    payload = _context(profile).to_payload()
     payload["database_sha256"] = FROZEN_CONFIG.database_sha256
     for name, digest in {
         "exp291_prediction": FROZEN_CONFIG.exp291_prediction_sha256,
@@ -53,7 +57,7 @@ def _frozen_context() -> Exp436RunContext:
     payload["context_sha256"] = sha256(canonical_json_bytes(
         {key: value for key, value in payload.items() if key != "context_sha256"}
     )).hexdigest()
-    return Exp436RunContext.from_payload(payload)
+    return Exp436RunContext.from_payload(payload, profile=profile)
 
 
 def _row(dataset: str, *, candidate: bool = False, audit: bool = False) -> Exp436DatasetResult:
@@ -64,6 +68,25 @@ def _row(dataset: str, *, candidate: bool = False, audit: bool = False) -> Exp43
     candidates = (Exp436Candidate(dataset, 2, 16, evidence.evidence_digest),) if candidate else ()
     audits = (ExcludedTrainRowAudit(dataset, 1, 16, 1, "a" * 64),) if audit else ()
     return Exp436DatasetResult(dataset, "scored", (2,), candidates, (evidence,), audits)
+
+
+class _Exp437StoreView:
+    """Profile-bound view over the shared fixture checkpoint for one test."""
+
+    def __init__(self, base: Exp436CheckpointStore) -> None:
+        self._base = base
+        self.root = base.root
+        self.context = dict(base.context)
+        self.context["experiment_id"] = EXP437_PROFILE.experiment_id
+        self.context["run_identity"] = EXP437_PROFILE.run_identity
+        self.context_fingerprint = base.context_fingerprint
+        self.datasets = base.datasets
+        self.manifest = base.manifest
+        self.run_identity = EXP437_PROFILE.run_identity
+        self.profile = EXP437_PROFILE
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._base, name)
 
 
 class ReportingAntigravityTests(unittest.TestCase):
@@ -109,6 +132,45 @@ class ReportingAntigravityTests(unittest.TestCase):
         writer.mark_checkpoint_complete()
         writer.close()
 
+        # Reuse the complete checkpoint through a profile-bound view.  The
+        # publication boundary still receives the real ordered store surface,
+        # while avoiding a second 1,117-record fixture and its quadratic setup.
+        cls.store_437 = _Exp437StoreView(cls.store)
+        cls.runtime_437 = root / "runtime_437_antigravity"
+        shutil.copytree(cls.runtime, cls.runtime_437)
+        old_identity = EXP436_PROFILE.run_identity.encode("utf-8")
+        new_identity = EXP437_PROFILE.run_identity.encode("utf-8")
+        for name in ("events_antigravity.jsonl", "progress_antigravity.json", "run_antigravity.pid"):
+            path = cls.runtime_437 / name
+            path.write_bytes(path.read_bytes().replace(old_identity, new_identity))
+        # Re-sign the identity-bearing runtime authorities after the canonical
+        # profile replacement while preserving the original context digest.
+        events_path = cls.runtime_437 / "events_antigravity.jsonl"
+        events = []
+        previous = "0" * 64
+        for line in events_path.read_bytes().splitlines():
+            event = json.loads(line)
+            event["previous_event_sha256"] = previous
+            unsigned = dict(event)
+            unsigned.pop("event_sha256", None)
+            event["event_sha256"] = sha256(canonical_json_bytes(unsigned)).hexdigest()
+            previous = event["event_sha256"]
+            events.append(canonical_json_bytes(event))
+        events_path.write_bytes(b"\n".join(events) + b"\n")
+        progress_path = cls.runtime_437 / "progress_antigravity.json"
+        progress = json.loads(progress_path.read_bytes())
+        progress["last_event_sha256"] = previous
+        unsigned = dict(progress)
+        unsigned.pop("progress_sha256", None)
+        progress["progress_sha256"] = sha256(canonical_json_bytes(unsigned)).hexdigest()
+        progress_path.write_bytes(canonical_json_bytes(progress))
+        pid_path = cls.runtime_437 / "run_antigravity.pid"
+        pid = json.loads(pid_path.read_bytes())
+        unsigned = dict(pid)
+        unsigned.pop("pid_sha256", None)
+        pid["pid_sha256"] = sha256(canonical_json_bytes(unsigned)).hexdigest()
+        pid_path.write_bytes(canonical_json_bytes(pid))
+
     @classmethod
     def tearDownClass(cls) -> None:
         cls._temporary.cleanup()
@@ -117,6 +179,18 @@ class ReportingAntigravityTests(unittest.TestCase):
         destination = Path(self._temporary.name) / f"case_{self.id().rsplit('.', 1)[-1]}_antigravity"
         shutil.copytree(self.runtime, destination)
         return destination
+
+    def _profile_runtime_copy(self) -> tuple[Path, object]:
+        """Copy a runtime into the selected profile's canonical sibling name."""
+        output = Path(self._temporary.name) / "output_antigravity"
+        if output.exists():
+            shutil.rmtree(output)
+        evaluation = output.parent / "evaluation_antigravity"
+        if evaluation.exists():
+            shutil.rmtree(evaluation)
+        shutil.copytree(self.runtime, output)
+        profile = replace(EXP436_PROFILE, run_parent=output.parent)
+        return output, profile
 
     def _publication(self) -> tuple[Path, object]:
         output = self._runtime_copy()
@@ -154,8 +228,29 @@ class ReportingAntigravityTests(unittest.TestCase):
 
     def test_public_inspection_has_no_expectation_override(self) -> None:
         from experiments.exp436_missing_safe_strict_consensus_antigravity import reporting_antigravity
-        self.assertEqual(tuple(inspect.signature(inspect_publication).parameters), ("output", "completed_store"))
+        self.assertEqual(
+            tuple(inspect.signature(inspect_publication).parameters),
+            ("output", "completed_store", "profile"),
+        )
+        self.assertEqual(
+            inspect.signature(inspect_publication).parameters["profile"].kind,
+            inspect.Parameter.KEYWORD_ONLY,
+        )
         self.assertNotIn("PublicationExpectations", reporting_antigravity.__all__)
+
+    def test_exp437_publication_manifest_uses_profile_identity(self) -> None:
+        """A checkpoint bound to Exp437 publishes only Exp437 identity."""
+        output = Path(self._temporary.name) / "exp437_publication_antigravity"
+        shutil.copytree(self.runtime_437, output)
+        publication = publish_exp436(
+            self.store_437,
+            output,
+            profile=EXP437_PROFILE,
+        )
+        self.assertEqual(publication.manifest["experiment_id"], "Exp437")
+        self.assertEqual(publication.manifest["run_identity"], EXP437_PROFILE.run_identity)
+        with self.assertRaisesRegex(ValueError, "identity"):
+            inspect_publication(output, self.store_437, profile=EXP436_PROFILE)
 
     def test_prediction_is_globally_sorted_unique_and_within_frozen_budget(self) -> None:
         _, publication = self._publication()
@@ -297,25 +392,25 @@ class ReportingAntigravityTests(unittest.TestCase):
 
     def test_public_evaluate_replays_an_existing_bound_evaluation_without_labels(self) -> None:
         """The production evaluate route reuses only a fully bound immutable result."""
-        from experiments.exp436_missing_safe_strict_consensus_antigravity import cli_antigravity
         from experiments.exp436_missing_safe_strict_consensus_antigravity import evaluation_antigravity
-        output, publication = self._publication()
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import execution_profile_antigravity
+        output, profile = self._profile_runtime_copy()
+        publication = publish_exp436(self.store, output)
         evaluation_root = output.parent / "evaluation_antigravity"
         existing = self._frozen_existing_evaluation(publication, evaluation_antigravity)
         evaluation_antigravity._write_evaluation_artifacts(evaluation_root, existing)
         before = {path: path.read_bytes() for path in output.rglob("*") if path.is_file()}
-        with patch.object(cli_antigravity, "RUN_PARENT", output.parent), \
-                patch.object(cli_antigravity, "FROZEN_OUTPUT", output), \
-                patch.object(cli_antigravity, "FROZEN_CHECKPOINT", self.checkpoint), \
-                patch.object(cli_antigravity, "FROZEN_EVALUATION", evaluation_root):
-            replayed = evaluation_antigravity.evaluate_exp436(output, evaluation_root)
+        with patch.object(execution_profile_antigravity, "_DATA_ROOT", output.parent.parent), \
+                patch.object(execution_profile_antigravity, "_ALLOWED_PROFILES", (profile, EXP437_PROFILE)):
+            replayed = evaluation_antigravity.evaluate_exp436(output, evaluation_root, profile=profile)
         self.assertEqual(replayed, existing)
         self.assertEqual(before, {path: path.read_bytes() for path in output.rglob("*") if path.is_file()})
 
     def test_existing_evaluation_replay_rejects_any_frozen_coherence_mismatch_without_writes(self) -> None:
-        from experiments.exp436_missing_safe_strict_consensus_antigravity import cli_antigravity
         from experiments.exp436_missing_safe_strict_consensus_antigravity import evaluation_antigravity
-        output, publication = self._publication()
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import execution_profile_antigravity
+        output, profile = self._profile_runtime_copy()
+        publication = publish_exp436(self.store, output)
         base = self._frozen_existing_evaluation(publication, evaluation_antigravity)
         short_rows = base.dataset_rows[:-1]
         short_baseline = evaluation_antigravity._aggregate_counts(short_rows, combined=False)
@@ -361,14 +456,12 @@ class ReportingAntigravityTests(unittest.TestCase):
                 evaluation_root = output.parent / f"evaluation_{name}_antigravity"
                 evaluation_antigravity._write_evaluation_artifacts(evaluation_root, existing)
                 before = {path: path.read_bytes() for path in output.parent.rglob("*") if path.is_file()}
-                with patch.object(cli_antigravity, "RUN_PARENT", output.parent), \
-                        patch.object(cli_antigravity, "FROZEN_OUTPUT", output), \
-                        patch.object(cli_antigravity, "FROZEN_CHECKPOINT", self.checkpoint), \
-                        patch.object(cli_antigravity, "FROZEN_EVALUATION", evaluation_root), \
+                with patch.object(execution_profile_antigravity, "_DATA_ROOT", output.parent.parent), \
+                        patch.object(execution_profile_antigravity, "_ALLOWED_PROFILES", (profile, EXP437_PROFILE)), \
                         patch.object(evaluation_antigravity, "_write_new", side_effect=AssertionError("existing replay wrote")), \
                         patch.object(evaluation_antigravity, "_load_frozen_hard_coordinates", side_effect=AssertionError("existing replay opened labels")):
                     with self.assertRaises(ValueError):
-                        evaluation_antigravity.evaluate_exp436(output, evaluation_root)
+                        evaluation_antigravity.evaluate_exp436(output, evaluation_root, profile=profile)
                 self.assertEqual(before, {path: path.read_bytes() for path in output.parent.rglob("*") if path.is_file()})
 
     def test_destination_appearing_during_staging_fails_without_clobbering_it(self) -> None:

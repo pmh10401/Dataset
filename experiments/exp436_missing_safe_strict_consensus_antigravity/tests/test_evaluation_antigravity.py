@@ -21,6 +21,10 @@ from unittest.mock import patch
 
 from experiments.exp436_missing_safe_strict_consensus_antigravity import evaluation_antigravity as module
 from experiments.exp436_missing_safe_strict_consensus_antigravity.config_antigravity import FROZEN_CONFIG
+from experiments.exp436_missing_safe_strict_consensus_antigravity.execution_profile_antigravity import (
+    EXP436_PROFILE,
+    EXP437_PROFILE,
+)
 from experiments.exp436_missing_safe_strict_consensus_antigravity.reporting_antigravity import (
     PUBLICATION_DIRECTORY,
     FrozenPublication,
@@ -284,7 +288,35 @@ class EvaluationAntigravityTests(unittest.TestCase):
 
     def test_public_exports_are_only_the_two_production_apis(self):
         self.assertEqual(module.__all__, ["evaluate_exp436", "decide_exp436_success"])
-        self.assertEqual(tuple(inspect.signature(module.evaluate_exp436).parameters), ("output_root", "evaluation_root"))
+        self.assertEqual(
+            tuple(inspect.signature(module.evaluate_exp436).parameters),
+            ("output_root", "evaluation_root", "profile"),
+        )
+        self.assertEqual(
+            inspect.signature(module.evaluate_exp436).parameters["profile"].kind,
+            inspect.Parameter.KEYWORD_ONLY,
+        )
+
+    def test_exp437_evaluation_rejects_exp436_fixed_paths_before_labels(self) -> None:
+        with patch.object(module, "_load_test_labels") as labels:
+            with self.assertRaisesRegex(ValueError, "fixed paths"):
+                module.evaluate_exp436(
+                    EXP436_PROFILE.output,
+                    EXP436_PROFILE.evaluation,
+                    profile=EXP437_PROFILE,
+                )
+        labels.assert_not_called()
+
+    def test_public_evaluation_keeps_only_a_keyword_profile_extension(self) -> None:
+        signature = inspect.signature(module.evaluate_exp436)
+        self.assertEqual(
+            tuple(signature.parameters),
+            ("output_root", "evaluation_root", "profile"),
+        )
+        self.assertEqual(
+            signature.parameters["profile"].kind,
+            inspect.Parameter.KEYWORD_ONLY,
+        )
 
 
 if __name__ == "__main__":

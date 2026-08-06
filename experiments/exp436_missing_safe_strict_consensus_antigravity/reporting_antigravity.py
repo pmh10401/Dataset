@@ -8,7 +8,7 @@ evaluation module is imported here.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from hashlib import sha256
 import ctypes
 import errno
@@ -30,6 +30,12 @@ from .contracts_antigravity import (
     Exp436DatasetResult,
 )
 from .progress_antigravity import inspect_progress_bytes
+from .execution_profile_antigravity import (
+    EXP436_PROFILE,
+    ExecutionProfileAntigravity,
+    frozen_config_payload_for_profile_antigravity,
+    validated_profile_antigravity,
+)
 
 
 class CandidateBudgetExceeded(ValueError):
@@ -253,19 +259,34 @@ def _store_root(store: object) -> Path:
     return root
 
 
-def _require_frozen_store_identity(store: object) -> None:
-    if getattr(store, "run_identity", None) != FROZEN_CONFIG.run_identity:
-        raise ValueError("checkpoint run identity does not match frozen identity")
+def _require_frozen_store_identity(
+    store: object,
+    profile: ExecutionProfileAntigravity,
+) -> None:
+    selected = validated_profile_antigravity(profile)
+    if getattr(store, "profile", None) != selected:
+        raise ValueError("checkpoint profile identity does not match selected identity")
+    if getattr(store, "run_identity", None) != selected.run_identity:
+        raise ValueError("checkpoint run identity does not match selected identity")
     context = getattr(store, "context", None)
-    if not isinstance(context, Mapping) or context.get("run_identity") != FROZEN_CONFIG.run_identity:
-        raise ValueError("checkpoint context run identity does not match frozen identity")
+    if (
+        not isinstance(context, Mapping)
+        or context.get("experiment_id") != selected.experiment_id
+        or context.get("run_identity") != selected.run_identity
+    ):
+        raise ValueError("checkpoint context identity does not match selected identity")
 
 
-def _open_store(value: object) -> Exp436CheckpointStore:
+def _open_store(
+    value: object,
+    *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Exp436CheckpointStore:
+    selected = validated_profile_antigravity(profile)
     if isinstance(value, Exp436CheckpointStore):
         store: object = value
     elif isinstance(value, (str, Path)):
-        store = Exp436CheckpointStore.open_read_only(Path(value))
+        store = Exp436CheckpointStore.open_read_only(Path(value), profile=selected)
     else:
         # Test doubles intentionally use the same narrow public surface.  A real
         # store is required for production publication, while this adapter keeps
@@ -274,7 +295,7 @@ def _open_store(value: object) -> Exp436CheckpointStore:
         if not all(hasattr(value, name) for name in required):
             raise ValueError("checkpoint store is invalid")
         store = value
-    _require_frozen_store_identity(store)
+    _require_frozen_store_identity(store, selected)
     return store  # type: ignore[return-value]
 
 
@@ -341,7 +362,12 @@ def _input_hashes(context: Mapping[str, object]) -> dict[str, str]:
 def _record_data(
     store: object,
     expectations: _PublicationExpectations,
+    *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
 ) -> tuple[tuple[Exp436DatasetResult, ...], Mapping[str, str], Mapping[str, object]]:
+    selected = validated_profile_antigravity(profile)
+    _require_frozen_store_identity(store, selected)
+    config = frozen_config_payload_for_profile_antigravity(selected)
     inspection = store.inspect()
     datasets = tuple(getattr(store, "datasets"))
     if len(datasets) != expectations.total or tuple(sorted(datasets)) != datasets or len(set(datasets)) != len(datasets):
@@ -378,16 +404,16 @@ def _record_data(
         if result.status == "failed":
             raise ValueError("publication cannot contain failed dataset records")
         candidate_count += result.candidate_count
-    if candidate_count > FROZEN_CONFIG.global_candidate_budget:
+    if candidate_count > int(config["global_candidate_budget"]):
         raise CandidateBudgetExceeded(
             observed=candidate_count,
-            budget=FROZEN_CONFIG.global_candidate_budget,
+            budget=int(config["global_candidate_budget"]),
         )
     context = getattr(store, "context")
     if not isinstance(context, Mapping):
         raise ValueError("checkpoint context is invalid")
-    if expectations.total == FROZEN_CONFIG.expected_datasets:
-        if context.get("database_sha256") != FROZEN_CONFIG.database_sha256:
+    if expectations.total == int(config["expected_datasets"]):
+        if context.get("database_sha256") != config["database_sha256"]:
             raise ValueError("checkpoint database hash does not match frozen input")
         if context.get("reviewed_commit") is None:
             raise ValueError("checkpoint reviewed commit is absent")
@@ -495,9 +521,17 @@ def _build_payloads(
     output: Path,
     expectations: _PublicationExpectations,
     *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
     _owned_staging: Path | None = None,
 ) -> dict[str, bytes]:
-    records, record_digests, context = _record_data(store, expectations)
+    selected = validated_profile_antigravity(profile)
+    _require_frozen_store_identity(store, selected)
+    config = frozen_config_payload_for_profile_antigravity(selected)
+    records, record_digests, context = _record_data(
+        store,
+        expectations,
+        profile=selected,
+    )
     progress, runtime_raw = _validate_runtime(output, store, records, record_digests, context, _owned_staging)
     runtime_hashes = {
         name: _digest(raw) for name, raw in sorted(runtime_raw.items())
@@ -569,7 +603,7 @@ def _build_payloads(
         }),
     }
     semantic_hashes = {name: _digest(raw) for name, raw in sorted(semantic.items())}
-    config_hash = _digest(canonical_json_bytes(asdict(FROZEN_CONFIG)))
+    config_hash = _digest(canonical_json_bytes(config))
     context_sha256 = getattr(store, "context_fingerprint", None)
     if not isinstance(context_sha256, str):
         context_sha256 = _context_hash(context)
@@ -585,7 +619,7 @@ def _build_payloads(
     manifest = {
         "schema": "exp436.publication-manifest.v1",
         "run_identity": run_identity,
-        "experiment_id": FROZEN_CONFIG.experiment_id,
+        "experiment_id": selected.experiment_id,
         "git_commit": reviewed_commit,
         "reviewed_commit": reviewed_commit,
         "reviewed_commit_sha256": _digest(reviewed_commit.encode("utf-8")),
@@ -674,9 +708,18 @@ def _verify_bytes(
     output: Path,
     store: object,
     expectations: _PublicationExpectations,
+    *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
 ) -> FrozenPublication:
+    selected = validated_profile_antigravity(profile)
+    _require_frozen_store_identity(store, selected)
     publication = _validated_root(Path(output))
-    expected = _build_payloads(store, Path(output), expectations)
+    expected = _build_payloads(
+        store,
+        Path(output),
+        expectations,
+        profile=selected,
+    )
     artifact_map = _read_json(publication / HASH_FILE, "artifact SHA256 map")
     hashes = artifact_map.get("artifact_sha256")
     if not isinstance(hashes, dict) or set(hashes) != _PUBLICATION_FILES - {HASH_FILE}:
@@ -704,42 +747,57 @@ def _inspect_publication(
     output: Path,
     completed_store: object,
     *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
     _expectations: _PublicationExpectations = _PublicationExpectations(),
 ) -> FrozenPublication:
     """Replay and verify bytes without opening DB, labels, or workers."""
 
+    selected = validated_profile_antigravity(profile)
     if not isinstance(_expectations, _PublicationExpectations):
         raise ValueError("publication expectations are invalid")
-    store = _open_store(completed_store)
-    return _verify_bytes(Path(output), store, _expectations)
+    store = _open_store(completed_store, profile=selected)
+    return _verify_bytes(Path(output), store, _expectations, profile=selected)
 
 
-def inspect_publication(output: Path, completed_store: object) -> FrozenPublication:
+def inspect_publication(
+    output: Path,
+    completed_store: object,
+    *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> FrozenPublication:
     """Replay the exact frozen publication; public inspection has no tuning seam."""
-    return _inspect_publication(output, completed_store)
+    selected = validated_profile_antigravity(profile)
+    return _inspect_publication(output, completed_store, profile=selected)
 
 
 def _publish_exp436(
     completed_store: object,
     output: Path,
     *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
     _expectations: _PublicationExpectations = _PublicationExpectations(),
 ) -> FrozenPublication:
     """Publish a fully completed checkpoint exactly once, without clobbering."""
 
+    selected = validated_profile_antigravity(profile)
     if not isinstance(_expectations, _PublicationExpectations):
         raise ValueError("publication expectations are invalid")
-    store = _open_store(completed_store)
+    store = _open_store(completed_store, profile=selected)
     output = Path(output)
     publication = output / PUBLICATION_DIRECTORY
     # An existing root is idempotent only when it was present on entry.  Any
     # later appearance is a concurrent publisher and must fail no-clobber.
     if publication.exists() or publication.is_symlink():
-        return _verify_bytes(output, store, _expectations)
+        return _verify_bytes(output, store, _expectations, profile=selected)
     # Validate every precondition, including budget, before allocating a
     # publication staging directory.  A failed run can therefore never leave
     # a partial publication behind.
-    payloads = _build_payloads(store, output, _expectations)
+    payloads = _build_payloads(
+        store,
+        output,
+        _expectations,
+        profile=selected,
+    )
     if output.is_symlink() or not output.is_dir():
         raise ValueError("runtime output root is absent or invalid")
     staging = output / f".{PUBLICATION_DIRECTORY}.{uuid4().hex}.tmp"
@@ -754,7 +812,13 @@ def _publish_exp436(
             raise ValueError("staged publication bytes changed before rename")
         # Rebuild from the checkpoint and terminal runtime authorities after
         # staging.  A source mutation in that interval must prevent publish.
-        if _build_payloads(store, output, _expectations, _owned_staging=staging) != payloads:
+        if _build_payloads(
+            store,
+            output,
+            _expectations,
+            profile=selected,
+            _owned_staging=staging,
+        ) != payloads:
             raise ValueError("publication source authorities changed during staging")
         if publication.exists() or publication.is_symlink():
             raise ValueError("publication appeared during atomic staging")
@@ -768,12 +832,18 @@ def _publish_exp436(
                     child.unlink()
             staging.rmdir()
             _fsync_directory(output)
-    return _verify_bytes(output, store, _expectations)
+    return _verify_bytes(output, store, _expectations, profile=selected)
 
 
-def publish_exp436(completed_store: object, output: Path) -> FrozenPublication:
+def publish_exp436(
+    completed_store: object,
+    output: Path,
+    *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> FrozenPublication:
     """Publish only the frozen full-population artifact; no public tuning seam."""
-    return _publish_exp436(completed_store, output)
+    selected = validated_profile_antigravity(profile)
+    return _publish_exp436(completed_store, output, profile=selected)
 
 
 __all__ = [
