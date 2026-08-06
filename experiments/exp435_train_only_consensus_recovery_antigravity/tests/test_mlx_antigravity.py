@@ -386,6 +386,161 @@ class MlxAdoptionTests(unittest.TestCase):
                 engine=UnavailableEngine(),
             )
 
+    def test_mlx_reference_batches_are_exact_in_readiness_and_production(self) -> None:
+        """One selected batch size bounds references, not production queries."""
+
+        class Metal:
+            @staticmethod
+            def is_available() -> bool:
+                return True
+
+            @staticmethod
+            def device_info() -> dict[str, object]:
+                return {"architecture": "reference-batching-stub"}
+
+        class Core(types.ModuleType):
+            __version__ = "0.30.0"
+            float32 = np.float32
+            metal = Metal()
+
+            def __init__(self, name: str) -> None:
+                super().__init__(name)
+                self.transfers: list[np.ndarray] = []
+
+            @staticmethod
+            def default_device() -> object:
+                return "Device(gpu,0)"
+
+            def array(self, value, dtype=None):
+                array = np.asarray(value, dtype=dtype)
+                self.transfers.append(array.copy())
+                return array
+
+            @staticmethod
+            def square(value):
+                return np.square(value)
+
+            @staticmethod
+            def mean(value, axis=None):
+                return np.mean(value, axis=axis, dtype=np.float32)
+
+            @staticmethod
+            def sqrt(value):
+                return np.sqrt(value, dtype=np.float32)
+
+            @staticmethod
+            def sort(value, axis=1):
+                return np.sort(value, axis=axis)
+
+            @staticmethod
+            def concatenate(values, axis=0):
+                return np.concatenate(values, axis=axis)
+
+            @staticmethod
+            def eval(value):
+                return None
+
+            @staticmethod
+            def synchronize():
+                return None
+
+        core = Core("mlx.core")
+        package = types.ModuleType("mlx")
+        package.core = core
+        previous = {name: sys.modules.get(name) for name in ("mlx", "mlx.core")}
+        sys.modules["mlx"] = package
+        sys.modules["mlx.core"] = core
+        try:
+            references = np.stack(
+                (np.arange(513, dtype=np.float32), np.arange(513, dtype=np.float32)), axis=1
+            )
+            queries = np.asarray([[-1.0, -1.0]], dtype=np.float32)
+
+            class RecordingMlxEngine(MlxEngine):
+                def __init__(self) -> None:
+                    super().__init__()
+                    self.reference_batches: list[tuple[int, tuple[int, ...]]] = []
+
+                def score(self, query, refs, k, *, batch_size=16):
+                    before = len(core.transfers)
+                    output = super().score(query, refs, k, batch_size=batch_size)
+                    transfers = core.transfers[before:]
+                    chunk_rows = tuple(
+                        transfer.shape[0]
+                        for transfer in transfers
+                        if transfer.ndim == 2 and transfer.shape[0] > 0 and transfer[0, 0] >= 0
+                    )
+                    self.reference_batches.append((int(batch_size), chunk_rows))
+                    return output
+
+                def timed_call(self, kind, batch_size, call, clock):
+                    del batch_size, clock
+                    call()
+                    return 1.0 if kind == "cpu" else 0.5
+
+            with patch(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.mlx_antigravity.metadata.version",
+                return_value="0.30.0",
+            ):
+                engine = RecordingMlxEngine()
+
+            output = score_channel_mlx(queries, references, 3, batch_size=128, engine=engine)
+            expected = np.asarray([score_channel_cpu(queries[0], references, 3)], dtype=np.float32)
+            np.testing.assert_array_equal(output, expected)
+            self.assertEqual(engine.reference_batches, [(128, (128, 128, 128, 128, 1))])
+
+            engine.reference_batches.clear()
+            decision = benchmark_mlx_adoption(
+                fixtures=({"queries": queries, "references": references, "thresholds": 2.0},),
+                engine=engine,
+                clock=_StepClock(),
+            )
+            self.assertTrue(decision.adopted)
+            self.assertTrue(all(item.candidate_identity_match for item in decision.batch_evidence))
+            self.assertTrue(all(item.parity_passed for item in decision.batch_evidence))
+            for batch_size in (16, 32, 64, 128, 256):
+                expected_chunks = (batch_size,) * (513 // batch_size)
+                if 513 % batch_size:
+                    expected_chunks += (513 % batch_size,)
+                matching = [chunks for size, chunks in engine.reference_batches if size == batch_size]
+                self.assertEqual(matching, [expected_chunks] * 7)
+        finally:
+            for name, value in previous.items():
+                if value is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = value
+
+    def test_selected_batch_size_reaches_production_engine(self) -> None:
+        class SelectedBatchEngine(FakeMlxEngine):
+            def __init__(self) -> None:
+                super().__init__(speedup=2.0)
+                self.batch_sizes: list[int] = []
+
+            def score(self, query, references, k, *, batch_size=16):
+                self.batch_sizes.append(int(batch_size))
+                return super().score(query, references, k, batch_size=batch_size)
+
+            def timed_call(self, kind, batch_size, call, clock):
+                del clock
+                call()
+                return 1.0 if kind == "cpu" else (0.25 if batch_size == 64 else 0.5)
+
+        engine = SelectedBatchEngine()
+        decision = benchmark_mlx_adoption(fixtures=self.fixtures, engine=engine, clock=_StepClock())
+        self.assertTrue(decision.adopted)
+        self.assertEqual(decision.selected_batch_size, 64)
+        engine.batch_sizes.clear()
+        score = score_with_backend(
+            decision,
+            np.asarray([0.1, 0.1], dtype=np.float32),
+            np.asarray([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0], [3.0, 3.0]], dtype=np.float32),
+            3,
+            engine=engine,
+        )
+        self.assertEqual(score, score_channel_cpu(np.asarray([0.1, 0.1], dtype=np.float32), np.asarray([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0], [3.0, 3.0]], dtype=np.float32), 3))
+        self.assertEqual(engine.batch_sizes, [64])
+
     def test_mlx_engine_constructs_from_standard_bundled_metal_stub(self) -> None:
         class Metal:
             @staticmethod

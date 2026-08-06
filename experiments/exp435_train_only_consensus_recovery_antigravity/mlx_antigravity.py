@@ -215,7 +215,6 @@ class MlxEngine:
         *,
         batch_size: int = 16,
     ) -> NDArray[np.float32]:
-        del batch_size  # chunking is performed by score_channel_mlx.
         queries = _query_matrix(query)
         refs = _reference_matrix(references)
         if refs.shape[1] != queries.shape[1]:
@@ -224,16 +223,29 @@ class MlxEngine:
             raise ValueError("k must be a positive integer")
         if int(k) > refs.shape[0]:
             raise ValueError("k cannot exceed reference count")
+        if not isinstance(batch_size, Integral) or isinstance(batch_size, bool) or int(batch_size) < 1:
+            raise ValueError("batch_size must be a positive integer")
 
         mx = self.mx
-        # Both transfers are intentionally inside the timed stage.  The
-        # reduction below follows the CPU scorer's float32 RMS exactly.
+        # Transfers are intentionally inside the timed stage.  Reference
+        # chunks bound the largest dense allocation to Q x batch_size while
+        # retaining the exact global nearest-k set across every chunk.
         query_mx = mx.array(queries, dtype=mx.float32)
-        refs_mx = mx.array(refs, dtype=mx.float32)
-        delta = refs_mx[None, :, :] - query_mx[:, None, :]
-        distances = mx.sqrt(mx.mean(mx.square(delta), axis=2))
-        ordered = mx.sort(distances, axis=1)
-        nearest = ordered[:, : int(k)]
+        nearest = None
+        for start in range(0, refs.shape[0], int(batch_size)):
+            stop = min(start + int(batch_size), refs.shape[0])
+            refs_mx = mx.array(refs[start:stop], dtype=mx.float32)
+            delta = refs_mx[None, :, :] - query_mx[:, None, :]
+            distances = mx.sqrt(mx.mean(mx.square(delta), axis=2))
+            chunk_nearest = mx.sort(distances, axis=1)[:, : min(int(k), stop - start)]
+            if nearest is None:
+                nearest = chunk_nearest
+            else:
+                nearest = mx.sort(mx.concatenate((nearest, chunk_nearest), axis=1), axis=1)[
+                    :, : int(k)
+                ]
+        if nearest is None:  # pragma: no cover - refs is validated non-empty
+            raise ValueError("references must be a non-empty matrix")
         if int(k) % 2:
             scores = nearest[:, int(k) // 2]
         else:
@@ -306,19 +318,13 @@ def _score_channel_with_engine(
         raise ValueError("k cannot exceed reference count")
     if not isinstance(batch_size, Integral) or isinstance(batch_size, bool) or int(batch_size) < 1:
         raise ValueError("batch_size must be a positive integer")
-    chunks: list[NDArray[np.float32]] = []
-    for start in range(0, query_array.shape[0], int(batch_size)):
-        stop = min(start + int(batch_size), query_array.shape[0])
-        chunks.append(
-            _engine_call(
-                engine,
-                query_array[start:stop],
-                reference_array,
-                int(k),
-                int(batch_size),
-            )
-        )
-    output = np.concatenate(chunks).astype(np.float32, copy=False)
+    output = _engine_call(
+        engine,
+        query_array,
+        reference_array,
+        int(k),
+        int(batch_size),
+    )
     if not np.isfinite(output).all():
         raise ValueError("MLX score output is nonfinite")
     return np.ascontiguousarray(output, dtype=np.float32)
