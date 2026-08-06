@@ -126,13 +126,19 @@ def _validate_metadata(metadata: object) -> dict[str, object]:
         if not isinstance(histogram, Mapping):
             raise ValueError("dataset metadata is invalid")
         pairs = list(histogram.items())
-        if [key for key, _ in pairs] != sorted(histogram, key=lambda key: (len(key), key)):
+        if any(
+            type(key) is not str
+            or not key.isdecimal()
+            or key.startswith("0")
+            or int(key) < 1
+            or type(item) is not int
+            or item < 0
+            for key, item in pairs
+        ):
             raise ValueError("dataset metadata is invalid")
-        if any(not isinstance(key, str) or not key.isdecimal() or key.startswith("0") or int(key) < 1 or type(value) is not int or value < 0 for key, value in pairs):
+        if sum(item for _, item in pairs) != count:
             raise ValueError("dataset metadata is invalid")
-        if sum(value for _, value in pairs) != count:
-            raise ValueError("dataset metadata is invalid")
-        result[name] = dict(pairs)
+        result[name] = dict(sorted(pairs))
     return result
 
 

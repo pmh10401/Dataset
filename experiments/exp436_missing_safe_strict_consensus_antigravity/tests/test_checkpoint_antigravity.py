@@ -21,6 +21,7 @@ from experiments.exp436_missing_safe_strict_consensus_antigravity.checkpoint_ant
     context_fingerprint,
     _name,
     _result_payload,
+    _result_from_payload,
 )
 from experiments.exp436_missing_safe_strict_consensus_antigravity.contracts_antigravity import BackendDecision, Exp436DatasetResult, InstanceScoreEvidence
 
@@ -68,6 +69,21 @@ class CheckpointTests(unittest.TestCase):
             self.assertEqual(dict(store.load_record_metadata("D0000")), metadata)
         finally:
             directory.cleanup()
+
+    def test_dataset_metadata_survives_canonical_lexicographic_key_order(self) -> None:
+        metadata = {
+            "train_count": 2,
+            "test_count": 2,
+            "train_length_histogram": {"29": 1, "102": 1},
+            "test_length_histogram": {"29": 1, "102": 1},
+        }
+        payload = _result_payload(_result("D0000", 2), 0, metadata)
+        decoded = json.loads(canonical_json_bytes(payload))
+        _result_from_payload(decoded, expected_sequence=0)
+        self.assertEqual(
+            list(decoded["dataset_metadata"]["train_length_histogram"]),
+            ["102", "29"],
+        )
 
     def test_missing_record_metadata_cannot_be_used_for_runtime_replay(self) -> None:
         directory, root, store = self._make_store()

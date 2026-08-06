@@ -274,9 +274,20 @@ def _dataset_metadata(value: object) -> dict[str, object]:
         if type(result[name]) is not int or result[name] < (1 if name == "train_count" else 0): raise ValueError("dataset record metadata is invalid")
     for name, count in (("train_length_histogram", result["train_count"]), ("test_length_histogram", result["test_count"])):
         histogram = result[name]
-        if not isinstance(histogram, Mapping) or sum(histogram.values()) != count or any(type(key) is not str or not key.isdecimal() or key.startswith("0") or type(item) is not int or item < 0 for key, item in histogram.items()): raise ValueError("dataset record metadata is invalid")
-        result[name] = dict(sorted(histogram.items(), key=lambda item: (len(item[0]), item[0])))
-        if list(histogram) != list(result[name]): raise ValueError("dataset record metadata is invalid")
+        if not isinstance(histogram, Mapping): raise ValueError("dataset record metadata is invalid")
+        pairs = list(histogram.items())
+        if any(
+            type(key) is not str
+            or not key.isdecimal()
+            or key.startswith("0")
+            or int(key) < 1
+            or type(item) is not int
+            or item < 0
+            for key, item in pairs
+        ):
+            raise ValueError("dataset record metadata is invalid")
+        if sum(item for _, item in pairs) != count: raise ValueError("dataset record metadata is invalid")
+        result[name] = dict(sorted(pairs))
     return result
 
 def _result_payload(result: Exp436DatasetResult, sequence_index: int, dataset_metadata: Mapping[str, object] | None = None) -> dict[str, object]:

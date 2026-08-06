@@ -11,6 +11,7 @@ import unittest
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
+import experiments.exp436_missing_safe_strict_consensus_antigravity.progress_antigravity as progress_antigravity
 from experiments.exp436_missing_safe_strict_consensus_antigravity.progress_antigravity import (
     ProgressWriter,
     inspect_progress,
@@ -30,6 +31,16 @@ class ProgressWriterTests(unittest.TestCase):
     def _writer(self, root: Path, **kwargs: object) -> ProgressWriter:
         options = {"heartbeat_seconds": None, **kwargs}
         return ProgressWriter.create(root, run_identity="run", checkpoint=root.parent / "checkpoint_antigravity", total_datasets=1117, backend="cpu", context_fingerprint="c" * 64, **options)
+
+    def test_progress_metadata_accepts_canonical_lexicographic_key_order(self) -> None:
+        metadata = {
+            "train_count": 2,
+            "test_count": 2,
+            "train_length_histogram": {"102": 1, "29": 1},
+            "test_length_histogram": {"102": 1, "29": 1},
+        }
+        normalized = progress_antigravity._validate_metadata(metadata)
+        self.assertEqual(list(normalized["train_length_histogram"]), ["102", "29"])
 
     def _complete(self, writer: ProgressWriter, index: int = 0, dataset: str = "alpha", digest: str = "a" * 64) -> None:
         writer.record_dataset_complete(sequence_index=index, dataset=dataset, record_sha256=digest, status="scored", dataset_metadata=_metadata(), completed_datasets=index + 1, success=index + 1, abstention=0, error=0, excluded_train_rows=0, nonfinite_test_rows=0, candidate_count=0)
