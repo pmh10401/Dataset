@@ -410,14 +410,6 @@ def _run_prediction(command: str) -> Mapping[str, object]:
     if command not in {"new", "resume"}:
         raise ValueError("prediction command is invalid")
     from .checkpoint_antigravity import Exp435CheckpointStore
-    from .inputs_antigravity import (
-        DEFAULT_DATABASE,
-        DEFAULT_EXP291_MANIFEST,
-        DEFAULT_EXP291_PREDICTION,
-        DEFAULT_EXP292_MANIFEST,
-        DEFAULT_EXP292_PREDICTION,
-        open_exp435_input_session,
-    )
     head = _clean_head()
     readiness_payload: Mapping[str, object] | None = None
     if command == "new":
@@ -462,6 +454,14 @@ def _run_prediction(command: str) -> Mapping[str, object]:
             publication = publish_exp435(store, FROZEN_OUTPUT)
             return _summary_payload(summary, publication)
 
+    from .inputs_antigravity import (
+        DEFAULT_DATABASE,
+        DEFAULT_EXP291_MANIFEST,
+        DEFAULT_EXP291_PREDICTION,
+        DEFAULT_EXP292_MANIFEST,
+        DEFAULT_EXP292_PREDICTION,
+        open_exp435_input_session,
+    )
     from .runtime_antigravity import _runtime_context, resume_exp435, run_exp435_new
 
     with open_exp435_input_session(
