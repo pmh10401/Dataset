@@ -6,7 +6,11 @@ import io
 import json
 import builtins
 from contextlib import contextmanager
+import os
 from pathlib import Path
+import re
+import subprocess
+import sys
 from tempfile import TemporaryDirectory
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -188,6 +192,30 @@ class Exp435CliTests(unittest.TestCase):
             self.assertIn(name, help_text)
         with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             parser.parse_args(["new", "--output-root", "/tmp/alternate"])
+
+    def test_absolute_scratch_runner_help_works_outside_repo_without_pythonpath(self) -> None:
+        """The documented wrapper must bootstrap imports when launched directly."""
+        runner = Path(__file__).resolve().parents[3] / "scratch" / (
+            "run_exp435_train_only_consensus_recovery_antigravity.py"
+        )
+        environment = os.environ.copy()
+        environment.pop("PYTHONPATH", None)
+        with TemporaryDirectory() as directory:
+            completed = subprocess.run(
+                [sys.executable, str(runner), "--help"],
+                cwd=directory,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        match = re.search(r"\{([^}]+)\}", completed.stdout)
+        self.assertIsNotNone(match, completed.stdout)
+        self.assertEqual(
+            match.group(1).split(","),
+            ["readiness", "new", "resume", "inspect", "evaluate"],
+        )
 
     def test_readiness_uses_only_fixed_file_and_no_alternate_path(self) -> None:
         with TemporaryDirectory() as directory:
