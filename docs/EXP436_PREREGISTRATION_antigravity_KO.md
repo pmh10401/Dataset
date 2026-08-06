@@ -53,9 +53,13 @@ DB 전체 이름 수는 모집단이 아니며 population 밖 이름·누락·�
 
 ## 점수와 후보
 
-- dtype `float32`, nearest normal `k=3`, TRAIN leave-one-row-out
+- dtype `float32`, `candidate_alpha=0.01`, nearest normal `k=3`, TRAIN leave-one-row-out
 - quantile `q=0.99`, `method='higher'`, channel abnormal은 strict `score > threshold`
-- distance `sqrt(mean((x-reference)**2))`, smallest 3 distance median, scale floor `1e-12`
+- shared robust transform: `center=median(matrix)`,
+  `scale=float32(1.4826 * median(abs(matrix-center)))`, scale floor `1e-12`
+- prototype/raw와 gradient는 각각 자신의 TRAIN-group matrix로 위 transform을 계산한다. ACF는 이미
+  동결한 ACF formula를 바꾸지 않는다.
+- distance `sqrt(mean((x-reference)**2))`, smallest 3 distance median
 - gradient `diff(values, prepend=values[0])`; ACF lag `1..min(32, floor(length/4))`, 최소 length
   16, variance floor `1e-12`
 
@@ -75,17 +79,22 @@ global candidate budget은 **100**이고 101번째는 `candidate_budget_exceeded
 
 ## 실행과 가속
 
-`new`는 정확한 run parent가 **부재**일 때만 허용한다. readiness는 바로 전 비어 있는 parent를
-만든 뒤 `output_antigravity`, `checkpoint_antigravity`, `readiness_antigravity.json`,
-`evaluation_antigravity`가 모두 없을 때만 실행한다. 모든 새 artifact filename은 `antigravity`를
-포함한다.
+readiness가 정확한 RUN_PARENT를 생성·소유하고 그 아래
+`readiness_antigravity.json`을 남긴다. `new`는 그 **같은 existing RUN_PARENT**와 exact verified
+readiness artifact를 요구하며 `output_antigravity`, `checkpoint_antigravity`, `evaluation_antigravity`가
+모두 부재일 때만 허용한다. `new`는 RUN_PARENT 또는 readiness root를 삭제·덮어쓰지 않는다. 모든 새
+artifact filename은 `antigravity`를 포함한다.
 
 CPU worker는 `max(1, (os.cpu_count() or 1) - 1)`이며 numerical-library thread는 worker당 1이다.
-현재 Mac은 12 logical CPU, 11 workers다. MLX/PyTorch-MPS는 exact dense-distance stage만 검토하며
-동일 input/seed smoke가 finite output, 모든 preregistered candidate coordinate CPU 동일성, max absolute
-및 normalized score error 각각 `<=1e-5`, transfer/synchronization 포함 `>=1.1x` speedup을 모두
-보여야만 채택한다. MLX/MPS-heavy process는 하나뿐이고 채택 시 outer process pool을 쓰지 않는다.
-manifest는 MLX/mlx-metal/version/device, timing, parity, 채택/CPU fallback reason을 기록한다.
+현재 Mac은 12 logical CPU, 11 workers다. MLX/PyTorch-MPS smoke seed는 정확히 `43601`이며 각 backend는
+batch `(16, 32, 64, 128, 256)`마다 untimed warm-up 정확히 2회와 timed paired CPU/device run 정확히 5회를
+수행한다. device work는 timing 안에서 synchronize하고 각 median은 5회 결과의 median이다. finite output,
+모든 preregistered candidate coordinate CPU 동일성, max absolute 및 normalized score error 각각 `<=1e-5`,
+transfer/synchronization 포함 `>=1.1x` speedup을 모두 보여야만 그 batch가 통과한다. backend 안에서는
+통과 batch 중 device median이 가장 낮은 것을 고르고 tie는 더 작은 batch다. MLX/MPS 둘 다 통과하면 더
+낮은 device median을 선택하고 exact tie는 lexical backend name(`mlx`가 `mps`보다 먼저)이다. 둘 다
+실패하면 CPU다. MLX/MPS-heavy process는 하나뿐이고 채택 시 outer process pool을 쓰지 않는다. manifest는
+MLX/mlx-metal/version/device, seed, warm-up/timed-run count, batch medians, parity, 선택과 fallback reason을 기록한다.
 
 프로세스는 `progress_antigravity.json`, `events_antigravity.jsonl`, `parent_antigravity.log`,
 `run_antigravity.pid`, ordered canonical checkpoint를 기록한다. PID, heartbeat, current dataset,
@@ -104,7 +113,8 @@ missing/duplicate/out-of-population/failed dataset 0, candidate `<=100`, inactiv
 `current_dataset=null`, TEST label access 0, checkpoint/event/summary/prediction 및 SHA256 재검증
 일치를 요구한다. 그 뒤에만 prediction/manifest/artifact SHA256을 동결한다.
 
-evaluation은 descriptor-bound read-only connection 하나로 TEST `instance_index,label`을 읽기 전
+publication artifact에는 `train_exclusion_audit_antigravity.jsonl`도 포함하며 manifest와
+`artifact_sha256_antigravity.json`이 그 SHA256을 bind한다. evaluation은 descriptor-bound read-only connection 하나로 TEST `instance_index,label`을 읽기 전
 Exp404/Exp291 equality gate와 output-byte snapshot/no-clobber를 검증한다. artifact는
 `evaluation_antigravity.json`, `dataset_metrics_antigravity.jsonl`, `rescued_datasets_antigravity.jsonl`,
 `regressed_datasets_antigravity.jsonl`, `confusion_antigravity.json`, `bootstrap_antigravity.json`,

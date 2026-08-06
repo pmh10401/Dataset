@@ -1,6 +1,6 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T17:20:00+09:00",
+  "updated_at": "2026-08-06T17:31:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
@@ -28,6 +28,8 @@
   "active_process": {
     "pid": null,
     "run_parent": "/Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806",
+    "readiness_owns_run_parent": true,
+    "new_requires": "existing_run_parent_with_exact_verified_readiness_and_absent_output_checkpoint_evaluation",
     "fixed_roots_absent": true,
     "checkpoint": "/Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806/checkpoint_antigravity",
     "output": "/Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806/output_antigravity",
@@ -117,6 +119,17 @@
     "detected_logical_cpu_count": 12,
     "official_worker_count": 11,
     "applies_to": "new and not-yet-started official CPU-parallel runs"
+  },
+  "exp436_frozen_contract": {
+    "candidate_alpha": 0.01,
+    "robust_transform": "center=median(matrix); scale=float32(1.4826 * median(abs(matrix-center))) per prototype/raw or gradient TRAIN-group matrix; ACF formula unchanged",
+    "backend_smoke_seed": 43601,
+    "backend_batch_sizes": [16, 32, 64, 128, 256],
+    "backend_warmup_runs": 2,
+    "backend_timed_paired_runs": 5,
+    "readiness_owns_run_parent": true,
+    "new_requires_exact_verified_readiness": true,
+    "train_exclusion_audit_artifact": "train_exclusion_audit_antigravity.jsonl"
   },
   "failed_runs": {
     "exp435_official": {

@@ -145,7 +145,7 @@
       "review_only": true,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "Scientific preregistration and operator runbook are frozen: exclude only nonfinite normal TRAIN rows, abstain only nonfinite TEST rows without imputation, require prototype AND gradient AND ACF outside all frozen lanes, and recompute all 1,117 datasets in a new root. Product implementation, readiness, prediction, and evaluation have not started; TEST labels remain unopened."
+      "notes": "Scientific preregistration and operator runbook are frozen: exclude only nonfinite normal TRAIN rows, abstain only nonfinite TEST rows without imputation, use candidate_alpha=0.01 and per-channel 1.4826 median/MAD TRAIN-group transforms, require prototype AND gradient AND ACF outside all frozen lanes, and recompute all 1,117 datasets in a readiness-owned new root. Backend smoke is seed 43601 with fixed batches/warm-ups/timed medians and deterministic selection; train_exclusion_audit_antigravity.jsonl is hash-bound. Product implementation, readiness, prediction, and evaluation have not started; TEST labels remain unopened."
     }
   ]
 }

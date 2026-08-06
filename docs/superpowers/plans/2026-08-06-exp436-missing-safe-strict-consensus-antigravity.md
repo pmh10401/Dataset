@@ -16,11 +16,11 @@
 - Nonfinite TRAIN rows are excluded whole; values are never imputed, padded, truncated, copied, or tail-replaced. Their original values-blob SHA256 is retained.
 - A length group is calibratable only when at least four finite normal TRAIN rows remain.
 - Nonfinite TEST rows produce `nonfinite_test` evidence and no candidate. Finite sibling rows continue.
-- Scoring stays float32 with `k=3`, TRAIN LOO, `q=0.99`, `method='higher'`, and strict `score > threshold`.
+- Scoring stays float32 with `candidate_alpha=0.01`, `k=3`, TRAIN LOO, `q=0.99`, `method='higher'`, and strict `score > threshold`. Prototype/raw and gradient each use their own TRAIN-group matrix with `center=median(matrix)` and `scale=float32(1.4826 * median(abs(matrix-center)))`; ACF retains its approved formula.
 - Candidate rule is `prototype AND gradient AND ACF` outside all four frozen lanes. A missing channel cannot vote true.
 - Global candidate budget is 100. The 101st candidate fails the run without trimming or reselection.
 - CPU work uses `max(1, (os.cpu_count() or 1) - 1)` dataset workers and one numerical-library thread per worker; this Mac should report 11 workers.
-- MLX and PyTorch/MPS are adopted only for the exact dense-distance stage when outputs are finite, all preregistered candidate coordinates match CPU, maximum absolute and normalized score error are each at most `1e-5`, and end-to-end stage speedup including transfer and synchronization is at least `1.1x`.
+- MLX and PyTorch/MPS use smoke seed exactly `43601`; each backend tests batches `(16, 32, 64, 128, 256)`, runs exactly 2 untimed warm-ups and 5 timed paired CPU/device runs per batch, synchronizes device work inside timing, and takes the median of the 5 runs. A backend selects its passing batch by lowest device median then smaller batch; a shared selector chooses the passing backend by lower device median then lexical backend name (`mlx` before `mps`), otherwise CPU. Adoption remains limited to the exact dense-distance stage when outputs are finite, all preregistered candidate coordinates match CPU, maximum absolute and normalized score error are each at most `1e-5`, and end-to-end stage speedup including transfer and synchronization is at least `1.1x`.
 - Only one MLX/MPS-heavy process may run. An adopted accelerator uses no outer process pool.
 - Prediction artifacts are review-only and cannot become operational alerts.
 - Post-freeze success requires rescued datasets >=10, added false positives <=30, positive paired micro and dataset-balanced macro F1 deltas, and positive lower bounds for both 95% cluster-bootstrap intervals using 20,000 repetitions and seed `43520260806`.
@@ -83,7 +83,7 @@ Each new production module has a matching `test_<component>_antigravity.py` unde
 
 - [ ] **Step 1: Write both documents from the approved design before product code.**
 
-Include exact allowed/prohibited inputs, all constants, artifact names, expected commands, failure/resume semantics, and the rule that the run parent must be absent for `new`.
+Include exact allowed/prohibited inputs, all constants, artifact names, expected commands, failure/resume semantics, and the rule that readiness creates/owns RUN_PARENT while `new` requires that same parent with an exact verified readiness artifact and absent output/checkpoint/evaluation roots.
 
 - [ ] **Step 2: Verify every frozen value is present.**
 
@@ -205,6 +205,12 @@ def test_frozen_config_and_cpu_policy(self):
     self.assertEqual(FROZEN_CONFIG.expected_datasets, 1117)
     self.assertEqual(FROZEN_CONFIG.cpu_workers, max(1, (os.cpu_count() or 1) - 1))
     self.assertEqual(FROZEN_CONFIG.global_candidate_budget, 100)
+    self.assertEqual(FROZEN_CONFIG.candidate_alpha, 0.01)
+    self.assertEqual(FROZEN_CONFIG.backend_smoke_seed, 43601)
+    self.assertEqual(FROZEN_CONFIG.backend_batch_sizes, (16, 32, 64, 128, 256))
+    self.assertEqual(FROZEN_CONFIG.backend_warmup_runs, 2)
+    self.assertEqual(FROZEN_CONFIG.backend_timed_runs, 5)
+    self.assertEqual(FROZEN_CONFIG.robust_scale_multiplier, 1.4826)
     FROZEN_CONFIG.validate()
 
 def test_mutated_config_fails_closed(self):
@@ -360,7 +366,7 @@ for series in sorted(train.series, key=lambda item: item.instance_index):
         finite_by_length.setdefault(len(values), []).append(series)
 ```
 
-For every original length, emit either a finite `PreparedTrainGroup` or `UnavailableTrainGroup(reason='insufficient_finite_train_rows')`. Reuse the Exp435 float32 median/MAD, gradient, ACF, LOO, digest, and threshold formulas exactly; change no numerical rule.
+For every original length, emit either a finite `PreparedTrainGroup` or `UnavailableTrainGroup(reason='insufficient_finite_train_rows')`. Freeze `candidate_alpha=0.01` and compute each prototype/raw and gradient TRAIN-group transform as `center=median(matrix)` and `scale=float32(1.4826 * median(abs(matrix-center)))`; do not share a matrix between those channels. ACF keeps its already approved formula. Reuse the remaining Exp435 float32 LOO, digest, and threshold formulas exactly; change no numerical rule.
 
 - [ ] **Step 4: Prove parity on finite fixtures.**
 
@@ -472,7 +478,7 @@ def test_backend_requires_end_to_end_speedup(self):
     self.assertFalse(decision.adopted)
 ```
 
-Test batches 16, 32, 64, 128, and 256; synchronization must occur inside the timed accelerator call.
+For each backend assert smoke seed `43601`, batches `(16, 32, 64, 128, 256)`, exactly 2 untimed warm-ups and exactly 5 timed paired CPU/device runs per batch, device synchronization inside timing, and median-of-5 timing. Assert a backend chooses the passing lowest device median batch (tie: smaller batch), the shared selector chooses lower device median across passing MLX/MPS (exact tie: `mlx` before `mps`), and neither passing selects CPU.
 
 - [ ] **Step 2: Run and observe failure.**
 
@@ -484,7 +490,7 @@ python3 -m unittest \
 
 - [ ] **Step 3: Implement exact dense RMS-distance kernels only.**
 
-Do not move normalization, ACF, thresholds, consensus, lanes, or candidate limits to a device. MLX uses `mx.eval`; MPS uses `torch.mps.synchronize()` before stopping the timer. Record Python, NumPy, MLX, mlx-metal, PyTorch, device, Metal availability, seed, fixture hashes, timings, batch evidence, maximum errors, candidate identity, selected batch, speedup, and fallback reason.
+Do not move normalization, ACF, thresholds, consensus, lanes, or candidate limits to a device. MLX uses `mx.eval`; MPS uses `torch.mps.synchronize()` before stopping the timer. Use seed `43601`, exactly 2 untimed warm-ups, exactly 5 timed paired CPU/device runs, and the median of five synchronized device timings for every batch. Record Python, NumPy, MLX, mlx-metal, PyTorch, device, Metal availability, seed, fixture hashes, timings, batch evidence, maximum errors, candidate identity, selected batch, backend-selection tie break, speedup, and fallback reason.
 
 - [ ] **Step 4: Run both backend test suites.**
 
@@ -604,7 +610,7 @@ def test_success_requires_every_preregistered_gate(self):
 
 - [ ] **Step 3: Write failing CLI tests.**
 
-Test fixed roots, clean reviewed HEAD, readiness hash revalidation, absent-root requirement for `new`, interrupted-only `resume`, read-only `inspect`, evaluate-after-freeze, no hidden tuning flags, and exactly `FROZEN_CONFIG.cpu_workers` for CPU production.
+Test fixed roots, clean reviewed HEAD, readiness creates/owns RUN_PARENT, `new` requires the same parent and exact verified readiness artifact while output/checkpoint/evaluation roots are absent and never deletes/overwrites readiness, interrupted-only `resume`, read-only `inspect`, evaluate-after-freeze, no hidden tuning flags, and exactly `FROZEN_CONFIG.cpu_workers` for CPU production.
 
 - [ ] **Step 4: Run and observe failure.**
 
@@ -617,7 +623,7 @@ python3 -m unittest \
 
 - [ ] **Step 5: Implement publication by adapting Exp435 replay with Exp436 schemas.**
 
-Publish prediction, dataset summary, score evidence, TRAIN exclusion audit, TEST abstention ledger, backend decision, manifest, status, and artifact hash map. Use create-only writes followed by exclusive directory rename. Re-open and verify every artifact before returning `FrozenPublication`.
+Publish prediction, dataset summary, score evidence, `train_exclusion_audit_antigravity.jsonl`, TEST abstention ledger, backend decision, manifest, status, and artifact hash map. The manifest and `artifact_sha256_antigravity.json` must bind `train_exclusion_audit_antigravity.jsonl`. Use create-only writes followed by exclusive directory rename. Re-open and verify every artifact before returning `FrozenPublication`.
 
 - [ ] **Step 6: Implement post-freeze evaluation.**
 

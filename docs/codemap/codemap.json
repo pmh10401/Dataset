@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T08:06:09Z",
-  "generated_from_commit": "8ca235f7a419e5b9761e94b2f2c654b5b4f0239f",
+  "generated_at": "2026-08-06T08:19:31Z",
+  "generated_from_commit": "b0e24241d5b1b7ea0b9d228e5b9934a1ec70c9ab",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -9,7 +9,7 @@
     "Exp435 frozen label-free prediction boundary, resumable runtime, checkpoint/progress outputs and MLX readiness",
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
-    "Research control files, Exp435 preserved failure evidence, Exp436 frozen preregistration/runbook and product-implementation-pending state, and local external data stores",
+    "Research control files, Exp435 preserved failure evidence, Exp436 corrected readiness-owned lifecycle, strict scoring/benchmark/publication contract, and product-implementation-pending state",
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation"
   ],
   "nodes": [
@@ -20,7 +20,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records the active experiment, frozen inputs, preregistration/runbook, phase, output paths, and exact continuation command.",
+      "role": "Records Exp436 frozen inputs, readiness-owned run lifecycle, scientific/operator authorities, phase, output paths, and exact continuation command.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -29,7 +29,8 @@
       "tests": [],
       "constraints": [
         "Must be updated when execution stops or phase changes",
-        "Exp435 failed before prediction freeze at progress count 179 and is preserved; Exp436 preregistration and runbook are frozen, product implementation/prediction have not started, TEST labels remain unopened, and PID is null."
+        "Exp435 failed before prediction freeze at progress count 179 and is preserved; Exp436 readiness owns RUN_PARENT, new requires its exact verified readiness plus absent output/checkpoint/evaluation roots, and product implementation/prediction have not started. TEST labels remain unopened and PID is null.",
+        "Exp436 fixes candidate_alpha=0.01, per-channel 1.4826 median/MAD transforms, smoke seed 43601 with deterministic MLX/MPS selection, and a hash-bound train exclusion audit artifact."
       ],
       "evidence": [
         {
@@ -46,19 +47,23 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"preregistration\": \"docs/EXP436_PREREGISTRATION_antigravity_KO.md\""
+          "symbol": "\"readiness_owns_run_parent\": true"
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"runbook\": \"docs/EXP436_RUNBOOK_antigravity_KO.md\""
+          "symbol": "\"candidate_alpha\": 0.01"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"backend_smoke_seed\": 43601"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"train_exclusion_audit_artifact\": \"train_exclusion_audit_antigravity.jsonl\""
         },
         {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"pid\": null"
-        },
-        {
-          "path": "RESEARCH_STATE.json",
-          "symbol": "\"fixed_roots_absent\": true"
         },
         {
           "path": "EXPERIMENT_CATALOG.json",

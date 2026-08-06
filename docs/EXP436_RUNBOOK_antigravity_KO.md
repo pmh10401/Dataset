@@ -35,7 +35,7 @@ prediction/manifest SHA256은 `73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4
 
 publication은 `prediction_antigravity.jsonl`, `dataset_summary_antigravity.jsonl`,
 `score_evidence_antigravity.jsonl`, `abstention_ledger_antigravity.jsonl`,
-`backend_decision_antigravity.json`, `manifest_antigravity.json`, `status_antigravity.json`,
+`train_exclusion_audit_antigravity.jsonl`, `backend_decision_antigravity.json`, `manifest_antigravity.json`, `status_antigravity.json`,
 `artifact_sha256_antigravity.json`이다. evaluation은 `evaluation_antigravity.json`,
 `dataset_metrics_antigravity.jsonl`, `rescued_datasets_antigravity.jsonl`,
 `regressed_datasets_antigravity.jsonl`, `confusion_antigravity.json`, `bootstrap_antigravity.json`,
@@ -54,9 +54,9 @@ python3 -m unittest discover -s experiments/exp417_causal_multihorizon_shadow/te
 git diff --check
 ```
 
-`new`는 **RUN_PARENT가 부재일 때만** 허용한다. 따라서 existing/failed/complete parent를 지우거나
-덮어쓰지 않는다. readiness는 그 직전의 비어 있는 parent를 한 번 만든 뒤 output/checkpoint/readiness/
-evaluation fixed root 모두가 없을 때만 수행한다.
+readiness가 RUN_PARENT를 생성·소유하고 `readiness_antigravity.json`을 그 아래에 남긴다. `new`는
+**같은 existing RUN_PARENT**의 exact verified readiness artifact를 요구하며 output/checkpoint/evaluation
+fixed root가 모두 부재일 때만 허용한다. `new`는 RUN_PARENT 또는 readiness root를 지우거나 덮어쓰지 않는다.
 
 ```bash
 mkdir /Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806
@@ -64,12 +64,16 @@ python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py readines
 ```
 
 readiness는 clean HEAD, exact hash, **1,117** (`1117`) population, TEST label/`labels_blob` access 0,
-candidate fixture와 root absence를 기록한다. CPU는 `max(1,(os.cpu_count() or 1)-1)` workers(현재 12
-logical CPU에서 11)와 worker당 numerical thread 1이다. MLX/PyTorch-MPS exact dense-distance smoke는
-finite output, candidate coordinate CPU identity, absolute/normalized error 각각 `<=1e-5`, transfer 및
-synchronization 포함 `>=1.1x` speedup을 모두 만족할 때만 채택한다. accelerator 하나만 heavy process로
-실행하며 채택 시 outer pool을 쓰지 않는다. MLX/mlx-metal/device/version/timing/parity/fallback reason은
-manifest에 남긴다. 실패 readiness 뒤 `new`를 실행하지 않는다.
+candidate fixture와 output/checkpoint/evaluation root absence를 기록한다. CPU는 `max(1,(os.cpu_count() or 1)-1)`
+workers(현재 12 logical CPU에서 11)와 worker당 numerical thread 1이다. MLX/PyTorch-MPS exact dense-distance
+smoke seed는 `43601`이다. 각 backend는 batches `(16, 32, 64, 128, 256)` 각각에 untimed warm-up 정확히 2회,
+timed paired CPU/device run 정확히 5회를 수행하고 device synchronization을 timing 안에서 끝내며 device median은
+5회 median이다. finite output, candidate coordinate CPU identity, absolute/normalized error 각각 `<=1e-5`,
+transfer/synchronization 포함 `>=1.1x` speedup을 모두 만족한 batch만 통과한다. backend 안에서는 passing batch의
+lowest device median(동률은 smaller batch)을 선택하고, MLX와 MPS 모두 passing이면 lower device median(정확한
+동률은 lexical `mlx` then `mps`)을 선택하며 둘 다 실패하면 CPU다. accelerator 하나만 heavy process로 실행하며
+채택 시 outer pool을 쓰지 않는다. MLX/mlx-metal/device/version/seed/warm-up/timed-run/batch medians/parity/
+selection/fallback reason은 manifest에 남긴다. 실패 readiness 뒤 `new`를 실행하지 않는다.
 
 ## label-free new와 진행
 
@@ -83,7 +87,9 @@ audit을 남기고 제외하며 finite 행 4개 미만 length는 `insufficient_f
 행은 `nonfinite_test` evidence로 그 행만 abstain하고 finite sibling은 계속한다. imputation/padding/
 truncation/copy/tail replacement는 없다.
 
-점수는 float32, `k=3`, TRAIN LOO, `q=0.99`, `method='higher'`, strict `score > threshold`다. 후보는
+점수는 float32, `candidate_alpha=0.01`, `k=3`, TRAIN LOO, `q=0.99`, `method='higher'`, strict `score > threshold`다.
+shared robust transform은 `center=median(matrix)`, `scale=float32(1.4826 * median(abs(matrix-center)))`이고
+prototype/raw와 gradient가 각각 자신의 TRAIN-group matrix로 계산하며 ACF는 기존 동결 formula를 유지한다. 후보는
 `prototype AND gradient AND ACF` 그리고 four frozen lane 밖일 때만 생긴다. unavailable channel은 true가
 아니다. budget은 **100**, 101번째는 top-N 절단 없이 `candidate_budget_exceeded` 전체 실패다. 항상
 review-only이며 operational alert가 아니다.
