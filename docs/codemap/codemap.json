@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T02:56:30Z",
-  "generated_from_commit": "ba20ceeb65705c4f2c760bbfd21f5b6b9c06f3fb",
+  "generated_at": "2026-08-06T03:29:34Z",
+  "generated_from_commit": "30f85e2ef5cb58034e0bc5e48989de05c983f4b0",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -9,7 +9,8 @@
     "Exp435 frozen label-free prediction boundary, resumable runtime, checkpoint/progress outputs and MLX readiness",
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
-    "Research control files and local external data stores"
+    "Research control files and local external data stores",
+    "Exp435 CLI readiness, clean-HEAD revalidation, atomic review-only publication and verified replay"
   ],
   "nodes": [
     {
@@ -845,12 +846,12 @@
     },
     {
       "id": "exp435_runtime",
-      "label": "Exp435 resumable runtime",
+      "label": "Exp435 CLI + resumable runtime",
       "type": "pipeline",
       "boundary": "Exp435 deterministic runtime",
       "layer": 4,
-      "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
-      "role": "Runs the label-free scorer with a parent-owned session, bounded CPU workers, ordered commits, serial adopted MLX mode, and resumable failure handling.",
+      "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
+      "role": "Validates readiness and clean HEAD, runs or resumes the label-free scorer with parent-owned inputs, bounded CPU workers, ordered commits, serial adopted MLX mode, and verified publication replay.",
       "entrypoints": [
         "run_exp435_new",
         "resume_exp435",
@@ -858,10 +859,17 @@
         "_run",
         "_load_values",
         "LaneMembershipSnapshot",
-        "_score_worker"
+        "_score_worker",
+        "run_new",
+        "run_resume",
+        "main",
+        "_production_inspect",
+        "_publication_summary"
       ],
       "tests": [
-        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py"
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py"
       ],
       "constraints": [
         "CPU uses ProcessPoolExecutor(max_workers=7) with bounded prefetch 14",
@@ -870,7 +878,10 @@
         "Adopted MLX uses one process and no outer scoring pool",
         "Candidate-budget overflow is persisted before any record/publication and fails closed",
         "Runtime outputs are bound to checkpoint path, backend, dataset total, run identity and context fingerprint",
-        "Workers receive values-only objects and never access labels, SQLite descriptors or durable outputs"
+        "Workers receive values-only objects and never access labels, SQLite descriptors or durable outputs",
+        "Readiness has one writer and is byte-identical to the validated callback payload",
+        "A final clean-HEAD read must match both the validated HEAD and readiness commit before the input session opens",
+        "Existing publications are inspected read-only and summarized without reopening the database"
       ],
       "evidence": [
         {
@@ -908,17 +919,33 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
           "symbol": "def inspect_exp435("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def run_new()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def run_resume()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def main("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _publication_summary("
         }
       ]
     },
     {
       "id": "exp435_checkpoint_progress",
-      "label": "Exp435 checkpoint + progress",
+      "label": "Exp435 checkpoint + publication",
       "type": "storage",
       "boundary": "Exp435 deterministic runtime",
       "layer": 5,
       "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
-      "role": "Persists canonical dataset records and record-set digests, atomic progress/PID/events/text logs, recovery intents, and read-only inspection bindings.",
+      "role": "Persists canonical records, atomic progress/PID/events logs and recovery intents, then builds and verifies a no-clobber review-only publication with prediction and manifest SHA256 evidence.",
       "entrypoints": [
         "Exp435CheckpointStore.create",
         "Exp435CheckpointStore.open_existing",
@@ -930,12 +957,17 @@
         "ProgressWriter.append_event",
         "ProgressWriter.mark_complete",
         "ProgressWriter.mark_interrupted",
-        "ProgressWriter.mark_failed"
+        "ProgressWriter.mark_failed",
+        "publish_exp435",
+        "inspect_publication",
+        "FrozenPublication",
+        "_exclusive_rename"
       ],
       "tests": [
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_checkpoint_antigravity.py",
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
-        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py"
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py"
       ],
       "constraints": [
         "Atomic no-clobber records and record-set digest are fsynced; commit intent recovery is deterministic",
@@ -943,7 +975,10 @@
         "Only exact internal progress/PID temp files are removed on mutable resume; unknown files, symlinks and read-only pending temps fail closed",
         "Progress, PID and events bind one canonical checkpoint path, backend, total, run identity and context fingerprint",
         "Inspection opens no database or worker and validates outputs, events, labels firewall and counter conservation read-only",
-        "Durable progress and logs never contain TEST values or labels"
+        "Durable progress and logs never contain TEST values or labels",
+        "Publication accepts checkpoint_complete runtime state only and requires exact success/abstention/error counter conservation",
+        "Publication staging is fsynced and moved with Darwin RENAME_EXCL so an appearing destination is never replaced",
+        "Published prediction, manifest and supporting artifacts reject forbidden TEST-label fields and are independently hash-verified"
       ],
       "evidence": [
         {
@@ -977,6 +1012,22 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
           "symbol": "def test_output_binding_rejects_checkpoint_backend_total_and_fingerprint_swaps"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "class FrozenPublication"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def inspect_publication("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def publish_exp435("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _exclusive_rename("
         }
       ]
     }
@@ -1477,6 +1528,14 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
           "symbol": "writer.update"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "_write_new(staging / name, payloads[name])"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "_exclusive_rename(staging, publication)"
         }
       ]
     },
@@ -1583,8 +1642,8 @@
     },
     {
       "id": "exp435_runtime_flow",
-      "label": "Exp435 resumable label-free prediction",
-      "trigger": "A caller invokes run_exp435_new(...) or resume_exp435(...) with one verified Exp435InputSession.",
+      "label": "Exp435 resumable prediction + frozen publication",
+      "trigger": "The CLI validates readiness and clean HEAD, then invokes a new run, resume, inspect, or verified publication replay.",
       "steps": [
         "exp435_runtime",
         "exp435_prediction_boundary",
@@ -1593,7 +1652,7 @@
         "sqlite_store",
         "exp435_checkpoint_progress"
       ],
-      "outcome": "The parent loads normal TRAIN first, requests values-only TEST through load_test_values_after_train, scores with the frozen CPU/MLX-gated path, and durably commits ordered records with no TEST labels or publication/evaluation claim."
+      "outcome": "The parent loads normal TRAIN first, requests values-only TEST, scores through the frozen CPU/MLX gate, durably commits ordered records, and atomically publishes hash-bound review-only artifacts without TEST labels."
     }
   ]
 }
