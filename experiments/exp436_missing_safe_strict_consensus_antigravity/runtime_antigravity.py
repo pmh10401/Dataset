@@ -15,7 +15,7 @@ for _thread_name in _THREAD_ENV:
 
 from concurrent.futures import FIRST_COMPLETED, Future, ProcessPoolExecutor, wait
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from hashlib import sha256
 import json
 import multiprocessing
@@ -31,6 +31,12 @@ from .backend_antigravity import score_with_backend, validate_backend_engine
 from .checkpoint_antigravity import Exp436CheckpointStore, Exp436RunContext, context_payload
 from .config_antigravity import FROZEN_CONFIG
 from .contracts_antigravity import BackendDecision, Exp436DatasetResult, Exp436RunSummary
+from .execution_profile_antigravity import (
+    EXP436_PROFILE,
+    ExecutionProfileAntigravity,
+    frozen_config_payload_for_profile_antigravity,
+    validated_profile_antigravity,
+)
 from .progress_antigravity import ProgressWriter, inspect_progress
 
 
@@ -47,8 +53,10 @@ _READINESS_KEYS = frozenset({
 })
 
 
-def _frozen_config_payload() -> dict[str, object]:
-    return json.loads(canonical_json_bytes(asdict(FROZEN_CONFIG)))
+def _frozen_config_payload(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> dict[str, object]:
+    return frozen_config_payload_for_profile_antigravity(profile)
 
 
 def _digest(value: object) -> str:
@@ -61,9 +69,17 @@ def _absolute(value: object, label: str) -> str:
     return str(Path(value).resolve())
 
 
-def _canonical_readiness(readiness_path: Path, reviewed_commit: str, run_root: Path, checkpoint_root: Path) -> dict[str, object]:
+def _canonical_readiness(
+    readiness_path: Path,
+    reviewed_commit: str,
+    run_root: Path,
+    checkpoint_root: Path,
+    *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> dict[str, object]:
     """Validate every public external binding before creating an input session."""
 
+    selected = validated_profile_antigravity(profile)
     try:
         raw = Path(readiness_path).read_bytes()
         payload = json.loads(raw)
@@ -71,7 +87,7 @@ def _canonical_readiness(readiness_path: Path, reviewed_commit: str, run_root: P
         raise ValueError("readiness artifact is invalid") from error
     if not isinstance(payload, dict) or canonical_json_bytes(payload) != raw or set(payload) != _READINESS_KEYS:
         raise ValueError("readiness artifact schema is invalid")
-    if payload["schema"] != "exp436.readiness-binding.v1" or payload["run_identity"] != FROZEN_CONFIG.run_identity:
+    if payload["schema"] != "exp436.readiness-binding.v1" or payload["run_identity"] != selected.run_identity:
         raise ValueError("readiness artifact identity is invalid")
     if type(reviewed_commit) is not str or len(reviewed_commit) != 40 or payload["reviewed_commit"] != reviewed_commit:
         raise ValueError("readiness reviewed commit is invalid")
@@ -101,11 +117,11 @@ def _canonical_readiness(readiness_path: Path, reviewed_commit: str, run_root: P
         if not isinstance(value, str) or len(value) != 64:
             raise ValueError("readiness digest is invalid")
     datasets = payload["datasets"]
-    if not isinstance(datasets, list) or len(datasets) != FROZEN_CONFIG.expected_datasets or datasets != sorted(datasets) or len(datasets) != len(set(datasets)) or any(type(item) is not str or not item for item in datasets):
+    config = _frozen_config_payload(selected)
+    if not isinstance(datasets, list) or len(datasets) != config["expected_datasets"] or datasets != sorted(datasets) or len(datasets) != len(set(datasets)) or any(type(item) is not str or not item for item in datasets):
         raise ValueError("readiness population is invalid")
     if payload["dataset_digest"] != _digest(datasets):
         raise ValueError("readiness dataset digest is invalid")
-    config = _frozen_config_payload()
     if payload["frozen_config"] != config or payload["frozen_config_sha256"] != _digest(config):
         raise ValueError("readiness frozen config is invalid")
     try:
@@ -180,9 +196,22 @@ def _context_lanes_payload(lanes: object) -> dict[str, dict[str, list[int]]]:
     }
 
 
-def _build_run_context(*, session: object, readiness: Mapping[str, object], readiness_path: Path | str, run_root: Path | str, checkpoint_root: Path | str, decision: BackendDecision) -> Exp436RunContext:
+def _build_run_context(
+    *,
+    session: object,
+    readiness: Mapping[str, object],
+    readiness_path: Path | str,
+    run_root: Path | str,
+    checkpoint_root: Path | str,
+    decision: BackendDecision,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Exp436RunContext:
     """Make the exact v1 checkpoint context from already-validated authorities."""
 
+    selected = validated_profile_antigravity(profile)
+    config = _frozen_config_payload(selected)
+    if readiness.get("run_identity") != selected.run_identity or readiness.get("frozen_config") != config:
+        raise ValueError("readiness identity does not match execution profile")
     source = getattr(session, "context", None)
     datasets = tuple(getattr(source, "datasets", ()))
     lanes = getattr(source, "lanes", None)
@@ -207,10 +236,9 @@ def _build_run_context(*, session: object, readiness: Mapping[str, object], read
         raise ValueError("input session database path does not match readiness")
     test_manifest = {dataset: [[index, length] for index, length in manifest[dataset]] for dataset in datasets}
     lane_mappings = _context_lanes_payload(lanes)
-    config = _frozen_config_payload()
     payload: dict[str, object] = {
         "schema": "exp436.run-context.v1", "protocol_versions": {"context": "v1", "checkpoint": "v1", "readiness": "v1"},
-        "experiment_id": FROZEN_CONFIG.experiment_id, "run_identity": FROZEN_CONFIG.run_identity,
+        "experiment_id": selected.experiment_id, "run_identity": selected.run_identity,
         "reviewed_commit": readiness["reviewed_commit"], "readiness_path": _absolute(str(readiness_path), "readiness_path"),
         "readiness_artifact_sha256": _digest(dict(readiness)), "backend_decision": decision.to_payload(),
         "backend_decision_sha256": _digest(decision.to_payload()), "database_path": _absolute(paths["database"], "database"),
@@ -227,7 +255,7 @@ def _build_run_context(*, session: object, readiness: Mapping[str, object], read
         "output_path": _absolute(str(run_root), "run_root"), "checkpoint_path": _absolute(str(checkpoint_root), "checkpoint_root"),
     }
     payload["context_sha256"] = _digest(payload)
-    return Exp436RunContext.from_payload(payload)
+    return Exp436RunContext.from_payload(payload, profile=selected)
 
 
 def _worker_initializer() -> None:
@@ -428,21 +456,32 @@ def _reconcile_progress(store: Exp436CheckpointStore, writer: ProgressWriter) ->
     writer.reconcile_checkpoint_tail(tuple(bindings), checkpoint_inspection=checkpoint_inspection)
 
 
-def _run(*, run_root: Path, checkpoint_root: Path, readiness_path: Path, readiness: Mapping[str, object], input_session: object, decision: BackendDecision, resume: bool) -> Exp436RunSummary:
-    context = _build_run_context(session=input_session, readiness=readiness, readiness_path=readiness_path, run_root=run_root, checkpoint_root=checkpoint_root, decision=decision)
+def _run(
+    *,
+    run_root: Path,
+    checkpoint_root: Path,
+    readiness_path: Path,
+    readiness: Mapping[str, object],
+    input_session: object,
+    decision: BackendDecision,
+    resume: bool,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Exp436RunSummary:
+    selected = validated_profile_antigravity(profile)
+    context = _build_run_context(session=input_session, readiness=readiness, readiness_path=readiness_path, run_root=run_root, checkpoint_root=checkpoint_root, decision=decision, profile=selected)
     lanes = _lanes_snapshot(getattr(getattr(input_session, "context", None), "lanes", None), tuple(context.to_payload()["datasets"]))
     if resume:
         # Read-only classification accepts only recognized crash leftovers;
         # output ownership is claimed before the mutable checkpoint repair.
-        readonly = Exp436CheckpointStore.open_classified_read_only(checkpoint_root, expected_context=context)
+        readonly = Exp436CheckpointStore.open_classified_read_only(checkpoint_root, expected_context=context, profile=selected)
         inspection = readonly.inspect()
         writer = ProgressWriter.open_existing(run_root, run_identity=readonly.run_identity, checkpoint=checkpoint_root, backend=decision.backend, total_datasets=len(readonly.datasets), context_fingerprint=readonly.context_fingerprint, checkpoint_inspection={"completed": inspection.completed, "datasets": tuple(readonly.completed_digests()), "record_digests": readonly.completed_digests()})
         # The output writer now owns its exclusive lock before mutable checkpoint repair.
-        store = Exp436CheckpointStore.open_existing(checkpoint_root, context)
+        store = Exp436CheckpointStore.open_existing(checkpoint_root, context, profile=selected)
     else:
         if run_root.exists() or checkpoint_root.exists():
             raise ValueError("new runtime roots must be absent")
-        store = Exp436CheckpointStore.create(checkpoint_root, context)
+        store = Exp436CheckpointStore.create(checkpoint_root, context, profile=selected)
         writer = ProgressWriter.create(run_root, run_identity=store.run_identity, checkpoint=checkpoint_root, total_datasets=len(store.datasets), backend=decision.backend, context_fingerprint=store.context_fingerprint)
     try:
         _reconcile_progress(store, writer)
@@ -490,16 +529,28 @@ def _decision(readiness: Mapping[str, object]) -> BackendDecision:
     return BackendDecision.from_payload(readiness["backend_decision"])
 
 
-def _validate_stored_context(store: Exp436CheckpointStore, readiness: Mapping[str, object], readiness_path: Path, run_root: Path, checkpoint_root: Path, decision: BackendDecision) -> None:
+def _validate_stored_context(
+    store: Exp436CheckpointStore,
+    readiness: Mapping[str, object],
+    readiness_path: Path,
+    run_root: Path,
+    checkpoint_root: Path,
+    decision: BackendDecision,
+    *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> None:
     """Bind read-only complete/inspect routes to the exact reviewed readiness."""
+    selected = validated_profile_antigravity(profile)
     context = context_payload(store.context)
+    if context.get("experiment_id") != selected.experiment_id or context.get("run_identity") != selected.run_identity:
+        raise ValueError("stored context does not match execution profile identity")
     if context.get("reviewed_commit") != readiness["reviewed_commit"] or context.get("readiness_path") != str(readiness_path.resolve()) or context.get("readiness_artifact_sha256") != _digest(dict(readiness)):
         raise ValueError("stored context does not match readiness identity")
     if context.get("output_path") != str(run_root.resolve()) or context.get("checkpoint_path") != str(checkpoint_root.resolve()):
         raise ValueError("stored context does not match runtime roots")
     if context.get("database_path") != _absolute(readiness["database_path"], "database") or context.get("database_sha256") != readiness["database_sha256"] or context.get("datasets") != readiness["datasets"] or context.get("dataset_order_sha256") != readiness["dataset_digest"]:
         raise ValueError("stored context does not match source readiness")
-    config = _frozen_config_payload()
+    config = _frozen_config_payload(selected)
     if context.get("frozen_config") != config or context.get("frozen_config_sha256") != readiness["frozen_config_sha256"] or context.get("backend_decision") != decision.to_payload() or context.get("backend_decision_sha256") != readiness["backend_decision_sha256"]:
         raise ValueError("stored context does not match frozen readiness")
     lanes = context.get("lane_artifacts")
@@ -510,19 +561,37 @@ def _validate_stored_context(store: Exp436CheckpointStore, readiness: Mapping[st
             raise ValueError("stored context does not match lane readiness")
 
 
-def run_exp436_new(*, readiness_path: Path, run_root: Path, checkpoint_root: Path, reviewed_commit: str, input_session_factory: Callable[[], object]) -> Exp436RunSummary:
-    readiness = _canonical_readiness(readiness_path, reviewed_commit, run_root, checkpoint_root)
+def run_exp436_new(
+    *,
+    readiness_path: Path,
+    run_root: Path,
+    checkpoint_root: Path,
+    reviewed_commit: str,
+    input_session_factory: Callable[[], object],
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Exp436RunSummary:
+    selected = validated_profile_antigravity(profile)
+    readiness = _canonical_readiness(readiness_path, reviewed_commit, run_root, checkpoint_root, profile=selected)
     if Path(run_root).exists() or Path(checkpoint_root).exists():
         raise ValueError("readiness-owned new roots must be absent")
     with _session_from_factory(input_session_factory) as session:
-        return _run(run_root=Path(run_root), checkpoint_root=Path(checkpoint_root), readiness_path=Path(readiness_path), readiness=readiness, input_session=session, decision=_decision(readiness), resume=False)
+        return _run(run_root=Path(run_root), checkpoint_root=Path(checkpoint_root), readiness_path=Path(readiness_path), readiness=readiness, input_session=session, decision=_decision(readiness), resume=False, profile=selected)
 
 
-def resume_exp436(*, readiness_path: Path, run_root: Path, checkpoint_root: Path, reviewed_commit: str, input_session_factory: Callable[[], object]) -> Exp436RunSummary:
-    readiness = _canonical_readiness(readiness_path, reviewed_commit, run_root, checkpoint_root)
-    store = Exp436CheckpointStore.open_classified_read_only(checkpoint_root)
+def resume_exp436(
+    *,
+    readiness_path: Path,
+    run_root: Path,
+    checkpoint_root: Path,
+    reviewed_commit: str,
+    input_session_factory: Callable[[], object],
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Exp436RunSummary:
+    selected = validated_profile_antigravity(profile)
+    readiness = _canonical_readiness(readiness_path, reviewed_commit, run_root, checkpoint_root, profile=selected)
+    store = Exp436CheckpointStore.open_classified_read_only(checkpoint_root, profile=selected)
     decision = _decision(readiness)
-    _validate_stored_context(store, readiness, Path(readiness_path), Path(run_root), Path(checkpoint_root), decision)
+    _validate_stored_context(store, readiness, Path(readiness_path), Path(run_root), Path(checkpoint_root), decision, profile=selected)
     inspection = store.inspect()
     # A record-set-stable complete root needs no writer or session.  An
     # interrupted complete root (including the final intent-with-record crash
@@ -540,7 +609,7 @@ def resume_exp436(*, readiness_path: Path, run_root: Path, checkpoint_root: Path
                                               context_fingerprint=store.context_fingerprint,
                                               checkpoint_inspection={"completed": inspection.completed, "datasets": tuple(store.completed_digests()), "record_digests": store.completed_digests()})
         try:
-            repaired = Exp436CheckpointStore.open_existing(checkpoint_root, Exp436RunContext.from_payload(context_payload(store.context)))
+            repaired = Exp436CheckpointStore.open_existing(checkpoint_root, Exp436RunContext.from_payload(context_payload(store.context), profile=selected), profile=selected)
             _reconcile_progress(repaired, writer)
             _mark_checkpoint_complete(repaired, writer)
             return _summary(repaired, decision, "checkpoint_complete")
@@ -548,15 +617,23 @@ def resume_exp436(*, readiness_path: Path, run_root: Path, checkpoint_root: Path
             writer.stop_heartbeat(); writer.close()
     # The preflight above is intentionally before the only session factory call.
     with _session_from_factory(input_session_factory) as session:
-        return _run(run_root=Path(run_root), checkpoint_root=Path(checkpoint_root), readiness_path=Path(readiness_path), readiness=readiness, input_session=session, decision=decision, resume=True)
+        return _run(run_root=Path(run_root), checkpoint_root=Path(checkpoint_root), readiness_path=Path(readiness_path), readiness=readiness, input_session=session, decision=decision, resume=True, profile=selected)
 
 
-def inspect_exp436(*, readiness_path: Path, run_root: Path, checkpoint_root: Path, reviewed_commit: str) -> Exp436RunSummary:
-    readiness = _canonical_readiness(readiness_path, reviewed_commit, run_root, checkpoint_root)
-    store = Exp436CheckpointStore.open_classified_read_only(checkpoint_root)
+def inspect_exp436(
+    *,
+    readiness_path: Path,
+    run_root: Path,
+    checkpoint_root: Path,
+    reviewed_commit: str,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Exp436RunSummary:
+    selected = validated_profile_antigravity(profile)
+    readiness = _canonical_readiness(readiness_path, reviewed_commit, run_root, checkpoint_root, profile=selected)
+    store = Exp436CheckpointStore.open_classified_read_only(checkpoint_root, profile=selected)
     inspection = store.inspect()
     decision = _decision(readiness)
-    _validate_stored_context(store, readiness, Path(readiness_path), Path(run_root), Path(checkpoint_root), decision)
+    _validate_stored_context(store, readiness, Path(readiness_path), Path(run_root), Path(checkpoint_root), decision, profile=selected)
     progress = inspect_progress(run_root, run_identity=store.run_identity, checkpoint=checkpoint_root, context_fingerprint=store.context_fingerprint,
                                 checkpoint_inspection={"completed": inspection.completed, "datasets": tuple(store.completed_digests()), "record_digests": store.completed_digests()})
     # The progress terminal state is the public lifecycle report.  A complete

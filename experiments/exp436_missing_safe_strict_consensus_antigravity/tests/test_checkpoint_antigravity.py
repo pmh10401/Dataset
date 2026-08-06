@@ -24,9 +24,14 @@ from experiments.exp436_missing_safe_strict_consensus_antigravity.checkpoint_ant
     _result_from_payload,
 )
 from experiments.exp436_missing_safe_strict_consensus_antigravity.contracts_antigravity import BackendDecision, Exp436DatasetResult, InstanceScoreEvidence
+from experiments.exp436_missing_safe_strict_consensus_antigravity.execution_profile_antigravity import (
+    EXP436_PROFILE,
+    EXP437_PROFILE,
+    frozen_config_payload_for_profile_antigravity,
+)
 
 
-def _context() -> dict[str, object]:
+def _context(profile=EXP436_PROFILE) -> dict[str, object]:
     from hashlib import sha256
     from experiments.exp403_408.artifact_io import canonical_json_bytes
     datasets = [f"D{i:04d}" for i in range(1117)]
@@ -34,12 +39,12 @@ def _context() -> dict[str, object]:
     lanes = {name: {"path": f"/tmp/{name}_antigravity", "sha256": "a" * 64} for name in ("exp291_prediction", "exp291_manifest", "exp292_prediction", "exp292_manifest")}
     decision = BackendDecision.cpu_fallback().to_payload()
     lane_mappings = {"hard":{},"standard":{},"priority":{},"automatic_normal":{}}
-    from dataclasses import asdict
-    from experiments.exp436_missing_safe_strict_consensus_antigravity.config_antigravity import FROZEN_CONFIG
-    config = json.loads(canonical_json_bytes(asdict(FROZEN_CONFIG)))
-    payload = {"schema":"exp436.run-context.v1","protocol_versions":{"context":"v1","checkpoint":"v1","readiness":"v1"},"experiment_id":"Exp436","run_identity":"exp436-missing-safe-strict-consensus-antigravity-20260806","reviewed_commit":"b"*40,"readiness_path":"/tmp/readiness_antigravity.json","readiness_artifact_sha256":"a"*64,"backend_decision":decision,"backend_decision_sha256":sha256(canonical_json_bytes(decision)).hexdigest(),"database_path":"/tmp/db_antigravity","database_sha256":"a"*64,"lane_artifacts":lanes,"lane_mappings":lane_mappings,"lane_snapshot_sha256":sha256(canonical_json_bytes({"artifacts":lanes,"mappings":lane_mappings,"datasets":datasets})).hexdigest(),"datasets":datasets,"dataset_order_sha256":sha256(canonical_json_bytes(datasets)).hexdigest(),"test_identity_manifest":manifest,"test_manifest_sha256":sha256(canonical_json_bytes(manifest)).hexdigest(),"frozen_config":config,"frozen_config_sha256":sha256(canonical_json_bytes(config)).hexdigest(),"python_implementation":"CPython","python_version":"3","python_executable":"/tmp/python","numpy_version":"2","platform":"x","machine":"x","multiprocessing_start_method":"spawn","logical_cpus":12,"cpu_workers":11,"selected_framework_provenance":{"framework":"cpu","adopted":False},"backend_protocol":"paired-synchronized-v1","selected_batch_size":None,"output_path":"/tmp/output_antigravity","checkpoint_path":"/tmp/checkpoint_antigravity"}
+    config = frozen_config_payload_for_profile_antigravity(profile)
+    payload = {"schema":"exp436.run-context.v1","protocol_versions":{"context":"v1","checkpoint":"v1","readiness":"v1"},"experiment_id":profile.experiment_id,"run_identity":profile.run_identity,"reviewed_commit":"b"*40,"readiness_path":"/tmp/readiness_antigravity.json","readiness_artifact_sha256":"a"*64,"backend_decision":decision,"backend_decision_sha256":sha256(canonical_json_bytes(decision)).hexdigest(),"database_path":"/tmp/db_antigravity","database_sha256":"a"*64,"lane_artifacts":lanes,"lane_mappings":lane_mappings,"lane_snapshot_sha256":sha256(canonical_json_bytes({"artifacts":lanes,"mappings":lane_mappings,"datasets":datasets})).hexdigest(),"datasets":datasets,"dataset_order_sha256":sha256(canonical_json_bytes(datasets)).hexdigest(),"test_identity_manifest":manifest,"test_manifest_sha256":sha256(canonical_json_bytes(manifest)).hexdigest(),"frozen_config":config,"frozen_config_sha256":sha256(canonical_json_bytes(config)).hexdigest(),"python_implementation":"CPython","python_version":"3","python_executable":"/tmp/python","numpy_version":"2","platform":"x","machine":"x","multiprocessing_start_method":"spawn","logical_cpus":12,"cpu_workers":11,"selected_framework_provenance":{"framework":"cpu","adopted":False},"backend_protocol":"paired-synchronized-v1","selected_batch_size":None,"output_path":"/tmp/output_antigravity","checkpoint_path":"/tmp/checkpoint_antigravity"}
     payload["context_sha256"] = sha256(canonical_json_bytes(payload)).hexdigest()
-    return Exp436RunContext.from_payload(payload)
+    if profile is EXP436_PROFILE:
+        return Exp436RunContext.from_payload(payload)
+    return Exp436RunContext.from_payload(payload, profile=profile)
 
 
 def _result(dataset: str, index: int) -> Exp436DatasetResult:
@@ -61,6 +66,13 @@ def _commit_after_inspection_antigravity(root_text: str, started: object, comple
 
 
 class CheckpointTests(unittest.TestCase):
+    def test_exp437_context_roundtrip_is_profile_bound(self) -> None:
+        payload = _context(EXP437_PROFILE).to_payload()
+        parsed = Exp436RunContext.from_payload(payload, profile=EXP437_PROFILE)
+        self.assertEqual(parsed.to_payload()["experiment_id"], "Exp437")
+        with self.assertRaisesRegex(ValueError, "identity"):
+            Exp436RunContext.from_payload(payload, profile=EXP436_PROFILE)
+
     def test_record_persists_exact_nonlabel_dataset_metadata_for_runtime_replay(self) -> None:
         directory, root, store = self._make_store()
         try:

@@ -27,6 +27,11 @@ from experiments.exp436_missing_safe_strict_consensus_antigravity.contracts_anti
 )
 from experiments.exp436_missing_safe_strict_consensus_antigravity.backend_antigravity import select_backend
 from experiments.exp436_missing_safe_strict_consensus_antigravity.config_antigravity import FROZEN_CONFIG
+from experiments.exp436_missing_safe_strict_consensus_antigravity.execution_profile_antigravity import (
+    EXP436_PROFILE,
+    EXP437_PROFILE,
+    frozen_config_payload_for_profile_antigravity,
+)
 
 
 class RuntimeImportTests(unittest.TestCase):
@@ -42,6 +47,42 @@ class RuntimeImportTests(unittest.TestCase):
 
 
 class RuntimeContextTests(unittest.TestCase):
+    def test_exp437_readiness_and_context_are_profile_bound(self) -> None:
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import runtime_antigravity
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = _readiness_antigravity(
+                runtime_antigravity,
+                root,
+                profile=EXP437_PROFILE,
+            )
+            readiness = runtime_antigravity._canonical_readiness(
+                path,
+                "a" * 40,
+                root / "output_antigravity",
+                root / "checkpoint_antigravity",
+                profile=EXP437_PROFILE,
+            )
+            context = runtime_antigravity._build_run_context(
+                session=_session_antigravity(),
+                readiness=readiness,
+                readiness_path=path,
+                run_root=root / "output_antigravity",
+                checkpoint_root=root / "checkpoint_antigravity",
+                decision=BackendDecision.cpu_fallback(),
+                profile=EXP437_PROFILE,
+            )
+            self.assertEqual(context.to_payload()["run_identity"], EXP437_PROFILE.run_identity)
+            with self.assertRaisesRegex(ValueError, "identity"):
+                runtime_antigravity._canonical_readiness(
+                    path,
+                    "a" * 40,
+                    root / "output_antigravity",
+                    root / "checkpoint_antigravity",
+                    profile=EXP436_PROFILE,
+                )
+
     def test_readiness_accepts_the_phase_c_evidence_binding_without_opening_a_session(self) -> None:
         """Dropping CLI readiness evidence must reject before the session factory."""
 
@@ -179,11 +220,11 @@ def _session_antigravity() -> object:
     )
 
 
-def _readiness_antigravity(runtime: object, root: Path) -> Path:
+def _readiness_antigravity(runtime: object, root: Path, *, profile=EXP436_PROFILE) -> Path:
     datasets = _datasets_antigravity(); decision = BackendDecision.cpu_fallback()
-    config = json.loads(canonical_json_bytes(asdict(FROZEN_CONFIG)))
+    config = frozen_config_payload_for_profile_antigravity(profile)
     payload = {
-        "schema": "exp436.readiness-binding.v1", "run_identity": FROZEN_CONFIG.run_identity, "reviewed_commit": "a" * 40,
+        "schema": "exp436.readiness-binding.v1", "run_identity": profile.run_identity, "reviewed_commit": "a" * 40,
         "database_path": "/tmp/database_antigravity", "database_sha256": "f" * 64,
         "exp291_prediction_path": "/tmp/exp291_prediction_antigravity", "exp291_prediction_sha256": "b" * 64,
         "exp291_manifest_path": "/tmp/exp291_manifest_antigravity", "exp291_manifest_sha256": "c" * 64,

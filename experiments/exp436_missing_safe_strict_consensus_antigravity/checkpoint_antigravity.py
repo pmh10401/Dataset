@@ -7,7 +7,7 @@ Exp436 recovery run.
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from hashlib import sha256
 import fcntl
 import json
@@ -22,6 +22,12 @@ from uuid import uuid4
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 from .config_antigravity import FROZEN_CONFIG
 from .contracts_antigravity import BackendDecision, ExcludedTrainRowAudit, Exp436Candidate, Exp436DatasetResult, InstanceScoreEvidence
+from .execution_profile_antigravity import (
+    EXP436_PROFILE,
+    ExecutionProfileAntigravity,
+    frozen_config_payload_for_profile_antigravity,
+    validated_profile_antigravity,
+)
 
 _ROOT = frozenset({"run_context_antigravity.json", "record_set_antigravity.json", "records_antigravity", "intents_antigravity"})
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
@@ -47,11 +53,18 @@ class Exp436RunContext:
     payload: Mapping[str, object]
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, object]) -> "Exp436RunContext":
+    def from_payload(
+        cls,
+        payload: Mapping[str, object],
+        *,
+        profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+    ) -> "Exp436RunContext":
+        selected = validated_profile_antigravity(profile)
+        config = frozen_config_payload_for_profile_antigravity(selected)
         if not isinstance(payload, Mapping) or set(payload) != _CONTEXT_KEYS:
             raise ValueError("run context keys are invalid")
         value = dict(payload)
-        if value["schema"] != "exp436.run-context.v1" or value["experiment_id"] != FROZEN_CONFIG.experiment_id or value["run_identity"] != FROZEN_CONFIG.run_identity:
+        if value["schema"] != "exp436.run-context.v1" or value["experiment_id"] != selected.experiment_id or value["run_identity"] != selected.run_identity:
             raise ValueError("run context identity is invalid")
         if not isinstance(value["reviewed_commit"], str) or re.fullmatch(r"[0-9a-f]{40}", value["reviewed_commit"]) is None:
             raise ValueError("run context reviewed commit is invalid")
@@ -70,10 +83,10 @@ class Exp436RunContext:
             raise ValueError("run context backend decision is invalid") from error
         if decision.to_payload() != value["backend_decision"]:
             raise ValueError("run context backend decision is noncanonical")
-        if value["frozen_config"] != json.loads(canonical_json_bytes(asdict(FROZEN_CONFIG))):
+        if value["frozen_config"] != config:
             raise ValueError("run context frozen config is invalid")
         datasets = value["datasets"]
-        if not isinstance(datasets, list) or len(datasets) != FROZEN_CONFIG.expected_datasets or any(type(x) is not str for x in datasets) or datasets != sorted(datasets) or len(set(datasets)) != len(datasets):
+        if not isinstance(datasets, list) or len(datasets) != config["expected_datasets"] or any(type(x) is not str for x in datasets) or datasets != sorted(datasets) or len(set(datasets)) != len(datasets):
             raise ValueError("run context population is invalid")
         manifest = value["test_identity_manifest"]
         if not isinstance(manifest, Mapping) or set(manifest) != set(datasets):
@@ -115,9 +128,9 @@ class Exp436RunContext:
         if sha256(canonical_json_bytes(lane_bound)).hexdigest() != value["lane_snapshot_sha256"]:
             raise ValueError("run context lane snapshot digest is invalid")
         expected_provenance = {"framework": decision.backend, "adopted": decision.adopted}
-        if value["selected_framework_provenance"] != expected_provenance or value["backend_protocol"] != FROZEN_CONFIG.backend_protocol or value["selected_batch_size"] != decision.selected_batch_size:
+        if value["selected_framework_provenance"] != expected_provenance or value["backend_protocol"] != config["backend_protocol"] or value["selected_batch_size"] != decision.selected_batch_size:
             raise ValueError("run context selected framework provenance is invalid")
-        if type(value["logical_cpus"]) is not int or value["logical_cpus"] < 1 or value["cpu_workers"] != FROZEN_CONFIG.cpu_workers or value["multiprocessing_start_method"] not in {"spawn", "fork", "forkserver"}:
+        if type(value["logical_cpus"]) is not int or value["logical_cpus"] < 1 or value["cpu_workers"] != config["cpu_workers"] or value["multiprocessing_start_method"] not in {"spawn", "fork", "forkserver"}:
             raise ValueError("run context topology is invalid")
         for name in ("protocol_versions", "lane_mappings", "backend_decision", "frozen_config", "selected_framework_provenance"):
             if not isinstance(value[name], Mapping): raise ValueError("run context nested object is invalid")
@@ -334,20 +347,38 @@ class _CheckpointScan:
     inspection: Exp436CheckpointInspection
 
 class Exp436CheckpointStore:
-    def __init__(self, root: Path, context: Mapping[str, object], records: Mapping[str, str], *, fingerprint: str) -> None:
+    def __init__(
+        self,
+        root: Path,
+        context: Mapping[str, object],
+        records: Mapping[str, str],
+        *,
+        fingerprint: str,
+        profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+    ) -> None:
+        selected = validated_profile_antigravity(profile)
         self.root, self.context, self._records, self.context_fingerprint = Path(root), _freeze(context), dict(records), fingerprint
         self.datasets = _datasets(context); self.manifest = _manifest(context, self.datasets)
         self.run_identity = str(context.get("run_identity"))
+        self.profile = selected
 
     @classmethod
-    def create(cls, root: Path, context: object, backend_decision: object | None = None) -> "Exp436CheckpointStore":
+    def create(
+        cls,
+        root: Path,
+        context: object,
+        backend_decision: object | None = None,
+        *,
+        profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+    ) -> "Exp436CheckpointStore":
+        selected = validated_profile_antigravity(profile)
         root = Path(root)
         if root.exists() or root.is_symlink(): raise ValueError("checkpoint root already exists")
         if not isinstance(context, Exp436RunContext) or backend_decision is not None:
             raise ValueError("checkpoint requires an Exp436RunContext v1")
-        projection = context.to_payload()
+        projection = Exp436RunContext.from_payload(context.to_payload(), profile=selected).to_payload()
         datasets = _datasets(projection); _manifest(projection, datasets)
-        if projection.get("run_identity") != FROZEN_CONFIG.run_identity: raise ValueError("checkpoint run identity does not match frozen identity")
+        if projection.get("run_identity") != selected.run_identity: raise ValueError("checkpoint run identity does not match frozen identity")
         fingerprint = context_fingerprint(projection)
         root.mkdir(mode=0o700); _fsync_dir(root.parent)
         with _root_lock(root, True):
@@ -355,10 +386,19 @@ class Exp436CheckpointStore:
             _write_new(root / "run_context_antigravity.json", canonical_json_bytes({"schema": "exp436.run-context.v1", "context_fingerprint": fingerprint, "context": projection}))
             empty = cls._set_payload_static(fingerprint, (), {})
             _write_new(root / "record_set_antigravity.json", canonical_json_bytes(empty))
-        return cls(root, projection, {}, fingerprint=fingerprint)
+        return cls(root, projection, {}, fingerprint=fingerprint, profile=selected)
 
     @classmethod
-    def _load_locked(cls, root: Path, expected_context: object | None = None, *, mutable: bool = False, allow_temp: bool = False) -> "Exp436CheckpointStore":
+    def _load_locked(
+        cls,
+        root: Path,
+        expected_context: object | None = None,
+        *,
+        mutable: bool = False,
+        allow_temp: bool = False,
+        profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+    ) -> "Exp436CheckpointStore":
+        selected = validated_profile_antigravity(profile)
         root = Path(root)
         descriptor = _open_directory(root, "checkpoint root")
         os.close(descriptor)
@@ -370,15 +410,18 @@ class Exp436CheckpointStore:
         context = dict(context_file["context"])
         # Reconstruct through the explicit v1 parser before trusting any
         # stored population, TEST manifest, path, or provenance field.
-        Exp436RunContext.from_payload(context)
+        Exp436RunContext.from_payload(context, profile=selected)
         fingerprint = context_fingerprint(context)
         if context_file.get("context_fingerprint") != fingerprint: raise ValueError("context fingerprint is invalid")
-        if expected_context is not None and context != context_payload(expected_context): raise ValueError("context fingerprint does not match verified context")
+        if expected_context is not None:
+            expected_payload = context_payload(expected_context)
+            Exp436RunContext.from_payload(expected_payload, profile=selected)
+            if context != expected_payload: raise ValueError("context fingerprint does not match verified context")
         required_set = {"schema", "context_fingerprint", "completed_datasets", "completed", "record_digests", "candidate_count", "excluded_train_rows", "nonfinite_test_rows", "success", "abstention", "record_set_sha256"}
         if set(record_set) != required_set or record_set.get("schema") != "exp436.record-set.v1" or record_set.get("context_fingerprint") != fingerprint: raise ValueError("record set schema is invalid")
         digests = record_set.get("record_digests")
         if not isinstance(digests, Mapping) or any(type(k) is not str or not isinstance(v, str) or not _SHA.fullmatch(v) for k, v in digests.items()) or record_set.get("completed") != len(digests): raise ValueError("record set is invalid")
-        store = cls(root, context, dict(digests), fingerprint=fingerprint); store._validate_records(allow_pending=mutable); store._validate_set_counters(record_set)
+        store = cls(root, context, dict(digests), fingerprint=fingerprint, profile=selected); store._validate_records(allow_pending=mutable); store._validate_set_counters(record_set)
         return store
 
     @classmethod
@@ -417,10 +460,18 @@ class Exp436CheckpointStore:
         return Exp436CheckpointInspection(store.run_identity, store.context_fingerprint, len(store._records), len(store.datasets), MappingProxyType(dict(store._records)), bool(reasons), tuple(reasons))
 
     @classmethod
-    def _scan_locked(cls, root: Path, expected_context: object | None = None, *, mode: str) -> _CheckpointScan:
+    def _scan_locked(
+        cls,
+        root: Path,
+        expected_context: object | None = None,
+        *,
+        mode: str,
+        profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+    ) -> _CheckpointScan:
         """Read one complete snapshot. The caller owns the sole root flock."""
         if mode not in {"pristine", "reconcile"}: raise ValueError("checkpoint scan mode is invalid")
-        store = cls._load_locked(root, expected_context, mutable=mode == "reconcile", allow_temp=mode == "reconcile")
+        selected = validated_profile_antigravity(profile)
+        store = cls._load_locked(root, expected_context, mutable=mode == "reconcile", allow_temp=mode == "reconcile", profile=selected)
         inspection = cls._inspection_locked(store) if mode == "reconcile" else Exp436CheckpointInspection(store.run_identity, store.context_fingerprint, len(store._records), len(store.datasets), MappingProxyType(dict(store._records)))
         return _CheckpointScan(store, inspection)
 
@@ -453,40 +504,75 @@ class Exp436CheckpointStore:
         intent.unlink(); _fsync_dir(intent.parent)
 
     @classmethod
-    def open_existing(cls, root: Path, context: object, backend_decision: object | None = None) -> "Exp436CheckpointStore":
+    def open_existing(
+        cls,
+        root: Path,
+        context: object,
+        backend_decision: object | None = None,
+        *,
+        profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+    ) -> "Exp436CheckpointStore":
+        selected = validated_profile_antigravity(profile)
         if not isinstance(context, Exp436RunContext) or backend_decision is not None:
             raise ValueError("checkpoint requires an Exp436RunContext v1")
-        expected = context.to_payload()
+        expected = Exp436RunContext.from_payload(context.to_payload(), profile=selected).to_payload()
         with _root_lock(Path(root), True):
-            scan = cls._scan_locked(root, expected, mode="reconcile")
+            scan = cls._scan_locked(root, expected, mode="reconcile", profile=selected)
             cls._repair_locked(scan)
-            return cls._scan_locked(root, expected, mode="pristine").store
+            return cls._scan_locked(root, expected, mode="pristine", profile=selected).store
 
     @classmethod
-    def open_read_only(cls, root: Path, *, expected_context: object | None = None) -> "Exp436CheckpointStore":
-        with _root_lock(Path(root), False): return cls._scan_locked(root, expected_context, mode="pristine").store
+    def open_read_only(
+        cls,
+        root: Path,
+        *,
+        expected_context: object | None = None,
+        profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+    ) -> "Exp436CheckpointStore":
+        selected = validated_profile_antigravity(profile)
+        with _root_lock(Path(root), False): return cls._scan_locked(root, expected_context, mode="pristine", profile=selected).store
 
     @classmethod
-    def open_classified_read_only(cls, root: Path, *, expected_context: object | None = None) -> "Exp436CheckpointStore":
+    def open_classified_read_only(
+        cls,
+        root: Path,
+        *,
+        expected_context: object | None = None,
+        profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+    ) -> "Exp436CheckpointStore":
         """Read the durable prefix while classifying recognized crash leftovers."""
-        with _root_lock(Path(root), False): return cls._scan_locked(root, expected_context, mode="reconcile").store
+        selected = validated_profile_antigravity(profile)
+        with _root_lock(Path(root), False): return cls._scan_locked(root, expected_context, mode="reconcile", profile=selected).store
 
     @classmethod
-    def inspect_read_only(cls, root: Path, *, expected_context: object | None = None) -> Exp436CheckpointInspection:
+    def inspect_read_only(
+        cls,
+        root: Path,
+        *,
+        expected_context: object | None = None,
+        profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+    ) -> Exp436CheckpointInspection:
         # Inspection deliberately accepts only syntactically recognized crash
         # leftovers; it never unlinks, replaces, or reconciles them.
-        with _root_lock(Path(root), False): return cls._scan_locked(root, expected_context, mode="reconcile").inspection
+        selected = validated_profile_antigravity(profile)
+        with _root_lock(Path(root), False): return cls._scan_locked(root, expected_context, mode="reconcile", profile=selected).inspection
 
     @classmethod
-    def read_context_projection(cls, root: Path) -> Mapping[str, object]:
-        with _root_lock(Path(root), False): return cls._scan_locked(root, mode="pristine").store.context
+    def read_context_projection(
+        cls,
+        root: Path,
+        *,
+        profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+    ) -> Mapping[str, object]:
+        selected = validated_profile_antigravity(profile)
+        with _root_lock(Path(root), False): return cls._scan_locked(root, mode="pristine", profile=selected).store.context
 
     def completed_digests(self) -> Mapping[str, str]:
         with _root_lock(self.root, False):
-            return MappingProxyType(dict(type(self)._scan_locked(self.root, self.context, mode="reconcile").store._records))
+            return MappingProxyType(dict(type(self)._scan_locked(self.root, self.context, mode="reconcile", profile=self.profile).store._records))
 
     def inspect(self) -> Exp436CheckpointInspection:
-        with _root_lock(self.root, False): return type(self)._scan_locked(self.root, self.context, mode="reconcile").inspection
+        with _root_lock(self.root, False): return type(self)._scan_locked(self.root, self.context, mode="reconcile", profile=self.profile).inspection
 
     def _validate_records(self, *, allow_pending: bool) -> None:
         expected_prefix = self.datasets[:len(self._records)]
@@ -523,13 +609,13 @@ class Exp436CheckpointStore:
 
     def load_record(self, dataset: str) -> Exp436DatasetResult:
         with _root_lock(self.root, False):
-            store = type(self)._scan_locked(self.root, self.context, mode="reconcile").store
+            store = type(self)._scan_locked(self.root, self.context, mode="reconcile", profile=self.profile).store
             if dataset not in store._records: raise ValueError("checkpoint record is absent")
             return store._read_record(dataset, store._records[dataset])
 
     def load_record_metadata(self, dataset: str) -> Mapping[str, object]:
         with _root_lock(self.root, False):
-            store = type(self)._scan_locked(self.root, self.context, mode="reconcile").store
+            store = type(self)._scan_locked(self.root, self.context, mode="reconcile", profile=self.profile).store
             digest = store._records.get(dataset)
             if digest is None: raise ValueError("checkpoint record is absent")
             return store._read_record_metadata(dataset, digest)
@@ -543,7 +629,7 @@ class Exp436CheckpointStore:
     def completed_records(self) -> tuple[tuple[str, str, Exp436DatasetResult, Mapping[str, object]], ...]:
         """Return one locked, validated ordered snapshot for runtime replay."""
         with _root_lock(self.root, False):
-            store = type(self)._scan_locked(self.root, self.context, mode="reconcile").store
+            store = type(self)._scan_locked(self.root, self.context, mode="reconcile", profile=self.profile).store
             return tuple((dataset, digest, store._read_record(dataset, digest), store._read_record_metadata(dataset, digest)) for dataset, digest in store._records.items())
 
     @staticmethod
@@ -569,7 +655,7 @@ class Exp436CheckpointStore:
         raw, digest = canonical_json_bytes(_result_payload(result, self.datasets.index(result.dataset), dataset_metadata)), None
         digest = _digest(raw)
         with _root_lock(self.root, True):
-            fresh = type(self)._scan_locked(self.root, self.context, mode="pristine").store
+            fresh = type(self)._scan_locked(self.root, self.context, mode="pristine", profile=self.profile).store
             self._records = dict(fresh._records)
             expected = self.datasets[len(self._records)] if len(self._records) < len(self.datasets) else None
             existing = self._records.get(result.dataset)
