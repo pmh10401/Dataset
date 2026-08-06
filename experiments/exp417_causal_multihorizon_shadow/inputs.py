@@ -289,6 +289,30 @@ def load_raw_test_values_from_connection(
     return RawTestDataset(dataset=dataset, series=series)
 
 
+def load_raw_test_values_after_train_from_connection(
+    connection: sqlite3.Connection,
+    dataset: str,
+    train: RawTrainDataset,
+    context: FrozenRunContext,
+) -> RawTestDataset:
+    """Decode TEST values after the actual normal TRAIN values are present.
+
+    This is the label-free Exp435 boundary.  The TRAIN object is evidence that
+    the caller completed the normal TRAIN step; it is checked for type and
+    dataset identity before the fixed values-only TEST query is executed.
+    """
+
+    if not isinstance(train, RawTrainDataset):
+        raise ValueError("TRAIN evidence must be a RawTrainDataset")
+    _validate_context_dataset(dataset, context)
+    if train.dataset != dataset:
+        raise ValueError("TRAIN evidence dataset does not match requested TEST dataset")
+    series = _load_values_from_connection(connection, dataset, _TEST_VALUES_SQL, "TEST")
+    if tuple((item.instance_index, len(item.values)) for item in series) != context.test_identity_manifest[dataset]:
+        raise ValueError("TEST values do not match the frozen identity manifest")
+    return RawTestDataset(dataset=dataset, series=series)
+
+
 def assert_label_free_sql_contract() -> None:
     """Fail if the fixed TEST query stops being identity-and-values only."""
     query = " ".join(_TEST_VALUES_SQL.lower().split())

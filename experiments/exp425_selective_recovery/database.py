@@ -372,6 +372,38 @@ class Exp425DatabaseSnapshot:
             raise primary
         return result
 
+    def load_test_values_after_train(
+        self, dataset: str, train: RawTrainDataset, context: FrozenRunContext
+    ) -> RawTestDataset:
+        """Load values-only TEST after this snapshot's TRAIN evidence.
+
+        The descriptor boundary is checked both before and after the query,
+        exactly like the existing TRAIN/contract path.  No qualification
+        contract or TEST label is constructed here.
+        """
+
+        self.verify_boundary("load_test_after_train:before")
+        primary: BaseException | None = None
+        try:
+            self._require_context(context, kind="TEST", dataset=dataset)
+            result = exp417_inputs.load_raw_test_values_after_train_from_connection(
+                self._connection, dataset, train, context
+            )
+        except sqlite3.Error as error:
+            primary = ValueError("Exp435 TEST decoder query failed")
+            primary.__cause__ = error
+        except BaseException as error:
+            primary = error
+        try:
+            self.verify_boundary("load_test_after_train:after")
+        except BaseException as boundary_error:
+            if primary is not None:
+                raise primary from boundary_error
+            raise
+        if primary is not None:
+            raise primary
+        return result
+
     def load_test(self, dataset: str, contract: FrozenTrainContract, context: FrozenRunContext) -> RawTestDataset:
         self.verify_boundary("load_test:before")
         primary: BaseException | None = None

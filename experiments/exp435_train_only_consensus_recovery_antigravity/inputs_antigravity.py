@@ -20,7 +20,6 @@ from experiments.exp417_causal_multihorizon_shadow.config import (
 )
 from experiments.exp417_causal_multihorizon_shadow.contracts import (
     FrozenRunContext,
-    FrozenTrainContract,
     RawTestDataset,
     RawTrainDataset,
 )
@@ -75,11 +74,16 @@ class Exp435InputSession:
         return self.database.load_train(dataset, self.context)
 
     def load_test_values(
-        self, dataset: str, train_contract: FrozenTrainContract
+        self, dataset: str, train: RawTrainDataset
     ) -> RawTestDataset:
-        """Load TEST values only after a validated TRAIN contract exists."""
+        """Load TEST values only after actual normal TRAIN values exist."""
 
-        return self.database.load_test(dataset, train_contract, self.context)
+        loader = getattr(self.database, "load_test_values_after_train", None)
+        if callable(loader):
+            return loader(dataset, train, self.context)
+        # Compatibility for existing in-memory test doubles.  The production
+        # Exp425 snapshot always exposes the values-only method above.
+        return self.database.load_test(dataset, train, self.context)
 
 
 def _assert_shared_frozen_identity() -> None:

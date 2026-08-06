@@ -989,7 +989,8 @@ class Exp435RunSummary:
     def __post_init__(self) -> None:
         _name(self.run_identity, "run_identity")
         if self.status not in {
-            "initializing", "running", "interrupted", "complete", "complete_review_only", "failed"
+            "initializing", "running", "interrupted", "checkpoint_complete",
+            "complete", "complete_review_only", "failed"
         }:
             raise ValueError("status is invalid")
         values = (
@@ -1004,7 +1005,17 @@ class Exp435RunSummary:
             _integer(value, label)
         if not isinstance(self.backend, BackendDecision):
             raise ValueError("backend must be a BackendDecision")
+        checkpoint_complete = self.status == "checkpoint_complete"
         terminal_complete = self.status in {"complete", "complete_review_only"}
+        if checkpoint_complete:
+            if self.total_datasets != FROZEN_CONFIG.expected_datasets:
+                raise ValueError("checkpoint-complete summary total must equal frozen population 1117")
+            if self.completed_datasets != FROZEN_CONFIG.expected_datasets:
+                raise ValueError("checkpoint-complete summary must process all 1117 datasets")
+            if self.failed_datasets != 0 or self.successful_datasets + self.abstained_datasets != self.completed_datasets:
+                raise ValueError("checkpoint-complete summary requires zero errors and conserved success/abstention counts")
+            if self.candidate_count > FROZEN_CONFIG.global_candidate_budget:
+                raise ValueError("checkpoint-complete summary candidate budget exceeded")
         if terminal_complete:
             if self.total_datasets != FROZEN_CONFIG.expected_datasets:
                 raise ValueError("complete summary total must equal frozen population 1117")
