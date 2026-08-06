@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T08:19:31Z",
-  "generated_from_commit": "b0e24241d5b1b7ea0b9d228e5b9934a1ec70c9ab",
+  "generated_at": "2026-08-06T08:24:06Z",
+  "generated_from_commit": "b241e632b40c8440341ff7316f5e13e1e68cbcb3",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -29,7 +29,7 @@
       "tests": [],
       "constraints": [
         "Must be updated when execution stops or phase changes",
-        "Exp435 failed before prediction freeze at progress count 179 and is preserved; Exp436 readiness owns RUN_PARENT, new requires its exact verified readiness plus absent output/checkpoint/evaluation roots, and product implementation/prediction have not started. TEST labels remain unopened and PID is null.",
+        "Exp435 failed before prediction freeze at progress count 179 and is preserved; Exp436 readiness atomically creates RUN_PARENT, new requires its exact verified readiness plus absent output/checkpoint/evaluation roots, and product implementation/prediction have not started. TEST labels remain unopened and PID is null.",
         "Exp436 fixes candidate_alpha=0.01, per-channel 1.4826 median/MAD transforms, smoke seed 43601 with deterministic MLX/MPS selection, and a hash-bound train exclusion audit artifact."
       ],
       "evidence": [

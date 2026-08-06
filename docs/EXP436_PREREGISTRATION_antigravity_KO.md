@@ -79,7 +79,7 @@ global candidate budget은 **100**이고 101번째는 `candidate_budget_exceeded
 
 ## 실행과 가속
 
-readiness가 정확한 RUN_PARENT를 생성·소유하고 그 아래
+readiness가 previously absent 정확한 RUN_PARENT를 원자적으로 생성·소유하고 그 아래
 `readiness_antigravity.json`을 남긴다. `new`는 그 **같은 existing RUN_PARENT**와 exact verified
 readiness artifact를 요구하며 `output_antigravity`, `checkpoint_antigravity`, `evaluation_antigravity`가
 모두 부재일 때만 허용한다. `new`는 RUN_PARENT 또는 readiness root를 삭제·덮어쓰지 않는다. 모든 새

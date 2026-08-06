@@ -54,12 +54,11 @@ python3 -m unittest discover -s experiments/exp417_causal_multihorizon_shadow/te
 git diff --check
 ```
 
-readiness가 RUN_PARENT를 생성·소유하고 `readiness_antigravity.json`을 그 아래에 남긴다. `new`는
+readiness는 previously absent RUN_PARENT를 원자적으로 생성·소유하고 `readiness_antigravity.json`을 그 아래에 남긴다. `new`는
 **같은 existing RUN_PARENT**의 exact verified readiness artifact를 요구하며 output/checkpoint/evaluation
 fixed root가 모두 부재일 때만 허용한다. `new`는 RUN_PARENT 또는 readiness root를 지우거나 덮어쓰지 않는다.
 
 ```bash
-mkdir /Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806
 python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py readiness
 ```
 

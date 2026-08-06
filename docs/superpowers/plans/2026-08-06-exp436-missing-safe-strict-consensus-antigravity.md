@@ -710,13 +710,13 @@ git status --short --branch
 
 Expected: clean worktree after the commit.
 
-- [ ] **Step 7: Generate official readiness at the reviewed clean HEAD.**
+- [ ] **Step 7: From a previously absent RUN_PARENT, generate official readiness at the reviewed clean HEAD.**
 
 ```bash
 python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py readiness
 ```
 
-Readiness must bind the clean commit, DB/lane hashes, focused test evidence, CPU/MLX/MPS benchmark evidence, selected backend, and fallback reason. `inspect` is not called until a prediction root exists.
+Readiness must atomically create the previously absent RUN_PARENT and its `readiness_antigravity.json`, then bind the clean commit, DB/lane hashes, focused test evidence, CPU/MLX/MPS benchmark evidence, selected backend, and fallback reason. It fails closed if the parent already exists. `inspect` is not called until a prediction root exists.
 
 ---
 
@@ -725,10 +725,14 @@ Readiness must bind the clean commit, DB/lane hashes, focused test evidence, CPU
 **Files outside Git:**
 - Create only under `/Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806`
 
-- [ ] **Step 1: Prove the official root is absent and launch once.**
+- [ ] **Step 1: Prove the readiness-owned root and exact launch preconditions, then launch once.**
 
 ```bash
-test ! -e /Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806
+test -d /Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806
+test -f /Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806/readiness_antigravity.json
+test ! -e /Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806/output_antigravity
+test ! -e /Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806/checkpoint_antigravity
+test ! -e /Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806/evaluation_antigravity
 nohup python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py new \
   >/tmp/exp436_new_antigravity.log 2>&1 &
 exp436_launcher_pid=$!
