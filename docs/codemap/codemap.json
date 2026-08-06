@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T05:44:57Z",
-  "generated_from_commit": "a0e59c55811614a969a3a1b48d42cd58a669565d",
+  "generated_at": "2026-08-06T06:11:58Z",
+  "generated_from_commit": "b669f46c9ecf78ab0cfdf1c8ae553be74c8b419e",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -29,24 +29,24 @@
       "tests": [],
       "constraints": [
         "Must be updated when execution stops or phase changes",
-        "Exp435 remains implementation-complete with final review pending; prediction has not started, TEST labels are unopened, PID is null and fixed roots are absent."
+        "Exp435 final-review corrections are complete; code-map synchronization and a fresh Sol/High review remain before readiness. Prediction has not started, TEST labels are unopened, PID is null and fixed roots are absent."
       ],
       "evidence": [
-        {
-          "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_experiment\": \"Exp435\""
-        },
         {
           "path": "AUTONOMOUS_RESEARCH_LOOP.md",
           "symbol": "prediction hash"
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"implementation_complete_final_review_pending\""
+          "symbol": "\"active_experiment\": \"Exp435\""
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"last_verified_commit\": \"2f21989bc5441bacf06c9b9faf253e0a27a1ca67\""
+          "symbol": "\"active_phase\": \"final_review_corrections_complete_codemap_and_fresh_review_pending\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"last_verified_commit\": \"947754df26f54d847dac9c44c4d8d2a84f07c10b\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -58,7 +58,7 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"implementation_complete_prediction_not_started\""
+          "symbol": "\"implementation_commit\": \"947754df26f54d847dac9c44c4d8d2a84f07c10b\""
         }
       ]
     },
@@ -634,7 +634,7 @@
       "boundary": "Exp435 label-free prediction",
       "layer": 1,
       "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
-      "role": "Groups the frozen Exp435 configuration/contracts, descriptor-bound label-free input session, TRAIN-only feature calibration, CPU consensus scoring, candidate budget and optional MLX readiness gate.",
+      "role": "Groups the frozen Exp435 configuration/contracts, descriptor-bound label-free input session, TRAIN-only feature calibration, CPU consensus scoring, candidate budget and optional exact reference-batched MLX readiness gate.",
       "entrypoints": [
         "Exp435FrozenConfig",
         "FROZEN_CONFIG",
@@ -690,12 +690,13 @@
         "CPU scoring routes each TEST value row to one exact raw-length TRAIN group; missing or unavailable lengths abstain without concatenation or tail replacement",
         "A candidate requires prototype AND (gradient OR ACF) with strict score > threshold; frozen-lane coordinates are excluded",
         "Global candidate validation sorts coordinates and fails closed above 100; it never truncates or auto-promotes",
-        "MLX is optional and lazy; readiness uses exactly one query row per channel score call, preserves the frozen reference batch sizes, and adopted runtime/device/output failure fails closed without CPU-score mixing",
-        "MLX dense scoring keeps exact float32 inputs and checks finite outputs, normalized/absolute score error <=1e-5 and exact candidate coordinates for every batch size 16, 32, 64, 128 and 256",
         "Each MLX gate batch performs 2 warmups and 5 timed measurements including evaluation and synchronization; adoption requires speedup >=1.1",
         "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance",
         "UnavailableTrainGroup, TrainGroup and CalibratedTrainGroupResult remain public contract exports for feature/scoring consumers.",
-        "Exp435FrozenConfig supplies the sole canonical run identity exp435-train-only-consensus-recovery-antigravity-20260806 for readiness and all runtime artifacts."
+        "Exp435FrozenConfig supplies the sole canonical run identity exp435-train-only-consensus-recovery-antigravity-20260806 for readiness and all runtime artifacts.",
+        "MLX is optional and lazy; readiness uses exactly one query row per channel call and batch sizes 16/32/64/128/256 chunk the reference axis in readiness and production.",
+        "Each MLX reference chunk contributes nearest-k values to a rolling exact global nearest-k set, bounding dense allocation without changing the float32 RMS k-median score.",
+        "MLX adoption requires finite outputs, normalized/absolute score error <=1e-5, exact candidate coordinates for every reference batch size and speedup >=1.1; runtime failures fail closed without CPU-score mixing."
       ],
       "evidence": [
         {
@@ -901,6 +902,22 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
           "symbol": "def test_readiness_fixture_uses_one_query_row_per_production_score_call"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "for start in range(0, refs.shape[0], int(batch_size)):"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "nearest = mx.sort(mx.concatenate((nearest, chunk_nearest), axis=1), axis=1)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_mlx_reference_batches_are_exact_in_readiness_and_production"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_selected_batch_size_reaches_production_engine"
         }
       ]
     },
@@ -960,8 +977,8 @@
         "Production evaluate is bound to the exact FROZEN_OUTPUT and FROZEN_EVALUATION sibling paths under RUN_PARENT; helper evaluation roots must also be absent, separate and outside output/publication/checkpoint.",
         "The direct scratch runner bootstraps the repository root before importing experiments and exposes exactly five modes; an outside-cwd --help subprocess regression protects the documented entrypoint.",
         "The runbook records readiness, prediction, replay, evaluation, interrupted and failed states with fixed CLI return-code behavior.",
-        "Failed roots reject resume read-only before input access, PID/progress/event mutation; interrupted roots remain resumable after binding checks.",
-        "Parallel current_dataset denotes only loading/dispatching, a submitted result not yet collected by the parent, or committing work; parallel stages never assert unobserved worker scoring."
+        "Failed roots are rejected from durable progress by a read-only gate before mutable checkpoint reconciliation, input access, PID/progress/event mutation or temp/intent cleanup; interrupted roots remain resumable after binding checks.",
+        "Parallel progress uses exactly loading, dispatching, awaiting_worker_result, committing and idle; current_dataset names only parent-observed work and worker failures retain the actual dataset under awaiting_worker_result."
       ],
       "evidence": [
         {
@@ -1155,6 +1172,18 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
           "symbol": "def test_inspect_requires_exact_frozen_identity_without_mutating_roots"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "ProgressWriter.reject_failed_resume(run_root)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_failed_resume_rejects_before_checkpoint_reconciliation"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_parallel_worker_failure_records_offending_dataset_and_does_not_wait_for_sibling"
         }
       ]
     },
@@ -1172,6 +1201,7 @@
         "Exp435CheckpointStore.commit",
         "Exp435CheckpointStore.recover_runtime_accounting",
         "ProgressWriter.create",
+        "ProgressWriter.reject_failed_resume",
         "ProgressWriter.open_existing",
         "ProgressWriter.update",
         "ProgressWriter.append_event",
@@ -1232,8 +1262,6 @@
       "constraints": [
         "Atomic no-clobber records and record-set digest are fsynced; commit intent recovery is deterministic",
         "Candidate budget is checked before writing an over-budget record and publication rejects totals above 100 without truncation",
-        "Only interrupted/nonterminal roots may reconcile exact internal progress/PID temps; failed durable state rejects read-only before any cleanup or PID/progress/event mutation.",
-        "Progress, PID and events bind one canonical checkpoint path, backend, total 1,117, run identity and context fingerprint",
         "Inspection opens no database or worker and validates outputs, events, label firewall and counter conservation read-only",
         "Durable progress and logs never contain TEST values or labels",
         "Publication accepts checkpoint_complete runtime state only and requires exact success/abstention/error counter conservation",
@@ -1251,7 +1279,10 @@
         "One Exp417 descriptor-bound verified read-only SQLite connection opens the exact hashed inode after the hash gate, loads only instance_index and label, then closes once; prediction remains label-free.",
         "The complete frozen output tree is snapshotted before labels and re-inspected immediately before the staged evaluation no-clobber rename; any source mutation fails closed.",
         "Evaluation payload state is evaluated and combined confusion counts preserve the monotonic union invariants: TP/FP do not decrease and FN/TN do not increase.",
-        "Exp404 and Exp291 comparator artifacts are each captured through one O_NOFOLLOW descriptor, then bytes, SHA256 and parse use that same capture."
+        "Exp404 and Exp291 comparator artifacts are each captured through one O_NOFOLLOW descriptor, then bytes, SHA256 and parse use that same capture.",
+        "Only interrupted/nonterminal roots may reconcile exact internal progress/PID/checkpoint temps or intents; failed durable state is rejected read-only before every mutable checkpoint operation.",
+        "Checkpoint create/open/read-only inspection/publication require the exact canonical FROZEN_CONFIG.run_identity; no missing, alternate or synthesized identity is accepted.",
+        "Progress, PID and events bind one canonical checkpoint path, backend, total 1,117, frozen run identity and context fingerprint."
       ],
       "evidence": [
         {
@@ -1517,6 +1548,22 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
           "symbol": "def test_pinned_artifact_reader_keeps_opened_bytes_after_pathname_aba_replacement"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _require_frozen_run_identity("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "def reject_failed_resume(cls, output: Path)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _require_frozen_store_identity("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "def test_create_requires_exact_frozen_run_identity"
         }
       ]
     }
@@ -2200,7 +2247,7 @@
         "exp435_runtime",
         "exp435_checkpoint_progress"
       ],
-      "outcome": "The CLI checks clean HEAD, frozen canonical identity and inputs, requires absent fixed roots, benchmarks the exact one-query-row MLX scoring granularity across frozen reference batch sizes, then writes one canonical readiness artifact. Adoption is immutable for the run; runtime MLX failure fails closed rather than mixing CPU scores."
+      "outcome": "The CLI checks clean HEAD, frozen canonical identity and inputs, requires absent fixed roots, and benchmarks one query row while each frozen batch size chunks references and maintains exact global nearest-k. The chosen reference batch is immutable for production; runtime MLX failure fails closed rather than mixing CPU scores."
     },
     {
       "id": "exp435_new_resume_flow",
@@ -2214,7 +2261,7 @@
         "sqlite_store",
         "exp435_checkpoint_progress"
       ],
-      "outcome": "New binds the canonical identity and final clean commit before the descriptor-bound session; unfinished interrupted resume rechecks those bindings, while failed roots reject read-only before input/PID/progress/event mutation. The parent loads TRAIN then values-only TEST, submits at most seven CPU futures, records only parent-observable dispatch/result/commit stages, and commits dataset-name order."
+      "outcome": "New binds the canonical identity and final clean commit before the descriptor-bound session; interrupted resume rechecks those bindings, while failed roots reject read-only before checkpoint cleanup or any input/PID/progress/event mutation. The parent loads TRAIN then values-only TEST, submits at most seven CPU futures, uses only five parent-observed stages, and commits dataset-name order."
     },
     {
       "id": "exp435_publication_flow",
