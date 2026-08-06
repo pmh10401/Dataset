@@ -70,7 +70,24 @@ class Exp435ContractTests(unittest.TestCase):
             "mlx_version": "0.29.0",
             "mlx_metal_version": "0.29.0",
             "device": "gpu",
+            "device_info": "{\"architecture\":\"test-gpu\"}",
+            "metal_available": True,
             "timings": ((16, 0.12, 0.1),),
+            "batch_evidence": (
+                BackendBatchEvidence(
+                    batch_size=16,
+                    finite_outputs=True,
+                    candidate_identity_match=True,
+                    parity_passed=True,
+                    normalized_error_max=1e-6,
+                    absolute_error_max=1e-6,
+                    speed_passed=True,
+                    cpu_median_seconds=0.12,
+                    mlx_median_seconds=0.1,
+                    speedup=1.2,
+                    reason="adopted_after_parity_and_speed_gate",
+                ),
+            ),
             "reason": "adopted_after_parity_and_speed_gate",
         }
         values.update(changes)
@@ -371,6 +388,26 @@ class Exp435ContractTests(unittest.TestCase):
                 mlx_median_seconds=0.01,
                 speedup=12.0,
             )
+
+    def test_adopted_backend_rejects_unbound_or_mismatched_evidence(self) -> None:
+        valid = self._adopted_backend()
+        bad_cases = (
+            ({"batch_evidence": ()}, "batch evidence"),
+            ({"finite_outputs": False}, "finite_outputs"),
+            ({"candidate_identity_match": False}, "candidate_identity_match"),
+            ({"parity_passed": False}, "parity_passed"),
+            ({"normalized_error_max": 2e-6}, "normalized_error_max"),
+            ({"absolute_error_max": 2e-6}, "absolute_error_max"),
+            ({"cpu_median_seconds": 0.11, "speedup": 1.1}, "cpu_median_seconds"),
+            ({"mlx_median_seconds": 0.11, "speedup": 12 / 11}, "mlx_median_seconds"),
+            ({"speedup": 1.3}, "speedup"),
+            ({"device_info": None}, "device_info"),
+            ({"metal_available": False}, "available Metal"),
+            ({"timings": ((16, 0.13, 0.1),)}, "timing does not match"),
+        )
+        for changes, message in bad_cases:
+            with self.subTest(message=message), self.assertRaises(ValueError):
+                replace(valid, **changes)
 
     def test_available_calibration_matches_train_count_and_higher_quantile(self) -> None:
         loo_scores = (0.0, 0.1, 0.2, 0.3)

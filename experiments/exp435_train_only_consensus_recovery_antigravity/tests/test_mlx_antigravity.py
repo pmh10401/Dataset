@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import builtins
-import importlib
 import sys
 import types
 import unittest
@@ -126,8 +125,12 @@ class MlxAdoptionTests(unittest.TestCase):
         self.assertFalse(decision.adopted)
         self.assertEqual(decision.reason, "candidate_identity_mismatch")
 
-    def test_unavailable_engine_returns_cpu(self) -> None:
-        decision = benchmark_mlx_adoption(fixtures=self.fixtures, engine=None)
+    def test_injected_unavailable_engine_returns_cpu(self) -> None:
+        with patch(
+            "experiments.exp435_train_only_consensus_recovery_antigravity.mlx_antigravity.MlxEngine",
+            side_effect=MlxUnavailable("mlx_unavailable"),
+        ):
+            decision = benchmark_mlx_adoption(fixtures=self.fixtures, engine=None)
         self.assertFalse(decision.adopted)
         self.assertEqual(decision.backend, "cpu")
         self.assertEqual(decision.reason, "mlx_unavailable")
@@ -239,6 +242,19 @@ class MlxAdoptionTests(unittest.TestCase):
         self.assertEqual(len(decision.timings), 5)
         self.assertIn(decision.reason, {"absolute_error_exceeded", "candidate_identity_mismatch"})
 
+    def test_shape_only_failure_has_precise_top_level_reason(self) -> None:
+        class WrongShape(FakeMlxEngine):
+            def score(self, query, references, k, *, batch_size=16):
+                return np.asarray([1.0], dtype=np.float32)
+
+        decision = benchmark_mlx_adoption(
+            fixtures=self.fixtures,
+            engine=WrongShape(speedup=10.0),
+            clock=_StepClock(),
+        )
+        self.assertFalse(decision.adopted)
+        self.assertEqual(decision.reason, "score_shape_mismatch")
+
     def test_timing_tie_chooses_smaller_batch(self) -> None:
         class Tied(FakeMlxEngine):
             def timed_call(self, kind: str, batch_size: int, call, clock) -> float:
@@ -327,12 +343,39 @@ class MlxAdoptionTests(unittest.TestCase):
             expected,
         )
 
-    def test_score_channel_mlx_requires_explicit_engine(self) -> None:
-        with self.assertRaises(Exception):
+        class OtherDevice(FakeMlxEngine):
+            def __init__(self):
+                super().__init__()
+                self.device = "other-metal-device"
+
+        class OtherHardwareInfo(FakeMlxEngine):
+            def __init__(self):
+                super().__init__()
+                self.device_info = "other-device-info"
+
+        class NoMetal(FakeMlxEngine):
+            def __init__(self):
+                super().__init__()
+                self.metal_available = False
+
+        for incompatible in (OtherDevice(), OtherHardwareInfo(), NoMetal()):
+            with self.subTest(incompatible=type(incompatible).__name__):
+                self.assertEqual(
+                    score_with_backend(decision, query, references, 3, engine=incompatible),
+                    expected,
+                )
+
+    def test_injected_engine_failure_is_explicit(self) -> None:
+        class UnavailableEngine:
+            def score(self, query, references, k, *, batch_size=16):
+                raise MlxUnavailable("mlx_unavailable")
+
+        with self.assertRaises(MlxUnavailable):
             score_channel_mlx(
                 np.asarray([[0.0, 0.0]], dtype=np.float32),
                 np.asarray([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]], dtype=np.float32),
                 3,
+                engine=UnavailableEngine(),
             )
 
     def test_mlx_engine_constructs_from_standard_bundled_metal_stub(self) -> None:

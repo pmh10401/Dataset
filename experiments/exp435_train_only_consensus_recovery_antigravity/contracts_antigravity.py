@@ -789,11 +789,15 @@ class BackendDecision:
             if value is not None:
                 object.__setattr__(self, name, _name(value, name))
         timings = []
+        timing_batches: set[int] = set()
         for item in _tuple(self.timings, "timings"):
             if not isinstance(item, tuple) or len(item) != 3:
                 raise ValueError("timings must be (batch_size, cpu_seconds, mlx_seconds) tuples")
             batch, cpu_seconds, mlx_seconds = item
             _integer(batch, "timing batch size", minimum=1)
+            if batch in timing_batches:
+                raise ValueError("timings contain duplicate batch size")
+            timing_batches.add(batch)
             timings.append((batch, _finite(cpu_seconds, "cpu timing"), _finite(mlx_seconds, "mlx timing")))
         object.__setattr__(self, "timings", tuple(timings))
         batch_evidence = []
@@ -852,7 +856,9 @@ class BackendDecision:
                 raise ValueError("adopted MLX speedup from recorded medians must be at least 1.1")
             if self.mlx_version is None or self.mlx_metal_version is None or self.device is None:
                 raise ValueError("adopted MLX requires mlx_version, mlx_metal_version, and device")
-            if self.metal_available is False:
+            if self.device_info is None:
+                raise ValueError("adopted MLX requires device_info")
+            if self.metal_available is not True:
                 raise ValueError("adopted MLX requires available Metal")
             if self.selected_batch_size is None or not self.timings:
                 raise ValueError("adopted MLX requires benchmark timings")
@@ -864,15 +870,48 @@ class BackendDecision:
                 raise ValueError("adopted MLX timings must be positive")
             if not any(item[0] == self.batch_size for item in self.timings):
                 raise ValueError("adopted MLX batch size is absent from timings")
-        if self.batch_evidence:
-            if self.selected_batch_size is not None:
-                selected_evidence = [
-                    item for item in self.batch_evidence if item.batch_size == self.selected_batch_size
-                ]
-                if len(selected_evidence) != 1:
-                    raise ValueError("selected batch evidence is missing or duplicated")
-                if self.adopted and not selected_evidence[0].adopted:
+            if not self.batch_evidence:
+                raise ValueError("adopted MLX requires batch evidence")
+        if self.batch_evidence and self.selected_batch_size is not None:
+            selected_evidence = [
+                item for item in self.batch_evidence if item.batch_size == self.selected_batch_size
+            ]
+            if len(selected_evidence) != 1:
+                raise ValueError("selected batch evidence is missing or duplicated")
+            selected_record = selected_evidence[0]
+            if self.adopted:
+                if not selected_record.adopted:
                     raise ValueError("adopted decision selected batch evidence did not pass")
+                if self.finite_outputs != selected_record.finite_outputs:
+                    raise ValueError("adopted finite_outputs does not match selected batch evidence")
+                if self.candidate_identity_match != selected_record.candidate_identity_match:
+                    raise ValueError("adopted candidate_identity_match does not match selected batch evidence")
+                if self.parity_passed != selected_record.parity_passed:
+                    raise ValueError("adopted parity_passed does not match selected batch evidence")
+                for name in (
+                    "normalized_error_max",
+                    "absolute_error_max",
+                    "cpu_median_seconds",
+                    "mlx_median_seconds",
+                    "speedup",
+                ):
+                    if getattr(self, name) != getattr(selected_record, name):
+                        raise ValueError(f"adopted {name} does not match selected batch evidence")
+            evidence_by_batch = {item.batch_size: item for item in self.batch_evidence}
+            for batch, cpu_seconds, mlx_seconds in self.timings:
+                record = evidence_by_batch.get(batch)
+                if record is None:
+                    raise ValueError("timings contain batch without batch evidence")
+                if record.cpu_median_seconds is None or record.mlx_median_seconds is None:
+                    raise ValueError("timing has no batch medians")
+                if record.cpu_median_seconds != cpu_seconds or record.mlx_median_seconds != mlx_seconds:
+                    raise ValueError("timing does not match batch evidence")
+            for record in self.batch_evidence:
+                if record.cpu_median_seconds is None and record.mlx_median_seconds is None:
+                    continue
+                matching = [item for item in self.timings if item[0] == record.batch_size]
+                if len(matching) != 1:
+                    raise ValueError("batch evidence medians are missing from timings")
 
     @classmethod
     def cpu_fallback(

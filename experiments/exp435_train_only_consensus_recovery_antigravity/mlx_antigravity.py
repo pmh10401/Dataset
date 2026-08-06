@@ -14,7 +14,7 @@ from importlib import metadata
 import json
 from numbers import Integral
 from time import perf_counter
-from typing import Any, Callable, Mapping, Protocol, Sequence
+from typing import Callable, Mapping, Protocol, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -680,7 +680,10 @@ def benchmark_mlx_adoption(
                         clock,
                     )
                 except (TypeError, ValueError, FloatingPointError) as exc:
-                    batch_error = batch_error or "nonfinite_output"
+                    message = str(exc).lower()
+                    batch_error = batch_error or (
+                        "score_shape_mismatch" if "shape" in message else "nonfinite_output"
+                    )
                     batch_finite = False
                     batch_identity = False
                     break
@@ -732,7 +735,10 @@ def benchmark_mlx_adoption(
                     batch_identity = False
                     batch_error = batch_error or "candidate_identity_mismatch"
         except (TypeError, ValueError, FloatingPointError) as exc:
-            batch_error = batch_error or "nonfinite_output"
+            message = str(exc).lower()
+            batch_error = batch_error or (
+                "score_shape_mismatch" if "shape" in message else "nonfinite_output"
+            )
             batch_finite = False
             batch_identity = False
         except RuntimeError as exc:
@@ -829,6 +835,8 @@ def benchmark_mlx_adoption(
         reason = "absolute_error_exceeded"
     elif any(item.reason == "normalized_error_exceeded" for item in evidence):
         reason = "normalized_error_exceeded"
+    elif any(item.reason == "score_shape_mismatch" for item in evidence):
+        reason = "score_shape_mismatch"
     elif any(item.reason.startswith("mlx_runtime_error:") for item in evidence):
         reason = next(item.reason for item in evidence if item.reason.startswith("mlx_runtime_error:"))
     else:
@@ -882,6 +890,15 @@ def score_with_backend(
                 actual_device = _metadata(active_engine, "device", "device_name")
                 if actual_device != decision.device:
                     raise ValueError("MLX device is not the approved backend")
+            if decision.device_info is None:
+                raise ValueError("approved MLX device_info is missing")
+            actual_device_info = _metadata(active_engine, "device_info", "metal_device_info")
+            if actual_device_info != decision.device_info:
+                raise ValueError("MLX device_info is not the approved backend")
+            if decision.metal_available is not True:
+                raise ValueError("approved MLX Metal availability is false")
+            if getattr(active_engine, "metal_available", None) is not True:
+                raise ValueError("MLX Metal availability is not the approved backend")
             output = score_channel_mlx(
                 query,
                 references,
