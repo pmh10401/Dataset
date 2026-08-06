@@ -1,19 +1,15 @@
 {
-  "current_commit": "a960e070cbcc652007b2fc378034b008fd01e547",
+  "current_commit": "ba20ceeb65705c4f2c760bbfd21f5b6b9c06f3fb",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-06T02:48:20Z",
-  "changed_modules_since_prior_lock": [
-    "experiments"
-  ],
+  "generated_at": "2026-08-06T02:56:30Z",
+  "changed_modules_since_prior_lock": [],
   "scanned_scope": [
     "tracked root files",
     ".superpowers",
     "docs except docs/codemap",
     "experiments",
     "operational",
-    "outputs",
     "reports",
-    "results",
     "scratch",
     "scripts",
     "vercel-dashboard"
