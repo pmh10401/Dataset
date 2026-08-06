@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T07:16:49Z",
-  "generated_from_commit": "bef9403c02c26b072fa81c69ca19acfecaedebc2",
+  "generated_at": "2026-08-06T07:24:24Z",
+  "generated_from_commit": "fc098accbd16e061d15c13b4a34e8459458abd77",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -29,7 +29,7 @@
       "tests": [],
       "constraints": [
         "Must be updated when execution stops or phase changes",
-        "Exp435 fresh Sol/High review returned ship with no findings; fixed readiness is next. Prediction has not started, TEST labels are unopened, PID is null and fixed run parent is absent."
+        "Exp435 prediction has not started; after the project-wide CPU max-minus-one policy change, readiness must be regenerated from a clean commit with 11 workers on the 12-logical-CPU Mac. TEST labels are unopened and PID is null."
       ],
       "evidence": [
         {
@@ -42,7 +42,7 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"ship_approved_readiness_next\""
+          "symbol": "\"active_phase\": \"cpu_max_minus_one_revalidation\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -62,7 +62,7 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"ship_review_passed_readiness_next\""
+          "symbol": "\"status\": \"cpu_max_minus_one_revalidation\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
@@ -646,6 +646,7 @@
       "entrypoints": [
         "Exp435FrozenConfig",
         "FROZEN_CONFIG",
+        "cpu_worker_count_antigravity",
         "PreparedTrainGroup",
         "ChannelCalibration",
         "CalibratedTrainGroup",
@@ -687,6 +688,7 @@
       ],
       "constraints": [
         "FROZEN_CONFIG.validate() must pass before input access",
+        "CPU parallelism always uses max(1, detected logical CPU count - 1); the current 12-logical-CPU Mac therefore uses 11 workers",
         "Exactly 1,117 sorted unique datasets come from the frozen Exp291/292 lane population",
         "The held Exp425 descriptor is read-only and closes on every exit path",
         "Prediction intake exposes TRAIN values and TEST values only; no TEST labels are loaded",
@@ -710,6 +712,10 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
           "symbol": "class Exp435FrozenConfig"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
+          "symbol": "def cpu_worker_count_antigravity()"
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
@@ -986,7 +992,7 @@
         "New validates readiness, imports input/runtime dependencies before the final HEAD read, then binds that exact commit before opening the input session",
         "Unfinished resume imports runtime/input dependencies and rechecks final HEAD immediately before opening the input session; completed or repeated resume replays read-only without DB or workers",
         "Evaluation is imported and delegated lazily only for evaluate; implementation and post-freeze TEST-label loading are grouped in exp435_checkpoint_progress; prediction modes never import it",
-        "CPU uses ProcessPoolExecutor(max_workers=7) with at most seven submitted/in-flight futures; queued work is never reported as current.",
+        "CPU uses ProcessPoolExecutor with max(1, detected logical CPU count - 1) workers and no more submitted/in-flight futures than workers; queued work is never reported as current.",
         "LaneMembershipSnapshot is immutable and pickle-safe before workers start",
         "Parent alone owns the verified input session, checkpoint, progress and logs; commits remain dataset-name ordered",
         "Adopted MLX uses one process and no outer scoring pool",
@@ -1189,7 +1195,7 @@
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
-          "symbol": "def test_parallel_progress_never_reports_or_submits_an_eighth_blocked_dataset"
+          "symbol": "def test_parallel_progress_never_submits_beyond_frozen_worker_count"
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
@@ -2358,7 +2364,7 @@
         "sqlite_store",
         "exp435_checkpoint_progress"
       ],
-      "outcome": "New binds canonical identity and clean commit. Integrated interrupted resume rejects existing evaluation, runs the shared complete read-only runtime preflight, then alone permits checkpoint/output reconciliation; invalid records preserve the whole tree. Parent-owned TRAIN then values-only TEST uses at most seven CPU futures, name-ordered commits and five persisted stages."
+      "outcome": "New binds canonical identity and clean commit. Integrated interrupted resume rejects existing evaluation, runs the shared complete read-only runtime preflight, then alone permits checkpoint/output reconciliation; invalid records preserve the whole tree. Parent-owned TRAIN then values-only TEST uses max(1, detected logical CPU count - 1) CPU futures, name-ordered commits and five persisted stages."
     },
     {
       "id": "exp435_publication_flow",
