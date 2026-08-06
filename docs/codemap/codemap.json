@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T00:06:06Z",
-  "generated_from_commit": "350330308364de21b410260ddca01167d90b4d41",
+  "generated_at": "2026-08-06T00:11:34Z",
+  "generated_from_commit": "3498ecdb7f35e28c259777f42ee2357543e3947d",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1315,7 +1315,7 @@
         "exp417_inputs",
         "sqlite_store"
       ],
-      "outcome": "The frozen 1,117-dataset lane population is admitted through one descriptor-bound Exp425 snapshot and the Exp417 values-only boundary; TRAIN groups are prepared and calibrated with deterministic feature channels, invalid lengths become structured unavailable outcomes while valid siblings continue, and database extras and TEST labels remain inaccessible to prediction."
+      "outcome": "The frozen 1,117-dataset lane population is admitted through one descriptor-bound Exp425 snapshot and the Exp417 values-only boundary; prediction intake exposes TRAIN and TEST values only, while database extras and TEST labels remain inaccessible."
     }
   ]
 }
