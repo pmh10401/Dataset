@@ -1,8 +1,9 @@
 """Real-artifact TDD coverage for the Exp436 label-free publication boundary."""
 from __future__ import annotations
 
-from hashlib import sha256
+import copy
 from dataclasses import replace
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -70,25 +71,6 @@ def _row(dataset: str, *, candidate: bool = False, audit: bool = False) -> Exp43
     return Exp436DatasetResult(dataset, "scored", (2,), candidates, (evidence,), audits)
 
 
-class _Exp437StoreView:
-    """Profile-bound view over the shared fixture checkpoint for one test."""
-
-    def __init__(self, base: Exp436CheckpointStore) -> None:
-        self._base = base
-        self.root = base.root
-        self.context = dict(base.context)
-        self.context["experiment_id"] = EXP437_PROFILE.experiment_id
-        self.context["run_identity"] = EXP437_PROFILE.run_identity
-        self.context_fingerprint = base.context_fingerprint
-        self.datasets = base.datasets
-        self.manifest = base.manifest
-        self.run_identity = EXP437_PROFILE.run_identity
-        self.profile = EXP437_PROFILE
-
-    def __getattr__(self, name: str) -> object:
-        return getattr(self._base, name)
-
-
 class ReportingAntigravityTests(unittest.TestCase):
     """Every test uses the real v1 checkpoint and terminal progress artifacts."""
 
@@ -132,44 +114,66 @@ class ReportingAntigravityTests(unittest.TestCase):
         writer.mark_checkpoint_complete()
         writer.close()
 
-        # Reuse the complete checkpoint through a profile-bound view.  The
-        # publication boundary still receives the real ordered store surface,
-        # while avoiding a second 1,117-record fixture and its quadratic setup.
-        cls.store_437 = _Exp437StoreView(cls.store)
+        # Build a genuinely profile-bound Exp437 checkpoint from the same
+        # immutable semantic record payloads.  The context, record-set digest,
+        # runtime authorities, and progress hash chain are all regenerated for
+        # Exp437; no identity-sensitive operation delegates to Exp436.
+        cls.checkpoint_437 = root / "checkpoint_437_antigravity"
+        seed_store_437 = Exp436CheckpointStore.create(
+            cls.checkpoint_437,
+            _frozen_context(EXP437_PROFILE),
+            profile=EXP437_PROFILE,
+        )
+        records_437: dict[str, str] = {}
+        for dataset in seed_store_437.datasets:
+            source = cls.checkpoint / "records_antigravity" / _name(dataset)
+            target = cls.checkpoint_437 / "records_antigravity" / _name(dataset)
+            shutil.copyfile(source, target)
+            records_437[dataset] = sha256(target.read_bytes()).hexdigest()
+        record_set_437 = Exp436CheckpointStore._set_payload_static(
+            seed_store_437.context_fingerprint,
+            seed_store_437.datasets,
+            records_437,
+            tuple(results),
+        )
+        (cls.checkpoint_437 / "record_set_antigravity.json").write_bytes(
+            canonical_json_bytes(record_set_437)
+        )
+        cls.store_437 = Exp436CheckpointStore.open_read_only(
+            cls.checkpoint_437,
+            profile=EXP437_PROFILE,
+        )
         cls.runtime_437 = root / "runtime_437_antigravity"
-        shutil.copytree(cls.runtime, cls.runtime_437)
-        old_identity = EXP436_PROFILE.run_identity.encode("utf-8")
-        new_identity = EXP437_PROFILE.run_identity.encode("utf-8")
-        for name in ("events_antigravity.jsonl", "progress_antigravity.json", "run_antigravity.pid"):
-            path = cls.runtime_437 / name
-            path.write_bytes(path.read_bytes().replace(old_identity, new_identity))
-        # Re-sign the identity-bearing runtime authorities after the canonical
-        # profile replacement while preserving the original context digest.
-        events_path = cls.runtime_437 / "events_antigravity.jsonl"
-        events = []
-        previous = "0" * 64
-        for line in events_path.read_bytes().splitlines():
-            event = json.loads(line)
-            event["previous_event_sha256"] = previous
-            unsigned = dict(event)
-            unsigned.pop("event_sha256", None)
-            event["event_sha256"] = sha256(canonical_json_bytes(unsigned)).hexdigest()
-            previous = event["event_sha256"]
-            events.append(canonical_json_bytes(event))
-        events_path.write_bytes(b"\n".join(events) + b"\n")
-        progress_path = cls.runtime_437 / "progress_antigravity.json"
-        progress = json.loads(progress_path.read_bytes())
-        progress["last_event_sha256"] = previous
-        unsigned = dict(progress)
-        unsigned.pop("progress_sha256", None)
-        progress["progress_sha256"] = sha256(canonical_json_bytes(unsigned)).hexdigest()
-        progress_path.write_bytes(canonical_json_bytes(progress))
-        pid_path = cls.runtime_437 / "run_antigravity.pid"
-        pid = json.loads(pid_path.read_bytes())
-        unsigned = dict(pid)
-        unsigned.pop("pid_sha256", None)
-        pid["pid_sha256"] = sha256(canonical_json_bytes(unsigned)).hexdigest()
-        pid_path.write_bytes(canonical_json_bytes(pid))
+        writer_437 = ProgressWriter.create(
+            cls.runtime_437,
+            run_identity=cls.store_437.run_identity,
+            checkpoint=cls.checkpoint_437,
+            total_datasets=1117,
+            backend="cpu",
+            context_fingerprint=cls.store_437.context_fingerprint,
+            heartbeat_seconds=None,
+        )
+        candidates_437 = 0
+        for sequence, dataset in enumerate(cls.store_437.datasets):
+            result = results[sequence]
+            digest = records_437[dataset]
+            candidates_437 += result.candidate_count
+            writer_437.record_dataset_complete(
+                sequence_index=sequence,
+                dataset=dataset,
+                record_sha256=digest,
+                status="scored",
+                dataset_metadata=_METADATA,
+                completed_datasets=sequence + 1,
+                success=sequence + 1,
+                abstention=0,
+                error=0,
+                excluded_train_rows=1,
+                nonfinite_test_rows=0,
+                candidate_count=candidates_437,
+            )
+        writer_437.mark_checkpoint_complete()
+        writer_437.close()
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -249,8 +253,55 @@ class ReportingAntigravityTests(unittest.TestCase):
         )
         self.assertEqual(publication.manifest["experiment_id"], "Exp437")
         self.assertEqual(publication.manifest["run_identity"], EXP437_PROFILE.run_identity)
+        self.assertNotEqual(self.store_437.context_fingerprint, self.store.context_fingerprint)
+        self.assertEqual(publication.manifest["input_context_sha256"], self.store_437.context_fingerprint)
+        self.assertEqual(publication.manifest["checkpoint_context_sha256"], self.store_437.context_fingerprint)
+        self.assertEqual(
+            publication.manifest["checkpoint_record_set_sha256"],
+            sha256((self.checkpoint_437 / "record_set_antigravity.json").read_bytes()).hexdigest(),
+        )
         with self.assertRaisesRegex(ValueError, "identity"):
             inspect_publication(output, self.store_437, profile=EXP436_PROFILE)
+
+    def test_publication_rejects_context_fingerprint_mismatch(self) -> None:
+        """Publication must derive the context digest from the supplied context."""
+        tampered = copy.copy(self.store_437)
+        tampered.context_fingerprint = "0" * 64
+        runtime = Path(self._temporary.name) / "runtime_context_tamper_antigravity"
+        writer = ProgressWriter.create(
+            runtime,
+            run_identity=tampered.run_identity,
+            checkpoint=tampered.root,
+            total_datasets=1117,
+            backend="cpu",
+            context_fingerprint=tampered.context_fingerprint,
+            heartbeat_seconds=None,
+        )
+        candidates = 0
+        for sequence, (dataset, digest, result, metadata) in enumerate(tampered.completed_records()):
+            candidates += result.candidate_count
+            writer.record_dataset_complete(
+                sequence_index=sequence,
+                dataset=dataset,
+                record_sha256=digest,
+                status=result.status,
+                dataset_metadata=metadata,
+                completed_datasets=sequence + 1,
+                success=sequence + 1,
+                abstention=0,
+                error=0,
+                excluded_train_rows=len(result.train_exclusion_audits),
+                nonfinite_test_rows=sum(
+                    evidence.exclusion_reason == "nonfinite_test" for evidence in result.evidence
+                ),
+                candidate_count=candidates,
+            )
+        writer.mark_checkpoint_complete()
+        writer.close()
+        output = Path(self._temporary.name) / "exp437_context_tamper_antigravity"
+        shutil.copytree(runtime, output)
+        with self.assertRaisesRegex(ValueError, "context fingerprint"):
+            publish_exp436(tampered, output, profile=EXP437_PROFILE)
 
     def test_prediction_is_globally_sorted_unique_and_within_frozen_budget(self) -> None:
         _, publication = self._publication()

@@ -23,7 +23,10 @@ from uuid import uuid4
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
-from .checkpoint_antigravity import Exp436CheckpointStore
+from .checkpoint_antigravity import (
+    Exp436CheckpointStore,
+    context_fingerprint as checkpoint_context_fingerprint,
+)
 from .config_antigravity import FROZEN_CONFIG
 from .contracts_antigravity import (
     BackendDecision,
@@ -275,6 +278,7 @@ def _require_frozen_store_identity(
         or context.get("run_identity") != selected.run_identity
     ):
         raise ValueError("checkpoint context identity does not match selected identity")
+    _validated_context_fingerprint(store, context)
 
 
 def _open_store(
@@ -324,6 +328,22 @@ def _backend_from_context(context: Mapping[str, object]) -> BackendDecision:
 
 def _context_hash(context: Mapping[str, object]) -> str:
     return _digest(canonical_json_bytes(dict(context)))
+
+
+def _validated_context_fingerprint(
+    store: object,
+    context: Mapping[str, object],
+) -> str:
+    """Recompute the checkpoint context digest before trusting its authority."""
+
+    try:
+        expected = checkpoint_context_fingerprint(context)
+    except (TypeError, ValueError) as error:
+        raise ValueError("checkpoint context fingerprint is invalid") from error
+    observed = getattr(store, "context_fingerprint", None)
+    if observed != expected:
+        raise ValueError("checkpoint context fingerprint does not match context")
+    return expected
 
 
 def _input_hashes(context: Mapping[str, object]) -> dict[str, str]:
@@ -466,9 +486,7 @@ def _validate_runtime(
         raise ValueError("publication directory is invalid")
     backend = _backend_from_context(context)
     root = _store_root(store)
-    context_fingerprint = getattr(store, "context_fingerprint", None)
-    if not isinstance(context_fingerprint, str):
-        context_fingerprint = _context_hash(context)
+    context_fingerprint = _validated_context_fingerprint(store, context)
     inspection = store.inspect()
     # Progress owns a strict four-file inventory.  Publication/staging entries
     # are excluded by validating the already-opened runtime bytes in memory.
@@ -604,9 +622,7 @@ def _build_payloads(
     }
     semantic_hashes = {name: _digest(raw) for name, raw in sorted(semantic.items())}
     config_hash = _digest(canonical_json_bytes(config))
-    context_sha256 = getattr(store, "context_fingerprint", None)
-    if not isinstance(context_sha256, str):
-        context_sha256 = _context_hash(context)
+    context_sha256 = _validated_context_fingerprint(store, context)
     reviewed_commit = context.get("reviewed_commit")
     if not isinstance(reviewed_commit, str):
         raise ValueError("checkpoint reviewed commit is absent")

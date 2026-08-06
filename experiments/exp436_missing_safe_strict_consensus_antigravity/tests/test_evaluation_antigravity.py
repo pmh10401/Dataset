@@ -298,14 +298,18 @@ class EvaluationAntigravityTests(unittest.TestCase):
         )
 
     def test_exp437_evaluation_rejects_exp436_fixed_paths_before_labels(self) -> None:
-        with patch.object(module, "_load_test_labels") as labels:
+        with patch.object(module, "_load_test_labels") as legacy_labels, \
+                patch.object(module, "verified_read_only_connection") as connection, \
+                patch.object(module, "_load_test_labels_from_connection") as connection_labels:
             with self.assertRaisesRegex(ValueError, "fixed paths"):
                 module.evaluate_exp436(
                     EXP436_PROFILE.output,
                     EXP436_PROFILE.evaluation,
                     profile=EXP437_PROFILE,
                 )
-        labels.assert_not_called()
+        legacy_labels.assert_not_called()
+        connection.assert_not_called()
+        connection_labels.assert_not_called()
 
     def test_public_evaluation_keeps_only_a_keyword_profile_extension(self) -> None:
         signature = inspect.signature(module.evaluate_exp436)
