@@ -127,7 +127,7 @@ python3 -m unittest experiments.exp436_missing_safe_strict_consensus_antigravity
 # 60 tests
 
 python3 -m unittest experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_reporting_antigravity experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_evaluation_antigravity experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_cli_antigravity -q
-# 75 tests: reporting 24, evaluation 26, CLI 25
+# 76 tests: reporting 25, evaluation 26, CLI 25
 
 python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py' -q
 # 279 discovered tests

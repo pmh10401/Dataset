@@ -162,7 +162,7 @@ class EvaluationAntigravityTests(unittest.TestCase):
             manifest = {"prediction_sha256": "a" * 64, "database_sha256": "b" * 64, "label_access_count": 0, "code_commit": "c" * 40}
             summary = ({"dataset": "Demo", "test_size": 3},)
             prediction = ({"dataset": "Demo", "instance_index": 19},)
-            with patch.object(module, "inspect_publication", return_value=publication), patch.object(module, "_validate_verified_publication", return_value=(manifest, summary, prediction)), patch.object(module, "_snapshot_frozen_tree", return_value={".": ("directory", None)}), patch.object(module, "_load_labels", side_effect=AssertionError("labels must remain closed")):
+            with patch.object(module, "_inspect_publication", return_value=publication), patch.object(module, "_validate_verified_publication", return_value=(manifest, summary, prediction)), patch.object(module, "_snapshot_frozen_tree", return_value={".": ("directory", None)}), patch.object(module, "_load_labels", side_effect=AssertionError("labels must remain closed")):
                 with self.assertRaisesRegex(ValueError, "overlaps"):
                     module._evaluate_frozen_prediction_for_test(publication, hard_coordinates={"Demo": (19,)}, label_loader=lambda _: None, checkpoint=type("Store", (), {"root": checkpoint})(), expected_datasets=("Demo",))
 
@@ -181,7 +181,7 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 if len(events) == 2:
                     raise ValueError("source changed before labels")
                 return publication
-            with patch.object(module, "inspect_publication", side_effect=replay), patch.object(module, "_validate_verified_publication", return_value=(manifest, summary, ())), patch.object(module, "_snapshot_frozen_tree", return_value={".": ("directory", None)}):
+            with patch.object(module, "_inspect_publication", side_effect=replay), patch.object(module, "_validate_verified_publication", return_value=(manifest, summary, ())), patch.object(module, "_snapshot_frozen_tree", return_value={".": ("directory", None)}):
                 with self.assertRaisesRegex(ValueError, "source changed before labels"):
                     module._evaluate_frozen_prediction_for_test(publication, hard_coordinates={"Demo": ()}, label_loader=lambda _: (_ for _ in ()).throw(AssertionError("label access before reverify")), checkpoint=type("Store", (), {"root": checkpoint})(), expected_datasets=("Demo",), evaluation_root=Path(temporary) / "evaluation_antigravity")
             self.assertEqual(events, ["replay", "replay"])
@@ -245,7 +245,7 @@ class EvaluationAntigravityTests(unittest.TestCase):
             output, checkpoint, publication = self._source(Path(temporary))
             source = module._snapshot_frozen_tree(output)
             (output / "changed_antigravity.txt").write_text("mutated")
-            with patch.object(module, "inspect_publication", return_value=publication):
+            with patch.object(module, "_inspect_publication", return_value=publication):
                 with self.assertRaisesRegex(ValueError, "changed"):
                     module._verify_frozen_source(output, type("Store", (), {"root": checkpoint})(), expected_total=1, snapshot=source)
 
@@ -269,7 +269,7 @@ class EvaluationAntigravityTests(unittest.TestCase):
                 if outcome is not None:
                     raise outcome
             verified = SimpleNamespace(manifest_sha256="b" * 64, publication=publication.publication)
-            with patch.object(module, "inspect_publication", return_value=verified), \
+            with patch.object(module, "_inspect_publication", return_value=verified), \
                     patch.object(module, "_validate_verified_publication", return_value=(manifest, ({"dataset": "Demo", "test_size": 1},), ())), \
                     patch.object(module, "_snapshot_frozen_tree", return_value={".": ("directory", None)}), \
                     patch.object(module, "_verify_frozen_source", side_effect=verify), \
