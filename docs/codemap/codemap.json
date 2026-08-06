@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T04:28:41Z",
-  "generated_from_commit": "90ce19b673a1880a9a47d2089c20c39ecbe967e0",
+  "generated_at": "2026-08-06T04:55:23Z",
+  "generated_from_commit": "3501f6ddb4e1268fb05927bcc11295a72f3ce31f",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -10,7 +10,7 @@
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
     "Research control files and local external data stores",
-    "Exp435 fixed five-mode CLI, clean-HEAD readiness, resumable runtime, atomic review-only publication, verified replay, and hash-gated retrospective evaluation"
+    "Exp435 fixed five-mode CLI, clean-HEAD readiness, resumable runtime, atomic review-only publication, verified replay, hash-gated retrospective evaluation and fixed sibling publication"
   ],
   "nodes": [
     {
@@ -896,7 +896,8 @@
         "Candidate-budget overflow is persisted before any record/publication and fails closed",
         "Runtime outputs are bound to checkpoint path, backend, dataset total, run identity and context fingerprint",
         "Workers receive values-only objects and never access labels, SQLite descriptors or durable outputs",
-        "Existing publications are inspected read-only and summarized without reopening the database"
+        "Existing publications are inspected read-only and summarized without reopening the database",
+        "Production evaluate is bound to the exact FROZEN_OUTPUT and FROZEN_EVALUATION sibling paths under RUN_PARENT; helper evaluation roots must also be absent, separate and outside output/publication/checkpoint."
       ],
       "evidence": [
         {
@@ -1034,6 +1035,18 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
           "symbol": "def test_production_readiness_stable_head_writes_only_canonical_readiness"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "FROZEN_OUTPUT = RUN_PARENT / \"output_antigravity\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "FROZEN_EVALUATION = RUN_PARENT / \"evaluation_antigravity\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "fixed_evaluation = Path(cli_antigravity.FROZEN_EVALUATION)"
         }
       ]
     },
@@ -1090,7 +1103,16 @@
         "regressed_datasets_antigravity.jsonl",
         "confusion_antigravity.json",
         "bootstrap_antigravity.json",
-        "decision_antigravity.json"
+        "decision_antigravity.json",
+        "_parse_exp404_hard_file",
+        "_load_frozen_hard_coordinates",
+        "_open_test_label_connection",
+        "_load_test_labels_from_connection",
+        "_snapshot_frozen_tree",
+        "_verify_frozen_source",
+        "_validate_evaluation_root",
+        "_write_evaluation_artifacts",
+        "Exp435Evaluation.to_payload"
       ],
       "tests": [
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_checkpoint_antigravity.py",
@@ -1115,7 +1137,12 @@
         "TEST labels are loaded only in evaluation_antigravity.py after the hash gate; prediction modules never import the loader",
         "Hard versus Hard+Exp435 metrics are paired by dataset; rescued, regression and strong-baseline lists remain review-only",
         "Bootstrap uses 20,000 paired dataset clusters with seed 43520260806 and percentile 2.5/97.5 intervals",
-        "Evaluation artifacts are canonical, staged and no-clobber under a separate evaluation_antigravity root"
+        "Evaluation artifacts are canonical, staged and no-clobber under a separate evaluation_antigravity root",
+        "Production evaluation accepts only the exact fixed CLI FROZEN_OUTPUT/FROZEN_EVALUATION siblings; helper roots reject equal or nested output, publication or checkpoint paths.",
+        "Before TEST labels, the Exp404 SHA and Exp291 SHA are frozen and the comparator verifies 888 Exp404 datasets, 2,218 coordinates and the 229-dataset empty complement across all 1,117 datasets.",
+        "One read-only SQLite mode=ro session loads only instance_index and label after the hash gate, then closes once; prediction remains label-free.",
+        "The complete frozen output tree is snapshotted before labels and re-inspected immediately before the staged evaluation no-clobber rename; any source mutation fails closed.",
+        "Evaluation payload state is evaluated and combined confusion counts preserve the monotonic union invariants: TP/FP do not decrease and FN/TN do not increase."
       ],
       "evidence": [
         {
@@ -1257,6 +1284,94 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
           "symbol": "def test_prediction_hash_failure_precedes_test_label_loader"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "EXP404_HARD_PATH = Path("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _parse_exp404_hard_file("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _load_frozen_hard_coordinates("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _open_test_label_connection("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _load_test_labels_from_connection("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "sqlite3.connect(_readonly_database_uri(Path(database_path)), uri=True)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "SELECT i.instance_index, i.label"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _snapshot_frozen_tree("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _verify_frozen_source("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _validate_evaluation_root("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "before_publish: Callable[[], None] | None = None"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "if before_publish is not None:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def evaluate_exp435("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "\"state\": \"evaluated\""
+        },
+        {
+          "path": "/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl",
+          "symbol": "candidate_index"
+        },
+        {
+          "path": "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl",
+          "symbol": "automatic_hard_indices"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_end_to_end_evaluation_writes_eight_artifacts_and_preserves_source"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_source_tamper_after_label_access_fails_before_evaluation_publish"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_private_evaluation_uses_one_database_session_after_hash_gate"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_each_success_gate_fails_independently"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_dataset_comparison_rejects_lost_baseline_true_positive"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_evaluation_payload_has_stable_evaluated_state"
         }
       ]
     }
@@ -1905,11 +2020,19 @@
       "evidence": [
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
-          "symbol": "connection.execute("
+          "symbol": "def _open_test_label_connection("
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
-          "symbol": "def _load_test_labels("
+          "symbol": "sqlite3.connect(_readonly_database_uri(Path(database_path)), uri=True)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "SELECT i.instance_index, i.label"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _load_test_labels_from_connection("
         }
       ],
       "id": "edge_046_exp435_checkpoint_progress_reads_sqlite_labels"
@@ -1965,14 +2088,14 @@
     {
       "id": "exp435_evaluate_boundary",
       "label": "Exp435 hash-gated retrospective evaluation",
-      "trigger": "The operator explicitly selects evaluate after label-free prediction, manifest and artifact hashes are frozen.",
+      "trigger": "The operator explicitly selects evaluate only after the label-free prediction, manifest and artifact hashes are frozen at the fixed production sibling paths.",
       "steps": [
         "exp435_runtime",
         "exp435_checkpoint_progress",
         "sqlite_store",
         "artifact_utils"
       ],
-      "outcome": "The CLI lazily imports the evaluator; it replays the read-only checkpoint/publication and validates population, code/input/config hashes and zero prediction-time label access before loading TEST labels. It emits paired Hard versus Hard+Exp435 confusion, F1 deltas, rescued/regressed disclosures, 20,000-cluster bootstrap intervals and a separate canonical decision/artifact root; prediction bytes remain unchanged."
+      "outcome": "The CLI lazily imports the evaluator; it replays the read-only checkpoint/publication, validates exact fixed sibling paths and population/code/input/config hashes, compares the Exp404/Exp291 frozen coordinates before labels, opens one SQLite mode=ro session for instance_index/label, and snapshots/re-inspects the entire output before a staged no-clobber rename. It emits state=evaluated paired Hard versus Hard+Exp435 confusion, monotonic-union checks, F1 deltas, rescued/regressed disclosures and 20,000-cluster bootstrap intervals in a separate canonical root; prediction bytes remain unchanged."
     }
   ]
 }
