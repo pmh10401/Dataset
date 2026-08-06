@@ -5,6 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+import io
+import json
+import os
+import sqlite3
+from contextlib import redirect_stderr, redirect_stdout
+from hashlib import sha256
+from unittest.mock import patch
 
 from experiments.exp435_train_only_consensus_recovery_antigravity.evaluation_antigravity import (
     BootstrapResult,
@@ -14,6 +21,14 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.evaluation_ant
     SuccessDecision,
     decide_exp435_success,
     paired_dataset_bootstrap,
+)
+from experiments.exp435_train_only_consensus_recovery_antigravity import (
+    cli_antigravity as cli_module,
+    evaluation_antigravity as evaluation_module,
+)
+from experiments.exp435_train_only_consensus_recovery_antigravity.cli_antigravity import (
+    _CliDependencies,
+    main,
 )
 from experiments.exp435_train_only_consensus_recovery_antigravity.reporting_antigravity import (
     PublicationExpectations,
@@ -44,9 +59,9 @@ class Exp435EvaluationTests(unittest.TestCase):
             ),
             DatasetComparison(
                 dataset="D2",
-                test_size=4,
-                baseline=ConfusionCounts(tp=4, fp=0, fn=0, tn=0),
-                combined=ConfusionCounts(tp=3, fp=1, fn=0, tn=0),
+                test_size=8,
+                baseline=ConfusionCounts(tp=4, fp=0, fn=0, tn=4),
+                combined=ConfusionCounts(tp=4, fp=1, fn=0, tn=3),
             ),
         )
 
@@ -57,6 +72,77 @@ class Exp435EvaluationTests(unittest.TestCase):
         self.assertTrue(rows[0].rescued)
         self.assertTrue(rows[2].regressed)
         self.assertTrue(rows[2].strong_baseline)
+
+    def test_dataset_comparison_rejects_lost_baseline_true_positive(self) -> None:
+        with self.assertRaisesRegex(ValueError, "monotonic"):
+            DatasetComparison(
+                dataset="lost",
+                test_size=8,
+                baseline=ConfusionCounts(tp=4, fp=0, fn=0, tn=4),
+                combined=ConfusionCounts(tp=3, fp=1, fn=1, tn=3),
+            )
+
+    def _evaluation(self) -> object:
+        rows = self._rows()
+        baseline = ConfusionCounts(
+            tp=sum(row.baseline.tp for row in rows),
+            fp=sum(row.baseline.fp for row in rows),
+            fn=sum(row.baseline.fn for row in rows),
+            tn=sum(row.baseline.tn for row in rows),
+        )
+        combined = ConfusionCounts(
+            tp=sum(row.combined.tp for row in rows),
+            fp=sum(row.combined.fp for row in rows),
+            fn=sum(row.combined.fn for row in rows),
+            tn=sum(row.combined.tn for row in rows),
+        )
+        bootstrap = paired_dataset_bootstrap(rows, repetitions=8, seed=123)
+        return evaluation_module.Exp435Evaluation(
+            dataset_count=len(rows),
+            candidate_count=3,
+            added_fp=combined.fp - baseline.fp,
+            dataset_rows=rows,
+            baseline_confusion=baseline,
+            combined_confusion=combined,
+            micro_f1_delta=combined.f1 - baseline.f1,
+            macro_f1_delta=sum(row.combined_f1 - row.baseline_f1 for row in rows) / len(rows),
+            micro_f1_ci=bootstrap.micro_f1_ci,
+            macro_f1_ci=bootstrap.macro_f1_ci,
+            rescued_datasets=tuple(row.dataset for row in rows if row.rescued),
+            regressed_datasets=tuple(row.dataset for row in rows if row.regressed),
+            strong_baseline_regressions=tuple(row.dataset for row in rows if row.regressed and row.strong_baseline),
+            prediction_sha256="a" * 64,
+            manifest_sha256="b" * 64,
+            bootstrap=bootstrap,
+        )
+
+    def test_evaluation_payload_has_stable_evaluated_state(self) -> None:
+        payload = self._evaluation().to_payload()
+        self.assertEqual(payload["state"], "evaluated")
+
+    def test_injected_cli_returns_zero_for_evaluation_payload(self) -> None:
+        evaluation = self._evaluation()
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            output = parent / "output"
+            checkpoint = parent / "checkpoint"
+            output.mkdir()
+            checkpoint.mkdir()
+            dependencies = _CliDependencies(
+                output=output,
+                checkpoint=checkpoint,
+                readiness=parent / "readiness.json",
+                current_head=lambda: "a" * 40,
+                readiness_call=lambda: {},
+                execute=lambda _mode: {},
+                inspect=lambda: {},
+                evaluate=evaluation.to_payload,
+            )
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                code = main(["evaluate"], _dependencies=dependencies)
+            self.assertEqual(code, 0, stderr.getvalue())
+            self.assertEqual(json.loads(stdout.getvalue())["state"], "evaluated")
 
     def test_bootstrap_is_paired_deterministic_and_frozen(self) -> None:
         first = paired_dataset_bootstrap(self._rows())
@@ -117,6 +203,46 @@ class Exp435EvaluationTests(unittest.TestCase):
         self.assertIn("micro_f1_point_gate", decision.reasons)
         self.assertIn("macro_f1_point_gate", decision.reasons)
 
+    def test_each_success_gate_fails_independently(self) -> None:
+        common = dict(
+            dataset_count=1117,
+            candidate_count=100,
+            rescued_datasets=tuple("R" + str(index) for index in range(10)),
+            added_fp=30,
+            micro_f1_delta=0.1,
+            macro_f1_delta=0.1,
+            micro_f1_ci=ConfidenceInterval(0.01, 0.2),
+            macro_f1_ci=ConfidenceInterval(0.01, 0.2),
+            prediction_label_access_count=0,
+        )
+        cases = {
+            "rescued_dataset_gate": {"rescued_datasets": tuple("R" + str(index) for index in range(9))},
+            "added_false_positive_gate": {"added_fp": 31},
+            "micro_f1_point_gate": {"micro_f1_delta": 0.0},
+            "macro_f1_point_gate": {"macro_f1_delta": 0.0},
+            "micro_f1_ci_gate": {"micro_f1_ci": ConfidenceInterval(0.0, 0.2)},
+            "macro_f1_ci_gate": {"macro_f1_ci": ConfidenceInterval(0.0, 0.2)},
+            "candidate_budget_gate": {"candidate_count": 101},
+            "dataset_count_gate": {"dataset_count": 1116},
+            "prediction_label_access_gate": {"prediction_label_access_count": 1},
+        }
+        for reason, override in cases.items():
+            with self.subTest(reason=reason):
+                decision = decide_exp435_success(**{**common, **override})
+                self.assertFalse(decision.passed)
+                self.assertEqual(decision.reasons, (reason,))
+
+    def test_evaluation_payload_bytes_are_deterministic(self) -> None:
+        first = evaluation_module._evaluation_payloads(self._evaluation())
+        second = evaluation_module._evaluation_payloads(self._evaluation())
+        self.assertEqual(first, second)
+
+    def test_label_loader_schema_rejects_noncanonical_identity(self) -> None:
+        with self.assertRaisesRegex(ValueError, "binary"):
+            evaluation_module._label_payload({"instance_indices": [0], "labels": [2]}, dataset="Demo")
+        with self.assertRaisesRegex(ValueError, "canonical"):
+            evaluation_module._label_payload({"instance_indices": [1, 0], "labels": [0, 1]}, dataset="Demo")
+
     def test_prediction_hash_failure_precedes_test_label_loader(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -141,6 +267,241 @@ class Exp435EvaluationTests(unittest.TestCase):
                     expected_datasets=1,
                 )
             self.assertEqual(calls, [])
+
+    def _fixture_labels(self, _dataset: str) -> dict[str, object]:
+        return {
+            "instance_indices": list(range(101)),
+            "labels": [1] + [0] * 100,
+        }
+
+    def _fixture_publication(self, root: Path):
+        output = root / "output"
+        checkpoint = root / "checkpoint"
+        store = _runtime(output, checkpoint, candidates=1)
+        publication = publish_exp435(
+            store,
+            output,
+            _expectations=PublicationExpectations(total=1),
+        )
+        return output, checkpoint, store, publication
+
+    def _tree_signature(self, root: Path) -> dict[str, tuple[str, bytes | str | None]]:
+        signature: dict[str, tuple[str, bytes | str | None]] = {}
+        for path in sorted((root, *root.rglob("*"))):
+            relative = "." if path == root else path.relative_to(root).as_posix()
+            if path.is_symlink():
+                signature[relative] = ("symlink", os.readlink(path))
+            elif path.is_dir():
+                signature[relative] = ("directory", None)
+            elif path.is_file():
+                signature[relative] = ("file", path.read_bytes())
+            else:
+                signature[relative] = ("other", None)
+        return signature
+
+    def test_end_to_end_evaluation_writes_eight_artifacts_and_preserves_source(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            output, _checkpoint, store, publication = self._fixture_publication(root)
+            before = self._tree_signature(output)
+            evaluation_root = root / "evaluation"
+            with patch.object(evaluation_module, "_exclusive_rename", os.rename):
+                result = evaluation_module.evaluate_frozen_prediction(
+                    publication,
+                    hard_coordinates={"Demo": ()},
+                    label_loader=self._fixture_labels,
+                    completed_store=store,
+                    expected_datasets=("Demo",),
+                    evaluation_root=evaluation_root,
+                )
+            self.assertEqual(result.dataset_count, 1)
+            self.assertEqual(result.rescued_datasets, ("Demo",))
+            self.assertEqual(result.prediction_label_access_count, 0)
+            self.assertEqual(
+                {item.name for item in evaluation_root.iterdir()},
+                set(evaluation_module._EVALUATION_FILES),
+            )
+            hashes = json.loads((evaluation_root / evaluation_module.EVALUATION_HASH_FILE).read_bytes())
+            for name, digest in hashes["artifact_sha256"].items():
+                self.assertEqual(sha256((evaluation_root / name).read_bytes()).hexdigest(), digest)
+            self.assertEqual(before, self._tree_signature(output))
+
+    def test_source_tamper_after_label_access_fails_before_evaluation_publish(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            output, _checkpoint, store, publication = self._fixture_publication(root)
+            evaluation_root = root / "evaluation"
+
+            def tampering_loader(dataset: str) -> dict[str, object]:
+                progress = output / "progress_antigravity.json"
+                progress.write_bytes(progress.read_bytes() + b"tampered")
+                return self._fixture_labels(dataset)
+
+            with patch.object(evaluation_module, "_exclusive_rename", os.rename):
+                with self.assertRaisesRegex(ValueError, "frozen|source|publication"):
+                    evaluation_module.evaluate_frozen_prediction(
+                        publication,
+                        hard_coordinates={"Demo": ()},
+                        label_loader=tampering_loader,
+                        completed_store=store,
+                        expected_datasets=("Demo",),
+                        evaluation_root=evaluation_root,
+                    )
+            self.assertFalse(evaluation_root.exists())
+
+    def test_evaluation_root_is_no_clobber(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            output, _checkpoint, store, publication = self._fixture_publication(root)
+            evaluation_root = root / "evaluation"
+            with patch.object(evaluation_module, "_exclusive_rename", os.rename):
+                evaluation_module.evaluate_frozen_prediction(
+                    publication,
+                    hard_coordinates={"Demo": ()},
+                    label_loader=self._fixture_labels,
+                    completed_store=store,
+                    expected_datasets=("Demo",),
+                    evaluation_root=evaluation_root,
+                )
+            original = self._tree_signature(evaluation_root)
+            with self.assertRaisesRegex(ValueError, "already exists"):
+                evaluation_module.evaluate_frozen_prediction(
+                    publication,
+                    hard_coordinates={"Demo": ()},
+                    label_loader=self._fixture_labels,
+                    completed_store=store,
+                    expected_datasets=("Demo",),
+                    evaluation_root=evaluation_root,
+                )
+            self.assertEqual(original, self._tree_signature(evaluation_root))
+
+    def test_helper_rejects_evaluation_root_inside_frozen_output_or_checkpoint(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            output, checkpoint, store, publication = self._fixture_publication(root)
+            for destination in (
+                output / "nested-evaluation",
+                output / evaluation_module.PUBLICATION_DIRECTORY / "nested-evaluation",
+                checkpoint / "nested-evaluation",
+            ):
+                with self.subTest(destination=destination):
+                    with self.assertRaisesRegex(ValueError, "sibling|nested"):
+                        evaluation_module.evaluate_frozen_prediction(
+                            publication,
+                            hard_coordinates={"Demo": ()},
+                            label_loader=lambda _dataset: self._fixture_labels("Demo"),
+                            completed_store=store,
+                            expected_datasets=("Demo",),
+                            evaluation_root=destination,
+                        )
+
+    def test_production_entrypoint_accepts_only_fixed_sibling_paths(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            fixed_output = parent / "output"
+            fixed_evaluation = parent / "evaluation"
+            with patch.object(cli_module, "RUN_PARENT", parent), patch.object(cli_module, "FROZEN_OUTPUT", fixed_output), patch.object(cli_module, "FROZEN_EVALUATION", fixed_evaluation):
+                with self.assertRaisesRegex(ValueError, "fixed"):
+                    evaluation_module.evaluate_exp435(parent / "alternate", fixed_evaluation)
+                with self.assertRaisesRegex(ValueError, "sibling|fixed"):
+                    evaluation_module.evaluate_exp435(fixed_output, fixed_output)
+
+    def test_frozen_exp404_and_exp291_maps_match(self) -> None:
+        hard = evaluation_module._load_frozen_hard_coordinates()
+        self.assertEqual(len(hard), 1117)
+        self.assertEqual(sum(bool(indices) for indices in hard.values()), 888)
+        self.assertEqual(sum(len(indices) for indices in hard.values()), 2218)
+
+    def test_exp404_hash_mismatch_is_rejected_before_labels(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "exp404.jsonl"
+            path.write_text("{}\n", encoding="utf-8")
+            with patch.object(evaluation_module, "EXP404_HARD_PATH", path):
+                with self.assertRaisesRegex(ValueError, "Exp404 Hard prediction SHA256"):
+                    evaluation_module._load_frozen_hard_coordinates()
+
+    def test_exp291_hash_mismatch_is_rejected_after_exp404_pin(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "exp291.jsonl"
+            path.write_text("{}\n", encoding="utf-8")
+            with patch.object(evaluation_module, "EXP291_HARD_PATH", path):
+                with self.assertRaisesRegex(ValueError, "Exp291 Hard prediction SHA256"):
+                    evaluation_module._load_frozen_hard_coordinates()
+
+    def test_sqlite_label_loader_is_read_only_and_selects_only_labels(self) -> None:
+        with TemporaryDirectory() as directory:
+            database = Path(directory) / "labels.db"
+            connection = sqlite3.connect(database)
+            connection.executescript(
+                """
+                CREATE TABLE datasets (id INTEGER PRIMARY KEY, name TEXT UNIQUE);
+                CREATE TABLE instances (dataset_id INTEGER, split TEXT, instance_index INTEGER,
+                    label TEXT, values_blob BLOB, labels_blob BLOB);
+                INSERT INTO datasets VALUES (1, 'Demo');
+                INSERT INTO instances VALUES (1, 'TEST', 0, '1', X'00', X'01');
+                INSERT INTO instances VALUES (1, 'TEST', 1, '0', X'02', X'03');
+                """
+            )
+            connection.commit()
+            connection.close()
+            calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+            traces: list[str] = []
+            original_connect = sqlite3.connect
+
+            def traced_connect(*args: object, **kwargs: object):
+                calls.append((args, kwargs))
+                opened = original_connect(*args, **kwargs)
+                opened.set_trace_callback(traces.append)
+                return opened
+
+            with patch.object(evaluation_module.sqlite3, "connect", traced_connect):
+                result = evaluation_module._load_test_labels("Demo", database_path=database)
+            self.assertEqual(len(calls), 1)
+            self.assertTrue(calls[0][1].get("uri"))
+            self.assertIn("mode=ro", str(calls[0][0][0]))
+            self.assertEqual(result["labels"], [1, 0])
+            sql = " ".join(traces).lower()
+            self.assertIn("select i.instance_index", sql)
+            self.assertIn("label", sql)
+            self.assertNotIn("values_blob", sql)
+            self.assertNotIn("labels_blob", sql)
+
+    def test_private_evaluation_uses_one_database_session_after_hash_gate(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            database = root / "labels.db"
+            connection = sqlite3.connect(database)
+            connection.executescript(
+                """
+                CREATE TABLE datasets (id INTEGER PRIMARY KEY, name TEXT UNIQUE);
+                CREATE TABLE instances (dataset_id INTEGER, split TEXT, instance_index INTEGER,
+                    label TEXT, values_blob BLOB, labels_blob BLOB);
+                INSERT INTO datasets VALUES (1, 'Demo');
+                """
+            )
+            connection.executemany(
+                "INSERT INTO instances VALUES (1, 'TEST', ?, ?, X'00', X'01')",
+                ((index, "1" if index == 0 else "0") for index in range(101)),
+            )
+            connection.commit()
+            connection.close()
+            output, _checkpoint, store, publication = self._fixture_publication(root)
+            calls: list[Path] = []
+            original_open = evaluation_module._open_test_label_connection
+
+            def traced_open(path: Path):
+                calls.append(Path(path))
+                return original_open(path)
+
+            with patch.object(evaluation_module, "_validate_database_pin", return_value="d" * 64), patch.object(evaluation_module, "_open_test_label_connection", traced_open):
+                evaluation_module.evaluate_frozen_prediction(
+                    publication,
+                    hard_coordinates={"Demo": ()},
+                    completed_store=store,
+                    expected_datasets=("Demo",),
+                    database_path=database,
+                )
+            self.assertEqual(calls, [database])
 
 
 if __name__ == "__main__":  # pragma: no cover

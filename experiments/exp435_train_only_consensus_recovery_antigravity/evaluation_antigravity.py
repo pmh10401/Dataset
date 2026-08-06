@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import stat
 from hashlib import sha256
 from tempfile import mkdtemp
 from types import MappingProxyType
@@ -43,6 +44,10 @@ from .reporting_antigravity import (
 
 
 DATABASE_PATH = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
+EXP404_HARD_PATH = Path(
+    "/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/"
+    "exp404_hard_confidence.jsonl"
+)
 EXP291_HARD_PATH = Path(
     "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/"
     "exp291_frozen_operational_routing.jsonl"
@@ -76,6 +81,8 @@ _EVALUATION_FILES = frozenset(
 _HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 _HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 _LABEL_LOADER_DEFAULT = object()
+_EXP404_EXPECTED_COORDINATES = 2_218
+_EXP404_EXPECTED_DATASETS = 888
 
 
 def _digest(raw: bytes) -> str:
@@ -192,6 +199,13 @@ class DatasetComparison:
             raise ValueError("baseline and combined must be ConfusionCounts")
         if self.baseline.total != self.test_size or self.combined.total != self.test_size:
             raise ValueError("confusion counts must conserve test_size")
+        if (
+            self.combined.tp < self.baseline.tp
+            or self.combined.fp < self.baseline.fp
+            or self.combined.fn > self.baseline.fn
+            or self.combined.tn > self.baseline.tn
+        ):
+            raise ValueError("combined confusion counts violate baseline monotonic invariants")
 
     @property
     def baseline_f1(self) -> float:
@@ -423,6 +437,7 @@ class Exp435Evaluation:
     def to_payload(self) -> dict[str, object]:
         return {
             "schema": "exp435.evaluation.v1",
+            "state": "evaluated",
             "dataset_count": self.dataset_count,
             "candidate_count": self.candidate_count,
             "added_fp": self.added_fp,
@@ -631,6 +646,69 @@ def _parse_hard_file(path: Path) -> dict[str, tuple[int, ...]]:
     return dict(sorted(rows.items()))
 
 
+def _parse_exp404_hard_file(path: Path) -> dict[str, tuple[int, ...]]:
+    """Parse the frozen Exp404 candidate-index rows without TEST labels."""
+
+    path = Path(path)
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Exp404 Hard prediction file is absent or invalid")
+    rows: dict[str, list[int]] = {}
+    coordinates: set[tuple[str, int]] = set()
+    for raw in path.read_bytes().splitlines():
+        if not raw:
+            continue
+        try:
+            value = json.loads(raw)
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError("Exp404 Hard prediction is invalid JSON") from error
+        if not isinstance(value, Mapping):
+            raise ValueError("Exp404 Hard prediction row is invalid")
+        dataset = value.get("dataset")
+        candidate_index = value.get("candidate_index")
+        if not isinstance(dataset, str) or not dataset.strip() or type(candidate_index) is not int or candidate_index < 0:
+            raise ValueError("Exp404 Hard prediction row is incomplete")
+        if value.get("contains_test_labels") is not False or value.get("contains_evaluation_metrics") is not False:
+            raise ValueError("Exp404 Hard prediction is not label-free")
+        coordinate = (dataset, candidate_index)
+        if coordinate in coordinates:
+            raise ValueError("Exp404 Hard prediction contains duplicate coordinates")
+        coordinates.add(coordinate)
+        rows.setdefault(dataset, []).append(candidate_index)
+    if len(coordinates) != _EXP404_EXPECTED_COORDINATES or len(rows) != _EXP404_EXPECTED_DATASETS:
+        raise ValueError("Exp404 Hard prediction population is invalid")
+    if any(not values for values in rows.values()):
+        raise ValueError("Exp404 Hard prediction contains an empty candidate dataset")
+    return {dataset: tuple(sorted(values)) for dataset, values in sorted(rows.items())}
+
+
+def _load_frozen_hard_coordinates(
+    *,
+    config: Exp435FrozenConfig = FROZEN_CONFIG,
+) -> dict[str, tuple[int, ...]]:
+    """Verify Exp404 and Exp291 identities and return their exact shared map."""
+
+    config.validate()
+    exp404_sha = _sha256_file(EXP404_HARD_PATH)
+    if exp404_sha != config.hard_prediction_sha256:
+        raise ValueError("Exp404 Hard prediction SHA256 does not match frozen input")
+    exp291_sha = _sha256_file(EXP291_HARD_PATH)
+    if exp291_sha != config.exp291_prediction_sha256:
+        raise ValueError("Exp291 Hard prediction SHA256 does not match frozen input")
+    exp404 = _parse_exp404_hard_file(EXP404_HARD_PATH)
+    exp291 = _parse_hard_file(EXP291_HARD_PATH)
+    if len(exp291) != config.expected_datasets:
+        raise ValueError("Exp291 Hard population is invalid")
+    if set(exp404) - set(exp291):
+        raise ValueError("Exp404 Hard dataset population is outside Exp291")
+    if any(tuple(exp404.get(dataset, ())) != tuple(exp291[dataset]) for dataset in exp291):
+        raise ValueError("Exp404 Hard coordinates do not equal Exp291 automatic Hard")
+    if sum(bool(indices) for indices in exp291.values()) != _EXP404_EXPECTED_DATASETS:
+        raise ValueError("Exp291 Hard nonempty population is invalid")
+    if sum(len(indices) for indices in exp291.values()) != _EXP404_EXPECTED_COORDINATES:
+        raise ValueError("Exp291 Hard coordinate population is invalid")
+    return dict(sorted(exp291.items()))
+
+
 def _read_publication_json(publication: FrozenPublication, name: str) -> dict[str, object]:
     path = publication.publication / name
     raw = path.read_bytes()
@@ -797,27 +875,53 @@ def _label_payload(value: object, *, dataset: str) -> tuple[tuple[int, ...], tup
     return index_tuple, labels_tuple, digest
 
 
-def _load_test_labels(dataset: str, *, database_path: Path = DATABASE_PATH) -> Mapping[str, object]:
-    """Private post-freeze loader; prediction modules cannot import it."""
+def _readonly_database_uri(path: Path) -> str:
+    path = Path(path)
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(f"TEST label database is absent or invalid: {path}")
+    return f"{path.resolve().as_uri()}?mode=ro"
 
-    path = Path(database_path)
-    connection = sqlite3.connect(str(path))
-    try:
-        rows = connection.execute(
-            """
-            SELECT i.instance_index, CAST(i.label AS INTEGER)
-            FROM instances AS i
-            JOIN datasets AS d ON d.id = i.dataset_id
-            WHERE d.name = ? AND i.split = 'TEST'
-            ORDER BY i.instance_index
-            """,
-            (dataset,),
-        ).fetchall()
-    finally:
-        connection.close()
+
+def _open_test_label_connection(database_path: Path) -> sqlite3.Connection:
+    """Open exactly one read-only SQLite connection after the hash gate."""
+
+    return sqlite3.connect(_readonly_database_uri(Path(database_path)), uri=True)
+
+
+def _load_test_labels_from_connection(connection: sqlite3.Connection, dataset: str) -> Mapping[str, object]:
+    rows = connection.execute(
+        """
+        SELECT i.instance_index, i.label
+        FROM instances AS i
+        JOIN datasets AS d ON d.id = i.dataset_id
+        WHERE d.name = ? AND i.split = 'TEST'
+        ORDER BY i.instance_index
+        """,
+        (dataset,),
+    ).fetchall()
     if not rows:
         raise ValueError(f"TEST labels are absent: dataset={dataset}")
-    return {"instance_indices": [int(row[0]) for row in rows], "labels": [int(row[1]) for row in rows]}
+    labels: list[int] = []
+    for row in rows:
+        raw_label = row[1]
+        if type(raw_label) is int:
+            label = raw_label
+        elif isinstance(raw_label, str) and raw_label in {"0", "1"}:
+            label = int(raw_label)
+        else:
+            raise ValueError(f"TEST label schema is invalid: dataset={dataset}")
+        labels.append(label)
+    return {"instance_indices": [int(row[0]) for row in rows], "labels": labels}
+
+
+def _load_test_labels(dataset: str, *, database_path: Path = DATABASE_PATH) -> Mapping[str, object]:
+    """Private post-freeze convenience loader; prediction modules cannot import it."""
+
+    connection = _open_test_label_connection(Path(database_path))
+    try:
+        return _load_test_labels_from_connection(connection, dataset)
+    finally:
+        connection.close()
 
 
 def _load_labels(
@@ -887,6 +991,85 @@ def _label_identity_hash(identities: Mapping[str, str]) -> str:
     return _digest(canonical_json_bytes(dict(sorted(identities.items()))))
 
 
+def _snapshot_frozen_tree(root: Path) -> dict[str, tuple[str, bytes | str | None]]:
+    """Capture every relative path, entry type, and byte payload without following links."""
+
+    root = Path(root)
+    if root.is_symlink() or not root.is_dir():
+        raise ValueError("frozen output root is absent or invalid")
+    snapshot: dict[str, tuple[str, bytes | str | None]] = {".": ("directory", None)}
+
+    def visit(directory: Path) -> None:
+        try:
+            entries = sorted(directory.iterdir(), key=lambda item: item.name)
+        except OSError as error:
+            raise ValueError("frozen output tree cannot be read") from error
+        for entry in entries:
+            relative = entry.relative_to(root).as_posix()
+            try:
+                metadata = entry.stat(follow_symlinks=False)
+            except OSError as error:
+                raise ValueError("frozen output tree cannot be inspected") from error
+            if stat.S_ISLNK(metadata.st_mode):
+                snapshot[relative] = ("symlink", os.readlink(entry))
+            elif stat.S_ISDIR(metadata.st_mode):
+                snapshot[relative] = ("directory", None)
+                visit(entry)
+            elif stat.S_ISREG(metadata.st_mode):
+                try:
+                    payload = entry.read_bytes()
+                except OSError as error:
+                    raise ValueError("frozen output tree cannot be read") from error
+                snapshot[relative] = ("file", payload)
+            else:
+                snapshot[relative] = ("other", None)
+
+    visit(root)
+    return snapshot
+
+
+def _verify_frozen_source(
+    output: Path,
+    store: object,
+    *,
+    expected_total: int,
+    snapshot: Mapping[str, tuple[str, bytes | str | None]],
+) -> None:
+    """Replay publication and compare the complete source tree before publish."""
+
+    try:
+        inspect_publication(
+            Path(output),
+            store,
+            _expectations=PublicationExpectations(total=expected_total),
+        )
+    except ValueError as error:
+        raise ValueError(f"frozen output source replay failed: {error}") from error
+    current = _snapshot_frozen_tree(Path(output))
+    if dict(current) != dict(snapshot):
+        raise ValueError("frozen output source tree changed after label access")
+
+
+def _validate_evaluation_root(output: Path, store: object, evaluation_root: Path) -> Path:
+    """Require a new sibling destination outside the frozen source/checkpoint."""
+
+    output = Path(output)
+    destination = Path(evaluation_root)
+    if destination.exists() or destination.is_symlink():
+        raise ValueError("evaluation root already exists")
+    checkpoint = Path(getattr(store, "root", output.parent / "checkpoint_antigravity"))
+    publication = output / PUBLICATION_DIRECTORY
+    if destination.parent != output.parent:
+        raise ValueError("evaluation root must be an absent sibling of output")
+    if destination == output or output in destination.parents:
+        raise ValueError("evaluation root cannot be equal to or nested under output")
+    if destination == publication or publication in destination.parents:
+        raise ValueError("evaluation root cannot be equal to or nested under publication")
+    if destination == checkpoint or checkpoint in destination.parents:
+        raise ValueError("evaluation root cannot be equal to or nested under checkpoint")
+    return destination
+
+
 def _extract_candidate_indices(prediction_rows: Sequence[Mapping[str, object]]) -> dict[str, tuple[int, ...]]:
     output: dict[str, list[int]] = {}
     for row in prediction_rows:
@@ -923,6 +1106,7 @@ def evaluate_frozen_prediction(
     expected_datasets: int | Sequence[str] | None = None,
     database_path: Path = DATABASE_PATH,
     config: Exp435FrozenConfig = FROZEN_CONFIG,
+    before_publish: Callable[[], None] | None = None,
 ) -> Exp435Evaluation:
     """Replay and evaluate a frozen publication after the hash gate.
 
@@ -933,10 +1117,16 @@ def evaluate_frozen_prediction(
     """
 
     config.validate()
+    if before_publish is not None and not callable(before_publish):
+        raise ValueError("before_publish callback is invalid")
     if checkpoint is not None and completed_store is not None:
         raise ValueError("checkpoint and completed_store are mutually exclusive")
     store_argument = completed_store if completed_store is not None else checkpoint
     output, store = _resolve_store(publication, store_argument)
+    if evaluation_root is None and output_root is not None:
+        evaluation_root = Path(output_root)
+    if evaluation_root is not None:
+        evaluation_root = _validate_evaluation_root(output, store, Path(evaluation_root))
     if expected_datasets is None:
         expected_total = config.expected_datasets
         expected_names: tuple[str, ...] | None = None
@@ -973,13 +1163,11 @@ def evaluate_frozen_prediction(
     if expected_names is not None and datasets != expected_names:
         raise ValueError("prediction population does not match expected names")
     summary_by_dataset = {str(row["dataset"]): row for row in summary_rows}
+    source_snapshot = _snapshot_frozen_tree(output)
     if hard_coordinates is None:
         if expected_total != config.expected_datasets:
             raise ValueError("fixture evaluation must provide Hard coordinates")
-        hard_file_sha = _sha256_file(EXP291_HARD_PATH)
-        if hard_file_sha != config.exp291_prediction_sha256:
-            raise ValueError("Exp291 Hard prediction SHA256 does not match frozen input")
-        hard_coordinates = _parse_hard_file(EXP291_HARD_PATH)
+        hard_coordinates = _load_frozen_hard_coordinates(config=config)
     hard_source = _normalise_hard_coordinates(hard_coordinates)
     hard = {str(dataset): tuple(sorted(set(int(index) for index in indices))) for dataset, indices in hard_source.items()}
     if tuple(sorted(hard)) != datasets:
@@ -997,12 +1185,22 @@ def evaluate_frozen_prediction(
         # Pin the DB before the first SQL call.  The hash gate above has already
         # verified publication and input identities.
         database_sha = _validate_database_pin(Path(database_path), config)
-        loader = lambda dataset: _load_test_labels(dataset, database_path=Path(database_path))
     else:
         database_sha = str(manifest.get("database_sha256", ""))
         if database_sha and _HEX64.fullmatch(database_sha) is None:
             raise ValueError("publication database SHA256 is invalid")
-    labels_by_dataset, identities = _load_labels(loader, datasets, summary_by_dataset)
+    if private_loader:
+        connection = _open_test_label_connection(Path(database_path))
+        try:
+            labels_by_dataset, identities = _load_labels(
+                lambda dataset: _load_test_labels_from_connection(connection, dataset),
+                datasets,
+                summary_by_dataset,
+            )
+        finally:
+            connection.close()
+    else:
+        labels_by_dataset, identities = _load_labels(loader, datasets, summary_by_dataset)  # type: ignore[arg-type]
     if not private_loader and database_sha and database_sha != config.database_sha256 and expected_total == config.expected_datasets:
         raise ValueError("TEST label database SHA256 does not match frozen input")
     rows: list[DatasetComparison] = []
@@ -1043,10 +1241,29 @@ def evaluate_frozen_prediction(
         code_commit=str(manifest.get("code_commit")),
         bootstrap=bootstrap,
     )
-    if evaluation_root is None and output_root is not None:
-        evaluation_root = Path(output_root)
     if evaluation_root is not None:
-        _write_evaluation_artifacts(Path(evaluation_root), evaluation)
+        def verify_before_publish() -> None:
+            if before_publish is not None:
+                before_publish()
+            _verify_frozen_source(
+                output,
+                store,
+                expected_total=expected_total,
+                snapshot=source_snapshot,
+            )
+
+        _write_evaluation_artifacts(
+            Path(evaluation_root),
+            evaluation,
+            before_publish=verify_before_publish,
+        )
+    else:
+        _verify_frozen_source(
+            output,
+            store,
+            expected_total=expected_total,
+            snapshot=source_snapshot,
+        )
     return evaluation
 
 
@@ -1096,7 +1313,12 @@ def _evaluation_payloads(evaluation: Exp435Evaluation) -> dict[str, bytes]:
     return payloads
 
 
-def _write_evaluation_artifacts(root: Path, evaluation: Exp435Evaluation) -> None:
+def _write_evaluation_artifacts(
+    root: Path,
+    evaluation: Exp435Evaluation,
+    *,
+    before_publish: Callable[[], None] | None = None,
+) -> None:
     root = Path(root)
     if root.exists() or root.is_symlink():
         raise ValueError("evaluation root already exists")
@@ -1112,6 +1334,8 @@ def _write_evaluation_artifacts(root: Path, evaluation: Exp435Evaluation) -> Non
         descriptor = os.open(staging, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
         os.fsync(descriptor)
         os.close(descriptor)
+        if before_publish is not None:
+            before_publish()
         if root.exists() or root.is_symlink():
             raise ValueError("evaluation root appeared during publish")
         # Darwin's RENAME_EXCL is the same no-clobber primitive used for the
@@ -1135,9 +1359,30 @@ def evaluate_exp435(
 ) -> Exp435Evaluation:
     """Fixed CLI entrypoint for the post-freeze ``evaluate`` mode."""
 
+    # Import the CLI constants lazily so prediction modes never import this
+    # evaluator, while this production entrypoint cannot be redirected to a
+    # fixture or an alternate output directory.
+    from . import cli_antigravity
+
     output_root = Path(output_root)
-    checkpoint = output_root.parent / "checkpoint_antigravity"
-    store = Exp435CheckpointStore.open_read_only(checkpoint)
+    evaluation_root = Path(evaluation_root)
+    fixed_output = Path(cli_antigravity.FROZEN_OUTPUT)
+    fixed_checkpoint = Path(cli_antigravity.FROZEN_CHECKPOINT)
+    fixed_evaluation = Path(cli_antigravity.FROZEN_EVALUATION)
+    run_parent = Path(cli_antigravity.RUN_PARENT)
+    if any(path.is_symlink() for path in (run_parent, fixed_output, fixed_checkpoint, fixed_evaluation)):
+        raise ValueError("production evaluation paths cannot be symlinks")
+    if output_root != fixed_output or evaluation_root != fixed_evaluation:
+        raise ValueError("production evaluation requires the exact fixed paths")
+    if fixed_output.parent != run_parent or fixed_evaluation.parent != run_parent:
+        raise ValueError("production evaluation paths must be fixed siblings")
+    if fixed_checkpoint != run_parent / "checkpoint_antigravity":
+        raise ValueError("production checkpoint path is not fixed")
+    if fixed_output == fixed_evaluation or fixed_evaluation in fixed_output.parents or fixed_output in fixed_evaluation.parents:
+        raise ValueError("production evaluation paths must be fixed siblings")
+    if evaluation_root.exists() or evaluation_root.is_symlink():
+        raise ValueError("evaluation root already exists")
+    store = Exp435CheckpointStore.open_read_only(fixed_checkpoint)
     publication = FrozenPublication(output_root / PUBLICATION_DIRECTORY, {})
     # The placeholder object above is intentionally not trusted; the evaluator
     # performs a fresh inspect_publication replay from disk before labels.
@@ -1167,7 +1412,6 @@ __all__ = [
     "REGRESSED_FILE",
     "RESCUED_FILE",
     "SuccessDecision",
-    "_load_test_labels",
     "decide_exp435_success",
     "evaluate_exp435",
     "evaluate_frozen_prediction",
