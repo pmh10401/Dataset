@@ -545,6 +545,42 @@ git commit -m "feat(exp436): gate mlx and mps dense scoring"
 
 ### Task 7: Add durable checkpoint, progress, and runtime execution
 
+**Implementation status (2026-08-06):** implemented in the Task 7 focused
+commit.  The Exp436-specific store is the sole ordered-prefix authority;
+progress/event replay follows checkpoint → event → snapshot, with failed roots
+rejected before mutation.  CPU uses the frozen 11-worker constructor and
+accelerators retain one validated serial engine.  No official run or hardware
+benchmark was performed.
+
+**Phase A correction:** explicit `Exp436RunContext` v1 now rejects arbitrary
+context projections and binds the full frozen population/TEST manifest,
+provenance, paths, hashes, and topology before checkpoint creation/open.
+Checkpoint nested Exp436 evidence/candidate/audit deserialization is exact-key
+only. Checkpoint A6 also now performs a fail-closed, no-follow authority scan:
+the sole recognized record-set temp is a regular canonical current set or the
+exact prospective next set beside a valid next intent/record, and cleanup is
+deferred until inspection validates the complete inventory. Unknown entries,
+orphan or non-prefix records, non-stale/future/multiple intents, temp
+disagreement, symlinks, and nonregular authority entries preserve the tree.
+A7 now holds one safe root `flock` from each public checkpoint operation's
+first scan through its result: read-only inspection takes one shared lock and
+never mutates, while mutable resume holds one exclusive lock across scan,
+recognized repair, fsync, and pristine rescan. Commit scans, budgets, writes,
+and updates under one exclusive lock; context and inspection projections are
+deeply immutable. Phase A checkpoint hardening is complete.
+
+**Phase B correction:** `ProgressWriter` now owns exactly four durable output
+artifacts (progress snapshot, canonical hash-chained event JSONL, parent text
+log, and PID snapshot) under one `O_DIRECTORY|O_NOFOLLOW` directory-FD flock,
+with no lock-file artifact. Strict read-only inspection validates exact schemas,
+hashes, canonical bytes, PID bindings, metadata firewall, event/checkpoint
+prefixes, and snapshot-tail binding. Mutable reconciliation appends only the
+supplied authoritative ordered checkpoint tail. Terminal lifecycle records keep
+the offending dataset/prior stage without advancing checkpoint-derived
+completion counters; heartbeat changes liveness only. Phase B is complete.
+Phase C CPU/accelerator scheduling and integrated runtime lifecycle hardening
+remain pending; this phase makes no topology claim.
+
 **Files:**
 - Create: `experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py`
 - Create: `experiments/exp436_missing_safe_strict_consensus_antigravity/progress_antigravity.py`

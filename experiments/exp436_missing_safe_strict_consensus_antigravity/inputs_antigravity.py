@@ -57,6 +57,40 @@ _LANE_HASH_FIELDS = (
 )
 
 
+@dataclass(frozen=True)
+class Exp436CanonicalSourcePaths:
+    """Immutable source bindings persisted by the runtime context."""
+
+    database: Path
+    exp291_prediction: Path
+    exp291_manifest: Path
+    exp292_prediction: Path
+    exp292_manifest: Path
+
+    def __post_init__(self) -> None:
+        for field_name in self.__dataclass_fields__:
+            value = getattr(self, field_name)
+            if not isinstance(value, Path) or not value.is_absolute():
+                raise ValueError(f"{field_name} must be an absolute canonical source path")
+
+    def to_payload(self) -> dict[str, str]:
+        return {name: str(getattr(self, name)) for name in self.__dataclass_fields__}
+
+
+def canonical_source_paths_antigravity(
+    database: Path = DEFAULT_DATABASE,
+    exp291_prediction: Path = DEFAULT_EXP291_PREDICTION,
+    exp291_manifest: Path = DEFAULT_EXP291_MANIFEST,
+    exp292_prediction: Path = DEFAULT_EXP292_PREDICTION,
+    exp292_manifest: Path = DEFAULT_EXP292_MANIFEST,
+) -> Exp436CanonicalSourcePaths:
+    """Freeze exactly the caller-selected absolute bindings before opening DB."""
+
+    return Exp436CanonicalSourcePaths(*(Path(value).resolve(strict=False) for value in (
+        database, exp291_prediction, exp291_manifest, exp292_prediction, exp292_manifest
+    )))
+
+
 def decode_raw_value_row_antigravity(index: int, blob: bytes) -> RawValueSeries:
     """Decode one exact little-endian float32 BLOB without normalizing values."""
 
@@ -77,6 +111,7 @@ class Exp436InputSession:
 
     _database: Exp425DatabaseSnapshot
     context: FrozenRunContext
+    source_paths: Exp436CanonicalSourcePaths | None = None
     _active: bool = field(default=True, init=False, repr=False)
     _train_authority_antigravity: dict[
         str, tuple[MissingSafeRawDataset, tuple[tuple[int, bytes], ...]]
@@ -186,11 +221,12 @@ def open_exp436_input_session(
     """Open exactly one lane-gated descriptor snapshot and freeze its context."""
 
     _assert_shared_frozen_identity()
+    sources = canonical_source_paths_antigravity(database, exp291_prediction, exp291_manifest, exp292_prediction, exp292_manifest)
     lanes = freeze_lane_inputs(
-        Path(exp291_prediction),
-        Path(exp291_manifest),
-        Path(exp292_prediction),
-        Path(exp292_manifest),
+        sources.exp291_prediction,
+        sources.exp291_manifest,
+        sources.exp292_prediction,
+        sources.exp292_manifest,
         config=EXP417_FROZEN_CONFIG,
     )
     lane_population = _validate_population(lanes.population, source="frozen lane")
@@ -200,7 +236,7 @@ def open_exp436_input_session(
     ):
         raise ValueError("Exp436 reviewed code commit is invalid")
     with open_database_snapshot(
-        Path(database), expected_sha256=FROZEN_CONFIG.database_sha256
+        sources.database, expected_sha256=FROZEN_CONFIG.database_sha256
     ) as snapshot:
         context = snapshot.freeze_context(lanes, verified_code_commit=verified_code_commit)
         context_population = _validate_population(
@@ -208,7 +244,7 @@ def open_exp436_input_session(
         )
         if context_population != lane_population:
             raise ValueError("frozen lane and context populations do not match")
-        session = Exp436InputSession(snapshot, context)
+        session = Exp436InputSession(snapshot, context, sources)
         try:
             yield session
         finally:
@@ -222,6 +258,8 @@ __all__ = [
     "DEFAULT_EXP292_MANIFEST",
     "DEFAULT_EXP292_PREDICTION",
     "Exp436InputSession",
+    "Exp436CanonicalSourcePaths",
+    "canonical_source_paths_antigravity",
     "decode_raw_value_row_antigravity",
     "open_exp436_input_session",
 ]

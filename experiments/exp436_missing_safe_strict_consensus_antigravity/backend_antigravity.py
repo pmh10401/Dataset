@@ -58,6 +58,23 @@ def _validate_accelerator_engine(decision: BackendDecision, engine: object | Non
     return engine
 
 
+def validate_backend_engine(decision: BackendDecision, engine: object | None) -> object:
+    """Public runtime gate for the one adopted engine instance.
+
+    CPU has deliberately no engine.  Accelerator callers must validate the
+    exact selected object once and retain that same identity for the serial
+    run; this boundary never manufactures a fallback.
+    """
+
+    if not isinstance(decision, BackendDecision):
+        raise ValueError("decision must be a BackendDecision")
+    if decision.backend == "cpu":
+        if engine is not None:
+            raise ValueError("CPU backend does not accept an accelerator engine")
+        return None
+    return _validate_accelerator_engine(decision, engine)
+
+
 def score_with_backend(decision: BackendDecision, query: object, references: object, k: int, *, engine: object | None = None) -> float:
     """Score exactly one float32 query; accelerator errors are never hidden by CPU."""
 
@@ -78,4 +95,4 @@ def score_with_backend(decision: BackendDecision, query: object, references: obj
     return float(score)
 
 
-__all__ = ["score_with_backend", "select_backend"]
+__all__ = ["score_with_backend", "select_backend", "validate_backend_engine"]

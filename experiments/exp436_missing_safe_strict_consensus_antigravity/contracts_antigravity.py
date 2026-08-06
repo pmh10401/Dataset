@@ -1049,6 +1049,40 @@ class BackendDecision:
         return self.to_payload()
 
     @classmethod
+    def from_payload(cls, payload: Mapping[str, object]) -> "BackendDecision":
+        """Strictly reconstruct the persisted decision, rejecting derived junk."""
+
+        expected = {"mlx", "mps", "backend", "adopted", "reason", "selected_batch_size",
+                    "selected_device_median_seconds", "outer_worker_count", "serial_outer_execution"}
+        if not isinstance(payload, Mapping) or set(payload) != expected:
+            raise ValueError("backend decision payload keys are invalid")
+
+        def benchmark(raw: object) -> BackendBenchmarkEvidence:
+            if not isinstance(raw, Mapping):
+                raise ValueError("backend benchmark payload is invalid")
+            item = dict(raw)
+            benchmark_keys = {"backend", "available", "batches", "python_version", "numpy_version", "device",
+                              "device_info", "metal_available", "protocol", "seed", "mlx_version", "mlx_metal_version",
+                              "pytorch_version", "selected_batch_size", "selected_device_median_seconds", "fallback_reason", "passed"}
+            if set(item) != benchmark_keys or not isinstance(item.get("batches"), list):
+                raise ValueError("backend benchmark payload keys are invalid")
+            batches = item.pop("batches")
+            item.pop("passed")
+            try:
+                return BackendBenchmarkEvidence(
+                    batches=tuple(BackendBatchEvidence(**dict(batch)) for batch in batches if isinstance(batch, Mapping)),
+                    **item,
+                )
+            except (TypeError, ValueError) as error:
+                raise ValueError("backend benchmark payload is invalid") from error
+
+        decision = cls(benchmark(payload["mlx"]), benchmark(payload["mps"]),
+                       payload["backend"], payload["adopted"], payload["reason"])
+        if decision.to_payload() != dict(payload):
+            raise ValueError("backend decision derived fields are invalid")
+        return decision
+
+    @classmethod
     def cpu_fallback(cls) -> "BackendDecision":
         return cls(BackendBenchmarkEvidence.unavailable("mlx", "no_accelerator_passed"), BackendBenchmarkEvidence.unavailable("mps", "no_accelerator_passed"), "cpu", False, "no_accelerator_passed")
 

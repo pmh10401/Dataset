@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T12:23:59Z",
-  "generated_from_commit": "90bc1e70396597b0ac5c7c078bfecad8d984d6ad",
+  "generated_at": "2026-08-06T15:30:18Z",
+  "generated_from_commit": "08e19293a625f165882aa28d2bd63fd59c7aca05",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -11,7 +11,8 @@
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
     "Research control files, Exp435 preserved failure evidence, Exp436 corrected readiness-owned lifecycle, strict scoring/benchmark/publication contract, and product-implementation-pending state",
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
-    "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch"
+    "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch",
+    "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs"
   ],
   "nodes": [
     {
@@ -1690,7 +1691,7 @@
       "boundary": "Exp436 missing-safe strict consensus",
       "layer": 3,
       "path": "experiments/exp436_missing_safe_strict_consensus_antigravity",
-      "role": "Freezes missing-safe values-only contracts, owns the single label-free prediction input session, prepares exact-length finite TRAIN groups, and scores each TEST row locally with strict prototype/gradient/ACF consensus and frozen-lane exclusion. It also owns truthful optional MLX/MPS scalar dense-score readiness evidence and neutral no-fallback backend dispatch.",
+      "role": "Freezes missing-safe values-only contracts and implements readiness-first, parent-owned ordered runtime execution. Checkpoint records retain strict result evidence plus exact non-label dataset metadata; classified read-only inspection reports only recognized crash leftovers, checkpoint_complete is fail-closed unless the complete checkpoint, event prefix, terminal counters, and snapshot agree, and the single writer caches its validated JSONL tail while attributing CPU failures to the exact future. CPU uses frozen 11-worker ordered scheduling and MLX/MPS uses one validated serial engine.",
       "entrypoints": [
         "Exp436FrozenConfig",
         "FROZEN_CONFIG",
@@ -1727,7 +1728,16 @@
         "MpsFixture",
         "benchmark_mps_adoption",
         "select_backend",
-        "score_with_backend"
+        "score_with_backend",
+        "Exp436CanonicalSourcePaths",
+        "canonical_source_paths_antigravity",
+        "validate_backend_engine",
+        "Exp436CheckpointStore",
+        "ProgressWriter",
+        "run_exp436_new",
+        "resume_exp436",
+        "inspect_exp436",
+        "Exp436RunContext"
       ],
       "tests": [
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_config_antigravity.py",
@@ -1737,7 +1747,10 @@
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_scoring_antigravity.py",
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mlx_antigravity.py",
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mps_antigravity.py",
-        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py"
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_checkpoint_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_progress_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_runtime_antigravity.py"
       ],
       "constraints": [
         "No TEST labels, anomaly positions, metrics, imputation, padding, truncation, copied values, or tail replacement",
@@ -1747,7 +1760,8 @@
         "Raw nonfinite TEST rows and length below two abstain before group lookup or transforms; exact routing abstentions are scalar-free and every finite-row post-transform numerical error raises ValueError",
         "Candidates require prototype AND gradient AND ACF and exact TEST identity evidence coverage; unavailable TRAIN channels preserve all calculable siblings with exact channel reasons, while ACF zero energy never substitutes the raw waveform",
         "Backend protocol is paired-synchronized-v1: timed CPU/device callables contain only their scalar score suites; candidate/JSON/hash work is outside timing, every warmup/timed device output is aggregated into parity/error gates, invalid output preserves only prior fully validated pairs, and nonfinite completed output canonically takes the nonfinite_output reason before all other failed gates; fixtures, engines, and dispatch require exactly frozen k=3 with at least three references; unavailable backends have empty batches/no invented timing or selection, each available backend retains one common input/output fixture digest pair, two available backends must match those pairs before selection, available MLX/MPS evidence requires backend-specific non-CPU accelerator provenance, MLX requires an explicit GPU stream, exact-device synchronization, and installed mlx-metal provenance, and dispatch repeats device validation",
-        "Exp436 scoring imports only local config, contracts, and features; it injects only dense scoring backends and contains no label, evaluation, metric, or database route"
+        "Exp436 scoring imports only local config, contracts, and features; it injects only dense scoring backends and contains no label, evaluation, metric, or database route",
+        "Checkpoint is the sole ordered-prefix authority; checkpoint record -> completion event -> progress snapshot. Phase B progress owns exactly progress JSON, event JSONL, parent log, and PID JSON under one O_DIRECTORY|O_NOFOLLOW directory flock, validates canonical hash-chain/schema/binding/metadata/PID state read-only, and reconciles only an authoritative ordered checkpoint tail. Failed roots are non-resumable; complete/inspect read-only routes bind stored context to readiness before any external resource, and no Exp435 record/runtime import is permitted. Inspection first validates every checkpoint authority with lstat/O_NOFOLLOW/fstat while one shared root flock is held; only one exact canonical record-set temp may equal the current set or the valid next intent/record prospective set. Mutable checkpoint recovery uses one exclusive root flock across full scan, recognized repair/fsync, and pristine rescan; contexts and inspections are deeply immutable."
       ],
       "evidence": [
         {
@@ -1941,6 +1955,50 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py",
           "symbol": "def test_dispatch_rejects_nonfrozen_k_before_any_cpu_or_device_score"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "class Exp436CheckpointStore"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/progress_antigravity.py",
+          "symbol": "class ProgressWriter"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def run_exp436_new("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def resume_exp436("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def inspect_exp436("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/backend_antigravity.py",
+          "symbol": "def validate_backend_engine("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "class Exp436RunContext"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _regular_bytes("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _root_lock("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _scan_locked("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _repair_locked("
         }
       ]
     }

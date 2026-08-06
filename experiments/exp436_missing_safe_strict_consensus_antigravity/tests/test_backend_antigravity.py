@@ -11,6 +11,7 @@ from experiments.exp436_missing_safe_strict_consensus_antigravity import mps_ant
 from experiments.exp436_missing_safe_strict_consensus_antigravity.backend_antigravity import (
     score_with_backend,
     select_backend,
+    validate_backend_engine,
 )
 from experiments.exp436_missing_safe_strict_consensus_antigravity.contracts_antigravity import (
     BackendBatchEvidence,
@@ -40,6 +41,11 @@ def _available(backend: str, median: float) -> BackendBenchmarkEvidence:
 
 
 class BackendSelectorTests(unittest.TestCase):
+    def test_public_engine_validation_rejects_cpu_engine(self) -> None:
+        cpu = select_backend(BackendBenchmarkEvidence.unavailable("mlx", "missing"), BackendBenchmarkEvidence.unavailable("mps", "missing"))
+        self.assertIsNone(validate_backend_engine(cpu, None))
+        with self.assertRaisesRegex(ValueError, "CPU"):
+            validate_backend_engine(cpu, object())
     def test_mlx_and_mps_fixture_digest_algorithms_are_symmetric(self) -> None:
         query = np.asarray([0.1, 0.1], dtype=np.float32)
         references = np.asarray([[0., 0.], [1., 1.], [2., 2.]], dtype=np.float32)
