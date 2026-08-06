@@ -88,6 +88,9 @@ readiness는 다음을 확인한다.
 MLX smoke는 seed `43501`로 만든 동일한 float32 입력을 CPU와 MLX에 전달한다.
 fixture는 production처럼 channel 하나의 TEST query row 정확히 하나를 score하고,
 reference batch sizes `16, 32, 64, 128, 256`은 변경하지 않는다.
+각 값은 query 묶음이 아니라 reference 묶음 크기다. 각 묶음에서 찾은 최근접
+후보를 전역으로 다시 합쳐 정확한 k=3 median을 계산하며, readiness에서 선택한
+크기가 production 점수 계산에도 그대로 사용된다.
 각 유한 score 쌍의 정규화오차는
 `abs(cpu_score - mlx_score) / max(abs(cpu_score), abs(mlx_score), 1e-12)`이고,
 그 최댓값과 최대 절대오차가 각각 `1e-5` 이하여야 한다. parity, 공식 alpha 후보
@@ -148,6 +151,8 @@ parent가 loading/dispatching 중이거나 아직 result를 수집하지 않은
 `awaiting_worker_result`, 또는 `committing` 중인 dataset만 가리킨다. queued dataset과
 이미 complete/commit된 dataset을 `scoring`으로 표시하지 않으며 parent가 worker
 activity event를 받지 않으므로 parallel stage는 `scoring`을 주장하지 않는다.
+허용되는 parallel stage는 `loading`, `dispatching`, `awaiting_worker_result`,
+`committing`, `idle`의 다섯 가지뿐이다.
 
 ## 7. 중단과 재개
 

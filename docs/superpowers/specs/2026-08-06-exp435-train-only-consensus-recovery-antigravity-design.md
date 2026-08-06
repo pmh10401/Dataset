@@ -192,6 +192,11 @@ smoke seed `43501`로 만든 동일한 float32 입력과 동일한 seed를 CPU�
 그대로 전달해 비교하고 다음을 모두 만족할 때만 MLX를 채택한다. 이 seed는
 사후 bootstrap seed와 분리된 MLX parity 계약의 일부다.
 
+고정 batch sizes `16, 32, 64, 128, 256`은 reference 축의 묶음 크기다. 각 묶음의
+RMS 거리에서 최근접 k개를 남기고 이를 다음 묶음과 전역적으로 병합해, 전체
+reference를 한 번에 계산한 것과 같은 k-neighbor median을 만든다. readiness에서
+선택한 reference batch size는 production에서도 바꾸지 않는다.
+
 1. 점수식, threshold, alpha와 routing이 바뀌지 않는다.
 2. 모든 출력이 유한하다.
 3. 공식 alpha에서 후보 좌표가 완전히 같다.

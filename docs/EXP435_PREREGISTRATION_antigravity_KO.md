@@ -184,6 +184,12 @@ production score call과 같은 granularity로, fixture는 channel 하나의 TES
 row 정확히 하나를 사용한다. reference batch sizes만 `16, 32, 64, 128, 256`으로
 고정한다.
 
+여기서 batch size는 query 수가 아니라 reference 수를 뜻한다. MLX는 reference를
+선택된 크기로 나눠 RMS 거리를 계산하고, 각 묶음의 결과를 합쳐 전체 reference에
+대한 정확한 최근접 k개를 유지한다. 따라서 전체 reference를 한 번에 올리지 않아도
+CPU와 같은 전역 k-neighbor median을 계산하며, readiness에서 고른 batch size가
+production에도 그대로 전달된다.
+
 - benchmark batch sizes: `16, 32, 64, 128, 256`
 - warm-up: 2회
 - 측정: 각 batch 5회, median wall time
@@ -247,7 +253,7 @@ evaluation의 네 고정 root가 모두 없을 때만 `ready`를 기록한다. p
 completed/total, success/abstention/error, 후보 수, 처리속도, 경과시간, ETA,
 checkpoint와 latest error다. 데이터셋 결과 저장 순서는 이름 순서로 고정한다.
 parallel stage는 parent가 관찰한 `loading`, `dispatching`, `awaiting_worker_result`,
-`waiting_for_ordered_commit`, `committing`, `idle`, `failing`만 사용한다. worker가
+`committing`, `idle`의 다섯 값만 사용한다. worker가
 실제로 scoring 중이라고 parent가 증명할 event는 없으므로 parallel progress에서
 `scoring`을 사용하지 않는다.
 

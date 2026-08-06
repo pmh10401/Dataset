@@ -552,6 +552,11 @@ compute RMS distances and k-neighbor median without changing feature definitions
 `mx.eval`, synchronize, and return NumPy float32 values. Absence of MLX/Metal returns a CPU
 decision rather than raising during normal readiness.
 
+The frozen batch sizes apply to the reference axis. Merge each reference chunk's nearest-k
+values into an exact global nearest-k set so readiness and production avoid a full query-by-
+reference allocation without changing the score. Propagate the selected reference batch size
+unchanged into production scoring.
+
 - [ ] **Step 4: Implement preregistered benchmarking**
 
 Use the frozen smoke seed `43501` to construct and order one float32 fixture, and pass that same
