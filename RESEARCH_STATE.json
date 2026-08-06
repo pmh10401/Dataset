@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T17:31:00+09:00",
+  "updated_at": "2026-08-07T03:22:28+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
   "last_verified_commit": "bc3a696602bd3e8688ada46d9e31e3221f439a96",
   "active_experiment": "Exp436",
-  "active_phase": "governance_frozen_product_implementation_pending",
+  "active_phase": "implementation_complete_readiness_pending",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -131,6 +131,25 @@
     "new_requires_exact_verified_readiness": true,
     "train_exclusion_audit_artifact": "train_exclusion_audit_antigravity.jsonl"
   },
+  "exp436_pre_readiness_verification": {
+    "implementation_status": "complete_readiness_pending",
+    "official_readiness": false,
+    "head_before_task9_commit": "61398ee7575d24755cca09ea46254ba0928d43c9",
+    "cli_readiness_exit_fix": "TDD RED at 61398ee7 then GREEN; canonical readiness remains state-free and public main(['readiness']) exits 0",
+    "tests": {
+      "exp436": {"command": "python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py'", "tests": 280, "skips": 0, "status": "passed"},
+      "exp425_database": {"command": "python3 -m unittest experiments.exp425_selective_recovery.tests.test_database -v", "tests": 30, "skips": 0, "status": "passed"},
+      "exp435": {"command": "python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*_antigravity.py'", "tests": 187, "skips": 0, "status": "passed"},
+      "exp426": {"command": "python3 -m unittest discover -s experiments/exp426_verified_baseline/tests -p 'test_*_antigravity.py'", "tests": 58, "skips": 1, "status": "passed", "skip_reason": "EXP426_RUN_PRODUCTION_SOURCE_TEST=1 is required for the explicit external production-source audit"},
+      "exp417": {"command": "python3 -m unittest discover -s experiments/exp417_causal_multihorizon_shadow/tests -p 'test_*.py'", "tests": 270, "skips": 0, "status": "passed", "note": "full CPU-bound legacy suite completed after a long JSON serialization phase"}
+    },
+    "test_labels_opened": false,
+    "pid": null,
+    "checkpoint_created": false,
+    "output_created": false,
+    "evaluation_created": false,
+    "next_command": "python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py readiness"
+  },
   "failed_runs": {
     "exp435_official": {
       "state": "failed",
@@ -144,7 +163,7 @@
       "root": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806"
     }
   },
-  "next_action": "Execute the approved Exp436 TDD implementation plan at Task 1, the add-only values-only raw-blob boundary. Exp436 preregistration/runbook and research-control baseline are frozen; Exp435 remains failed and preserved; Exp436 prediction has not started and TEST labels remain unopened.",
+  "next_action": "Review the clean committed Exp436 Task9 pre-readiness state, then invoke the one official readiness command exactly once. Official readiness remains false; no prediction/evaluation or TEST-label access has started.",
   "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && sed -n '1,220p' docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md && python3 -m json.tool RESEARCH_STATE.json",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",

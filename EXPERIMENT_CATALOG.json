@@ -131,7 +131,7 @@
     {
       "id": "Exp436",
       "kind": "missing_safe_strict_three_channel_consensus_recovery",
-      "status": "governance_frozen_product_implementation_pending",
+      "status": "implementation_complete_readiness_pending",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "c33753ab6e608c0a4dfd414a2a169b016096f913",
       "documents": [
@@ -145,7 +145,9 @@
       "review_only": true,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "Scientific preregistration and operator runbook are frozen: exclude only nonfinite normal TRAIN rows, abstain only nonfinite TEST rows without imputation, use candidate_alpha=0.01 and per-channel 1.4826 median/MAD TRAIN-group transforms, require prototype AND gradient AND ACF outside all frozen lanes, and recompute all 1,117 datasets in a readiness-owned new root. Backend smoke is seed 43601 with fixed batches/warm-ups/timed medians and deterministic selection; train_exclusion_audit_antigravity.jsonl is hash-bound. Product implementation, readiness, prediction, and evaluation have not started; TEST labels remain unopened."
+      "official_readiness": false,
+      "checkpoint_output_evaluation_created": false,
+      "notes": "Scientific preregistration and operator runbook are frozen: exclude only nonfinite normal TRAIN rows, abstain only nonfinite TEST rows without imputation, use candidate_alpha=0.01 and per-channel 1.4826 median/MAD TRAIN-group transforms, require prototype AND gradient AND ACF outside all frozen lanes, and recompute all 1,117 datasets in a readiness-owned new root. Backend smoke is seed 43601 with fixed batches/warm-ups/timed medians and deterministic selection; train_exclusion_audit_antigravity.jsonl is hash-bound. Product implementation is complete and readiness remains pending; prediction/evaluation have not started and TEST labels remain unopened."
     }
   ]
 }

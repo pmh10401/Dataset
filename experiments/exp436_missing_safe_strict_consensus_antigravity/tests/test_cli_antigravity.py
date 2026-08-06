@@ -138,6 +138,29 @@ class CliAntigravityTests(unittest.TestCase):
             self.assertEqual(tuple(item.name for item in parent.iterdir()), ("readiness_antigravity.json",))
             self.assertEqual((parent / "readiness_antigravity.json").read_bytes(), canonical_json_bytes(payload))
 
+    def test_main_readiness_returns_zero_after_canonical_publication_without_state(self):
+        """Removing the readiness success branch would turn this valid CLI call into exit 1."""
+        with TemporaryDirectory() as directory:
+            parent, calls = Path(directory) / "run_parent_antigravity", []
+            payload = _readiness(parent)
+
+            def publish_readiness():
+                calls.append("readiness")
+                module._publish_readiness_atomically(parent / "readiness_antigravity.json", payload)
+                return payload
+
+            base = self._deps(parent, calls)
+            deps = module._CliDependencies(base.output, base.checkpoint, base.readiness,
+                base.current_head, publish_readiness, base.execute, base.inspect, base.evaluate)
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with patch.object(module, "_production_dependencies", return_value=deps), \
+                    redirect_stdout(stdout), redirect_stderr(stderr):
+                code = module.main(["readiness"])
+            self.assertEqual((code, calls, stderr.getvalue()), (0, ["readiness"], ""))
+            published = json.loads(deps.readiness.read_bytes())
+            self.assertEqual(published, payload)
+            self.assertNotIn("state", published)
+
     def test_atomic_readiness_rejects_existing_parent_without_clobber(self):
         with TemporaryDirectory() as directory:
             parent = Path(directory) / "run_parent_antigravity"; parent.mkdir()

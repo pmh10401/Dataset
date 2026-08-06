@@ -418,6 +418,7 @@ def _main_with_dependencies(argv: list[str] | None, deps: _CliDependencies) -> i
         elif args.command == "inspect": result = dict(deps.inspect())
         else: result = dict(deps.evaluate())
         print(json.dumps(result, sort_keys=True))
+        if args.command == "readiness": return 0
         if args.command == "evaluate": return 0 if result.get("state") in {"evaluated", "complete", "success"} else 1
         return 0 if result.get("state") in {"complete_review_only", "checkpoint_complete", "complete"} else 1
     except (OSError, ValueError) as error:
