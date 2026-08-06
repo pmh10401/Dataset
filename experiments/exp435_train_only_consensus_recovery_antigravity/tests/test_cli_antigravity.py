@@ -9,15 +9,50 @@ from tempfile import TemporaryDirectory
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
+from dataclasses import asdict
+from hashlib import sha256
 
+from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp435_train_only_consensus_recovery_antigravity.cli_antigravity import (
     _CliDependencies,
+    _write_new,
     build_parser,
     main,
 )
+from experiments.exp435_train_only_consensus_recovery_antigravity.config_antigravity import FROZEN_CONFIG
 
 
 class Exp435CliTests(unittest.TestCase):
+    def _valid_readiness(self, commit: str) -> dict[str, object]:
+        lanes = {
+            "exp291_prediction": FROZEN_CONFIG.exp291_prediction_sha256,
+            "exp291_manifest": FROZEN_CONFIG.exp291_manifest_sha256,
+            "exp292_prediction": FROZEN_CONFIG.exp292_prediction_sha256,
+            "exp292_manifest": FROZEN_CONFIG.exp292_manifest_sha256,
+        }
+        return {
+            "schema": "exp435.readiness.v1",
+            "state": "ready",
+            "experiment_id": FROZEN_CONFIG.experiment_id,
+            "run_identity": "exp435-train-only-consensus-recovery-antigravity-20260806",
+            "git_commit": commit,
+            "config_sha256": sha256(canonical_json_bytes(asdict(FROZEN_CONFIG))).hexdigest(),
+            "input_sha256": {"database": FROZEN_CONFIG.database_sha256, **lanes},
+            "database_sha256": FROZEN_CONFIG.database_sha256,
+            "lane_artifact_sha256": lanes,
+            "backend": "cpu",
+            "backend_decision": {"backend": "cpu"},
+            "runtime_versions": {"python": "test"},
+            "scientific_parity": True,
+            "output_root_absent": True,
+            "checkpoint_root_absent": True,
+            "evaluation_root_absent": True,
+            "test_values_opened": 0,
+            "test_labels_opened": 0,
+            "label_access_count": 0,
+            "focused_tests": {"returncode": 0},
+        }
+
     def _dependencies(self, parent: Path, calls: list[str]) -> _CliDependencies:
         output = parent / "output_antigravity"
         checkpoint = parent / "checkpoint_antigravity"
@@ -93,6 +128,37 @@ class Exp435CliTests(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertIn("readiness", stderr)
             self.assertEqual(calls, [])
+
+    def test_readiness_action_is_the_single_writer(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory) / "new_parent"
+            output = parent / "output_antigravity"
+            checkpoint = parent / "checkpoint_antigravity"
+            readiness = parent / "readiness_antigravity.json"
+            calls: list[str] = []
+            payload = self._valid_readiness("a" * 40)
+
+            def readiness_call() -> dict[str, object]:
+                calls.append("readiness")
+                parent.mkdir()
+                _write_new(readiness, canonical_json_bytes(payload))
+                return payload
+
+            dependencies = _CliDependencies(
+                output=output,
+                checkpoint=checkpoint,
+                readiness=readiness,
+                current_head=lambda: "a" * 40,
+                readiness_call=readiness_call,
+                execute=lambda mode: {"state": "complete_review_only"},
+                inspect=lambda: {"state": "complete_review_only"},
+                evaluate=lambda: {"state": "evaluated"},
+            )
+            code, stdout, stderr = self._main(["readiness"], dependencies)
+            self.assertEqual(code, 0, stderr)
+            self.assertEqual(calls, ["readiness"])
+            self.assertEqual(readiness.read_bytes(), canonical_json_bytes(payload))
+            self.assertEqual(json.loads(stdout), payload)
 
     def test_prediction_modes_do_not_import_evaluation(self) -> None:
         with TemporaryDirectory() as directory:

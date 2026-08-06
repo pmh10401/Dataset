@@ -30,6 +30,7 @@ from .reporting_antigravity import (
     PREDICTION_FILE,
     FrozenPublication,
     _backend_from_context,
+    _fsync_directory,
     _read_json,
     _write_new,
     inspect_publication,
@@ -179,8 +180,13 @@ def _preflight_roots(command: str, output: Path, checkpoint: Path, readiness: Pa
     if command == "readiness":
         if output.exists() or checkpoint.exists() or readiness.exists() or evaluation.exists():
             raise ValueError("readiness requires all fixed roots to be absent")
-        if not readiness.parent.is_dir() or readiness.parent.is_symlink():
+        parent = readiness.parent
+        if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
             raise ValueError("readiness parent is absent or invalid")
+        if parent.exists() and any(parent.iterdir()):
+            raise ValueError("readiness parent contains unknown existing content")
+        if not parent.exists() and (parent.parent.is_symlink() or not parent.parent.is_dir()):
+            raise ValueError("readiness parent container is absent or invalid")
         return
     if command == "new":
         if output.exists() or checkpoint.exists():
@@ -290,7 +296,31 @@ def _synthetic_mlx_decision():
     return benchmark_mlx_adoption((MlxFixture(queries, references),))
 
 
+def _ensure_run_parent(parent: Path) -> None:
+    """Create the fixed run parent once, without accepting unknown content."""
+
+    parent = Path(parent)
+    container = parent.parent
+    if container.is_symlink() or not container.is_dir():
+        raise ValueError("readiness parent container is absent or invalid")
+    if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+        raise ValueError("readiness parent is absent or invalid")
+    if not parent.exists():
+        try:
+            parent.mkdir(mode=0o700)
+            _fsync_directory(container)
+        except FileExistsError:
+            # Another writer won creation; validate its contents below rather
+            # than following or replacing anything it created.
+            pass
+    if parent.is_symlink() or not parent.is_dir():
+        raise ValueError("readiness parent is absent or invalid")
+    if any(parent.iterdir()):
+        raise ValueError("readiness parent contains unknown existing content")
+
+
 def _production_readiness() -> Mapping[str, object]:
+    _ensure_run_parent(RUN_PARENT)
     FROZEN_CONFIG.validate()
     head = _clean_head()
     if FROZEN_OUTPUT.exists() or FROZEN_CHECKPOINT.exists() or FROZEN_READINESS.exists() or FROZEN_EVALUATION.exists():
@@ -352,6 +382,30 @@ def _summary_payload(summary: object, publication: FrozenPublication | None = No
     return dict(payload)
 
 
+def _publication_summary(publication: FrozenPublication) -> dict[str, object]:
+    """Return a scalar CLI result from an already verified publication."""
+
+    manifest = publication.manifest
+    completed = manifest.get("completed_datasets")
+    failed = manifest.get("failed_datasets")
+    candidate_count = manifest.get("candidate_count")
+    if not all(type(value) is int for value in (completed, failed, candidate_count)):
+        raise ValueError("publication summary accounting is invalid")
+    return {
+        "run_identity": manifest.get("run_identity"),
+        "state": "complete_review_only",
+        "total_datasets": completed,
+        "completed_datasets": completed,
+        "failed_datasets": failed,
+        "candidate_count": candidate_count,
+        "prediction_path": str(publication.publication / PREDICTION_FILE),
+        "manifest_path": str(publication.publication / MANIFEST_FILE),
+        "prediction_sha256": publication.prediction_sha256,
+        "manifest_sha256": publication.manifest_sha256,
+        "artifact_sha256": publication.artifact_sha256,
+    }
+
+
 def _run_prediction(command: str) -> Mapping[str, object]:
     if command not in {"new", "resume"}:
         raise ValueError("prediction command is invalid")
@@ -364,23 +418,21 @@ def _run_prediction(command: str) -> Mapping[str, object]:
         DEFAULT_EXP292_PREDICTION,
         open_exp435_input_session,
     )
-    from .runtime_antigravity import (
-        _runtime_context,
-        inspect_exp435,
-        resume_exp435,
-        run_exp435_new,
-    )
-
     head = _clean_head()
     readiness_payload: Mapping[str, object] | None = None
     if command == "new":
-        # This second head read is deliberately immediately before opening the
-        # database-bound session, closing the readiness/HEAD race.
+        # Retain the readiness-validated clean HEAD and read it again directly
+        # before opening the database-bound session.  The exact final value is
+        # passed into the descriptor-bound input session below.
         readiness_payload = _revalidate_readiness_for_execution(
             FROZEN_READINESS,
-            validated_commit=_read_json(FROZEN_READINESS, "readiness input").get("git_commit") if FROZEN_READINESS.is_file() else None,
-            current_head=_clean_head(),
+            validated_commit=head,
+            current_head=head,
         )
+        final_head = _clean_head()
+        if final_head != head or final_head != readiness_payload.get("git_commit"):
+            raise ValueError("clean HEAD changed before input session")
+        head = final_head
         backend = _backend_from_readiness(readiness_payload)
     else:
         stored_context = Exp435CheckpointStore.read_context_projection(FROZEN_CHECKPOINT)
@@ -388,6 +440,13 @@ def _run_prediction(command: str) -> Mapping[str, object]:
         if stored_commit != head:
             raise ValueError("resume code commit does not match current clean HEAD")
         backend = _backend_from_context(stored_context)
+        publication_root = FROZEN_OUTPUT / "publication_antigravity"
+        if publication_root.exists() or publication_root.is_symlink():
+            store = Exp435CheckpointStore.open_read_only(FROZEN_CHECKPOINT)
+            publication = inspect_publication(FROZEN_OUTPUT, store)
+            return _publication_summary(publication)
+        from .runtime_antigravity import inspect_exp435, resume_exp435
+
         # A completed checkpoint can be published/read without reopening the
         # DB.  This also makes repeated resume safe after a publication race.
         try:
@@ -402,6 +461,8 @@ def _run_prediction(command: str) -> Mapping[str, object]:
             store = Exp435CheckpointStore.open_read_only(FROZEN_CHECKPOINT)
             publication = publish_exp435(store, FROZEN_OUTPUT)
             return _summary_payload(summary, publication)
+
+    from .runtime_antigravity import _runtime_context, resume_exp435, run_exp435_new
 
     with open_exp435_input_session(
         DEFAULT_DATABASE,
@@ -446,6 +507,12 @@ def run_resume() -> Mapping[str, object]:
 
 def _production_inspect() -> Mapping[str, object]:
     from .checkpoint_antigravity import Exp435CheckpointStore
+
+    publication_root = FROZEN_OUTPUT / "publication_antigravity"
+    if publication_root.exists() or publication_root.is_symlink():
+        store = Exp435CheckpointStore.open_read_only(FROZEN_CHECKPOINT)
+        return _publication_summary(inspect_publication(FROZEN_OUTPUT, store))
+
     from .runtime_antigravity import inspect_exp435
 
     stored_context = Exp435CheckpointStore.read_context_projection(FROZEN_CHECKPOINT)
@@ -525,21 +592,31 @@ def main(
         )
         if args.command == "readiness":
             payload = dict(dependencies.readiness_call())
-            verified = _validate_readiness_payload(payload, expected_commit=_head(dependencies))
-            _write_new(dependencies.readiness, canonical_json_bytes(verified))
+            validated_head = _head(dependencies)
+            verified = _validate_readiness_payload(payload, expected_commit=validated_head)
+            # The injected/production action is the sole writer.  Re-read the
+            # artifact and require byte identity with the canonical returned
+            # payload; the CLI must never perform a second write.
+            if dependencies.readiness.is_symlink() or not dependencies.readiness.is_file():
+                raise ValueError("readiness action did not create its artifact")
+            artifact_raw = dependencies.readiness.read_bytes()
+            canonical = canonical_json_bytes(verified)
+            if artifact_raw != canonical:
+                raise ValueError("readiness artifact is not byte-identical to the action result")
+            reread = _read_json(dependencies.readiness, "readiness artifact")
+            if reread != verified:
+                raise ValueError("readiness artifact changed after the action")
             print(json.dumps(verified, sort_keys=True))
             return 0
         if args.command == "new":
             readiness = _read_json(dependencies.readiness, "readiness input")
-            validated = _validate_readiness_payload(readiness, expected_commit=_head(dependencies))
-            # Re-read the commit after all preflight work and before the
-            # injected execution callback.  Production execution repeats this
-            # check immediately before opening the input session as well.
-            _revalidate_readiness_for_execution(
-                dependencies.readiness,
-                validated_commit=validated["git_commit"] if isinstance(validated.get("git_commit"), str) else None,
-                current_head=_head(dependencies),
-            )
+            validated_head = _head(dependencies)
+            validated = _validate_readiness_payload(readiness, expected_commit=validated_head)
+            # Read a final clean HEAD immediately before execution and require
+            # it to equal both the earlier validation and readiness commit.
+            final_head = _head(dependencies)
+            if final_head != validated_head or final_head != validated.get("git_commit"):
+                raise ValueError("clean HEAD changed before execution")
             result = dict(dependencies.execute("new"))
         elif args.command == "resume":
             result = dict(dependencies.execute("resume"))
