@@ -9,21 +9,12 @@ completion order.
 
 from __future__ import annotations
 
-from concurrent.futures import FIRST_COMPLETED, Future, ProcessPoolExecutor, wait
-from dataclasses import asdict
-from hashlib import sha256
 import os
-from pathlib import Path
-from typing import Callable, Mapping
-from dataclasses import dataclass
-import json
-
-from experiments.exp403_408.artifact_io import canonical_json_bytes
 
 
-# This module is imported by the parent and by spawned workers.  Set the
-# numerical-library limits before importing any project module that can import
-# NumPy (contracts, features, or scoring).
+# This module is imported by the parent and by spawned workers.  Keep this
+# bootstrap immediately after ``os``: even the artifact/checkpoint imports
+# below may transitively load NumPy.
 _THREAD_ENV = (
     "OMP_NUM_THREADS",
     "OPENBLAS_NUM_THREADS",
@@ -40,6 +31,15 @@ def _set_numerical_thread_environment() -> None:
 
 
 _set_numerical_thread_environment()
+
+from concurrent.futures import FIRST_COMPLETED, Future, ProcessPoolExecutor, wait
+from dataclasses import asdict, dataclass
+from hashlib import sha256
+import json
+from pathlib import Path
+from typing import Callable, Mapping
+
+from experiments.exp403_408.artifact_io import canonical_json_bytes
 
 from .checkpoint_antigravity import (
     Exp435CheckpointStore,
@@ -250,7 +250,13 @@ def _summary(
     publication_hashes: Mapping[str, str] | None = None,
 ) -> Exp435RunSummary:
     results = [store.load_record(dataset) for dataset in sorted(store.completed_digests())]
-    completed = len(results)
+    recorded_failed = sum(result.status == "failed" for result in results)
+    reported_failed = max(int(failed), recorded_failed)
+    # ``failed`` may include the current terminal attempt that never reached
+    # the checkpoint (for example a candidate-budget overflow).  Count that
+    # attempt in the summary so successful + abstained + failed remains a
+    # truthful conservation law without inventing a checkpoint record.
+    completed = len(results) + max(0, reported_failed - recorded_failed)
     successful = sum(result.status == "scored" for result in results)
     abstained = sum(result.status == "abstained" for result in results)
     candidate_count = sum(result.candidate_count for result in results)
@@ -262,7 +268,7 @@ def _summary(
         completed_datasets=completed,
         successful_datasets=successful,
         abstained_datasets=abstained,
-        failed_datasets=failed,
+        failed_datasets=reported_failed,
         candidate_count=candidate_count,
         backend=backend,
         prediction_sha256=hashes.get("prediction_sha256"),
@@ -446,6 +452,9 @@ def _run(
             run_root,
             run_identity=store.run_identity,
             checkpoint=checkpoint_root,
+            backend=backend.backend,
+            total_datasets=len(datasets),
+            context_fingerprint=store.context_fingerprint,
         )
     else:
         if Path(run_root).exists() or Path(checkpoint_root).exists():
@@ -457,6 +466,7 @@ def _run(
             checkpoint=checkpoint_root,
             total_datasets=len(datasets),
             backend=backend.backend,
+            context_fingerprint=store.context_fingerprint,
         )
     failure_persisted = False
     try:
@@ -651,7 +661,14 @@ def _run(
             writer.mark_complete(candidate_count=candidate_count)
         return _summary(store, backend, status=final_status, failed=failed)
     except KeyboardInterrupt as error:
-        writer.mark_interrupted(writer.progress.get("current_dataset") if isinstance(writer.progress.get("current_dataset"), str) else None, error)
+        if not failure_persisted:
+            writer.mark_interrupted(
+                writer.progress.get("current_dataset")
+                if isinstance(writer.progress.get("current_dataset"), str)
+                else None,
+                error,
+            )
+            failure_persisted = True
         raise
     except BaseException as error:
         # Candidate-budget overflow is persisted as an immutable event before
@@ -735,6 +752,53 @@ def _backend_from_payload(payload: object) -> BackendDecision:
         raise ValueError("stored backend decision is invalid") from error
 
 
+def _inspect_progress_accounting(
+    store: Exp435CheckpointStore,
+    progress: Mapping[str, object],
+) -> tuple[str, int]:
+    """Bind progress counters to durable records and preserve terminal state."""
+
+    records = [store.load_record(dataset) for dataset in sorted(store.completed_digests())]
+    recorded_completed = len(records)
+    recorded_success = sum(result.status == "scored" for result in records)
+    recorded_abstention = sum(result.status == "abstained" for result in records)
+    recorded_failed = sum(result.status == "failed" for result in records)
+    recorded_candidates = sum(result.candidate_count for result in records)
+
+    integer_fields = ("completed", "completed_datasets", "success", "abstention", "error", "candidate_count")
+    if any(type(progress.get(field)) is not int for field in integer_fields):
+        raise ValueError("runtime progress accounting is invalid")
+    completed = int(progress["completed"])
+    if progress["completed_datasets"] != completed or completed > len(store.datasets):
+        raise ValueError("runtime progress completed count is invalid")
+    success = int(progress["success"])
+    abstention = int(progress["abstention"])
+    errors = int(progress["error"])
+    candidates = int(progress["candidate_count"])
+    if any(value < 0 for value in (completed, success, abstention, errors, candidates)):
+        raise ValueError("runtime progress accounting is invalid")
+    if success + abstention + errors != completed:
+        raise ValueError("runtime progress count conservation is invalid")
+    if success != recorded_success or abstention != recorded_abstention or candidates != recorded_candidates:
+        raise ValueError("runtime progress does not match checkpoint records")
+    terminal_failed = errors - recorded_failed
+    if terminal_failed < 0 or completed != recorded_completed + terminal_failed:
+        raise ValueError("runtime progress failure accounting does not match checkpoint records")
+
+    state = str(progress.get("state", "running"))
+    if state not in {
+        "initializing", "running", "interrupted", "failed",
+        "checkpoint_complete", "complete", "complete_review_only",
+    }:
+        state = "running"
+    if state == "failed" and errors <= 0:
+        raise ValueError("failed runtime progress has no failed dataset")
+    if state in {"checkpoint_complete", "complete", "complete_review_only"}:
+        if completed != len(store.datasets) or errors != 0:
+            raise ValueError("complete runtime progress is inconsistent with checkpoint")
+    return state, recorded_failed + terminal_failed
+
+
 def inspect_exp435(
     *,
     run_root: Path,
@@ -768,18 +832,48 @@ def inspect_exp435(
         or progress.get("run_identity") != store.run_identity
     ):
         raise ValueError("runtime progress is not canonical")
-    from .progress_antigravity import _assert_label_free, _validate_events
+    from .progress_antigravity import (
+        _assert_label_free,
+        _canonical_checkpoint,
+        _validate_binding,
+        _validate_events,
+    )
 
     _assert_label_free(progress)
-    _validate_events(output / "events_antigravity.jsonl", store.run_identity)
+    expected_checkpoint = _canonical_checkpoint(checkpoint_root)
+    _validate_binding(
+        progress,
+        checkpoint=expected_checkpoint,
+        backend=backend.backend,
+        total_datasets=len(store.datasets),
+        run_identity=store.run_identity,
+        context_fingerprint=store.context_fingerprint,
+        source="runtime progress",
+        require_total=True,
+    )
+    _validate_events(
+        output / "events_antigravity.jsonl",
+        store.run_identity,
+        checkpoint=expected_checkpoint,
+        backend=backend.backend,
+        total_datasets=len(store.datasets),
+        context_fingerprint=store.context_fingerprint,
+    )
     pid_raw = (output / "run_antigravity.pid").read_bytes()
     pid = json.loads(pid_raw)
-    if not isinstance(pid, dict) or canonical_json_bytes(pid) != pid_raw or pid.get("run_identity") != store.run_identity:
+    if not isinstance(pid, dict) or canonical_json_bytes(pid) != pid_raw:
         raise ValueError("runtime PID is not canonical")
-    status = str(progress.get("state", "running"))
-    if status not in {"checkpoint_complete", "complete", "complete_review_only"}:
-        status = "running"
-    return _summary(store, backend, status=status, failed=int(progress.get("error", 0) or 0))
+    _validate_binding(
+        pid,
+        checkpoint=expected_checkpoint,
+        backend=backend.backend,
+        total_datasets=len(store.datasets),
+        run_identity=store.run_identity,
+        context_fingerprint=store.context_fingerprint,
+        source="runtime PID",
+    )
+    status, failed = _inspect_progress_accounting(store, progress)
+    return _summary(store, backend, status=status, failed=failed)
 
 
 __all__ = ["inspect_exp435", "resume_exp435", "run_exp435_new"]

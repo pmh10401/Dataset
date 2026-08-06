@@ -5,6 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import json
+import os
+import subprocess
+import sys
 import time
 import unittest
 from concurrent.futures import ProcessPoolExecutor
@@ -18,6 +21,9 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.contracts_anti
     Exp435Candidate,
     Exp435DatasetResult,
     InstanceScoreEvidence,
+)
+from experiments.exp435_train_only_consensus_recovery_antigravity.checkpoint_antigravity import (
+    Exp435CheckpointStore,
 )
 from experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity import (
     LaneMembershipSnapshot,
@@ -99,6 +105,11 @@ def _parallel_budget_score(train: object, test: object, lanes: object, backend: 
         return _budget_score(train, {"dataset": dataset}, None, None)
     time.sleep(1.5)
     return _score(train, {"dataset": dataset}, None, None)
+
+
+def _interrupt_score(train: object, test: object, lanes: object, backend: object) -> Exp435DatasetResult:
+    del train, test, lanes, backend
+    raise KeyboardInterrupt("synthetic interrupt")
 
 
 def _adopted_backend() -> BackendDecision:
@@ -185,6 +196,40 @@ class RuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "disagree"):
             _runtime_context(session, BackendDecision.cpu_fallback("fixture"))
 
+    def test_thread_limits_are_set_before_numpy_or_artifact_import_in_clean_process(self) -> None:
+        script = r'''
+import builtins
+import json
+import os
+
+names = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS", "NUMBA_NUM_THREADS")
+observed = []
+real_import = builtins.__import__
+
+def traced(name, *args, **kwargs):
+    if name == "numpy" or name.startswith("numpy.") or name == "experiments.exp403_408.artifact_io":
+        observed.append((name, {key: os.environ.get(key) for key in names}))
+    return real_import(name, *args, **kwargs)
+
+builtins.__import__ = traced
+import experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity
+print(json.dumps(observed, sort_keys=True))
+'''
+        environment = os.environ.copy()
+        for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS", "NUMBA_NUM_THREADS"):
+            environment[name] = "999"
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=Path(__file__).resolve().parents[3],
+            env=environment,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        observed = json.loads(result.stdout)
+        self.assertTrue(observed)
+        self.assertTrue(all(all(value == "1" for value in values.values()) for _, values in observed))
+
     def test_serial_and_parallel_checkpoint_order_and_digest_are_equal(self) -> None:
         datasets = ("A", "B")
         for worker_count in (1, 7):
@@ -262,6 +307,30 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(engine.call_count, 1)
             self.assertEqual(scorer.call_count, 2)
 
+    def test_inspect_rejects_cpu_output_bound_to_swapped_mlx_checkpoint(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            session = _Session(("A",))
+            session.context["code_commit"] = "f" * 40
+            session.load_train = lambda dataset: {"dataset": dataset}  # type: ignore[attr-defined]
+            session.load_test_values = lambda dataset, train: {"dataset": dataset}  # type: ignore[attr-defined]
+            run_exp435_new(
+                run_root=root / "output",
+                checkpoint_root=root / "checkpoint-cpu",
+                input_session=session,
+                backend_decision=None,
+                dataset_scorer=_score,
+                worker_count=1,
+            )
+            mlx_context = _runtime_context(session, _adopted_backend())
+            Exp435CheckpointStore.create(root / "checkpoint-mlx", mlx_context)
+            with self.assertRaisesRegex(ValueError, "binding"):
+                inspect_exp435(
+                    run_root=root / "output",
+                    checkpoint_root=root / "checkpoint-mlx",
+                    expected_context=session.context,
+                )
+
     def test_candidate_budget_failure_is_recorded_before_no_record_is_published(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -288,6 +357,16 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(budget_events[0]["observed"], 101)
             self.assertEqual(budget_events[0]["budget"], 100)
             self.assertEqual(tuple((root / "checkpoint" / "records_antigravity").iterdir()), ())
+            inspected = inspect_exp435(
+                run_root=root / "output",
+                checkpoint_root=root / "checkpoint",
+                expected_context=session.context,
+            )
+            self.assertEqual(inspected.status, "failed")
+            self.assertEqual(inspected.completed_datasets, 1)
+            self.assertEqual(inspected.successful_datasets, 0)
+            self.assertEqual(inspected.abstained_datasets, 0)
+            self.assertEqual(inspected.failed_datasets, 1)
 
     def test_parallel_worker_failure_records_offending_dataset_and_does_not_wait_for_sibling(self) -> None:
         with TemporaryDirectory() as directory:
@@ -313,6 +392,36 @@ class RuntimeTests(unittest.TestCase):
             failures = [item for item in events if item.get("kind") == "failure"]
             self.assertEqual(len(failures), 1)
             self.assertEqual(failures[0]["dataset"], "B")
+
+    def test_keyboard_interrupt_has_one_terminal_state_and_read_only_summary(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            session = _Session(("A",))
+            session.load_train = lambda dataset: {"dataset": dataset}  # type: ignore[attr-defined]
+            session.load_test_values = lambda dataset, train: {"dataset": dataset}  # type: ignore[attr-defined]
+            with self.assertRaises(KeyboardInterrupt):
+                run_exp435_new(
+                    run_root=root / "output",
+                    checkpoint_root=root / "checkpoint",
+                    input_session=session,
+                    backend_decision=None,
+                    dataset_scorer=_interrupt_score,
+                    worker_count=7,
+                )
+            events = [
+                json.loads(line)
+                for line in (root / "output" / "events_antigravity.jsonl").read_text().splitlines()
+            ]
+            interrupted = [item for item in events if item.get("kind") == "state" and item.get("state") == "interrupted"]
+            self.assertEqual(len(interrupted), 1)
+            inspected = inspect_exp435(
+                run_root=root / "output",
+                checkpoint_root=root / "checkpoint",
+                expected_context=session.context,
+            )
+            self.assertEqual(inspected.status, "interrupted")
+            self.assertEqual(inspected.completed_datasets, 0)
+            self.assertEqual(inspected.failed_datasets, 0)
 
     def test_parallel_budget_overflow_is_persisted_before_slow_sibling_finishes(self) -> None:
         with TemporaryDirectory() as directory:

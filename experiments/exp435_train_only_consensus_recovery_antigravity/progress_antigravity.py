@@ -25,7 +25,15 @@ _OUTPUT_FILES = frozenset(
     }
 )
 _FORBIDDEN_KEYS = ("label", "truth", "ground_truth", "anomaly_position", "actual_values", "raw_values")
-_TEMP_FILE = re.compile(r"^\.progress_antigravity\.json\.[0-9a-f]{32}\.tmp\Z")
+_TEMP_FILE = re.compile(
+    r"^\.(?:progress_antigravity\.json|run_antigravity\.pid)\.[0-9a-f]{32}\.tmp\Z"
+)
+
+
+def _canonical_checkpoint(path: Path) -> str:
+    """Use one absolute, symlink-resolved spelling in every runtime file."""
+
+    return str(Path(path).expanduser().resolve(strict=False))
 
 
 def _fsync_directory(path: Path) -> None:
@@ -133,7 +141,15 @@ def _validate_output_inventory(output: Path, *, mutable: bool) -> None:
             raise ValueError("runtime output inventory is invalid")
 
 
-def _validate_events(path: Path, run_identity: str) -> None:
+def _validate_events(
+    path: Path,
+    run_identity: str,
+    *,
+    checkpoint: str | None = None,
+    backend: str | None = None,
+    total_datasets: int | None = None,
+    context_fingerprint: str | None = None,
+) -> None:
     raw = path.read_bytes()
     if raw and not raw.endswith(b"\n"):
         raise ValueError("runtime events contain a partial record")
@@ -142,13 +158,46 @@ def _validate_events(path: Path, run_identity: str) -> None:
             item = json.loads(line)
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
             raise ValueError("runtime event is invalid") from error
-        if (
-            not isinstance(item, dict)
-            or canonical_json_bytes(item) != line
-            or item.get("run_identity") != run_identity
-        ):
+        if not isinstance(item, dict) or canonical_json_bytes(item) != line:
             raise ValueError("runtime event is not canonical or is bound to another run")
+        expected = {
+            "run_identity": run_identity,
+            "checkpoint": checkpoint,
+            "backend": backend,
+            "total_datasets": total_datasets,
+            "context_fingerprint": context_fingerprint,
+        }
+        for key, value in expected.items():
+            if value is not None and item.get(key) != value:
+                raise ValueError("runtime event binding does not match checkpoint")
         _assert_label_free(item)
+
+
+def _validate_binding(
+    payload: Mapping[str, object],
+    *,
+    checkpoint: str,
+    backend: str,
+    total_datasets: int,
+    run_identity: str,
+    context_fingerprint: str,
+    source: str,
+    require_total: bool = False,
+) -> None:
+    if (
+        payload.get("run_identity") != run_identity
+        or payload.get("checkpoint") != checkpoint
+        or payload.get("backend") != backend
+        or payload.get("context_fingerprint") != context_fingerprint
+    ):
+        raise ValueError(f"{source} binding does not match checkpoint")
+    total_value = payload.get("total")
+    if require_total and (type(total_value) is not int or total_value != total_datasets):
+        raise ValueError(f"{source} total does not match checkpoint")
+    if not require_total and total_value is not None and (type(total_value) is not int or total_value != total_datasets):
+        raise ValueError(f"{source} total does not match checkpoint")
+    if type(payload.get("total_datasets")) is not int or payload.get("total_datasets") != total_datasets:
+        raise ValueError(f"{source} total does not match checkpoint")
 
 
 def _assert_label_free(value: object, *, path: str = "metadata") -> None:
@@ -186,6 +235,7 @@ class ProgressWriter:
         checkpoint: Path,
         total_datasets: int,
         backend: str,
+        context_fingerprint: str | None = None,
         heartbeat_seconds: float | None = 30.0,
         process_is_live: Callable[[int], bool] = _process_is_live,
     ) -> None:
@@ -204,8 +254,12 @@ class ProgressWriter:
         self.output = Path(output)
         self.run_identity = run_identity
         self.checkpoint = Path(checkpoint)
+        self.checkpoint_identity = _canonical_checkpoint(self.checkpoint)
         self.total_datasets = total_datasets
         self.backend = backend
+        self.context_fingerprint = context_fingerprint or "unbound"
+        if not isinstance(self.context_fingerprint, str) or not self.context_fingerprint:
+            raise ValueError("context fingerprint is invalid")
         self.heartbeat_seconds = heartbeat_seconds
         self.process_is_live = process_is_live
         self.started = time.monotonic()
@@ -225,6 +279,7 @@ class ProgressWriter:
         checkpoint: Path,
         total_datasets: int,
         backend: str,
+        context_fingerprint: str | None = None,
         heartbeat_seconds: float | None = 30.0,
     ) -> "ProgressWriter":
         output = Path(output)
@@ -240,6 +295,7 @@ class ProgressWriter:
             checkpoint=checkpoint,
             total_datasets=total_datasets,
             backend=backend,
+            context_fingerprint=context_fingerprint,
             heartbeat_seconds=heartbeat_seconds,
         )
         initial = writer._make_progress(
@@ -267,6 +323,9 @@ class ProgressWriter:
         *,
         run_identity: str,
         checkpoint: Path,
+        backend: str | None = None,
+        total_datasets: int | None = None,
+        context_fingerprint: str | None = None,
         process_is_live: Callable[[int], bool] = _process_is_live,
         heartbeat_seconds: float | None = 30.0,
     ) -> "ProgressWriter":
@@ -274,22 +333,57 @@ class ProgressWriter:
         _validate_output_inventory(output, mutable=True)
         progress = _canonical_object(output / "progress_antigravity.json", "runtime progress")
         pid_payload = _canonical_object(output / "run_antigravity.pid", "runtime PID")
-        if progress.get("run_identity") != run_identity or pid_payload.get("run_identity") != run_identity:
-            raise ValueError("runtime run identity does not match")
+        stored_total = progress.get("total_datasets", progress.get("total"))
+        stored_backend = progress.get("backend")
+        stored_fingerprint = progress.get("context_fingerprint")
+        expected_total = stored_total if total_datasets is None else total_datasets
+        expected_backend = stored_backend if backend is None else backend
+        expected_fingerprint = stored_fingerprint if context_fingerprint is None else context_fingerprint
+        if (
+            type(expected_total) is not int
+            or not isinstance(expected_backend, str)
+            or not isinstance(expected_fingerprint, str)
+            or not expected_fingerprint
+        ):
+            raise ValueError("runtime progress binding is invalid")
+        checkpoint_identity = _canonical_checkpoint(checkpoint)
+        _validate_binding(
+            progress,
+            checkpoint=checkpoint_identity,
+            backend=expected_backend,
+            total_datasets=expected_total,
+            run_identity=run_identity,
+            context_fingerprint=expected_fingerprint,
+            source="runtime progress",
+            require_total=True,
+        )
+        _validate_binding(
+            pid_payload,
+            checkpoint=checkpoint_identity,
+            backend=expected_backend,
+            total_datasets=expected_total,
+            run_identity=run_identity,
+            context_fingerprint=expected_fingerprint,
+            source="runtime PID",
+        )
         old_pid = pid_payload.get("pid")
         if pid_payload.get("active") is True and type(old_pid) is int and process_is_live(old_pid):
             raise ValueError("runtime process is still active")
-        _validate_events(output / "events_antigravity.jsonl", run_identity)
-        total = progress.get("total_datasets", progress.get("total"))
-        backend = progress.get("backend")
-        if type(total) is not int or not isinstance(backend, str):
-            raise ValueError("runtime progress accounting is invalid")
+        _validate_events(
+            output / "events_antigravity.jsonl",
+            run_identity,
+            checkpoint=checkpoint_identity,
+            backend=expected_backend,
+            total_datasets=expected_total,
+            context_fingerprint=expected_fingerprint,
+        )
         writer = cls(
             output,
             run_identity=run_identity,
             checkpoint=checkpoint,
-            total_datasets=total,
-            backend=backend,
+            total_datasets=expected_total,
+            backend=expected_backend,
+            context_fingerprint=expected_fingerprint,
             heartbeat_seconds=heartbeat_seconds,
             process_is_live=process_is_live,
         )
@@ -311,6 +405,10 @@ class ProgressWriter:
         return {
             "schema": "exp435.runtime-pid.v1",
             "run_identity": self.run_identity,
+            "checkpoint": self.checkpoint_identity,
+            "backend": self.backend,
+            "total_datasets": self.total_datasets,
+            "context_fingerprint": self.context_fingerprint,
             "pid": os.getpid(),
             "active": active,
             "updated_at": _now(),
@@ -349,6 +447,7 @@ class ProgressWriter:
         return {
             "schema": "exp435.runtime-progress.v1",
             "run_identity": self.run_identity,
+            "context_fingerprint": self.context_fingerprint,
             "updated_at": _now(),
             "pid": os.getpid(),
             "heartbeat": _now(),
@@ -369,7 +468,7 @@ class ProgressWriter:
             "throughput_datasets_per_second": throughput,
             "elapsed_seconds": elapsed,
             "eta_seconds": eta,
-            "checkpoint": str(self.checkpoint),
+            "checkpoint": self.checkpoint_identity,
             "latest_error": None if latest_error is None else dict(latest_error),
         }
 
@@ -413,7 +512,20 @@ class ProgressWriter:
         event = dict(payload)
         event.setdefault("schema", "exp435.runtime-event.v1")
         event.setdefault("run_identity", self.run_identity)
+        event.setdefault("checkpoint", self.checkpoint_identity)
+        event.setdefault("backend", self.backend)
+        event.setdefault("total_datasets", self.total_datasets)
+        event.setdefault("context_fingerprint", self.context_fingerprint)
         event.setdefault("recorded_at", _now())
+        _validate_binding(
+            event,
+            checkpoint=self.checkpoint_identity,
+            backend=self.backend,
+            total_datasets=self.total_datasets,
+            run_identity=self.run_identity,
+            context_fingerprint=self.context_fingerprint,
+            source="runtime event",
+        )
         with self.lock:
             _append_durable(self.output / "events_antigravity.jsonl", canonical_json_bytes(event) + b"\n")
 

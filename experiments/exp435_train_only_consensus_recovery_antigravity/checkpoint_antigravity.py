@@ -630,27 +630,47 @@ class Exp435CheckpointStore:
                 self.root / "output_antigravity",
             ]
         )
+        from .progress_antigravity import _canonical_checkpoint, _validate_binding, _validate_events
+
+        expected_checkpoint = _canonical_checkpoint(self.root)
+        backend_payload = self.context.get("backend_decision")
+        expected_backend = backend_payload.get("backend") if isinstance(backend_payload, Mapping) else None
         events: set[str] = set()
         progress: set[str] = set()
         event_path = next((path / "events_antigravity.jsonl" for path in output_candidates if (path / "events_antigravity.jsonl").is_file()), None)
         progress_path = next((path / "progress_antigravity.json" for path in output_candidates if (path / "progress_antigravity.json").is_file()), None)
         if event_path is not None:
-            from .progress_antigravity import _assert_label_free
-
             event_raw = event_path.read_bytes()
             if event_raw and not event_raw.endswith(b"\n"):
                 raise ValueError("runtime events contain a partial record")
+            _validate_events(
+                event_path,
+                self.run_identity,
+                checkpoint=expected_checkpoint,
+                backend=expected_backend if isinstance(expected_backend, str) else None,
+                total_datasets=len(self._datasets),
+                context_fingerprint=self.context_fingerprint,
+            )
             for line in event_raw.splitlines():
                 if not line:
                     continue
                 item = json.loads(line)
                 if not isinstance(item, dict) or canonical_json_bytes(item) != line or item.get("run_identity") != self.run_identity:
                     raise ValueError("runtime event is not canonical or is bound to another run")
-                _assert_label_free(item)
                 if item.get("kind") == "dataset_complete" and isinstance(item.get("dataset"), str):
                     events.add(item["dataset"])
         if progress_path is not None:
             item = _canonical_object(progress_path, "runtime progress")
+            _validate_binding(
+                item,
+                checkpoint=expected_checkpoint,
+                backend=expected_backend if isinstance(expected_backend, str) else str(item.get("backend", "")),
+                total_datasets=len(self._datasets),
+                run_identity=self.run_identity,
+                context_fingerprint=self.context_fingerprint,
+                source="runtime progress",
+                require_total=True,
+            )
             raw_completed = item.get("completed_datasets", item.get("completed"))
             if type(raw_completed) is int:
                 # Progress does not carry a set of completed names; a current
