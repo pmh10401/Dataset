@@ -211,12 +211,27 @@ class Exp436ContractsTests(unittest.TestCase):
     def _batch(batch_size: int, cpu: float = 2.0, device: float = 1.0) -> BackendBatchEvidence:
         pairs = tuple((cpu, device) for _ in range(5))
         return BackendBatchEvidence(
-            backend="mlx", batch_size=batch_size, timing_pairs=pairs,
+            backend="mlx", batch_size=batch_size, state="completed", warmup_pairs_completed=2, timing_pairs=pairs,
             finite_outputs=True, candidate_identity_match=True,
             absolute_error_max=1e-6, normalized_error_max=1e-6,
             fixture_input_sha256="a" * 64, fixture_output_sha256="b" * 64,
             cpu_median_seconds=cpu, device_median_seconds=device, speedup=cpu / device,
             parity_passed=True, speed_passed=True, passed=True, reason="passed",
+        )
+
+    @classmethod
+    def _benchmark(cls, backend: str, batches: tuple[BackendBatchEvidence, ...] | None = None) -> BackendBenchmarkEvidence:
+        source = batches or tuple(replace(cls._batch(size), backend=backend) for size in (16, 32, 64, 128, 256))
+        passing = tuple(item for item in source if item.passed)
+        selected = min(passing, key=lambda item: (item.device_median_seconds, item.batch_size)) if passing else None
+        return BackendBenchmarkEvidence(
+            backend, True, source, "python", "numpy", "gpu:0" if backend == "mlx" else "mps", "info", True, "paired-synchronized-v1",
+            None if selected is None else selected.batch_size,
+            None if selected is None else selected.device_median_seconds,
+            "no_passing_batch" if selected is None else None,
+            mlx_version="mlx" if backend == "mlx" else None,
+            mlx_metal_version="metal" if backend == "mlx" else None,
+            pytorch_version="torch" if backend == "mps" else None,
         )
 
     def test_batch_rejects_bad_pair_counts_and_derived_values(self) -> None:
@@ -238,19 +253,19 @@ class Exp436ContractsTests(unittest.TestCase):
                         device=1.0 if size in (16, 32) else 2.0)
             for size in (16, 32, 64, 128, 256)
         )
-        benchmark = BackendBenchmarkEvidence.fixture("mlx", batches=batches)
+        benchmark = self._benchmark("mlx", batches=batches)
         self.assertEqual(benchmark.selected_batch_size, 16)
         with self.assertRaisesRegex(ValueError, "exactly"):
-            BackendBenchmarkEvidence.fixture("mlx", batches=batches[:-1])
+            self._benchmark("mlx", batches=batches[:-1])
 
     def test_backend_decision_uses_lexical_tie_and_cpu_fallback(self) -> None:
-        mlx = BackendBenchmarkEvidence.fixture("mlx")
-        mps = BackendBenchmarkEvidence.fixture("mps")
-        decision = BackendDecision(mlx, mps, "mlx", True, "selected")
+        mlx = self._benchmark("mlx")
+        mps = self._benchmark("mps")
+        decision = BackendDecision(mlx, mps, "mlx", True, "selected_fastest_passing_backend")
         self.assertEqual(decision.outer_worker_count, 1)
-        failed_mlx = BackendBenchmarkEvidence.fixture("mlx", batches=())
-        failed_mps = BackendBenchmarkEvidence.fixture("mps", batches=())
-        cpu = BackendDecision(failed_mlx, failed_mps, "cpu", False, "both_failed")
+        failed_mlx = BackendBenchmarkEvidence.unavailable("mlx", "missing")
+        failed_mps = BackendBenchmarkEvidence.unavailable("mps", "missing")
+        cpu = BackendDecision(failed_mlx, failed_mps, "cpu", False, "no_accelerator_passed")
         self.assertGreaterEqual(cpu.outer_worker_count, 1)
 
     def test_channel_calibration_requires_finite_public_scalars(self) -> None:
@@ -271,7 +286,7 @@ class Exp436ContractsTests(unittest.TestCase):
 
     def test_metal_unavailable_benchmark_cannot_pass(self) -> None:
         with self.assertRaisesRegex(ValueError, "metal_available"):
-            replace(BackendBenchmarkEvidence.fixture("mlx"), metal_available=False)
+            replace(self._benchmark("mlx"), metal_available=False)
 
     def test_complete_review_only_summary_is_the_final_publication_state(self) -> None:
         summary = Exp436RunSummary(
@@ -323,8 +338,8 @@ class Exp436ContractsTests(unittest.TestCase):
         result = Exp436DatasetResult("Demo", "scored", (3,),
                                       (Exp436Candidate("Demo", 3, 16, evidence.evidence_digest),), (evidence,))
         batch = self._batch(16)
-        benchmark = BackendBenchmarkEvidence.fixture("mlx")
-        decision = BackendDecision(benchmark, BackendBenchmarkEvidence.fixture("mps"), "mlx", True, "selected")
+        benchmark = self._benchmark("mlx")
+        decision = BackendDecision(benchmark, self._benchmark("mps"), "mlx", True, "selected_fastest_passing_backend")
         summary = Exp436RunSummary("run", "complete_review_only", 1117, 1117, 1117, 0, 0, 0,
                                    BackendDecision.cpu_fallback(), prediction_sha256="a" * 64,
                                    manifest_sha256="b" * 64, artifact_sha256="c" * 64)
@@ -337,7 +352,7 @@ class Exp436ContractsTests(unittest.TestCase):
 
     def test_backend_protocol_is_frozen(self) -> None:
         with self.assertRaisesRegex(ValueError, "protocol"):
-            replace(BackendBenchmarkEvidence.fixture("mps"), protocol="invented")
+            replace(self._benchmark("mps"), protocol="invented")
 
     def test_backend_evidence_recomputes_native_scalars_for_strict_json(self) -> None:
         batch = replace(
@@ -350,12 +365,12 @@ class Exp436ContractsTests(unittest.TestCase):
         self.assertEqual(batch.cpu_median_seconds, 2.0)
         self.assertEqual(batch.speedup, 2.0)
         benchmark = replace(
-            BackendBenchmarkEvidence.fixture("mlx"), selected_batch_size=np.int64(16),
+            self._benchmark("mlx"), selected_batch_size=np.int64(16),
             selected_device_median_seconds=np.float32(1.0),
         )
         self.assertIs(type(benchmark.selected_batch_size), int)
         self.assertIs(type(benchmark.selected_device_median_seconds), float)
-        decision = BackendDecision(benchmark, BackendBenchmarkEvidence.fixture("mps"), "mlx", True, "selected")
+        decision = BackendDecision(benchmark, self._benchmark("mps"), "mlx", True, "selected_fastest_passing_backend")
         for payload in (batch.to_payload(), benchmark.to_payload(), decision.to_payload()):
             json.dumps(payload, allow_nan=False, sort_keys=True)
 
@@ -366,3 +381,81 @@ class Exp436ContractsTests(unittest.TestCase):
         self.assertEqual(canonical.speedup, 2.0)
         with self.assertRaisesRegex(ValueError, "median"):
             replace(base, cpu_median_seconds=2.1)
+
+    def test_runtime_failed_batch_retains_only_completed_real_pairs(self) -> None:
+        failed = BackendBatchEvidence(
+            "mlx", 16, "runtime_failed", 1, ((2.0, 1.0),), "a" * 64, "b" * 64,
+            None, None, None, None, None, None, None, None, None, False, "mlx_runtime_failed:RuntimeError",
+        )
+        self.assertEqual(failed.timing_pairs, ((2.0, 1.0),))
+        self.assertIsNone(failed.speedup)
+        with self.assertRaisesRegex(ValueError, "no derived"):
+            replace(failed, speedup=2.0)
+
+    def test_unavailable_backend_has_empty_batches_and_no_invented_selection(self) -> None:
+        unavailable = BackendBenchmarkEvidence.unavailable("mps", "framework_unavailable")
+        self.assertFalse(unavailable.available)
+        self.assertEqual(unavailable.batches, ())
+        self.assertIsNone(unavailable.selected_device_median_seconds)
+
+    def test_backend_reasons_and_unavailable_provenance_are_canonical(self) -> None:
+        with self.assertRaisesRegex(ValueError, "reason"):
+            replace(self._batch(16), reason="invented")
+        with self.assertRaisesRegex(ValueError, "canonical"):
+            BackendBatchEvidence(
+                "mps", 16, "runtime_failed", 0, (), "a" * 64, "b" * 64,
+                None, None, None, None, None, None, None, None, None, False, "runtime_failed",
+            )
+        with self.assertRaisesRegex(ValueError, "cannot claim MLX"):
+            BackendBenchmarkEvidence.unavailable("mps", "framework_unavailable", mlx_version="wrong")
+        with self.assertRaisesRegex(ValueError, "decision reason"):
+            BackendDecision(self._benchmark("mlx"), self._benchmark("mps"), "mlx", True, "selected")
+
+    def test_nonfinite_completed_reason_precedes_every_other_gate(self) -> None:
+        fast_nonfinite = replace(
+            self._batch(16), finite_outputs=False, parity_passed=False, passed=False,
+            reason="nonfinite_output",
+        )
+        self.assertTrue(fast_nonfinite.speed_passed)
+        slow_nonfinite = replace(
+            fast_nonfinite, timing_pairs=((1.0, 1.0),) * 5,
+            cpu_median_seconds=1.0, device_median_seconds=1.0, speedup=1.0,
+            speed_passed=False,
+        )
+        self.assertFalse(slow_nonfinite.speed_passed)
+        with self.assertRaisesRegex(ValueError, "reason"):
+            replace(fast_nonfinite, reason="speedup_below_threshold")
+
+    def test_available_benchmark_requires_backend_specific_device_provenance(self) -> None:
+        with self.assertRaisesRegex(ValueError, "device"):
+            replace(self._benchmark("mlx"), device="cpu:0")
+        with self.assertRaisesRegex(ValueError, "device"):
+            replace(self._benchmark("mps"), device="cpu")
+
+    def test_available_benchmark_requires_one_shared_fixture_digest_pair(self) -> None:
+        batches = self._benchmark("mlx").batches
+        with self.assertRaisesRegex(ValueError, "fixture"):
+            self._benchmark("mlx", batches=(batches[0], replace(batches[1], fixture_input_sha256="c" * 64), *batches[2:]))
+        with self.assertRaisesRegex(ValueError, "fixture"):
+            self._benchmark("mlx", batches=(batches[0], replace(batches[1], fixture_output_sha256="d" * 64), *batches[2:]))
+
+    def test_available_backends_require_matching_fixture_digest_pairs_even_when_one_fails(self) -> None:
+        mlx = self._benchmark("mlx")
+        mismatched_mps = self._benchmark(
+            "mps", batches=tuple(replace(batch, fixture_input_sha256="c" * 64) for batch in self._benchmark("mps").batches),
+        )
+        with self.assertRaisesRegex(ValueError, "fixture"):
+            BackendDecision(mlx, mismatched_mps, "mlx", True, "selected_fastest_passing_backend")
+
+        failed_mps = self._benchmark(
+            "mps", batches=tuple(
+                replace(
+                    batch, fixture_output_sha256="d" * 64, timing_pairs=((1.0, 1.0),) * 5,
+                    cpu_median_seconds=1.0, device_median_seconds=1.0, speedup=1.0,
+                    speed_passed=False, passed=False, reason="speedup_below_threshold",
+                )
+                for batch in self._benchmark("mps").batches
+            ),
+        )
+        with self.assertRaisesRegex(ValueError, "fixture"):
+            BackendDecision(mlx, failed_mps, "mlx", True, "selected_fastest_passing_backend")

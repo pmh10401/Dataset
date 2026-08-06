@@ -20,12 +20,27 @@ _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _CHANNELS = frozenset({"prototype", "gradient", "acf"})
 _STATUSES = frozenset({"scored", "abstained", "failed"})
 _BACKENDS = frozenset({"mlx", "mps"})
+_COMPLETED_BACKEND_REASONS = frozenset({
+    "passed", "nonfinite_output", "candidate_identity_mismatch",
+    "absolute_error_exceeded", "normalized_error_exceeded", "speedup_below_threshold",
+})
 
 
 def _name(value: object, label: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{label} must be a non-empty string")
     return value
+
+
+def _backend_accelerator_device(backend: str, value: object) -> bool:
+    """Reject CPU-like provenance before evidence can claim accelerator availability."""
+
+    device = str(value).strip().lower()
+    if not device or "cpu" in device:
+        return False
+    if backend == "mlx":
+        return "gpu" in device or "metal" in device
+    return "mps" in device or "metal" in device
 
 
 def _integer(value: object, label: str, *, minimum: int = 0) -> int:
@@ -743,40 +758,44 @@ class Exp436DatasetResult:
 
 @dataclass(frozen=True)
 class BackendBatchEvidence:
-    """Raw paired timings plus independently recomputed Exp436 gate results."""
+    """One truthful batch execution record from the frozen paired protocol."""
 
     backend: str
     batch_size: int
+    state: str
+    warmup_pairs_completed: int
     timing_pairs: tuple[tuple[float, float], ...]
-    finite_outputs: bool
-    candidate_identity_match: bool
-    absolute_error_max: float
-    normalized_error_max: float
     fixture_input_sha256: str
     fixture_output_sha256: str
-    cpu_median_seconds: float
-    device_median_seconds: float
-    speedup: float
-    parity_passed: bool
-    speed_passed: bool
+    finite_outputs: bool | None
+    candidate_identity_match: bool | None
+    absolute_error_max: float | None
+    normalized_error_max: float | None
+    cpu_median_seconds: float | None
+    device_median_seconds: float | None
+    speedup: float | None
+    parity_passed: bool | None
+    speed_passed: bool | None
     passed: bool
     reason: str
-    warmup_runs: int = FROZEN_CONFIG.backend_warmup_runs
     synchronization_inside_timing: bool = True
 
     def __post_init__(self) -> None:
         if self.backend not in _BACKENDS:
             raise ValueError("backend is invalid")
         object.__setattr__(self, "batch_size", _integer(self.batch_size, "batch_size", minimum=1))
-        warmup_runs = _integer(self.warmup_runs, "warmup_runs")
-        if warmup_runs != FROZEN_CONFIG.backend_warmup_runs:
-            raise ValueError("warmup_runs must equal frozen count")
-        object.__setattr__(self, "warmup_runs", warmup_runs)
+        if self.state not in {"completed", "runtime_failed"}:
+            raise ValueError("state must be completed or runtime_failed")
+        warmups = _integer(self.warmup_pairs_completed, "warmup_pairs_completed")
+        if warmups > FROZEN_CONFIG.backend_warmup_runs:
+            raise ValueError("warmup_pairs_completed exceeds frozen count")
+        object.__setattr__(self, "warmup_pairs_completed", warmups)
         if self.synchronization_inside_timing is not True:
             raise ValueError("synchronization_inside_timing must be true")
         pairs = _tuple(self.timing_pairs, "timing_pairs")
-        if len(pairs) != FROZEN_CONFIG.backend_timed_runs:
-            raise ValueError("timing_pairs must contain exactly 5 pairs")
+        maximum_pairs = FROZEN_CONFIG.backend_timed_runs
+        if len(pairs) > maximum_pairs or (self.state == "completed" and len(pairs) != maximum_pairs):
+            raise ValueError("completed timing_pairs must contain exactly 5 pairs")
         validated: list[tuple[float, float]] = []
         for pair in pairs:
             values = _tuple(pair, "timing pair")
@@ -784,16 +803,29 @@ class BackendBatchEvidence:
                 raise ValueError("timing pair must contain CPU and device seconds")
             validated.append((_finite(values[0], "cpu_seconds", positive=True), _finite(values[1], "device_seconds", positive=True)))
         object.__setattr__(self, "timing_pairs", tuple(validated))
-        for name in ("finite_outputs", "candidate_identity_match", "parity_passed", "speed_passed", "passed"):
-            if type(getattr(self, name)) is not bool:
-                raise ValueError(f"{name} must be boolean")
-        absolute, normalized = _finite(self.absolute_error_max, "absolute_error_max"), _finite(self.normalized_error_max, "normalized_error_max")
-        if absolute < 0 or normalized < 0:
-            raise ValueError("errors must be non-negative")
-        object.__setattr__(self, "absolute_error_max", absolute)
-        object.__setattr__(self, "normalized_error_max", normalized)
         object.__setattr__(self, "fixture_input_sha256", _digest(self.fixture_input_sha256, "fixture_input_sha256"))
         object.__setattr__(self, "fixture_output_sha256", _digest(self.fixture_output_sha256, "fixture_output_sha256"))
+        if type(self.passed) is not bool:
+            raise ValueError("passed must be boolean")
+        if self.state == "runtime_failed":
+            if any(getattr(self, name) is not None for name in (
+                "finite_outputs", "candidate_identity_match", "absolute_error_max", "normalized_error_max",
+                "cpu_median_seconds", "device_median_seconds", "speedup", "parity_passed", "speed_passed",
+            )) or self.passed:
+                raise ValueError("runtime_failed batches retain no derived metrics and cannot pass")
+            reason = _name(self.reason, "reason")
+            if re.fullmatch(rf"{self.backend}_runtime_failed:[A-Za-z][A-Za-z0-9_]*", reason) is None:
+                raise ValueError("runtime_failed reason must be canonical backend exception evidence")
+            return
+        if warmups != FROZEN_CONFIG.backend_warmup_runs:
+            raise ValueError("completed batches require exactly 2 warmup pairs")
+        for name in ("finite_outputs", "candidate_identity_match", "parity_passed", "speed_passed"):
+            if type(getattr(self, name)) is not bool:
+                raise ValueError(f"{name} must be boolean")
+        absolute = _finite(self.absolute_error_max, "absolute_error_max")
+        normalized = _finite(self.normalized_error_max, "normalized_error_max")
+        if absolute < 0 or normalized < 0:
+            raise ValueError("errors must be non-negative")
         cpu_median, device_median = float(median(pair[0] for pair in validated)), float(median(pair[1] for pair in validated))
         if not isclose(_finite(self.cpu_median_seconds, "cpu_median_seconds", positive=True), cpu_median, rel_tol=1e-12, abs_tol=0.0):
             raise ValueError("cpu median does not match timing pairs")
@@ -802,18 +834,29 @@ class BackendBatchEvidence:
         speedup = cpu_median / device_median
         if not isclose(_finite(self.speedup, "speedup", positive=True), speedup, rel_tol=1e-12, abs_tol=0.0):
             raise ValueError("speedup does not match timing medians")
-        parity = self.finite_outputs and self.candidate_identity_match and absolute <= FROZEN_CONFIG.score_tolerance and normalized <= FROZEN_CONFIG.score_tolerance
+        parity = bool(self.finite_outputs and self.candidate_identity_match and absolute <= FROZEN_CONFIG.score_tolerance and normalized <= FROZEN_CONFIG.score_tolerance)
         speed = speedup >= FROZEN_CONFIG.backend_min_speedup
         if self.parity_passed != parity or self.speed_passed != speed or self.passed != (parity and speed):
             raise ValueError("derived parity/speed/pass result is inconsistent")
+        expected_reason = "passed" if parity and speed else (
+            "nonfinite_output" if not self.finite_outputs else
+            "candidate_identity_mismatch" if not self.candidate_identity_match else
+            "absolute_error_exceeded" if absolute > FROZEN_CONFIG.score_tolerance else
+            "normalized_error_exceeded" if normalized > FROZEN_CONFIG.score_tolerance else
+            "speedup_below_threshold"
+        )
+        if self.reason != expected_reason or self.reason not in _COMPLETED_BACKEND_REASONS:
+            raise ValueError("completed batch reason is inconsistent with gates")
+        object.__setattr__(self, "absolute_error_max", absolute)
+        object.__setattr__(self, "normalized_error_max", normalized)
         object.__setattr__(self, "cpu_median_seconds", cpu_median)
         object.__setattr__(self, "device_median_seconds", device_median)
         object.__setattr__(self, "speedup", speedup)
         _name(self.reason, "reason")
 
     def to_payload(self) -> dict[str, object]:
-        return {"backend": self.backend, "batch_size": self.batch_size,
-                "timing_pairs": [list(pair) for pair in self.timing_pairs], "warmup_runs": self.warmup_runs,
+        return {"backend": self.backend, "batch_size": self.batch_size, "state": self.state,
+                "warmup_pairs_completed": self.warmup_pairs_completed, "timing_pairs": [list(pair) for pair in self.timing_pairs],
                 "synchronization_inside_timing": self.synchronization_inside_timing, "finite_outputs": self.finite_outputs,
                 "candidate_identity_match": self.candidate_identity_match, "absolute_error_max": self.absolute_error_max,
                 "normalized_error_max": self.normalized_error_max, "fixture_input_sha256": self.fixture_input_sha256,
@@ -831,12 +874,13 @@ class BackendBenchmarkEvidence:
     """All frozen batches and backend-specific version provenance."""
 
     backend: str
+    available: bool
     batches: tuple[BackendBatchEvidence, ...]
-    python_version: str
-    numpy_version: str
-    device: str
-    device_info: str
-    metal_available: bool
+    python_version: str | None
+    numpy_version: str | None
+    device: str | None
+    device_info: str | None
+    metal_available: bool | None
     protocol: str
     selected_batch_size: int | None
     selected_device_median_seconds: float | None
@@ -853,34 +897,52 @@ class BackendBenchmarkEvidence:
         if seed != FROZEN_CONFIG.backend_smoke_seed:
             raise ValueError("seed must equal frozen backend seed")
         object.__setattr__(self, "seed", seed)
+        if type(self.available) is not bool:
+            raise ValueError("available must be boolean")
         batches = _tuple(self.batches, "batches")
-        sizes = tuple(item.batch_size for item in batches if isinstance(item, BackendBatchEvidence))
-        if len(batches) != len(FROZEN_CONFIG.backend_batch_sizes) or sizes != FROZEN_CONFIG.backend_batch_sizes or any(item.backend != self.backend for item in batches):
-            raise ValueError("batches must cover exactly all frozen batch sizes")
+        if any(not isinstance(item, BackendBatchEvidence) for item in batches):
+            raise ValueError("batches contain invalid evidence")
+        sizes = tuple(item.batch_size for item in batches)
+        if self.available and (sizes != FROZEN_CONFIG.backend_batch_sizes or any(item.backend != self.backend for item in batches)):
+            raise ValueError("available benchmark batches must cover exactly all frozen batch sizes")
+        if not self.available and batches:
+            raise ValueError("unavailable benchmark must retain empty batches")
         object.__setattr__(self, "batches", batches)
-        for name in ("python_version", "numpy_version", "device", "device_info"):
-            _name(getattr(self, name), name)
         if self.protocol != FROZEN_CONFIG.backend_protocol:
             raise ValueError("protocol must equal frozen backend protocol")
-        if type(self.metal_available) is not bool:
-            raise ValueError("metal_available must be boolean")
-        if self.backend == "mlx":
-            _name(self.mlx_version, "mlx_version")
-            _name(self.mlx_metal_version, "mlx_metal_version")
-            if self.pytorch_version is not None:
-                raise ValueError("MLX evidence cannot claim PyTorch provenance")
-        else:
-            _name(self.pytorch_version, "pytorch_version")
-            if self.mlx_version is not None or self.mlx_metal_version is not None:
-                raise ValueError("MPS evidence cannot claim MLX provenance")
+        if self.backend == "mlx" and self.pytorch_version is not None:
+            raise ValueError("MLX evidence cannot claim PyTorch provenance")
+        if self.backend == "mps" and (self.mlx_version is not None or self.mlx_metal_version is not None):
+            raise ValueError("MPS evidence cannot claim MLX provenance")
+        if self.available:
+            input_digests = {item.fixture_input_sha256 for item in batches}
+            output_digests = {item.fixture_output_sha256 for item in batches}
+            if len(input_digests) != 1 or len(output_digests) != 1:
+                raise ValueError("available benchmark batches must retain one shared fixture digest pair")
+            for name in ("python_version", "numpy_version", "device", "device_info"):
+                _name(getattr(self, name), name)
+            if not _backend_accelerator_device(self.backend, self.device):
+                raise ValueError("available benchmark requires backend-specific accelerator device")
+            if self.metal_available is not True:
+                raise ValueError("available benchmark requires metal_available=True")
+            if self.backend == "mlx":
+                _name(self.mlx_version, "mlx_version")
+                _name(self.mlx_metal_version, "mlx_metal_version")
+            else:
+                _name(self.pytorch_version, "pytorch_version")
         passing = [item for item in batches if item.passed]
         chosen = min(passing, key=lambda item: (item.device_median_seconds, item.batch_size)) if passing else None
-        if not self.metal_available and chosen is not None:
-            raise ValueError("metal_available=False cannot select a passing backend")
+        if not self.available and chosen is not None:
+            raise ValueError("unavailable benchmark cannot select a passing backend")
         if chosen is None:
             if self.selected_batch_size is not None or self.selected_device_median_seconds is not None:
                 raise ValueError("failed backend cannot select a batch")
-            _name(self.fallback_reason, "fallback_reason")
+            fallback = _name(self.fallback_reason, "fallback_reason")
+            if self.available:
+                if fallback != "no_passing_batch":
+                    raise ValueError("available failed benchmark fallback_reason must be no_passing_batch")
+            elif re.fullmatch(rf"{self.backend}_unavailable:[a-z][a-z0-9_]*", fallback) is None:
+                raise ValueError("unavailable benchmark fallback_reason must be canonical")
         else:
             if isinstance(self.selected_batch_size, bool) or not isinstance(self.selected_batch_size, Integral) or int(self.selected_batch_size) != chosen.batch_size:
                 raise ValueError("selected batch does not match fastest passing batch")
@@ -896,7 +958,7 @@ class BackendBenchmarkEvidence:
         return self.selected_batch_size is not None
 
     def to_payload(self) -> dict[str, object]:
-        return {"backend": self.backend, "batches": [batch.to_payload() for batch in self.batches],
+        return {"backend": self.backend, "available": self.available, "batches": [batch.to_payload() for batch in self.batches],
                 "python_version": self.python_version, "numpy_version": self.numpy_version, "device": self.device,
                 "device_info": self.device_info, "metal_available": self.metal_available, "protocol": self.protocol,
                 "seed": self.seed, "mlx_version": self.mlx_version, "mlx_metal_version": self.mlx_metal_version,
@@ -908,22 +970,24 @@ class BackendBenchmarkEvidence:
         return self.to_payload()
 
     @classmethod
-    def fixture(cls, backend: str, *, batches: tuple[BackendBatchEvidence, ...] | None = None) -> "BackendBenchmarkEvidence":
-        if batches is None:
-            batches = tuple(BackendBatchEvidence(backend, size, ((2.0, 1.0),) * 5, True, True, 1e-6, 1e-6,
-                "a" * 64, "b" * 64, 2.0, 1.0, 2.0, True, True, True, "passed") for size in FROZEN_CONFIG.backend_batch_sizes)
-        if not batches:
-            # Test helper cannot invent a partial raw benchmark: construct five valid failed records.
-            batches = tuple(BackendBatchEvidence(backend, size, ((1.0, 1.0),) * 5, False, False, 1.0, 1.0,
-                "a" * 64, "b" * 64, 1.0, 1.0, 1.0, False, False, False, "failed") for size in FROZEN_CONFIG.backend_batch_sizes)
-        passing = [item for item in batches if item.passed]
-        chosen = min(passing, key=lambda item: (item.device_median_seconds, item.batch_size)) if passing else None
-        kwargs: dict[str, object] = {"backend": backend, "batches": batches, "python_version": "test-python", "numpy_version": "test-numpy",
-            "device": "test-device", "device_info": "test-info", "metal_available": True, "protocol": "paired-synchronized-v1",
-            "selected_batch_size": None if chosen is None else chosen.batch_size, "selected_device_median_seconds": None if chosen is None else chosen.device_median_seconds,
-            "fallback_reason": "no_passing_batch" if chosen is None else None}
-        if backend == "mlx": kwargs.update(mlx_version="test-mlx", mlx_metal_version="test-mlx-metal")
-        else: kwargs.update(pytorch_version="test-torch")
+    def unavailable(cls, backend: str, reason: str, **provenance: object) -> "BackendBenchmarkEvidence":
+        """Record an honest optional-framework failure with no invented work."""
+
+        raw_reason = _name(reason, "reason")
+        suffix = raw_reason.split(":", 1)[-1]
+        if re.fullmatch(r"[a-z][a-z0-9_]*", suffix) is None:
+            raise ValueError("unavailable reason must be a canonical token")
+        kwargs: dict[str, object] = {
+            "backend": backend, "available": False, "batches": (), "python_version": provenance.pop("python_version", None),
+            "numpy_version": provenance.pop("numpy_version", None), "device": provenance.pop("device", None),
+            "device_info": provenance.pop("device_info", None), "metal_available": provenance.pop("metal_available", None),
+            "protocol": FROZEN_CONFIG.backend_protocol, "selected_batch_size": None,
+            "selected_device_median_seconds": None, "fallback_reason": f"{backend}_unavailable:{suffix}",
+            "mlx_version": provenance.pop("mlx_version", None), "mlx_metal_version": provenance.pop("mlx_metal_version", None),
+            "pytorch_version": provenance.pop("pytorch_version", None),
+        }
+        if provenance:
+            raise ValueError("unknown unavailable backend provenance")
         return cls(**kwargs)  # type: ignore[arg-type]
 
 
@@ -942,11 +1006,18 @@ class BackendDecision:
             raise ValueError("mlx benchmark evidence is required")
         if not isinstance(self.mps, BackendBenchmarkEvidence) or self.mps.backend != "mps":
             raise ValueError("mps benchmark evidence is required")
+        if self.mlx.available and self.mps.available:
+            mlx_batch, mps_batch = self.mlx.batches[0], self.mps.batches[0]
+            if (mlx_batch.fixture_input_sha256 != mps_batch.fixture_input_sha256
+                    or mlx_batch.fixture_output_sha256 != mps_batch.fixture_output_sha256):
+                raise ValueError("available backend fixture digest pairs must match before selection")
         choices = [item for item in (self.mlx, self.mps) if item.passed]
         expected = "cpu" if not choices else min(choices, key=lambda item: (item.selected_device_median_seconds, item.backend)).backend
         if self.backend != expected or type(self.adopted) is not bool or self.adopted != (expected != "cpu"):
             raise ValueError("backend decision is inconsistent with retained evidence")
-        _name(self.reason, "reason")
+        expected_reason = "selected_fastest_passing_backend" if expected != "cpu" else "no_accelerator_passed"
+        if self.reason != expected_reason:
+            raise ValueError("backend decision reason is inconsistent with selected backend")
 
     @property
     def outer_worker_count(self) -> int:
@@ -978,8 +1049,8 @@ class BackendDecision:
         return self.to_payload()
 
     @classmethod
-    def cpu_fallback(cls, reason: str = "no_accelerator_passed") -> "BackendDecision":
-        return cls(BackendBenchmarkEvidence.fixture("mlx", batches=()), BackendBenchmarkEvidence.fixture("mps", batches=()), "cpu", False, reason)
+    def cpu_fallback(cls) -> "BackendDecision":
+        return cls(BackendBenchmarkEvidence.unavailable("mlx", "no_accelerator_passed"), BackendBenchmarkEvidence.unavailable("mps", "no_accelerator_passed"), "cpu", False, "no_accelerator_passed")
 
 
 @dataclass(frozen=True)

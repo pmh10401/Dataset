@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T11:11:48Z",
-  "generated_from_commit": "476e2681c4476f49ba52e02458d2f71e1cd3aa43",
+  "generated_at": "2026-08-06T12:23:59Z",
+  "generated_from_commit": "90bc1e70396597b0ac5c7c078bfecad8d984d6ad",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -11,7 +11,7 @@
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
     "Research control files, Exp435 preserved failure evidence, Exp436 corrected readiness-owned lifecycle, strict scoring/benchmark/publication contract, and product-implementation-pending state",
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
-    "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring"
+    "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch"
   ],
   "nodes": [
     {
@@ -1690,7 +1690,7 @@
       "boundary": "Exp436 missing-safe strict consensus",
       "layer": 3,
       "path": "experiments/exp436_missing_safe_strict_consensus_antigravity",
-      "role": "Freezes missing-safe values-only contracts, owns the single label-free prediction input session, prepares exact-length finite TRAIN groups, and scores each TEST row locally with strict prototype/gradient/ACF consensus and frozen-lane exclusion.",
+      "role": "Freezes missing-safe values-only contracts, owns the single label-free prediction input session, prepares exact-length finite TRAIN groups, and scores each TEST row locally with strict prototype/gradient/ACF consensus and frozen-lane exclusion. It also owns truthful optional MLX/MPS scalar dense-score readiness evidence and neutral no-fallback backend dispatch.",
       "entrypoints": [
         "Exp436FrozenConfig",
         "FROZEN_CONFIG",
@@ -1719,14 +1719,25 @@
         "score_test_instance_cpu",
         "score_dataset_cpu",
         "score_dataset_backend",
-        "validate_global_candidates"
+        "validate_global_candidates",
+        "MlxEngine",
+        "MlxFixture",
+        "benchmark_mlx_adoption",
+        "MpsEngine",
+        "MpsFixture",
+        "benchmark_mps_adoption",
+        "select_backend",
+        "score_with_backend"
       ],
       "tests": [
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_config_antigravity.py",
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_inputs_antigravity.py",
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_features_antigravity.py",
-        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_scoring_antigravity.py"
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mlx_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mps_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py"
       ],
       "constraints": [
         "No TEST labels, anomaly positions, metrics, imputation, padding, truncation, copied values, or tail replacement",
@@ -1735,7 +1746,7 @@
         "Raw values may be nonfinite; every published calibration, score, threshold and timing scalar is finite",
         "Raw nonfinite TEST rows and length below two abstain before group lookup or transforms; exact routing abstentions are scalar-free and every finite-row post-transform numerical error raises ValueError",
         "Candidates require prototype AND gradient AND ACF and exact TEST identity evidence coverage; unavailable TRAIN channels preserve all calculable siblings with exact channel reasons, while ACF zero energy never substitutes the raw waveform",
-        "Backend protocol is paired-synchronized-v1; a selected accelerator requires Metal availability and all accepted raw/derived timing fields are canonical native Python JSON values recomputed from the five pairs",
+        "Backend protocol is paired-synchronized-v1: timed CPU/device callables contain only their scalar score suites; candidate/JSON/hash work is outside timing, every warmup/timed device output is aggregated into parity/error gates, invalid output preserves only prior fully validated pairs, and nonfinite completed output canonically takes the nonfinite_output reason before all other failed gates; fixtures, engines, and dispatch require exactly frozen k=3 with at least three references; unavailable backends have empty batches/no invented timing or selection, each available backend retains one common input/output fixture digest pair, two available backends must match those pairs before selection, available MLX/MPS evidence requires backend-specific non-CPU accelerator provenance, MLX requires an explicit GPU stream, exact-device synchronization, and installed mlx-metal provenance, and dispatch repeats device validation",
         "Exp436 scoring imports only local config, contracts, and features; it injects only dense scoring backends and contains no label, evaluation, metric, or database route"
       ],
       "evidence": [
@@ -1774,6 +1785,22 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
           "symbol": "def test_backend_evidence_recomputes_native_scalars_for_strict_json"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_nonfinite_completed_reason_precedes_every_other_gate"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_available_benchmark_requires_backend_specific_device_provenance"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_available_benchmark_requires_one_shared_fixture_digest_pair"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_available_backends_require_matching_fixture_digest_pairs_even_when_one_fails"
         },
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
@@ -1866,6 +1893,54 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_scoring_antigravity.py",
           "symbol": "class ScoringTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/mlx_antigravity.py",
+          "symbol": "def benchmark_mlx_adoption("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/mps_antigravity.py",
+          "symbol": "def benchmark_mps_adoption("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/backend_antigravity.py",
+          "symbol": "def select_backend("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/backend_antigravity.py",
+          "symbol": "def score_with_backend("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "class MlxReadinessTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_fixture_and_engine_reject_every_nonfrozen_k"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mps_antigravity.py",
+          "symbol": "class MpsReadinessTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mps_antigravity.py",
+          "symbol": "def test_cpu_like_injected_mps_device_cannot_be_available_or_selected"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mps_antigravity.py",
+          "symbol": "def test_fixture_and_engine_reject_every_nonfrozen_k"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py",
+          "symbol": "class BackendSelectorTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py",
+          "symbol": "def test_mlx_and_mps_fixture_digest_algorithms_are_symmetric"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py",
+          "symbol": "def test_dispatch_rejects_nonfrozen_k_before_any_cpu_or_device_score"
         }
       ]
     }
