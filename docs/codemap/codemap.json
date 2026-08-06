@@ -1759,7 +1759,8 @@
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_runtime_antigravity.py",
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py",
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py",
-        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py"
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_execution_profile_antigravity.py"
       ],
       "constraints": [
         "No TEST labels, anomaly positions, metrics, imputation, padding, truncation, copied values, or tail replacement",
@@ -2058,6 +2059,18 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py",
           "symbol": "def test_public_evaluate_replays_an_existing_bound_evaluation_without_labels("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py",
+          "symbol": "class ExecutionProfileAntigravity"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py",
+          "symbol": "EXP436_PROFILE = ExecutionProfileAntigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py",
+          "symbol": "EXP437_PROFILE = ExecutionProfileAntigravity("
         }
       ]
     }
