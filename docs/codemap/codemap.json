@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T07:04:41Z",
-  "generated_from_commit": "05fafb5016ab728db5c0b4007267d513eb153e53",
+  "generated_at": "2026-08-06T07:16:49Z",
+  "generated_from_commit": "bef9403c02c26b072fa81c69ca19acfecaedebc2",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -29,7 +29,7 @@
       "tests": [],
       "constraints": [
         "Must be updated when execution stops or phase changes",
-        "Exp435 integrated resume preflight is complete; code-map synchronization and a fresh Sol/High ship review remain before readiness. Prediction has not started, TEST labels are unopened, PID is null and fixed run parent is absent."
+        "Exp435 fresh Sol/High review returned ship with no findings; fixed readiness is next. Prediction has not started, TEST labels are unopened, PID is null and fixed run parent is absent."
       ],
       "evidence": [
         {
@@ -42,11 +42,15 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"integrated_resume_preflight_complete_codemap_and_ship_review_pending\""
+          "symbol": "\"active_phase\": \"ship_approved_readiness_next\""
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"last_verified_commit\": \"bc3a696602bd3e8688ada46d9e31e3221f439a96\""
+          "symbol": "\"reviewed_head\": \"cc4135fc081390fd0998ee2860279d5df3f5fb40\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"verdict\": \"ship\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -55,6 +59,10 @@
         {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"fixed_roots_absent\": true"
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"status\": \"ship_review_passed_readiness_next\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
