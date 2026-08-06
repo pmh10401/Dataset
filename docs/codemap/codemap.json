@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T03:29:34Z",
-  "generated_from_commit": "30f85e2ef5cb58034e0bc5e48989de05c983f4b0",
+  "generated_at": "2026-08-06T03:55:46Z",
+  "generated_from_commit": "b8c98fe680b842dfb84d33d031953b1bc53782a5",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -10,7 +10,7 @@
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
     "Research control files and local external data stores",
-    "Exp435 CLI readiness, clean-HEAD revalidation, atomic review-only publication and verified replay"
+    "Exp435 fixed five-mode CLI, clean-HEAD readiness, resumable runtime, atomic review-only publication, verified replay, and lazy evaluation boundary"
   ],
   "nodes": [
     {
@@ -846,12 +846,12 @@
     },
     {
       "id": "exp435_runtime",
-      "label": "Exp435 CLI + resumable runtime",
+      "label": "Exp435 five-mode CLI + resumable runtime",
       "type": "pipeline",
       "boundary": "Exp435 deterministic runtime",
       "layer": 4,
       "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
-      "role": "Validates readiness and clean HEAD, runs or resumes the label-free scorer with parent-owned inputs, bounded CPU workers, ordered commits, serial adopted MLX mode, and verified publication replay.",
+      "role": "Fixed five-mode CLI (readiness/new/resume/inspect/evaluate) validates clean HEAD and delayed imports, runs or resumes the label-free scorer with parent-owned inputs, and delegates evaluate only at a lazy boundary; publication and replay remain verified read-only operations.",
       "entrypoints": [
         "run_exp435_new",
         "resume_exp435",
@@ -864,7 +864,19 @@
         "run_resume",
         "main",
         "_production_inspect",
-        "_publication_summary"
+        "_publication_summary",
+        "build_parser",
+        "_clean_head",
+        "_preflight_roots",
+        "_validate_readiness_payload",
+        "_revalidate_readiness_for_execution",
+        "_ensure_run_parent",
+        "_production_readiness",
+        "run_readiness",
+        "_run_prediction",
+        "run_inspect",
+        "run_evaluate",
+        "scratch wrapper"
       ],
       "tests": [
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
@@ -872,6 +884,11 @@
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py"
       ],
       "constraints": [
+        "CLI parser accepts exactly readiness, new, resume, inspect and evaluate; alternate paths are rejected",
+        "Readiness requires clean initial and final HEAD, absent fixed output/checkpoint/evaluation roots and an empty fixed parent; one writer persists byte-identical canonical readiness",
+        "New validates readiness, imports input/runtime dependencies before the final HEAD read, then binds that exact commit before opening the input session",
+        "Unfinished resume imports runtime/input dependencies and rechecks final HEAD immediately before opening the input session; completed or repeated resume replays read-only without DB or workers",
+        "Evaluation is imported and delegated lazily only for evaluate; this map does not claim an evaluation implementation or TEST-label loader",
         "CPU uses ProcessPoolExecutor(max_workers=7) with bounded prefetch 14",
         "LaneMembershipSnapshot is immutable and pickle-safe before workers start",
         "Parent alone owns the verified input session, checkpoint, progress and logs; commits remain dataset-name ordered",
@@ -879,8 +896,6 @@
         "Candidate-budget overflow is persisted before any record/publication and fails closed",
         "Runtime outputs are bound to checkpoint path, backend, dataset total, run identity and context fingerprint",
         "Workers receive values-only objects and never access labels, SQLite descriptors or durable outputs",
-        "Readiness has one writer and is byte-identical to the validated callback payload",
-        "A final clean-HEAD read must match both the validated HEAD and readiness commit before the input session opens",
         "Existing publications are inspected read-only and summarized without reopening the database"
       ],
       "evidence": [
@@ -922,30 +937,114 @@
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
-          "symbol": "def run_new()"
+          "symbol": "def build_parser()"
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
-          "symbol": "def run_resume()"
+          "symbol": "def _clean_head()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _preflight_roots("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _validate_readiness_payload("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _revalidate_readiness_for_execution("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _ensure_run_parent("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _production_readiness()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def run_readiness()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _run_prediction("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "from .runtime_antigravity import _runtime_context, run_exp435_new"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "from .runtime_antigravity import _runtime_context, resume_exp435"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def run_inspect()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def run_evaluate()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "importlib.import_module(module_name)"
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
           "symbol": "def main("
         },
         {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
-          "symbol": "def _publication_summary("
+          "path": "scratch/run_exp435_train_only_consensus_recovery_antigravity.py",
+          "symbol": "from experiments.exp435_train_only_consensus_recovery_antigravity.cli_antigravity import main"
+        },
+        {
+          "path": "scratch/run_exp435_train_only_consensus_recovery_antigravity.py",
+          "symbol": "if __name__ == \"__main__\":"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_parser_has_exactly_five_modes"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_new_rechecks_clean_commit_before_execute"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_prediction_modes_do_not_import_evaluation"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_inspect_after_publication_replays_without_runtime_imports"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_repeated_resume_replays_publication_without_database_or_workers"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_unfinished_resume_passes_exact_final_head_to_input_session"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_new_rejects_head_changed_by_delayed_imports_before_session"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_production_readiness_stable_head_writes_only_canonical_readiness"
         }
       ]
     },
     {
       "id": "exp435_checkpoint_progress",
-      "label": "Exp435 checkpoint + publication",
+      "label": "Exp435 checkpoint + eight-file review-only publication",
       "type": "storage",
       "boundary": "Exp435 deterministic runtime",
       "layer": 5,
       "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
-      "role": "Persists canonical records, atomic progress/PID/events logs and recovery intents, then builds and verifies a no-clobber review-only publication with prediction and manifest SHA256 evidence.",
+      "role": "Persists canonical records and atomic progress/PID/events logs, then replays a checkpoint_complete runtime into eight no-clobber review-only artifacts while binding hashes for all four terminal runtime files.",
       "entrypoints": [
         "Exp435CheckpointStore.create",
         "Exp435CheckpointStore.open_existing",
@@ -958,10 +1057,29 @@
         "ProgressWriter.mark_complete",
         "ProgressWriter.mark_interrupted",
         "ProgressWriter.mark_failed",
+        "_PUBLICATION_FILES",
+        "_RUNTIME_FILES",
+        "_runtime_file_bytes",
+        "_validate_runtime",
+        "_build_payloads",
+        "_write_new",
         "publish_exp435",
         "inspect_publication",
         "FrozenPublication",
-        "_exclusive_rename"
+        "_verify_bytes",
+        "_exclusive_rename",
+        "prediction_antigravity.jsonl",
+        "dataset_summary_antigravity.jsonl",
+        "score_evidence_antigravity.jsonl",
+        "abstention_ledger_antigravity.jsonl",
+        "backend_decision_antigravity.json",
+        "manifest_antigravity.json",
+        "status_antigravity.json",
+        "artifact_sha256_antigravity.json",
+        "progress_antigravity.json",
+        "events_antigravity.jsonl",
+        "parent_antigravity.log",
+        "run_antigravity.pid"
       ],
       "tests": [
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_checkpoint_antigravity.py",
@@ -971,14 +1089,16 @@
       ],
       "constraints": [
         "Atomic no-clobber records and record-set digest are fsynced; commit intent recovery is deterministic",
-        "Candidate budget is checked before writing an over-budget record",
+        "Candidate budget is checked before writing an over-budget record and publication rejects totals above 100 without truncation",
         "Only exact internal progress/PID temp files are removed on mutable resume; unknown files, symlinks and read-only pending temps fail closed",
-        "Progress, PID and events bind one canonical checkpoint path, backend, total, run identity and context fingerprint",
-        "Inspection opens no database or worker and validates outputs, events, labels firewall and counter conservation read-only",
+        "Progress, PID and events bind one canonical checkpoint path, backend, total 1,117, run identity and context fingerprint",
+        "Inspection opens no database or worker and validates outputs, events, label firewall and counter conservation read-only",
         "Durable progress and logs never contain TEST values or labels",
         "Publication accepts checkpoint_complete runtime state only and requires exact success/abstention/error counter conservation",
+        "The publication inventory is exactly the eight files prediction_antigravity.jsonl, dataset_summary_antigravity.jsonl, score_evidence_antigravity.jsonl, abstention_ledger_antigravity.jsonl, backend_decision_antigravity.json, manifest_antigravity.json, status_antigravity.json and artifact_sha256_antigravity.json",
+        "Manifest, status and artifact SHA maps bind the four terminal runtime files progress_antigravity.json, events_antigravity.jsonl, parent_antigravity.log and run_antigravity.pid by SHA256; artifact_sha256_antigravity.json is self-excluded",
         "Publication staging is fsynced and moved with Darwin RENAME_EXCL so an appearing destination is never replaced",
-        "Published prediction, manifest and supporting artifacts reject forbidden TEST-label fields and are independently hash-verified"
+        "Published outputs are review_only, operational_alert_eligible=false, contain no TEST labels and are independently replay-verified"
       ],
       "evidence": [
         {
@@ -1006,16 +1126,64 @@
           "symbol": "def _validate_binding("
         },
         {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_checkpoint_antigravity.py",
-          "symbol": "def test_record_commit_survives_missing_event_and_progress"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
-          "symbol": "def test_output_binding_rejects_checkpoint_backend_total_and_fingerprint_swaps"
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "_PUBLICATION_FILES = frozenset"
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
-          "symbol": "class FrozenPublication"
+          "symbol": "_RUNTIME_FILES = ("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "PREDICTION_FILE = \"prediction_antigravity.jsonl\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "SUMMARY_FILE = \"dataset_summary_antigravity.jsonl\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "EVIDENCE_FILE = \"score_evidence_antigravity.jsonl\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "ABSTENTION_FILE = \"abstention_ledger_antigravity.jsonl\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "BACKEND_FILE = \"backend_decision_antigravity.json\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "MANIFEST_FILE = \"manifest_antigravity.json\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "STATUS_FILE = \"status_antigravity.json\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "HASH_FILE = \"artifact_sha256_antigravity.json\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _runtime_file_bytes("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _validate_runtime("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _build_payloads("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "runtime_hashes = {"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _verify_bytes("
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
@@ -1027,7 +1195,27 @@
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
-          "symbol": "def _exclusive_rename("
+          "symbol": "_write_new(staging / name, payloads[name])"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "_exclusive_rename(staging, publication)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_requires_checkpoint_complete_progress_state"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_manifest_status_and_hash_map_bind_all_terminal_runtime_files"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_mutating_any_terminal_runtime_file_invalidates_replay"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_does_not_replace_destination_that_appears_during_publish"
         }
       ]
     }
@@ -1434,7 +1622,8 @@
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
           "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
         }
-      ]
+      ],
+      "id": "edge_045_exp435_checkpoint_progress_imports_artifact_utils"
     },
     {
       "from": "exp435_prediction_boundary",
@@ -1537,7 +1726,8 @@
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
           "symbol": "_exclusive_rename(staging, publication)"
         }
-      ]
+      ],
+      "id": "edge_039_exp435_runtime_writes_exp435_checkpoint_progress"
     },
     {
       "from": "exp435_runtime",
@@ -1563,8 +1753,17 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
           "symbol": "def _default_mlx_dataset_scorer("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "open_exp435_input_session("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _run_prediction("
         }
-      ]
+      ],
+      "id": "edge_040_exp435_runtime_calls_exp435_prediction_boundary"
     },
     {
       "from": "exp435_runtime",
@@ -1582,68 +1781,86 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
           "symbol": "from .scoring_antigravity import score_dataset_cpu"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "from .inputs_antigravity import ("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "from .runtime_antigravity import inspect_exp435, resume_exp435"
+        }
+      ],
+      "id": "edge_041_exp435_runtime_imports_exp435_prediction_boundary"
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp435_checkpoint_progress",
+      "type": "calls",
+      "id": "edge_042_exp435_runtime_calls_exp435_checkpoint_progress",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "publication = inspect_publication(FROZEN_OUTPUT, store)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "publication = publish_exp435(store, FROZEN_OUTPUT)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def publish_exp435("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def inspect_publication("
+        }
+      ]
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp435_checkpoint_progress",
+      "type": "reads",
+      "id": "edge_043_exp435_runtime_reads_exp435_checkpoint_progress",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "Exp435CheckpointStore.open_read_only(FROZEN_CHECKPOINT)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _verify_bytes("
+        }
+      ]
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "artifact_utils",
+      "type": "imports",
+      "id": "edge_044_exp435_runtime_imports_artifact_utils",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
         }
       ]
     }
   ],
   "flows": [
     {
-      "id": "exp424_import",
-      "label": "Exp424 verified import",
-      "trigger": "Open the frozen Exp424 source authority.",
+      "id": "exp435_readiness_flow",
+      "label": "Exp435 clean-HEAD readiness",
+      "trigger": "Run the fixed readiness mode before any prediction roots exist.",
       "steps": [
-        "exp424_source",
-        "exp425_predecessor",
-        "exp425_contracts",
-        "exp425_checkpoint"
+        "exp435_runtime",
+        "exp435_checkpoint_progress"
       ],
-      "outcome": "Verified nonterminal records are adapted and committed without recomputation."
+      "outcome": "The CLI checks clean HEAD at the start and end, validates frozen input/backend evidence, requires an empty parent and absent output/checkpoint/evaluation roots, then writes one byte-identical canonical readiness artifact."
     },
     {
-      "id": "exp426_task2",
-      "label": "Exp426 verified intake",
-      "trigger": "Open the frozen Exp424 authority and stream sorted source records.",
-      "steps": [
-        "exp424_source",
-        "exp425_predecessor",
-        "exp426_intake_parallel",
-        "exp417_preprocessing",
-        "exp425_contracts",
-        "exp426_contracts"
-      ],
-      "outcome": "983 scored imports and 134 TRAIN-verified abstentions are produced in stable dataset order without TEST labels."
-    },
-    {
-      "id": "exp426_runtime_flow",
-      "label": "Exp426 resumable verified baseline",
-      "trigger": "Start or resume the frozen Exp426 baseline population.",
-      "steps": [
-        "research_control",
-        "exp426_runtime",
-        "exp424_source",
-        "exp426_intake_parallel",
-        "exp425_database",
-        "sqlite_store",
-        "exp426_checkpoint",
-        "exp426_publication"
-      ],
-      "outcome": "All 1,117 records are imported or TRAIN-verified, durably checkpointed and published as complete_review_only without TEST labels."
-    },
-    {
-      "id": "exp426_publication_flow",
-      "label": "Exp426 independent publication replay",
-      "trigger": "A complete Exp426 checkpoint and terminal runtime log are available.",
-      "steps": [
-        "exp426_checkpoint",
-        "exp426_publication",
-        "artifact_utils"
-      ],
-      "outcome": "Prediction, ledgers, backend decision, manifest, status and artifact SHA256 map are atomically published and independently reproducible."
-    },
-    {
-      "id": "exp435_runtime_flow",
-      "label": "Exp435 resumable prediction + frozen publication",
-      "trigger": "The CLI validates readiness and clean HEAD, then invokes a new run, resume, inspect, or verified publication replay.",
+      "id": "exp435_new_resume_flow",
+      "label": "Exp435 new/resume label-free prediction",
+      "trigger": "Invoke new after readiness or resume an unfinished checkpoint.",
       "steps": [
         "exp435_runtime",
         "exp435_prediction_boundary",
@@ -1652,7 +1869,38 @@
         "sqlite_store",
         "exp435_checkpoint_progress"
       ],
-      "outcome": "The parent loads normal TRAIN first, requests values-only TEST, scores through the frozen CPU/MLX gate, durably commits ordered records, and atomically publishes hash-bound review-only artifacts without TEST labels."
+      "outcome": "Runtime imports input and scorer dependencies before its final clean-HEAD read, binds that exact commit before opening the descriptor-bound session, loads TRAIN first, requests values-only TEST, uses the frozen CPU/MLX gate, and commits ordered records."
+    },
+    {
+      "id": "exp435_publication_flow",
+      "label": "Exp435 checkpoint_complete publication",
+      "trigger": "A checkpoint_complete runtime has 1,117 records, <=100 candidates, inactive PID, null current dataset and the four terminal runtime files.",
+      "steps": [
+        "exp435_runtime",
+        "exp435_checkpoint_progress",
+        "artifact_utils"
+      ],
+      "outcome": "Replay validates counter conservation and label-free fields, binds eight artifact files plus four terminal runtime SHA256 values, and publishes review-only artifacts with atomic Darwin RENAME_EXCL without clobbering a destination."
+    },
+    {
+      "id": "exp435_replay_flow",
+      "label": "Exp435 inspect/repeated resume replay",
+      "trigger": "inspect or repeated resume sees an existing publication or a completed checkpoint.",
+      "steps": [
+        "exp435_runtime",
+        "exp435_checkpoint_progress",
+        "artifact_utils"
+      ],
+      "outcome": "The CLI opens checkpoint/publication data read-only, replays and compares canonical bytes and hashes, and does not reopen the database, input session or workers."
+    },
+    {
+      "id": "exp435_evaluate_boundary",
+      "label": "Exp435 lazy evaluation boundary",
+      "trigger": "The operator explicitly selects evaluate after label-free prediction artifacts are frozen.",
+      "steps": [
+        "exp435_runtime"
+      ],
+      "outcome": "Only evaluate lazily delegates to an optional evaluator; no evaluation implementation or TEST-label loader is claimed in this map, and prediction modes never import it."
     }
   ]
 }
