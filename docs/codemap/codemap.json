@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T06:31:11Z",
-  "generated_from_commit": "c389b2dd8516daa8beb0ba8c4f76d0874e0db5d9",
+  "generated_at": "2026-08-06T06:48:16Z",
+  "generated_from_commit": "649b1eb28614db2a27db01ebfb68c2759f43fd49",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -29,7 +29,7 @@
       "tests": [],
       "constraints": [
         "Must be updated when execution stops or phase changes",
-        "Exp435 second final-review corrections and real MLX engineering probe are complete; code-map synchronization and a fresh Sol/High ship review remain before readiness. Prediction has not started, TEST labels are unopened, PID is null and fixed roots are absent."
+        "Exp435 third final-review corrections are complete; code-map synchronization and a fresh Sol/High ship review remain before readiness. Prediction has not started, TEST labels are unopened, PID is null and fixed roots are absent."
       ],
       "evidence": [
         {
@@ -42,15 +42,11 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"second_final_review_corrections_complete_codemap_and_ship_review_pending\""
+          "symbol": "\"active_phase\": \"third_final_review_corrections_complete_codemap_and_ship_review_pending\""
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"last_verified_commit\": \"c8269e1f59f3987d557bbec4b76975ddfce0b4f3\""
-        },
-        {
-          "path": "RESEARCH_STATE.json",
-          "symbol": "\"local_mlx_probe\": {"
+          "symbol": "\"last_verified_commit\": \"f3191b345054c95a4a40504ce5273f2c47ff2bc8\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -62,7 +58,7 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"implementation_commit\": \"c8269e1f59f3987d557bbec4b76975ddfce0b4f3\""
+          "symbol": "\"implementation_commit\": \"f3191b345054c95a4a40504ce5273f2c47ff2bc8\""
         }
       ]
     },
@@ -994,7 +990,9 @@
         "The direct scratch runner bootstraps the repository root before importing experiments and exposes exactly five modes; an outside-cwd --help subprocess regression protects the documented entrypoint.",
         "The runbook records readiness, prediction, replay, evaluation, interrupted and failed states with fixed CLI return-code behavior.",
         "Failed roots are rejected from durable progress by a read-only gate before mutable checkpoint reconciliation, input access, PID/progress/event mutation or temp/intent cleanup; interrupted roots remain resumable after binding checks.",
-        "Every persisted progress/event stage, including initial, reconciliation, failure and terminal lifecycle records, is centrally restricted to loading, dispatching, awaiting_worker_result, committing or idle; lifecycle records without a dataset use idle."
+        "Every persisted progress/event stage, including initial, reconciliation, failure and terminal lifecycle records, is centrally restricted to loading, dispatching, awaiting_worker_result, committing or idle; lifecycle records without a dataset use idle.",
+        "Production resume rejects an existing or symlink evaluation root before checkpoint/publication replay, delayed imports or mutable runtime access; inspect remains read-only after evaluation.",
+        "Mutable resume validates durable progress, PID, events, bindings and all persisted stages before any recognized crash-temp cleanup or PID write."
       ],
       "evidence": [
         {
@@ -1216,6 +1214,22 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
           "symbol": "def test_interrupted_resume_reconciliation_returns_to_idle_stage"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "resume requires the fixed evaluation root to be absent"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "_validate_durable_output_files(output)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_direct_resume_rejects_evaluation_before_checkpoint_or_replay_imports"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_resume_rejects_invalid_event_stage_before_reconciling_atomic_temp"
         }
       ]
     },
@@ -1317,7 +1331,9 @@
         "Only interrupted/nonterminal roots may reconcile exact internal progress/PID/checkpoint temps or intents; failed durable state is rejected read-only before every mutable checkpoint operation.",
         "Checkpoint create/open/read-only inspection/publication require the exact canonical FROZEN_CONFIG.run_identity; no missing, alternate or synthesized identity is accepted.",
         "Progress, PID and events bind one canonical checkpoint path, backend, total 1,117, frozen run identity and context fingerprint.",
-        "Progress and event writers/readers reject every persisted stage outside the exact five-value allowlist before mutation; initial/recovered/complete snapshots use idle."
+        "Progress and event writers/readers reject every persisted stage outside the exact five-value allowlist before mutation; initial/recovered/complete snapshots use idle.",
+        "Checkpoint-complete publication requires persisted terminal progress stage exactly idle and validates every event stage through the shared allowlist.",
+        "A publication present at publish entry may be replay-verified idempotently; a destination appearing after entry during payload replay or staging fails strict no-clobber even when byte-identical."
       ],
       "evidence": [
         {
@@ -1607,6 +1623,26 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
           "symbol": "def test_direct_persistence_rejects_non_allowlisted_stages_without_writes"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "if progress[\"stage\"] != \"idle\":"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "An existing root is idempotent only when it was present on entry."
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_requires_idle_allowlisted_terminal_progress_stage"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_rejects_identical_destination_appearing_during_payload_replay"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_at_entry_replays_identical_existing_publication"
         }
       ]
     }
@@ -2304,7 +2340,7 @@
         "sqlite_store",
         "exp435_checkpoint_progress"
       ],
-      "outcome": "New binds the canonical identity and final clean commit; interrupted resume rechecks bindings, while failed roots reject before checkpoint cleanup or other mutation. Parent-owned TRAIN then values-only TEST processing uses at most seven CPU futures, exact name-ordered commits, and only the five centrally enforced persisted stages across lifecycle and work."
+      "outcome": "New binds the canonical identity and clean commit; interrupted resume rejects any existing evaluation root and validates durable progress/PID/events/bindings before temp cleanup. Failed roots stay immutable. Parent-owned TRAIN then values-only TEST uses at most seven CPU futures, name-ordered commits and only five persisted stages."
     },
     {
       "id": "exp435_publication_flow",
@@ -2315,7 +2351,7 @@
         "exp435_checkpoint_progress",
         "artifact_utils"
       ],
-      "outcome": "Replay validates counter conservation and label-free fields, binds eight artifact files plus four terminal runtime SHA256 values, and publishes review-only artifacts with atomic Darwin RENAME_EXCL without clobbering a destination."
+      "outcome": "Replay requires terminal idle progress, counter conservation and label-free fields, then binds eight artifacts plus runtime hashes. A publication present at entry is replayed idempotently; one appearing later during replay/staging fails strict Darwin no-clobber even if identical."
     },
     {
       "id": "exp435_replay_flow",
