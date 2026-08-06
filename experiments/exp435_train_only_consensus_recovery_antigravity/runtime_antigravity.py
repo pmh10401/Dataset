@@ -493,7 +493,7 @@ def _run(
         writer.start_heartbeat()
         writer.transition(
             "running",
-            stage="scoring",
+            stage="dispatching",
             current_dataset=None,
             dataset_metadata=None,
             completed=completed,
@@ -582,10 +582,11 @@ def _run(
                             candidate_count=candidate_count,
                         )
                         train, test, metadata = _load_values(input_session, dataset)
-                        writer.update(stage="scoring", current_dataset=dataset, dataset_metadata=metadata, completed=completed, success=successful, abstention=abstained, error=failed, candidate_count=candidate_count)
+                        writer.update(stage="dispatching", current_dataset=dataset, dataset_metadata=metadata, completed=completed, success=successful, abstention=abstained, error=failed, candidate_count=candidate_count)
                         assert executor is not None
                         future = executor.submit(_score_worker, dataset_scorer, dataset, train, test, lanes, backend)
                         pending[future] = (dataset, metadata)
+                        writer.update(stage="awaiting_worker_result", current_dataset=dataset, dataset_metadata=metadata, completed=completed, success=successful, abstention=abstained, error=failed, candidate_count=candidate_count)
                         submit_index += 1
                     done, _ = wait(tuple(pending), return_when=FIRST_COMPLETED)
                     for future in done:
@@ -610,7 +611,7 @@ def _run(
                         active_future = next(iter(pending))
                         active_dataset, active_metadata = pending[active_future]
                         writer.update(
-                            stage="scoring",
+                            stage="awaiting_worker_result",
                             current_dataset=active_dataset,
                             dataset_metadata=active_metadata,
                             completed=completed,
@@ -655,7 +656,7 @@ def _run(
                         active_future = next(iter(pending))
                         active_dataset, active_metadata = pending[active_future]
                         writer.update(
-                            stage="scoring",
+                            stage="awaiting_worker_result",
                             current_dataset=active_dataset,
                             dataset_metadata=active_metadata,
                             completed=completed,

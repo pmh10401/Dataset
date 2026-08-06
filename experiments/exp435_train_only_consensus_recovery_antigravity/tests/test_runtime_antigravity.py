@@ -117,6 +117,7 @@ class _BlockedExecutor:
     """In-process executor fixture that exposes exact submitted work."""
 
     instances: list["_BlockedExecutor"] = []
+    on_submit: object | None = None
 
     def __init__(self, *args: object, **kwargs: object) -> None:
         del args, kwargs
@@ -128,6 +129,9 @@ class _BlockedExecutor:
         from concurrent.futures import Future
 
         future = Future()
+        callback = type(self).on_submit
+        if callable(callback):
+            callback(args)
         self.submitted.append((future, (function, *args)))
         return future
 
@@ -435,7 +439,23 @@ print(json.dumps(observed, sort_keys=True))
             session.load_train = lambda dataset: loaded.append(dataset) or {"dataset": dataset}  # type: ignore[attr-defined]
             session.load_test_values = lambda dataset, train: {"dataset": dataset}  # type: ignore[attr-defined]
             _BlockedExecutor.instances.clear()
+            submit_stages: list[tuple[object, object]] = []
+            updates: list[tuple[object, object]] = []
             waits = 0
+
+            def observe_submit(args: tuple[object, ...]) -> None:
+                del args
+                payload = json.loads((root / "output" / "progress_antigravity.json").read_text())
+                submit_stages.append((payload["stage"], payload["current_dataset"]))
+
+            original_update = __import__(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.progress_antigravity",
+                fromlist=["ProgressWriter"],
+            ).ProgressWriter.update
+
+            def trace_update(writer, **kwargs):
+                updates.append((kwargs.get("stage"), kwargs.get("current_dataset")))
+                return original_update(writer, **kwargs)
 
             def release_when_observed(pending, *, return_when):
                 del return_when
@@ -448,7 +468,7 @@ print(json.dumps(observed, sort_keys=True))
                     self.assertEqual(loaded, list(datasets[:7]))
                     payload = json.loads((root / "output" / "progress_antigravity.json").read_text())
                     self.assertNotEqual(payload["current_dataset"], datasets[7])
-                    self.assertEqual(payload["stage"], "scoring")
+                    self.assertEqual(payload["stage"], "awaiting_worker_result")
                     future = next(iter(pending))
                     worker, scorer, dataset, train, test, lanes, backend = executor.submitted[0][1]
                     future.set_result(worker(scorer, dataset, train, test, lanes, backend))
@@ -460,12 +480,16 @@ print(json.dumps(observed, sort_keys=True))
                         future.set_result(worker(scorer, dataset, train, test, lanes, backend))
                 return set(pending), set()
 
+            _BlockedExecutor.on_submit = observe_submit
             with patch(
                 "experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity.ProcessPoolExecutor",
                 _BlockedExecutor,
             ), patch(
                 "experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity.wait",
                 side_effect=release_when_observed,
+            ), patch(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.progress_antigravity.ProgressWriter.update",
+                trace_update,
             ):
                 summary = run_exp435_new(
                     run_root=root / "output",
@@ -475,8 +499,12 @@ print(json.dumps(observed, sort_keys=True))
                     dataset_scorer=_score,
                     worker_count=7,
                 )
+            _BlockedExecutor.on_submit = None
             self.assertEqual(summary.completed_datasets, len(datasets))
             self.assertEqual(waits, 2)
+            self.assertTrue(submit_stages)
+            self.assertTrue(all(stage in {"loading", "dispatching"} for stage, _ in submit_stages))
+            self.assertFalse(any(stage == "scoring" for stage, _ in updates))
 
     def test_keyboard_interrupt_has_one_terminal_state_and_read_only_summary(self) -> None:
         with TemporaryDirectory() as directory:
