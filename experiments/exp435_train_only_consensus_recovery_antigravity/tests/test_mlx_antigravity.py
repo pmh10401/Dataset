@@ -616,6 +616,137 @@ class MlxAdoptionTests(unittest.TestCase):
                 else:
                     sys.modules[name] = value
 
+    def test_mlx_engine_prefers_core_device_info_over_legacy_metal_probe(self) -> None:
+        calls: list[str] = []
+
+        class Metal:
+            @staticmethod
+            def is_available() -> bool:
+                return True
+
+            @staticmethod
+            def device_info() -> dict[str, object]:
+                calls.append("legacy")
+                raise AssertionError("legacy device_info must not be called")
+
+        core = types.ModuleType("mlx.core")
+        core.__version__ = "0.32.0"
+        core.metal = Metal()
+        core.default_device = lambda: "Device(gpu,0)"
+
+        def device_info() -> dict[str, object]:
+            calls.append("modern")
+            return {"memory_size": 456, "architecture": "modern-stub-gpu"}
+
+        core.device_info = device_info
+        package = types.ModuleType("mlx")
+        package.core = core
+        previous = {name: sys.modules.get(name) for name in ("mlx", "mlx.core")}
+        sys.modules["mlx"] = package
+        sys.modules["mlx.core"] = core
+        try:
+            with patch(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.mlx_antigravity.metadata.version",
+                return_value="0.32.0",
+            ):
+                engine = MlxEngine()
+            self.assertEqual(calls, ["modern"])
+            self.assertEqual(
+                engine.device_info,
+                '{"architecture":"modern-stub-gpu","memory_size":456}',
+            )
+        finally:
+            for name, value in previous.items():
+                if value is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = value
+
+    def test_mlx_engine_uses_legacy_device_info_when_modern_api_is_absent(self) -> None:
+        calls: list[str] = []
+
+        class Metal:
+            @staticmethod
+            def is_available() -> bool:
+                return True
+
+            @staticmethod
+            def device_info() -> dict[str, object]:
+                calls.append("legacy")
+                return {"architecture": "legacy-stub-gpu"}
+
+        core = types.ModuleType("mlx.core")
+        core.__version__ = "0.30.0"
+        core.metal = Metal()
+        core.default_device = lambda: "Device(gpu,0)"
+        package = types.ModuleType("mlx")
+        package.core = core
+        previous = {name: sys.modules.get(name) for name in ("mlx", "mlx.core")}
+        sys.modules["mlx"] = package
+        sys.modules["mlx.core"] = core
+        try:
+            with patch(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.mlx_antigravity.metadata.version",
+                return_value="0.30.0",
+            ):
+                engine = MlxEngine()
+            self.assertEqual(calls, ["legacy"])
+            self.assertEqual(engine.device_info, '{"architecture":"legacy-stub-gpu"}')
+        finally:
+            for name, value in previous.items():
+                if value is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = value
+
+    def test_modern_device_info_probe_failure_preserves_cpu_fallback_provenance(self) -> None:
+        calls: list[str] = []
+
+        class Metal:
+            @staticmethod
+            def is_available() -> bool:
+                return True
+
+            @staticmethod
+            def device_info() -> dict[str, object]:
+                calls.append("legacy")
+                return {"architecture": "must-not-be-used"}
+
+        core = types.ModuleType("mlx.core")
+        core.__version__ = "0.32.0"
+        core.metal = Metal()
+        core.default_device = lambda: "Device(gpu,0)"
+
+        def device_info() -> dict[str, object]:
+            calls.append("modern")
+            raise RuntimeError("modern probe failed")
+
+        core.device_info = device_info
+        package = types.ModuleType("mlx")
+        package.core = core
+        previous = {name: sys.modules.get(name) for name in ("mlx", "mlx.core")}
+        sys.modules["mlx"] = package
+        sys.modules["mlx.core"] = core
+        try:
+            with patch(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.mlx_antigravity.metadata.version",
+                return_value="0.32.0",
+            ):
+                decision = benchmark_mlx_adoption(self.fixtures)
+            self.assertEqual(calls, ["modern"])
+            self.assertFalse(decision.adopted)
+            self.assertEqual(decision.reason, "mlx_device_info_failed:RuntimeError")
+            self.assertEqual(decision.mlx_version, "0.32.0")
+            self.assertEqual(decision.device, "Device(gpu,0)")
+            self.assertTrue(decision.metal_available)
+            self.assertIsNone(decision.device_info)
+        finally:
+            for name, value in previous.items():
+                if value is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = value
+
     def test_direct_absence_test_injects_import_failure_independent_of_host(self) -> None:
         original_import = builtins.__import__
 

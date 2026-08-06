@@ -185,12 +185,19 @@ class MlxEngine:
                 device=self.device,
                 metal_available=None,
             ) from exc
-        device_info_call = getattr(metal, "device_info", None)
+        modern_device_info_call = getattr(mx, "device_info", None)
+        legacy_device_info_call = getattr(metal, "device_info", None)
+        device_info_call = (
+            modern_device_info_call
+            if callable(modern_device_info_call)
+            else legacy_device_info_call
+        )
         try:
             raw_device_info = device_info_call() if callable(device_info_call) else None
         except Exception as exc:  # pragma: no cover - implementation dependent
+            probe_name = "device_info" if callable(modern_device_info_call) else "metal_device_info"
             raise MlxUnavailable(
-                f"mlx_metal_device_info_failed:{type(exc).__name__}",
+                f"mlx_{probe_name}_failed:{type(exc).__name__}",
                 mlx_version=self.mlx_version,
                 device=self.device,
                 metal_available=self.metal_available,
