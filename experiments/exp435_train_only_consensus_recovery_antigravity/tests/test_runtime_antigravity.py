@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from hashlib import sha256
 import json
 import os
 import subprocess
@@ -32,8 +33,10 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigr
     _score_worker,
     inspect_exp435,
     run_exp435_new,
+    resume_exp435,
 )
 from experiments.exp435_train_only_consensus_recovery_antigravity.config_antigravity import FROZEN_CONFIG
+from experiments.exp435_train_only_consensus_recovery_antigravity.progress_antigravity import ProgressWriter
 from experiments.exp435_train_only_consensus_recovery_antigravity.scoring_antigravity import (
     CandidateBudgetExceeded,
 )
@@ -474,6 +477,73 @@ print(json.dumps(observed, sort_keys=True))
             failures = [item for item in events if item.get("kind") == "failure"]
             self.assertEqual(len(failures), 1)
             self.assertEqual(failures[0]["dataset"], "B")
+            progress = json.loads((root / "output" / "progress_antigravity.json").read_text())
+            self.assertEqual(progress["state"], "failed")
+            self.assertEqual(progress["stage"], "awaiting_worker_result")
+            self.assertEqual(progress["current_dataset"], "B")
+
+    def test_failed_resume_rejects_before_checkpoint_reconciliation(self) -> None:
+        """A failed output must prevent temp/intent cleanup in the checkpoint tree."""
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            session = _Session(("A",))
+            context = _runtime_context(
+                session, BackendDecision.cpu_fallback("backend decision not supplied")
+            )
+            checkpoint = root / "checkpoint"
+            store = Exp435CheckpointStore.create(checkpoint, context)
+            writer = ProgressWriter.create(
+                root / "output",
+                run_identity=store.run_identity,
+                checkpoint=checkpoint,
+                total_datasets=1,
+                backend="cpu",
+                context_fingerprint=store.context_fingerprint,
+                heartbeat_seconds=None,
+            )
+            writer.mark_failed("A", RuntimeError("synthetic failure"))
+            writer.close()
+            (checkpoint / (".record_set_antigravity." + "a" * 32 + ".tmp")).write_bytes(
+                b"checkpoint-temp"
+            )
+            intent = checkpoint / "intents_antigravity" / (
+                sha256(b"A").hexdigest() + ".json"
+            )
+            intent.write_text(
+                json.dumps(
+                    {
+                        "schema": "exp435.commit-intent.v1",
+                        "dataset": "A",
+                        "record_sha256": "0" * 64,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+                encoding="utf-8",
+            )
+            before = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.rglob("*"))
+                if path.is_file()
+            }
+
+            with self.assertRaisesRegex(ValueError, "failed runtime cannot resume"):
+                resume_exp435(
+                    run_root=root / "output",
+                    checkpoint_root=checkpoint,
+                    input_session=session,
+                    backend_decision=None,
+                    dataset_scorer=_score,
+                    worker_count=1,
+                )
+
+            after = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.rglob("*"))
+                if path.is_file()
+            }
+            self.assertEqual(after, before)
 
     def test_parallel_progress_never_reports_or_submits_an_eighth_blocked_dataset(self) -> None:
         datasets = tuple(f"Dataset-{index}" for index in range(1, 9))

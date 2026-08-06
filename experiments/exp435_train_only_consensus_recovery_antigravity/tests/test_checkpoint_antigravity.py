@@ -8,6 +8,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
+from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp435_train_only_consensus_recovery_antigravity.checkpoint_antigravity import (
     Exp435CheckpointStore,
 )
@@ -15,11 +16,13 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.contracts_anti
     Exp435DatasetResult,
     InstanceScoreEvidence,
 )
+from experiments.exp435_train_only_consensus_recovery_antigravity.config_antigravity import FROZEN_CONFIG
 
 
 def _context() -> dict[str, object]:
     return {
         "schema": "fixture.context.v1",
+        "run_identity": FROZEN_CONFIG.run_identity,
         "datasets": ["Demo", "Other"],
         "test_sizes": {"Demo": 2, "Other": 2},
         "database_sha256": "d" * 64,
@@ -39,6 +42,44 @@ def _result(dataset: str = "Demo") -> Exp435DatasetResult:
 
 
 class Exp435CheckpointTests(unittest.TestCase):
+    def test_create_requires_exact_frozen_run_identity(self) -> None:
+        """Creation must not derive a production identity from mutable context."""
+
+        with TemporaryDirectory() as directory:
+            for run_identity in (None, "exp435-fixture"):
+                root = Path(directory) / ("checkpoint-missing" if run_identity is None else "checkpoint-wrong")
+                context = _context()
+                if run_identity is None:
+                    context.pop("run_identity")
+                else:
+                    context["run_identity"] = run_identity
+                with self.subTest(run_identity=run_identity), self.assertRaisesRegex(ValueError, "run identity"):
+                    Exp435CheckpointStore.create(root, context)
+                self.assertFalse(root.exists())
+
+    def test_read_only_open_rejects_mismatched_stored_context_identity(self) -> None:
+        """Read-only adapters require the identity inside the checkpoint context too."""
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoint"
+            Exp435CheckpointStore.create(root, _context())
+            context_file = json.loads((root / "run_context_antigravity.json").read_bytes())
+            context_file["context"]["run_identity"] = "exp435-fixture"
+            context_fingerprint = sha256(canonical_json_bytes(context_file["context"])).hexdigest()
+            context_file["context_fingerprint"] = context_fingerprint
+            (root / "run_context_antigravity.json").write_bytes(canonical_json_bytes(context_file))
+            record_set = json.loads((root / "record_set_antigravity.json").read_bytes())
+            record_set["context_fingerprint"] = context_fingerprint
+            (root / "record_set_antigravity.json").write_bytes(canonical_json_bytes(record_set))
+
+            for opener in (
+                Exp435CheckpointStore.open_read_only,
+                Exp435CheckpointStore.inspect_read_only,
+                Exp435CheckpointStore.read_context_projection,
+            ):
+                with self.subTest(opener=opener.__name__), self.assertRaisesRegex(ValueError, "run identity"):
+                    opener(root)
+
     def test_create_commit_reopen_and_record_set_digest(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory) / "checkpoint"

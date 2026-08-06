@@ -449,6 +449,9 @@ def _run(
         raise ValueError("dataset_scorer is invalid")
 
     if resume:
+        # A failed durable progress state is immutable.  This gate must run
+        # before the mutable checkpoint opener can reconcile crash leftovers.
+        ProgressWriter.reject_failed_resume(run_root)
         store = Exp435CheckpointStore.open_existing(checkpoint_root, context)
         writer = ProgressWriter.open_existing(
             run_root,
@@ -520,7 +523,7 @@ def _run(
                 )
                 train, test, metadata = _load_values(input_session, dataset)
                 writer.update(
-                    stage="scoring",
+                    stage="dispatching",
                     current_dataset=dataset,
                     dataset_metadata=metadata,
                     completed=completed,
@@ -597,7 +600,7 @@ def _run(
                             # Preserve the actual failing dataset before the
                             # outer handler persists its durable error event.
                             writer.update(
-                                stage="failing",
+                                stage="awaiting_worker_result",
                                 current_dataset=dataset,
                                 dataset_metadata=metadata,
                                 completed=completed,
@@ -614,17 +617,6 @@ def _run(
                             stage="awaiting_worker_result",
                             current_dataset=active_dataset,
                             dataset_metadata=active_metadata,
-                            completed=completed,
-                            success=successful,
-                            abstention=abstained,
-                            error=failed,
-                            candidate_count=candidate_count,
-                        )
-                    else:
-                        writer.update(
-                            stage="waiting_for_ordered_commit",
-                            current_dataset=None,
-                            dataset_metadata=None,
                             completed=completed,
                             success=successful,
                             abstention=abstained,
@@ -659,17 +651,6 @@ def _run(
                             stage="awaiting_worker_result",
                             current_dataset=active_dataset,
                             dataset_metadata=active_metadata,
-                            completed=completed,
-                            success=successful,
-                            abstention=abstained,
-                            error=failed,
-                            candidate_count=candidate_count,
-                        )
-                    elif completed_results:
-                        writer.update(
-                            stage="waiting_for_ordered_commit",
-                            current_dataset=None,
-                            dataset_metadata=None,
                             completed=completed,
                             success=successful,
                             abstention=abstained,

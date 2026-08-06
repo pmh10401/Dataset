@@ -248,18 +248,29 @@ def _store_root(store: object) -> Path:
     return root
 
 
+def _require_frozen_store_identity(store: object) -> None:
+    if getattr(store, "run_identity", None) != FROZEN_CONFIG.run_identity:
+        raise ValueError("checkpoint run identity does not match frozen identity")
+    context = getattr(store, "context", None)
+    if not isinstance(context, Mapping) or context.get("run_identity") != FROZEN_CONFIG.run_identity:
+        raise ValueError("checkpoint context run identity does not match frozen identity")
+
+
 def _open_store(value: object) -> Exp435CheckpointStore:
     if isinstance(value, Exp435CheckpointStore):
-        return value
-    if isinstance(value, (str, Path)):
-        return Exp435CheckpointStore.open_read_only(Path(value))
-    # Test doubles intentionally use the same narrow public surface.  A real
-    # store is required for production publication, while this adapter keeps
-    # replay tests independent of filesystem internals.
-    required = ("inspect", "completed_digests", "load_record", "datasets", "context")
-    if all(hasattr(value, name) for name in required):
-        return value  # type: ignore[return-value]
-    raise ValueError("checkpoint store is invalid")
+        store: object = value
+    elif isinstance(value, (str, Path)):
+        store = Exp435CheckpointStore.open_read_only(Path(value))
+    else:
+        # Test doubles intentionally use the same narrow public surface.  A real
+        # store is required for production publication, while this adapter keeps
+        # replay tests independent of filesystem internals.
+        required = ("inspect", "completed_digests", "load_record", "datasets", "context")
+        if not all(hasattr(value, name) for name in required):
+            raise ValueError("checkpoint store is invalid")
+        store = value
+    _require_frozen_store_identity(store)
+    return store  # type: ignore[return-value]
 
 
 def _backend_from_context(context: Mapping[str, object]) -> BackendDecision:

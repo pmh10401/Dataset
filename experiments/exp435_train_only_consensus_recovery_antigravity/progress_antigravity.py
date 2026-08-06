@@ -317,6 +317,20 @@ class ProgressWriter:
         return writer
 
     @classmethod
+    def reject_failed_resume(cls, output: Path) -> None:
+        """Reject a failed runtime by reading only its durable progress state."""
+
+        output = Path(output)
+        if output.is_symlink() or not output.is_dir():
+            raise ValueError("runtime output inventory is invalid")
+        progress_path = output / "progress_antigravity.json"
+        if progress_path.is_symlink() or not progress_path.is_file():
+            raise ValueError("runtime progress is invalid")
+        progress = _canonical_object(progress_path, "runtime progress")
+        if progress.get("state") == "failed":
+            raise ValueError("failed runtime cannot resume")
+
+    @classmethod
     def open_existing(
         cls,
         output: Path,
@@ -333,14 +347,9 @@ class ProgressWriter:
         # Failed roots are immutable/non-resumable.  Read their durable state
         # before reconciliation can remove an internal temporary or rewrite a
         # PID, so even a direct caller cannot mutate a failed root.
-        if output.is_symlink() or not output.is_dir():
-            raise ValueError("runtime output inventory is invalid")
+        cls.reject_failed_resume(output)
         progress_path = output / "progress_antigravity.json"
-        if progress_path.is_symlink() or not progress_path.is_file():
-            raise ValueError("runtime progress is invalid")
         progress = _canonical_object(progress_path, "runtime progress")
-        if progress.get("state") == "failed":
-            raise ValueError("failed runtime cannot resume")
         _validate_output_inventory(output, mutable=True)
         pid_payload = _canonical_object(output / "run_antigravity.pid", "runtime PID")
         stored_total = progress.get("total_datasets", progress.get("total"))

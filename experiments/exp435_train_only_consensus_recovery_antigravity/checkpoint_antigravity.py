@@ -183,6 +183,12 @@ def _context_test_sizes(context: Mapping[str, object]) -> Mapping[str, int]:
     return MappingProxyType(checked)
 
 
+def _require_frozen_run_identity(value: object, *, source: str) -> str:
+    if value != FROZEN_CONFIG.run_identity:
+        raise ValueError(f"{source} run identity does not match frozen identity")
+    return FROZEN_CONFIG.run_identity
+
+
 def _record_filename(dataset: str) -> str:
     return f"{sha256(dataset.encode('utf-8')).hexdigest()}.json"
 
@@ -322,9 +328,9 @@ class Exp435CheckpointStore:
         projected = context_payload(context)
         datasets = _context_datasets(projected)
         context_hash = _digest(canonical_json_bytes(projected))
-        run_identity = str(projected.get("run_identity") or f"exp435-{context_hash[:24]}")
-        if not run_identity:
-            raise ValueError("checkpoint run identity is invalid")
+        run_identity = _require_frozen_run_identity(
+            projected.get("run_identity"), source="checkpoint context"
+        )
         if backend_decision is not None:
             if not isinstance(backend_decision, BackendDecision):
                 raise ValueError("backend decision is invalid")
@@ -367,6 +373,9 @@ class Exp435CheckpointStore:
         if not root.is_dir() or root.is_symlink():
             raise ValueError("checkpoint root is absent or invalid")
         projected = context_payload(context)
+        _require_frozen_run_identity(
+            projected.get("run_identity"), source="verified context"
+        )
         if backend_decision is not None:
             if not isinstance(backend_decision, BackendDecision):
                 raise ValueError("backend decision is invalid")
@@ -375,6 +384,7 @@ class Exp435CheckpointStore:
         expected_hash = _digest(canonical_json_bytes(projected))
         info = root.stat()
         store = cls._load(root, (info.st_dev, info.st_ino), expected_context=projected, expected_hash=expected_hash)
+        _require_frozen_run_identity(store.run_identity, source="checkpoint")
         store._reconcile_intents()
         store._refresh()
         return store
@@ -400,6 +410,7 @@ class Exp435CheckpointStore:
             expected_hash=expected_hash,
             mutable=False,
         )
+        _require_frozen_run_identity(store.run_identity, source="checkpoint")
         if expected_run_identity is not None and store.run_identity != expected_run_identity:
             raise ValueError("checkpoint run identity does not match")
         return store.inspect()
@@ -427,6 +438,7 @@ class Exp435CheckpointStore:
             expected_hash=expected_hash,
             mutable=False,
         )
+        _require_frozen_run_identity(store.run_identity, source="checkpoint")
         if expected_run_identity is not None and store.run_identity != expected_run_identity:
             raise ValueError("checkpoint run identity does not match")
         return store
@@ -446,6 +458,7 @@ class Exp435CheckpointStore:
             expected_hash=None,
             mutable=False,
         )
+        _require_frozen_run_identity(store.run_identity, source="checkpoint")
         return MappingProxyType(dict(store.context))
 
     @classmethod
@@ -500,6 +513,9 @@ class Exp435CheckpointStore:
             projected = context_file.get("context")
             if not isinstance(projected, dict):
                 raise ValueError("run context payload is invalid")
+            _require_frozen_run_identity(
+                projected.get("run_identity"), source="checkpoint context"
+            )
             computed_hash = _digest(canonical_json_bytes(projected))
             if context_file.get("context_fingerprint") != computed_hash or not _is_digest(computed_hash):
                 raise ValueError("context fingerprint is invalid")

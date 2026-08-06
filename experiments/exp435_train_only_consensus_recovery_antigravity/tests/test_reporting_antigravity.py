@@ -22,6 +22,7 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.contracts_anti
 from experiments.exp435_train_only_consensus_recovery_antigravity.progress_antigravity import (
     ProgressWriter,
 )
+from experiments.exp435_train_only_consensus_recovery_antigravity.config_antigravity import FROZEN_CONFIG
 from experiments.exp435_train_only_consensus_recovery_antigravity.reporting_antigravity import (
     CandidateBudgetExceeded,
     FrozenPublication,
@@ -35,6 +36,7 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.reporting_anti
 def _context() -> dict[str, object]:
     return {
         "schema": "fixture.context.v1",
+        "run_identity": FROZEN_CONFIG.run_identity,
         "datasets": ["Demo"],
         "test_sizes": {"Demo": 101},
         "database_sha256": "d" * 64,
@@ -95,7 +97,7 @@ class _BudgetStore:
         self.root = Path(context["_root"]) if "_root" in context else Path(".")
         self.context = context
         self.context_fingerprint = "0" * 64
-        self.run_identity = "exp435-fixture"
+        self.run_identity = FROZEN_CONFIG.run_identity
         self.datasets = (result.dataset,)
         self._result = result
         self.record_set_sha256 = "1" * 64
@@ -136,6 +138,18 @@ def _runtime_empty(root: Path, checkpoint: Path, store: _BudgetStore) -> None:
 
 class Exp435ReportingTests(unittest.TestCase):
     expectations = _PublicationExpectations(total=1)
+
+    def test_publication_adapters_reject_nonfrozen_store_identity(self) -> None:
+        """Publication must not mint or replay an artifact for another run."""
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = _BudgetStore(_context(), _result())
+            store.run_identity = "exp435-fixture"
+            _runtime_empty(root / "output", root / "checkpoint", store)
+            with self.assertRaisesRegex(ValueError, "run identity"):
+                publish_exp435(store, root / "output", _expectations=self.expectations)
+            self.assertFalse((root / "output" / "publication_antigravity").exists())
 
     def test_publication_replays_checkpoint_without_labels(self) -> None:
         with TemporaryDirectory() as directory:
