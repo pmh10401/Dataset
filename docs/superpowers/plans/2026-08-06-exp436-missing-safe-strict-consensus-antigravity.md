@@ -265,7 +265,7 @@ git commit -m "feat(exp436): freeze missing-safe scientific contracts"
 - Create: `experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py`
 - Create: `experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_inputs_antigravity.py`
 
-**Interfaces:** `Exp436InputSession.load_train(dataset) -> MissingSafeRawDataset`, `Exp436InputSession.load_test_values(dataset, train) -> MissingSafeRawDataset`, and `open_exp436_input_session(..., verified_code_commit)`. The session caches a bound Exp417 `RawTrainDataset` only as proof that TRAIN was loaded before TEST; it exposes no TEST label method.
+**Interfaces:** `Exp436InputSession.load_train(dataset) -> MissingSafeRawDataset`, `Exp436InputSession.load_test_values(dataset, train) -> MissingSafeRawDataset`, and `open_exp436_input_session(..., verified_code_commit)`. `Exp436InputSession` privately retains the exact raw TRAIN blob tuple returned by this snapshot as the DB authorization proof, binds that tuple to the exact returned `MissingSafeRawDataset` object, and passes the retained tuple to the TEST loader only after verifying the caller supplied that exact public TRAIN object. It does not use an Exp417 `RawTrainDataset` as this proof, and it exposes no TEST label method.
 
 - [ ] **Step 1: Write failing decoder and session tests.**
 

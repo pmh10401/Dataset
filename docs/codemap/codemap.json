@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T08:24:06Z",
-  "generated_from_commit": "b241e632b40c8440341ff7316f5e13e1e68cbcb3",
+  "generated_at": "2026-08-06T08:45:07Z",
+  "generated_from_commit": "0762b7b3e1340eb7e3e9a40d8747705aa840f7a0",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -367,18 +367,22 @@
       "boundary": "Exp425 trusted boundary",
       "layer": 2,
       "path": "experiments/exp425_selective_recovery/database.py",
-      "role": "Pins and verifies a read-only SQLite snapshot and loads data through a held descriptor.",
+      "role": "Pins and verifies a read-only SQLite snapshot, loads existing Exp417 raw data, and exposes exact descriptor-bound normal-TRAIN and values-only TEST blobs.",
       "entrypoints": [
         "open_database_snapshot",
         "Exp425DatabaseSnapshot",
-        "DatabaseSnapshotAudit"
+        "DatabaseSnapshotAudit",
+        "load_normal_train_value_blobs",
+        "load_test_value_blobs_after_train"
       ],
       "tests": [
         "experiments/exp425_selective_recovery/tests/test_database.py"
       ],
       "constraints": [
         "Expected database SHA required",
-        "Path/inode mutation rejected"
+        "Path/inode mutation rejected",
+        "Raw blob rows require nonnegative integer indices and positive exact SQLite BLOB lengths divisible by four",
+        "TEST blob SQL reads only instance identity and values after this snapshot's normal-TRAIN blob evidence"
       ],
       "evidence": [
         {
@@ -388,6 +392,14 @@
         {
           "path": "experiments/exp425_selective_recovery/database.py",
           "symbol": "Exp425DatabaseSnapshot"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "load_normal_train_value_blobs"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "load_test_value_blobs_after_train"
         }
       ]
     },

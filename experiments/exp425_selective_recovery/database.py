@@ -42,6 +42,20 @@ _SIDECAR_SUFFIXES = ("-wal", "-shm", "-journal")
 # This is deliberately a POSIX record lock (rather than flock): SQLite itself
 # uses POSIX byte-range locks on this page.
 _SQLITE_SHARED_FIRST = 0x40000002
+_NORMAL_TRAIN_VALUE_BLOBS_SQL = """
+SELECT i.instance_index, i.values_blob
+FROM instances AS i
+JOIN datasets AS d ON d.id = i.dataset_id
+WHERE d.name = ? AND i.split = 'TRAIN' AND i.label = '0'
+ORDER BY i.instance_index
+"""
+_TEST_VALUE_BLOBS_SQL = """
+SELECT i.instance_index, i.values_blob
+FROM instances AS i
+JOIN datasets AS d ON d.id = i.dataset_id
+WHERE d.name = ? AND i.split = 'TEST'
+ORDER BY i.instance_index
+"""
 
 
 @dataclass(frozen=True)
@@ -81,6 +95,25 @@ def _identity(info: os.stat_result) -> tuple[int, int]:
 
 def _metadata(info: os.stat_result) -> tuple[int, int, int, int, int, int]:
     return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns, info.st_nlink
+
+
+def _load_value_blobs(
+    connection: sqlite3.Connection, dataset: str, query: str
+) -> tuple[tuple[int, bytes], ...]:
+    rows = connection.execute(query, (dataset,)).fetchall()
+    if (
+        not rows
+        or any(type(index) is not int or index < 0 for index, _ in rows)
+        or tuple(index for index, _ in rows) != tuple(sorted(index for index, _ in rows))
+    ):
+        raise ValueError("values-only row identities are invalid")
+    if len({index for index, _ in rows}) != len(rows):
+        raise ValueError("values-only row identities contain a duplicate")
+    if any(type(blob) is not bytes for _, blob in rows):
+        raise ValueError("values-only row blob is invalid")
+    if any(not blob or len(blob) % 4 for _, blob in rows):
+        raise ValueError("values-only row blob byte length is not a multiple of four")
+    return tuple(rows)
 
 
 def _accepted_path_info(parent_fd: int, name: str) -> os.stat_result:
@@ -173,7 +206,7 @@ class Exp425DatabaseSnapshot:
     __slots__ = (
         "_database", "_name", "_parent_fd", "_grandparent_fd", "_parent_name", "_database_fd", "_connection",
         "_before", "_operational", "_parent_identity", "_parent_metadata",
-        "_owned_directory", "_owned_name", "_owned_directory_identity", "_context", "_closed", "_audit",
+        "_owned_directory", "_owned_name", "_owned_directory_identity", "_context", "_normal_train_value_blobs", "_closed", "_audit",
     )
 
     def __init__(
@@ -208,6 +241,7 @@ class Exp425DatabaseSnapshot:
         self._owned_name = owned_name
         self._owned_directory_identity = owned_directory_identity
         self._context: FrozenRunContext | None = None
+        self._normal_train_value_blobs: dict[str, tuple[tuple[int, bytes], ...]] = {}
         self._closed = False
         self._audit = DatabaseSnapshotAudit(digest, before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns, operational.st_ctime_ns, operational.st_nlink, parent.st_dev, parent.st_ino, 1, ())
 
@@ -396,6 +430,64 @@ class Exp425DatabaseSnapshot:
             primary = error
         try:
             self.verify_boundary("load_test_after_train:after")
+        except BaseException as boundary_error:
+            if primary is not None:
+                raise primary from boundary_error
+            raise
+        if primary is not None:
+            raise primary
+        return result
+
+    def load_normal_train_value_blobs(
+        self, dataset: str, context: FrozenRunContext
+    ) -> tuple[tuple[int, bytes], ...]:
+        """Load exact normal-TRAIN values blobs as this snapshot's TEST authority."""
+        self.verify_boundary("load_normal_train_value_blobs:before")
+        primary: BaseException | None = None
+        try:
+            self._require_context(context, kind="TRAIN", dataset=dataset)
+            result = _load_value_blobs(
+                self._connection, dataset, _NORMAL_TRAIN_VALUE_BLOBS_SQL
+            )
+        except sqlite3.Error as error:
+            primary = ValueError("Exp436 normal TRAIN values-only query failed")
+            primary.__cause__ = error
+        except BaseException as error:
+            primary = error
+        try:
+            self.verify_boundary("load_normal_train_value_blobs:after")
+        except BaseException as boundary_error:
+            if primary is not None:
+                raise primary from boundary_error
+            raise
+        if primary is not None:
+            raise primary
+        self._normal_train_value_blobs[dataset] = result
+        return result
+
+    def load_test_value_blobs_after_train(
+        self,
+        dataset: str,
+        train: tuple[tuple[int, bytes], ...],
+        context: FrozenRunContext,
+    ) -> tuple[tuple[int, bytes], ...]:
+        """Load exact TEST values blobs only after this snapshot's normal TRAIN blobs."""
+        self.verify_boundary("load_test_value_blobs_after_train:before")
+        primary: BaseException | None = None
+        try:
+            self._require_context(context, kind="TEST", dataset=dataset)
+            if self._normal_train_value_blobs.get(dataset) is not train:
+                raise ValueError("TRAIN evidence is not this snapshot's normal values-only blobs")
+            result = _load_value_blobs(self._connection, dataset, _TEST_VALUE_BLOBS_SQL)
+            if tuple((index, len(blob) // 4) for index, blob in result) != context.test_identity_manifest[dataset]:
+                raise ValueError("TEST values-only blobs do not match the frozen identity manifest")
+        except sqlite3.Error as error:
+            primary = ValueError("Exp436 TEST values-only query failed")
+            primary.__cause__ = error
+        except BaseException as error:
+            primary = error
+        try:
+            self.verify_boundary("load_test_value_blobs_after_train:after")
         except BaseException as boundary_error:
             if primary is not None:
                 raise primary from boundary_error

@@ -16,13 +16,15 @@ import time
 import unittest
 from unittest.mock import patch
 
+import numpy as np
+
 from experiments.exp425_selective_recovery import database as snapshot_database
 from experiments.exp425_selective_recovery.database import open_database_snapshot
 from experiments.exp417_causal_multihorizon_shadow.config import Exp417FrozenConfig, FROZEN_CONFIG
 from experiments.exp417_causal_multihorizon_shadow.contracts import BackendAudit, FrozenLaneSnapshot, FrozenRunContext, FrozenTrainContract, GroupQualification
 
 
-class DatabaseSnapshotTests(unittest.TestCase):
+class Exp425DatabaseSnapshotTests(unittest.TestCase):
     def test_snapshot_module_exposes_context_manager(self) -> None:
         self.assertTrue(callable(open_database_snapshot))
 
@@ -288,6 +290,79 @@ class DatabaseSnapshotTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "TRAIN evidence"):
                 snapshot.load_test_values_after_train("A", object(), context)
             self.assertEqual(snapshot.audit.boundaries[-2:], ("load_test_after_train:before", "load_test_after_train:after"))
+
+    def test_raw_blob_loader_preserves_nonfinite_test_bytes(self) -> None:
+        raw = np.asarray([1.0, np.nan, np.inf], dtype="<f4").tobytes()
+        connection = sqlite3.connect(self.database)
+        try:
+            connection.execute(
+                "UPDATE instances SET values_blob = ? WHERE dataset_id = 1 AND split = 'TEST'",
+                (raw,),
+            )
+            connection.commit()
+        finally:
+            connection.close()
+        digest = sha256(self.database.read_bytes()).hexdigest()
+        config = replace(self._synthetic_config(), database_sha256=digest)
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(
+            snapshot_database, "FROZEN_CONFIG", config
+        ), open_database_snapshot(self.database, expected_sha256=digest) as snapshot:
+            context = snapshot.freeze_context(self._lanes(config), verified_code_commit="a" * 40)
+            train = snapshot.load_normal_train_value_blobs("A", context)
+            rows = snapshot.load_test_value_blobs_after_train("A", train, context)
+        self.assertEqual(rows, ((0, raw),))
+
+    def test_raw_blob_loader_rejects_malformed_normal_train_rows(self) -> None:
+        values = struct.pack("<2f", 1.0, 2.0)
+        cases = (
+            ("empty_blob", 0, b""),
+            ("integer_blob", 0, 4),
+            ("negative_index", -1, values),
+        )
+        for name, index, blob in cases:
+            with self.subTest(name=name):
+                malformed = self.root / f"antigravity_{name}.sqlite"
+                shutil.copyfile(self.database, malformed)
+                connection = sqlite3.connect(malformed)
+                try:
+                    connection.execute(
+                        "UPDATE instances SET instance_index = ?, values_blob = ? "
+                        "WHERE dataset_id = 1 AND split = 'TRAIN'",
+                        (index, blob),
+                    )
+                    connection.commit()
+                finally:
+                    connection.close()
+                digest = sha256(malformed.read_bytes()).hexdigest()
+                config = replace(self._synthetic_config(), database_sha256=digest)
+                with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(
+                    snapshot_database, "FROZEN_CONFIG", config
+                ), open_database_snapshot(malformed, expected_sha256=digest) as snapshot:
+                    context = snapshot.freeze_context(self._lanes(config), verified_code_commit="a" * 40)
+                    with self.assertRaisesRegex(ValueError, "values-only row"):
+                        snapshot.load_normal_train_value_blobs("A", context)
+
+    def test_test_blob_loader_requires_bound_train_and_never_selects_labels(self) -> None:
+        config = self._synthetic_config()
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(
+            snapshot_database, "FROZEN_CONFIG", config
+        ), open_database_snapshot(self.database, expected_sha256=self.digest) as snapshot:
+            context = snapshot.freeze_context(self._lanes(config), verified_code_commit="a" * 40)
+            train = snapshot.load_normal_train_value_blobs("A", context)
+            traced_statements: list[str] = []
+            snapshot._connection.set_trace_callback(traced_statements.append)
+            with self.assertRaisesRegex(ValueError, "TRAIN"):
+                snapshot.load_test_value_blobs_after_train("A", ((1, b"foreign"),), context)
+            rows = snapshot.load_test_value_blobs_after_train("A", train, context)
+            snapshot._connection.set_trace_callback(None)
+        self.assertEqual(rows, ((0, struct.pack("<2f", 1.0, 2.0)),))
+        test_sql = " ".join(
+            " ".join(statement.lower().split())
+            for statement in traced_statements
+            if "'test'" in statement.lower()
+        )
+        self.assertNotIn("labels_blob", test_sql)
+        self.assertNotRegex(test_sql, r"select .*\blabel\b")
 
     def test_context_rejects_nonfrozen_config_and_nonexact_population(self) -> None:
         config = self._synthetic_config()
