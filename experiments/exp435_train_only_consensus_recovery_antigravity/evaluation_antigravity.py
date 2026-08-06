@@ -16,7 +16,6 @@ import math
 import os
 from pathlib import Path
 import re
-import sqlite3
 import stat
 from hashlib import sha256
 from tempfile import mkdtemp
@@ -26,6 +25,9 @@ from typing import Any
 import numpy as np
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
+from experiments.exp417_causal_multihorizon_shadow.inputs import (
+    verified_read_only_connection,
+)
 
 from .checkpoint_antigravity import Exp435CheckpointStore
 from .config_antigravity import FROZEN_CONFIG, Exp435FrozenConfig
@@ -83,6 +85,11 @@ _HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 _LABEL_LOADER_DEFAULT = object()
 _EXP404_EXPECTED_COORDINATES = 2_218
 _EXP404_EXPECTED_DATASETS = 888
+_PINNED_READ_FLAGS = (
+    os.O_RDONLY
+    | getattr(os, "O_CLOEXEC", 0)
+    | getattr(os, "O_NOFOLLOW", 0)
+)
 
 
 def _digest(raw: bytes) -> str:
@@ -98,14 +105,48 @@ def _jsonl(rows: Iterable[Mapping[str, object]]) -> bytes:
 
 
 def _sha256_file(path: Path) -> str:
+    """Compatibility wrapper for callers that need only a pinned digest."""
+
+    return _read_pinned_bytes(Path(path))[1]
+
+
+def _stable_inode_metadata(metadata: os.stat_result) -> tuple[int, ...]:
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mode,
+        metadata.st_nlink,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
+def _read_pinned_bytes(path: Path) -> tuple[bytes, str]:
+    """Capture bytes and SHA256 from one stable, non-symlink regular inode."""
+
     path = Path(path)
-    if path.is_symlink() or not path.is_file():
-        raise ValueError(f"database file is absent or invalid: {path}")
-    digest = sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    try:
+        descriptor = os.open(path, _PINNED_READ_FLAGS)
+    except OSError as error:
+        raise ValueError(f"frozen artifact is absent or invalid: {path}") from error
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink < 1:
+            raise ValueError(f"frozen artifact is not a linked regular file: {path}")
+        digest = sha256()
+        chunks: list[bytes] = []
+        while block := os.read(descriptor, 1024 * 1024):
+            chunks.append(block)
+            digest.update(block)
+        after = os.fstat(descriptor)
+        if _stable_inode_metadata(before) != _stable_inode_metadata(after):
+            raise ValueError(f"frozen artifact inode changed while reading: {path}")
+        return b"".join(chunks), digest.hexdigest()
+    except OSError as error:
+        raise ValueError(f"frozen artifact cannot be read: {path}") from error
+    finally:
+        os.close(descriptor)
 
 
 def _require_digest(value: object, label: str) -> str:
@@ -616,11 +657,17 @@ def decide_exp435_success(
 
 
 def _parse_hard_file(path: Path) -> dict[str, tuple[int, ...]]:
-    path = Path(path)
-    if path.is_symlink() or not path.is_file():
-        raise ValueError("Exp291 Hard file is absent or invalid")
+    """Compatibility wrapper that parses bytes captured from one descriptor."""
+
+    payload, _ = _read_pinned_bytes(Path(path))
+    return _parse_hard_payload(payload)
+
+
+def _parse_hard_payload(payload: bytes) -> dict[str, tuple[int, ...]]:
+    """Parse already-pinned Exp291 rows without reopening their pathname."""
+
     rows: dict[str, tuple[int, ...]] = {}
-    for raw in path.read_bytes().splitlines():
+    for raw in payload.splitlines():
         if not raw:
             continue
         try:
@@ -647,14 +694,18 @@ def _parse_hard_file(path: Path) -> dict[str, tuple[int, ...]]:
 
 
 def _parse_exp404_hard_file(path: Path) -> dict[str, tuple[int, ...]]:
-    """Parse the frozen Exp404 candidate-index rows without TEST labels."""
+    """Compatibility wrapper that parses bytes captured from one descriptor."""
 
-    path = Path(path)
-    if path.is_symlink() or not path.is_file():
-        raise ValueError("Exp404 Hard prediction file is absent or invalid")
+    payload, _ = _read_pinned_bytes(Path(path))
+    return _parse_exp404_hard_payload(payload)
+
+
+def _parse_exp404_hard_payload(payload: bytes) -> dict[str, tuple[int, ...]]:
+    """Parse already-pinned Exp404 candidate-index rows without TEST labels."""
+
     rows: dict[str, list[int]] = {}
     coordinates: set[tuple[str, int]] = set()
-    for raw in path.read_bytes().splitlines():
+    for raw in payload.splitlines():
         if not raw:
             continue
         try:
@@ -688,14 +739,14 @@ def _load_frozen_hard_coordinates(
     """Verify Exp404 and Exp291 identities and return their exact shared map."""
 
     config.validate()
-    exp404_sha = _sha256_file(EXP404_HARD_PATH)
+    exp404_payload, exp404_sha = _read_pinned_bytes(EXP404_HARD_PATH)
     if exp404_sha != config.hard_prediction_sha256:
         raise ValueError("Exp404 Hard prediction SHA256 does not match frozen input")
-    exp291_sha = _sha256_file(EXP291_HARD_PATH)
+    exp291_payload, exp291_sha = _read_pinned_bytes(EXP291_HARD_PATH)
     if exp291_sha != config.exp291_prediction_sha256:
         raise ValueError("Exp291 Hard prediction SHA256 does not match frozen input")
-    exp404 = _parse_exp404_hard_file(EXP404_HARD_PATH)
-    exp291 = _parse_hard_file(EXP291_HARD_PATH)
+    exp404 = _parse_exp404_hard_payload(exp404_payload)
+    exp291 = _parse_hard_payload(exp291_payload)
     if len(exp291) != config.expected_datasets:
         raise ValueError("Exp291 Hard population is invalid")
     if set(exp404) - set(exp291):
@@ -875,20 +926,7 @@ def _label_payload(value: object, *, dataset: str) -> tuple[tuple[int, ...], tup
     return index_tuple, labels_tuple, digest
 
 
-def _readonly_database_uri(path: Path) -> str:
-    path = Path(path)
-    if path.is_symlink() or not path.is_file():
-        raise ValueError(f"TEST label database is absent or invalid: {path}")
-    return f"{path.resolve().as_uri()}?mode=ro"
-
-
-def _open_test_label_connection(database_path: Path) -> sqlite3.Connection:
-    """Open exactly one read-only SQLite connection after the hash gate."""
-
-    return sqlite3.connect(_readonly_database_uri(Path(database_path)), uri=True)
-
-
-def _load_test_labels_from_connection(connection: sqlite3.Connection, dataset: str) -> Mapping[str, object]:
+def _load_test_labels_from_connection(connection: object, dataset: str) -> Mapping[str, object]:
     rows = connection.execute(
         """
         SELECT i.instance_index, i.label
@@ -914,14 +952,19 @@ def _load_test_labels_from_connection(connection: sqlite3.Connection, dataset: s
     return {"instance_indices": [int(row[0]) for row in rows], "labels": labels}
 
 
-def _load_test_labels(dataset: str, *, database_path: Path = DATABASE_PATH) -> Mapping[str, object]:
-    """Private post-freeze convenience loader; prediction modules cannot import it."""
+def _load_test_labels(
+    dataset: str,
+    *,
+    database_path: Path = DATABASE_PATH,
+    expected_sha256: str | None = None,
+) -> Mapping[str, object]:
+    """Load one dataset through Exp417's descriptor-bound verified session."""
 
-    connection = _open_test_label_connection(Path(database_path))
-    try:
+    expected = _sha256_file(database_path) if expected_sha256 is None else _require_digest(
+        expected_sha256, "TEST label database SHA256"
+    )
+    with verified_read_only_connection(Path(database_path), expected) as connection:
         return _load_test_labels_from_connection(connection, dataset)
-    finally:
-        connection.close()
 
 
 def _load_labels(
@@ -978,13 +1021,6 @@ def _resolve_store(publication: FrozenPublication | Path | str, checkpoint: obje
         root = Path(publication)
         output = root.parent if root.name == PUBLICATION_DIRECTORY else root
     return output, store
-
-
-def _validate_database_pin(database_path: Path, config: Exp435FrozenConfig) -> str:
-    actual = _sha256_file(database_path)
-    if actual != config.database_sha256:
-        raise ValueError("TEST label database SHA256 does not match frozen input")
-    return actual
 
 
 def _label_identity_hash(identities: Mapping[str, str]) -> str:
@@ -1182,23 +1218,21 @@ def evaluate_frozen_prediction(
     loader = label_loader
     private_loader = loader is None
     if loader is None:
-        # Pin the DB before the first SQL call.  The hash gate above has already
-        # verified publication and input identities.
-        database_sha = _validate_database_pin(Path(database_path), config)
+        # Exp417 verifies the frozen digest from the same descriptor used for
+        # the read-only SQLite session.  All artifact gates above have already
+        # completed, so TEST labels remain unreachable on any earlier failure.
+        database_sha = config.database_sha256
     else:
         database_sha = str(manifest.get("database_sha256", ""))
         if database_sha and _HEX64.fullmatch(database_sha) is None:
             raise ValueError("publication database SHA256 is invalid")
     if private_loader:
-        connection = _open_test_label_connection(Path(database_path))
-        try:
+        with verified_read_only_connection(Path(database_path), database_sha) as connection:
             labels_by_dataset, identities = _load_labels(
                 lambda dataset: _load_test_labels_from_connection(connection, dataset),
                 datasets,
                 summary_by_dataset,
             )
-        finally:
-            connection.close()
     else:
         labels_by_dataset, identities = _load_labels(loader, datasets, summary_by_dataset)  # type: ignore[arg-type]
     if not private_loader and database_sha and database_sha != config.database_sha256 and expected_total == config.expected_datasets:

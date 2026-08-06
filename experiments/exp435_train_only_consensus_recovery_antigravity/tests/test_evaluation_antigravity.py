@@ -9,7 +9,7 @@ import io
 import json
 import os
 import sqlite3
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from hashlib import sha256
 from unittest.mock import patch
 
@@ -428,7 +428,58 @@ class Exp435EvaluationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Exp291 Hard prediction SHA256"):
                     evaluation_module._load_frozen_hard_coordinates()
 
-    def test_sqlite_label_loader_is_read_only_and_selects_only_labels(self) -> None:
+    def test_pinned_artifact_reader_keeps_opened_bytes_after_pathname_aba_replacement(self) -> None:
+        """Replacing the name after ``open`` cannot change the captured bytes."""
+
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "exp291.jsonl"
+            original = b'{"dataset":"Original","automatic_hard_indices":[],"contains_test_labels":false}\n'
+            replacement = b'{"dataset":"Replacement","automatic_hard_indices":[9],"contains_test_labels":false}\n'
+            path.write_bytes(original)
+            replacement_path = Path(directory) / "replacement.jsonl"
+            replacement_path.write_bytes(replacement)
+            real_open = evaluation_module.os.open
+
+            def replace_after_open(target: os.PathLike[str] | str, flags: int, *args: object) -> int:
+                descriptor = real_open(target, flags, *args)
+                if Path(target) == path:
+                    os.replace(replacement_path, path)
+                return descriptor
+
+            with patch.object(evaluation_module.os, "open", replace_after_open):
+                try:
+                    payload, digest = evaluation_module._read_pinned_bytes(path)
+                except ValueError as error:
+                    # Losing the only directory entry changes st_nlink and is
+                    # deliberately rejected rather than silently reopening.
+                    self.assertIn("linked regular file", str(error))
+                else:
+                    self.assertEqual(payload, original)
+                    self.assertEqual(digest, sha256(original).hexdigest())
+            self.assertEqual(path.read_bytes(), replacement)
+
+    def test_hard_parser_consumes_captured_bytes_instead_of_reopening_pathname(self) -> None:
+        """The Exp291 parser must receive the pinned payload, not read its path again."""
+
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "exp291.jsonl"
+            original = b'{"dataset":"Original","automatic_hard_indices":[],"contains_test_labels":false}\n'
+            replacement = b'{"dataset":"Replacement","automatic_hard_indices":[9],"contains_test_labels":false}\n'
+            path.write_bytes(original)
+
+            def captured_reader(target: Path) -> tuple[bytes, str]:
+                self.assertEqual(Path(target), path)
+                path.write_bytes(replacement)
+                return original, sha256(original).hexdigest()
+
+            with patch.object(evaluation_module, "_read_pinned_bytes", captured_reader):
+                self.assertEqual(
+                    evaluation_module._parse_hard_file(path),
+                    {"Original": ()},
+                )
+            self.assertEqual(path.read_bytes(), replacement)
+
+    def test_sqlite_label_loader_uses_verified_session_and_selects_only_labels(self) -> None:
         with TemporaryDirectory() as directory:
             database = Path(directory) / "labels.db"
             connection = sqlite3.connect(database)
@@ -444,21 +495,28 @@ class Exp435EvaluationTests(unittest.TestCase):
             )
             connection.commit()
             connection.close()
-            calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+            calls: list[tuple[Path, str]] = []
             traces: list[str] = []
             original_connect = sqlite3.connect
 
-            def traced_connect(*args: object, **kwargs: object):
-                calls.append((args, kwargs))
-                opened = original_connect(*args, **kwargs)
+            @contextmanager
+            def verified_session(path: Path, expected_sha256: str):
+                calls.append((Path(path), expected_sha256))
+                opened = original_connect(path)
                 opened.set_trace_callback(traces.append)
-                return opened
+                try:
+                    yield opened
+                finally:
+                    opened.close()
 
-            with patch.object(evaluation_module.sqlite3, "connect", traced_connect):
-                result = evaluation_module._load_test_labels("Demo", database_path=database)
+            with patch.object(evaluation_module, "verified_read_only_connection", verified_session):
+                result = evaluation_module._load_test_labels(
+                    "Demo",
+                    database_path=database,
+                    expected_sha256="d" * 64,
+                )
             self.assertEqual(len(calls), 1)
-            self.assertTrue(calls[0][1].get("uri"))
-            self.assertIn("mode=ro", str(calls[0][0][0]))
+            self.assertEqual(calls, [(database, "d" * 64)])
             self.assertEqual(result["labels"], [1, 0])
             sql = " ".join(traces).lower()
             self.assertIn("select i.instance_index", sql)
@@ -466,7 +524,7 @@ class Exp435EvaluationTests(unittest.TestCase):
             self.assertNotIn("values_blob", sql)
             self.assertNotIn("labels_blob", sql)
 
-    def test_private_evaluation_uses_one_database_session_after_hash_gate(self) -> None:
+    def test_private_evaluation_uses_one_pinned_database_session_after_all_artifact_gates(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory)
             database = root / "labels.db"
@@ -486,14 +544,31 @@ class Exp435EvaluationTests(unittest.TestCase):
             connection.commit()
             connection.close()
             output, _checkpoint, store, publication = self._fixture_publication(root)
-            calls: list[Path] = []
-            original_open = evaluation_module._open_test_label_connection
+            calls: list[tuple[Path, str]] = []
+            closed: list[bool] = []
+            original_connect = sqlite3.connect
 
-            def traced_open(path: Path):
-                calls.append(Path(path))
-                return original_open(path)
+            class ClosingConnection:
+                def __init__(self, connection: sqlite3.Connection) -> None:
+                    self.connection = connection
 
-            with patch.object(evaluation_module, "_validate_database_pin", return_value="d" * 64), patch.object(evaluation_module, "_open_test_label_connection", traced_open):
+                def execute(self, *args: object, **kwargs: object):
+                    return self.connection.execute(*args, **kwargs)
+
+                def close(self) -> None:
+                    self.connection.close()
+                    closed.append(True)
+
+            @contextmanager
+            def verified_session(path: Path, expected_sha256: str):
+                calls.append((Path(path), expected_sha256))
+                wrapped = ClosingConnection(original_connect(path))
+                try:
+                    yield wrapped
+                finally:
+                    wrapped.close()
+
+            with patch.object(evaluation_module, "verified_read_only_connection", verified_session), patch.object(sqlite3, "connect", side_effect=AssertionError("evaluator reopened SQLite by pathname")):
                 evaluation_module.evaluate_frozen_prediction(
                     publication,
                     hard_coordinates={"Demo": ()},
@@ -501,7 +576,8 @@ class Exp435EvaluationTests(unittest.TestCase):
                     expected_datasets=("Demo",),
                     database_path=database,
                 )
-            self.assertEqual(calls, [database])
+            self.assertEqual(calls, [(database, evaluation_module.FROZEN_CONFIG.database_sha256)])
+            self.assertEqual(closed, [True])
 
 
 if __name__ == "__main__":  # pragma: no cover
