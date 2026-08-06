@@ -227,7 +227,7 @@ class PreparedTrainGroup:
 
     def __post_init__(self) -> None:
         _name(self.dataset, "dataset")
-        _integer(self.length, "length", minimum=FROZEN_CONFIG.min_scored_length)
+        _integer(self.length, "length", minimum=1)
         indices = _indices(self.instance_indices)
         if len(indices) < FROZEN_CONFIG.min_finite_train_rows:
             raise ValueError("PreparedTrainGroup requires at least min_finite_train_rows references")
@@ -437,7 +437,7 @@ class CalibratedTrainGroup:
     dataset: str
     length: int
     instance_indices: tuple[int, ...]
-    values: np.ndarray
+    values: np.ndarray | None
     gradients: np.ndarray | None
     acf_values: np.ndarray | None
     prototype: ChannelCalibration
@@ -446,31 +446,40 @@ class CalibratedTrainGroup:
 
     def __post_init__(self) -> None:
         _name(self.dataset, "dataset")
-        _integer(self.length, "length", minimum=FROZEN_CONFIG.min_scored_length)
+        _integer(self.length, "length", minimum=1)
         indices = _indices(self.instance_indices)
         rows = len(indices)
+        if rows < FROZEN_CONFIG.min_finite_train_rows:
+            raise ValueError("CalibratedTrainGroup has insufficient references")
         object.__setattr__(self, "instance_indices", indices)
-        object.__setattr__(self, "values", _immutable_matrix(self.values, "values", rows=rows, columns=self.length))
         for expected, calibration in (("prototype", self.prototype), ("gradient", self.gradient), ("acf", self.acf)):
             if not isinstance(calibration, ChannelCalibration) or calibration.channel != expected:
                 raise ValueError("calibration channels do not match group")
             if calibration.available and calibration.reference_count != rows:
                 raise ValueError("calibration reference_count must match group rows")
-        if not self.prototype.available:
-            raise ValueError("prototype calibration must be available")
+        object.__setattr__(self, "values", _immutable_optional_matrix(self.values, "values", rows=rows, columns=self.length))
+        if (self.values is None) != (not self.prototype.available):
+            raise ValueError("prototype availability must match values matrix")
+        if not self.prototype.available and self.prototype.reason != "zero_scale":
+            raise ValueError("prototype unavailability requires zero_scale")
         object.__setattr__(self, "gradients", _immutable_optional_matrix(self.gradients, "gradients", rows=rows, columns=self.length))
         if (self.gradients is None) != (not self.gradient.available):
             raise ValueError("gradient availability must match gradient matrix")
+        if not self.gradient.available and self.gradient.reason != "zero_scale":
+            raise ValueError("gradient unavailability requires zero_scale")
         acf_columns = min(FROZEN_CONFIG.max_acf_lag, self.length // 4)
         if self.length < FROZEN_CONFIG.min_acf_length and (self.acf_values is not None or self.acf.available):
             raise ValueError("ACF must be unavailable below min_acf_length")
         object.__setattr__(self, "acf_values", _immutable_optional_matrix(self.acf_values, "acf_values", rows=rows, columns=acf_columns))
         if (self.acf_values is None) != (not self.acf.available):
             raise ValueError("acf availability must match acf matrix")
+        expected_acf_reason = "short_series" if self.length < FROZEN_CONFIG.min_acf_length else "zero_acf_energy"
+        if not self.acf.available and self.acf.reason != expected_acf_reason:
+            raise ValueError(f"acf unavailability requires {expected_acf_reason}")
 
     def to_payload(self) -> dict[str, object]:
         return {"schema": "exp436.calibrated-train-group.v1", "dataset": self.dataset, "length": self.length,
-                "instance_indices": list(self.instance_indices), "values": _matrix_metadata(self.values),
+                "instance_indices": list(self.instance_indices), "values": None if self.values is None else _matrix_metadata(self.values),
                 "gradients": None if self.gradients is None else _matrix_metadata(self.gradients),
                 "acf_values": None if self.acf_values is None else _matrix_metadata(self.acf_values),
                 "prototype": self.prototype.to_payload(), "gradient": self.gradient.to_payload(), "acf": self.acf.to_payload()}

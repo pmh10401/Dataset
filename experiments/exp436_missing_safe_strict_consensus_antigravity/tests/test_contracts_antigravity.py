@@ -82,6 +82,47 @@ class Exp436ContractsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             group.values.setflags(write=True)
 
+    def test_calibrated_group_retains_sibling_channel_evidence_when_prototype_is_zero_scale(self) -> None:
+        values = np.ones((4, 16), dtype=np.float32)
+        calibrated = CalibratedTrainGroup(
+            "Demo", 16, (1, 2, 3, 4), None, values, np.ones((4, 4), dtype=np.float32),
+            ChannelCalibration.unavailable("prototype", "zero_scale"),
+            ChannelCalibration.fixture("gradient"), ChannelCalibration.fixture("acf"),
+        )
+        self.assertIsNone(calibrated.values)
+        self.assertIsNone(calibrated.to_payload()["values"])
+        self.assertFalse(calibrated.values is not None)
+
+    def test_calibrated_group_rejects_fewer_than_four_direct_references(self) -> None:
+        with self.assertRaisesRegex(ValueError, "insufficient references"):
+            CalibratedTrainGroup(
+                "Demo", 16, (1, 2, 3), None, None, None,
+                ChannelCalibration.unavailable("prototype", "zero_scale"),
+                ChannelCalibration.unavailable("gradient", "zero_scale"),
+                ChannelCalibration.unavailable("acf", "short_series"),
+            )
+
+    def test_calibrated_group_rejects_contextually_impossible_unavailable_reasons(self) -> None:
+        prototype = ChannelCalibration.unavailable("prototype", "zero_scale")
+        valid_gradient = ChannelCalibration.unavailable("gradient", "zero_scale")
+        valid_acf = ChannelCalibration.unavailable("acf", "zero_acf_energy")
+        for calibration, length, message in (
+            (ChannelCalibration.unavailable("prototype", "invented"), 16, "prototype"),
+            (ChannelCalibration.unavailable("gradient", "nonfinite_train"), 16, "gradient"),
+            (ChannelCalibration.unavailable("gradient", "invented"), 16, "gradient"),
+            (ChannelCalibration.unavailable("acf", "short_series"), 16, "acf"),
+            (ChannelCalibration.unavailable("acf", "zero_acf_energy"), 15, "acf"),
+            (ChannelCalibration.unavailable("acf", "invented"), 16, "acf"),
+        ):
+            with self.subTest(calibration=calibration.channel, reason=calibration.reason, length=length):
+                with self.assertRaisesRegex(ValueError, message):
+                    CalibratedTrainGroup(
+                        "Demo", length, (1, 2, 3, 4), None, None, None,
+                        calibration if calibration.channel == "prototype" else prototype,
+                        calibration if calibration.channel == "gradient" else valid_gradient,
+                        calibration if calibration.channel == "acf" else valid_acf,
+                    )
+
     @staticmethod
     def _batch(batch_size: int, cpu: float = 2.0, device: float = 1.0) -> BackendBatchEvidence:
         pairs = tuple((cpu, device) for _ in range(5))

@@ -372,6 +372,22 @@ For every original length, emit either a finite `PreparedTrainGroup` or `Unavail
 
 For an all-finite fixed fixture, compare every Exp436 center, scale, LOO score, threshold, and reference digest with Exp435 to `0.0` exact difference where serialization is shared and `<=1e-7` for scalar float conversion.
 
+**Task 4 architecture ruling (2026-08-06):** zero scale is channel-local.  A
+`CalibratedTrainGroup` therefore permits `values=None` exactly when the
+prototype calibration is structurally unavailable for `zero_scale`; finite
+gradient and ACF matrices/calibrations remain publishable when constructible.
+The same independent rule applies to gradient and ACF availability.  In
+contrast, a nonfinite result created after finite-row filtering (center,
+scale, standardization, ACF arithmetic/vector, distance, LOO score, or
+threshold) crosses the whole-prediction numerical-failure boundary and raises
+a stable `ValueError`; it must never be rewritten as channel unavailability.
+Prepared and calibrated TRAIN groups retain raw lengths of one or greater so
+the preparation partition covers every source length; the frozen scored TEST
+minimum remains two and is enforced later.  Direct calibrated-group validation
+allows only `prototype=zero_scale`, `gradient=zero_scale`, and
+`acf=short_series` below the ACF minimum or `acf=zero_acf_energy` at/above it.
+No other unavailable reason can encode a numerical failure.
+
 ```bash
 python3 -m unittest experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_features_antigravity -v
 ```

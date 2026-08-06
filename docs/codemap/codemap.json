@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T00:00:00Z",
-  "generated_from_commit": "f98718527de7cacd3547c4b43987f3b004546bb9",
+  "generated_at": "2026-08-06T10:27:34Z",
+  "generated_from_commit": "cd0608463a39d4f3898ffc308e6ecfacaa227a1c",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -11,7 +11,7 @@
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
     "Research control files, Exp435 preserved failure evidence, Exp436 corrected readiness-owned lifecycle, strict scoring/benchmark/publication contract, and product-implementation-pending state",
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
-    "Exp436 frozen missing-safe contracts: values-only raw identities, immutable TRAIN matrices, strict three-channel AND, exact TEST evidence coverage, and dual-backend timing/selection evidence"
+    "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and future strict consensus scoring"
   ],
   "nodes": [
     {
@@ -1685,18 +1685,22 @@
     },
     {
       "id": "exp436_contract_boundary",
-      "label": "Exp436 missing-safe contracts + input boundary",
+      "label": "Exp436 missing-safe input + TRAIN features",
       "type": "data",
       "boundary": "Exp436 missing-safe strict consensus",
       "layer": 3,
       "path": "experiments/exp436_missing_safe_strict_consensus_antigravity",
-      "role": "Freezes missing-safe values-only contracts and owns the single label-free prediction input session: frozen lanes precede one descriptor snapshot, exact raw TRAIN BLOBs privately authorize TEST values, TEST identity coverage is checked again after decoding, and the private authority cache is disposed on every context-manager exit.",
+      "role": "Freezes missing-safe values-only contracts, owns the single label-free prediction input session, and prepares exact-length finite TRAIN groups with immutable audit evidence and independent prototype/gradient/ACF float32 calibrations.",
       "entrypoints": [
         "Exp436FrozenConfig",
         "FROZEN_CONFIG",
         "RawValueSeries",
         "MissingSafeRawDataset",
+        "ExcludedTrainRowAudit",
+        "PreparedTrainGroup",
+        "UnavailableTrainGroup",
         "TrainPreparation",
+        "CalibratedTrainGroup",
         "InstanceScoreEvidence",
         "Exp436DatasetResult",
         "BackendBatchEvidence",
@@ -1705,20 +1709,26 @@
         "Exp436RunSummary",
         "Exp436InputSession",
         "decode_raw_value_row_antigravity",
-        "open_exp436_input_session"
+        "open_exp436_input_session",
+        "prepare_train_groups",
+        "fit_calibrated_group",
+        "acf_vector",
+        "score_channel_cpu"
       ],
       "tests": [
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_config_antigravity.py",
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
-        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_inputs_antigravity.py"
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_inputs_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_features_antigravity.py"
       ],
       "constraints": [
         "No TEST labels, anomaly positions, metrics, imputation, padding, truncation, copied values, or tail replacement",
+        "Only whole nonfinite float32 TRAIN rows are excluded; all raw lengths >=1 remain partitioned, source preparation/direct calibrated groups require at least four finite references, and audit plus surviving groups exactly partition the sorted source identity-length manifest",
+        "Prototype and gradient may be unavailable only for zero_scale; ACF may be unavailable only for short_series below length 16 or zero_acf_energy otherwise, while any later nonfinite numerical result raises a whole-prediction ValueError",
         "Raw values may be nonfinite; every published calibration, score, threshold and timing scalar is finite",
         "Candidates require prototype AND gradient AND ACF and exact TEST identity evidence coverage; nonfinite_test is scalar-free abstained evidence",
-        "TRAIN source identity-length manifest is exactly partitioned by surviving groups and excluded-row audits; matrices are finite float32 C-order arrays owned by immutable bytes",
         "Backend protocol is paired-synchronized-v1; a selected accelerator requires Metal availability and all accepted raw/derived timing fields are canonical native Python JSON values recomputed from the five pairs",
-        "Exp436 inputs have no source-evidenced callers yet; they import local config/contracts plus Exp417 lane/context authority and Exp425's descriptor snapshot, while the retained raw TRAIN tuple is private TEST authorization and is discarded when the session closes"
+        "Exp436 features are source-backed but have no runtime caller yet; feature preparation imports only local frozen config/contracts and contains no TEST or label route"
       ],
       "evidence": [
         {
@@ -1780,6 +1790,54 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_inputs_antigravity.py",
           "symbol": "class Exp436InputTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class CalibratedTrainGroup"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "from .config_antigravity import FROZEN_CONFIG"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "from .contracts_antigravity import ("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "def prepare_train_groups("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "def fit_calibrated_group("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "def acf_vector("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "def score_channel_cpu("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_features_antigravity.py",
+          "symbol": "class Exp436FeatureTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_features_antigravity.py",
+          "symbol": "def test_all_finite_fixture_matches_exp435_shared_calibrations_exactly("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_calibrated_group_rejects_fewer_than_four_direct_references("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_calibrated_group_rejects_contextually_impossible_unavailable_reasons("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_features_antigravity.py",
+          "symbol": "def test_four_finite_length_one_rows_remain_preparable_and_calibratable("
         }
       ]
     }
