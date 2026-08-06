@@ -6,12 +6,12 @@
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
   "last_verified_commit": "bc3a696602bd3e8688ada46d9e31e3221f439a96",
   "active_experiment": "Exp436",
-  "active_phase": "design_approved_spec_review",
+  "active_phase": "implementation_plan_ready",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
     "design": "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
-    "plan": null,
+    "plan": "docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md",
     "preregistration": null,
     "runbook": null
   },
@@ -131,8 +131,8 @@
       "root": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806"
     }
   },
-  "next_action": "Review the committed Exp436 design, then write a TDD implementation plan and preregistration. Exp435 remains failed and preserved; Exp436 prediction has not started and TEST labels remain unopened.",
-  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && python3 -m json.tool RESEARCH_STATE.json && python3 -m json.tool FAILURE_LEDGER.json",
+  "next_action": "Execute the approved Exp436 TDD implementation plan beginning with preregistration and the add-only values-only raw-blob boundary. Exp435 remains failed and preserved; Exp436 prediction has not started and TEST labels remain unopened.",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && sed -n '1,220p' docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md && python3 -m json.tool RESEARCH_STATE.json",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": false,
