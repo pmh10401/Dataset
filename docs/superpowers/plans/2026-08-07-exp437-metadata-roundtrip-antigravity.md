@@ -47,6 +47,7 @@
 **Files:**
 - Create: `experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py`
 - Create: `experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_execution_profile_antigravity.py`
+- Regenerate together: `docs/codemap/codemap.html`, `docs/codemap/codemap.json`, `docs/codemap/codemap.lock`
 
 **Interfaces:**
 - Consumes: `Exp436FrozenConfig` and `FROZEN_CONFIG` from `config_antigravity.py`.
@@ -213,11 +214,16 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
 
 Expected: all tests PASS; the Exp436 profile produces the same `asdict(FROZEN_CONFIG)` bytes as before.
 
-- [ ] **Step 5: Commit the profile boundary**
+- [ ] **Step 5: Synchronize the code map with the new profile module**
+
+Group `execution_profile_antigravity.py` and its focused test under the existing `exp436_contract_boundary` node. Add the exact source path and these symbols to node evidence: `ExecutionProfileAntigravity`, `EXP436_PROFILE`, and `EXP437_PROFILE`. Do not add a twenty-first primary node or invent callers before Task 5 wires the profile into the CLI. Regenerate HTML's embedded payload and lock fingerprints from the same JSON state, then run `python3 -m json.tool` on both JSON files and `git diff --check`.
+
+- [ ] **Step 6: Commit the profile boundary and synchronized map**
 
 ```bash
 git add experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py \
-  experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_execution_profile_antigravity.py
+  experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_execution_profile_antigravity.py \
+  docs/codemap/codemap.html docs/codemap/codemap.json docs/codemap/codemap.lock
 git commit -m "refactor(exp437): add frozen execution profiles"
 ```
 
@@ -348,6 +354,7 @@ git commit -m "fix(exp437): accept canonical metadata key order"
 - Modify: `experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py:45-126,180-569`
 - Modify: `experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_checkpoint_antigravity.py`
 - Modify: `experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_runtime_antigravity.py`
+- Regenerate together: `docs/codemap/codemap.html`, `docs/codemap/codemap.json`, `docs/codemap/codemap.lock`
 
 **Interfaces:**
 - Consumes: `ExecutionProfileAntigravity`, defaulting to `EXP436_PROFILE` on existing public calls.
@@ -494,13 +501,18 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
 
 Expected: all tests PASS; Exp436 default behavior is unchanged, Exp437 context identity is accepted only with `EXP437_PROFILE`, and no scoring signature changed.
 
-- [ ] **Step 6: Commit the profile-bound engine core**
+- [ ] **Step 6: Synchronize the code map with the profile-aware runtime API**
+
+Update the existing `exp436_contract_boundary` node's role, entrypoints, tests, constraints, and source evidence for the profile-aware context/store/runtime signatures. Update only edges whose exact calls or imports appear in the changed source. Regenerate all three map files together and validate JSON, paths, symbols, edge endpoints/types, HTML payload identity, and lock fingerprints.
+
+- [ ] **Step 7: Commit the profile-bound engine core and synchronized map**
 
 ```bash
 git add experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py \
   experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py \
   experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_checkpoint_antigravity.py \
-  experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_runtime_antigravity.py
+  experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_runtime_antigravity.py \
+  docs/codemap/codemap.html docs/codemap/codemap.json docs/codemap/codemap.lock
 git commit -m "refactor(exp437): bind runtime to execution profile"
 ```
 
@@ -513,6 +525,7 @@ git commit -m "refactor(exp437): bind runtime to execution profile"
 - Modify: `experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py:40-66,730-820,1150-1180,1510-1575`
 - Modify: `experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py`
 - Modify: `experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py`
+- Regenerate together: `docs/codemap/codemap.html`, `docs/codemap/codemap.json`, `docs/codemap/codemap.lock`
 
 **Interfaces:**
 - Consumes: a checkpoint store already bound to the selected execution profile.
@@ -612,13 +625,18 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
 
 Expected: all tests PASS; Exp437 manifests carry only Exp437 execution identity, Exp436 defaults replay unchanged, and mismatched profile/path calls never open labels.
 
-- [ ] **Step 6: Commit profile-aware publication and evaluation**
+- [ ] **Step 6: Synchronize the code map with publication/evaluation profile flow**
+
+Update the existing Exp436 boundary node and post-freeze flow with the exact profile-aware reporting/evaluation symbols and calls. Preserve the TEST-label boundary and do not add a relationship without source evidence. Regenerate all three map files together and validate JSON, source symbols, flow nodes, HTML payload identity, and lock fingerprints.
+
+- [ ] **Step 7: Commit profile-aware publication/evaluation and synchronized map**
 
 ```bash
 git add experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py \
   experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py \
   experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py \
-  experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py
+  experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py \
+  docs/codemap/codemap.html docs/codemap/codemap.json docs/codemap/codemap.lock
 git commit -m "refactor(exp437): bind publication and evaluation profile"
 ```
 
@@ -630,6 +648,7 @@ git commit -m "refactor(exp437): bind publication and evaluation profile"
 - Modify: `experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py:31-418`
 - Modify: `experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py`
 - Create: `scratch/run_exp437_metadata_roundtrip_antigravity.py`
+- Regenerate together: `docs/codemap/codemap.html`, `docs/codemap/codemap.json`, `docs/codemap/codemap.lock`
 
 **Interfaces:**
 - Consumes: `EXP436_PROFILE`, `EXP437_PROFILE`, and all profile-aware shared-engine entrypoints.
@@ -746,12 +765,17 @@ PY
 
 Expected: tests PASS; help shows only five commands; importing the Exp437 prediction boundary does not import evaluation; the printed path is the fixed Exp437 parent.
 
-- [ ] **Step 6: Commit the Exp437 command boundary**
+- [ ] **Step 6: Synchronize the code map with the fixed Exp437 CLI flow**
+
+Add the fixed wrapper path and `main_for_profile_antigravity` source evidence to the existing Exp436 boundary node. Add or update one Exp437 readiness/new/evaluate flow only where every step references an existing node and every edge has an exact source symbol. Keep the map at 20 primary nodes or fewer, regenerate all three files together, and validate JSON, HTML payload identity, evidence, endpoints, edge types, flows, and fingerprints.
+
+- [ ] **Step 7: Commit the Exp437 command boundary and synchronized map**
 
 ```bash
 git add experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py \
   experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py \
-  scratch/run_exp437_metadata_roundtrip_antigravity.py
+  scratch/run_exp437_metadata_roundtrip_antigravity.py \
+  docs/codemap/codemap.html docs/codemap/codemap.json docs/codemap/codemap.lock
 git commit -m "feat(exp437): add fixed profile command wrapper"
 ```
 
