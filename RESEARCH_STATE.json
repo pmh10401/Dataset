@@ -1,10 +1,10 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T14:40:29+09:00",
+  "updated_at": "2026-08-06T14:43:23+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "640fa5b290792e23d0cb3045faf5efdbbc97fc42",
+  "last_verified_commit": "2f21989bc5441bacf06c9b9faf253e0a27a1ca67",
   "active_experiment": "Exp435",
   "active_phase": "implementation_complete_final_review_pending",
   "status": "in_progress",
@@ -56,7 +56,8 @@
     "exp435_task9_direct_runner": "595417d773c432f0471d6c6445aea1f46a9b2668",
     "exp435_task8_evaluator_pin": "8ede3bc0510b95cbba3efa85cfadca913445733d",
     "exp435_runtime_readiness_progress_fix": "c77c9b86862877581bd5965a28b199409815d6d5",
-    "exp435_parent_truthful_parallel_progress_fix": "640fa5b290792e23d0cb3045faf5efdbbc97fc42"
+    "exp435_parent_truthful_parallel_progress_fix": "640fa5b290792e23d0cb3045faf5efdbbc97fc42",
+    "exp435_canonical_inspection_identity_fix": "2f21989bc5441bacf06c9b9faf253e0a27a1ca67"
   },
   "partial_engineering_commits": {
     "task5_initial_runtime": "dc018ac9cc6e6dec13a93317df194d5e19200884",
