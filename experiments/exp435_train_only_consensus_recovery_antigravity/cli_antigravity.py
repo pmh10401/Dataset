@@ -492,6 +492,14 @@ def _run_prediction(command: str) -> Mapping[str, object]:
         )
         from .runtime_antigravity import _runtime_context, resume_exp435
 
+        # The unfinished-resume path has now imported the runtime and input
+        # boundaries.  Re-read HEAD immediately before opening the session and
+        # bind that exact final value to both the checkpoint and session.
+        final_head = _clean_head()
+        if final_head != head or final_head != stored_commit:
+            raise ValueError("clean HEAD changed before resume input session")
+        head = final_head
+
     with open_exp435_input_session(
         DEFAULT_DATABASE,
         DEFAULT_EXP291_PREDICTION,

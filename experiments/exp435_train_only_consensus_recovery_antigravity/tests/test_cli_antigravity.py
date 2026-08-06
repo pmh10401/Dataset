@@ -110,6 +110,31 @@ class Exp435CliTests(unittest.TestCase):
         )
         return output, checkpoint, store
 
+    def _unfinished_runtime(self, parent: Path) -> tuple[Path, Path, Exp435CheckpointStore]:
+        output = parent / "output_antigravity"
+        checkpoint = parent / "checkpoint_antigravity"
+        context = {
+            "schema": "fixture.context.v1",
+            "datasets": ["Demo"],
+            "test_sizes": {"Demo": 101},
+            "database_sha256": "d" * 64,
+            "code_commit": "f" * 40,
+            "runtime_versions": {"python": "test"},
+            "backend_decision": BackendDecision.cpu_fallback("fixture").to_dict(),
+        }
+        store = Exp435CheckpointStore.create(checkpoint, context)
+        writer = ProgressWriter.create(
+            output,
+            run_identity=store.run_identity,
+            checkpoint=checkpoint,
+            total_datasets=1,
+            backend="cpu",
+            context_fingerprint=store.context_fingerprint,
+            heartbeat_seconds=None,
+        )
+        writer.close()
+        return output, checkpoint, store
+
     def _local_publication(self, output: Path, store: Exp435CheckpointStore):
         return reporting_module.inspect_publication(
             output, store, _expectations=reporting_module._PublicationExpectations(total=1),
@@ -287,6 +312,78 @@ class Exp435CliTests(unittest.TestCase):
             self.assertEqual(result["prediction_sha256"], json.loads(
                 (output / "publication_antigravity" / "manifest_antigravity.json").read_bytes()
             )["prediction_sha256"])
+
+    def test_unfinished_resume_passes_exact_final_head_to_input_session(self) -> None:
+        with TemporaryDirectory() as directory:
+            output, checkpoint, _store = self._unfinished_runtime(Path(directory))
+            received: list[str] = []
+
+            @contextmanager
+            def fake_session(*args, **kwargs):
+                received.append(kwargs["verified_code_commit"])
+                yield SimpleNamespace(context={})
+
+            class Summary:
+                status = "running"
+
+                def to_payload(self):
+                    return {"state": "running"}
+
+            inputs_module = __import__(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.inputs_antigravity",
+                fromlist=["open_exp435_input_session"],
+            )
+            runtime_module = __import__(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity",
+                fromlist=["inspect_exp435", "resume_exp435"],
+            )
+            with patch.object(cli_module, "FROZEN_OUTPUT", output), \
+                    patch.object(cli_module, "FROZEN_CHECKPOINT", checkpoint), \
+                    patch.object(cli_module, "_clean_head", side_effect=["f" * 40, "f" * 40]), \
+                    patch.object(runtime_module, "inspect_exp435", return_value=SimpleNamespace(status="running")), \
+                    patch.object(inputs_module, "open_exp435_input_session", fake_session), \
+                    patch.object(runtime_module, "_runtime_context", return_value={}), \
+                    patch.object(runtime_module, "resume_exp435", return_value=Summary()):
+                result = cli_module._run_prediction("resume")
+            self.assertEqual(result["state"], "running")
+            self.assertEqual(received, ["f" * 40])
+
+    def test_unfinished_resume_rejects_head_changed_before_input_session(self) -> None:
+        with TemporaryDirectory() as directory:
+            output, checkpoint, _store = self._unfinished_runtime(Path(directory))
+            opened = False
+
+            @contextmanager
+            def fail_session(*args, **kwargs):
+                nonlocal opened
+                opened = True
+                raise AssertionError("input session must not open after resume HEAD change")
+                yield  # pragma: no cover
+
+            class Summary:
+                status = "running"
+
+                def to_payload(self):
+                    return {"state": "running"}
+
+            inputs_module = __import__(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.inputs_antigravity",
+                fromlist=["open_exp435_input_session"],
+            )
+            runtime_module = __import__(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity",
+                fromlist=["inspect_exp435", "resume_exp435"],
+            )
+            with patch.object(cli_module, "FROZEN_OUTPUT", output), \
+                    patch.object(cli_module, "FROZEN_CHECKPOINT", checkpoint), \
+                    patch.object(cli_module, "_clean_head", side_effect=["f" * 40, "e" * 40]), \
+                    patch.object(runtime_module, "inspect_exp435", return_value=SimpleNamespace(status="running")), \
+                    patch.object(inputs_module, "open_exp435_input_session", fail_session), \
+                    patch.object(runtime_module, "_runtime_context", return_value={}), \
+                    patch.object(runtime_module, "resume_exp435", return_value=Summary()):
+                with self.assertRaises(ValueError):
+                    cli_module._run_prediction("resume")
+            self.assertFalse(opened)
 
     def test_new_rejects_head_changed_by_delayed_imports_before_session(self) -> None:
         with TemporaryDirectory() as directory:
