@@ -40,7 +40,10 @@ _READINESS_KEYS = frozenset({
     "exp291_manifest_sha256", "exp292_prediction_path", "exp292_prediction_sha256",
     "exp292_manifest_path", "exp292_manifest_sha256", "datasets", "dataset_digest",
     "frozen_config", "frozen_config_sha256", "backend_decision",
-    "backend_decision_sha256", "run_root", "checkpoint_root",
+    "backend_decision_sha256", "run_root", "checkpoint_root", "evaluation_root",
+    "evaluation_root_absent", "test_values_opened", "test_labels_opened",
+    "label_access_count", "focused_tests", "candidate_fixture", "cpu_topology",
+    "runtime_versions",
 })
 
 
@@ -76,6 +79,21 @@ def _canonical_readiness(readiness_path: Path, reviewed_commit: str, run_root: P
         raise ValueError("readiness run root is invalid")
     if _absolute(payload["checkpoint_root"], "readiness checkpoint_root") != str(Path(checkpoint_root).resolve()):
         raise ValueError("readiness checkpoint root is invalid")
+    expected_evaluation = Path(run_root).parent / "evaluation_antigravity"
+    if _absolute(payload["evaluation_root"], "readiness evaluation_root") != str(expected_evaluation.resolve()):
+        raise ValueError("readiness evaluation root is invalid")
+    if payload["evaluation_root_absent"] is not True or any(payload[name] != 0 for name in ("test_values_opened", "test_labels_opened", "label_access_count")):
+        raise ValueError("readiness label/evaluation evidence is invalid")
+    focused, fixture, topology, versions = payload["focused_tests"], payload["candidate_fixture"], payload["cpu_topology"], payload["runtime_versions"]
+    if not isinstance(focused, Mapping) or focused.get("returncode") != 0 or not isinstance(focused.get("command"), list):
+        raise ValueError("readiness focused-test evidence is invalid")
+    if not isinstance(fixture, Mapping) or set(fixture) != {"sha256", "candidate_indices"} or not isinstance(fixture["sha256"], str) or len(fixture["sha256"]) != 64 or not isinstance(fixture["candidate_indices"], list):
+        raise ValueError("readiness candidate fixture is invalid")
+    logical_cpus = os.cpu_count() or 1
+    if not isinstance(topology, Mapping) or set(topology) != {"logical_cpus", "workers", "inner_threads"} or topology.get("logical_cpus") != logical_cpus or topology.get("workers") != max(1, logical_cpus - 1) or topology.get("inner_threads") != 1:
+        raise ValueError("readiness CPU topology is invalid")
+    if not isinstance(versions, Mapping) or set(versions) != {"python", "numpy", "torch", "mlx"} or not all(isinstance(item, str) and item for item in versions.values()):
+        raise ValueError("readiness runtime versions are invalid")
     paths = ("database", "exp291_prediction", "exp291_manifest", "exp292_prediction", "exp292_manifest")
     for name in paths:
         _absolute(payload[f"{name}_path"], f"readiness {name}")

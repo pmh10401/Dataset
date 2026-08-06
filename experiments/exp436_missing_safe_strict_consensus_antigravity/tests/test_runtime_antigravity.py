@@ -42,6 +42,54 @@ class RuntimeImportTests(unittest.TestCase):
 
 
 class RuntimeContextTests(unittest.TestCase):
+    def test_readiness_accepts_the_phase_c_evidence_binding_without_opening_a_session(self) -> None:
+        """Dropping CLI readiness evidence must reject before the session factory."""
+
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import runtime_antigravity
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = _readiness_antigravity(runtime_antigravity, root)
+            payload = json.loads(path.read_bytes())
+            payload.update({
+                "evaluation_root": str((root / "evaluation_antigravity").resolve()),
+                "evaluation_root_absent": True,
+                "test_values_opened": 0,
+                "test_labels_opened": 0,
+                "label_access_count": 0,
+                "focused_tests": {"returncode": 0, "command": ["unittest"]},
+                "candidate_fixture": {"sha256": "b" * 64, "candidate_indices": []},
+                "cpu_topology": {"logical_cpus": 12, "workers": 11, "inner_threads": 1},
+                "runtime_versions": {"python": "test", "numpy": "test", "torch": "unavailable", "mlx": "unavailable"},
+            })
+            path.write_bytes(canonical_json_bytes(payload))
+            verified = runtime_antigravity._canonical_readiness(
+                path, "a" * 40, root / "output_antigravity", root / "checkpoint_antigravity",
+            )
+            self.assertEqual(verified["label_access_count"], 0)
+
+    def test_readiness_rejects_phase_c_evidence_claiming_any_label_access(self) -> None:
+        from experiments.exp436_missing_safe_strict_consensus_antigravity import runtime_antigravity
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = _readiness_antigravity(runtime_antigravity, root)
+            payload = json.loads(path.read_bytes())
+            payload.update({
+                "evaluation_root": str((root / "evaluation_antigravity").resolve()),
+                "evaluation_root_absent": True,
+                "test_values_opened": 0, "test_labels_opened": 0, "label_access_count": 1,
+                "focused_tests": {"returncode": 0, "command": ["unittest"]},
+                "candidate_fixture": {"sha256": "b" * 64, "candidate_indices": []},
+                "cpu_topology": {"logical_cpus": 12, "workers": 11, "inner_threads": 1},
+                "runtime_versions": {"python": "test", "numpy": "test", "torch": "unavailable", "mlx": "unavailable"},
+            })
+            path.write_bytes(canonical_json_bytes(payload))
+            with self.assertRaisesRegex(ValueError, "label"):
+                runtime_antigravity._canonical_readiness(
+                    path, "a" * 40, root / "output_antigravity", root / "checkpoint_antigravity",
+                )
+
     def test_context_binds_every_readiness_and_session_authority(self) -> None:
         """Changing an external readiness binding must alter the persisted context."""
 
@@ -145,6 +193,12 @@ def _readiness_antigravity(runtime: object, root: Path) -> Path:
         "frozen_config": config, "frozen_config_sha256": sha256(canonical_json_bytes(config)).hexdigest(),
         "backend_decision": decision.to_payload(), "backend_decision_sha256": sha256(canonical_json_bytes(decision.to_payload())).hexdigest(),
         "run_root": str((root / "output_antigravity").resolve()), "checkpoint_root": str((root / "checkpoint_antigravity").resolve()),
+        "evaluation_root": str((root / "evaluation_antigravity").resolve()), "evaluation_root_absent": True,
+        "test_values_opened": 0, "test_labels_opened": 0, "label_access_count": 0,
+        "focused_tests": {"returncode": 0, "command": ["unittest"]},
+        "candidate_fixture": {"sha256": "b" * 64, "candidate_indices": []},
+        "cpu_topology": {"logical_cpus": os.cpu_count() or 1, "workers": max(1, (os.cpu_count() or 1) - 1), "inner_threads": 1},
+        "runtime_versions": {"python": "test", "numpy": "test", "torch": "unavailable", "mlx": "unavailable"},
     }
     path = root / "readiness_antigravity.json"; path.write_bytes(canonical_json_bytes(payload))
     return path

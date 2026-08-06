@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T15:30:18Z",
-  "generated_from_commit": "08e19293a625f165882aa28d2bd63fd59c7aca05",
+  "generated_at": "2026-08-06T16:36:02Z",
+  "generated_from_commit": "afdf693634ddde29276dff5cd51cce7461744a5c",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1686,12 +1686,12 @@
     },
     {
       "id": "exp436_contract_boundary",
-      "label": "Exp436 missing-safe scoring boundary",
+      "label": "Exp436 runtime, publication, and CLI firewall",
       "type": "data",
       "boundary": "Exp436 missing-safe strict consensus",
       "layer": 3,
       "path": "experiments/exp436_missing_safe_strict_consensus_antigravity",
-      "role": "Freezes missing-safe values-only contracts and implements readiness-first, parent-owned ordered runtime execution. Checkpoint records retain strict result evidence plus exact non-label dataset metadata; classified read-only inspection reports only recognized crash leftovers, checkpoint_complete is fail-closed unless the complete checkpoint, event prefix, terminal counters, and snapshot agree, and the single writer caches its validated JSONL tail while attributing CPU failures to the exact future. CPU uses frozen 11-worker ordered scheduling and MLX/MPS uses one validated serial engine.",
+      "role": "Owns Exp436 missing-safe values-only scoring, extended canonical readiness evidence, parent-owned runtime, atomic review-only publication, lazy post-freeze evaluation, and the fixed five-command wrapper. Readiness stages its sole canonical artifact while RUN_PARENT is absent; new rechecks clean HEAD and fixed roots; only interrupted resume opens the input session; inspect stays byte-read-only; evaluation never changes prediction bytes.",
       "entrypoints": [
         "Exp436FrozenConfig",
         "FROZEN_CONFIG",
@@ -1737,7 +1737,13 @@
         "run_exp436_new",
         "resume_exp436",
         "inspect_exp436",
-        "Exp436RunContext"
+        "Exp436RunContext",
+        "publish_exp436",
+        "inspect_publication",
+        "evaluate_exp436",
+        "decide_exp436_success",
+        "build_parser",
+        "main"
       ],
       "tests": [
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_config_antigravity.py",
@@ -1750,7 +1756,10 @@
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py",
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_checkpoint_antigravity.py",
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_progress_antigravity.py",
-        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_runtime_antigravity.py"
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py"
       ],
       "constraints": [
         "No TEST labels, anomaly positions, metrics, imputation, padding, truncation, copied values, or tail replacement",
@@ -1761,7 +1770,8 @@
         "Candidates require prototype AND gradient AND ACF and exact TEST identity evidence coverage; unavailable TRAIN channels preserve all calculable siblings with exact channel reasons, while ACF zero energy never substitutes the raw waveform",
         "Backend protocol is paired-synchronized-v1: timed CPU/device callables contain only their scalar score suites; candidate/JSON/hash work is outside timing, every warmup/timed device output is aggregated into parity/error gates, invalid output preserves only prior fully validated pairs, and nonfinite completed output canonically takes the nonfinite_output reason before all other failed gates; fixtures, engines, and dispatch require exactly frozen k=3 with at least three references; unavailable backends have empty batches/no invented timing or selection, each available backend retains one common input/output fixture digest pair, two available backends must match those pairs before selection, available MLX/MPS evidence requires backend-specific non-CPU accelerator provenance, MLX requires an explicit GPU stream, exact-device synchronization, and installed mlx-metal provenance, and dispatch repeats device validation",
         "Exp436 scoring imports only local config, contracts, and features; it injects only dense scoring backends and contains no label, evaluation, metric, or database route",
-        "Checkpoint is the sole ordered-prefix authority; checkpoint record -> completion event -> progress snapshot. Phase B progress owns exactly progress JSON, event JSONL, parent log, and PID JSON under one O_DIRECTORY|O_NOFOLLOW directory flock, validates canonical hash-chain/schema/binding/metadata/PID state read-only, and reconciles only an authoritative ordered checkpoint tail. Failed roots are non-resumable; complete/inspect read-only routes bind stored context to readiness before any external resource, and no Exp435 record/runtime import is permitted. Inspection first validates every checkpoint authority with lstat/O_NOFOLLOW/fstat while one shared root flock is held; only one exact canonical record-set temp may equal the current set or the valid next intent/record prospective set. Mutable checkpoint recovery uses one exclusive root flock across full scan, recognized repair/fsync, and pristine rescan; contexts and inspections are deeply immutable."
+        "Checkpoint is the sole ordered-prefix authority; checkpoint record -> completion event -> progress snapshot. Phase B progress owns exactly progress JSON, event JSONL, parent log, and PID JSON under one O_DIRECTORY|O_NOFOLLOW directory flock, validates canonical hash-chain/schema/binding/metadata/PID state read-only, and reconciles only an authoritative ordered checkpoint tail. Failed roots are non-resumable; complete/inspect read-only routes bind stored context to readiness before any external resource, and no Exp435 record/runtime import is permitted. Inspection first validates every checkpoint authority with lstat/O_NOFOLLOW/fstat while one shared root flock is held; only one exact canonical record-set temp may equal the current set or the valid next intent/record prospective set. Mutable checkpoint recovery uses one exclusive root flock across full scan, recognized repair/fsync, and pristine rescan; contexts and inspections are deeply immutable.",
+        "Readiness computes source/backend/test/CPU/version evidence before RUN_PARENT exists, then fsyncs a create-only canonical readiness file in a same-parent staging directory and exclusively renames it; CLI exposes only readiness/new/resume/inspect/evaluate, imports evaluation only in evaluate, and binds all runtime calls to readiness_path, fixed roots, reviewed_commit, and input_session_factory."
       ],
       "evidence": [
         {
@@ -1999,6 +2009,34 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
           "symbol": "def _repair_locked("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def _canonical_readiness("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def _publish_readiness_atomically("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def _run_prediction("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "def publish_exp436("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py",
+          "symbol": "def evaluate_exp436("
+        },
+        {
+          "path": "scratch/run_exp436_missing_safe_strict_consensus_antigravity.py",
+          "symbol": "from experiments.exp436_missing_safe_strict_consensus_antigravity.cli_antigravity import main"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "class CliAntigravityTests"
         }
       ]
     }
@@ -2675,6 +2713,30 @@
         }
       ],
       "id": "edge_052_exp436_inputs_calls_exp425_values_boundary"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "artifact_utils",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "canonical_json_bytes("
+        }
+      ],
+      "id": "edge_053_exp436_publication_uses_canonical_artifacts"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "sqlite_store",
+      "type": "reads_after_freeze",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py",
+          "symbol": "def _load_test_labels("
+        }
+      ],
+      "id": "edge_054_exp436_evaluation_reads_labels_after_publication"
     }
   ],
   "flows": [
@@ -2734,6 +2796,56 @@
         "artifact_utils"
       ],
       "outcome": "The CLI lazily imports the evaluator; it replays read-only checkpoint/publication, validates fixed sibling paths and population/code/input/config hashes, captures Exp404 and Exp291 through O_NOFOLLOW descriptors for same-byte SHA256/parse equality, then imports Exp417 verified_read_only_connection to open one exact hashed SQLite inode for instance_index/label. It snapshots/re-inspects output before staged no-clobber evaluation publication; prediction bytes remain unchanged."
+    },
+    {
+      "id": "exp436_readiness_flow",
+      "label": "Exp436 absent-parent readiness",
+      "trigger": "Run readiness before any fixed Exp436 root exists.",
+      "steps": [
+        "exp436_contract_boundary"
+      ],
+      "outcome": "Clean HEAD, source hashes, backend fixture/selection, focused tests, CPU topology, runtime versions and zero label access are bound before a same-parent staged readiness directory is fsync-verified and exclusively renamed into the sole run parent."
+    },
+    {
+      "id": "exp436_new_resume_flow",
+      "label": "Exp436 label-free new/interrupted resume",
+      "trigger": "Run new after verified readiness or resume only an interrupted root.",
+      "steps": [
+        "exp436_contract_boundary",
+        "exp425_database",
+        "sqlite_store"
+      ],
+      "outcome": "New requires the exact canonical readiness and absent output/checkpoint/evaluation roots, rechecks HEAD after delayed imports, and passes the exact runtime public arguments. Complete checkpoint replay does not invoke the input-session factory; failed/running/fake-complete roots are rejected."
+    },
+    {
+      "id": "exp436_publication_flow",
+      "label": "Exp436 checkpoint-complete publication",
+      "trigger": "A verified checkpoint-complete runtime reaches its review-only freeze.",
+      "steps": [
+        "exp436_contract_boundary",
+        "artifact_utils"
+      ],
+      "outcome": "Publication replays the completed checkpoint and terminal progress, writes exact no-clobber artifacts, and binds their SHA256 values. Repeated publication is byte-verified replay only."
+    },
+    {
+      "id": "exp436_inspect_flow",
+      "label": "Exp436 immutable inspect",
+      "trigger": "Run inspect on an existing fixed output/checkpoint pair.",
+      "steps": [
+        "exp436_contract_boundary"
+      ],
+      "outcome": "Inspect validates canonical readiness/context/checkpoint/progress without an input session, workers, publication write, or byte mutation."
+    },
+    {
+      "id": "exp436_evaluate_boundary",
+      "label": "Exp436 post-freeze evaluation",
+      "trigger": "Explicitly select evaluate after review-only publication is frozen.",
+      "steps": [
+        "exp436_contract_boundary",
+        "sqlite_store",
+        "artifact_utils"
+      ],
+      "outcome": "Only evaluate lazily imports the exact evaluator. It verifies publication bytes before opening the descriptor-bound TEST identity/label reader, re-verifies the source afterward, and treats evaluated completion independently from champion success."
     }
   ],
   "unknown_relationships": 0

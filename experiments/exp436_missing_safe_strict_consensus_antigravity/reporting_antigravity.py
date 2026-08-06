@@ -1,0 +1,804 @@
+"""Independent, label-free publication and replay for Exp436.
+
+The runtime checkpoint is the only scientific source for this module.  It is
+read through the checkpoint's read-only API and replayed into a private
+staging directory before a no-clobber rename.  No database, worker, or
+evaluation module is imported here.
+"""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from hashlib import sha256
+import ctypes
+import errno
+import json
+import os
+from pathlib import Path
+import sys
+import stat
+from types import MappingProxyType
+from typing import Iterable, Mapping
+from uuid import uuid4
+
+from experiments.exp403_408.artifact_io import canonical_json_bytes
+
+from .checkpoint_antigravity import Exp436CheckpointStore
+from .config_antigravity import FROZEN_CONFIG
+from .contracts_antigravity import (
+    BackendDecision,
+    Exp436DatasetResult,
+)
+from .progress_antigravity import inspect_progress
+
+
+class CandidateBudgetExceeded(ValueError):
+    """The immutable global candidate budget was exceeded during replay."""
+
+    def __init__(self, *, observed: int, budget: int) -> None:
+        super().__init__(f"candidate budget exceeded: {observed} > {budget}")
+        self.observed = observed
+        self.budget = budget
+
+
+PUBLICATION_DIRECTORY = "publication_antigravity"
+PREDICTION_FILE = "prediction_antigravity.jsonl"
+SUMMARY_FILE = "dataset_summary_antigravity.jsonl"
+EVIDENCE_FILE = "score_evidence_antigravity.jsonl"
+ABSTENTION_FILE = "abstention_ledger_antigravity.jsonl"
+TRAIN_AUDIT_FILE = "train_exclusion_audit_antigravity.jsonl"
+BACKEND_FILE = "backend_decision_antigravity.json"
+MANIFEST_FILE = "manifest_antigravity.json"
+STATUS_FILE = "status_antigravity.json"
+HASH_FILE = "artifact_sha256_antigravity.json"
+
+_SEMANTIC_FILES = (
+    PREDICTION_FILE,
+    SUMMARY_FILE,
+    EVIDENCE_FILE,
+    ABSTENTION_FILE,
+    TRAIN_AUDIT_FILE,
+    BACKEND_FILE,
+)
+_PUBLICATION_FILES = frozenset((*_SEMANTIC_FILES, MANIFEST_FILE, STATUS_FILE, HASH_FILE))
+_RUNTIME_FILES = (
+    "progress_antigravity.json",
+    "events_antigravity.jsonl",
+    "parent_antigravity.log",
+    "run_antigravity.pid",
+)
+_GOVERNANCE_KEYS = frozenset({
+    "contains_test_labels",
+    "test_labels_opened",
+    "label_access_count",
+    "operational_alert_eligible",
+    "review_only",
+})
+_FORBIDDEN_KEY_TOKENS = (
+    "target",
+    "groundtruth",
+    "anomaly",
+    "confusion",
+    "precision",
+    "recall",
+    "specificity",
+    "fpr",
+    "f1",
+    "metric",
+    "anomalylocation",
+    "familytest",
+)
+
+
+@dataclass(frozen=True)
+class _PublicationExpectations:
+    """Frozen population expectations, with a tiny override for unit tests."""
+
+    total: int = FROZEN_CONFIG.expected_datasets
+
+    def __post_init__(self) -> None:
+        if type(self.total) is not int or self.total <= 0:
+            raise ValueError("publication total is invalid")
+        if self.total == FROZEN_CONFIG.expected_datasets:
+            return
+        # Small expectations are useful for deterministic publication tests,
+        # but production callers must use the exact 1,117 population.
+        if self.total > FROZEN_CONFIG.expected_datasets:
+            raise ValueError("publication total exceeds the frozen population")
+
+
+PublicationExpectations = _PublicationExpectations
+
+
+@dataclass(frozen=True)
+class FrozenPublication:
+    """A verified publication root and its immutable manifest."""
+
+    publication: Path
+    manifest: Mapping[str, object]
+
+    def __post_init__(self) -> None:
+        publication = Path(self.publication)
+        if publication.is_symlink() or not publication.is_dir():
+            raise ValueError("publication root is absent or invalid")
+        object.__setattr__(self, "publication", publication)
+        object.__setattr__(self, "manifest", MappingProxyType(dict(self.manifest)))
+
+    @property
+    def prediction_sha256(self) -> str:
+        value = self.manifest.get("prediction_sha256")
+        if not isinstance(value, str):
+            raise ValueError("publication prediction SHA256 is absent")
+        return value
+
+    @property
+    def manifest_sha256(self) -> str:
+        return _digest((self.publication / MANIFEST_FILE).read_bytes())
+
+    @property
+    def artifact_sha256(self) -> str:
+        return _digest((self.publication / HASH_FILE).read_bytes())
+
+
+def _digest(raw: bytes) -> str:
+    return sha256(raw).hexdigest()
+
+
+def _json_raw(value: object) -> bytes:
+    return canonical_json_bytes(value) + b"\n"
+
+
+def _jsonl_raw(rows: Iterable[Mapping[str, object]]) -> bytes:
+    return b"".join(canonical_json_bytes(dict(row)) + b"\n" for row in rows)
+
+
+def _read_json(path: Path, label: str) -> dict[str, object]:
+    raw = path.read_bytes()
+    try:
+        value = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"{label} is invalid JSON") from error
+    if not isinstance(value, dict) or raw not in {canonical_json_bytes(value), _json_raw(value)}:
+        raise ValueError(f"{label} is not canonical JSON")
+    return value
+
+
+def _write_new(path: Path, payload: bytes) -> None:
+    descriptor = os.open(
+        path,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0),
+        0o600,
+    )
+    try:
+        offset = 0
+        while offset < len(payload):
+            offset += os.write(descriptor, payload[offset:])
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    _fsync_directory(path.parent)
+
+
+def _fsync_directory(path: Path) -> None:
+    descriptor = os.open(
+        path,
+        os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+    )
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _exclusive_rename(source: Path, destination: Path) -> None:
+    """Atomically move a directory without replacing a destination.
+
+    ``os.rename`` replaces an existing directory on Darwin.  That behavior is
+    unsafe for a publication that must never clobber a concurrent destination,
+    so use the kernel's exclusive rename primitive and fail closed elsewhere.
+    """
+
+    source = Path(source)
+    destination = Path(destination)
+    if sys.platform != "darwin":
+        raise RuntimeError("exclusive directory rename is unsupported on this platform")
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+        renamex_np = libc.renamex_np
+    except (AttributeError, OSError) as error:
+        raise RuntimeError("Darwin renamex_np is unavailable") from error
+    renamex_np.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+    renamex_np.restype = ctypes.c_int
+    result = renamex_np(
+        os.fsencode(source),
+        os.fsencode(destination),
+        ctypes.c_uint(0x00000004),  # RENAME_EXCL from <sys/stdio.h>
+    )
+    if result != 0:
+        error_number = ctypes.get_errno() or errno.EIO
+        raise OSError(error_number, os.strerror(error_number), str(destination))
+
+
+def _reject_forbidden_keys(value: object, *, artifact: str) -> None:
+    """Reject semantic fields that could smuggle TEST labels into artifacts."""
+
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            if not isinstance(key, str):
+                raise ValueError("publication JSON key is invalid")
+            normalized = "".join(character for character in key.lower() if character.isalnum())
+            if normalized in {"contains test labels", "test labels opened"}:
+                raise ValueError("publication governance key is malformed")
+            if key in _GOVERNANCE_KEYS:
+                if artifact not in {MANIFEST_FILE, STATUS_FILE}:
+                    raise ValueError("governance keys are restricted to manifest/status")
+                if key == "label_access_count" and child != 0:
+                    raise ValueError("label access count must be zero")
+                if key in {"contains_test_labels", "test_labels_opened", "operational_alert_eligible"} and child is not False:
+                    raise ValueError("label governance flags must be false")
+                if key == "review_only" and child is not True:
+                    raise ValueError("review_only must be true")
+            elif "label" in normalized or any(token in normalized for token in _FORBIDDEN_KEY_TOKENS):
+                raise ValueError(f"forbidden publication key: {key}")
+            _reject_forbidden_keys(child, artifact=artifact)
+    elif isinstance(value, (tuple, list)):
+        for child in value:
+            _reject_forbidden_keys(child, artifact=artifact)
+
+
+def _store_root(store: object) -> Path:
+    root = getattr(store, "root", None)
+    if root is None:
+        raise ValueError("checkpoint store does not expose a root")
+    root = Path(root)
+    if root.is_symlink() or not root.is_dir():
+        raise ValueError("checkpoint root is absent or invalid")
+    return root
+
+
+def _require_frozen_store_identity(store: object) -> None:
+    if getattr(store, "run_identity", None) != FROZEN_CONFIG.run_identity:
+        raise ValueError("checkpoint run identity does not match frozen identity")
+    context = getattr(store, "context", None)
+    if not isinstance(context, Mapping) or context.get("run_identity") != FROZEN_CONFIG.run_identity:
+        raise ValueError("checkpoint context run identity does not match frozen identity")
+
+
+def _open_store(value: object) -> Exp436CheckpointStore:
+    if isinstance(value, Exp436CheckpointStore):
+        store: object = value
+    elif isinstance(value, (str, Path)):
+        store = Exp436CheckpointStore.open_read_only(Path(value))
+    else:
+        # Test doubles intentionally use the same narrow public surface.  A real
+        # store is required for production publication, while this adapter keeps
+        # replay tests independent of filesystem internals.
+        required = ("inspect", "completed_digests", "load_record", "datasets", "context")
+        if not all(hasattr(value, name) for name in required):
+            raise ValueError("checkpoint store is invalid")
+        store = value
+    _require_frozen_store_identity(store)
+    return store  # type: ignore[return-value]
+
+
+def _backend_from_context(context: Mapping[str, object]) -> BackendDecision:
+    payload = context.get("backend_decision")
+    if isinstance(payload, BackendDecision):
+        return payload
+    if not isinstance(payload, Mapping):
+        raise ValueError("checkpoint backend decision is absent")
+    try:
+        # The checkpoint recursively freezes persisted lists as tuples.  The
+        # public decision decoder deliberately accepts JSON lists only, so
+        # restore just that JSON surface before exact reconstruction.
+        raw = dict(payload)
+        for name in ("mlx", "mps"):
+            item = raw.get(name)
+            if not isinstance(item, Mapping):
+                raise ValueError("checkpoint backend decision is invalid")
+            decoded = dict(item)
+            decoded["batches"] = list(decoded.get("batches", ()))
+            raw[name] = decoded
+        return BackendDecision.from_payload(raw)
+    except (TypeError, ValueError, KeyError) as error:
+        raise ValueError("checkpoint backend decision is invalid") from error
+
+
+def _context_hash(context: Mapping[str, object]) -> str:
+    return _digest(canonical_json_bytes(dict(context)))
+
+
+def _input_hashes(context: Mapping[str, object]) -> dict[str, str]:
+    database = context.get("database_sha256")
+    if not isinstance(database, str):
+        raise ValueError("checkpoint database hash is absent")
+    values: dict[str, str] = {"database": database}
+    lanes = context.get("lanes")
+    if isinstance(lanes, Mapping):
+        for name in (
+            "exp291_prediction_sha256", "exp291_manifest_sha256",
+            "exp292_prediction_sha256", "exp292_manifest_sha256",
+        ):
+            value = lanes.get(name)
+            if isinstance(value, str):
+                values[name] = value
+    # Some test contexts expose lane hashes directly.  Keep the same names
+    # and never invent a digest for absent evidence.
+    for name in (
+        "exp291_prediction_sha256", "exp291_manifest_sha256",
+        "exp292_prediction_sha256", "exp292_manifest_sha256",
+    ):
+        value = context.get(name)
+        if isinstance(value, str):
+            values[name] = value
+    artifacts = context.get("lane_artifacts")
+    if isinstance(artifacts, Mapping):
+        for name, raw in artifacts.items():
+            if isinstance(name, str) and isinstance(raw, Mapping):
+                digest = raw.get("sha256")
+                if isinstance(digest, str):
+                    values[f"{name}_sha256"] = digest
+    return dict(sorted(values.items()))
+
+
+def _record_data(
+    store: object,
+    expectations: _PublicationExpectations,
+) -> tuple[tuple[Exp436DatasetResult, ...], Mapping[str, str], Mapping[str, object]]:
+    inspection = store.inspect()
+    datasets = tuple(getattr(store, "datasets"))
+    if len(datasets) != expectations.total or tuple(sorted(datasets)) != datasets or len(set(datasets)) != len(datasets):
+        raise ValueError("publication population does not match frozen expectations")
+    if inspection.total != len(datasets) or inspection.completed != len(datasets):
+        raise ValueError("publication requires a completed checkpoint population")
+    digests = dict(store.completed_digests())
+    if set(digests) != set(datasets):
+        raise ValueError("checkpoint record population does not match context")
+    records: list[Exp436DatasetResult] = []
+    completed_records = getattr(store, "completed_records", None)
+    if callable(completed_records):
+        # The real v1 store supplies a single locked snapshot.  Calling
+        # ``load_record`` for every dataset would rescan its complete prefix
+        # 1,117 times and make a production publication quadratic.
+        snapshot = tuple(completed_records())
+        if len(snapshot) != len(datasets):
+            raise ValueError("checkpoint record population does not match context")
+        for dataset, digest, result, _metadata in snapshot:
+            if (digests.get(dataset) != digest or not isinstance(result, Exp436DatasetResult)
+                    or result.dataset != dataset):
+                raise ValueError("checkpoint dataset record is invalid")
+            records.append(result)
+    else:
+        for dataset in datasets:
+            result = store.load_record(dataset)
+            if not isinstance(result, Exp436DatasetResult) or result.dataset != dataset:
+                raise ValueError("checkpoint dataset record is invalid")
+            records.append(result)
+    if tuple(result.dataset for result in records) != datasets:
+        raise ValueError("checkpoint records are not the ordered dataset population")
+    candidate_count = 0
+    for result in records:
+        if result.status == "failed":
+            raise ValueError("publication cannot contain failed dataset records")
+        candidate_count += result.candidate_count
+    if candidate_count > FROZEN_CONFIG.global_candidate_budget:
+        raise CandidateBudgetExceeded(
+            observed=candidate_count,
+            budget=FROZEN_CONFIG.global_candidate_budget,
+        )
+    context = getattr(store, "context")
+    if not isinstance(context, Mapping):
+        raise ValueError("checkpoint context is invalid")
+    if expectations.total == FROZEN_CONFIG.expected_datasets:
+        if context.get("database_sha256") != FROZEN_CONFIG.database_sha256:
+            raise ValueError("checkpoint database hash does not match frozen input")
+        if context.get("reviewed_commit") is None:
+            raise ValueError("checkpoint reviewed commit is absent")
+    return tuple(records), dict(sorted(digests.items())), dict(context)
+
+
+def _runtime_file_bytes(output: Path) -> dict[str, bytes]:
+    """Read the four terminal runtime files as regular, nonsymlink files."""
+
+    snapshot: dict[str, bytes] = {}
+    for name in _RUNTIME_FILES:
+        path = Path(output) / name
+        try:
+            metadata = path.stat(follow_symlinks=False)
+        except (OSError, ValueError) as error:
+            raise ValueError("runtime output inventory is invalid") from error
+        if path.is_symlink() or not stat.S_ISREG(metadata.st_mode):
+            raise ValueError("runtime output inventory contains a non-regular file")
+        try:
+            snapshot[name] = path.read_bytes()
+        except OSError as error:
+            raise ValueError("runtime output inventory cannot be read") from error
+    return snapshot
+
+
+def _validate_runtime(
+    output: Path,
+    store: object,
+    records: tuple[Exp436DatasetResult, ...],
+    record_digests: Mapping[str, str],
+    context: Mapping[str, object],
+    owned_staging: Path | None = None,
+) -> tuple[Mapping[str, object], Mapping[str, bytes]]:
+    output = Path(output)
+    if output.is_symlink() or not output.is_dir():
+        raise ValueError("runtime output inventory is invalid")
+    runtime_names = set(_RUNTIME_FILES)
+    names = {item.name for item in output.iterdir()}
+    allowed = {PUBLICATION_DIRECTORY}
+    if owned_staging is not None:
+        if owned_staging.parent != output or owned_staging.is_symlink() or not owned_staging.is_dir():
+            raise ValueError("publication staging directory is invalid")
+        allowed.add(owned_staging.name)
+    extras = names - runtime_names - allowed
+    if extras:
+        raise ValueError("runtime output inventory is invalid")
+    runtime_raw = _runtime_file_bytes(output)
+    publication = output / PUBLICATION_DIRECTORY
+    if publication.exists() and (publication.is_symlink() or not publication.is_dir()):
+        raise ValueError("publication directory is invalid")
+    backend = _backend_from_context(context)
+    root = _store_root(store)
+    context_fingerprint = getattr(store, "context_fingerprint", None)
+    if not isinstance(context_fingerprint, str):
+        context_fingerprint = _context_hash(context)
+    inspection = store.inspect()
+    # The progress authority intentionally rejects the publication directory
+    # as an unknown runtime artifact.  Replay therefore validates the exact
+    # four runtime bytes in an isolated same-parent view once publication is
+    # present, without weakening the runtime inventory rule.
+    validation_root: Path | None = None
+    if publication.exists():
+        validation_root = output.parent / f".runtime-replay-{uuid4().hex}-antigravity"
+        validation_root.mkdir(mode=0o700)
+        try:
+            for name, raw in runtime_raw.items():
+                _write_new(validation_root / name, raw)
+            runtime_for_progress = validation_root
+        except BaseException:
+            for child in tuple(validation_root.iterdir()):
+                child.unlink()
+            validation_root.rmdir()
+            raise
+    else:
+        runtime_for_progress = output
+    try:
+        progress_view = inspect_progress(
+            runtime_for_progress,
+            run_identity=str(getattr(store, "run_identity")),
+            checkpoint=root,
+            context_fingerprint=context_fingerprint,
+            checkpoint_inspection={
+                "completed": inspection.completed,
+                "datasets": tuple(getattr(store, "datasets")),
+                "record_digests": dict(record_digests),
+            },
+        )
+    finally:
+        if validation_root is not None and validation_root.exists():
+            for child in tuple(validation_root.iterdir()):
+                child.unlink()
+            validation_root.rmdir()
+    progress = dict(progress_view["progress"])
+    # ``complete_review_only`` is a publication/result state, never a runtime
+    # checkpoint state.  Accepting it here would allow a second publication
+    # pass to masquerade as the first checkpoint-complete boundary.
+    if progress.get("state") != "checkpoint_complete":
+        raise ValueError("runtime is not checkpoint-complete")
+    if progress["stage"] != "idle":
+        raise ValueError("runtime checkpoint-complete stage is not idle")
+    if progress.get("current_dataset") is not None:
+        raise ValueError("runtime current dataset is not null")
+    if progress.get("eta_seconds") not in {0, 0.0}:
+        raise ValueError("runtime ETA is not zero")
+    for field in ("completed_datasets", "success", "abstention", "error", "candidate_count"):
+        if type(progress.get(field)) is not int:
+            raise ValueError("runtime completion accounting is invalid")
+    recorded_success = sum(result.status == "scored" for result in records)
+    recorded_abstention = sum(result.status == "abstained" for result in records)
+    recorded_error = sum(result.status == "failed" for result in records)
+    if (
+        progress["completed_datasets"] != len(records)
+        or progress["success"] != recorded_success
+        or progress["abstention"] != recorded_abstention
+        or progress["error"] != recorded_error
+        or progress["success"] + progress["abstention"] + progress["error"] != progress["completed_datasets"]
+    ):
+        raise ValueError("runtime completion accounting is invalid")
+    if progress["candidate_count"] != sum(result.candidate_count for result in records):
+        raise ValueError("runtime candidate accounting does not match checkpoint")
+    if progress_view["pid"].get("pid_active") is not False:
+        raise ValueError("runtime PID is still active")
+    return progress, runtime_raw
+
+
+def _build_payloads(
+    store: object,
+    output: Path,
+    expectations: _PublicationExpectations,
+    *,
+    _owned_staging: Path | None = None,
+) -> dict[str, bytes]:
+    records, record_digests, context = _record_data(store, expectations)
+    progress, runtime_raw = _validate_runtime(output, store, records, record_digests, context, _owned_staging)
+    runtime_hashes = {
+        name: _digest(raw) for name, raw in sorted(runtime_raw.items())
+    }
+    backend = _backend_from_context(context)
+    run_identity = str(getattr(store, "run_identity"))
+    candidate_rows: list[dict[str, object]] = []
+    summary_rows: list[dict[str, object]] = []
+    evidence_rows: list[dict[str, object]] = []
+    abstention_rows: list[dict[str, object]] = []
+    audit_rows: list[dict[str, object]] = []
+    for result in records:
+        for candidate in result.candidates:
+            candidate_rows.append({
+                "dataset": candidate.dataset,
+                "instance_index": candidate.instance_index,
+                "length": candidate.length,
+                "evidence_digest": candidate.evidence_digest,
+            })
+        summary_rows.append({
+            "dataset": result.dataset,
+            "status": result.status,
+            "test_size": result.test_size,
+            "candidate_count": result.candidate_count,
+            "abstention_reason": result.abstention_reason,
+            "error": result.error,
+            "record_sha256": record_digests[result.dataset],
+        })
+        for evidence in result.evidence:
+            row = dict(evidence.to_payload())
+            row["record_sha256"] = record_digests[result.dataset]
+            evidence_rows.append(row)
+            if evidence.status != "scored" or evidence.exclusion_reason is not None:
+                abstention_rows.append({
+                    "dataset": evidence.dataset,
+                    "instance_index": evidence.instance_index,
+                    "length": evidence.length,
+                    "status": evidence.status,
+                    "reason": evidence.exclusion_reason,
+                    "record_sha256": record_digests[result.dataset],
+                })
+        if result.status == "abstained" and not result.evidence:
+            abstention_rows.append({
+                "dataset": result.dataset,
+                "instance_index": None,
+                "length": None,
+                "status": result.status,
+                "reason": result.abstention_reason,
+                "record_sha256": record_digests[result.dataset],
+            })
+        for audit in result.train_exclusion_audits:
+            row = dict(audit.to_payload())
+            row["record_sha256"] = record_digests[result.dataset]
+            audit_rows.append(row)
+    candidate_rows.sort(key=lambda row: (row["dataset"], row["instance_index"]))
+    summary_rows.sort(key=lambda row: row["dataset"])
+    evidence_rows.sort(key=lambda row: (row["dataset"], row["instance_index"]))
+    abstention_rows.sort(key=lambda row: (row["dataset"], -1 if row["instance_index"] is None else row["instance_index"]))
+    audit_rows.sort(key=lambda row: (row["dataset"], row["length"], row["instance_index"]))
+    semantic: dict[str, bytes] = {
+        PREDICTION_FILE: _jsonl_raw(candidate_rows),
+        SUMMARY_FILE: _jsonl_raw(summary_rows),
+        EVIDENCE_FILE: _jsonl_raw(evidence_rows),
+        ABSTENTION_FILE: _jsonl_raw(abstention_rows),
+        TRAIN_AUDIT_FILE: _jsonl_raw(audit_rows),
+        BACKEND_FILE: _json_raw({
+            "schema": "exp436.backend-decision.v1",
+            "decision": backend.to_dict(),
+        }),
+    }
+    semantic_hashes = {name: _digest(raw) for name, raw in sorted(semantic.items())}
+    config_hash = _digest(canonical_json_bytes(asdict(FROZEN_CONFIG)))
+    context_sha256 = getattr(store, "context_fingerprint", None)
+    if not isinstance(context_sha256, str):
+        context_sha256 = _context_hash(context)
+    reviewed_commit = context.get("reviewed_commit")
+    if not isinstance(reviewed_commit, str):
+        raise ValueError("checkpoint reviewed commit is absent")
+    runtime_versions = {
+        key: context[key] for key in (
+            "python_implementation", "python_version", "python_executable",
+            "numpy_version", "platform", "machine", "multiprocessing_start_method",
+        ) if key in context
+    }
+    manifest = {
+        "schema": "exp436.publication-manifest.v1",
+        "run_identity": run_identity,
+        "experiment_id": FROZEN_CONFIG.experiment_id,
+        "git_commit": reviewed_commit,
+        "reviewed_commit": reviewed_commit,
+        "reviewed_commit_sha256": _digest(reviewed_commit.encode("utf-8")),
+        "config_sha256": config_hash,
+        "input_context_sha256": context_sha256,
+        "database_sha256": context.get("database_sha256"),
+        "input_sha256": _input_hashes(context),
+        "lane_artifact_sha256": {
+            key: value for key, value in _input_hashes(context).items() if key != "database"
+        },
+        "checkpoint_context_sha256": context_sha256,
+        "checkpoint_record_set_sha256": _digest((_store_root(store) / "record_set_antigravity.json").read_bytes()),
+        "test_identity_manifest_sha256": context.get("test_manifest_sha256"),
+        "readiness_artifact_sha256": context.get("readiness_artifact_sha256"),
+        "runtime_versions": dict(sorted(runtime_versions.items())),
+        "backend": backend.to_dict(),
+        "backend_decision_sha256": _digest(canonical_json_bytes(backend.to_dict())),
+        "prediction_sha256": semantic_hashes[PREDICTION_FILE],
+        "completed_datasets": len(records),
+        "failed_datasets": 0,
+        "candidate_count": sum(result.candidate_count for result in records),
+        "review_only": True,
+        "operational_alert_eligible": False,
+        "contains_test_labels": False,
+        "test_labels_opened": False,
+        "label_access_count": 0,
+        "artifact_sha256": semantic_hashes,
+        "artifact_sha256_self_excluded": HASH_FILE,
+        "runtime_sha256": runtime_hashes,
+    }
+    _reject_forbidden_keys(manifest, artifact=MANIFEST_FILE)
+    manifest_raw = _json_raw(manifest)
+    status = {
+        "schema": "exp436.publication-status.v1",
+        "run_identity": run_identity,
+        "state": "complete_review_only",
+        "completed_datasets": len(records),
+        "failed_datasets": 0,
+        "candidate_count": sum(result.candidate_count for result in records),
+        "backend": backend.backend,
+        "prediction_sha256": semantic_hashes[PREDICTION_FILE],
+        "manifest_sha256": _digest(manifest_raw),
+        "runtime_progress_sha256": _digest(runtime_raw["progress_antigravity.json"]),
+        "runtime_sha256": runtime_hashes,
+        "review_only": True,
+        "operational_alert_eligible": False,
+        "contains_test_labels": False,
+        "test_labels_opened": False,
+        "label_access_count": 0,
+    }
+    _reject_forbidden_keys(status, artifact=STATUS_FILE)
+    status_raw = _json_raw(status)
+    before_hash_map = {**semantic, MANIFEST_FILE: manifest_raw, STATUS_FILE: status_raw}
+    artifact_map = {
+        "schema": "exp436.artifact-sha256.v1",
+        "artifact_sha256": {name: _digest(raw) for name, raw in sorted(before_hash_map.items())},
+        "runtime_sha256": runtime_hashes,
+        "self_excluded": HASH_FILE,
+        "self_hash_excluded": True,
+    }
+    payloads = {**before_hash_map, HASH_FILE: _json_raw(artifact_map)}
+    for name, raw in payloads.items():
+        if name.endswith(".json"):
+            _reject_forbidden_keys(json.loads(raw), artifact=name)
+        else:
+            for line in raw.splitlines():
+                _reject_forbidden_keys(json.loads(line), artifact=name)
+    if set(payloads) != _PUBLICATION_FILES or progress.get("state") != "checkpoint_complete":
+        raise ValueError("publication artifact inventory is invalid")
+    return payloads
+
+
+def _validated_root(output: Path) -> Path:
+    publication = Path(output) / PUBLICATION_DIRECTORY
+    if publication.is_symlink() or not publication.is_dir():
+        raise ValueError("publication directory is absent or invalid")
+    entries = tuple(publication.iterdir())
+    if {item.name for item in entries} != _PUBLICATION_FILES:
+        raise ValueError("publication inventory is invalid")
+    if any(item.is_symlink() or not item.is_file() for item in entries):
+        raise ValueError("publication inventory contains an invalid file")
+    return publication
+
+
+def _verify_bytes(
+    output: Path,
+    store: object,
+    expectations: _PublicationExpectations,
+) -> FrozenPublication:
+    publication = _validated_root(Path(output))
+    expected = _build_payloads(store, Path(output), expectations)
+    artifact_map = _read_json(publication / HASH_FILE, "artifact SHA256 map")
+    hashes = artifact_map.get("artifact_sha256")
+    if not isinstance(hashes, dict) or set(hashes) != _PUBLICATION_FILES - {HASH_FILE}:
+        raise ValueError("artifact SHA256 map inventory is invalid")
+    runtime_hashes = artifact_map.get("runtime_sha256")
+    expected_manifest = json.loads(expected[MANIFEST_FILE])
+    expected_runtime_hashes = expected_manifest.get("runtime_sha256")
+    if runtime_hashes != expected_runtime_hashes:
+        raise ValueError("artifact runtime SHA256 map does not match replay")
+    if artifact_map.get("self_excluded") != HASH_FILE or artifact_map.get("self_hash_excluded") is not True:
+        raise ValueError("artifact SHA256 map self-exclusion is invalid")
+    for name in sorted(_PUBLICATION_FILES):
+        actual = (publication / name).read_bytes()
+        if actual != expected[name]:
+            raise ValueError(f"publication {name} does not match checkpoint replay")
+        if name != HASH_FILE and hashes.get(name) != _digest(actual):
+            raise ValueError(f"publication {name} SHA256 does not match")
+    manifest = _read_json(publication / MANIFEST_FILE, "publication manifest")
+    if manifest.get("prediction_sha256") != _digest((publication / PREDICTION_FILE).read_bytes()):
+        raise ValueError("prediction SHA256 does not match manifest")
+    return FrozenPublication(publication, manifest)
+
+
+def inspect_publication(
+    output: Path,
+    completed_store: object,
+    *,
+    _expectations: _PublicationExpectations = _PublicationExpectations(),
+) -> FrozenPublication:
+    """Replay and verify bytes without opening DB, labels, or workers."""
+
+    if not isinstance(_expectations, _PublicationExpectations):
+        raise ValueError("publication expectations are invalid")
+    store = _open_store(completed_store)
+    return _verify_bytes(Path(output), store, _expectations)
+
+
+def publish_exp436(
+    completed_store: object,
+    output: Path,
+    *,
+    _expectations: _PublicationExpectations = _PublicationExpectations(),
+) -> FrozenPublication:
+    """Publish a fully completed checkpoint exactly once, without clobbering."""
+
+    if not isinstance(_expectations, _PublicationExpectations):
+        raise ValueError("publication expectations are invalid")
+    store = _open_store(completed_store)
+    output = Path(output)
+    publication = output / PUBLICATION_DIRECTORY
+    # An existing root is idempotent only when it was present on entry.  Any
+    # later appearance is a concurrent publisher and must fail no-clobber.
+    if publication.exists() or publication.is_symlink():
+        return _verify_bytes(output, store, _expectations)
+    # Validate every precondition, including budget, before allocating a
+    # publication staging directory.  A failed run can therefore never leave
+    # a partial publication behind.
+    payloads = _build_payloads(store, output, _expectations)
+    if output.is_symlink() or not output.is_dir():
+        raise ValueError("runtime output root is absent or invalid")
+    staging = output / f".{PUBLICATION_DIRECTORY}.{uuid4().hex}.tmp"
+    staging.mkdir(mode=0o700)
+    _fsync_directory(output)
+    published = False
+    try:
+        for name in sorted(payloads):
+            _write_new(staging / name, payloads[name])
+        _fsync_directory(staging)
+        if publication.exists() or publication.is_symlink():
+            raise ValueError("publication appeared during atomic staging")
+        _exclusive_rename(staging, publication)
+        _fsync_directory(output)
+        published = True
+    finally:
+        if not published and staging.is_dir() and not staging.is_symlink():
+            for child in tuple(staging.iterdir()):
+                if child.is_file() and not child.is_symlink():
+                    child.unlink()
+            staging.rmdir()
+            _fsync_directory(output)
+    return _verify_bytes(output, store, _expectations)
+
+
+__all__ = [
+    "ABSTENTION_FILE",
+    "BACKEND_FILE",
+    "EVIDENCE_FILE",
+    "FrozenPublication",
+    "HASH_FILE",
+    "MANIFEST_FILE",
+    "PUBLICATION_DIRECTORY",
+    "PREDICTION_FILE",
+    "PublicationExpectations",
+    "STATUS_FILE",
+    "SUMMARY_FILE",
+    "TRAIN_AUDIT_FILE",
+    "inspect_publication",
+    "publish_exp436",
+]
