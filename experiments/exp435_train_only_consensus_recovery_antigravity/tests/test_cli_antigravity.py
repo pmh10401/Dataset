@@ -1,0 +1,109 @@
+"""TDD checks for the fixed Exp435 command boundary."""
+
+from __future__ import annotations
+
+import io
+import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from unittest.mock import patch
+
+from experiments.exp435_train_only_consensus_recovery_antigravity.cli_antigravity import (
+    _CliDependencies,
+    build_parser,
+    main,
+)
+
+
+class Exp435CliTests(unittest.TestCase):
+    def _dependencies(self, parent: Path, calls: list[str]) -> _CliDependencies:
+        output = parent / "output_antigravity"
+        checkpoint = parent / "checkpoint_antigravity"
+        readiness = parent / "readiness_antigravity.json"
+
+        def readiness_call() -> dict[str, object]:
+            calls.append("readiness")
+            return {
+                "schema": "exp435.readiness.v1",
+                "state": "ready",
+                "git_commit": "a" * 40,
+                "backend": "cpu",
+                "output_root_absent": True,
+                "checkpoint_root_absent": True,
+            }
+
+        def execute(mode: str) -> dict[str, object]:
+            calls.append(mode)
+            return {
+                "state": "complete_review_only",
+                "completed_datasets": 1117,
+                "failed_datasets": 0,
+            }
+
+        return _CliDependencies(
+            output=output,
+            checkpoint=checkpoint,
+            readiness=readiness,
+            current_head=lambda: "a" * 40,
+            readiness_call=readiness_call,
+            execute=execute,
+            inspect=lambda: {"state": "complete_review_only"},
+            evaluate=lambda: {"state": "evaluated"},
+        )
+
+    def _main(self, argv: list[str], dependencies: _CliDependencies):
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            code = main(argv, _dependencies=dependencies)
+        return code, stdout.getvalue(), stderr.getvalue()
+
+    def test_parser_has_exactly_five_modes(self) -> None:
+        parser = build_parser()
+        help_text = parser.format_help()
+        for name in ("readiness", "new", "resume", "inspect", "evaluate"):
+            self.assertIn(name, help_text)
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            parser.parse_args(["new", "--output-root", "/tmp/alternate"])
+
+    def test_readiness_uses_only_fixed_file_and_no_alternate_path(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            calls: list[str] = []
+            dependencies = self._dependencies(parent, calls)
+            code, _stdout, stderr = self._main(
+                ["readiness", "--readiness-output", str(parent / "other.json")],
+                dependencies,
+            )
+            self.assertEqual(code, 2)
+            self.assertIn("unrecognized", stderr)
+            self.assertEqual(calls, [])
+
+    def test_new_rechecks_clean_commit_before_execute(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            calls: list[str] = []
+            dependencies = self._dependencies(parent, calls)
+            dependencies.readiness.write_text(
+                json.dumps({"schema": "exp435.readiness.v1", "state": "ready", "git_commit": "a" * 40}),
+                encoding="utf-8",
+            )
+            code, _stdout, stderr = self._main(["new"], dependencies)
+            self.assertEqual(code, 2)
+            self.assertIn("readiness", stderr)
+            self.assertEqual(calls, [])
+
+    def test_prediction_modes_do_not_import_evaluation(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            calls: list[str] = []
+            dependencies = self._dependencies(parent, calls)
+            with patch.dict("sys.modules", {"experiments.exp435_train_only_consensus_recovery_antigravity.evaluation_antigravity": None}):
+                code, _stdout, stderr = self._main(["inspect"], dependencies)
+            self.assertEqual(code, 2)
+            self.assertNotIn("evaluation", stderr.lower())
+
+
+if __name__ == "__main__":
+    unittest.main()
