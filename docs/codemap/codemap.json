@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T04:55:23Z",
-  "generated_from_commit": "3501f6ddb4e1268fb05927bcc11295a72f3ce31f",
+  "generated_at": "2026-08-06T05:03:04Z",
+  "generated_from_commit": "d64275f2a2767ecaea716c5f7f52dffa7805a47c",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -645,7 +645,8 @@
         "MlxEngine",
         "score_channel_mlx",
         "benchmark_mlx_adoption",
-        "score_with_backend"
+        "score_with_backend",
+        "CalibratedTrainGroupResult"
       ],
       "tests": [
         "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_config_antigravity.py",
@@ -671,7 +672,8 @@
         "MLX is optional and lazy; bundled Metal discovery, version/device provenance and runtime errors fall back to the CPU path",
         "MLX dense scoring keeps exact float32 inputs and checks finite outputs, normalized/absolute score error <=1e-5 and exact candidate coordinates for every batch size 16, 32, 64, 128 and 256",
         "Each MLX gate batch performs 2 warmups and 5 timed measurements including evaluation and synchronization; adoption requires speedup >=1.1",
-        "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance"
+        "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance",
+        "UnavailableTrainGroup, TrainGroup and CalibratedTrainGroupResult remain public contract exports for feature/scoring consumers."
       ],
       "evidence": [
         {
@@ -841,6 +843,30 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
           "symbol": "def score_with_backend("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "TrainGroup = PreparedTrainGroup | UnavailableTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "CalibratedTrainGroupResult = CalibratedTrainGroup | UnavailableTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "\"CalibratedTrainGroupResult\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_train_group_contracts_are_public_star_exports"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "def test_lane_population_count_mismatch_is_rejected_before_database_open"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "self.assertNotIn(\"evaluation_antigravity\", source)"
         }
       ]
     },
