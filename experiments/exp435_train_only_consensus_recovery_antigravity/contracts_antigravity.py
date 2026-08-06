@@ -650,6 +650,90 @@ class Exp435DatasetResult:
 
 
 @dataclass(frozen=True)
+class BackendBatchEvidence:
+    """Immutable parity, finite-output, and timing evidence for one batch.
+
+    A batch that fails one gate must not erase a sibling batch that passes.  A
+    ``BackendDecision`` retains all these records and selects at most one for
+    adoption, making the batch-level gate auditable after readiness.
+    """
+
+    batch_size: int
+    finite_outputs: bool
+    candidate_identity_match: bool
+    parity_passed: bool
+    normalized_error_max: float | None
+    absolute_error_max: float | None
+    speed_passed: bool
+    cpu_median_seconds: float | None
+    mlx_median_seconds: float | None
+    speedup: float | None
+    reason: str
+
+    def __post_init__(self) -> None:
+        _integer(self.batch_size, "batch_size", minimum=1)
+        for name in (
+            "finite_outputs",
+            "candidate_identity_match",
+            "parity_passed",
+            "speed_passed",
+        ):
+            if type(getattr(self, name)) is not bool:
+                raise ValueError(f"{name} must be boolean")
+        for name in ("normalized_error_max", "absolute_error_max", "cpu_median_seconds", "mlx_median_seconds", "speedup"):
+            value = _optional_finite(getattr(self, name), name)
+            if value is not None and value < 0:
+                raise ValueError(f"{name} must be non-negative")
+            object.__setattr__(self, name, value)
+        medians_present = self.cpu_median_seconds is not None or self.mlx_median_seconds is not None
+        if medians_present:
+            if self.cpu_median_seconds is None or self.mlx_median_seconds is None:
+                raise ValueError("CPU and MLX batch medians must be supplied together")
+            if self.cpu_median_seconds <= 0 or self.mlx_median_seconds <= 0:
+                raise ValueError("CPU and MLX batch medians must be positive")
+            if self.speedup is None:
+                raise ValueError("batch speedup is required with medians")
+            if not isclose(
+                self.speedup,
+                self.cpu_median_seconds / self.mlx_median_seconds,
+                rel_tol=1e-12,
+                abs_tol=0.0,
+            ):
+                raise ValueError("batch speedup does not match medians")
+        elif self.speedup is not None:
+            raise ValueError("batch speedup requires CPU and MLX medians")
+        if self.parity_passed:
+            if not self.finite_outputs or not self.candidate_identity_match:
+                raise ValueError("passed batch parity requires finite matching output")
+            if self.normalized_error_max is None or self.normalized_error_max > FROZEN_CONFIG.score_tolerance:
+                raise ValueError("passed batch normalized error exceeds 1e-5")
+            if self.absolute_error_max is None or self.absolute_error_max > FROZEN_CONFIG.score_tolerance:
+                raise ValueError("passed batch absolute error exceeds 1e-5")
+        if self.speed_passed and (self.speedup is None or self.speedup < FROZEN_CONFIG.mlx_min_speedup):
+            raise ValueError("passed batch speed gate is below 1.1")
+        object.__setattr__(self, "reason", _name(self.reason, "reason"))
+
+    @property
+    def adopted(self) -> bool:
+        return self.parity_passed and self.speed_passed
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "batch_size": self.batch_size,
+            "finite_outputs": self.finite_outputs,
+            "candidate_identity_match": self.candidate_identity_match,
+            "parity_passed": self.parity_passed,
+            "normalized_error_max": self.normalized_error_max,
+            "absolute_error_max": self.absolute_error_max,
+            "speed_passed": self.speed_passed,
+            "cpu_median_seconds": self.cpu_median_seconds,
+            "mlx_median_seconds": self.mlx_median_seconds,
+            "speedup": self.speedup,
+            "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True)
 class BackendDecision:
     """The deterministic CPU/MLX adoption result and parity evidence."""
 
@@ -669,7 +753,10 @@ class BackendDecision:
     mlx_version: str | None = None
     mlx_metal_version: str | None = None
     device: str | None = None
+    device_info: str | None = None
+    metal_available: bool | None = None
     timings: tuple[tuple[int, float, float], ...] = ()
+    batch_evidence: tuple[BackendBatchEvidence, ...] = ()
     reason: str = ""
 
     def __post_init__(self) -> None:
@@ -695,7 +782,9 @@ class BackendDecision:
         selected_batch_size = self.selected_batch_size if self.selected_batch_size is not None else self.batch_size
         object.__setattr__(self, "batch_size", selected_batch_size)
         object.__setattr__(self, "selected_batch_size", selected_batch_size)
-        for name in ("mlx_version", "mlx_metal_version", "device"):
+        if self.metal_available is not None and type(self.metal_available) is not bool:
+            raise ValueError("metal_available must be boolean or None")
+        for name in ("mlx_version", "mlx_metal_version", "device", "device_info"):
             value = getattr(self, name)
             if value is not None:
                 object.__setattr__(self, name, _name(value, name))
@@ -707,6 +796,16 @@ class BackendDecision:
             _integer(batch, "timing batch size", minimum=1)
             timings.append((batch, _finite(cpu_seconds, "cpu timing"), _finite(mlx_seconds, "mlx timing")))
         object.__setattr__(self, "timings", tuple(timings))
+        batch_evidence = []
+        seen_batches: set[int] = set()
+        for item in _tuple(self.batch_evidence, "batch_evidence"):
+            if not isinstance(item, BackendBatchEvidence):
+                raise ValueError("batch_evidence must contain BackendBatchEvidence")
+            if item.batch_size in seen_batches:
+                raise ValueError("batch_evidence contains duplicate batch size")
+            seen_batches.add(item.batch_size)
+            batch_evidence.append(item)
+        object.__setattr__(self, "batch_evidence", tuple(batch_evidence))
         object.__setattr__(self, "reason", _name(self.reason, "reason"))
         medians_present = self.cpu_median_seconds is not None or self.mlx_median_seconds is not None
         if medians_present:
@@ -753,6 +852,8 @@ class BackendDecision:
                 raise ValueError("adopted MLX speedup from recorded medians must be at least 1.1")
             if self.mlx_version is None or self.mlx_metal_version is None or self.device is None:
                 raise ValueError("adopted MLX requires mlx_version, mlx_metal_version, and device")
+            if self.metal_available is False:
+                raise ValueError("adopted MLX requires available Metal")
             if self.selected_batch_size is None or not self.timings:
                 raise ValueError("adopted MLX requires benchmark timings")
             if self.cpu_median_seconds is None or self.cpu_median_seconds <= 0:
@@ -763,9 +864,28 @@ class BackendDecision:
                 raise ValueError("adopted MLX timings must be positive")
             if not any(item[0] == self.batch_size for item in self.timings):
                 raise ValueError("adopted MLX batch size is absent from timings")
+        if self.batch_evidence:
+            if self.selected_batch_size is not None:
+                selected_evidence = [
+                    item for item in self.batch_evidence if item.batch_size == self.selected_batch_size
+                ]
+                if len(selected_evidence) != 1:
+                    raise ValueError("selected batch evidence is missing or duplicated")
+                if self.adopted and not selected_evidence[0].adopted:
+                    raise ValueError("adopted decision selected batch evidence did not pass")
 
     @classmethod
-    def cpu_fallback(cls, reason: str) -> "BackendDecision":
+    def cpu_fallback(
+        cls,
+        reason: str,
+        *,
+        mlx_version: str | None = None,
+        mlx_metal_version: str | None = None,
+        device: str | None = None,
+        device_info: str | None = None,
+        metal_available: bool | None = None,
+        batch_evidence: tuple[BackendBatchEvidence, ...] = (),
+    ) -> "BackendDecision":
         return cls(
             backend="cpu",
             adopted=False,
@@ -775,6 +895,12 @@ class BackendDecision:
             parity_passed=False,
             normalized_error_max=None,
             absolute_error_max=None,
+            mlx_version=mlx_version,
+            mlx_metal_version=mlx_metal_version,
+            device=device,
+            device_info=device_info,
+            metal_available=metal_available,
+            batch_evidence=batch_evidence,
             reason=reason,
         )
 
@@ -796,7 +922,10 @@ class BackendDecision:
             "mlx_version": self.mlx_version,
             "mlx_metal_version": self.mlx_metal_version,
             "device": self.device,
+            "device_info": self.device_info,
+            "metal_available": self.metal_available,
             "timings": [list(item) for item in self.timings],
+            "batch_evidence": [item.to_dict() for item in self.batch_evidence],
             "reason": self.reason,
         }
 
@@ -886,6 +1015,7 @@ __all__ = [
     "InstanceScoreEvidence",
     "Exp435Candidate",
     "Exp435DatasetResult",
+    "BackendBatchEvidence",
     "BackendDecision",
     "Exp435RunSummary",
 ]

@@ -8,6 +8,7 @@ import unittest
 import numpy as np
 
 from experiments.exp435_train_only_consensus_recovery_antigravity.contracts_antigravity import (
+    BackendBatchEvidence,
     BackendDecision,
     CalibratedTrainGroup,
     ChannelCalibration,
@@ -320,6 +321,55 @@ class Exp435ContractTests(unittest.TestCase):
                 selected_batch_size=16,
                 timings=((16, 0.10, 0.20),),
                 reason="recorded_benchmark_not_adopted",
+            )
+
+    def test_backend_keeps_immutable_per_batch_gate_evidence(self) -> None:
+        passed = BackendBatchEvidence(
+            batch_size=32,
+            finite_outputs=True,
+            candidate_identity_match=True,
+            parity_passed=True,
+            normalized_error_max=1e-6,
+            absolute_error_max=1e-6,
+            speed_passed=True,
+            cpu_median_seconds=0.12,
+            mlx_median_seconds=0.1,
+            speedup=1.2,
+            reason="passed",
+        )
+        failed = BackendBatchEvidence(
+            batch_size=16,
+            finite_outputs=True,
+            candidate_identity_match=False,
+            parity_passed=False,
+            normalized_error_max=1.0,
+            absolute_error_max=1.0,
+            speed_passed=False,
+            cpu_median_seconds=0.12,
+            mlx_median_seconds=0.01,
+            speedup=12.0,
+            reason="candidate_identity_mismatch",
+        )
+        backend = self._adopted_backend(
+            batch_size=32,
+            selected_batch_size=32,
+            cpu_median_seconds=0.12,
+            mlx_median_seconds=0.1,
+            speedup=1.2,
+            timings=((16, 0.12, 0.01), (32, 0.12, 0.1)),
+            batch_evidence=(failed, passed),
+        )
+        self.assertTrue(backend.adopted)
+        self.assertEqual(tuple(item.batch_size for item in backend.batch_evidence), (16, 32))
+        self.assertIn("batch_evidence", backend.to_dict())
+        with self.assertRaisesRegex(ValueError, "selected batch evidence"):
+            replace(
+                backend,
+                batch_size=16,
+                selected_batch_size=16,
+                cpu_median_seconds=0.12,
+                mlx_median_seconds=0.01,
+                speedup=12.0,
             )
 
     def test_available_calibration_matches_train_count_and_higher_quantile(self) -> None:

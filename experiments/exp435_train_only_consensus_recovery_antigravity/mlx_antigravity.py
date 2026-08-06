@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from importlib import metadata
+import json
 from numbers import Integral
 from time import perf_counter
 from typing import Any, Callable, Mapping, Protocol, Sequence
@@ -19,7 +20,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .config_antigravity import FROZEN_CONFIG
-from .contracts_antigravity import BackendDecision
+from .contracts_antigravity import BackendBatchEvidence, BackendDecision
 from .features_antigravity import score_channel_cpu
 
 
@@ -29,7 +30,25 @@ _TIMED_RUNS = 5
 
 
 class MlxUnavailable(RuntimeError):
-    """Raised by a direct MLX score call when MLX/Metal is not usable."""
+    """Raised when MLX discovery fails, retaining partial provenance."""
+
+    def __init__(
+        self,
+        reason: str,
+        *,
+        mlx_version: str | None = None,
+        mlx_metal_version: str | None = None,
+        device: str | None = None,
+        device_info: str | None = None,
+        metal_available: bool | None = None,
+    ) -> None:
+        self.reason = str(reason) or "mlx_unavailable"
+        self.mlx_version = mlx_version
+        self.mlx_metal_version = mlx_metal_version
+        self.device = device
+        self.device_info = device_info
+        self.metal_available = metal_available
+        super().__init__(self.reason)
 
 
 class MlxEngineProtocol(Protocol):
@@ -119,6 +138,17 @@ def _version(distribution: str, fallback: object = None) -> str:
     return str(value)
 
 
+def _canonical_info(value: object) -> str | None:
+    """Serialize Metal device information without depending on its shape."""
+
+    if value is None:
+        return None
+    try:
+        return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+    except (TypeError, ValueError):
+        return str(value)
+
+
 class MlxEngine:
     """Lazy MLX implementation of the exact CPU RMS/nearest-k median score."""
 
@@ -129,18 +159,53 @@ class MlxEngine:
             raise MlxUnavailable("mlx_unavailable") from exc
         self.mx = mx
         self.mlx_version = _version("mlx", getattr(mx, "__version__", None))
-        # The readiness contract records both distributions.  Do not infer a
-        # Metal package version from the core MLX version: an incomplete
-        # install must remain on the CPU path.
-        self.mlx_metal_version = _version("mlx-metal", None)
-        if self.mlx_version == "unknown" or self.mlx_metal_version == "unknown":
-            raise MlxUnavailable("mlx_unavailable")
+        # Apple distributes Metal support inside the ``mlx`` wheel.  There is
+        # no separate ``mlx-metal`` distribution to require; this marker is a
+        # truthful provenance label for the bundled backend version.
+        if self.mlx_version == "unknown":
+            raise MlxUnavailable(
+                "mlx_version_unavailable",
+                mlx_version=self.mlx_version,
+            )
         try:
             self.device = str(mx.default_device())
-        except Exception:  # pragma: no cover - implementation dependent
-            raise MlxUnavailable("mlx_metal_unavailable")
-        if "metal" not in self.device.lower():
-            raise MlxUnavailable("mlx_metal_unavailable")
+        except Exception as exc:  # pragma: no cover - implementation dependent
+            raise MlxUnavailable(
+                f"mlx_device_unavailable:{type(exc).__name__}",
+                mlx_version=self.mlx_version,
+            ) from exc
+        metal = getattr(mx, "metal", None)
+        metal_is_available = getattr(metal, "is_available", None)
+        try:
+            self.metal_available = bool(metal_is_available()) if callable(metal_is_available) else False
+        except Exception as exc:  # pragma: no cover - implementation dependent
+            raise MlxUnavailable(
+                f"mlx_metal_probe_failed:{type(exc).__name__}",
+                mlx_version=self.mlx_version,
+                device=self.device,
+                metal_available=None,
+            ) from exc
+        device_info_call = getattr(metal, "device_info", None)
+        try:
+            raw_device_info = device_info_call() if callable(device_info_call) else None
+        except Exception as exc:  # pragma: no cover - implementation dependent
+            raise MlxUnavailable(
+                f"mlx_metal_device_info_failed:{type(exc).__name__}",
+                mlx_version=self.mlx_version,
+                device=self.device,
+                metal_available=self.metal_available,
+            ) from exc
+        self.device_info = _canonical_info(raw_device_info)
+        self.mlx_metal_version = f"bundled-with-mlx-{self.mlx_version}"
+        if not self.metal_available:
+            raise MlxUnavailable(
+                "mlx_metal_unavailable",
+                mlx_version=self.mlx_version,
+                mlx_metal_version=self.mlx_metal_version,
+                device=self.device,
+                device_info=self.device_info,
+                metal_available=False,
+            )
 
     def score(
         self,
@@ -413,9 +478,39 @@ def _metadata(engine: object, name: str, *aliases: str) -> str | None:
     return None
 
 
+def _engine_provenance(engine: object | None) -> dict[str, object]:
+    if engine is None:
+        return {
+            "mlx_version": None,
+            "mlx_metal_version": None,
+            "device": None,
+            "device_info": None,
+            "metal_available": None,
+        }
+    metal_available = getattr(engine, "metal_available", None)
+    if metal_available is not None:
+        metal_available = bool(metal_available)
+    return {
+        "mlx_version": _metadata(engine, "mlx_version", "version"),
+        "mlx_metal_version": _metadata(engine, "mlx_metal_version", "metal_version"),
+        "device": _metadata(engine, "device", "device_name"),
+        "device_info": _metadata(engine, "device_info", "metal_device_info"),
+        "metal_available": metal_available,
+    }
+
+
+def _runtime_failure_reason(exc: BaseException) -> str:
+    """Return a stable, precise reason without catching process interrupts."""
+
+    message = str(exc).strip().replace("\n", " ")
+    if len(message) > 120:
+        message = message[:120]
+    return f"mlx_runtime_error:{type(exc).__name__}" + (f":{message}" if message else "")
+
+
 def _make_decision(
     *,
-    engine: object,
+    engine: object | None,
     adopted: bool,
     reason: str,
     smoke_seed: int,
@@ -426,12 +521,44 @@ def _make_decision(
     absolute_error_max: float | None,
     timings: tuple[tuple[int, float, float], ...],
     selected_batch_size: int | None,
+    batch_evidence: tuple[BackendBatchEvidence, ...] = (),
+    provenance: Mapping[str, object] | None = None,
 ) -> BackendDecision:
-    if not timings or selected_batch_size is None:
-        return BackendDecision.cpu_fallback(reason)
-    selected = next(item for item in timings if item[0] == selected_batch_size)
-    cpu_seconds, mlx_seconds = selected[1], selected[2]
-    speedup = cpu_seconds / mlx_seconds
+    evidence = next(
+        (item for item in batch_evidence if item.batch_size == selected_batch_size),
+        None,
+    )
+    if evidence is not None and evidence.cpu_median_seconds is not None and evidence.mlx_median_seconds is not None:
+        cpu_seconds = evidence.cpu_median_seconds
+        mlx_seconds = evidence.mlx_median_seconds
+        speedup = evidence.speedup
+    elif timings and selected_batch_size is not None:
+        selected = next(item for item in timings if item[0] == selected_batch_size)
+        cpu_seconds, mlx_seconds = selected[1], selected[2]
+        speedup = cpu_seconds / mlx_seconds
+    else:
+        cpu_seconds = mlx_seconds = speedup = None
+    fields = dict(_engine_provenance(engine))
+    if provenance is not None:
+        fields.update(provenance)
+    if cpu_seconds is None or mlx_seconds is None or selected_batch_size is None:
+        return BackendDecision(
+            backend="cpu",
+            adopted=False,
+            smoke_seed=smoke_seed,
+            finite_outputs=finite_outputs,
+            candidate_identity_match=candidate_identity_match,
+            parity_passed=False,
+            normalized_error_max=normalized_error_max,
+            absolute_error_max=absolute_error_max,
+            mlx_version=fields.get("mlx_version"),
+            mlx_metal_version=fields.get("mlx_metal_version"),
+            device=fields.get("device"),
+            device_info=fields.get("device_info"),
+            metal_available=fields.get("metal_available"),
+            batch_evidence=batch_evidence,
+            reason=reason,
+        )
     return BackendDecision(
         backend="mlx" if adopted else "cpu",
         adopted=adopted,
@@ -445,10 +572,13 @@ def _make_decision(
         selected_batch_size=selected_batch_size,
         cpu_median_seconds=cpu_seconds,
         mlx_median_seconds=mlx_seconds,
-        mlx_version=_metadata(engine, "mlx_version", "version") or ("unknown" if adopted else None),
-        mlx_metal_version=_metadata(engine, "mlx_metal_version", "metal_version") or ("unknown" if adopted else None),
-        device=_metadata(engine, "device", "device_name") or ("unknown" if adopted else None),
+        mlx_version=fields.get("mlx_version") or ("unknown" if adopted else None),
+        mlx_metal_version=fields.get("mlx_metal_version") or ("unknown" if adopted else None),
+        device=fields.get("device") or ("unknown" if adopted else None),
+        device_info=fields.get("device_info"),
+        metal_available=fields.get("metal_available"),
         timings=timings,
+        batch_evidence=batch_evidence,
         reason=reason,
     )
 
@@ -470,11 +600,28 @@ def benchmark_mlx_adoption(
     except (TypeError, ValueError):
         return BackendDecision.cpu_fallback("invalid_fixture")
     active_engine = engine
+    provenance: dict[str, object] | None = None
     if active_engine is None:
         try:
             active_engine = MlxEngine()
         except MlxUnavailable as exc:
-            return BackendDecision.cpu_fallback(str(exc) or "mlx_unavailable")
+            provenance = {
+                "mlx_version": exc.mlx_version,
+                "mlx_metal_version": exc.mlx_metal_version,
+                "device": exc.device,
+                "device_info": exc.device_info,
+                "metal_available": exc.metal_available,
+            }
+            return BackendDecision.cpu_fallback(
+                exc.reason,
+                mlx_version=exc.mlx_version,
+                mlx_metal_version=exc.mlx_metal_version,
+                device=exc.device,
+                device_info=exc.device_info,
+                metal_available=exc.metal_available,
+            )
+        except RuntimeError as exc:
+            return BackendDecision.cpu_fallback(_runtime_failure_reason(exc))
 
     # CPU scores are computed once from the exact input and reused for every
     # batch timing.  This is not a TEST evaluation; thresholds are fixed
@@ -488,12 +635,7 @@ def benchmark_mlx_adoption(
     cpu_flat = np.concatenate(cpu_reference).astype(np.float32, copy=False)
 
     timings_list: list[tuple[int, float, float]] = []
-    all_finite = True
-    identity_match = True
-    maximum_absolute = 0.0
-    maximum_normalized = 0.0
-    finite_pairs = 0
-    output_error: str | None = None
+    batch_records: list[BackendBatchEvidence] = []
 
     def cpu_call() -> NDArray[np.float32]:
         return np.concatenate(
@@ -515,32 +657,51 @@ def benchmark_mlx_adoption(
         ).astype(np.float32, copy=False)
 
     for batch_size in _BATCH_SIZES:
+        batch_finite = True
+        batch_identity = True
+        batch_absolute = 0.0
+        batch_normalized = 0.0
+        batch_pairs = 0
+        batch_error: str | None = None
+        cpu_times: list[float] = []
+        mlx_times: list[float] = []
         try:
             for _ in range(_WARMUPS):
                 _measure(active_engine, "cpu", batch_size, cpu_call, clock)
                 _measure(active_engine, "mlx", batch_size, lambda b=batch_size: mlx_call(b), clock)
-            cpu_times: list[float] = []
-            mlx_times: list[float] = []
             for _ in range(_TIMED_RUNS):
-                cpu_seconds, cpu_output_raw = _measure(active_engine, "cpu", batch_size, cpu_call, clock)
-                mlx_seconds, mlx_output_raw = _measure(
-                    active_engine,
-                    "mlx",
-                    batch_size,
-                    lambda b=batch_size: mlx_call(b),
-                    clock,
-                )
+                try:
+                    cpu_seconds, cpu_output_raw = _measure(active_engine, "cpu", batch_size, cpu_call, clock)
+                    mlx_seconds, mlx_output_raw = _measure(
+                        active_engine,
+                        "mlx",
+                        batch_size,
+                        lambda b=batch_size: mlx_call(b),
+                        clock,
+                    )
+                except (TypeError, ValueError, FloatingPointError) as exc:
+                    batch_error = batch_error or "nonfinite_output"
+                    batch_finite = False
+                    batch_identity = False
+                    break
+                except RuntimeError as exc:
+                    batch_error = batch_error or _runtime_failure_reason(exc)
+                    batch_finite = False
+                    batch_identity = False
+                    break
                 cpu_times.append(cpu_seconds)
                 mlx_times.append(mlx_seconds)
                 cpu_output = np.asarray(cpu_output_raw, dtype=np.float32)
                 mlx_output = np.asarray(mlx_output_raw, dtype=np.float32)
                 if cpu_output.shape != mlx_output.shape or cpu_output.shape != cpu_flat.shape:
-                    raise ValueError("score shape mismatch")
-                if not np.isfinite(cpu_output).all() or not np.isfinite(mlx_output).all():
-                    all_finite = False
-                    output_error = output_error or "nonfinite_output"
+                    batch_error = batch_error or "score_shape_mismatch"
+                    batch_finite = False
                     continue
-                finite_pairs += int(cpu_output.size)
+                if not np.isfinite(cpu_output).all() or not np.isfinite(mlx_output).all():
+                    batch_finite = False
+                    batch_error = batch_error or "nonfinite_output"
+                    continue
+                batch_pairs += int(cpu_output.size)
                 # Error arithmetic follows the preregistered scalar formula;
                 # score values remain the exact float32 values returned by the
                 # two backends, while the comparison itself avoids an
@@ -553,8 +714,8 @@ def benchmark_mlx_adoption(
                     float(FROZEN_CONFIG.numeric_floor),
                 )
                 normalized = absolute / denominators
-                maximum_absolute = max(maximum_absolute, float(np.max(absolute)))
-                maximum_normalized = max(maximum_normalized, float(np.max(normalized)))
+                batch_absolute = max(batch_absolute, float(np.max(absolute)))
+                batch_normalized = max(batch_normalized, float(np.max(normalized)))
                 offset = 0
                 mlx_coordinates: list[tuple[int, int]] = []
                 for fixture_index, item_scores in enumerate(cpu_reference):
@@ -568,74 +729,125 @@ def benchmark_mlx_adoption(
                     )
                     offset += count
                 if tuple(mlx_coordinates) != tuple(item for group in cpu_coordinates for item in group):
-                    identity_match = False
-                    output_error = output_error or "candidate_identity_mismatch"
-            timings_list.append(
-                (
-                    int(batch_size),
-                    float(np.median(np.asarray(cpu_times, dtype=np.float64))),
-                    float(np.median(np.asarray(mlx_times, dtype=np.float64))),
-                )
+                    batch_identity = False
+                    batch_error = batch_error or "candidate_identity_mismatch"
+        except (TypeError, ValueError, FloatingPointError) as exc:
+            batch_error = batch_error or "nonfinite_output"
+            batch_finite = False
+            batch_identity = False
+        except RuntimeError as exc:
+            batch_error = batch_error or _runtime_failure_reason(exc)
+            batch_finite = False
+            batch_identity = False
+
+        complete_timing = len(cpu_times) == _TIMED_RUNS and len(mlx_times) == _TIMED_RUNS
+        if complete_timing:
+            cpu_median = float(np.median(np.asarray(cpu_times, dtype=np.float64)))
+            mlx_median = float(np.median(np.asarray(mlx_times, dtype=np.float64)))
+            speedup = cpu_median / mlx_median
+            timings_list.append((int(batch_size), cpu_median, mlx_median))
+        else:
+            cpu_median = mlx_median = speedup = None
+        parity_passed = bool(
+            batch_finite
+            and batch_identity
+            and batch_pairs > 0
+            and batch_absolute <= FROZEN_CONFIG.score_tolerance
+            and batch_normalized <= FROZEN_CONFIG.score_tolerance
+        )
+        speed_passed = bool(parity_passed and speedup is not None and speedup >= FROZEN_CONFIG.mlx_min_speedup)
+        if batch_error is None:
+            if not parity_passed:
+                if not batch_identity:
+                    batch_error = "candidate_identity_mismatch"
+                elif not batch_finite:
+                    batch_error = "nonfinite_output"
+                elif batch_absolute > FROZEN_CONFIG.score_tolerance:
+                    batch_error = "absolute_error_exceeded"
+                elif batch_normalized > FROZEN_CONFIG.score_tolerance:
+                    batch_error = "normalized_error_exceeded"
+            elif not speed_passed:
+                batch_error = "speedup_below_threshold"
+            else:
+                batch_error = "passed"
+        batch_records.append(
+            BackendBatchEvidence(
+                batch_size=int(batch_size),
+                finite_outputs=batch_finite,
+                candidate_identity_match=batch_identity,
+                parity_passed=parity_passed,
+                normalized_error_max=batch_normalized if batch_pairs else None,
+                absolute_error_max=batch_absolute if batch_pairs else None,
+                speed_passed=speed_passed,
+                cpu_median_seconds=cpu_median,
+                mlx_median_seconds=mlx_median,
+                speedup=speedup,
+                reason=batch_error,
             )
-        except (TypeError, ValueError, FloatingPointError):
-            all_finite = False if output_error == "nonfinite_output" else all_finite
-            output_error = output_error or "nonfinite_output"
+        )
 
     timings = tuple(timings_list)
-    if finite_pairs == 0:
-        all_finite = False
-    parity_passed = bool(
-        all_finite
-        and identity_match
-        and finite_pairs > 0
-        and maximum_absolute <= FROZEN_CONFIG.score_tolerance
-        and maximum_normalized <= FROZEN_CONFIG.score_tolerance
-    )
-    passing = [
-        item
-        for item in timings
-        if item[1] / item[2] >= FROZEN_CONFIG.mlx_min_speedup and parity_passed
-    ]
+    evidence = tuple(batch_records)
+    passing = [item for item in evidence if item.adopted]
     if passing:
-        selected = min(passing, key=lambda item: (item[2], item[0]))
+        selected = min(passing, key=lambda item: (item.mlx_median_seconds or float("inf"), item.batch_size))
         reason = "adopted"
         return _make_decision(
             engine=active_engine,
             adopted=True,
             reason=reason,
             smoke_seed=smoke_seed,
-            finite_outputs=all_finite,
-            candidate_identity_match=identity_match,
+            finite_outputs=selected.finite_outputs,
+            candidate_identity_match=selected.candidate_identity_match,
             parity_passed=True,
-            normalized_error_max=maximum_normalized,
-            absolute_error_max=maximum_absolute,
+            normalized_error_max=selected.normalized_error_max,
+            absolute_error_max=selected.absolute_error_max,
             timings=timings,
-            selected_batch_size=selected[0],
+            selected_batch_size=selected.batch_size,
+            batch_evidence=evidence,
+            provenance=provenance,
         )
 
-    if output_error == "candidate_identity_mismatch" or not identity_match:
+    parity_evidence = [item for item in evidence if item.parity_passed]
+    representative = (
+        min(
+            parity_evidence,
+            key=lambda item: (item.mlx_median_seconds or float("inf"), item.batch_size),
+        )
+        if parity_evidence
+        else min(
+            (item for item in evidence if item.mlx_median_seconds is not None),
+            key=lambda item: (item.mlx_median_seconds or float("inf"), item.batch_size),
+            default=None,
+        )
+    )
+    if any(item.reason == "candidate_identity_mismatch" for item in evidence):
         reason = "candidate_identity_mismatch"
-    elif not all_finite:
+    elif any(item.reason == "nonfinite_output" for item in evidence):
         reason = "nonfinite_output"
-    elif maximum_absolute > FROZEN_CONFIG.score_tolerance:
+    elif any(item.reason == "absolute_error_exceeded" for item in evidence):
         reason = "absolute_error_exceeded"
-    elif maximum_normalized > FROZEN_CONFIG.score_tolerance:
+    elif any(item.reason == "normalized_error_exceeded" for item in evidence):
         reason = "normalized_error_exceeded"
+    elif any(item.reason.startswith("mlx_runtime_error:") for item in evidence):
+        reason = next(item.reason for item in evidence if item.reason.startswith("mlx_runtime_error:"))
     else:
         reason = "speedup_below_threshold"
-    selected_fallback = min(timings, key=lambda item: (item[2], item[0]))[0] if timings else None
+    selected_fallback = representative.batch_size if representative is not None and representative.mlx_median_seconds is not None else None
     return _make_decision(
         engine=active_engine,
         adopted=False,
         reason=reason,
         smoke_seed=smoke_seed,
-        finite_outputs=all_finite,
-        candidate_identity_match=identity_match,
-        parity_passed=False,
-        normalized_error_max=(maximum_normalized if finite_pairs else None),
-        absolute_error_max=(maximum_absolute if finite_pairs else None),
+        finite_outputs=representative.finite_outputs if representative is not None else False,
+        candidate_identity_match=representative.candidate_identity_match if representative is not None else False,
+        parity_passed=representative.parity_passed if representative is not None else False,
+        normalized_error_max=representative.normalized_error_max if representative is not None else None,
+        absolute_error_max=representative.absolute_error_max if representative is not None else None,
         timings=timings,
         selected_batch_size=selected_fallback,
+        batch_evidence=evidence,
+        provenance=provenance,
     )
 
 

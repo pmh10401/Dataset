@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import builtins
+import importlib
+import sys
+import types
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -11,6 +16,8 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.contracts_anti
     BackendDecision,
 )
 from experiments.exp435_train_only_consensus_recovery_antigravity.mlx_antigravity import (
+    MlxEngine,
+    MlxUnavailable,
     benchmark_mlx_adoption,
     score_channel_mlx,
     score_with_backend,
@@ -49,6 +56,8 @@ class FakeMlxEngine:
         self.mlx_version = "fake-mlx"
         self.mlx_metal_version = "fake-metal"
         self.device = "fake-metal-device"
+        self.device_info = "fake-device-info"
+        self.metal_available = True
 
     def score(self, query: object, references: object, k: int, *, batch_size: int = 16) -> np.ndarray:
         del batch_size
@@ -131,6 +140,7 @@ class MlxAdoptionTests(unittest.TestCase):
         )
         self.assertFalse(decision.adopted)
         self.assertEqual(decision.reason, "nonfinite_output")
+        self.assertFalse(decision.finite_outputs)
 
     def test_absolute_error_gate_is_strict(self) -> None:
         decision = benchmark_mlx_adoption(
@@ -150,6 +160,42 @@ class MlxAdoptionTests(unittest.TestCase):
         self.assertFalse(decision.adopted)
         self.assertEqual(decision.reason, "speedup_below_threshold")
 
+    def test_one_failed_batch_does_not_poison_a_passing_batch(self) -> None:
+        class FailsOnlyFirstBatch(FakeMlxEngine):
+            def score(self, query, references, k, *, batch_size=16):
+                if batch_size == 16:
+                    raise RuntimeError("forced kernel failure")
+                return super().score(query, references, k, batch_size=batch_size)
+
+        decision = benchmark_mlx_adoption(
+            fixtures=self.fixtures,
+            engine=FailsOnlyFirstBatch(speedup=1.2),
+            clock=_StepClock(),
+        )
+        self.assertTrue(decision.adopted)
+        self.assertNotEqual(decision.selected_batch_size, 16)
+        first = next(item for item in decision.batch_evidence if item.batch_size == 16)
+        self.assertFalse(first.parity_passed)
+        self.assertIn("mlx_runtime_error", first.reason)
+
+    def test_one_candidate_mismatch_batch_does_not_poison_a_passing_batch(self) -> None:
+        class FlipsOnlyFirstBatch(FakeMlxEngine):
+            def score(self, query, references, k, *, batch_size=16):
+                output = super().score(query, references, k, batch_size=batch_size)
+                if batch_size == 16:
+                    output = output + np.float32(10.0)
+                return output
+
+        decision = benchmark_mlx_adoption(
+            fixtures=self.fixtures,
+            engine=FlipsOnlyFirstBatch(speedup=1.2),
+            clock=_StepClock(),
+        )
+        self.assertTrue(decision.adopted)
+        self.assertNotEqual(decision.selected_batch_size, 16)
+        first = next(item for item in decision.batch_evidence if item.batch_size == 16)
+        self.assertEqual(first.reason, "candidate_identity_mismatch")
+
     def test_normalized_error_uses_the_one_e_minus_twelve_floor(self) -> None:
         queries = np.zeros((2, 2), dtype=np.float32)
         references = np.zeros((3, 2), dtype=np.float32)
@@ -162,6 +208,21 @@ class MlxAdoptionTests(unittest.TestCase):
                 },
             ),
             engine=FakeMlxEngine(error=1e-6, speedup=10.0),
+            clock=_StepClock(),
+        )
+        self.assertFalse(decision.adopted)
+        self.assertEqual(decision.reason, "normalized_error_exceeded")
+        self.assertGreater(decision.normalized_error_max or 0.0, 1e-5)
+
+    def test_normalized_error_boundary_above_one_e_minus_five_fails(self) -> None:
+        class RelativeError(FakeMlxEngine):
+            def score(self, query, references, k, *, batch_size=16):
+                output = super().score(query, references, k, batch_size=batch_size)
+                return np.asarray(output * np.float32(1.0 + 1.0001e-5), dtype=np.float32)
+
+        decision = benchmark_mlx_adoption(
+            fixtures=self.fixtures,
+            engine=RelativeError(speedup=10.0),
             clock=_StepClock(),
         )
         self.assertFalse(decision.adopted)
@@ -209,6 +270,9 @@ class MlxAdoptionTests(unittest.TestCase):
             "parity_passed",
             "reason",
             "normalized_error_max",
+            "batch_evidence",
+            "metal_available",
+            "device_info",
         ):
             self.assertIn(key, payload)
 
@@ -270,6 +334,130 @@ class MlxAdoptionTests(unittest.TestCase):
                 np.asarray([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]], dtype=np.float32),
                 3,
             )
+
+    def test_mlx_engine_constructs_from_standard_bundled_metal_stub(self) -> None:
+        class Metal:
+            @staticmethod
+            def is_available() -> bool:
+                return True
+
+            @staticmethod
+            def device_info() -> dict[str, object]:
+                return {"architecture": "stub-gpu", "memory_size": 123}
+
+        class Core(types.ModuleType):
+            __version__ = "0.30.0"
+            float32 = np.float32
+            metal = Metal()
+
+            @staticmethod
+            def default_device() -> object:
+                return "Device(gpu,0)"
+
+            @staticmethod
+            def array(value, dtype=None):
+                return np.asarray(value, dtype=dtype)
+
+            @staticmethod
+            def square(value):
+                return np.square(value)
+
+            @staticmethod
+            def mean(value, axis=None):
+                return np.mean(value, axis=axis, dtype=np.float32)
+
+            @staticmethod
+            def sqrt(value):
+                return np.sqrt(value, dtype=np.float32)
+
+            @staticmethod
+            def sort(value, axis=1):
+                return np.sort(value, axis=axis)
+
+            @staticmethod
+            def eval(value):
+                return None
+
+            @staticmethod
+            def synchronize():
+                return None
+
+        package = types.ModuleType("mlx")
+        core = Core("mlx.core")
+        package.core = core
+        previous = {name: sys.modules.get(name) for name in ("mlx", "mlx.core")}
+        sys.modules["mlx"] = package
+        sys.modules["mlx.core"] = core
+        try:
+            with patch("experiments.exp435_train_only_consensus_recovery_antigravity.mlx_antigravity.metadata.version", return_value="0.30.0"):
+                engine = MlxEngine()
+            self.assertTrue(engine.metal_available)
+            self.assertEqual(engine.mlx_version, "0.30.0")
+            self.assertEqual(engine.mlx_metal_version, "bundled-with-mlx-0.30.0")
+            self.assertEqual(engine.device, "Device(gpu,0)")
+            self.assertIn("stub-gpu", engine.device_info or "")
+            result = engine.score(
+                np.asarray([[0.1, 0.1]], dtype=np.float32),
+                np.asarray([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]], dtype=np.float32),
+                3,
+            )
+            self.assertEqual(result.dtype, np.dtype(np.float32))
+            self.assertEqual(result.shape, (1,))
+        finally:
+            for name, value in previous.items():
+                if value is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = value
+
+    def test_direct_absence_test_injects_import_failure_independent_of_host(self) -> None:
+        original_import = builtins.__import__
+
+        def blocked(name, *args, **kwargs):
+            if name == "mlx.core" or name.startswith("mlx."):
+                raise ModuleNotFoundError("forced absence")
+            return original_import(name, *args, **kwargs)
+
+        with patch("builtins.__import__", side_effect=blocked):
+            with self.assertRaises(MlxUnavailable) as context:
+                MlxEngine()
+        self.assertEqual(context.exception.reason, "mlx_unavailable")
+
+    def test_partial_discovery_is_preserved_in_cpu_fallback_evidence(self) -> None:
+        class Metal:
+            @staticmethod
+            def is_available() -> bool:
+                return False
+
+            @staticmethod
+            def device_info() -> dict[str, object]:
+                return {"architecture": "stub-cpu"}
+
+        core = types.ModuleType("mlx.core")
+        core.__version__ = "0.30.1"
+        core.metal = Metal()
+        core.default_device = lambda: "Device(cpu,0)"
+        package = types.ModuleType("mlx")
+        package.core = core
+        previous = {name: sys.modules.get(name) for name in ("mlx", "mlx.core")}
+        sys.modules["mlx"] = package
+        sys.modules["mlx.core"] = core
+        try:
+            with patch("experiments.exp435_train_only_consensus_recovery_antigravity.mlx_antigravity.metadata.version", return_value="0.30.1"):
+                decision = benchmark_mlx_adoption(self.fixtures)
+            self.assertFalse(decision.adopted)
+            self.assertEqual(decision.reason, "mlx_metal_unavailable")
+            self.assertEqual(decision.mlx_version, "0.30.1")
+            self.assertEqual(decision.mlx_metal_version, "bundled-with-mlx-0.30.1")
+            self.assertEqual(decision.device, "Device(cpu,0)")
+            self.assertFalse(decision.metal_available)
+            self.assertIn("stub-cpu", decision.device_info or "")
+        finally:
+            for name, value in previous.items():
+                if value is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = value
 
 
 if __name__ == "__main__":
