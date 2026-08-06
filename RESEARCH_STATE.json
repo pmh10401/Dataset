@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T14:09:55+09:00",
+  "updated_at": "2026-08-06T14:40:29+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "595417d773c432f0471d6c6445aea1f46a9b2668",
+  "last_verified_commit": "640fa5b290792e23d0cb3045faf5efdbbc97fc42",
   "active_experiment": "Exp435",
-  "active_phase": "implementation_complete_readiness_pending",
+  "active_phase": "implementation_complete_final_review_pending",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -53,7 +53,10 @@
     "exp435_task8_codemap_evaluation_boundary": "8127cd057ec2bfa66dbe5910716abfce6f6bd522",
     "exp435_task8_final_hardening": "d64275f2a2767ecaea716c5f7f52dffa7805a47c",
     "exp435_task8_codemap_contract_exports": "6d60e15461350efbf011e410dfc6ab0e1301b493",
-    "exp435_task9_direct_runner": "595417d773c432f0471d6c6445aea1f46a9b2668"
+    "exp435_task9_direct_runner": "595417d773c432f0471d6c6445aea1f46a9b2668",
+    "exp435_task8_evaluator_pin": "8ede3bc0510b95cbba3efa85cfadca913445733d",
+    "exp435_runtime_readiness_progress_fix": "c77c9b86862877581bd5965a28b199409815d6d5",
+    "exp435_parent_truthful_parallel_progress_fix": "640fa5b290792e23d0cb3045faf5efdbbc97fc42"
   },
   "partial_engineering_commits": {
     "task5_initial_runtime": "dc018ac9cc6e6dec13a93317df194d5e19200884",
@@ -74,7 +77,7 @@
       "artifact_root": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2"
     }
   },
-  "next_action": "Run a fresh final review of the implementation and fixed five-mode CLI, then run readiness. Prediction has not started, TEST labels have not been opened, and all fixed Exp435 artifact roots remain absent.",
+  "next_action": "Synchronize the code map, then run a fresh Sol review of the implementation and fixed five-mode CLI before readiness. Prediction has not started, TEST labels have not been opened, and all fixed Exp435 artifact roots remain absent.",
   "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*antigravity.py' && python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py --help",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",

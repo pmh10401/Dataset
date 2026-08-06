@@ -56,6 +56,10 @@ Exp404 목록이어야 하며, 합계는 동결된 1,117개 전체와 일치해�
 Python, NumPy, Numba, Torch, MLX와 mlx-metal 버전은 설치 여부를 포함해 manifest에
 기록한다.
 
+모든 readiness, runtime context, checkpoint, progress, publication은 단 하나의 동결
+run identity `exp435-train-only-consensus-recovery-antigravity-20260806`을 기록하고
+검증한다. source commit에서 identity를 파생하지 않는다.
+
 ## 3. prediction 정보 경계
 
 prediction이 사용할 수 있는 정보는 다음뿐이다.
@@ -79,6 +83,11 @@ prediction code는 label column 또는 `labels_blob`을 SELECT하지 않는다. 
 loader는 별도 모듈과 별도 CLI 명령에만 존재한다. 모든 해시·population·comparator
 검증을 통과한 뒤 evaluator가 `mode=ro`인 SQLite 연결 하나만 열어
 `instance_index`와 `label`을 읽고, 전체 데이터셋을 처리한 뒤 한 번 닫는다.
+
+Exp404 comparator와 Exp291 artifact는 각각 하나의 `O_NOFOLLOW` descriptor에서
+바이트를 읽어 SHA256을 계산하고 그 동일한 캡처 바이트를 parse한다. SQLite도
+Exp417의 descriptor-bound 검증 read-only connection 하나만 사용하며, 정확한
+해시 inode를 연 뒤에만 label query를 수행한다.
 
 ## 4. instance와 길이 경계
 
@@ -171,6 +180,9 @@ MLX 후보 단계는 amplitude, gradient와 ACF의 batched dense distance 계산
 TRAIN-only 고정 smoke에서 seed `43501`을 사용해 같은 float32 입력을 만들고,
 그 입력과 seed를 CPU와 MLX에 그대로 전달해 비교한다. 이 smoke seed는 사후
 bootstrap seed(`43520260806`)와 다르며, TEST 결과로 바꾸지 않는다.
+production score call과 같은 granularity로, fixture는 channel 하나의 TEST query
+row 정확히 하나를 사용한다. reference batch sizes만 `16, 32, 64, 128, 256`으로
+고정한다.
 
 - benchmark batch sizes: `16, 32, 64, 128, 256`
 - warm-up: 2회
@@ -188,9 +200,17 @@ bootstrap seed(`43520260806`)와 다르며, TEST 결과로 바꾸지 않는다.
 채택하고 그대로 실행한다. TEST 결과로 batch를 바꾸지 않는다. 조건 하나라도
 실패하거나 MLX/Metal이 없으면 CPU를 사용한다.
 
+readiness에서 채택한 MLX는 실행 중 device/version/parity/output 오류가 나면 CPU
+점수로 조용히 바꾸지 않고 전체 run을 실패시킨다. 따라서 manifest가 MLX인데 CPU
+score가 섞이는 경우는 없다.
+
 CPU는 최대 7 dataset worker를 사용한다. 각 worker 내부 OMP, OpenBLAS, MKL,
 VecLib, NumExpr와 Numba thread는 1개로 제한한다. MLX-heavy process는 하나만
 실행하며 MLX와 외부 multiprocess scoring을 동시에 사용하지 않는다.
+CPU parallel path는 submitted/in-flight future도 최대 7개다. parent가 worker event를
+받지 않으므로 `current_dataset`은 loading, dispatching, parent가 아직 result를
+수집하지 않은 `awaiting_worker_result`, 또는 committing 중인 dataset만 가리킨다;
+queued 또는 이미 completed/committed dataset을 `scoring`으로 표시하지 않는다.
 
 ## 9. 실행과 artifact 경로
 
@@ -226,6 +246,10 @@ evaluation의 네 고정 root가 모두 없을 때만 `ready`를 기록한다. p
 필수 필드는 PID, heartbeat, current dataset, TRAIN/TEST 수와 길이, stage, backend,
 completed/total, success/abstention/error, 후보 수, 처리속도, 경과시간, ETA,
 checkpoint와 latest error다. 데이터셋 결과 저장 순서는 이름 순서로 고정한다.
+parallel stage는 parent가 관찰한 `loading`, `dispatching`, `awaiting_worker_result`,
+`waiting_for_ordered_commit`, `committing`, `idle`, `failing`만 사용한다. worker가
+실제로 scoring 중이라고 parent가 증명할 event는 없으므로 parallel progress에서
+`scoring`을 사용하지 않는다.
 
 허용 모드는 `readiness`, `new`, `resume`, `inspect`, `evaluate`다. `evaluate`는
 완료된 prediction/manifest/artifact SHA256을 독립 검증한 뒤에만 TEST label을 연다.
@@ -245,7 +269,10 @@ prediction 완료 조건은 다음과 같다.
 
 입력 지문 변경, label 접근, 101개 이상 후보, 비유한 점수, worker 결과 불일치,
 checkpoint 손상 또는 저장 실패는 전체 prediction 실패다. 실패 root를 지우거나
-재사용하지 않는다.
+재사용하지 않는다. durable state가 `failed`인 root의 `resume`은 input session open,
+PID rewrite, progress write, event append 전에 read-only로 거절되고 tree bytes는
+바뀌지 않는다. `interrupted` root만 같은 frozen identity/binding을 검증한 뒤 재개할
+수 있다.
 
 ## 12. 사후 평가 고정
 

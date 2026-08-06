@@ -40,7 +40,11 @@ OUTPUT=/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigra
 CHECKPOINT=/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/checkpoint_antigravity
 READINESS=/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/readiness_antigravity.json
 EVALUATION=/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/evaluation_antigravity
+RUN_IDENTITY=exp435-train-only-consensus-recovery-antigravity-20260806
 ```
+
+readiness, runtime/checkpoint/progress/publication은 모두 이 정확한 frozen identity를
+기록·검증하며 Git commit에서 identity를 만들지 않는다.
 
 ## 3. 구현 완료 전 검증
 
@@ -82,11 +86,16 @@ readiness는 다음을 확인한다.
   (run parent는 존재하더라도 비어 있어야 함)
 
 MLX smoke는 seed `43501`로 만든 동일한 float32 입력을 CPU와 MLX에 전달한다.
+fixture는 production처럼 channel 하나의 TEST query row 정확히 하나를 score하고,
+reference batch sizes `16, 32, 64, 128, 256`은 변경하지 않는다.
 각 유한 score 쌍의 정규화오차는
 `abs(cpu_score - mlx_score) / max(abs(cpu_score), abs(mlx_score), 1e-12)`이고,
 그 최댓값과 최대 절대오차가 각각 `1e-5` 이하여야 한다. parity, 공식 alpha 후보
 좌표와 전송·동기화를 포함한 1.1배 속도 향상을 모두 만족하지 못하면 CPU로
 고정한다.
+
+readiness가 MLX를 채택했더라도 runtime device/version/parity/output 오류는 CPU로
+fallback하지 않고 run을 `failed`로 만든다. MLX manifest와 CPU score의 혼합은 없다.
 
 성공하면 `readiness_antigravity.json`의 `state`가 `ready`이고 backend가 `cpu` 또는
 `mlx`로 한 번 고정된다. 실패하면 `new`를 실행하지 않는다.
@@ -134,6 +143,12 @@ tail -n 40 \
 `current_dataset`, `dataset_metadata`, `stage`, `backend`, `counts`, `throughput`,
 `elapsed_seconds`, `eta_seconds`, `checkpoint`와 `latest_error`를 확인한다.
 
+CPU parallel에서는 submitted/in-flight future가 최대 7개다. `current_dataset`은
+parent가 loading/dispatching 중이거나 아직 result를 수집하지 않은
+`awaiting_worker_result`, 또는 `committing` 중인 dataset만 가리킨다. queued dataset과
+이미 complete/commit된 dataset을 `scoring`으로 표시하지 않으며 parent가 worker
+activity event를 받지 않으므로 parallel stage는 `scoring`을 주장하지 않는다.
+
 ## 7. 중단과 재개
 
 같은 PID가 살아 있으면 두 번째 실행을 시작하지 않는다. 프로세스가 없고 상태가
@@ -144,7 +159,10 @@ python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py resume
 ```
 
 계산·무결성 오류나 candidate budget 초과로 `failed`가 된 root는 재개하지 않는다.
-파일을 직접 고치거나 삭제하지 않는다.
+`resume`은 failed durable state를 input session open, PID rewrite, progress write,
+event append 전에 read-only로 거절하므로 root tree bytes는 불변이다. 파일을 직접
+고치거나 삭제하지 않는다. `interrupted` root만 frozen identity와 binding을 다시
+검증한 뒤 재개할 수 있다.
 
 완료 checkpoint가 이미 있으면 `resume`은 DB나 worker를 다시 열지 않고 publication을
 검증한다. publication/evaluation destination이 이미 나타난 경우 기존 파일을
@@ -200,6 +218,9 @@ SHA256 `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70`)와
 Exp291의 `automatic_hard_indices`가 888개 non-empty 데이터셋, 2,218개 좌표,
 229개 empty complement를 포함해 1,117개 전체에서 정확히 같은지 확인한다. 그
 뒤 `mode=ro` SQLite 연결 하나만 열어 `instance_index`와 `label`을 읽고 닫는다.
+Exp404 comparator와 Exp291 artifact는 각각 하나의 `O_NOFOLLOW` descriptor에서
+bytes+SHA256+parse를 끝내며, SQLite는 Exp417 descriptor-bound verified read-only
+connection 하나로 정확한 hashed inode만 연다.
 label 접근 전 output 전체 트리 바이트를 snapshot하고, 평가 파일을 staging한 뒤
 publish 직전 다시 전체 바이트를 검사한다. 변경이 있으면 no-clobber publish를
 실패시킨다.
