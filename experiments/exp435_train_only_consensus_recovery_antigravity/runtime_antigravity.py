@@ -43,6 +43,7 @@ from experiments.exp403_408.artifact_io import canonical_json_bytes
 
 from .checkpoint_antigravity import (
     Exp435CheckpointStore,
+    context_fingerprint,
     context_payload,
 )
 from .config_antigravity import FROZEN_CONFIG
@@ -453,9 +454,16 @@ def _run(
         raise ValueError("dataset_scorer is invalid")
 
     if resume:
-        # A failed durable progress state is immutable.  This gate must run
-        # before the mutable checkpoint opener can reconcile crash leftovers.
-        ProgressWriter.reject_failed_resume(run_root)
+        # This complete read-only output gate includes failed-state rejection
+        # and must run before checkpoint recovery can reconcile crash leftovers.
+        ProgressWriter.preflight_existing(
+            run_root,
+            run_identity=FROZEN_CONFIG.run_identity,
+            checkpoint=checkpoint_root,
+            backend=backend.backend,
+            total_datasets=len(datasets),
+            context_fingerprint=context_fingerprint(context),
+        )
         store = Exp435CheckpointStore.open_existing(checkpoint_root, context)
         writer = ProgressWriter.open_existing(
             run_root,

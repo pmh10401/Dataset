@@ -593,6 +593,106 @@ print(json.dumps(observed, sort_keys=True))
             }
             self.assertEqual(after, before)
 
+    def test_invalid_event_resume_rejects_before_checkpoint_reconciliation(self) -> None:
+        """Catches checkpoint recovery running before the full output preflight."""
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            session = _Session(("A",))
+            context = _runtime_context(
+                session, BackendDecision.cpu_fallback("backend decision not supplied")
+            )
+            checkpoint = root / "checkpoint"
+            store = Exp435CheckpointStore.create(checkpoint, context)
+            output = root / "output"
+            writer = ProgressWriter.create(
+                output,
+                run_identity=store.run_identity,
+                checkpoint=checkpoint,
+                total_datasets=1,
+                backend="cpu",
+                context_fingerprint=store.context_fingerprint,
+                heartbeat_seconds=None,
+            )
+            writer.transition(
+                "interrupted",
+                stage="dispatching",
+                current_dataset="A",
+                dataset_metadata=None,
+                completed=0,
+                success=0,
+                abstention=0,
+                error=0,
+                candidate_count=0,
+            )
+            writer.close()
+            store.commit(_score({"dataset": "A"}, {"dataset": "A"}, None, None))
+            record_path = checkpoint / "records_antigravity" / (sha256(b"A").hexdigest() + ".json")
+            intent = checkpoint / "intents_antigravity" / record_path.name
+            intent.write_bytes(
+                json.dumps(
+                    {
+                        "schema": "exp435.commit-intent.v1",
+                        "dataset": "A",
+                        "record_sha256": sha256(record_path.read_bytes()).hexdigest(),
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode()
+            )
+            output_temp = output / (".progress_antigravity.json." + "b" * 32 + ".tmp")
+            output_temp.write_bytes(b"output-temp")
+            checkpoint_temp = checkpoint / (".record_set_antigravity." + "c" * 32 + ".tmp")
+            checkpoint_temp.write_bytes(b"checkpoint-temp")
+            event_path = output / "events_antigravity.jsonl"
+            valid_events = event_path.read_bytes()
+            invalid_event = json.loads(valid_events.splitlines()[-1])
+            invalid_event["stage"] = "corrupt"
+            event_path.write_bytes(
+                b"\n".join(valid_events.splitlines()[:-1])
+                + b"\n"
+                + json.dumps(invalid_event, sort_keys=True, separators=(",", ":")).encode()
+                + b"\n"
+            )
+
+            def snapshot_tree() -> dict[Path, tuple[str, bytes | None]]:
+                return {
+                    path.relative_to(root): (
+                        ("directory", None) if path.is_dir() else ("file", path.read_bytes())
+                    )
+                    for path in sorted(root.rglob("*"))
+                    if path.is_dir() or path.is_file()
+                }
+
+            before = snapshot_tree()
+
+            with self.assertRaisesRegex(ValueError, "runtime event stage is invalid"):
+                resume_exp435(
+                    run_root=output,
+                    checkpoint_root=checkpoint,
+                    input_session=session,
+                    backend_decision=None,
+                    dataset_scorer=_score,
+                    worker_count=1,
+                )
+
+            after = snapshot_tree()
+            self.assertEqual(after, before)
+
+            event_path.write_bytes(valid_events)
+            summary = resume_exp435(
+                run_root=output,
+                checkpoint_root=checkpoint,
+                input_session=session,
+                backend_decision=None,
+                dataset_scorer=_score,
+                worker_count=1,
+            )
+            self.assertEqual(summary.completed_datasets, 1)
+            self.assertFalse(output_temp.exists())
+            self.assertFalse(checkpoint_temp.exists())
+            self.assertFalse(intent.exists())
+
     def test_parallel_progress_never_reports_or_submits_an_eighth_blocked_dataset(self) -> None:
         datasets = tuple(f"Dataset-{index}" for index in range(1, 9))
         with TemporaryDirectory() as directory:

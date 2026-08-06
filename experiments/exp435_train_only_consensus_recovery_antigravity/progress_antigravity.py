@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 import os
@@ -243,6 +244,16 @@ def _process_is_live(pid: int) -> bool:
     return True
 
 
+@dataclass(frozen=True)
+class _ResumePreflight:
+    """Read-only durable state validated before mutable resume reconciliation."""
+
+    progress: dict[str, object]
+    total_datasets: int
+    backend: str
+    context_fingerprint: str
+
+
 class ProgressWriter:
     """Parent-owned writer for progress JSON, JSONL events and text logs."""
 
@@ -351,7 +362,7 @@ class ProgressWriter:
             raise ValueError("failed runtime cannot resume")
 
     @classmethod
-    def open_existing(
+    def preflight_existing(
         cls,
         output: Path,
         *,
@@ -361,16 +372,16 @@ class ProgressWriter:
         total_datasets: int | None = None,
         context_fingerprint: str | None = None,
         process_is_live: Callable[[int], bool] = _process_is_live,
-        heartbeat_seconds: float | None = 30.0,
-    ) -> "ProgressWriter":
+    ) -> _ResumePreflight:
+        """Read and validate every durable resume binding without mutation."""
+
         output = Path(output)
-        # Failed roots are immutable/non-resumable.  Read their durable state
-        # before reconciliation can remove an internal temporary or rewrite a
-        # PID, so even a direct caller cannot mutate a failed root.
+        # Failed roots are immutable/non-resumable.  This gate runs before all
+        # other resume reads so neither direct callers nor runtime resume can
+        # reconcile a temporary or claim a PID for a failed root.
         cls.reject_failed_resume(output)
         _validate_durable_output_files(output)
-        progress_path = output / "progress_antigravity.json"
-        progress = _canonical_object(progress_path, "runtime progress")
+        progress = _canonical_object(output / "progress_antigravity.json", "runtime progress")
         _require_persisted_stage(progress.get("stage"), source="runtime progress stage")
         pid_payload = _canonical_object(output / "run_antigravity.pid", "runtime PID")
         stored_total = progress.get("total_datasets", progress.get("total"))
@@ -417,6 +428,36 @@ class ProgressWriter:
             total_datasets=expected_total,
             context_fingerprint=expected_fingerprint,
         )
+        return _ResumePreflight(
+            progress=progress,
+            total_datasets=expected_total,
+            backend=expected_backend,
+            context_fingerprint=expected_fingerprint,
+        )
+
+    @classmethod
+    def open_existing(
+        cls,
+        output: Path,
+        *,
+        run_identity: str,
+        checkpoint: Path,
+        backend: str | None = None,
+        total_datasets: int | None = None,
+        context_fingerprint: str | None = None,
+        process_is_live: Callable[[int], bool] = _process_is_live,
+        heartbeat_seconds: float | None = 30.0,
+    ) -> "ProgressWriter":
+        output = Path(output)
+        preflight = cls.preflight_existing(
+            output,
+            run_identity=run_identity,
+            checkpoint=checkpoint,
+            backend=backend,
+            total_datasets=total_datasets,
+            context_fingerprint=context_fingerprint,
+            process_is_live=process_is_live,
+        )
         # All immutable durable records now agree.  Only this success path may
         # remove a recognized interrupted atomic write or claim the PID.
         _validate_output_inventory(output, mutable=True)
@@ -424,16 +465,16 @@ class ProgressWriter:
             output,
             run_identity=run_identity,
             checkpoint=checkpoint,
-            total_datasets=expected_total,
-            backend=expected_backend,
-            context_fingerprint=expected_fingerprint,
+            total_datasets=preflight.total_datasets,
+            backend=preflight.backend,
+            context_fingerprint=preflight.context_fingerprint,
             heartbeat_seconds=heartbeat_seconds,
             process_is_live=process_is_live,
         )
-        elapsed = progress.get("elapsed_seconds")
+        elapsed = preflight.progress.get("elapsed_seconds")
         if isinstance(elapsed, (int, float)):
             writer.elapsed_offset = max(0.0, float(elapsed))
-        writer.progress = progress
+        writer.progress = preflight.progress
         writer._atomic_pid(True)
         return writer
 
