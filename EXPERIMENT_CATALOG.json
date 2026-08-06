@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-06T07:15:19+09:00",
+  "updated_at": "2026-08-06T14:09:55+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -111,7 +111,7 @@
     {
       "id": "Exp435",
       "kind": "train_only_normal_pattern_consensus_recovery",
-      "status": "design_approved_plan_ready_implementation_not_started",
+      "status": "implementation_complete_prediction_not_started",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "cab27f1b40b8aed448256c7094bec075211340c0",
       "documents": [
@@ -125,7 +125,8 @@
       "review_only": true,
       "prediction_phase_started": false,
       "test_labels_opened": false,
-      "notes": "Requires prototype distance AND gradient-or-ACF agreement outside all frozen lanes. Success requires at least 10 rescued datasets, at most 30 added false positives, and positive micro/macro F1 deltas with both paired 95% CI lower bounds above zero."
+      "notes": "Implementation and focused/full regression are complete at the fixed five-mode CLI boundary; prediction has not started. The run remains review_only for exactly 1,117 datasets (195,900 TEST rows), with a 100-candidate budget, frozen Exp291/292 lanes, and no TEST-label access before prediction freeze. Readiness is the next gate.",
+      "implementation_commit": "595417d773c432f0471d6c6445aea1f46a9b2668"
     }
   ]
 }

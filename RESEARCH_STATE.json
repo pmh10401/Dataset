@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-06T07:15:19+09:00",
+  "updated_at": "2026-08-06T14:09:55+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "cab27f1b40b8aed448256c7094bec075211340c0",
+  "last_verified_commit": "595417d773c432f0471d6c6445aea1f46a9b2668",
   "active_experiment": "Exp435",
-  "active_phase": "design_approved_plan_ready_implementation_not_started",
+  "active_phase": "implementation_complete_readiness_pending",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -14,9 +14,9 @@
     "plan": "docs/superpowers/plans/2026-08-06-exp435-train-only-consensus-recovery-antigravity.md",
     "preregistration": "docs/EXP435_PREREGISTRATION_antigravity_KO.md",
     "runbook": "docs/EXP435_RUNBOOK_antigravity_KO.md",
-    "sdd_progress": null,
-    "task_brief": null,
-    "task_report": null
+    "sdd_progress": ".superpowers/sdd/2026-08-06-exp435-train-only-consensus-recovery-antigravity/progress.md",
+    "task_brief": ".superpowers/sdd/2026-08-06-exp435-train-only-consensus-recovery-antigravity/task-8-brief.md",
+    "task_report": ".superpowers/sdd/2026-08-06-exp435-train-only-consensus-recovery-antigravity/task-8-report.md"
   },
   "frozen_inputs": {
     "database": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -30,6 +30,8 @@
   },
   "active_process": {
     "pid": null,
+    "run_parent": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806",
+    "fixed_roots_absent": true,
     "checkpoint": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/checkpoint_antigravity",
     "output": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/output_antigravity",
     "progress_json": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/output_antigravity/progress_antigravity.json",
@@ -46,7 +48,12 @@
     "exp426_task1_contract_checkpoint": "c8f84a1865ef9dedaff4d093b3545592ba17ac3a",
     "exp426_task2_source_parallel": "14cbde223cfdfabb2673fdf3e874aafe1b59d0ea",
     "exp426_task3_runtime_progress": "bab628d2998269b9cd9a27be7d22f7f32128dd88",
-    "exp426_task4_reporting_cli_docs": "1595769b8a8ae10e3d16207ab73678e1cb54c513"
+    "exp426_task4_reporting_cli_docs": "1595769b8a8ae10e3d16207ab73678e1cb54c513",
+    "exp435_task8_evaluation": "3501f6ddb4e1268fb05927bcc11295a72f3ce31f",
+    "exp435_task8_codemap_evaluation_boundary": "8127cd057ec2bfa66dbe5910716abfce6f6bd522",
+    "exp435_task8_final_hardening": "d64275f2a2767ecaea716c5f7f52dffa7805a47c",
+    "exp435_task8_codemap_contract_exports": "6d60e15461350efbf011e410dfc6ab0e1301b493",
+    "exp435_task9_direct_runner": "595417d773c432f0471d6c6445aea1f46a9b2668"
   },
   "partial_engineering_commits": {
     "task5_initial_runtime": "dc018ac9cc6e6dec13a93317df194d5e19200884",
@@ -67,8 +74,10 @@
       "artifact_root": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2"
     }
   },
-  "next_action": "Choose the approved Exp435 plan execution mode, then implement Task 1 with TDD. Prediction has not started and the fixed artifact root remains absent.",
-  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && sed -n '1,220p' docs/superpowers/plans/2026-08-06-exp435-train-only-consensus-recovery-antigravity.md",
+  "next_action": "Run a fresh final review of the implementation and fixed five-mode CLI, then run readiness. Prediction has not started, TEST labels have not been opened, and all fixed Exp435 artifact roots remain absent.",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*antigravity.py' && python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py --help",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
-  "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens."
+  "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
+  "prediction_phase_started": false,
+  "test_labels_opened": false
 }

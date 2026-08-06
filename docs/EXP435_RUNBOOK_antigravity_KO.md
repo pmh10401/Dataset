@@ -2,9 +2,9 @@
 
 ## 1. 목적
 
-Exp435는 정상 TRAIN으로 만든 대표 패턴·기울기·주기 점수의 합의로 1,117개 TEST
-instance를 label-free 평가한다. 새 후보는 검토용이며 기존 Hard 경보를 바꾸지
-않는다.
+Exp435는 정상 TRAIN으로 만든 대표 패턴·기울기·주기 점수의 합의로 동결된 1,117개
+데이터셋, 총 195,900개 TEST row를 label-free 평가한다. 새 후보는 검토용이며
+기존 Hard 경보를 바꾸지 않는다.
 
 모든 명령은 다음 clean worktree에서 실행한다.
 
@@ -17,6 +17,15 @@ cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery'
 ```text
 scratch/run_exp435_train_only_consensus_recovery_antigravity.py
 ```
+
+직접 실행 wrapper는 저장소 밖의 현재 디렉터리에서도 저장소 root를 자동으로
+찾는다. 구현 완료 후 다음 도움말에는 정확히 다섯 모드가 보인다.
+
+```bash
+python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py --help
+```
+
+`readiness`, `new`, `resume`, `inspect`, `evaluate` 외의 모드는 없다.
 
 ## 2. 고정 경로
 
@@ -44,6 +53,7 @@ python3 -m unittest discover \
 python3 -m unittest discover \
   -s experiments/exp426_verified_baseline/tests \
   -p 'test_*antigravity.py'
+python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py --help
 git diff --check
 ```
 
@@ -68,7 +78,8 @@ readiness는 다음을 확인한다.
 - TEST label/labels_blob 접근 0
 - TRAIN-only CPU/MLX parity와 속도 결정
 - candidate 규칙의 고정 synthetic fixture 결과
-- output/checkpoint root 부재
+- output, checkpoint, readiness artifact, evaluation의 네 고정 root가 모두 부재
+  (run parent는 존재하더라도 비어 있어야 함)
 
 MLX smoke는 seed `43501`로 만든 동일한 float32 입력을 CPU와 MLX에 전달한다.
 각 유한 score 쌍의 정규화오차는
@@ -79,6 +90,16 @@ MLX smoke는 seed `43501`로 만든 동일한 float32 입력을 CPU와 MLX에 �
 
 성공하면 `readiness_antigravity.json`의 `state`가 `ready`이고 backend가 `cpu` 또는
 `mlx`로 한 번 고정된다. 실패하면 `new`를 실행하지 않는다.
+
+readiness는 `ready`만 기록한다. `new`는 `initializing`에서 시작해
+`running`을 거쳐 checkpoint가 완성되면 `checkpoint_complete`를 만들고,
+검증된 publication은 `complete_review_only`가 된다. `inspect`와 이미 끝난
+`resume`은 이 publication을 read-only로 재생한다. `evaluate`는 동결 후에만
+`evaluated` 결과를 반환한다. 사용자가 중단하면 `interrupted`, 무결성·budget
+오류는 `failed`로 남으며 `failed` root는 재개하지 않는다. CLI는
+readiness/new/resume/inspect가 성공 상태를
+반환할 때 0, 평가가 `evaluated`/`success`/`complete`일 때 0을 반환하며,
+argparse 오류나 처리 실패는 2, 미완료 상태는 1을 반환한다.
 
 ## 5. 새 label-free 실행
 
@@ -125,6 +146,10 @@ python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py resume
 계산·무결성 오류나 candidate budget 초과로 `failed`가 된 root는 재개하지 않는다.
 파일을 직접 고치거나 삭제하지 않는다.
 
+완료 checkpoint가 이미 있으면 `resume`은 DB나 worker를 다시 열지 않고 publication을
+검증한다. publication/evaluation destination이 이미 나타난 경우 기존 파일을
+교체하지 않는 no-clobber 규칙으로 실패한다.
+
 ## 8. 읽기 전용 완료 확인
 
 ```bash
@@ -134,7 +159,7 @@ python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py inspect
 완료 조건은 다음과 같다.
 
 - state `complete_review_only`
-- completed 1,117, error 0
+- completed 1,117, error 0 (총 TEST row 195,900)
 - candidate 0~100
 - current dataset `null`, inactive PID
 - TEST label 접근 0
@@ -168,6 +193,27 @@ python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py evaluate
 
 `evaluate`는 먼저 동결된 artifact를 다시 검증한 뒤 TEST label을 연다. 결과는
 `evaluation_antigravity` 아래에 새로 만들고 기존 prediction을 바꾸지 않는다.
+production 경로는 run parent 바로 아래의 고정 output/evaluation 형제만 허용한다.
+TEST label을 열기 전 Exp404 comparator
+(`/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl`,
+SHA256 `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70`)와
+Exp291의 `automatic_hard_indices`가 888개 non-empty 데이터셋, 2,218개 좌표,
+229개 empty complement를 포함해 1,117개 전체에서 정확히 같은지 확인한다. 그
+뒤 `mode=ro` SQLite 연결 하나만 열어 `instance_index`와 `label`을 읽고 닫는다.
+label 접근 전 output 전체 트리 바이트를 snapshot하고, 평가 파일을 staging한 뒤
+publish 직전 다시 전체 바이트를 검사한다. 변경이 있으면 no-clobber publish를
+실패시킨다.
+
+평가 root에는 정확히 다음 8개 파일만 생성된다.
+
+- `evaluation_antigravity.json`
+- `dataset_metrics_antigravity.jsonl`
+- `rescued_datasets_antigravity.jsonl`
+- `regressed_datasets_antigravity.jsonl`
+- `confusion_antigravity.json`
+- `bootstrap_antigravity.json`
+- `decision_antigravity.json`
+- `artifact_sha256_antigravity.json`
 
 평가 결과에는 confusion matrix, micro/macro F1, rescued dataset, 추가 FP,
 regression, strong baseline regression과 20,000회 paired dataset bootstrap이
@@ -177,10 +223,14 @@ regression, strong baseline regression과 20,000회 paired dataset bootstrap이
 
 다음을 모두 만족하면 Exp435는 개선된 review-only 후보다.
 
+- 1,117개 prediction/evaluation population 보존
 - rescued dataset 10개 이상
 - 추가 FP 30개 이하
-- micro F1 95% CI lower > 0
-- macro F1 95% CI lower > 0
+- micro F1 point delta > 0 및 paired 95% CI lower > 0
+- dataset-balanced macro F1 point delta > 0 및 paired 95% CI lower > 0
+- prediction 동결 전 TEST label 접근 0, 같은 Exp435 안의 TEST 기반 재선택 0
+- Exp404/Exp291 좌표 equality gate와 output snapshot/no-clobber 검증 통과
+- `review_only=true`, `operational_alert_eligible=false` 유지
 
 하나라도 실패하면 FAILURE_LEDGER에 기록하고 Exp435 설정을 바꾸지 않는다. 다음
 연구는 새 실험 번호와 새 사전등록으로 시작한다.

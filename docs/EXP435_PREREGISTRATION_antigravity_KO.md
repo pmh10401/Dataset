@@ -3,8 +3,9 @@
 ## 1. 목적과 상태
 
 Exp435는 정상 TRAIN 데이터로 만든 세 가지 거리 점수의 합의를 사용해 현재 Hard
-기준이 놓친 이상을 찾는 label-free 실험이다. 기존 Hard 좌표는 바꾸지 않으며,
-새 좌표는 `review_only`로만 공개한다.
+기준이 놓친 이상을 찾는 label-free 실험이다. 동결 lane population의 정확히
+1,117개 데이터셋과 총 195,900개 TEST row를 대상으로 한다. 기존 Hard 좌표는
+바꾸지 않으며, 새 좌표는 `review_only`로만 공개한다.
 
 - 실험 번호: Exp435
 - 데이터셋: 동결 lane population의 정확한 1,117개
@@ -40,8 +41,16 @@ population만 사용한다. 추가 이름이 공식 결과에 들어오면 실�
   `0672b2f84a3b2883628bac3c12ad8a25ebfb48efd929e4c0a448c5418267b0d0`
 - Hard retrospective comparator prediction SHA256:
   `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70`
+- Hard retrospective comparator path (Exp404):
+  `/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl`
 - Exp416 evaluation:
   `/Users/mac/Documents/Dataset/exp416_exp404_hard_test_confusion_audit/exp416_confusion_matrix.json`
+
+사후 evaluator는 TEST label을 열기 전에 Exp404 comparator와 Exp291 동결 Hard
+좌표를 다시 대조한다. Exp404 파일은 888개 데이터셋에 비어 있지 않은 2,218개
+좌표를 가져야 하며, 이 좌표 집합은 Exp291 prediction의
+`automatic_hard_indices`와 정확히 같아야 한다. 나머지 229개 데이터셋은 빈
+Exp404 목록이어야 하며, 합계는 동결된 1,117개 전체와 일치해야 한다.
 
 실행 Git commit은 readiness와 실제 `new` 실행에서 같은 clean commit이어야 한다.
 Python, NumPy, Numba, Torch, MLX와 mlx-metal 버전은 설치 여부를 포함해 manifest에
@@ -67,7 +76,9 @@ prediction이 사용할 수 있는 정보는 다음뿐이다.
 - TEST 결과를 보고 바꾼 alpha, threshold, score source, backend 또는 budget
 
 prediction code는 label column 또는 `labels_blob`을 SELECT하지 않는다. 사후 평가
-loader는 별도 모듈과 별도 CLI 명령에만 존재한다.
+loader는 별도 모듈과 별도 CLI 명령에만 존재한다. 모든 해시·population·comparator
+검증을 통과한 뒤 evaluator가 `mode=ro`인 SQLite 연결 하나만 열어
+`instance_index`와 `label`을 읽고, 전체 데이터셋을 처리한 뒤 한 번 닫는다.
 
 ## 4. instance와 길이 경계
 
@@ -195,9 +206,12 @@ VecLib, NumExpr와 Numba thread는 1개로 제한한다. MLX-heavy process는 �
   `/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/evaluation_antigravity`
 - run identity: `exp435-train-only-consensus-recovery-antigravity-20260806`
 
-이 경로들은 사전등록 시점에 존재하지 않는다. run parent만 DB snapshot을 열기 전에
-한 번 만들고, 그 아래 output/checkpoint/readiness/evaluation을 둔다. 기존 root를
-덮어쓰지 않는다.
+이 경로들은 사전등록 시점에 존재하지 않는다. readiness 직전에 비어 있는 run
+parent만 한 번 만들고, readiness는 그 아래 output, checkpoint, readiness 파일,
+evaluation의 네 고정 root가 모두 없을 때만 `ready`를 기록한다. production
+`evaluate`는 `RUN_PARENT` 바로 아래의 정확한 `FROZEN_OUTPUT`과
+`FROZEN_EVALUATION` 형제 경로만 허용하며, 서로 같거나 중첩된 helper root와
+기존 root를 허용하지 않는다. 기존 root를 덮어쓰지 않는다.
 
 ## 10. 진행 로그와 재개
 
@@ -238,6 +252,25 @@ checkpoint 손상 또는 저장 실패는 전체 prediction 실패다. 실패 ro
 prediction과 manifest SHA256을 먼저 동결한다. evaluator는 그 해시와 population을
 검증한 뒤 TEST label을 한 번 연다. baseline은 Exp404 Hard/Exp416 결과다.
 
+사후 평가의 순서는 고정된다. evaluator는 먼저 publication과 checkpoint를
+read-only로 재생하고, Exp404/Exp291 좌표 equality gate와 모든 입력·코드·config
+hash gate를 통과시킨다. TEST label을 열기 전에 output 전체 트리의 경로·종류·바이트
+snapshot을 저장한다. label을 읽고 평가를 계산한 뒤에는 그 전체 output 바이트를
+다시 검사하고, evaluation 임시 디렉터리의 8개 파일을 만든 직후에도 같은 검사를
+수행한 다음 no-clobber atomic rename으로 publish한다. prediction publication은
+절대 수정하지 않는다.
+
+평가 root의 파일은 정확히 다음 8개다.
+
+- `evaluation_antigravity.json`
+- `dataset_metrics_antigravity.jsonl`
+- `rescued_datasets_antigravity.jsonl`
+- `regressed_datasets_antigravity.jsonl`
+- `confusion_antigravity.json`
+- `bootstrap_antigravity.json`
+- `decision_antigravity.json`
+- `artifact_sha256_antigravity.json`
+
 - bootstrap 단위: dataset cluster
 - resampling: 1,117개 dataset을 복원 추출
 - paired 계산: 같은 bootstrap 표본에서 Hard와 Hard+Exp435를 함께 계산
@@ -257,10 +290,13 @@ prediction과 manifest SHA256을 먼저 동결한다. evaluator는 그 해시와
 2. 새 후보 100개 이하
 3. rescued dataset 10개 이상
 4. 추가 FP 30개 이하
-5. micro F1 delta > 0이고 95% CI lower > 0
-6. dataset-balanced macro F1 delta > 0이고 95% CI lower > 0
+5. micro F1 point delta > 0이고 paired 95% CI lower > 0
+6. dataset-balanced macro F1 point delta > 0이고 paired 95% CI lower > 0
 7. prediction 동결 전 TEST label 접근 0
 8. 같은 Exp435 안의 TEST 기반 재선택 0
+9. Exp404/Exp291 888 non-empty/2,218-coordinate/229-empty-complement equality gate 통과
+10. output 전체 바이트 재검사와 evaluation no-clobber publish 통과
+11. 결과는 `review_only`이고 자동 경보 승격을 하지 않음
 
 일부 dataset 악화는 위 조건이 모두 참일 때만 허용한다. strong baseline 악화 목록을
 포함한 모든 regression을 공개한다.
