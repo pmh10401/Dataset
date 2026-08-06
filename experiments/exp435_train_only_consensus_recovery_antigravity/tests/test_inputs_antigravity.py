@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import ast
 from contextlib import contextmanager
 from pathlib import Path
+import re
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -35,6 +37,7 @@ class _Snapshot:
         self.database_names = tuple(database_names)
         self.context = context
         self.closed = False
+        self.entered = False
         self.loaded: list[tuple[str, str]] = []
 
     def __enter__(self) -> "_Snapshot":
@@ -85,6 +88,7 @@ class InputBoundaryTests(unittest.TestCase):
 
         @contextmanager
         def manager(*args: object, **kwargs: object):
+            snapshot.entered = True
             try:
                 yield snapshot
             finally:
@@ -129,8 +133,23 @@ class InputBoundaryTests(unittest.TestCase):
 
     def test_prediction_sql_never_selects_test_labels(self):
         source = Path(inputs_antigravity.__file__).read_text(encoding="utf-8")
+        self.assertNotIn("evaluation_antigravity", source)
+        tree = ast.parse(source)
+        imported_modules = [
+            node.module
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.module is not None
+        ]
+        imported_modules.extend(
+            alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names
+        )
+        self.assertNotIn("evaluation_antigravity", "\n".join(imported_modules))
         self.assertNotIn("labels_blob", source)
-        self.assertNotRegex(source, r"TEST.+label")
+        sqlish_lines = "\n".join(
+            line for line in source.splitlines()
+            if re.search(r"(?i)\b(?:select|where|join|sql)\b", line)
+        )
+        self.assertNotRegex(sqlish_lines, r"(?i)\b(?:label|labels_blob)\b")
 
     def test_session_delegates_values_only_and_keeps_label_access_count_zero(self):
         patcher, snapshot = self.fixture_session(
@@ -168,7 +187,7 @@ class InputBoundaryTests(unittest.TestCase):
     def test_lane_population_count_mismatch_is_rejected_before_database_open(self):
         for frozen in (("A",), ("A", "B", "C")):
             with self.subTest(frozen=frozen):
-                patcher, _snapshot = self.fixture_session(
+                patcher, snapshot = self.fixture_session(
                     database_names=("A", "B", "DBOnlyExtra"), frozen=frozen
                 )
                 with patcher, self.assertRaisesRegex(ValueError, "population"):
@@ -181,6 +200,7 @@ class InputBoundaryTests(unittest.TestCase):
                         verified_code_commit="f" * 40,
                     ):
                         pass
+                self.assertFalse(snapshot.entered)
 
     def test_context_population_mismatch_is_rejected_and_snapshot_closes(self):
         patcher, snapshot = self.fixture_session(

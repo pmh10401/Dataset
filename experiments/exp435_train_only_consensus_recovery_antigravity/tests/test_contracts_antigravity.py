@@ -7,21 +7,38 @@ import unittest
 
 import numpy as np
 
+from experiments.exp435_train_only_consensus_recovery_antigravity import contracts_antigravity
 from experiments.exp435_train_only_consensus_recovery_antigravity.contracts_antigravity import (
     BackendBatchEvidence,
     BackendDecision,
     CalibratedTrainGroup,
+    CalibratedTrainGroupResult,
     ChannelCalibration,
     Exp435Candidate,
     Exp435DatasetResult,
     Exp435RunSummary,
     InstanceScoreEvidence,
     PreparedTrainGroup,
+    TrainGroup,
     UnavailableTrainGroup,
 )
 
 
 class Exp435ContractTests(unittest.TestCase):
+    def test_train_group_contracts_are_public_star_exports(self) -> None:
+        """The feature pipeline's shared train-group types remain public contracts."""
+        expected = (UnavailableTrainGroup, TrainGroup, CalibratedTrainGroupResult)
+        for symbol in ("UnavailableTrainGroup", "TrainGroup", "CalibratedTrainGroupResult"):
+            self.assertIn(symbol, contracts_antigravity.__all__)
+        namespace: dict[str, object] = {}
+        exec(
+            "from experiments.exp435_train_only_consensus_recovery_antigravity.contracts_antigravity import *",
+            namespace,
+        )
+        self.assertIs(namespace["UnavailableTrainGroup"], expected[0])
+        self.assertIs(namespace["TrainGroup"], expected[1])
+        self.assertIs(namespace["CalibratedTrainGroupResult"], expected[2])
+
     @staticmethod
     def _evidence(
         *,

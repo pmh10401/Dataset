@@ -1060,8 +1060,11 @@ class Exp435RunSummary:
 
 __all__ = [
     "PreparedTrainGroup",
+    "UnavailableTrainGroup",
+    "TrainGroup",
     "ChannelCalibration",
     "CalibratedTrainGroup",
+    "CalibratedTrainGroupResult",
     "InstanceScoreEvidence",
     "Exp435Candidate",
     "Exp435DatasetResult",
