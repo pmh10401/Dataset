@@ -104,7 +104,7 @@ class Exp435CliTests(unittest.TestCase):
             heartbeat_seconds=None,
         )
         writer.update(
-            stage="scoring", current_dataset="Demo", dataset_metadata=None,
+            stage="idle", current_dataset=None, dataset_metadata=None,
             completed=1, success=1, abstention=0, error=0, candidate_count=1,
         )
         writer.append_event({"kind": "dataset_complete", "dataset": "Demo", "record_sha256": digest})

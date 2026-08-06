@@ -27,7 +27,7 @@ class ProgressWriterTests(unittest.TestCase):
                 heartbeat_seconds=None,
             )
             writer.update(
-                stage="scoring",
+                stage="loading",
                 current_dataset="Demo",
                 dataset_metadata={
                     "train_size": 4,
@@ -52,6 +52,7 @@ class ProgressWriterTests(unittest.TestCase):
             self.assertEqual(payload["current_dataset"], "Demo")
             self.assertTrue(payload["checkpoint"].endswith("/checkpoint"))
             self.assertEqual(payload["context_fingerprint"], "unbound")
+            self.assertEqual(payload["stage"], "loading")
             writer.close()
             pid = json.loads((root / "run_antigravity.pid").read_text())
             self.assertFalse(pid["active"])
@@ -59,6 +60,126 @@ class ProgressWriterTests(unittest.TestCase):
             self.assertEqual(pid["total_datasets"], 2)
             events = [json.loads(line) for line in (root / "events_antigravity.jsonl").read_text().splitlines()]
             self.assertTrue(all(item["context_fingerprint"] == "unbound" for item in events))
+
+    def test_persisted_stage_snapshots_use_only_the_authoritative_allowlist(self) -> None:
+        """Catches any lifecycle stage leaking into durable progress or events."""
+
+        allowed = {"loading", "dispatching", "awaiting_worker_result", "committing", "idle"}
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "output"
+            writer = ProgressWriter.create(
+                root,
+                run_identity="exp435-fixture",
+                checkpoint=Path(directory) / "checkpoint",
+                total_datasets=1,
+                backend="cpu",
+                heartbeat_seconds=None,
+            )
+            initial = json.loads((root / "progress_antigravity.json").read_text())
+            self.assertEqual(initial["stage"], "idle")
+            writer.transition(
+                "running",
+                stage="dispatching",
+                current_dataset="Demo",
+                dataset_metadata=None,
+                completed=0,
+                success=0,
+                abstention=0,
+                error=0,
+                candidate_count=0,
+            )
+            writer.update(
+                stage="awaiting_worker_result",
+                current_dataset="Demo",
+                dataset_metadata=None,
+                completed=0,
+                success=0,
+                abstention=0,
+                error=0,
+                candidate_count=0,
+            )
+            writer.update(
+                stage="committing",
+                current_dataset="Demo",
+                dataset_metadata=None,
+                completed=0,
+                success=0,
+                abstention=0,
+                error=0,
+                candidate_count=0,
+            )
+            writer.update(
+                stage="idle",
+                current_dataset=None,
+                dataset_metadata=None,
+                completed=1,
+                success=1,
+                abstention=0,
+                error=0,
+                candidate_count=0,
+            )
+            writer.mark_complete()
+            writer.close()
+            progress = json.loads((root / "progress_antigravity.json").read_text())
+            events = [
+                json.loads(line)
+                for line in (root / "events_antigravity.jsonl").read_text().splitlines()
+            ]
+            observed = [progress["stage"]] + [event["stage"] for event in events if "stage" in event]
+            self.assertTrue(observed)
+            self.assertTrue(all(stage in allowed for stage in observed))
+            self.assertEqual(progress["stage"], "idle")
+            self.assertIsNone(progress["current_dataset"])
+
+    def test_direct_persistence_rejects_non_allowlisted_stages_without_writes(self) -> None:
+        """Catches a writer accepting lifecycle or arbitrary stage names."""
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "output"
+            writer = ProgressWriter.create(
+                root,
+                run_identity="exp435-fixture",
+                checkpoint=Path(directory) / "checkpoint",
+                total_datasets=1,
+                backend="cpu",
+                heartbeat_seconds=None,
+            )
+            before = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.iterdir()) if path.is_file()
+            }
+            for stage in ("scoring", "initializing", "recovered", "finalizing", "arbitrary"):
+                with self.subTest(stage=stage), self.assertRaisesRegex(ValueError, "stage"):
+                    writer.update(
+                        stage=stage,
+                        current_dataset=None,
+                        dataset_metadata=None,
+                        completed=0,
+                        success=0,
+                        abstention=0,
+                        error=0,
+                        candidate_count=0,
+                    )
+                with self.subTest(transition_stage=stage), self.assertRaisesRegex(ValueError, "stage"):
+                    writer.transition(
+                        "running",
+                        stage=stage,
+                        current_dataset=None,
+                        dataset_metadata=None,
+                        completed=0,
+                        success=0,
+                        abstention=0,
+                        error=0,
+                        candidate_count=0,
+                    )
+                with self.subTest(event_stage=stage), self.assertRaisesRegex(ValueError, "stage"):
+                    writer.append_event({"kind": "state", "state": "running", "stage": stage})
+            after = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.iterdir()) if path.is_file()
+            }
+            self.assertEqual(after, before)
+            writer.close()
 
     def test_resume_rejects_live_pid_and_allows_inactive_cleanup(self) -> None:
         with TemporaryDirectory() as directory:
@@ -92,6 +213,7 @@ class ProgressWriterTests(unittest.TestCase):
             self.assertTrue(any(item["state"] == "interrupted" for item in events))
             payload = json.loads((root / "progress_antigravity.json").read_text())
             self.assertEqual(payload["state"], "interrupted")
+            self.assertEqual(payload["stage"], "dispatching")
             self.assertFalse(payload["pid"]["active"] if isinstance(payload["pid"], dict) else False)
 
     def test_open_existing_rejects_failed_state_without_mutating_runtime_files(self) -> None:

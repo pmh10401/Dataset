@@ -316,28 +316,32 @@ def _counts(store: Exp435CheckpointStore) -> tuple[int, int, int, int]:
 
 def _persist_failure(writer: ProgressWriter, error: BaseException) -> None:
     message = " ".join(str(error).split())[:1000]
+    current_dataset = (
+        writer.progress.get("current_dataset")
+        if isinstance(writer.progress.get("current_dataset"), str)
+        else None
+    )
+    stage = writer.failure_stage(current_dataset)
     if "candidate budget" in message.lower():
         writer.append_event({
             "kind": "candidate_budget_exceeded",
-            "dataset": writer.progress.get("current_dataset"),
+            "dataset": current_dataset,
             "error_type": type(error).__name__,
             "error_message": message,
             "observed": getattr(error, "observed", None),
             "budget": FROZEN_CONFIG.global_candidate_budget,
-            "stage": writer.progress.get("stage", "scoring"),
+            "stage": stage,
         })
     else:
         writer.append_event({
             "kind": "failure",
-            "dataset": writer.progress.get("current_dataset"),
+            "dataset": current_dataset,
             "error_type": type(error).__name__,
             "error_message": message,
-            "stage": writer.progress.get("stage", "scoring"),
+            "stage": stage,
         })
     writer.mark_failed(
-        writer.progress.get("current_dataset")
-        if isinstance(writer.progress.get("current_dataset"), str)
-        else None,
+        current_dataset,
         error,
     )
 
@@ -381,7 +385,7 @@ def _reconcile_runtime(
             )
         )
     writer.update(
-        stage="recovered",
+        stage="idle",
         current_dataset=None,
         dataset_metadata=None,
         completed=completed,
@@ -496,7 +500,7 @@ def _run(
         writer.start_heartbeat()
         writer.transition(
             "running",
-            stage="dispatching",
+            stage="idle",
             current_dataset=None,
             dataset_metadata=None,
             completed=completed,
@@ -880,11 +884,13 @@ def inspect_exp435(
     from .progress_antigravity import (
         _assert_label_free,
         _canonical_checkpoint,
+        _require_persisted_stage,
         _validate_binding,
         _validate_events,
     )
 
     _assert_label_free(progress)
+    _require_persisted_stage(progress.get("stage"), source="runtime progress stage")
     expected_checkpoint = _canonical_checkpoint(checkpoint_root)
     _validate_binding(
         progress,

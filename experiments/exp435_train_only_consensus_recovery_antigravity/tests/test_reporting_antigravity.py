@@ -78,7 +78,7 @@ def _runtime(root: Path, checkpoint: Path, *, completed: int = 1, candidates: in
         heartbeat_seconds=None,
     )
     writer.update(
-        stage="scoring", current_dataset="Demo", dataset_metadata=None,
+        stage="idle", current_dataset=None, dataset_metadata=None,
         completed=1, success=1, abstention=0, error=0,
         candidate_count=candidates,
     )
@@ -125,7 +125,7 @@ def _runtime_empty(root: Path, checkpoint: Path, store: _BudgetStore) -> None:
         heartbeat_seconds=None,
     )
     writer.update(
-        stage="scoring", current_dataset="Demo", dataset_metadata=None,
+        stage="idle", current_dataset=None, dataset_metadata=None,
         completed=1, success=1, abstention=0, error=0,
         candidate_count=store._result.candidate_count,
     )

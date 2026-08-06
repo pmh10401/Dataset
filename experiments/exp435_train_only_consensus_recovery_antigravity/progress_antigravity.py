@@ -25,9 +25,20 @@ _OUTPUT_FILES = frozenset(
     }
 )
 _FORBIDDEN_KEYS = ("label", "truth", "ground_truth", "anomaly_position", "actual_values", "raw_values")
+_PERSISTED_STAGES = frozenset(
+    {"loading", "dispatching", "awaiting_worker_result", "committing", "idle"}
+)
 _TEMP_FILE = re.compile(
     r"^\.(?:progress_antigravity\.json|run_antigravity\.pid)\.[0-9a-f]{32}\.tmp\Z"
 )
+
+
+def _require_persisted_stage(stage: object, *, source: str = "runtime stage") -> str:
+    """Reject lifecycle names before they can enter a durable runtime record."""
+
+    if not isinstance(stage, str) or stage not in _PERSISTED_STAGES:
+        raise ValueError(f"{source} is invalid")
+    return stage
 
 
 def _canonical_checkpoint(path: Path) -> str:
@@ -114,7 +125,7 @@ def _normalise_error(error: object | None, stage: str | None = None) -> dict[str
     message = " ".join(message.split()).strip()[:1000] or error_type
     payload: dict[str, object] = {"type": error_type, "message": message}
     if stage is not None:
-        payload["stage"] = stage
+        payload["stage"] = _require_persisted_stage(stage)
     return payload
 
 
@@ -171,6 +182,8 @@ def _validate_events(
             if value is not None and item.get(key) != value:
                 raise ValueError("runtime event binding does not match checkpoint")
         _assert_label_free(item)
+        if "stage" in item:
+            _require_persisted_stage(item["stage"], source="runtime event stage")
 
 
 def _validate_binding(
@@ -300,7 +313,7 @@ class ProgressWriter:
         )
         initial = writer._make_progress(
             state="initializing",
-            stage="initializing",
+            stage="idle",
             current_dataset=None,
             metadata=None,
             completed=0,
@@ -313,7 +326,7 @@ class ProgressWriter:
         _write_new(output / "progress_antigravity.json", canonical_json_bytes(initial))
         _write_new(output / "run_antigravity.pid", canonical_json_bytes(writer._pid_payload(True)))
         writer.progress = initial
-        writer.append_event({"kind": "state", "state": "initializing"})
+        writer.append_event({"kind": "state", "state": "initializing", "stage": "idle"})
         return writer
 
     @classmethod
@@ -327,6 +340,7 @@ class ProgressWriter:
         if progress_path.is_symlink() or not progress_path.is_file():
             raise ValueError("runtime progress is invalid")
         progress = _canonical_object(progress_path, "runtime progress")
+        _require_persisted_stage(progress.get("stage"), source="runtime progress stage")
         if progress.get("state") == "failed":
             raise ValueError("failed runtime cannot resume")
 
@@ -350,6 +364,7 @@ class ProgressWriter:
         cls.reject_failed_resume(output)
         progress_path = output / "progress_antigravity.json"
         progress = _canonical_object(progress_path, "runtime progress")
+        _require_persisted_stage(progress.get("stage"), source="runtime progress stage")
         _validate_output_inventory(output, mutable=True)
         pid_payload = _canonical_object(output / "run_antigravity.pid", "runtime PID")
         stored_total = progress.get("total_datasets", progress.get("total"))
@@ -450,6 +465,7 @@ class ProgressWriter:
         candidate_count: int,
         latest_error: Mapping[str, object] | None,
     ) -> dict[str, object]:
+        stage = _require_persisted_stage(stage)
         if type(completed) is not int or completed < 0 or completed > self.total_datasets:
             raise ValueError("completed dataset count is invalid")
         if any(type(value) is not int or value < 0 for value in (success, abstention, error, candidate_count)):
@@ -505,8 +521,7 @@ class ProgressWriter:
         latest_error: Mapping[str, object] | None = None,
         state: str = "running",
     ) -> None:
-        if not isinstance(stage, str) or not stage:
-            raise ValueError("runtime stage is invalid")
+        _require_persisted_stage(stage)
         payload = self._make_progress(
             state=state,
             stage=stage,
@@ -529,6 +544,8 @@ class ProgressWriter:
     def append_event(self, payload: Mapping[str, object]) -> None:
         _assert_label_free(payload)
         event = dict(payload)
+        if "stage" in event:
+            _require_persisted_stage(event["stage"], source="runtime event stage")
         event.setdefault("schema", "exp435.runtime-event.v1")
         event.setdefault("run_identity", self.run_identity)
         event.setdefault("checkpoint", self.checkpoint_identity)
@@ -586,11 +603,24 @@ class ProgressWriter:
         self.append_event({"kind": "state", "state": state, "stage": stage, "dataset": current_dataset})
         self.append_log(f"state={state} stage={stage} completed={completed}/{self.total_datasets}")
 
+    def _terminal_stage(self, current_dataset: str | None) -> str:
+        stage = self.progress.get("stage")
+        if isinstance(stage, str) and stage in _PERSISTED_STAGES:
+            if (stage == "idle") == (current_dataset is None):
+                return stage
+        return "idle" if current_dataset is None else "dispatching"
+
+    def failure_stage(self, current_dataset: str | None) -> str:
+        """Expose the truthful durable stage used by terminal failure events."""
+
+        return self._terminal_stage(current_dataset)
+
     def mark_interrupted(self, current_dataset: str | None, error: object | None = None) -> None:
         current = self.progress
+        stage = self._terminal_stage(current_dataset)
         self.transition(
             "interrupted",
-            stage=str(current.get("stage", "running")),
+            stage=stage,
             current_dataset=current_dataset,
             dataset_metadata=current.get("dataset_metadata") if isinstance(current.get("dataset_metadata"), Mapping) else None,
             completed=int(current.get("completed", 0)),
@@ -598,11 +628,12 @@ class ProgressWriter:
             abstention=int(current.get("abstention", 0)),
             error=int(current.get("error", 0)),
             candidate_count=int(current.get("candidate_count", 0)),
-            latest_error=_normalise_error(error, str(current.get("stage", "running"))),
+            latest_error=_normalise_error(error, stage),
         )
 
     def mark_failed(self, current_dataset: str | None, error: object) -> None:
         current = self.progress
+        stage = self._terminal_stage(current_dataset)
         current_completed = int(current.get("completed", 0))
         current_errors = int(current.get("error", 0))
         # The failed dataset is terminal accounting even though no checkpoint
@@ -613,7 +644,7 @@ class ProgressWriter:
         failed_error = current_errors if already_terminal else current_errors + 1
         self.transition(
             "failed",
-            stage=str(current.get("stage", "running")),
+            stage=stage,
             current_dataset=current_dataset,
             dataset_metadata=current.get("dataset_metadata") if isinstance(current.get("dataset_metadata"), Mapping) else None,
             completed=failed_completed,
@@ -621,14 +652,14 @@ class ProgressWriter:
             abstention=int(current.get("abstention", 0)),
             error=max(1, failed_error) if not already_terminal else failed_error,
             candidate_count=int(current.get("candidate_count", 0)),
-            latest_error=_normalise_error(error, str(current.get("stage", "running"))),
+            latest_error=_normalise_error(error, stage),
         )
 
     def mark_complete(self, *, candidate_count: int | None = None) -> None:
         current = self.progress
         self.transition(
             "checkpoint_complete",
-            stage="finalizing",
+            stage="idle",
             current_dataset=None,
             dataset_metadata=None,
             completed=self.total_datasets,
@@ -650,6 +681,7 @@ class ProgressWriter:
                     if self._closed:
                         return
                     payload = dict(self.progress)
+                    _require_persisted_stage(payload.get("stage"), source="runtime progress stage")
                     payload["updated_at"] = _now()
                     payload["heartbeat"] = _now()
                     payload["elapsed_seconds"] = self._elapsed()

@@ -29,6 +29,7 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.checkpoint_ant
 from experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity import (
     LaneMembershipSnapshot,
     _lane_snapshot,
+    _reconcile_runtime,
     _runtime_context,
     _score_worker,
     inspect_exp435,
@@ -182,6 +183,51 @@ def _adopted_backend() -> BackendDecision:
 
 
 class RuntimeTests(unittest.TestCase):
+    def test_interrupted_resume_reconciliation_returns_to_idle_stage(self) -> None:
+        """Catches recovery metadata being persisted as a runtime stage."""
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            session = _Session(("A",))
+            backend = BackendDecision.cpu_fallback("fixture")
+            context = _runtime_context(session, backend)
+            checkpoint = root / "checkpoint"
+            store = Exp435CheckpointStore.create(checkpoint, context)
+            writer = ProgressWriter.create(
+                root / "output",
+                run_identity=store.run_identity,
+                checkpoint=checkpoint,
+                total_datasets=1,
+                backend="cpu",
+                context_fingerprint=store.context_fingerprint,
+                heartbeat_seconds=None,
+            )
+            writer.transition(
+                "interrupted",
+                stage="dispatching",
+                current_dataset="A",
+                dataset_metadata=None,
+                completed=0,
+                success=0,
+                abstention=0,
+                error=0,
+                candidate_count=0,
+            )
+            store.commit(_score({"dataset": "A"}, {"dataset": "A"}, None, None))
+            _reconcile_runtime(store, writer, backend)
+            payload = json.loads((root / "output" / "progress_antigravity.json").read_text())
+            self.assertEqual(payload["state"], "running")
+            self.assertEqual(payload["stage"], "idle")
+            self.assertIsNone(payload["current_dataset"])
+            events = [
+                json.loads(line)
+                for line in (root / "output" / "events_antigravity.jsonl").read_text().splitlines()
+            ]
+            self.assertTrue(all(item["stage"] in {
+                "loading", "dispatching", "awaiting_worker_result", "committing", "idle",
+            } for item in events if "stage" in item))
+            writer.close()
+
     def test_lane_snapshot_roundtrips_and_preserves_all_four_lanes(self) -> None:
         lanes = SimpleNamespace(
             hard=MappingProxyType({"A": (0,)}),
@@ -439,6 +485,7 @@ print(json.dumps(observed, sort_keys=True))
             self.assertEqual(budget_events[0]["dataset"], "A")
             self.assertEqual(budget_events[0]["observed"], 101)
             self.assertEqual(budget_events[0]["budget"], 100)
+            self.assertEqual(budget_events[0]["stage"], "dispatching")
             self.assertEqual(tuple((root / "checkpoint" / "records_antigravity").iterdir()), ())
             inspected = inspect_exp435(
                 run_root=root / "output",
@@ -481,6 +528,7 @@ print(json.dumps(observed, sort_keys=True))
             self.assertEqual(progress["state"], "failed")
             self.assertEqual(progress["stage"], "awaiting_worker_result")
             self.assertEqual(progress["current_dataset"], "B")
+            self.assertEqual(failures[0]["stage"], "awaiting_worker_result")
 
     def test_failed_resume_rejects_before_checkpoint_reconciliation(self) -> None:
         """A failed output must prevent temp/intent cleanup in the checkpoint tree."""
