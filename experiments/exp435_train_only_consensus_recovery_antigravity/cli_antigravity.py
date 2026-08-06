@@ -180,6 +180,8 @@ def _focused_test_evidence() -> dict[str, object]:
 
 
 def _preflight_roots(command: str, output: Path, checkpoint: Path, readiness: Path, evaluation: Path) -> None:
+    if command == "resume" and (evaluation.is_symlink() or evaluation.exists()):
+        raise ValueError("resume requires the fixed evaluation root to be absent")
     for path in (output, checkpoint, readiness, evaluation):
         if path.is_symlink():
             raise ValueError("fixed runtime paths cannot be symlinks")
@@ -426,6 +428,8 @@ def _publication_summary(publication: FrozenPublication) -> dict[str, object]:
 def _run_prediction(command: str) -> Mapping[str, object]:
     if command not in {"new", "resume"}:
         raise ValueError("prediction command is invalid")
+    if command == "resume" and (FROZEN_EVALUATION.is_symlink() or FROZEN_EVALUATION.exists()):
+        raise ValueError("resume requires the fixed evaluation root to be absent")
     from .checkpoint_antigravity import Exp435CheckpointStore
     head = _clean_head()
     readiness_payload: Mapping[str, object] | None = None

@@ -301,6 +301,46 @@ class Exp435CliTests(unittest.TestCase):
             self.assertIn("new", stderr)
             self.assertEqual(calls, [])
 
+    def test_resume_preflight_rejects_evaluation_directory_before_execution(self) -> None:
+        """A post-freeze evaluation must prevent any resume replay or mutation."""
+
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            calls: list[str] = []
+            dependencies = self._dependencies(parent, calls)
+            dependencies.output.mkdir()
+            dependencies.checkpoint.mkdir()
+            evaluation = parent / "evaluation_antigravity"
+            evaluation.mkdir()
+            marker = dependencies.output / "unchanged_antigravity.txt"
+            marker.write_text("unchanged", encoding="utf-8")
+            before = marker.read_bytes()
+
+            code, _stdout, stderr = self._main(["resume"], dependencies)
+
+            self.assertEqual(code, 2)
+            self.assertIn("evaluation", stderr)
+            self.assertEqual(calls, [])
+            self.assertEqual(marker.read_bytes(), before)
+
+    def test_direct_resume_rejects_evaluation_symlink_before_checkpoint_import(self) -> None:
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            output, checkpoint, _store = self._completed_runtime(parent)
+            target = parent / "evaluation-target_antigravity"
+            target.mkdir()
+            evaluation = parent / "evaluation_antigravity"
+            evaluation.symlink_to(target, target_is_directory=True)
+
+            with patch.object(cli_module, "FROZEN_OUTPUT", output), \
+                    patch.object(cli_module, "FROZEN_CHECKPOINT", checkpoint), \
+                    patch.object(cli_module, "FROZEN_EVALUATION", evaluation), \
+                    patch.dict("sys.modules", {
+                        "experiments.exp435_train_only_consensus_recovery_antigravity.checkpoint_antigravity": None,
+                    }):
+                with self.assertRaisesRegex(ValueError, "evaluation"):
+                    cli_module.run_resume()
+
     def test_ensure_run_parent_creates_empty_parent_and_rejects_unknown_content(self) -> None:
         with TemporaryDirectory() as directory:
             parent = Path(directory) / "run_parent"
@@ -331,9 +371,11 @@ class Exp435CliTests(unittest.TestCase):
 
     def test_repeated_resume_replays_publication_without_database_or_workers(self) -> None:
         with TemporaryDirectory() as directory:
-            output, checkpoint, _store = self._completed_runtime(Path(directory))
+            parent = Path(directory)
+            output, checkpoint, _store = self._completed_runtime(parent)
             with patch.object(cli_module, "FROZEN_OUTPUT", output), \
                     patch.object(cli_module, "FROZEN_CHECKPOINT", checkpoint), \
+                    patch.object(cli_module, "FROZEN_EVALUATION", parent / "evaluation_antigravity"), \
                     patch.object(cli_module, "_clean_head", return_value="f" * 40), \
                     patch.object(cli_module, "inspect_publication", side_effect=lambda out, store: self._local_publication(out, store)), \
                     patch.dict("sys.modules", {
@@ -345,6 +387,34 @@ class Exp435CliTests(unittest.TestCase):
             self.assertEqual(result["prediction_sha256"], json.loads(
                 (output / "publication_antigravity" / "manifest_antigravity.json").read_bytes()
             )["prediction_sha256"])
+
+    def test_direct_resume_rejects_evaluation_before_checkpoint_or_replay_imports(self) -> None:
+        """The production helper must guard before its delayed runtime imports."""
+
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            output, checkpoint, _store = self._completed_runtime(parent)
+            evaluation = parent / "evaluation_antigravity"
+            evaluation.mkdir()
+            before = {
+                path.relative_to(parent): path.read_bytes()
+                for path in sorted(parent.rglob("*")) if path.is_file()
+            }
+            with patch.object(cli_module, "FROZEN_OUTPUT", output), \
+                    patch.object(cli_module, "FROZEN_CHECKPOINT", checkpoint), \
+                    patch.object(cli_module, "FROZEN_EVALUATION", evaluation), \
+                    patch.dict("sys.modules", {
+                        "experiments.exp435_train_only_consensus_recovery_antigravity.checkpoint_antigravity": None,
+                        "experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity": None,
+                        "experiments.exp435_train_only_consensus_recovery_antigravity.inputs_antigravity": None,
+                    }):
+                with self.assertRaisesRegex(ValueError, "evaluation"):
+                    cli_module.run_resume()
+            after = {
+                path.relative_to(parent): path.read_bytes()
+                for path in sorted(parent.rglob("*")) if path.is_file()
+            }
+            self.assertEqual(after, before)
 
     def test_unfinished_resume_passes_exact_final_head_to_input_session(self) -> None:
         with TemporaryDirectory() as directory:
