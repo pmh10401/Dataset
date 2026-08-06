@@ -10,9 +10,12 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from hashlib import sha256
+import ctypes
+import errno
 import json
 import os
 from pathlib import Path
+import sys
 from types import MappingProxyType
 from typing import Iterable, Mapping
 from uuid import uuid4
@@ -170,6 +173,35 @@ def _fsync_directory(path: Path) -> None:
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
+
+
+def _exclusive_rename(source: Path, destination: Path) -> None:
+    """Atomically move a directory without replacing a destination.
+
+    ``os.rename`` replaces an existing directory on Darwin.  That behavior is
+    unsafe for a publication that must never clobber a concurrent destination,
+    so use the kernel's exclusive rename primitive and fail closed elsewhere.
+    """
+
+    source = Path(source)
+    destination = Path(destination)
+    if sys.platform != "darwin":
+        raise RuntimeError("exclusive directory rename is unsupported on this platform")
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+        renamex_np = libc.renamex_np
+    except (AttributeError, OSError) as error:
+        raise RuntimeError("Darwin renamex_np is unavailable") from error
+    renamex_np.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+    renamex_np.restype = ctypes.c_int
+    result = renamex_np(
+        os.fsencode(source),
+        os.fsencode(destination),
+        ctypes.c_uint(0x00000004),  # RENAME_EXCL from <sys/stdio.h>
+    )
+    if result != 0:
+        error_number = ctypes.get_errno() or errno.EIO
+        raise OSError(error_number, os.strerror(error_number), str(destination))
 
 
 def _reject_forbidden_keys(value: object, *, artifact: str) -> None:
@@ -367,7 +399,10 @@ def _validate_runtime(
         source="runtime progress",
         require_total=True,
     )
-    if progress.get("state") not in {"checkpoint_complete", "complete_review_only"}:
+    # ``complete_review_only`` is a publication/result state, never a runtime
+    # checkpoint state.  Accepting it here would allow a second publication
+    # pass to masquerade as the first checkpoint-complete boundary.
+    if progress.get("state") != "checkpoint_complete":
         raise ValueError("runtime is not checkpoint-complete")
     if progress.get("current_dataset") is not None:
         raise ValueError("runtime current dataset is not null")
@@ -376,7 +411,17 @@ def _validate_runtime(
     for field in ("completed", "completed_datasets", "success", "abstention", "error", "candidate_count"):
         if type(progress.get(field)) is not int:
             raise ValueError("runtime completion accounting is invalid")
-    if progress["completed"] != len(records) or progress["completed_datasets"] != len(records) or progress["error"] != 0:
+    recorded_success = sum(result.status == "scored" for result in records)
+    recorded_abstention = sum(result.status == "abstained" for result in records)
+    recorded_error = sum(result.status == "failed" for result in records)
+    if (
+        progress["completed"] != len(records)
+        or progress["completed_datasets"] != len(records)
+        or progress["success"] != recorded_success
+        or progress["abstention"] != recorded_abstention
+        or progress["error"] != recorded_error
+        or progress["success"] + progress["abstention"] + progress["error"] != progress["completed"]
+    ):
         raise ValueError("runtime completion accounting is invalid")
     if progress["candidate_count"] != sum(result.candidate_count for result in records):
         raise ValueError("runtime candidate accounting does not match checkpoint")
@@ -555,7 +600,7 @@ def _build_payloads(
         else:
             for line in raw.splitlines():
                 _reject_forbidden_keys(json.loads(line), artifact=name)
-    if set(payloads) != _PUBLICATION_FILES or progress.get("state") not in {"checkpoint_complete", "complete_review_only"}:
+    if set(payloads) != _PUBLICATION_FILES or progress.get("state") != "checkpoint_complete":
         raise ValueError("publication artifact inventory is invalid")
     return payloads
 
@@ -642,7 +687,7 @@ def publish_exp435(
         _fsync_directory(staging)
         if publication.exists() or publication.is_symlink():
             raise ValueError("publication appeared during atomic staging")
-        os.rename(staging, publication)
+        _exclusive_rename(staging, publication)
         _fsync_directory(output)
         published = True
     finally:

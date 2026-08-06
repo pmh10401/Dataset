@@ -8,6 +8,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from experiments.exp435_train_only_consensus_recovery_antigravity.checkpoint_antigravity import (
     Exp435CheckpointStore,
@@ -25,6 +26,7 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.reporting_anti
     CandidateBudgetExceeded,
     FrozenPublication,
     _PublicationExpectations,
+    _exclusive_rename,
     inspect_publication,
     publish_exp435,
 )
@@ -173,6 +175,56 @@ class Exp435ReportingTests(unittest.TestCase):
             self.assertNotIn("artifact_sha256_antigravity.json", mapping["artifact_sha256"])
             for name, digest in mapping["artifact_sha256"].items():
                 self.assertEqual(sha256((publication.publication / name).read_bytes()).hexdigest(), digest)
+
+    def test_publication_requires_checkpoint_complete_progress_state(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = _runtime(root / "output", root / "checkpoint")
+            progress = root / "output" / "progress_antigravity.json"
+            payload = json.loads(progress.read_bytes())
+            payload["state"] = "complete_review_only"
+            from experiments.exp403_408.artifact_io import canonical_json_bytes
+
+            progress.write_bytes(canonical_json_bytes(payload))
+            with self.assertRaises(ValueError):
+                publish_exp435(store, root / "output", _expectations=self.expectations)
+
+    def test_publication_requires_checkpoint_counter_conservation(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = _runtime(root / "output", root / "checkpoint")
+            progress = root / "output" / "progress_antigravity.json"
+            payload = json.loads(progress.read_bytes())
+            payload["success"] = 0
+            payload["abstention"] = 1
+            payload["completed"] = 1
+            payload["completed_datasets"] = 1
+            from experiments.exp403_408.artifact_io import canonical_json_bytes
+
+            progress.write_bytes(canonical_json_bytes(payload))
+            with self.assertRaises(ValueError):
+                publish_exp435(store, root / "output", _expectations=self.expectations)
+
+    def test_publication_does_not_replace_destination_that_appears_during_publish(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = _runtime(root / "output", root / "checkpoint")
+            destination = root / "output" / "publication_antigravity"
+            original = _exclusive_rename
+
+            def race(staging: Path, target: Path) -> None:
+                target.mkdir()
+                original(staging, target)
+
+            with patch(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.reporting_antigravity._exclusive_rename",
+                race,
+            ):
+                with self.assertRaises((OSError, ValueError, RuntimeError)):
+                    publish_exp435(store, root / "output", _expectations=self.expectations)
+            self.assertTrue(destination.is_dir())
+            self.assertEqual(tuple(destination.iterdir()), ())
+            self.assertEqual(tuple(root.joinpath("output").glob(".publication_antigravity.*.tmp")), ())
 
 
 if __name__ == "__main__":
