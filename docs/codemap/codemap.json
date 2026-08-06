@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-06T01:17:35Z",
+  "generated_at": "2026-08-06T01:26:01Z",
   "generated_from_commit": "24cc20d742017b6828491e54032a247e7982dbb8",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
@@ -703,7 +703,7 @@
         "Scoring is a source-backed capability only; no end-to-end runtime caller is registered yet",
         "MLX is optional and lazy; bundled Metal discovery, version/device provenance and runtime errors fall back to the CPU path",
         "MLX dense scoring keeps exact float32 inputs and checks finite outputs, normalized/absolute score error <=1e-5 and exact candidate coordinates for every batch size 16, 32, 64, 128 and 256",
-        "Each MLX gate batch records 2 warmups and 5 CPU/MLX timings including evaluation and synchronization; adoption requires speedup >=1.1",
+        "Each MLX gate batch performs 2 warmups and 5 timed measurements including evaluation and synchronization, then records CPU/MLX median timings; adoption requires speedup >=1.1",
         "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance",
         "MLX readiness and backend scoring are source-backed capabilities only; no runtime caller or end-to-end scoring flow is registered yet"
       ],
