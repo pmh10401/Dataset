@@ -499,12 +499,15 @@ class InstanceScoreEvidence:
     prototype_score: float | None = None
     prototype_threshold: float | None = None
     prototype_abnormal: bool = False
+    prototype_unavailability_reason: str | None = None
     gradient_score: float | None = None
     gradient_threshold: float | None = None
     gradient_abnormal: bool = False
+    gradient_unavailability_reason: str | None = None
     acf_score: float | None = None
     acf_threshold: float | None = None
     acf_abnormal: bool = False
+    acf_unavailability_reason: str | None = None
     consensus_candidate: bool = False
     status: str = "scored"
     exclusion_reason: str | None = None
@@ -513,12 +516,20 @@ class InstanceScoreEvidence:
     def __post_init__(self) -> None:
         _name(self.dataset, "dataset")
         _integer(self.instance_index, "instance_index")
-        if self.status not in _STATUSES:
+        if self.status not in {"scored", "abstained"}:
             raise ValueError("status is invalid")
         _integer(self.length, "length", minimum=1 if self.status != "scored" else FROZEN_CONFIG.min_scored_length)
-        for channel, score, threshold, abnormal in (("prototype", self.prototype_score, self.prototype_threshold, self.prototype_abnormal),
-                                                    ("gradient", self.gradient_score, self.gradient_threshold, self.gradient_abnormal),
-                                                    ("acf", self.acf_score, self.acf_threshold, self.acf_abnormal)):
+        allowed_reasons = {
+            "prototype": {"zero_scale"},
+            "gradient": {"zero_scale"},
+            "acf": {"short_series", "zero_acf_energy"},
+        }
+        scalar_presence: dict[str, bool] = {}
+        for channel, score, threshold, abnormal, reason in (
+            ("prototype", self.prototype_score, self.prototype_threshold, self.prototype_abnormal, self.prototype_unavailability_reason),
+            ("gradient", self.gradient_score, self.gradient_threshold, self.gradient_abnormal, self.gradient_unavailability_reason),
+            ("acf", self.acf_score, self.acf_threshold, self.acf_abnormal, self.acf_unavailability_reason),
+        ):
             if type(abnormal) is not bool:
                 raise ValueError(f"{channel}_abnormal must be boolean")
             score_value, threshold_value = _optional_finite(score, f"{channel}_score"), _optional_finite(threshold, f"{channel}_threshold")
@@ -528,18 +539,59 @@ class InstanceScoreEvidence:
                 raise ValueError(f"{channel} score and threshold must be both present or absent")
             if abnormal != (score_value is not None and score_value > threshold_value):  # type: ignore[operator]
                 raise ValueError(f"{channel} abnormal decision is inconsistent")
+            if reason is not None and reason not in allowed_reasons[channel]:
+                raise ValueError(f"{channel} unavailability reason is invalid")
+            scalar_presence[channel] = score_value is not None
+        if self.acf_unavailability_reason is not None:
+            expected_acf_reason = (
+                "short_series"
+                if self.length < FROZEN_CONFIG.min_acf_length
+                else "zero_acf_energy"
+            )
+            if self.acf_unavailability_reason != expected_acf_reason:
+                raise ValueError(f"acf unavailability requires {expected_acf_reason}")
         expected = self.prototype_abnormal and self.gradient_abnormal and self.acf_abnormal
         if type(self.consensus_candidate) is not bool or self.consensus_candidate != expected:
             raise ValueError("consensus candidate is inconsistent with strict three-channel AND")
         if self.status != "scored" and self.consensus_candidate:
-            raise ValueError("abstained or failed TEST evidence cannot be a candidate")
+            raise ValueError("abstained TEST evidence cannot be a candidate")
+        routing_reasons = {
+            "nonfinite_test", "insufficient_series_length", "missing_length", "insufficient_finite_train_rows"
+        }
+        scored_exclusions = {"frozen_lane", "lane_check_error"}
+        valid_exclusions = routing_reasons | scored_exclusions | {"three_channel_consensus_unavailable"}
         if self.exclusion_reason is not None:
             object.__setattr__(self, "exclusion_reason", _name(self.exclusion_reason, "exclusion_reason"))
-            if self.exclusion_reason == "nonfinite_test":
-                pairs = ((self.prototype_score, self.prototype_threshold), (self.gradient_score, self.gradient_threshold),
-                         (self.acf_score, self.acf_threshold))
-                if self.status != "abstained" or any(score is not None or threshold is not None for score, threshold in pairs) or any((self.prototype_abnormal, self.gradient_abnormal, self.acf_abnormal, self.consensus_candidate)):
-                    raise ValueError("nonfinite_test requires scalar-free abstained evidence")
+            if self.exclusion_reason not in valid_exclusions:
+                raise ValueError("exclusion reason is invalid")
+        channel_reasons = (
+            self.prototype_unavailability_reason,
+            self.gradient_unavailability_reason,
+            self.acf_unavailability_reason,
+        )
+        if self.exclusion_reason in routing_reasons:
+            if self.status != "abstained" or any(scalar_presence.values()) or any(channel_reasons) or any((self.prototype_abnormal, self.gradient_abnormal, self.acf_abnormal, self.consensus_candidate)):
+                raise ValueError(f"{self.exclusion_reason} requires scalar-free abstained evidence")
+            if (self.exclusion_reason == "insufficient_series_length"
+                    and self.length >= FROZEN_CONFIG.min_scored_length):
+                raise ValueError("routing insufficient_series_length requires a short row")
+            if (self.exclusion_reason in {"missing_length", "insufficient_finite_train_rows"}
+                    and self.length < FROZEN_CONFIG.min_scored_length):
+                raise ValueError(f"routing {self.exclusion_reason} requires a scored-length row")
+        elif self.exclusion_reason == "three_channel_consensus_unavailable":
+            if (self.status != "abstained" or not any(channel_reasons) or self.consensus_candidate
+                    or any(scalar_presence[channel] != (reason is None) for channel, reason in (
+                        ("prototype", self.prototype_unavailability_reason),
+                        ("gradient", self.gradient_unavailability_reason),
+                        ("acf", self.acf_unavailability_reason),
+                    ))):
+                raise ValueError("three_channel_consensus_unavailable requires unavailable abstained evidence")
+        elif self.exclusion_reason in scored_exclusions:
+            if self.status != "scored" or not all(scalar_presence.values()) or any(channel_reasons) or not self.consensus_candidate:
+                raise ValueError(f"{self.exclusion_reason} requires scored strict-consensus evidence")
+        elif self.exclusion_reason is None:
+            if self.status != "scored" or not all(scalar_presence.values()) or any(channel_reasons):
+                raise ValueError("unexcluded evidence requires all scored channel scalars")
         expected_digest = _canonical_digest(self.to_payload(include_digest=False))
         digest = expected_digest if self.evidence_digest is None else _digest(self.evidence_digest, "evidence_digest")
         if digest != expected_digest:
@@ -555,13 +607,17 @@ class InstanceScoreEvidence:
         def channel(flag: bool) -> tuple[float, float, bool]:
             return (2.0 if flag else 0.0, 1.0, flag)
         p, g, a = channel(prototype_abnormal), channel(gradient_abnormal), channel(acf_abnormal)
-        return cls(dataset, instance_index, length, p[0], p[1], p[2], g[0], g[1], g[2], a[0], a[1], a[2],
-                   prototype_abnormal and gradient_abnormal and acf_abnormal, status, exclusion_reason)
+        return cls(
+            dataset, instance_index, length, p[0], p[1], p[2], None,
+            g[0], g[1], g[2], None, a[0], a[1], a[2], None,
+            prototype_abnormal and gradient_abnormal and acf_abnormal, status, exclusion_reason,
+        )
 
     def to_payload(self, *, include_digest: bool = True) -> dict[str, object]:
         payload: dict[str, object] = {name: getattr(self, name) for name in (
             "dataset", "instance_index", "length", "prototype_score", "prototype_threshold", "prototype_abnormal",
-            "gradient_score", "gradient_threshold", "gradient_abnormal", "acf_score", "acf_threshold", "acf_abnormal",
+            "prototype_unavailability_reason", "gradient_score", "gradient_threshold", "gradient_abnormal",
+            "gradient_unavailability_reason", "acf_score", "acf_threshold", "acf_abnormal", "acf_unavailability_reason",
             "consensus_candidate", "status", "exclusion_reason")}
         if include_digest:
             payload["evidence_digest"] = self.evidence_digest
@@ -634,6 +690,22 @@ class Exp436DatasetResult:
                 raise ValueError("candidate evidence has an exclusion reason")
             if candidate.length != matched.length or candidate.evidence_digest != matched.evidence_digest:
                 raise ValueError("candidate does not match evidence")
+        if self.status == "abstained":
+            if any(item.status != "abstained" for item in evidence):
+                raise ValueError("abstained result requires every row evidence abstained")
+            if self.abstention_reason != "all_instances_abstained":
+                raise ValueError("abstained result requires all_instances_abstained")
+            if self.error is not None:
+                raise ValueError("abstained result cannot contain error")
+        elif self.status == "scored" and not any(item.status == "scored" for item in evidence):
+            raise ValueError("scored result requires scored row evidence")
+        expected_candidates = tuple(
+            Exp436Candidate(item.dataset, item.instance_index, item.length, item.evidence_digest)
+            for item in evidence
+            if item.status == "scored" and item.consensus_candidate and item.exclusion_reason is None
+        )
+        if candidates != expected_candidates:
+            raise ValueError("candidates must exactly match eligible strict-consensus evidence")
         if self.status != "scored" and candidates:
             raise ValueError("abstained or failed result cannot contain candidates")
         audits = _tuple(self.train_exclusion_audits, "train_exclusion_audits")
@@ -644,15 +716,11 @@ class Exp436DatasetResult:
             raise ValueError("TRAIN exclusion audits must be ordered and unique")
         object.__setattr__(self, "candidates", candidates)
         object.__setattr__(self, "train_exclusion_audits", audits)
-        if self.status == "abstained":
-            object.__setattr__(self, "abstention_reason", _name(self.abstention_reason, "abstention_reason"))
-            if self.error is not None:
-                raise ValueError("abstained result cannot contain error")
-        elif self.status == "failed":
+        if self.status == "failed":
             object.__setattr__(self, "error", _name(self.error, "error"))
             if self.abstention_reason is not None:
                 raise ValueError("failed result cannot contain abstention reason")
-        elif self.abstention_reason is not None or self.error is not None:
+        elif self.status == "scored" and (self.abstention_reason is not None or self.error is not None):
             raise ValueError("scored result cannot contain status metadata")
 
     @property

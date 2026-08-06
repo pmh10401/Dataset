@@ -62,6 +62,63 @@ class Exp436ContractsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "nonfinite_test"):
             self._evidence(2, exclusion_reason="nonfinite_test")
 
+    def test_instance_evidence_rejects_per_row_failed_and_unknown_reasons(self) -> None:
+        with self.assertRaisesRegex(ValueError, "status"):
+            InstanceScoreEvidence.fixture(status="failed")
+        with self.assertRaisesRegex(ValueError, "exclusion"):
+            InstanceScoreEvidence.fixture(exclusion_reason="invented")
+        with self.assertRaisesRegex(ValueError, "unavailability"):
+            InstanceScoreEvidence(
+                dataset="Demo", instance_index=3, length=16,
+                prototype_unavailability_reason="invented",
+                status="abstained", exclusion_reason="three_channel_consensus_unavailable",
+            )
+
+    def test_channel_unavailability_preserves_only_calculable_siblings(self) -> None:
+        evidence = InstanceScoreEvidence(
+            dataset="Demo", instance_index=3, length=16,
+            prototype_unavailability_reason="zero_scale",
+            gradient_score=2.0, gradient_threshold=1.0, gradient_abnormal=True,
+            acf_score=0.0, acf_threshold=1.0, acf_abnormal=False,
+            status="abstained", exclusion_reason="three_channel_consensus_unavailable",
+        )
+        self.assertEqual(evidence.prototype_unavailability_reason, "zero_scale")
+        self.assertEqual(evidence.gradient_score, 2.0)
+        self.assertIn("prototype_unavailability_reason", evidence.to_payload())
+        with self.assertRaisesRegex(ValueError, "scalar-free"):
+            InstanceScoreEvidence.fixture(status="abstained", exclusion_reason="missing_length")
+
+    def test_acf_unavailability_reason_matches_test_length_context(self) -> None:
+        def evidence(length: int, reason: str) -> InstanceScoreEvidence:
+            return InstanceScoreEvidence(
+                dataset="Demo", instance_index=3, length=length,
+                prototype_score=0.0, prototype_threshold=1.0,
+                gradient_score=0.0, gradient_threshold=1.0,
+                acf_unavailability_reason=reason,
+                status="abstained", exclusion_reason="three_channel_consensus_unavailable",
+            )
+        self.assertEqual(evidence(15, "short_series").acf_unavailability_reason, "short_series")
+        self.assertEqual(evidence(16, "zero_acf_energy").acf_unavailability_reason, "zero_acf_energy")
+        with self.assertRaisesRegex(ValueError, "acf unavailability"):
+            evidence(16, "short_series")
+        with self.assertRaisesRegex(ValueError, "acf unavailability"):
+            evidence(15, "zero_acf_energy")
+
+    def test_routing_reason_matches_raw_length_context(self) -> None:
+        def evidence(length: int, reason: str) -> InstanceScoreEvidence:
+            return InstanceScoreEvidence(
+                "Demo", 3, length, status="abstained", exclusion_reason=reason
+            )
+        for length, reason in ((1, "nonfinite_test"), (1, "insufficient_series_length"),
+                               (2, "missing_length"), (2, "insufficient_finite_train_rows")):
+            with self.subTest(length=length, reason=reason):
+                self.assertEqual(evidence(length, reason).exclusion_reason, reason)
+        for length, reason in ((2, "insufficient_series_length"), (1, "missing_length"),
+                               (1, "insufficient_finite_train_rows")):
+            with self.subTest(length=length, reason=reason):
+                with self.assertRaisesRegex(ValueError, "routing"):
+                    evidence(length, reason)
+
     def test_dataset_requires_exact_non_contiguous_test_identity_coverage(self) -> None:
         first, second = self._evidence(2), self._evidence(9, prototype_abnormal=False)
         candidate = Exp436Candidate("Demo", 2, 16, first.evidence_digest)
@@ -74,6 +131,33 @@ class Exp436ContractsTests(unittest.TestCase):
         extra = self._evidence(10)
         with self.assertRaisesRegex(ValueError, "exactly"):
             Exp436DatasetResult("Demo", "scored", (2, 9), (), (first, second, extra))
+
+    def test_dataset_result_requires_every_eligible_candidate(self) -> None:
+        first, second = self._evidence(2), self._evidence(9)
+        candidate = Exp436Candidate("Demo", 2, 16, first.evidence_digest)
+        with self.assertRaisesRegex(ValueError, "candidates must exactly"):
+            Exp436DatasetResult("Demo", "scored", (2,), (), (first,))
+        with self.assertRaisesRegex(ValueError, "candidates must exactly"):
+            Exp436DatasetResult("Demo", "scored", (2, 9), (candidate,), (first, second))
+
+    def test_dataset_result_rejects_status_and_abstention_evasion(self) -> None:
+        abstained = InstanceScoreEvidence("Demo", 0, 1, status="abstained", exclusion_reason="insufficient_series_length")
+        scored = self._evidence(1)
+        with self.assertRaisesRegex(ValueError, "scored result requires"):
+            Exp436DatasetResult("Demo", "scored", (0,), (), (abstained,))
+        with self.assertRaisesRegex(ValueError, "abstained result requires"):
+            Exp436DatasetResult("Demo", "abstained", (0, 1), (), (abstained, scored), abstention_reason="all_instances_abstained")
+        with self.assertRaisesRegex(ValueError, "all_instances_abstained"):
+            Exp436DatasetResult("Demo", "abstained", (0,), (), (abstained,), abstention_reason="wrong_reason")
+
+    def test_dataset_result_rejects_101_eligible_rows_with_only_100_candidates(self) -> None:
+        evidence = tuple(self._evidence(index) for index in range(101))
+        candidates = tuple(
+            Exp436Candidate(item.dataset, item.instance_index, item.length, item.evidence_digest)
+            for item in evidence[:100]
+        )
+        with self.assertRaisesRegex(ValueError, "candidates must exactly"):
+            Exp436DatasetResult("Demo", "scored", tuple(range(101)), candidates, evidence)
 
     def test_train_arrays_use_an_immutable_bytes_backing_store(self) -> None:
         group = PreparedTrainGroup("Demo", 2, (1, 3, 5, 7), np.ones((4, 2)))

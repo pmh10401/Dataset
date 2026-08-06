@@ -454,6 +454,19 @@ consensus = bool(prototype_abnormal and gradient_abnormal and acf_abnormal)
 
 If any channel score/threshold is absent, set `consensus_candidate=False` and preserve the channel reason. Lane checks happen only after all three booleans are true and fail closed on lane lookup errors.
 
+**Settled evidence and numerical-failure ruling:** `InstanceScoreEvidence` records
+optional exact per-channel unavailability reasons (`zero_scale` for prototype or
+gradient; `short_series` or `zero_acf_energy` for ACF) in its canonical payload
+and digest. A scalar-free routing abstention is limited to `nonfinite_test`,
+`insufficient_series_length`, `missing_length`, or
+`insufficient_finite_train_rows`; a TRAIN-unavailable channel instead preserves
+all calculable sibling scalar pairs under
+`three_channel_consensus_unavailable`. Any nonfinite result after the finite
+raw-row check, or an error from the injected dense scorer, terminates prediction
+with `ValueError`; it is never converted into an abstention. A finite
+zero-energy TEST waveform records `zero_acf_energy` and is never substituted as
+raw input to the ACF scorer.
+
 - [ ] **Step 5: Run tests and finite-fixture parity regression.**
 
 ```bash
