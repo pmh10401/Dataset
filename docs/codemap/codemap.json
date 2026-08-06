@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T09:31:19Z",
-  "generated_from_commit": "266959b5c586e593f5f30d94cb3b876ce3438e20",
+  "generated_at": "2026-08-06T00:00:00Z",
+  "generated_from_commit": "f98718527de7cacd3547c4b43987f3b004546bb9",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1685,12 +1685,12 @@
     },
     {
       "id": "exp436_contract_boundary",
-      "label": "Exp436 frozen missing-safe contracts",
+      "label": "Exp436 missing-safe contracts + input boundary",
       "type": "data",
       "boundary": "Exp436 missing-safe strict consensus",
       "layer": 3,
       "path": "experiments/exp436_missing_safe_strict_consensus_antigravity",
-      "role": "Freezes label-free raw/TRAIN calibration/scoring/result contracts, exact source-identity preparation accounting, immutable bytes-backed matrices, strict three-channel AND evidence, and auditable MLX/MPS/CPU selection and lifecycle evidence.",
+      "role": "Freezes missing-safe values-only contracts and owns the single label-free prediction input session: frozen lanes precede one descriptor snapshot, exact raw TRAIN BLOBs privately authorize TEST values, TEST identity coverage is checked again after decoding, and the private authority cache is disposed on every context-manager exit.",
       "entrypoints": [
         "Exp436FrozenConfig",
         "FROZEN_CONFIG",
@@ -1702,11 +1702,15 @@
         "BackendBatchEvidence",
         "BackendBenchmarkEvidence",
         "BackendDecision",
-        "Exp436RunSummary"
+        "Exp436RunSummary",
+        "Exp436InputSession",
+        "decode_raw_value_row_antigravity",
+        "open_exp436_input_session"
       ],
       "tests": [
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_config_antigravity.py",
-        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py"
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_inputs_antigravity.py"
       ],
       "constraints": [
         "No TEST labels, anomaly positions, metrics, imputation, padding, truncation, copied values, or tail replacement",
@@ -1714,7 +1718,7 @@
         "Candidates require prototype AND gradient AND ACF and exact TEST identity evidence coverage; nonfinite_test is scalar-free abstained evidence",
         "TRAIN source identity-length manifest is exactly partitioned by surviving groups and excluded-row audits; matrices are finite float32 C-order arrays owned by immutable bytes",
         "Backend protocol is paired-synchronized-v1; a selected accelerator requires Metal availability and all accepted raw/derived timing fields are canonical native Python JSON values recomputed from the five pairs",
-        "Complete review-only publication is explicit after checkpoint_complete; no source-evidenced callers or dependencies outside the internal config import exist yet"
+        "Exp436 inputs have no source-evidenced callers yet; they import local config/contracts plus Exp417 lane/context authority and Exp425's descriptor snapshot, while the retained raw TRAIN tuple is private TEST authorization and is discarded when the session closes"
       ],
       "evidence": [
         {
@@ -1752,6 +1756,30 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
           "symbol": "def test_backend_evidence_recomputes_native_scalars_for_strict_json"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "def decode_raw_value_row_antigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "class Exp436InputSession"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "def open_exp436_input_session("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "from .config_antigravity import FROZEN_CONFIG"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "from .contracts_antigravity import MissingSafeRawDataset, RawValueSeries"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "class Exp436InputTests"
         }
       ]
     }
@@ -2360,6 +2388,74 @@
           "symbol": "verified_read_only_connection,"
         }
       ]
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "exp417_inputs",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.inputs import freeze_lane_inputs"
+        }
+      ],
+      "id": "edge_048_exp436_inputs_imports_exp417_lane_boundary"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "exp417_inputs",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "freeze_lane_inputs("
+        }
+      ],
+      "id": "edge_049_exp436_inputs_calls_exp417_lane_freeze"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenRunContext"
+        }
+      ],
+      "id": "edge_050_exp436_inputs_imports_exp417_context"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "exp425_database",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp425_selective_recovery.database import ("
+        }
+      ],
+      "id": "edge_051_exp436_inputs_imports_exp425_snapshot"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "exp425_database",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "open_database_snapshot("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "load_normal_train_value_blobs("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "load_test_value_blobs_after_train("
+        }
+      ],
+      "id": "edge_052_exp436_inputs_calls_exp425_values_boundary"
     }
   ],
   "flows": [
