@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from numbers import Integral
-from typing import Protocol
+from typing import Callable, Protocol
 
 import numpy as np
 
@@ -121,6 +121,7 @@ def _score_channel(
     calibration: object,
     *,
     transform: bool,
+    channel_scorer: Callable[[object, object, int], float] = score_channel_cpu,
 ) -> tuple[float | None, float | None, bool, str | None]:
     """Score one available channel, returning scalar evidence or a reason."""
 
@@ -134,7 +135,7 @@ def _score_channel(
             if transform
             else values
         )
-        score = score_channel_cpu(query, group_values, FROZEN_CONFIG.neighbor_count)
+        score = channel_scorer(query, group_values, FROZEN_CONFIG.neighbor_count)
         threshold = calibration.threshold
         if threshold is None or not np.isfinite(score) or not np.isfinite(threshold):
             raise ValueError("nonfinite score")
@@ -148,6 +149,8 @@ def score_test_instance_cpu(
     test_series: RawSeries,
     calibrated_groups: Sequence[TrainGroup] | TrainGroup,
     lanes: LaneMembership,
+    *,
+    channel_scorer: Callable[[object, object, int], float] = score_channel_cpu,
 ) -> InstanceScoreEvidence:
     """Score one values-only TEST instance against its exact TRAIN length group.
 
@@ -192,6 +195,7 @@ def score_test_instance_cpu(
         group.values,
         group.prototype,
         transform=True,
+        channel_scorer=channel_scorer,
     )
     if prototype_reason is not None:
         return _abstention(
@@ -227,6 +231,7 @@ def score_test_instance_cpu(
             group.gradients,
             group.gradient,
             transform=True,
+            channel_scorer=channel_scorer,
         )
 
     acf_values = acf_vector(
@@ -239,6 +244,7 @@ def score_test_instance_cpu(
         group.acf_values,
         group.acf,
         transform=False,
+        channel_scorer=channel_scorer,
     )
 
     if gradient_score is None and acf_score is None:
@@ -290,6 +296,8 @@ def score_dataset_cpu(
     calibrated_groups: Sequence[TrainGroup] | TrainGroup,
     test: RawTestDataset,
     lanes: LaneMembership,
+    *,
+    channel_scorer: Callable[[object, object, int], float] = score_channel_cpu,
 ) -> Exp435DatasetResult:
     """Score all TEST rows independently and retain ordered evidence."""
 
@@ -308,7 +316,14 @@ def score_dataset_cpu(
 
     evidence: list[InstanceScoreEvidence] = []
     for series in test.series:
-        evidence.append(score_test_instance_cpu(series, calibrated_groups, lanes))
+        evidence.append(
+            score_test_instance_cpu(
+                series,
+                calibrated_groups,
+                lanes,
+                channel_scorer=channel_scorer,
+            )
+        )
     ordered_evidence = tuple(sorted(evidence, key=lambda item: item.instance_index))
     candidates = tuple(
         Exp435Candidate(
@@ -338,6 +353,29 @@ def score_dataset_cpu(
     )
 
 
+def score_dataset_backend(
+    calibrated_groups: Sequence[TrainGroup] | TrainGroup,
+    test: RawTestDataset,
+    lanes: LaneMembership,
+    channel_scorer: Callable[[object, object, int], float],
+) -> Exp435DatasetResult:
+    """Score one dataset with an already-selected channel backend.
+
+    Feature construction, thresholds, routing and consensus remain identical
+    to ``score_dataset_cpu``; only the dense channel distance operation is
+    injected.  CPU callers should continue using the public CPU wrapper.
+    """
+
+    if not callable(channel_scorer):
+        raise ValueError("channel_scorer must be callable")
+    return score_dataset_cpu(
+        calibrated_groups,
+        test,
+        lanes,
+        channel_scorer=channel_scorer,
+    )
+
+
 def validate_global_candidates(
     results: Sequence[Exp435DatasetResult], budget: int = FROZEN_CONFIG.global_candidate_budget
 ) -> tuple[Exp435Candidate, ...]:
@@ -361,6 +399,7 @@ def validate_global_candidates(
 __all__ = [
     "CandidateBudgetExceeded",
     "score_dataset_cpu",
+    "score_dataset_backend",
     "score_test_instance_cpu",
     "validate_global_candidates",
 ]

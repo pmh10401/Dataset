@@ -87,6 +87,34 @@ class ProgressWriterTests(unittest.TestCase):
             self.assertEqual(payload["state"], "interrupted")
             self.assertFalse(payload["pid"]["active"] if isinstance(payload["pid"], dict) else False)
 
+    def test_resume_removes_only_internal_atomic_temp_and_rejects_unknown_files(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "output"
+            writer = ProgressWriter.create(
+                root, run_identity="exp435-fixture", checkpoint=Path(directory) / "cp",
+                total_datasets=1, backend="cpu", heartbeat_seconds=None,
+            )
+            writer.close()
+            internal = root / (".progress_antigravity.json." + "a" * 32 + ".tmp")
+            internal.write_bytes(b"partial")
+            resumed = ProgressWriter.open_existing(
+                root,
+                run_identity="exp435-fixture",
+                checkpoint=Path(directory) / "cp",
+                process_is_live=lambda pid: False,
+            )
+            resumed.close()
+            self.assertFalse(internal.exists())
+            unknown = root / ".progress_antigravity.json.unknown.tmp"
+            unknown.write_bytes(b"partial")
+            with self.assertRaisesRegex(ValueError, "inventory"):
+                ProgressWriter.open_existing(
+                    root,
+                    run_identity="exp435-fixture",
+                    checkpoint=Path(directory) / "cp",
+                    process_is_live=lambda pid: False,
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

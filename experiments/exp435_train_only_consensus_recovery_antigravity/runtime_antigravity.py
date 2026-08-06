@@ -11,23 +11,19 @@ from __future__ import annotations
 
 from concurrent.futures import FIRST_COMPLETED, Future, ProcessPoolExecutor, wait
 from dataclasses import asdict
+from hashlib import sha256
 import os
 from pathlib import Path
 from typing import Callable, Mapping
+from dataclasses import dataclass
+import json
 
-from .checkpoint_antigravity import (
-    Exp435CheckpointStore,
-    context_payload,
-)
-from .config_antigravity import FROZEN_CONFIG
-from .contracts_antigravity import (
-    BackendDecision,
-    Exp435DatasetResult,
-    Exp435RunSummary,
-)
-from .progress_antigravity import ProgressWriter
+from experiments.exp403_408.artifact_io import canonical_json_bytes
 
 
+# This module is imported by the parent and by spawned workers.  Set the
+# numerical-library limits before importing any project module that can import
+# NumPy (contracts, features, or scoring).
 _THREAD_ENV = (
     "OMP_NUM_THREADS",
     "OPENBLAS_NUM_THREADS",
@@ -36,12 +32,91 @@ _THREAD_ENV = (
     "NUMEXPR_NUM_THREADS",
     "NUMBA_NUM_THREADS",
 )
-_PREFETCH = 14
 
 
 def _set_numerical_thread_environment() -> None:
     for name in _THREAD_ENV:
         os.environ[name] = "1"
+
+
+_set_numerical_thread_environment()
+
+from .checkpoint_antigravity import (
+    Exp435CheckpointStore,
+    context_payload,
+)
+from .config_antigravity import FROZEN_CONFIG
+from .contracts_antigravity import (
+    BackendBatchEvidence,
+    BackendDecision,
+    Exp435DatasetResult,
+    Exp435RunSummary,
+)
+from .progress_antigravity import ProgressWriter, _validate_output_inventory
+
+
+_PREFETCH = 14
+
+
+@dataclass(frozen=True)
+class LaneMembershipSnapshot:
+    """Pickle-safe immutable copy of all four frozen lane coordinate sets."""
+
+    hard: frozenset[tuple[str, int]]
+    standard: frozenset[tuple[str, int]]
+    priority: frozenset[tuple[str, int]]
+    automatic_normal: frozenset[tuple[str, int]]
+
+    def contains(self, dataset: str, instance_index: int) -> bool:
+        coordinate = (dataset, instance_index)
+        return any(coordinate in lane for lane in (
+            self.hard, self.standard, self.priority, self.automatic_normal
+        ))
+
+
+def _lane_mapping(lanes: object, name: str) -> Mapping[str, object]:
+    mapping = getattr(lanes, name, None)
+    if mapping is None and isinstance(lanes, Mapping):
+        mapping = lanes.get(name)
+    if not isinstance(mapping, Mapping):
+        raise ValueError(f"frozen lane {name} mapping is invalid")
+    return mapping
+
+
+def _lane_snapshot(
+    lanes: object,
+    datasets: tuple[str, ...],
+    test_sizes: Mapping[str, int] | None = None,
+) -> LaneMembershipSnapshot:
+    """Validate and copy a real FrozenLaneSnapshot-shaped object."""
+
+    dataset_set = set(datasets)
+    sizes = test_sizes if test_sizes is not None else getattr(lanes, "test_sizes", None)
+    if isinstance(sizes, Mapping):
+        if set(sizes) != dataset_set or any(type(size) is not int or size <= 0 for size in sizes.values()):
+            raise ValueError("frozen TEST sizes are invalid")
+    frozen: dict[str, frozenset[tuple[str, int]]] = {}
+    all_coordinates: set[tuple[str, int]] = set()
+    for name in ("hard", "standard", "priority", "automatic_normal"):
+        mapping = _lane_mapping(lanes, name)
+        coordinates: set[tuple[str, int]] = set()
+        for dataset, indices in mapping.items():
+            if not isinstance(dataset, str) or dataset not in dataset_set:
+                raise ValueError("frozen lane contains a dataset outside context")
+            if not isinstance(indices, (tuple, list, frozenset)):
+                raise ValueError("frozen lane coordinates are invalid")
+            for index in indices:
+                if type(index) is not int or index < 0:
+                    raise ValueError("frozen lane coordinate is invalid")
+                if isinstance(sizes, Mapping) and dataset in sizes and index >= int(sizes[dataset]):
+                    raise ValueError("frozen lane coordinate exceeds TEST bounds")
+                coordinate = (dataset, index)
+                if coordinate in coordinates or coordinate in all_coordinates:
+                    raise ValueError("frozen lanes overlap or contain duplicates")
+                coordinates.add(coordinate)
+        all_coordinates.update(coordinates)
+        frozen[name] = frozenset(coordinates)
+    return LaneMembershipSnapshot(**frozen)
 
 
 def _worker_initializer() -> None:
@@ -57,7 +132,7 @@ def _default_dataset_scorer(
     """Run the frozen CPU feature/calibration/scoring path in a worker."""
 
     if backend_decision.adopted:
-        raise ValueError("adopted MLX backend requires a single-process scorer")
+        raise ValueError("adopted MLX backend requires the runtime MLX scorer")
     # Imports occur after the worker initializer has constrained numerical
     # libraries.  No TEST label or anomaly metadata is imported here.
     from .features_antigravity import fit_calibrated_group, prepare_train_groups
@@ -65,6 +140,30 @@ def _default_dataset_scorer(
 
     groups = tuple(fit_calibrated_group(group) for group in prepare_train_groups(train))
     return score_dataset_cpu(groups, test, lanes)
+
+
+def _default_mlx_dataset_scorer(
+    train: object,
+    test: object,
+    lanes: object,
+    backend_decision: BackendDecision,
+    engine: object,
+) -> Exp435DatasetResult:
+    """Use one approved MLX engine for all channel scores in one process."""
+
+    from .features_antigravity import fit_calibrated_group, prepare_train_groups
+    from .mlx_antigravity import score_with_backend
+    from .scoring_antigravity import score_dataset_backend
+
+    groups = tuple(fit_calibrated_group(group) for group in prepare_train_groups(train))
+    channel_scorer = lambda query, references, k: score_with_backend(  # noqa: E731
+        backend_decision,
+        query,
+        references,
+        k,
+        engine=engine,
+    )
+    return score_dataset_backend(groups, test, lanes, channel_scorer)
 
 
 def _score_worker(
@@ -111,6 +210,30 @@ def _runtime_context(session: object, backend: BackendDecision) -> dict[str, obj
     projected["experiment_id"] = FROZEN_CONFIG.experiment_id
     projected["frozen_config"] = asdict(FROZEN_CONFIG)
     projected["backend_decision"] = backend.to_dict()
+    manifest = projected.get("test_identity_manifest")
+    if isinstance(manifest, Mapping):
+        manifest_sizes = {
+            dataset: len(entries)
+            for dataset, entries in manifest.items()
+            if isinstance(dataset, str) and isinstance(entries, list)
+        }
+        if set(manifest_sizes) != set(projected.get("datasets", ())):
+            raise ValueError("verified context TEST identity manifest is incomplete")
+        supplied_sizes = projected.get("test_sizes")
+        if supplied_sizes is not None and supplied_sizes != manifest_sizes:
+            raise ValueError("verified context TEST sizes disagree with identity manifest")
+        projected["test_sizes"] = manifest_sizes
+    elif "test_sizes" not in projected:
+        raise ValueError("verified context lacks TEST identity manifest")
+    datasets = projected.get("datasets")
+    sizes = projected.get("test_sizes")
+    if (
+        not isinstance(datasets, list)
+        or not isinstance(sizes, dict)
+        or set(sizes) != set(datasets)
+        or any(type(size) is not int or size <= 0 for size in sizes.values())
+    ):
+        raise ValueError("verified context TEST sizes do not cover the frozen population")
     # A run identity is part of the checkpoint context, never caller input.
     code_commit = projected.get("code_commit")
     if isinstance(code_commit, str) and code_commit:
@@ -181,6 +304,46 @@ def _counts(store: Exp435CheckpointStore) -> tuple[int, int, int, int]:
         sum(result.status == "abstained" for result in results),
         sum(result.status == "failed" for result in results),
     )
+
+
+def _persist_failure(writer: ProgressWriter, error: BaseException) -> None:
+    message = " ".join(str(error).split())[:1000]
+    if "candidate budget" in message.lower():
+        writer.append_event({
+            "kind": "candidate_budget_exceeded",
+            "dataset": writer.progress.get("current_dataset"),
+            "error_type": type(error).__name__,
+            "error_message": message,
+            "observed": getattr(error, "observed", None),
+            "budget": FROZEN_CONFIG.global_candidate_budget,
+            "stage": writer.progress.get("stage", "scoring"),
+        })
+    else:
+        writer.append_event({
+            "kind": "failure",
+            "dataset": writer.progress.get("current_dataset"),
+            "error_type": type(error).__name__,
+            "error_message": message,
+            "stage": writer.progress.get("stage", "scoring"),
+        })
+    writer.mark_failed(
+        writer.progress.get("current_dataset")
+        if isinstance(writer.progress.get("current_dataset"), str)
+        else None,
+        error,
+    )
+
+
+def _abort_executor(executor: ProcessPoolExecutor) -> None:
+    """Cancel pending work and terminate running children after a hard failure."""
+
+    processes = getattr(executor, "_processes", {})
+    if isinstance(processes, Mapping):
+        for process in tuple(processes.values()):
+            terminate = getattr(process, "terminate", None)
+            if callable(terminate):
+                terminate()
+    executor.shutdown(wait=False, cancel_futures=True)
 
 
 def _reconcile_runtime(
@@ -266,6 +429,12 @@ def _run(
         raise ValueError("worker_count must be 1 or the frozen CPU worker count 7")
     if backend.adopted and worker_count != 1:
         raise ValueError("MLX backend must use one process without an outer pool")
+    lane_snapshot = _lane_snapshot(
+        context.get("lanes"),
+        datasets,
+        context.get("test_sizes") if isinstance(context.get("test_sizes"), Mapping) else None,
+    )
+    using_default_scorer = dataset_scorer is None
     if dataset_scorer is None:
         dataset_scorer = _default_dataset_scorer
     if not callable(dataset_scorer):
@@ -289,7 +458,13 @@ def _run(
             total_datasets=len(datasets),
             backend=backend.backend,
         )
+    failure_persisted = False
     try:
+        mlx_engine: object | None = None
+        if backend.adopted and using_default_scorer:
+            from .mlx_antigravity import MlxEngine
+
+            mlx_engine = MlxEngine()
         _reconcile_runtime(store, writer, backend)
         completed_datasets = set(store.completed_digests())
         missing = [dataset for dataset in datasets if dataset not in completed_datasets]
@@ -319,6 +494,16 @@ def _run(
         if backend.adopted or worker_count == 1:
             ready: dict[str, tuple[Exp435DatasetResult, Mapping[str, object]]] = {}
             for dataset in missing:
+                writer.update(
+                    stage="loading",
+                    current_dataset=dataset,
+                    dataset_metadata=None,
+                    completed=completed,
+                    success=successful,
+                    abstention=abstained,
+                    error=failed,
+                    candidate_count=candidate_count,
+                )
                 train, test, metadata = _load_values(input_session, dataset)
                 writer.update(
                     stage="scoring",
@@ -330,7 +515,20 @@ def _run(
                     error=failed,
                     candidate_count=candidate_count,
                 )
-                result = _score_worker(dataset_scorer, dataset, train, test, _session_lanes(input_session), backend)
+                if backend.adopted and using_default_scorer:
+                    assert mlx_engine is not None
+                    result = _score_worker(
+                        lambda train_item, test_item, lane_item, decision: _default_mlx_dataset_scorer(
+                            train_item, test_item, lane_item, decision, mlx_engine
+                        ),
+                        dataset,
+                        train,
+                        test,
+                        lane_snapshot,
+                        backend,
+                    )
+                else:
+                    result = _score_worker(dataset_scorer, dataset, train, test, lane_snapshot, backend)
                 ready[dataset] = (result, metadata)
                 # Serial path is already ordered because ``missing`` follows
                 # the frozen dataset order.
@@ -346,8 +544,11 @@ def _run(
             # Bounded 14-task prefetch; only the parent loads values and writes
             # durable files.  Futures are retained until their name-order slot
             # can be committed.
-            lanes = _session_lanes(input_session)
-            executor = ProcessPoolExecutor(max_workers=FROZEN_CONFIG.cpu_workers, initializer=_worker_initializer)
+            lanes = lane_snapshot
+            executor: ProcessPoolExecutor | None = ProcessPoolExecutor(
+                max_workers=FROZEN_CONFIG.cpu_workers,
+                initializer=_worker_initializer,
+            )
             pending: dict[Future[Exp435DatasetResult], tuple[str, Mapping[str, object]]] = {}
             completed_results: dict[str, tuple[Exp435DatasetResult, Mapping[str, object]]] = {}
             submit_index = 0
@@ -356,18 +557,54 @@ def _run(
                 while submit_index < len(missing) or pending:
                     while submit_index < len(missing) and len(pending) < _PREFETCH:
                         dataset = missing[submit_index]
+                        writer.update(
+                            stage="loading",
+                            current_dataset=dataset,
+                            dataset_metadata=None,
+                            completed=completed,
+                            success=successful,
+                            abstention=abstained,
+                            error=failed,
+                            candidate_count=candidate_count,
+                        )
                         train, test, metadata = _load_values(input_session, dataset)
                         writer.update(stage="scoring", current_dataset=dataset, dataset_metadata=metadata, completed=completed, success=successful, abstention=abstained, error=failed, candidate_count=candidate_count)
+                        assert executor is not None
                         future = executor.submit(_score_worker, dataset_scorer, dataset, train, test, lanes, backend)
                         pending[future] = (dataset, metadata)
                         submit_index += 1
                     done, _ = wait(tuple(pending), return_when=FIRST_COMPLETED)
                     for future in done:
                         dataset, metadata = pending.pop(future)
-                        completed_results[dataset] = (future.result(), metadata)
+                        try:
+                            completed_results[dataset] = (future.result(), metadata)
+                        except BaseException:
+                            # Preserve the actual failing dataset before the
+                            # outer handler persists its durable error event.
+                            writer.update(
+                                stage="scoring",
+                                current_dataset=dataset,
+                                dataset_metadata=metadata,
+                                completed=completed,
+                                success=successful,
+                                abstention=abstained,
+                                error=failed,
+                                candidate_count=candidate_count,
+                            )
+                            raise
                     while commit_index < len(missing) and missing[commit_index] in completed_results:
                         dataset = missing[commit_index]
                         result, metadata = completed_results.pop(dataset)
+                        writer.update(
+                            stage="committing",
+                            current_dataset=dataset,
+                            dataset_metadata=metadata,
+                            completed=completed,
+                            success=successful,
+                            abstention=abstained,
+                            error=failed,
+                            candidate_count=candidate_count,
+                        )
                         digest = store.commit(result)
                         completed += 1
                         successful += result.status == "scored"
@@ -377,8 +614,35 @@ def _run(
                         writer.append_event(_result_event(result, digest, completed=completed, total=len(datasets), metadata=metadata, backend=backend))
                         writer.update(stage="scoring", current_dataset=dataset, dataset_metadata=metadata, completed=completed, success=successful, abstention=abstained, error=failed, candidate_count=candidate_count)
                         commit_index += 1
+            except KeyboardInterrupt as error:
+                writer.mark_interrupted(
+                    writer.progress.get("current_dataset")
+                    if isinstance(writer.progress.get("current_dataset"), str)
+                    else None,
+                    error,
+                )
+                failure_persisted = True
+                for future in pending:
+                    future.cancel()
+                assert executor is not None
+                _abort_executor(executor)
+                executor = None
+                raise
+            except BaseException as error:
+                # Persist evidence while the parent is still responsive, then
+                # cancel work that has not started and avoid waiting for a slow
+                # sibling process before surfacing the failure.
+                _persist_failure(writer, error)
+                failure_persisted = True
+                for future in pending:
+                    future.cancel()
+                assert executor is not None
+                _abort_executor(executor)
+                executor = None
+                raise
             finally:
-                executor.shutdown(wait=True, cancel_futures=True)
+                if executor is not None:
+                    executor.shutdown(wait=True, cancel_futures=True)
 
         if len(store.completed_digests()) != len(datasets) or failed:
             raise ValueError("runtime population is incomplete")
@@ -393,19 +657,8 @@ def _run(
         # Candidate-budget overflow is persisted as an immutable event before
         # the exception escapes; no publication artifact is created here.
         try:
-            message = " ".join(str(error).split())[:1000]
-            if "candidate budget" in message.lower():
-                writer.append_event({
-                    "kind": "candidate_budget_exceeded",
-                    "error_type": type(error).__name__,
-                    "error_message": message,
-                    "observed": getattr(error, "observed", None),
-                    "budget": FROZEN_CONFIG.global_candidate_budget,
-                    "stage": writer.progress.get("stage", "scoring"),
-                })
-            else:
-                writer.append_event({"kind": "failure", "error_type": type(error).__name__, "error_message": message, "stage": writer.progress.get("stage", "scoring")})
-            writer.mark_failed(writer.progress.get("current_dataset") if isinstance(writer.progress.get("current_dataset"), str) else None, error)
+            if not failure_persisted:
+                _persist_failure(writer, error)
         finally:
             raise
     finally:
@@ -453,6 +706,35 @@ def resume_exp435(
     )
 
 
+def _backend_from_payload(payload: object) -> BackendDecision:
+    if not isinstance(payload, Mapping):
+        raise ValueError("stored backend decision is absent")
+    raw = dict(payload)
+    timings_raw = raw.get("timings", ())
+    evidence_raw = raw.get("batch_evidence", ())
+    if not isinstance(timings_raw, list) or not isinstance(evidence_raw, list):
+        raise ValueError("stored backend timing evidence is invalid")
+    try:
+        raw["timings"] = tuple(tuple(item) for item in timings_raw)
+        raw["batch_evidence"] = tuple(
+            BackendBatchEvidence(**dict(item)) for item in evidence_raw
+        )
+        return BackendDecision(**{
+            key: raw[key]
+            for key in (
+                "backend", "adopted", "smoke_seed", "finite_outputs",
+                "candidate_identity_match", "parity_passed", "normalized_error_max",
+                "absolute_error_max", "speedup", "batch_size", "selected_batch_size",
+                "cpu_median_seconds", "mlx_median_seconds", "mlx_version",
+                "mlx_metal_version", "device", "device_info", "metal_available",
+                "timings", "batch_evidence", "reason",
+            )
+            if key in raw
+        })
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("stored backend decision is invalid") from error
+
+
 def inspect_exp435(
     *,
     run_root: Path,
@@ -461,20 +743,39 @@ def inspect_exp435(
 ) -> Exp435RunSummary:
     """Inspect only canonical files; this function opens neither DB nor workers."""
 
-    context = context_payload(expected_context)
-    backend_payload = context.get("backend_decision")
-    backend = BackendDecision.cpu_fallback("inspect")
-    if isinstance(backend_payload, Mapping):
-        backend_name = backend_payload.get("backend")
-        if backend_name == "cpu":
-            backend = BackendDecision.cpu_fallback(str(backend_payload.get("reason", "inspect")))
-    store = Exp435CheckpointStore.open_existing(checkpoint_root, context)
-    progress_path = Path(run_root) / "progress_antigravity.json"
-    progress = {}
-    if progress_path.is_file():
-        import json
+    expected_base = context_payload(expected_context)
+    stored_context = Exp435CheckpointStore.read_context_projection(checkpoint_root)
+    backend = _backend_from_payload(stored_context.get("backend_decision"))
+    expected_runtime = _runtime_context(type("_Session", (), {"context": expected_base})(), backend)
+    if dict(stored_context) != expected_runtime:
+        raise ValueError("context fingerprint does not match verified context")
+    expected_run_identity = expected_runtime.get("run_identity")
+    if not isinstance(expected_run_identity, str) or not expected_run_identity:
+        expected_run_identity = f"exp435-{sha256(canonical_json_bytes(expected_runtime)).hexdigest()[:24]}"
+    store = Exp435CheckpointStore.open_read_only(
+        checkpoint_root,
+        expected_run_identity=expected_run_identity,
+        expected_context=expected_runtime,
+    )
+    output = Path(run_root)
+    _validate_output_inventory(output, mutable=False)
+    progress_path = output / "progress_antigravity.json"
+    progress_raw = progress_path.read_bytes()
+    progress = json.loads(progress_raw)
+    if (
+        not isinstance(progress, dict)
+        or canonical_json_bytes(progress) != progress_raw
+        or progress.get("run_identity") != store.run_identity
+    ):
+        raise ValueError("runtime progress is not canonical")
+    from .progress_antigravity import _assert_label_free, _validate_events
 
-        progress = json.loads(progress_path.read_bytes())
+    _assert_label_free(progress)
+    _validate_events(output / "events_antigravity.jsonl", store.run_identity)
+    pid_raw = (output / "run_antigravity.pid").read_bytes()
+    pid = json.loads(pid_raw)
+    if not isinstance(pid, dict) or canonical_json_bytes(pid) != pid_raw or pid.get("run_identity") != store.run_identity:
+        raise ValueError("runtime PID is not canonical")
     status = str(progress.get("state", "running"))
     if status not in {"checkpoint_complete", "complete", "complete_review_only"}:
         status = "running"

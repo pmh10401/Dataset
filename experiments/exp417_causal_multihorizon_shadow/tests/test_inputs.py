@@ -193,6 +193,15 @@ class InputBoundaryTests(unittest.TestCase):
         self.assertEqual(second.dataset, "B")
         self.assertEqual(digest.call_count, 1)
 
+    def test_train_bound_test_decoder_rejects_missing_or_wrong_train_evidence(self) -> None:
+        with self.synthetic_config() as config:
+            context = self._context(config)
+            with inputs.verified_read_only_connection(self.database, config.database_sha256) as connection:
+                with self.assertRaisesRegex(ValueError, "TRAIN evidence"):
+                    inputs.load_raw_test_values_after_train_from_connection(
+                        connection, "A", object(), context
+                    )
+
     def test_verified_connection_rejects_database_inode_replacement_on_close(self) -> None:
         """A query session cannot accept an ABA replacement of its source DB."""
         replacement = self.root / "replacement.sqlite"

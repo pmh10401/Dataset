@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from experiments.exp417_causal_multihorizon_shadow.contracts import RawSeries, RawTrainDataset
 from experiments.exp435_train_only_consensus_recovery_antigravity import inputs_antigravity
 
 
@@ -62,7 +63,7 @@ class _Snapshot:
         self.loaded.append(("TRAIN", dataset))
         return SimpleNamespace(dataset=dataset, series=())
 
-    def load_test(self, dataset: str, contract: object, context: object) -> object:
+    def load_test_values_after_train(self, dataset: str, train: object, context: object) -> object:
         self.loaded.append(("TEST", dataset))
         return SimpleNamespace(dataset=dataset, series=())
 
@@ -145,10 +146,24 @@ class InputBoundaryTests(unittest.TestCase):
                 verified_code_commit="f" * 40,
             ) as session:
                 session.load_train("A")
-                session.load_test_values("A", object())
+                session.load_test_values(
+                    "A", RawTrainDataset("A", (RawSeries(0, (1.0, 2.0)),))
+                )
                 self.assertEqual(session.label_access_count, 0)
         self.assertEqual(snapshot.loaded, [("TRAIN", "A"), ("TEST", "A")])
         self.assertTrue(snapshot.closed)
+
+    def test_legacy_database_without_train_bound_test_loader_is_rejected(self) -> None:
+        legacy = SimpleNamespace(
+            load_test=lambda *args: SimpleNamespace(dataset="A", series=()),
+        )
+        session = inputs_antigravity.Exp435InputSession(
+            legacy, SimpleNamespace(datasets=("A",))
+        )
+        with self.assertRaisesRegex(ValueError, "TRAIN-bound TEST values loader"):
+            session.load_test_values(
+                "A", RawTrainDataset("A", (RawSeries(0, (1.0, 2.0)),))
+            )
 
     def test_lane_population_count_mismatch_is_rejected_before_database_open(self):
         for frozen in (("A",), ("A", "B", "C")):

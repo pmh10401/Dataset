@@ -281,6 +281,14 @@ class DatabaseSnapshotTests(unittest.TestCase):
             self.assertEqual(snapshot.audit.full_hash_count, 1)
             self.assertEqual(snapshot.audit.lifecycle, "closed")
 
+    def test_train_bound_test_loader_rejects_non_train_evidence(self) -> None:
+        config = self._synthetic_config()
+        with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(snapshot_database, "FROZEN_CONFIG", config), open_database_snapshot(self.database, expected_sha256=self.digest) as snapshot:
+            context = snapshot.freeze_context(self._lanes(config), verified_code_commit="a" * 40)
+            with self.assertRaisesRegex(ValueError, "TRAIN evidence"):
+                snapshot.load_test_values_after_train("A", object(), context)
+            self.assertEqual(snapshot.audit.boundaries[-2:], ("load_test_after_train:before", "load_test_after_train:after"))
+
     def test_context_rejects_nonfrozen_config_and_nonexact_population(self) -> None:
         config = self._synthetic_config()
         with patch.object(Exp417FrozenConfig, "validate", lambda _self: None), patch.object(snapshot_database, "FROZEN_CONFIG", config), open_database_snapshot(self.database, expected_sha256=self.digest) as snapshot:

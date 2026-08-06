@@ -79,11 +79,9 @@ class Exp435InputSession:
         """Load TEST values only after actual normal TRAIN values exist."""
 
         loader = getattr(self.database, "load_test_values_after_train", None)
-        if callable(loader):
-            return loader(dataset, train, self.context)
-        # Compatibility for existing in-memory test doubles.  The production
-        # Exp425 snapshot always exposes the values-only method above.
-        return self.database.load_test(dataset, train, self.context)
+        if not callable(loader):
+            raise ValueError("database snapshot lacks the TRAIN-bound TEST values loader")
+        return loader(dataset, train, self.context)
 
 
 def _assert_shared_frozen_identity() -> None:

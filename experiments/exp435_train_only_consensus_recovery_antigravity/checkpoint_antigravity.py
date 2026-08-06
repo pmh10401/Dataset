@@ -41,6 +41,9 @@ _ROOT_FILES = frozenset(
     }
 )
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
+_TEMP_FILE = re.compile(
+    r"^\.(?:run_context_antigravity|record_set_antigravity)\.[0-9a-f]{32}\.tmp\Z"
+)
 
 
 def _fsync_directory(path: Path) -> None:
@@ -377,15 +380,73 @@ class Exp435CheckpointStore:
         return store
 
     @classmethod
-    def inspect_read_only(cls, root: Path, *, expected_run_identity: str | None = None) -> Exp435CheckpointInspection:
+    def inspect_read_only(
+        cls,
+        root: Path,
+        *,
+        expected_run_identity: str | None = None,
+        expected_context: object | None = None,
+    ) -> Exp435CheckpointInspection:
         root = Path(root)
         if not root.is_dir() or root.is_symlink():
             raise ValueError("checkpoint root is absent or invalid")
         info = root.stat()
-        store = cls._load(root, (info.st_dev, info.st_ino), expected_context=None, expected_hash=None)
+        projected = None if expected_context is None else context_payload(expected_context)
+        expected_hash = None if projected is None else _digest(canonical_json_bytes(projected))
+        store = cls._load(
+            root,
+            (info.st_dev, info.st_ino),
+            expected_context=projected,
+            expected_hash=expected_hash,
+            mutable=False,
+        )
         if expected_run_identity is not None and store.run_identity != expected_run_identity:
             raise ValueError("checkpoint run identity does not match")
         return store.inspect()
+
+    @classmethod
+    def open_read_only(
+        cls,
+        root: Path,
+        *,
+        expected_run_identity: str | None = None,
+        expected_context: object | None = None,
+    ) -> "Exp435CheckpointStore":
+        """Open a validated checkpoint store without reconciliation or writes."""
+
+        root = Path(root)
+        if not root.is_dir() or root.is_symlink():
+            raise ValueError("checkpoint root is absent or invalid")
+        info = root.stat()
+        projected = None if expected_context is None else context_payload(expected_context)
+        expected_hash = None if projected is None else _digest(canonical_json_bytes(projected))
+        store = cls._load(
+            root,
+            (info.st_dev, info.st_ino),
+            expected_context=projected,
+            expected_hash=expected_hash,
+            mutable=False,
+        )
+        if expected_run_identity is not None and store.run_identity != expected_run_identity:
+            raise ValueError("checkpoint run identity does not match")
+        return store
+
+    @classmethod
+    def read_context_projection(cls, root: Path) -> Mapping[str, object]:
+        """Read the stored scalar context without reconciling or writing."""
+
+        root = Path(root)
+        if not root.is_dir() or root.is_symlink():
+            raise ValueError("checkpoint root is absent or invalid")
+        info = root.stat()
+        store = cls._load(
+            root,
+            (info.st_dev, info.st_ino),
+            expected_context=None,
+            expected_hash=None,
+            mutable=False,
+        )
+        return MappingProxyType(dict(store.context))
 
     @classmethod
     def _load(
@@ -395,22 +456,43 @@ class Exp435CheckpointStore:
         *,
         expected_context: Mapping[str, object] | None,
         expected_hash: str | None,
+        mutable: bool = True,
     ) -> "Exp435CheckpointStore":
         descriptor = os.open(
             root,
             os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
         )
         try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX if expected_context is not None else fcntl.LOCK_SH)
+            fcntl.flock(descriptor, fcntl.LOCK_EX if mutable else fcntl.LOCK_SH)
             info = os.fstat(descriptor)
             if (info.st_dev, info.st_ino) != identity:
                 raise ValueError("checkpoint root identity changed")
+            names = set(os.listdir(descriptor))
+            extras = names - set(_ROOT_FILES)
+            for name in extras:
+                path = root / name
+                if not _TEMP_FILE.fullmatch(name):
+                    raise ValueError("checkpoint inventory is invalid")
+                if path.is_symlink() or not path.is_file() or path.stat().st_uid != os.getuid():
+                    raise ValueError("checkpoint temporary inventory is invalid")
+                if not mutable:
+                    raise ValueError("checkpoint has pending atomic temporary file")
+                path.unlink()
+            if extras:
+                _fsync_directory(root)
             if set(os.listdir(descriptor)) != set(_ROOT_FILES):
                 raise ValueError("checkpoint inventory is invalid")
             for name in _ROOT_FILES:
                 path = root / name
                 if path.is_symlink():
                     raise ValueError("checkpoint inventory contains a symlink")
+                if name in {"records_antigravity", "intents_antigravity"}:
+                    if not path.is_dir():
+                        raise ValueError("checkpoint inventory is invalid")
+                elif not path.is_file():
+                    raise ValueError("checkpoint inventory is invalid")
+            if not mutable and any((root / "intents_antigravity").iterdir()):
+                raise ValueError("checkpoint has pending commit intent")
             context_file = _canonical_object(root / "run_context_antigravity.json", "run context")
             record_set = _canonical_object(root / "record_set_antigravity.json", "record set")
             if set(context_file) != {"schema", "run_identity", "context_fingerprint", "context"} or context_file.get("schema") != "exp435.run-context.v1":
@@ -553,11 +635,19 @@ class Exp435CheckpointStore:
         event_path = next((path / "events_antigravity.jsonl" for path in output_candidates if (path / "events_antigravity.jsonl").is_file()), None)
         progress_path = next((path / "progress_antigravity.json" for path in output_candidates if (path / "progress_antigravity.json").is_file()), None)
         if event_path is not None:
-            for line in event_path.read_bytes().splitlines():
+            from .progress_antigravity import _assert_label_free
+
+            event_raw = event_path.read_bytes()
+            if event_raw and not event_raw.endswith(b"\n"):
+                raise ValueError("runtime events contain a partial record")
+            for line in event_raw.splitlines():
                 if not line:
                     continue
                 item = json.loads(line)
-                if isinstance(item, dict) and item.get("kind") == "dataset_complete" and isinstance(item.get("dataset"), str):
+                if not isinstance(item, dict) or canonical_json_bytes(item) != line or item.get("run_identity") != self.run_identity:
+                    raise ValueError("runtime event is not canonical or is bound to another run")
+                _assert_label_free(item)
+                if item.get("kind") == "dataset_complete" and isinstance(item.get("dataset"), str):
                     events.add(item["dataset"])
         if progress_path is not None:
             item = _canonical_object(progress_path, "runtime progress")

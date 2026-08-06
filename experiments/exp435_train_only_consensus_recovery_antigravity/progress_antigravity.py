@@ -11,6 +11,7 @@ from threading import Event, RLock, Thread
 import time
 from typing import Callable, Mapping
 from uuid import uuid4
+import re
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
@@ -24,6 +25,7 @@ _OUTPUT_FILES = frozenset(
     }
 )
 _FORBIDDEN_KEYS = ("label", "truth", "ground_truth", "anomaly_position", "actual_values", "raw_values")
+_TEMP_FILE = re.compile(r"^\.progress_antigravity\.json\.[0-9a-f]{32}\.tmp\Z")
 
 
 def _fsync_directory(path: Path) -> None:
@@ -106,6 +108,47 @@ def _normalise_error(error: object | None, stage: str | None = None) -> dict[str
     if stage is not None:
         payload["stage"] = stage
     return payload
+
+
+def _validate_output_inventory(output: Path, *, mutable: bool) -> None:
+    if not output.is_dir() or output.is_symlink():
+        raise ValueError("runtime output inventory is invalid")
+    extras = {item.name for item in output.iterdir()} - set(_OUTPUT_FILES)
+    for name in extras:
+        path = output / name
+        if not _TEMP_FILE.fullmatch(name):
+            raise ValueError("runtime output inventory is invalid")
+        if path.is_symlink() or not path.is_file() or path.stat().st_uid != os.getuid():
+            raise ValueError("runtime temporary inventory is invalid")
+        if not mutable:
+            raise ValueError("runtime output has pending atomic temporary file")
+        path.unlink()
+    if extras:
+        _fsync_directory(output)
+    if set(item.name for item in output.iterdir()) != set(_OUTPUT_FILES):
+        raise ValueError("runtime output inventory is invalid")
+    for name in _OUTPUT_FILES:
+        path = output / name
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("runtime output inventory is invalid")
+
+
+def _validate_events(path: Path, run_identity: str) -> None:
+    raw = path.read_bytes()
+    if raw and not raw.endswith(b"\n"):
+        raise ValueError("runtime events contain a partial record")
+    for line in raw.splitlines():
+        try:
+            item = json.loads(line)
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError("runtime event is invalid") from error
+        if (
+            not isinstance(item, dict)
+            or canonical_json_bytes(item) != line
+            or item.get("run_identity") != run_identity
+        ):
+            raise ValueError("runtime event is not canonical or is bound to another run")
+        _assert_label_free(item)
 
 
 def _assert_label_free(value: object, *, path: str = "metadata") -> None:
@@ -228,8 +271,7 @@ class ProgressWriter:
         heartbeat_seconds: float | None = 30.0,
     ) -> "ProgressWriter":
         output = Path(output)
-        if not output.is_dir() or set(item.name for item in output.iterdir()) != set(_OUTPUT_FILES):
-            raise ValueError("runtime output inventory is invalid")
+        _validate_output_inventory(output, mutable=True)
         progress = _canonical_object(output / "progress_antigravity.json", "runtime progress")
         pid_payload = _canonical_object(output / "run_antigravity.pid", "runtime PID")
         if progress.get("run_identity") != run_identity or pid_payload.get("run_identity") != run_identity:
@@ -237,6 +279,7 @@ class ProgressWriter:
         old_pid = pid_payload.get("pid")
         if pid_payload.get("active") is True and type(old_pid) is int and process_is_live(old_pid):
             raise ValueError("runtime process is still active")
+        _validate_events(output / "events_antigravity.jsonl", run_identity)
         total = progress.get("total_datasets", progress.get("total"))
         backend = progress.get("backend")
         if type(total) is not int or not isinstance(backend, str):
@@ -434,7 +477,9 @@ class ProgressWriter:
         # The failed dataset is terminal accounting even though no checkpoint
         # record is published.  Keeping conservation explicit prevents a
         # failed root from looking resumable.
-        failed_completed = min(self.total_datasets, current_completed + 1)
+        already_terminal = current_completed >= self.total_datasets
+        failed_completed = current_completed if already_terminal else current_completed + 1
+        failed_error = current_errors if already_terminal else current_errors + 1
         self.transition(
             "failed",
             stage=str(current.get("stage", "running")),
@@ -443,7 +488,7 @@ class ProgressWriter:
             completed=failed_completed,
             success=int(current.get("success", 0)),
             abstention=int(current.get("abstention", 0)),
-            error=max(1, current_errors + 1),
+            error=max(1, failed_error) if not already_terminal else failed_error,
             candidate_count=int(current.get("candidate_count", 0)),
             latest_error=_normalise_error(error, str(current.get("stage", "running"))),
         )
