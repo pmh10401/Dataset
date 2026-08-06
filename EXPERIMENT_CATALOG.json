@@ -131,7 +131,7 @@
     {
       "id": "Exp436",
       "kind": "missing_safe_strict_three_channel_consensus_recovery",
-      "status": "implementation_complete_readiness_pending",
+      "status": "failed_immutable",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "c33753ab6e608c0a4dfd414a2a169b016096f913",
       "documents": [
@@ -143,11 +143,32 @@
       "dataset_count": 1117,
       "candidate_budget": 100,
       "review_only": true,
+      "prediction_phase_started": true,
+      "test_labels_opened": false,
+      "official_readiness": true,
+      "checkpoint_output_evaluation_created": true,
+      "notes": "The official CPU/11-worker label-free run preserved 47 completed records and failed while committing AllGestureWiimoteX_normal_1. Scoring succeeded, but canonical JSON sorted histogram object keys lexicographically while the reader required numeric insertion order. The failed root, readiness artifact, 47-record authority, and one orphan record file are immutable; no publication, evaluation, or TEST-label access occurred. Exp437 is the thin transport-only successor."
+    },
+    {
+      "id": "Exp437",
+      "kind": "exp436_canonical_metadata_roundtrip_repair",
+      "status": "design_approved_implementation_pending",
+      "branch": "codex/exp425-selective-recovery",
+      "base_commit": "d10a24e77bce15e0376964aa11a275fb4f033fb5",
+      "documents": [
+        "docs/superpowers/specs/2026-08-07-exp437-metadata-roundtrip-antigravity-design.md",
+        "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
+        "docs/EXP436_PREREGISTRATION_antigravity_KO.md",
+        "docs/EXP436_RUNBOOK_antigravity_KO.md"
+      ],
+      "dataset_count": 1117,
+      "candidate_budget": 100,
+      "review_only": true,
       "prediction_phase_started": false,
       "test_labels_opened": false,
       "official_readiness": false,
       "checkpoint_output_evaluation_created": false,
-      "notes": "Scientific preregistration and operator runbook are frozen: exclude only nonfinite normal TRAIN rows, abstain only nonfinite TEST rows without imputation, use candidate_alpha=0.01 and per-channel 1.4826 median/MAD TRAIN-group transforms, require prototype AND gradient AND ACF outside all frozen lanes, and recompute all 1,117 datasets in a readiness-owned new root. Backend smoke is seed 43601 with fixed batches/warm-ups/timed medians and deterministic selection; train_exclusion_audit_antigravity.jsonl is hash-bound. Product implementation is complete and readiness remains pending; prediction/evaluation have not started and TEST labels remain unopened."
+      "notes": "Thin successor to Exp436: identical label-free science and frozen evaluation gates, new execution identity/root, and one persistence repair that validates length histograms semantically without relying on JSON object-key insertion order. No Exp436 checkpoint result is reused."
     }
   ]
 }
