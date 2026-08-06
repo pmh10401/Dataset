@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T05:15:07Z",
-  "generated_from_commit": "fe59b526b0628ec0a1859faae4109a78afd89f20",
+  "generated_at": "2026-08-06T05:44:57Z",
+  "generated_from_commit": "a0e59c55811614a969a3a1b48d42cd58a669565d",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -10,7 +10,7 @@
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
     "Research control files and local external data stores",
-    "Exp435 fixed five-mode CLI, direct scratch bootstrap, clean-HEAD readiness, resumable runtime, atomic review-only publication, verified replay, hash-gated retrospective evaluation, fixed sibling publication and readiness-pending governance"
+    "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation"
   ],
   "nodes": [
     {
@@ -29,7 +29,7 @@
       "tests": [],
       "constraints": [
         "Must be updated when execution stops or phase changes",
-        "Exp435 remains implementation-complete with readiness pending; prediction has not started, TEST labels are unopened, PID is null and fixed roots are absent."
+        "Exp435 remains implementation-complete with final review pending; prediction has not started, TEST labels are unopened, PID is null and fixed roots are absent."
       ],
       "evidence": [
         {
@@ -42,11 +42,11 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"implementation_complete_readiness_pending\""
+          "symbol": "\"active_phase\": \"implementation_complete_final_review_pending\""
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"last_verified_commit\": \"595417d773c432f0471d6c6445aea1f46a9b2668\""
+          "symbol": "\"last_verified_commit\": \"2f21989bc5441bacf06c9b9faf253e0a27a1ca67\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -690,11 +690,12 @@
         "CPU scoring routes each TEST value row to one exact raw-length TRAIN group; missing or unavailable lengths abstain without concatenation or tail replacement",
         "A candidate requires prototype AND (gradient OR ACF) with strict score > threshold; frozen-lane coordinates are excluded",
         "Global candidate validation sorts coordinates and fails closed above 100; it never truncates or auto-promotes",
-        "MLX is optional and lazy; bundled Metal discovery, version/device provenance and runtime errors fall back to the CPU path",
+        "MLX is optional and lazy; readiness uses exactly one query row per channel score call, preserves the frozen reference batch sizes, and adopted runtime/device/output failure fails closed without CPU-score mixing",
         "MLX dense scoring keeps exact float32 inputs and checks finite outputs, normalized/absolute score error <=1e-5 and exact candidate coordinates for every batch size 16, 32, 64, 128 and 256",
         "Each MLX gate batch performs 2 warmups and 5 timed measurements including evaluation and synchronization; adoption requires speedup >=1.1",
         "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance",
-        "UnavailableTrainGroup, TrainGroup and CalibratedTrainGroupResult remain public contract exports for feature/scoring consumers."
+        "UnavailableTrainGroup, TrainGroup and CalibratedTrainGroupResult remain public contract exports for feature/scoring consumers.",
+        "Exp435FrozenConfig supplies the sole canonical run identity exp435-train-only-consensus-recovery-antigravity-20260806 for readiness and all runtime artifacts."
       ],
       "evidence": [
         {
@@ -888,6 +889,18 @@
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
           "symbol": "self.assertNotIn(\"evaluation_antigravity\", source)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
+          "symbol": "run_identity: str = \"exp435-train-only-consensus-recovery-antigravity-20260806\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "raise MlxUnavailable(_runtime_failure_reason(exc)) from exc"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_readiness_fixture_uses_one_query_row_per_production_score_call"
         }
       ]
     },
@@ -936,17 +949,19 @@
         "New validates readiness, imports input/runtime dependencies before the final HEAD read, then binds that exact commit before opening the input session",
         "Unfinished resume imports runtime/input dependencies and rechecks final HEAD immediately before opening the input session; completed or repeated resume replays read-only without DB or workers",
         "Evaluation is imported and delegated lazily only for evaluate; implementation and post-freeze TEST-label loading are grouped in exp435_checkpoint_progress; prediction modes never import it",
-        "CPU uses ProcessPoolExecutor(max_workers=7) with bounded prefetch 14",
+        "CPU uses ProcessPoolExecutor(max_workers=7) with at most seven submitted/in-flight futures; queued work is never reported as current.",
         "LaneMembershipSnapshot is immutable and pickle-safe before workers start",
         "Parent alone owns the verified input session, checkpoint, progress and logs; commits remain dataset-name ordered",
         "Adopted MLX uses one process and no outer scoring pool",
         "Candidate-budget overflow is persisted before any record/publication and fails closed",
-        "Runtime outputs are bound to checkpoint path, backend, dataset total, run identity and context fingerprint",
+        "Runtime/checkpoint/progress/publication bind the exact frozen run identity, checkpoint path, backend, dataset total and context fingerprint; no commit/hash-derived identity is accepted.",
         "Workers receive values-only objects and never access labels, SQLite descriptors or durable outputs",
         "Existing publications are inspected read-only and summarized without reopening the database",
         "Production evaluate is bound to the exact FROZEN_OUTPUT and FROZEN_EVALUATION sibling paths under RUN_PARENT; helper evaluation roots must also be absent, separate and outside output/publication/checkpoint.",
         "The direct scratch runner bootstraps the repository root before importing experiments and exposes exactly five modes; an outside-cwd --help subprocess regression protects the documented entrypoint.",
-        "The runbook records readiness, prediction, replay, evaluation, interrupted and failed states with fixed CLI return-code behavior."
+        "The runbook records readiness, prediction, replay, evaluation, interrupted and failed states with fixed CLI return-code behavior.",
+        "Failed roots reject resume read-only before input access, PID/progress/event mutation; interrupted roots remain resumable after binding checks.",
+        "Parallel current_dataset denotes only loading/dispatching, a submitted result not yet collected by the parent, or committing work; parallel stages never assert unobserved worker scoring."
       ],
       "evidence": [
         {
@@ -967,7 +982,7 @@
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
-          "symbol": "_PREFETCH = 14"
+          "symbol": "_PREFETCH = FROZEN_CONFIG.cpu_workers"
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
@@ -1120,6 +1135,26 @@
         {
           "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
           "symbol": "argparse 오류나 처리 실패는 2, 미완료 상태는 1을 반환한다."
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "projected[\"run_identity\"] = FROZEN_CONFIG.run_identity"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "stage=\"awaiting_worker_result\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "if durable_progress.get(\"state\") == \"failed\":"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_parallel_progress_never_reports_or_submits_an_eighth_blocked_dataset"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_inspect_requires_exact_frozen_identity_without_mutating_roots"
         }
       ]
     },
@@ -1197,7 +1232,7 @@
       "constraints": [
         "Atomic no-clobber records and record-set digest are fsynced; commit intent recovery is deterministic",
         "Candidate budget is checked before writing an over-budget record and publication rejects totals above 100 without truncation",
-        "Only exact internal progress/PID temp files are removed on mutable resume; unknown files, symlinks and read-only pending temps fail closed",
+        "Only interrupted/nonterminal roots may reconcile exact internal progress/PID temps; failed durable state rejects read-only before any cleanup or PID/progress/event mutation.",
         "Progress, PID and events bind one canonical checkpoint path, backend, total 1,117, run identity and context fingerprint",
         "Inspection opens no database or worker and validates outputs, events, label firewall and counter conservation read-only",
         "Durable progress and logs never contain TEST values or labels",
@@ -1213,9 +1248,10 @@
         "Evaluation artifacts are canonical, staged and no-clobber under a separate evaluation_antigravity root",
         "Production evaluation accepts only the exact fixed CLI FROZEN_OUTPUT/FROZEN_EVALUATION siblings; helper roots reject equal or nested output, publication or checkpoint paths.",
         "Before TEST labels, the Exp404 SHA and Exp291 SHA are frozen and the comparator verifies 888 Exp404 datasets, 2,218 coordinates and the 229-dataset empty complement across all 1,117 datasets.",
-        "One read-only SQLite mode=ro session loads only instance_index and label after the hash gate, then closes once; prediction remains label-free.",
+        "One Exp417 descriptor-bound verified read-only SQLite connection opens the exact hashed inode after the hash gate, loads only instance_index and label, then closes once; prediction remains label-free.",
         "The complete frozen output tree is snapshotted before labels and re-inspected immediately before the staged evaluation no-clobber rename; any source mutation fails closed.",
-        "Evaluation payload state is evaluated and combined confusion counts preserve the monotonic union invariants: TP/FP do not decrease and FN/TN do not increase."
+        "Evaluation payload state is evaluated and combined confusion counts preserve the monotonic union invariants: TP/FP do not decrease and FN/TN do not increase.",
+        "Exp404 and Exp291 comparator artifacts are each captured through one O_NOFOLLOW descriptor, then bytes, SHA256 and parse use that same capture."
       ],
       "evidence": [
         {
@@ -1372,7 +1408,7 @@
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
-          "symbol": "def _open_test_label_connection("
+          "symbol": "with verified_read_only_connection(Path(database_path), database_sha) as connection:"
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
@@ -1380,7 +1416,7 @@
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
-          "symbol": "sqlite3.connect(_readonly_database_uri(Path(database_path)), uri=True)"
+          "symbol": "verified_read_only_connection,"
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
@@ -1432,7 +1468,7 @@
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
-          "symbol": "def test_private_evaluation_uses_one_database_session_after_hash_gate"
+          "symbol": "def test_private_evaluation_uses_one_pinned_database_session_after_all_artifact_gates"
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
@@ -1465,6 +1501,22 @@
         {
           "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
           "symbol": "`artifact_sha256_antigravity.json`"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "if progress.get(\"state\") == \"failed\":"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "verified_read_only_connection,"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _read_pinned_bytes(path: Path)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_pinned_artifact_reader_keeps_opened_bytes_after_pathname_aba_replacement"
         }
       ]
     }
@@ -2113,11 +2165,7 @@
       "evidence": [
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
-          "symbol": "def _open_test_label_connection("
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
-          "symbol": "sqlite3.connect(_readonly_database_uri(Path(database_path)), uri=True)"
+          "symbol": "with verified_read_only_connection(Path(database_path), database_sha) as connection:"
         },
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
@@ -2129,6 +2177,18 @@
         }
       ],
       "id": "edge_046_exp435_checkpoint_progress_reads_sqlite_labels"
+    },
+    {
+      "from": "exp435_checkpoint_progress",
+      "to": "exp417_inputs",
+      "type": "imports",
+      "id": "edge_047_exp435_evaluation_imports_exp417_pinned_connection",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "verified_read_only_connection,"
+        }
+      ]
     }
   ],
   "flows": [
@@ -2140,7 +2200,7 @@
         "exp435_runtime",
         "exp435_checkpoint_progress"
       ],
-      "outcome": "The CLI checks clean HEAD at the start and end, validates frozen input/backend evidence, requires an empty parent and absent output/checkpoint/evaluation roots, then writes one byte-identical canonical readiness artifact."
+      "outcome": "The CLI checks clean HEAD, frozen canonical identity and inputs, requires absent fixed roots, benchmarks the exact one-query-row MLX scoring granularity across frozen reference batch sizes, then writes one canonical readiness artifact. Adoption is immutable for the run; runtime MLX failure fails closed rather than mixing CPU scores."
     },
     {
       "id": "exp435_new_resume_flow",
@@ -2154,7 +2214,7 @@
         "sqlite_store",
         "exp435_checkpoint_progress"
       ],
-      "outcome": "Runtime imports input and scorer dependencies before its final clean-HEAD read, binds that exact commit before opening the descriptor-bound session, loads TRAIN first, requests values-only TEST, uses the frozen CPU/MLX gate, and commits ordered records."
+      "outcome": "New binds the canonical identity and final clean commit before the descriptor-bound session; unfinished interrupted resume rechecks those bindings, while failed roots reject read-only before input/PID/progress/event mutation. The parent loads TRAIN then values-only TEST, submits at most seven CPU futures, records only parent-observable dispatch/result/commit stages, and commits dataset-name order."
     },
     {
       "id": "exp435_publication_flow",
@@ -2188,7 +2248,8 @@
         "sqlite_store",
         "artifact_utils"
       ],
-      "outcome": "The CLI lazily imports the evaluator; it replays the read-only checkpoint/publication, validates exact fixed sibling paths and population/code/input/config hashes, compares the Exp404/Exp291 frozen coordinates before labels, opens one SQLite mode=ro session for instance_index/label, and snapshots/re-inspects the entire output before a staged no-clobber rename. It emits state=evaluated paired Hard versus Hard+Exp435 confusion, monotonic-union checks, F1 deltas, rescued/regressed disclosures and 20,000-cluster bootstrap intervals in a separate canonical root; prediction bytes remain unchanged."
+      "outcome": "The CLI lazily imports the evaluator; it replays read-only checkpoint/publication, validates fixed sibling paths and population/code/input/config hashes, captures Exp404 and Exp291 through O_NOFOLLOW descriptors for same-byte SHA256/parse equality, then imports Exp417 verified_read_only_connection to open one exact hashed SQLite inode for instance_index/label. It snapshots/re-inspects output before staged no-clobber evaluation publication; prediction bytes remain unchanged."
     }
-  ]
+  ],
+  "unknown_relationships": 0
 }
