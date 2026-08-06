@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-08-06T01:26:01Z",
-  "generated_from_commit": "24cc20d742017b6828491e54032a247e7982dbb8",
+  "generated_at": "2026-08-06T02:48:20Z",
+  "generated_from_commit": "a960e070cbcc652007b2fc378034b008fd01e547",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
     "Exp425 source validation, descriptor-bound database snapshot, eligibility, runtime and checkpoints",
     "Exp426 verified-baseline contracts, intake, runtime, checkpoint and publication",
-    "Exp435 frozen prediction configuration/contracts and label-free input boundary",
+    "Exp435 frozen label-free prediction boundary, resumable runtime, checkpoint/progress outputs and MLX readiness",
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
     "Research control files and local external data stores"
@@ -194,23 +194,29 @@
     },
     {
       "id": "exp417_preprocessing",
-      "label": "Exp417 preprocessing",
+      "label": "Exp417 TRAIN preparation + model",
       "type": "model",
       "boundary": "Exp417 foundation",
       "layer": 2,
-      "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
-      "role": "Groups equal-length TRAIN series, builds identity-grouped folds, channels and deterministic abstentions.",
+      "path": "experiments/exp417_causal_multihorizon_shadow",
+      "role": "Groups and transforms normal TRAIN series, builds identity-grouped folds, and trains the frozen causal multi-horizon model path.",
       "entrypoints": [
         "preprocess_length_groups",
         "identity_grouped_folds",
-        "canonical_waveform_sha256"
+        "canonical_waveform_sha256",
+        "train_oof_models",
+        "fit_final_seed_models",
+        "ResidualBatchPredictor"
       ],
       "tests": [
-        "experiments/exp417_causal_multihorizon_shadow/tests/test_preprocessing.py"
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_preprocessing.py",
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_model.py"
       ],
       "constraints": [
         "Identity groups remain within one fold",
-        "Deterministic TRAIN-only transforms"
+        "Deterministic TRAIN-only transforms",
+        "Seed and fold contracts are frozen",
+        "MPS-heavy execution serialized"
       ],
       "evidence": [
         {
@@ -220,30 +226,7 @@
         {
           "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
           "symbol": "identity_grouped_folds"
-        }
-      ]
-    },
-    {
-      "id": "exp417_model",
-      "label": "Exp417 causal model",
-      "type": "model",
-      "boundary": "Exp417 foundation",
-      "layer": 3,
-      "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
-      "role": "Trains out-of-fold and final causal multi-horizon CNN models and batch predictors.",
-      "entrypoints": [
-        "train_oof_models",
-        "fit_final_seed_models",
-        "ResidualBatchPredictor"
-      ],
-      "tests": [
-        "experiments/exp417_causal_multihorizon_shadow/tests/test_model.py"
-      ],
-      "constraints": [
-        "Seed and fold contracts are frozen",
-        "MPS-heavy execution serialized"
-      ],
-      "evidence": [
+        },
         {
           "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
           "symbol": "train_oof_models"
@@ -287,24 +270,29 @@
     },
     {
       "id": "exp425_contracts",
-      "label": "Exp425 contracts",
+      "label": "Exp425 contracts + TRAIN eligibility",
       "type": "data",
       "boundary": "Exp425 trusted boundary",
       "layer": 1,
-      "path": "experiments/exp425_selective_recovery/contracts.py",
-      "role": "Defines eligibility evidence, provenance, imported/native record envelopes and backend assessments.",
+      "path": "experiments/exp425_selective_recovery",
+      "role": "Defines immutable provenance/record envelopes and computes TRAIN-only fold and identity eligibility evidence.",
       "entrypoints": [
         "EligibilityAssessment",
         "Exp425RunProvenance",
         "ImportedRecordEnvelope",
-        "NativeRecordEnvelope"
+        "NativeRecordEnvelope",
+        "apply_group_eligibility",
+        "evaluate_group_eligibility"
       ],
       "tests": [
-        "experiments/exp425_selective_recovery/tests/test_contracts.py"
+        "experiments/exp425_selective_recovery/tests/test_contracts.py",
+        "experiments/exp425_selective_recovery/tests/test_eligibility.py"
       ],
       "constraints": [
         "Deep immutable payloads",
-        "Lowercase SHA256 values"
+        "Lowercase SHA256 values",
+        "TRAIN-only evidence",
+        "Insufficient identity support produces explicit abstention"
       ],
       "evidence": [
         {
@@ -314,6 +302,14 @@
         {
           "path": "experiments/exp425_selective_recovery/contracts.py",
           "symbol": "ImportedRecordEnvelope"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/eligibility.py",
+          "symbol": "apply_group_eligibility"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/eligibility.py",
+          "symbol": "evaluate_group_eligibility"
         }
       ]
     },
@@ -376,36 +372,6 @@
         {
           "path": "experiments/exp425_selective_recovery/predecessor.py",
           "symbol": "inspect_exp424_source"
-        }
-      ]
-    },
-    {
-      "id": "exp425_eligibility",
-      "label": "TRAIN eligibility",
-      "type": "model",
-      "boundary": "Exp425 trusted boundary",
-      "layer": 3,
-      "path": "experiments/exp425_selective_recovery/eligibility.py",
-      "role": "Computes fold and identity support from current TRAIN data and decides whether a group is model-eligible.",
-      "entrypoints": [
-        "apply_group_eligibility",
-        "evaluate_group_eligibility"
-      ],
-      "tests": [
-        "experiments/exp425_selective_recovery/tests/test_eligibility.py"
-      ],
-      "constraints": [
-        "TRAIN-only evidence",
-        "Insufficient identity support produces explicit abstention"
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/eligibility.py",
-          "symbol": "apply_group_eligibility"
-        },
-        {
-          "path": "experiments/exp425_selective_recovery/eligibility.py",
-          "symbol": "evaluate_group_eligibility"
         }
       ]
     },
@@ -646,7 +612,7 @@
       "boundary": "Exp435 label-free prediction",
       "layer": 1,
       "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
-      "role": "Groups the frozen Exp435 configuration, immutable prediction contracts, descriptor-bound TRAIN/TEST-value intake, deterministic TRAIN-only feature calibration, CPU scoring/candidate-budget capability and optional MLX dense-scoring readiness gate; invalid exact-length groups become structured unavailable outcomes while valid sibling lengths continue. Scoring routes TEST values by exact raw length, requires prototype AND (gradient OR ACF), excludes frozen-lane coordinates, and fails closed above 100 candidates. MLX is benchmark-gated only; no runtime caller or end-to-end scoring flow is registered yet.",
+      "role": "Groups the frozen Exp435 configuration/contracts, descriptor-bound label-free input session, TRAIN-only feature calibration, CPU consensus scoring, candidate budget and optional MLX readiness gate.",
       "entrypoints": [
         "Exp435FrozenConfig",
         "FROZEN_CONFIG",
@@ -693,6 +659,7 @@
         "Exactly 1,117 sorted unique datasets come from the frozen Exp291/292 lane population",
         "The held Exp425 descriptor is read-only and closes on every exit path",
         "Prediction intake exposes TRAIN values and TEST values only; no TEST labels are loaded",
+        "Exp435 TEST values are requested only after a concrete RawTrainDataset is loaded",
         "Published records and backend evidence are immutable and fail closed on contract mismatch",
         "Exact-length TRAIN groups retain duplicate rows and sorted instance coordinates",
         "Invalid TRAIN groups emit immutable UnavailableTrainGroup records with preregistered reasons; valid sibling groups continue",
@@ -700,12 +667,10 @@
         "CPU scoring routes each TEST value row to one exact raw-length TRAIN group; missing or unavailable lengths abstain without concatenation or tail replacement",
         "A candidate requires prototype AND (gradient OR ACF) with strict score > threshold; frozen-lane coordinates are excluded",
         "Global candidate validation sorts coordinates and fails closed above 100; it never truncates or auto-promotes",
-        "Scoring is a source-backed capability only; no end-to-end runtime caller is registered yet",
         "MLX is optional and lazy; bundled Metal discovery, version/device provenance and runtime errors fall back to the CPU path",
         "MLX dense scoring keeps exact float32 inputs and checks finite outputs, normalized/absolute score error <=1e-5 and exact candidate coordinates for every batch size 16, 32, 64, 128 and 256",
-        "Each MLX gate batch performs 2 warmups and 5 timed measurements including evaluation and synchronization, then records CPU/MLX median timings; adoption requires speedup >=1.1",
-        "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance",
-        "MLX readiness and backend scoring are source-backed capabilities only; no runtime caller or end-to-end scoring flow is registered yet"
+        "Each MLX gate batch performs 2 warmups and 5 timed measurements including evaluation and synchronization; adoption requires speedup >=1.1",
+        "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance"
       ],
       "evidence": [
         {
@@ -877,56 +842,157 @@
           "symbol": "def score_with_backend("
         }
       ]
+    },
+    {
+      "id": "exp435_runtime",
+      "label": "Exp435 resumable runtime",
+      "type": "pipeline",
+      "boundary": "Exp435 deterministic runtime",
+      "layer": 4,
+      "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+      "role": "Runs the label-free scorer with a parent-owned session, bounded CPU workers, ordered commits, serial adopted MLX mode, and resumable failure handling.",
+      "entrypoints": [
+        "run_exp435_new",
+        "resume_exp435",
+        "inspect_exp435",
+        "_run",
+        "_load_values",
+        "LaneMembershipSnapshot",
+        "_score_worker"
+      ],
+      "tests": [
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py"
+      ],
+      "constraints": [
+        "CPU uses ProcessPoolExecutor(max_workers=7) with bounded prefetch 14",
+        "LaneMembershipSnapshot is immutable and pickle-safe before workers start",
+        "Parent alone owns the verified input session, checkpoint, progress and logs; commits remain dataset-name ordered",
+        "Adopted MLX uses one process and no outer scoring pool",
+        "Candidate-budget overflow is persisted before any record/publication and fails closed",
+        "Runtime outputs are bound to checkpoint path, backend, dataset total, run identity and context fingerprint",
+        "Workers receive values-only objects and never access labels, SQLite descriptors or durable outputs"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "class LaneMembershipSnapshot"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def _load_values("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def _default_dataset_scorer("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def _default_mlx_dataset_scorer("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "_PREFETCH = 14"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "max_workers=FROZEN_CONFIG.cpu_workers"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "worker_count = 1 if backend.adopted"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "store.commit(result)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def inspect_exp435("
+        }
+      ]
+    },
+    {
+      "id": "exp435_checkpoint_progress",
+      "label": "Exp435 checkpoint + progress",
+      "type": "storage",
+      "boundary": "Exp435 deterministic runtime",
+      "layer": 5,
+      "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
+      "role": "Persists canonical dataset records and record-set digests, atomic progress/PID/events/text logs, recovery intents, and read-only inspection bindings.",
+      "entrypoints": [
+        "Exp435CheckpointStore.create",
+        "Exp435CheckpointStore.open_existing",
+        "Exp435CheckpointStore.commit",
+        "Exp435CheckpointStore.recover_runtime_accounting",
+        "ProgressWriter.create",
+        "ProgressWriter.open_existing",
+        "ProgressWriter.update",
+        "ProgressWriter.append_event",
+        "ProgressWriter.mark_complete",
+        "ProgressWriter.mark_interrupted",
+        "ProgressWriter.mark_failed"
+      ],
+      "tests": [
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_checkpoint_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py"
+      ],
+      "constraints": [
+        "Atomic no-clobber records and record-set digest are fsynced; commit intent recovery is deterministic",
+        "Candidate budget is checked before writing an over-budget record",
+        "Only exact internal progress/PID temp files are removed on mutable resume; unknown files, symlinks and read-only pending temps fail closed",
+        "Progress, PID and events bind one canonical checkpoint path, backend, total, run identity and context fingerprint",
+        "Inspection opens no database or worker and validates outputs, events, labels firewall and counter conservation read-only",
+        "Durable progress and logs never contain TEST values or labels"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
+          "symbol": "class Exp435CheckpointStore"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
+          "symbol": "def commit("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
+          "symbol": "def recover_runtime_accounting("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "class ProgressWriter"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "def _atomic_replace("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "def _validate_binding("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "def test_record_commit_survives_missing_event_and_progress"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_output_binding_rejects_checkpoint_backend_total_and_fingerprint_swaps"
+        }
+      ]
     }
   ],
   "edges": [
     {
-      "from": "exp417_inputs",
-      "to": "sqlite_store",
-      "type": "reads",
-      "evidence": [
-        {
-          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
-          "symbol": "verified_read_only_connection"
-        }
-      ],
-      "id": "edge_001_exp417_inputs_reads_sqlite_store"
-    },
-    {
-      "from": "exp417_inputs",
-      "to": "exp417_contracts",
+      "from": "exp417_checkpoint",
+      "to": "artifact_utils",
       "type": "imports",
       "evidence": [
         {
-          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
-          "symbol": "from .contracts import"
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "canonical_json_bytes"
         }
       ],
-      "id": "edge_002_exp417_inputs_imports_exp417_contracts"
-    },
-    {
-      "from": "exp417_preprocessing",
-      "to": "exp417_contracts",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
-          "symbol": "from .contracts import"
-        }
-      ],
-      "id": "edge_003_exp417_preprocessing_imports_exp417_contracts"
-    },
-    {
-      "from": "exp417_model",
-      "to": "exp417_contracts",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
-          "symbol": "from .contracts import"
-        }
-      ],
-      "id": "edge_004_exp417_model_imports_exp417_contracts"
+      "id": "edge_006_exp417_checkpoint_imports_artifact_utils"
     },
     {
       "from": "exp417_checkpoint",
@@ -941,28 +1007,92 @@
       "id": "edge_005_exp417_checkpoint_imports_exp417_contracts"
     },
     {
-      "from": "exp417_checkpoint",
-      "to": "artifact_utils",
+      "from": "exp417_inputs",
+      "to": "exp417_contracts",
       "type": "imports",
       "evidence": [
         {
-          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
-          "symbol": "canonical_json_bytes"
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "from .contracts import"
         }
       ],
-      "id": "edge_006_exp417_checkpoint_imports_artifact_utils"
+      "id": "edge_002_exp417_inputs_imports_exp417_contracts"
     },
     {
-      "from": "exp425_database",
+      "from": "exp417_inputs",
       "to": "sqlite_store",
       "type": "reads",
       "evidence": [
         {
-          "path": "experiments/exp425_selective_recovery/database.py",
-          "symbol": "open_database_snapshot"
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "verified_read_only_connection"
         }
       ],
-      "id": "edge_007_exp425_database_reads_sqlite_store"
+      "id": "edge_001_exp417_inputs_reads_sqlite_store"
+    },
+    {
+      "from": "exp417_preprocessing",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
+          "symbol": "from .contracts import"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+          "symbol": "from .contracts import"
+        }
+      ],
+      "id": "edge_003_exp417_preprocessing_imports_exp417_contracts"
+    },
+    {
+      "from": "exp425_checkpoint",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/checkpoints.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ],
+      "id": "edge_015_exp425_checkpoint_imports_artifact_utils"
+    },
+    {
+      "from": "exp425_contracts",
+      "to": "exp417_preprocessing",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/eligibility.py",
+          "symbol": "identity_grouped_folds"
+        }
+      ],
+      "id": "edge_013_exp425_contracts_calls_exp417_preprocessing"
+    },
+    {
+      "from": "exp425_database",
+      "to": "exp417_inputs",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "exp417_inputs.load_raw_train_values_from_connection"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "exp417_inputs.load_raw_test_values_from_connection"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "load_test_values_after_train"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "load_raw_test_values_after_train_from_connection"
+        }
+      ],
+      "id": "edge_033_exp425_database_calls_exp417_inputs"
     },
     {
       "from": "exp425_database",
@@ -977,16 +1107,16 @@
       "id": "edge_008_exp425_database_imports_exp417_inputs"
     },
     {
-      "from": "exp425_predecessor",
-      "to": "exp424_source",
+      "from": "exp425_database",
+      "to": "sqlite_store",
       "type": "reads",
       "evidence": [
         {
-          "path": "experiments/exp425_selective_recovery/predecessor.py",
-          "symbol": "open_validated_exp424_source"
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "open_database_snapshot"
         }
       ],
-      "id": "edge_009_exp425_predecessor_reads_exp424_source"
+      "id": "edge_007_exp425_database_reads_sqlite_store"
     },
     {
       "from": "exp425_predecessor",
@@ -999,6 +1129,18 @@
         }
       ],
       "id": "edge_010_exp425_predecessor_imports_exp417_checkpoint"
+    },
+    {
+      "from": "exp425_predecessor",
+      "to": "exp424_source",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "open_validated_exp424_source"
+        }
+      ],
+      "id": "edge_009_exp425_predecessor_reads_exp424_source"
     },
     {
       "from": "exp425_predecessor",
@@ -1025,52 +1167,40 @@
       "id": "edge_012_exp425_predecessor_imports_exp425_contracts"
     },
     {
-      "from": "exp425_eligibility",
-      "to": "exp417_preprocessing",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/eligibility.py",
-          "symbol": "identity_grouped_folds"
-        }
-      ],
-      "id": "edge_013_exp425_eligibility_imports_exp417_preprocessing"
-    },
-    {
-      "from": "exp425_eligibility",
-      "to": "exp425_contracts",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/eligibility.py",
-          "symbol": "EligibilityAssessment"
-        }
-      ],
-      "id": "edge_014_exp425_eligibility_imports_exp425_contracts"
-    },
-    {
-      "from": "exp425_checkpoint",
+      "from": "exp426_checkpoint",
       "to": "artifact_utils",
       "type": "imports",
       "evidence": [
         {
-          "path": "experiments/exp425_selective_recovery/checkpoints.py",
+          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
           "symbol": "canonical_json_bytes"
         }
       ],
-      "id": "edge_015_exp425_checkpoint_imports_artifact_utils"
+      "id": "edge_023_exp426_checkpoint_imports_artifact_utils"
     },
     {
-      "from": "exp426_intake_parallel",
-      "to": "exp425_predecessor",
+      "from": "exp426_checkpoint",
+      "to": "exp426_contracts",
       "type": "imports",
       "evidence": [
         {
-          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
-          "symbol": "ValidatedExp424Source"
+          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+          "symbol": "Exp426DatasetRecord"
         }
       ],
-      "id": "edge_016_exp426_intake_parallel_imports_exp425_predecessor"
+      "id": "edge_022_exp426_checkpoint_imports_exp426_contracts"
+    },
+    {
+      "from": "exp426_contracts",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ],
+      "id": "edge_021_exp426_contracts_imports_artifact_utils"
     },
     {
       "from": "exp426_intake_parallel",
@@ -1098,7 +1228,7 @@
     },
     {
       "from": "exp426_intake_parallel",
-      "to": "exp425_eligibility",
+      "to": "exp425_contracts",
       "type": "calls",
       "evidence": [
         {
@@ -1106,7 +1236,19 @@
           "symbol": "apply_group_eligibility"
         }
       ],
-      "id": "edge_019_exp426_intake_parallel_calls_exp425_eligibility"
+      "id": "edge_019_exp426_intake_parallel_calls_exp425_contracts"
+    },
+    {
+      "from": "exp426_intake_parallel",
+      "to": "exp425_predecessor",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "ValidatedExp424Source"
+        }
+      ],
+      "id": "edge_016_exp426_intake_parallel_imports_exp425_predecessor"
     },
     {
       "from": "exp426_intake_parallel",
@@ -1121,112 +1263,16 @@
       "id": "edge_020_exp426_intake_parallel_imports_exp426_contracts"
     },
     {
-      "from": "exp426_contracts",
+      "from": "exp426_publication",
       "to": "artifact_utils",
       "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
-          "symbol": "canonical_json_bytes"
-        }
-      ],
-      "id": "edge_021_exp426_contracts_imports_artifact_utils"
-    },
-    {
-      "from": "exp426_checkpoint",
-      "to": "exp426_contracts",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
-          "symbol": "Exp426DatasetRecord"
-        }
-      ],
-      "id": "edge_022_exp426_checkpoint_imports_exp426_contracts"
-    },
-    {
-      "from": "exp426_checkpoint",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
-          "symbol": "canonical_json_bytes"
-        }
-      ],
-      "id": "edge_023_exp426_checkpoint_imports_artifact_utils"
-    },
-    {
-      "from": "exp426_runtime",
-      "to": "exp426_intake_parallel",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
-          "symbol": "run_ordered_workers"
-        }
-      ],
-      "id": "edge_024_exp426_runtime_calls_exp426_intake_parallel"
-    },
-    {
-      "from": "exp426_runtime",
-      "to": "exp426_checkpoint",
-      "type": "writes",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
-          "symbol": "store.commit"
-        }
-      ],
-      "id": "edge_025_exp426_runtime_writes_exp426_checkpoint"
-    },
-    {
-      "from": "exp426_runtime",
-      "to": "exp425_database",
-      "type": "reads",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
-          "symbol": "database.load_train"
-        }
-      ],
-      "id": "edge_026_exp426_runtime_reads_exp425_database"
-    },
-    {
-      "from": "exp426_runtime",
-      "to": "exp426_contracts",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
-          "symbol": "Exp426Counts"
-        }
-      ],
-      "id": "edge_027_exp426_runtime_imports_exp426_contracts"
-    },
-    {
-      "from": "exp426_publication",
-      "to": "exp426_runtime",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
-          "symbol": "run_exp426_new"
-        }
-      ],
-      "id": "edge_028_exp426_publication_calls_exp426_runtime"
-    },
-    {
-      "from": "exp426_publication",
-      "to": "exp426_checkpoint",
-      "type": "reads",
       "evidence": [
         {
           "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
-          "symbol": "Exp426CheckpointStore.inspect_read_only"
+          "symbol": "canonical_json_bytes"
         }
       ],
-      "id": "edge_029_exp426_publication_reads_exp426_checkpoint"
+      "id": "edge_032_exp426_publication_imports_artifact_utils"
     },
     {
       "from": "exp426_publication",
@@ -1242,6 +1288,18 @@
     },
     {
       "from": "exp426_publication",
+      "to": "exp426_checkpoint",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
+          "symbol": "Exp426CheckpointStore.inspect_read_only"
+        }
+      ],
+      "id": "edge_029_exp426_publication_reads_exp426_checkpoint"
+    },
+    {
+      "from": "exp426_publication",
       "to": "exp426_intake_parallel",
       "type": "calls",
       "evidence": [
@@ -1254,79 +1312,78 @@
     },
     {
       "from": "exp426_publication",
+      "to": "exp426_runtime",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "run_exp426_new"
+        }
+      ],
+      "id": "edge_028_exp426_publication_calls_exp426_runtime"
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp425_database",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "database.load_train"
+        }
+      ],
+      "id": "edge_026_exp426_runtime_reads_exp425_database"
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp426_checkpoint",
+      "type": "writes",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "store.commit"
+        }
+      ],
+      "id": "edge_025_exp426_runtime_writes_exp426_checkpoint"
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp426_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "Exp426Counts"
+        }
+      ],
+      "id": "edge_027_exp426_runtime_imports_exp426_contracts"
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp426_intake_parallel",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "run_ordered_workers"
+        }
+      ],
+      "id": "edge_024_exp426_runtime_calls_exp426_intake_parallel"
+    },
+    {
+      "from": "exp435_checkpoint_progress",
       "to": "artifact_utils",
       "type": "imports",
       "evidence": [
         {
-          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
-          "symbol": "canonical_json_bytes"
-        }
-      ],
-      "id": "edge_032_exp426_publication_imports_artifact_utils"
-    },
-    {
-      "from": "exp425_database",
-      "to": "exp417_inputs",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/database.py",
-          "symbol": "exp417_inputs.load_raw_train_values_from_connection"
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
+          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
         },
         {
-          "path": "experiments/exp425_selective_recovery/database.py",
-          "symbol": "exp417_inputs.load_raw_test_values_from_connection"
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
         }
-      ],
-      "id": "edge_033_exp425_database_calls_exp417_inputs"
-    },
-    {
-      "from": "exp435_prediction_boundary",
-      "to": "exp417_inputs",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
-          "symbol": "from experiments.exp417_causal_multihorizon_shadow.inputs import"
-        }
-      ],
-      "id": "edge_034_exp435_prediction_boundary_imports_exp417_inputs"
-    },
-    {
-      "from": "exp435_prediction_boundary",
-      "to": "exp417_inputs",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
-          "symbol": "freeze_lane_inputs("
-        }
-      ],
-      "id": "edge_035_exp435_prediction_boundary_calls_exp417_inputs"
-    },
-    {
-      "from": "exp435_prediction_boundary",
-      "to": "exp425_database",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
-          "symbol": "from experiments.exp425_selective_recovery.database import"
-        }
-      ],
-      "id": "edge_036_exp435_prediction_boundary_imports_exp425_database"
-    },
-    {
-      "from": "exp435_prediction_boundary",
-      "to": "exp425_database",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
-          "symbol": "open_database_snapshot("
-        }
-      ],
-      "id": "edge_037_exp435_prediction_boundary_calls_exp425_database"
+      ]
     },
     {
       "from": "exp435_prediction_boundary",
@@ -1347,6 +1404,127 @@
         }
       ],
       "id": "edge_038_exp435_prediction_boundary_imports_exp417_contracts"
+    },
+    {
+      "from": "exp435_prediction_boundary",
+      "to": "exp417_inputs",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "freeze_lane_inputs("
+        }
+      ],
+      "id": "edge_035_exp435_prediction_boundary_calls_exp417_inputs"
+    },
+    {
+      "from": "exp435_prediction_boundary",
+      "to": "exp417_inputs",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.inputs import"
+        }
+      ],
+      "id": "edge_034_exp435_prediction_boundary_imports_exp417_inputs"
+    },
+    {
+      "from": "exp435_prediction_boundary",
+      "to": "exp425_database",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "open_database_snapshot("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "def load_test_values("
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "def load_test_values_after_train("
+        }
+      ],
+      "id": "edge_037_exp435_prediction_boundary_calls_exp425_database"
+    },
+    {
+      "from": "exp435_prediction_boundary",
+      "to": "exp425_database",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp425_selective_recovery.database import"
+        }
+      ],
+      "id": "edge_036_exp435_prediction_boundary_imports_exp425_database"
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp435_checkpoint_progress",
+      "type": "writes",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "store.commit(result)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "writer.append_event"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "writer.update"
+        }
+      ]
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp435_prediction_boundary",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def _load_values("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "def load_train("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "def load_test_values("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def _default_dataset_scorer("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def _default_mlx_dataset_scorer("
+        }
+      ]
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp435_prediction_boundary",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "from .contracts_antigravity import"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "from .features_antigravity import fit_calibrated_group, prepare_train_groups"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "from .scoring_antigravity import score_dataset_cpu"
+        }
+      ]
     }
   ],
   "flows": [
@@ -1371,7 +1549,7 @@
         "exp425_predecessor",
         "exp426_intake_parallel",
         "exp417_preprocessing",
-        "exp425_eligibility",
+        "exp425_contracts",
         "exp426_contracts"
       ],
       "outcome": "983 scored imports and 134 TRAIN-verified abstentions are produced in stable dataset order without TEST labels."
@@ -1404,17 +1582,18 @@
       "outcome": "Prediction, ledgers, backend decision, manifest, status and artifact SHA256 map are atomically published and independently reproducible."
     },
     {
-      "id": "exp435_label_free_intake",
-      "label": "Exp435 label-free intake",
-      "trigger": "Research control selects the approved Exp435 prediction phase.",
+      "id": "exp435_runtime_flow",
+      "label": "Exp435 resumable label-free prediction",
+      "trigger": "A caller invokes run_exp435_new(...) or resume_exp435(...) with one verified Exp435InputSession.",
       "steps": [
-        "research_control",
+        "exp435_runtime",
         "exp435_prediction_boundary",
         "exp425_database",
         "exp417_inputs",
-        "sqlite_store"
+        "sqlite_store",
+        "exp435_checkpoint_progress"
       ],
-      "outcome": "The frozen 1,117-dataset lane population is admitted through one descriptor-bound Exp425 snapshot and the Exp417 values-only boundary; prediction intake exposes TRAIN and TEST values only, while database extras and TEST labels remain inaccessible."
+      "outcome": "The parent loads normal TRAIN first, requests values-only TEST through load_test_values_after_train, scores with the frozen CPU/MLX-gated path, and durably commits ordered records with no TEST labels or publication/evaluation claim."
     }
   ]
 }
