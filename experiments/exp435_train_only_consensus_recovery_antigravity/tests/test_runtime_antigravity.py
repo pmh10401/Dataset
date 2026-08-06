@@ -33,6 +33,7 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigr
     inspect_exp435,
     run_exp435_new,
 )
+from experiments.exp435_train_only_consensus_recovery_antigravity.config_antigravity import FROZEN_CONFIG
 from experiments.exp435_train_only_consensus_recovery_antigravity.scoring_antigravity import (
     CandidateBudgetExceeded,
 )
@@ -110,6 +111,28 @@ def _parallel_budget_score(train: object, test: object, lanes: object, backend: 
 def _interrupt_score(train: object, test: object, lanes: object, backend: object) -> Exp435DatasetResult:
     del train, test, lanes, backend
     raise KeyboardInterrupt("synthetic interrupt")
+
+
+class _BlockedExecutor:
+    """In-process executor fixture that exposes exact submitted work."""
+
+    instances: list["_BlockedExecutor"] = []
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        del args, kwargs
+        self.submitted: list[tuple[object, tuple[object, ...]]] = []
+        self.shutdown_calls: list[tuple[bool, bool]] = []
+        type(self).instances.append(self)
+
+    def submit(self, function: object, *args: object):
+        from concurrent.futures import Future
+
+        future = Future()
+        self.submitted.append((future, (function, *args)))
+        return future
+
+    def shutdown(self, *, wait: bool, cancel_futures: bool) -> None:
+        self.shutdown_calls.append((wait, cancel_futures))
 
 
 def _adopted_backend() -> BackendDecision:
@@ -195,6 +218,16 @@ class RuntimeTests(unittest.TestCase):
         session.context["test_sizes"] = {"A": 2, "B": 2}
         with self.assertRaisesRegex(ValueError, "disagree"):
             _runtime_context(session, BackendDecision.cpu_fallback("fixture"))
+
+    def test_runtime_context_checkpoint_and_progress_use_the_frozen_run_identity(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            session = _Session(("A",))
+            session.context["code_commit"] = "f" * 40
+            projected = _runtime_context(session, BackendDecision.cpu_fallback("fixture"))
+            self.assertEqual(projected["run_identity"], FROZEN_CONFIG.run_identity)
+            store = Exp435CheckpointStore.create(root / "checkpoint", projected)
+            self.assertEqual(store.run_identity, FROZEN_CONFIG.run_identity)
 
     def test_thread_limits_are_set_before_numpy_or_artifact_import_in_clean_process(self) -> None:
         script = r'''
@@ -392,6 +425,58 @@ print(json.dumps(observed, sort_keys=True))
             failures = [item for item in events if item.get("kind") == "failure"]
             self.assertEqual(len(failures), 1)
             self.assertEqual(failures[0]["dataset"], "B")
+
+    def test_parallel_progress_never_reports_or_submits_an_eighth_blocked_dataset(self) -> None:
+        datasets = tuple(f"Dataset-{index}" for index in range(1, 9))
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            session = _Session(datasets)
+            loaded: list[str] = []
+            session.load_train = lambda dataset: loaded.append(dataset) or {"dataset": dataset}  # type: ignore[attr-defined]
+            session.load_test_values = lambda dataset, train: {"dataset": dataset}  # type: ignore[attr-defined]
+            _BlockedExecutor.instances.clear()
+            waits = 0
+
+            def release_when_observed(pending, *, return_when):
+                del return_when
+                nonlocal waits
+                waits += 1
+                executor = _BlockedExecutor.instances[0]
+                submitted = [args[2] for _future, args in executor.submitted]
+                if waits == 1:
+                    self.assertEqual(submitted, list(datasets[:7]))
+                    self.assertEqual(loaded, list(datasets[:7]))
+                    payload = json.loads((root / "output" / "progress_antigravity.json").read_text())
+                    self.assertNotEqual(payload["current_dataset"], datasets[7])
+                    self.assertEqual(payload["stage"], "scoring")
+                    future = next(iter(pending))
+                    worker, scorer, dataset, train, test, lanes, backend = executor.submitted[0][1]
+                    future.set_result(worker(scorer, dataset, train, test, lanes, backend))
+                    return {future}, set()
+                self.assertEqual(submitted, list(datasets))
+                for future, args in executor.submitted:
+                    if not future.done():
+                        worker, scorer, dataset, train, test, lanes, backend = args
+                        future.set_result(worker(scorer, dataset, train, test, lanes, backend))
+                return set(pending), set()
+
+            with patch(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity.ProcessPoolExecutor",
+                _BlockedExecutor,
+            ), patch(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.runtime_antigravity.wait",
+                side_effect=release_when_observed,
+            ):
+                summary = run_exp435_new(
+                    run_root=root / "output",
+                    checkpoint_root=root / "checkpoint",
+                    input_session=session,
+                    backend_decision=None,
+                    dataset_scorer=_score,
+                    worker_count=7,
+                )
+            self.assertEqual(summary.completed_datasets, len(datasets))
+            self.assertEqual(waits, 2)
 
     def test_keyboard_interrupt_has_one_terminal_state_and_read_only_summary(self) -> None:
         with TemporaryDirectory() as directory:

@@ -52,7 +52,7 @@ class Exp435CliTests(unittest.TestCase):
             "schema": "exp435.readiness.v1",
             "state": "ready",
             "experiment_id": FROZEN_CONFIG.experiment_id,
-            "run_identity": "exp435-train-only-consensus-recovery-antigravity-20260806",
+            "run_identity": FROZEN_CONFIG.run_identity,
             "git_commit": commit,
             "config_sha256": sha256(canonical_json_bytes(asdict(FROZEN_CONFIG))).hexdigest(),
             "input_sha256": {"database": FROZEN_CONFIG.database_sha256, **lanes},
@@ -76,6 +76,7 @@ class Exp435CliTests(unittest.TestCase):
         checkpoint = parent / "checkpoint_antigravity"
         context = {
             "schema": "fixture.context.v1",
+            "run_identity": FROZEN_CONFIG.run_identity,
             "datasets": ["Demo"],
             "test_sizes": {"Demo": 101},
             "database_sha256": "d" * 64,
@@ -119,6 +120,7 @@ class Exp435CliTests(unittest.TestCase):
         checkpoint = parent / "checkpoint_antigravity"
         context = {
             "schema": "fixture.context.v1",
+            "run_identity": FROZEN_CONFIG.run_identity,
             "datasets": ["Demo"],
             "test_sizes": {"Demo": 101},
             "database_sha256": "d" * 64,
@@ -192,6 +194,9 @@ class Exp435CliTests(unittest.TestCase):
             self.assertIn(name, help_text)
         with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             parser.parse_args(["new", "--output-root", "/tmp/alternate"])
+
+    def test_cli_run_identity_is_derived_from_the_frozen_config(self) -> None:
+        self.assertEqual(cli_module.RUN_IDENTITY, FROZEN_CONFIG.run_identity)
 
     def test_absolute_scratch_runner_help_works_outside_repo_without_pythonpath(self) -> None:
         """The documented wrapper must bootstrap imports when launched directly."""
@@ -412,6 +417,52 @@ class Exp435CliTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     cli_module._run_prediction("resume")
             self.assertFalse(opened)
+
+    def test_failed_resume_rejects_before_input_and_preserves_runtime_tree(self) -> None:
+        with TemporaryDirectory() as directory:
+            output, checkpoint, store = self._unfinished_runtime(Path(directory))
+            writer = ProgressWriter.open_existing(
+                output,
+                run_identity=store.run_identity,
+                checkpoint=checkpoint,
+                backend="cpu",
+                total_datasets=1,
+                context_fingerprint=store.context_fingerprint,
+                process_is_live=lambda pid: False,
+                heartbeat_seconds=None,
+            )
+            writer.mark_failed("Demo", RuntimeError("synthetic failure"))
+            writer.close()
+            root = Path(directory)
+            before = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.rglob("*")) if path.is_file()
+            }
+            opened = False
+
+            @contextmanager
+            def fail_session(*args, **kwargs):
+                nonlocal opened
+                opened = True
+                raise AssertionError("failed roots cannot open input")
+                yield  # pragma: no cover
+
+            inputs_module = __import__(
+                "experiments.exp435_train_only_consensus_recovery_antigravity.inputs_antigravity",
+                fromlist=["open_exp435_input_session"],
+            )
+            with patch.object(cli_module, "FROZEN_OUTPUT", output), \
+                    patch.object(cli_module, "FROZEN_CHECKPOINT", checkpoint), \
+                    patch.object(cli_module, "_clean_head", return_value="f" * 40), \
+                    patch.object(inputs_module, "open_exp435_input_session", fail_session):
+                with self.assertRaisesRegex(ValueError, "failed.*cannot resume"):
+                    cli_module.run_resume()
+            after = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.rglob("*")) if path.is_file()
+            }
+            self.assertFalse(opened)
+            self.assertEqual(after, before)
 
     def test_new_rejects_head_changed_by_delayed_imports_before_session(self) -> None:
         with TemporaryDirectory() as directory:

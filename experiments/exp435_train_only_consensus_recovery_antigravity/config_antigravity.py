@@ -15,6 +15,7 @@ class Exp435FrozenConfig:
     """
 
     experiment_id: str = "Exp435"
+    run_identity: str = "exp435-train-only-consensus-recovery-antigravity-20260806"
     expected_datasets: int = 1117
     neighbor_count: int = 3
     candidate_alpha: float = 0.01

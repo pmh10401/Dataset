@@ -330,8 +330,18 @@ class ProgressWriter:
         heartbeat_seconds: float | None = 30.0,
     ) -> "ProgressWriter":
         output = Path(output)
+        # Failed roots are immutable/non-resumable.  Read their durable state
+        # before reconciliation can remove an internal temporary or rewrite a
+        # PID, so even a direct caller cannot mutate a failed root.
+        if output.is_symlink() or not output.is_dir():
+            raise ValueError("runtime output inventory is invalid")
+        progress_path = output / "progress_antigravity.json"
+        if progress_path.is_symlink() or not progress_path.is_file():
+            raise ValueError("runtime progress is invalid")
+        progress = _canonical_object(progress_path, "runtime progress")
+        if progress.get("state") == "failed":
+            raise ValueError("failed runtime cannot resume")
         _validate_output_inventory(output, mutable=True)
-        progress = _canonical_object(output / "progress_antigravity.json", "runtime progress")
         pid_payload = _canonical_object(output / "run_antigravity.pid", "runtime PID")
         stored_total = progress.get("total_datasets", progress.get("total"))
         stored_backend = progress.get("backend")

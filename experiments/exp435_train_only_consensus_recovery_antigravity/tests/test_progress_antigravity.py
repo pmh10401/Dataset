@@ -94,6 +94,31 @@ class ProgressWriterTests(unittest.TestCase):
             self.assertEqual(payload["state"], "interrupted")
             self.assertFalse(payload["pid"]["active"] if isinstance(payload["pid"], dict) else False)
 
+    def test_open_existing_rejects_failed_state_without_mutating_runtime_files(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "output"
+            checkpoint = Path(directory) / "cp"
+            writer = ProgressWriter.create(
+                root, run_identity="exp435-fixture", checkpoint=checkpoint,
+                total_datasets=1, backend="cpu", heartbeat_seconds=None,
+            )
+            writer.mark_failed("Demo", RuntimeError("stopped"))
+            writer.close()
+            before = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.rglob("*")) if path.is_file()
+            }
+            with self.assertRaisesRegex(ValueError, "failed.*cannot resume"):
+                ProgressWriter.open_existing(
+                    root, run_identity="exp435-fixture", checkpoint=checkpoint,
+                    process_is_live=lambda pid: False,
+                )
+            after = {
+                path.relative_to(root): path.read_bytes()
+                for path in sorted(root.rglob("*")) if path.is_file()
+            }
+            self.assertEqual(after, before)
+
     def test_resume_removes_only_internal_atomic_temp_and_rejects_unknown_files(self) -> None:
         with TemporaryDirectory() as directory:
             root = Path(directory) / "output"

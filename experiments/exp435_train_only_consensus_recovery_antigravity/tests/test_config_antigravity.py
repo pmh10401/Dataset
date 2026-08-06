@@ -14,6 +14,10 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.config_antigra
 class Exp435ConfigTests(unittest.TestCase):
     def test_frozen_config_has_preregistered_values(self) -> None:
         self.assertEqual(FROZEN_CONFIG.experiment_id, "Exp435")
+        self.assertEqual(
+            FROZEN_CONFIG.run_identity,
+            "exp435-train-only-consensus-recovery-antigravity-20260806",
+        )
         self.assertEqual(FROZEN_CONFIG.expected_datasets, 1117)
         self.assertEqual(FROZEN_CONFIG.neighbor_count, 3)
         self.assertEqual(FROZEN_CONFIG.candidate_alpha, 0.01)

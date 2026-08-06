@@ -21,6 +21,8 @@ from experiments.exp435_train_only_consensus_recovery_antigravity.mlx_antigravit
     score_channel_mlx,
     score_with_backend,
 )
+from experiments.exp435_train_only_consensus_recovery_antigravity import cli_antigravity as cli_module
+from experiments.exp435_train_only_consensus_recovery_antigravity import mlx_antigravity as mlx_module
 from experiments.exp435_train_only_consensus_recovery_antigravity.features_antigravity import (
     score_channel_cpu,
 )
@@ -115,6 +117,16 @@ class MlxAdoptionTests(unittest.TestCase):
         self.assertEqual(decision.backend, "mlx")
         self.assertEqual(decision.smoke_seed, 43501)
         self.assertEqual(decision.selected_batch_size, 16)
+
+    def test_readiness_fixture_uses_one_query_row_per_production_score_call(self) -> None:
+        with patch.object(
+            mlx_module,
+            "benchmark_mlx_adoption",
+            return_value=BackendDecision.cpu_fallback("fixture"),
+        ) as benchmark:
+            cli_module._synthetic_mlx_decision()
+        fixture = benchmark.call_args.args[0][0]
+        self.assertEqual(fixture.queries.shape[0], 1)
 
     def test_candidate_flip_forces_cpu_even_when_fast(self) -> None:
         decision = benchmark_mlx_adoption(
@@ -317,7 +329,7 @@ class MlxAdoptionTests(unittest.TestCase):
         self.assertEqual(output.dtype, np.dtype(np.float32))
         np.testing.assert_array_equal(output, expected)
 
-    def test_adopted_decision_uses_mlx_but_runtime_failure_returns_cpu(self) -> None:
+    def test_adopted_decision_uses_mlx_and_runtime_failure_fails_closed(self) -> None:
         decision = benchmark_mlx_adoption(
             fixtures=self.fixtures,
             engine=FakeMlxEngine(speedup=1.2),
@@ -338,10 +350,8 @@ class MlxAdoptionTests(unittest.TestCase):
             def score(self, query, references, k, *, batch_size=16):
                 raise RuntimeError("device lost")
 
-        self.assertEqual(
-            score_with_backend(decision, query, references, 3, engine=Broken()),
-            expected,
-        )
+        with self.assertRaisesRegex(MlxUnavailable, "mlx_runtime_error:RuntimeError:device lost"):
+            score_with_backend(decision, query, references, 3, engine=Broken())
 
         class OtherDevice(FakeMlxEngine):
             def __init__(self):
@@ -360,10 +370,8 @@ class MlxAdoptionTests(unittest.TestCase):
 
         for incompatible in (OtherDevice(), OtherHardwareInfo(), NoMetal()):
             with self.subTest(incompatible=type(incompatible).__name__):
-                self.assertEqual(
-                    score_with_backend(decision, query, references, 3, engine=incompatible),
-                    expected,
-                )
+                with self.assertRaises(MlxUnavailable):
+                    score_with_backend(decision, query, references, 3, engine=incompatible)
 
     def test_injected_engine_failure_is_explicit(self) -> None:
         class UnavailableEngine:

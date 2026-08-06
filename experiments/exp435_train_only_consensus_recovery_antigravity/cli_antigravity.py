@@ -46,7 +46,7 @@ FROZEN_OUTPUT = RUN_PARENT / "output_antigravity"
 FROZEN_CHECKPOINT = RUN_PARENT / "checkpoint_antigravity"
 FROZEN_READINESS = RUN_PARENT / "readiness_antigravity.json"
 FROZEN_EVALUATION = RUN_PARENT / "evaluation_antigravity"
-RUN_IDENTITY = "exp435-train-only-consensus-recovery-antigravity-20260806"
+RUN_IDENTITY = FROZEN_CONFIG.run_identity
 LANE_PATHS = (
     DATA_ROOT / "exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl",
     DATA_ROOT / "exp291_final_operational_routing_freeze/exp291_prediction_manifest.json",
@@ -301,7 +301,8 @@ def _synthetic_mlx_decision():
 
     generator = np.random.default_rng(FROZEN_CONFIG.mlx_smoke_seed)
     references = generator.normal(size=(32, 16)).astype(np.float32)
-    queries = generator.normal(size=(24, 16)).astype(np.float32)
+    # Production scores exactly one TEST query row for one channel per call.
+    queries = generator.normal(size=(1, 16)).astype(np.float32)
     return benchmark_mlx_adoption((MlxFixture(queries, references),))
 
 
@@ -457,6 +458,8 @@ def _run_prediction(command: str) -> Mapping[str, object]:
         head = final_head
     else:
         stored_context = Exp435CheckpointStore.read_context_projection(FROZEN_CHECKPOINT)
+        if stored_context.get("run_identity") != RUN_IDENTITY:
+            raise ValueError("resume run identity does not match frozen identity")
         stored_commit = stored_context.get("code_commit")
         if stored_commit != head:
             raise ValueError("resume code commit does not match current clean HEAD")
@@ -466,6 +469,12 @@ def _run_prediction(command: str) -> Mapping[str, object]:
             store = Exp435CheckpointStore.open_read_only(FROZEN_CHECKPOINT)
             publication = inspect_publication(FROZEN_OUTPUT, store)
             return _publication_summary(publication)
+        durable_progress = _read_json(
+            FROZEN_OUTPUT / "progress_antigravity.json",
+            "runtime progress",
+        )
+        if durable_progress.get("state") == "failed":
+            raise ValueError("failed Exp435 runtime cannot resume")
         from .runtime_antigravity import inspect_exp435, resume_exp435
 
         # A completed checkpoint can be published/read without reopening the
@@ -482,6 +491,8 @@ def _run_prediction(command: str) -> Mapping[str, object]:
             store = Exp435CheckpointStore.open_read_only(FROZEN_CHECKPOINT)
             publication = publish_exp435(store, FROZEN_OUTPUT)
             return _summary_payload(summary, publication)
+        if summary is not None and summary.status == "failed":
+            raise ValueError("failed Exp435 runtime cannot resume")
         from .inputs_antigravity import (
             DEFAULT_DATABASE,
             DEFAULT_EXP291_MANIFEST,

@@ -55,7 +55,7 @@ from .contracts_antigravity import (
 from .progress_antigravity import ProgressWriter, _validate_output_inventory
 
 
-_PREFETCH = 14
+_PREFETCH = FROZEN_CONFIG.cpu_workers
 
 
 @dataclass(frozen=True)
@@ -234,10 +234,12 @@ def _runtime_context(session: object, backend: BackendDecision) -> dict[str, obj
         or any(type(size) is not int or size <= 0 for size in sizes.values())
     ):
         raise ValueError("verified context TEST sizes do not cover the frozen population")
-    # A run identity is part of the checkpoint context, never caller input.
-    code_commit = projected.get("code_commit")
-    if isinstance(code_commit, str) and code_commit:
-        projected["run_identity"] = f"exp435-{code_commit[:12]}"
+    supplied_identity = projected.get("run_identity")
+    if supplied_identity is not None and supplied_identity != FROZEN_CONFIG.run_identity:
+        raise ValueError("verified context run identity does not match frozen identity")
+    # A run identity is part of the checkpoint context, never caller input or
+    # a derivative of the mutable source commit.
+    projected["run_identity"] = FROZEN_CONFIG.run_identity
     return projected
 
 
@@ -468,6 +470,8 @@ def _run(
             backend=backend.backend,
             context_fingerprint=store.context_fingerprint,
         )
+    if store.run_identity != FROZEN_CONFIG.run_identity:
+        raise ValueError("checkpoint run identity does not match frozen identity")
     failure_persisted = False
     try:
         mlx_engine: object | None = None
@@ -549,11 +553,11 @@ def _run(
                 failed += result.status == "failed"
                 candidate_count += result.candidate_count
                 writer.append_event(_result_event(result, digest, completed=completed, total=len(datasets), metadata=metadata, backend=backend))
-                writer.update(stage="scoring", current_dataset=dataset, dataset_metadata=metadata, completed=completed, success=successful, abstention=abstained, error=failed, candidate_count=candidate_count)
+                writer.update(stage="idle", current_dataset=None, dataset_metadata=None, completed=completed, success=successful, abstention=abstained, error=failed, candidate_count=candidate_count)
         else:
-            # Bounded 14-task prefetch; only the parent loads values and writes
-            # durable files.  Futures are retained until their name-order slot
-            # can be committed.
+            # At most one submitted/in-flight task per CPU worker.  Only the
+            # parent loads values and writes durable files; commits are still
+            # held for deterministic dataset-name order.
             lanes = lane_snapshot
             executor: ProcessPoolExecutor | None = ProcessPoolExecutor(
                 max_workers=FROZEN_CONFIG.cpu_workers,
@@ -592,7 +596,7 @@ def _run(
                             # Preserve the actual failing dataset before the
                             # outer handler persists its durable error event.
                             writer.update(
-                                stage="scoring",
+                                stage="failing",
                                 current_dataset=dataset,
                                 dataset_metadata=metadata,
                                 completed=completed,
@@ -602,6 +606,30 @@ def _run(
                                 candidate_count=candidate_count,
                             )
                             raise
+                    if pending:
+                        active_future = next(iter(pending))
+                        active_dataset, active_metadata = pending[active_future]
+                        writer.update(
+                            stage="scoring",
+                            current_dataset=active_dataset,
+                            dataset_metadata=active_metadata,
+                            completed=completed,
+                            success=successful,
+                            abstention=abstained,
+                            error=failed,
+                            candidate_count=candidate_count,
+                        )
+                    else:
+                        writer.update(
+                            stage="waiting_for_ordered_commit",
+                            current_dataset=None,
+                            dataset_metadata=None,
+                            completed=completed,
+                            success=successful,
+                            abstention=abstained,
+                            error=failed,
+                            candidate_count=candidate_count,
+                        )
                     while commit_index < len(missing) and missing[commit_index] in completed_results:
                         dataset = missing[commit_index]
                         result, metadata = completed_results.pop(dataset)
@@ -622,8 +650,42 @@ def _run(
                         failed += result.status == "failed"
                         candidate_count += result.candidate_count
                         writer.append_event(_result_event(result, digest, completed=completed, total=len(datasets), metadata=metadata, backend=backend))
-                        writer.update(stage="scoring", current_dataset=dataset, dataset_metadata=metadata, completed=completed, success=successful, abstention=abstained, error=failed, candidate_count=candidate_count)
                         commit_index += 1
+                    if pending:
+                        active_future = next(iter(pending))
+                        active_dataset, active_metadata = pending[active_future]
+                        writer.update(
+                            stage="scoring",
+                            current_dataset=active_dataset,
+                            dataset_metadata=active_metadata,
+                            completed=completed,
+                            success=successful,
+                            abstention=abstained,
+                            error=failed,
+                            candidate_count=candidate_count,
+                        )
+                    elif completed_results:
+                        writer.update(
+                            stage="waiting_for_ordered_commit",
+                            current_dataset=None,
+                            dataset_metadata=None,
+                            completed=completed,
+                            success=successful,
+                            abstention=abstained,
+                            error=failed,
+                            candidate_count=candidate_count,
+                        )
+                    else:
+                        writer.update(
+                            stage="idle",
+                            current_dataset=None,
+                            dataset_metadata=None,
+                            completed=completed,
+                            success=successful,
+                            abstention=abstained,
+                            error=failed,
+                            candidate_count=candidate_count,
+                        )
             except KeyboardInterrupt as error:
                 writer.mark_interrupted(
                     writer.progress.get("current_dataset")

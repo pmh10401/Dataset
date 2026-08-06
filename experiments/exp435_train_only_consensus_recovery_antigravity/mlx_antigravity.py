@@ -869,8 +869,8 @@ def score_with_backend(
 ) -> float:
     """Score one query using only the already-approved backend decision.
 
-    A runtime MLX error is fail-closed: the exact CPU scorer produces the
-    result, and an unapproved/non-adopted decision never enters MLX.
+    A runtime MLX error is fail-closed.  The selected backend is frozen by
+    readiness, so an adopted MLX run cannot silently mix in CPU scores.
     """
 
     if not isinstance(decision, BackendDecision):
@@ -909,10 +909,10 @@ def score_with_backend(
             if output.shape != (1,) or not np.isfinite(output).all():
                 raise ValueError("MLX runtime output is invalid")
             return float(output[0])
-        except Exception:
-            # An adopted path is never allowed to silently change its score
-            # definition; CPU fallback keeps the frozen definition intact.
-            pass
+        except BaseException as exc:
+            if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+                raise
+            raise MlxUnavailable(_runtime_failure_reason(exc)) from exc
     return float(score_channel_cpu(query, references, k))
 
 
