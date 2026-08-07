@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T16:20:26Z",
-  "generated_from_commit": "328162742bafbb5dcf4d80d034c8adfa4d2ad6da",
+  "generated_at": "2026-08-07T16:54:55Z",
+  "generated_from_commit": "9017faa87338914388e2bffdd14fca17ac3cf454",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -22,7 +22,9 @@
     "Exp439 completed one-ULP reconstruction repair, exact immutable 89-record import, dataset-attributed failure evidence, 679-test regression proof, and real Chinatown TRAIN-only smoke",
     "Exp439 bounded slow-head dispatch and TRAIN-only preferred-depth/decomposition cache with predecessor-record byte parity",
     "Exp437 strict nested canonical-JSON surface repair design for reproducible publication inspection without checkpoint mutation",
-    "Exp440 approved TRAIN-only low-frequency multi-depth precision gate with deterministic outside-Hard budget 100 and post-freeze evaluation"
+    "Exp440 approved TRAIN-only low-frequency multi-depth precision gate with deterministic outside-Hard budget 100 and post-freeze evaluation",
+    "Exp437 nested JSON surface repair implementation plan with strict-decoder regression proof and immutable real-artifact replay",
+    "Exp440 test-first implementation plan for isolated multi-depth calibration, budget, acceleration, runtime, publication, and post-freeze evaluation"
   ],
   "nodes": [
     {
@@ -252,6 +254,14 @@
         {
           "path": "docs/superpowers/specs/2026-08-08-exp440-train-only-low-frequency-precision-gate-antigravity-design.md",
           "symbol": "# Exp440 TRAIN-Only Low-Frequency Precision Gate Design"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-08-exp437-nested-json-surface-repair-antigravity.md",
+          "symbol": "# Exp437 Nested JSON Surface Repair Implementation Plan"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-08-exp440-train-only-low-frequency-precision-gate-antigravity.md",
+          "symbol": "# Exp440 TRAIN-Only Low-Frequency Precision Gate Implementation Plan"
         }
       ]
     },
