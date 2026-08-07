@@ -105,8 +105,9 @@ prediction/manifest/artifact hash는 post-freeze evaluation 전에 immutable하�
 
 `resume`은 **interrupted Exp437 root에만 legal**하다. 먼저 frozen identity, input
 hashes, progress binding, PID/event/checkpoint authority를 read-only로 검증하고
-그 뒤에만 재개한다. `complete` 또는 `inspect`는 DB와 worker를 열지 않는
-read-only publication replay다.
+그 뒤에만 재개한다. Exp437의 `checkpoint_complete` root도 `resume` 대상이
+아니며 실행·publication·mutation 전에 거절한다. 오직 `inspect`만 DB와 worker를
+열지 않는 read-only publication replay다.
 
 `failed` root는 immutable이다. candidate budget 초과, score/fingerprint 오류,
 checkpoint/write failure, metadata corruption, label boundary 위반 등 어떤

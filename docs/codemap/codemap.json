@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T00:21:50Z",
-  "generated_from_commit": "f759cddf2e044733b69968e56cd46ef022313daf",
+  "generated_at": "2026-08-07T00:37:03Z",
+  "generated_from_commit": "dba6a223cf12d2955b775697cc67edd52d31651b",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -58,6 +58,10 @@
         {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"pid\": null"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"exact_next_command_if_interrupted\":"
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
@@ -1763,7 +1767,8 @@
         "decide_exp436_success",
         "build_parser",
         "main",
-        "main_for_profile_antigravity"
+        "main_for_profile_antigravity",
+        "_validate_resume_state"
       ],
       "tests": [
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_config_antigravity.py",
@@ -1798,7 +1803,8 @@
         "Publication recomputes the canonical checkpoint context fingerprint from the supplied store context and rejects stale or mismatched fingerprint authorities before runtime replay, manifest construction, or publication writes.",
         "The public command surface is exactly readiness, new, resume, inspect, and evaluate; no path, worker, backend, seed, threshold, alpha, lane, or budget override flags are accepted.",
         "Exp437 fixed roots come only from EXP437_PROFILE; RUN_PARENT, FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, and FROZEN_EVALUATION remain Exp436 compatibility aliases and are never read by Exp437 execution.",
-        "Exp437 transport repair validates length histograms semantically (positive decimal keys, nonnegative integer counts, exact TRAIN/TEST sums) and normalizes with dict(sorted(histogram.items())); it never changes the Exp436 alpha, thresholds, lanes, budget, seeds, bootstrap, rescue, false-positive gates, or routing."
+        "Exp437 transport repair validates length histograms semantically (positive decimal keys, nonnegative integer counts, exact TRAIN/TEST sums) and normalizes with dict(sorted(histogram.items())); it never changes the Exp436 alpha, thresholds, lanes, budget, seeds, bootstrap, rescue, false-positive gates, or routing.",
+        "The validated-profile resume policy accepts interrupted for both profiles, preserves Exp436 checkpoint_complete compatibility, and rejects checkpoint_complete for Exp437 before execute/publication/mutation; failed and running are rejected for both. Only inspect is the read-only completed-root path."
       ],
       "evidence": [
         {
@@ -2226,6 +2232,14 @@
           "symbol": "validate_frozen_config_for_profile_antigravity(config, selected)"
         },
         {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def _validate_resume_state("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "_RESUME_ALLOWED_STATES"
+        },
+        {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
           "symbol": "def _dataset_metadata("
         },
@@ -2243,7 +2257,15 @@
         },
         {
           "path": "docs/EXP437_RUNBOOK_antigravity_KO.md",
-          "symbol": "## 중단, resume, inspect와 immutable failure"
+          "symbol": "Exp437의 `checkpoint_complete` root도 `resume` 대상이"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_exp437_cli_resume_rejects_checkpoint_complete_before_execute_or_mutation"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_exp437_public_resume_rejects_checkpoint_complete_before_prediction_or_publication"
         }
       ]
     }
@@ -3088,7 +3110,7 @@
         "artifact_utils",
         "sqlite_store"
       ],
-      "outcome": "The wrapper resolves the repository before importing the selected profile entrypoint. The parser exposes only five commands; readiness, fixed-root preflight, runtime, publication replay, and lazy evaluation all receive EXP437_PROFILE. New/resume remain label-free and profile-bound, inspect is read-only, and evaluate imports the exact evaluator only after the Exp437 review-only publication is frozen; failed roots remain immutable and require a new experiment number, while no Exp436 compatibility root alias or scientific override can redirect the flow."
+      "outcome": "The wrapper resolves the repository before importing the selected profile entrypoint. The parser exposes only five commands; readiness, fixed-root preflight, runtime, publication replay, and lazy evaluation all receive EXP437_PROFILE. New remains label-free and profile-bound, interrupted resume is accepted, checkpoint_complete/failed/running resume is rejected before execute or publication, inspect alone is read-only, and evaluate imports the exact evaluator only after the Exp437 review-only publication is frozen; failed roots remain immutable and require a new experiment number, while no Exp436 compatibility root alias or scientific override can redirect the flow."
     }
   ],
   "unknown_relationships": 0

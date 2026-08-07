@@ -182,7 +182,7 @@
     }
   },
   "next_action": "Clean-HEAD readiness review for Exp437, then run the exact readiness command in docs/EXP437_RUNBOOK_antigravity_KO.md. Exp436 remains failed and immutable; Exp437 prediction and evaluation have not started.",
-  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && python3 -m json.tool RESEARCH_STATE.json && python3 scratch/run_exp437_metadata_roundtrip_antigravity.py readiness",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && python3 -m json.tool RESEARCH_STATE.json && PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py readiness",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": false,

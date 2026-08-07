@@ -29,6 +29,7 @@ from experiments.exp403_408.artifact_io import canonical_json_bytes
 from .config_antigravity import FROZEN_CONFIG
 from .execution_profile_antigravity import (
     EXP436_PROFILE,
+    EXP437_PROFILE,
     ExecutionProfileAntigravity,
     frozen_config_for_profile_antigravity,
     validate_frozen_config_for_profile_antigravity,
@@ -372,6 +373,23 @@ def _resume_state(output: Path) -> str:
     return str(_read_json(Path(output) / "progress_antigravity.json", "runtime progress").get("state"))
 
 
+_RESUME_ALLOWED_STATES = {
+    EXP436_PROFILE: frozenset(("interrupted", "checkpoint_complete")),
+    EXP437_PROFILE: frozenset(("interrupted",)),
+}
+
+
+def _validate_resume_state(
+    state: object,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> str:
+    selected = validated_profile_antigravity(profile)
+    allowed = _RESUME_ALLOWED_STATES[selected]
+    if not isinstance(state, str) or state not in allowed:
+        raise ValueError(f"resume rejects runtime state: {state}")
+    return state
+
+
 def _summary_payload(summary: object, publication: object | None = None) -> dict[str, object]:
     payload = summary.to_payload() if hasattr(summary, "to_payload") else dict(summary)
     if publication is not None:
@@ -438,9 +456,7 @@ def run_resume(
     selected = validated_profile_antigravity(profile)
     _run_parent, output, checkpoint, readiness_path, evaluation = _fixed_paths(selected)
     _preflight_roots("resume", output, checkpoint, readiness_path, evaluation)
-    state = _resume_state(output)
-    if state not in {"interrupted", "checkpoint_complete"}:
-        raise ValueError(f"resume rejects runtime state: {state}")
+    _validate_resume_state(_resume_state(output), selected)
     return _run_prediction("resume", selected)
 
 
@@ -512,8 +528,7 @@ def _main_with_dependencies(
             if _head(deps) != verified_head: raise ValueError("clean HEAD changed before execution")
             result = dict(deps.execute("new"))
         elif args.command == "resume":
-            state = _resume_state(deps.output)
-            if state not in {"interrupted", "checkpoint_complete"}: raise ValueError(f"resume rejects runtime state: {state}")
+            _validate_resume_state(_resume_state(deps.output), selected)
             result = dict(deps.execute("resume"))
         elif args.command == "inspect": result = dict(deps.inspect())
         else: result = dict(deps.evaluate())

@@ -25,7 +25,7 @@ from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp436_missing_safe_strict_consensus_antigravity import cli_antigravity as module
 from experiments.exp436_missing_safe_strict_consensus_antigravity.config_antigravity import FROZEN_CONFIG
 from experiments.exp436_missing_safe_strict_consensus_antigravity.contracts_antigravity import BackendDecision
-from experiments.exp436_missing_safe_strict_consensus_antigravity.execution_profile_antigravity import EXP437_PROFILE
+from experiments.exp436_missing_safe_strict_consensus_antigravity.execution_profile_antigravity import EXP436_PROFILE, EXP437_PROFILE
 
 
 HEAD = "a" * 40
@@ -80,10 +80,10 @@ class CliAntigravityTests(unittest.TestCase):
             evaluate=lambda: calls.append("evaluate") or {"state": "evaluated", "success": False},
         )
 
-    def _main(self, argv, deps):
+    def _main(self, argv, deps, *, profile=EXP436_PROFILE):
         stdout, stderr = io.StringIO(), io.StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):
-            code = module._main_with_dependencies(argv, deps)
+            code = module._main_with_dependencies(argv, deps, profile=profile)
         return code, stdout.getvalue(), stderr.getvalue()
 
     def test_parser_has_exactly_five_commands_and_no_flags(self):
@@ -381,6 +381,64 @@ class CliAntigravityTests(unittest.TestCase):
             with patch.object(module, "_resume_state", return_value="interrupted"):
                 code, _out, err = self._main(["resume"], deps)
             self.assertEqual((code, calls), (0, ["resume"]), err)
+
+    def test_exp437_cli_resume_rejects_checkpoint_complete_before_execute_or_mutation(self):
+        with TemporaryDirectory() as directory:
+            parent, calls = Path(directory), []
+            deps = self._deps(parent, calls); deps.output.mkdir(); deps.checkpoint.mkdir()
+            marker = deps.output / "immutable_antigravity"; marker.write_bytes(b"unchanged")
+            with patch.object(module, "_resume_state", return_value="checkpoint_complete"):
+                code, _out, err = self._main(["resume"], deps, profile=EXP437_PROFILE)
+            self.assertEqual(code, 2)
+            self.assertIn("checkpoint_complete", err)
+            self.assertEqual(calls, [])
+            self.assertEqual(marker.read_bytes(), b"unchanged")
+
+    def test_exp437_public_resume_rejects_checkpoint_complete_before_prediction_or_publication(self):
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            output = parent / "output_antigravity"; checkpoint = parent / "checkpoint_antigravity"
+            readiness = parent / "readiness_antigravity.json"; evaluation = parent / "evaluation_antigravity"
+            output.mkdir(); checkpoint.mkdir()
+            with patch.object(module, "_fixed_paths", return_value=(parent, output, checkpoint, readiness, evaluation)), \
+                    patch.object(module, "_resume_state", return_value="checkpoint_complete"), \
+                    patch.object(module, "_run_prediction") as prediction:
+                with self.assertRaisesRegex(ValueError, "checkpoint_complete"):
+                    module.run_resume(EXP437_PROFILE)
+            prediction.assert_not_called()
+            self.assertEqual(tuple(sorted(path.name for path in parent.iterdir())), ("checkpoint_antigravity", "output_antigravity"))
+
+    def test_exp437_cli_resume_accepts_interrupted_state(self):
+        with TemporaryDirectory() as directory:
+            parent, calls = Path(directory), []
+            deps = self._deps(parent, calls); deps.output.mkdir(); deps.checkpoint.mkdir()
+            with patch.object(module, "_resume_state", return_value="interrupted"):
+                code, _out, err = self._main(["resume"], deps, profile=EXP437_PROFILE)
+            self.assertEqual((code, calls), (0, ["resume"]), err)
+
+    def test_exp437_cli_resume_rejects_failed_and_running_states(self):
+        for state in ("failed", "running"):
+            with self.subTest(state=state), TemporaryDirectory() as directory:
+                parent, calls = Path(directory), []
+                deps = self._deps(parent, calls); deps.output.mkdir(); deps.checkpoint.mkdir()
+                with patch.object(module, "_resume_state", return_value=state):
+                    code, _out, err = self._main(["resume"], deps, profile=EXP437_PROFILE)
+                self.assertEqual(code, 2)
+                self.assertIn(state, err)
+                self.assertEqual(calls, [])
+
+    def test_exp436_public_resume_continues_to_accept_checkpoint_complete(self):
+        with TemporaryDirectory() as directory:
+            parent = Path(directory)
+            output = parent / "output_antigravity"; checkpoint = parent / "checkpoint_antigravity"
+            readiness = parent / "readiness_antigravity.json"; evaluation = parent / "evaluation_antigravity"
+            output.mkdir(); checkpoint.mkdir()
+            with patch.object(module, "_fixed_paths", return_value=(parent, output, checkpoint, readiness, evaluation)), \
+                    patch.object(module, "_resume_state", return_value="checkpoint_complete"), \
+                    patch.object(module, "_run_prediction", return_value={"state": "checkpoint_complete"}) as prediction:
+                result = module.run_resume(EXP436_PROFILE)
+            self.assertEqual(result, {"state": "checkpoint_complete"})
+            prediction.assert_called_once_with("resume", EXP436_PROFILE)
 
     def test_inspect_is_read_only_and_does_not_publish(self):
         with TemporaryDirectory() as directory:
