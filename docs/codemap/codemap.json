@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T17:12:51Z",
-  "generated_from_commit": "50fe53f3ef416158d1dbe03cdba394a78431bdb0",
+  "generated_at": "2026-08-07T17:15:17Z",
+  "generated_from_commit": "5d74510c700a5331eb794d2835bf731966f0fdeb",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2417,7 +2417,7 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts.",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2440,7 +2440,11 @@
         "DepthScoreAntigravity",
         "ProvisionalCandidateAntigravity",
         "RetainedCandidateAntigravity",
-        "Exp440DatasetResultAntigravity"
+        "Exp440DatasetResultAntigravity",
+        "partition_train_rows_antigravity",
+        "test_row_abstention_reason_antigravity",
+        "validate_prediction_source_antigravity",
+        "load_frozen_hard_coordinates_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2458,7 +2462,9 @@
         "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_progress_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_config_antigravity.py",
-        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_contracts_antigravity.py"
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_contracts_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_inputs_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_predecessor_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2593,6 +2599,14 @@
         {
           "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_contracts_antigravity.py",
           "symbol": "class Exp440ContractsAntigravityTests"
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/inputs_antigravity.py",
+          "symbol": "def partition_train_rows_antigravity("
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/predecessor_antigravity.py",
+          "symbol": "def validate_prediction_source_antigravity("
         }
       ]
     },
