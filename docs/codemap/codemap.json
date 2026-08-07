@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T09:30:15Z",
-  "generated_from_commit": "5ad5541d0dd8b850ea87f818ff5af80bc5af83fe",
+  "generated_at": "2026-08-07T09:32:10Z",
+  "generated_from_commit": "bc121971a81f61c4a40cba1044675572e756aced",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -17,7 +17,8 @@
     "User-approved Exp437 stale-PID checkpoint recovery followed by explicitly verified CPU concurrency with Exp438, without scientific-rule changes",
     "User-approved Exp437 stale-PID recovery and live CPU concurrency with Exp438, implemented through a test-first operational plan",
     "Exp439 isolated scale-aware float32 reconstruction repair, immutable Exp438 failure evidence, exact-prefix import gate, and unchanged label-free scientific rules",
-    "Exp439 preregistered one-ULP reconstruction repair, whole-row nonfinite TRAIN exclusion, exact 89-record predecessor import, and dataset-attributed failure logs"
+    "Exp439 preregistered one-ULP reconstruction repair, whole-row nonfinite TRAIN exclusion, exact 89-record predecessor import, and dataset-attributed failure logs",
+    "Exp439 mechanically isolated namespace, frozen identity, five-command CLI, and distinct artifact roots"
   ],
   "nodes": [
     {
@@ -2343,12 +2344,12 @@
     },
     {
       "id": "exp438_frequency_runtime",
-      "label": "Exp438 prediction + runtime",
+      "label": "Exp438 / Exp439 frequency runtime",
       "type": "pipeline",
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 readiness, strict Exp437 predecessor snapshots and replay, plus the separate exact-source Exp437 stale-PID recovery launcher used before concurrent label-free execution.",
+      "role": "Owns the isolated Exp438 frequency-complexity evidence runtime and its Exp439 scale-aware reconstruction-repair fork with distinct frozen identities, roots, readiness, checkpoints, logs, and label-free execution.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2360,7 +2361,9 @@
         "revalidate_exp437_snapshot_antigravity",
         "_validate_exp437_replay_antigravity",
         "preflight_exp437_recovery_antigravity",
-        "recover_exp437_checkpoint_antigravity"
+        "recover_exp437_checkpoint_antigravity",
+        "experiments.exp439_scale_aware_reconstruction_repair_antigravity.config_antigravity.FROZEN_CONFIG",
+        "experiments.exp439_scale_aware_reconstruction_repair_antigravity.cli_antigravity.main_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2370,7 +2373,8 @@
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_predecessor_antigravity.py",
-        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_recover_exp437_checkpoint_antigravity.py"
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_recover_exp437_checkpoint_antigravity.py",
+        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_config_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2431,6 +2435,18 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/runtime_antigravity.py",
           "symbol": "def _decision_payload_antigravity("
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/config_antigravity.py",
+          "symbol": "class Exp439FrozenConfig:"
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/cli_antigravity.py",
+          "symbol": "def main_antigravity("
+        },
+        {
+          "path": "scratch/run_exp439_scale_aware_reconstruction_repair_antigravity.py",
+          "symbol": "main_antigravity"
         }
       ]
     },
