@@ -1,11 +1,8 @@
 {
-  "current_commit": "49a44a3473d255e5cf6421b06fddfb6246f155c4",
+  "current_commit": "0e4f1eb1970b6d1f7ad0a535a026cac93df24af6",
   "working_tree_dirty": true,
-  "generated_at": "2026-08-07T05:21:12Z",
-  "changed_modules_since_prior_lock": [
-    "docs",
-    "root"
-  ],
+  "generated_at": "2026-08-07T05:21:50Z",
+  "changed_modules_since_prior_lock": [],
   "scanned_scope": [
     "tracked root files",
     ".superpowers",

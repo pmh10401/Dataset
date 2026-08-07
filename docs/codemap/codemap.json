@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T05:21:12Z",
-  "generated_from_commit": "49a44a3473d255e5cf6421b06fddfb6246f155c4",
+  "generated_at": "2026-08-07T05:21:50Z",
+  "generated_from_commit": "0e4f1eb1970b6d1f7ad0a535a026cac93df24af6",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -82,7 +82,7 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"stale_pid_recovery_preflight_passed\""
+          "symbol": "\"status\": \"official_running_recovered_checkpoint\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
