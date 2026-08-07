@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-07T09:14:58+09:00",
+  "updated_at": "2026-08-07T09:55:43+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -161,6 +161,7 @@
         "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
         "docs/EXP437_PREREGISTRATION_antigravity_KO.md",
         "docs/EXP437_RUNBOOK_antigravity_KO.md",
+        "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md",
         "docs/EXP436_PREREGISTRATION_antigravity_KO.md",
         "docs/EXP436_RUNBOOK_antigravity_KO.md"
       ],
@@ -171,7 +172,27 @@
       "test_labels_opened": false,
       "official_readiness": false,
       "checkpoint_output_evaluation_created": false,
-      "notes": "Implementation complete; readiness pending. Thin successor to Exp436: identical label-free science and frozen evaluation gates, new execution identity/root, and one persistence repair that validates length histograms semantically without relying on JSON object-key insertion order. No Exp436 checkpoint result is reused, prediction has not started, TEST labels remain unopened, and the final implementation commit is deferred until Task 7's verified commit."
+      "reviewed_implementation_commit": "d977dee17e5d870ff5f84078647fb93b5231a725d",
+      "task7_regression_counts": {
+        "exp436_shared_engine_tests": 299,
+        "predecessor_boundary_tests": 68,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      "exp436_readiness_sha256": "5def8dbe785163dc69e80e0bb6a5a1cdba1d3663058f4d73625a6deda048c43a",
+      "exp436_failed_record_bytes": 59498,
+      "exp437_run_parent_absent": true,
+      "frozen_config_changed_fields": ["experiment_id", "run_identity"],
+      "cpu_topology": {
+        "logical_cpus": 12,
+        "workers": 11,
+        "inner_threads": 1
+      },
+      "mlx_mps_readiness": "pending",
+      "next_readiness_command": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py readiness",
+      "implementation_report": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md",
+      "notes": "Implementation complete and Task 7 handoff reviewed at d977dee17e5d870ff5f84078647fb93b5231a725d; readiness remains pending. Thin successor to Exp436: identical label-free science and frozen evaluation gates, new execution identity/root, and one persistence repair that validates length histograms semantically without relying on JSON object-key insertion order. No Exp436 checkpoint result is reused, the Exp437 run parent is absent, prediction has not started, TEST labels remain unopened, and official MLX/MPS readiness has not been invoked."
     }
   ]
 }

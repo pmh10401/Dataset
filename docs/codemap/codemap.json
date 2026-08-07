@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T00:45:51Z",
-  "generated_from_commit": "6fecee11659a7d867d88b3af0db79a1bb1a01ccc",
+  "generated_at": "2026-08-07T00:57:21Z",
+  "generated_from_commit": "d977dee17e5d870ff5f84078647fb93b5231a725d",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -22,7 +22,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records the immutable Exp436 persistence failure, Exp437's implementation-complete governance and frozen preregistration/runbook, frozen scientific inputs, zero TEST-label access, and the exact clean-HEAD readiness handoff.",
+      "role": "Records the immutable Exp436 persistence failure, Exp437's implementation-complete governance and frozen preregistration/runbook, fresh Task 7 regression/hash/config/root evidence, zero TEST-label access, and the exact clean-HEAD readiness handoff.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -32,7 +32,8 @@
       "constraints": [
         "Must be updated when execution stops or phase changes",
         "Exp436 readiness completed and its official CPU run preserved 47 records before a canonical metadata-key ordering bug failed AllGestureWiimoteX_normal_1; that root, its readiness hash, one orphan record, and 47-record authority are immutable. Exp437 has completed implementation and frozen governance, starts from a new readiness-owned root, and remains readiness-pending; prediction has not started, TEST labels remain unopened, and PID is null.",
-        "Exp437 changes only execution identity, fixed roots, and order-independent canonical length-histogram persistence; candidate_alpha=0.01, strict three-channel consensus, candidate budget 100, CPU max(1, logical_cpus - 1) with expected 11 workers, zero prediction-label access, and all post-freeze evaluation gates remain unchanged."
+        "Exp437 changes only execution identity, fixed roots, and order-independent canonical length-histogram persistence; candidate_alpha=0.01, strict three-channel consensus, candidate budget 100, CPU max(1, logical_cpus - 1) with expected 11 workers, zero prediction-label access, and all post-freeze evaluation gates remain unchanged.",
+        "Task 7 handoff reviewed implementation commit d977dee1 with 299 shared-engine tests and 68 predecessor tests, zero failures/errors/skips, immutable Exp436 readiness hash/record proof, Exp437 root absence, and an exact two-field frozen-config diff; official readiness remains pending."
       ],
       "evidence": [
         {
@@ -64,12 +65,32 @@
           "symbol": "\"exact_next_command_if_interrupted\":"
         },
         {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"exp437_task7_handoff\": {"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"reviewed_implementation_commit\": \"d977dee17e5d870ff5f84078647fb93b5231a725d\""
+        },
+        {
           "path": "EXPERIMENT_CATALOG.json",
           "symbol": "\"id\": \"Exp437\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
           "symbol": "\"status\": \"implementation_complete_readiness_pending\""
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"reviewed_implementation_commit\": \"d977dee17e5d870ff5f84078647fb93b5231a725d\""
+        },
+        {
+          "path": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "# Exp437 Task 7 implementation report"
+        },
+        {
+          "path": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "## Immutable Exp436 failure proof"
         },
         {
           "path": "docs/superpowers/specs/2026-08-07-exp437-metadata-roundtrip-antigravity-design.md",

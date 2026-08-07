@@ -1,10 +1,10 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-07T09:14:58+09:00",
+  "updated_at": "2026-08-07T09:55:43+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "bd607309185d8a54c3681e55d4626afa551799f7",
+  "last_verified_commit": "d977dee17e5d870ff5f84078647fb93b5231a725d",
   "active_experiment": "Exp437",
   "active_phase": "implementation_complete_readiness_pending",
   "status": "in_progress",
@@ -17,7 +17,8 @@
     "scientific_base_preregistration": "docs/EXP436_PREREGISTRATION_antigravity_KO.md",
     "scientific_base_runbook": "docs/EXP436_RUNBOOK_antigravity_KO.md",
     "preregistration": "docs/EXP437_PREREGISTRATION_antigravity_KO.md",
-    "runbook": "docs/EXP437_RUNBOOK_antigravity_KO.md"
+    "runbook": "docs/EXP437_RUNBOOK_antigravity_KO.md",
+    "implementation_report": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md"
   },
   "frozen_inputs": {
     "database": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -153,6 +154,71 @@
     "output_created": false,
     "evaluation_created": false,
     "next_command": "python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py readiness"
+  },
+  "exp437_task7_handoff": {
+    "reviewed_implementation_commit": "d977dee17e5d870ff5f84078647fb93b5231a725d",
+    "full_exp436_shared_engine": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py' -v",
+      "tests": 299,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "status": "passed",
+      "duration_seconds": 122.88
+    },
+    "predecessor_boundary_regressions": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest experiments.exp435_train_only_consensus_recovery_antigravity.tests.test_checkpoint_antigravity experiments.exp435_train_only_consensus_recovery_antigravity.tests.test_progress_antigravity experiments.exp435_train_only_consensus_recovery_antigravity.tests.test_runtime_antigravity experiments.exp425_selective_recovery.tests.test_database -v",
+      "tests": 68,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "status": "passed",
+      "duration_seconds": 4.571
+    },
+    "immutable_exp436_failure_proof": {
+      "readiness_sha256": "5def8dbe785163dc69e80e0bb6a5a1cdba1d3663058f4d73625a6deda048c43a",
+      "record": "/Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806/checkpoint_antigravity/records_antigravity/1f10eac76bc530cbb48ab776cf8fe1817d08acab7ce4976ccf2c58d0d4c04af0.json",
+      "failed_dataset": "AllGestureWiimoteX_normal_1",
+      "record_bytes": 59498,
+      "record_bytes_unchanged": true,
+      "parser": "_result_from_payload",
+      "status": "passed"
+    },
+    "exp437_root_absent": true,
+    "wrapper_help": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py --help",
+      "commands": ["readiness", "new", "resume", "inspect", "evaluate"],
+      "status": "passed"
+    },
+    "forbidden_term_grep": {
+      "command": "git grep -nE 'test_label|groundtruth|anomaly_location|family.*test' -- experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py scratch/run_exp437_metadata_roundtrip_antigravity.py",
+      "matching_sources": 5,
+      "classification": "readiness schema counters and zero-valued delayed-evaluation guards only; no matching terms in the Exp437 wrapper",
+      "status": "passed"
+    },
+    "frozen_config_diff": {
+      "changed_fields": ["experiment_id", "run_identity"],
+      "exp436_experiment_id": "Exp436",
+      "exp437_experiment_id": "Exp437",
+      "exp436_run_identity": "exp436-missing-safe-strict-consensus-antigravity-20260806",
+      "exp437_run_identity": "exp437-metadata-roundtrip-antigravity-20260807"
+    },
+    "cpu_topology": {
+      "logical_cpus": 12,
+      "workers": 11,
+      "inner_threads": 1,
+      "rule": "max(1, logical_cpus - 1)"
+    },
+    "mlx_mps_readiness": {
+      "status": "pending",
+      "official_readiness": false,
+      "adoption": "not claimed",
+      "cpu_fallback_remains_canonical": true
+    },
+    "prediction_started": false,
+    "test_labels_opened": false,
+    "next_readiness_command": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py readiness",
+    "report": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md"
   },
   "failed_runs": {
     "exp435_official": {
