@@ -9,6 +9,12 @@ from experiments.exp439_scale_aware_reconstruction_repair_antigravity.readiness_
     ReadinessDependenciesAntigravity,
     _create_readiness_antigravity,
 )
+from experiments.exp439_scale_aware_reconstruction_repair_antigravity.predecessor_import_antigravity import (
+    EXP438_PREFIX_ROOT_ANTIGRAVITY,
+    validate_exp438_prefix_antigravity,
+)
+from experiments.exp403_408.artifact_io import canonical_json_bytes
+from hashlib import sha256
 
 
 _EXP437_PARENT = (
@@ -73,6 +79,75 @@ def _session_factory(commit):
 
 
 class Exp439ReadinessAntigravityTests(unittest.TestCase):
+    def test_full_readiness_binds_exact_exp438_prefix_before_parent_creation(self) -> None:
+        if not EXP438_PREFIX_ROOT_ANTIGRAVITY.is_dir():
+            self.skipTest("the immutable Exp438 predecessor root is unavailable")
+        imported = validate_exp438_prefix_antigravity(EXP438_PREFIX_ROOT_ANTIGRAVITY)
+
+        class FullContext:
+            datasets = imported.datasets
+            test_identity_manifest = {
+                dataset: ((0, 16),) for dataset in imported.datasets
+            }
+            code_commit = "a" * 40
+            database_sha256 = (
+                "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
+            )
+
+        class FullSession:
+            context = FullContext()
+            label_access_count = 0
+
+        @contextmanager
+        def full_session_factory(commit):
+            yield FullSession()
+
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            sources = {}
+            for name in (
+                "database",
+                "exp291_prediction",
+                "exp291_manifest",
+                "exp292_prediction",
+                "exp292_manifest",
+            ):
+                path = base / f"{name}_antigravity.bin"
+                path.write_bytes(name.encode())
+                sources[name] = path
+            parent = base / "run_parent_antigravity"
+            dependencies = ReadinessDependenciesAntigravity(
+                clean_head=lambda: "a" * 40,
+                sha256_file=lambda path: (
+                    "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
+                    if path == sources["database"]
+                    else "a" * 64
+                ),
+                exp437_terminal=lambda: _exp437_snapshot(terminal=True),
+                input_session_factory=full_session_factory,
+                assess_backends=lambda: (
+                    BackendDecision("cpu", None, (), "synthetic fallback"),
+                    {"cpu": {"version": "synthetic"}},
+                ),
+                focused_tests=lambda: {"returncode": 0},
+                exp438_prefix=lambda: imported,
+            )
+
+            payload = _create_readiness_antigravity(
+                run_parent=parent,
+                source_paths=sources,
+                dependencies=dependencies,
+                expected_datasets=1117,
+            )
+
+            self.assertEqual(payload["exp438_prefix_import"]["record_count"], 89)
+            self.assertEqual(
+                payload["exp438_prefix_import_sha256"],
+                sha256(
+                    canonical_json_bytes(imported.manifest_payload_antigravity())
+                ).hexdigest(),
+            )
+
     def test_readiness_owns_absent_parent_and_freezes_all_bindings(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)

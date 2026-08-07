@@ -12,12 +12,15 @@ from experiments.exp439_scale_aware_reconstruction_repair_antigravity.contracts_
     InstanceChannelEvidence,
     InstanceScoreEvidence,
 )
+from experiments.exp439_scale_aware_reconstruction_repair_antigravity.config_antigravity import (
+    FROZEN_CONFIG,
+)
 
 
 def _context() -> dict[str, object]:
     return {
-        "experiment_id": "Exp439",
-        "run_identity": "exp439-frequency-complexity-evidence-antigravity-20260807",
+        "experiment_id": FROZEN_CONFIG.experiment_id,
+        "run_identity": FROZEN_CONFIG.run_identity,
         "code_commit": "a" * 40,
         "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
         "datasets": ["A", "B"],

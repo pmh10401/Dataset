@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 from typing import Mapping
 from uuid import uuid4
 
@@ -28,6 +29,9 @@ _ROOT_FILES_ANTIGRAVITY = {
     "context_antigravity.json",
     "state_antigravity.json",
     "records_antigravity",
+}
+_IMPORTED_ROOT_FILES_ANTIGRAVITY = _ROOT_FILES_ANTIGRAVITY | {
+    "import_manifest_antigravity.json",
 }
 
 
@@ -309,6 +313,101 @@ class Exp439CheckpointStore:
         return cls(root, payload, state, mutable=True)
 
     @classmethod
+    def create_with_exp438_prefix_antigravity(
+        cls,
+        root: Path,
+        context: object,
+        prefix: object,
+    ) -> "Exp439CheckpointStore":
+        """Publish a complete verified prefix atomically or leave no final root."""
+        from .predecessor_import_antigravity import (
+            Exp438PrefixImportAntigravity,
+            validate_exp438_prefix_antigravity,
+        )
+
+        root = Path(root)
+        if root.exists() or root.is_symlink():
+            raise ValueError("Exp439 checkpoint root already exists")
+        if type(prefix) is not Exp438PrefixImportAntigravity:
+            raise ValueError("Exp438 prefix import evidence is invalid")
+        verified = validate_exp438_prefix_antigravity(prefix.source_root)
+        source_manifest_raw = canonical_json_bytes(
+            verified.manifest_payload_antigravity()
+        )
+        if canonical_json_bytes(prefix.manifest_payload_antigravity()) != source_manifest_raw:
+            raise ValueError("Exp438 prefix import evidence changed")
+        manifest = verified.manifest_payload_antigravity()
+        manifest_records = manifest["records"]
+        if not isinstance(manifest_records, list) or len(manifest_records) != len(
+            verified.records
+        ):
+            raise ValueError("Exp438 import manifest records are invalid")
+        expected_destination_sha256: list[str] = []
+        for sequence, (item, record) in enumerate(
+            zip(manifest_records, verified.records, strict=True)
+        ):
+            if not isinstance(item, dict):
+                raise ValueError("Exp438 import manifest record is invalid")
+            destination_raw = canonical_json_bytes(
+                _result_payload_antigravity(
+                    record.result,
+                    sequence,
+                    record.dataset_metadata,
+                )
+            )
+            destination_digest = _digest_antigravity(destination_raw)
+            item["destination_sha256"] = destination_digest
+            expected_destination_sha256.append(destination_digest)
+        reject_label_like_fields_antigravity(manifest)
+        manifest_raw = canonical_json_bytes(manifest)
+        import_context = dict(context) if isinstance(context, Mapping) else context
+        if not isinstance(import_context, dict):
+            raise ValueError("Exp439 import context is invalid")
+        source_manifest_sha256 = _digest_antigravity(source_manifest_raw)
+        if import_context.get(
+            "exp438_prefix_import_sha256",
+            source_manifest_sha256,
+        ) != source_manifest_sha256:
+            raise ValueError("Exp438 prefix hash does not match Exp439 context")
+        import_context["exp438_prefix_import_sha256"] = source_manifest_sha256
+        import_context["exp438_import_manifest_sha256"] = _digest_antigravity(
+            manifest_raw
+        )
+        staging = root.with_name(
+            f".antigravity_{root.name}_{uuid4().hex}.tmpdir"
+        )
+        if staging.exists() or staging.is_symlink():
+            raise ValueError("Exp439 checkpoint staging root already exists")
+        store: Exp439CheckpointStore | None = None
+        try:
+            store = cls.create(staging, import_context)
+            for record, expected_digest in zip(
+                verified.records,
+                expected_destination_sha256,
+                strict=True,
+            ):
+                actual_digest = store.commit(
+                    record.result,
+                    dataset_metadata=record.dataset_metadata,
+                )
+                if actual_digest != expected_digest:
+                    raise ValueError("Exp439 imported record digest changed")
+            _write_new_antigravity(
+                staging / "import_manifest_antigravity.json",
+                manifest_raw,
+            )
+            if root.exists() or root.is_symlink():
+                raise ValueError("Exp439 checkpoint root appeared during import")
+            os.rename(staging, root)
+            _fsync_directory_antigravity(root.parent)
+            store.root = root
+            return store
+        except BaseException:
+            if staging.exists() and not staging.is_symlink():
+                shutil.rmtree(staging)
+            raise
+
+    @classmethod
     def inspect_existing(cls, root: Path) -> "Exp439CheckpointStore":
         """Open an Exp439 checkpoint read-only using only its own bound context."""
         root = Path(root)
@@ -327,18 +426,90 @@ class Exp439CheckpointStore:
             names = {path.name for path in root.iterdir()}
         except OSError as error:
             raise ValueError("Exp439 checkpoint root is invalid") from error
-        if names != _ROOT_FILES_ANTIGRAVITY or not (root / "records_antigravity").is_dir():
+        if names not in (
+            _ROOT_FILES_ANTIGRAVITY,
+            _IMPORTED_ROOT_FILES_ANTIGRAVITY,
+        ) or not (root / "records_antigravity").is_dir():
             raise ValueError("Exp439 checkpoint inventory is invalid")
         stored = _canonical_object_antigravity(root / "context_antigravity.json", "Exp439 context")
         if stored != supplied:
             raise ValueError("Exp439 context does not match")
         state = _canonical_object_antigravity(root / "state_antigravity.json", "Exp439 state")
         cls._validate_state_antigravity(root, stored, state)
+        if names == _IMPORTED_ROOT_FILES_ANTIGRAVITY:
+            cls._validate_import_manifest_antigravity(root, stored, state)
         if mutable and state["status"] == "failed":
             raise ValueError("failed checkpoint is immutable")
         if mutable and state["status"] == "complete":
             raise ValueError("complete checkpoint is immutable")
         return cls(root, stored, state, mutable=mutable)
+
+    @staticmethod
+    def _validate_import_manifest_antigravity(
+        root: Path,
+        context: Mapping[str, object],
+        state: Mapping[str, object],
+    ) -> None:
+        manifest = _canonical_object_antigravity(
+            root / "import_manifest_antigravity.json",
+            "Exp439 import manifest",
+        )
+        required = {
+            "schema",
+            "predecessor_experiment_id",
+            "predecessor_run_identity",
+            "predecessor_root",
+            "reviewed_commit",
+            "database_sha256",
+            "readiness_sha256",
+            "context_sha256",
+            "state_sha256",
+            "progress_sha256",
+            "record_set_sha256",
+            "record_count",
+            "last_dataset",
+            "next_dataset",
+            "prediction_label_access_count",
+            "records",
+        }
+        records = manifest.get("records")
+        committed = state.get("committed")
+        if (
+            set(manifest) != required
+            or manifest.get("schema") != "exp439.exp438-prefix-import.v1"
+            or manifest.get("predecessor_experiment_id") != "Exp438"
+            or manifest.get("database_sha256") != FROZEN_CONFIG.database_sha256
+            or manifest.get("record_count") != 89
+            or manifest.get("prediction_label_access_count") != 0
+            or not isinstance(records, list)
+            or not isinstance(committed, list)
+            or len(records) != 89
+            or len(committed) < 89
+            or context.get("exp438_import_manifest_sha256")
+            != _digest_antigravity(canonical_json_bytes(manifest))
+        ):
+            raise ValueError("Exp439 import manifest is invalid")
+        reject_label_like_fields_antigravity(manifest)
+        for sequence, (record, destination) in enumerate(
+            zip(records, committed[:89], strict=True)
+        ):
+            if (
+                not isinstance(record, Mapping)
+                or set(record)
+                != {
+                    "sequence_index",
+                    "dataset",
+                    "source_path",
+                    "source_sha256",
+                    "destination_sha256",
+                }
+                or record.get("sequence_index") != sequence
+                or record.get("dataset") != destination.get("dataset")
+                or record.get("destination_sha256") != destination.get("sha256")
+                or type(record.get("source_path")) is not str
+                or _SHA256_ANTIGRAVITY.fullmatch(str(record.get("source_sha256"))) is None
+            ):
+                raise ValueError("Exp439 import manifest record is invalid")
 
     @staticmethod
     def _validate_state_antigravity(
@@ -408,6 +579,10 @@ class Exp439CheckpointStore:
     @property
     def status(self) -> str:
         return str(self._state["status"])
+
+    @property
+    def imported_dataset_count(self) -> int:
+        return 89 if (self.root / "import_manifest_antigravity.json").is_file() else 0
 
     @property
     def context_payload(self) -> dict[str, object]:

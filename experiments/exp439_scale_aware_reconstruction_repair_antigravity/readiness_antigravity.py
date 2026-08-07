@@ -32,6 +32,10 @@ from .predecessor_antigravity import (
     classify_exp437_snapshot_antigravity,
     read_exp437_snapshot_antigravity,
 )
+from .predecessor_import_antigravity import (
+    Exp438PrefixImportAntigravity,
+    validate_exp438_prefix_antigravity,
+)
 from .scoring_antigravity import score_channel_cpu_antigravity
 
 
@@ -51,6 +55,7 @@ class ReadinessDependenciesAntigravity:
     input_session_factory: Callable[[str], object]
     assess_backends: Callable[[], tuple[BackendDecision, Mapping[str, object]]]
     focused_tests: Callable[[], Mapping[str, object]]
+    exp438_prefix: Callable[[], object] = validate_exp438_prefix_antigravity
 
     def __post_init__(self) -> None:
         if any(not callable(getattr(self, name)) for name in self.__dataclass_fields__):
@@ -100,6 +105,17 @@ def _create_readiness_antigravity(
         predecessor_mode = classify_exp437_snapshot_antigravity(predecessor)
     except ValueError as error:
         raise ValueError("Exp437 execution is not safe for Exp439 readiness") from error
+    prefix: Exp438PrefixImportAntigravity | None = None
+    prefix_manifest: dict[str, object] | None = None
+    if expected_datasets == FROZEN_CONFIG.dataset_count:
+        candidate = dependencies.exp438_prefix()
+        if (
+            type(candidate) is not Exp438PrefixImportAntigravity
+            or candidate.prediction_label_access_count != 0
+        ):
+            raise ValueError("Exp438 prefix is not safe for Exp439 readiness")
+        prefix = candidate
+        prefix_manifest = prefix.manifest_payload_antigravity()
     hashes: dict[str, str] = {}
     for name in _SOURCE_NAMES_ANTIGRAVITY:
         path = Path(source_paths[name])
@@ -132,6 +148,8 @@ def _create_readiness_antigravity(
             dataset: [[int(index), int(length)] for index, length in manifest[dataset]]
             for dataset in datasets
         }
+    if prefix is not None and prefix.datasets != datasets:
+        raise ValueError("Exp438 prefix dataset order does not match Exp439 readiness")
     decision, provenance_raw = dependencies.assess_backends()
     if type(decision) is not BackendDecision or not isinstance(provenance_raw, Mapping):
         raise ValueError("Exp439 readiness backend assessment is invalid")
@@ -163,6 +181,24 @@ def _create_readiness_antigravity(
         "prediction_label_access_count": 0,
         "run_parent": str(run_parent.resolve()),
     }
+    if prefix is not None and prefix_manifest is not None:
+        payload["exp438_prefix_import"] = {
+            "predecessor_root": str(prefix.source_root),
+            "reviewed_commit": prefix.reviewed_commit,
+            "database_sha256": prefix.database_sha256,
+            "readiness_sha256": prefix.readiness_sha256,
+            "context_sha256": prefix.context_sha256,
+            "state_sha256": prefix.state_sha256,
+            "progress_sha256": prefix.progress_sha256,
+            "record_set_sha256": prefix.record_set_sha256,
+            "record_count": len(prefix.records),
+            "last_dataset": prefix.records[-1].dataset,
+            "next_dataset": prefix.datasets[len(prefix.records)],
+            "prediction_label_access_count": prefix.prediction_label_access_count,
+        }
+        payload["exp438_prefix_import_sha256"] = _digest_value_antigravity(
+            prefix_manifest
+        )
     run_parent.mkdir(mode=0o700)
     try:
         _write_create_only_antigravity(
@@ -347,6 +383,7 @@ def create_readiness_antigravity() -> dict[str, object]:
         input_session_factory=lambda commit: open_exp439_input_session(verified_code_commit=commit),
         assess_backends=_assess_backends_antigravity,
         focused_tests=_focused_tests_antigravity,
+        exp438_prefix=validate_exp438_prefix_antigravity,
     )
     return _create_readiness_antigravity(
         run_parent=RUN_PARENT_ANTIGRAVITY,

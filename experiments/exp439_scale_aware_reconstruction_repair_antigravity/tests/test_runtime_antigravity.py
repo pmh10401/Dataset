@@ -20,6 +20,10 @@ from experiments.exp439_scale_aware_reconstruction_repair_antigravity.contracts_
 from experiments.exp439_scale_aware_reconstruction_repair_antigravity.inputs_antigravity import (
     Exp439RawDataset,
 )
+from experiments.exp439_scale_aware_reconstruction_repair_antigravity.predecessor_import_antigravity import (
+    EXP438_PREFIX_ROOT_ANTIGRAVITY,
+    validate_exp438_prefix_antigravity,
+)
 from experiments.exp439_scale_aware_reconstruction_repair_antigravity.runtime_antigravity import (
     CpuDatasetTaskAntigravity,
     LaneMembershipSnapshotAntigravity,
@@ -123,6 +127,59 @@ def _thread_executor(max_workers: int, initializer):
 
 
 class Exp439RuntimeAntigravityTests(unittest.TestCase):
+    def test_new_imports_89_and_first_recompute_is_beetlefly_normal_2(self) -> None:
+        if not EXP438_PREFIX_ROOT_ANTIGRAVITY.is_dir():
+            self.skipTest("the immutable Exp438 predecessor root is unavailable")
+        imported = validate_exp438_prefix_antigravity(EXP438_PREFIX_ROOT_ANTIGRAVITY)
+        seen: list[str] = []
+
+        def stop_at_first_recompute(task):
+            seen.append(task.dataset)
+            raise KeyboardInterrupt("stop after proving the first recompute dataset")
+
+        decision = BackendDecision("cpu", None, (), "synthetic CPU fixture")
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            output = base / "output_antigravity"
+            checkpoint = base / "checkpoint_antigravity"
+            with self.assertRaises(KeyboardInterrupt):
+                _run_antigravity(
+                    mode="new",
+                    output_root=output,
+                    checkpoint_root=checkpoint,
+                    reviewed_commit="a" * 40,
+                    decision=decision,
+                    input_session_factory=lambda: _BoundSession(imported.datasets),
+                    workers=1,
+                    executor_factory=_thread_executor,
+                    score_task=stop_at_first_recompute,
+                    predecessor_import_factory=lambda: imported,
+                )
+            self.assertEqual(seen, ["BeetleFly_normal_2"])
+            progress = json.loads((output / "progress_antigravity.json").read_bytes())
+            self.assertEqual(progress["state"], "interrupted")
+            self.assertEqual(progress["completed"], 89)
+            self.assertEqual(progress["import_count"], 89)
+            self.assertEqual(progress["recompute_count"], 0)
+            self.assertEqual(progress["checkpoint"], "BeetleFly_normal_1")
+            self.assertTrue((checkpoint / "import_manifest_antigravity.json").is_file())
+
+            seen.clear()
+            with self.assertRaises(KeyboardInterrupt):
+                _run_antigravity(
+                    mode="resume",
+                    output_root=output,
+                    checkpoint_root=checkpoint,
+                    reviewed_commit="a" * 40,
+                    decision=decision,
+                    input_session_factory=lambda: _BoundSession(imported.datasets),
+                    workers=1,
+                    executor_factory=_thread_executor,
+                    score_task=stop_at_first_recompute,
+                    predecessor_import_factory=lambda: imported,
+                )
+            self.assertEqual(seen, ["BeetleFly_normal_2"])
+
     def test_runtime_accepts_json_roundtripped_readiness_backend_decision(self) -> None:
         datasets = ("A",)
         decision = BackendDecision("cpu", None, (), "synthetic CPU fixture")

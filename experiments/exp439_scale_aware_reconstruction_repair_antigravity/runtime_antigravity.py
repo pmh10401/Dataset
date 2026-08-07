@@ -50,6 +50,10 @@ from .scoring_antigravity import (
     score_test_row_cpu_antigravity,
 )
 from .progress_antigravity import ProgressWriterAntigravity
+from .predecessor_import_antigravity import (
+    Exp438PrefixImportAntigravity,
+    validate_exp438_prefix_antigravity,
+)
 
 
 def worker_count_antigravity(logical_cpus: int | None = None) -> int:
@@ -574,7 +578,7 @@ def _counts_antigravity(
     return {
         "completed": len(results),
         "import_count": imported,
-        "recompute_count": 0,
+        "recompute_count": len(results) - imported,
         "success_count": sum(bool(result.evidence) for result in results),
         "abstention_count": sum(not result.evidence for result in results),
         "error_count": 0,
@@ -587,7 +591,10 @@ def _summary_antigravity(
     store: Exp439CheckpointStore, decision: BackendDecision
 ) -> Exp439RunSummary:
     results = store.results()
-    counts = _counts_antigravity(results, imported=len(results))
+    counts = _counts_antigravity(
+        results,
+        imported=store.imported_dataset_count,
+    )
     return Exp439RunSummary(
         total_datasets=len(store.context_payload["datasets"]),
         completed_datasets=len(results),
@@ -629,6 +636,7 @@ def _run_antigravity(
     score_task: Callable[[CpuDatasetTaskAntigravity], Exp439DatasetResult] | None = None,
     accelerator_engine_factory: Callable[[str], object] = _create_accelerator_engine_antigravity,
     readiness_payload: Mapping[str, object] | None = None,
+    predecessor_import_factory: Callable[[], object] = validate_exp438_prefix_antigravity,
 ) -> Exp439RunSummary:
     """Execute only a verified new or interrupted-resume Exp439 root."""
     if mode not in {"new", "resume"} or type(decision) is not BackendDecision:
@@ -649,7 +657,27 @@ def _run_antigravity(
         if mode == "new":
             if output_root.exists() or checkpoint_root.exists():
                 raise ValueError("Exp439 new roots must be absent")
-            store = Exp439CheckpointStore.create(checkpoint_root, context)
+            if len(context["datasets"]) == FROZEN_CONFIG.dataset_count:
+                prefix = predecessor_import_factory()
+                if (
+                    type(prefix) is not Exp438PrefixImportAntigravity
+                    or prefix.datasets != tuple(context["datasets"])
+                    or prefix.prediction_label_access_count != 0
+                ):
+                    raise ValueError("Exp438 prefix does not match Exp439 runtime")
+                if readiness_payload is not None and readiness_payload.get(
+                    "exp438_prefix_import_sha256"
+                ) != sha256(
+                    canonical_json_bytes(prefix.manifest_payload_antigravity())
+                ).hexdigest():
+                    raise ValueError("Exp438 prefix does not match Exp439 readiness")
+                store = Exp439CheckpointStore.create_with_exp438_prefix_antigravity(
+                    checkpoint_root,
+                    context,
+                    prefix,
+                )
+            else:
+                store = Exp439CheckpointStore.create(checkpoint_root, context)
             writer = ProgressWriterAntigravity.create(
                 output_root,
                 store.context_hash,
@@ -658,6 +686,21 @@ def _run_antigravity(
                 pid=os.getpid(),
             )
         else:
+            inspected = Exp439CheckpointStore.inspect_existing(checkpoint_root)
+            stored_context = inspected.context_payload
+            for name in (
+                "exp438_prefix_import_sha256",
+                "exp438_import_manifest_sha256",
+            ):
+                if name in stored_context:
+                    context[name] = stored_context[name]
+            if (
+                readiness_payload is not None
+                and "exp438_prefix_import_sha256" in stored_context
+                and readiness_payload.get("exp438_prefix_import_sha256")
+                != stored_context["exp438_prefix_import_sha256"]
+            ):
+                raise ValueError("Exp439 resume prefix does not match readiness")
             store = Exp439CheckpointStore.open_existing(
                 checkpoint_root, context, mutable=True
             )
@@ -669,7 +712,10 @@ def _run_antigravity(
             if writer.snapshot["state"] != "interrupted":
                 raise ValueError("Exp439 resume requires interrupted progress")
         existing = store.results()
-        counters = _counts_antigravity(existing, imported=len(existing))
+        counters = _counts_antigravity(
+            existing,
+            imported=store.imported_dataset_count,
+        )
         datasets = tuple(context["datasets"])
         missing = datasets[len(existing):]
 
@@ -720,6 +766,20 @@ def _run_antigravity(
                 in_flight=(),
             )
 
+        if mode == "new" and store.imported_dataset_count:
+            writer.append_event(
+                {
+                    "event": "prefix_imported",
+                    "import_count": store.imported_dataset_count,
+                    "checkpoint": counters["checkpoint"],
+                }
+            )
+        progress(
+            stage="idle",
+            current_dataset=None,
+            dataset_metadata=None,
+            in_flight=(),
+        )
         writer.start_heartbeat(interval_seconds=120.0)
         try:
             if decision.selected_backend == "cpu":

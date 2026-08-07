@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T09:37:12Z",
-  "generated_from_commit": "b4a88ea9f25474cbc75676eef5072ce73c104075",
+  "generated_at": "2026-08-07T09:51:47Z",
+  "generated_from_commit": "a783cd6ae33ac4a08e59d0a4cd7dfa5269720e98",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2363,7 +2363,9 @@
         "preflight_exp437_recovery_antigravity",
         "recover_exp437_checkpoint_antigravity",
         "experiments.exp439_scale_aware_reconstruction_repair_antigravity.config_antigravity.FROZEN_CONFIG",
-        "experiments.exp439_scale_aware_reconstruction_repair_antigravity.cli_antigravity.main_antigravity"
+        "experiments.exp439_scale_aware_reconstruction_repair_antigravity.cli_antigravity.main_antigravity",
+        "experiments.exp439_scale_aware_reconstruction_repair_antigravity.predecessor_import_antigravity.validate_exp438_prefix_antigravity",
+        "experiments.exp439_scale_aware_reconstruction_repair_antigravity.checkpoint_antigravity.Exp439CheckpointStore.create_with_exp438_prefix_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2375,7 +2377,10 @@
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_predecessor_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_recover_exp437_checkpoint_antigravity.py",
         "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_config_antigravity.py",
-        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_features_antigravity.py"
+        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_features_antigravity.py",
+        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_predecessor_import_antigravity.py",
+        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_readiness_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2383,7 +2388,8 @@
         "CPU uses max(1, logical CPUs - 1) workers with one numerical thread each; adopted MLX/MPS/Numba exact stages run serially after parity and speed gates.",
         "Results commit in frozen dataset order; failed roots are immutable and interrupted roots alone may resume.",
         "Persisted backend decisions use canonical JSON list semantics so readiness replay and runtime context compare the same evidence shape.",
-        "Exp439 changes only the reconstruction validation guard to max(1e-5, one float32 ULP at component peak); FFT bins, casts, returned components, features, scores, thresholds, and label boundary remain unchanged."
+        "Exp439 changes only the reconstruction validation guard to max(1e-5, one float32 ULP at component peak); FFT bins, casts, returned components, features, scores, thresholds, and label boundary remain unchanged.",
+        "Exp439 imports exactly 89 immutable Exp438 records only after readiness, context, state, progress, record-set, dataset order, and every source-record SHA256 validate; the checkpoint appears atomically and recomputation starts at BeetleFly_normal_2."
       ],
       "evidence": [
         {
@@ -2453,6 +2459,18 @@
         {
           "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/features_antigravity.py",
           "symbol": "def reconstruction_tolerance_antigravity("
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/predecessor_import_antigravity.py",
+          "symbol": "def validate_exp438_prefix_antigravity("
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/checkpoint_antigravity.py",
+          "symbol": "def create_with_exp438_prefix_antigravity("
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/runtime_antigravity.py",
+          "symbol": "\"event\": \"prefix_imported\""
         }
       ]
     },
@@ -3286,8 +3304,8 @@
     },
     {
       "id": "exp438_cpu_new_resume_flow",
-      "label": "Exp438 ordered label-free CPU new/resume",
-      "trigger": "Run new from absent roots or resume an interrupted Exp438 prefix after readiness chooses CPU.",
+      "label": "Exp438 / Exp439 ordered label-free CPU new/resume",
+      "trigger": "Run Exp438 from absent roots or resume its interrupted prefix; Exp439 first verifies and atomically imports the exact failed Exp438 89-record prefix, then starts CPU recomputation at BeetleFly_normal_2.",
       "steps": [
         "exp438_frequency_runtime",
         "exp417_inputs",
@@ -3295,7 +3313,7 @@
         "sqlite_store",
         "artifact_utils"
       ],
-      "outcome": "The parent reads frozen lanes and value-only TRAIN/TEST rows, up to max-minus-one workers compute datasets, and the parent commits canonical records in sorted order while writing heartbeat, metadata, throughput, ETA, and candidate counts."
+      "outcome": "The parent reads frozen lanes and value-only TRAIN/TEST rows, uses max-minus-one CPU workers, and commits canonical results in sorted order. Exp439 binds the immutable Exp438 readiness/context/state/progress and every record SHA256, publishes all 89 imported records atomically with a source/destination manifest, reports import and recompute counts separately, and continues at dataset position 89 without opening TEST labels."
     },
     {
       "id": "exp438_publication_flow",
