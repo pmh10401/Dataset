@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T05:21:50Z",
-  "generated_from_commit": "0e4f1eb1970b6d1f7ad0a535a026cac93df24af6",
+  "generated_at": "2026-08-07T06:35:14Z",
+  "generated_from_commit": "8590a8a110e8c138def883da5877bebaf9a88e37",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2349,7 +2349,8 @@
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
         "High-frequency, low-frequency, and amplitude-complexity channels stay separate; no fusion or post-TEST retuning.",
         "CPU uses max(1, logical CPUs - 1) workers with one numerical thread each; adopted MLX/MPS/Numba exact stages run serially after parity and speed gates.",
-        "Results commit in frozen dataset order; failed roots are immutable and interrupted roots alone may resume."
+        "Results commit in frozen dataset order; failed roots are immutable and interrupted roots alone may resume.",
+        "Persisted backend decisions use canonical JSON list semantics so readiness replay and runtime context compare the same evidence shape."
       ],
       "evidence": [
         {
@@ -2399,6 +2400,10 @@
         {
           "path": "operational/recover_exp437_checkpoint_antigravity.py",
           "symbol": "def preflight_exp437_recovery_antigravity"
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/runtime_antigravity.py",
+          "symbol": "def _decision_payload_antigravity("
         }
       ]
     },

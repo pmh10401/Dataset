@@ -451,7 +451,12 @@ def _lane_snapshot_antigravity(
 def _decision_payload_antigravity(decision: BackendDecision) -> dict[str, object]:
     if type(decision) is not BackendDecision:
         raise ValueError("Exp438 backend decision is invalid")
-    return asdict(decision)
+    return {
+        "selected_backend": decision.selected_backend,
+        "selected_batch_size": decision.selected_batch_size,
+        "evidence": [asdict(item) for item in decision.evidence],
+        "fallback_reason": decision.fallback_reason,
+    }
 
 
 def _decision_from_payload_antigravity(payload: object) -> BackendDecision:

@@ -23,6 +23,7 @@ from experiments.exp438_frequency_complexity_evidence_antigravity.inputs_antigra
 from experiments.exp438_frequency_complexity_evidence_antigravity.runtime_antigravity import (
     CpuDatasetTaskAntigravity,
     LaneMembershipSnapshotAntigravity,
+    _build_context_antigravity,
     _score_accelerated_task_antigravity,
     _run_antigravity,
     inspect_exp438_antigravity,
@@ -122,6 +123,37 @@ def _thread_executor(max_workers: int, initializer):
 
 
 class Exp438RuntimeAntigravityTests(unittest.TestCase):
+    def test_runtime_accepts_json_roundtripped_readiness_backend_decision(self) -> None:
+        datasets = ("A",)
+        decision = BackendDecision("cpu", None, (), "synthetic CPU fixture")
+        readiness = {
+            "schema": "exp438.readiness.v1",
+            "reviewed_commit": "a" * 40,
+            "database_sha256": (
+                "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
+            ),
+            "datasets": ["A"],
+            "backend_decision": {
+                "selected_backend": "cpu",
+                "selected_batch_size": None,
+                "evidence": [],
+                "fallback_reason": "synthetic CPU fixture",
+            },
+            "backend_provenance": {},
+            "source_sha256": {},
+        }
+
+        context, _ = _build_context_antigravity(
+            session=_BoundSession(datasets),
+            reviewed_commit="a" * 40,
+            decision=decision,
+            output_root=Path("/tmp/output_antigravity"),
+            checkpoint_root=Path("/tmp/checkpoint_antigravity"),
+            readiness_payload=readiness,
+        )
+
+        self.assertEqual(context["backend_decision"], readiness["backend_decision"])
+
     def test_official_worker_count_and_inner_threads_are_max_minus_one(self) -> None:
         self.assertEqual(worker_count_antigravity(12), 11)
         self.assertEqual(worker_count_antigravity(1), 1)
