@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T16:54:55Z",
-  "generated_from_commit": "9017faa87338914388e2bffdd14fca17ac3cf454",
+  "generated_at": "2026-08-07T17:06:18Z",
+  "generated_from_commit": "d0f0294eb3b1def480c12ad33a6f4dde020817b0",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1819,7 +1819,7 @@
       "boundary": "Exp436 missing-safe strict consensus",
       "layer": 3,
       "path": "experiments/exp436_missing_safe_strict_consensus_antigravity",
-      "role": "Owns the implemented Exp436 missing-safe values-only scoring, Task8 canonical readiness/publication and post-freeze evaluation firewall, and the profile-aware parent-owned checkpoint/runtime core behind the fixed five-command wrappers. Exp436 remains the default profile; Exp437 binds its own execution identity, fixed sibling roots, outside-CWD-safe wrapper, and lexical length-histogram transport repair while reusing the shared scientific engine and transport schemas. Official Exp436 readiness, prediction, and evaluation remain immutable historical evidence; Exp437 implementation and governance are complete but readiness, prediction, and evaluation are pending. Profile-aware context, readiness, checkpoint, runtime, publication, and evaluation calls reject cross-profile artifacts before recovery, mutation, or TEST-label access; readiness stages its sole canonical artifact while the selected RUN_PARENT is absent; only interrupted resume opens the input session; inspect replays frozen publication bytes read-only; evaluation never changes prediction bytes and may only replay a bound existing evaluation.",
+      "role": "Owns the implemented Exp436 missing-safe values-only scoring, Task8 canonical readiness/publication and post-freeze evaluation firewall, and the profile-aware parent-owned checkpoint/runtime core behind the fixed five-command wrappers. Exp436 remains the default profile; Exp437 binds its own execution identity, fixed sibling roots, outside-CWD-safe wrapper, and lexical length-histogram transport repair while reusing the shared scientific engine and transport schemas. Official Exp436 readiness, prediction, and evaluation remain immutable historical evidence; Exp437 official execution and review-only publication are complete; its frozen prediction is reproducibly inspectable, and the reporting boundary restores recursively frozen checkpoint JSON arrays without changing scientific bytes. Profile-aware context, readiness, checkpoint, runtime, publication, and evaluation calls reject cross-profile artifacts before recovery, mutation, or TEST-label access; readiness stages its sole canonical artifact while the selected RUN_PARENT is absent; only interrupted resume opens the input session; inspect replays frozen publication bytes read-only; evaluation never changes prediction bytes and may only replay a bound existing evaluation.",
       "entrypoints": [
         "Exp436FrozenConfig",
         "FROZEN_CONFIG",
@@ -1874,6 +1874,7 @@
         "inspect_exp436",
         "Exp436RunContext",
         "publish_exp436",
+        "_canonical_json_surface_antigravity",
         "inspect_publication",
         "evaluate_exp436",
         "decide_exp436_success",
@@ -1909,7 +1910,7 @@
         "Backend protocol is paired-synchronized-v1: timed CPU/device callables contain only their scalar score suites; candidate/JSON/hash work is outside timing, every warmup/timed device output is aggregated into parity/error gates, invalid output preserves only prior fully validated pairs, and nonfinite completed output canonically takes the nonfinite_output reason before all other failed gates; fixtures, engines, and dispatch require exactly frozen k=3 with at least three references; unavailable backends have empty batches/no invented timing or selection, each available backend retains one common input/output fixture digest pair, two available backends must match those pairs before selection, available MLX/MPS evidence requires backend-specific non-CPU accelerator provenance, MLX requires an explicit GPU stream, exact-device synchronization, and installed mlx-metal provenance, and dispatch repeats device validation",
         "Exp436 scoring imports only local config, contracts, and features; it injects only dense scoring backends and contains no label, evaluation, metric, or database route",
         "Checkpoint is the sole ordered-prefix authority; checkpoint record -> completion event -> progress snapshot. Phase B progress owns exactly progress JSON, event JSONL, parent log, and PID JSON under one O_DIRECTORY|O_NOFOLLOW directory flock, validates canonical hash-chain/schema/binding/metadata/PID state read-only, and reconciles only an authoritative ordered checkpoint tail. Failed roots are non-resumable; complete/inspect read-only routes bind stored context to readiness before any external resource, and no Exp435 record/runtime import is permitted. Inspection first validates every checkpoint authority with lstat/O_NOFOLLOW/fstat while one shared root flock is held; only one exact canonical record-set temp may equal the current set or the valid next intent/record prospective set. Mutable checkpoint recovery uses one exclusive root flock across full scan, recognized repair/fsync, and pristine rescan; contexts and inspections are deeply immutable. Every profile-aware context/store/readiness/runtime entrypoint validates the selected allowlisted profile, carries its projected frozen config and identity through nested parsers/open/create/recovery calls, and rejects cross-profile artifacts before checkpoint mutation.",
-        "Task8 completed the readiness/publication/evaluation firewall. Official Exp436 readiness selected CPU/11 workers; prediction then failed immutably after 47 committed records because canonical JSON key order conflicted with numeric histogram insertion-order validation. Exp437's execution profile, canonical metadata persistence repair, profile-bound context/checkpoint/runtime core, fixed wrapper, preregistration, and runbook are implemented and frozen; official readiness is pending, prediction has not started, and TEST labels remain unopened.",
+        "Task8 completed the readiness/publication/evaluation firewall. Official Exp436 readiness selected CPU/11 workers; prediction then failed immutably after 47 committed records because canonical JSON key order conflicted with numeric histogram insertion-order validation. Exp437's official execution and review-only publication are complete. Reporting recursively restores frozen tuple/list metadata to the canonical JSON surface before strict BackendDecision reconstruction; derived-field tampering remains rejected and the frozen prediction bytes remain unchanged.",
         "Publication inspection has no public expectation override and replays checkpoint/runtime source authorities before RENAME_EXCL; progress replay validates strict runtime bytes in memory and never creates a sibling copy. Evaluator uses the publication reviewed_commit and reviewed_commit_sha256 before labels, revalidates the full source before staging and before rename, and existing evaluation replay recomputes its 1,117-row frozen 20,000-repetition bootstrap while binding publication summaries, candidate accounting, reviewed publication, and frozen database.",
         "Publication and evaluation APIs accept only a keyword-only selected profile; store/profile/context identity and profile-specific frozen-config hashes must match before publication replay or evaluation, and profile/path mismatches fail before TEST labels or the verified SQLite label reader.",
         "Publication recomputes the canonical checkpoint context fingerprint from the supplied store context and rejects stale or mismatched fingerprint authorities before runtime replay, manifest construction, or publication writes.",
@@ -2378,6 +2379,14 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py",
           "symbol": "def test_exp437_public_resume_rejects_checkpoint_complete_before_prediction_or_publication"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "def _canonical_json_surface_antigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_backend_context_accepts_recursively_frozen_json_arrays("
         }
       ]
     },
