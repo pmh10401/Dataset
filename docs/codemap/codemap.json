@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T23:59:12Z",
-  "generated_from_commit": "d106438e2f3f8f3606467a89ffc444dd7b0d1934",
+  "generated_at": "2026-08-07T00:05:29Z",
+  "generated_from_commit": "d28c1d31fd968563039c3cc1fdf6b2f628c5ecd8",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2207,6 +2207,10 @@
         {
           "path": "scratch/run_exp437_metadata_roundtrip_antigravity.py",
           "symbol": "from experiments.exp436_missing_safe_strict_consensus_antigravity.cli_antigravity import"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "validate_frozen_config_for_profile_antigravity(config, selected)"
         }
       ]
     }

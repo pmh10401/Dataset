@@ -31,6 +31,7 @@ from .execution_profile_antigravity import (
     EXP436_PROFILE,
     ExecutionProfileAntigravity,
     frozen_config_for_profile_antigravity,
+    validate_frozen_config_for_profile_antigravity,
     validated_profile_antigravity,
 )
 
@@ -315,7 +316,11 @@ def _production_readiness(
     config = frozen_config_for_profile_antigravity(selected)
     if any(path.exists() or path.is_symlink() for path in (_run_parent, output, checkpoint, evaluation, readiness_path)):
         raise ValueError("readiness requires every fixed root and parent to be absent")
-    config.validate(); head = _clean_head()
+    # Validate the shared scientific values against the immutable Exp436 base,
+    # then validate the selected profile's two projected identity fields.
+    FROZEN_CONFIG.validate()
+    validate_frozen_config_for_profile_antigravity(config, selected)
+    head = _clean_head()
     from .inputs_antigravity import DEFAULT_DATABASE, DEFAULT_EXP291_MANIFEST, DEFAULT_EXP291_PREDICTION, DEFAULT_EXP292_MANIFEST, DEFAULT_EXP292_PREDICTION, open_exp436_input_session
     with open_exp436_input_session(DEFAULT_DATABASE, DEFAULT_EXP291_PREDICTION, DEFAULT_EXP291_MANIFEST, DEFAULT_EXP292_PREDICTION, DEFAULT_EXP292_MANIFEST, verified_code_commit=head) as session:
         source = session.source_paths.to_payload(); datasets = list(session.context.datasets)

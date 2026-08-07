@@ -105,6 +105,48 @@ class CliAntigravityTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             parser.parse_args(["new", "--workers", "1"])
 
+    def test_exp437_readiness_projects_the_selected_profile_config(self):
+        with TemporaryDirectory() as directory:
+            parent = Path(directory) / "run_parent_antigravity"
+            output = parent / "output_antigravity"
+            checkpoint = parent / "checkpoint_antigravity"
+            readiness = parent / "readiness_antigravity.json"
+            evaluation = parent / "evaluation_antigravity"
+            source = {
+                "database": "/tmp/database_antigravity",
+                "exp291_prediction": "/tmp/exp291_prediction_antigravity",
+                "exp291_manifest": "/tmp/exp291_manifest_antigravity",
+                "exp292_prediction": "/tmp/exp292_prediction_antigravity",
+                "exp292_manifest": "/tmp/exp292_manifest_antigravity",
+            }
+
+            @contextmanager
+            def session(*_args, **_kwargs):
+                yield SimpleNamespace(
+                    source_paths=SimpleNamespace(to_payload=lambda: source),
+                    context=SimpleNamespace(datasets=("D0000",)),
+                    label_access_count=0,
+                )
+
+            digests = {
+                module.DATABASE_PATH: FROZEN_CONFIG.database_sha256,
+                module.LANE_PATHS[0]: FROZEN_CONFIG.exp291_prediction_sha256,
+                module.LANE_PATHS[1]: FROZEN_CONFIG.exp291_manifest_sha256,
+                module.LANE_PATHS[2]: FROZEN_CONFIG.exp292_prediction_sha256,
+                module.LANE_PATHS[3]: FROZEN_CONFIG.exp292_manifest_sha256,
+            }
+            decision = BackendDecision.cpu_fallback()
+            with patch.object(module, "_fixed_paths", return_value=(parent, output, checkpoint, readiness, evaluation)), \
+                    patch.object(module, "_clean_head", return_value=HEAD), \
+                    patch.object(module, "_backend_decision_and_fixture", return_value=(decision, {"sha256": "b" * 64, "candidate_indices": []})), \
+                    patch.object(module, "_focused_test_evidence", return_value={"returncode": 0, "command": ["unittest"]}), \
+                    patch.object(module, "_runtime_versions", return_value={"python": "test", "numpy": "test", "torch": "test", "mlx": "test"}), \
+                    patch.object(module, "_sha256_file", side_effect=lambda path: digests[Path(path)]), \
+                    patch("experiments.exp436_missing_safe_strict_consensus_antigravity.inputs_antigravity.open_exp436_input_session", session):
+                payload = module._production_readiness(EXP437_PROFILE)
+            self.assertEqual(payload["run_identity"], EXP437_PROFILE.run_identity)
+            self.assertEqual(payload["frozen_config"]["experiment_id"], EXP437_PROFILE.experiment_id)
+
     def test_exp437_wrapper_runs_from_outside_repository_with_no_override_flags(self):
         wrapper = Path(__file__).resolve().parents[3] / "scratch/run_exp437_metadata_roundtrip_antigravity.py"
         completed = subprocess.run(
