@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T04:49:15Z",
-  "generated_from_commit": "5eb0f426309684e72120c01745cfc55ec4e54c94",
+  "generated_at": "2026-08-07T04:53:53Z",
+  "generated_from_commit": "3c5c4c78bcebb3fbb367cf8a8dce28d600df11b3",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2300,13 +2300,16 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 readiness, fixed CLI boundary, value-only exact-length inputs, FFT/ASPE features, three separate TRAIN-only scores, truthful exact-stage acceleration, ordered max-minus-one CPU execution, fail-closed recovery, checkpoints, and self-written progress logs.",
+      "role": "Owns Exp438 readiness, strict read-only Exp437 predecessor snapshots, CPU-only live concurrency classification, ordered label-free runtime, checkpoints, progress, and backend dispatch.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
         "run_exp438_new_antigravity",
         "resume_exp438_antigravity",
-        "inspect_exp438_antigravity"
+        "inspect_exp438_antigravity",
+        "read_exp437_snapshot_antigravity",
+        "classify_exp437_snapshot_antigravity",
+        "revalidate_exp437_snapshot_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2314,7 +2317,8 @@
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_progress_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_scoring_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_readiness_antigravity.py",
-        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py"
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_predecessor_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2358,6 +2362,10 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/cli_antigravity.py",
           "symbol": "def main_antigravity("
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/predecessor_antigravity.py",
+          "symbol": "def read_exp437_snapshot_antigravity"
         }
       ]
     },
@@ -3145,6 +3153,17 @@
           "symbol": "inspect_exp438_antigravity("
         }
       ]
+    },
+    {
+      "from": "exp438_frequency_runtime",
+      "to": "exp436_contract_boundary",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/predecessor_antigravity.py",
+          "symbol": "Exp436CheckpointStore"
+        }
+      ]
     }
   ],
   "flows": [
@@ -3166,6 +3185,7 @@
       "trigger": "Run readiness only after Exp437 is terminal and inactive and the fixed Exp438 parent is absent.",
       "steps": [
         "exp438_frequency_runtime",
+        "exp436_contract_boundary",
         "exp417_inputs",
         "exp425_database",
         "sqlite_store",

@@ -28,6 +28,10 @@ from .config_antigravity import (
 from .contracts_antigravity import BackendBatchEvidence, BackendDecision
 from .aspe_antigravity import amplitude_sensitive_permutation_entropy_antigravity
 from .inputs_antigravity import canonical_source_paths_antigravity, open_exp438_input_session
+from .predecessor_antigravity import (
+    classify_exp437_snapshot_antigravity,
+    read_exp437_snapshot_antigravity,
+)
 from .scoring_antigravity import score_channel_cpu_antigravity
 
 
@@ -92,8 +96,10 @@ def _create_readiness_antigravity(
     if type(commit) is not str or len(commit) != 40 or any(character not in "0123456789abcdef" for character in commit):
         raise ValueError("Exp438 readiness clean HEAD is invalid")
     predecessor = dict(dependencies.exp437_terminal())
-    if predecessor.get("state") not in {"complete", "checkpoint_complete"} or predecessor.get("pid_active") is not False:
-        raise ValueError("Exp437 must be terminal and inactive before Exp438 readiness")
+    try:
+        predecessor_mode = classify_exp437_snapshot_antigravity(predecessor)
+    except ValueError as error:
+        raise ValueError("Exp437 execution is not safe for Exp438 readiness") from error
     hashes: dict[str, str] = {}
     for name in _SOURCE_NAMES_ANTIGRAVITY:
         path = Path(source_paths[name])
@@ -149,7 +155,9 @@ def _create_readiness_antigravity(
         "backend_decision_sha256": _digest_value_antigravity(asdict(decision)),
         "backend_provenance": dict(provenance_raw),
         "focused_tests": focused,
-        "exp437_terminal": predecessor,
+        "exp437_execution": predecessor,
+        "exp437_execution_mode": predecessor_mode,
+        "concurrent_with_exp437": predecessor_mode == "concurrent",
         "test_values_opened": 0,
         "test_labels_opened": 0,
         "prediction_label_access_count": 0,
@@ -178,19 +186,7 @@ def _clean_head_antigravity() -> str:
 
 
 def _exp437_terminal_antigravity() -> Mapping[str, object]:
-    progress_path = _EXP437_PARENT_ANTIGRAVITY / "output_antigravity/progress_antigravity.json"
-    pid_path = _EXP437_PARENT_ANTIGRAVITY / "output_antigravity/run_antigravity.pid"
-    try:
-        progress = json.loads(progress_path.read_bytes())
-        pid = json.loads(pid_path.read_bytes())
-    except (OSError, json.JSONDecodeError) as error:
-        raise ValueError("Exp437 terminal evidence is unavailable") from error
-    return {
-        "state": progress.get("state"),
-        "pid_active": pid.get("pid_active"),
-        "completed": progress.get("completed_datasets"),
-        "total": progress.get("total_datasets"),
-    }
+    return read_exp437_snapshot_antigravity(_EXP437_PARENT_ANTIGRAVITY)
 
 
 def _unavailable_evidence_antigravity(backend: str, reason: str):

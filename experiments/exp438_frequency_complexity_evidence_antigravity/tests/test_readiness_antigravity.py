@@ -11,6 +11,44 @@ from experiments.exp438_frequency_complexity_evidence_antigravity.readiness_anti
 )
 
 
+_EXP437_PARENT = (
+    "/Users/mac/Documents/Dataset/"
+    "exp437_metadata_roundtrip_antigravity_20260807"
+)
+
+
+def _exp437_snapshot(*, terminal=False, **changes):
+    payload = {
+        "run_identity": "exp437-metadata-roundtrip-antigravity-20260807",
+        "run_parent": _EXP437_PARENT,
+        "state": "running",
+        "pid": 43210,
+        "pid_active": True,
+        "pid_os_live": True,
+        "backend": "cpu",
+        "completed": 938,
+        "checkpoint_completed": 939,
+        "total": 1117,
+        "error": 0,
+        "heartbeat": "2026-08-07T04:50:00Z",
+        "heartbeat_age_seconds": 1.0,
+        "publication_exists": False,
+        "evaluation_exists": False,
+        "concurrency_authorized": True,
+    }
+    if terminal:
+        payload.update(
+            state="checkpoint_complete",
+            pid_active=False,
+            pid_os_live=False,
+            completed=1117,
+            checkpoint_completed=1117,
+            publication_exists=True,
+        )
+    payload.update(changes)
+    return payload
+
+
 class _Context:
     datasets = ("A", "B")
     test_identity_manifest = {"A": ((0, 16),), "B": ((0, 16),)}
@@ -47,7 +85,7 @@ class Exp438ReadinessAntigravityTests(unittest.TestCase):
             dependencies = ReadinessDependenciesAntigravity(
                 clean_head=lambda: "a" * 40,
                 sha256_file=lambda path: "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c" if path == sources["database"] else (path.name[0] * 64),
-                exp437_terminal=lambda: {"state": "complete", "pid_active": False},
+                exp437_terminal=lambda: _exp437_snapshot(terminal=True),
                 input_session_factory=_session_factory,
                 assess_backends=lambda: (BackendDecision("cpu", None, (), "synthetic fallback"), {"cpu": {"version": "synthetic"}}),
                 focused_tests=lambda: {"returncode": 0, "tests": 68},
@@ -63,7 +101,9 @@ class Exp438ReadinessAntigravityTests(unittest.TestCase):
             self.assertEqual(payload["datasets"], ["A", "B"])
             self.assertEqual(payload["test_values_opened"], 0)
             self.assertEqual(payload["test_labels_opened"], 0)
-            self.assertEqual(payload["exp437_terminal"]["state"], "complete")
+            self.assertEqual(payload["exp437_execution"]["state"], "checkpoint_complete")
+            self.assertEqual(payload["exp437_execution_mode"], "terminal")
+            self.assertFalse(payload["concurrent_with_exp437"])
             with self.assertRaisesRegex(ValueError, "already exists"):
                 _create_readiness_antigravity(
                     run_parent=run_parent,
@@ -72,7 +112,32 @@ class Exp438ReadinessAntigravityTests(unittest.TestCase):
                     expected_datasets=2,
                 )
 
-    def test_nonterminal_exp437_fails_before_creating_parent(self) -> None:
+    def test_fresh_live_cpu_exp437_is_accepted_and_frozen(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            paths = {name: base / f"{name}_antigravity.bin" for name in ("database", "exp291_prediction", "exp291_manifest", "exp292_prediction", "exp292_manifest")}
+            for path in paths.values():
+                path.write_bytes(b"x")
+            parent = base / "run_parent_antigravity"
+            dependencies = ReadinessDependenciesAntigravity(
+                clean_head=lambda: "a" * 40,
+                sha256_file=lambda path: "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c" if path == paths["database"] else "a" * 64,
+                exp437_terminal=lambda: _exp437_snapshot(),
+                input_session_factory=_session_factory,
+                assess_backends=lambda: (BackendDecision("cpu", None, (), "fallback"), {"cpu": {"version": "synthetic"}}),
+                focused_tests=lambda: {"returncode": 0},
+            )
+            payload = _create_readiness_antigravity(
+                run_parent=parent,
+                source_paths=paths,
+                dependencies=dependencies,
+                expected_datasets=2,
+            )
+            self.assertEqual(payload["exp437_execution_mode"], "concurrent")
+            self.assertTrue(payload["concurrent_with_exp437"])
+            self.assertEqual(payload["exp437_execution"]["pid"], 43210)
+
+    def test_unsafe_live_exp437_fails_before_creating_parent(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             paths = {name: base / f"{name}_antigravity.bin" for name in ("database", "exp291_prediction", "exp291_manifest", "exp292_prediction", "exp292_manifest")}
@@ -82,7 +147,7 @@ class Exp438ReadinessAntigravityTests(unittest.TestCase):
             dependencies = ReadinessDependenciesAntigravity(
                 clean_head=lambda: "a" * 40,
                 sha256_file=lambda path: "a" * 64,
-                exp437_terminal=lambda: {"state": "running", "pid_active": True},
+                exp437_terminal=lambda: _exp437_snapshot(pid_os_live=False),
                 input_session_factory=_session_factory,
                 assess_backends=lambda: (BackendDecision("cpu", None, (), "fallback"), {}),
                 focused_tests=lambda: {"returncode": 0},
