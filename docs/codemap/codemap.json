@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T00:37:03Z",
-  "generated_from_commit": "dba6a223cf12d2955b775697cc67edd52d31651b",
+  "generated_at": "2026-08-07T00:45:51Z",
+  "generated_from_commit": "6fecee11659a7d867d88b3af0db79a1bb1a01ccc",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -3061,14 +3061,14 @@
     },
     {
       "id": "exp436_new_resume_flow",
-      "label": "Exp436 label-free new/interrupted resume",
-      "trigger": "Run new after verified readiness or resume only an interrupted root.",
+      "label": "Exp436/Exp437 label-free new/resume policy",
+      "trigger": "Run new after verified readiness; Exp436 resumes interrupted roots and may finalize/replay checkpoint_complete for preserved compatibility, while Exp437 resumes interrupted roots only.",
       "steps": [
         "exp436_contract_boundary",
         "exp425_database",
         "sqlite_store"
       ],
-      "outcome": "New requires the exact canonical readiness and absent output/checkpoint/evaluation roots, rechecks HEAD after delayed imports, and passes the exact runtime public arguments. Complete checkpoint replay does not invoke the input-session factory; failed/running/fake-complete roots are rejected."
+      "outcome": "New requires the exact canonical readiness and absent output/checkpoint/evaluation roots, rechecks HEAD after delayed imports, and passes the exact runtime public arguments. Exp436 resume accepts interrupted and preserved checkpoint_complete compatibility, which may finalize/replay a completed checkpoint without opening the input-session factory; Exp437 resume accepts interrupted only. Failed/running/fake-complete roots are rejected."
     },
     {
       "id": "exp436_publication_flow",
