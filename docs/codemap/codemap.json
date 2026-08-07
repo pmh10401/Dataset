@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T04:06:26Z",
-  "generated_from_commit": "157cfc7a89ef0dc02116f72758ae9d94f6f3db0b",
+  "generated_at": "2026-08-07T04:14:45Z",
+  "generated_from_commit": "c89d5b47fa6d18ae6fba0c6fba7f06400ee84088",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -13,7 +13,7 @@
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
     "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch",
     "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs",
-    "Exp438 clean-HEAD/Exp437-terminal readiness, label-free ordered runtime, deterministic review-only publication, and channel-separate post-freeze TEST-label evaluation with no-clobber hash replay"
+    "Exp438 isolated implementation, clean-HEAD/Exp437-terminal readiness, label-free ordered prediction, deterministic review-only publication, and separate lazy post-freeze TEST-label evaluation"
   ],
   "nodes": [
     {
@@ -23,7 +23,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records the immutable Exp436 persistence failure, Exp437's implementation-complete governance and frozen preregistration/runbook, fresh Task 7 regression/hash/config/root evidence, zero TEST-label access, and the exact clean-HEAD readiness handoff, plus the isolated Exp438 design, source provenance, and implementation plan.",
+      "role": "Records the active Exp437 handoff unchanged while cataloging Exp438 as an isolated implementation-complete track with frozen design, provenance, preregistration, runbook, implementation evidence, and an execution block pending Exp437 terminal direction review.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -35,7 +35,8 @@
         "Exp436 readiness completed and its official CPU run preserved 47 records before a canonical metadata-key ordering bug failed AllGestureWiimoteX_normal_1; that root, its readiness hash, one orphan record, and 47-record authority are immutable. Exp437 has completed implementation and frozen governance, starts from a new readiness-owned root, and remains readiness-pending; prediction has not started, TEST labels remain unopened, and PID is null.",
         "Exp437 changes only execution identity, fixed roots, and order-independent canonical length-histogram persistence; candidate_alpha=0.01, strict three-channel consensus, candidate budget 100, CPU max(1, logical_cpus - 1) with expected 11 workers, zero prediction-label access, and all post-freeze evaluation gates remain unchanged.",
         "Task 7 handoff reviewed implementation commit d977dee1 with 299 shared-engine tests and 68 predecessor tests, zero failures/errors/skips, immutable Exp436 readiness hash/record proof, Exp437 root absence, and an exact two-field frozen-config diff; official readiness remains pending.",
-        "Exp438 is an isolated review-only design: it keeps high-frequency, low-frequency, and amplitude-complexity channels separate; uses zero TEST-label access before frozen publication; and cannot run readiness or the 1,117-dataset prediction while Exp437 is active."
+        "Exp438 is an isolated review-only design: it keeps high-frequency, low-frequency, and amplitude-complexity channels separate; uses zero TEST-label access before frozen publication; and cannot run readiness or the 1,117-dataset prediction while Exp437 is active.",
+        "Exp438 readiness and the official 1,117-dataset run remain blocked until Exp437 is terminal/inactive and the requested result-direction discussion is complete."
       ],
       "evidence": [
         {
@@ -145,6 +146,22 @@
         {
           "path": "docs/EXP438_THIRD_PARTY_PROVENANCE_antigravity.md",
           "symbol": "## Excluded namesake PhysDiff repository"
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"id\": \"Exp438\""
+        },
+        {
+          "path": "docs/EXP438_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "# Exp438 주파수·복잡도 근거 사전등록"
+        },
+        {
+          "path": "docs/EXP438_RUNBOOK_antigravity_KO.md",
+          "symbol": "# Exp438 주파수·복잡도 근거 실행 안내서"
+        },
+        {
+          "path": "docs/EXP438_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "# Exp438 구현 완료 보고서"
         }
       ]
     },
@@ -597,20 +614,28 @@
     },
     {
       "id": "exp426_runtime",
-      "label": "Exp426 resumable runtime",
+      "label": "Exp426 runtime + publication",
       "type": "orchestrator",
       "boundary": "Exp426 verified baseline",
       "layer": 4,
       "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
-      "role": "Coordinates frozen-source intake, TRAIN-only terminal verification, parent-owned checkpoint commits, resumable interruption, immutable failure and self-written progress logs.",
+      "role": "Owns Exp426 resumable verified-baseline execution, checkpoint-backed recovery, fixed CLI, deterministic review-only publication, and replay validation.",
       "entrypoints": [
         "run_exp426_new",
         "run_exp426_resume",
         "inspect_exp426",
-        "_source_worker_tasks"
+        "_source_worker_tasks",
+        "build_parser",
+        "main",
+        "publish_exp426",
+        "verify_exp426_publication",
+        "_preflight_roots",
+        "_revalidate_readiness_for_execution"
       ],
       "tests": [
-        "experiments/exp426_verified_baseline/tests/test_runtime_antigravity.py"
+        "experiments/exp426_verified_baseline/tests/test_runtime_antigravity.py",
+        "experiments/exp426_verified_baseline/tests/test_cli_antigravity.py",
+        "experiments/exp426_verified_baseline/tests/test_reporting_antigravity.py"
       ],
       "constraints": [
         "Exactly 12 CPU workers with bounded prefetch 24",
@@ -618,7 +643,13 @@
         "No TEST value or label loader",
         "Atomic progress, durable events and 30-second heartbeat",
         "Interrupted roots resume with zero errors; failed roots are immutable",
-        "Failures persist a normalized exception type and message in progress, events and text log"
+        "Failures persist a normalized exception type and message in progress, events and text log",
+        "Only frozen external roots are accepted",
+        "Runtime roots must be below a pre-existing parent isolated from the live database parent",
+        "No worker-count option; exactly 12 CPU workers",
+        "Publication is review-only and contains no TEST labels",
+        "Every artifact is replayed against checkpoint and runtime evidence",
+        "New execution requires canonical readiness from the same clean commit"
       ],
       "evidence": [
         {
@@ -640,38 +671,7 @@
         {
           "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
           "symbol": "def _latest_error_payload"
-        }
-      ]
-    },
-    {
-      "id": "exp426_publication",
-      "label": "Exp426 CLI + publication",
-      "type": "interface",
-      "boundary": "Exp426 verified baseline",
-      "layer": 5,
-      "path": "experiments/exp426_verified_baseline",
-      "role": "Exposes frozen new, resume, inspect and readiness commands, binds new execution to same-commit readiness, and atomically publishes independently replayed label-free baseline artifacts.",
-      "entrypoints": [
-        "build_parser",
-        "main",
-        "publish_exp426",
-        "verify_exp426_publication",
-        "_preflight_roots",
-        "_revalidate_readiness_for_execution"
-      ],
-      "tests": [
-        "experiments/exp426_verified_baseline/tests/test_cli_antigravity.py",
-        "experiments/exp426_verified_baseline/tests/test_reporting_antigravity.py"
-      ],
-      "constraints": [
-        "Only frozen external roots are accepted",
-        "Runtime roots must be below a pre-existing parent isolated from the live database parent",
-        "No worker-count option; exactly 12 CPU workers",
-        "Publication is review-only and contains no TEST labels",
-        "Every artifact is replayed against checkpoint and runtime evidence",
-        "New execution requires canonical readiness from the same clean commit"
-      ],
-      "evidence": [
+        },
         {
           "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
           "symbol": "def main"
@@ -2283,20 +2283,18 @@
     },
     {
       "id": "exp438_frequency_runtime",
-      "label": "Exp438 frequency evidence",
+      "label": "Exp438 prediction + runtime",
       "type": "pipeline",
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 readiness, fixed five-command CLI, value-only inputs, FFT/ASPE and separate TRAIN-only scores, truthful exact-stage acceleration, ordered max-minus-one CPU execution, fail-closed recovery, self-written heartbeat logs, deterministic review-only publication, and lazy channel-separate post-freeze evaluation.",
+      "role": "Owns Exp438 readiness, fixed CLI boundary, value-only exact-length inputs, FFT/ASPE features, three separate TRAIN-only scores, truthful exact-stage acceleration, ordered max-minus-one CPU execution, fail-closed recovery, checkpoints, and self-written progress logs.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
         "run_exp438_new_antigravity",
         "resume_exp438_antigravity",
-        "inspect_exp438_antigravity",
-        "publish_exp438_antigravity",
-        "evaluate_exp438_antigravity"
+        "inspect_exp438_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2304,16 +2302,13 @@
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_progress_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_scoring_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_readiness_antigravity.py",
-        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py",
-        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py",
-        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_evaluation_antigravity.py"
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
         "High-frequency, low-frequency, and amplitude-complexity channels stay separate; no fusion or post-TEST retuning.",
         "CPU uses max(1, logical CPUs - 1) workers with one numerical thread each; adopted MLX/MPS/Numba exact stages run serially after parity and speed gates.",
-        "Results commit in frozen dataset order; failed roots are immutable and interrupted roots alone may resume.",
-        "Post-freeze evaluation opens TEST labels only after Exp438 and Exp437 publications, frozen comparators, provenance, population, runtime, and hashes replay; it reports all channels without selecting a winner."
+        "Results commit in frozen dataset order; failed roots are immutable and interrupted roots alone may resume."
       ],
       "evidence": [
         {
@@ -2351,14 +2346,48 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/cli_antigravity.py",
           "symbol": "def main_antigravity("
-        },
+        }
+      ]
+    },
+    {
+      "id": "exp438_publication_evaluation",
+      "label": "Exp438 publication + evaluation",
+      "type": "pipeline",
+      "boundary": "Active isolated research",
+      "layer": 3,
+      "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
+      "role": "Replays a complete zero-label-access checkpoint into a deterministic separate-channel review-only publication, then lazily evaluates all three frozen channels only after Exp438, Exp437, Hard comparator, database, population, provenance, and artifact hashes pass.",
+      "entrypoints": [
+        "publish_exp438_antigravity",
+        "inspect_publication_antigravity",
+        "evaluate_exp438_antigravity"
+      ],
+      "tests": [
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py",
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py"
+      ],
+      "constraints": [
+        "Publication requires exactly 1,117 completed datasets, failed=0, inactive PID, current_dataset=null, budget compliance, and prediction TEST-label access exactly zero.",
+        "Evaluation is a lazy explicit command and reads TEST labels only after every frozen publication, comparator, source, population, runtime, database, and provenance gate passes.",
+        "High-frequency, low-frequency, and amplitude-complexity results remain separate; evaluation selects no winner and publishes eight no-clobber hash-bound artifacts."
+      ],
+      "evidence": [
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/reporting_antigravity.py",
           "symbol": "def publish_exp438_antigravity("
         },
         {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/reporting_antigravity.py",
+          "symbol": "def inspect_publication_antigravity("
+        },
+        {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
           "symbol": "def evaluate_exp438_antigravity("
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
+          "symbol": "def _write_evaluation_artifacts_antigravity("
         }
       ]
     }
@@ -2373,8 +2402,7 @@
           "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
           "symbol": "verified_read_only_connection"
         }
-      ],
-      "id": "edge_001_exp417_inputs_reads_sqlite_store"
+      ]
     },
     {
       "from": "exp417_inputs",
@@ -2385,8 +2413,7 @@
           "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
           "symbol": "from .contracts import"
         }
-      ],
-      "id": "edge_002_exp417_inputs_imports_exp417_contracts"
+      ]
     },
     {
       "from": "exp417_preprocessing",
@@ -2401,8 +2428,7 @@
           "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
           "symbol": "from .contracts import"
         }
-      ],
-      "id": "edge_003_exp417_preprocessing_imports_exp417_contracts"
+      ]
     },
     {
       "from": "exp417_checkpoint",
@@ -2413,8 +2439,7 @@
           "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
           "symbol": "from .contracts import"
         }
-      ],
-      "id": "edge_005_exp417_checkpoint_imports_exp417_contracts"
+      ]
     },
     {
       "from": "exp417_checkpoint",
@@ -2425,8 +2450,7 @@
           "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
           "symbol": "canonical_json_bytes"
         }
-      ],
-      "id": "edge_006_exp417_checkpoint_imports_artifact_utils"
+      ]
     },
     {
       "from": "exp425_database",
@@ -2437,8 +2461,7 @@
           "path": "experiments/exp425_selective_recovery/database.py",
           "symbol": "open_database_snapshot"
         }
-      ],
-      "id": "edge_007_exp425_database_reads_sqlite_store"
+      ]
     },
     {
       "from": "exp425_database",
@@ -2449,8 +2472,7 @@
           "path": "experiments/exp425_selective_recovery/database.py",
           "symbol": "from experiments.exp417_causal_multihorizon_shadow import inputs as exp417_inputs"
         }
-      ],
-      "id": "edge_008_exp425_database_imports_exp417_inputs"
+      ]
     },
     {
       "from": "exp425_predecessor",
@@ -2461,8 +2483,7 @@
           "path": "experiments/exp425_selective_recovery/predecessor.py",
           "symbol": "_record_from_bytes"
         }
-      ],
-      "id": "edge_010_exp425_predecessor_imports_exp417_checkpoint"
+      ]
     },
     {
       "from": "exp425_predecessor",
@@ -2473,8 +2494,7 @@
           "path": "experiments/exp425_selective_recovery/predecessor.py",
           "symbol": "import_exp424_nonterminal"
         }
-      ],
-      "id": "edge_011_exp425_predecessor_calls_exp425_checkpoint"
+      ]
     },
     {
       "from": "exp425_predecessor",
@@ -2485,8 +2505,7 @@
           "path": "experiments/exp425_selective_recovery/predecessor.py",
           "symbol": "ImportedRecordEnvelope"
         }
-      ],
-      "id": "edge_012_exp425_predecessor_imports_exp425_contracts"
+      ]
     },
     {
       "from": "exp425_contracts",
@@ -2497,8 +2516,7 @@
           "path": "experiments/exp425_selective_recovery/eligibility.py",
           "symbol": "identity_grouped_folds"
         }
-      ],
-      "id": "edge_013_exp425_contracts_calls_exp417_preprocessing"
+      ]
     },
     {
       "from": "exp425_checkpoint",
@@ -2509,8 +2527,7 @@
           "path": "experiments/exp425_selective_recovery/checkpoints.py",
           "symbol": "canonical_json_bytes"
         }
-      ],
-      "id": "edge_015_exp425_checkpoint_imports_artifact_utils"
+      ]
     },
     {
       "from": "exp426_intake_parallel",
@@ -2521,8 +2538,7 @@
           "path": "experiments/exp426_verified_baseline/source_antigravity.py",
           "symbol": "ValidatedExp424Source"
         }
-      ],
-      "id": "edge_016_exp426_intake_parallel_imports_exp425_predecessor"
+      ]
     },
     {
       "from": "exp426_intake_parallel",
@@ -2533,8 +2549,7 @@
           "path": "experiments/exp426_verified_baseline/source_antigravity.py",
           "symbol": "_record_from_bytes"
         }
-      ],
-      "id": "edge_017_exp426_intake_parallel_imports_exp417_checkpoint"
+      ]
     },
     {
       "from": "exp426_intake_parallel",
@@ -2545,8 +2560,7 @@
           "path": "experiments/exp426_verified_baseline/source_antigravity.py",
           "symbol": "preprocess_length_groups"
         }
-      ],
-      "id": "edge_018_exp426_intake_parallel_calls_exp417_preprocessing"
+      ]
     },
     {
       "from": "exp426_intake_parallel",
@@ -2557,8 +2571,7 @@
           "path": "experiments/exp426_verified_baseline/source_antigravity.py",
           "symbol": "apply_group_eligibility"
         }
-      ],
-      "id": "edge_019_exp426_intake_parallel_calls_exp425_contracts"
+      ]
     },
     {
       "from": "exp426_intake_parallel",
@@ -2569,8 +2582,7 @@
           "path": "experiments/exp426_verified_baseline/parallel_antigravity.py",
           "symbol": "WorkerEvidence"
         }
-      ],
-      "id": "edge_020_exp426_intake_parallel_imports_exp426_contracts"
+      ]
     },
     {
       "from": "exp426_contracts",
@@ -2581,8 +2593,7 @@
           "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
           "symbol": "canonical_json_bytes"
         }
-      ],
-      "id": "edge_021_exp426_contracts_imports_artifact_utils"
+      ]
     },
     {
       "from": "exp426_checkpoint",
@@ -2593,8 +2604,7 @@
           "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
           "symbol": "Exp426DatasetRecord"
         }
-      ],
-      "id": "edge_022_exp426_checkpoint_imports_exp426_contracts"
+      ]
     },
     {
       "from": "exp426_checkpoint",
@@ -2605,8 +2615,7 @@
           "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
           "symbol": "canonical_json_bytes"
         }
-      ],
-      "id": "edge_023_exp426_checkpoint_imports_artifact_utils"
+      ]
     },
     {
       "from": "exp426_runtime",
@@ -2616,9 +2625,12 @@
         {
           "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
           "symbol": "run_ordered_workers"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "inspect_production_source_authority"
         }
-      ],
-      "id": "edge_024_exp426_runtime_calls_exp426_intake_parallel"
+      ]
     },
     {
       "from": "exp426_runtime",
@@ -2629,8 +2641,7 @@
           "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
           "symbol": "store.commit"
         }
-      ],
-      "id": "edge_025_exp426_runtime_writes_exp426_checkpoint"
+      ]
     },
     {
       "from": "exp426_runtime",
@@ -2640,9 +2651,12 @@
         {
           "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
           "symbol": "database.load_train"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "open_database_snapshot"
         }
-      ],
-      "id": "edge_026_exp426_runtime_reads_exp425_database"
+      ]
     },
     {
       "from": "exp426_runtime",
@@ -2653,23 +2667,10 @@
           "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
           "symbol": "Exp426Counts"
         }
-      ],
-      "id": "edge_027_exp426_runtime_imports_exp426_contracts"
+      ]
     },
     {
-      "from": "exp426_publication",
-      "to": "exp426_runtime",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
-          "symbol": "run_exp426_new"
-        }
-      ],
-      "id": "edge_028_exp426_publication_calls_exp426_runtime"
-    },
-    {
-      "from": "exp426_publication",
+      "from": "exp426_runtime",
       "to": "exp426_checkpoint",
       "type": "reads",
       "evidence": [
@@ -2677,35 +2678,10 @@
           "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
           "symbol": "Exp426CheckpointStore.inspect_read_only"
         }
-      ],
-      "id": "edge_029_exp426_publication_reads_exp426_checkpoint"
+      ]
     },
     {
-      "from": "exp426_publication",
-      "to": "exp425_database",
-      "type": "reads",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
-          "symbol": "open_database_snapshot"
-        }
-      ],
-      "id": "edge_030_exp426_publication_reads_exp425_database"
-    },
-    {
-      "from": "exp426_publication",
-      "to": "exp426_intake_parallel",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
-          "symbol": "inspect_production_source_authority"
-        }
-      ],
-      "id": "edge_031_exp426_publication_calls_exp426_intake_parallel"
-    },
-    {
-      "from": "exp426_publication",
+      "from": "exp426_runtime",
       "to": "artifact_utils",
       "type": "imports",
       "evidence": [
@@ -2713,8 +2689,7 @@
           "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
           "symbol": "canonical_json_bytes"
         }
-      ],
-      "id": "edge_032_exp426_publication_imports_artifact_utils"
+      ]
     },
     {
       "from": "exp425_database",
@@ -2737,8 +2712,7 @@
           "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
           "symbol": "load_raw_test_values_after_train_from_connection"
         }
-      ],
-      "id": "edge_033_exp425_database_calls_exp417_inputs"
+      ]
     },
     {
       "from": "exp435_runtime",
@@ -2749,8 +2723,7 @@
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
           "symbol": "from experiments.exp417_causal_multihorizon_shadow.inputs import"
         }
-      ],
-      "id": "edge_034_exp435_prediction_boundary_imports_exp417_inputs"
+      ]
     },
     {
       "from": "exp435_runtime",
@@ -2761,8 +2734,7 @@
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
           "symbol": "freeze_lane_inputs("
         }
-      ],
-      "id": "edge_035_exp435_prediction_boundary_calls_exp417_inputs"
+      ]
     },
     {
       "from": "exp435_runtime",
@@ -2773,8 +2745,7 @@
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
           "symbol": "from experiments.exp425_selective_recovery.database import"
         }
-      ],
-      "id": "edge_036_exp435_prediction_boundary_imports_exp425_database"
+      ]
     },
     {
       "from": "exp435_runtime",
@@ -2793,8 +2764,7 @@
           "path": "experiments/exp425_selective_recovery/database.py",
           "symbol": "def load_test_values_after_train("
         }
-      ],
-      "id": "edge_037_exp435_prediction_boundary_calls_exp425_database"
+      ]
     },
     {
       "from": "exp435_runtime",
@@ -2813,8 +2783,7 @@
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
           "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import RawSeries, RawTestDataset"
         }
-      ],
-      "id": "edge_038_exp435_prediction_boundary_imports_exp417_contracts"
+      ]
     },
     {
       "from": "exp435_runtime",
@@ -2841,14 +2810,12 @@
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
           "symbol": "_exclusive_rename(staging, publication)"
         }
-      ],
-      "id": "edge_039_exp435_runtime_writes_exp435_checkpoint_progress"
+      ]
     },
     {
       "from": "exp435_runtime",
       "to": "exp435_checkpoint_progress",
       "type": "calls",
-      "id": "edge_042_exp435_runtime_calls_exp435_checkpoint_progress",
       "evidence": [
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
@@ -2880,7 +2847,6 @@
       "from": "exp435_runtime",
       "to": "exp435_checkpoint_progress",
       "type": "reads",
-      "id": "edge_043_exp435_runtime_reads_exp435_checkpoint_progress",
       "evidence": [
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
@@ -2896,7 +2862,6 @@
       "from": "exp435_runtime",
       "to": "artifact_utils",
       "type": "imports",
-      "id": "edge_044_exp435_runtime_imports_artifact_utils",
       "evidence": [
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
@@ -2921,8 +2886,7 @@
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
           "symbol": "canonical_json_bytes"
         }
-      ],
-      "id": "edge_045_exp435_checkpoint_progress_imports_artifact_utils"
+      ]
     },
     {
       "from": "exp435_checkpoint_progress",
@@ -2941,14 +2905,12 @@
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
           "symbol": "def _load_test_labels_from_connection("
         }
-      ],
-      "id": "edge_046_exp435_checkpoint_progress_reads_sqlite_labels"
+      ]
     },
     {
       "from": "exp435_checkpoint_progress",
       "to": "exp417_inputs",
       "type": "imports",
-      "id": "edge_047_exp435_evaluation_imports_exp417_pinned_connection",
       "evidence": [
         {
           "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
@@ -2965,8 +2927,7 @@
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
           "symbol": "from experiments.exp417_causal_multihorizon_shadow.inputs import freeze_lane_inputs"
         }
-      ],
-      "id": "edge_048_exp436_inputs_imports_exp417_lane_boundary"
+      ]
     },
     {
       "from": "exp436_contract_boundary",
@@ -2977,8 +2938,7 @@
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
           "symbol": "freeze_lane_inputs("
         }
-      ],
-      "id": "edge_049_exp436_inputs_calls_exp417_lane_freeze"
+      ]
     },
     {
       "from": "exp436_contract_boundary",
@@ -2989,8 +2949,7 @@
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
           "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenRunContext"
         }
-      ],
-      "id": "edge_050_exp436_inputs_imports_exp417_context"
+      ]
     },
     {
       "from": "exp436_contract_boundary",
@@ -3001,8 +2960,7 @@
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
           "symbol": "from experiments.exp425_selective_recovery.database import ("
         }
-      ],
-      "id": "edge_051_exp436_inputs_imports_exp425_snapshot"
+      ]
     },
     {
       "from": "exp436_contract_boundary",
@@ -3021,8 +2979,7 @@
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
           "symbol": "load_test_value_blobs_after_train("
         }
-      ],
-      "id": "edge_052_exp436_inputs_calls_exp425_values_boundary"
+      ]
     },
     {
       "from": "exp436_contract_boundary",
@@ -3045,8 +3002,7 @@
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
           "symbol": "def _validated_context_fingerprint("
         }
-      ],
-      "id": "edge_053_exp436_publication_uses_canonical_artifacts"
+      ]
     },
     {
       "from": "exp436_contract_boundary",
@@ -3069,8 +3025,7 @@
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py",
           "symbol": "def test_exp437_evaluation_rejects_exp436_fixed_paths_before_labels("
         }
-      ],
-      "id": "edge_054_exp436_evaluation_reads_labels_after_publication"
+      ]
     },
     {
       "from": "exp438_frequency_runtime",
@@ -3080,7 +3035,14 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/inputs_antigravity.py",
           "symbol": "freeze_lane_inputs("
-        },
+        }
+      ]
+    },
+    {
+      "from": "exp438_publication_evaluation",
+      "to": "exp417_inputs",
+      "type": "calls",
+      "evidence": [
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
           "symbol": "with verified_read_only_connection("
@@ -3106,7 +3068,14 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/checkpoint_antigravity.py",
           "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
-        },
+        }
+      ]
+    },
+    {
+      "from": "exp438_publication_evaluation",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
           "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
@@ -3114,7 +3083,7 @@
       ]
     },
     {
-      "from": "exp438_frequency_runtime",
+      "from": "exp438_publication_evaluation",
       "to": "exp436_contract_boundary",
       "type": "calls",
       "evidence": [
@@ -3129,13 +3098,39 @@
       ]
     },
     {
-      "from": "exp438_frequency_runtime",
+      "from": "exp438_publication_evaluation",
       "to": "sqlite_store",
       "type": "reads",
       "evidence": [
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
           "symbol": "SELECT i.instance_index,i.label FROM instances"
+        }
+      ]
+    },
+    {
+      "from": "exp438_frequency_runtime",
+      "to": "exp438_publication_evaluation",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/cli_antigravity.py",
+          "symbol": "_publish_after_run_antigravity()"
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/cli_antigravity.py",
+          "symbol": "evaluate_exp438_antigravity("
+        }
+      ]
+    },
+    {
+      "from": "exp438_publication_evaluation",
+      "to": "exp438_frequency_runtime",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/reporting_antigravity.py",
+          "symbol": "inspect_exp438_antigravity("
         }
       ]
     }
@@ -3155,7 +3150,7 @@
     },
     {
       "id": "exp438_readiness_flow",
-      "label": "Exp438 clean-HEAD readiness gate",
+      "label": "Exp438 clean-HEAD readiness and acceleration gate",
       "trigger": "Run readiness only after Exp437 is terminal and inactive and the fixed Exp438 parent is absent.",
       "steps": [
         "exp438_frequency_runtime",
@@ -3164,7 +3159,7 @@
         "sqlite_store",
         "artifact_utils"
       ],
-      "outcome": "Readiness verifies clean HEAD, frozen source paths and hashes, the 1,117-name population and TEST identity manifest without TEST values or labels, focused tests, and compile-amortized Numba plus synchronized MLX/MPS parity/speed evidence before exclusively creating the run parent."
+      "outcome": "Readiness verifies clean HEAD, frozen source paths and hashes, the 1,117-name population and TEST identity manifest without TEST values or labels, focused tests, and compile-amortized Numba plus synchronized MLX/MPS parity/speed evidence before exclusively creating the run parent. The same artifact records compile-amortized Numba and synchronized MLX/MPS exact-stage parity, timing, selected batch/backend, and truthful CPU fallback evidence."
     },
     {
       "id": "exp438_cpu_new_resume_flow",
@@ -3180,27 +3175,29 @@
       "outcome": "The parent reads frozen lanes and value-only TRAIN/TEST rows, up to max-minus-one workers compute datasets, and the parent commits canonical records in sorted order while writing heartbeat, metadata, throughput, ETA, and candidate counts."
     },
     {
-      "id": "exp438_accelerator_flow",
-      "label": "Exp438 truthful exact-stage acceleration",
-      "trigger": "Readiness selects Numba, MLX, or MPS only after finite-output, score-tolerance, candidate-parity, and at-least-1.1x speed gates pass.",
-      "steps": [
-        "exp438_frequency_runtime",
-        "artifact_utils"
-      ],
-      "outcome": "A single parent-owned accelerator uses only the approved ASPE or dense-distance stage with the frozen CPU algorithm unchanged; no outer process parallelism is combined with it."
-    },
-    {
-      "id": "exp438_publication_inspect_flow",
-      "label": "Exp438 review-only freeze, inspect, and post-freeze evaluation",
+      "id": "exp438_publication_flow",
+      "label": "Exp438 deterministic review-only publication",
       "trigger": "The ordered checkpoint and process-owned progress both reach complete with the full conserved population and zero label access.",
       "steps": [
         "exp438_frequency_runtime",
-        "artifact_utils",
+        "exp438_publication_evaluation",
+        "artifact_utils"
+      ],
+      "outcome": "Publication replays complete ordered checkpoint records into separate-channel prediction, summary, abstention, TRAIN audit, backend, manifest, status, and hash artifacts through a no-clobber rename. Inspect recomputes all publication bytes without opening SQLite labels or workers."
+    },
+    {
+      "id": "exp438_postfreeze_evaluation_flow",
+      "label": "Exp438 lazy post-freeze TEST-label evaluation",
+      "trigger": "Invoke the fixed evaluate command only after both Exp438 and Exp437 have independently frozen and replayed their publications.",
+      "steps": [
+        "exp438_frequency_runtime",
+        "exp438_publication_evaluation",
         "exp436_contract_boundary",
         "exp417_inputs",
-        "sqlite_store"
+        "sqlite_store",
+        "artifact_utils"
       ],
-      "outcome": "Publication freezes separate-channel prediction and audit artifacts through a no-clobber rename. Inspect replays bytes without labels. Only the explicit lazy evaluate command may then replay Exp438, Exp437, the frozen Hard comparator, population, database, and provenance gates before reading TEST labels once and publishing eight hashed, no-clobber evaluation artifacts without choosing a winner."
+      "outcome": "The lazy evaluator verifies Exp438 publication/output/checkpoint, Exp437 publication, Exp404/Exp291 Hard equality, population, database, provenance, and hashes before one descriptor-bound TEST instance_index,label read; it then publishes separate channel confusion, dataset, bootstrap, correlation/overlap, and decision evidence without choosing a winner or mutating frozen bytes."
     }
   ],
   "unknown_relationships": 0
