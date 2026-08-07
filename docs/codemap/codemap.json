@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-06T23:42:49Z",
-  "generated_from_commit": "59123d5809d00030ef274c27071ae5002b5dfc0f",
+  "generated_at": "2026-08-06T23:59:12Z",
+  "generated_from_commit": "d106438e2f3f8f3606467a89ffc444dd7b0d1934",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -1691,7 +1691,7 @@
       "boundary": "Exp436 missing-safe strict consensus",
       "layer": 3,
       "path": "experiments/exp436_missing_safe_strict_consensus_antigravity",
-      "role": "Owns the implemented Exp436 missing-safe values-only scoring, Task8 canonical readiness/publication and post-freeze evaluation firewall, and the profile-aware parent-owned checkpoint/runtime core behind the fixed five-command wrappers. Exp436 remains the default profile; the approved Exp437 thin successor binds its own execution identity and fixed sibling roots while reusing the shared scientific engine and transport schemas. Official Exp436 readiness, prediction, and evaluation remain immutable historical evidence; Exp437 readiness, prediction, and evaluation have not run. Profile-aware context, readiness, checkpoint, and runtime calls reject cross-profile artifacts before recovery or mutation; readiness stages its sole canonical artifact while the selected RUN_PARENT is absent; only interrupted resume opens the input session; inspect replays frozen publication bytes read-only; evaluation never changes prediction bytes and may only replay a bound existing evaluation. Task 4 binds review-only publication and post-freeze evaluation to the selected ExecutionProfileAntigravity: profile-aware config hashes and manifest identity are replayed from the selected checkpoint, fixed sibling paths are derived from the profile before any TEST-label loader, and Exp436 remains the default.",
+      "role": "Owns the implemented Exp436 missing-safe values-only scoring, Task8 canonical readiness/publication and post-freeze evaluation firewall, and the profile-aware parent-owned checkpoint/runtime core behind the fixed five-command wrappers. Exp436 remains the default profile; the approved Exp437 thin successor binds its own execution identity, fixed sibling roots, and outside-CWD-safe wrapper while reusing the shared scientific engine and transport schemas. Official Exp436 readiness, prediction, and evaluation remain immutable historical evidence; Exp437 readiness, prediction, and evaluation have not run. Profile-aware context, readiness, checkpoint, runtime, publication, and evaluation calls reject cross-profile artifacts before recovery, mutation, or TEST-label access; readiness stages its sole canonical artifact while the selected RUN_PARENT is absent; only interrupted resume opens the input session; inspect replays frozen publication bytes read-only; evaluation never changes prediction bytes and may only replay a bound existing evaluation.",
       "entrypoints": [
         "Exp436FrozenConfig",
         "FROZEN_CONFIG",
@@ -1750,7 +1750,8 @@
         "evaluate_exp436",
         "decide_exp436_success",
         "build_parser",
-        "main"
+        "main",
+        "main_for_profile_antigravity"
       ],
       "tests": [
         "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_config_antigravity.py",
@@ -1782,7 +1783,9 @@
         "Task8 completed the readiness/publication/evaluation firewall. Official Exp436 readiness selected CPU/11 workers; prediction then failed immutably after 47 committed records because canonical JSON key order conflicted with numeric histogram insertion-order validation. Exp437 is the approved thin successor with a written TDD implementation plan; its execution profile, canonical metadata persistence repair, and profile-bound context/checkpoint/runtime core are implemented, while official readiness, prediction, and evaluation remain pending.",
         "Publication inspection has no public expectation override and replays checkpoint/runtime source authorities before RENAME_EXCL; progress replay validates strict runtime bytes in memory and never creates a sibling copy. Evaluator uses the publication reviewed_commit and reviewed_commit_sha256 before labels, revalidates the full source before staging and before rename, and existing evaluation replay recomputes its 1,117-row frozen 20,000-repetition bootstrap while binding publication summaries, candidate accounting, reviewed publication, and frozen database.",
         "Publication and evaluation APIs accept only a keyword-only selected profile; store/profile/context identity and profile-specific frozen-config hashes must match before publication replay or evaluation, and profile/path mismatches fail before TEST labels or the verified SQLite label reader.",
-        "Publication recomputes the canonical checkpoint context fingerprint from the supplied store context and rejects stale or mismatched fingerprint authorities before runtime replay, manifest construction, or publication writes."
+        "Publication recomputes the canonical checkpoint context fingerprint from the supplied store context and rejects stale or mismatched fingerprint authorities before runtime replay, manifest construction, or publication writes.",
+        "The public command surface is exactly readiness, new, resume, inspect, and evaluate; no path, worker, backend, seed, threshold, alpha, lane, or budget override flags are accepted.",
+        "Exp437 fixed roots come only from EXP437_PROFILE; RUN_PARENT, FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, and FROZEN_EVALUATION remain Exp436 compatibility aliases and are never read by Exp437 execution."
       ],
       "evidence": [
         {
@@ -2188,6 +2191,22 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py",
           "symbol": "def test_public_evaluation_keeps_only_a_keyword_profile_extension("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def main_for_profile_antigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def _production_dependencies("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def build_parser("
+        },
+        {
+          "path": "scratch/run_exp437_metadata_roundtrip_antigravity.py",
+          "symbol": "from experiments.exp436_missing_safe_strict_consensus_antigravity.cli_antigravity import"
         }
       ]
     }
@@ -3021,6 +3040,18 @@
         "artifact_utils"
       ],
       "outcome": "Only evaluate lazily imports the exact evaluator. It derives fixed output, checkpoint, evaluation, and run-parent siblings from the selected profile, rejects profile/path mismatches before labels, verifies publication bytes, profile-specific config identity, and canonical reviewed commit before opening the descriptor-bound TEST identity/label reader, re-verifies the source afterward, and treats evaluated completion independently from champion success. An existing evaluation root is read-only replay only when it binds the verified publication."
+    },
+    {
+      "id": "exp437_fixed_profile_flow",
+      "label": "Exp437 fixed-profile command boundary",
+      "trigger": "Invoke the outside-CWD-safe Exp437 wrapper for readiness, prediction lifecycle, inspect, or post-freeze evaluation.",
+      "steps": [
+        "exp436_contract_boundary",
+        "exp425_database",
+        "artifact_utils",
+        "sqlite_store"
+      ],
+      "outcome": "The wrapper resolves the repository before importing the selected profile entrypoint. The parser exposes only five commands; readiness, fixed-root preflight, runtime, publication replay, and lazy evaluation all receive EXP437_PROFILE. New/resume remain label-free and profile-bound, inspect is read-only, and evaluate imports the exact evaluator only after the Exp437 review-only publication is frozen; no Exp436 compatibility root alias or scientific override can redirect the flow."
     }
   ],
   "unknown_relationships": 0

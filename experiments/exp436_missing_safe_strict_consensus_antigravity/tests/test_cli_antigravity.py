@@ -25,6 +25,7 @@ from experiments.exp403_408.artifact_io import canonical_json_bytes
 from experiments.exp436_missing_safe_strict_consensus_antigravity import cli_antigravity as module
 from experiments.exp436_missing_safe_strict_consensus_antigravity.config_antigravity import FROZEN_CONFIG
 from experiments.exp436_missing_safe_strict_consensus_antigravity.contracts_antigravity import BackendDecision
+from experiments.exp436_missing_safe_strict_consensus_antigravity.execution_profile_antigravity import EXP437_PROFILE
 
 
 HEAD = "a" * 40
@@ -93,6 +94,31 @@ class CliAntigravityTests(unittest.TestCase):
             self.assertEqual(command, parser.parse_args([command]).command)
         with self.assertRaises(SystemExit):
             parser.parse_args(["new", "--workers", "1"])
+
+    def test_exp437_parser_and_dependencies_are_bound_to_the_new_profile(self):
+        parser = module.build_parser(profile=EXP437_PROFILE)
+        self.assertIn(EXP437_PROFILE.cli_program, parser.prog)
+        deps = module._production_dependencies(EXP437_PROFILE)
+        self.assertEqual(deps.output, EXP437_PROFILE.output)
+        self.assertEqual(deps.checkpoint, EXP437_PROFILE.checkpoint)
+        self.assertEqual(deps.readiness, EXP437_PROFILE.readiness)
+        with self.assertRaises(SystemExit):
+            parser.parse_args(["new", "--workers", "1"])
+
+    def test_exp437_wrapper_runs_from_outside_repository_with_no_override_flags(self):
+        wrapper = Path(__file__).resolve().parents[3] / "scratch/run_exp437_metadata_roundtrip_antigravity.py"
+        completed = subprocess.run(
+            [sys.executable, str(wrapper), "--help"],
+            cwd="/tmp",
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("run_exp437_metadata_roundtrip_antigravity.py", completed.stdout)
+        self.assertIn("{readiness,new,resume,inspect,evaluate}", completed.stdout)
+        self.assertNotIn("--workers", completed.stdout)
+        self.assertNotIn("--backend", completed.stdout)
 
     def test_new_requires_a_canonical_binding_from_the_current_clean_head(self):
         with TemporaryDirectory() as directory:

@@ -27,6 +27,12 @@ from uuid import uuid4
 from experiments.exp403_408.artifact_io import canonical_json_bytes
 
 from .config_antigravity import FROZEN_CONFIG
+from .execution_profile_antigravity import (
+    EXP436_PROFILE,
+    ExecutionProfileAntigravity,
+    frozen_config_for_profile_antigravity,
+    validated_profile_antigravity,
+)
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -77,8 +83,27 @@ class _CliDependencies:
                 raise ValueError(f"CLI dependency {name} is invalid")
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="run_exp436_missing_safe_strict_consensus_antigravity.py", allow_abbrev=False)
+def _fixed_paths(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> tuple[Path, Path, Path, Path, Path]:
+    """Return the selected profile's fixed parent and four sibling artifacts.
+
+    The module-level Exp436 names are retained solely as compatibility seams
+    for existing tests and historical callers.  A non-default profile always
+    resolves its roots directly from the immutable profile object.
+    """
+
+    selected = validated_profile_antigravity(profile)
+    if selected == EXP436_PROFILE:
+        return RUN_PARENT, FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, FROZEN_EVALUATION
+    return selected.run_parent, selected.output, selected.checkpoint, selected.readiness, selected.evaluation
+
+
+def build_parser(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> argparse.ArgumentParser:
+    selected = validated_profile_antigravity(profile)
+    parser = argparse.ArgumentParser(prog=selected.cli_program, allow_abbrev=False)
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("readiness", "new", "resume", "inspect", "evaluate"):
         commands.add_parser(name, allow_abbrev=False)
@@ -136,11 +161,18 @@ def _sha(value: object, label: str) -> str:
     return value
 
 
-def _validate_readiness_payload(payload: Mapping[str, object], *, expected_commit: str) -> dict[str, object]:
+def _validate_readiness_payload(
+    payload: Mapping[str, object],
+    *,
+    expected_commit: str,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> dict[str, object]:
+    selected = validated_profile_antigravity(profile)
+    config = frozen_config_for_profile_antigravity(selected)
     value = dict(payload)
     if set(value) != _READINESS_KEYS or value.get("schema") != "exp436.readiness-binding.v1":
         raise ValueError("readiness fields are invalid")
-    if value.get("run_identity") != RUN_IDENTITY or value.get("reviewed_commit") != _validate_commit(expected_commit, "readiness Git commit"):
+    if value.get("run_identity") != selected.run_identity or value.get("reviewed_commit") != _validate_commit(expected_commit, "readiness Git commit"):
         raise ValueError("readiness identity is invalid")
     roots = (_absolute(value["run_root"], "run_root"), _absolute(value["checkpoint_root"], "checkpoint_root"), _absolute(value["evaluation_root"], "evaluation_root"))
     if tuple(Path(item).name for item in roots) != ("output_antigravity", "checkpoint_antigravity", "evaluation_antigravity") or len({str(Path(item).parent) for item in roots}) != 1:
@@ -148,14 +180,14 @@ def _validate_readiness_payload(payload: Mapping[str, object], *, expected_commi
     for name in ("database", "exp291_prediction", "exp291_manifest", "exp292_prediction", "exp292_manifest"):
         _absolute(value[f"{name}_path"], f"{name}_path")
         _sha(value[f"{name}_sha256"], f"{name}_sha256")
-    if value["database_sha256"] != FROZEN_CONFIG.database_sha256:
+    if value["database_sha256"] != config.database_sha256:
         raise ValueError("readiness database hash is invalid")
-    if value["exp291_prediction_sha256"] != FROZEN_CONFIG.exp291_prediction_sha256 or value["exp291_manifest_sha256"] != FROZEN_CONFIG.exp291_manifest_sha256 or value["exp292_prediction_sha256"] != FROZEN_CONFIG.exp292_prediction_sha256 or value["exp292_manifest_sha256"] != FROZEN_CONFIG.exp292_manifest_sha256:
+    if value["exp291_prediction_sha256"] != config.exp291_prediction_sha256 or value["exp291_manifest_sha256"] != config.exp291_manifest_sha256 or value["exp292_prediction_sha256"] != config.exp292_prediction_sha256 or value["exp292_manifest_sha256"] != config.exp292_manifest_sha256:
         raise ValueError("readiness lane hashes are invalid")
     if not isinstance(value["datasets"], list) or not value["datasets"] or sha256(canonical_json_bytes(value["datasets"])).hexdigest() != _sha(value["dataset_digest"], "dataset_digest"):
         raise ValueError("readiness dataset binding is invalid")
-    config = json.loads(canonical_json_bytes(asdict(FROZEN_CONFIG)))
-    if value["frozen_config"] != config or sha256(canonical_json_bytes(config)).hexdigest() != _sha(value["frozen_config_sha256"], "frozen_config_sha256"):
+    frozen_config = json.loads(canonical_json_bytes(asdict(config)))
+    if value["frozen_config"] != frozen_config or sha256(canonical_json_bytes(frozen_config)).hexdigest() != _sha(value["frozen_config_sha256"], "frozen_config_sha256"):
         raise ValueError("readiness frozen config is invalid")
     from .contracts_antigravity import BackendDecision
     decision = BackendDecision.from_payload(value["backend_decision"])
@@ -251,13 +283,17 @@ def _focused_test_evidence() -> dict[str, object]:
     return {"returncode": completed.returncode, "command": command[1:], "elapsed_seconds": perf_counter() - started, "stderr_sha256": sha256(completed.stderr.encode()).hexdigest()}
 
 
-def _backend_decision_and_fixture() -> tuple[object, dict[str, object]]:
+def _backend_decision_and_fixture(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> tuple[object, dict[str, object]]:
+    selected = validated_profile_antigravity(profile)
+    config = frozen_config_for_profile_antigravity(selected)
     import numpy as np
     from .backend_antigravity import select_backend
     from .features_antigravity import score_channel_cpu
     from .mlx_antigravity import MlxFixture, benchmark_mlx_adoption
     from .mps_antigravity import MpsFixture, benchmark_mps_adoption
-    generator = np.random.default_rng(FROZEN_CONFIG.backend_smoke_seed)
+    generator = np.random.default_rng(config.backend_smoke_seed)
     references = generator.normal(size=(32, 16)).astype(np.float32)
     query = generator.normal(size=16).astype(np.float32)
     # Task6's scalar fixture is the production dense-score primitive: exactly
@@ -265,42 +301,51 @@ def _backend_decision_and_fixture() -> tuple[object, dict[str, object]]:
     threshold = float(np.float32(0.0))
     mlx_fixture, mps_fixture = MlxFixture(query, references, threshold), MpsFixture(query, references, threshold)
     decision = select_backend(benchmark_mlx_adoption((mlx_fixture,)), benchmark_mps_adoption((mps_fixture,)))
-    cpu_score = float(score_channel_cpu(query, references, FROZEN_CONFIG.neighbor_count))
+    cpu_score = float(score_channel_cpu(query, references, config.neighbor_count))
     candidates = [0] if cpu_score > threshold else []
     return decision, {"sha256": sha256(canonical_json_bytes({"query": query.tolist(), "references": references.tolist(), "threshold": threshold})).hexdigest(), "candidate_indices": candidates}
 
 
-def _production_readiness() -> dict[str, object]:
+def _production_readiness(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> dict[str, object]:
     """Compute evidence before any run-parent side effect or label-capable call."""
-    if any(path.exists() or path.is_symlink() for path in (RUN_PARENT, FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_EVALUATION, FROZEN_READINESS)):
+    selected = validated_profile_antigravity(profile)
+    _run_parent, output, checkpoint, readiness_path, evaluation = _fixed_paths(selected)
+    config = frozen_config_for_profile_antigravity(selected)
+    if any(path.exists() or path.is_symlink() for path in (_run_parent, output, checkpoint, evaluation, readiness_path)):
         raise ValueError("readiness requires every fixed root and parent to be absent")
-    FROZEN_CONFIG.validate(); head = _clean_head()
+    config.validate(); head = _clean_head()
     from .inputs_antigravity import DEFAULT_DATABASE, DEFAULT_EXP291_MANIFEST, DEFAULT_EXP291_PREDICTION, DEFAULT_EXP292_MANIFEST, DEFAULT_EXP292_PREDICTION, open_exp436_input_session
     with open_exp436_input_session(DEFAULT_DATABASE, DEFAULT_EXP291_PREDICTION, DEFAULT_EXP291_MANIFEST, DEFAULT_EXP292_PREDICTION, DEFAULT_EXP292_MANIFEST, verified_code_commit=head) as session:
         source = session.source_paths.to_payload(); datasets = list(session.context.datasets)
         if session.label_access_count != 0: raise ValueError("readiness input session exposed labels")
-    decision, fixture = _backend_decision_and_fixture()
+    decision, fixture = _backend_decision_and_fixture(selected)
     focused = _focused_test_evidence()
     if focused["returncode"] != 0: raise ValueError("focused tests failed during readiness")
     final_head = _clean_head()
     if final_head != head: raise ValueError("clean HEAD changed during readiness")
-    config = json.loads(canonical_json_bytes(asdict(FROZEN_CONFIG)))
+    config_payload = json.loads(canonical_json_bytes(asdict(config)))
     hashes = {"database": _sha256_file(DATABASE_PATH), "exp291_prediction": _sha256_file(LANE_PATHS[0]), "exp291_manifest": _sha256_file(LANE_PATHS[1]), "exp292_prediction": _sha256_file(LANE_PATHS[2]), "exp292_manifest": _sha256_file(LANE_PATHS[3])}
-    if hashes["database"] != FROZEN_CONFIG.database_sha256: raise ValueError("database source hash changed")
-    return {"schema": "exp436.readiness-binding.v1", "run_identity": RUN_IDENTITY, "reviewed_commit": head,
+    if hashes["database"] != config.database_sha256: raise ValueError("database source hash changed")
+    return {"schema": "exp436.readiness-binding.v1", "run_identity": selected.run_identity, "reviewed_commit": head,
         **{f"{name}_path": source[name] for name in hashes}, **{f"{name}_sha256": hashes[name] for name in hashes},
         "datasets": datasets, "dataset_digest": sha256(canonical_json_bytes(datasets)).hexdigest(),
-        "frozen_config": config, "frozen_config_sha256": sha256(canonical_json_bytes(config)).hexdigest(),
+        "frozen_config": config_payload, "frozen_config_sha256": sha256(canonical_json_bytes(config_payload)).hexdigest(),
         "backend_decision": decision.to_payload(), "backend_decision_sha256": sha256(canonical_json_bytes(decision.to_payload())).hexdigest(),
-        "run_root": str(FROZEN_OUTPUT.resolve()), "checkpoint_root": str(FROZEN_CHECKPOINT.resolve()), "evaluation_root": str(FROZEN_EVALUATION.resolve()), "evaluation_root_absent": True,
+        "run_root": str(output.resolve()), "checkpoint_root": str(checkpoint.resolve()), "evaluation_root": str(evaluation.resolve()), "evaluation_root_absent": True,
         "test_values_opened": 0, "test_labels_opened": 0, "label_access_count": 0, "focused_tests": focused, "candidate_fixture": fixture,
         "cpu_topology": {"logical_cpus": os.cpu_count() or 1, "workers": max(1, (os.cpu_count() or 1) - 1), "inner_threads": 1}, "runtime_versions": _runtime_versions()}
 
 
-def run_readiness() -> Mapping[str, object]:
-    payload = _production_readiness(); _validate_readiness_payload(payload, expected_commit=payload["reviewed_commit"])
+def run_readiness(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Mapping[str, object]:
+    selected = validated_profile_antigravity(profile)
+    _run_parent, _output, _checkpoint, readiness_path, _evaluation = _fixed_paths(selected)
+    payload = _production_readiness(selected); _validate_readiness_payload(payload, expected_commit=payload["reviewed_commit"], profile=selected)
     if _clean_head() != payload["reviewed_commit"]: raise ValueError("clean HEAD changed before readiness publication")
-    _publish_readiness_atomically(FROZEN_READINESS, payload)
+    _publish_readiness_atomically(readiness_path, payload)
     return payload
 
 
@@ -330,85 +375,135 @@ def _summary_payload(summary: object, publication: object | None = None) -> dict
     return dict(payload)
 
 
-def _input_factory(head: str):
+def _input_factory(
+    head: str,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+):
+    selected = validated_profile_antigravity(profile)
     from .inputs_antigravity import DEFAULT_DATABASE, DEFAULT_EXP291_MANIFEST, DEFAULT_EXP291_PREDICTION, DEFAULT_EXP292_MANIFEST, DEFAULT_EXP292_PREDICTION, open_exp436_input_session
+    # ``selected`` is validated at the boundary even though the shared input
+    # session intentionally keeps its scientific source arguments unchanged.
     return lambda: open_exp436_input_session(DEFAULT_DATABASE, DEFAULT_EXP291_PREDICTION, DEFAULT_EXP291_MANIFEST, DEFAULT_EXP292_PREDICTION, DEFAULT_EXP292_MANIFEST, verified_code_commit=head)
 
 
-def _publish_after_complete(summary: object) -> Mapping[str, object]:
+def _publish_after_complete(
+    summary: object,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Mapping[str, object]:
+    selected = validated_profile_antigravity(profile)
+    _run_parent, output, checkpoint, _readiness, _evaluation = _fixed_paths(selected)
     from .checkpoint_antigravity import Exp436CheckpointStore
     from .reporting_antigravity import inspect_publication, publish_exp436, PUBLICATION_DIRECTORY
-    store = Exp436CheckpointStore.open_read_only(FROZEN_CHECKPOINT)
-    publication = inspect_publication(FROZEN_OUTPUT, store) if (FROZEN_OUTPUT / PUBLICATION_DIRECTORY).exists() else publish_exp436(store, FROZEN_OUTPUT)
+    store = Exp436CheckpointStore.open_read_only(checkpoint, profile=selected)
+    publication = inspect_publication(output, store, profile=selected) if (output / PUBLICATION_DIRECTORY).exists() else publish_exp436(store, output, profile=selected)
     return _summary_payload(summary, publication)
 
 
-def _run_prediction(command: str) -> Mapping[str, object]:
+def _run_prediction(
+    command: str,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Mapping[str, object]:
     """Import only input/runtime after an exact readiness/head recheck."""
+    selected = validated_profile_antigravity(profile)
+    _run_parent, output, checkpoint, readiness_path, _evaluation = _fixed_paths(selected)
     head = _clean_head()
     if command == "new":
-        readiness = _read_json(FROZEN_READINESS, "readiness input")
-        _validate_readiness_payload(readiness, expected_commit=head)
+        readiness = _read_json(readiness_path, "readiness input")
+        _validate_readiness_payload(readiness, expected_commit=head, profile=selected)
     from .runtime_antigravity import run_exp436_new, resume_exp436
     final_head = _clean_head()
     if final_head != head: raise ValueError("clean HEAD changed before input session")
-    factory = _input_factory(final_head)
-    summary = run_exp436_new(readiness_path=FROZEN_READINESS, run_root=FROZEN_OUTPUT, checkpoint_root=FROZEN_CHECKPOINT, reviewed_commit=final_head, input_session_factory=factory) if command == "new" else resume_exp436(readiness_path=FROZEN_READINESS, run_root=FROZEN_OUTPUT, checkpoint_root=FROZEN_CHECKPOINT, reviewed_commit=final_head, input_session_factory=factory)
-    return _publish_after_complete(summary) if summary.status == "checkpoint_complete" else _summary_payload(summary)
+    factory = _input_factory(final_head, selected)
+    summary = run_exp436_new(readiness_path=readiness_path, run_root=output, checkpoint_root=checkpoint, reviewed_commit=final_head, input_session_factory=factory, profile=selected) if command == "new" else resume_exp436(readiness_path=readiness_path, run_root=output, checkpoint_root=checkpoint, reviewed_commit=final_head, input_session_factory=factory, profile=selected)
+    return _publish_after_complete(summary, selected) if summary.status == "checkpoint_complete" else _summary_payload(summary)
 
 
-def run_new() -> Mapping[str, object]:
-    _preflight_roots("new", FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, FROZEN_EVALUATION)
-    return _run_prediction("new")
+def run_new(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Mapping[str, object]:
+    selected = validated_profile_antigravity(profile)
+    _run_parent, output, checkpoint, readiness_path, evaluation = _fixed_paths(selected)
+    _preflight_roots("new", output, checkpoint, readiness_path, evaluation)
+    return _run_prediction("new", selected)
 
 
-def run_resume() -> Mapping[str, object]:
-    _preflight_roots("resume", FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, FROZEN_EVALUATION)
-    state = _resume_state(FROZEN_OUTPUT)
+def run_resume(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Mapping[str, object]:
+    selected = validated_profile_antigravity(profile)
+    _run_parent, output, checkpoint, readiness_path, evaluation = _fixed_paths(selected)
+    _preflight_roots("resume", output, checkpoint, readiness_path, evaluation)
+    state = _resume_state(output)
     if state not in {"interrupted", "checkpoint_complete"}:
         raise ValueError(f"resume rejects runtime state: {state}")
-    return _run_prediction("resume")
+    return _run_prediction("resume", selected)
 
 
-def run_inspect() -> Mapping[str, object]:
-    _preflight_roots("inspect", FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, FROZEN_EVALUATION)
+def run_inspect(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Mapping[str, object]:
+    selected = validated_profile_antigravity(profile)
+    _run_parent, output, checkpoint, readiness_path, evaluation = _fixed_paths(selected)
+    _preflight_roots("inspect", output, checkpoint, readiness_path, evaluation)
     from .reporting_antigravity import PUBLICATION_DIRECTORY, inspect_publication
-    if (FROZEN_OUTPUT / PUBLICATION_DIRECTORY).is_dir():
+    if (output / PUBLICATION_DIRECTORY).is_dir():
         from .checkpoint_antigravity import Exp436CheckpointStore
-        publication = inspect_publication(FROZEN_OUTPUT, Exp436CheckpointStore.open_read_only(FROZEN_CHECKPOINT))
+        publication = inspect_publication(output, Exp436CheckpointStore.open_read_only(checkpoint, profile=selected), profile=selected)
         manifest = publication.manifest
         return {"state": "complete_review_only", "run_identity": manifest.get("run_identity"),
                 "completed_datasets": manifest.get("completed_datasets"), "candidate_count": manifest.get("candidate_count"),
                 "prediction_sha256": publication.prediction_sha256, "manifest_sha256": publication.manifest_sha256}
     from .runtime_antigravity import inspect_exp436
-    summary = inspect_exp436(readiness_path=FROZEN_READINESS, run_root=FROZEN_OUTPUT, checkpoint_root=FROZEN_CHECKPOINT, reviewed_commit=_clean_head())
+    summary = inspect_exp436(readiness_path=readiness_path, run_root=output, checkpoint_root=checkpoint, reviewed_commit=_clean_head(), profile=selected)
     return _summary_payload(summary)
 
 
-def run_evaluate() -> Mapping[str, object]:
+def run_evaluate(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> Mapping[str, object]:
+    selected = validated_profile_antigravity(profile)
+    _run_parent, output, _checkpoint, _readiness, evaluation = _fixed_paths(selected)
     evaluator = importlib.import_module("experiments.exp436_missing_safe_strict_consensus_antigravity.evaluation_antigravity")
-    result = evaluator.evaluate_exp436(FROZEN_OUTPUT, FROZEN_EVALUATION)
+    result = evaluator.evaluate_exp436(output, evaluation, profile=selected)
     return result.to_payload() if hasattr(result, "to_payload") else dict(result)
 
 
-def _production_dependencies() -> _CliDependencies:
-    return _CliDependencies(FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, _clean_head, run_readiness,
-                            lambda command: run_new() if command == "new" else run_resume(), run_inspect, run_evaluate)
+def _production_dependencies(
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> _CliDependencies:
+    selected = validated_profile_antigravity(profile)
+    _run_parent, output, checkpoint, readiness_path, _evaluation = _fixed_paths(selected)
+    return _CliDependencies(
+        output,
+        checkpoint,
+        readiness_path,
+        _clean_head,
+        lambda: run_readiness(selected),
+        lambda command: run_new(selected) if command == "new" else run_resume(selected),
+        lambda: run_inspect(selected),
+        lambda: run_evaluate(selected),
+    )
 
 
-def _main_with_dependencies(argv: list[str] | None, deps: _CliDependencies) -> int:
+def _main_with_dependencies(
+    argv: list[str] | None,
+    deps: _CliDependencies,
+    *,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> int:
     """Private test seam; the exported CLI cannot accept dependency overrides."""
-    try: args = build_parser().parse_args(argv)
+    selected = validated_profile_antigravity(profile)
+    try: args = build_parser(selected).parse_args(argv)
     except SystemExit as error: return int(error.code) if isinstance(error.code, int) else 2
     try:
         evaluation = deps.output.parent / "evaluation_antigravity"
         _preflight_roots(args.command, deps.output, deps.checkpoint, deps.readiness, evaluation)
         if args.command == "readiness":
-            payload = dict(deps.readiness_call()); verified = _validate_readiness_payload(payload, expected_commit=payload.get("reviewed_commit"))
+            payload = dict(deps.readiness_call()); verified = _validate_readiness_payload(payload, expected_commit=payload.get("reviewed_commit"), profile=selected)
             if deps.readiness.is_file() and _read_json(deps.readiness, "readiness artifact") != verified: raise ValueError("readiness artifact changed after action")
             result = verified
         elif args.command == "new":
-            verified_head = _head(deps); _validate_readiness_payload(_read_json(deps.readiness, "readiness input"), expected_commit=verified_head)
+            verified_head = _head(deps); _validate_readiness_payload(_read_json(deps.readiness, "readiness input"), expected_commit=verified_head, profile=selected)
             if _head(deps) != verified_head: raise ValueError("clean HEAD changed before execution")
             result = dict(deps.execute("new"))
         elif args.command == "resume":
@@ -425,13 +520,33 @@ def _main_with_dependencies(argv: list[str] | None, deps: _CliDependencies) -> i
         print(f"{args.command} failed: {type(error).__name__}: {error}", file=sys.stderr); return 2
 
 
+def main_for_profile_antigravity(
+    profile: ExecutionProfileAntigravity,
+    argv: list[str] | None = None,
+) -> int:
+    selected = validated_profile_antigravity(profile)
+    return _main_with_dependencies(
+        argv,
+        _production_dependencies(selected),
+        profile=selected,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
-    return _main_with_dependencies(argv, _production_dependencies())
+    """Existing Exp436-only command entrypoint."""
+
+    return main_for_profile_antigravity(EXP436_PROFILE, argv)
 
 
-__all__ = ["DATABASE_PATH", "FROZEN_CHECKPOINT", "FROZEN_EVALUATION", "FROZEN_OUTPUT", "FROZEN_READINESS", "LANE_PATHS", "RUN_IDENTITY", "build_parser", "main", "run_evaluate", "run_inspect", "run_new", "run_readiness", "run_resume"]
+__all__ = ["DATABASE_PATH", "FROZEN_CHECKPOINT", "FROZEN_EVALUATION", "FROZEN_OUTPUT", "FROZEN_READINESS", "LANE_PATHS", "RUN_IDENTITY", "build_parser", "main", "main_for_profile_antigravity", "run_evaluate", "run_inspect", "run_new", "run_readiness", "run_resume"]
 
 
-def _revalidate_readiness_for_execution(readiness: Path, *, validated_commit: str | None, current_head: str) -> dict[str, object]:
+def _revalidate_readiness_for_execution(
+    readiness: Path,
+    *,
+    validated_commit: str | None,
+    current_head: str,
+    profile: ExecutionProfileAntigravity = EXP436_PROFILE,
+) -> dict[str, object]:
     if validated_commit is None or validated_commit != current_head: raise ValueError("readiness commit changed before execution")
-    return _validate_readiness_payload(_read_json(Path(readiness), "readiness input"), expected_commit=current_head)
+    return _validate_readiness_payload(_read_json(Path(readiness), "readiness input"), expected_commit=current_head, profile=profile)
