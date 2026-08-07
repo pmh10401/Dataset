@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T17:18:18Z",
-  "generated_from_commit": "adb9dedb5b7c3174d13c1e719e58fb76e91c5d46",
+  "generated_at": "2026-08-07T17:20:11Z",
+  "generated_from_commit": "fff85106da07775efb283246c74b9631140e826f",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2417,7 +2417,7 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding.",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2448,7 +2448,10 @@
         "adjacent_depths_antigravity",
         "fit_group_calibration_antigravity",
         "score_test_row_antigravity",
-        "select_global_candidates_antigravity"
+        "select_global_candidates_antigravity",
+        "benchmark_mlx_antigravity",
+        "benchmark_numba_antigravity",
+        "select_backend_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2471,7 +2474,10 @@
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_predecessor_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_features_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_scoring_antigravity.py",
-        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_budget_antigravity.py"
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_budget_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_backend_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_mlx_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_numba_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2626,6 +2632,18 @@
         {
           "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/budget_antigravity.py",
           "symbol": "def select_global_candidates_antigravity("
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/backend_antigravity.py",
+          "symbol": "def select_backend_antigravity("
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/mlx_antigravity.py",
+          "symbol": "def benchmark_mlx_antigravity("
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/numba_antigravity.py",
+          "symbol": "def benchmark_numba_antigravity("
         }
       ]
     },
