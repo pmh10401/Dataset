@@ -9,7 +9,7 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import subprocess
-from typing import Callable
+from typing import Callable, Mapping
 
 from experiments.exp403_408.artifact_io import canonical_json_bytes, sha256_file
 from .config_antigravity import (
@@ -71,6 +71,26 @@ def main_with_dependencies_antigravity(
     return 0
 
 
+def _validate_exp437_replay_antigravity(
+    readiness: Mapping[str, object], current: Mapping[str, object]
+) -> str:
+    from .predecessor_antigravity import (
+        classify_exp437_snapshot_antigravity,
+        revalidate_exp437_snapshot_antigravity,
+    )
+
+    bound = readiness.get("exp437_execution")
+    if not isinstance(bound, Mapping) or not isinstance(current, Mapping):
+        raise ValueError("Exp437 readiness execution snapshot is invalid")
+    bound_mode = classify_exp437_snapshot_antigravity(bound)
+    if (
+        readiness.get("exp437_execution_mode") != bound_mode
+        or readiness.get("concurrent_with_exp437") is not (bound_mode == "concurrent")
+    ):
+        raise ValueError("Exp437 readiness execution mode is invalid")
+    return revalidate_exp437_snapshot_antigravity(bound, current)
+
+
 def _read_readiness_antigravity() -> dict[str, object]:
     try:
         raw = READINESS_PATH_ANTIGRAVITY.read_bytes()
@@ -96,6 +116,10 @@ def _read_readiness_antigravity() -> dict[str, object]:
     from .readiness_antigravity import _exp437_terminal_antigravity
 
     current_exp437 = dict(_exp437_terminal_antigravity())
+    try:
+        _validate_exp437_replay_antigravity(payload, current_exp437)
+    except ValueError as error:
+        raise ValueError("Exp438 readiness replay validation failed") from error
     expected_paths = canonical_source_paths_antigravity().to_payload()
     if (
         head != payload.get("reviewed_commit")
@@ -116,8 +140,6 @@ def _read_readiness_antigravity() -> dict[str, object]:
         or payload.get("test_values_opened") != 0
         or payload.get("test_labels_opened") != 0
         or payload.get("prediction_label_access_count") != 0
-        or current_exp437.get("state") not in {"complete", "checkpoint_complete"}
-        or current_exp437.get("pid_active") is not False
     ):
         raise ValueError("Exp438 readiness replay validation failed")
     return payload

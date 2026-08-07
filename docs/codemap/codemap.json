@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T04:53:53Z",
-  "generated_from_commit": "3c5c4c78bcebb3fbb367cf8a8dce28d600df11b3",
+  "generated_at": "2026-08-07T04:55:20Z",
+  "generated_from_commit": "763343770cf12ba5c3e60263f7fea20f82de730f",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2309,7 +2309,8 @@
         "inspect_exp438_antigravity",
         "read_exp437_snapshot_antigravity",
         "classify_exp437_snapshot_antigravity",
-        "revalidate_exp437_snapshot_antigravity"
+        "revalidate_exp437_snapshot_antigravity",
+        "_validate_exp437_replay_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2366,6 +2367,10 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/predecessor_antigravity.py",
           "symbol": "def read_exp437_snapshot_antigravity"
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/cli_antigravity.py",
+          "symbol": "def _validate_exp437_replay_antigravity"
         }
       ]
     },
