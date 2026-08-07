@@ -264,7 +264,7 @@
     {
       "id": "Exp439",
       "kind": "exp438_scale_aware_reconstruction_validation_repair",
-      "status": "official_interrupted_101_scheduler_cache_repair_validation",
+      "status": "official_interrupted_101_scheduler_cache_repair_ready_for_readiness",
       "branch": "codex/exp439-scale-aware-reconstruction-antigravity",
       "base_commit": "b994fd46db373f5f556bbecb00cc9811d3679ac8",
       "documents": [
@@ -289,7 +289,7 @@
       "prediction_phase_started": true,
       "test_labels_opened": false,
       "official_readiness": false,
-      "implementation_code_commit": "9230efa0cb5d5739f4547dee7f9623aa99815a14",
+      "implementation_code_commit": "a3fae166ede77c0276d416447e57519e0334d053",
       "regression_counts": {
         "exp439_tests": 108,
         "exp438_tests": 94,
