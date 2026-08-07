@@ -25,7 +25,8 @@ Exp440의 동결된 저주파 후보를 아주 보수적으로 줄이면, Exp404
 
 1. 기존 강한 데이터셋의 성능을 떨어뜨리지 않는다.
 2. 추가 오탐을 최대 30개 안에 묶는다.
-3. 전체 1,117개 데이터셋에서 micro와 macro F1이 모두 통계적으로 증가한다.
+3. 전체 1,117개 데이터셋에서 이미 관찰된 micro/macro F1 개선을 같은 동결 규칙으로
+   재현하고, 그 결과가 사후 선택된 설명값임을 분명히 남긴다.
 
 ## 왜 Exp440을 그대로 승격하지 않는가
 
@@ -80,13 +81,19 @@ Exp441 예측 코드는 TEST label, 실제 이상 위치, 과거 family별 TEST 
 adaptive_followup = true
 independent_validation = false
 external_generalization_supported = false
+official_run_purpose = deterministic_retrospective_reproduction
+confirmatory_statistical_claim = false
+bootstrap_interpretation = descriptive_post_selection
+scientific_winner_selected = false
 review_only = true
 operational_alert_eligible = false
 ```
 
-Exp441이 성공 기준을 통과하면 **현재 고정 벤치마크 안에서 검증된 새 내부 기준**이
-될 수 있다. 하지만 새 설비나 보지 않은 외부 데이터에서도 좋아진다고 주장하지
-않으며 자동 경보로 승격하지 않는다.
+Exp441이 아래 판정표를 모두 통과해도 새 내부 챔피언이나 통계적으로 검증된 개선으로
+승격하지 않는다. Exp404 Hard/Exp416 감사본이 계속 검증 기준이다. Exp441이 줄 수
+있는 결론은 "동결된 선택 규칙과 이미 본 결과가 독립된 label 차단 실행에서도
+정확히 재현되었다"까지다. 새 설비나 보지 않은 외부 데이터에서도 좋아진다고
+주장하지 않으며 자동 경보로 승격하지 않는다.
 
 ## 동결 신원과 입력
 
@@ -228,9 +235,13 @@ macro paired-bootstrap 95% CI = [0.0066248881, 0.0191584602]
 maximum strong-dataset loss = 0
 ```
 
-이는 구현 가능성을 확인한 **사후 탐색값**일 뿐 Exp441의 공식 결과가 아니다. 같은
-TEST 집단에서 얻은 값이므로 새 prediction freeze와 평가 절차를 생략하는 근거로
-쓰지 않는다.
+이는 구현 가능성을 확인한 **사후 탐색값**이다. 정확한 선택 규칙과 TP/FP/F1 및
+bootstrap 구간을 모두 같은 TEST label에서 이미 얻었으므로, Exp441 공식 실행은
+새 확인 실험이 아니라 이 결과의 결정론적 retrospective reproduction이다. 새
+prediction freeze는 runtime label 누수를 막고 provenance를 동결하는 데 필요하지만,
+이미 발생한 사후 선택을 되돌리거나 bootstrap을 confirmatory interval로 바꾸지는
+못한다. 공식 평가가 같은 구간을 다시 내더라도 이는 descriptive/post-selection
+interval이며 통계적 일반화 증거가 아니다.
 
 ## 실행 구조
 
@@ -279,21 +290,40 @@ instance_index와 label-free 근거만 담고 label, 실제 이상 위치, confu
 후보 수, label access count 0, review-only 상태를 묶는다. artifact map은 자기 자신만
 제외하고 나머지 publication 파일을 모두 해시한다.
 
-## CPU, MLX, MPS 판단
+## PyTorch, MLX, MPS 판단
 
-Exp441의 핵심은 JSON record 검증, SHA256, 필터, 짧은 정렬이다. MLX/MPS가 잘하는
-큰 행렬 연산이나 신경망 학습이 없다. 장치로 데이터를 옮기면 오히려 느려지고,
-문자열·파일 해시를 같은 알고리즘으로 표현할 수도 없다. 따라서 MLX 정책의 첫 조건인
-"동일 연산을 알고리즘 변화 없이 표현"을 통과하지 못해 CPU가 고정 backend다.
+Exp441의 핵심은 JSON record 검증, SHA256, 문자열 필터, 짧은 정렬이다. 따라서
+`tensor_eligible = false`다. PyTorch, MLX, MPS가 잘하는 큰 행렬 연산이나 신경망
+학습이 없고, 문자열·파일 해시는 tensor 연산으로 같은 알고리즘을 표현할 수 없다.
+장치 전송과 compile/synchronization 비용만 추가된다. 현재 설계 확인 환경의 backend
+상태는 다음과 같다.
+
+```text
+Python = 3.14.6
+PyTorch = available, version 2.13.0
+PyTorch MPS = built true, available true
+MLX = available, version 0.32.0, default device GPU 0
+mlx-metal = available, version 0.32.0
+tensor_eligible = false
+acceleration_benchmark_status = not_run_inapplicable
+canonical_backend = cpu
+```
+
+readiness는 실행 시점의 버전, device, availability를 다시 기록한다. 현재는 적용성
+첫 단계에서 탈락하므로 의미 없는 속도 숫자를 만들기 위한 tensor rewrite나
+microbenchmark를 하지 않는다. 향후 실제 tensor stage가 추가된다면 Exp441 범위가
+아니며, 동일 입력에서 prediction 바이트와 후보 좌표가 완전히 같고 모든 출력이
+유한하며 transfer/compile/synchronization을 포함해 CPU보다 최소 1.1배 빠른 전체-stage
+benchmark를 통과해야만 accelerated path가 canonical이 될 수 있다.
 
 공식 검증은 이 Mac의 논리 코어 수에서 하나를 뺀 11 CPU worker를 사용해 1,117개
-record의 바이트 해시와 파싱을 병렬 확인한다. 저장소의 일반 MLX fallback 문구에는
-최대 7 worker가 적혀 있지만, 사용자가 이 프로젝트의 공식 CPU 실행에 대해 나중에
-승인한 `max(1, logical CPUs - 1)` 규칙을 Exp441의 실험별 고정값으로 사용한다.
-readiness는 실제 worker 수가 11이 아니면 실행하지 않는다. 부모 프로세스가 정렬된
-순서로 결과를 합치고 publication은 부모 하나만 쓴다. worker 안의 수치 스레드는
-1개로 제한한다. manifest에는 MLX/MPS가
-`inapplicable_no_dense_numeric_stage`로 제외된 이유를 기록한다.
+record의 바이트 해시와 파싱을 병렬 확인한다. 이는 AGENTS의
+`max(1, logical CPUs - 1)` 정책과 사용자의 공식 실행 지시를 함께 따른다. readiness는
+감지한 논리 CPU 수와 worker 수를 provenance에 기록하고, 이 Mac에서 worker가 11이
+아니면 실행하지 않는다. 부모 프로세스가 정렬된 순서로 결과를 합치고 publication은
+부모 하나만 쓴다. worker 안의 수치 스레드는 1개로 제한한다. manifest에는 PyTorch,
+MLX, MPS가 `inapplicable_no_tensor_stage`로 제외된 이유와 benchmark 미실행 상태를
+기록한다.
 
 ## 진행 로그
 
@@ -315,14 +345,15 @@ selector-only 실행이라 정상적으로는 짧게 끝나지만, 동일한 관
 `null`로 기록하며 `dimension_status = "not_available_in_frozen_selector_source"`를
 함께 남긴다. 원시 DB를 다시 열어 로그용 정보를 보충하지 않는다.
 
-## 사후 평가와 성공 기준
+## 사후 재현 평가와 기술적 판정표
 
 평가는 publication을 완전히 재검증하고 prediction SHA256을 고정한 뒤에만 SQLite의
 TEST `instance_index,label`을 한 번 읽는다. Frozen Hard와 `Hard union Exp441`을
-전체 1,117개 데이터셋에서 비교한다.
+전체 1,117개 데이터셋에서 비교한다. 이 순서는 runtime label 누수를 막지만, 이미
+TEST 결과를 보고 선택한 규칙을 독립 검증으로 바꾸지는 않는다.
 
-Exp441은 다음 조건을 **모두** 만족할 때만 현재 고정 벤치마크의 내부 챔피언
-후보가 된다.
+다음 항목은 통계적 성공 기준이나 챔피언 승격 gate가 아니라, 공식 구현이 설계 때
+이미 관찰한 결과와 같은 정책을 재현했는지 확인하는 기술적·설명용 판정표다.
 
 - 전체 데이터셋 수가 정확히 1,117개
 - Exp441 후보 수가 30개 이하이고 데이터셋당 1개 이하
@@ -338,11 +369,18 @@ Exp441은 다음 조건을 **모두** 만족할 때만 현재 고정 벤치마�
 
 bootstrap은 1,117개 dataset cluster를 replacement 방식으로 paired 재표본화하며
 seed `44120260808`, NumPy quantile `method="linear"`, 2.5/97.5 percentile을
-사용한다. zero-denominator F1은 0으로 고정한다.
+사용한다. zero-denominator F1은 0으로 고정한다. 산출물에는
+`bootstrap_interpretation = "descriptive_post_selection"`과
+`confirmatory_statistical_claim = false`를 함께 기록한다.
 
-하나라도 실패하면 Exp441은 실패로 기록하고 같은 실험에서 예산, 순위, source를
-바꾸지 않는다. 변경은 새 실험 번호와 새 사전등록으로만 한다. 성공하더라도
-review-only이며 자동 경보로 승격하지 않는다.
+source hash, population, 선택 규칙, 후보 수 또는 label 차단선이 다르면
+`engineering_reproduction_failed`로 기록한다. 구조는 같지만 사후 지표가 위 탐색
+replay와 다르면 `retrospective_reproduction_discrepancy`로 기록하고 원인을 감사한다.
+구조와 지표가 모두 재현되면 `retrospective_reproduction_complete`로 기록한다.
+세 상태 모두 `scientific_winner_selected = false`, review-only,
+operational-alert-ineligible이며 CHAMPION_LEDGER를 Exp441로 바꾸지 않는다. 같은
+실험에서 예산, 순위, source를 바꾸지 않으며 변경은 새 실험 번호와 새 사전등록으로만
+한다.
 
 ## 오류 처리와 불변성
 
@@ -372,7 +410,8 @@ review-only이며 자동 경보로 승격하지 않는다.
 - 진행 JSON의 PID, 현재 데이터셋, 크기, 단계, backend, 완료 수, 속도, ETA, 오류
 - create-only publication, 모든 artifact tamper, 동시 destination 생성을 거부
 - prediction freeze 전 evaluate 금지와 post-freeze label read 순서
-- 손으로 계산 가능한 TP/FP/FN/TN, rescue, macro, strong-loss, bootstrap gate 경계
+- 손으로 계산 가능한 TP/FP/FN/TN, rescue, macro, strong-loss, descriptive bootstrap
+  판정표와 세 reproduction 상태
 - 실제 Exp440/Hard artifact를 이용한 production-shaped label-free replay
 
 공식 실행 전에 adversarial production-path suite가 모두 통과해야 한다. fixture smoke만
