@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-07T14:02:00+09:00",
+  "updated_at": "2026-08-07T14:20:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp438-frequency-complexity-evidence",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
-  "last_verified_commit": "90d9d1ec0b5eaf510b06be6d656129db491f17f0",
+  "last_verified_commit": "49a44a3473d255e5cf6421b06fddfb6246f155c4",
   "active_experiment": "Exp437 + Exp438",
-  "active_phase": "exp437_recovery_preflight_passed_exp438_concurrent_readiness_pending",
+  "active_phase": "exp437_recovered_running_wait_for_completion_before_exp438",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -31,8 +31,8 @@
     "hard_comparator_prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"
   },
   "active_process": {
-    "pid": 81739,
-    "pid_os_live": false,
+    "pid": 45306,
+    "pid_os_live": true,
     "run_parent": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807",
     "readiness_owns_run_parent": true,
     "new_requires": "existing_run_parent_with_exact_verified_readiness_and_absent_output_checkpoint_evaluation",
@@ -43,15 +43,17 @@
     "events_jsonl": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/events_antigravity.jsonl",
     "parent_log": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/parent_antigravity.log",
     "pid_file": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/run_antigravity.pid",
-    "progress_completed": 938,
-    "event_completed": 938,
-    "checkpoint_completed": 938,
+    "progress_completed": 939,
+    "event_completed": 939,
+    "checkpoint_completed": 939,
     "physical_record_files": 939,
     "reconciliation_reason": "intent_with_record",
     "backend": "cpu",
     "error": 0,
     "test_labels_opened": false,
     "recovery_preflight": "passed",
+    "recovery_status": "running",
+    "recovery_session_id": 89716,
     "recovery_launcher": "operational/recover_exp437_checkpoint_antigravity.py",
     "recovery_log": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/recovery_launcher_antigravity.log",
     "last_error": null
@@ -252,6 +254,9 @@
     "publication_exists": false,
     "evaluation_exists": false,
     "preflight_status": "passed",
+    "recovery_pid": 45306,
+    "recovery_pid_os_live_at_handoff": true,
+    "recovery_progress_at_handoff": 939,
     "implementation_commits": {
       "live_cpu_predecessor": "763343770cf12ba5c3e60263f7fea20f82de730f",
       "monotonic_cli_replay": "75f35700db48eb2c4aed0deb42e3de8e5e295bda",
@@ -265,7 +270,9 @@
       "errors": 0,
       "skips": 0
     },
-    "exp438_concurrency_rule": "terminal_inactive_or_fresh_live_zero_error_cpu_with_heartbeat_age_at_most_300_seconds",
+    "exp438_concurrency_rule": "implemented_but_not_used_because_database_snapshot_is_single_owner",
+    "database_snapshot_concurrency_finding": "Exp437 holds one macOS owned DB hardlink while active, making database nlink=2; Exp438 open_database_snapshot requires nlink=1 before creating its own safety pin.",
+    "user_decision": "wait_for_exp437_completion_then_start_exp438",
     "exp438_run_parent_exists": false,
     "monitoring": "one_post_launch_liveness_check_then_process_owned_logs_only"
   },
@@ -296,8 +303,8 @@
       "root": "/Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806"
     }
   },
-  "next_action": "From the clean Exp438 worktree, launch the exact-source Exp437 recovery once, verify the replacement CPU PID is live, then create Exp438 readiness and start its official 1,117-dataset run.",
-  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence' && python3 operational/recover_exp437_checkpoint_antigravity.py --preflight",
+  "next_action": "Do not poll Exp437. After the user reports PID 45306 complete, verify terminal/inactive publication and database nlink=1 once, then create Exp438 readiness and start the official 1,117-dataset run.",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence' && python3 scratch/run_exp438_frequency_complexity_evidence_antigravity.py readiness",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": true,

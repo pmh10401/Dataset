@@ -152,7 +152,7 @@
     {
       "id": "Exp437",
       "kind": "exp436_canonical_metadata_roundtrip_repair",
-      "status": "stale_pid_recovery_preflight_passed",
+      "status": "official_running_recovered_checkpoint",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "d10a24e77bce15e0376964aa11a275fb4f033fb5",
       "documents": [
@@ -189,6 +189,10 @@
       "physical_record_files": 939,
       "stale_pid": 81739,
       "stale_pid_os_live": false,
+      "recovery_pid": 45306,
+      "recovery_progress_at_handoff": 939,
+      "recovery_backend": "cpu",
+      "recovery_errors": 0,
       "checkpoint_reconciliation_reasons": ["intent_with_record"],
       "official_backend": "cpu",
       "official_errors": 0,
@@ -206,7 +210,7 @@
     {
       "id": "Exp438",
       "kind": "train_frozen_frequency_complexity_separate_channel_evidence",
-      "status": "implementation_complete_concurrent_readiness_pending",
+      "status": "implementation_complete_waiting_for_exp437_completion",
       "branch": "codex/exp438-frequency-complexity-evidence",
       "reviewed_implementation_commit": "90d9d1ec0b5eaf510b06be6d656129db491f17f0",
       "documents": [
@@ -245,8 +249,10 @@
       },
       "predecessor_concurrency": "terminal_inactive_or_fresh_live_zero_error_cpu_heartbeat_at_most_300_seconds",
       "exp437_recovery_preflight": "passed",
+      "database_snapshot_concurrency": "single_owner_nlink_contract_prevents_safe_simultaneous_input_sessions",
+      "user_execution_choice": "start_exp438_after_exp437_completion",
       "next_readiness_command_after_exp437_recovery": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp438_frequency_complexity_evidence_antigravity.py readiness",
-      "notes": "Isolated TRAIN-frozen FFT high/low and attributed ASPE evidence remains scientifically unchanged. User-approved operational concurrency now permits readiness after exact checkpoint recovery when Exp437 is either terminal/inactive or a fresh live zero-error CPU run. CLI replay requires monotonic counters and stable identity/root/backend. TEST labels remain unopened and post-freeze evaluation cannot select a winner."
+      "notes": "Isolated TRAIN-frozen FFT high/low and attributed ASPE evidence remains scientifically unchanged. Exp437 recovered successfully as CPU PID 45306 at 939/1117. True simultaneous start is intentionally deferred because the shared macOS DB snapshot contract permits one owned hardlink/session at a time. The user selected the stable path: wait for Exp437 completion, verify DB nlink returns to 1, then run Exp438 readiness and the official 1,117-dataset prediction."
     }
   ]
 }

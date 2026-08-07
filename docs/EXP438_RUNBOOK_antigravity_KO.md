@@ -178,8 +178,13 @@ evaluation root가 있거나 hash replay가 실패하면 덮어쓰지 않는다.
 
 ## 현재 handoff
 
-현재 상태는 `implementation_complete_concurrent_readiness_pending`이다. Exp437
+현재 상태는 `implementation_complete_waiting_for_exp437_completion`이다. Exp437
 복구 preflight는 진행 938, event 938, 공식 checkpoint 938, intent와 함께 남은
-물리 record 939, 오류 0, label 접근 0으로 통과했다. 아직 두 복구/공식 프로세스는
-시작하지 않았다. 위 복구 명령으로 Exp437를 살리고 한 번 생존 확인한 뒤 정확한
-Exp438 `readiness`와 `new`를 순서대로 실행한다.
+물리 record 939, 오류 0, label 접근 0으로 통과했다. 복구된 Exp437는 CPU PID
+`45306`, 939/1,117에서 정상 실행 중이다.
+
+실제 동시 입력 세션은 사용하지 않는다. Exp437가 macOS DB 안전 hardlink를
+보유하는 동안 DB nlink는 2이고, Exp438도 같은 snapshot 계약상 시작 전 nlink=1을
+요구하기 때문이다. 사용자는 안정 경로를 선택했다. Exp437 완료를 사용자가
+알린 뒤 terminal/inactive, publication, DB nlink=1을 한 번 확인하고 정확한
+Exp438 `readiness`와 `new`를 순서대로 실행한다. 그전에는 반복 감시하지 않는다.

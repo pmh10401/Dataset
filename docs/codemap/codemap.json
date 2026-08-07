@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T05:07:32Z",
-  "generated_from_commit": "90d9d1ec0b5eaf510b06be6d656129db491f17f0",
+  "generated_at": "2026-08-07T05:21:12Z",
+  "generated_from_commit": "49a44a3473d255e5cf6421b06fddfb6246f155c4",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -25,7 +25,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records the passed Exp437 stale-PID recovery preflight, user-approved Exp437/Exp438 CPU concurrency, exact next commands, test evidence, and unchanged scientific/label-firewall boundaries.",
+      "role": "Records recovered Exp437 CPU PID 45306 at checkpoint 939, the single-owner DB snapshot constraint, the user decision to wait for Exp437 completion, and the exact deferred Exp438 readiness handoff.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -36,8 +36,8 @@
         "Exp435 and Exp436 failed roots remain immutable; Exp437 recovery uses only the exact clean cc0f507f source and its existing public runtime API.",
         "The observed Exp437 crash window is progress/event/checkpoint 938 plus one intent-bound physical record (939 files), stale PID 81739, CPU, zero errors, and zero label access.",
         "Exp438 accepts Exp437 only when terminal/inactive or running with a live CPU PID, heartbeat age at most 300 seconds, zero errors, monotonic counters, fixed identity/root, and explicit concurrency authorization.",
-        "Exp437 and Exp438 each use 11 CPU workers; oversubscription is user-approved and affects timing only, not frozen science.",
-        "Prediction TEST-label access remains zero; post-freeze evaluation stays separate and review-only; Codex performs one liveness check and no recurring polling."
+        "Prediction TEST-label access remains zero; post-freeze evaluation stays separate and review-only; Codex performs one liveness check and no recurring polling.",
+        "Exp437 runs with 11 CPU workers. Exp438 waits because the macOS DB snapshot safety contract permits one owned hardlink/session at a time; after Exp437 completion DB nlink must return to 1 before Exp438 readiness."
       ],
       "evidence": [
         {
@@ -50,7 +50,7 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"exp437_recovery_preflight_passed_exp438_concurrent_readiness_pending\""
+          "symbol": "\"active_phase\": \"exp437_recovered_running_wait_for_completion_before_exp438\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -182,7 +182,19 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"implementation_complete_concurrent_readiness_pending\""
+          "symbol": "\"status\": \"implementation_complete_waiting_for_exp437_completion\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"recovery_pid\": 45306"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"user_decision\": \"wait_for_exp437_completion_then_start_exp438\""
+        },
+        {
+          "path": "docs/EXP438_RUNBOOK_antigravity_KO.md",
+          "symbol": "`implementation_complete_waiting_for_exp437_completion`"
         }
       ]
     },
