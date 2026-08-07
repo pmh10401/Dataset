@@ -18,21 +18,28 @@ def ordered_parallel_map_antigravity(values,function,*,workers):
 
 @dataclass(frozen=True)
 class CpuDatasetTaskAntigravity:
- dataset:str;train:Exp439RawDataset;test:Exp439RawDataset
+ dataset:str;train:Exp439RawDataset;test:Exp439RawDataset;backend:str='cpu'
 
 def _worker_init_antigravity():
  for name in ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS','VECLIB_MAXIMUM_THREADS','NUMEXPR_NUM_THREADS'):os.environ[name]='1'
 
 def score_dataset_task_antigravity(task:CpuDatasetTaskAntigravity)->Exp440DatasetResultAntigravity:
+ if task.backend=='numba':
+  from .numba_antigravity import score_numba_antigravity
+  distance=score_numba_antigravity
+ elif task.backend=='cpu':
+  from experiments.exp439_scale_aware_reconstruction_repair_antigravity.scoring_antigravity import score_channel_cpu_antigravity
+  distance=score_channel_cpu_antigravity
+ else:raise ValueError('dataset task backend is invalid')
  prepared=partition_train_rows_antigravity(task.train);models={}
  for group in prepared.groups:
-  try:fitted=fit_group_calibration_antigravity(group.matrix)
+  try:fitted=fit_group_calibration_antigravity(group.matrix,distance=distance)
   except ValueError:continue
   if fitted.eligible:models[group.raw_length]=fitted
  candidates=[];abstentions=[]
  for row in task.test.series:
   if test_row_abstention_reason_antigravity(row) is not None or row.raw_length not in models:abstentions.append(row.instance_index);continue
-  _,candidate=score_test_row_antigravity(task.dataset,row.instance_index,row.values,models[row.raw_length])
+  _,candidate=score_test_row_antigravity(task.dataset,row.instance_index,row.values,models[row.raw_length],distance=distance)
   if candidate is not None:candidates.append(candidate)
  return Exp440DatasetResultAntigravity(task.dataset,'scored',tuple(candidates),tuple(abstentions),len(prepared.exclusions),len(task.test.series))
 
@@ -41,8 +48,9 @@ def _run_antigravity(*,reviewed_commit:str,resume:bool)->tuple[int,int]:
  with open_exp439_input_session(verified_code_commit=reviewed_commit) as session:
   datasets=tuple(session.context.datasets)
   if len(datasets)!=FROZEN_CONFIG.dataset_count:raise ValueError('dataset population differs')
+  readiness=json.loads(Path(FROZEN_CONFIG.readiness_path).read_text());backend=readiness['backend']
   store=Exp440CheckpointStoreAntigravity.open_read_only(checkpoint) if resume else Exp440CheckpointStoreAntigravity.create(checkpoint,datasets,reviewed_commit)
-  writer=ProgressWriterAntigravity.resume(output) if resume else ProgressWriterAntigravity.create(output,total=len(datasets),checkpoint=checkpoint,backend='cpu')
+  writer=ProgressWriterAntigravity.resume(output) if resume else ProgressWriterAntigravity.create(output,total=len(datasets),checkpoint=checkpoint,backend=backend)
   def interrupted(_signum,_frame):raise KeyboardInterrupt
   previous=signal.signal(signal.SIGTERM,interrupted)
   pending=[];capacity=cpu_worker_count_antigravity()**2
@@ -50,7 +58,7 @@ def _run_antigravity(*,reviewed_commit:str,resume:bool)->tuple[int,int]:
    with ProcessPoolExecutor(max_workers=cpu_worker_count_antigravity(),initializer=_worker_init_antigravity) as pool:
     for sequence,dataset in enumerate(datasets[store.completed:],start=store.completed):
      train=session.load_train(dataset);test=session.load_test_values(dataset,train);writer.start_dataset(dataset,len(train.series),len(test.series),tuple(sorted({x.raw_length for x in train.series})),tuple(sorted({x.raw_length for x in test.series})),'queued')
-     pending.append((sequence,dataset,pool.submit(score_dataset_task_antigravity,CpuDatasetTaskAntigravity(dataset,train,test))))
+     pending.append((sequence,dataset,pool.submit(score_dataset_task_antigravity,CpuDatasetTaskAntigravity(dataset,train,test,backend))))
      if len(pending)>=capacity:
       seq,name,future=pending.pop(0);result=future.result();store.commit(seq,result);writer.complete_dataset(name,result.status,provisional=len(result.provisional_candidates))
     for seq,name,future in pending:

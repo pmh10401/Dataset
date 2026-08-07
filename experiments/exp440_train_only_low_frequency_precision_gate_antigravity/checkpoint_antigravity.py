@@ -35,15 +35,15 @@ class Exp440CheckpointStoreAntigravity:
   store=cls(root,tuple(context['datasets']),context['reviewed_commit'],state['records'])
   if state.get('completed')!=len(store.records) or tuple(store.records)!=store.datasets[:store.completed]:raise ValueError('checkpoint prefix is invalid')
   for dataset,digest in store.records.items():
-   matches=list((root/'records_antigravity').glob(f'*_{dataset}_antigravity.json'))
-   if len(matches)!=1 or sha256(matches[0].read_bytes()).hexdigest()!=digest:raise ValueError('checkpoint record differs')
-   Exp440DatasetResultAntigravity.from_payload(json.loads(matches[0].read_bytes()))
+   path=root/'records_antigravity'/f'{store.datasets.index(dataset):04d}_record_antigravity.json'
+   if not path.is_file() or sha256(path.read_bytes()).hexdigest()!=digest:raise ValueError('checkpoint record differs')
+   Exp440DatasetResultAntigravity.from_payload(json.loads(path.read_bytes()))
   return store
  def commit(self,sequence,result):
   if sequence!=self.completed or sequence>=len(self.datasets) or result.dataset!=self.datasets[sequence]:raise ValueError('checkpoint commit is out of order')
-  raw=_bytes(result.to_payload());path=self.root/'records_antigravity'/f'{sequence:04d}_{result.dataset}_antigravity.json'
+  raw=_bytes(result.to_payload());path=self.root/'records_antigravity'/f'{sequence:04d}_record_antigravity.json'
   fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
   with os.fdopen(fd,'wb') as f:f.write(raw);f.flush();os.fsync(f.fileno())
   self.records[result.dataset]=sha256(raw).hexdigest();_atomic(self.root/'state_antigravity.json',_bytes({'completed':self.completed,'records':self.records}))
  def results(self):
-  for i,dataset in enumerate(self.datasets[:self.completed]):yield Exp440DatasetResultAntigravity.from_payload(json.loads((self.root/'records_antigravity'/f'{i:04d}_{dataset}_antigravity.json').read_bytes()))
+  for i,dataset in enumerate(self.datasets[:self.completed]):yield Exp440DatasetResultAntigravity.from_payload(json.loads((self.root/'records_antigravity'/f'{i:04d}_record_antigravity.json').read_bytes()))

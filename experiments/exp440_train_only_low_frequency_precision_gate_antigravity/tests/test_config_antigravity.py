@@ -16,6 +16,7 @@ class Exp440ConfigAntigravityTests(unittest.TestCase):
         self.assertEqual(FROZEN_CONFIG.adjacent_offsets, (-1, 0, 1))
         self.assertEqual(FROZEN_CONFIG.minimum_consensus_depths, 2)
         self.assertEqual(FROZEN_CONFIG.outside_hard_budget, 100)
+        self.assertEqual(FROZEN_CONFIG.maximum_train_rows, 256)
         self.assertEqual(cpu_worker_count_antigravity(12), 11)
         self.assertEqual(cpu_worker_count_antigravity(1), 1)
         self.assertTrue(FROZEN_CONFIG.review_only)

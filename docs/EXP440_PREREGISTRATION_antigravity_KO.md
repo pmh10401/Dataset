@@ -14,6 +14,7 @@ database_sha256 = 8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef
 exp439_prediction_sha256 = 500f6956b8640ea329cd47c8cdb504debaeff6ec67c44d0c56b96c1ecd77f3ef
 hard_prediction_sha256 = 437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70
 nearest_k = 3
+maximum_train_rows_per_exact_length_group = 256
 quantile = 0.99, method = higher, comparison = strict greater
 stability_ratio_max = 2.0
 consensus_depths_min = 2
@@ -26,7 +27,7 @@ bootstrap_samples = 20000
 
 ## 예측 규칙
 
-1. 정상 TRAIN 행만 사용한다. 비유한 TRAIN 행은 행 전체를 제외하고 기록한다.
+1. 정상 TRAIN 행만 사용한다. 비유한 TRAIN 행은 행 전체를 제외하고 기록한다. 한 exact-length 그룹의 유한 정상 TRAIN이 256행을 넘으면 임의 추출하지 않고 그 그룹 전체를 `train_group_over_compute_cap`으로 abstain한다. 이 규칙은 TEST를 보기 전에 고정한 정밀도·실행 가능성 보호 규칙이다.
 2. 각 길이 그룹에서 Exp439가 고른 깊이 `d`와 경계 안의 `d-1`, `d+1`을 사용한다. 유효 깊이가 두 개보다 적으면 후보를 만들지 않는다.
 3. 각 깊이에서 한 TRAIN 행을 빼고 나머지 TRAIN만으로 변환과 최근접 정상 거리 `k=3`을 다시 계산한다.
 4. OOF 점수의 0.99 분위수를 `higher` 방식으로 문턱으로 삼으며, TEST 점수는 문턱보다 **엄격히 클 때만** 넘은 것으로 본다.

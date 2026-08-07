@@ -13,6 +13,8 @@ def main_antigravity(argv=None):
   from .readiness_antigravity import run_readiness_antigravity
   return run_readiness_antigravity(_head())
  if command in {'new','resume'}:
+  from .readiness_antigravity import validate_readiness_for_run_antigravity
+  validate_readiness_for_run_antigravity(_head())
   from .runtime_antigravity import run_exp440_new_antigravity,resume_exp440_antigravity
   fn=run_exp440_new_antigravity if command=='new' else resume_exp440_antigravity;result=fn(reviewed_commit=_head())
   from .reporting_antigravity import publish_exp440_antigravity

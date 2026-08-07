@@ -21,6 +21,7 @@ class Exp440FrozenConfig:
     adjacent_offsets: tuple[int, ...] = (-1, 0, 1)
     minimum_consensus_depths: int = 2
     minimum_train_rows: int = 4
+    maximum_train_rows: int = 256
     robust_scale_floor: float = 1e-12
     stability_ratio_max: float = 2.0
     outside_hard_budget: int = 100
@@ -46,7 +47,7 @@ class Exp440FrozenConfig:
             raise ValueError("Exp440 calibration is frozen")
         if self.adjacent_offsets != (-1, 0, 1) or self.minimum_consensus_depths != 2:
             raise ValueError("Exp440 depth consensus is frozen")
-        if self.outside_hard_budget != 100 or self.stability_ratio_max != 2.0:
+        if self.outside_hard_budget != 100 or self.stability_ratio_max != 2.0 or self.maximum_train_rows != 256:
             raise ValueError("Exp440 precision gates are frozen")
         if self.batch_sizes != (16, 32, 64, 128, 256):
             raise ValueError("Exp440 batch sizes are frozen")

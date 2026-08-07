@@ -8,14 +8,14 @@ from .contracts_antigravity import DepthScoreAntigravity,ProvisionalCandidateAnt
 from .features_antigravity import FittedGroupAntigravity
 
 
-def score_test_row_antigravity(dataset:str,instance_index:int,values:object,group:FittedGroupAntigravity)->tuple[tuple[DepthScoreAntigravity,...],ProvisionalCandidateAntigravity|None]:
+def score_test_row_antigravity(dataset:str,instance_index:int,values:object,group:FittedGroupAntigravity,*,distance=score_channel_cpu_antigravity)->tuple[tuple[DepthScoreAntigravity,...],ProvisionalCandidateAntigravity|None]:
     vector=np.ascontiguousarray(values,dtype=np.float32)
     if not dataset or type(instance_index) is not int or instance_index<0 or vector.ndim!=1 or vector.size!=group.raw_length or not np.isfinite(vector).all():raise ValueError("TEST row is invalid")
     scores=[]
     for model in group.models:
         low=fft_split_antigravity(vector,model.calibration.depth)[0]
         query=np.ascontiguousarray((low.astype(np.float64)-model.center)/model.scale,dtype=np.float32)
-        score=score_channel_cpu_antigravity(query,model.references,FROZEN_CONFIG.nearest_k);threshold=model.calibration.threshold;rank=(1+sum(x>=score for x in model.calibration.oof_scores))/(len(model.calibration.oof_scores)+1)
+        score=distance(query,model.references,FROZEN_CONFIG.nearest_k);threshold=model.calibration.threshold;rank=(1+sum(x>=score for x in model.calibration.oof_scores))/(len(model.calibration.oof_scores)+1)
         scores.append(DepthScoreAntigravity(model.calibration.depth,score,threshold,score>threshold,score/max(threshold,1e-12),rank))
     agreeing=tuple(x for x in scores if x.exceeds)
     if len(agreeing)<FROZEN_CONFIG.minimum_consensus_depths:return tuple(scores),None

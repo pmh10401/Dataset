@@ -30,5 +30,10 @@ class Exp440InputsAntigravityTests(unittest.TestCase):
         self.assertIsNone(abstention_reason(_row(0,[1.0]*16,'TEST')))
         self.assertEqual(abstention_reason(_row(1,[1.0,float('inf')],'TEST')),'nonfinite_test')
 
+    def test_groups_over_compute_cap_abstain_without_subsampling(self)->None:
+        rows=tuple(_row(i,[float(i+j) for j in range(16)],'TRAIN') for i in range(257))
+        prepared=partition_train_rows_antigravity(Exp439RawDataset('A','TRAIN',rows))
+        self.assertEqual(prepared.groups,());self.assertEqual(prepared.insufficient_lengths,(16,))
+
 
 if __name__=='__main__': unittest.main()

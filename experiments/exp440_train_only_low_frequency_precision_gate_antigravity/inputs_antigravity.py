@@ -28,7 +28,7 @@ def partition_train_rows_antigravity(train:Exp439RawDataset)->TrainPreparationAn
     groups=[];insufficient=[]
     for length in sorted(lengths):
         rows=tuple(finite.get(length,()))
-        if len(rows)<FROZEN_CONFIG.minimum_train_rows:insufficient.append(length)
+        if len(rows)<FROZEN_CONFIG.minimum_train_rows or len(rows)>FROZEN_CONFIG.maximum_train_rows:insufficient.append(length)
         else:groups.append(PreparedTrainGroup(train.dataset,length,rows))
     return TrainPreparationAntigravity(train.dataset,tuple(groups),tuple(sorted(excluded,key=lambda x:x.instance_index)),tuple(insufficient))
 
