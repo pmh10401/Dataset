@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T09:29:35Z",
-  "generated_from_commit": "b994fd46db373f5f556bbecb00cc9811d3679ac8",
+  "generated_at": "2026-08-07T09:30:15Z",
+  "generated_from_commit": "5ad5541d0dd8b850ea87f818ff5af80bc5af83fe",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -46,14 +46,6 @@
         {
           "path": "AUTONOMOUS_RESEARCH_LOOP.md",
           "symbol": "prediction hash"
-        },
-        {
-          "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_experiment\": \"Exp437 + Exp438\""
-        },
-        {
-          "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"exp437_recovered_running_wait_for_completion_before_exp438\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -184,10 +176,6 @@
           "symbol": "\"regression_tests\": {"
         },
         {
-          "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"implementation_complete_waiting_for_exp437_completion\""
-        },
-        {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"recovery_pid\": 45306"
         },
@@ -222,6 +210,18 @@
         {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"exp439_repair\": {"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"active_experiment\": \"Exp439\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"active_phase\": \"exp439_governance_freeze_before_tdd_implementation\""
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"status\": \"official_failed_immutable_89_of_1117\""
         }
       ]
     },
