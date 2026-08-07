@@ -1,0 +1,1808 @@
+"""Compact shared-context checkpoint tests for Exp425."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, replace
+from hashlib import sha256
+import json
+import os
+from pathlib import Path
+import stat
+from tempfile import TemporaryDirectory
+import time
+import unittest
+from unittest.mock import patch
+from collections.abc import Mapping
+
+from experiments.exp403_408.artifact_io import canonical_json_bytes
+from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenRunContext
+from experiments.exp417_causal_multihorizon_shadow.checkpoints import _context_payload, _context_from_payload
+from experiments.exp417_causal_multihorizon_shadow.tests.test_checkpoints import _context
+from experiments.exp425_selective_recovery.checkpoints import Exp425CheckpointStore, record_filename
+from experiments.exp425_selective_recovery import checkpoints
+from experiments.exp425_selective_recovery.contracts import (
+    Exp425RunProvenance,
+    ImportedRecordEnvelope,
+    MPSAdoptionAssessment,
+    MPSExecutionEvidence,
+    NativeRecordEnvelope,
+    SourceProvenGroupEvidence,
+)
+from experiments.exp425_selective_recovery import capabilities
+
+
+def _digest(letter: str) -> str:
+    return letter * 64
+
+
+def _checkpoint_snapshot(root: Path) -> dict[str, tuple[bytes | None, tuple[int, int, int, int, int, int, int]]]:
+    """All application-observed metadata except atime, plus bytes for regular files."""
+    snapshot: dict[str, tuple[bytes | None, tuple[int, int, int, int, int, int, int]]] = {}
+    for path in (root, *sorted(root.rglob("*"))):
+        info = path.lstat()
+        metadata = (info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_nlink, info.st_mtime_ns, info.st_ctime_ns)
+        snapshot[str(path.relative_to(root)) if path != root else "."] = (path.read_bytes() if stat.S_ISREG(info.st_mode) else None, metadata)
+    return snapshot
+
+
+def _provenance(context: FrozenRunContext) -> Exp425RunProvenance:
+    return Exp425RunProvenance(
+        run_identity="exp425-test-run", git_commit="c" * 40,
+        database_sha256=context.database_sha256,
+        lane_artifact_sha256={"hard": _digest("a"), "standard": _digest("b"), "priority": _digest("c"), "automatic_normal": _digest("d")},
+        frozen_config_sha256=_digest("e"), fold_contract_sha256=_digest("f"),
+        model_contract_sha256=_digest("1"), backend_contract_sha256=_digest("2"),
+        model_seeds=(1,), perturbation_seeds=(2,), runtime_versions={"python": "test"},
+        expected_datasets=context.datasets, predecessor_compatibility_sha256=_digest("3"),
+    )
+
+
+def _mps_evidence(provenance: Exp425RunProvenance) -> tuple[MPSAdoptionAssessment, MPSExecutionEvidence]:
+    """Synthetic but internally complete immutable MPS evidence for record tests."""
+    return (
+        MPSAdoptionAssessment(
+            "/sealed/task7_backend_audit.json", _digest("a"), True,
+            0.0, 1.0, 1.0, 1.1, False, "speedup_below_threshold",
+        ),
+        MPSExecutionEvidence(
+            True, "mps", "mps", True, True, False,
+            {"final:8:1": "mps"}, "2.0.0", "4" * 40,
+            {"runner": _digest("b")}, provenance.git_commit,
+            "synthetic timer", 0,
+        ),
+    )
+
+
+def _native_envelope(
+    store: Exp425CheckpointStore,
+    provenance: Exp425RunProvenance,
+    dataset: str,
+    result_payload: dict[str, object],
+    group_evidence: dict[str, object],
+    values: dict[str, str],
+    model_hashes: dict[str, object],
+    calibration_hashes: dict[str, object],
+    elapsed_seconds: float,
+    reason: str | None,
+) -> NativeRecordEnvelope:
+    """Mint a v2 record after binding its two mandatory MPS evidence digests."""
+    adoption, execution = _mps_evidence(provenance)
+    trace_body = result_payload["native_trace_body"]
+    assert isinstance(trace_body, dict)
+    trace_body.update({
+        "schema": "exp425.native-trace.v2",
+        "mps_adoption_sha256": adoption.sha256,
+        "mps_execution_sha256": execution.sha256,
+    })
+    trace = sha256(canonical_json_bytes(trace_body)).hexdigest()
+    provisional = NativeRecordEnvelope(
+        dataset, result_payload, group_evidence, trace_sha256=trace,
+        record_payload_sha256="0" * 64, model_hashes=model_hashes,
+        calibration_hashes=calibration_hashes, elapsed_seconds=elapsed_seconds,
+        reason=reason, mps_adoption=adoption, mps_execution=execution, **values,
+    )
+    digest = sha256(canonical_json_bytes(
+        checkpoints._native_record_body(store.run_context_sha256, provisional)
+    )).hexdigest()
+    return replace(provisional, record_payload_sha256=digest)
+
+
+def _native_record_for(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, dataset: str) -> NativeRecordEnvelope:
+    values = {name: sha256(f"{dataset}:{name}".encode()).hexdigest() for name in (
+        "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256",
+        "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256",
+        "result_evidence_sha256", "backend_audit_sha256",
+    )}
+    trace_body = {
+        "schema": "exp425.native-trace.v2", "run_identity": provenance.run_identity,
+        "dataset": dataset, "run_context_sha256": store.run_context_sha256,
+        **values, "device": "mps",
+    }
+    result_payload = {
+        "effective_result": {"status": "abstained", "result_evidence_sha256": values["result_evidence_sha256"]},
+        "native_trace_body": trace_body,
+    }
+    group_evidence = {
+        "eligibility_sha256": values["eligibility_sha256"],
+        "processed_groups_sha256": values["processed_groups_sha256"],
+    }
+    model_hashes = {
+        "train_identity_sha256": values["train_identity_sha256"],
+        "model_evidence_sha256": values["model_evidence_sha256"],
+        "frozen_train_contract_sha256": values["frozen_train_contract_sha256"],
+    }
+    calibration_hashes = {"scoring_evidence_sha256": values["scoring_evidence_sha256"]}
+    return _native_envelope(store, provenance, dataset, result_payload, group_evidence,
+                            values, model_hashes, calibration_hashes, 0.0, "synthetic")
+
+
+def _strict_native_record_for(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, dataset: str) -> NativeRecordEnvelope:
+    """A compact, independently assembled Task5 runtime-native envelope."""
+    digest = lambda label: sha256(f"{dataset}:{label}".encode()).hexdigest()
+    eligibility = {"8": {"dataset": dataset, "length": 8, "status": "candidate_eligible"}}
+    processed_manifest = {
+        "schema": "exp425.processed-manifest.v1",
+        "groups": [{"length": 8, "status": "candidate_eligible", "series_count": 2, "instance_indices": [0, 1]}],
+    }
+    backend = {"backend": "mps", "candidate_identity": True, "max_normalized_error": 0.0,
+               "spearman": 1.0, "speedup": 1.1, "fallback": False, "fallback_reason": None}
+    contract = {
+        "dataset": dataset,
+        "groups": [{"length": 8, "series_count": 2, "status": "qualified", "oof_candidate_rate": 0.0,
+                    "wilson_upper": 0.0, "pooled_synthetic_sensitivity": 1.0,
+                    "per_type_synthetic_sensitivity": {"level_shift": 1.0, "gradual_drift": 1.0,
+                                                         "amplitude_scaling": 1.0, "period_change": 1.0},
+                    "seed_agreement": True, "finite": True, "backend_fallback": False}],
+        "backend": backend, "train_identity_sha256": digest("train"), "near_repeat_status": "not_available",
+    }
+    models = {
+        "schema": "exp425.runtime-model-evidence.v1", "status": "captured",
+        "processed_identity_sha256": digest("processed"),
+        "oof_models": [{"length": 8, "seed": 1, "fold": 0, "model_sha256": digest("oof")}],
+        "final_models": [{"length": 8, "seed": 1, "model_sha256": digest("final")}],
+    }
+    statistic = {"horizon": 1, "oof_count": 2, "length": 8, "center": 0.0, "scale": 1.0,
+                 "threshold": 1.0, "oof_scores_dtype": "<f8", "oof_scores_shape": [2],
+                 "oof_scores_sha256": digest("oof-scores")}
+    calibration = {"length": 8, "seed": 1, "horizon": 1,
+                   "digest": sha256(canonical_json_bytes(statistic)).hexdigest(), "statistic": statistic}
+    scoring = {
+        "schema": "exp425.runtime-scoring-evidence.v1", "status": "captured",
+        "calibrations": [calibration],
+        "final_models": [{"length": 8, "seed": 1, "model_sha256": digest("final")}],
+    }
+    values = {
+        "train_identity_sha256": contract["train_identity_sha256"],
+        "eligibility_sha256": sha256(canonical_json_bytes(eligibility)).hexdigest(),
+        "processed_groups_sha256": models["processed_identity_sha256"],
+        "model_evidence_sha256": sha256(canonical_json_bytes(models)).hexdigest(),
+        "frozen_train_contract_sha256": sha256(canonical_json_bytes(contract)).hexdigest(),
+        "scoring_evidence_sha256": sha256(canonical_json_bytes(scoring)).hexdigest(),
+        "result_evidence_sha256": digest("result"),
+        "backend_audit_sha256": sha256(canonical_json_bytes(backend)).hexdigest(),
+    }
+    trace_body = {"schema": "exp425.native-trace.v2", "run_identity": provenance.run_identity,
+                  "dataset": dataset, "run_context_sha256": store.run_context_sha256, **values, "device": "mps"}
+    result_payload = {"effective_result": {"status": "scored", "candidate_coordinates": [[dataset, 0]],
+                                             "result_evidence_sha256": values["result_evidence_sha256"],
+                                             "result_source_sha256": sha256(canonical_json_bytes({"status": "scored", "candidate_coordinates": [[dataset, 0]]})).hexdigest()},
+                      "native_trace_body": trace_body}
+    group = {"schema": "exp425.runtime-group-evidence.v1", "eligibility_sha256": values["eligibility_sha256"],
+             "processed_groups_sha256": values["processed_groups_sha256"], "eligibility": {"payload": eligibility,
+             "sha256": values["eligibility_sha256"]}, "processed": {"manifest": processed_manifest,
+             "manifest_sha256": sha256(canonical_json_bytes(processed_manifest)).hexdigest(),
+             "identity_sha256": values["processed_groups_sha256"]}}
+    model_hashes = {"train_identity_sha256": values["train_identity_sha256"],
+                    "model_evidence_sha256": values["model_evidence_sha256"],
+                    "frozen_train_contract_sha256": values["frozen_train_contract_sha256"],
+                    "frozen_train_contract": contract, "model_evidence": models}
+    calibration_hashes = {"scoring_evidence_sha256": values["scoring_evidence_sha256"],
+                          "scoring_evidence": scoring}
+    return _native_envelope(store, provenance, dataset, result_payload, group, values,
+                            model_hashes, calibration_hashes, 0.0, "native_mps")
+
+
+def _native_capability(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, authority: object, record: NativeRecordEnvelope) -> object:
+    return capabilities._mint(
+        authority, kind="native", run_identity=provenance.run_identity, dataset=record.dataset,
+        context_sha256=store.run_context_sha256, trace_sha256=record.trace_sha256,
+        record_sha256=record.record_payload_sha256, backend_sha256=record.backend_audit_sha256,
+        mps_adoption_sha256=record.mps_adoption.sha256,
+        mps_execution_sha256=record.mps_execution.sha256,
+    )
+
+
+def _import_record_for(dataset: str, index: int, attestation: str) -> ImportedRecordEnvelope:
+    evidence = {"dataset": dataset, "source_groups": [index]}
+    return ImportedRecordEnvelope(
+        dataset, {"status": "abstained", "source_index": index},
+        SourceProvenGroupEvidence(evidence, sha256(canonical_json_bytes(evidence)).hexdigest()),
+        sha256(f"root:{dataset}".encode()).hexdigest(), sha256(f"progress:{dataset}".encode()).hexdigest(),
+        sha256(f"record:{dataset}".encode()).hexdigest(), sha256(f"result:{dataset}".encode()).hexdigest(),
+        attestation, float(index), "sealed local exp424 import",
+    )
+
+
+def _import_stage_digest(store: Exp425CheckpointStore, record: ImportedRecordEnvelope) -> str:
+    return sha256(canonical_json_bytes(checkpoints._import_record_body(store.run_context_sha256, record))).hexdigest()
+
+
+def _import_final_attestation(store: Exp425CheckpointStore, batch_identity: str, attestation: str, records: tuple[ImportedRecordEnvelope, ...]) -> str:
+    return sha256(canonical_json_bytes({
+        "batch_identity": batch_identity,
+        "record_digests": dict(sorted((record.dataset, _import_stage_digest(store, record)) for record in records)),
+        "attestation_sha256": attestation,
+    })).hexdigest()
+
+
+def _begin_and_stage_imports(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, authority: object, nonce: str, batch_identity: str, attestation: str, records: tuple[ImportedRecordEnvelope, ...]) -> object:
+    batch = store._begin_import_batch(capabilities._mint(
+        authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity=batch_identity,
+        attestation_sha256=attestation, process_nonce=nonce,
+    ), batch_identity)
+    for record in records:
+        store._stage_imported(capabilities._mint(
+            authority, kind="import_stage", run_identity=provenance.run_identity, batch_identity=batch_identity,
+            dataset=record.dataset, source_sha256=record.source_record_sha256,
+            attestation_sha256=attestation, process_nonce=nonce, record_sha256=_import_stage_digest(store, record),
+        ), batch, record)
+    return batch
+
+
+def _promote_imports(store: Exp425CheckpointStore, provenance: Exp425RunProvenance, authority: object, nonce: str, batch_identity: str, attestation: str, records: tuple[ImportedRecordEnvelope, ...], batch: object) -> None:
+    store._promote_import_batch(capabilities._mint(
+        authority, kind="import_promote", run_identity=provenance.run_identity, batch_identity=batch_identity,
+        attestation_sha256=attestation, process_nonce=nonce,
+        final_attestation_sha256=_import_final_attestation(store, batch_identity, attestation, records),
+    ), batch)
+
+
+@dataclass(frozen=True)
+class _CheckpointBenchmarkMetrics:
+    repeated_context_bytes: int
+    exp425_bytes: int
+    byte_reduction_fraction: float
+    old_median_validated_cycle_seconds: float
+    exp425_median_open_iter_validated_cycle_seconds: float
+    speedup: float
+    old_candidate_coordinates: tuple[tuple[object, ...], ...]
+    exp425_candidate_coordinates: tuple[tuple[object, ...], ...]
+    old_result_evidence_digests: tuple[str, ...]
+    exp425_result_evidence_digests: tuple[str, ...]
+    completed_record_count: int
+
+
+def _measure_shared_context_checkpoint_benchmark() -> _CheckpointBenchmarkMetrics:
+    """Measure two fully validated 25-record checkpoint representations."""
+    context = _context()
+    provenance = _provenance(context)
+    datasets = context.datasets[:25]
+
+    def record_for(dataset: str, index: int, store: Exp425CheckpointStore) -> NativeRecordEnvelope:
+        digest = lambda label: sha256(f"{dataset}:{label}".encode()).hexdigest()
+        values = {name: digest(name) for name in (
+            "train_identity_sha256", "eligibility_sha256", "processed_groups_sha256",
+            "model_evidence_sha256", "frozen_train_contract_sha256", "scoring_evidence_sha256",
+            "result_evidence_sha256", "backend_audit_sha256",
+        )}
+        trace_body = {
+            "schema": "exp425.native-trace.v2", "run_identity": provenance.run_identity,
+            "dataset": dataset, "run_context_sha256": store.run_context_sha256,
+            **values, "device": "mps",
+        }
+        result = {
+            "effective_result": {
+                "candidate_coordinates": [[dataset, index]],
+                "result_evidence_sha256": values["result_evidence_sha256"],
+                "status": "abstained",
+            },
+            "native_trace_body": trace_body,
+        }
+        group = {"eligibility_sha256": values["eligibility_sha256"], "processed_groups_sha256": values["processed_groups_sha256"]}
+        models = {"train_identity_sha256": values["train_identity_sha256"], "model_evidence_sha256": values["model_evidence_sha256"], "frozen_train_contract_sha256": values["frozen_train_contract_sha256"]}
+        calibration = {"scoring_evidence_sha256": values["scoring_evidence_sha256"]}
+        return _native_envelope(store, provenance, dataset, result, group, values, models,
+                                calibration, float(index), "benchmark")
+
+    def checked_native_result(record: NativeRecordEnvelope) -> tuple[tuple[tuple[object, ...], ...], str]:
+        payload = dict(record.result_payload)
+        trace_body = payload.get("native_trace_body")
+        effective = payload.get("effective_result")
+        if not isinstance(trace_body, Mapping) or not isinstance(effective, Mapping):
+            raise AssertionError("benchmark native result payload is invalid")
+        if sha256(canonical_json_bytes(checkpoints.thaw_payload(trace_body))).hexdigest() != record.trace_sha256:
+            raise AssertionError("benchmark trace does not match its stored declared digest")
+        result_evidence = effective.get("result_evidence_sha256")
+        coordinates = effective.get("candidate_coordinates")
+        if (
+            not isinstance(result_evidence, str)
+            or trace_body.get("result_evidence_sha256") != result_evidence
+            or not isinstance(coordinates, tuple)
+            or any(not isinstance(row, tuple) for row in coordinates)
+        ):
+            raise AssertionError("benchmark effective result evidence is invalid")
+        return tuple(tuple(row) for row in coordinates), result_evidence
+
+    with TemporaryDirectory() as directory:
+        root = Path(directory) / "checkpoints"
+        store = Exp425CheckpointStore.create(root, provenance, context)
+        authority = object()
+        capabilities._register_authority(authority, "exp425_native")
+        try:
+            records = [record_for(dataset, index, store) for index, dataset in enumerate(datasets)]
+            for record in records:
+                token = capabilities._mint(
+                    authority, kind="native", run_identity=provenance.run_identity,
+                    dataset=record.dataset, context_sha256=store.run_context_sha256,
+                    trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256,
+                    backend_sha256=record.backend_audit_sha256,
+                    mps_adoption_sha256=record.mps_adoption.sha256,
+                    mps_execution_sha256=record.mps_execution.sha256,
+                )
+                store._commit_native(token, record)
+        finally:
+            capabilities._close_authority(authority)
+        repeated_records = [canonical_json_bytes({
+            "schema": "exp424.repeated-context.v1", "context": _context_payload(context),
+            "record": checkpoints._native_record_body(store.run_context_sha256, record) | {
+                "record_payload_sha256": record.record_payload_sha256,
+            },
+        }) for record in records]
+        repeated_context_bytes = sum(map(len, repeated_records))
+        exp425_bytes = sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
+
+        def old_cycle() -> tuple[tuple[tuple[object, ...], ...], tuple[str, ...]]:
+            coordinates: list[tuple[object, ...]] = []
+            result_evidence_digests: list[str] = []
+            for raw in repeated_records:
+                payload = checkpoints._canonical_object(raw, "repeated benchmark record")
+                if set(payload) != {"schema", "context", "record"} or payload["schema"] != "exp424.repeated-context.v1":
+                    raise AssertionError("repeated benchmark schema is invalid")
+                if _context_from_payload(payload["context"]) != context:
+                    raise AssertionError("repeated benchmark context is invalid")
+                persisted = payload["record"]
+                if not isinstance(persisted, dict):
+                    raise AssertionError("repeated benchmark record is invalid")
+                decoded = checkpoints._decode_record(canonical_json_bytes(persisted), context)
+                if not isinstance(decoded, NativeRecordEnvelope):
+                    raise AssertionError("repeated benchmark record origin is invalid")
+                rows, evidence = checked_native_result(decoded)
+                coordinates.extend(rows)
+                result_evidence_digests.append(evidence)
+            return tuple(coordinates), tuple(result_evidence_digests)
+
+        def new_cycle() -> tuple[tuple[tuple[object, ...], ...], tuple[str, ...], int]:
+            reopened = Exp425CheckpointStore.open(root, provenance, context)
+            coordinates: list[tuple[object, ...]] = []
+            result_evidence_digests: list[str] = []
+            for record in reopened.iter_records():
+                if not isinstance(record, NativeRecordEnvelope):
+                    raise AssertionError("Exp425 benchmark record origin is invalid")
+                rows, evidence = checked_native_result(record)
+                coordinates.extend(rows)
+                result_evidence_digests.append(evidence)
+            return tuple(coordinates), tuple(result_evidence_digests), len(reopened.completed_record_digests())
+
+        old_coordinates, old_evidence = old_cycle()
+        exp425_coordinates, exp425_evidence, completed_count = new_cycle()
+        old_samples: list[float] = []
+        exp425_samples: list[float] = []
+        for _ in range(5):
+            started = time.perf_counter()
+            old_coordinates, old_evidence = old_cycle()
+            old_samples.append(time.perf_counter() - started)
+            started = time.perf_counter()
+            exp425_coordinates, exp425_evidence, completed_count = new_cycle()
+            exp425_samples.append(time.perf_counter() - started)
+        old_seconds = sorted(old_samples)[2]
+        exp425_seconds = sorted(exp425_samples)[2]
+        return _CheckpointBenchmarkMetrics(
+            repeated_context_bytes=repeated_context_bytes,
+            exp425_bytes=exp425_bytes,
+            byte_reduction_fraction=1.0 - (exp425_bytes / repeated_context_bytes),
+            old_median_validated_cycle_seconds=old_seconds,
+            exp425_median_open_iter_validated_cycle_seconds=exp425_seconds,
+            speedup=old_seconds / exp425_seconds,
+            old_candidate_coordinates=old_coordinates,
+            exp425_candidate_coordinates=exp425_coordinates,
+            old_result_evidence_digests=old_evidence,
+            exp425_result_evidence_digests=exp425_evidence,
+            completed_record_count=completed_count,
+        )
+
+
+class CheckpointStoreTests(unittest.TestCase):
+    """Changing a record or shared context invalidates the persisted checkpoint."""
+
+    def test_create_persists_one_shared_context_and_read_only_inspection(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            self.assertEqual(
+                {path.name for path in root.iterdir()},
+                {"checkpoint_provenance.json", "run_context.json", "progress.json", "datasets", "transactions", "import_batches"},
+            )
+            raw = (root / "run_context.json").read_bytes()
+            self.assertEqual(store.run_context_sha256, sha256(raw).hexdigest())
+            before = {path: path.stat().st_mtime_ns for path in root.rglob("*")}
+            inspection = Exp425CheckpointStore.inspect_read_only(root, expected_run_identity="exp425-test-run")
+            after = {path: path.stat().st_mtime_ns for path in root.rglob("*")}
+            self.assertEqual(inspection.run_identity, "exp425-test-run")
+            self.assertEqual(inspection.completed_count, 0)
+            self.assertEqual(before, after)
+
+    def test_quarantine_import_batch_persists_exact_owned_evidence(self) -> None:
+        """A quarantine without durable batch/inode/attestation/reason binding is not recoverable evidence."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            store = Exp425CheckpointStore.create(Path(directory) / "checkpoints", provenance, context)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = store._begin_import_batch(capabilities._mint(authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="owned-batch", attestation_sha256=_digest("a"), process_nonce="nonce"), "owned-batch")
+                original_inode = batch.inode
+                reason = _digest("b")
+                evidence = store._quarantine_import_batch(batch, final_attestation_sha256=None, reason_sha256=reason)
+            finally:
+                capabilities._close_authority(authority)
+            self.assertEqual(evidence.batch_identity, "owned-batch")
+            self.assertEqual(evidence.identity, original_inode)
+            persisted = json.loads((evidence.directory / "quarantine.json").read_text())
+            self.assertEqual(persisted["batch_identity"], "owned-batch")
+            self.assertEqual(persisted["source_attestation_sha256"], _digest("a"))
+            self.assertEqual(persisted["reason_sha256"], reason)
+            self.assertEqual(tuple(persisted["original_inode"]), original_inode)
+            self.assertEqual(Exp425CheckpointStore.inspect_read_only(store.root).completed_count, 0)
+
+    def test_quarantine_refuses_second_active_batch_without_mutation(self) -> None:
+        """Quarantining one batch while another is active would hide ambiguous import state."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            store = Exp425CheckpointStore.create(Path(directory) / "checkpoints", provenance, context)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                first = store._begin_import_batch(capabilities._mint(authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="first-batch", attestation_sha256=_digest("a"), process_nonce="nonce-a"), "first-batch")
+                before = _checkpoint_snapshot(store.root)
+                with self.assertRaisesRegex(ValueError, "different import batch"):
+                    store._begin_import_batch(capabilities._mint(authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="second-batch", attestation_sha256=_digest("b"), process_nonce="nonce-b"), "second-batch")
+                self.assertEqual(_checkpoint_snapshot(store.root), before)
+            finally:
+                capabilities._close_authority(authority)
+
+    def test_restart_rejects_tampered_quarantined_batch_content(self) -> None:
+        """A quarantine marker must not hide altered metadata, records, names, or identity."""
+        context = _context()
+        provenance = _provenance(context)
+        def quarantine(directory: str) -> tuple[Exp425CheckpointStore, Path, Path]:
+            store = Exp425CheckpointStore.create(Path(directory) / "checkpoints", provenance, context)
+            authority = object(); capabilities._register_authority(authority, "exp424_import")
+            try:
+                record = _import_record_for(context.datasets[0], 0, _digest("a"))
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", "tamper-batch", _digest("a"), (record,))
+                evidence = store._quarantine_import_batch(batch, final_attestation_sha256=None, reason_sha256=_digest("b"))
+            finally:
+                capabilities._close_authority(authority)
+            return store, evidence.directory, evidence.directory / record_filename(record.dataset)
+
+        for kind in ("quarantine-json", "batch-json", "staged-body", "staged-name", "directory-inode"):
+            with self.subTest(kind=kind), TemporaryDirectory() as directory:
+                store, quarantined, staged = quarantine(directory)
+                if kind == "quarantine-json":
+                    (quarantined / "quarantine.json").write_bytes(b"{}\n")
+                elif kind == "batch-json":
+                    (quarantined / "batch.json").write_bytes(b"{}\n")
+                elif kind == "staged-body":
+                    staged.write_bytes(staged.read_bytes() + b" ")
+                elif kind == "staged-name":
+                    staged.rename(quarantined / "renamed-record.json")
+                else:
+                    replacement = quarantined.with_name(quarantined.name + ".saved")
+                    quarantined.rename(replacement)
+                    quarantined.mkdir()
+                with self.assertRaises(ValueError):
+                    Exp425CheckpointStore.inspect_read_only(store.root)
+
+    def test_inspect_read_only_preserves_all_observed_bytes_and_metadata_on_success_and_failure(self) -> None:
+        """Any inspect write, reconciliation, or quarantine would change this complete snapshot."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, provenance, context)
+            before = _checkpoint_snapshot(root)
+            Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+            (root / "unexpected-entry").write_bytes(b"foreign")
+            before_failure = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before_failure)
+
+    def test_new_and_open_enforce_root_lifecycle(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.open(root, provenance, context)
+            Exp425CheckpointStore.create(root, provenance, context)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.create(root, provenance, context)
+            reopened = Exp425CheckpointStore.open(root, provenance, context)
+            self.assertEqual(reopened.completed_record_digests(), {})
+
+    def test_create_and_open_reject_provenance_context_commit_mismatch_without_mutation(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        mismatch = replace(provenance, git_commit="d" * 40)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            with self.assertRaisesRegex(ValueError, "git commit"):
+                Exp425CheckpointStore.create(root, mismatch, context)
+            self.assertFalse(root.exists())
+            Exp425CheckpointStore.create(root, provenance, context)
+            before = _checkpoint_snapshot(root)
+            with self.assertRaisesRegex(ValueError, "git commit"):
+                Exp425CheckpointStore.open(root, mismatch, context)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_inspection_rejects_noncanonical_progress_without_repairing_it(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            progress = root / "progress.json"
+            corrupt = b'{ "completed_count": 0}'
+            progress.write_bytes(corrupt)
+            before = progress.read_bytes()
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(progress.read_bytes(), before)
+
+    def test_progress_rejects_uppercase_digests_and_completed_current_dataset(self) -> None:
+        """Removing strict progress semantics would admit canonically rehashed invalid resume state."""
+        context = _context()
+        provenance = _provenance(context)
+        for name, mutate in (
+            ("uppercase digest", lambda progress, dataset: progress["record_digests"].__setitem__(dataset, "A" * 64)),
+            ("completed current", lambda progress, dataset: progress.__setitem__("current_dataset", dataset)),
+        ):
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                record = _native_record_for(store, provenance, context.datasets[0])
+                authority = object()
+                capabilities._register_authority(authority, "exp425_native")
+                try:
+                    store._commit_native(_native_capability(store, provenance, authority, record), record)
+                finally:
+                    capabilities._close_authority(authority)
+                path = root / "progress.json"
+                progress = json.loads(path.read_bytes())
+                mutate(progress, record.dataset)
+                body = dict(progress)
+                body.pop("payload_sha256")
+                progress["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+                path.write_bytes(canonical_json_bytes(progress))
+                with self.assertRaises(ValueError):
+                    Exp425CheckpointStore.inspect_read_only(root)
+
+    def test_native_write_requires_live_exact_capability_and_injects_context_on_read(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            store = Exp425CheckpointStore.create(Path(directory) / "checkpoints", provenance, context)
+            dataset = context.datasets[0]
+            record = _native_record_for(store, provenance, dataset)
+            with self.assertRaises(ValueError):
+                store._commit_native(object(), record)
+            authority = object(); capabilities._register_authority(authority, "local")
+            try:
+                token = capabilities._mint(authority, kind="native", run_identity=provenance.run_identity, dataset=dataset,
+                    context_sha256=store.run_context_sha256, trace_sha256=record.trace_sha256, record_sha256=record.record_payload_sha256,
+                    backend_sha256=record.backend_audit_sha256,
+                    mps_adoption_sha256=record.mps_adoption.sha256,
+                    mps_execution_sha256=record.mps_execution.sha256)
+                self.assertEqual(store._commit_native(token, record), record.record_payload_sha256)
+            finally:
+                capabilities._close_authority(authority)
+            loaded = store.load_record(dataset)
+            self.assertIs(loaded.context, context)
+            raw = (store.root / "datasets" / __import__("experiments.exp425_selective_recovery.checkpoints", fromlist=["record_filename"]).record_filename(dataset)).read_bytes()
+            self.assertNotIn(b'"test_identity_manifest"', raw)
+            self.assertLess(len(raw), len(canonical_json_bytes(_context_payload(context))) // 5)
+
+    def test_complex_native_and_imported_envelopes_round_trip_without_narrowing_payloads(self) -> None:
+        """Restoring fixture-shaped nested checks would reject legitimate frozen result/evidence fields."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            base = _native_record_for(store, provenance, context.datasets[0])
+            result = checkpoints.thaw_payload(base.result_payload)
+            group = checkpoints.thaw_payload(base.group_evidence)
+            model = checkpoints.thaw_payload(base.model_hashes)
+            calibration = checkpoints.thaw_payload(base.calibration_hashes)
+            assert isinstance(result, dict) and isinstance(group, dict) and isinstance(model, dict) and isinstance(calibration, dict)
+            result["effective_result"]["provenance_notes"] = [{"fold": 0, "weight": 0.25}, {"fold": 1, "weight": 0.75}]
+            result["effective_result"]["candidate_coordinates"] = [["candidate", 1]]
+            group["frozen_exp417_evidence"] = {"groups": [64, 128], "sealed": True}
+            model["serialized_model_manifest"] = {"parts": ["encoder", "head"]}
+            calibration["calibration_diagnostics"] = {"bins": [0.1, 0.9]}
+            provisional = replace(base, result_payload=result, group_evidence=group,
+                                  model_hashes=model, calibration_hashes=calibration,
+                                  record_payload_sha256="0" * 64)
+            native = replace(provisional, record_payload_sha256=sha256(canonical_json_bytes(
+                checkpoints._native_record_body(store.run_context_sha256, provisional)
+            )).hexdigest())
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                store._commit_native(_native_capability(store, provenance, authority, native), native)
+            finally:
+                capabilities._close_authority(authority)
+            self.assertEqual(checkpoints.thaw_payload(store.load_record(native.dataset).result_payload), result)
+            source = {"source_groups": [{"group": 64, "weights": [0.3, 0.7]}], "compatibility": {"sealed": True}}
+            imported_result = {"status": "abstained", "source_index": 1, "exp424_artifacts": [{"name": "oof", "hashes": ["a", "b"]}]}
+            imported = ImportedRecordEnvelope(context.datasets[1], imported_result, SourceProvenGroupEvidence(source, sha256(canonical_json_bytes(source)).hexdigest()), *(_digest("a"), _digest("b"), _digest("c"), _digest("d"), _digest("e")), 1.0, "sealed local exp424 import")
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "roundtrip", "roundtrip-batch", _digest("e"), (imported,))
+                _promote_imports(store, provenance, authority, "roundtrip", "roundtrip-batch", _digest("e"), (imported,), batch)
+            finally:
+                capabilities._close_authority(authority)
+            loaded = store.load_record(imported.dataset)
+            self.assertIsInstance(loaded, ImportedRecordEnvelope)
+            self.assertEqual(checkpoints.thaw_payload(loaded.result_payload), imported_result)
+            self.assertEqual(checkpoints.thaw_payload(loaded.group_evidence.source_group_evidence), source)
+
+    def test_native_recovery_advances_each_durable_phase_once(self) -> None:
+        """Native B→E crash recovery removes or adopts only the durable state."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        for phase in ("intent_durable", "record_durable", "progress_durable", "intent_removed"):
+            with self.subTest(phase=phase), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                record = _native_record_for(store, provenance, context.datasets[0])
+                authority = object()
+                capabilities._register_authority(authority, "exp425_native")
+                try:
+                    with patch.object(checkpoints, "_after_native_phase", side_effect=lambda reached: (
+                        (_ for _ in ()).throw(SimulatedProcessDeath(reached)) if reached == phase else None
+                    )):
+                        with self.assertRaisesRegex(SimulatedProcessDeath, phase):
+                            store._commit_native(_native_capability(store, provenance, authority, record), record)
+                finally:
+                    capabilities._close_authority(authority)
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+                expected = {} if phase == "intent_durable" else {record.dataset: record.record_payload_sha256}
+                self.assertEqual(dict(reopened.completed_record_digests()), expected)
+                self.assertEqual(list((root / "transactions").iterdir()), [])
+
+    def test_native_intent_requires_exact_schema_origin_and_operation(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        dataset = context.datasets[0]
+        base = {
+            "schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native",
+            "dataset": dataset, "record_payload_sha256": _digest("a"), "run_identity": provenance.run_identity,
+            "run_context_sha256": sha256(canonical_json_bytes(_context_payload(context))).hexdigest(),
+            "backend_contract_sha256": provenance.backend_contract_sha256, "backend_audit_sha256": _digest("b"),
+        }
+        malformed = (
+            {key: value for key, value in base.items() if key != "operation"},
+            base | {"operation": "other"},
+            base | {"extra": "rejected"},
+        )
+        for intent in malformed:
+            with self.subTest(intent=intent), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                Exp425CheckpointStore.create(root, provenance, context)
+                (root / "transactions" / "native.json").write_bytes(canonical_json_bytes(intent))
+                with self.assertRaises(ValueError):
+                    Exp425CheckpointStore.open(root, provenance, context)
+
+    def test_record_absent_unknown_native_intent_fails_without_unlinking_it(self) -> None:
+        """Removing the root-universe check would silently delete an impossible durable intent."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            intent = {"schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native", "dataset": "outside-universe", "record_payload_sha256": _digest("a"), "run_identity": provenance.run_identity, "run_context_sha256": store.run_context_sha256, "backend_contract_sha256": provenance.backend_contract_sha256, "backend_audit_sha256": _digest("b")}
+            path = root / "transactions" / "impossible.json"
+            path.write_bytes(canonical_json_bytes(intent))
+            before = _checkpoint_snapshot(root)
+            with store._store_binding(exclusive=True) as binding:
+                with self.assertRaises(ValueError):
+                    store._reconcile_native_intents(binding=binding)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_native_reconciliation_preflights_every_intent_before_any_mutation(self) -> None:
+        """A later invalid intent must not let an earlier record-absent intent be removed."""
+        context = _context()
+        provenance = _provenance(context)
+        cases = (
+            ("unknown origin", {"schema": "exp425.intent.v1", "origin": "unrecognized"}),
+            ("malformed import", {"schema": "exp425.intent.v1", "origin": "exp424_import"}),
+            ("impossible native", {"schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native", "dataset": "outside-universe", "record_payload_sha256": _digest("a"), "run_identity": provenance.run_identity, "run_context_sha256": sha256(canonical_json_bytes(_context_payload(context))).hexdigest(), "backend_contract_sha256": provenance.backend_contract_sha256, "backend_audit_sha256": _digest("b")}),
+        )
+        for name, later_intent in cases:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                valid = {"schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native", "dataset": context.datasets[0], "record_payload_sha256": _digest("a"), "run_identity": provenance.run_identity, "run_context_sha256": store.run_context_sha256, "backend_contract_sha256": provenance.backend_contract_sha256, "backend_audit_sha256": _digest("b")}
+                (root / "transactions" / "a-valid-record-absent.json").write_bytes(canonical_json_bytes(valid))
+                (root / "transactions" / "z-later-invalid.json").write_bytes(canonical_json_bytes(later_intent))
+                before = _checkpoint_snapshot(root)
+                with store._store_binding(exclusive=True) as binding:
+                    with self.assertRaises(ValueError):
+                        store._reconcile_native_intents(binding=binding)
+                self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_import_intent_preflight_rejects_wrong_staged_claims_and_cross_origin_duplicates_without_mutation(self) -> None:
+        """Every import intent is bound to its staged batch before native recovery can unlink."""
+        context = _context()
+        provenance = _provenance(context)
+        cases = ("wrong staged dataset", "wrong staged digest", "cross-origin duplicate")
+        for case in cases:
+            with self.subTest(case=case), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                attestation, batch_identity = _digest("a"), "all-intent-" + case.replace(" ", "-")
+                imported = _import_record_for(context.datasets[1], 1, attestation)
+                authority = object()
+                capabilities._register_authority(authority, "exp424_import")
+                try:
+                    _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, (imported,))
+                finally:
+                    capabilities._close_authority(authority)
+                staged_digest = _import_stage_digest(store, imported)
+                intent_dataset = imported.dataset
+                intent_digest = staged_digest
+                native_dataset = context.datasets[0]
+                if case == "wrong staged dataset":
+                    intent_dataset = context.datasets[2]
+                elif case == "wrong staged digest":
+                    intent_digest = _digest("b")
+                else:
+                    native_dataset = imported.dataset
+                final = _import_final_attestation(store, batch_identity, attestation, (imported,))
+                native = {
+                    "schema": "exp425.intent.v1", "operation": "commit_native", "origin": "exp425_native",
+                    "dataset": native_dataset, "record_payload_sha256": _digest("c"),
+                    "run_identity": provenance.run_identity, "run_context_sha256": store.run_context_sha256,
+                    "backend_contract_sha256": provenance.backend_contract_sha256, "backend_audit_sha256": _digest("d"),
+                }
+                imported_intent = {
+                    "schema": "exp425.intent.v1", "origin": "exp424_import", "dataset": intent_dataset,
+                    "record_payload_sha256": intent_digest, "batch_identity": batch_identity,
+                    "final_attestation_sha256": final,
+                }
+                (root / "transactions" / "a-valid-record-absent-native.json").write_bytes(canonical_json_bytes(native))
+                (root / "transactions" / "z-invalid-import.json").write_bytes(canonical_json_bytes(imported_intent))
+                before = _checkpoint_snapshot(root)
+                with store._store_binding(exclusive=True) as binding:
+                    with self.assertRaises(ValueError):
+                        store._reconcile_native_intents(binding=binding)
+                self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_cleanup_preflight_rejects_stale_declared_staged_digest_without_mutation(self) -> None:
+        """Same-inode staged edits cannot retain a stale declared payload digest through cleanup."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            attestation, batch_identity = _digest("a"), "stale-cleanup-digest"
+            record = _import_record_for(context.datasets[0], 0, attestation)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,))
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda phase: (_ for _ in ()).throw(SimulatedProcessDeath()) if phase == "cleanup_tombstone_durable" else None):
+                    with self.assertRaises(SimulatedProcessDeath):
+                        _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,), batch)
+            finally:
+                capabilities._close_authority(authority)
+            staged = root / "import_batches" / batch_identity / checkpoints.record_filename(record.dataset)
+            payload = json.loads(staged.read_bytes())
+            payload["reason"] = "same inode but stale declared digest"
+            staged.write_bytes(canonical_json_bytes(payload))
+            before = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_cleanup_preflight_rejects_forged_batch_directory_phase_without_mutation(self) -> None:
+        """A removed directory phase cannot coexist with the exact owned batch directory."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            attestation, batch_identity = _digest("a"), "forged-directory-phase"
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, ())
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda phase: (_ for _ in ()).throw(SimulatedProcessDeath()) if phase == "cleanup_tombstone_durable" else None):
+                    with self.assertRaises(SimulatedProcessDeath):
+                        _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (), batch)
+            finally:
+                capabilities._close_authority(authority)
+            cleanup_path = root / "import_batches" / checkpoints._cleanup_name(batch_identity)
+            cleanup = json.loads(cleanup_path.read_bytes())
+            cleanup["entries"]["batch-directory"]["phase"] = "removed"
+            body = dict(cleanup)
+            body.pop("payload_sha256")
+            cleanup["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+            cleanup_path.write_bytes(canonical_json_bytes(cleanup))
+            before = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_cleanup_preflight_rejects_uppercase_staged_digest_syntax_without_mutation(self) -> None:
+        """Cleanup digest fields are canonical lowercase SHA-256 values, not merely 64-byte strings."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            attestation, batch_identity = _digest("a"), "uppercase-cleanup-digest"
+            record = _import_record_for(context.datasets[0], 0, attestation)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,))
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda phase: (_ for _ in ()).throw(SimulatedProcessDeath()) if phase == "cleanup_tombstone_durable" else None):
+                    with self.assertRaises(SimulatedProcessDeath):
+                        _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,), batch)
+            finally:
+                capabilities._close_authority(authority)
+            cleanup_path = root / "import_batches" / checkpoints._cleanup_name(batch_identity)
+            cleanup = json.loads(cleanup_path.read_bytes())
+            key = "staged:" + record.dataset
+            uppercase = cleanup["staged_record_digests"][record.dataset].upper()
+            cleanup["staged_record_digests"][record.dataset] = uppercase
+            cleanup["entries"][key]["digest"] = uppercase
+            cleanup["entries"][key]["isolated_name"] = checkpoints._cleanup_isolated_name(batch_identity, key, uppercase)
+            body = dict(cleanup)
+            body.pop("payload_sha256")
+            cleanup["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+            cleanup_path.write_bytes(canonical_json_bytes(cleanup))
+            before = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_native_load_rejects_trace_literals_and_cross_field_mutations(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        mutations = (
+            ("run identity", lambda payload: payload["result_payload"]["native_trace_body"].__setitem__("run_identity", "other-run")),
+            ("dataset", lambda payload: payload["result_payload"]["native_trace_body"].__setitem__("dataset", "other-dataset")),
+            ("context", lambda payload: payload["result_payload"]["native_trace_body"].__setitem__("run_context_sha256", _digest("0"))),
+            ("device", lambda payload: payload["result_payload"]["native_trace_body"].__setitem__("device", "cpu")),
+            ("backend", lambda payload: payload["result_payload"]["native_trace_body"].__setitem__("backend_audit_sha256", _digest("0"))),
+            ("adoption source", lambda payload: payload["mps_adoption"].__setitem__("source_sha256", _digest("0"))),
+            ("adoption unknown key", lambda payload: payload["mps_adoption"].__setitem__("unknown", True)),
+            ("execution device", lambda payload: payload["mps_execution"].__setitem__("actual_device", "cpu")),
+            ("execution head", lambda payload: payload["mps_execution"].__setitem__("executed_head", "0" * 40)),
+            ("execution unknown key", lambda payload: payload["mps_execution"].__setitem__("unknown", True)),
+            ("result", lambda payload: payload["result_payload"]["effective_result"].__setitem__("result_evidence_sha256", _digest("0"))),
+            ("eligibility", lambda payload: payload["group_evidence"].__setitem__("eligibility_sha256", _digest("0"))),
+            ("processed groups", lambda payload: payload["group_evidence"].__setitem__("processed_groups_sha256", _digest("0"))),
+            ("train", lambda payload: payload["model_hashes"].__setitem__("train_identity_sha256", _digest("0"))),
+            ("model", lambda payload: payload["model_hashes"].__setitem__("model_evidence_sha256", _digest("0"))),
+            ("frozen train", lambda payload: payload["model_hashes"].__setitem__("frozen_train_contract_sha256", _digest("0"))),
+            ("scoring", lambda payload: payload["calibration_hashes"].__setitem__("scoring_evidence_sha256", _digest("0"))),
+            ("test label", lambda payload: payload["result_payload"]["effective_result"].__setitem__("TEST_label", "forbidden")),
+            ("ground truth", lambda payload: payload["group_evidence"].__setitem__("ground_truth", "forbidden")),
+            ("family test performance", lambda payload: payload["model_hashes"].__setitem__("family_TEST_performance", "forbidden")),
+            ("nested evaluation", lambda payload: payload["calibration_hashes"].__setitem__("evaluation_summary", {"nested": ["forbidden"]})),
+            ("embedded evaluation", lambda payload: payload["calibration_hashes"].__setitem__("model_evaluation_summary", "forbidden")),
+            ("mixed case evaluation", lambda payload: payload["calibration_hashes"].__setitem__("TEST_Model_Evaluation_Summary", "forbidden")),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                record = _native_record_for(store, provenance, context.datasets[0])
+                authority = object()
+                capabilities._register_authority(authority, "exp425_native")
+                try:
+                    store._commit_native(_native_capability(store, provenance, authority, record), record)
+                finally:
+                    capabilities._close_authority(authority)
+                path = root / "datasets" / checkpoints.record_filename(record.dataset)
+                payload = json.loads(path.read_bytes())
+                mutate(payload)
+                trace = payload["result_payload"]["native_trace_body"]
+                payload["trace_sha256"] = sha256(canonical_json_bytes(trace)).hexdigest()
+                body = dict(payload)
+                body.pop("record_payload_sha256")
+                payload["record_payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+                path.write_bytes(canonical_json_bytes(payload))
+                progress_path = root / "progress.json"
+                progress = json.loads(progress_path.read_bytes())
+                progress["record_digests"][record.dataset] = payload["record_payload_sha256"]
+                progress_body = dict(progress)
+                progress_body.pop("payload_sha256")
+                progress["payload_sha256"] = sha256(canonical_json_bytes(progress_body)).hexdigest()
+                progress_path.write_bytes(canonical_json_bytes(progress))
+                with self.assertRaises(ValueError):
+                    store.load_record(record.dataset)
+
+    def test_strict_runtime_native_eligibility_tamper_fails_before_commit(self) -> None:
+        """Rehashing an envelope cannot bless altered runtime-native eligibility evidence."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            store = Exp425CheckpointStore.create(Path(directory) / "checkpoints", provenance, context)
+            record = _strict_native_record_for(store, provenance, context.datasets[0])
+            body = checkpoints._native_record_body(store.run_context_sha256, record)
+            body["group_evidence"]["eligibility"]["payload"]["8"]["status"] = "altered"  # type: ignore[index]
+            mutated = replace(record, group_evidence=body["group_evidence"],
+                              record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest())
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                with self.assertRaises(ValueError):
+                    store._commit_native(_native_capability(store, provenance, authority, mutated), mutated)
+            finally:
+                capabilities._close_authority(authority)
+
+    def test_runtime_native_nested_evidence_mutation_matrix_fails_closed_before_intent(self) -> None:
+        """Each semantic Task5 branch rejects a canonically rehashed envelope."""
+        context = _context()
+        provenance = _provenance(context)
+        mutations = (
+            ("eligibility payload", lambda body: body["group_evidence"]["eligibility"]["payload"]["8"].__setitem__("status", "altered")),
+            ("processed manifest", lambda body: body["group_evidence"]["processed"]["manifest"]["groups"][0].__setitem__("status", "altered")),
+            ("processed identity", lambda body: body["group_evidence"]["processed"].__setitem__("identity_sha256", _digest("0"))),
+            ("contract numeric", lambda body: body["model_hashes"]["frozen_train_contract"]["groups"][0].__setitem__("wilson_upper", 0.2)),
+            ("contract bool", lambda body: body["model_hashes"]["frozen_train_contract"]["groups"][0].__setitem__("finite", False)),
+            ("contract map", lambda body: body["model_hashes"]["frozen_train_contract"]["groups"][0]["per_type_synthetic_sensitivity"].__setitem__("amplitude_scaling", 0.2)),
+            ("contract backend", lambda body: body["model_hashes"]["frozen_train_contract"]["backend"].__setitem__("speedup", 2.0)),
+            ("contract near repeat", lambda body: body["model_hashes"]["frozen_train_contract"].__setitem__("near_repeat_status", "altered")),
+            ("contract train identity", lambda body: body["model_hashes"]["frozen_train_contract"].__setitem__("train_identity_sha256", _digest("0"))),
+            ("oof model key", lambda body: body["model_hashes"]["model_evidence"]["oof_models"][0].__setitem__("fold", 1)),
+            ("oof model hash", lambda body: body["model_hashes"]["model_evidence"]["oof_models"][0].__setitem__("model_sha256", _digest("0"))),
+            ("final model key", lambda body: body["model_hashes"]["model_evidence"]["final_models"][0].__setitem__("seed", 2)),
+            ("final model hash", lambda body: body["model_hashes"]["model_evidence"]["final_models"][0].__setitem__("model_sha256", _digest("0"))),
+            ("model unknown key", lambda body: body["model_hashes"]["model_evidence"].__setitem__("unknown", True)),
+            ("calibration statistic", lambda body: body["calibration_hashes"]["scoring_evidence"]["calibrations"][0]["statistic"].__setitem__("center", 0.5)),
+            ("calibration oof digest", lambda body: body["calibration_hashes"]["scoring_evidence"]["calibrations"][0]["statistic"].__setitem__("oof_scores_sha256", _digest("0"))),
+            ("scoring final hash", lambda body: body["calibration_hashes"]["scoring_evidence"]["final_models"][0].__setitem__("model_sha256", _digest("0"))),
+            ("scoring status", lambda body: body["calibration_hashes"]["scoring_evidence"].__setitem__("status", "not_applicable_no_qualified_group")),
+            ("scoring reason", lambda body: body.__setitem__("reason", "altered")),
+            ("effective status", lambda body: body["result_payload"]["effective_result"].__setitem__("status", "abstained")),
+            ("effective coordinate", lambda body: body["result_payload"]["effective_result"]["candidate_coordinates"][0].__setitem__(1, 2)),
+            ("effective result digest", lambda body: body["result_payload"]["effective_result"].__setitem__("result_evidence_sha256", _digest("0"))),
+            ("trace literal", lambda body: body["result_payload"]["native_trace_body"].__setitem__("device", "cpu")),
+            ("adoption digest", lambda body: body["mps_adoption"].__setitem__("source_sha256", _digest("0"))),
+            ("execution source", lambda body: body["mps_execution"]["source_hashes"].__setitem__("runner", _digest("0"))),
+            ("execution head", lambda body: body["mps_execution"].__setitem__("executed_head", "0" * 40)),
+            ("backend audit", lambda body: body.__setitem__("backend_audit_sha256", _digest("0"))),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                record = _strict_native_record_for(store, provenance, context.datasets[0])
+                body = checkpoints._native_record_body(store.run_context_sha256, record)
+                mutate(body)
+                trace = body["result_payload"]["native_trace_body"]
+                body["trace_sha256"] = sha256(canonical_json_bytes(trace)).hexdigest()
+                mutated = replace(record, result_payload=body["result_payload"], group_evidence=body["group_evidence"],
+                                  model_hashes=body["model_hashes"], calibration_hashes=body["calibration_hashes"],
+                                  backend_audit_sha256=body["backend_audit_sha256"], trace_sha256=body["trace_sha256"],
+                                  reason=body["reason"], record_payload_sha256=sha256(canonical_json_bytes(body)).hexdigest())
+                before = _checkpoint_snapshot(root)
+                authority = object()
+                capabilities._register_authority(authority, "exp425_native")
+                try:
+                    with self.assertRaises(ValueError):
+                        store._commit_native(_native_capability(store, provenance, authority, mutated), mutated)
+                finally:
+                    capabilities._close_authority(authority)
+                self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_runtime_native_nested_tamper_is_rejected_by_read_only_inspection(self) -> None:
+        """The descriptor-safe inspector applies the same strict nested binding."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            record = _strict_native_record_for(store, provenance, context.datasets[0])
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                store._commit_native(_native_capability(store, provenance, authority, record), record)
+            finally:
+                capabilities._close_authority(authority)
+            path = root / "datasets" / record_filename(record.dataset)
+            payload = json.loads(path.read_bytes())
+            payload["calibration_hashes"]["scoring_evidence"]["calibrations"][0]["statistic"]["center"] = 0.5
+            body = dict(payload)
+            body.pop("record_payload_sha256")
+            payload["record_payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+            path.write_bytes(canonical_json_bytes(payload))
+            progress_path = root / "progress.json"
+            progress = json.loads(progress_path.read_bytes())
+            progress["record_digests"][record.dataset] = payload["record_payload_sha256"]
+            progress_body = dict(progress)
+            progress_body.pop("payload_sha256")
+            progress["payload_sha256"] = sha256(canonical_json_bytes(progress_body)).hexdigest()
+            progress_path.write_bytes(canonical_json_bytes(progress))
+            before = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root, expected_run_identity=provenance.run_identity)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_lazy_open_defers_unknown_native_result_status_to_explicit_load(self) -> None:
+        """Removing result-status validation would accept a canonically rehashed unknown outcome."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            record = _native_record_for(store, provenance, context.datasets[0])
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                store._commit_native(_native_capability(store, provenance, authority, record), record)
+            finally:
+                capabilities._close_authority(authority)
+            path = root / "datasets" / checkpoints.record_filename(record.dataset)
+            payload = json.loads(path.read_bytes())
+            payload["result_payload"]["effective_result"]["status"] = "invented_status"
+            body = dict(payload)
+            body.pop("record_payload_sha256")
+            payload["record_payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+            path.write_bytes(canonical_json_bytes(payload))
+            progress_path = root / "progress.json"
+            progress = json.loads(progress_path.read_bytes())
+            progress["record_digests"][record.dataset] = payload["record_payload_sha256"]
+            progress_body = dict(progress)
+            progress_body.pop("payload_sha256")
+            progress["payload_sha256"] = sha256(canonical_json_bytes(progress_body)).hexdigest()
+            progress_path.write_bytes(canonical_json_bytes(progress))
+            reopened = Exp425CheckpointStore.open(root, provenance, context)
+            with self.assertRaisesRegex(ValueError, "result status"):
+                reopened.load_record(record.dataset)
+
+    def test_mutating_open_is_lazy_but_explicit_load_decodes_completed_record(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            record = _native_record_for(store, provenance, context.datasets[0])
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                store._commit_native(_native_capability(store, provenance, authority, record), record)
+            finally:
+                capabilities._close_authority(authority)
+            with patch.object(checkpoints, "_decode_record", side_effect=AssertionError("open decoded completed record")):
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+            self.assertEqual(dict(reopened.completed_record_digests()), {record.dataset: record.record_payload_sha256})
+            self.assertEqual(reopened.load_record(record.dataset).dataset, record.dataset)
+
+    def test_store_lifetime_root_binding_rejects_replacement_before_public_operation(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            reopened = Exp425CheckpointStore.open(root, provenance, context)
+            displaced = Path(directory) / "displaced"
+            root.rename(displaced)
+            root.mkdir()
+            for instance in (store, reopened):
+                with self.assertRaisesRegex(ValueError, "store root identity"):
+                    instance.completed_record_digests()
+            record = _native_record_for(store, provenance, context.datasets[0])
+            authority = object()
+            capabilities._register_authority(authority, "exp425_native")
+            try:
+                with self.assertRaisesRegex(ValueError, "store root identity"):
+                    store._commit_native(_native_capability(store, provenance, authority, record), record)
+            finally:
+                capabilities._close_authority(authority)
+            self.assertEqual(list(root.iterdir()), [])
+
+    def test_quarantine_moves_only_the_exact_locked_root_inode(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            with checkpoints._locked_root(root, exclusive=True) as binding:
+                quarantined = checkpoints._quarantine_owned(root, binding)
+            self.assertFalse(root.exists())
+            self.assertTrue(quarantined.is_dir())
+
+    def test_quarantine_refuses_replaced_root_or_existing_destination(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            collision = Path(directory) / "collision"
+            collision.mkdir()
+            with checkpoints._locked_root(root, exclusive=True) as binding:
+                with self.assertRaises(ValueError):
+                    checkpoints._quarantine_owned(root, binding, destination=collision)
+            self.assertTrue(root.is_dir())
+            self.assertTrue(collision.is_dir())
+
+    def test_atomic_quarantine_destination_race_preserves_source_and_racing_destination(self) -> None:
+        """Replacing exclusive rename with overwrite rename would destroy the racer's destination."""
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            destination = Path(directory) / "race-destination"
+            source_before = _checkpoint_snapshot(root)
+
+            def race(parent_fd: int, source: str, target: str) -> None:
+                destination.mkdir()
+                (destination / "racer").write_bytes(b"racer-owned")
+                raise ValueError("quarantine destination is unavailable")
+
+            with checkpoints._locked_root(root, exclusive=True) as binding:
+                with patch.object(checkpoints, "_rename_exclusive_at", side_effect=race):
+                    with self.assertRaisesRegex(ValueError, "destination"):
+                        checkpoints._quarantine_owned(root, binding, destination=destination)
+            self.assertEqual(_checkpoint_snapshot(root), source_before)
+            self.assertEqual((destination / "racer").read_bytes(), b"racer-owned")
+
+    def test_open_quarantines_corruption_only_while_the_owned_root_is_bound(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            (root / "progress.json").write_bytes(b"{}")
+            with self.assertRaisesRegex(ValueError, "quarantined"):
+                Exp425CheckpointStore.open(root, _provenance(context), context)
+            self.assertFalse(root.exists())
+            self.assertEqual(len(list(Path(directory).glob("checkpoints.quarantine-*"))), 1)
+
+    def test_root_and_child_directory_replacement_fail_before_mutation(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            with checkpoints._locked_root(root, exclusive=True) as binding:
+                for name in ("datasets", "transactions"):
+                    descriptor, identity = checkpoints._open_directory_at(binding, name)
+                    original = root / name
+                    displaced = root / (name + ".old")
+                    original.rename(displaced)
+                    original.mkdir()
+                    try:
+                        with self.assertRaises(ValueError):
+                            checkpoints._verify_directory_at(binding, name, identity)
+                    finally:
+                        os.close(descriptor)
+                        original.rmdir(); displaced.rename(original)
+                root.rename(Path(directory) / "owned")
+                root.mkdir()
+                with self.assertRaises(ValueError):
+                    binding.verify()
+
+    def test_descriptor_read_rejects_record_replaced_between_open_and_use(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            target = root / "datasets" / "record.json"
+            target.write_bytes(b"{}")
+            original_read = checkpoints.os.read
+            replaced = False
+
+            def replace_then_read(descriptor: int, size: int) -> bytes:
+                nonlocal replaced
+                if not replaced:
+                    replaced = True
+                    target.replace(root / "datasets" / "replacement.json")
+                    target.write_bytes(b"{}")
+                return original_read(descriptor, size)
+
+            with checkpoints._locked_root(root, exclusive=False) as binding:
+                descriptor, _ = checkpoints._open_directory_at(binding, "datasets")
+                try:
+                    with patch.object(checkpoints.os, "read", side_effect=replace_then_read):
+                        with self.assertRaises(ValueError):
+                            checkpoints._read_file("record.json", dir_fd=descriptor)
+                finally:
+                    os.close(descriptor)
+
+    def test_import_promotion_revalidates_after_each_durable_phase_and_resumes_two_records_once(self) -> None:
+        """A new source authority alone may resume every durable A→E boundary."""
+        context = _context()
+        provenance = _provenance(context)
+        datasets = context.datasets[:2]
+        batch_identity = "sealed-exp424-import"
+        source_attestation = _digest("a")
+
+        def imported_record(dataset: str, index: int) -> ImportedRecordEnvelope:
+            evidence = {"dataset": dataset, "source_groups": [index]}
+            return ImportedRecordEnvelope(
+                dataset=dataset,
+                result_payload={"status": "abstained", "source_index": index},
+                group_evidence=SourceProvenGroupEvidence(
+                    evidence, sha256(canonical_json_bytes(evidence)).hexdigest()
+                ),
+                source_root_sha256=sha256(f"root:{dataset}".encode()).hexdigest(),
+                source_progress_sha256=sha256(f"progress:{dataset}".encode()).hexdigest(),
+                source_record_sha256=sha256(f"record:{dataset}".encode()).hexdigest(),
+                source_result_sha256=sha256(f"result:{dataset}".encode()).hexdigest(),
+                compatibility_attestation_sha256=source_attestation,
+                elapsed_seconds=float(index),
+                reason="sealed local exp424 import",
+            )
+
+        records = tuple(imported_record(dataset, index) for index, dataset in enumerate(datasets))
+
+        def stage_digest(store: Exp425CheckpointStore, record: ImportedRecordEnvelope) -> str:
+            return sha256(canonical_json_bytes(checkpoints._import_record_body(store.run_context_sha256, record))).hexdigest()
+
+        def final_attestation(store: Exp425CheckpointStore) -> str:
+            staged = {record.dataset: stage_digest(store, record) for record in records}
+            return sha256(canonical_json_bytes({
+                "batch_identity": batch_identity,
+                "record_digests": dict(sorted(staged.items())),
+                "attestation_sha256": source_attestation,
+            })).hexdigest()
+
+        def begin_and_stage(store: Exp425CheckpointStore, authority: object, nonce: str) -> object:
+            batch = store._begin_import_batch(capabilities._mint(
+                authority, kind="import_begin", run_identity=provenance.run_identity,
+                batch_identity=batch_identity, attestation_sha256=source_attestation,
+                process_nonce=nonce,
+            ), batch_identity)
+            for record in records:
+                store._stage_imported(capabilities._mint(
+                    authority, kind="import_stage", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, dataset=record.dataset,
+                    source_sha256=record.source_record_sha256,
+                    attestation_sha256=source_attestation, process_nonce=nonce,
+                    record_sha256=stage_digest(store, record),
+                ), batch, record)
+            return batch
+
+        def promote(store: Exp425CheckpointStore, authority: object, nonce: str, batch: object) -> None:
+            store._promote_import_batch(capabilities._mint(
+                authority, kind="import_promote", run_identity=provenance.run_identity,
+                batch_identity=batch_identity, attestation_sha256=source_attestation,
+                process_nonce=nonce, final_attestation_sha256=final_attestation(store),
+            ), batch)
+
+        def file_bytes(root: Path) -> dict[str, bytes]:
+            return {str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        for phase in ("intent_durable", "record_durable", "progress_durable", "intent_removed"):
+            with self.subTest(phase=phase), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                old_authority, old_nonce = object(), "old-nonce"
+                capabilities._register_authority(old_authority, "exp424_import")
+                try:
+                    old_batch = begin_and_stage(store, old_authority, old_nonce)
+                    with patch.object(checkpoints, "_after_import_phase", side_effect=lambda reached: (
+                        (_ for _ in ()).throw(SimulatedProcessDeath(reached)) if reached == phase else None
+                    )):
+                        with self.assertRaisesRegex(SimulatedProcessDeath, phase):
+                            promote(store, old_authority, old_nonce, old_batch)
+                finally:
+                    capabilities._close_authority(old_authority)
+
+                before_open = file_bytes(root)
+                self.assertEqual([path for path in (root / "import_batches").iterdir() if path.name.startswith(".quarantined-")], [])
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+                self.assertEqual(file_bytes(root), before_open)
+                self.assertEqual(
+                    reopened.import_revalidation_required,
+                    ((batch_identity, final_attestation(reopened)),),
+                )
+
+                new_authority, new_nonce = object(), "new-nonce"
+                capabilities._register_authority(new_authority, "exp424_import")
+                try:
+                    new_batch = begin_and_stage(reopened, new_authority, new_nonce)
+                    promote(reopened, new_authority, new_nonce, new_batch)
+                finally:
+                    capabilities._close_authority(new_authority)
+                expected_digests = {record.dataset: stage_digest(reopened, record) for record in records}
+                self.assertEqual(dict(reopened.completed_record_digests()), expected_digests)
+                self.assertEqual(json.loads((root / "progress.json").read_bytes())["record_digests"], expected_digests)
+                self.assertEqual(set(path.name for path in (root / "datasets").iterdir()), {
+                    checkpoints.record_filename(record.dataset) for record in records
+                })
+                self.assertEqual(list((root / "transactions").iterdir()), [])
+                self.assertEqual(list((root / "import_batches").iterdir()), [])
+
+    def test_invalid_import_capabilities_leave_the_checkpoint_unchanged(self) -> None:
+        """Wrong source, closed, batch, and final-attestation tokens cannot mutate state."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            source_evidence = {"source_groups": []}
+            record = ImportedRecordEnvelope(
+                context.datasets[0], {"status": "abstained"},
+                SourceProvenGroupEvidence(source_evidence, sha256(canonical_json_bytes(source_evidence)).hexdigest()),
+                _digest("c"), _digest("d"), _digest("e"), _digest("f"), _digest("a"),
+                0.0, "sealed local exp424 import",
+            )
+            batch_identity, attestation, nonce = "capability-batch", _digest("a"), "nonce"
+            try:
+                batch = store._begin_import_batch(capabilities._mint(
+                    authority, kind="import_begin", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, attestation_sha256=attestation, process_nonce=nonce,
+                ), batch_identity)
+                digest = sha256(canonical_json_bytes(checkpoints._import_record_body(store.run_context_sha256, record))).hexdigest()
+
+                def unchanged_after(action: object) -> None:
+                    before = {str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+                    with self.assertRaises(ValueError):
+                        action()
+                    self.assertEqual(
+                        {str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}, before
+                    )
+
+                unchanged_after(lambda: store._stage_imported(object(), batch, record))
+                wrong_source = capabilities._mint(authority, kind="import_stage", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, dataset=record.dataset, source_sha256=_digest("0"),
+                    attestation_sha256=attestation, process_nonce=nonce, record_sha256=digest)
+                unchanged_after(lambda: store._stage_imported(wrong_source, batch, record))
+                wrong_batch = capabilities._mint(authority, kind="import_stage", run_identity=provenance.run_identity,
+                    batch_identity="other-batch", dataset=record.dataset, source_sha256=record.source_record_sha256,
+                    attestation_sha256=attestation, process_nonce=nonce, record_sha256=digest)
+                unchanged_after(lambda: store._stage_imported(wrong_batch, batch, record))
+                store._stage_imported(capabilities._mint(authority, kind="import_stage", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, dataset=record.dataset, source_sha256=record.source_record_sha256,
+                    attestation_sha256=attestation, process_nonce=nonce, record_sha256=digest), batch, record)
+                final = sha256(canonical_json_bytes({
+                    "batch_identity": batch_identity,
+                    "record_digests": {record.dataset: digest},
+                    "attestation_sha256": attestation,
+                })).hexdigest()
+                wrong_final = capabilities._mint(authority, kind="import_promote", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, attestation_sha256=attestation, process_nonce=nonce,
+                    final_attestation_sha256=_digest("0"))
+                unchanged_after(lambda: store._promote_import_batch(wrong_final, batch))
+                closed = capabilities._mint(authority, kind="import_promote", run_identity=provenance.run_identity,
+                    batch_identity=batch_identity, attestation_sha256=attestation, process_nonce=nonce,
+                    final_attestation_sha256=final)
+                capabilities._close_authority(authority)
+                unchanged_after(lambda: store._promote_import_batch(closed, batch))
+            finally:
+                capabilities._close_authority(authority)
+
+    def test_import_cleanup_crashes_are_revalidated_and_resumed_once(self) -> None:
+        """Every cleanup boundary leaves durable authority-gated restart state."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        batch_identity, attestation = "cleanup-batch", _digest("a")
+        records = tuple(_import_record_for(dataset, index, attestation) for index, dataset in enumerate(context.datasets[:2]))
+        cases = (("cleanup_tombstone_durable", 1), ("cleanup_after_staged_isolation_before_phase_update", 1), ("cleanup_after_staged_phase_before_remove", 1), ("cleanup_staged_unlinked", 1), ("cleanup_staged_unlinked", 2), ("cleanup_after_metadata_isolation_before_phase_update", 1), ("cleanup_after_metadata_phase_before_remove", 1), ("cleanup_metadata_removed", 1), ("cleanup_after_directory_isolation_before_phase_update", 1), ("cleanup_after_directory_phase_before_remove", 1), ("cleanup_directory_removed", 1), ("cleanup_directory_fsynced", 1))
+        for phase, occurrence in cases:
+            with self.subTest(phase=phase, occurrence=occurrence), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                old_authority = object()
+                capabilities._register_authority(old_authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records)
+                    seen = 0
+
+                    def crash_after(reached: str) -> None:
+                        nonlocal seen
+                        if reached == phase:
+                            seen += 1
+                            if seen == occurrence:
+                                raise SimulatedProcessDeath(reached)
+
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=crash_after):
+                        with self.assertRaisesRegex(SimulatedProcessDeath, phase):
+                            _promote_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records, batch)
+                finally:
+                    capabilities._close_authority(old_authority)
+                before = {str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+                self.assertEqual({str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}, before)
+                self.assertEqual(reopened.import_revalidation_required, ((batch_identity, _import_final_attestation(reopened, batch_identity, attestation, records)),))
+                new_authority = object()
+                capabilities._register_authority(new_authority, "exp424_import")
+                try:
+                    resumed = _begin_and_stage_imports(reopened, provenance, new_authority, "new-nonce", batch_identity, attestation, records)
+                    _promote_imports(reopened, provenance, new_authority, "new-nonce", batch_identity, attestation, records, resumed)
+                finally:
+                    capabilities._close_authority(new_authority)
+                self.assertEqual(list((root / "transactions").iterdir()), [])
+                self.assertEqual(list((root / "import_batches").iterdir()), [])
+                self.assertEqual(len(reopened.completed_record_digests()), 2)
+
+    def test_cleanup_tombstone_blocks_a_different_batch_until_resumed(self) -> None:
+        """Ignoring cleanup-owned state would allow two logical import batches to overlap."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        attestation = _digest("a")
+        records = (_import_record_for(context.datasets[0], 0, attestation),)
+        for phase in ("cleanup_after_directory_isolation_before_phase_update", "cleanup_directory_removed"):
+            with self.subTest(phase=phase), TemporaryDirectory() as directory:
+                batch_identity = "cleanup-active-" + phase
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                old_authority = object()
+                capabilities._register_authority(old_authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records)
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda reached: (_ for _ in ()).throw(SimulatedProcessDeath()) if reached == phase else None):
+                        with self.assertRaises(SimulatedProcessDeath):
+                            _promote_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records, batch)
+                finally:
+                    capabilities._close_authority(old_authority)
+                before = _checkpoint_snapshot(root)
+                new_authority = object()
+                capabilities._register_authority(new_authority, "exp424_import")
+                try:
+                    with self.assertRaisesRegex(ValueError, "different import batch"):
+                        store._begin_import_batch(capabilities._mint(new_authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="different-batch", attestation_sha256=_digest("b"), process_nonce="new-nonce"), "different-batch")
+                    self.assertEqual(_checkpoint_snapshot(root), before)
+                    resumed = _begin_and_stage_imports(store, provenance, new_authority, "new-nonce", batch_identity, attestation, records)
+                    _promote_imports(store, provenance, new_authority, "new-nonce", batch_identity, attestation, records, resumed)
+                    distinct = store._begin_import_batch(capabilities._mint(new_authority, kind="import_begin", run_identity=provenance.run_identity, batch_identity="different-batch", attestation_sha256=_digest("b"), process_nonce="newer-nonce"), "different-batch")
+                    self.assertEqual(distinct.identity, "different-batch")
+                finally:
+                    capabilities._close_authority(new_authority)
+
+    def test_cleanup_rejects_a_replaced_batch_without_touching_it(self) -> None:
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        batch_identity, attestation = "replaced-cleanup-batch", _digest("a")
+        records = (_import_record_for(context.datasets[0], 0, attestation),)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "old-nonce", batch_identity, attestation, records)
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda phase: (_ for _ in ()).throw(SimulatedProcessDeath()) if phase == "cleanup_tombstone_durable" else None):
+                    with self.assertRaises(SimulatedProcessDeath):
+                        _promote_imports(store, provenance, authority, "old-nonce", batch_identity, attestation, records, batch)
+            finally:
+                capabilities._close_authority(authority)
+            batch_path = root / "import_batches" / batch_identity
+            batch_path.rename(Path(directory) / "displaced-batch")
+            batch_path.mkdir()
+            foreign = batch_path / checkpoints.record_filename(context.datasets[0])
+            foreign.write_bytes(b"unrelated")
+            before = {str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}
+            with self.assertRaisesRegex(ValueError, "replaced"):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual({str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()}, before)
+
+    def test_import_failures_do_not_leak_descriptors_or_follow_replaced_root(self) -> None:
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                baseline = len(os.listdir("/dev/fd"))
+                for index in range(10):
+                    batch = _begin_and_stage_imports(store, provenance, authority, f"nonce-{index}", f"fd-batch-{index}", _digest("a"), ())
+                    token = capabilities._mint(authority, kind="import_stage", run_identity=provenance.run_identity,
+                        batch_identity=batch.identity, dataset=context.datasets[0], source_sha256=_digest("b"),
+                        attestation_sha256=_digest("a"), process_nonce=f"nonce-{index}", record_sha256=_digest("c"))
+                    with patch.object(checkpoints, "_open_batch_at", side_effect=ValueError("adversarial open failure")):
+                        with self.assertRaises(ValueError):
+                            store._stage_imported(token, batch, _import_record_for(context.datasets[0], 0, _digest("a")))
+                    store._quarantine_import_batch(batch, final_attestation_sha256=None, reason_sha256=_digest("d"))
+                self.assertEqual(len(os.listdir("/dev/fd")), baseline)
+            finally:
+                capabilities._close_authority(authority)
+            displaced = Path(directory) / "displaced"
+            root.rename(displaced)
+            root.mkdir()
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                with self.assertRaisesRegex(ValueError, "store root identity"):
+                    _begin_and_stage_imports(store, provenance, authority, "replaced", "replacement-batch", _digest("a"), ())
+            finally:
+                capabilities._close_authority(authority)
+            self.assertEqual(list(root.iterdir()), [])
+
+    def test_descriptor_post_open_failures_do_not_leak_file_descriptors(self) -> None:
+        context = _context()
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            Exp425CheckpointStore.create(root, _provenance(context), context)
+            baseline = len(os.listdir("/dev/fd"))
+            for _ in range(10):
+                with checkpoints._locked_root(root, exclusive=False) as binding:
+                    with patch.object(checkpoints, "_verify_directory_at", side_effect=ValueError("post-open failure")):
+                        with self.assertRaises(ValueError):
+                            checkpoints._open_directory_at(binding, "datasets")
+                self.assertEqual(len(os.listdir("/dev/fd")), baseline)
+            for _ in range(10):
+                with patch.object(checkpoints._locked_root, "verify", side_effect=ValueError("final root verification failure")):
+                    with self.assertRaises(ValueError):
+                        with checkpoints._locked_root(root, exclusive=False):
+                            pass
+                self.assertEqual(len(os.listdir("/dev/fd")), baseline)
+
+    def test_cleanup_isolation_preserves_replacements_at_each_delete_boundary(self) -> None:
+        """Replacing a validated basename before isolation must never make cleanup unlink it."""
+        context = _context()
+        provenance = _provenance(context)
+        cases = (("cleanup_before_staged_isolation", True), ("cleanup_before_metadata_isolation", False), ("cleanup_before_directory_isolation", False))
+        for phase, with_record in cases:
+            with self.subTest(phase=phase), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                attestation, batch_identity = _digest("a"), "isolation-" + phase
+                records = (_import_record_for(context.datasets[0], 0, attestation),) if with_record else ()
+                authority = object()
+                capabilities._register_authority(authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, records)
+                    batch_path = root / "import_batches" / batch_identity
+
+                    def replace(reached: str) -> None:
+                        if reached != phase:
+                            return
+                        if phase == "cleanup_before_staged_isolation":
+                            target = batch_path / checkpoints.record_filename(context.datasets[0])
+                            target.rename(Path(directory) / "owned-staged")
+                            target.write_bytes(b"foreign-staged")
+                        elif phase == "cleanup_before_metadata_isolation":
+                            target = batch_path / "batch.json"
+                            target.rename(Path(directory) / "owned-metadata")
+                            target.write_bytes(b"foreign-metadata")
+                        else:
+                            batch_path.rename(Path(directory) / "owned-batch")
+                            batch_path.mkdir()
+                            (batch_path / "foreign").write_bytes(b"foreign-directory")
+
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=replace):
+                        with self.assertRaisesRegex(ValueError, "replaced during isolation"):
+                            _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, records, batch)
+                finally:
+                    capabilities._close_authority(authority)
+                if phase == "cleanup_before_staged_isolation":
+                    self.assertEqual((batch_path / checkpoints.record_filename(context.datasets[0])).read_bytes(), b"foreign-staged")
+                elif phase == "cleanup_before_metadata_isolation":
+                    self.assertEqual((batch_path / "batch.json").read_bytes(), b"foreign-metadata")
+                else:
+                    self.assertEqual((batch_path / "foreign").read_bytes(), b"foreign-directory")
+
+    def test_cleanup_isolation_preserves_a_mutated_expected_inode(self) -> None:
+        """A staged file whose bytes change in place must not be mistaken for owned cleanup data."""
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            attestation, batch_identity = _digest("a"), "mutated-cleanup-entry"
+            record = _import_record_for(context.datasets[0], 0, attestation)
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,))
+                target = root / "import_batches" / batch_identity / checkpoints.record_filename(context.datasets[0])
+
+                def mutate(reached: str) -> None:
+                    if reached == "cleanup_before_staged_isolation":
+                        target.write_bytes(b"foreign-bytes-on-the-owned-inode")
+
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=mutate):
+                    with self.assertRaisesRegex(ValueError, "replaced during isolation"):
+                        _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,), batch)
+            finally:
+                capabilities._close_authority(authority)
+            self.assertEqual(target.read_bytes(), b"foreign-bytes-on-the-owned-inode")
+
+    def test_cleanup_rechecks_each_isolated_entry_after_the_pre_remove_hook(self) -> None:
+        """Replacing an isolated entry after validation must preserve it instead of deleting it."""
+        context = _context()
+        provenance = _provenance(context)
+        cases = (("staged", True), ("metadata", False), ("directory", False))
+        for label, with_record in cases:
+            with self.subTest(label=label), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                attestation, batch_identity = _digest("a"), "post-hook-" + label
+                records = (_import_record_for(context.datasets[0], 0, attestation),) if with_record else ()
+                authority = object()
+                capabilities._register_authority(authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, records)
+                    batch_path = root / "import_batches" / batch_identity
+
+                    def replace(reached: str) -> None:
+                        if reached != "cleanup_after_" + label + "_phase_before_remove":
+                            return
+                        cleanup = json.loads(next((root / "import_batches").glob("cleanup-*.json")).read_bytes())
+                        key = "staged:" + context.datasets[0] if label == "staged" else ("batch.json" if label == "metadata" else "batch-directory")
+                        entry = cleanup["entries"][key]
+                        parent = batch_path if label != "directory" else root / "import_batches"
+                        isolated = parent / entry["isolated_name"]
+                        isolated.rename(Path(directory) / ("owned-" + label))
+                        if label == "directory":
+                            isolated.mkdir()
+                            (isolated / "foreign").write_bytes(b"foreign-directory")
+                        else:
+                            isolated.write_bytes(("foreign-" + label).encode())
+
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=replace):
+                        with self.assertRaisesRegex(ValueError, "replaced"):
+                            _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, records, batch)
+                finally:
+                    capabilities._close_authority(authority)
+                if label == "staged":
+                    self.assertEqual((batch_path / checkpoints.record_filename(context.datasets[0])).read_bytes(), b"foreign-staged")
+                elif label == "metadata":
+                    self.assertEqual((batch_path / "batch.json").read_bytes(), b"foreign-metadata")
+                else:
+                    self.assertEqual((batch_path / "foreign").read_bytes(), b"foreign-directory")
+
+    def test_cleanup_resumes_after_delete_before_removed_phase_is_persisted(self) -> None:
+        """A crash after an unlink is resumed as removed for every cleanup entry kind."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        cases = (("staged", True), ("metadata", False), ("directory", False))
+        for label, with_record in cases:
+            with self.subTest(label=label), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                attestation, batch_identity = _digest("a"), "after-delete-" + label
+                records = (_import_record_for(context.datasets[0], 0, attestation),) if with_record else ()
+                old_authority = object()
+                capabilities._register_authority(old_authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records)
+                    crash_phase = "cleanup_after_" + label + "_remove_before_phase_update"
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda reached: (_ for _ in ()).throw(SimulatedProcessDeath(reached)) if reached == crash_phase else None):
+                        with self.assertRaisesRegex(SimulatedProcessDeath, crash_phase):
+                            _promote_imports(store, provenance, old_authority, "old-nonce", batch_identity, attestation, records, batch)
+                finally:
+                    capabilities._close_authority(old_authority)
+                reopened = Exp425CheckpointStore.open(root, provenance, context)
+                new_authority = object()
+                capabilities._register_authority(new_authority, "exp424_import")
+                try:
+                    resumed = _begin_and_stage_imports(reopened, provenance, new_authority, "new-nonce", batch_identity, attestation, records)
+                    _promote_imports(reopened, provenance, new_authority, "new-nonce", batch_identity, attestation, records, resumed)
+                finally:
+                    capabilities._close_authority(new_authority)
+                self.assertEqual(list((root / "import_batches").iterdir()), [])
+
+    def test_cleanup_rejects_each_forged_deterministic_plan_field_before_mutation(self) -> None:
+        """Changing a cleanup entry's deterministic plan must not authorize any deletion."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        for field, replacement in (("original_name", "forged.json"), ("isolated_name", ".cleanup-owned-forged"), ("entry_type", "directory"), ("digest", _digest("f")), ("metadata_digest", _digest("f"))):
+            with self.subTest(field=field), TemporaryDirectory() as directory:
+                root = Path(directory) / "checkpoints"
+                store = Exp425CheckpointStore.create(root, provenance, context)
+                attestation, batch_identity = _digest("a"), "forged-plan-" + field
+                record = _import_record_for(context.datasets[0], 0, attestation)
+                authority = object()
+                capabilities._register_authority(authority, "exp424_import")
+                try:
+                    batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,))
+                    with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda reached: (_ for _ in ()).throw(SimulatedProcessDeath()) if reached == "cleanup_tombstone_durable" else None):
+                        with self.assertRaises(SimulatedProcessDeath):
+                            _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (record,), batch)
+                finally:
+                    capabilities._close_authority(authority)
+                cleanup_path = next((root / "import_batches").glob("cleanup-*.json"))
+                cleanup = json.loads(cleanup_path.read_bytes())
+                entry = cleanup["entries"]["batch.json"] if field == "metadata_digest" else cleanup["entries"]["staged:" + context.datasets[0]]
+                entry["digest" if field == "metadata_digest" else field] = replacement
+                if field == "metadata_digest":
+                    entry["isolated_name"] = checkpoints._cleanup_isolated_name(batch_identity, "batch.json", replacement)
+                body = dict(cleanup)
+                body.pop("payload_sha256")
+                cleanup["payload_sha256"] = sha256(canonical_json_bytes(body)).hexdigest()
+                cleanup_path.write_bytes(canonical_json_bytes(cleanup))
+                before = _checkpoint_snapshot(root)
+                with self.assertRaises(ValueError):
+                    Exp425CheckpointStore.inspect_read_only(root)
+                self.assertEqual(_checkpoint_snapshot(root), before)
+
+    def test_read_only_cleanup_inspection_rejects_foreign_isolated_metadata(self) -> None:
+        """Readonly inspection reports a foreign pre-phase isolated entry without repairing it."""
+        class SimulatedProcessDeath(RuntimeError):
+            pass
+
+        context = _context()
+        provenance = _provenance(context)
+        with TemporaryDirectory() as directory:
+            root = Path(directory) / "checkpoints"
+            store = Exp425CheckpointStore.create(root, provenance, context)
+            attestation, batch_identity = _digest("a"), "foreign-isolated-metadata"
+            authority = object()
+            capabilities._register_authority(authority, "exp424_import")
+            try:
+                batch = _begin_and_stage_imports(store, provenance, authority, "nonce", batch_identity, attestation, ())
+                with patch.object(checkpoints, "_after_import_cleanup_phase", side_effect=lambda reached: (_ for _ in ()).throw(SimulatedProcessDeath()) if reached == "cleanup_after_metadata_isolation_before_phase_update" else None):
+                    with self.assertRaises(SimulatedProcessDeath):
+                        _promote_imports(store, provenance, authority, "nonce", batch_identity, attestation, (), batch)
+            finally:
+                capabilities._close_authority(authority)
+            cleanup_path = next((root / "import_batches").glob("cleanup-*.json"))
+            cleanup = json.loads(cleanup_path.read_bytes())
+            isolated = cleanup["entries"]["batch.json"]["isolated_name"]
+            target = root / "import_batches" / batch_identity / isolated
+            target.unlink()
+            target.write_bytes(b"foreign-metadata")
+            before = _checkpoint_snapshot(root)
+            with self.assertRaises(ValueError):
+                Exp425CheckpointStore.inspect_read_only(root)
+            self.assertEqual(_checkpoint_snapshot(root), before)
+
+
+class CheckpointBenchmarkTests(unittest.TestCase):
+    """The compact format must avoid revalidating the same frozen context 25 times."""
+
+    def test_shared_context_is_compact_and_resumes_faster_than_repeated_context(self) -> None:
+        metrics = _measure_shared_context_checkpoint_benchmark()
+        self.assertGreaterEqual(metrics.byte_reduction_fraction, 0.80)
+        self.assertGreaterEqual(metrics.speedup, 2.0)
+        self.assertEqual(metrics.exp425_candidate_coordinates, metrics.old_candidate_coordinates)
+        self.assertEqual(metrics.exp425_result_evidence_digests, metrics.old_result_evidence_digests)
+        self.assertEqual(len(metrics.exp425_candidate_coordinates), 25)
+        self.assertEqual(metrics.completed_record_count, 25)

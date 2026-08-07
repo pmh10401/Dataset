@@ -1,0 +1,52 @@
+# SDD ledger — plan: docs/superpowers/plans/2026-08-04-exp425-selective-recovery.md
+
+Pre-flight commitment review: ship at 4aa3fe142c043c55b4bdcabc1824b6cadd9e3bdc (Sol/High; no implementation blockers).
+Task 1: in progress (base 4aa3fe142c043c55b4bdcabc1824b6cadd9e3bdc)
+Task 1: complete (commits 4aa3fe1..a37e0b4, review clean)
+Task 2: in progress (base a37e0b4d1e241a885c69b65b318fe77107b055c8)
+Task 2: fix round 1/5 (3 addressed, 10 Critical/Important open including descriptor leaks; commits bfc221c..22b8b97)
+Task 2: minor (deferred): inspect proof does not yet snapshot bytes/root and broader metadata timestamps
+Task 2: fix round 2 in progress (base 22b8b97)
+Task 2: fix round 2/5 (4 addressed, 6 Critical/Important open including strict-decoder regression; commits 22b8b97..a638ce9)
+Task 2: minor (deferred): inspect proof excludes atime because read policy may update it although interface wording says timestamps
+Task 2: fix round 3 in progress (base a638ce9)
+Task 2: fix round 3/5 (2 addressed, 4 Critical/Important open including tombstone semantics; commits a638ce9..d2302d7)
+Task 2: fix round 4 in progress (base d2302d7; fresh Terra implementer)
+Task 2: fix round 4/5 (1 addressed, 3 Critical/Important open; commits d2302d7..096e83d)
+Task 2: minor (deferred): cleanup staged digest syntax validates length but not lowercase hex
+Task 2: fix round 5 in progress (base 096e83d; fresh Terra implementer, final round)
+Task 2: fix round 5/5 (3 addressed, 0 open; commits 096e83d..7ebe538)
+Task 2: complete (commits a37e0b4..7ebe538, final scoped review ship; historical deferred minor notes retained)
+Task 3: in progress (base 7ebe538)
+Task 3: fix round 1 in progress (base ea7ea85; initial review: 2 Critical, 5 Important open)
+Task 3: fix round 1/5 (2 addressed, 5 Critical/Important open including post-promotion quarantine; commits ea7ea85..16b5cdc)
+Task 3: fix round 2 in progress (base 16b5cdc)
+Task 3: fix round 2/5 (2 addressed, 3 Important open; commits 16b5cdc..1450716)
+Task 3: fix round 3 in progress (base 1450716)
+Task 3: fix round 3/5 (3 addressed, 1 new Important open: mint-time revalidation is misclassified post-promotion; commits 1450716..dc3f6d5)
+Task 3: fix round 4 in progress (base dc3f6d5)
+Task 3: fix round 4/5 (1 addressed, 0 open; commits dc3f6d5..78580fc; final scoped Sol/High review ship)
+Task 3: complete (commits 7ebe538..78580fc; production smoke 1117/983/134, source_mutated=false)
+Task 4: in progress (base 78580fc)
+Task 4: fix round 1 in progress (base 3cf9e49; review: 1 Critical, 8 Important open)
+Task 4: fix round 1 partial (commit 57fdb7f; package remains in progress; implementer reports parent binding/live-writer/malformed-row/benchmark coverage open)
+Task 4: fix round 1/5 (original 1 Critical addressed; 4 Important open after cumulative commits 3cf9e49..4d18e03)
+Task 4: fix round 2 in progress (base 4d18e03)
+Task 4: fix round 2/5 (4 addressed, 2 Important open: integrity audit lifecycle and real replace/open/restore ABA proof; commit 6081e2b)
+Task 4: fix round 3 in progress (base 6081e2b)
+Task 4: fix round 3/5 (2 addressed, 0 open; commit 18159d6; final Sol/High scoped review ship)
+Task 4: complete (commits 78580fc..18159d6; DB tests 25, DB+Exp417 50, Exp425 106; 256MiB 0.136s vs 2.593s)
+External readiness: removed 8 unreferenced stale Exp417 DB pin hardlinks; official DB inode 1048138 retained, nlink restored 9 -> 1.
+Task 5: in progress (base 18159d6)
+Task 5: follow-up partial (owner-bound PID/read-only full inspection/preflight context binding/final-close ordering/native no-qualified abstention and authority sealing implemented; focused Task5+checkpoint 54 tests, Task1-4 95 tests, frozen Exp417 suite exit 0; orchestration/heartbeat/full CLI/nested-mutation/MPS parity evidence remain open; no official run/readiness)
+Task 5: round 2 partial (serialized periodic heartbeat and first CLI preflight/cleanup evidence added; MPS itself available: torch 2.13.0, but exact Exp424 reference module/assembly absent from this worktree; real mixed orchestration, full CLI, nested mutation and exact parity remain open)
+Task 5: integration step 1 complete (mixed-runtime integration commit): real Exp425 store + source begin/stage/promote import + opaque runtime session mixed-run coverage added.  The three-record fixture proves sorted imported/native routing, compact global gate, durable progress/events/heartbeat, cleanup, exact session-minted claims, and all native intent/record/progress/removal crash boundaries reopen/resume once without duplicate record/event/counter.  No CLI/global-parity/nested-mutation/MPS parity/readiness work was started.
+Task 5: compact global parity hardening complete (pending commit): Exp425's adapter now uses Exp417 qualification module cap, rejects context cap divergence, validates exact compact native/imported schemas and full sorted inventory, and has direct real-`DatasetResult` Exp417 parity at below/exact/above boundaries plus exhaustive coordinate/status/coverage guards.  A gate failure preserves runtime's failed nonpublication status.  Runtime 20 tests, Exp417 qualification 22 tests, compileall, and diff check pass.
+Task 5: CLI/PID/inspect lifecycle matrix complete (pending commit): fail-closed cross-root inspection, factory-free complete resume, real 11-case CLI matrix; focused runtime+CLI 31 tests and py_compile/diff-check pass; no readiness or official run.
+Task 5: CLI fix round 1/5 complete (pending commit): factory assembly now exits 2; inspect read-only payload/counter reconciliation rejects adversarial state/accounting corruption; CLI 15 and focused runtime+CLI 35 pass.
+Task 5: CLI fix round 1 continuation complete (pending commit): nonterminal counters now bind to preflight-validated terminal-event prefix, preserving legal checkpoint-ahead suffix resume; CLI 18 and focused runtime+CLI 38 pass.
+Task 5: Architecture A first smoke stopped pre-data (PID 32415; golden decoded object/raw-mapping mismatch; TRAIN/TEST/MPS all zero); retry addendum freezes a new root but no second invocation was run. Follow-up binds truthful CPU audit/adoption/execution provenance before fresh review.
+Task 5: first retry stopped in DB/lane identity preflight (PID 79638; completed=0; no TRAIN/TEST-value/TEST-label/MPS model work). Production audit proved frozen lanes are a valid 3,090-coordinate subset of 195,900 TEST identities, not full coverage; equality check corrected by TDD, retry root preserved, and antigravity-named retry2 addendum freezes one new exact root pending full verification and fresh Sol/High review.
+Task 5: retry2 stopped after one-fixture MPS TRAIN compute but before parity/commit/result (PID 80796; 120.025s; TRAIN=1, TEST values=0, TEST labels=0; completed=0). Nested immutable-container serialization and exception-path snapshot double-close were reproduced RED and corrected GREEN without a scientific change. Retry2 evidence is immutable; antigravity-named retry3 addendum freezes one new exact root pending full verification and fresh Sol/High review.
+Task 5: first retry3 prelaunch review returned fix-first (raw immutable result publication and pre-assignment guard-mismatch session leak). Both were reproduced RED and corrected GREEN: real result JSON serializes immutable containers, and guard failure closes session/snapshot/runtime once inside snapshot scope before failure publication. Parity 21, full Exp425 176, and frozen Exp417 boundary 83 tests pass; retry3 remains absent pending a fresh review.
+Task 5: fresh rereview returned ship, then the single retry3 TRAIN-only MPS smoke ran as PID 42332 for 120.033s and failed closed at the combined shared-parity/status/candidate gate. TRAIN=1, TEST values=0, TEST labels=0, four heartbeats, zero committed records. Exact model and legacy OOF hashes had passed, but the detailed mismatch was not persisted. Retry3 evidence is immutable and research is paused for user direction before any new root, Task 6, or 1,117 run.

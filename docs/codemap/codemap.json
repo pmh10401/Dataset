@@ -1,0 +1,3138 @@
+{
+  "generated_at": "2026-08-07T01:05:25Z",
+  "generated_from_commit": "d977dee17e5d870ff5f84078647fb93b5231a725",
+  "scope": [
+    "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
+    "Exp424 frozen MPS score-cache authority",
+    "Exp425 source validation, descriptor-bound database snapshot, eligibility, runtime and checkpoints",
+    "Exp426 verified-baseline contracts, intake, runtime, checkpoint and publication",
+    "Exp435 frozen label-free prediction boundary, resumable runtime, checkpoint/progress outputs and MLX readiness",
+    "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
+    "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
+    "Research control files, Exp435 preserved failure evidence, Exp436 corrected readiness-owned lifecycle, strict scoring/benchmark/publication contract, and Exp436 preserved failure plus Exp437 implementation-complete governance and readiness-pending handoff",
+    "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
+    "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch",
+    "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs"
+  ],
+  "nodes": [
+    {
+      "id": "research_control",
+      "label": "Research control",
+      "type": "interface",
+      "boundary": "Research governance",
+      "layer": 0,
+      "path": "RESEARCH_STATE.json",
+      "role": "Records the immutable Exp436 persistence failure, Exp437's implementation-complete governance and frozen preregistration/runbook, fresh Task 7 regression/hash/config/root evidence, zero TEST-label access, and the exact clean-HEAD readiness handoff.",
+      "entrypoints": [
+        "active_experiment",
+        "active_phase",
+        "next_action"
+      ],
+      "tests": [],
+      "constraints": [
+        "Must be updated when execution stops or phase changes",
+        "Exp436 readiness completed and its official CPU run preserved 47 records before a canonical metadata-key ordering bug failed AllGestureWiimoteX_normal_1; that root, its readiness hash, one orphan record, and 47-record authority are immutable. Exp437 has completed implementation and frozen governance, starts from a new readiness-owned root, and remains readiness-pending; prediction has not started, TEST labels remain unopened, and PID is null.",
+        "Exp437 changes only execution identity, fixed roots, and order-independent canonical length-histogram persistence; candidate_alpha=0.01, strict three-channel consensus, candidate budget 100, CPU max(1, logical_cpus - 1) with expected 11 workers, zero prediction-label access, and all post-freeze evaluation gates remain unchanged.",
+        "Task 7 handoff reviewed implementation commit d977dee1 with 299 shared-engine tests and 68 predecessor tests, zero failures/errors/skips, immutable Exp436 readiness hash/record proof, Exp437 root absence, and an exact two-field frozen-config diff; official readiness remains pending."
+      ],
+      "evidence": [
+        {
+          "path": "AUTONOMOUS_RESEARCH_LOOP.md",
+          "symbol": "prediction hash"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"active_experiment\": \"Exp437\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"active_phase\": \"implementation_complete_readiness_pending\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"exp436_official\": {"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"failed_dataset\": \"AllGestureWiimoteX_normal_1\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"pid\": null"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"exact_next_command_if_interrupted\":"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"exp437_task7_handoff\": {"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"reviewed_implementation_commit\": \"d977dee17e5d870ff5f84078647fb93b5231a725\""
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"id\": \"Exp437\""
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"status\": \"implementation_complete_readiness_pending\""
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"reviewed_implementation_commit\": \"d977dee17e5d870ff5f84078647fb93b5231a725\""
+        },
+        {
+          "path": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "# Exp437 Task 7 implementation report"
+        },
+        {
+          "path": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "## Immutable Exp436 failure proof"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-07-exp437-metadata-roundtrip-antigravity-design.md",
+          "symbol": "# Exp437 Canonical Metadata Roundtrip Repair Design"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-07-exp437-metadata-roundtrip-antigravity.md",
+          "symbol": "# Exp437 Metadata Roundtrip Repair Implementation Plan"
+        },
+        {
+          "path": "docs/EXP437_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "## Prediction boundary"
+        },
+        {
+          "path": "docs/EXP437_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "## Frozen scientific rule"
+        },
+        {
+          "path": "docs/EXP437_RUNBOOK_antigravity_KO.md",
+          "symbol": "## 정확한 고정 명령"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
+          "symbol": "# Exp436 결측 안전 3중 합의 복구 설계"
+        },
+        {
+          "path": "docs/EXP436_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "# Exp436 결측 안전 엄격 3중 합의 복구 사전등록"
+        },
+        {
+          "path": "docs/EXP436_RUNBOOK_antigravity_KO.md",
+          "symbol": "# Exp436 결측 안전 엄격 3중 합의 실행 안내서"
+        }
+      ]
+    },
+    {
+      "id": "sqlite_store",
+      "label": "univariate_ts.db",
+      "type": "database",
+      "boundary": "External frozen data",
+      "layer": 0,
+      "path": "/Users/mac/Documents/Dataset/univariate_ts.db",
+      "role": "Frozen local SQLite dataset used through descriptor-bound read-only snapshots.",
+      "entrypoints": [
+        "datasets",
+        "instances"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_database.py"
+      ],
+      "constraints": [
+        "External to Git",
+        "No TEST values or labels in Exp426 prediction"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "open_database_snapshot"
+        }
+      ]
+    },
+    {
+      "id": "exp424_source",
+      "label": "Exp424 frozen checkpoint",
+      "type": "storage",
+      "boundary": "External frozen data",
+      "layer": 0,
+      "path": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint",
+      "role": "Read-only source authority containing 1,117 Exp424 records, of which 983 are importable and 134 terminal.",
+      "entrypoints": [
+        "root_provenance.json",
+        "progress.json",
+        "datasets"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_predecessor.py"
+      ],
+      "constraints": [
+        "Fixed root/progress/record-set hashes",
+        "Never mutated by successor experiments"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "EXP424_SOURCE_ROOT"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "class Exp424CompatibilityContract"
+        }
+      ]
+    },
+    {
+      "id": "artifact_utils",
+      "label": "Canonical artifact I/O",
+      "type": "storage",
+      "boundary": "Shared research core",
+      "layer": 1,
+      "path": "experiments/exp403_408/artifact_io.py",
+      "role": "Provides canonical JSON bytes, SHA256 helpers, and atomic JSON/CSV/JSONL writes.",
+      "entrypoints": [
+        "canonical_json_bytes",
+        "write_json_atomic",
+        "write_jsonl_atomic",
+        "write_csv_atomic"
+      ],
+      "tests": [
+        "experiments/exp403_408/tests/test_prediction_boundary.py"
+      ],
+      "constraints": [
+        "Canonical bytes define scientific hashes"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp403_408/artifact_io.py",
+          "symbol": "canonical_json_bytes"
+        },
+        {
+          "path": "experiments/exp403_408/artifact_io.py",
+          "symbol": "write_json_atomic"
+        }
+      ]
+    },
+    {
+      "id": "exp417_contracts",
+      "label": "Exp417 scientific contracts",
+      "type": "data",
+      "boundary": "Exp417 foundation",
+      "layer": 1,
+      "path": "experiments/exp417_causal_multihorizon_shadow/contracts.py",
+      "role": "Defines frozen run context, raw TRAIN/TEST structures, processed groups, model evidence and dataset results.",
+      "entrypoints": [
+        "FrozenRunContext",
+        "RawTrainDataset",
+        "ProcessedGroup",
+        "DatasetResult"
+      ],
+      "tests": [
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_contracts.py"
+      ],
+      "constraints": [
+        "Frozen immutable scientific structures",
+        "TRAIN and TEST structures are distinct"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/contracts.py",
+          "symbol": "FrozenRunContext"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/contracts.py",
+          "symbol": "RawTrainDataset"
+        }
+      ]
+    },
+    {
+      "id": "exp417_inputs",
+      "label": "Exp417 input boundary",
+      "type": "data",
+      "boundary": "Exp417 foundation",
+      "layer": 1,
+      "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+      "role": "Freezes input identities and provides separate verified read-only TRAIN and TEST loaders.",
+      "entrypoints": [
+        "freeze_run_context",
+        "load_raw_train_values",
+        "load_raw_test_values",
+        "verified_read_only_connection"
+      ],
+      "tests": [
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_inputs.py"
+      ],
+      "constraints": [
+        "SQL label-free contract",
+        "Database and lane hashes verified"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "load_raw_train_values"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "assert_label_free_sql_contract"
+        }
+      ]
+    },
+    {
+      "id": "exp417_preprocessing",
+      "label": "Exp417 TRAIN preparation + model",
+      "type": "model",
+      "boundary": "Exp417 foundation",
+      "layer": 2,
+      "path": "experiments/exp417_causal_multihorizon_shadow",
+      "role": "Groups and transforms normal TRAIN series, builds identity-grouped folds, and trains the frozen causal multi-horizon model path.",
+      "entrypoints": [
+        "preprocess_length_groups",
+        "identity_grouped_folds",
+        "canonical_waveform_sha256",
+        "train_oof_models",
+        "fit_final_seed_models",
+        "ResidualBatchPredictor"
+      ],
+      "tests": [
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_preprocessing.py",
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_model.py"
+      ],
+      "constraints": [
+        "Identity groups remain within one fold",
+        "Deterministic TRAIN-only transforms",
+        "Seed and fold contracts are frozen",
+        "MPS-heavy execution serialized"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
+          "symbol": "preprocess_length_groups"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
+          "symbol": "identity_grouped_folds"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+          "symbol": "train_oof_models"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+          "symbol": "fit_final_seed_models"
+        }
+      ]
+    },
+    {
+      "id": "exp417_checkpoint",
+      "label": "Exp417 checkpoint store",
+      "type": "storage",
+      "boundary": "Exp417 foundation",
+      "layer": 4,
+      "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+      "role": "Persists and verifies Exp417 contexts, dataset results, progress and crash-recovery state.",
+      "entrypoints": [
+        "Exp417CheckpointStore",
+        "canonical_result_sha256",
+        "_record_from_bytes"
+      ],
+      "tests": [
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_checkpoints.py"
+      ],
+      "constraints": [
+        "Descriptor and inode checks",
+        "Atomic no-clobber publication"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "Exp417CheckpointStore"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "canonical_result_sha256"
+        }
+      ]
+    },
+    {
+      "id": "exp425_contracts",
+      "label": "Exp425 contracts + TRAIN eligibility",
+      "type": "data",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 1,
+      "path": "experiments/exp425_selective_recovery",
+      "role": "Defines immutable provenance/record envelopes and computes TRAIN-only fold and identity eligibility evidence.",
+      "entrypoints": [
+        "EligibilityAssessment",
+        "Exp425RunProvenance",
+        "ImportedRecordEnvelope",
+        "NativeRecordEnvelope",
+        "apply_group_eligibility",
+        "evaluate_group_eligibility"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_contracts.py",
+        "experiments/exp425_selective_recovery/tests/test_eligibility.py"
+      ],
+      "constraints": [
+        "Deep immutable payloads",
+        "Lowercase SHA256 values",
+        "TRAIN-only evidence",
+        "Insufficient identity support produces explicit abstention"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/contracts.py",
+          "symbol": "EligibilityAssessment"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/contracts.py",
+          "symbol": "ImportedRecordEnvelope"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/eligibility.py",
+          "symbol": "apply_group_eligibility"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/eligibility.py",
+          "symbol": "evaluate_group_eligibility"
+        }
+      ]
+    },
+    {
+      "id": "exp425_database",
+      "label": "Exp425 DB snapshot",
+      "type": "data",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 2,
+      "path": "experiments/exp425_selective_recovery/database.py",
+      "role": "Pins and verifies a read-only SQLite snapshot, loads existing Exp417 raw data, and exposes exact descriptor-bound normal-TRAIN and values-only TEST blobs.",
+      "entrypoints": [
+        "open_database_snapshot",
+        "Exp425DatabaseSnapshot",
+        "DatabaseSnapshotAudit",
+        "load_normal_train_value_blobs",
+        "load_test_value_blobs_after_train"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_database.py"
+      ],
+      "constraints": [
+        "Expected database SHA required",
+        "Path/inode mutation rejected",
+        "Raw blob rows require nonnegative integer indices and positive exact SQLite BLOB lengths divisible by four",
+        "TEST blob SQL reads only instance identity and values after this snapshot's normal-TRAIN blob evidence"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "open_database_snapshot"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "Exp425DatabaseSnapshot"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "load_normal_train_value_blobs"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "load_test_value_blobs_after_train"
+        }
+      ]
+    },
+    {
+      "id": "exp425_predecessor",
+      "label": "Exp424 source validator",
+      "type": "pipeline",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 2,
+      "path": "experiments/exp425_selective_recovery/predecessor.py",
+      "role": "Authenticates Exp424 source descriptors, inspects 1,117 records and adapts valid nonterminal results.",
+      "entrypoints": [
+        "open_validated_exp424_source",
+        "inspect_exp424_source",
+        "import_exp424_nonterminal"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_predecessor.py"
+      ],
+      "constraints": [
+        "Read-only descriptor-bound source",
+        "Fixed production compatibility contract"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "open_validated_exp424_source"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "inspect_exp424_source"
+        }
+      ]
+    },
+    {
+      "id": "exp425_checkpoint",
+      "label": "Exp425 checkpoint store",
+      "type": "storage",
+      "boundary": "Exp425 trusted boundary",
+      "layer": 4,
+      "path": "experiments/exp425_selective_recovery/checkpoints.py",
+      "role": "Owns imported/native record publication, import batches, progress, intent recovery and inspection.",
+      "entrypoints": [
+        "Exp425CheckpointStore",
+        "Exp425CheckpointInspection",
+        "record_filename"
+      ],
+      "tests": [
+        "experiments/exp425_selective_recovery/tests/test_checkpoints.py"
+      ],
+      "constraints": [
+        "One writable owner",
+        "Crash-safe atomic state machine"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/checkpoints.py",
+          "symbol": "Exp425CheckpointStore"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/checkpoints.py",
+          "symbol": "record_filename"
+        }
+      ]
+    },
+    {
+      "id": "exp426_contracts",
+      "label": "Exp426 contracts",
+      "type": "data",
+      "boundary": "Exp426 verified baseline",
+      "layer": 2,
+      "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
+      "role": "Defines immutable provenance, dataset records, counts, progress and worker evidence for the verified baseline.",
+      "entrypoints": [
+        "Exp426Provenance",
+        "Exp426DatasetRecord",
+        "Exp426Counts",
+        "Exp426Progress",
+        "WorkerEvidence"
+      ],
+      "tests": [
+        "experiments/exp426_verified_baseline/tests/test_contracts_antigravity.py"
+      ],
+      "constraints": [
+        "Exactly 12 workers in provenance",
+        "Imported and verified-abstention records remain distinct"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
+          "symbol": "Exp426Provenance"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
+          "symbol": "Exp426DatasetRecord"
+        }
+      ]
+    },
+    {
+      "id": "exp426_intake_parallel",
+      "label": "Exp426 intake + 12 workers",
+      "type": "pipeline",
+      "boundary": "Exp426 verified baseline",
+      "layer": 3,
+      "path": "experiments/exp426_verified_baseline",
+      "role": "Reads descriptor-bound Exp424 bytes, classifies them, and rechecks terminal datasets from TRAIN on a bounded twelve-process CPU pool.",
+      "entrypoints": [
+        "read_verified_source_tasks",
+        "classify_exp424_record_bytes",
+        "verify_train_abstention",
+        "run_ordered_workers"
+      ],
+      "tests": [
+        "experiments/exp426_verified_baseline/tests/test_source_antigravity.py",
+        "experiments/exp426_verified_baseline/tests/test_parallel_antigravity.py"
+      ],
+      "constraints": [
+        "Workers receive bytes or RawTrainDataset, never paths or database handles",
+        "Exactly 12 production workers with at most 24 prefetched tasks",
+        "No TEST value or label loader"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "def read_verified_source_tasks"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/parallel_antigravity.py",
+          "symbol": "def run_ordered_workers"
+        }
+      ]
+    },
+    {
+      "id": "exp426_checkpoint",
+      "label": "Exp426 checkpoint",
+      "type": "storage",
+      "boundary": "Exp426 verified baseline",
+      "layer": 3,
+      "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+      "role": "Creates, opens, inspects and commits Exp426 records against frozen provenance and context.",
+      "entrypoints": [
+        "Exp426CheckpointStore.create",
+        "Exp426CheckpointStore.open",
+        "Exp426CheckpointStore.commit",
+        "Exp426CheckpointStore.inspect_read_only"
+      ],
+      "tests": [
+        "experiments/exp426_verified_baseline/tests/test_checkpoint_antigravity.py"
+      ],
+      "constraints": [
+        "Parent-only writable store",
+        "Exact root inventory",
+        "Atomic intent and progress publication"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+          "symbol": "Exp426CheckpointStore"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+          "symbol": "_atomic_replace"
+        }
+      ]
+    },
+    {
+      "id": "exp426_runtime",
+      "label": "Exp426 resumable runtime",
+      "type": "orchestrator",
+      "boundary": "Exp426 verified baseline",
+      "layer": 4,
+      "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+      "role": "Coordinates frozen-source intake, TRAIN-only terminal verification, parent-owned checkpoint commits, resumable interruption, immutable failure and self-written progress logs.",
+      "entrypoints": [
+        "run_exp426_new",
+        "run_exp426_resume",
+        "inspect_exp426",
+        "_source_worker_tasks"
+      ],
+      "tests": [
+        "experiments/exp426_verified_baseline/tests/test_runtime_antigravity.py"
+      ],
+      "constraints": [
+        "Exactly 12 CPU workers with bounded prefetch 24",
+        "Parent alone owns database, checkpoint and logs",
+        "No TEST value or label loader",
+        "Atomic progress, durable events and 30-second heartbeat",
+        "Interrupted roots resume with zero errors; failed roots are immutable",
+        "Failures persist a normalized exception type and message in progress, events and text log"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "def run_exp426_new"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "def run_exp426_resume"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "class _RuntimeLogger"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "def _source_worker_tasks"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "def _latest_error_payload"
+        }
+      ]
+    },
+    {
+      "id": "exp426_publication",
+      "label": "Exp426 CLI + publication",
+      "type": "interface",
+      "boundary": "Exp426 verified baseline",
+      "layer": 5,
+      "path": "experiments/exp426_verified_baseline",
+      "role": "Exposes frozen new, resume, inspect and readiness commands, binds new execution to same-commit readiness, and atomically publishes independently replayed label-free baseline artifacts.",
+      "entrypoints": [
+        "build_parser",
+        "main",
+        "publish_exp426",
+        "verify_exp426_publication",
+        "_preflight_roots",
+        "_revalidate_readiness_for_execution"
+      ],
+      "tests": [
+        "experiments/exp426_verified_baseline/tests/test_cli_antigravity.py",
+        "experiments/exp426_verified_baseline/tests/test_reporting_antigravity.py"
+      ],
+      "constraints": [
+        "Only frozen external roots are accepted",
+        "Runtime roots must be below a pre-existing parent isolated from the live database parent",
+        "No worker-count option; exactly 12 CPU workers",
+        "Publication is review-only and contains no TEST labels",
+        "Every artifact is replayed against checkpoint and runtime evidence",
+        "New execution requires canonical readiness from the same clean commit"
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "def main"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
+          "symbol": "def publish_exp426"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
+          "symbol": "def verify_exp426_publication"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "def _revalidate_readiness_for_execution"
+        },
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "def _preflight_roots"
+        }
+      ]
+    },
+    {
+      "id": "exp435_runtime",
+      "label": "Exp435 prediction + runtime boundary",
+      "type": "pipeline",
+      "boundary": "Exp435 deterministic runtime",
+      "layer": 4,
+      "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
+      "role": "Owns the label-free Exp435 prediction boundary, resumable runtime, CLI routing, backend readiness, and ordered dataset execution.",
+      "entrypoints": [
+        "run_exp435_new",
+        "resume_exp435",
+        "inspect_exp435",
+        "_run",
+        "_load_values",
+        "LaneMembershipSnapshot",
+        "_score_worker",
+        "run_new",
+        "run_resume",
+        "main",
+        "_production_inspect",
+        "_publication_summary",
+        "build_parser",
+        "_clean_head",
+        "_preflight_roots",
+        "_validate_readiness_payload",
+        "_revalidate_readiness_for_execution",
+        "_ensure_run_parent",
+        "_production_readiness",
+        "run_readiness",
+        "_run_prediction",
+        "run_inspect",
+        "run_evaluate",
+        "scratch wrapper",
+        "Exp435FrozenConfig",
+        "FROZEN_CONFIG",
+        "cpu_worker_count_antigravity",
+        "PreparedTrainGroup",
+        "ChannelCalibration",
+        "CalibratedTrainGroup",
+        "InstanceScoreEvidence",
+        "Exp435Candidate",
+        "Exp435DatasetResult",
+        "BackendDecision",
+        "Exp435RunSummary",
+        "Exp435InputSession",
+        "open_exp435_input_session",
+        "load_train",
+        "load_test_values",
+        "UnavailableTrainGroup",
+        "TrainGroup",
+        "prepare_train_groups",
+        "fit_calibrated_group",
+        "acf_vector",
+        "score_channel_cpu",
+        "CandidateBudgetExceeded",
+        "score_test_instance_cpu",
+        "score_dataset_cpu",
+        "validate_global_candidates",
+        "BackendBatchEvidence",
+        "MlxUnavailable",
+        "MlxFixture",
+        "MlxEngine",
+        "score_channel_mlx",
+        "benchmark_mlx_adoption",
+        "score_with_backend",
+        "CalibratedTrainGroupResult"
+      ],
+      "tests": [
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py"
+      ],
+      "constraints": [
+        "CLI parser accepts exactly readiness, new, resume, inspect and evaluate; alternate paths are rejected",
+        "Readiness requires clean initial and final HEAD, absent fixed output/checkpoint/evaluation roots and an empty fixed parent; one writer persists byte-identical canonical readiness",
+        "New validates readiness, imports input/runtime dependencies before the final HEAD read, then binds that exact commit before opening the input session",
+        "Unfinished resume imports runtime/input dependencies and rechecks final HEAD immediately before opening the input session; completed or repeated resume replays read-only without DB or workers",
+        "Evaluation is imported and delegated lazily only for evaluate; implementation and post-freeze TEST-label loading are grouped in exp435_checkpoint_progress; prediction modes never import it",
+        "CPU uses ProcessPoolExecutor with max(1, detected logical CPU count - 1) workers and no more submitted/in-flight futures than workers; queued work is never reported as current.",
+        "LaneMembershipSnapshot is immutable and pickle-safe before workers start",
+        "Parent alone owns the verified input session, checkpoint, progress and logs; commits remain dataset-name ordered",
+        "Adopted MLX uses one process and no outer scoring pool",
+        "Candidate-budget overflow is persisted before any record/publication and fails closed",
+        "Runtime/checkpoint/progress/publication bind the exact frozen run identity, checkpoint path, backend, dataset total and context fingerprint; no commit/hash-derived identity is accepted.",
+        "Workers receive values-only objects and never access labels, SQLite descriptors or durable outputs",
+        "Existing publications are inspected read-only and summarized without reopening the database",
+        "Production evaluate is bound to the exact FROZEN_OUTPUT and FROZEN_EVALUATION sibling paths under RUN_PARENT; helper evaluation roots must also be absent, separate and outside output/publication/checkpoint.",
+        "The direct scratch runner bootstraps the repository root before importing experiments and exposes exactly five modes; an outside-cwd --help subprocess regression protects the documented entrypoint.",
+        "The runbook records readiness, prediction, replay, evaluation, interrupted and failed states with fixed CLI return-code behavior.",
+        "Failed roots are rejected from durable progress by a read-only gate before mutable checkpoint reconciliation, input access, PID/progress/event mutation or temp/intent cleanup; interrupted roots remain resumable after binding checks.",
+        "Every persisted progress/event stage, including initial, reconciliation, failure and terminal lifecycle records, is centrally restricted to loading, dispatching, awaiting_worker_result, committing or idle; lifecycle records without a dataset use idle.",
+        "Production resume rejects an existing or symlink evaluation root before checkpoint/publication replay, delayed imports or mutable runtime access; inspect remains read-only after evaluation.",
+        "Integrated runtime resume calls shared ProgressWriter.preflight_existing to validate durable progress, PID, live-process state, events, bindings and stages read-only before any mutable checkpoint temp/intent reconciliation; invalid runtime records leave the complete output+checkpoint tree unchanged.",
+        "FROZEN_CONFIG.validate() must pass before input access",
+        "CPU parallelism always uses max(1, detected logical CPU count - 1); the current 12-logical-CPU Mac therefore uses 11 workers",
+        "Exactly 1,117 sorted unique datasets come from the frozen Exp291/292 lane population",
+        "The held Exp425 descriptor is read-only and closes on every exit path",
+        "Prediction intake exposes TRAIN values and TEST values only; no TEST labels are loaded",
+        "Exp435 TEST values are requested only after a concrete RawTrainDataset is loaded",
+        "Published records and backend evidence are immutable and fail closed on contract mismatch",
+        "Exact-length TRAIN groups retain duplicate rows and sorted instance coordinates",
+        "Invalid TRAIN groups emit immutable UnavailableTrainGroup records with preregistered reasons; valid sibling groups continue",
+        "Prototype uses TRAIN-only float32 robust scaling and leave-one-out higher-quantile calibration; gradient and ACF are optional channels",
+        "CPU scoring routes each TEST value row to one exact raw-length TRAIN group; missing or unavailable lengths abstain without concatenation or tail replacement",
+        "A candidate requires prototype AND (gradient OR ACF) with strict score > threshold; frozen-lane coordinates are excluded",
+        "Global candidate validation sorts coordinates and fails closed above 100; it never truncates or auto-promotes",
+        "Each MLX gate batch performs 2 warmups and 5 timed measurements including evaluation and synchronization; adoption requires speedup >=1.1",
+        "BackendBatchEvidence preserves per-batch parity, finite-output, candidate, timing and reason records; BackendDecision binds selected batch evidence to MLX/Metal/device provenance",
+        "UnavailableTrainGroup, TrainGroup and CalibratedTrainGroupResult remain public contract exports for feature/scoring consumers.",
+        "Exp435FrozenConfig supplies the sole canonical run identity exp435-train-only-consensus-recovery-antigravity-20260806 for readiness and all runtime artifacts.",
+        "Each MLX reference chunk contributes nearest-k values to a rolling exact global nearest-k set, bounding dense allocation without changing the float32 RMS k-median score.",
+        "MLX adoption requires finite outputs, normalized/absolute score error <=1e-5, exact candidate coordinates for every reference batch size and speedup >=1.1; runtime failures fail closed without CPU-score mixing.",
+        "MLX is optional and lazy; readiness and production use exact reference-axis batching, while device provenance prefers modern mx.device_info and falls back to legacy mx.metal.device_info only for older MLX."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "class LaneMembershipSnapshot"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def _load_values("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def _default_dataset_scorer("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def _default_mlx_dataset_scorer("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "_PREFETCH = FROZEN_CONFIG.cpu_workers"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "max_workers=FROZEN_CONFIG.cpu_workers"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "worker_count = 1 if backend.adopted"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "store.commit(result)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def inspect_exp435("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def build_parser()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _clean_head()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _preflight_roots("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _validate_readiness_payload("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _revalidate_readiness_for_execution("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _ensure_run_parent("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _production_readiness()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def run_readiness()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _run_prediction("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "from .runtime_antigravity import _runtime_context, run_exp435_new"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "from .runtime_antigravity import _runtime_context, resume_exp435"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def run_inspect()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def run_evaluate()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "importlib.import_module(module_name)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def main("
+        },
+        {
+          "path": "scratch/run_exp435_train_only_consensus_recovery_antigravity.py",
+          "symbol": "from experiments.exp435_train_only_consensus_recovery_antigravity.cli_antigravity import main"
+        },
+        {
+          "path": "scratch/run_exp435_train_only_consensus_recovery_antigravity.py",
+          "symbol": "if __name__ == \"__main__\":"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_parser_has_exactly_five_modes"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_new_rechecks_clean_commit_before_execute"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_prediction_modes_do_not_import_evaluation"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_inspect_after_publication_replays_without_runtime_imports"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_repeated_resume_replays_publication_without_database_or_workers"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_unfinished_resume_passes_exact_final_head_to_input_session"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_new_rejects_head_changed_by_delayed_imports_before_session"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_production_readiness_stable_head_writes_only_canonical_readiness"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "FROZEN_OUTPUT = RUN_PARENT / \"output_antigravity\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "FROZEN_EVALUATION = RUN_PARENT / \"evaluation_antigravity\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "fixed_evaluation = Path(cli_antigravity.FROZEN_EVALUATION)"
+        },
+        {
+          "path": "scratch/run_exp435_train_only_consensus_recovery_antigravity.py",
+          "symbol": "REPO_ROOT = Path(__file__).resolve().parents[1]"
+        },
+        {
+          "path": "scratch/run_exp435_train_only_consensus_recovery_antigravity.py",
+          "symbol": "sys.path.insert(0, str(REPO_ROOT))"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_absolute_scratch_runner_help_works_outside_repo_without_pythonpath"
+        },
+        {
+          "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
+          "symbol": "python3 scratch/run_exp435_train_only_consensus_recovery_antigravity.py --help"
+        },
+        {
+          "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
+          "symbol": "`readiness`, `new`, `resume`, `inspect`, `evaluate` 외의 모드는 없다."
+        },
+        {
+          "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
+          "symbol": "argparse 오류나 처리 실패는 2, 미완료 상태는 1을 반환한다."
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "projected[\"run_identity\"] = FROZEN_CONFIG.run_identity"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "stage=\"awaiting_worker_result\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "if durable_progress.get(\"state\") == \"failed\":"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_parallel_progress_never_submits_beyond_frozen_worker_count"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_inspect_requires_exact_frozen_identity_without_mutating_roots"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_failed_resume_rejects_before_checkpoint_reconciliation"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_parallel_worker_failure_records_offending_dataset_and_does_not_wait_for_sibling"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "_PERSISTED_STAGES = frozenset("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "def _require_persisted_stage("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_persisted_stage_snapshots_use_only_the_authoritative_allowlist"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_interrupted_resume_reconciliation_returns_to_idle_stage"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "resume requires the fixed evaluation root to be absent"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "_validate_durable_output_files(output)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_direct_resume_rejects_evaluation_before_checkpoint_or_replay_imports"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_resume_rejects_invalid_event_stage_before_reconciling_atomic_temp"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "ProgressWriter.preflight_existing("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "def preflight_existing("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_invalid_event_resume_rejects_before_checkpoint_reconciliation"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
+          "symbol": "class Exp435FrozenConfig"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
+          "symbol": "def cpu_worker_count_antigravity()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
+          "symbol": "FROZEN_CONFIG = Exp435FrozenConfig()"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class PreparedTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class ChannelCalibration"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class CalibratedTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class InstanceScoreEvidence"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class Exp435Candidate"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class Exp435DatasetResult"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendDecision"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class Exp435RunSummary"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "class Exp435InputSession"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "def open_exp435_input_session("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "def load_train("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "def load_test_values("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "def test_prediction_sql_never_selects_test_labels"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "def test_session_uses_frozen_1117_population_not_all_db_names"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class UnavailableTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def prepare_train_groups"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def fit_calibrated_group"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def acf_vector"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "def score_channel_cpu"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
+          "symbol": "def test_prepare_returns_unavailable_outcomes_without_suppressing_valid_siblings"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_features_antigravity.py",
+          "symbol": "def test_fit_returns_structured_unavailable_outcomes_for_invalid_prototype"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_unavailable_train_group_is_immutable_and_digest_bound"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "class CandidateBudgetExceeded"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "def score_test_instance_cpu"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "def score_dataset_cpu"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "def validate_global_candidates"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "class ScoringTests"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_exact_length_groups_do_not_concatenate"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_prototype_is_mandatory"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_one_secondary_channel_is_enough"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_frozen_lane_coordinate_is_never_published"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_candidate_budget_accepts_100_and_rejects_101_without_truncating"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "def test_global_candidates_are_canonical_sorted_and_duplicate_checked"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendBatchEvidence:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "class MlxUnavailable("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "class MlxFixture:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "class MlxEngine:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "def score_channel_mlx("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "def benchmark_mlx_adoption("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "def score_with_backend("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "TrainGroup = PreparedTrainGroup | UnavailableTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "CalibratedTrainGroupResult = CalibratedTrainGroup | UnavailableTrainGroup"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "\"CalibratedTrainGroupResult\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_train_group_contracts_are_public_star_exports"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "def test_lane_population_count_mismatch_is_rejected_before_database_open"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "self.assertNotIn(\"evaluation_antigravity\", source)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/config_antigravity.py",
+          "symbol": "run_identity: str = \"exp435-train-only-consensus-recovery-antigravity-20260806\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "raise MlxUnavailable(_runtime_failure_reason(exc)) from exc"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_readiness_fixture_uses_one_query_row_per_production_score_call"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "for start in range(0, refs.shape[0], int(batch_size)):"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "nearest = mx.sort(mx.concatenate((nearest, chunk_nearest), axis=1), axis=1)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_mlx_reference_batches_are_exact_in_readiness_and_production"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_selected_batch_size_reaches_production_engine"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/mlx_antigravity.py",
+          "symbol": "modern_device_info_call = getattr(mx, \"device_info\", None)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_mlx_engine_prefers_core_device_info_over_legacy_metal_probe"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_mlx_engine_uses_legacy_device_info_when_modern_api_is_absent"
+        }
+      ]
+    },
+    {
+      "id": "exp435_checkpoint_progress",
+      "label": "Exp435 checkpoint, publication + retrospective evaluation",
+      "type": "storage",
+      "boundary": "Exp435 deterministic runtime",
+      "layer": 5,
+      "path": "experiments/exp435_train_only_consensus_recovery_antigravity",
+      "role": "Persists canonical records and atomic progress/PID/events logs, replays a checkpoint_complete runtime into eight no-clobber review-only artifacts, and evaluates only after independent publication/hash verification.",
+      "entrypoints": [
+        "Exp435CheckpointStore.create",
+        "Exp435CheckpointStore.open_existing",
+        "Exp435CheckpointStore.commit",
+        "Exp435CheckpointStore.recover_runtime_accounting",
+        "ProgressWriter.create",
+        "ProgressWriter.reject_failed_resume",
+        "ProgressWriter.preflight_existing",
+        "ProgressWriter.open_existing",
+        "ProgressWriter.update",
+        "ProgressWriter.append_event",
+        "ProgressWriter.mark_complete",
+        "ProgressWriter.mark_interrupted",
+        "ProgressWriter.mark_failed",
+        "_PUBLICATION_FILES",
+        "_RUNTIME_FILES",
+        "_runtime_file_bytes",
+        "_validate_runtime",
+        "_build_payloads",
+        "_write_new",
+        "publish_exp435",
+        "inspect_publication",
+        "FrozenPublication",
+        "_verify_bytes",
+        "_exclusive_rename",
+        "prediction_antigravity.jsonl",
+        "dataset_summary_antigravity.jsonl",
+        "score_evidence_antigravity.jsonl",
+        "abstention_ledger_antigravity.jsonl",
+        "backend_decision_antigravity.json",
+        "manifest_antigravity.json",
+        "status_antigravity.json",
+        "artifact_sha256_antigravity.json",
+        "progress_antigravity.json",
+        "events_antigravity.jsonl",
+        "parent_antigravity.log",
+        "run_antigravity.pid",
+        "evaluate_frozen_prediction",
+        "paired_dataset_bootstrap",
+        "decide_exp435_success",
+        "evaluate_exp435",
+        "_load_test_labels",
+        "dataset_metrics_antigravity.jsonl",
+        "rescued_datasets_antigravity.jsonl",
+        "regressed_datasets_antigravity.jsonl",
+        "confusion_antigravity.json",
+        "bootstrap_antigravity.json",
+        "decision_antigravity.json",
+        "_parse_exp404_hard_file",
+        "_load_frozen_hard_coordinates",
+        "_open_test_label_connection",
+        "_load_test_labels_from_connection",
+        "_snapshot_frozen_tree",
+        "_verify_frozen_source",
+        "_validate_evaluation_root",
+        "_write_evaluation_artifacts",
+        "Exp435Evaluation.to_payload",
+        "_PERSISTED_STAGES",
+        "_require_persisted_stage"
+      ],
+      "tests": [
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_checkpoint_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+        "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py"
+      ],
+      "constraints": [
+        "Atomic no-clobber records and record-set digest are fsynced; commit intent recovery is deterministic",
+        "Candidate budget is checked before writing an over-budget record and publication rejects totals above 100 without truncation",
+        "Inspection opens no database or worker and validates outputs, events, label firewall and counter conservation read-only",
+        "Durable progress and logs never contain TEST values or labels",
+        "Publication accepts checkpoint_complete runtime state only and requires exact success/abstention/error counter conservation",
+        "The publication inventory is exactly the eight review-only files; its SHA map is self-excluded",
+        "Manifest, status and artifact SHA maps bind the four terminal runtime files by SHA256",
+        "Publication staging is fsynced and moved with Darwin RENAME_EXCL so an appearing destination is never replaced",
+        "Published outputs are review_only, operational_alert_eligible=false, contain no TEST labels and are independently replay-verified",
+        "Retrospective evaluation replays publication and validates population, input/code/config hashes before opening TEST labels",
+        "TEST labels are loaded only in evaluation_antigravity.py after the hash gate; prediction modules never import the loader",
+        "Hard versus Hard+Exp435 metrics are paired by dataset; rescued, regression and strong-baseline lists remain review-only",
+        "Bootstrap uses 20,000 paired dataset clusters with seed 43520260806 and percentile 2.5/97.5 intervals",
+        "Evaluation artifacts are canonical, staged and no-clobber under a separate evaluation_antigravity root",
+        "Production evaluation accepts only the exact fixed CLI FROZEN_OUTPUT/FROZEN_EVALUATION siblings; helper roots reject equal or nested output, publication or checkpoint paths.",
+        "Before TEST labels, the Exp404 SHA and Exp291 SHA are frozen and the comparator verifies 888 Exp404 datasets, 2,218 coordinates and the 229-dataset empty complement across all 1,117 datasets.",
+        "One Exp417 descriptor-bound verified read-only SQLite connection opens the exact hashed inode after the hash gate, loads only instance_index and label, then closes once; prediction remains label-free.",
+        "The complete frozen output tree is snapshotted before labels and re-inspected immediately before the staged evaluation no-clobber rename; any source mutation fails closed.",
+        "Evaluation payload state is evaluated and combined confusion counts preserve the monotonic union invariants: TP/FP do not decrease and FN/TN do not increase.",
+        "Exp404 and Exp291 comparator artifacts are each captured through one O_NOFOLLOW descriptor, then bytes, SHA256 and parse use that same capture.",
+        "Only interrupted/nonterminal roots may reconcile exact internal progress/PID/checkpoint temps or intents; failed durable state is rejected read-only before every mutable checkpoint operation.",
+        "Checkpoint create/open/read-only inspection/publication require the exact canonical FROZEN_CONFIG.run_identity; no missing, alternate or synthesized identity is accepted.",
+        "Progress, PID and events bind one canonical checkpoint path, backend, total 1,117, frozen run identity and context fingerprint.",
+        "Progress and event writers/readers reject every persisted stage outside the exact five-value allowlist before mutation; initial/recovered/complete snapshots use idle.",
+        "Checkpoint-complete publication requires persisted terminal progress stage exactly idle and validates every event stage through the shared allowlist.",
+        "A publication present at publish entry may be replay-verified idempotently; a destination appearing after entry during payload replay or staging fails strict no-clobber even when byte-identical.",
+        "The same read-only resume preflight is reused by integrated runtime and mutable ProgressWriter open, preventing validation-order drift."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
+          "symbol": "class Exp435CheckpointStore"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
+          "symbol": "def commit("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
+          "symbol": "def recover_runtime_accounting("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "class ProgressWriter"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "def _atomic_replace("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "def _validate_binding("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "_PUBLICATION_FILES = frozenset"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "_RUNTIME_FILES = ("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "PREDICTION_FILE = \"prediction_antigravity.jsonl\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "SUMMARY_FILE = \"dataset_summary_antigravity.jsonl\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "EVIDENCE_FILE = \"score_evidence_antigravity.jsonl\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "ABSTENTION_FILE = \"abstention_ledger_antigravity.jsonl\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "BACKEND_FILE = \"backend_decision_antigravity.json\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "MANIFEST_FILE = \"manifest_antigravity.json\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "STATUS_FILE = \"status_antigravity.json\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "HASH_FILE = \"artifact_sha256_antigravity.json\""
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _runtime_file_bytes("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _validate_runtime("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _build_payloads("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "runtime_hashes = {"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _verify_bytes("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def inspect_publication("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def publish_exp435("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "_write_new(staging / name, payloads[name])"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "_exclusive_rename(staging, publication)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_requires_checkpoint_complete_progress_state"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_manifest_status_and_hash_map_bind_all_terminal_runtime_files"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_mutating_any_terminal_runtime_file_invalidates_replay"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_does_not_replace_destination_that_appears_during_publish"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def evaluate_frozen_prediction("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _load_test_labels("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def paired_dataset_bootstrap("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def decide_exp435_success("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _write_evaluation_artifacts("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_prediction_hash_failure_precedes_test_label_loader"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "EXP404_HARD_PATH = Path("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _parse_exp404_hard_file("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _load_frozen_hard_coordinates("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "with verified_read_only_connection(Path(database_path), database_sha) as connection:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _load_test_labels_from_connection("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "verified_read_only_connection,"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "SELECT i.instance_index, i.label"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _snapshot_frozen_tree("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _verify_frozen_source("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _validate_evaluation_root("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "before_publish: Callable[[], None] | None = None"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "if before_publish is not None:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def evaluate_exp435("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "\"state\": \"evaluated\""
+        },
+        {
+          "path": "/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl",
+          "symbol": "candidate_index"
+        },
+        {
+          "path": "/Users/mac/Documents/Dataset/exp291_final_operational_routing_freeze/exp291_frozen_operational_routing.jsonl",
+          "symbol": "automatic_hard_indices"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_end_to_end_evaluation_writes_eight_artifacts_and_preserves_source"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_source_tamper_after_label_access_fails_before_evaluation_publish"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_private_evaluation_uses_one_pinned_database_session_after_all_artifact_gates"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_each_success_gate_fails_independently"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_dataset_comparison_rejects_lost_baseline_true_positive"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_evaluation_payload_has_stable_evaluated_state"
+        },
+        {
+          "path": "docs/EXP435_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "output 전체 바이트 재검사와 evaluation no-clobber publish 통과"
+        },
+        {
+          "path": "docs/EXP435_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "micro F1 point delta > 0이고 paired 95% CI lower > 0"
+        },
+        {
+          "path": "docs/EXP435_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "dataset-balanced macro F1 point delta > 0이고 paired 95% CI lower > 0"
+        },
+        {
+          "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
+          "symbol": "`mode=ro` SQLite 연결 하나만 열어"
+        },
+        {
+          "path": "docs/EXP435_RUNBOOK_antigravity_KO.md",
+          "symbol": "`artifact_sha256_antigravity.json`"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "if progress.get(\"state\") == \"failed\":"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "verified_read_only_connection,"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _read_pinned_bytes(path: Path)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_pinned_artifact_reader_keeps_opened_bytes_after_pathname_aba_replacement"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _require_frozen_run_identity("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "def reject_failed_resume(cls, output: Path)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _require_frozen_store_identity("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "def test_create_requires_exact_frozen_run_identity"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "_require_persisted_stage(event[\"stage\"], source=\"runtime event stage\")"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_direct_persistence_rejects_non_allowlisted_stages_without_writes"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "if progress[\"stage\"] != \"idle\":"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "An existing root is idempotent only when it was present on entry."
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_requires_idle_allowlisted_terminal_progress_stage"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_rejects_identical_destination_appearing_during_payload_replay"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_at_entry_replays_identical_existing_publication"
+        }
+      ]
+    },
+    {
+      "id": "exp436_contract_boundary",
+      "label": "Exp436 runtime, publication, and CLI firewall",
+      "type": "data",
+      "boundary": "Exp436 missing-safe strict consensus",
+      "layer": 3,
+      "path": "experiments/exp436_missing_safe_strict_consensus_antigravity",
+      "role": "Owns the implemented Exp436 missing-safe values-only scoring, Task8 canonical readiness/publication and post-freeze evaluation firewall, and the profile-aware parent-owned checkpoint/runtime core behind the fixed five-command wrappers. Exp436 remains the default profile; Exp437 binds its own execution identity, fixed sibling roots, outside-CWD-safe wrapper, and lexical length-histogram transport repair while reusing the shared scientific engine and transport schemas. Official Exp436 readiness, prediction, and evaluation remain immutable historical evidence; Exp437 implementation and governance are complete but readiness, prediction, and evaluation are pending. Profile-aware context, readiness, checkpoint, runtime, publication, and evaluation calls reject cross-profile artifacts before recovery, mutation, or TEST-label access; readiness stages its sole canonical artifact while the selected RUN_PARENT is absent; only interrupted resume opens the input session; inspect replays frozen publication bytes read-only; evaluation never changes prediction bytes and may only replay a bound existing evaluation.",
+      "entrypoints": [
+        "Exp436FrozenConfig",
+        "FROZEN_CONFIG",
+        "RawValueSeries",
+        "MissingSafeRawDataset",
+        "ExcludedTrainRowAudit",
+        "PreparedTrainGroup",
+        "UnavailableTrainGroup",
+        "TrainPreparation",
+        "CalibratedTrainGroup",
+        "InstanceScoreEvidence",
+        "Exp436DatasetResult",
+        "BackendBatchEvidence",
+        "BackendBenchmarkEvidence",
+        "BackendDecision",
+        "Exp436RunSummary",
+        "Exp436InputSession",
+        "decode_raw_value_row_antigravity",
+        "open_exp436_input_session",
+        "prepare_train_groups",
+        "fit_calibrated_group",
+        "acf_vector",
+        "score_channel_cpu",
+        "LaneMembership",
+        "CandidateBudgetExceeded",
+        "score_test_instance_cpu",
+        "score_dataset_cpu",
+        "score_dataset_backend",
+        "validate_global_candidates",
+        "MlxEngine",
+        "MlxFixture",
+        "benchmark_mlx_adoption",
+        "MpsEngine",
+        "MpsFixture",
+        "benchmark_mps_adoption",
+        "select_backend",
+        "score_with_backend",
+        "Exp436CanonicalSourcePaths",
+        "canonical_source_paths_antigravity",
+        "validate_backend_engine",
+        "Exp436CheckpointStore",
+        "ExecutionProfileAntigravity",
+        "EXP436_PROFILE",
+        "EXP437_PROFILE",
+        "validated_profile_antigravity",
+        "frozen_config_payload_for_profile_antigravity",
+        "validate_frozen_config_for_profile_antigravity",
+        "frozen_config_for_profile_antigravity",
+        "ProgressWriter",
+        "run_exp436_new",
+        "resume_exp436",
+        "inspect_exp436",
+        "Exp436RunContext",
+        "publish_exp436",
+        "inspect_publication",
+        "evaluate_exp436",
+        "decide_exp436_success",
+        "build_parser",
+        "main",
+        "main_for_profile_antigravity",
+        "_validate_resume_state"
+      ],
+      "tests": [
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_inputs_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_features_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mlx_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mps_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_checkpoint_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_progress_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_execution_profile_antigravity.py"
+      ],
+      "constraints": [
+        "No TEST labels, anomaly positions, metrics, imputation, padding, truncation, copied values, or tail replacement",
+        "Only whole nonfinite float32 TRAIN rows are excluded; all raw lengths >=1 remain partitioned, source preparation/direct calibrated groups require at least four finite references, and audit plus surviving groups exactly partition the sorted source identity-length manifest",
+        "Prototype and gradient may be unavailable only for zero_scale; ACF evidence requires short_series below length 16 and zero_acf_energy at or above it, while any later nonfinite numerical result raises a whole-prediction ValueError",
+        "Raw values may be nonfinite; every published calibration, score, threshold and timing scalar is finite",
+        "Raw nonfinite TEST rows and length below two abstain before group lookup or transforms; exact routing abstentions are scalar-free and every finite-row post-transform numerical error raises ValueError",
+        "Candidates require prototype AND gradient AND ACF and exact TEST identity evidence coverage; unavailable TRAIN channels preserve all calculable siblings with exact channel reasons, while ACF zero energy never substitutes the raw waveform",
+        "Backend protocol is paired-synchronized-v1: timed CPU/device callables contain only their scalar score suites; candidate/JSON/hash work is outside timing, every warmup/timed device output is aggregated into parity/error gates, invalid output preserves only prior fully validated pairs, and nonfinite completed output canonically takes the nonfinite_output reason before all other failed gates; fixtures, engines, and dispatch require exactly frozen k=3 with at least three references; unavailable backends have empty batches/no invented timing or selection, each available backend retains one common input/output fixture digest pair, two available backends must match those pairs before selection, available MLX/MPS evidence requires backend-specific non-CPU accelerator provenance, MLX requires an explicit GPU stream, exact-device synchronization, and installed mlx-metal provenance, and dispatch repeats device validation",
+        "Exp436 scoring imports only local config, contracts, and features; it injects only dense scoring backends and contains no label, evaluation, metric, or database route",
+        "Checkpoint is the sole ordered-prefix authority; checkpoint record -> completion event -> progress snapshot. Phase B progress owns exactly progress JSON, event JSONL, parent log, and PID JSON under one O_DIRECTORY|O_NOFOLLOW directory flock, validates canonical hash-chain/schema/binding/metadata/PID state read-only, and reconciles only an authoritative ordered checkpoint tail. Failed roots are non-resumable; complete/inspect read-only routes bind stored context to readiness before any external resource, and no Exp435 record/runtime import is permitted. Inspection first validates every checkpoint authority with lstat/O_NOFOLLOW/fstat while one shared root flock is held; only one exact canonical record-set temp may equal the current set or the valid next intent/record prospective set. Mutable checkpoint recovery uses one exclusive root flock across full scan, recognized repair/fsync, and pristine rescan; contexts and inspections are deeply immutable. Every profile-aware context/store/readiness/runtime entrypoint validates the selected allowlisted profile, carries its projected frozen config and identity through nested parsers/open/create/recovery calls, and rejects cross-profile artifacts before checkpoint mutation.",
+        "Task8 completed the readiness/publication/evaluation firewall. Official Exp436 readiness selected CPU/11 workers; prediction then failed immutably after 47 committed records because canonical JSON key order conflicted with numeric histogram insertion-order validation. Exp437's execution profile, canonical metadata persistence repair, profile-bound context/checkpoint/runtime core, fixed wrapper, preregistration, and runbook are implemented and frozen; official readiness is pending, prediction has not started, and TEST labels remain unopened.",
+        "Publication inspection has no public expectation override and replays checkpoint/runtime source authorities before RENAME_EXCL; progress replay validates strict runtime bytes in memory and never creates a sibling copy. Evaluator uses the publication reviewed_commit and reviewed_commit_sha256 before labels, revalidates the full source before staging and before rename, and existing evaluation replay recomputes its 1,117-row frozen 20,000-repetition bootstrap while binding publication summaries, candidate accounting, reviewed publication, and frozen database.",
+        "Publication and evaluation APIs accept only a keyword-only selected profile; store/profile/context identity and profile-specific frozen-config hashes must match before publication replay or evaluation, and profile/path mismatches fail before TEST labels or the verified SQLite label reader.",
+        "Publication recomputes the canonical checkpoint context fingerprint from the supplied store context and rejects stale or mismatched fingerprint authorities before runtime replay, manifest construction, or publication writes.",
+        "The public command surface is exactly readiness, new, resume, inspect, and evaluate; no path, worker, backend, seed, threshold, alpha, lane, or budget override flags are accepted.",
+        "Exp437 fixed roots come only from EXP437_PROFILE; RUN_PARENT, FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, and FROZEN_EVALUATION remain Exp436 compatibility aliases and are never read by Exp437 execution.",
+        "Exp437 transport repair validates length histograms semantically (positive decimal keys, nonnegative integer counts, exact TRAIN/TEST sums) and normalizes with dict(sorted(histogram.items())); it never changes the Exp436 alpha, thresholds, lanes, budget, seeds, bootstrap, rescue, false-positive gates, or routing.",
+        "The validated-profile resume policy accepts interrupted for both profiles, preserves Exp436 checkpoint_complete compatibility, and rejects checkpoint_complete for Exp437 before execute/publication/mutation; failed and running are rejected for both. Only inspect is the read-only completed-root path."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/config_antigravity.py",
+          "symbol": "class Exp436FrozenConfig"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/config_antigravity.py",
+          "symbol": "FROZEN_CONFIG = Exp436FrozenConfig()"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class TrainPreparation"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class InstanceScoreEvidence"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendBatchEvidence"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendBenchmarkEvidence"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendDecision"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class Exp436RunSummary"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_backend_evidence_recomputes_native_scalars_for_strict_json"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_nonfinite_completed_reason_precedes_every_other_gate"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_available_benchmark_requires_backend_specific_device_provenance"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_available_benchmark_requires_one_shared_fixture_digest_pair"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_available_backends_require_matching_fixture_digest_pairs_even_when_one_fails"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "def decode_raw_value_row_antigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "class Exp436InputSession"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "def open_exp436_input_session("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "from .config_antigravity import FROZEN_CONFIG"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "from .contracts_antigravity import MissingSafeRawDataset, RawValueSeries"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_inputs_antigravity.py",
+          "symbol": "class Exp436InputTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/contracts_antigravity.py",
+          "symbol": "class CalibratedTrainGroup"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "from .config_antigravity import FROZEN_CONFIG"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "from .contracts_antigravity import ("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "def prepare_train_groups("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "def fit_calibrated_group("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "def acf_vector("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/features_antigravity.py",
+          "symbol": "def score_channel_cpu("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_features_antigravity.py",
+          "symbol": "class Exp436FeatureTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_features_antigravity.py",
+          "symbol": "def test_all_finite_fixture_matches_exp435_shared_calibrations_exactly("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_calibrated_group_rejects_fewer_than_four_direct_references("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_calibrated_group_rejects_contextually_impossible_unavailable_reasons("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_features_antigravity.py",
+          "symbol": "def test_four_finite_length_one_rows_remain_preparable_and_calibratable("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/scoring_antigravity.py",
+          "symbol": "def score_test_instance_cpu("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/scoring_antigravity.py",
+          "symbol": "def score_dataset_cpu("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/scoring_antigravity.py",
+          "symbol": "def score_dataset_backend("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/scoring_antigravity.py",
+          "symbol": "def validate_global_candidates("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_scoring_antigravity.py",
+          "symbol": "class ScoringTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/mlx_antigravity.py",
+          "symbol": "def benchmark_mlx_adoption("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/mps_antigravity.py",
+          "symbol": "def benchmark_mps_adoption("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/backend_antigravity.py",
+          "symbol": "def select_backend("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/backend_antigravity.py",
+          "symbol": "def score_with_backend("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "class MlxReadinessTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mlx_antigravity.py",
+          "symbol": "def test_fixture_and_engine_reject_every_nonfrozen_k"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mps_antigravity.py",
+          "symbol": "class MpsReadinessTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mps_antigravity.py",
+          "symbol": "def test_cpu_like_injected_mps_device_cannot_be_available_or_selected"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_mps_antigravity.py",
+          "symbol": "def test_fixture_and_engine_reject_every_nonfrozen_k"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py",
+          "symbol": "class BackendSelectorTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py",
+          "symbol": "def test_mlx_and_mps_fixture_digest_algorithms_are_symmetric"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_backend_antigravity.py",
+          "symbol": "def test_dispatch_rejects_nonfrozen_k_before_any_cpu_or_device_score"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "class Exp436CheckpointStore"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/progress_antigravity.py",
+          "symbol": "class ProgressWriter"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def run_exp436_new("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def resume_exp436("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def inspect_exp436("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/backend_antigravity.py",
+          "symbol": "def validate_backend_engine("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "class Exp436RunContext"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _regular_bytes("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _root_lock("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _scan_locked("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _repair_locked("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def _canonical_readiness("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def _publish_readiness_atomically("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def _exclusive_rename("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/progress_antigravity.py",
+          "symbol": "def inspect_progress_bytes("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def _run_prediction("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "def publish_exp436("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "def _publish_exp436("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py",
+          "symbol": "def evaluate_exp436("
+        },
+        {
+          "path": "scratch/run_exp436_missing_safe_strict_consensus_antigravity.py",
+          "symbol": "from experiments.exp436_missing_safe_strict_consensus_antigravity.cli_antigravity import main"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "class CliAntigravityTests"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_real_1117_record_publication_passes_evaluator_prelabel_commit_handoff("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_public_evaluate_replays_an_existing_bound_evaluation_without_labels("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py",
+          "symbol": "class ExecutionProfileAntigravity"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py",
+          "symbol": "EXP436_PROFILE = ExecutionProfileAntigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py",
+          "symbol": "EXP437_PROFILE = ExecutionProfileAntigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py",
+          "symbol": "def validated_profile_antigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py",
+          "symbol": "def frozen_config_payload_for_profile_antigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def from_payload("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def create("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _load_locked("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def open_existing("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def open_read_only("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def open_classified_read_only("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def inspect_read_only("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def _frozen_config_payload("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def _build_run_context("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py",
+          "symbol": "def _run("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "def test_exp437_context_roundtrip_is_profile_bound("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_exp437_readiness_and_context_are_profile_bound("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "def _open_store("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "def _build_payloads("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "def _validated_context_fingerprint("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "def inspect_publication("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py",
+          "symbol": "def _validate_verified_publication("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py",
+          "symbol": "def _verify_frozen_source("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py",
+          "symbol": "profile=selected"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py",
+          "symbol": "def frozen_config_for_profile_antigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/execution_profile_antigravity.py",
+          "symbol": "def validate_frozen_config_for_profile_antigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_exp437_publication_manifest_uses_profile_identity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_rejects_context_fingerprint_mismatch("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_exp437_evaluation_rejects_exp436_fixed_paths_before_labels("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_public_evaluation_keeps_only_a_keyword_profile_extension("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def main_for_profile_antigravity("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def _production_dependencies("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def build_parser("
+        },
+        {
+          "path": "scratch/run_exp437_metadata_roundtrip_antigravity.py",
+          "symbol": "from experiments.exp436_missing_safe_strict_consensus_antigravity.cli_antigravity import"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "validate_frozen_config_for_profile_antigravity(config, selected)"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "def _validate_resume_state("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
+          "symbol": "_RESUME_ALLOWED_STATES"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _dataset_metadata("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/progress_antigravity.py",
+          "symbol": "def _validate_metadata("
+        },
+        {
+          "path": "scratch/run_exp437_metadata_roundtrip_antigravity.py",
+          "symbol": "main_for_profile_antigravity(EXP437_PROFILE)"
+        },
+        {
+          "path": "docs/EXP437_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "Transport delta: canonical length-histogram validation ignores insertion order and normalizes lexicographically"
+        },
+        {
+          "path": "docs/EXP437_RUNBOOK_antigravity_KO.md",
+          "symbol": "Exp437의 `checkpoint_complete` root도 `resume` 대상이"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_exp437_cli_resume_rejects_checkpoint_complete_before_execute_or_mutation"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_exp437_public_resume_rejects_checkpoint_complete_before_prediction_or_publication"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "exp417_inputs",
+      "to": "sqlite_store",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "verified_read_only_connection"
+        }
+      ],
+      "id": "edge_001_exp417_inputs_reads_sqlite_store"
+    },
+    {
+      "from": "exp417_inputs",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "from .contracts import"
+        }
+      ],
+      "id": "edge_002_exp417_inputs_imports_exp417_contracts"
+    },
+    {
+      "from": "exp417_preprocessing",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/preprocessing.py",
+          "symbol": "from .contracts import"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
+          "symbol": "from .contracts import"
+        }
+      ],
+      "id": "edge_003_exp417_preprocessing_imports_exp417_contracts"
+    },
+    {
+      "from": "exp417_checkpoint",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "from .contracts import"
+        }
+      ],
+      "id": "edge_005_exp417_checkpoint_imports_exp417_contracts"
+    },
+    {
+      "from": "exp417_checkpoint",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ],
+      "id": "edge_006_exp417_checkpoint_imports_artifact_utils"
+    },
+    {
+      "from": "exp425_database",
+      "to": "sqlite_store",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "open_database_snapshot"
+        }
+      ],
+      "id": "edge_007_exp425_database_reads_sqlite_store"
+    },
+    {
+      "from": "exp425_database",
+      "to": "exp417_inputs",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow import inputs as exp417_inputs"
+        }
+      ],
+      "id": "edge_008_exp425_database_imports_exp417_inputs"
+    },
+    {
+      "from": "exp425_predecessor",
+      "to": "exp424_source",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "open_validated_exp424_source"
+        }
+      ],
+      "id": "edge_009_exp425_predecessor_reads_exp424_source"
+    },
+    {
+      "from": "exp425_predecessor",
+      "to": "exp417_checkpoint",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "_record_from_bytes"
+        }
+      ],
+      "id": "edge_010_exp425_predecessor_imports_exp417_checkpoint"
+    },
+    {
+      "from": "exp425_predecessor",
+      "to": "exp425_checkpoint",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "import_exp424_nonterminal"
+        }
+      ],
+      "id": "edge_011_exp425_predecessor_calls_exp425_checkpoint"
+    },
+    {
+      "from": "exp425_predecessor",
+      "to": "exp425_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/predecessor.py",
+          "symbol": "ImportedRecordEnvelope"
+        }
+      ],
+      "id": "edge_012_exp425_predecessor_imports_exp425_contracts"
+    },
+    {
+      "from": "exp425_contracts",
+      "to": "exp417_preprocessing",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/eligibility.py",
+          "symbol": "identity_grouped_folds"
+        }
+      ],
+      "id": "edge_013_exp425_contracts_calls_exp417_preprocessing"
+    },
+    {
+      "from": "exp425_checkpoint",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/checkpoints.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ],
+      "id": "edge_015_exp425_checkpoint_imports_artifact_utils"
+    },
+    {
+      "from": "exp426_intake_parallel",
+      "to": "exp425_predecessor",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "ValidatedExp424Source"
+        }
+      ],
+      "id": "edge_016_exp426_intake_parallel_imports_exp425_predecessor"
+    },
+    {
+      "from": "exp426_intake_parallel",
+      "to": "exp417_checkpoint",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "_record_from_bytes"
+        }
+      ],
+      "id": "edge_017_exp426_intake_parallel_imports_exp417_checkpoint"
+    },
+    {
+      "from": "exp426_intake_parallel",
+      "to": "exp417_preprocessing",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "preprocess_length_groups"
+        }
+      ],
+      "id": "edge_018_exp426_intake_parallel_calls_exp417_preprocessing"
+    },
+    {
+      "from": "exp426_intake_parallel",
+      "to": "exp425_contracts",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/source_antigravity.py",
+          "symbol": "apply_group_eligibility"
+        }
+      ],
+      "id": "edge_019_exp426_intake_parallel_calls_exp425_contracts"
+    },
+    {
+      "from": "exp426_intake_parallel",
+      "to": "exp426_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/parallel_antigravity.py",
+          "symbol": "WorkerEvidence"
+        }
+      ],
+      "id": "edge_020_exp426_intake_parallel_imports_exp426_contracts"
+    },
+    {
+      "from": "exp426_contracts",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ],
+      "id": "edge_021_exp426_contracts_imports_artifact_utils"
+    },
+    {
+      "from": "exp426_checkpoint",
+      "to": "exp426_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+          "symbol": "Exp426DatasetRecord"
+        }
+      ],
+      "id": "edge_022_exp426_checkpoint_imports_exp426_contracts"
+    },
+    {
+      "from": "exp426_checkpoint",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ],
+      "id": "edge_023_exp426_checkpoint_imports_artifact_utils"
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp426_intake_parallel",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "run_ordered_workers"
+        }
+      ],
+      "id": "edge_024_exp426_runtime_calls_exp426_intake_parallel"
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp426_checkpoint",
+      "type": "writes",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "store.commit"
+        }
+      ],
+      "id": "edge_025_exp426_runtime_writes_exp426_checkpoint"
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp425_database",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "database.load_train"
+        }
+      ],
+      "id": "edge_026_exp426_runtime_reads_exp425_database"
+    },
+    {
+      "from": "exp426_runtime",
+      "to": "exp426_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/runtime_antigravity.py",
+          "symbol": "Exp426Counts"
+        }
+      ],
+      "id": "edge_027_exp426_runtime_imports_exp426_contracts"
+    },
+    {
+      "from": "exp426_publication",
+      "to": "exp426_runtime",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "run_exp426_new"
+        }
+      ],
+      "id": "edge_028_exp426_publication_calls_exp426_runtime"
+    },
+    {
+      "from": "exp426_publication",
+      "to": "exp426_checkpoint",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
+          "symbol": "Exp426CheckpointStore.inspect_read_only"
+        }
+      ],
+      "id": "edge_029_exp426_publication_reads_exp426_checkpoint"
+    },
+    {
+      "from": "exp426_publication",
+      "to": "exp425_database",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "open_database_snapshot"
+        }
+      ],
+      "id": "edge_030_exp426_publication_reads_exp425_database"
+    },
+    {
+      "from": "exp426_publication",
+      "to": "exp426_intake_parallel",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/cli_antigravity.py",
+          "symbol": "inspect_production_source_authority"
+        }
+      ],
+      "id": "edge_031_exp426_publication_calls_exp426_intake_parallel"
+    },
+    {
+      "from": "exp426_publication",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ],
+      "id": "edge_032_exp426_publication_imports_artifact_utils"
+    },
+    {
+      "from": "exp425_database",
+      "to": "exp417_inputs",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "exp417_inputs.load_raw_train_values_from_connection"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "exp417_inputs.load_raw_test_values_from_connection"
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "load_test_values_after_train"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/inputs.py",
+          "symbol": "load_raw_test_values_after_train_from_connection"
+        }
+      ],
+      "id": "edge_033_exp425_database_calls_exp417_inputs"
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp417_inputs",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.inputs import"
+        }
+      ],
+      "id": "edge_034_exp435_prediction_boundary_imports_exp417_inputs"
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp417_inputs",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "freeze_lane_inputs("
+        }
+      ],
+      "id": "edge_035_exp435_prediction_boundary_calls_exp417_inputs"
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp425_database",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp425_selective_recovery.database import"
+        }
+      ],
+      "id": "edge_036_exp435_prediction_boundary_imports_exp425_database"
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp425_database",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "open_database_snapshot("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "def load_test_values("
+        },
+        {
+          "path": "experiments/exp425_selective_recovery/database.py",
+          "symbol": "def load_test_values_after_train("
+        }
+      ],
+      "id": "edge_037_exp435_prediction_boundary_calls_exp425_database"
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/features_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/scoring_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import RawSeries, RawTestDataset"
+        }
+      ],
+      "id": "edge_038_exp435_prediction_boundary_imports_exp417_contracts"
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp435_checkpoint_progress",
+      "type": "writes",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "store.commit(result)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "writer.append_event"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "writer.update"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "_write_new(staging / name, payloads[name])"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "_exclusive_rename(staging, publication)"
+        }
+      ],
+      "id": "edge_039_exp435_runtime_writes_exp435_checkpoint_progress"
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp435_checkpoint_progress",
+      "type": "calls",
+      "id": "edge_042_exp435_runtime_calls_exp435_checkpoint_progress",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "publication = inspect_publication(FROZEN_OUTPUT, store)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "publication = publish_exp435(store, FROZEN_OUTPUT)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def publish_exp435("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def inspect_publication("
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "importlib.import_module(module_name)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "function = getattr(evaluator, \"evaluate_exp435\", None)"
+        }
+      ]
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "exp435_checkpoint_progress",
+      "type": "reads",
+      "id": "edge_043_exp435_runtime_reads_exp435_checkpoint_progress",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "Exp435CheckpointStore.open_read_only(FROZEN_CHECKPOINT)"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _verify_bytes("
+        }
+      ]
+    },
+    {
+      "from": "exp435_runtime",
+      "to": "artifact_utils",
+      "type": "imports",
+      "id": "edge_044_exp435_runtime_imports_artifact_utils",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
+          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
+        }
+      ]
+    },
+    {
+      "from": "exp435_checkpoint_progress",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
+          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
+          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "canonical_json_bytes"
+        }
+      ],
+      "id": "edge_045_exp435_checkpoint_progress_imports_artifact_utils"
+    },
+    {
+      "from": "exp435_checkpoint_progress",
+      "to": "sqlite_store",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "with verified_read_only_connection(Path(database_path), database_sha) as connection:"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "SELECT i.instance_index, i.label"
+        },
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _load_test_labels_from_connection("
+        }
+      ],
+      "id": "edge_046_exp435_checkpoint_progress_reads_sqlite_labels"
+    },
+    {
+      "from": "exp435_checkpoint_progress",
+      "to": "exp417_inputs",
+      "type": "imports",
+      "id": "edge_047_exp435_evaluation_imports_exp417_pinned_connection",
+      "evidence": [
+        {
+          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "verified_read_only_connection,"
+        }
+      ]
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "exp417_inputs",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.inputs import freeze_lane_inputs"
+        }
+      ],
+      "id": "edge_048_exp436_inputs_imports_exp417_lane_boundary"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "exp417_inputs",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "freeze_lane_inputs("
+        }
+      ],
+      "id": "edge_049_exp436_inputs_calls_exp417_lane_freeze"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "exp417_contracts",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.contracts import FrozenRunContext"
+        }
+      ],
+      "id": "edge_050_exp436_inputs_imports_exp417_context"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "exp425_database",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "from experiments.exp425_selective_recovery.database import ("
+        }
+      ],
+      "id": "edge_051_exp436_inputs_imports_exp425_snapshot"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "exp425_database",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "open_database_snapshot("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "load_normal_train_value_blobs("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/inputs_antigravity.py",
+          "symbol": "load_test_value_blobs_after_train("
+        }
+      ],
+      "id": "edge_052_exp436_inputs_calls_exp425_values_boundary"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "artifact_utils",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "canonical_json_bytes("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "profile=selected"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "def _verify_bytes("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
+          "symbol": "def _validated_context_fingerprint("
+        }
+      ],
+      "id": "edge_053_exp436_publication_uses_canonical_artifacts"
+    },
+    {
+      "from": "exp436_contract_boundary",
+      "to": "sqlite_store",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py",
+          "symbol": "def _load_test_labels("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py",
+          "symbol": "def _verify_frozen_source("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/evaluation_antigravity.py",
+          "symbol": "def evaluate_exp436("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_exp437_evaluation_rejects_exp436_fixed_paths_before_labels("
+        }
+      ],
+      "id": "edge_054_exp436_evaluation_reads_labels_after_publication"
+    }
+  ],
+  "flows": [
+    {
+      "id": "exp435_readiness_flow",
+      "label": "Exp435 clean-HEAD readiness",
+      "trigger": "Run the fixed readiness mode before any prediction roots exist.",
+      "steps": [
+        "exp435_runtime",
+        "exp435_checkpoint_progress"
+      ],
+      "outcome": "The CLI checks clean HEAD, frozen identity and inputs, absent fixed roots, and benchmarks one query while frozen sizes chunk references and preserve exact global nearest-k. Modern MLX device provenance is captured when available; adoption remains parity/candidate/speed gated and immutable for production."
+    },
+    {
+      "id": "exp435_new_resume_flow",
+      "label": "Exp435 new/resume label-free prediction",
+      "trigger": "Invoke new after readiness or resume an unfinished checkpoint.",
+      "steps": [
+        "exp435_runtime",
+        "exp425_database",
+        "exp417_inputs",
+        "sqlite_store",
+        "exp435_checkpoint_progress"
+      ],
+      "outcome": "New binds canonical identity and clean commit. Integrated interrupted resume rejects existing evaluation, runs the shared complete read-only runtime preflight, then alone permits checkpoint/output reconciliation; invalid records preserve the whole tree. Parent-owned TRAIN then values-only TEST uses max(1, detected logical CPU count - 1) CPU futures, name-ordered commits and five persisted stages."
+    },
+    {
+      "id": "exp435_publication_flow",
+      "label": "Exp435 checkpoint_complete publication",
+      "trigger": "A checkpoint_complete runtime has 1,117 records, <=100 candidates, inactive PID, null current dataset and the four terminal runtime files.",
+      "steps": [
+        "exp435_runtime",
+        "exp435_checkpoint_progress",
+        "artifact_utils"
+      ],
+      "outcome": "Replay requires terminal idle progress, counter conservation and label-free fields, then binds eight artifacts plus runtime hashes. A publication present at entry is replayed idempotently; one appearing later during replay/staging fails strict Darwin no-clobber even if identical."
+    },
+    {
+      "id": "exp435_replay_flow",
+      "label": "Exp435 inspect/repeated resume replay",
+      "trigger": "inspect or repeated resume sees an existing publication or a completed checkpoint.",
+      "steps": [
+        "exp435_runtime",
+        "exp435_checkpoint_progress",
+        "artifact_utils"
+      ],
+      "outcome": "The CLI opens checkpoint/publication data read-only, replays and compares canonical bytes and hashes, and does not reopen the database, input session or workers."
+    },
+    {
+      "id": "exp435_evaluate_boundary",
+      "label": "Exp435 hash-gated retrospective evaluation",
+      "trigger": "The operator explicitly selects evaluate only after the label-free prediction, manifest and artifact hashes are frozen at the fixed production sibling paths.",
+      "steps": [
+        "exp435_runtime",
+        "exp435_checkpoint_progress",
+        "sqlite_store",
+        "artifact_utils"
+      ],
+      "outcome": "The CLI lazily imports the evaluator; it replays read-only checkpoint/publication, validates fixed sibling paths and population/code/input/config hashes, captures Exp404 and Exp291 through O_NOFOLLOW descriptors for same-byte SHA256/parse equality, then imports Exp417 verified_read_only_connection to open one exact hashed SQLite inode for instance_index/label. It snapshots/re-inspects output before staged no-clobber evaluation publication; prediction bytes remain unchanged."
+    },
+    {
+      "id": "exp436_readiness_flow",
+      "label": "Exp436 absent-parent readiness",
+      "trigger": "Run readiness before any fixed Exp436 root exists.",
+      "steps": [
+        "exp436_contract_boundary"
+      ],
+      "outcome": "Clean HEAD, source hashes, scalar backend fixture/selection, focused tests, CPU topology, runtime versions and zero label access are bound before a same-parent staged readiness directory is fsync-verified and Darwin RENAME_EXCL-renamed into the sole run parent."
+    },
+    {
+      "id": "exp436_new_resume_flow",
+      "label": "Exp436/Exp437 label-free new/resume policy",
+      "trigger": "Run new after verified readiness; Exp436 resumes interrupted roots and may finalize/replay checkpoint_complete for preserved compatibility, while Exp437 resumes interrupted roots only.",
+      "steps": [
+        "exp436_contract_boundary",
+        "exp425_database",
+        "sqlite_store"
+      ],
+      "outcome": "New requires the exact canonical readiness and absent output/checkpoint/evaluation roots, rechecks HEAD after delayed imports, and passes the exact runtime public arguments. Exp436 resume accepts interrupted and preserved checkpoint_complete compatibility, which may finalize/replay a completed checkpoint without opening the input-session factory; Exp437 resume accepts interrupted only. Failed/running/fake-complete roots are rejected."
+    },
+    {
+      "id": "exp436_publication_flow",
+      "label": "Exp436 checkpoint-complete publication",
+      "trigger": "A verified checkpoint-complete runtime reaches its review-only freeze.",
+      "steps": [
+        "exp436_contract_boundary",
+        "artifact_utils"
+      ],
+      "outcome": "Publication validates the selected profile/store/context identity, recomputes the canonical context fingerprint from the supplied context, derives the profile-specific frozen-config hash and Exp436/Exp437 manifest identity, then replays the completed checkpoint and terminal progress, writes exact no-clobber review-only artifacts, checks staged bytes, and replays sources again before RENAME_EXCL. Repeated publication is byte-verified replay only."
+    },
+    {
+      "id": "exp436_inspect_flow",
+      "label": "Exp436 immutable inspect",
+      "trigger": "Run inspect on an existing fixed output/checkpoint pair.",
+      "steps": [
+        "exp436_contract_boundary"
+      ],
+      "outcome": "Inspect validates canonical readiness/context/checkpoint/progress without an input session, workers, publication write, or byte mutation; once publication exists it replays that immutable publication rather than routing it through progress inventory."
+    },
+    {
+      "id": "exp436_evaluate_boundary",
+      "label": "Exp436 post-freeze evaluation",
+      "trigger": "Explicitly select evaluate after review-only publication is frozen.",
+      "steps": [
+        "exp436_contract_boundary",
+        "sqlite_store",
+        "artifact_utils"
+      ],
+      "outcome": "Only evaluate lazily imports the exact evaluator. It derives fixed output, checkpoint, evaluation, and run-parent siblings from the selected profile, rejects profile/path mismatches before labels, verifies publication bytes, profile-specific config identity, and canonical reviewed commit before opening the descriptor-bound TEST identity/label reader, re-verifies the source afterward, and treats evaluated completion independently from champion success. An existing evaluation root is read-only replay only when it binds the verified publication."
+    },
+    {
+      "id": "exp437_fixed_profile_flow",
+      "label": "Exp437 fixed-profile command boundary",
+      "trigger": "Invoke the outside-CWD-safe Exp437 wrapper with the exact readiness/new/resume/inspect/evaluate commands after the clean-HEAD readiness review.",
+      "steps": [
+        "exp436_contract_boundary",
+        "exp425_database",
+        "artifact_utils",
+        "sqlite_store"
+      ],
+      "outcome": "The wrapper resolves the repository before importing the selected profile entrypoint. The parser exposes only five commands; readiness, fixed-root preflight, runtime, publication replay, and lazy evaluation all receive EXP437_PROFILE. New remains label-free and profile-bound, interrupted resume is accepted, checkpoint_complete/failed/running resume is rejected before execute or publication, inspect alone is read-only, and evaluate imports the exact evaluator only after the Exp437 review-only publication is frozen; failed roots remain immutable and require a new experiment number, while no Exp436 compatibility root alias or scientific override can redirect the flow."
+    }
+  ],
+  "unknown_relationships": 0
+}

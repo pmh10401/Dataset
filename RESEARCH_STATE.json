@@ -1,0 +1,256 @@
+{
+  "schema": "autonomous-research-state.v1",
+  "updated_at": "2026-08-07T09:55:43+09:00",
+  "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
+  "branch": "codex/exp425-selective-recovery",
+  "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
+  "last_verified_commit": "d977dee17e5d870ff5f84078647fb93b5231a725",
+  "active_experiment": "Exp437",
+  "active_phase": "implementation_complete_readiness_pending",
+  "status": "in_progress",
+  "dataset_count": 1117,
+  "active_documents": {
+    "design": "docs/superpowers/specs/2026-08-07-exp437-metadata-roundtrip-antigravity-design.md",
+    "plan": "docs/superpowers/plans/2026-08-07-exp437-metadata-roundtrip-antigravity.md",
+    "scientific_base_design": "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
+    "scientific_base_plan": "docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md",
+    "scientific_base_preregistration": "docs/EXP436_PREREGISTRATION_antigravity_KO.md",
+    "scientific_base_runbook": "docs/EXP436_RUNBOOK_antigravity_KO.md",
+    "preregistration": "docs/EXP437_PREREGISTRATION_antigravity_KO.md",
+    "runbook": "docs/EXP437_RUNBOOK_antigravity_KO.md",
+    "implementation_report": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md"
+  },
+  "frozen_inputs": {
+    "database": "/Users/mac/Documents/Dataset/univariate_ts.db",
+    "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+    "database_inode": 1048138,
+    "database_nlink_after_stale_pin_cleanup": 1,
+    "official_population": 1117,
+    "exp291_prediction_sha256": "73dff56e26429158bd2672a898d87266aa38e73f0a50d15d4f7c7082e3a01848",
+    "exp292_prediction_sha256": "f02259ae77fdcbccb8922fb9f90d5918401020d5d7d902212c2e424b878d0d3b",
+    "hard_comparator_prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"
+  },
+  "active_process": {
+    "pid": null,
+    "run_parent": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807",
+    "readiness_owns_run_parent": true,
+    "new_requires": "existing_run_parent_with_exact_verified_readiness_and_absent_output_checkpoint_evaluation",
+    "fixed_roots_absent": true,
+    "checkpoint": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/checkpoint_antigravity",
+    "output": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity",
+    "progress_json": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/progress_antigravity.json",
+    "events_jsonl": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/events_antigravity.jsonl",
+    "parent_log": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/parent_antigravity.log",
+    "pid_file": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/run_antigravity.pid",
+    "last_error": null
+  },
+  "completed_engineering_tasks": {
+    "task1_eligibility": "a37e0b4d1e241a885c69b65b318fe77107b055c8",
+    "task2_checkpoint": "7ebe5384fa057f7eb82b0c8fb3bbded38665e7f4",
+    "task3_predecessor": "78580fcead5ffd276c274f938933637263f15b6c",
+    "task4_database": "18159d654f0d1b4ec7e03cf328313ac6bcf499ee",
+    "exp426_task1_contract_checkpoint": "c8f84a1865ef9dedaff4d093b3545592ba17ac3a",
+    "exp426_task2_source_parallel": "14cbde223cfdfabb2673fdf3e874aafe1b59d0ea",
+    "exp426_task3_runtime_progress": "bab628d2998269b9cd9a27be7d22f7f32128dd88",
+    "exp426_task4_reporting_cli_docs": "1595769b8a8ae10e3d16207ab73678e1cb54c513",
+    "exp435_task8_evaluation": "3501f6ddb4e1268fb05927bcc11295a72f3ce31f",
+    "exp435_task8_codemap_evaluation_boundary": "8127cd057ec2bfa66dbe5910716abfce6f6bd522",
+    "exp435_task8_final_hardening": "d64275f2a2767ecaea716c5f7f52dffa7805a47c",
+    "exp435_task8_codemap_contract_exports": "6d60e15461350efbf011e410dfc6ab0e1301b493",
+    "exp435_task9_direct_runner": "595417d773c432f0471d6c6445aea1f46a9b2668",
+    "exp435_task8_evaluator_pin": "8ede3bc0510b95cbba3efa85cfadca913445733d",
+    "exp435_runtime_readiness_progress_fix": "c77c9b86862877581bd5965a28b199409815d6d5",
+    "exp435_parent_truthful_parallel_progress_fix": "640fa5b290792e23d0cb3045faf5efdbbc97fc42",
+    "exp435_canonical_inspection_identity_fix": "2f21989bc5441bacf06c9b9faf253e0a27a1ca67",
+    "exp435_exact_mlx_reference_batching_fix": "f7623259b30a69be2aeffc71d6ebf20b5ea2e360",
+    "exp435_failed_resume_identity_stage_fix": "947754df26f54d847dac9c44c4d8d2a84f07c10b",
+    "exp435_modern_mlx_device_info_fix": "1fe069db32a7d399b898780cbca19d5e845a5ea9",
+    "exp435_exact_five_stage_enforcement_fix": "c8269e1f59f3987d557bbec4b76975ddfce0b4f3",
+    "exp435_resume_evaluation_root_guard": "dcb0621cac986b111fb16c8fac502400a44882f9",
+    "exp435_resume_publication_race_safety": "f3191b345054c95a4a40504ce5273f2c47ff2bc8",
+    "exp435_integrated_resume_preflight_ordering": "bc3a696602bd3e8688ada46d9e31e3221f439a96"
+  },
+  "partial_engineering_commits": {
+    "task5_initial_runtime": "dc018ac9cc6e6dec13a93317df194d5e19200884",
+    "task5_fix_round_1": "d1c48b58fd7ebaaf2b79e8dd48e927e1220e7b49",
+    "task5_smoke_cleanup": "5b5e16093338dbf8e96e7deb968856af69c78ebb",
+    "task5_sparse_lane_preflight": "ec76aa988085e76b0d264d031aeda5d59cf0581b",
+    "task5_parity_serialization_lifecycle": "8043149c9c6e12bdae2b9c4996813a74ae2f941f",
+    "task5_retry3_prelaunch_review_fix": "d02d9ae2bc848605ab2fa44c3914f14363f51771"
+  },
+  "completed_runs": {
+    "exp426_attempt2": {
+      "state": "complete_review_only",
+      "completed": 1117,
+      "imported": 983,
+      "verified_train_abstentions": 134,
+      "errors": 0,
+      "prediction_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2"
+    }
+  },
+  "final_review": {
+    "reviewed_head": "cc4135fc081390fd0998ee2860279d5df3f5fb40",
+    "verdict": "ship",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "exp435_tests": 187,
+    "exp426_tests": 58,
+    "exp426_skips": 1,
+    "exp425_tests": 177,
+    "exp417_focused_tests": 63
+  },
+  "local_mlx_probe": {
+    "python": "3.14.6",
+    "mlx": "0.32.0",
+    "device": "Apple M2 Max",
+    "metal_available": true,
+    "smoke_seed": 43501,
+    "reference_shape": [513, 64],
+    "batch_sizes": [16, 32, 64, 128, 256],
+    "finite_outputs": true,
+    "candidate_identity_match_with_fixed_threshold": true,
+    "max_absolute_error": 1.1920928955078125e-07,
+    "max_normalized_error": 1.0074609535839568e-07,
+    "best_observed_speedup": 0.17135964621923286,
+    "decision": "cpu",
+    "reason": "speedup_below_threshold",
+    "official_readiness": false
+  },
+  "cpu_worker_policy": {
+    "rule": "detected_logical_cpu_count_minus_one",
+    "minimum_workers": 1,
+    "detected_logical_cpu_count": 12,
+    "official_worker_count": 11,
+    "applies_to": "new and not-yet-started official CPU-parallel runs"
+  },
+  "exp436_frozen_contract": {
+    "candidate_alpha": 0.01,
+    "robust_transform": "center=median(matrix); scale=float32(1.4826 * median(abs(matrix-center))) per prototype/raw or gradient TRAIN-group matrix; ACF formula unchanged",
+    "backend_smoke_seed": 43601,
+    "backend_batch_sizes": [16, 32, 64, 128, 256],
+    "backend_warmup_runs": 2,
+    "backend_timed_paired_runs": 5,
+    "readiness_owns_run_parent": true,
+    "new_requires_exact_verified_readiness": true,
+    "train_exclusion_audit_artifact": "train_exclusion_audit_antigravity.jsonl"
+  },
+  "exp436_pre_readiness_verification": {
+    "implementation_status": "complete_readiness_pending",
+    "official_readiness": false,
+    "head_before_task9_commit": "61398ee7575d24755cca09ea46254ba0928d43c9",
+    "cli_readiness_exit_fix": "TDD RED at 61398ee7 then GREEN; canonical readiness remains state-free and public main(['readiness']) exits 0",
+    "tests": {
+      "exp436": {"command": "python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py'", "tests": 280, "skips": 0, "status": "passed"},
+      "exp425_database": {"command": "python3 -m unittest experiments.exp425_selective_recovery.tests.test_database -v", "tests": 30, "skips": 0, "status": "passed"},
+      "exp435": {"command": "python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*_antigravity.py'", "tests": 187, "skips": 0, "status": "passed"},
+      "exp426": {"command": "python3 -m unittest discover -s experiments/exp426_verified_baseline/tests -p 'test_*_antigravity.py'", "tests": 58, "skips": 1, "status": "passed", "skip_reason": "EXP426_RUN_PRODUCTION_SOURCE_TEST=1 is required for the explicit external production-source audit"},
+      "exp417": {"command": "python3 -m unittest discover -s experiments/exp417_causal_multihorizon_shadow/tests -p 'test_*.py'", "tests": 270, "skips": 0, "status": "passed", "note": "full CPU-bound legacy suite completed after a long JSON serialization phase"}
+    },
+    "test_labels_opened": false,
+    "pid": null,
+    "checkpoint_created": false,
+    "output_created": false,
+    "evaluation_created": false,
+    "next_command": "python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py readiness"
+  },
+  "exp437_task7_handoff": {
+    "reviewed_implementation_commit": "d977dee17e5d870ff5f84078647fb93b5231a725",
+    "full_exp436_shared_engine": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py' -v",
+      "tests": 299,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "status": "passed",
+      "duration_seconds": 122.88
+    },
+    "predecessor_boundary_regressions": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest experiments.exp435_train_only_consensus_recovery_antigravity.tests.test_checkpoint_antigravity experiments.exp435_train_only_consensus_recovery_antigravity.tests.test_progress_antigravity experiments.exp435_train_only_consensus_recovery_antigravity.tests.test_runtime_antigravity experiments.exp425_selective_recovery.tests.test_database -v",
+      "tests": 68,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "status": "passed",
+      "duration_seconds": 4.571
+    },
+    "immutable_exp436_failure_proof": {
+      "readiness_sha256": "5def8dbe785163dc69e80e0bb6a5a1cdba1d3663058f4d73625a6deda048c43a",
+      "record": "/Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806/checkpoint_antigravity/records_antigravity/1f10eac76bc530cbb48ab776cf8fe1817d08acab7ce4976ccf2c58d0d4c04af0.json",
+      "failed_dataset": "AllGestureWiimoteX_normal_1",
+      "record_bytes": 59498,
+      "record_bytes_unchanged": true,
+      "parser": "_result_from_payload",
+      "status": "passed"
+    },
+    "exp437_root_absent": true,
+    "wrapper_help": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py --help",
+      "commands": ["readiness", "new", "resume", "inspect", "evaluate"],
+      "status": "passed"
+    },
+    "forbidden_term_grep": {
+      "command": "git grep -nE 'test_label|groundtruth|anomaly_location|family.*test' -- experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py experiments/exp436_missing_safe_strict_consensus_antigravity/runtime_antigravity.py scratch/run_exp437_metadata_roundtrip_antigravity.py",
+      "matching_sources": 5,
+      "classification": "readiness schema counters and zero-valued delayed-evaluation guards only; no matching terms in the Exp437 wrapper",
+      "status": "passed"
+    },
+    "frozen_config_diff": {
+      "changed_fields": ["experiment_id", "run_identity"],
+      "exp436_experiment_id": "Exp436",
+      "exp437_experiment_id": "Exp437",
+      "exp436_run_identity": "exp436-missing-safe-strict-consensus-antigravity-20260806",
+      "exp437_run_identity": "exp437-metadata-roundtrip-antigravity-20260807"
+    },
+    "cpu_topology": {
+      "logical_cpus": 12,
+      "workers": 11,
+      "inner_threads": 1,
+      "rule": "max(1, logical_cpus - 1)"
+    },
+    "mlx_mps_readiness": {
+      "status": "pending",
+      "official_readiness": false,
+      "adoption": "not claimed",
+      "cpu_fallback_remains_canonical": true
+    },
+    "prediction_started": false,
+    "test_labels_opened": false,
+    "next_readiness_command": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py readiness",
+    "report": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md"
+  },
+  "failed_runs": {
+    "exp435_official": {
+      "state": "failed",
+      "pid": 12323,
+      "progress_count": 179,
+      "checkpoint_records": 178,
+      "candidate_count": 97,
+      "failed_dataset": "DodgerLoopDay_normal_1",
+      "error": "TEST raw values must be finite",
+      "test_labels_opened": false,
+      "root": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806"
+    },
+    "exp436_official": {
+      "state": "failed",
+      "pid": 42338,
+      "progress_count": 47,
+      "checkpoint_records": 47,
+      "orphan_record_files": 1,
+      "candidate_count": 4,
+      "failed_dataset": "AllGestureWiimoteX_normal_1",
+      "error": "dataset record metadata is invalid",
+      "root_cause": "canonical JSON lexicographic object-key order conflicted with numeric histogram insertion-order validation",
+      "readiness_sha256": "5def8dbe785163dc69e80e0bb6a5a1cdba1d3663058f4d73625a6deda048c43a",
+      "test_labels_opened": false,
+      "root": "/Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806"
+    }
+  },
+  "next_action": "Clean-HEAD readiness review for Exp437, then run the exact readiness command in docs/EXP437_RUNBOOK_antigravity_KO.md. Exp436 remains failed and immutable; Exp437 prediction and evaluation have not started.",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && python3 -m json.tool RESEARCH_STATE.json && PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py readiness",
+  "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
+  "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
+  "prediction_phase_started": false,
+  "test_labels_opened": false
+}

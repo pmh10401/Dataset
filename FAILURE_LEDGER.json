@@ -1,0 +1,150 @@
+{
+  "schema": "failure-ledger.v1",
+  "updated_at": "2026-08-06T16:38:15+09:00",
+  "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
+  "entries": [
+    {
+      "experiment": "Exp405",
+      "category": "research_gate_failed",
+      "evidence": "/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp405_demotion_evaluation.json",
+      "facts": {"passes_research_gate": false, "true_positive_count": 395, "false_positive_count": 78, "false_positive_fraction": 0.1649048625792812, "baseline_true_positive_retention": 0.793733681462141},
+      "lesson": "Demotion/recheck evidence did not justify an operational policy change."
+    },
+    {
+      "experiment": "Exp417",
+      "category": "interrupted_long_runtime",
+      "facts": {"preserved_checkpoint_records": 94},
+      "lesson": "Sequential runtime and heavyweight per-dataset validation required deterministic checkpoint/resume redesign."
+    },
+    {
+      "experiment": "Exp419",
+      "category": "runtime_recovery_failures",
+      "lesson": "Parallelism alone did not solve repeated source validation, parent-log, checkpoint, and environment integration failures. Preserve explicit modes and compact state."
+    },
+    {
+      "experiment": "Exp422-TEST-EVAL",
+      "category": "blocked_no_prediction",
+      "evidence": "/Users/mac/Documents/Dataset/exp422_test_eval_attempt_20260802-092039/MANIFEST.json",
+      "facts": {"test_labels_opened": false},
+      "lesson": "Never evaluate until both frozen prediction and manifest exist."
+    },
+    {
+      "experiment": "Exp424",
+      "category": "failed_summary_after_full_checkpoint_accounting",
+      "evidence": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831/manifest.json",
+      "facts": {"completed_datasets": 1117, "prediction_rows": 0, "verified_nonterminal_records": 983, "terminal_identity_insufficient": 134},
+      "lesson": "Preserve verified nonterminal evidence, selectively recompute/abstain terminal identity-insufficient records, and never rerun all expensive work blindly."
+    },
+    {
+      "experiment": "Exp425-engineering",
+      "category": "resolved_prelaunch_integrity_findings",
+      "facts": {"task3_fix_rounds": 4, "task4_fix_rounds": 3, "stale_db_pin_links_removed": 8},
+      "lesson": "Independent adversarial review is required before long execution; progress claims without exact context, inode, cleanup, and resume evidence are insufficient."
+    },
+    {
+      "experiment": "Exp425-task5-mps-parity-smoke",
+      "category": "smoke_failures_preserved",
+      "evidence": "/Users/mac/Documents/Dataset/exp425_task5_mps_parity_20260804_architecture_a_retry2/progress.json",
+      "facts": {
+        "first_failure_pid": 32415,
+        "first_retry_pid": 79638,
+        "first_retry_completed": 0,
+        "first_retry_train_loaded": false,
+        "first_retry_test_values_loaded": false,
+        "first_retry_test_labels_loaded": false,
+        "first_retry_mps_model_started": false,
+        "second_retry_pid": 80796,
+        "second_retry_completed": 0,
+        "second_retry_train_loaded": true,
+        "second_retry_test_values_loaded": false,
+        "second_retry_test_labels_loaded": false,
+        "second_retry_mps_model_completed": true,
+        "second_retry_parity_observed": false,
+        "second_retry_checkpoint_record_committed": false,
+        "second_retry_elapsed_seconds": 120.02529912500177,
+        "second_retry_progress_sha256": "861794bd14c833664bf2d1a02682e0a6e57e36661472a367744d16a37c65097c",
+        "third_retry_pid": 42332,
+        "third_retry_completed": 0,
+        "third_retry_train_loaded": true,
+        "third_retry_test_values_loaded": false,
+        "third_retry_test_labels_loaded": false,
+        "third_retry_mps_model_completed": true,
+        "third_retry_exact_model_hash_gate_passed": true,
+        "third_retry_exact_legacy_oof_gate_passed": true,
+        "third_retry_shared_parity_status_candidate_gate_passed": false,
+        "third_retry_detailed_mismatch_persisted": false,
+        "third_retry_checkpoint_record_committed": false,
+        "third_retry_elapsed_seconds": 120.03315816598479,
+        "third_retry_progress_sha256": "f2f1d918df5e84e5d4d67777fd9653dda00105e029416e6b563d6a33bf2b52c0",
+        "test_identity_count": 195900,
+        "frozen_lane_coordinate_count": 3090,
+        "intentionally_unrouted_identity_count": 192810,
+        "lane_coordinates_outside_test_identity": 0
+      },
+      "lesson": "Frozen operational lanes are sparse routed-coordinate exclusions, not complete TEST coverage. Immutable runtime mappings must be normalized before JSON publication, and session-owned cleanup must occur inside snapshot scope. A failed combined scientific gate must persist its exact mismatch evidence before raising; preserve every no-clobber smoke root."
+    },
+    {
+      "experiment": "Exp426-readiness-attempt-1",
+      "category": "resolved_prelaunch_task_adapter_failure",
+      "facts": {
+        "git_commit": "337be3e069610b8e347814b7a1c98c78179ee594",
+        "error": "worker task type is invalid",
+        "output_root_created": false,
+        "checkpoint_root_created": false,
+        "readiness_artifact_created": false,
+        "database_sha256_unchanged": true,
+        "test_values_opened": false,
+        "test_labels_opened": false
+      },
+      "lesson": "Production readiness must use the same shared Exp424SourceTask-to-Exp426SourceWorkerTask adapter as the runtime. A test that performs the conversion locally can hide a production wiring defect."
+    },
+    {
+      "experiment": "Exp426-full-run-attempt-1",
+      "category": "failed_database_parent_boundary",
+      "evidence": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805/progress.json",
+      "facts": {
+        "git_commit": "6a9c240442975c3b0bcd62857fa8c630c8857ff4",
+        "pid": 16829,
+        "completed": 983,
+        "imported": 983,
+        "remaining_train_abstentions": 134,
+        "failed_datasets": 0,
+        "state": "failed",
+        "root_cause": "output and checkpoint directory creation changed the live database snapshot parent metadata before the first TRAIN load",
+        "output_root_preserved": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805",
+        "checkpoint_root_preserved": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260805.checkpoint",
+        "publication_created": false,
+        "test_values_opened": false,
+        "test_labels_opened": false
+      },
+      "lesson": "Keep runtime roots below a pre-existing dedicated child directory instead of beside the live database. Preserve the strict database parent boundary, fail preflight when roots share the database parent, and persist the actual exception message in every runtime log."
+    },
+    {
+      "experiment": "Exp435",
+      "category": "failed_label_free_prediction_nonfinite_input_boundary",
+      "evidence": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806/output_antigravity/progress_antigravity.json",
+      "facts": {
+        "git_commit": "c33753ab6e608c0a4dfd414a2a169b016096f913",
+        "pid": 12323,
+        "state": "failed",
+        "completed_progress_count": 179,
+        "checkpoint_records": 178,
+        "successful_datasets": 163,
+        "abstained_datasets": 15,
+        "failed_datasets": 1,
+        "candidate_count": 97,
+        "processed_test_rows_in_checkpoint": 40200,
+        "failed_dataset": "DodgerLoopDay_normal_1",
+        "error": "TEST raw values must be finite",
+        "normal_train_nonfinite_datasets": 19,
+        "normal_train_nonfinite_rows": 164,
+        "test_nonfinite_datasets": 20,
+        "test_nonfinite_rows": 235,
+        "test_labels_opened": false,
+        "publication_created": false,
+        "failed_root_preserved": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806"
+      },
+      "lesson": "A dataset-wide finite RawTestDataset contract made the per-row nonfinite_test abstention unreachable. Preserve Exp435 unchanged; the next experiment must use per-row nonfinite abstention, finite-only TRAIN support, and a stricter preregistered consensus instead of same-experiment retuning."
+    }
+  ]
+}
