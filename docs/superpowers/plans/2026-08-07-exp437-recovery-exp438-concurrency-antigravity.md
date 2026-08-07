@@ -296,8 +296,8 @@ git commit -m "docs(exp438): freeze concurrent execution evidence"
 ### Task 6: Recover Exp437 And Prove It Is Alive
 
 **Files:**
-- Runtime log: `/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/recovery_launcher_antigravity.log`
-- Runtime PID: `/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/recovery_launcher_antigravity.pid`
+- Runtime log: `/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/recovery_launcher_antigravity.log`
+- Runtime PID: `/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/recovery_launcher_antigravity.pid`
 - Existing Exp437 process-owned progress/event/PID/checkpoint files.
 
 **Interfaces:**
@@ -315,10 +315,10 @@ Expected: exact clean source, old PID absent, 938 progress/events, 939 checkpoin
 - [ ] **Step 2: Launch once**
 
 ```bash
-nohup python3 operational/recover_exp437_checkpoint_antigravity.py > /Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/recovery_launcher_antigravity.log 2>&1 &
+nohup python3 operational/recover_exp437_checkpoint_antigravity.py > /Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/recovery_launcher_antigravity.log 2>&1 &
 ```
 
-Write the shell PID to `recovery_launcher_antigravity.pid`; the runtime replaces canonical `run_antigravity.pid` through its owner API.
+Write the shell PID to the run-parent `recovery_launcher_antigravity.pid`; the runtime replaces canonical `output_antigravity/run_antigravity.pid` through its owner API. Launcher files must remain outside `output_antigravity`, whose strict inventory allows only process-owned runtime files.
 
 - [ ] **Step 3: Perform one liveness check**
 
@@ -355,10 +355,10 @@ Expected: 1,117 sorted datasets, current hashes, zero TEST value/label access, v
 - [ ] **Step 3: Launch official run once**
 
 ```bash
-nohup python3 scratch/run_exp438_frequency_complexity_evidence_antigravity.py new > /Users/mac/Documents/Dataset/exp438_frequency_complexity_evidence_antigravity_20260807/output_antigravity/launcher_antigravity.log 2>&1 &
+nohup python3 scratch/run_exp438_frequency_complexity_evidence_antigravity.py new > /Users/mac/Documents/Dataset/exp438_frequency_complexity_evidence_antigravity_20260807/launcher_antigravity.log 2>&1 &
 ```
 
-Write the shell PID to `launcher_antigravity.pid`; canonical process PID remains `run_antigravity.pid`.
+Write the shell PID to the run-parent `launcher_antigravity.pid`; canonical process PID remains `output_antigravity/run_antigravity.pid`. Keeping launcher files outside `output_antigravity` also allows shell redirection before the runtime creates that directory.
 
 - [ ] **Step 4: Perform one liveness check and hand off**
 

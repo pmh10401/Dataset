@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T04:55:20Z",
-  "generated_from_commit": "763343770cf12ba5c3e60263f7fea20f82de730f",
+  "generated_at": "2026-08-07T05:00:03Z",
+  "generated_from_commit": "75f35700db48eb2c4aed0deb42e3de8e5e295bda",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2300,7 +2300,7 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 readiness, strict read-only Exp437 predecessor snapshots, CPU-only live concurrency classification, ordered label-free runtime, checkpoints, progress, and backend dispatch.",
+      "role": "Owns Exp438 readiness, strict Exp437 predecessor snapshots and replay, plus the separate exact-source Exp437 stale-PID recovery launcher used before concurrent label-free execution.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2310,7 +2310,9 @@
         "read_exp437_snapshot_antigravity",
         "classify_exp437_snapshot_antigravity",
         "revalidate_exp437_snapshot_antigravity",
-        "_validate_exp437_replay_antigravity"
+        "_validate_exp437_replay_antigravity",
+        "preflight_exp437_recovery_antigravity",
+        "recover_exp437_checkpoint_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2319,7 +2321,8 @@
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_scoring_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py",
-        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_predecessor_antigravity.py"
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_predecessor_antigravity.py",
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_recover_exp437_checkpoint_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2371,6 +2374,10 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/cli_antigravity.py",
           "symbol": "def _validate_exp437_replay_antigravity"
+        },
+        {
+          "path": "operational/recover_exp437_checkpoint_antigravity.py",
+          "symbol": "def preflight_exp437_recovery_antigravity"
         }
       ]
     },
@@ -3167,6 +3174,10 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/predecessor_antigravity.py",
           "symbol": "Exp436CheckpointStore"
+        },
+        {
+          "path": "operational/recover_exp437_checkpoint_antigravity.py",
+          "symbol": "resume_exp436"
         }
       ]
     }
@@ -3187,7 +3198,7 @@
     {
       "id": "exp438_readiness_flow",
       "label": "Exp438 clean-HEAD readiness and acceleration gate",
-      "trigger": "Run readiness only after Exp437 is terminal and inactive and the fixed Exp438 parent is absent.",
+      "trigger": "Recover the exact frozen Exp437 stale-PID checkpoint through its existing runtime API, then run Exp438 readiness only after terminal/inactive or fresh live zero-error CPU predecessor evidence.",
       "steps": [
         "exp438_frequency_runtime",
         "exp436_contract_boundary",
@@ -3196,7 +3207,7 @@
         "sqlite_store",
         "artifact_utils"
       ],
-      "outcome": "Readiness verifies clean HEAD, frozen source paths and hashes, the 1,117-name population and TEST identity manifest without TEST values or labels, focused tests, and compile-amortized Numba plus synchronized MLX/MPS parity/speed evidence before exclusively creating the run parent. The same artifact records compile-amortized Numba and synchronized MLX/MPS exact-stage parity, timing, selected batch/backend, and truthful CPU fallback evidence."
+      "outcome": "The recovery launcher validates 938 durable progress/checkpoint records plus the intent-with-record crash window without mutation, resumes Exp437 from the exact clean commit, and Exp438 readiness records the verified concurrent or terminal predecessor snapshot before creating its root."
     },
     {
       "id": "exp438_cpu_new_resume_flow",
