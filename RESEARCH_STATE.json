@@ -4,7 +4,7 @@
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp425-selective-recovery",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "d977dee17e5d870ff5f84078647fb93b5231a725d",
+  "last_verified_commit": "d977dee17e5d870ff5f84078647fb93b5231a725",
   "active_experiment": "Exp437",
   "active_phase": "implementation_complete_readiness_pending",
   "status": "in_progress",
@@ -156,7 +156,7 @@
     "next_command": "python3 scratch/run_exp436_missing_safe_strict_consensus_antigravity.py readiness"
   },
   "exp437_task7_handoff": {
-    "reviewed_implementation_commit": "d977dee17e5d870ff5f84078647fb93b5231a725d",
+    "reviewed_implementation_commit": "d977dee17e5d870ff5f84078647fb93b5231a725",
     "full_exp436_shared_engine": {
       "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py' -v",
       "tests": 299,

@@ -3,7 +3,7 @@
 ## Reviewed implementation and scope
 
 - Worktree: `/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery`
-- Reviewed implementation commit: `d977dee17e5d870ff5f84078647fb93b5231a725d`
+- Reviewed implementation commit: `d977dee17e5d870ff5f84078647fb93b5231a725`
 - Task 7 adds this report and readiness-handoff evidence only; no product code,
   readiness artifact, prediction output, publication, evaluation, or Exp437 run
   root was created.
@@ -11,6 +11,40 @@
   commit is intentionally not written into `last_verified_commit`; state points
   to the implementation commit under review, not to a self-referential future
   documentation commit.
+
+## Fix Round 1: provenance validation
+
+The first handoff review found a trailing `d` in the recorded base hash. A
+focused validator now checks every recorded reviewed/last-verified/provenance
+commit field for exactly 40 lowercase hexadecimal characters and verifies the
+object with `git cat-file -e <hash>^{commit}` before accepting the handoff:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'
+import json, re, subprocess
+from pathlib import Path
+
+expected = "d977dee17e5d870ff5f84078647fb93b5231a725"
+state = json.loads(Path("RESEARCH_STATE.json").read_text())
+catalog = json.loads(Path("EXPERIMENT_CATALOG.json").read_text())
+exp437 = next(item for item in catalog["experiments"] if item["id"] == "Exp437")
+values = {
+    "state.last_verified_commit": state["last_verified_commit"],
+    "state.exp437_task7_handoff.reviewed_implementation_commit": state["exp437_task7_handoff"]["reviewed_implementation_commit"],
+    "catalog.Exp437.reviewed_implementation_commit": exp437["reviewed_implementation_commit"],
+    "codemap.generated_from_commit": json.loads(Path("docs/codemap/codemap.json").read_text())["generated_from_commit"],
+    "codemap.lock.current_commit": json.loads(Path("docs/codemap/codemap.lock").read_text())["current_commit"],
+}
+assert all(re.fullmatch(r"[0-9a-f]{40}", value) for value in values.values())
+assert all(value == expected for value in values.values())
+assert all(subprocess.run(["git", "cat-file", "-e", f"{value}^{{commit}}"], check=False).returncode == 0 for value in values.values())
+print("provenance validation: PASS", len(values), "recorded commit fields")
+PY
+```
+
+Result: `provenance validation: PASS 5 recorded commit fields`. The tracked
+implementation report and ignored SDD report both now carry the exact 40-byte
+base hash; abbreviated prose references (`d977dee1`) are descriptive only.
 
 ## Regression evidence
 

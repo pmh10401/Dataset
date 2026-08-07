@@ -172,7 +172,7 @@
       "test_labels_opened": false,
       "official_readiness": false,
       "checkpoint_output_evaluation_created": false,
-      "reviewed_implementation_commit": "d977dee17e5d870ff5f84078647fb93b5231a725d",
+      "reviewed_implementation_commit": "d977dee17e5d870ff5f84078647fb93b5231a725",
       "task7_regression_counts": {
         "exp436_shared_engine_tests": 299,
         "predecessor_boundary_tests": 68,
@@ -192,7 +192,7 @@
       "mlx_mps_readiness": "pending",
       "next_readiness_command": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py readiness",
       "implementation_report": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md",
-      "notes": "Implementation complete and Task 7 handoff reviewed at d977dee17e5d870ff5f84078647fb93b5231a725d; readiness remains pending. Thin successor to Exp436: identical label-free science and frozen evaluation gates, new execution identity/root, and one persistence repair that validates length histograms semantically without relying on JSON object-key insertion order. No Exp436 checkpoint result is reused, the Exp437 run parent is absent, prediction has not started, TEST labels remain unopened, and official MLX/MPS readiness has not been invoked."
+      "notes": "Implementation complete and Task 7 handoff reviewed at d977dee17e5d870ff5f84078647fb93b5231a725; readiness remains pending. Thin successor to Exp436: identical label-free science and frozen evaluation gates, new execution identity/root, and one persistence repair that validates length histograms semantically without relying on JSON object-key insertion order. No Exp436 checkpoint result is reused, the Exp437 run parent is absent, prediction has not started, TEST labels remain unopened, and official MLX/MPS readiness has not been invoked."
     }
   ]
 }

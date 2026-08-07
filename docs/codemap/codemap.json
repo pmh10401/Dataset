@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T00:57:21Z",
-  "generated_from_commit": "d977dee17e5d870ff5f84078647fb93b5231a725d",
+  "generated_at": "2026-08-07T01:05:25Z",
+  "generated_from_commit": "d977dee17e5d870ff5f84078647fb93b5231a725",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -70,7 +70,7 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"reviewed_implementation_commit\": \"d977dee17e5d870ff5f84078647fb93b5231a725d\""
+          "symbol": "\"reviewed_implementation_commit\": \"d977dee17e5d870ff5f84078647fb93b5231a725\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
@@ -82,7 +82,7 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"reviewed_implementation_commit\": \"d977dee17e5d870ff5f84078647fb93b5231a725d\""
+          "symbol": "\"reviewed_implementation_commit\": \"d977dee17e5d870ff5f84078647fb93b5231a725\""
         },
         {
           "path": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md",
