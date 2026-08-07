@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T01:05:25Z",
-  "generated_from_commit": "d977dee17e5d870ff5f84078647fb93b5231a725",
+  "generated_at": "2026-08-07T02:54:34Z",
+  "generated_from_commit": "42b43e381b9439acb36e339c28593982000de2cf",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -12,7 +12,8 @@
     "Research control files, Exp435 preserved failure evidence, Exp436 corrected readiness-owned lifecycle, strict scoring/benchmark/publication contract, and Exp436 preserved failure plus Exp437 implementation-complete governance and readiness-pending handoff",
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
     "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch",
-    "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs"
+    "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs",
+    "Exp438 isolated TRAIN-frozen frequency-complexity design, pinned third-party provenance, and Exp437-safe implementation plan"
   ],
   "nodes": [
     {
@@ -22,7 +23,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records the immutable Exp436 persistence failure, Exp437's implementation-complete governance and frozen preregistration/runbook, fresh Task 7 regression/hash/config/root evidence, zero TEST-label access, and the exact clean-HEAD readiness handoff.",
+      "role": "Records the immutable Exp436 persistence failure, Exp437's implementation-complete governance and frozen preregistration/runbook, fresh Task 7 regression/hash/config/root evidence, zero TEST-label access, and the exact clean-HEAD readiness handoff, plus the isolated Exp438 design, source provenance, and implementation plan.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -33,7 +34,8 @@
         "Must be updated when execution stops or phase changes",
         "Exp436 readiness completed and its official CPU run preserved 47 records before a canonical metadata-key ordering bug failed AllGestureWiimoteX_normal_1; that root, its readiness hash, one orphan record, and 47-record authority are immutable. Exp437 has completed implementation and frozen governance, starts from a new readiness-owned root, and remains readiness-pending; prediction has not started, TEST labels remain unopened, and PID is null.",
         "Exp437 changes only execution identity, fixed roots, and order-independent canonical length-histogram persistence; candidate_alpha=0.01, strict three-channel consensus, candidate budget 100, CPU max(1, logical_cpus - 1) with expected 11 workers, zero prediction-label access, and all post-freeze evaluation gates remain unchanged.",
-        "Task 7 handoff reviewed implementation commit d977dee1 with 299 shared-engine tests and 68 predecessor tests, zero failures/errors/skips, immutable Exp436 readiness hash/record proof, Exp437 root absence, and an exact two-field frozen-config diff; official readiness remains pending."
+        "Task 7 handoff reviewed implementation commit d977dee1 with 299 shared-engine tests and 68 predecessor tests, zero failures/errors/skips, immutable Exp436 readiness hash/record proof, Exp437 root absence, and an exact two-field frozen-config diff; official readiness remains pending.",
+        "Exp438 is an isolated review-only design: it keeps high-frequency, low-frequency, and amplitude-complexity channels separate; uses zero TEST-label access before frozen publication; and cannot run readiness or the 1,117-dataset prediction while Exp437 is active."
       ],
       "evidence": [
         {
@@ -123,6 +125,26 @@
         {
           "path": "docs/EXP436_RUNBOOK_antigravity_KO.md",
           "symbol": "# Exp436 결측 안전 엄격 3중 합의 실행 안내서"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-07-exp438-frequency-complexity-evidence-antigravity-design.md",
+          "symbol": "# Exp438 TRAIN-Frozen Frequency-Complexity Evidence Design"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-07-exp438-frequency-complexity-evidence-antigravity.md",
+          "symbol": "# Exp438 Frequency-Complexity Evidence Implementation Plan"
+        },
+        {
+          "path": "docs/EXP438_THIRD_PARTY_PROVENANCE_antigravity.md",
+          "symbol": "# Exp438 third-party provenance"
+        },
+        {
+          "path": "docs/EXP438_THIRD_PARTY_PROVENANCE_antigravity.md",
+          "symbol": "## ASPE reference semantics"
+        },
+        {
+          "path": "docs/EXP438_THIRD_PARTY_PROVENANCE_antigravity.md",
+          "symbol": "## Excluded namesake PhysDiff repository"
         }
       ]
     },
