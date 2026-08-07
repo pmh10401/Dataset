@@ -20,9 +20,11 @@ from concurrent.futures import FIRST_COMPLETED, Future, ProcessPoolExecutor, wai
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from functools import partial
+from hashlib import sha256
 from pathlib import Path
 from typing import Callable, Mapping
 
+from experiments.exp403_408.artifact_io import canonical_json_bytes
 from .checkpoint_antigravity import Exp438CheckpointStore
 from .config_antigravity import (
     FROZEN_CONFIG,
@@ -490,6 +492,7 @@ def _build_context_antigravity(
     decision: BackendDecision,
     output_root: Path,
     checkpoint_root: Path,
+    readiness_payload: Mapping[str, object] | None = None,
 ) -> tuple[dict[str, object], LaneMembershipSnapshotAntigravity]:
     source = getattr(session, "context", None)
     datasets = tuple(getattr(source, "datasets", ()))
@@ -537,6 +540,22 @@ def _build_context_antigravity(
         "official_cpu_workers": worker_count_antigravity(),
         "prediction_label_access_count": 0,
     }
+    if readiness_payload is not None:
+        if (
+            readiness_payload.get("schema") != "exp438.readiness.v1"
+            or readiness_payload.get("reviewed_commit") != reviewed_commit
+            or readiness_payload.get("database_sha256") != FROZEN_CONFIG.database_sha256
+            or readiness_payload.get("datasets") != list(datasets)
+            or readiness_payload.get("backend_decision") != _decision_payload_antigravity(decision)
+            or not isinstance(readiness_payload.get("backend_provenance"), Mapping)
+            or not isinstance(readiness_payload.get("source_sha256"), Mapping)
+        ):
+            raise ValueError("Exp438 readiness does not match the runtime context")
+        context["readiness_sha256"] = sha256(
+            canonical_json_bytes(dict(readiness_payload))
+        ).hexdigest()
+        context["backend_provenance"] = dict(readiness_payload["backend_provenance"])
+        context["source_sha256"] = dict(readiness_payload["source_sha256"])
     return context, lanes
 
 
@@ -604,6 +623,7 @@ def _run_antigravity(
     executor_factory: Callable[..., object] = ProcessPoolExecutor,
     score_task: Callable[[CpuDatasetTaskAntigravity], Exp438DatasetResult] | None = None,
     accelerator_engine_factory: Callable[[str], object] = _create_accelerator_engine_antigravity,
+    readiness_payload: Mapping[str, object] | None = None,
 ) -> Exp438RunSummary:
     """Execute only a verified new or interrupted-resume Exp438 root."""
     if mode not in {"new", "resume"} or type(decision) is not BackendDecision:
@@ -617,6 +637,7 @@ def _run_antigravity(
             decision=decision,
             output_root=output_root,
             checkpoint_root=checkpoint_root,
+            readiness_payload=readiness_payload,
         )
         if getattr(session, "label_access_count", None) != 0:
             raise ValueError("Exp438 prediction label access must remain zero")
@@ -780,6 +801,7 @@ def run_exp438_new_antigravity(
     reviewed_commit: str,
     decision: BackendDecision,
     input_session_factory: Callable[[], object],
+    readiness_payload: Mapping[str, object],
 ) -> Exp438RunSummary:
     return _run_antigravity(
         mode="new",
@@ -789,6 +811,7 @@ def run_exp438_new_antigravity(
         decision=decision,
         input_session_factory=input_session_factory,
         workers=worker_count_antigravity(),
+        readiness_payload=readiness_payload,
     )
 
 
@@ -799,6 +822,7 @@ def resume_exp438_antigravity(
     reviewed_commit: str,
     decision: BackendDecision,
     input_session_factory: Callable[[], object],
+    readiness_payload: Mapping[str, object],
 ) -> Exp438RunSummary:
     return _run_antigravity(
         mode="resume",
@@ -808,6 +832,7 @@ def resume_exp438_antigravity(
         decision=decision,
         input_session_factory=input_session_factory,
         workers=worker_count_antigravity(),
+        readiness_payload=readiness_payload,
     )
 
 
