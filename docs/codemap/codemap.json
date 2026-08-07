@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T06:35:14Z",
-  "generated_from_commit": "8590a8a110e8c138def883da5877bebaf9a88e37",
+  "generated_at": "2026-08-07T08:46:13Z",
+  "generated_from_commit": "d1da286e9c74c64abe76e0c255c86c30141813bd",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -15,7 +15,8 @@
     "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs",
     "Exp438 isolated implementation, clean-HEAD readiness with terminal or fresh live CPU Exp437 evidence, label-free ordered prediction, deterministic review-only publication, and lazy post-freeze TEST-label evaluation",
     "User-approved Exp437 stale-PID checkpoint recovery followed by explicitly verified CPU concurrency with Exp438, without scientific-rule changes",
-    "User-approved Exp437 stale-PID recovery and live CPU concurrency with Exp438, implemented through a test-first operational plan"
+    "User-approved Exp437 stale-PID recovery and live CPU concurrency with Exp438, implemented through a test-first operational plan",
+    "Exp439 isolated scale-aware float32 reconstruction repair, immutable Exp438 failure evidence, exact-prefix import gate, and unchanged label-free scientific rules"
   ],
   "nodes": [
     {
@@ -37,7 +38,8 @@
         "The observed Exp437 crash window is progress/event/checkpoint 938 plus one intent-bound physical record (939 files), stale PID 81739, CPU, zero errors, and zero label access.",
         "Exp438 accepts Exp437 only when terminal/inactive or running with a live CPU PID, heartbeat age at most 300 seconds, zero errors, monotonic counters, fixed identity/root, and explicit concurrency authorization.",
         "Prediction TEST-label access remains zero; post-freeze evaluation stays separate and review-only; Codex performs one liveness check and no recurring polling.",
-        "Exp437 runs with 11 CPU workers. Exp438 waits because the macOS DB snapshot safety contract permits one owned hardlink/session at a time; after Exp437 completion DB nlink must return to 1 before Exp438 readiness."
+        "Exp437 runs with 11 CPU workers. Exp438 waits because the macOS DB snapshot safety contract permits one owned hardlink/session at a time; after Exp437 completion DB nlink must return to 1 before Exp438 readiness.",
+        "Exp438 failed at 89/1,117 on a false fixed-tolerance reconstruction rejection in Chinatown_normal_1; Exp439 preserves the failed root and changes only the validation guard to max(1e-5, one float32 ULP at component scale)."
       ],
       "evidence": [
         {
@@ -195,6 +197,10 @@
         {
           "path": "docs/EXP438_RUNBOOK_antigravity_KO.md",
           "symbol": "`implementation_complete_waiting_for_exp437_completion`"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-07-exp439-scale-aware-reconstruction-antigravity-design.md",
+          "symbol": "# Exp439 Scale-Aware Reconstruction Repair Design"
         }
       ]
     },
