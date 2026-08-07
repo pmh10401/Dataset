@@ -1,7 +1,11 @@
+from hashlib import sha256
 import unittest
 
 import numpy as np
 
+from experiments.exp438_frequency_complexity_evidence_antigravity.features_antigravity import (
+    fft_split_antigravity as fft_split_exp438_antigravity,
+)
 from experiments.exp439_scale_aware_reconstruction_repair_antigravity.features_antigravity import (
     amplitude_complexity_vector_antigravity,
     decompose_at_depth_antigravity,
@@ -14,6 +18,65 @@ from experiments.exp439_scale_aware_reconstruction_repair_antigravity.features_a
 
 
 class Exp439FeaturesAntigravityTests(unittest.TestCase):
+    def test_real_chinatown_row_accepts_float32_reconstruction_rounding(self) -> None:
+        values = np.asarray(
+            [
+                554.0,
+                267.0,
+                172.0,
+                109.0,
+                106.0,
+                77.0,
+                23.0,
+                43.0,
+                69.0,
+                159.0,
+                365.0,
+                706.0,
+                1378.0,
+                1471.0,
+                1347.0,
+                1300.0,
+                1082.0,
+                1200.0,
+                1350.0,
+                1211.0,
+                936.0,
+                813.0,
+                713.0,
+                401.0,
+            ],
+            dtype="<f4",
+        )
+        self.assertEqual(
+            sha256(values.tobytes()).hexdigest(),
+            "33bd5923753b1a3b6e4903ad9e8405d0c761a08f432b7a76c2177921034702a7",
+        )
+
+        low, high = fft_split_antigravity(values, depth=1)
+
+        self.assertEqual(low.shape, values.shape)
+        self.assertEqual(high.shape, values.shape)
+        self.assertTrue(np.isfinite(low).all())
+        self.assertTrue(np.isfinite(high).all())
+
+    def test_four_ulp_component_corruption_is_rejected(self) -> None:
+        from experiments.exp439_scale_aware_reconstruction_repair_antigravity.features_antigravity import (
+            _validate_reconstruction_antigravity,
+        )
+
+        original = np.full(24, 1000.0, dtype=np.float32)
+        low = original.copy()
+        high = np.zeros_like(original)
+        four_ulp = np.float32(4.0 * np.spacing(np.float32(1000.0)))
+        low[0] = np.float32(low[0] + four_ulp)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "decomposition reconstruction tolerance failed",
+        ):
+            _validate_reconstruction_antigravity(original, low, high)
+
     def test_maximum_depth_is_length_bound_and_capped(self) -> None:
         self.assertEqual(maximum_depth_antigravity(16), 1)
         self.assertEqual(maximum_depth_antigravity(64), 3)
@@ -37,6 +100,15 @@ class Exp439FeaturesAntigravityTests(unittest.TestCase):
         cutoff = max(1, (64 // 2) // (2**2))
         spectrum = np.fft.rfft(low.astype(np.float64))
         self.assertLessEqual(float(np.max(np.abs(spectrum[cutoff + 1 :]))), 1e-5)
+
+    def test_exp438_pass_input_keeps_identical_component_bytes(self) -> None:
+        original = np.random.default_rng(43801).normal(size=64).astype(np.float32)
+
+        old_low, old_high = fft_split_exp438_antigravity(original, depth=2)
+        new_low, new_high = fft_split_antigravity(original, depth=2)
+
+        self.assertEqual(new_low.tobytes(), old_low.tobytes())
+        self.assertEqual(new_high.tobytes(), old_high.tobytes())
 
     def test_invalid_depth_and_nonfinite_values_fail_closed(self) -> None:
         with self.assertRaises(ValueError):

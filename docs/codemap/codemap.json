@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T09:32:10Z",
-  "generated_from_commit": "bc121971a81f61c4a40cba1044675572e756aced",
+  "generated_at": "2026-08-07T09:37:12Z",
+  "generated_from_commit": "b4a88ea9f25474cbc75676eef5072ce73c104075",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2374,14 +2374,16 @@
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_predecessor_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_recover_exp437_checkpoint_antigravity.py",
-        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_config_antigravity.py"
+        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_features_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
         "High-frequency, low-frequency, and amplitude-complexity channels stay separate; no fusion or post-TEST retuning.",
         "CPU uses max(1, logical CPUs - 1) workers with one numerical thread each; adopted MLX/MPS/Numba exact stages run serially after parity and speed gates.",
         "Results commit in frozen dataset order; failed roots are immutable and interrupted roots alone may resume.",
-        "Persisted backend decisions use canonical JSON list semantics so readiness replay and runtime context compare the same evidence shape."
+        "Persisted backend decisions use canonical JSON list semantics so readiness replay and runtime context compare the same evidence shape.",
+        "Exp439 changes only the reconstruction validation guard to max(1e-5, one float32 ULP at component peak); FFT bins, casts, returned components, features, scores, thresholds, and label boundary remain unchanged."
       ],
       "evidence": [
         {
@@ -2447,6 +2449,10 @@
         {
           "path": "scratch/run_exp439_scale_aware_reconstruction_repair_antigravity.py",
           "symbol": "main_antigravity"
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/features_antigravity.py",
+          "symbol": "def reconstruction_tolerance_antigravity("
         }
       ]
     },

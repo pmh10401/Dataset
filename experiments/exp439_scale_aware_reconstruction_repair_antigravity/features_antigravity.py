@@ -37,6 +37,47 @@ def maximum_depth_antigravity(raw_length: int) -> int:
     )
 
 
+def reconstruction_tolerance_antigravity(
+    original: object,
+    low: object,
+    high: object,
+) -> float:
+    source = _finite_vector_antigravity(original)
+    low_vector = _finite_vector_antigravity(low)
+    high_vector = _finite_vector_antigravity(high)
+    if source.shape != low_vector.shape or source.shape != high_vector.shape:
+        raise ValueError("decomposition components do not share exact length")
+    peak = max(
+        1.0,
+        float(np.max(np.abs(source))),
+        float(np.max(np.abs(low_vector))),
+        float(np.max(np.abs(high_vector))),
+    )
+    tolerance = max(1e-5, float(np.spacing(np.float32(peak))))
+    if not math.isfinite(tolerance) or tolerance <= 0.0:
+        raise ValueError("reconstruction tolerance is invalid")
+    return tolerance
+
+
+def _validate_reconstruction_antigravity(
+    original: object,
+    low: object,
+    high: object,
+) -> float:
+    source = _finite_vector_antigravity(original)
+    low_vector = _finite_vector_antigravity(low)
+    high_vector = _finite_vector_antigravity(high)
+    tolerance = reconstruction_tolerance_antigravity(
+        source,
+        low_vector,
+        high_vector,
+    )
+    error = float(np.max(np.abs(source - (low_vector + high_vector))))
+    if not math.isfinite(error) or error > tolerance:
+        raise ValueError("decomposition reconstruction tolerance failed")
+    return error
+
+
 def fft_split_antigravity(
     values: object,
     depth: int,
@@ -60,9 +101,7 @@ def fft_split_antigravity(
     high = np.ascontiguousarray(high64, dtype=np.float32)
     if not np.isfinite(low).all() or not np.isfinite(high).all():
         raise ValueError("decomposition output is nonfinite")
-    error = float(np.max(np.abs(original - (low + high))))
-    if not math.isfinite(error) or error > 1e-5:
-        raise ValueError("decomposition reconstruction tolerance failed")
+    _validate_reconstruction_antigravity(original, low, high)
     low.flags.writeable = False
     high.flags.writeable = False
     return low, high
@@ -202,5 +241,6 @@ __all__ = [
     "maximum_depth_antigravity",
     "preferred_depth_antigravity",
     "preferred_depth_from_scores_antigravity",
+    "reconstruction_tolerance_antigravity",
     "select_train_depth_antigravity",
 ]
