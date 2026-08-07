@@ -11,6 +11,7 @@ import inspect
 import shutil
 import stat
 from tempfile import TemporaryDirectory
+from types import MappingProxyType
 import unittest
 from unittest.mock import patch
 
@@ -24,13 +25,15 @@ from experiments.exp436_missing_safe_strict_consensus_antigravity.execution_prof
     EXP437_PROFILE,
 )
 from experiments.exp436_missing_safe_strict_consensus_antigravity.contracts_antigravity import (
-    ExcludedTrainRowAudit, Exp436Candidate, Exp436DatasetResult, InstanceScoreEvidence,
+    BackendBatchEvidence, BackendBenchmarkEvidence, ExcludedTrainRowAudit,
+    Exp436Candidate, Exp436DatasetResult, InstanceScoreEvidence,
 )
+from experiments.exp436_missing_safe_strict_consensus_antigravity.backend_antigravity import select_backend
 from experiments.exp436_missing_safe_strict_consensus_antigravity.progress_antigravity import ProgressWriter
 from experiments.exp436_missing_safe_strict_consensus_antigravity.reporting_antigravity import (
     ABSTENTION_FILE, BACKEND_FILE, EVIDENCE_FILE, HASH_FILE, MANIFEST_FILE,
     PREDICTION_FILE, PUBLICATION_DIRECTORY, STATUS_FILE, SUMMARY_FILE, TRAIN_AUDIT_FILE,
-    inspect_publication, publish_exp436,
+    _backend_from_context, inspect_publication, publish_exp436,
 )
 from experiments.exp436_missing_safe_strict_consensus_antigravity.tests.test_checkpoint_antigravity import _context
 
@@ -71,8 +74,56 @@ def _row(dataset: str, *, candidate: bool = False, audit: bool = False) -> Exp43
     return Exp436DatasetResult(dataset, "scored", (2,), candidates, (evidence,), audits)
 
 
+def _mlx_backend_payload_antigravity() -> dict[str, object]:
+    batches = tuple(
+        BackendBatchEvidence(
+            "mlx", size, "completed", 2, ((2.0, 1.0),) * 5,
+            "a" * 64, "b" * 64, True, True, 0.0, 0.0,
+            2.0, 1.0, 2.0, True, True, True, "passed",
+        )
+        for size in (16, 32, 64, 128, 256)
+    )
+    mlx = BackendBenchmarkEvidence(
+        "mlx", True, batches, "python", "numpy", "gpu:0", "info",
+        True, "paired-synchronized-v1", 16, 1.0, None,
+        mlx_version="mlx", mlx_metal_version="metal",
+    )
+    return select_backend(
+        mlx, BackendBenchmarkEvidence.unavailable("mps", "missing")
+    ).to_payload()
+
+
+def _recursively_frozen_antigravity(value: object) -> object:
+    if isinstance(value, dict):
+        return MappingProxyType(
+            {key: _recursively_frozen_antigravity(child) for key, child in value.items()}
+        )
+    if isinstance(value, list):
+        return tuple(_recursively_frozen_antigravity(child) for child in value)
+    return value
+
+
 class ReportingAntigravityTests(unittest.TestCase):
     """Every test uses the real v1 checkpoint and terminal progress artifacts."""
+
+    def test_backend_context_accepts_recursively_frozen_json_arrays(self) -> None:
+        raw = _mlx_backend_payload_antigravity()
+        restored = _backend_from_context({
+            "backend_decision": _recursively_frozen_antigravity(raw),
+        })
+
+        self.assertEqual(restored.to_payload(), raw)
+
+    def test_backend_context_still_rejects_tampered_derived_fields(self) -> None:
+        raw = _mlx_backend_payload_antigravity()
+        tampered = copy.deepcopy(raw)
+        for pair in tampered["mlx"]["batches"][0]["timing_pairs"][:3]:
+            pair[0] += 1.0
+
+        with self.assertRaisesRegex(ValueError, "checkpoint backend decision is invalid"):
+            _backend_from_context({
+                "backend_decision": _recursively_frozen_antigravity(tampered),
+            })
 
     @classmethod
     def setUpClass(cls) -> None:

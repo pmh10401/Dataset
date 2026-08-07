@@ -303,6 +303,19 @@ def _open_store(
     return store  # type: ignore[return-value]
 
 
+def _canonical_json_surface_antigravity(value: object) -> object:
+    """Restore recursively frozen checkpoint values to their JSON surface."""
+
+    if isinstance(value, Mapping):
+        return {
+            key: _canonical_json_surface_antigravity(child)
+            for key, child in value.items()
+        }
+    if isinstance(value, (tuple, list)):
+        return [_canonical_json_surface_antigravity(child) for child in value]
+    return value
+
+
 def _backend_from_context(context: Mapping[str, object]) -> BackendDecision:
     payload = context.get("backend_decision")
     if isinstance(payload, BackendDecision):
@@ -312,15 +325,10 @@ def _backend_from_context(context: Mapping[str, object]) -> BackendDecision:
     try:
         # The checkpoint recursively freezes persisted lists as tuples.  The
         # public decision decoder deliberately accepts JSON lists only, so
-        # restore just that JSON surface before exact reconstruction.
-        raw = dict(payload)
-        for name in ("mlx", "mps"):
-            item = raw.get(name)
-            if not isinstance(item, Mapping):
-                raise ValueError("checkpoint backend decision is invalid")
-            decoded = dict(item)
-            decoded["batches"] = list(decoded.get("batches", ()))
-            raw[name] = decoded
+        # restore the full JSON surface before exact reconstruction.
+        raw = _canonical_json_surface_antigravity(payload)
+        if not isinstance(raw, Mapping):
+            raise ValueError("checkpoint backend decision is invalid")
         return BackendDecision.from_payload(raw)
     except (TypeError, ValueError, KeyError) as error:
         raise ValueError("checkpoint backend decision is invalid") from error
