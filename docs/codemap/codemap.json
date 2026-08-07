@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T09:54:35Z",
-  "generated_from_commit": "6e68d769083d2c2277bc93d273b795e6100be730",
+  "generated_at": "2026-08-07T10:01:19Z",
+  "generated_from_commit": "9230efa0cb5d5739f4547dee7f9623aa99815a14",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -18,7 +18,8 @@
     "User-approved Exp437 stale-PID recovery and live CPU concurrency with Exp438, implemented through a test-first operational plan",
     "Exp439 isolated scale-aware float32 reconstruction repair, immutable Exp438 failure evidence, exact-prefix import gate, and unchanged label-free scientific rules",
     "Exp439 preregistered one-ULP reconstruction repair, whole-row nonfinite TRAIN exclusion, exact 89-record predecessor import, and dataset-attributed failure logs",
-    "Exp439 mechanically isolated namespace, frozen identity, five-command CLI, and distinct artifact roots"
+    "Exp439 mechanically isolated namespace, frozen identity, five-command CLI, and distinct artifact roots",
+    "Exp439 completed one-ULP reconstruction repair, exact immutable 89-record import, dataset-attributed failure evidence, 679-test regression proof, and real Chinatown TRAIN-only smoke"
   ],
   "nodes": [
     {
@@ -28,7 +29,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records immutable Exp438 failure evidence at 89/1,117 and governs the approved Exp439 scale-aware float32 reconstruction repair, exact-prefix import, label boundary, and official execution handoff.",
+      "role": "Records immutable Exp438 failure evidence and the completed, regression-verified Exp439 scale-aware reconstruction repair, exact 89-record import, label boundary, readiness handoff, and official execution state.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -218,11 +219,15 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"exp439_governance_freeze_before_tdd_implementation\""
+          "symbol": "\"active_phase\": \"exp439_implementation_complete_waiting_readiness\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
           "symbol": "\"status\": \"official_failed_immutable_89_of_1117\""
+        },
+        {
+          "path": "docs/EXP439_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "# Exp439 구현 완료 보고서"
         }
       ]
     },
