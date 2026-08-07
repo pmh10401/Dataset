@@ -48,6 +48,16 @@ called AFD or MAFD. The PhysDiff code link in the paper was not publicly
 retrievable during design, so Exp438 makes no code-compatibility claim with
 PhysDiff.
 
+The similarly named public repository `VUT-HFUT/PhysDiff`, inspected at commit
+`c4a17679cc3c81d0eea7e5ec07cccada1272bad7`, is explicitly excluded. Its
+repository description identifies it as the AAAI 2025 "Physiology-based
+Dynamicity Disentangled Diffusion Model for Remote Physiological Measurement."
+Its `model/physdiff.py` consumes camera-derived spatial-temporal maps and
+fixed-length blood-volume-pulse signals, and hard-codes CUDA in its training and
+sampling paths. It is not the NeurIPS 2025 multivariate time-series anomaly
+detection implementation used as Exp438's research inspiration. The repository
+also exposes no detected license, so no code is copied from it.
+
 ## 2. Isolation From Exp437
 
 Exp438 is developed on branch
