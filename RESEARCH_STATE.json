@@ -1,24 +1,24 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-07T09:55:43+09:00",
+  "updated_at": "2026-08-07T14:02:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
-  "branch": "codex/exp425-selective-recovery",
-  "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
-  "last_verified_commit": "d977dee17e5d870ff5f84078647fb93b5231a725",
-  "active_experiment": "Exp437",
-  "active_phase": "implementation_complete_readiness_pending",
+  "branch": "codex/exp438-frequency-complexity-evidence",
+  "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
+  "last_verified_commit": "90d9d1ec0b5eaf510b06be6d656129db491f17f0",
+  "active_experiment": "Exp437 + Exp438",
+  "active_phase": "exp437_recovery_preflight_passed_exp438_concurrent_readiness_pending",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
-    "design": "docs/superpowers/specs/2026-08-07-exp437-metadata-roundtrip-antigravity-design.md",
-    "plan": "docs/superpowers/plans/2026-08-07-exp437-metadata-roundtrip-antigravity.md",
+    "design": "docs/superpowers/specs/2026-08-07-exp437-recovery-exp438-concurrency-antigravity-design.md",
+    "plan": "docs/superpowers/plans/2026-08-07-exp437-recovery-exp438-concurrency-antigravity.md",
     "scientific_base_design": "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
     "scientific_base_plan": "docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md",
     "scientific_base_preregistration": "docs/EXP436_PREREGISTRATION_antigravity_KO.md",
     "scientific_base_runbook": "docs/EXP436_RUNBOOK_antigravity_KO.md",
-    "preregistration": "docs/EXP437_PREREGISTRATION_antigravity_KO.md",
-    "runbook": "docs/EXP437_RUNBOOK_antigravity_KO.md",
-    "implementation_report": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md"
+    "preregistration": "docs/EXP438_PREREGISTRATION_antigravity_KO.md",
+    "runbook": "docs/EXP438_RUNBOOK_antigravity_KO.md",
+    "implementation_report": "docs/EXP438_IMPLEMENTATION_REPORT_antigravity.md"
   },
   "frozen_inputs": {
     "database": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -31,17 +31,29 @@
     "hard_comparator_prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70"
   },
   "active_process": {
-    "pid": null,
+    "pid": 81739,
+    "pid_os_live": false,
     "run_parent": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807",
     "readiness_owns_run_parent": true,
     "new_requires": "existing_run_parent_with_exact_verified_readiness_and_absent_output_checkpoint_evaluation",
-    "fixed_roots_absent": true,
+    "fixed_roots_absent": false,
     "checkpoint": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/checkpoint_antigravity",
     "output": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity",
     "progress_json": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/progress_antigravity.json",
     "events_jsonl": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/events_antigravity.jsonl",
     "parent_log": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/parent_antigravity.log",
     "pid_file": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/output_antigravity/run_antigravity.pid",
+    "progress_completed": 938,
+    "event_completed": 938,
+    "checkpoint_completed": 938,
+    "physical_record_files": 939,
+    "reconciliation_reason": "intent_with_record",
+    "backend": "cpu",
+    "error": 0,
+    "test_labels_opened": false,
+    "recovery_preflight": "passed",
+    "recovery_launcher": "operational/recover_exp437_checkpoint_antigravity.py",
+    "recovery_log": "/Users/mac/Documents/Dataset/exp437_metadata_roundtrip_antigravity_20260807/recovery_launcher_antigravity.log",
     "last_error": null
   },
   "completed_engineering_tasks": {
@@ -220,6 +232,43 @@
     "next_readiness_command": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py readiness",
     "report": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md"
   },
+  "exp437_recovery_exp438_concurrency": {
+    "authorization": "approved_by_user",
+    "exp437_source_worktree": "/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery",
+    "exp437_source_commit": "cc0f507f290dc7f613763d3653498f8f54cad88a",
+    "exp437_source_clean": true,
+    "old_pid": 81739,
+    "old_pid_os_live": false,
+    "progress_completed": 938,
+    "event_completed": 938,
+    "checkpoint_completed": 938,
+    "physical_record_files": 939,
+    "reconciliation_reasons": ["intent_with_record"],
+    "backend": "cpu",
+    "error": 0,
+    "label_access_count": 0,
+    "test_values_opened": 0,
+    "test_labels_opened": 0,
+    "publication_exists": false,
+    "evaluation_exists": false,
+    "preflight_status": "passed",
+    "implementation_commits": {
+      "live_cpu_predecessor": "763343770cf12ba5c3e60263f7fea20f82de730f",
+      "monotonic_cli_replay": "75f35700db48eb2c4aed0deb42e3de8e5e295bda",
+      "exact_source_recovery_launcher": "90d9d1ec0b5eaf510b06be6d656129db491f17f0"
+    },
+    "regression_tests": {
+      "exp438": 93,
+      "exp436_shared_engine": 299,
+      "exp425_predecessor": 180,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "exp438_concurrency_rule": "terminal_inactive_or_fresh_live_zero_error_cpu_with_heartbeat_age_at_most_300_seconds",
+    "exp438_run_parent_exists": false,
+    "monitoring": "one_post_launch_liveness_check_then_process_owned_logs_only"
+  },
   "failed_runs": {
     "exp435_official": {
       "state": "failed",
@@ -247,10 +296,10 @@
       "root": "/Users/mac/Documents/Dataset/exp436_missing_safe_strict_consensus_antigravity_20260806"
     }
   },
-  "next_action": "Clean-HEAD readiness review for Exp437, then run the exact readiness command in docs/EXP437_RUNBOOK_antigravity_KO.md. Exp436 remains failed and immutable; Exp437 prediction and evaluation have not started.",
-  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp425-selective-recovery' && git status --short --branch && git rev-parse HEAD && python3 -m json.tool RESEARCH_STATE.json && PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py readiness",
+  "next_action": "From the clean Exp438 worktree, launch the exact-source Exp437 recovery once, verify the replacement CPU PID is live, then create Exp438 readiness and start its official 1,117-dataset run.",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence' && python3 operational/recover_exp437_checkpoint_antigravity.py --preflight",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
-  "prediction_phase_started": false,
+  "prediction_phase_started": true,
   "test_labels_opened": false
 }

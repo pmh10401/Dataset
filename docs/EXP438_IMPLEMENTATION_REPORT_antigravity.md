@@ -5,10 +5,11 @@
 - Worktree: `/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence`
 - Branch: `codex/exp438-frequency-complexity-evidence`
 - 검토 구현 commit: `c89d5b47fa6d18ae6fba0c6fba7f06400ee84088`
-- 상태: 구현 완료, Exp437 종료 결과·방향 논의 전 실행 보류
+- 상태: 병행 실행 보완 구현 완료, Exp437 복구·Exp438 readiness 대기
 - readiness/prediction/publication/evaluation: 시작하지 않음
 - TEST label access: 0
-- Exp437 제품 코드와 runtime root 변경: 없음
+- Exp437 제품 코드 변경: 없음. 별도 운영 런처는 exact clean commit의 기존 공개
+  runtime API만 호출한다.
 
 이 보고서는 구현과 회귀 검증만 동결한다. backend 선택이나 공식 1,117개 결과를
 주장하지 않는다. backend는 나중의 exact readiness에서만 정해진다.
@@ -105,8 +106,9 @@ evaluation에서 SQLite label로 가는 post-freeze 흐름을 source evidence로
 
 ## 정확한 다음 단계
 
-Exp437가 terminal/inactive가 된 뒤 결과와 연구 방향을 사용자와 먼저 논의한다.
-Exp438 진행을 유지하기로 결정한 경우 clean HEAD에서 다음 한 명령만 먼저 실행한다.
+사용자는 stale-PID Exp437 복구 후 살아 있는 CPU Exp437와 Exp438을 병행하도록
+승인했다. Exp437는 운영 런처로 복구하고 실제 PID와 fresh heartbeat를 한 번
+확인한다. 그다음 clean HEAD에서 다음 readiness 명령을 실행한다.
 
 ```bash
 cd '/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence'
@@ -114,5 +116,6 @@ PYTHONDONTWRITEBYTECODE=1 python3 \
   scratch/run_exp438_frequency_complexity_evidence_antigravity.py readiness
 ```
 
-그전에는 Exp438 run parent를 만들거나 backend readiness와 공식 1,117개 실행을
-시작하지 않는다. `RESEARCH_STATE.json`의 active Exp437 상태도 변경하지 않는다.
+복구 실패, 죽은 PID, 오래된 heartbeat, 오류, MLX/MPS predecessor 또는 카운터
+후퇴가 있으면 Exp438 run parent를 만들지 않는다. 두 프로세스가 살아난 뒤에는
+각자 atomic 로그를 쓰며 Codex가 반복 감시하지 않는다.

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T05:00:03Z",
-  "generated_from_commit": "75f35700db48eb2c4aed0deb42e3de8e5e295bda",
+  "generated_at": "2026-08-07T05:07:32Z",
+  "generated_from_commit": "90d9d1ec0b5eaf510b06be6d656129db491f17f0",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -9,11 +9,11 @@
     "Exp435 frozen label-free prediction boundary, resumable runtime, checkpoint/progress outputs and MLX readiness",
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
-    "Research control files, Exp435 preserved failure evidence, Exp436 corrected readiness-owned lifecycle, strict scoring/benchmark/publication contract, and Exp436 preserved failure plus Exp437 implementation-complete governance and readiness-pending handoff",
+    "Research control files, preserved Exp435/Exp436 failures, Exp437 exact-source stale-PID recovery evidence, and Exp438 verified CPU-concurrency governance",
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
     "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch",
     "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs",
-    "Exp438 isolated implementation, clean-HEAD/Exp437-terminal readiness, label-free ordered prediction, deterministic review-only publication, and separate lazy post-freeze TEST-label evaluation",
+    "Exp438 isolated implementation, clean-HEAD readiness with terminal or fresh live CPU Exp437 evidence, label-free ordered prediction, deterministic review-only publication, and lazy post-freeze TEST-label evaluation",
     "User-approved Exp437 stale-PID checkpoint recovery followed by explicitly verified CPU concurrency with Exp438, without scientific-rule changes",
     "User-approved Exp437 stale-PID recovery and live CPU concurrency with Exp438, implemented through a test-first operational plan"
   ],
@@ -25,7 +25,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records the active Exp437 checkpoint recovery incident and the user-approved, test-first Exp437/Exp438 concurrent execution plan while preserving scientific contracts, label firewalls, fixed roots, and review-only evaluation boundaries.",
+      "role": "Records the passed Exp437 stale-PID recovery preflight, user-approved Exp437/Exp438 CPU concurrency, exact next commands, test evidence, and unchanged scientific/label-firewall boundaries.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -33,14 +33,11 @@
       ],
       "tests": [],
       "constraints": [
-        "Must be updated when execution stops or phase changes",
-        "Exp436 readiness completed and its official CPU run preserved 47 records before a canonical metadata-key ordering bug failed AllGestureWiimoteX_normal_1; that root, its readiness hash, one orphan record, and 47-record authority are immutable. Exp437 has completed implementation and frozen governance, starts from a new readiness-owned root, and remains readiness-pending; prediction has not started, TEST labels remain unopened, and PID is null.",
-        "Exp437 changes only execution identity, fixed roots, and order-independent canonical length-histogram persistence; candidate_alpha=0.01, strict three-channel consensus, candidate budget 100, CPU max(1, logical_cpus - 1) with expected 11 workers, zero prediction-label access, and all post-freeze evaluation gates remain unchanged.",
-        "Task 7 handoff reviewed implementation commit d977dee1 with 299 shared-engine tests and 68 predecessor tests, zero failures/errors/skips, immutable Exp436 readiness hash/record proof, Exp437 root absence, and an exact two-field frozen-config diff; official readiness remains pending.",
-        "Exp438 is an isolated review-only design: it keeps high-frequency, low-frequency, and amplitude-complexity channels separate; uses zero TEST-label access before frozen publication; and cannot run readiness or the 1,117-dataset prediction while Exp437 is active.",
-        "Exp438 readiness and the official 1,117-dataset run remain blocked until Exp437 is terminal/inactive and the requested result-direction discussion is complete.",
-        "Exp437 must be recovered from the frozen checkpoint through its existing public runtime API before Exp438 may accept a live, fresh, zero-error CPU predecessor for concurrent readiness.",
-        "The committed implementation plan requires exact Exp437 source recovery, fresh live CPU-only predecessor evidence, monotonic Exp438 replay validation, one-check process handoff, and no recurring Codex polling."
+        "Exp435 and Exp436 failed roots remain immutable; Exp437 recovery uses only the exact clean cc0f507f source and its existing public runtime API.",
+        "The observed Exp437 crash window is progress/event/checkpoint 938 plus one intent-bound physical record (939 files), stale PID 81739, CPU, zero errors, and zero label access.",
+        "Exp438 accepts Exp437 only when terminal/inactive or running with a live CPU PID, heartbeat age at most 300 seconds, zero errors, monotonic counters, fixed identity/root, and explicit concurrency authorization.",
+        "Exp437 and Exp438 each use 11 CPU workers; oversubscription is user-approved and affects timing only, not frozen science.",
+        "Prediction TEST-label access remains zero; post-freeze evaluation stays separate and review-only; Codex performs one liveness check and no recurring polling."
       ],
       "evidence": [
         {
@@ -49,11 +46,11 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_experiment\": \"Exp437\""
+          "symbol": "\"active_experiment\": \"Exp437 + Exp438\""
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"implementation_complete_readiness_pending\""
+          "symbol": "\"active_phase\": \"exp437_recovery_preflight_passed_exp438_concurrent_readiness_pending\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -85,7 +82,7 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"implementation_complete_readiness_pending\""
+          "symbol": "\"status\": \"stale_pid_recovery_preflight_passed\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
@@ -174,6 +171,18 @@
         {
           "path": "docs/superpowers/plans/2026-08-07-exp437-recovery-exp438-concurrency-antigravity.md",
           "symbol": "# Exp437 Recovery And Exp438 Concurrency Implementation Plan"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"exp437_recovery_exp438_concurrency\": {"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"regression_tests\": {"
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"status\": \"implementation_complete_concurrent_readiness_pending\""
         }
       ]
     },

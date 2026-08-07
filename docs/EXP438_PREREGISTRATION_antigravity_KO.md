@@ -23,11 +23,18 @@ Operational alert eligible: false
 Prediction TEST-label access: exactly zero
 ```
 
-Exp438은 Exp437의 코드, 실행 폴더, checkpoint, progress, prediction 또는
-publication을 수정·정리·재개하지 않는다. Exp437 결과는 두 실험의 prediction이
-각각 동결된 뒤 읽기 전용 비교 근거로만 사용한다. Exp437가 종료되고 PID가
-비활성이며 사용자가 요청한 결과·방향 논의가 끝나기 전에는 Exp438 readiness,
-MLX/MPS-heavy benchmark, 공식 1,117개 prediction을 시작하지 않는다.
+Exp438 prediction 코드는 Exp437의 코드, 실행 폴더, checkpoint, progress,
+prediction 또는 publication을 수정·정리·재개하지 않는다. Exp437 결과는 두
+실험의 prediction이 각각 동결된 뒤 읽기 전용 비교 근거로만 사용한다.
+
+2026-08-07 사용자 승인에 따라 운영 gate만 보완했다. 별도 운영 런처가 정확한
+Exp437 clean commit의 기존 공개 runtime API로 stale-PID checkpoint를 복구할 수
+있다. 복구된 Exp437가 `running`, CPU, 실제 PID 생존, heartbeat 300초 이내,
+오류 0, TEST-label 접근 0일 때 Exp438 readiness와 공식 prediction을 병행할 수
+있다. terminal/inactive Exp437도 계속 허용한다. 죽은 PID, 오래된 heartbeat,
+MLX/MPS predecessor, 오류 또는 카운터 후퇴는 Exp438 root 생성 전에 거부한다.
+이 보완은 Exp438의 feature, score, threshold, budget, backend 선택 규칙 또는
+정보 방화벽을 바꾸지 않는다.
 
 ## 정보 방화벽
 

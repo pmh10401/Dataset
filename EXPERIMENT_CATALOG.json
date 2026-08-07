@@ -152,7 +152,7 @@
     {
       "id": "Exp437",
       "kind": "exp436_canonical_metadata_roundtrip_repair",
-      "status": "implementation_complete_readiness_pending",
+      "status": "stale_pid_recovery_preflight_passed",
       "branch": "codex/exp425-selective-recovery",
       "base_commit": "d10a24e77bce15e0376964aa11a275fb4f033fb5",
       "documents": [
@@ -168,10 +168,10 @@
       "dataset_count": 1117,
       "candidate_budget": 100,
       "review_only": true,
-      "prediction_phase_started": false,
+      "prediction_phase_started": true,
       "test_labels_opened": false,
-      "official_readiness": false,
-      "checkpoint_output_evaluation_created": false,
+      "official_readiness": true,
+      "checkpoint_output_evaluation_created": true,
       "reviewed_implementation_commit": "d977dee17e5d870ff5f84078647fb93b5231a725",
       "task7_regression_counts": {
         "exp436_shared_engine_tests": 299,
@@ -182,27 +182,38 @@
       },
       "exp436_readiness_sha256": "5def8dbe785163dc69e80e0bb6a5a1cdba1d3663058f4d73625a6deda048c43a",
       "exp436_failed_record_bytes": 59498,
-      "exp437_run_parent_absent": true,
+      "exp437_run_parent_absent": false,
+      "official_progress_completed": 938,
+      "official_event_completed": 938,
+      "official_checkpoint_completed": 938,
+      "physical_record_files": 939,
+      "stale_pid": 81739,
+      "stale_pid_os_live": false,
+      "checkpoint_reconciliation_reasons": ["intent_with_record"],
+      "official_backend": "cpu",
+      "official_errors": 0,
       "frozen_config_changed_fields": ["experiment_id", "run_identity"],
       "cpu_topology": {
         "logical_cpus": 12,
         "workers": 11,
         "inner_threads": 1
       },
-      "mlx_mps_readiness": "pending",
-      "next_readiness_command": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py readiness",
+      "mlx_mps_readiness": "cpu_selected",
+      "next_readiness_command": "python3 operational/recover_exp437_checkpoint_antigravity.py --preflight",
       "implementation_report": "docs/EXP437_IMPLEMENTATION_REPORT_antigravity.md",
-      "notes": "Implementation complete and Task 7 handoff reviewed at d977dee17e5d870ff5f84078647fb93b5231a725; readiness remains pending. Thin successor to Exp436: identical label-free science and frozen evaluation gates, new execution identity/root, and one persistence repair that validates length histograms semantically without relying on JSON object-key insertion order. No Exp436 checkpoint result is reused, the Exp437 run parent is absent, prediction has not started, TEST labels remain unopened, and official MLX/MPS readiness has not been invoked."
+      "notes": "The official CPU/11-worker label-free run reached 938 durable progress/events. PID 81739 is stale and absent at the OS level; one next record file remains with an intent, producing the recognized intent_with_record crash window. Exact-source read-only recovery preflight passed with 938 official checkpoint entries, 939 physical record files, zero errors, zero label access, and no publication/evaluation. Recovery must use the existing runtime API from clean commit cc0f507f290dc7f613763d3653498f8f54cad88a."
     },
     {
       "id": "Exp438",
       "kind": "train_frozen_frequency_complexity_separate_channel_evidence",
-      "status": "implementation_complete_execution_blocked_by_exp437_direction_review",
+      "status": "implementation_complete_concurrent_readiness_pending",
       "branch": "codex/exp438-frequency-complexity-evidence",
-      "reviewed_implementation_commit": "c89d5b47fa6d18ae6fba0c6fba7f06400ee84088",
+      "reviewed_implementation_commit": "90d9d1ec0b5eaf510b06be6d656129db491f17f0",
       "documents": [
         "docs/superpowers/specs/2026-08-07-exp438-frequency-complexity-evidence-antigravity-design.md",
         "docs/superpowers/plans/2026-08-07-exp438-frequency-complexity-evidence-antigravity.md",
+        "docs/superpowers/specs/2026-08-07-exp437-recovery-exp438-concurrency-antigravity-design.md",
+        "docs/superpowers/plans/2026-08-07-exp437-recovery-exp438-concurrency-antigravity.md",
         "docs/EXP438_THIRD_PARTY_PROVENANCE_antigravity.md",
         "docs/EXP438_PREREGISTRATION_antigravity_KO.md",
         "docs/EXP438_RUNBOOK_antigravity_KO.md",
@@ -226,14 +237,16 @@
         "inner_threads": 1
       },
       "regression_counts": {
-        "exp438_tests": 82,
+        "exp438_tests": 93,
         "exp436_shared_engine_tests": 299,
         "exp425_predecessor_tests": 180,
         "failures": 0,
         "errors": 0
       },
-      "next_readiness_command_after_exp437_discussion": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp438_frequency_complexity_evidence_antigravity.py readiness",
-      "notes": "Isolated implementation of TRAIN-frozen project-owned FFT high/low components and attributed ASPE amplitude complexity. Three channels remain separate, prediction has zero TEST-label access, and post-freeze evaluation cannot select a winner. Official readiness and the 1,117-dataset run remain blocked until Exp437 is terminal/inactive and the requested result-direction discussion is complete; RESEARCH_STATE active Exp437 is unchanged."
+      "predecessor_concurrency": "terminal_inactive_or_fresh_live_zero_error_cpu_heartbeat_at_most_300_seconds",
+      "exp437_recovery_preflight": "passed",
+      "next_readiness_command_after_exp437_recovery": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp438_frequency_complexity_evidence_antigravity.py readiness",
+      "notes": "Isolated TRAIN-frozen FFT high/low and attributed ASPE evidence remains scientifically unchanged. User-approved operational concurrency now permits readiness after exact checkpoint recovery when Exp437 is either terminal/inactive or a fresh live zero-error CPU run. CLI replay requires monotonic counters and stable identity/root/backend. TEST labels remain unopened and post-freeze evaluation cannot select a winner."
     }
   ]
 }
