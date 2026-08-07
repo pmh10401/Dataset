@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T00:05:29Z",
-  "generated_from_commit": "d28c1d31fd968563039c3cc1fdf6b2f628c5ecd8",
+  "generated_at": "2026-08-07T00:21:50Z",
+  "generated_from_commit": "f759cddf2e044733b69968e56cd46ef022313daf",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -9,7 +9,7 @@
     "Exp435 frozen label-free prediction boundary, resumable runtime, checkpoint/progress outputs and MLX readiness",
     "Exp435 TRAIN-only feature preparation, calibration, CPU scoring, candidate budget and structured unavailable groups",
     "Exp435 optional MLX dense scoring readiness gate: float32 parity, candidate identity, finite outputs, timing and provenance",
-    "Research control files, Exp435 preserved failure evidence, Exp436 corrected readiness-owned lifecycle, strict scoring/benchmark/publication contract, and Exp436 preserved failure plus Exp437 approved design and written implementation plan",
+    "Research control files, Exp435 preserved failure evidence, Exp436 corrected readiness-owned lifecycle, strict scoring/benchmark/publication contract, and Exp436 preserved failure plus Exp437 implementation-complete governance and readiness-pending handoff",
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
     "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch",
     "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs"
@@ -22,7 +22,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records the immutable Exp436 persistence failure, the approved Exp437 thin-successor design and implementation plan, frozen scientific inputs, zero TEST-label access, and the exact execution-pending continuation.",
+      "role": "Records the immutable Exp436 persistence failure, Exp437's implementation-complete governance and frozen preregistration/runbook, frozen scientific inputs, zero TEST-label access, and the exact clean-HEAD readiness handoff.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -31,8 +31,8 @@
       "tests": [],
       "constraints": [
         "Must be updated when execution stops or phase changes",
-        "Exp436 readiness completed and its official CPU run preserved 47 records before a canonical metadata-key ordering bug failed AllGestureWiimoteX_normal_1; that root is immutable. Exp437 has an approved design and written TDD implementation plan, reuses the same label-free science, and starts from a new readiness-owned root. Product implementation has not started; TEST labels remain unopened and PID is null.",
-        "Exp437 changes only execution identity, fixed roots, and order-independent canonical length-histogram persistence; candidate_alpha=0.01, strict three-channel consensus, candidate budget 100, and all post-freeze evaluation gates remain unchanged."
+        "Exp436 readiness completed and its official CPU run preserved 47 records before a canonical metadata-key ordering bug failed AllGestureWiimoteX_normal_1; that root, its readiness hash, one orphan record, and 47-record authority are immutable. Exp437 has completed implementation and frozen governance, starts from a new readiness-owned root, and remains readiness-pending; prediction has not started, TEST labels remain unopened, and PID is null.",
+        "Exp437 changes only execution identity, fixed roots, and order-independent canonical length-histogram persistence; candidate_alpha=0.01, strict three-channel consensus, candidate budget 100, CPU max(1, logical_cpus - 1) with expected 11 workers, zero prediction-label access, and all post-freeze evaluation gates remain unchanged."
       ],
       "evidence": [
         {
@@ -45,7 +45,7 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"implementation_plan_written_execution_pending\""
+          "symbol": "\"active_phase\": \"implementation_complete_readiness_pending\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -65,7 +65,7 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"implementation_plan_written_execution_pending\""
+          "symbol": "\"status\": \"implementation_complete_readiness_pending\""
         },
         {
           "path": "docs/superpowers/specs/2026-08-07-exp437-metadata-roundtrip-antigravity-design.md",
@@ -74,6 +74,18 @@
         {
           "path": "docs/superpowers/plans/2026-08-07-exp437-metadata-roundtrip-antigravity.md",
           "symbol": "# Exp437 Metadata Roundtrip Repair Implementation Plan"
+        },
+        {
+          "path": "docs/EXP437_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "## Prediction boundary"
+        },
+        {
+          "path": "docs/EXP437_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "## Frozen scientific rule"
+        },
+        {
+          "path": "docs/EXP437_RUNBOOK_antigravity_KO.md",
+          "symbol": "## 정확한 고정 명령"
         },
         {
           "path": "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
@@ -1691,7 +1703,7 @@
       "boundary": "Exp436 missing-safe strict consensus",
       "layer": 3,
       "path": "experiments/exp436_missing_safe_strict_consensus_antigravity",
-      "role": "Owns the implemented Exp436 missing-safe values-only scoring, Task8 canonical readiness/publication and post-freeze evaluation firewall, and the profile-aware parent-owned checkpoint/runtime core behind the fixed five-command wrappers. Exp436 remains the default profile; the approved Exp437 thin successor binds its own execution identity, fixed sibling roots, and outside-CWD-safe wrapper while reusing the shared scientific engine and transport schemas. Official Exp436 readiness, prediction, and evaluation remain immutable historical evidence; Exp437 readiness, prediction, and evaluation have not run. Profile-aware context, readiness, checkpoint, runtime, publication, and evaluation calls reject cross-profile artifacts before recovery, mutation, or TEST-label access; readiness stages its sole canonical artifact while the selected RUN_PARENT is absent; only interrupted resume opens the input session; inspect replays frozen publication bytes read-only; evaluation never changes prediction bytes and may only replay a bound existing evaluation.",
+      "role": "Owns the implemented Exp436 missing-safe values-only scoring, Task8 canonical readiness/publication and post-freeze evaluation firewall, and the profile-aware parent-owned checkpoint/runtime core behind the fixed five-command wrappers. Exp436 remains the default profile; Exp437 binds its own execution identity, fixed sibling roots, outside-CWD-safe wrapper, and lexical length-histogram transport repair while reusing the shared scientific engine and transport schemas. Official Exp436 readiness, prediction, and evaluation remain immutable historical evidence; Exp437 implementation and governance are complete but readiness, prediction, and evaluation are pending. Profile-aware context, readiness, checkpoint, runtime, publication, and evaluation calls reject cross-profile artifacts before recovery, mutation, or TEST-label access; readiness stages its sole canonical artifact while the selected RUN_PARENT is absent; only interrupted resume opens the input session; inspect replays frozen publication bytes read-only; evaluation never changes prediction bytes and may only replay a bound existing evaluation.",
       "entrypoints": [
         "Exp436FrozenConfig",
         "FROZEN_CONFIG",
@@ -1780,12 +1792,13 @@
         "Backend protocol is paired-synchronized-v1: timed CPU/device callables contain only their scalar score suites; candidate/JSON/hash work is outside timing, every warmup/timed device output is aggregated into parity/error gates, invalid output preserves only prior fully validated pairs, and nonfinite completed output canonically takes the nonfinite_output reason before all other failed gates; fixtures, engines, and dispatch require exactly frozen k=3 with at least three references; unavailable backends have empty batches/no invented timing or selection, each available backend retains one common input/output fixture digest pair, two available backends must match those pairs before selection, available MLX/MPS evidence requires backend-specific non-CPU accelerator provenance, MLX requires an explicit GPU stream, exact-device synchronization, and installed mlx-metal provenance, and dispatch repeats device validation",
         "Exp436 scoring imports only local config, contracts, and features; it injects only dense scoring backends and contains no label, evaluation, metric, or database route",
         "Checkpoint is the sole ordered-prefix authority; checkpoint record -> completion event -> progress snapshot. Phase B progress owns exactly progress JSON, event JSONL, parent log, and PID JSON under one O_DIRECTORY|O_NOFOLLOW directory flock, validates canonical hash-chain/schema/binding/metadata/PID state read-only, and reconciles only an authoritative ordered checkpoint tail. Failed roots are non-resumable; complete/inspect read-only routes bind stored context to readiness before any external resource, and no Exp435 record/runtime import is permitted. Inspection first validates every checkpoint authority with lstat/O_NOFOLLOW/fstat while one shared root flock is held; only one exact canonical record-set temp may equal the current set or the valid next intent/record prospective set. Mutable checkpoint recovery uses one exclusive root flock across full scan, recognized repair/fsync, and pristine rescan; contexts and inspections are deeply immutable. Every profile-aware context/store/readiness/runtime entrypoint validates the selected allowlisted profile, carries its projected frozen config and identity through nested parsers/open/create/recovery calls, and rejects cross-profile artifacts before checkpoint mutation.",
-        "Task8 completed the readiness/publication/evaluation firewall. Official Exp436 readiness selected CPU/11 workers; prediction then failed immutably after 47 committed records because canonical JSON key order conflicted with numeric histogram insertion-order validation. Exp437 is the approved thin successor with a written TDD implementation plan; its execution profile, canonical metadata persistence repair, and profile-bound context/checkpoint/runtime core are implemented, while official readiness, prediction, and evaluation remain pending.",
+        "Task8 completed the readiness/publication/evaluation firewall. Official Exp436 readiness selected CPU/11 workers; prediction then failed immutably after 47 committed records because canonical JSON key order conflicted with numeric histogram insertion-order validation. Exp437's execution profile, canonical metadata persistence repair, profile-bound context/checkpoint/runtime core, fixed wrapper, preregistration, and runbook are implemented and frozen; official readiness is pending, prediction has not started, and TEST labels remain unopened.",
         "Publication inspection has no public expectation override and replays checkpoint/runtime source authorities before RENAME_EXCL; progress replay validates strict runtime bytes in memory and never creates a sibling copy. Evaluator uses the publication reviewed_commit and reviewed_commit_sha256 before labels, revalidates the full source before staging and before rename, and existing evaluation replay recomputes its 1,117-row frozen 20,000-repetition bootstrap while binding publication summaries, candidate accounting, reviewed publication, and frozen database.",
         "Publication and evaluation APIs accept only a keyword-only selected profile; store/profile/context identity and profile-specific frozen-config hashes must match before publication replay or evaluation, and profile/path mismatches fail before TEST labels or the verified SQLite label reader.",
         "Publication recomputes the canonical checkpoint context fingerprint from the supplied store context and rejects stale or mismatched fingerprint authorities before runtime replay, manifest construction, or publication writes.",
         "The public command surface is exactly readiness, new, resume, inspect, and evaluate; no path, worker, backend, seed, threshold, alpha, lane, or budget override flags are accepted.",
-        "Exp437 fixed roots come only from EXP437_PROFILE; RUN_PARENT, FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, and FROZEN_EVALUATION remain Exp436 compatibility aliases and are never read by Exp437 execution."
+        "Exp437 fixed roots come only from EXP437_PROFILE; RUN_PARENT, FROZEN_OUTPUT, FROZEN_CHECKPOINT, FROZEN_READINESS, and FROZEN_EVALUATION remain Exp436 compatibility aliases and are never read by Exp437 execution.",
+        "Exp437 transport repair validates length histograms semantically (positive decimal keys, nonnegative integer counts, exact TRAIN/TEST sums) and normalizes with dict(sorted(histogram.items())); it never changes the Exp436 alpha, thresholds, lanes, budget, seeds, bootstrap, rescue, false-positive gates, or routing."
       ],
       "evidence": [
         {
@@ -2211,6 +2224,26 @@
         {
           "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/cli_antigravity.py",
           "symbol": "validate_frozen_config_for_profile_antigravity(config, selected)"
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _dataset_metadata("
+        },
+        {
+          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/progress_antigravity.py",
+          "symbol": "def _validate_metadata("
+        },
+        {
+          "path": "scratch/run_exp437_metadata_roundtrip_antigravity.py",
+          "symbol": "main_for_profile_antigravity(EXP437_PROFILE)"
+        },
+        {
+          "path": "docs/EXP437_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "Transport delta: canonical length-histogram validation ignores insertion order and normalizes lexicographically"
+        },
+        {
+          "path": "docs/EXP437_RUNBOOK_antigravity_KO.md",
+          "symbol": "## 중단, resume, inspect와 immutable failure"
         }
       ]
     }
@@ -3048,14 +3081,14 @@
     {
       "id": "exp437_fixed_profile_flow",
       "label": "Exp437 fixed-profile command boundary",
-      "trigger": "Invoke the outside-CWD-safe Exp437 wrapper for readiness, prediction lifecycle, inspect, or post-freeze evaluation.",
+      "trigger": "Invoke the outside-CWD-safe Exp437 wrapper with the exact readiness/new/resume/inspect/evaluate commands after the clean-HEAD readiness review.",
       "steps": [
         "exp436_contract_boundary",
         "exp425_database",
         "artifact_utils",
         "sqlite_store"
       ],
-      "outcome": "The wrapper resolves the repository before importing the selected profile entrypoint. The parser exposes only five commands; readiness, fixed-root preflight, runtime, publication replay, and lazy evaluation all receive EXP437_PROFILE. New/resume remain label-free and profile-bound, inspect is read-only, and evaluate imports the exact evaluator only after the Exp437 review-only publication is frozen; no Exp436 compatibility root alias or scientific override can redirect the flow."
+      "outcome": "The wrapper resolves the repository before importing the selected profile entrypoint. The parser exposes only five commands; readiness, fixed-root preflight, runtime, publication replay, and lazy evaluation all receive EXP437_PROFILE. New/resume remain label-free and profile-bound, inspect is read-only, and evaluate imports the exact evaluator only after the Exp437 review-only publication is frozen; failed roots remain immutable and require a new experiment number, while no Exp436 compatibility root alias or scientific override can redirect the flow."
     }
   ],
   "unknown_relationships": 0
