@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-08T02:08:56+09:00",
+  "updated_at": "2026-08-08T02:40:20+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -379,14 +379,15 @@
     {
       "id": "Exp440",
       "kind": "train_only_low_frequency_multi_depth_precision_gate",
-      "status": "design_approved_implementation_planned",
+      "status": "implementation_complete_readiness_pending",
       "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
       "base_commit": "62e143d1",
       "documents": [
         "docs/superpowers/specs/2026-08-08-exp440-train-only-low-frequency-precision-gate-antigravity-design.md",
         "docs/superpowers/plans/2026-08-08-exp440-train-only-low-frequency-precision-gate-antigravity.md",
         "docs/EXP440_PREREGISTRATION_antigravity_KO.md",
-        "docs/EXP440_RUNBOOK_antigravity_KO.md"
+        "docs/EXP440_RUNBOOK_antigravity_KO.md",
+        "docs/EXP440_IMPLEMENTATION_REPORT_antigravity.md"
       ],
       "artifact_root": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808",
       "dataset_count": 1117,
@@ -398,7 +399,44 @@
       "prediction_phase_started": false,
       "test_labels_opened": false,
       "cpu_workers": 11,
-      "notes": "TRAIN-only adjacent-depth low-frequency consensus and threshold stability reduce Exp439 false alarms before a deterministic outside-Hard budget of 100."
+      "notes": "TRAIN-only adjacent-depth low-frequency consensus and threshold stability reduce Exp439 false alarms before a deterministic outside-Hard budget of 100.",
+      "implementation_code_commit": "178d49bc9f6a418902d28031ee311e8e0270f1e1",
+      "maximum_train_rows_per_exact_length_group": 256,
+      "acceleration_decision": "cpu_11_workers",
+      "regression_counts": {
+        "exp440_tests": 35,
+        "exp439_tests": 108,
+        "exp436_tests": 301,
+        "total": 444,
+        "failures": 0,
+        "errors": 0
+      },
+      "real_train_only_smoke": {
+        "small": {
+          "dataset": "FiftyWords_normal_49",
+          "train_rows": 4,
+          "test_rows": 50,
+          "raw_length": 270,
+          "seconds": 0.15396179095841944,
+          "candidates": 1
+        },
+        "large_eligible": {
+          "dataset": "CBF_normal_3",
+          "train_rows": 248,
+          "test_rows": 300,
+          "raw_length": 128,
+          "seconds": 3.6269824999617413,
+          "candidates": 7
+        },
+        "label_access_count": 0
+      },
+      "acceleration_gate": {
+        "mlx_relative_speed": 0.21498985856113356,
+        "numba_end_to_end_relative_speed": 0.8747116449308402,
+        "numba_candidate_parity": true,
+        "numba_max_abs_difference": 1.241546465635679e-08,
+        "selected_backend": "cpu"
+      }
     }
   ]
 }

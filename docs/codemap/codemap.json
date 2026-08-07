@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T17:39:26Z",
-  "generated_from_commit": "a89a7e150d985e60a70c300f3b1ba6af09b175b9",
+  "generated_at": "2026-08-07T17:40:39Z",
+  "generated_from_commit": "178d49bc9f6a418902d28031ee311e8e0270f1e1",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -34,7 +34,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records completed Exp439 non-promotion evidence and governs the approved Exp440 TRAIN-only low-frequency multi-depth precision-gate implementation, fixed label boundary, run identity, observability, and post-freeze success rule.",
+      "role": "Records Exp439 non-promotion and the verified Exp440 implementation: fold-local adjacent-depth low-frequency consensus, conservative 256-row exact-length feasibility cap, CPU/11-worker selection after MLX/Numba gates, prediction not started, and clean-HEAD readiness pending.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -282,6 +282,18 @@
         {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"active_experiment\": \"Exp440\""
+        },
+        {
+          "path": "docs/EXP440_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "# Exp440 구현 보고서"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"exp440_implementation\": {"
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"status\": \"implementation_complete_readiness_pending\""
         }
       ]
     },
