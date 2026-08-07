@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T13:52:12Z",
-  "generated_from_commit": "a3fae166ede77c0276d416447e57519e0334d053",
+  "generated_at": "2026-08-07T16:20:26Z",
+  "generated_from_commit": "328162742bafbb5dcf4d80d034c8adfa4d2ad6da",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -20,7 +20,9 @@
     "Exp439 preregistered one-ULP reconstruction repair, whole-row nonfinite TRAIN exclusion, exact 89-record predecessor import, and dataset-attributed failure logs",
     "Exp439 mechanically isolated namespace, frozen identity, five-command CLI, and distinct artifact roots",
     "Exp439 completed one-ULP reconstruction repair, exact immutable 89-record import, dataset-attributed failure evidence, 679-test regression proof, and real Chinatown TRAIN-only smoke",
-    "Exp439 bounded slow-head dispatch and TRAIN-only preferred-depth/decomposition cache with predecessor-record byte parity"
+    "Exp439 bounded slow-head dispatch and TRAIN-only preferred-depth/decomposition cache with predecessor-record byte parity",
+    "Exp437 strict nested canonical-JSON surface repair design for reproducible publication inspection without checkpoint mutation",
+    "Exp440 approved TRAIN-only low-frequency multi-depth precision gate with deterministic outside-Hard budget 100 and post-freeze evaluation"
   ],
   "nodes": [
     {
@@ -43,7 +45,8 @@
         "Exp438 accepts Exp437 only when terminal/inactive or running with a live CPU PID, heartbeat age at most 300 seconds, zero errors, monotonic counters, fixed identity/root, and explicit concurrency authorization.",
         "Prediction TEST-label access remains zero; post-freeze evaluation stays separate and review-only; Codex performs one liveness check and no recurring polling.",
         "Exp437 runs with 11 CPU workers. Exp438 waits because the macOS DB snapshot safety contract permits one owned hardlink/session at a time; after Exp437 completion DB nlink must return to 1 before Exp438 readiness.",
-        "Exp438 failed at 89/1,117 on a false fixed-tolerance reconstruction rejection in Chinatown_normal_1; Exp439 preserves the failed root and changes only the validation guard to max(1e-5, one float32 ULP at component scale)."
+        "Exp438 failed at 89/1,117 on a false fixed-tolerance reconstruction rejection in Chinatown_normal_1; Exp439 preserves the failed root and changes only the validation guard to max(1e-5, one float32 ULP at component scale).",
+        "Exp439 direct integration failed its preregistered precision and F1 gates; Exp440 is a new review-only experiment whose prediction uses only TRAIN-calibrated multi-depth low-frequency consensus and never reads Exp439 evaluation artifacts."
       ],
       "evidence": [
         {
@@ -241,6 +244,14 @@
         {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"chinatown_record_byte_parity\": true"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-08-exp437-nested-json-surface-repair-antigravity-design.md",
+          "symbol": "# Exp437 Nested JSON Surface Repair Design"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-08-exp440-train-only-low-frequency-precision-gate-antigravity-design.md",
+          "symbol": "# Exp440 TRAIN-Only Low-Frequency Precision Gate Design"
         }
       ]
     },
