@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T17:17:26Z",
-  "generated_from_commit": "851b7bc0abbfe1d1351e2d833c65c90eb7a88b4e",
+  "generated_at": "2026-08-07T17:18:18Z",
+  "generated_from_commit": "adb9dedb5b7c3174d13c1e719e58fb76e91c5d46",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2417,7 +2417,7 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence.",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2447,7 +2447,8 @@
         "load_frozen_hard_coordinates_antigravity",
         "adjacent_depths_antigravity",
         "fit_group_calibration_antigravity",
-        "score_test_row_antigravity"
+        "score_test_row_antigravity",
+        "select_global_candidates_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2469,7 +2470,8 @@
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_inputs_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_predecessor_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_features_antigravity.py",
-        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_scoring_antigravity.py"
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_budget_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2620,6 +2622,10 @@
         {
           "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/scoring_antigravity.py",
           "symbol": "def score_test_row_antigravity("
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/budget_antigravity.py",
+          "symbol": "def select_global_candidates_antigravity("
         }
       ]
     },
