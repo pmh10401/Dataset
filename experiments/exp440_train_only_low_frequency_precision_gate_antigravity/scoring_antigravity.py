@@ -20,7 +20,7 @@ def score_test_row_antigravity(dataset:str,instance_index:int,values:object,grou
     agreeing=tuple(x for x in scores if x.exceeds)
     if len(agreeing)<FROZEN_CONFIG.minimum_consensus_depths:return tuple(scores),None
     ratios=sorted((x.excess_ratio for x in agreeing),reverse=True);ranks=sorted(x.empirical_rank for x in agreeing);depths=tuple(sorted(x.depth for x in agreeing))
-    return tuple(scores),ProvisionalCandidateAntigravity(dataset,instance_index,int(vector.size),depths,len(depths),ratios[1],ranks[1])
+    return tuple(scores),ProvisionalCandidateAntigravity(dataset,instance_index,int(vector.size),depths,len(depths),ratios[1],ranks[1],tuple(scores))
 
 
 __all__=["score_test_row_antigravity"]

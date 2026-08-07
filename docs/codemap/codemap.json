@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T17:24:32Z",
-  "generated_from_commit": "e92339efefcfa4c62431edd81557dc2b406e5cf8",
+  "generated_at": "2026-08-07T17:29:24Z",
+  "generated_from_commit": "a530c212091f0e17d6835a033a212b73d1457004",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2678,21 +2678,30 @@
     },
     {
       "id": "exp438_publication_evaluation",
-      "label": "Exp438 publication + evaluation",
+      "label": "Exp438 / Exp439 / Exp440 publication + evaluation",
       "type": "pipeline",
       "boundary": "Active isolated research",
       "layer": 3,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Replays a complete zero-label-access checkpoint into a deterministic separate-channel review-only publication, then lazily evaluates all three frozen channels only after Exp438, Exp437, Hard comparator, database, population, provenance, and artifact hashes pass.",
+      "role": "Replays a complete zero-label-access checkpoint into a deterministic separate-channel review-only publication, then lazily evaluates all three frozen channels only after Exp438, Exp437, Hard comparator, database, population, provenance, and artifact hashes pass. Exp440 owns fixed clean-HEAD readiness, a five-command wrapper, no-clobber hash-bound review-only prediction/depth/ranking/audit publication, and lazy post-freeze TEST-label evaluation against frozen Hard with 20,000 dataset bootstrap samples and all preregistered gates.",
       "entrypoints": [
         "publish_exp438_antigravity",
         "inspect_publication_antigravity",
-        "evaluate_exp438_antigravity"
+        "evaluate_exp438_antigravity",
+        "run_readiness_antigravity",
+        "publish_exp440_antigravity",
+        "evaluate_exp440_antigravity",
+        "build_parser_antigravity",
+        "main_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_evaluation_antigravity.py",
-        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py"
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_readiness_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_reporting_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_cli_antigravity.py"
       ],
       "constraints": [
         "Publication requires exactly 1,117 completed datasets, failed=0, inactive PID, current_dataset=null, budget compliance, and prediction TEST-label access exactly zero.",
@@ -2715,6 +2724,26 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
           "symbol": "def _write_evaluation_artifacts_antigravity("
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/readiness_antigravity.py",
+          "symbol": "def run_readiness_antigravity("
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def publish_exp440_antigravity("
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/evaluation_antigravity.py",
+          "symbol": "def evaluate_exp440_antigravity("
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/cli_antigravity.py",
+          "symbol": "def main_antigravity("
+        },
+        {
+          "path": "scratch/run_exp440_train_only_low_frequency_precision_gate_antigravity.py",
+          "symbol": "result=main_antigravity()"
         }
       ]
     }

@@ -107,7 +107,7 @@ class DepthScoreAntigravity:
 
 @dataclass(frozen=True)
 class ProvisionalCandidateAntigravity:
-    dataset:str; instance_index:int; raw_length:int; depths:tuple[int,...]; agreement_count:int; second_excess_ratio:float; second_empirical_rank:float
+    dataset:str; instance_index:int; raw_length:int; depths:tuple[int,...]; agreement_count:int; second_excess_ratio:float; second_empirical_rank:float; depth_scores:tuple[DepthScoreAntigravity,...]=()
     def __post_init__(self)->None:
         if not isinstance(self.dataset,str) or not self.dataset or type(self.instance_index) is not int or self.instance_index<0 or type(self.raw_length) is not int or self.raw_length<1: raise ValueError("candidate identity is invalid")
         depths=tuple(self.depths)
@@ -116,26 +116,29 @@ class ProvisionalCandidateAntigravity:
         object.__setattr__(self,"depths",depths); object.__setattr__(self,"second_excess_ratio",_finite(self.second_excess_ratio,"second excess ratio",nonnegative=True)); rank=_finite(self.second_empirical_rank,"second empirical rank",nonnegative=True)
         if rank<=0 or rank>1: raise ValueError("second empirical rank is invalid")
         object.__setattr__(self,"second_empirical_rank",rank)
+        scores=tuple(self.depth_scores)
+        if scores and (tuple(x.depth for x in scores)!=tuple(sorted(set(x.depth for x in scores))) or tuple(x.depth for x in scores if x.exceeds)!=depths):raise ValueError("candidate depth evidence is inconsistent")
+        object.__setattr__(self,"depth_scores",scores)
     @property
     def coordinate(self)->tuple[str,int]: return (self.dataset,self.instance_index)
     @property
     def ranking_key(self)->tuple[object,...]: return (-self.agreement_count,-self.second_excess_ratio,self.second_empirical_rank,self.dataset,self.instance_index)
-    def to_payload(self)->dict[str,object]: return {"dataset":self.dataset,"instance_index":self.instance_index,"raw_length":self.raw_length,"depths":list(self.depths),"agreement_count":self.agreement_count,"second_excess_ratio":self.second_excess_ratio,"second_empirical_rank":self.second_empirical_rank}
+    def to_payload(self)->dict[str,object]: return {"dataset":self.dataset,"instance_index":self.instance_index,"raw_length":self.raw_length,"depths":list(self.depths),"agreement_count":self.agreement_count,"second_excess_ratio":self.second_excess_ratio,"second_empirical_rank":self.second_empirical_rank,"depth_scores":[x.to_payload() for x in self.depth_scores]}
     @classmethod
     def from_payload(cls,payload:Mapping[str,object])->"ProvisionalCandidateAntigravity":
-        raw=_exact_payload(payload,{"dataset","instance_index","raw_length","depths","agreement_count","second_excess_ratio","second_empirical_rank"}); depths=raw["depths"]
-        if not isinstance(depths,list): raise ValueError("depths must be a list")
-        raw["depths"]=tuple(depths); return cls(**raw)
+        raw=_exact_payload(payload,{"dataset","instance_index","raw_length","depths","agreement_count","second_excess_ratio","second_empirical_rank","depth_scores"}); depths=raw["depths"]
+        if not isinstance(depths,list) or not isinstance(raw["depth_scores"],list): raise ValueError("depth evidence must be lists")
+        raw["depths"]=tuple(depths);raw["depth_scores"]=tuple(DepthScoreAntigravity.from_payload(x) for x in raw["depth_scores"]); return cls(**raw)
 
 
 @dataclass(frozen=True)
 class RetainedCandidateAntigravity(ProvisionalCandidateAntigravity):
-    global_rank:int
+    global_rank:int=0
     def __post_init__(self)->None:
         super().__post_init__()
         if type(self.global_rank) is not int or self.global_rank<1: raise ValueError("global rank must be positive")
     @classmethod
-    def from_provisional(cls,item:ProvisionalCandidateAntigravity,rank:int)->"RetainedCandidateAntigravity": return cls(item.dataset,item.instance_index,item.raw_length,item.depths,item.agreement_count,item.second_excess_ratio,item.second_empirical_rank,rank)
+    def from_provisional(cls,item:ProvisionalCandidateAntigravity,rank:int)->"RetainedCandidateAntigravity": return cls(item.dataset,item.instance_index,item.raw_length,item.depths,item.agreement_count,item.second_excess_ratio,item.second_empirical_rank,item.depth_scores,rank)
     def to_payload(self)->dict[str,object]:
         raw=super().to_payload(); raw["global_rank"]=self.global_rank; return raw
 

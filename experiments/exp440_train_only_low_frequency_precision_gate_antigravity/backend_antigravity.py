@@ -9,8 +9,10 @@ class AccelerationEvidenceAntigravity:
  def passed(self):return self.available and self.synchronized and self.candidate_parity and math.isfinite(self.max_abs_error) and self.max_abs_error<=FROZEN_CONFIG.acceleration_tolerance and math.isfinite(self.speedup) and self.speedup>=FROZEN_CONFIG.acceleration_speedup_min and bool(self.version) and bool(self.device)
  @classmethod
  def unavailable(cls,name,reason):return cls(name,False,False,False,float('inf'),0.0,0.0,0.0,None,None,reason)
+ def to_payload(self):return {name:getattr(self,name) for name in self.__dataclass_fields__}|{'passed':self.passed}
 @dataclass(frozen=True)
 class BackendDecisionAntigravity: backend:str;workers:int;evidence:tuple[AccelerationEvidenceAntigravity,...]
+def backend_decision_payload_antigravity(value):return {'backend':value.backend,'workers':value.workers,'evidence':[x.to_payload() for x in value.evidence]}
 def select_backend_antigravity(evidence):
  values=tuple(evidence);passed=[x for x in values if x.passed]
  return BackendDecisionAntigravity(max(passed,key=lambda x:(x.speedup,x.backend)).backend if passed else 'cpu',1 if passed else cpu_worker_count_antigravity(),values)
