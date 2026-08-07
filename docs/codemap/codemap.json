@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T04:14:45Z",
-  "generated_from_commit": "c89d5b47fa6d18ae6fba0c6fba7f06400ee84088",
+  "generated_at": "2026-08-07T04:39:20Z",
+  "generated_from_commit": "b2b32de7563f9068b3357d664299fd6bea7d095d",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -13,7 +13,8 @@
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
     "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch",
     "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs",
-    "Exp438 isolated implementation, clean-HEAD/Exp437-terminal readiness, label-free ordered prediction, deterministic review-only publication, and separate lazy post-freeze TEST-label evaluation"
+    "Exp438 isolated implementation, clean-HEAD/Exp437-terminal readiness, label-free ordered prediction, deterministic review-only publication, and separate lazy post-freeze TEST-label evaluation",
+    "User-approved Exp437 stale-PID checkpoint recovery followed by explicitly verified CPU concurrency with Exp438, without scientific-rule changes"
   ],
   "nodes": [
     {
@@ -23,7 +24,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records the active Exp437 handoff unchanged while cataloging Exp438 as an isolated implementation-complete track with frozen design, provenance, preregistration, runbook, implementation evidence, and an execution block pending Exp437 terminal direction review.",
+      "role": "Records the active Exp437 checkpoint recovery incident and the user-approved Exp437/Exp438 concurrent execution design while preserving both scientific contracts, label firewalls, fixed roots, and review-only evaluation boundaries.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -36,7 +37,8 @@
         "Exp437 changes only execution identity, fixed roots, and order-independent canonical length-histogram persistence; candidate_alpha=0.01, strict three-channel consensus, candidate budget 100, CPU max(1, logical_cpus - 1) with expected 11 workers, zero prediction-label access, and all post-freeze evaluation gates remain unchanged.",
         "Task 7 handoff reviewed implementation commit d977dee1 with 299 shared-engine tests and 68 predecessor tests, zero failures/errors/skips, immutable Exp436 readiness hash/record proof, Exp437 root absence, and an exact two-field frozen-config diff; official readiness remains pending.",
         "Exp438 is an isolated review-only design: it keeps high-frequency, low-frequency, and amplitude-complexity channels separate; uses zero TEST-label access before frozen publication; and cannot run readiness or the 1,117-dataset prediction while Exp437 is active.",
-        "Exp438 readiness and the official 1,117-dataset run remain blocked until Exp437 is terminal/inactive and the requested result-direction discussion is complete."
+        "Exp438 readiness and the official 1,117-dataset run remain blocked until Exp437 is terminal/inactive and the requested result-direction discussion is complete.",
+        "Exp437 must be recovered from the frozen checkpoint through its existing public runtime API before Exp438 may accept a live, fresh, zero-error CPU predecessor for concurrent readiness."
       ],
       "evidence": [
         {
@@ -162,6 +164,10 @@
         {
           "path": "docs/EXP438_IMPLEMENTATION_REPORT_antigravity.md",
           "symbol": "# Exp438 구현 완료 보고서"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-07-exp437-recovery-exp438-concurrency-antigravity-design.md",
+          "symbol": "# Exp437 Recovery And Exp438 Concurrent Execution Design"
         }
       ]
     },
