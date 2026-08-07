@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import math
-from typing import Iterable
+from typing import Callable, Iterable
 
 import numpy as np
 from numpy.typing import NDArray
 
-from .aspe_antigravity import amplitude_sensitive_permutation_entropy_antigravity
+from .aspe_antigravity import (
+    AspeResultAntigravity,
+    amplitude_sensitive_permutation_entropy_antigravity,
+)
 from .config_antigravity import FROZEN_CONFIG
 from .contracts_antigravity import DecompositionEvidence
 
@@ -69,6 +72,8 @@ def amplitude_complexity_vector_antigravity(
     original: object,
     low: object,
     high: object,
+    *,
+    aspe_compute: Callable[[object, int, int], AspeResultAntigravity] = amplitude_sensitive_permutation_entropy_antigravity,
 ) -> tuple[NDArray[np.float32], tuple[bool, ...]]:
     source = _finite_vector_antigravity(original, minimum_length=FROZEN_CONFIG.minimum_raw_length)
     low_vector = _finite_vector_antigravity(low, minimum_length=FROZEN_CONFIG.minimum_raw_length)
@@ -79,7 +84,7 @@ def amplitude_complexity_vector_antigravity(
     flags: list[bool] = []
     for component in (source, low_vector, high_vector):
         for delay in FROZEN_CONFIG.delays:
-            result = amplitude_sensitive_permutation_entropy_antigravity(
+            result = aspe_compute(
                 component,
                 FROZEN_CONFIG.embedding_dimension,
                 delay,
@@ -93,10 +98,17 @@ def amplitude_complexity_vector_antigravity(
     return vector, tuple(flags)
 
 
-def decompose_at_depth_antigravity(values: object, depth: int) -> DecompositionEvidence:
+def decompose_at_depth_antigravity(
+    values: object,
+    depth: int,
+    *,
+    aspe_compute: Callable[[object, int, int], AspeResultAntigravity] = amplitude_sensitive_permutation_entropy_antigravity,
+) -> DecompositionEvidence:
     original = _finite_vector_antigravity(values, minimum_length=FROZEN_CONFIG.minimum_raw_length)
     low, high = fft_split_antigravity(original, depth)
-    complexity, flags = amplitude_complexity_vector_antigravity(original, low, high)
+    complexity, flags = amplitude_complexity_vector_antigravity(
+        original, low, high, aspe_compute=aspe_compute
+    )
     return DecompositionEvidence(
         depth=depth,
         low=low,
@@ -106,10 +118,14 @@ def decompose_at_depth_antigravity(values: object, depth: int) -> DecompositionE
     )
 
 
-def _depth_score_antigravity(values: NDArray[np.float32], depth: int) -> float:
+def _depth_score_antigravity(
+    values: NDArray[np.float32],
+    depth: int,
+    aspe_compute: Callable[[object, int, int], AspeResultAntigravity],
+) -> float:
     _, high = fft_split_antigravity(values, depth)
     scores = tuple(
-        amplitude_sensitive_permutation_entropy_antigravity(
+        aspe_compute(
             high,
             FROZEN_CONFIG.embedding_dimension,
             delay,
@@ -132,11 +148,15 @@ def preferred_depth_from_scores_antigravity(scores: Iterable[float]) -> int:
     return len(values)
 
 
-def preferred_depth_antigravity(values: object) -> int:
+def preferred_depth_antigravity(
+    values: object,
+    *,
+    aspe_compute: Callable[[object, int, int], AspeResultAntigravity] = amplitude_sensitive_permutation_entropy_antigravity,
+) -> int:
     vector = _finite_vector_antigravity(values, minimum_length=FROZEN_CONFIG.minimum_raw_length)
     maximum = maximum_depth_antigravity(int(vector.size))
     return preferred_depth_from_scores_antigravity(
-        _depth_score_antigravity(vector, depth)
+        _depth_score_antigravity(vector, depth, aspe_compute)
         for depth in range(1, maximum + 1)
     )
 
@@ -153,6 +173,7 @@ def select_train_depth_antigravity(
     matrix: object,
     *,
     excluded_row_index: int | None = None,
+    aspe_compute: Callable[[object, int, int], AspeResultAntigravity] = amplitude_sensitive_permutation_entropy_antigravity,
 ) -> int:
     try:
         train = np.asarray(matrix, dtype=np.float32)
@@ -169,7 +190,7 @@ def select_train_depth_antigravity(
     if selected.shape[0] == 0:
         raise ValueError("TRAIN depth selection has no reference rows")
     return lower_median_depth_antigravity(
-        preferred_depth_antigravity(row) for row in selected
+        preferred_depth_antigravity(row, aspe_compute=aspe_compute) for row in selected
     )
 
 

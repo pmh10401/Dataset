@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import tempfile
+import time
 import unittest
 
 from experiments.exp438_frequency_complexity_evidence_antigravity.progress_antigravity import (
@@ -9,6 +10,16 @@ from experiments.exp438_frequency_complexity_evidence_antigravity.progress_antig
 
 
 class Exp438ProgressAntigravityTests(unittest.TestCase):
+    def test_background_heartbeat_updates_without_external_polling(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "output_antigravity"
+            writer = ProgressWriterAntigravity.create(output, "a" * 64, 2, "cpu", pid=1)
+            before = json.loads((output / "progress_antigravity.json").read_text())["updated_at"]
+            writer.start_heartbeat(interval_seconds=0.01)
+            time.sleep(0.04)
+            writer.stop_heartbeat()
+            after = json.loads((output / "progress_antigravity.json").read_text())["updated_at"]
+            self.assertNotEqual(before, after)
     def test_create_update_and_complete_writes_required_monitoring_files(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "output_antigravity"

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T02:54:34Z",
-  "generated_from_commit": "42b43e381b9439acb36e339c28593982000de2cf",
+  "generated_at": "2026-08-07T03:38:38Z",
+  "generated_from_commit": "d671f0301ce8a555249c80aca100083ea92de88d",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -13,7 +13,7 @@
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
     "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch",
     "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs",
-    "Exp438 isolated TRAIN-frozen frequency-complexity design, pinned third-party provenance, and Exp437-safe implementation plan"
+    "Exp438 label-free exact-length FFT/ASPE features, separate TRAIN-only calibration, truthful Numba/MLX/MPS exact-stage adapters, ordered max-minus-one CPU runtime, atomic checkpoint recovery, and self-written heartbeat/progress logs"
   ],
   "nodes": [
     {
@@ -171,37 +171,6 @@
         {
           "path": "experiments/exp425_selective_recovery/database.py",
           "symbol": "open_database_snapshot"
-        }
-      ]
-    },
-    {
-      "id": "exp424_source",
-      "label": "Exp424 frozen checkpoint",
-      "type": "storage",
-      "boundary": "External frozen data",
-      "layer": 0,
-      "path": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint",
-      "role": "Read-only source authority containing 1,117 Exp424 records, of which 983 are importable and 134 terminal.",
-      "entrypoints": [
-        "root_provenance.json",
-        "progress.json",
-        "datasets"
-      ],
-      "tests": [
-        "experiments/exp425_selective_recovery/tests/test_predecessor.py"
-      ],
-      "constraints": [
-        "Fixed root/progress/record-set hashes",
-        "Never mutated by successor experiments"
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/predecessor.py",
-          "symbol": "EXP424_SOURCE_ROOT"
-        },
-        {
-          "path": "experiments/exp425_selective_recovery/predecessor.py",
-          "symbol": "class Exp424CompatibilityContract"
         }
       ]
     },
@@ -2311,6 +2280,62 @@
           "symbol": "def test_exp437_public_resume_rejects_checkpoint_complete_before_prediction_or_publication"
         }
       ]
+    },
+    {
+      "id": "exp438_frequency_runtime",
+      "label": "Exp438 frequency evidence",
+      "type": "pipeline",
+      "boundary": "Active isolated research",
+      "layer": 2,
+      "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
+      "role": "Owns Exp438 value-only input, FFT/ASPE feature extraction, three separate TRAIN-only scores, truthful exact-stage acceleration, ordered 11-worker CPU execution, fail-closed checkpoints, and process-written heartbeat/progress artifacts.",
+      "entrypoints": [
+        "run_exp438_new_antigravity",
+        "resume_exp438_antigravity",
+        "inspect_exp438_antigravity"
+      ],
+      "tests": [
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_checkpoint_antigravity.py",
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_progress_antigravity.py",
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_scoring_antigravity.py"
+      ],
+      "constraints": [
+        "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
+        "High-frequency, low-frequency, and amplitude-complexity channels stay separate; no fusion or post-TEST retuning.",
+        "CPU uses max(1, logical CPUs - 1) workers with one numerical thread each; adopted MLX/MPS/Numba exact stages run serially after parity and speed gates.",
+        "Results commit in frozen dataset order; failed roots are immutable and interrupted roots alone may resume."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/runtime_antigravity.py",
+          "symbol": "def _run_antigravity("
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/runtime_antigravity.py",
+          "symbol": "def run_ordered_cpu_schedule_antigravity("
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/inputs_antigravity.py",
+          "symbol": "def open_exp438_input_session("
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/features_antigravity.py",
+          "symbol": "def decompose_at_depth_antigravity("
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/scoring_antigravity.py",
+          "symbol": "def fit_calibrated_group_antigravity("
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/checkpoint_antigravity.py",
+          "symbol": "class Exp438CheckpointStore:"
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/progress_antigravity.py",
+          "symbol": "class ProgressWriterAntigravity:"
+        }
+      ]
     }
   ],
   "edges": [
@@ -2401,18 +2426,6 @@
         }
       ],
       "id": "edge_008_exp425_database_imports_exp417_inputs"
-    },
-    {
-      "from": "exp425_predecessor",
-      "to": "exp424_source",
-      "type": "reads",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/predecessor.py",
-          "symbol": "open_validated_exp424_source"
-        }
-      ],
-      "id": "edge_009_exp425_predecessor_reads_exp424_source"
     },
     {
       "from": "exp425_predecessor",
@@ -3033,75 +3046,42 @@
         }
       ],
       "id": "edge_054_exp436_evaluation_reads_labels_after_publication"
+    },
+    {
+      "from": "exp438_frequency_runtime",
+      "to": "exp417_inputs",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/inputs_antigravity.py",
+          "symbol": "freeze_lane_inputs("
+        }
+      ]
+    },
+    {
+      "from": "exp438_frequency_runtime",
+      "to": "exp425_database",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/inputs_antigravity.py",
+          "symbol": "open_database_snapshot("
+        }
+      ]
+    },
+    {
+      "from": "exp438_frequency_runtime",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/checkpoint_antigravity.py",
+          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
+        }
+      ]
     }
   ],
   "flows": [
-    {
-      "id": "exp435_readiness_flow",
-      "label": "Exp435 clean-HEAD readiness",
-      "trigger": "Run the fixed readiness mode before any prediction roots exist.",
-      "steps": [
-        "exp435_runtime",
-        "exp435_checkpoint_progress"
-      ],
-      "outcome": "The CLI checks clean HEAD, frozen identity and inputs, absent fixed roots, and benchmarks one query while frozen sizes chunk references and preserve exact global nearest-k. Modern MLX device provenance is captured when available; adoption remains parity/candidate/speed gated and immutable for production."
-    },
-    {
-      "id": "exp435_new_resume_flow",
-      "label": "Exp435 new/resume label-free prediction",
-      "trigger": "Invoke new after readiness or resume an unfinished checkpoint.",
-      "steps": [
-        "exp435_runtime",
-        "exp425_database",
-        "exp417_inputs",
-        "sqlite_store",
-        "exp435_checkpoint_progress"
-      ],
-      "outcome": "New binds canonical identity and clean commit. Integrated interrupted resume rejects existing evaluation, runs the shared complete read-only runtime preflight, then alone permits checkpoint/output reconciliation; invalid records preserve the whole tree. Parent-owned TRAIN then values-only TEST uses max(1, detected logical CPU count - 1) CPU futures, name-ordered commits and five persisted stages."
-    },
-    {
-      "id": "exp435_publication_flow",
-      "label": "Exp435 checkpoint_complete publication",
-      "trigger": "A checkpoint_complete runtime has 1,117 records, <=100 candidates, inactive PID, null current dataset and the four terminal runtime files.",
-      "steps": [
-        "exp435_runtime",
-        "exp435_checkpoint_progress",
-        "artifact_utils"
-      ],
-      "outcome": "Replay requires terminal idle progress, counter conservation and label-free fields, then binds eight artifacts plus runtime hashes. A publication present at entry is replayed idempotently; one appearing later during replay/staging fails strict Darwin no-clobber even if identical."
-    },
-    {
-      "id": "exp435_replay_flow",
-      "label": "Exp435 inspect/repeated resume replay",
-      "trigger": "inspect or repeated resume sees an existing publication or a completed checkpoint.",
-      "steps": [
-        "exp435_runtime",
-        "exp435_checkpoint_progress",
-        "artifact_utils"
-      ],
-      "outcome": "The CLI opens checkpoint/publication data read-only, replays and compares canonical bytes and hashes, and does not reopen the database, input session or workers."
-    },
-    {
-      "id": "exp435_evaluate_boundary",
-      "label": "Exp435 hash-gated retrospective evaluation",
-      "trigger": "The operator explicitly selects evaluate only after the label-free prediction, manifest and artifact hashes are frozen at the fixed production sibling paths.",
-      "steps": [
-        "exp435_runtime",
-        "exp435_checkpoint_progress",
-        "sqlite_store",
-        "artifact_utils"
-      ],
-      "outcome": "The CLI lazily imports the evaluator; it replays read-only checkpoint/publication, validates fixed sibling paths and population/code/input/config hashes, captures Exp404 and Exp291 through O_NOFOLLOW descriptors for same-byte SHA256/parse equality, then imports Exp417 verified_read_only_connection to open one exact hashed SQLite inode for instance_index/label. It snapshots/re-inspects output before staged no-clobber evaluation publication; prediction bytes remain unchanged."
-    },
-    {
-      "id": "exp436_readiness_flow",
-      "label": "Exp436 absent-parent readiness",
-      "trigger": "Run readiness before any fixed Exp436 root exists.",
-      "steps": [
-        "exp436_contract_boundary"
-      ],
-      "outcome": "Clean HEAD, source hashes, scalar backend fixture/selection, focused tests, CPU topology, runtime versions and zero label access are bound before a same-parent staged readiness directory is fsync-verified and Darwin RENAME_EXCL-renamed into the sole run parent."
-    },
     {
       "id": "exp436_new_resume_flow",
       "label": "Exp436/Exp437 label-free new/resume policy",
@@ -3114,36 +3094,6 @@
       "outcome": "New requires the exact canonical readiness and absent output/checkpoint/evaluation roots, rechecks HEAD after delayed imports, and passes the exact runtime public arguments. Exp436 resume accepts interrupted and preserved checkpoint_complete compatibility, which may finalize/replay a completed checkpoint without opening the input-session factory; Exp437 resume accepts interrupted only. Failed/running/fake-complete roots are rejected."
     },
     {
-      "id": "exp436_publication_flow",
-      "label": "Exp436 checkpoint-complete publication",
-      "trigger": "A verified checkpoint-complete runtime reaches its review-only freeze.",
-      "steps": [
-        "exp436_contract_boundary",
-        "artifact_utils"
-      ],
-      "outcome": "Publication validates the selected profile/store/context identity, recomputes the canonical context fingerprint from the supplied context, derives the profile-specific frozen-config hash and Exp436/Exp437 manifest identity, then replays the completed checkpoint and terminal progress, writes exact no-clobber review-only artifacts, checks staged bytes, and replays sources again before RENAME_EXCL. Repeated publication is byte-verified replay only."
-    },
-    {
-      "id": "exp436_inspect_flow",
-      "label": "Exp436 immutable inspect",
-      "trigger": "Run inspect on an existing fixed output/checkpoint pair.",
-      "steps": [
-        "exp436_contract_boundary"
-      ],
-      "outcome": "Inspect validates canonical readiness/context/checkpoint/progress without an input session, workers, publication write, or byte mutation; once publication exists it replays that immutable publication rather than routing it through progress inventory."
-    },
-    {
-      "id": "exp436_evaluate_boundary",
-      "label": "Exp436 post-freeze evaluation",
-      "trigger": "Explicitly select evaluate after review-only publication is frozen.",
-      "steps": [
-        "exp436_contract_boundary",
-        "sqlite_store",
-        "artifact_utils"
-      ],
-      "outcome": "Only evaluate lazily imports the exact evaluator. It derives fixed output, checkpoint, evaluation, and run-parent siblings from the selected profile, rejects profile/path mismatches before labels, verifies publication bytes, profile-specific config identity, and canonical reviewed commit before opening the descriptor-bound TEST identity/label reader, re-verifies the source afterward, and treats evaluated completion independently from champion success. An existing evaluation root is read-only replay only when it binds the verified publication."
-    },
-    {
       "id": "exp437_fixed_profile_flow",
       "label": "Exp437 fixed-profile command boundary",
       "trigger": "Invoke the outside-CWD-safe Exp437 wrapper with the exact readiness/new/resume/inspect/evaluate commands after the clean-HEAD readiness review.",
@@ -3154,6 +3104,39 @@
         "sqlite_store"
       ],
       "outcome": "The wrapper resolves the repository before importing the selected profile entrypoint. The parser exposes only five commands; readiness, fixed-root preflight, runtime, publication replay, and lazy evaluation all receive EXP437_PROFILE. New remains label-free and profile-bound, interrupted resume is accepted, checkpoint_complete/failed/running resume is rejected before execute or publication, inspect alone is read-only, and evaluate imports the exact evaluator only after the Exp437 review-only publication is frozen; failed roots remain immutable and require a new experiment number, while no Exp436 compatibility root alias or scientific override can redirect the flow."
+    },
+    {
+      "id": "exp438_cpu_new_resume_flow",
+      "label": "Exp438 ordered label-free CPU new/resume",
+      "trigger": "Run new from absent roots or resume an interrupted Exp438 prefix after readiness chooses CPU.",
+      "steps": [
+        "exp438_frequency_runtime",
+        "exp417_inputs",
+        "exp425_database",
+        "sqlite_store",
+        "artifact_utils"
+      ],
+      "outcome": "The parent reads frozen lanes and value-only TRAIN/TEST rows, up to max-minus-one workers compute datasets, and the parent commits canonical records in sorted order while writing heartbeat, metadata, throughput, ETA, and candidate counts."
+    },
+    {
+      "id": "exp438_accelerator_flow",
+      "label": "Exp438 truthful exact-stage acceleration",
+      "trigger": "Readiness selects Numba, MLX, or MPS only after finite-output, score-tolerance, candidate-parity, and at-least-1.1x speed gates pass.",
+      "steps": [
+        "exp438_frequency_runtime",
+        "artifact_utils"
+      ],
+      "outcome": "A single parent-owned accelerator uses only the approved ASPE or dense-distance stage with the frozen CPU algorithm unchanged; no outer process parallelism is combined with it."
+    },
+    {
+      "id": "exp438_inspect_flow",
+      "label": "Exp438 read-only inspect",
+      "trigger": "Inspect an existing complete Exp438 output/checkpoint pair.",
+      "steps": [
+        "exp438_frequency_runtime",
+        "artifact_utils"
+      ],
+      "outcome": "The runtime validates canonical context, record inventory, record-set hashes, terminal progress, events, PID binding, and backend decision without opening SQLite or starting workers."
     }
   ],
   "unknown_relationships": 0

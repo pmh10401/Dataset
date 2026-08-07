@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 from types import MappingProxyType
-from typing import Iterable, Mapping
+from typing import Callable, Iterable, Mapping
 
 import numpy as np
 from numpy.typing import NDArray
@@ -23,6 +23,10 @@ from .contracts_antigravity import (
 from .features_antigravity import (
     decompose_at_depth_antigravity,
     select_train_depth_antigravity,
+)
+from .aspe_antigravity import (
+    AspeResultAntigravity,
+    amplitude_sensitive_permutation_entropy_antigravity,
 )
 
 
@@ -181,8 +185,15 @@ def higher_quantile_antigravity(scores: object, quantile: float) -> float:
     return result
 
 
-def _feature_matrices_antigravity(matrix: NDArray[np.float32], depth: int) -> _FeatureMatricesAntigravity:
-    decomposed = tuple(decompose_at_depth_antigravity(row, depth) for row in matrix)
+def _feature_matrices_antigravity(
+    matrix: NDArray[np.float32],
+    depth: int,
+    aspe_compute: Callable[[object, int, int], AspeResultAntigravity],
+) -> _FeatureMatricesAntigravity:
+    decomposed = tuple(
+        decompose_at_depth_antigravity(row, depth, aspe_compute=aspe_compute)
+        for row in matrix
+    )
     high = np.ascontiguousarray(np.stack([item.high for item in decomposed]), dtype=np.float32)
     low = np.ascontiguousarray(np.stack([item.low for item in decomposed]), dtype=np.float32)
     complexity = np.ascontiguousarray(
@@ -194,8 +205,14 @@ def _feature_matrices_antigravity(matrix: NDArray[np.float32], depth: int) -> _F
     return _FeatureMatricesAntigravity(high, low, complexity)
 
 
-def _query_features_antigravity(values: NDArray[np.float32], depth: int) -> Mapping[str, NDArray[np.float32]]:
-    decomposed = decompose_at_depth_antigravity(values, depth)
+def _query_features_antigravity(
+    values: NDArray[np.float32],
+    depth: int,
+    aspe_compute: Callable[[object, int, int], AspeResultAntigravity],
+) -> Mapping[str, NDArray[np.float32]]:
+    decomposed = decompose_at_depth_antigravity(
+        values, depth, aspe_compute=aspe_compute
+    )
     return MappingProxyType(
         {
             "high_frequency": decomposed.high,
@@ -207,13 +224,20 @@ def _query_features_antigravity(values: NDArray[np.float32], depth: int) -> Mapp
 
 def fit_calibrated_group_antigravity(
     group: PreparedTrainGroup,
+    *,
+    aspe_compute: Callable[[object, int, int], AspeResultAntigravity] = amplitude_sensitive_permutation_entropy_antigravity,
+    dense_score_batch: Callable[[object, object, int], object] | None = None,
 ) -> CalibratedTrainGroupAntigravity:
     if type(group) is not PreparedTrainGroup:
         raise ValueError("calibration requires a prepared TRAIN group")
     if group.matrix.shape[0] < FROZEN_CONFIG.minimum_train_rows:
         raise ValueError("calibration has insufficient finite TRAIN rows")
-    final_depth = select_train_depth_antigravity(group.matrix)
-    final_features = _feature_matrices_antigravity(group.matrix, final_depth)
+    final_depth = select_train_depth_antigravity(
+        group.matrix, aspe_compute=aspe_compute
+    )
+    final_features = _feature_matrices_antigravity(
+        group.matrix, final_depth, aspe_compute
+    )
     final_states: dict[
         str,
         tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]] | str,
@@ -231,9 +255,15 @@ def fit_calibrated_group_antigravity(
     oof_failures: dict[str, str] = {}
     for held_out in range(group.matrix.shape[0]):
         references_raw = np.delete(group.matrix, held_out, axis=0)
-        depth = select_train_depth_antigravity(references_raw)
-        reference_features = _feature_matrices_antigravity(references_raw, depth)
-        query_features = _query_features_antigravity(group.matrix[held_out], depth)
+        depth = select_train_depth_antigravity(
+            references_raw, aspe_compute=aspe_compute
+        )
+        reference_features = _feature_matrices_antigravity(
+            references_raw, depth, aspe_compute
+        )
+        query_features = _query_features_antigravity(
+            group.matrix[held_out], depth, aspe_compute
+        )
         for channel in CHANNELS_ANTIGRAVITY:
             if channel in oof_failures:
                 continue
@@ -243,9 +273,21 @@ def fit_calibrated_group_antigravity(
                     channel=channel,
                 )
                 query = _standardize_query_antigravity(query_features[channel], center, scale)
-                oof_scores[channel].append(
-                    score_channel_cpu_antigravity(query, references, FROZEN_CONFIG.nearest_k)
-                )
+                if dense_score_batch is None:
+                    score = score_channel_cpu_antigravity(
+                        query, references, FROZEN_CONFIG.nearest_k
+                    )
+                else:
+                    batch = np.asarray(
+                        dense_score_batch(
+                            query[None, :], references, FROZEN_CONFIG.nearest_k
+                        ),
+                        dtype=np.float32,
+                    )
+                    if batch.shape != (1,) or not np.isfinite(batch).all():
+                        raise ValueError("accelerated dense score is invalid")
+                    score = float(batch[0])
+                oof_scores[channel].append(score)
             except (_UnavailableChannelAntigravity, ValueError) as exc:
                 oof_failures[channel] = str(exc) or "oof_channel_unavailable"
 
@@ -296,6 +338,8 @@ def score_test_row_cpu_antigravity(
     calibrated: CalibratedTrainGroupAntigravity,
     *,
     outside_all_frozen_lanes: bool,
+    aspe_compute: Callable[[object, int, int], AspeResultAntigravity] = amplitude_sensitive_permutation_entropy_antigravity,
+    dense_score_batch: Callable[[object, object, int], object] | None = None,
 ) -> InstanceScoreEvidence:
     if type(row) is not RawValueSeries or row.split != "TEST":
         raise ValueError("CPU TEST scoring requires an Exp438 TEST row")
@@ -305,7 +349,9 @@ def score_test_row_cpu_antigravity(
         raise ValueError("TEST row does not have the exact TRAIN length")
     if type(outside_all_frozen_lanes) is not bool:
         raise ValueError("lane membership is invalid")
-    query_features = _query_features_antigravity(row.values, calibrated.depth)
+    query_features = _query_features_antigravity(
+        row.values, calibrated.depth, aspe_compute
+    )
     evidence: list[InstanceChannelEvidence] = []
     for channel in CHANNELS_ANTIGRAVITY:
         calibration = calibrated.calibrations[channel]
@@ -325,11 +371,24 @@ def score_test_row_cpu_antigravity(
             calibration.center,
             calibration.scale,
         )
-        score = score_channel_cpu_antigravity(
-            query,
-            calibration.references,
-            FROZEN_CONFIG.nearest_k,
-        )
+        if dense_score_batch is None:
+            score = score_channel_cpu_antigravity(
+                query,
+                calibration.references,
+                FROZEN_CONFIG.nearest_k,
+            )
+        else:
+            batch = np.asarray(
+                dense_score_batch(
+                    query[None, :],
+                    calibration.references,
+                    FROZEN_CONFIG.nearest_k,
+                ),
+                dtype=np.float32,
+            )
+            if batch.shape != (1,) or not np.isfinite(batch).all():
+                raise ValueError("accelerated dense score is invalid")
+            score = float(batch[0])
         evidence.append(
             InstanceChannelEvidence(
                 channel=channel,

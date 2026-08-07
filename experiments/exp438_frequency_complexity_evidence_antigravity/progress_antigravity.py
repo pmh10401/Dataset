@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import time
+from threading import Event, RLock, Thread
 from typing import Mapping
 from uuid import uuid4
 
@@ -189,13 +190,10 @@ def _validate_payload_antigravity(value: object) -> dict[str, object]:
         "import_count", "recompute_count", "success_count", "abstention_count", "error_count"
     ):
         _nonnegative_integer_antigravity(payload[name], name)
-    if (
-        int(payload["success_count"])
-        + int(payload["abstention_count"])
-        + int(payload["error_count"])
-        > completed
-    ):
-        raise ValueError("Exp438 outcome counters exceed completed datasets")
+    if int(payload["success_count"]) + int(payload["abstention_count"]) > completed:
+        raise ValueError("Exp438 successful outcomes exceed completed datasets")
+    if int(payload["error_count"]) > total - completed:
+        raise ValueError("Exp438 error count exceeds unfinished datasets")
     current = payload["current_dataset"]
     if current is not None and (type(current) is not str or not current):
         raise ValueError("current dataset is invalid")
@@ -230,6 +228,14 @@ def _validate_payload_antigravity(value: object) -> dict[str, object]:
     return payload
 
 
+def _synchronized_antigravity(method):
+    def wrapped(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapped
+
+
 class ProgressWriterAntigravity:
     """The parent process's only writer for progress, events, log, and PID."""
 
@@ -239,6 +245,9 @@ class ProgressWriterAntigravity:
         self._mutable = mutable
         self._started = time.monotonic()
         self._elapsed_offset = float(payload["elapsed_seconds"])
+        self._lock = RLock()
+        self._heartbeat_stop = Event()
+        self._heartbeat_thread: Thread | None = None
 
     @classmethod
     def create(
@@ -343,6 +352,10 @@ class ProgressWriterAntigravity:
         if self._payload["state"] in {"complete", "failed"}:
             raise ValueError(f"{self._payload['state']} progress is immutable")
 
+    @property
+    def snapshot(self) -> dict[str, object]:
+        return json.loads(canonical_json_bytes(self._payload))
+
     def _write_payload_antigravity(self, payload: dict[str, object]) -> None:
         validated = _validate_payload_antigravity(payload)
         _replace_antigravity(
@@ -351,6 +364,7 @@ class ProgressWriterAntigravity:
         )
         self._payload = validated
 
+    @_synchronized_antigravity
     def update(
         self,
         *,
@@ -403,6 +417,7 @@ class ProgressWriterAntigravity:
         proposed["updated_at"] = _now_antigravity()
         self._write_payload_antigravity(proposed)
 
+    @_synchronized_antigravity
     def append_event(self, event: Mapping[str, object]) -> None:
         self._require_mutable_antigravity()
         if not isinstance(event, Mapping):
@@ -419,6 +434,7 @@ class ProgressWriterAntigravity:
             f"{_now_antigravity()} {message}\n".encode("utf-8"),
         )
 
+    @_synchronized_antigravity
     def _mark_terminal_antigravity(
         self, state: str, *, completed: int | None = None, failure: str | None = None
     ) -> None:
@@ -448,6 +464,7 @@ class ProgressWriterAntigravity:
             else None
         )
         proposed["updated_at"] = _now_antigravity()
+        self._heartbeat_stop.set()
         self._write_payload_antigravity(proposed)
         terminal_event = {
             "event": state,
@@ -469,3 +486,57 @@ class ProgressWriterAntigravity:
 
     def mark_failed(self, failure: str) -> None:
         self._mark_terminal_antigravity("failed", failure=failure)
+
+    def heartbeat(self) -> None:
+        with self._lock:
+            if not self._mutable or self._payload["state"] != "running":
+                return
+            current = self.snapshot
+            self.update(
+                stage=str(current["stage"]),
+                current_dataset=current["current_dataset"],
+                dataset_metadata=current["dataset_metadata"],
+                completed=int(current["completed"]),
+                import_count=int(current["import_count"]),
+                recompute_count=int(current["recompute_count"]),
+                success_count=int(current["success_count"]),
+                abstention_count=int(current["abstention_count"]),
+                error_count=int(current["error_count"]),
+                checkpoint=current["checkpoint"],
+                per_channel_candidate_counts=current["per_channel_candidate_counts"],
+                latest_error=current["latest_error"],
+            )
+
+    def start_heartbeat(self, *, interval_seconds: float = 120.0) -> None:
+        if (
+            isinstance(interval_seconds, bool)
+            or not isinstance(interval_seconds, (int, float))
+            or not math.isfinite(float(interval_seconds))
+            or interval_seconds <= 0.0
+        ):
+            raise ValueError("heartbeat interval is invalid")
+        with self._lock:
+            self._require_mutable_antigravity()
+            if self._heartbeat_thread is not None and self._heartbeat_thread.is_alive():
+                raise ValueError("heartbeat is already running")
+            self._heartbeat_stop.clear()
+
+            def run() -> None:
+                while not self._heartbeat_stop.wait(float(interval_seconds)):
+                    self.heartbeat()
+
+            self._heartbeat_thread = Thread(
+                target=run,
+                name="exp438-heartbeat-antigravity",
+                daemon=True,
+            )
+            self._heartbeat_thread.start()
+
+    def stop_heartbeat(self) -> None:
+        with self._lock:
+            thread = self._heartbeat_thread
+            self._heartbeat_stop.set()
+        if thread is not None:
+            thread.join(timeout=5.0)
+        with self._lock:
+            self._heartbeat_thread = None

@@ -309,6 +309,15 @@ class Exp438CheckpointStore:
         return cls(root, payload, state, mutable=True)
 
     @classmethod
+    def inspect_existing(cls, root: Path) -> "Exp438CheckpointStore":
+        """Open an Exp438 checkpoint read-only using only its own bound context."""
+        root = Path(root)
+        context = _canonical_object_antigravity(
+            root / "context_antigravity.json", "Exp438 context"
+        )
+        return cls.open_existing(root, context, mutable=False)
+
+    @classmethod
     def open_existing(
         cls, root: Path, context: object, *, mutable: bool
     ) -> "Exp438CheckpointStore":
@@ -400,6 +409,10 @@ class Exp438CheckpointStore:
     def status(self) -> str:
         return str(self._state["status"])
 
+    @property
+    def context_payload(self) -> dict[str, object]:
+        return json.loads(canonical_json_bytes(self._context))
+
     def _require_mutable_antigravity(self) -> None:
         if not self._mutable:
             raise ValueError("checkpoint is read-only")
@@ -417,7 +430,7 @@ class Exp438CheckpointStore:
         result: Exp438DatasetResult,
         *,
         dataset_metadata: Mapping[str, object] | None = None,
-    ) -> None:
+    ) -> str:
         self._require_mutable_antigravity()
         sequence = len(self._state["committed"])
         datasets = tuple(self._context["datasets"])
@@ -442,6 +455,7 @@ class Exp438CheckpointStore:
         )
         self._state["status"] = "running"
         self._save_state_antigravity()
+        return _digest_antigravity(raw)
 
     def results(self) -> tuple[Exp438DatasetResult, ...]:
         results: list[Exp438DatasetResult] = []
