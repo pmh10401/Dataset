@@ -21,6 +21,7 @@ from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from functools import partial
 from hashlib import sha256
+import json
 from pathlib import Path
 from typing import Callable, Mapping
 
@@ -54,6 +55,36 @@ from .predecessor_import_antigravity import (
     Exp438PrefixImportAntigravity,
     validate_exp438_prefix_antigravity,
 )
+
+
+class DatasetExecutionErrorAntigravity(RuntimeError):
+    """Parent-side error that preserves the failed dataset and size audit."""
+
+    def __init__(
+        self,
+        dataset: str,
+        dataset_metadata: Mapping[str, object] | None,
+        cause: Exception,
+        *,
+        stage: str,
+    ) -> None:
+        if type(dataset) is not str or not dataset or type(stage) is not str or not stage:
+            raise ValueError("Exp439 dataset execution error binding is invalid")
+        if dataset_metadata is None:
+            metadata = None
+        elif isinstance(dataset_metadata, Mapping):
+            metadata = json.loads(canonical_json_bytes(dict(dataset_metadata)))
+        else:
+            raise ValueError("Exp439 dataset execution metadata is invalid")
+        self.dataset = dataset
+        self.dataset_metadata = metadata
+        self.cause_type = type(cause).__name__
+        self.cause_message = str(cause)
+        self.stage = stage
+        super().__init__(
+            f"dataset {dataset} failed during {stage}: "
+            f"{self.cause_type}: {self.cause_message}"
+        )
 
 
 def worker_count_antigravity(logical_cpus: int | None = None) -> int:
@@ -327,7 +358,15 @@ def run_ordered_cpu_schedule_antigravity(
                     dataset_metadata=None,
                     in_flight=tuple(name for name, _ in pending.values()),
                 )
-                task, metadata = _load_task_antigravity(session, dataset, lanes)
+                try:
+                    task, metadata = _load_task_antigravity(session, dataset, lanes)
+                except Exception as error:
+                    raise DatasetExecutionErrorAntigravity(
+                        dataset,
+                        None,
+                        error,
+                        stage="loading",
+                    ) from error
                 progress(
                     stage="dispatching",
                     current_dataset=dataset,
@@ -350,7 +389,15 @@ def run_ordered_cpu_schedule_antigravity(
                     dataset_metadata=metadata,
                     in_flight=tuple(name for name, _ in pending.values()),
                 )
-                result = future.result()
+                try:
+                    result = future.result()
+                except Exception as error:
+                    raise DatasetExecutionErrorAntigravity(
+                        dataset,
+                        metadata,
+                        error,
+                        stage="worker",
+                    ) from error
                 if type(result) is not Exp439DatasetResult or result.dataset != dataset:
                     raise ValueError("Exp439 worker returned the wrong dataset")
                 buffered[dataset] = (result, metadata)
@@ -403,14 +450,30 @@ def run_serial_accelerator_schedule_antigravity(
             dataset_metadata=None,
             in_flight=(),
         )
-        task, metadata = _load_task_antigravity(session, dataset, lanes)
+        try:
+            task, metadata = _load_task_antigravity(session, dataset, lanes)
+        except Exception as error:
+            raise DatasetExecutionErrorAntigravity(
+                dataset,
+                None,
+                error,
+                stage="loading",
+            ) from error
         progress(
             stage="dispatching",
             current_dataset=dataset,
             dataset_metadata=metadata,
             in_flight=(dataset,),
         )
-        result = score_task(task)
+        try:
+            result = score_task(task)
+        except Exception as error:
+            raise DatasetExecutionErrorAntigravity(
+                dataset,
+                metadata,
+                error,
+                stage="accelerator",
+            ) from error
         if type(result) is not Exp439DatasetResult or result.dataset != dataset:
             raise ValueError("Exp439 accelerator returned the wrong dataset")
         progress(
@@ -820,6 +883,21 @@ def _run_antigravity(
             raise
         except BaseException as error:
             counters["error_count"] = 1
+            latest_error: dict[str, object] = {
+                "type": type(error).__name__,
+                "message": str(error),
+                "backend": decision.selected_backend,
+            }
+            if isinstance(error, DatasetExecutionErrorAntigravity):
+                latest_error.update(
+                    {
+                        "dataset": error.dataset,
+                        "dataset_metadata": error.dataset_metadata,
+                        "cause_type": error.cause_type,
+                        "cause_message": error.cause_message,
+                        "stage": error.stage,
+                    }
+                )
             writer.update(
                 stage="idle",
                 current_dataset=None,
@@ -831,11 +909,9 @@ def _run_antigravity(
                 error_count=1,
                 checkpoint=counters["checkpoint"],
                 per_channel_candidate_counts=counters["per_channel_candidate_counts"],
-                latest_error={
-                    "type": type(error).__name__,
-                    "message": str(error),
-                },
+                latest_error=latest_error,
             )
+            writer.append_event({"event": "runtime_error", **latest_error})
             store.mark_failed(type(error).__name__)
             writer.mark_failed(type(error).__name__)
             raise
@@ -903,6 +979,7 @@ def resume_exp439_antigravity(
 
 __all__ = [
     "CpuDatasetTaskAntigravity",
+    "DatasetExecutionErrorAntigravity",
     "LaneMembershipSnapshotAntigravity",
     "run_ordered_cpu_schedule_antigravity",
     "run_serial_accelerator_schedule_antigravity",

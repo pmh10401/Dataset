@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T09:51:47Z",
-  "generated_from_commit": "a783cd6ae33ac4a08e59d0a4cd7dfa5269720e98",
+  "generated_at": "2026-08-07T09:54:35Z",
+  "generated_from_commit": "6e68d769083d2c2277bc93d273b795e6100be730",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2380,7 +2380,8 @@
         "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_features_antigravity.py",
         "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_predecessor_import_antigravity.py",
         "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_runtime_antigravity.py",
-        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_readiness_antigravity.py"
+        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_readiness_antigravity.py",
+        "experiments/exp439_scale_aware_reconstruction_repair_antigravity/tests/test_progress_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2389,7 +2390,8 @@
         "Results commit in frozen dataset order; failed roots are immutable and interrupted roots alone may resume.",
         "Persisted backend decisions use canonical JSON list semantics so readiness replay and runtime context compare the same evidence shape.",
         "Exp439 changes only the reconstruction validation guard to max(1e-5, one float32 ULP at component peak); FFT bins, casts, returned components, features, scores, thresholds, and label boundary remain unchanged.",
-        "Exp439 imports exactly 89 immutable Exp438 records only after readiness, context, state, progress, record-set, dataset order, and every source-record SHA256 validate; the checkpoint appears atomically and recomputation starts at BeetleFly_normal_2."
+        "Exp439 imports exactly 89 immutable Exp438 records only after readiness, context, state, progress, record-set, dataset order, and every source-record SHA256 validate; the checkpoint appears atomically and recomputation starts at BeetleFly_normal_2.",
+        "Exp439 parent-side failures preserve dataset name, TRAIN/TEST size metadata, stage, backend, cause type, and cause message in atomic progress JSON, events JSONL, and the text parent log."
       ],
       "evidence": [
         {
@@ -2471,6 +2473,14 @@
         {
           "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/runtime_antigravity.py",
           "symbol": "\"event\": \"prefix_imported\""
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/runtime_antigravity.py",
+          "symbol": "class DatasetExecutionErrorAntigravity("
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/runtime_antigravity.py",
+          "symbol": "\"event\": \"runtime_error\""
         }
       ]
     },

@@ -276,6 +276,10 @@ class Exp439RuntimeAntigravityTests(unittest.TestCase):
         self.assertEqual(committed, ["A"])
 
     def test_worker_exception_is_attributed_and_stops_the_schedule(self) -> None:
+        from experiments.exp439_scale_aware_reconstruction_repair_antigravity.runtime_antigravity import (
+            DatasetExecutionErrorAntigravity,
+        )
+
         session = _Session(("A", "B", "C"))
         committed: list[str] = []
 
@@ -284,7 +288,10 @@ class Exp439RuntimeAntigravityTests(unittest.TestCase):
                 raise RuntimeError("synthetic worker failure")
             return _result(task.dataset)
 
-        with self.assertRaisesRegex(RuntimeError, "synthetic worker failure"):
+        with self.assertRaisesRegex(
+            DatasetExecutionErrorAntigravity,
+            "dataset B.*synthetic worker failure",
+        ) as raised:
             run_ordered_cpu_schedule_antigravity(
                 datasets=session.datasets,
                 session=session,
@@ -295,6 +302,9 @@ class Exp439RuntimeAntigravityTests(unittest.TestCase):
                 score_task=score,
                 executor_factory=_thread_executor,
             )
+        self.assertEqual(raised.exception.dataset, "B")
+        self.assertEqual(raised.exception.dataset_metadata["train_count"], 5)
+        self.assertEqual(raised.exception.cause_type, "RuntimeError")
         self.assertNotIn("C", committed)
 
     def test_accelerator_schedule_is_strictly_serial(self) -> None:
@@ -442,7 +452,9 @@ class Exp439RuntimeAntigravityTests(unittest.TestCase):
             checkpoint = base / "checkpoint_antigravity"
 
             def fail(task):
-                raise RuntimeError("synthetic failure")
+                if task.dataset == "B":
+                    raise RuntimeError("synthetic failure")
+                return _result(task.dataset)
 
             with self.assertRaisesRegex(RuntimeError, "synthetic failure"):
                 _run_antigravity(
@@ -452,11 +464,18 @@ class Exp439RuntimeAntigravityTests(unittest.TestCase):
                     reviewed_commit="a" * 40,
                     decision=decision,
                     input_session_factory=lambda: _BoundSession(datasets),
-                    workers=2,
+                    workers=1,
                     executor_factory=_thread_executor,
                     score_task=fail,
                 )
-            self.assertEqual(json.loads((output / "progress_antigravity.json").read_text())["state"], "failed")
+            progress = json.loads((output / "progress_antigravity.json").read_text())
+            self.assertEqual(progress["state"], "failed")
+            self.assertEqual(progress["latest_error"]["dataset"], "B")
+            self.assertEqual(progress["latest_error"]["cause_type"], "RuntimeError")
+            self.assertEqual(progress["latest_error"]["dataset_metadata"]["train_count"], 5)
+            parent_log = (output / "parent_antigravity.log").read_text()
+            self.assertIn("dataset=B", parent_log)
+            self.assertIn("synthetic failure", parent_log)
             self.assertEqual(json.loads((checkpoint / "state_antigravity.json").read_text())["status"], "failed")
             before = (checkpoint / "state_antigravity.json").read_bytes()
             with self.assertRaises(ValueError):

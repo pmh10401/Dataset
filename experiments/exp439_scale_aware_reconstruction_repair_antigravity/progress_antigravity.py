@@ -447,7 +447,13 @@ class ProgressWriterAntigravity:
         if state == "failed":
             if type(failure) is not str or not failure:
                 raise ValueError("failure code is invalid")
-            proposed["latest_error"] = {"code": failure}
+            details = (
+                dict(proposed["latest_error"])
+                if isinstance(proposed["latest_error"], Mapping)
+                else {}
+            )
+            details["code"] = failure
+            proposed["latest_error"] = details
         proposed["state"] = state
         proposed["stage"] = "idle"
         proposed["current_dataset"] = None
@@ -476,7 +482,15 @@ class ProgressWriterAntigravity:
             self.output / "events_antigravity.jsonl",
             canonical_json_bytes(terminal_event) + b"\n",
         )
-        self._append_log_antigravity(state if failure is None else f"{state} {failure}")
+        log_message = state if failure is None else f"{state} {failure}"
+        if failure is not None and isinstance(proposed["latest_error"], Mapping):
+            dataset = proposed["latest_error"].get("dataset")
+            cause_message = proposed["latest_error"].get("cause_message")
+            if type(dataset) is str:
+                log_message += f" dataset={dataset}"
+            if type(cause_message) is str:
+                log_message += f" cause={cause_message}"
+        self._append_log_antigravity(log_message)
 
     def mark_interrupted(self) -> None:
         self._mark_terminal_antigravity("interrupted")
