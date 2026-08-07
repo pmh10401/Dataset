@@ -1,19 +1,27 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-06T16:38:15+09:00",
+  "updated_at": "2026-08-08T02:08:56+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
     {
       "experiment": "Exp405",
       "category": "research_gate_failed",
       "evidence": "/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp405_demotion_evaluation.json",
-      "facts": {"passes_research_gate": false, "true_positive_count": 395, "false_positive_count": 78, "false_positive_fraction": 0.1649048625792812, "baseline_true_positive_retention": 0.793733681462141},
+      "facts": {
+        "passes_research_gate": false,
+        "true_positive_count": 395,
+        "false_positive_count": 78,
+        "false_positive_fraction": 0.1649048625792812,
+        "baseline_true_positive_retention": 0.793733681462141
+      },
       "lesson": "Demotion/recheck evidence did not justify an operational policy change."
     },
     {
       "experiment": "Exp417",
       "category": "interrupted_long_runtime",
-      "facts": {"preserved_checkpoint_records": 94},
+      "facts": {
+        "preserved_checkpoint_records": 94
+      },
       "lesson": "Sequential runtime and heavyweight per-dataset validation required deterministic checkpoint/resume redesign."
     },
     {
@@ -25,20 +33,31 @@
       "experiment": "Exp422-TEST-EVAL",
       "category": "blocked_no_prediction",
       "evidence": "/Users/mac/Documents/Dataset/exp422_test_eval_attempt_20260802-092039/MANIFEST.json",
-      "facts": {"test_labels_opened": false},
+      "facts": {
+        "test_labels_opened": false
+      },
       "lesson": "Never evaluate until both frozen prediction and manifest exist."
     },
     {
       "experiment": "Exp424",
       "category": "failed_summary_after_full_checkpoint_accounting",
       "evidence": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831/manifest.json",
-      "facts": {"completed_datasets": 1117, "prediction_rows": 0, "verified_nonterminal_records": 983, "terminal_identity_insufficient": 134},
+      "facts": {
+        "completed_datasets": 1117,
+        "prediction_rows": 0,
+        "verified_nonterminal_records": 983,
+        "terminal_identity_insufficient": 134
+      },
       "lesson": "Preserve verified nonterminal evidence, selectively recompute/abstain terminal identity-insufficient records, and never rerun all expensive work blindly."
     },
     {
       "experiment": "Exp425-engineering",
       "category": "resolved_prelaunch_integrity_findings",
-      "facts": {"task3_fix_rounds": 4, "task4_fix_rounds": 3, "stale_db_pin_links_removed": 8},
+      "facts": {
+        "task3_fix_rounds": 4,
+        "task4_fix_rounds": 3,
+        "stale_db_pin_links_removed": 8
+      },
       "lesson": "Independent adversarial review is required before long execution; progress claims without exact context, inode, cleanup, and resume evidence are insufficient."
     },
     {
@@ -145,6 +164,25 @@
         "failed_root_preserved": "/Users/mac/Documents/Dataset/exp435_train_only_consensus_recovery_antigravity_20260806"
       },
       "lesson": "A dataset-wide finite RawTestDataset contract made the per-row nonfinite_test abstention unreachable. Preserve Exp435 unchanged; the next experiment must use per-row nonfinite abstention, finite-only TRAIN support, and a stricter preregistered consensus instead of same-experiment retuning."
+    },
+    {
+      "experiment": "Exp439",
+      "category": "completed_research_gate_failed_not_promoted",
+      "evidence": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_scheduler_antigravity_20260807/evaluation_antigravity/evaluation_antigravity.json",
+      "facts": {
+        "prediction_sha256": "500f6956b8640ea329cd47c8cdb504debaeff6ec67c44d0c56b96c1ecd77f3ef",
+        "publication_manifest_sha256": "4e1cdfb3cc16609afe0fde3bd6874d3193f6c95a4ce3e2ca2ca115867e9e9fe8",
+        "evaluation_sha256": "299d71af458541db88f6223ade537a98514c0880cd9efa339c3da5bee8bddc5c",
+        "completed_datasets": 1117,
+        "errors": 0,
+        "low_frequency_added_true_positives": 233,
+        "low_frequency_added_false_positives": 996,
+        "low_frequency_candidate_precision": 0.1896,
+        "rescued_datasets": 116,
+        "regressed_datasets": 194,
+        "winner_selected": false
+      },
+      "lesson": "Low-frequency evidence finds missed anomalies but is too broad alone. Require TRAIN-only multi-depth agreement, threshold stability, Hard exclusion, and a fixed global budget in a new experiment."
     }
   ]
 }

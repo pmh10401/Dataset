@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-07T17:55:00+09:00",
+  "updated_at": "2026-08-08T02:08:56+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -8,7 +8,10 @@
       "kind": "feature_ml_validation_and_retrospective_variants",
       "status": "completed_review_only",
       "prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70",
-      "documents": ["docs/EXP403_408_PREREGISTRATION_KO.md", "docs/EXP403_408_RUNBOOK_KO.md"],
+      "documents": [
+        "docs/EXP403_408_PREREGISTRATION_KO.md",
+        "docs/EXP403_408_RUNBOOK_KO.md"
+      ],
       "artifact_root": "/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation",
       "notes": "Exp406-408 evidence is retrospective/review-only; no operational promotion."
     },
@@ -34,38 +37,57 @@
       "id": "Exp417",
       "kind": "causal_multihorizon_shadow",
       "status": "interrupted_predecessor",
-      "documents": ["docs/EXP417_PREREGISTRATION_KO.md", "docs/EXP417_RUNBOOK_KO.md"],
+      "documents": [
+        "docs/EXP417_PREREGISTRATION_KO.md",
+        "docs/EXP417_RUNBOOK_KO.md"
+      ],
       "notes": "Frozen label-free science source; 94-record interrupted checkpoint was evidence only."
     },
     {
       "id": "Exp419",
       "kind": "deterministic_cpu_parallel_runtime",
       "status": "superseded_runtime_recovery_line",
-      "documents": ["docs/EXP419_PREREGISTRATION_KO.md", "docs/EXP419_RUNBOOK_KO.md"],
+      "documents": [
+        "docs/EXP419_PREREGISTRATION_KO.md",
+        "docs/EXP419_RUNBOOK_KO.md"
+      ],
       "notes": "Scientific contract inherited Exp417; repeated runtime/recovery bottlenecks motivated later work."
     },
     {
       "id": "Exp422",
       "kind": "cpu_mps_numeric_and_score_diagnostic",
       "status": "diagnostic_only",
-      "documents": ["docs/EXP422_PREREGISTRATION_KO.md", "docs/EXP422_RUNBOOK_KO.md"],
+      "documents": [
+        "docs/EXP422_PREREGISTRATION_KO.md",
+        "docs/EXP422_RUNBOOK_KO.md"
+      ],
       "notes": "TEST evaluation attempt was blocked because a frozen prediction/manifest was absent."
     },
     {
       "id": "Exp423",
       "kind": "mps_full_test_value_evaluation",
       "status": "interrupted_checkpoint_preserved",
-      "documents": ["docs/EXP423_MPS_FULL_TEST_EVAL_KO.md", "docs/EXP423_MPS_FULL_TEST_EVAL_RUNBOOK_KO.md"]
+      "documents": [
+        "docs/EXP423_MPS_FULL_TEST_EVAL_KO.md",
+        "docs/EXP423_MPS_FULL_TEST_EVAL_RUNBOOK_KO.md"
+      ]
     },
     {
       "id": "Exp424",
       "kind": "mps_score_cache_optimization",
       "status": "failed_summary_with_verified_checkpoint_evidence",
       "git_commit": "4a398374d880f859f285a271ad63de4a5e55b028",
-      "documents": ["docs/EXP424_MPS_SCORE_CACHE_KO.md", "docs/EXP424_MPS_SCORE_CACHE_RUNBOOK_KO.md"],
+      "documents": [
+        "docs/EXP424_MPS_SCORE_CACHE_KO.md",
+        "docs/EXP424_MPS_SCORE_CACHE_RUNBOOK_KO.md"
+      ],
       "artifact_root": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831",
       "checkpoint": "/Users/mac/Documents/Dataset/exp424_mps_score_cache_20260802-153831.checkpoint",
-      "record_accounting": {"records": 1117, "verified_nonterminal": 983, "terminal_identity_insufficient": 134},
+      "record_accounting": {
+        "records": 1117,
+        "verified_nonterminal": 983,
+        "terminal_identity_insufficient": 134
+      },
       "review_only": true
     },
     {
@@ -96,7 +118,11 @@
         "docs/EXP426_PREREGISTRATION_antigravity_KO.md",
         "docs/EXP426_RUNBOOK_antigravity_KO.md"
       ],
-      "source_accounting": {"records": 1117, "importable": 983, "terminal": 134},
+      "source_accounting": {
+        "records": 1117,
+        "importable": 983,
+        "terminal": 134
+      },
       "workers": 12,
       "mps_adopted": false,
       "mlx_adopted": false,
@@ -104,7 +130,12 @@
       "prediction_phase_complete": true,
       "prediction_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "artifact_root": "/Users/mac/Documents/Dataset/exp426_verified_baseline_antigravity_20260806_attempt2",
-      "completed_accounting": {"completed": 1117, "imported": 983, "verified_train_abstentions": 134, "errors": 0},
+      "completed_accounting": {
+        "completed": 1117,
+        "imported": 983,
+        "verified_train_abstentions": 134,
+        "errors": 0
+      },
       "test_labels_opened": false,
       "notes": "Attempt 1 is preserved as a parent-boundary failure. Attempt 2 completed 1,117/983/134/0 as a verified review-only baseline with an empty canonical prediction and no TEST-label access."
     },
@@ -193,10 +224,15 @@
       "recovery_progress_at_handoff": 939,
       "recovery_backend": "cpu",
       "recovery_errors": 0,
-      "checkpoint_reconciliation_reasons": ["intent_with_record"],
+      "checkpoint_reconciliation_reasons": [
+        "intent_with_record"
+      ],
       "official_backend": "cpu",
       "official_errors": 0,
-      "frozen_config_changed_fields": ["experiment_id", "run_identity"],
+      "frozen_config_changed_fields": [
+        "experiment_id",
+        "run_identity"
+      ],
       "cpu_topology": {
         "logical_cpus": 12,
         "workers": 11,
@@ -225,7 +261,11 @@
       ],
       "artifact_root": "/Users/mac/Documents/Dataset/exp438_frequency_complexity_evidence_antigravity_20260807",
       "dataset_count": 1117,
-      "channels": ["high_frequency", "low_frequency", "amplitude_complexity"],
+      "channels": [
+        "high_frequency",
+        "low_frequency",
+        "amplitude_complexity"
+      ],
       "channel_candidate_budget": 10000,
       "total_candidate_budget": 30000,
       "direct_improvement_candidate_limit": 100,
@@ -264,7 +304,7 @@
     {
       "id": "Exp439",
       "kind": "exp438_scale_aware_reconstruction_validation_repair",
-      "status": "official_interrupted_101_scheduler_cache_repair_ready_for_readiness",
+      "status": "official_completed_evaluated_not_promoted",
       "branch": "codex/exp439-scale-aware-reconstruction-antigravity",
       "base_commit": "b994fd46db373f5f556bbecb00cc9811d3679ac8",
       "documents": [
@@ -283,11 +323,13 @@
       "predecessor_reviewed_commit": "d1da286e9c74c64abe76e0c255c86c30141813bd",
       "predecessor_import_records": 89,
       "reconstruction_tolerance": "max(1e-5, one_float32_ulp_at_max_component_scale)",
-      "scientific_changes": ["reconstruction_validation_guard"],
+      "scientific_changes": [
+        "reconstruction_validation_guard"
+      ],
       "review_only": true,
       "operational_alert_eligible": false,
       "prediction_phase_started": true,
-      "test_labels_opened": false,
+      "test_labels_opened": true,
       "official_readiness": false,
       "implementation_code_commit": "a3fae166ede77c0276d416447e57519e0334d053",
       "regression_counts": {
@@ -327,7 +369,36 @@
         "chlorine_raw_length": 166,
         "prediction_label_access_count": 0
       },
-      "notes": "Exp439 preserves Exp438 FFT bins, components, depth, ASPE, scoring, thresholds, lanes, budgets, and label boundary. The interrupted 101-record root remains immutable. The repair keeps up to 11 CPU workers busy behind a slow frozen-order head and reuses mathematically identical TRAIN-only preferred-depth and decomposition-feature work; predecessor record bytes remain identical."
+      "notes": "Exp439 preserves Exp438 FFT bins, components, depth, ASPE, scoring, thresholds, lanes, budgets, and label boundary. The interrupted 101-record root remains immutable. The repair keeps up to 11 CPU workers busy behind a slow frozen-order head and reuses mathematically identical TRAIN-only preferred-depth and decomposition-feature work; predecessor record bytes remain identical.",
+      "official_completed": 1117,
+      "official_errors": 0,
+      "prediction_sha256": "500f6956b8640ea329cd47c8cdb504debaeff6ec67c44d0c56b96c1ecd77f3ef",
+      "evaluation_sha256": "299d71af458541db88f6223ade537a98514c0880cd9efa339c3da5bee8bddc5c",
+      "winner_selected": false
+    },
+    {
+      "id": "Exp440",
+      "kind": "train_only_low_frequency_multi_depth_precision_gate",
+      "status": "design_approved_implementation_planned",
+      "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
+      "base_commit": "62e143d1",
+      "documents": [
+        "docs/superpowers/specs/2026-08-08-exp440-train-only-low-frequency-precision-gate-antigravity-design.md",
+        "docs/superpowers/plans/2026-08-08-exp440-train-only-low-frequency-precision-gate-antigravity.md",
+        "docs/EXP440_PREREGISTRATION_antigravity_KO.md",
+        "docs/EXP440_RUNBOOK_antigravity_KO.md"
+      ],
+      "artifact_root": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808",
+      "dataset_count": 1117,
+      "predecessor_experiment": "Exp439",
+      "exp439_prediction_sha256": "500f6956b8640ea329cd47c8cdb504debaeff6ec67c44d0c56b96c1ecd77f3ef",
+      "hard_prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70",
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "prediction_phase_started": false,
+      "test_labels_opened": false,
+      "cpu_workers": 11,
+      "notes": "TRAIN-only adjacent-depth low-frequency consensus and threshold stability reduce Exp439 false alarms before a deterministic outside-Hard budget of 100."
     }
   ]
 }

@@ -1,24 +1,19 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-07T18:59:10+09:00",
+  "updated_at": "2026-08-08T02:08:56+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
-  "branch": "codex/exp439-scale-aware-reconstruction-antigravity",
+  "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
-  "last_verified_commit": "a3fae166ede77c0276d416447e57519e0334d053",
-  "active_experiment": "Exp439",
-  "active_phase": "exp439_scheduler_cache_repair_ready_for_readiness",
+  "last_verified_commit": "c2fe5710",
+  "active_experiment": "Exp440",
+  "active_phase": "implementation_test_first",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
-    "design": "docs/superpowers/specs/2026-08-07-exp439-scale-aware-reconstruction-antigravity-design.md",
-    "plan": "docs/superpowers/plans/2026-08-07-exp439-scale-aware-reconstruction-antigravity.md",
-    "scientific_base_design": "docs/superpowers/specs/2026-08-06-exp436-missing-safe-strict-consensus-antigravity-design.md",
-    "scientific_base_plan": "docs/superpowers/plans/2026-08-06-exp436-missing-safe-strict-consensus-antigravity.md",
-    "scientific_base_preregistration": "docs/EXP436_PREREGISTRATION_antigravity_KO.md",
-    "scientific_base_runbook": "docs/EXP436_RUNBOOK_antigravity_KO.md",
-    "preregistration": "docs/EXP439_PREREGISTRATION_antigravity_KO.md",
-    "runbook": "docs/EXP439_RUNBOOK_antigravity_KO.md",
-    "implementation_report": "docs/EXP439_IMPLEMENTATION_REPORT_antigravity.md"
+    "design": "docs/superpowers/specs/2026-08-08-exp440-train-only-low-frequency-precision-gate-antigravity-design.md",
+    "plan": "docs/superpowers/plans/2026-08-08-exp440-train-only-low-frequency-precision-gate-antigravity.md",
+    "preregistration": "docs/EXP440_PREREGISTRATION_antigravity_KO.md",
+    "runbook": "docs/EXP440_RUNBOOK_antigravity_KO.md"
   },
   "frozen_inputs": {
     "database": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -33,30 +28,15 @@
   "active_process": {
     "pid": null,
     "pid_os_live": false,
-    "run_parent": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807",
-    "readiness_owns_run_parent": true,
-    "new_requires": "existing_run_parent_with_exact_verified_readiness_and_absent_output_checkpoint_evaluation",
-    "fixed_roots_absent": true,
-    "checkpoint": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807/checkpoint_antigravity",
-    "output": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807/output_antigravity",
-    "progress_json": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807/output_antigravity/progress_antigravity.json",
-    "events_jsonl": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807/output_antigravity/events_antigravity.jsonl",
-    "parent_log": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807/output_antigravity/parent_antigravity.log",
-    "pid_file": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807/output_antigravity/run_antigravity.pid",
-    "progress_completed": 0,
-    "event_completed": 0,
-    "checkpoint_completed": 0,
-    "physical_record_files": 0,
-    "reconciliation_reason": "not_started",
-    "backend": null,
-    "error": 0,
-    "test_labels_opened": false,
-    "recovery_preflight": "passed",
-    "recovery_status": "not_applicable",
-    "recovery_session_id": null,
-    "recovery_launcher": null,
-    "recovery_log": null,
-    "last_error": null
+    "run_parent": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808",
+    "checkpoint": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/checkpoint_antigravity",
+    "output": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/output_antigravity",
+    "progress_json": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/output_antigravity/progress_antigravity.json",
+    "events_jsonl": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/output_antigravity/events_antigravity.jsonl",
+    "parent_log": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/output_antigravity/parent_antigravity.log",
+    "pid_file": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/output_antigravity/run_antigravity.pid",
+    "state": "not_started",
+    "test_labels_opened": false
   },
   "completed_engineering_tasks": {
     "task1_eligibility": "a37e0b4d1e241a885c69b65b318fe77107b055c8",
@@ -121,8 +101,17 @@
     "device": "Apple M2 Max",
     "metal_available": true,
     "smoke_seed": 43501,
-    "reference_shape": [513, 64],
-    "batch_sizes": [16, 32, 64, 128, 256],
+    "reference_shape": [
+      513,
+      64
+    ],
+    "batch_sizes": [
+      16,
+      32,
+      64,
+      128,
+      256
+    ],
     "finite_outputs": true,
     "candidate_identity_match_with_fixed_threshold": true,
     "max_absolute_error": 1.1920928955078125e-07,
@@ -143,7 +132,13 @@
     "candidate_alpha": 0.01,
     "robust_transform": "center=median(matrix); scale=float32(1.4826 * median(abs(matrix-center))) per prototype/raw or gradient TRAIN-group matrix; ACF formula unchanged",
     "backend_smoke_seed": 43601,
-    "backend_batch_sizes": [16, 32, 64, 128, 256],
+    "backend_batch_sizes": [
+      16,
+      32,
+      64,
+      128,
+      256
+    ],
     "backend_warmup_runs": 2,
     "backend_timed_paired_runs": 5,
     "readiness_owns_run_parent": true,
@@ -156,11 +151,38 @@
     "head_before_task9_commit": "61398ee7575d24755cca09ea46254ba0928d43c9",
     "cli_readiness_exit_fix": "TDD RED at 61398ee7 then GREEN; canonical readiness remains state-free and public main(['readiness']) exits 0",
     "tests": {
-      "exp436": {"command": "python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py'", "tests": 280, "skips": 0, "status": "passed"},
-      "exp425_database": {"command": "python3 -m unittest experiments.exp425_selective_recovery.tests.test_database -v", "tests": 30, "skips": 0, "status": "passed"},
-      "exp435": {"command": "python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*_antigravity.py'", "tests": 187, "skips": 0, "status": "passed"},
-      "exp426": {"command": "python3 -m unittest discover -s experiments/exp426_verified_baseline/tests -p 'test_*_antigravity.py'", "tests": 58, "skips": 1, "status": "passed", "skip_reason": "EXP426_RUN_PRODUCTION_SOURCE_TEST=1 is required for the explicit external production-source audit"},
-      "exp417": {"command": "python3 -m unittest discover -s experiments/exp417_causal_multihorizon_shadow/tests -p 'test_*.py'", "tests": 270, "skips": 0, "status": "passed", "note": "full CPU-bound legacy suite completed after a long JSON serialization phase"}
+      "exp436": {
+        "command": "python3 -m unittest discover -s experiments/exp436_missing_safe_strict_consensus_antigravity/tests -p 'test_*_antigravity.py'",
+        "tests": 280,
+        "skips": 0,
+        "status": "passed"
+      },
+      "exp425_database": {
+        "command": "python3 -m unittest experiments.exp425_selective_recovery.tests.test_database -v",
+        "tests": 30,
+        "skips": 0,
+        "status": "passed"
+      },
+      "exp435": {
+        "command": "python3 -m unittest discover -s experiments/exp435_train_only_consensus_recovery_antigravity/tests -p 'test_*_antigravity.py'",
+        "tests": 187,
+        "skips": 0,
+        "status": "passed"
+      },
+      "exp426": {
+        "command": "python3 -m unittest discover -s experiments/exp426_verified_baseline/tests -p 'test_*_antigravity.py'",
+        "tests": 58,
+        "skips": 1,
+        "status": "passed",
+        "skip_reason": "EXP426_RUN_PRODUCTION_SOURCE_TEST=1 is required for the explicit external production-source audit"
+      },
+      "exp417": {
+        "command": "python3 -m unittest discover -s experiments/exp417_causal_multihorizon_shadow/tests -p 'test_*.py'",
+        "tests": 270,
+        "skips": 0,
+        "status": "passed",
+        "note": "full CPU-bound legacy suite completed after a long JSON serialization phase"
+      }
     },
     "test_labels_opened": false,
     "pid": null,
@@ -201,7 +223,13 @@
     "exp437_root_absent": true,
     "wrapper_help": {
       "command": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp437_metadata_roundtrip_antigravity.py --help",
-      "commands": ["readiness", "new", "resume", "inspect", "evaluate"],
+      "commands": [
+        "readiness",
+        "new",
+        "resume",
+        "inspect",
+        "evaluate"
+      ],
       "status": "passed"
     },
     "forbidden_term_grep": {
@@ -211,7 +239,10 @@
       "status": "passed"
     },
     "frozen_config_diff": {
-      "changed_fields": ["experiment_id", "run_identity"],
+      "changed_fields": [
+        "experiment_id",
+        "run_identity"
+      ],
       "exp436_experiment_id": "Exp436",
       "exp437_experiment_id": "Exp437",
       "exp436_run_identity": "exp436-missing-safe-strict-consensus-antigravity-20260806",
@@ -245,7 +276,9 @@
     "event_completed": 938,
     "checkpoint_completed": 938,
     "physical_record_files": 939,
-    "reconciliation_reasons": ["intent_with_record"],
+    "reconciliation_reasons": [
+      "intent_with_record"
+    ],
     "backend": "cpu",
     "error": 0,
     "label_access_count": 0,
@@ -313,7 +346,10 @@
       "error_count": 1,
       "last_checkpoint": "BeetleFly_normal_1",
       "failed_dataset": "Chinatown_normal_1",
-      "failed_dispatch_window": [89, 99],
+      "failed_dispatch_window": [
+        89,
+        99
+      ],
       "error": "decomposition reconstruction tolerance failed",
       "root_cause": "fixed absolute 1e-5 guard rejected normal float32 rounding up to 6.103515625e-05 at finite TRAIN magnitudes near 1700",
       "nonfinite_train_rows_in_failed_window": 0,
@@ -361,10 +397,10 @@
     "chlorine_cpu_smoke_seconds": 42.57567008398473,
     "chlorine_prediction_label_access": 0
   },
-  "next_action": "Complete regression and code-map validation, commit the scheduler/cache repair, create clean-HEAD readiness in the distinct repair root, then start the 1,117-dataset label-free CPU run with 11 workers.",
-  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence' && git switch codex/exp439-scale-aware-reconstruction-antigravity && PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp439_scale_aware_reconstruction_repair_antigravity.py readiness",
+  "next_action": "Implement Exp440 test first, verify readiness, then start the approved 1,117-dataset label-free run.",
+  "exact_next_command_if_interrupted": "cd '/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence' && PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp440_train_only_low_frequency_precision_gate_antigravity.py readiness",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
-  "prediction_phase_started": true,
+  "prediction_phase_started": false,
   "test_labels_opened": false
 }
