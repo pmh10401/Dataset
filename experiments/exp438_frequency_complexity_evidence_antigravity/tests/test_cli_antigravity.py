@@ -25,6 +25,11 @@ class Exp438CliAntigravityTests(unittest.TestCase):
                 parser.parse_args(forbidden)
 
     def test_dispatch_calls_only_the_selected_dependency(self) -> None:
+        evaluation_module = (
+            "experiments.exp438_frequency_complexity_evidence_antigravity."
+            "evaluation_antigravity"
+        )
+        previously_loaded = sys.modules.pop(evaluation_module, None)
         called = []
         dependencies = CliDependenciesAntigravity(
             **{
@@ -32,12 +37,13 @@ class Exp438CliAntigravityTests(unittest.TestCase):
                 for command in ("readiness", "new", "resume", "inspect", "evaluate")
             }
         )
-        self.assertEqual(main_with_dependencies_antigravity(["inspect"], dependencies), 0)
-        self.assertEqual(called, ["inspect"])
-        self.assertNotIn(
-            "experiments.exp438_frequency_complexity_evidence_antigravity.evaluation_antigravity",
-            sys.modules,
-        )
+        try:
+            self.assertEqual(main_with_dependencies_antigravity(["inspect"], dependencies), 0)
+            self.assertEqual(called, ["inspect"])
+            self.assertNotIn(evaluation_module, sys.modules)
+        finally:
+            if previously_loaded is not None:
+                sys.modules[evaluation_module] = previously_loaded
 
     def test_wrapper_help_works_outside_repository_cwd(self) -> None:
         root = Path(__file__).resolve().parents[3]

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T03:49:44Z",
-  "generated_from_commit": "41b754e16c48bc7377ae29bac7c7c8b2fbc5245f",
+  "generated_at": "2026-08-07T04:06:26Z",
+  "generated_from_commit": "157cfc7a89ef0dc02116f72758ae9d94f6f3db0b",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -13,7 +13,7 @@
     "Exp435 fixed five-mode CLI, canonical frozen identity, clean-HEAD readiness, read-only failed-resume rejection, bounded parent-truthful runtime, atomic review-only publication and descriptor-pinned retrospective evaluation",
     "Exp436 missing-safe contracts, label-free raw input, exact-length finite TRAIN filtering, channel-local calibration availability, and implemented strict consensus scoring, truthful optional MLX/MPS scalar readiness evidence, and neutral backend dispatch",
     "Exp436 ordered durable checkpoint/progress/runtime: ordered-prefix recovery, parent-only CPU workers, serial validated accelerator engine, and self-written logs",
-    "Exp438 clean-HEAD/Exp437-terminal readiness, exact input and backend binding, fixed five-command CLI, label-free ordered runtime, deterministic review-only publication, no-clobber hash replay, and lazy post-freeze evaluation boundary"
+    "Exp438 clean-HEAD/Exp437-terminal readiness, label-free ordered runtime, deterministic review-only publication, and channel-separate post-freeze TEST-label evaluation with no-clobber hash replay"
   ],
   "nodes": [
     {
@@ -2288,14 +2288,15 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 readiness, fixed five-command CLI, value-only inputs, FFT/ASPE and separate TRAIN-only scores, truthful exact-stage acceleration, ordered max-minus-one CPU execution, fail-closed recovery, self-written heartbeat logs, and deterministic review-only publication.",
+      "role": "Owns Exp438 readiness, fixed five-command CLI, value-only inputs, FFT/ASPE and separate TRAIN-only scores, truthful exact-stage acceleration, ordered max-minus-one CPU execution, fail-closed recovery, self-written heartbeat logs, deterministic review-only publication, and lazy channel-separate post-freeze evaluation.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
         "run_exp438_new_antigravity",
         "resume_exp438_antigravity",
         "inspect_exp438_antigravity",
-        "publish_exp438_antigravity"
+        "publish_exp438_antigravity",
+        "evaluate_exp438_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2304,13 +2305,15 @@
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_scoring_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_cli_antigravity.py",
-        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py"
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py",
+        "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_evaluation_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
         "High-frequency, low-frequency, and amplitude-complexity channels stay separate; no fusion or post-TEST retuning.",
         "CPU uses max(1, logical CPUs - 1) workers with one numerical thread each; adopted MLX/MPS/Numba exact stages run serially after parity and speed gates.",
-        "Results commit in frozen dataset order; failed roots are immutable and interrupted roots alone may resume."
+        "Results commit in frozen dataset order; failed roots are immutable and interrupted roots alone may resume.",
+        "Post-freeze evaluation opens TEST labels only after Exp438 and Exp437 publications, frozen comparators, provenance, population, runtime, and hashes replay; it reports all channels without selecting a winner."
       ],
       "evidence": [
         {
@@ -2352,6 +2355,10 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/reporting_antigravity.py",
           "symbol": "def publish_exp438_antigravity("
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
+          "symbol": "def evaluate_exp438_antigravity("
         }
       ]
     }
@@ -3073,6 +3080,10 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/inputs_antigravity.py",
           "symbol": "freeze_lane_inputs("
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
+          "symbol": "with verified_read_only_connection("
         }
       ]
     },
@@ -3095,6 +3106,36 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/checkpoint_antigravity.py",
           "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
+          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
+        }
+      ]
+    },
+    {
+      "from": "exp438_frequency_runtime",
+      "to": "exp436_contract_boundary",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
+          "symbol": "inspect_exp437_publication("
+        },
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
+          "symbol": "_load_frozen_hard_coordinates("
+        }
+      ]
+    },
+    {
+      "from": "exp438_frequency_runtime",
+      "to": "sqlite_store",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
+          "symbol": "SELECT i.instance_index,i.label FROM instances"
         }
       ]
     }
@@ -3150,13 +3191,16 @@
     },
     {
       "id": "exp438_publication_inspect_flow",
-      "label": "Exp438 deterministic review-only freeze and inspect",
+      "label": "Exp438 review-only freeze, inspect, and post-freeze evaluation",
       "trigger": "The ordered checkpoint and process-owned progress both reach complete with the full conserved population and zero label access.",
       "steps": [
         "exp438_frequency_runtime",
-        "artifact_utils"
+        "artifact_utils",
+        "exp436_contract_boundary",
+        "exp417_inputs",
+        "sqlite_store"
       ],
-      "outcome": "Publication replays checkpoint records into separate-channel prediction, abstention, TRAIN audit, backend, manifest, status, and hash artifacts through a no-clobber rename; inspect recomputes every byte without opening SQLite or workers, while evaluate remains a lazy explicit post-freeze import."
+      "outcome": "Publication freezes separate-channel prediction and audit artifacts through a no-clobber rename. Inspect replays bytes without labels. Only the explicit lazy evaluate command may then replay Exp438, Exp437, the frozen Hard comparator, population, database, and provenance gates before reading TEST labels once and publishing eight hashed, no-clobber evaluation artifacts without choosing a winner."
     }
   ],
   "unknown_relationships": 0
