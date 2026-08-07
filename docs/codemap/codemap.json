@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T10:01:19Z",
-  "generated_from_commit": "9230efa0cb5d5739f4547dee7f9623aa99815a14",
+  "generated_at": "2026-08-07T13:49:26Z",
+  "generated_from_commit": "65e2dc25e8ba88136904d47cfae341bfc595529f",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -19,7 +19,8 @@
     "Exp439 isolated scale-aware float32 reconstruction repair, immutable Exp438 failure evidence, exact-prefix import gate, and unchanged label-free scientific rules",
     "Exp439 preregistered one-ULP reconstruction repair, whole-row nonfinite TRAIN exclusion, exact 89-record predecessor import, and dataset-attributed failure logs",
     "Exp439 mechanically isolated namespace, frozen identity, five-command CLI, and distinct artifact roots",
-    "Exp439 completed one-ULP reconstruction repair, exact immutable 89-record import, dataset-attributed failure evidence, 679-test regression proof, and real Chinatown TRAIN-only smoke"
+    "Exp439 completed one-ULP reconstruction repair, exact immutable 89-record import, dataset-attributed failure evidence, 679-test regression proof, and real Chinatown TRAIN-only smoke",
+    "Exp439 bounded slow-head dispatch and TRAIN-only preferred-depth/decomposition cache with predecessor-record byte parity"
   ],
   "nodes": [
     {
@@ -29,7 +30,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records immutable Exp438 failure evidence and the completed, regression-verified Exp439 scale-aware reconstruction repair, exact 89-record import, label boundary, readiness handoff, and official execution state.",
+      "role": "Records immutable Exp438 failure evidence, the preserved Exp439 101-record interrupted root, and the regression-verified scheduler/cache repair with a distinct clean-commit run root and unchanged label boundary.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -219,7 +220,7 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"exp439_implementation_complete_waiting_readiness\""
+          "symbol": "\"active_phase\": \"exp439_scheduler_cache_repair_validation\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
@@ -228,6 +229,18 @@
         {
           "path": "docs/EXP439_IMPLEMENTATION_REPORT_antigravity.md",
           "symbol": "# Exp439 구현 완료 보고서"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"interrupted_completed\": 101"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"scheduler_reorder_capacity\": \"workers_squared\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"chinatown_record_byte_parity\": true"
         }
       ]
     },
@@ -2354,7 +2367,7 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns the isolated Exp438 frequency-complexity evidence runtime and its Exp439 scale-aware reconstruction-repair fork with distinct frozen identities, roots, readiness, checkpoints, logs, and label-free execution.",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2396,7 +2409,10 @@
         "Persisted backend decisions use canonical JSON list semantics so readiness replay and runtime context compare the same evidence shape.",
         "Exp439 changes only the reconstruction validation guard to max(1e-5, one float32 ULP at component peak); FFT bins, casts, returned components, features, scores, thresholds, and label boundary remain unchanged.",
         "Exp439 imports exactly 89 immutable Exp438 records only after readiness, context, state, progress, record-set, dataset order, and every source-record SHA256 validate; the checkpoint appears atomically and recomputation starts at BeetleFly_normal_2.",
-        "Exp439 parent-side failures preserve dataset name, TRAIN/TEST size metadata, stage, backend, cause type, and cause message in atomic progress JSON, events JSONL, and the text parent log."
+        "Exp439 parent-side failures preserve dataset name, TRAIN/TEST size metadata, stage, backend, cause type, and cause message in atomic progress JSON, events JSONL, and the text parent log.",
+        "Exp439 keeps up to max-minus-one CPU workers active behind a slow frozen-order head while bounding pending plus buffered results by workers squared; durable commits remain in frozen dataset order.",
+        "Exp439 computes each TRAIN row preferred depth once and each used-depth decomposition feature matrix once; held-out depth, fold-local robust transforms, OOF scores, thresholds, candidates, and record bytes remain unchanged.",
+        "The interrupted 101-record root is immutable; the scheduler/cache repair uses a distinct run root and imports only the exact 89-record Exp438 prefix under the existing gate."
       ],
       "evidence": [
         {
@@ -2486,6 +2502,22 @@
         {
           "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/runtime_antigravity.py",
           "symbol": "\"event\": \"runtime_error\""
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/runtime_antigravity.py",
+          "symbol": "reorder_capacity = min(len(datasets), capacity * capacity)"
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/scoring_antigravity.py",
+          "symbol": "preferred_depths = tuple("
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/scoring_antigravity.py",
+          "symbol": "def features_at_depth(depth: int)"
+        },
+        {
+          "path": "experiments/exp439_scale_aware_reconstruction_repair_antigravity/config_antigravity.py",
+          "symbol": "exp439_scale_aware_reconstruction_repair_scheduler_antigravity_20260807"
         }
       ]
     },
@@ -3328,7 +3360,7 @@
         "sqlite_store",
         "artifact_utils"
       ],
-      "outcome": "The parent reads frozen lanes and value-only TRAIN/TEST rows, uses max-minus-one CPU workers, and commits canonical results in sorted order. Exp439 binds the immutable Exp438 readiness/context/state/progress and every record SHA256, publishes all 89 imported records atomically with a source/destination manifest, reports import and recompute counts separately, and continues at dataset position 89 without opening TEST labels."
+      "outcome": "The parent reads frozen lanes and value-only TRAIN/TEST rows, uses max-minus-one CPU workers, keeps workers active behind slow ordered heads within a workers-squared reorder window, and commits canonical results in sorted order. Exp439 caches mathematically identical TRAIN-only preferred depths and used-depth decomposition features, binds and imports the immutable Exp438 89-record prefix, and preserves zero TEST-label access."
     },
     {
       "id": "exp438_publication_flow",

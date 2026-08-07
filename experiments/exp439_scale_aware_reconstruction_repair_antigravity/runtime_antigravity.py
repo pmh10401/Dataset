@@ -337,6 +337,7 @@ def run_ordered_cpu_schedule_antigravity(
     ):
         raise ValueError("Exp439 CPU schedule binding is invalid")
     capacity = min(workers, len(datasets))
+    reorder_capacity = min(len(datasets), capacity * capacity)
     executor = executor_factory(
         max_workers=capacity,
         initializer=_worker_initializer_antigravity,
@@ -349,7 +350,8 @@ def run_ordered_cpu_schedule_antigravity(
         while submit_index < len(datasets) or pending:
             while (
                 submit_index < len(datasets)
-                and len(pending) + len(buffered) < capacity
+                and len(pending) < capacity
+                and len(pending) + len(buffered) < reorder_capacity
             ):
                 dataset = datasets[submit_index]
                 progress(

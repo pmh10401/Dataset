@@ -70,11 +70,11 @@ TRAIN/TEST 크기 metadata, stage, backend, 원래 예외 type/message를 구조
 ## 검증 결과
 
 ```text
-Exp439   106 tests passed
+Exp439   108 tests passed
 Exp438    94 tests passed
 Exp436   299 tests passed
 Exp425   180 tests passed
-total    679 tests passed, failures 0, errors 0
+total    681 tests passed, failures 0, errors 0
 ```
 
 실제 DB 검증:
@@ -109,3 +109,41 @@ PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp439_scale_aware_reconstruction_
 
 readiness가 1,117개 population, 89개 import manifest, prediction label access 0,
 CPU fallback과 clean reviewed commit을 동결한 뒤에만 `new`를 실행한다.
+
+## 실행 병목 복구 증거
+
+첫 공식 실행은 101/1,117에서 오류 없이 살아 있었지만, 다음 frozen-order head가
+느린 동안 뒤에서 끝난 결과를 buffer에 둔 채 새 작업을 dispatch하지 않았다.
+작업자 11개 중 일부가 쉬고 checkpoint는 약 3시간 움직이지 않았다. SIGINT로
+종료한 뒤 output과 checkpoint가 모두 `interrupted`이고 마지막 checkpoint가
+`Chinatown_normal_2`임을 확인했다.
+
+수정은 탐지 수학이 아니라 실행 중복과 작업 배정만 바꾼다.
+
+- pending worker는 최대 11개를 유지한다.
+- out-of-order buffer를 포함한 reorder window는 최대 `workers ** 2`, 즉 121개다.
+- preferred depth는 각 TRAIN 행에서 한 번 계산한다.
+- 각 실제 사용 depth의 decomposition feature는 전체 TRAIN에서 한 번 계산하고,
+  leave-one-out fold에서는 같은 행을 제외한 view로 robust transform과 OOF score를
+  그대로 계산한다.
+
+검증 결과는 다음과 같다.
+
+```text
+slow-head scheduler test     fixed-order commit 유지, idle worker 재사용
+ASPE calls on 5x64 fixture   495 -> <=300
+Chlorine real CPU smoke      TRAIN 800 / TEST 1000 / length 166 / 42.576 sec
+Chinatown record parity      byte-identical
+record SHA256                01dabf95e22175ba09b01d80df4002981bbe149e8112a7d9771aec3de7478446
+prediction label access      0
+DB nlink after smoke         1
+```
+
+최적화 후 전체 회귀는 Exp439 108 + Exp438 94 + Exp436 299 + Exp425 180,
+합계 681개가 failures 0, errors 0으로 통과했다.
+
+기존 101-record interrupted root는 불변 보존한다. 새 clean reviewed commit의 공식
+root는
+`/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_scheduler_antigravity_20260807`
+이며, 검증된 Exp438 89-record prefix를 새로 import한 뒤 시작한다. 이렇게 해야 새
+코드를 과거 reviewed commit으로 잘못 표기하지 않는다.

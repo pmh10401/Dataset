@@ -22,7 +22,8 @@ from .contracts_antigravity import (
 )
 from .features_antigravity import (
     decompose_at_depth_antigravity,
-    select_train_depth_antigravity,
+    lower_median_depth_antigravity,
+    preferred_depth_antigravity,
 )
 from .aspe_antigravity import (
     AspeResultAntigravity,
@@ -232,12 +233,23 @@ def fit_calibrated_group_antigravity(
         raise ValueError("calibration requires a prepared TRAIN group")
     if group.matrix.shape[0] < FROZEN_CONFIG.minimum_train_rows:
         raise ValueError("calibration has insufficient finite TRAIN rows")
-    final_depth = select_train_depth_antigravity(
-        group.matrix, aspe_compute=aspe_compute
+    preferred_depths = tuple(
+        preferred_depth_antigravity(row, aspe_compute=aspe_compute)
+        for row in group.matrix
     )
-    final_features = _feature_matrices_antigravity(
-        group.matrix, final_depth, aspe_compute
-    )
+    final_depth = lower_median_depth_antigravity(preferred_depths)
+    feature_cache: dict[int, _FeatureMatricesAntigravity] = {}
+
+    def features_at_depth(depth: int) -> _FeatureMatricesAntigravity:
+        cached = feature_cache.get(depth)
+        if cached is None:
+            cached = _feature_matrices_antigravity(
+                group.matrix, depth, aspe_compute
+            )
+            feature_cache[depth] = cached
+        return cached
+
+    final_features = features_at_depth(final_depth)
     final_states: dict[
         str,
         tuple[NDArray[np.float32], NDArray[np.float32], NDArray[np.float32]] | str,
@@ -254,25 +266,23 @@ def fit_calibrated_group_antigravity(
     oof_scores: dict[str, list[float]] = {channel: [] for channel in CHANNELS_ANTIGRAVITY}
     oof_failures: dict[str, str] = {}
     for held_out in range(group.matrix.shape[0]):
-        references_raw = np.delete(group.matrix, held_out, axis=0)
-        depth = select_train_depth_antigravity(
-            references_raw, aspe_compute=aspe_compute
+        depth = lower_median_depth_antigravity(
+            preferred
+            for index, preferred in enumerate(preferred_depths)
+            if index != held_out
         )
-        reference_features = _feature_matrices_antigravity(
-            references_raw, depth, aspe_compute
-        )
-        query_features = _query_features_antigravity(
-            group.matrix[held_out], depth, aspe_compute
-        )
+        fold_features = features_at_depth(depth)
         for channel in CHANNELS_ANTIGRAVITY:
             if channel in oof_failures:
                 continue
             try:
                 references, center, scale = robust_transform_antigravity(
-                    reference_features.channel(channel),
+                    np.delete(fold_features.channel(channel), held_out, axis=0),
                     channel=channel,
                 )
-                query = _standardize_query_antigravity(query_features[channel], center, scale)
+                query = _standardize_query_antigravity(
+                    fold_features.channel(channel)[held_out], center, scale
+                )
                 if dense_score_batch is None:
                     score = score_channel_cpu_antigravity(
                         query, references, FROZEN_CONFIG.nearest_k

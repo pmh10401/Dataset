@@ -8,7 +8,7 @@
 WORKTREE=/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence
 DB=/Users/mac/Documents/Dataset/univariate_ts.db
 EXP438=/Users/mac/Documents/Dataset/exp438_frequency_complexity_evidence_antigravity_20260807
-RUN_PARENT=/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807
+RUN_PARENT=/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_scheduler_antigravity_20260807
 READINESS=$RUN_PARENT/readiness_antigravity.json
 OUTPUT=$RUN_PARENT/output_antigravity
 CHECKPOINT=$RUN_PARENT/checkpoint_antigravity
@@ -88,3 +88,24 @@ exec env PYTHONDONTWRITEBYTECODE=1 python3 \
 
 시작 직후 한 번만 PID 생존, CPU worker 11, import 89, error 0, DB nlink 2와 로그
 경로를 확인한다. 이후 사용자가 완료를 알릴 때까지 반복 polling하지 않는다.
+
+## 2026-08-07 실행 병목 복구
+
+첫 공식 root
+`exp439_scale_aware_reconstruction_repair_antigravity_20260807`은 101/1,117에서
+사용자 승인에 따라 정상 인터럽트했다. progress와 checkpoint는 모두
+`interrupted`, 마지막 checkpoint는 `Chinatown_normal_2`이며 이 root는 수정하거나
+덮어쓰지 않는다.
+
+새 reviewed implementation은 과학 규칙을 바꾸지 않고 두 실행 병목만 제거한다.
+
+- 완료 순서가 늦은 결과 때문에 작업자가 쉬지 않도록 최대 worker 수만큼 계속
+  dispatch하며, pending+buffered 범위는 worker 수의 제곱으로 제한한다.
+- TRAIN 행별 preferred depth와 depth별 decomposition feature를 TRAIN-only로 한 번
+  계산해 leave-one-out fold에서 재사용한다. 제외 행, lower-median depth,
+  robust transform, OOF score, threshold와 후보 규칙은 그대로다.
+
+기존 `Chinatown_normal_2` record와 새 구현 record는 SHA256
+`01dabf95e22175ba09b01d80df4002981bbe149e8112a7d9771aec3de7478446`로
+byte-identical이었다. `ChlorineConcentration_normal_1` 실제 TRAIN 800 / TEST 1,000,
+길이 166 label-free CPU smoke는 42.576초에 끝났고 label access는 0이었다.

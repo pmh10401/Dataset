@@ -264,7 +264,7 @@
     {
       "id": "Exp439",
       "kind": "exp438_scale_aware_reconstruction_validation_repair",
-      "status": "implementation_complete_waiting_readiness",
+      "status": "official_interrupted_101_scheduler_cache_repair_validation",
       "branch": "codex/exp439-scale-aware-reconstruction-antigravity",
       "base_commit": "b994fd46db373f5f556bbecb00cc9811d3679ac8",
       "documents": [
@@ -274,7 +274,10 @@
         "docs/EXP439_RUNBOOK_antigravity_KO.md",
         "docs/EXP439_IMPLEMENTATION_REPORT_antigravity.md"
       ],
-      "artifact_root": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_scheduler_antigravity_20260807",
+      "preserved_interrupted_root": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807",
+      "preserved_interrupted_completed": 101,
+      "preserved_interrupted_checkpoint": "Chinatown_normal_2",
       "dataset_count": 1117,
       "predecessor_experiment": "Exp438",
       "predecessor_reviewed_commit": "d1da286e9c74c64abe76e0c255c86c30141813bd",
@@ -283,16 +286,16 @@
       "scientific_changes": ["reconstruction_validation_guard"],
       "review_only": true,
       "operational_alert_eligible": false,
-      "prediction_phase_started": false,
+      "prediction_phase_started": true,
       "test_labels_opened": false,
       "official_readiness": false,
       "implementation_code_commit": "9230efa0cb5d5739f4547dee7f9623aa99815a14",
       "regression_counts": {
-        "exp439_tests": 106,
+        "exp439_tests": 108,
         "exp438_tests": 94,
         "exp436_shared_engine_tests": 299,
         "exp425_predecessor_tests": 180,
-        "total": 679,
+        "total": 681,
         "failures": 0,
         "errors": 0
       },
@@ -312,7 +315,19 @@
         "workers": 11,
         "inner_threads": 1
       },
-      "notes": "Exp439 preserves Exp438 FFT bins, components, depth, ASPE, scoring, thresholds, lanes, budgets, and label boundary. It permits only one scale-aware float32 ULP in the reconstruction guard, keeps whole-row nonfinite TRAIN exclusion, imports the exact 89-record prefix only under complete hash parity, and records the dataset name for future worker errors."
+      "scheduler_cache_repair": {
+        "reorder_capacity": "workers_squared",
+        "preferred_depth_cache": "once_per_train_row",
+        "decomposition_feature_cache": "once_per_used_depth",
+        "chinatown_record_byte_identical": true,
+        "chinatown_record_sha256": "01dabf95e22175ba09b01d80df4002981bbe149e8112a7d9771aec3de7478446",
+        "chlorine_cpu_smoke_seconds": 42.57567008398473,
+        "chlorine_train_rows": 800,
+        "chlorine_test_rows": 1000,
+        "chlorine_raw_length": 166,
+        "prediction_label_access_count": 0
+      },
+      "notes": "Exp439 preserves Exp438 FFT bins, components, depth, ASPE, scoring, thresholds, lanes, budgets, and label boundary. The interrupted 101-record root remains immutable. The repair keeps up to 11 CPU workers busy behind a slow frozen-order head and reuses mathematically identical TRAIN-only preferred-depth and decomposition-feature work; predecessor record bytes remain identical."
     }
   ]
 }

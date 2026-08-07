@@ -12,7 +12,7 @@ from experiments.exp403_408.artifact_io import canonical_json_bytes
 DATABASE_PATH_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/univariate_ts.db")
 RUN_PARENT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/"
-    "exp439_scale_aware_reconstruction_repair_antigravity_20260807"
+    "exp439_scale_aware_reconstruction_repair_scheduler_antigravity_20260807"
 )
 OUTPUT_ROOT_ANTIGRAVITY = RUN_PARENT_ANTIGRAVITY / "output_antigravity"
 CHECKPOINT_ROOT_ANTIGRAVITY = RUN_PARENT_ANTIGRAVITY / "checkpoint_antigravity"

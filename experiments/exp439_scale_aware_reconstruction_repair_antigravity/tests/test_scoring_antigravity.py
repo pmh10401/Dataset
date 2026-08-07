@@ -20,6 +20,9 @@ from experiments.exp439_scale_aware_reconstruction_repair_antigravity.scoring_an
     score_test_row_cpu_antigravity,
     validate_global_candidates_antigravity,
 )
+from experiments.exp439_scale_aware_reconstruction_repair_antigravity.aspe_antigravity import (
+    amplitude_sensitive_permutation_entropy_antigravity,
+)
 
 
 def _group(matrix: np.ndarray) -> PreparedTrainGroup:
@@ -73,20 +76,7 @@ class Exp439ScoringAntigravityTests(unittest.TestCase):
     def test_fit_uses_leave_one_out_models_and_is_train_order_invariant(self) -> None:
         rng = np.random.default_rng(43801)
         matrix = rng.normal(size=(5, 64)).astype(np.float32)
-        calls: list[int] = []
-
-        from experiments.exp439_scale_aware_reconstruction_repair_antigravity import scoring_antigravity
-
-        real_select = scoring_antigravity.select_train_depth_antigravity
-
-        def recording_select(value, **kwargs):
-            calls.append(np.asarray(value).shape[0])
-            return real_select(value, **kwargs)
-
-        with patch.object(scoring_antigravity, "select_train_depth_antigravity", side_effect=recording_select):
-            first = fit_calibrated_group_antigravity(_group(matrix))
-        self.assertIn(5, calls)
-        self.assertGreaterEqual(calls.count(4), 5)
+        first = fit_calibrated_group_antigravity(_group(matrix))
         reordered = fit_calibrated_group_antigravity(_group(matrix[[4, 2, 0, 3, 1]]))
         self.assertEqual(first.depth, reordered.depth)
         for channel in ("high_frequency", "low_frequency", "amplitude_complexity"):
@@ -94,8 +84,31 @@ class Exp439ScoringAntigravityTests(unittest.TestCase):
             right = reordered.calibrations[channel]
             self.assertEqual(left.available, right.available)
             if left.available:
+                self.assertEqual(left.oof_scores.shape, (5,))
                 self.assertAlmostEqual(left.threshold, right.threshold, places=5)
                 np.testing.assert_allclose(np.sort(left.oof_scores), np.sort(right.oof_scores), atol=1e-5)
+
+    def test_fit_reuses_train_only_depth_and_feature_work(self) -> None:
+        matrix = np.random.default_rng(43902).normal(size=(5, 64)).astype(np.float32)
+        calls = 0
+
+        def counted_aspe(values, embedding_dimension, delay):
+            nonlocal calls
+            calls += 1
+            return amplitude_sensitive_permutation_entropy_antigravity(
+                values, embedding_dimension, delay
+            )
+
+        fit_calibrated_group_antigravity(
+            _group(matrix),
+            aspe_compute=counted_aspe,
+        )
+
+        self.assertLessEqual(
+            calls,
+            300,
+            "TRAIN-only feature work must scale by rows and depths, not rows squared",
+        )
 
     def test_test_scoring_preserves_three_channels_without_fusion(self) -> None:
         rng = np.random.default_rng(9)

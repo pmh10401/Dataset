@@ -162,3 +162,20 @@ identity, finite-value, candidate-budget, label-access, checkpoint-prefix, or
 numeric-bound violation. It does not overwrite Exp438 or select parameters from
 TEST results.
 
+## Approved post-start scheduler and calibration-cache repair
+
+The interrupted 101-record official root remains immutable. A distinct run root
+with a new clean reviewed commit may reuse only the already preregistered exact
+89-record Exp438 prefix.
+
+The repair may keep up to `workers` futures running while earlier completed
+results wait for frozen-order commit. Pending plus buffered results are bounded
+by `workers ** 2`. Dataset commit order does not change.
+
+TRAIN-only preferred depths may be computed once per row because a fold's depth
+is exactly the lower median after excluding that row. Decomposition features may
+be computed once per depth and reused by deleting the held-out feature row.
+Robust transforms remain fold-local, and score, threshold, candidate, lane,
+budget, missing-value, and label-access rules remain unchanged. Acceptance
+requires byte identity against at least one predecessor record and a real
+label-free bottleneck-dataset smoke.

@@ -32,7 +32,7 @@ class Exp439ConfigAntigravityTests(unittest.TestCase):
             RUN_PARENT_ANTIGRAVITY,
             Path(
                 "/Users/mac/Documents/Dataset/"
-                "exp439_scale_aware_reconstruction_repair_antigravity_20260807"
+                "exp439_scale_aware_reconstruction_repair_scheduler_antigravity_20260807"
             ),
         )
         self.assertEqual(OUTPUT_ROOT_ANTIGRAVITY, RUN_PARENT_ANTIGRAVITY / "output_antigravity")

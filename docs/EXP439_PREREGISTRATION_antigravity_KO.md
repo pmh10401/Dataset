@@ -113,6 +113,17 @@ candidate identity, 사전등록 tolerance와 end-to-end 1.1x speedup을 모두 
 때만 채택한다. 실패하면 CPU fallback이 정상이다. 한 번에 MLX/MPS-heavy
 process는 하나뿐이다.
 
+## 실행 최적화 허용 범위
+
+동일 TRAIN 행의 preferred depth와 동일 depth decomposition feature는 캐시해
+leave-one-out fold에서 재사용할 수 있다. 단, 각 fold는 held-out 행을 제외한
+lower-median depth와 robust transform을 그대로 계산해야 하며 최종 score,
+threshold, 후보, lane, budget은 기존 계산과 byte parity를 만족해야 한다.
+
+CPU scheduler는 frozen commit 순서를 유지하면서 느린 head 뒤에서 끝난 결과를
+제한된 reorder window에 보관하고 다음 작업을 dispatch할 수 있다. 이 변경은
+dataset order, prediction 내용, TEST-label boundary를 바꾸지 않는다.
+
 ## checkpoint와 로그
 
 프로세스가 PID, current dataset, TRAIN/TEST 크기와 길이, stage, backend,

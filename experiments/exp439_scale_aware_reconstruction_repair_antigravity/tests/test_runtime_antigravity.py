@@ -259,8 +259,52 @@ class Exp439RuntimeAntigravityTests(unittest.TestCase):
                     observer=lambda pending, buffered: observations.append((pending, buffered)),
                 )
                 self.assertEqual(tuple(committed), datasets)
-                self.assertTrue(all(pending + buffered <= min(workers, len(datasets)) for pending, buffered in observations))
+                capacity = min(workers, len(datasets))
+                reorder_capacity = min(len(datasets), capacity * capacity)
+                self.assertTrue(all(pending <= capacity for pending, _ in observations))
+                self.assertTrue(all(pending + buffered <= reorder_capacity for pending, buffered in observations))
                 self.assertTrue(all(item[2] == threading.current_thread().name for item in session.loaded_by))
+
+    def test_slow_frozen_head_does_not_leave_a_worker_idle(self) -> None:
+        datasets = ("A", "B", "C")
+        session = _Session(datasets)
+        release_head = threading.Event()
+        second_finished = threading.Event()
+        third_started = threading.Event()
+        committed: list[str] = []
+
+        def score(task):
+            if task.dataset == "A":
+                release_head.wait(timeout=5.0)
+            elif task.dataset == "B":
+                second_finished.set()
+            elif task.dataset == "C":
+                third_started.set()
+            return _result(task.dataset)
+
+        with ThreadPoolExecutor(max_workers=1) as outer:
+            run = outer.submit(
+                run_ordered_cpu_schedule_antigravity,
+                datasets=datasets,
+                session=session,
+                lanes=LaneMembershipSnapshotAntigravity.empty_antigravity(),
+                workers=2,
+                commit=lambda result, metadata: committed.append(result.dataset),
+                progress=lambda **payload: None,
+                score_task=score,
+                executor_factory=_thread_executor,
+            )
+            try:
+                self.assertTrue(second_finished.wait(timeout=1.0))
+                self.assertTrue(
+                    third_started.wait(timeout=1.0),
+                    "a completed out-of-order result must release worker capacity",
+                )
+            finally:
+                release_head.set()
+            run.result(timeout=5.0)
+
+        self.assertEqual(tuple(committed), datasets)
 
     def test_real_process_pool_accepts_the_picklable_cpu_task(self) -> None:
         session = _Session(("A",))
