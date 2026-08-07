@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-07T13:07:00+09:00",
+  "updated_at": "2026-08-07T17:55:00+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -210,9 +210,9 @@
     {
       "id": "Exp438",
       "kind": "train_frozen_frequency_complexity_separate_channel_evidence",
-      "status": "implementation_complete_waiting_for_exp437_completion",
+      "status": "official_failed_immutable_89_of_1117",
       "branch": "codex/exp438-frequency-complexity-evidence",
-      "reviewed_implementation_commit": "90d9d1ec0b5eaf510b06be6d656129db491f17f0",
+      "reviewed_implementation_commit": "d1da286e9c74c64abe76e0c255c86c30141813bd",
       "documents": [
         "docs/superpowers/specs/2026-08-07-exp438-frequency-complexity-evidence-antigravity-design.md",
         "docs/superpowers/plans/2026-08-07-exp438-frequency-complexity-evidence-antigravity.md",
@@ -231,10 +231,10 @@
       "direct_improvement_candidate_limit": 100,
       "review_only": true,
       "operational_alert_eligible": false,
-      "prediction_phase_started": false,
+      "prediction_phase_started": true,
       "test_labels_opened": false,
-      "official_readiness": false,
-      "backend_selection": "pending_exact_readiness",
+      "official_readiness": true,
+      "backend_selection": "cpu",
       "cpu_topology": {
         "logical_cpus": 12,
         "workers": 11,
@@ -251,8 +251,46 @@
       "exp437_recovery_preflight": "passed",
       "database_snapshot_concurrency": "single_owner_nlink_contract_prevents_safe_simultaneous_input_sessions",
       "user_execution_choice": "start_exp438_after_exp437_completion",
+      "official_completed": 89,
+      "official_success": 74,
+      "official_abstention": 15,
+      "official_errors": 1,
+      "official_last_checkpoint": "BeetleFly_normal_1",
+      "failed_dataset": "Chinatown_normal_1",
+      "failure": "decomposition reconstruction tolerance failed",
       "next_readiness_command_after_exp437_recovery": "PYTHONDONTWRITEBYTECODE=1 python3 scratch/run_exp438_frequency_complexity_evidence_antigravity.py readiness",
-      "notes": "Isolated TRAIN-frozen FFT high/low and attributed ASPE evidence remains scientifically unchanged. Exp437 recovered successfully as CPU PID 45306 at 939/1117. True simultaneous start is intentionally deferred because the shared macOS DB snapshot contract permits one owned hardlink/session at a time. The user selected the stable path: wait for Exp437 completion, verify DB nlink returns to 1, then run Exp438 readiness and the official 1,117-dataset prediction."
+      "notes": "The official CPU/11-worker label-free run committed 89 ordered records and then failed in Chinatown_normal_1 because the fixed absolute 1e-5 reconstruction guard rejected normal float32 rounding up to 6.103515625e-05 at finite TRAIN magnitudes near 1700. The root, readiness, output, checkpoint, and records remain immutable. Prediction TEST-label access stayed zero. Exp439 is the isolated numeric-validation-only successor."
+    },
+    {
+      "id": "Exp439",
+      "kind": "exp438_scale_aware_reconstruction_validation_repair",
+      "status": "design_approved_implementation_planned",
+      "branch": "codex/exp439-scale-aware-reconstruction-antigravity",
+      "base_commit": "b994fd46db373f5f556bbecb00cc9811d3679ac8",
+      "documents": [
+        "docs/superpowers/specs/2026-08-07-exp439-scale-aware-reconstruction-antigravity-design.md",
+        "docs/superpowers/plans/2026-08-07-exp439-scale-aware-reconstruction-antigravity.md",
+        "docs/EXP439_PREREGISTRATION_antigravity_KO.md",
+        "docs/EXP439_RUNBOOK_antigravity_KO.md"
+      ],
+      "artifact_root": "/Users/mac/Documents/Dataset/exp439_scale_aware_reconstruction_repair_antigravity_20260807",
+      "dataset_count": 1117,
+      "predecessor_experiment": "Exp438",
+      "predecessor_reviewed_commit": "d1da286e9c74c64abe76e0c255c86c30141813bd",
+      "predecessor_import_records": 89,
+      "reconstruction_tolerance": "max(1e-5, one_float32_ulp_at_max_component_scale)",
+      "scientific_changes": ["reconstruction_validation_guard"],
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "prediction_phase_started": false,
+      "test_labels_opened": false,
+      "official_readiness": false,
+      "cpu_topology": {
+        "logical_cpus": 12,
+        "workers": 11,
+        "inner_threads": 1
+      },
+      "notes": "Exp439 preserves Exp438 FFT bins, components, depth, ASPE, scoring, thresholds, lanes, budgets, and label boundary. It permits only one scale-aware float32 ULP in the reconstruction guard, keeps whole-row nonfinite TRAIN exclusion, imports the exact 89-record prefix only under complete hash parity, and records the dataset name for future worker errors."
     }
   ]
 }

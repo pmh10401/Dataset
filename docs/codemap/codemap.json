@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-07T08:53:11Z",
-  "generated_from_commit": "319b78540cca3c4dc4c2abd6c3917a39ed07f8be",
+  "generated_at": "2026-08-07T09:29:35Z",
+  "generated_from_commit": "b994fd46db373f5f556bbecb00cc9811d3679ac8",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -16,7 +16,8 @@
     "Exp438 isolated implementation, clean-HEAD readiness with terminal or fresh live CPU Exp437 evidence, label-free ordered prediction, deterministic review-only publication, and lazy post-freeze TEST-label evaluation",
     "User-approved Exp437 stale-PID checkpoint recovery followed by explicitly verified CPU concurrency with Exp438, without scientific-rule changes",
     "User-approved Exp437 stale-PID recovery and live CPU concurrency with Exp438, implemented through a test-first operational plan",
-    "Exp439 isolated scale-aware float32 reconstruction repair, immutable Exp438 failure evidence, exact-prefix import gate, and unchanged label-free scientific rules"
+    "Exp439 isolated scale-aware float32 reconstruction repair, immutable Exp438 failure evidence, exact-prefix import gate, and unchanged label-free scientific rules",
+    "Exp439 preregistered one-ULP reconstruction repair, whole-row nonfinite TRAIN exclusion, exact 89-record predecessor import, and dataset-attributed failure logs"
   ],
   "nodes": [
     {
@@ -26,7 +27,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records recovered Exp437 CPU PID 45306 at checkpoint 939, the single-owner DB snapshot constraint, the user decision to wait for Exp437 completion, and the exact deferred Exp438 readiness handoff.",
+      "role": "Records immutable Exp438 failure evidence at 89/1,117 and governs the approved Exp439 scale-aware float32 reconstruction repair, exact-prefix import, label boundary, and official execution handoff.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -205,6 +206,22 @@
         {
           "path": "docs/superpowers/plans/2026-08-07-exp439-scale-aware-reconstruction-antigravity.md",
           "symbol": "# Exp439 Scale-Aware Reconstruction Repair Implementation Plan"
+        },
+        {
+          "path": "docs/EXP439_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "# Exp439 크기 대응 FFT 복원 검증 사전등록"
+        },
+        {
+          "path": "docs/EXP439_RUNBOOK_antigravity_KO.md",
+          "symbol": "# Exp439 크기 대응 FFT 복원 검증 실행 안내서"
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"id\": \"Exp439\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"exp439_repair\": {"
         }
       ]
     },
