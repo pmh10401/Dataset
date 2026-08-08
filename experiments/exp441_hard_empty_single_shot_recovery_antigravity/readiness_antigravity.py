@@ -15,8 +15,8 @@ from .artifacts_antigravity import (
     canonical_json_bytes_antigravity,
     exclusive_rename_antigravity,
     fsync_directory_antigravity,
+    pin_exact_regular_inventory_antigravity,
     parse_canonical_json_bytes_antigravity,
-    read_pinned_regular_bytes_antigravity,
     write_create_only_antigravity,
 )
 from .config_antigravity import FROZEN_CONFIG, cpu_worker_count_antigravity, governance_payload_antigravity
@@ -238,18 +238,54 @@ def _validate_readiness_payload_antigravity(payload: object) -> tuple[dict[str, 
     return payload, backend
 
 
-def _failed_staging_antigravity(staging: Path, reviewed_commit: str, error: BaseException) -> None:
-    """Preserve a private failure tree without ever creating the fixed parent."""
-    try:
-        failure: dict[str, object] = {"schema": "exp441.readiness_failure.v1", "reviewed_commit": reviewed_commit, "error": str(error) or type(error).__name__}
-        failure.update(_GOVERNANCE_ANTIGRAVITY)
-        write_create_only_antigravity(staging / "failure_antigravity.json", canonical_json_bytes_antigravity(failure))
-        fsync_directory_antigravity(staging)
-        failed = staging.with_name(f".{_RUN_ROOT_ANTIGRAVITY.name}_failed_{uuid4().hex}_antigravity")
-        os.rename(staging, failed)
-        fsync_directory_antigravity(failed.parent)
-    except BaseException:
-        pass
+def _failure_payload_antigravity(reviewed_commit: str, error: BaseException) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "schema": "exp441.readiness_failure.v1", "reviewed_commit": reviewed_commit,
+        "error": str(error) or type(error).__name__,
+    }
+    payload.update(_GOVERNANCE_ANTIGRAVITY)
+    if (set(payload) != {"schema", "reviewed_commit", "error"} | set(_GOVERNANCE_ANTIGRAVITY) or
+            payload["schema"] != "exp441.readiness_failure.v1" or not _lower_hex_antigravity(payload["reviewed_commit"], 40) or
+            not isinstance(payload["error"], str) or not payload["error"]):
+        raise ValueError("readiness failure evidence is invalid")
+    return payload
+
+
+def _failed_sibling_antigravity(parent: Path) -> Path:
+    return parent / f".{_RUN_ROOT_ANTIGRAVITY.name}_failed_{uuid4().hex}_antigravity"
+
+
+def _write_failure_evidence_antigravity(root: Path, reviewed_commit: str, error: BaseException) -> None:
+    write_create_only_antigravity(root / "failure_antigravity.json", canonical_json_bytes_antigravity(_failure_payload_antigravity(reviewed_commit, error)))
+    fsync_directory_antigravity(root)
+
+
+def _preserve_failed_staging_antigravity(staging: Path, reviewed_commit: str, error: BaseException) -> None:
+    """Durably retain a private pre-rename failure without replacing any winner."""
+    _write_failure_evidence_antigravity(staging, reviewed_commit, error)
+    failed = _failed_sibling_antigravity(staging.parent)
+    os.rename(staging, failed)
+    fsync_directory_antigravity(failed.parent)
+
+
+def _directory_identity_antigravity(path: Path) -> tuple[int, int, int]:
+    status = path.lstat()
+    if not stat.S_ISDIR(status.st_mode) or stat.S_IMODE(status.st_mode) != 0o700:
+        raise ValueError("owned readiness parent is invalid")
+    return status.st_dev, status.st_ino, status.st_mode
+
+
+def _rollback_owned_parent_antigravity(identity: tuple[int, int, int], reviewed_commit: str, error: BaseException) -> None:
+    """Undo only our provisional post-rename parent through a no-clobber failed rename."""
+    root = _RUN_ROOT_ANTIGRAVITY
+    if root.is_symlink() or _directory_identity_antigravity(root) != identity:
+        raise ValueError("readiness parent changed before rollback")
+    failed = _failed_sibling_antigravity(root.parent)
+    exclusive_rename_antigravity(root, failed)
+    _write_failure_evidence_antigravity(failed, reviewed_commit, error)
+    fsync_directory_antigravity(failed.parent)
+    if root.exists() or root.is_symlink():
+        raise ValueError("readiness rollback left the fixed parent present")
 
 
 def run_readiness_antigravity(reviewed_commit: str) -> ReadinessBindingAntigravity:
@@ -257,6 +293,7 @@ def run_readiness_antigravity(reviewed_commit: str) -> ReadinessBindingAntigravi
     reviewed_commit = _require_reviewed_head_antigravity(reviewed_commit)
     _require_absent_output_roots_antigravity()
     staging = _RUN_ROOT_ANTIGRAVITY.with_name(f".{_RUN_ROOT_ANTIGRAVITY.name}_staging_{uuid4().hex}_antigravity")
+    owned_identity: tuple[int, int, int] | None = None
     try:
         staging.mkdir(mode=0o700)
         snapshot = verify_frozen_sources_antigravity()
@@ -271,11 +308,18 @@ def run_readiness_antigravity(reviewed_commit: str) -> ReadinessBindingAntigravi
         if _RUN_ROOT_ANTIGRAVITY.exists() or _RUN_ROOT_ANTIGRAVITY.is_symlink():
             raise ValueError("Exp441 readiness ownership raced")
         exclusive_rename_antigravity(staging, _RUN_ROOT_ANTIGRAVITY)
+        owned_identity = _directory_identity_antigravity(_RUN_ROOT_ANTIGRAVITY)
         fsync_directory_antigravity(_RUN_ROOT_ANTIGRAVITY.parent)
         return ReadinessBindingAntigravity(reviewed_commit, str(payload["source_snapshot_sha256"]), backend, sha256(encoded).hexdigest())
     except BaseException as error:
-        if staging.exists() and not _RUN_ROOT_ANTIGRAVITY.exists():
-            _failed_staging_antigravity(staging, reviewed_commit, error)
+        try:
+            if owned_identity is not None:
+                _rollback_owned_parent_antigravity(owned_identity, reviewed_commit, error)
+            elif staging.exists():
+                _preserve_failed_staging_antigravity(staging, reviewed_commit, error)
+        except BaseException as preservation_error:
+            error.add_note(f"readiness failure preservation also failed: {type(preservation_error).__name__}: {preservation_error}")
+            raise error from preservation_error
         raise
 
 
@@ -284,27 +328,23 @@ def validate_readiness_for_run_antigravity(reviewed_commit: str) -> ReadinessBin
     reviewed_commit = _require_reviewed_head_antigravity(reviewed_commit)
     root = _RUN_ROOT_ANTIGRAVITY
     artifact = root / _READINESS_NAME_ANTIGRAVITY
-    if (root.is_symlink() or not root.is_dir() or stat.S_IMODE(root.stat(follow_symlinks=False).st_mode) != 0o700 or
-            set(entry.name for entry in root.iterdir()) != {_READINESS_NAME_ANTIGRAVITY}):
-        raise ValueError("readiness parent inventory is invalid")
-    encoded, _digest = read_pinned_regular_bytes_antigravity(artifact)
-    if stat.S_IMODE(artifact.stat(follow_symlinks=False).st_mode) != 0o600:
-        raise ValueError("readiness artifact mode is invalid")
-    parsed = parse_canonical_json_bytes_antigravity(encoded)
-    payload, backend = _validate_readiness_payload_antigravity(parsed)
-    if canonical_json_bytes_antigravity(payload) != encoded or payload["reviewed_commit"] != reviewed_commit:
-        raise ValueError("readiness bytes or reviewed commit differ")
-    snapshot = verify_frozen_sources_antigravity()
-    source = _source_payload_antigravity(snapshot)
-    selection = _selection_payload_antigravity(snapshot)
-    expected = _readiness_payload_antigravity(reviewed_commit, source, selection, backend)
-    if canonical_json_bytes_antigravity(expected) != encoded:
-        raise ValueError("readiness source replay differs")
-    if _backend_antigravity().to_payload() != backend.to_payload():
-        raise ValueError("readiness worker or environment differs")
-    if (root / "publication_antigravity").exists() or (root / "evaluation_antigravity").exists():
-        raise ValueError("publication or evaluation already exists")
-    return ReadinessBindingAntigravity(reviewed_commit, str(payload["source_snapshot_sha256"]), backend, sha256(encoded).hexdigest())
+    with pin_exact_regular_inventory_antigravity(root, (_READINESS_NAME_ANTIGRAVITY,)) as pinned:
+        encoded = pinned.payloads[_READINESS_NAME_ANTIGRAVITY]
+        parsed = parse_canonical_json_bytes_antigravity(encoded)
+        payload, backend = _validate_readiness_payload_antigravity(parsed)
+        if canonical_json_bytes_antigravity(payload) != encoded or payload["reviewed_commit"] != reviewed_commit:
+            raise ValueError("readiness bytes or reviewed commit differ")
+        snapshot = verify_frozen_sources_antigravity()
+        source = _source_payload_antigravity(snapshot)
+        selection = _selection_payload_antigravity(snapshot)
+        expected = _readiness_payload_antigravity(reviewed_commit, source, selection, backend)
+        if canonical_json_bytes_antigravity(expected) != encoded:
+            raise ValueError("readiness source replay differs")
+        if _backend_antigravity().to_payload() != backend.to_payload():
+            raise ValueError("readiness worker or environment differs")
+        binding = ReadinessBindingAntigravity(reviewed_commit, str(payload["source_snapshot_sha256"]), backend, sha256(encoded).hexdigest())
+        pinned.revalidate_antigravity()
+        return binding
 
 
 __all__ = ["run_readiness_antigravity", "validate_readiness_for_run_antigravity", "current_clean_head_antigravity"]
