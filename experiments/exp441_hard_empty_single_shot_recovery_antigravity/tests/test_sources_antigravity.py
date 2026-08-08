@@ -262,6 +262,7 @@ class FrozenSourcesAntigravityTests(unittest.TestCase):
             self.assertEqual(executor.max_workers, 11)
             self.assertTrue(all(len(args[0]) == 4 for _, args in executor.tasks))
             self.assertEqual([event["dataset"] for event in events], ["A", "B"])
+            self.assertEqual([(event["test_row_count"], event["raw_length"]) for event in events], [(1, None), (1, None)])
             self.assertTrue(all(os.environ[name] == "1" for name in sources._NUMERICAL_THREAD_ENV_ANTIGRAVITY))
 
     def test_parent_accepts_context_prefix_after_later_c_completes_and_fails_first(self) -> None:

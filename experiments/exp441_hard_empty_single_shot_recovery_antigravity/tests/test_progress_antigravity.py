@@ -83,11 +83,12 @@ class ProgressAntigravityTests(unittest.TestCase):
             with patch.object(progress_module.os, "write", side_effect=short_write):
                 writer.begin_record_antigravity(dataset="A", record_name="0000_record_antigravity.json", active_datasets=("A",))
             self.assertEqual(json.loads((attempt / "progress_antigravity.json").read_text())["current_dataset"], "A")
+            before_failure = (attempt / "progress_antigravity.json").read_bytes()
             with patch.object(progress_module.os, "write", side_effect=OSError("disk failure")):
                 with self.assertRaisesRegex(OSError, "disk failure"):
                     writer.begin_record_antigravity(dataset="A", record_name="0000_record_antigravity.json", active_datasets=("A",))
-            self.assertNotEqual((attempt / "progress_antigravity.json").read_bytes(), previous)
-            self.assertEqual(json.loads((attempt / "progress_antigravity.json").read_text())["current_dataset"], "A")
+            self.assertNotEqual(before_failure, previous)
+            self.assertEqual((attempt / "progress_antigravity.json").read_bytes(), before_failure)
             self.assertFalse((attempt / "progress_antigravity.tmp").exists())
 
     def test_known_test_and_raw_dimensions_are_recorded_without_inventing_train_data(self) -> None:

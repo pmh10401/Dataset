@@ -8,7 +8,7 @@ import signal
 import subprocess
 from typing import Mapping
 
-from .artifacts_antigravity import canonical_json_bytes_antigravity, write_create_only_antigravity
+from .artifacts_antigravity import canonical_json_bytes_antigravity, parse_canonical_json_bytes_antigravity, read_pinned_regular_bytes_antigravity, write_create_only_antigravity
 from .config_antigravity import FROZEN_CONFIG, governance_payload_antigravity
 from .contracts_antigravity import (
     CompletedAttemptAntigravity, FrozenSourceSnapshotAntigravity, SelectionResultAntigravity,
@@ -166,7 +166,10 @@ def _best_effort_failure_antigravity(writer: ProgressWriterAntigravity | None, a
     try:
         payload = _failure_payload_antigravity(sequence=sequence, reviewed_commit=reviewed_commit, status=status, error=message)
         _validate_failure_artifact_antigravity(payload)
-        write_create_only_antigravity(attempt / "failure_antigravity.json", canonical_json_bytes_antigravity(payload))
+        path = attempt / "failure_antigravity.json"
+        write_create_only_antigravity(path, canonical_json_bytes_antigravity(payload))
+        parsed = parse_canonical_json_bytes_antigravity(read_pinned_regular_bytes_antigravity(path)[0])
+        _validate_failure_artifact_antigravity(parsed)  # type: ignore[arg-type]
     except BaseException:
         pass
 
@@ -231,6 +234,8 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
         selection_sha256 = sha256(selection_bytes).hexdigest()
         write_create_only_antigravity(attempt / "source_snapshot_antigravity.json", snapshot_bytes)
         write_create_only_antigravity(attempt / "selection_antigravity.json", selection_bytes)
+        parsed_selection = parse_canonical_json_bytes_antigravity(read_pinned_regular_bytes_antigravity(attempt / "selection_antigravity.json")[0])
+        _validate_selection_artifact_antigravity(parsed_selection)  # type: ignore[arg-type]
         reverified = _reverify_sources_after_artifacts_antigravity()
         if (not isinstance(reverified, FrozenSourceSnapshotAntigravity) or
                 _snapshot_payload_antigravity(reverified) != snapshot_payload or
