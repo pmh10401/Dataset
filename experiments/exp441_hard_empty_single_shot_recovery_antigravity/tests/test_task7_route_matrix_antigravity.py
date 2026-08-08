@@ -96,3 +96,56 @@ class Task7RouteMatrixAntigravityTests(unittest.TestCase):
         subprocess.run([sys.executable,"-c",code],cwd=root,check=True,capture_output=True,text=True)
         result=subprocess.run([sys.executable,str(wrapper),"--help"],cwd="/tmp",check=True,capture_output=True,text=True)
         self.assertIn("{readiness,new,inspect,evaluate}",result.stdout)
+
+    def test_staging_write_and_directory_fsync_failures_keep_primary_error_visible(self):
+        """Initial readiness artifact failures must never create the fixed parent."""
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import readiness_antigravity as r
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_readiness_review_fix_antigravity import ReadinessReviewFixAntigravityTests
+        helper=ReadinessReviewFixAntigravityTests(); commit="a"*40
+        for failure in ("write","fsync"):
+            with self.subTest(failure=failure),tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp)/"run_antigravity"
+                with ExitStack() as stack:
+                    helper._patch_successful_replay_antigravity(stack,r,root,commit)
+                    if failure=="write": stack.enter_context(patch.object(r,"write_create_only_antigravity",side_effect=OSError("staging write")))
+                    else:
+                        stack.enter_context(patch.object(r,"fsync_directory_antigravity",side_effect=OSError("staging fsync")))
+                    with self.assertRaisesRegex(OSError,"staging") as caught:r.run_readiness_antigravity(commit)
+                self.assertFalse(root.exists());self.assertIsNotNone(caught.exception.__cause__)
+
+    def test_rollback_rename_and_failed_parent_fsync_chain_from_original_parent_fsync(self):
+        """Rollback races and failed-staging durability errors chain from, never mask, parent fsync."""
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import readiness_antigravity as r
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_readiness_review_fix_antigravity import ReadinessReviewFixAntigravityTests
+        helper=ReadinessReviewFixAntigravityTests();commit="a"*40
+        for failure in ("rollback_rename","failed_parent_fsync"):
+            with self.subTest(failure=failure),tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp)/"run_antigravity";original_rename=r.exclusive_rename_antigravity;seen={"rename":0}
+                def rename(source,destination):
+                    seen["rename"]+=1
+                    if failure=="rollback_rename" and seen["rename"]==2:raise OSError("rollback rename")
+                    return original_rename(source,destination)
+                def fsync(path):
+                    if path==root.parent and root.exists():raise OSError("parent fsync primary")
+                    if failure=="failed_parent_fsync" and path==root.parent:raise OSError("failed parent fsync")
+                    return r.fsync_directory_antigravity(path)
+                original_fsync=r.fsync_directory_antigravity
+                def fsync_safe(path):
+                    if path==root.parent and root.exists():raise OSError("parent fsync primary")
+                    if failure=="failed_parent_fsync" and path==root.parent:raise OSError("failed parent fsync")
+                    return original_fsync(path)
+                with ExitStack() as stack:
+                    helper._patch_successful_replay_antigravity(stack,r,root,commit)
+                    stack.enter_context(patch.object(r,"exclusive_rename_antigravity",side_effect=rename));stack.enter_context(patch.object(r,"fsync_directory_antigravity",side_effect=fsync_safe))
+                    with self.assertRaisesRegex(OSError,"parent fsync primary") as caught:r.run_readiness_antigravity(commit)
+                self.assertIsNotNone(caught.exception.__cause__);self.assertIn("preservation also failed","\n".join(caught.exception.__notes__))
+
+    def test_cli_new_rejects_moving_head_after_readiness_before_runtime(self):
+        """A second HEAD read must stop `new` before the source-replay runtime boundary."""
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import cli_antigravity as cli
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.readiness_antigravity as readiness
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity as runtime
+        binding=types.SimpleNamespace(reviewed_commit="a"*40)
+        with patch.object(cli,"current_clean_head_antigravity",side_effect=["a"*40,"b"*40]),patch.object(readiness,"validate_readiness_for_run_antigravity",return_value=binding),patch.object(runtime,"run_exp441_new_antigravity") as run:
+            with self.assertRaises(ValueError):cli.main_antigravity(["new"])
+        run.assert_not_called()
