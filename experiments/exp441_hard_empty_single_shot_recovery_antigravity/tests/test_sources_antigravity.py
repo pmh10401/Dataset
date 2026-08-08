@@ -58,6 +58,7 @@ class _DelayedExecutorAntigravity:
         self.futures: list[Future] = []
         self.tasks: list[tuple[object, tuple[object, ...]]] = []
         self.threads: list[threading.Thread] = []
+        self.completed_datasets: list[str] = []
 
     def __enter__(self):
         return self
@@ -74,9 +75,13 @@ class _DelayedExecutorAntigravity:
         def complete() -> None:
             time.sleep(self.delays[args[0][1]])
             try:
-                future.set_result(function(*args))
+                result = function(*args)
             except BaseException as error:
+                self.completed_datasets.append(args[0][1])
                 future.set_exception(error)
+            else:
+                self.completed_datasets.append(args[0][1])
+                future.set_result(result)
 
         thread = threading.Thread(target=complete)
         self.threads.append(thread)
@@ -258,8 +263,8 @@ class FrozenSourcesAntigravityTests(unittest.TestCase):
             self.assertEqual([event["dataset"] for event in events], ["A", "B"])
             self.assertTrue(all(os.environ[name] == "1" for name in sources._NUMERICAL_THREAD_ENV_ANTIGRAVITY))
 
-    def test_parent_emits_prefix_before_later_out_of_order_workers_finish_or_fail(self) -> None:
-        # Break caught: buffering every result before emitting, which loses committed prefix visibility on a later failure.
+    def test_parent_accepts_context_prefix_after_later_c_completes_and_fails_first(self) -> None:
+        # Break caught: treating completion order as commit order, or hiding A/B after C has already failed.
         with tempfile.TemporaryDirectory() as directory:
             tasks = []
             for sequence, dataset in enumerate(("A", "B", "C")):
@@ -272,14 +277,14 @@ class FrozenSourcesAntigravityTests(unittest.TestCase):
                     payload["unexpected"] = False
                 path.write_bytes(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode() + b"\n")
                 tasks.append((str(path), dataset, sha256(path.read_bytes()).hexdigest(), sequence))
-            executor = _DelayedExecutorAntigravity(max_workers=11, delays={"A": 0.01, "B": 0.20, "C": 0.25})
+            executor = _DelayedExecutorAntigravity(max_workers=11, delays={"A": 0.20, "B": 0.30, "C": 0.01})
             events: list[Mapping[str, object]] = []
-            pending_at_first_event: list[bool] = []
+            c_failed_before_a_accept: list[bool] = []
 
             def observe(event: Mapping[str, object]) -> None:
                 events.append(event)
                 if event["sequence"] == 0:
-                    pending_at_first_event.append(any(not future.done() for future in executor.futures[1:]))
+                    c_failed_before_a_accept.append(executor.futures[2].done())
 
             with patch.object(sources, "ProcessPoolExecutor", return_value=executor):
                 with self.assertRaisesRegex(ValueError, "record payload"):
@@ -287,8 +292,40 @@ class FrozenSourcesAntigravityTests(unittest.TestCase):
             self.assertEqual([event["dataset"] for event in events], ["A", "B"])
             self.assertEqual(executor.max_workers, 11)
             self.assertEqual(len(executor.tasks), 3)
-            self.assertEqual(pending_at_first_event, [True])
+            self.assertEqual(executor.completed_datasets[0], "C")
+            self.assertEqual(c_failed_before_a_accept, [True])
             self.assertTrue(all(type(event).__name__ == "mappingproxy" for event in events))
+
+    def test_reverification_rejects_a_source_mutated_after_its_initial_hash(self) -> None:
+        # Break caught: returning a snapshot after a pinned source changes during the replay window.
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "source_antigravity.json"
+            path.write_bytes(b"first\n")
+            expected = sha256(path.read_bytes()).hexdigest()
+            path.write_bytes(b"second\n")
+            with patch.object(sources, "_validate_allowed_prediction_path_antigravity", return_value=path):
+                with self.assertRaisesRegex(ValueError, "SHA256 mismatch"):
+                    sources._reverify_paths_antigravity({path: expected})
+
+    def test_public_and_observer_routes_enter_fixed_worker_parser_never_reference(self) -> None:
+        # Break caught: either production entrance bypassing the fixed 11-worker parser or using the test-only reference.
+        sentinel = object()
+        with patch.object(sources, "_verify_frozen_sources_with_observer_antigravity", return_value=sentinel) as runtime, \
+                patch.object(sources, "_verify_frozen_sources_single_worker_reference_antigravity") as reference:
+            self.assertIs(sources.verify_frozen_sources_antigravity(), sentinel)
+        runtime.assert_called_once()
+        reference.assert_not_called()
+        prefix = ((), {}, frozenset(), {}, {})
+        events: list[Mapping[str, object]] = []
+        with patch.object(sources, "_load_prefix_antigravity", return_value=prefix), \
+                patch.object(sources, "_record_tasks_antigravity", return_value=()), \
+                patch.object(sources, "_parse_records_fixed_workers_antigravity", return_value=()) as parser, \
+                patch.object(sources, "_snapshot_from_records_antigravity", return_value=sentinel), \
+                patch.object(sources, "_reverify_paths_antigravity"), \
+                patch.object(sources, "_verify_frozen_sources_single_worker_reference_antigravity") as reference:
+            self.assertIs(sources._verify_frozen_sources_with_observer_antigravity(events.append), sentinel)
+        parser.assert_called_once()
+        reference.assert_not_called()
 
     def test_public_verifier_routes_only_to_fixed_worker_runtime(self) -> None:
         # Break caught: production reaching the isolated sequential reference implementation.
@@ -310,27 +347,30 @@ class FrozenSourcesAntigravityTests(unittest.TestCase):
         # Break caught: a production entrypoint gaining a route to the sequential parity implementation.
         package = Path(sources.__file__).parent
         reference = "_verify_frozen_sources_single_worker_reference_antigravity"
+
+        def forbidden_uses(tree: ast.AST) -> list[str]:
+            hits: list[str] = []
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Name) and node.id == reference:
+                    hits.append("name")
+                elif isinstance(node, ast.Attribute) and node.attr == reference:
+                    hits.append("attribute")
+                elif isinstance(node, ast.ImportFrom) and any(alias.name == reference for alias in node.names):
+                    hits.append("from-import")
+                elif isinstance(node, ast.Import) and any(alias.name == reference for alias in node.names):
+                    hits.append("import")
+            return hits
+
+        self.assertEqual(forbidden_uses(ast.parse(f"from module import {reference} as alias")), ["from-import"])
+        self.assertEqual(forbidden_uses(ast.parse(f"module.{reference}()")), ["attribute"])
+        self.assertEqual(forbidden_uses(ast.parse(f"{reference}()")), ["name"])
         for path in package.glob("*.py"):
             tree = ast.parse(path.read_text())
-            names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
-            imported = {
-                alias.name
-                for node in ast.walk(tree)
-                if isinstance(node, (ast.Import, ast.ImportFrom))
-                for alias in node.names
-            }
-            imported_from = {
-                node.module
-                for node in ast.walk(tree)
-                if isinstance(node, ast.ImportFrom) and node.module is not None
-            }
             if path.name == "sources_antigravity.py":
                 public_calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == reference]
                 self.assertEqual(public_calls, [])
             else:
-                self.assertNotIn(reference, names, path.name)
-                self.assertNotIn(reference, imported, path.name)
-                self.assertFalse(any(reference in module for module in imported_from), path.name)
+                self.assertEqual(forbidden_uses(tree), [], path.name)
 
     def test_real_replay_is_fully_label_free_and_has_frozen_population_counts(self) -> None:
         # Break caught: a replay that silently changes source identity, counts, or touches labels.
