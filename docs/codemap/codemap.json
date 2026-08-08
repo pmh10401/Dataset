@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T02:12:10Z",
-  "generated_from_commit": "26eec288301b90b6500cb40ea61a11c5651f3f27",
+  "generated_at": "2026-08-08T02:27:35Z",
+  "generated_from_commit": "5af3eea0341fc4748eb1e15b9f5186cd46b6d102",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2466,7 +2466,7 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 currently contributes only an evidenced, caller-free package boundary: frozen selector configuration, immutable source/selection/publication/evaluation value contracts, and descriptor-pinned create-only artifact primitives; its callers and later source/selector flows do not yet exist.",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it parses 1,117 records in fixed context order through eleven CPU workers, validates every candidate and Hard coordinate against TEST row counts, and freezes zero label access without any SQLite or Exp417 input route.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2515,7 +2515,10 @@
         "read_pinned_regular_bytes_antigravity",
         "write_create_only_antigravity",
         "exclusive_rename_antigravity",
-        "BackendAssessmentAntigravity"
+        "BackendAssessmentAntigravity",
+        "verify_frozen_sources_antigravity",
+        "hard_coordinate_identity_sha256_antigravity",
+        "_parse_record_task_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2547,7 +2550,8 @@
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_runtime_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_config_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_contracts_antigravity.py",
-        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_artifacts_antigravity.py"
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_artifacts_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_sources_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2741,28 +2745,44 @@
         },
         {
           "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/readiness_antigravity.py",
-        "symbol": "acceleration_fixture"
-      },
-      {
-        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/config_antigravity.py",
-        "symbol": "class Exp441FrozenConfig"
-      },
-      {
-        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/contracts_antigravity.py",
-        "symbol": "class SelectionResultAntigravity"
-      },
-      {
-        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/artifacts_antigravity.py",
-        "symbol": "def read_pinned_regular_bytes_antigravity("
-      },
-      {
-        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/config_antigravity.py",
-        "symbol": "def _require_allowlisted_prediction_path_antigravity("
-      },
-      {
-        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/contracts_antigravity.py",
-        "symbol": "class BackendAssessmentAntigravity"
-      }
+          "symbol": "acceleration_fixture"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/config_antigravity.py",
+          "symbol": "class Exp441FrozenConfig"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class SelectionResultAntigravity"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/artifacts_antigravity.py",
+          "symbol": "def read_pinned_regular_bytes_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/config_antigravity.py",
+          "symbol": "def _require_allowlisted_prediction_path_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class BackendAssessmentAntigravity"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
+          "symbol": "def verify_frozen_sources_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
+          "symbol": "def _parse_record_task_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
+          "symbol": "def _hard_coordinates_antigravity("
+        },
+        {
+          "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/contracts_antigravity.py",
+          "symbol": "class Exp440DatasetResultAntigravity"
+        }
       ]
     },
     {
@@ -3513,6 +3533,10 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/checkpoint_antigravity.py",
           "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
+          "symbol": "from .artifacts_antigravity import ("
         }
       ]
     },
@@ -3591,6 +3615,28 @@
         {
           "path": "operational/recover_exp437_checkpoint_antigravity.py",
           "symbol": "resume_exp436"
+        }
+      ]
+    },
+    {
+      "from": "exp438_frequency_runtime",
+      "to": "artifact_utils",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
+          "symbol": "def _hard_coordinates_antigravity("
+        }
+      ]
+    },
+    {
+      "from": "exp438_frequency_runtime",
+      "to": "exp438_publication_evaluation",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
+          "symbol": "def _validate_publication_antigravity("
         }
       ]
     }
