@@ -103,11 +103,32 @@ class PinnedRegularInventoryAntigravity:
 
     def revalidate_antigravity(self) -> None:
         """Fail closed if the retained root or any named entry changed after initial pinning."""
+        self.revalidate_at_antigravity(self._root_antigravity)
+
+    def revalidate_at_antigravity(self, namespace_root: Path, *, renamed_antigravity: bool = False) -> None:
+        """Bind retained descriptors to an exact current directory pathname after a safe rename."""
         try:
             root_descriptor_identity = _pinned_file_identity_antigravity(os.fstat(self._root_descriptor_antigravity))
-            root_namespace_identity = _pinned_file_identity_antigravity(self._root_antigravity.lstat())
-            if (root_descriptor_identity != self._root_metadata_antigravity or
-                    root_namespace_identity != self._root_metadata_antigravity or
+            root_namespace = Path(namespace_root)
+            root_namespace_identity = _pinned_file_identity_antigravity(root_namespace.lstat())
+            root_identity_matches = (
+                root_descriptor_identity == self._root_metadata_antigravity and
+                root_namespace_identity == self._root_metadata_antigravity
+            )
+            if renamed_antigravity:
+                root_identity_matches = (
+                    root_descriptor_identity.device == self._root_metadata_antigravity.device and
+                    root_descriptor_identity.inode == self._root_metadata_antigravity.inode and
+                    root_descriptor_identity.mode == self._root_metadata_antigravity.mode and
+                    root_descriptor_identity.size == self._root_metadata_antigravity.size and
+                    root_descriptor_identity.mtime_ns == self._root_metadata_antigravity.mtime_ns and
+                    root_namespace_identity.device == root_descriptor_identity.device and
+                    root_namespace_identity.inode == root_descriptor_identity.inode and
+                    root_namespace_identity.mode == root_descriptor_identity.mode and
+                    root_namespace_identity.size == root_descriptor_identity.size and
+                    root_namespace_identity.mtime_ns == root_descriptor_identity.mtime_ns
+                )
+            if (not root_identity_matches or
                     not stat.S_ISDIR(root_descriptor_identity.mode) or
                     stat.S_IMODE(root_descriptor_identity.mode) != self._directory_mode_antigravity):
                 raise ValueError("pinned inventory root changed")
@@ -115,7 +136,7 @@ class PinnedRegularInventoryAntigravity:
                 raise ValueError("pinned inventory changed")
             for name in self._names_antigravity:
                 descriptor_identity = _pinned_file_identity_antigravity(os.fstat(self._descriptors_antigravity[name]))
-                namespace_identity = _pinned_file_identity_antigravity(os.stat(name, dir_fd=self._root_descriptor_antigravity, follow_symlinks=False))
+                namespace_identity = _pinned_file_identity_antigravity((root_namespace / name).stat(follow_symlinks=False))
                 if (descriptor_identity != self.metadata[name] or namespace_identity != self.metadata[name] or
                         not stat.S_ISREG(descriptor_identity.mode) or stat.S_IMODE(descriptor_identity.mode) != self._file_mode_antigravity):
                     raise ValueError("pinned inventory changed")

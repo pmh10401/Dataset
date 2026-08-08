@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T08:26:31Z",
-  "generated_from_commit": "22212ab05a35fe5c3bac5b0355d4dcdb64f2b04c",
+  "generated_at": "2026-08-08T08:37:35Z",
+  "generated_from_commit": "115a784b47f3c8eedaa40f606ced2feada0ffa69",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2896,6 +2896,10 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/readiness_antigravity.py",
           "symbol": "def _rollback_owned_parent_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/artifacts_antigravity.py",
+          "symbol": "def revalidate_at_antigravity("
         }
       ]
     },

@@ -305,12 +305,17 @@ def run_readiness_antigravity(reviewed_commit: str) -> ReadinessBindingAntigravi
         encoded = canonical_json_bytes_antigravity(payload)
         write_create_only_antigravity(staging / _READINESS_NAME_ANTIGRAVITY, encoded)
         fsync_directory_antigravity(staging)
-        if _RUN_ROOT_ANTIGRAVITY.exists() or _RUN_ROOT_ANTIGRAVITY.is_symlink():
-            raise ValueError("Exp441 readiness ownership raced")
-        exclusive_rename_antigravity(staging, _RUN_ROOT_ANTIGRAVITY)
-        owned_identity = _directory_identity_antigravity(_RUN_ROOT_ANTIGRAVITY)
-        fsync_directory_antigravity(_RUN_ROOT_ANTIGRAVITY.parent)
-        return ReadinessBindingAntigravity(reviewed_commit, str(payload["source_snapshot_sha256"]), backend, sha256(encoded).hexdigest())
+        with pin_exact_regular_inventory_antigravity(staging, (_READINESS_NAME_ANTIGRAVITY,)) as pinned:
+            if _RUN_ROOT_ANTIGRAVITY.exists() or _RUN_ROOT_ANTIGRAVITY.is_symlink():
+                raise ValueError("Exp441 readiness ownership raced")
+            pre_rename_identity = (pinned._root_metadata_antigravity.device, pinned._root_metadata_antigravity.inode, pinned._root_metadata_antigravity.mode)
+            exclusive_rename_antigravity(staging, _RUN_ROOT_ANTIGRAVITY)
+            owned_identity = pre_rename_identity
+            pinned.revalidate_at_antigravity(_RUN_ROOT_ANTIGRAVITY, renamed_antigravity=True)
+            fsync_directory_antigravity(_RUN_ROOT_ANTIGRAVITY.parent)
+            binding = ReadinessBindingAntigravity(reviewed_commit, str(payload["source_snapshot_sha256"]), backend, sha256(encoded).hexdigest())
+            pinned.revalidate_at_antigravity(_RUN_ROOT_ANTIGRAVITY, renamed_antigravity=True)
+            return binding
     except BaseException as error:
         try:
             if owned_identity is not None:

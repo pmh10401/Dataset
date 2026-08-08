@@ -67,6 +67,24 @@ class ReadinessReviewFixAntigravityTests(unittest.TestCase):
             self.assertEqual(failure["schema"], "exp441.readiness_failure.v1")
             self.assertEqual(failure["reviewed_commit"], commit)
 
+    def test_post_rename_move_aside_replacement_cannot_be_adopted_as_ours(self) -> None:
+        """Capturing ownership from destination after rename must not bless a racer's empty root."""
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import readiness_antigravity as readiness
+
+        commit = "a" * 40
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "run_antigravity"
+            def move_aside(source: Path, destination: Path) -> None:
+                os.rename(source, destination)
+                os.rename(destination, destination.with_name("owned_moved_aside_antigravity"))
+                destination.mkdir(mode=0o700)
+            with ExitStack() as stack:
+                self._patch_successful_replay_antigravity(stack, readiness, root, commit)
+                stack.enter_context(patch.object(readiness, "exclusive_rename_antigravity", side_effect=move_aside))
+                with self.assertRaises(ValueError): readiness.run_readiness_antigravity(commit)
+            self.assertTrue(root.is_dir())  # replacement remains racer's namespace, never adopted or moved
+            self.assertTrue((Path(temporary) / "owned_moved_aside_antigravity" / "readiness_antigravity.json").is_file())
+
     def test_post_rename_parent_fsync_rolls_back_our_owned_parent(self) -> None:
         """A durability failure after rename must leave no fixed parent behind."""
         from experiments.exp441_hard_empty_single_shot_recovery_antigravity import readiness_antigravity as readiness
