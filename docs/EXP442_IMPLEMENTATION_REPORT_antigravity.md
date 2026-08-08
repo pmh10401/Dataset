@@ -54,8 +54,8 @@ private `_run_readiness_at_root_antigravity`와
 
 - Important: profile의 design/preregistration hash binding을 최신 동결 SHA로 맞췄다.
 - Important: production root override를 제거하고 private test seam으로 격리했다.
-- Minor: codemap status 근거를 장부와 검증 기록에 반영했으며, 최종 codemap 재생성은
-  아직 남은 gate로 표시했다.
+- Minor: codemap status 근거를 장부와 검증 기록에 반영하고, 최종 codemap 세 파일을
+  commit `04560d0d`에서 함께 재생성했다.
 - Minor: active 상태의 원래 ETA 계산을 보존하는 회귀 테스트를 추가했다.
 
 ## TDD 증거
@@ -106,14 +106,13 @@ workers를 유지한다. 과학 계산을 GPU 사용 명분으로 다시 쓰지 
 
 ## 다음 gate
 
-현재 gate는 최종 codemap 세 파일 재생성과 Sol 재검토다. 두 gate가 끝나기 전에는
-공식 Exp442 root가 없고 readiness와 `new`를 시작하지 않는다.
+현재 남은 gate는 Sol 재검토뿐이다. 이 gate가 끝나기 전에는 공식 Exp442 root가
+없고 readiness와 `new`를 시작하지 않는다.
 
-1. 코드맵 세 파일을 최신 review-fix source에 맞춰 함께 재생성한다.
-2. fresh Sol High 재검토에서 중요한 문제가 없어야 한다.
-3. 깨끗한 reviewed commit에서 Exp442 readiness를 한 번 생성한다.
-4. 새 root에서 1,117개 label-free `new`를 실행하고 `inspect`로 prediction을 동결한다.
-5. prediction SHA와 label access 0을 확인한 뒤에만 `evaluate`를 실행한다.
+1. fresh Sol High 재검토에서 중요한 문제가 없어야 한다.
+2. 깨끗한 reviewed commit에서 Exp442 readiness를 한 번 생성한다.
+3. 새 root에서 1,117개 label-free `new`를 실행하고 `inspect`로 prediction을 동결한다.
+4. prediction SHA와 label access 0을 확인한 뒤에만 `evaluate`를 실행한다.
 
 현재 공식 Exp442 root/readiness/new/prediction/evaluation은 모두 미시작 또는 부재다.
 기술 실행과 사후 재현이 성공해도 Exp442는 adaptive, descriptive, review-only다.

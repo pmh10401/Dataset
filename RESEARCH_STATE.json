@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-08T17:54:51Z",
+  "updated_at": "2026-08-08T18:03:43Z",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
   "last_verified_commit": "5c946ba73d012760ba4309d46f3b4bcb499cf0cf",
   "active_experiment": "Exp442",
-  "active_phase": "exp442_review_fix_verification_complete_sol_rereview_codemap_pending",
+  "active_phase": "exp442_review_fix_and_codemap_complete_sol_rereview_pending",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -640,8 +640,8 @@
     "chlorine_cpu_smoke_seconds": 42.57567008398473,
     "chlorine_prediction_label_access": 0
   },
-  "next_action": "OBTAIN_SOL_REREVIEW_AND_FINAL_CODEMAP_THEN_CREATE_EXP442_READINESS",
-  "exact_next_command_if_interrupted": "DO_NOT_RUN_EXP442_READINESS_UNTIL_SOL_REREVIEW_AND_FINAL_CODEMAP",
+  "next_action": "OBTAIN_SOL_REREVIEW_THEN_CREATE_EXP442_READINESS",
+  "exact_next_command_if_interrupted": "DO_NOT_RUN_EXP442_READINESS_UNTIL_SOL_REREVIEW_SHIPS",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": false,
@@ -675,11 +675,12 @@
   },
   "exp442_implementation": {
     "experiment": "Exp442",
-    "status": "review_fix_verification_complete_sol_rereview_codemap_pending",
+    "status": "review_fix_and_codemap_complete_sol_rereview_pending",
     "predecessor": "Exp441",
     "predecessor_reviewed_commit": "f5df76e377a355eaf1613b7864186c7a618b7756",
     "implementation_commit": "5747a47fa8d996e549c4b9536e5ecbfeea87dfcf",
     "review_fix_commit": "5c946ba73d012760ba4309d46f3b4bcb499cf0cf",
+    "review_fix_codemap_commit": "04560d0d6ecaa43798e07369bea17968a70251dc",
     "implementation_report": "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md",
     "reviewed_design_sha256": "cf0b6e916a85cdf21c8cc28c735894f927b63e4c33aa4d62e95753540bd06a7b",
     "reviewed_preregistration_sha256": "ab909c35d0f4d0252d1a29fa80ea27d51d0ba56175c8cc0d8d3428092ec2746c",
@@ -711,7 +712,7 @@
     "official_run_started": false,
     "run_root_exists": false,
     "fresh_sol_high_review": "pending_sol_rereview",
-    "codemap_sync": "pending_final_regeneration",
+    "codemap_sync": "complete_at_04560d0d6ecaa43798e07369bea17968a70251dc",
     "tests": {
       "exp442_lifecycle": {"passed": 7, "failed": 0, "errors": 0},
       "exp441_regression": {"passed": 197, "failed": 0, "errors": 0},
@@ -734,6 +735,6 @@
     "review_only": true,
     "operational_alert_eligible": false,
     "scientific_winner_selected": false,
-    "next_action": "obtain_sol_rereview_and_final_codemap_then_exp442_readiness"
+    "next_action": "obtain_sol_rereview_then_exp442_readiness"
   }
 }

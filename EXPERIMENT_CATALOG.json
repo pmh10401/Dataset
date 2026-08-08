@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-09T02:54:51+09:00",
+  "updated_at": "2026-08-09T03:03:43+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -498,7 +498,7 @@
     {
       "id": "Exp442",
       "kind": "terminal_eta_publication_contract_repair",
-      "status": "review_fix_verification_complete_sol_rereview_codemap_pending",
+      "status": "review_fix_and_codemap_complete_sol_rereview_pending",
       "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
       "base_commit": "f5df76e377a355eaf1613b7864186c7a618b7756",
       "documents": [
@@ -520,6 +520,7 @@
       "reviewed_preregistration_sha256": "ab909c35d0f4d0252d1a29fa80ea27d51d0ba56175c8cc0d8d3428092ec2746c",
       "implementation_commit": "5747a47fa8d996e549c4b9536e5ecbfeea87dfcf",
       "review_fix_commit": "5c946ba73d012760ba4309d46f3b4bcb499cf0cf",
+      "review_fix_codemap_commit": "04560d0d6ecaa43798e07369bea17968a70251dc",
       "implementation_report": "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md",
       "selected_coordinate_identity_sha256": "db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048",
       "scientific_changes": [],
@@ -545,7 +546,7 @@
         "active_eta_regression_test"
       ],
       "fresh_sol_high_review": "pending_sol_rereview",
-      "codemap_sync": "pending_final_regeneration",
+      "codemap_sync": "complete_at_04560d0d6ecaa43798e07369bea17968a70251dc",
       "verification": {
         "exp442_lifecycle_tests": 7,
         "exp441_regression_tests": 197,
@@ -567,7 +568,7 @@
           "snapshot_parity": true
         }
       },
-      "notes": "Initial Sol High fix-first findings (design/preregistration hash binding, profile root override boundary, codemap status evidence, and active-ETA regression coverage) are resolved. Verification now passes at the review-fix worktree: Exp442 lifecycle 7/7, Exp441 197/197, Exp440 35/35, Exp417 270/270, and the real 1,117-record CPU/11-worker replay has exact source/selection/snapshot parity with zero label access. Sol re-review and final codemap regeneration remain pending. Exp442 readiness/new are not started, the official root remains absent, prediction/evaluation remain null, and this engineering-only successor is review-only and not a champion candidate."
+      "notes": "Initial Sol High fix-first findings (design/preregistration hash binding, profile root override boundary, codemap status evidence, and active-ETA regression coverage) are resolved. Verification now passes at the review-fix worktree: Exp442 lifecycle 7/7, Exp441 197/197, Exp440 35/35, Exp417 270/270, and the real 1,117-record CPU/11-worker replay has exact source/selection/snapshot parity with zero label access. The synchronized code map is committed at 04560d0d6ecaa43798e07369bea17968a70251dc; only Sol re-review remains pending. Exp442 readiness/new are not started, the official root remains absent, prediction/evaluation remain null, and this engineering-only successor is review-only and not a champion candidate."
     }
   ]
 }

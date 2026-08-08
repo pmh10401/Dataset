@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-09T02:54:51+09:00",
+  "updated_at": "2026-08-09T03:03:43+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -69,12 +69,13 @@
     },
     {
       "experiment": "Exp442",
-      "status": "review_fix_verification_complete_sol_rereview_codemap_pending",
-      "reason": "Exp442 repairs only the terminal progress/publication contract in a fresh identity and root. The initial Sol High fix-first findings (design/preregistration hash binding, profile root override boundary, codemap status evidence, and active-ETA regression coverage) are resolved. Verification now passes with 7/7 lifecycle tests, 197/197 Exp441, 35/35 Exp440, 270/270 Exp417 regressions, and exact 1,117-record CPU/11-worker source/selection/snapshot parity with zero label access. Sol re-review and final codemap regeneration remain pending; readiness/new are not started, so Exp442 remains review-only and is not a champion candidate.",
+      "status": "review_fix_and_codemap_complete_sol_rereview_pending",
+      "reason": "Exp442 repairs only the terminal progress/publication contract in a fresh identity and root. The initial Sol High fix-first findings (design/preregistration hash binding, profile root override boundary, codemap status evidence, and active-ETA regression coverage) are resolved. Verification passes with 7/7 lifecycle tests, 197/197 Exp441, 35/35 Exp440, 270/270 Exp417 regressions, and exact 1,117-record CPU/11-worker source/selection/snapshot parity with zero label access. The synchronized code map is committed at 04560d0d6ecaa43798e07369bea17968a70251dc; only Sol re-review remains pending. Readiness/new are not started, so Exp442 remains review-only and is not a champion candidate.",
       "reviewed_design_sha256": "cf0b6e916a85cdf21c8cc28c735894f927b63e4c33aa4d62e95753540bd06a7b",
       "reviewed_preregistration_sha256": "ab909c35d0f4d0252d1a29fa80ea27d51d0ba56175c8cc0d8d3428092ec2746c",
       "implementation_commit": "5747a47fa8d996e549c4b9536e5ecbfeea87dfcf",
       "review_fix_commit": "5c946ba73d012760ba4309d46f3b4bcb499cf0cf",
+      "review_fix_codemap_commit": "04560d0d6ecaa43798e07369bea17968a70251dc",
       "implementation_report": "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md",
       "prediction_sha256": null,
       "evaluation": null,
@@ -85,7 +86,7 @@
       "run_root_exists": false,
       "initial_sol_review_fix_status": "resolved",
       "fresh_sol_high_review": "pending_sol_rereview",
-      "codemap_sync": "pending_final_regeneration",
+      "codemap_sync": "complete_at_04560d0d6ecaa43798e07369bea17968a70251dc",
       "review_only": true,
       "operational_alert_eligible": false,
       "scientific_winner_selected": false
