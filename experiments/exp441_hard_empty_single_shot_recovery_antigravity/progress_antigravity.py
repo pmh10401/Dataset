@@ -9,6 +9,7 @@ import time
 from typing import Iterable
 
 from .artifacts_antigravity import canonical_json_bytes_antigravity, write_create_only_antigravity
+from .config_antigravity import FROZEN_CONFIG
 
 
 _DIMENSION_STATUS_ANTIGRAVITY = "not_available_in_frozen_selector_source"
@@ -46,11 +47,11 @@ class ProgressWriterAntigravity:
         self._latest_error: str | None = None
         self._state = self._base_state_antigravity(active=True, stage="allocated")
         write_create_only_antigravity(
-            self._attempt_path / "pid_antigravity.json",
+            self._attempt_path / "pid_antigravity",
             canonical_json_bytes_antigravity({"pid": self._pid, "active": True, "heartbeat": _utc_now_antigravity()}),
         )
         write_create_only_antigravity(self._attempt_path / "events_antigravity.jsonl", b"")
-        write_create_only_antigravity(self._attempt_path / "run_antigravity.log", b"")
+        write_create_only_antigravity(self._attempt_path / "text_antigravity.log", b"")
         self._write_progress_antigravity()
 
     def _base_state_antigravity(self, *, active: bool, stage: str) -> dict[str, object]:
@@ -64,7 +65,7 @@ class ProgressWriterAntigravity:
             "provisional_candidates": None, "outside_hard_candidates": None,
             "eligible_candidates": None, "selected_candidates": None,
             "throughput": 0.0, "elapsed_seconds": 0.0, "eta_seconds": None,
-            "source_checkpoint": "frozen_exp440_checkpoint_antigravity", "heartbeat": _utc_now_antigravity(),
+            "source_checkpoint": FROZEN_CONFIG.checkpoint_records_path, "heartbeat": _utc_now_antigravity(),
             "latest_error": self._latest_error,
         }
 
@@ -100,7 +101,12 @@ class ProgressWriterAntigravity:
             raise
         finally:
             os.close(descriptor)
-        os.replace(temporary, final)
+        try:
+            os.replace(temporary, final)
+        except BaseException:
+            try: temporary.unlink()
+            except FileNotFoundError: pass
+            raise
 
     def _append_antigravity(self, filename: str, payload: bytes) -> None:
         descriptor = os.open(self._attempt_path / filename, os.O_WRONLY | os.O_APPEND | os.O_NOFOLLOW)
@@ -143,11 +149,12 @@ class ProgressWriterAntigravity:
             raise ValueError("accepted dimensions are invalid")
         event = {"sequence": self._completed - 1, "dataset": dataset, "record_name": record_name, "test_row_count": test_row_count, "raw_length": raw_length, "accepted": True}
         self._append_antigravity("events_antigravity.jsonl", canonical_json_bytes_antigravity(event).rstrip(b"\n") + b"\n")
-        self._append_antigravity("run_antigravity.log", f"accepted dataset={dataset} record={record_name}\n".encode("utf-8"))
+        self._append_antigravity("text_antigravity.log", f"accepted dataset={dataset} record={record_name} test_row_count={test_row_count} raw_length={raw_length}\n".encode("utf-8"))
         self._state.update({
             "active_datasets": list(active), "success": self._completed,
             "current_dataset": next_dataset, "current_record_name": next_record_name,
-            "test_row_count": test_row_count, "raw_length": raw_length,
+            "test_row_count": None if next_dataset else None, "raw_length": None,
+            "stage": "verifying_frozen_sources" if next_dataset else "verifying_source_summary",
         })
         self._write_progress_antigravity()
 
@@ -162,7 +169,7 @@ class ProgressWriterAntigravity:
             "active_datasets": [], "error": int(stage == "failed"), "latest_error": latest_error,
         })
         self._write_progress_antigravity()
-        final_pid = self._attempt_path / "pid_antigravity.json"
+        final_pid = self._attempt_path / "pid_antigravity"
         temporary = self._attempt_path / "pid_terminal_antigravity.tmp"
         write_create_only_antigravity(temporary, canonical_json_bytes_antigravity({"pid": self._pid, "active": False, "heartbeat": _utc_now_antigravity()}))
         os.replace(temporary, final_pid)

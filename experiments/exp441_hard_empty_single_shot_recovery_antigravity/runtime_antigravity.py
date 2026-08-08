@@ -132,6 +132,22 @@ def _validate_terminal_artifact_governance_antigravity(payload: Mapping[str, obj
         raise ValueError("terminal artifact governance alias is invalid")
 
 
+def _validate_selection_artifact_antigravity(payload: Mapping[str, object]) -> None:
+    expected = set(SelectionResultAntigravity.__dataclass_fields__) | {"reviewed_commit", "source_snapshot_sha256"} | set(governance_payload_antigravity())
+    if set(payload) != expected or not isinstance(payload["reviewed_commit"], str) or len(payload["reviewed_commit"]) != 40 or not isinstance(payload["source_snapshot_sha256"], str) or len(payload["source_snapshot_sha256"]) != 64:
+        raise ValueError("selection artifact schema is invalid")
+    _validate_terminal_artifact_governance_antigravity(payload)
+
+
+def _validate_failure_artifact_antigravity(payload: Mapping[str, object]) -> None:
+    expected = {"attempt_sequence", "reviewed_commit", "status", "error"} | set(governance_payload_antigravity())
+    if (set(payload) != expected or type(payload["attempt_sequence"]) is not int or payload["attempt_sequence"] < 0 or
+            not isinstance(payload["reviewed_commit"], str) or len(payload["reviewed_commit"]) != 40 or
+            payload["status"] not in {"failed", "interrupted"} or not isinstance(payload["error"], str) or not payload["error"]):
+        raise ValueError("failure artifact schema is invalid")
+    _validate_terminal_artifact_governance_antigravity(payload)
+
+
 def _verify_with_observer_antigravity(observer):
     return _verify_frozen_sources_with_observer_antigravity(observer)
 
@@ -190,13 +206,13 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
         snapshot_payload = _snapshot_payload_antigravity(snapshot)
         snapshot_bytes = canonical_json_bytes_antigravity(snapshot_payload)
         snapshot_sha256 = sha256(snapshot_bytes).hexdigest()
-        write_create_only_antigravity(attempt / "source_snapshot_antigravity.json", snapshot_bytes)
         selection = validate_production_selection_antigravity(select_hard_empty_single_shot_antigravity(snapshot))
         writer.selection_counts_antigravity(provisional=len(selection.provisional_candidates), outside_hard=len(selection.outside_hard_candidates), eligible=len(selection.eligible_candidates), selected=len(selection.selected))
         selection_payload = _selection_payload_antigravity(selection, reviewed_commit=reviewed_commit, source_snapshot_sha256=snapshot_sha256)
-        _validate_terminal_artifact_governance_antigravity(selection_payload)
+        _validate_selection_artifact_antigravity(selection_payload)
         selection_bytes = canonical_json_bytes_antigravity(selection_payload)
         selection_sha256 = sha256(selection_bytes).hexdigest()
+        write_create_only_antigravity(attempt / "source_snapshot_antigravity.json", snapshot_bytes)
         write_create_only_antigravity(attempt / "selection_antigravity.json", selection_bytes)
         reverified = _reverify_sources_after_artifacts_antigravity()
         if (not isinstance(reverified, FrozenSourceSnapshotAntigravity) or
@@ -209,13 +225,13 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
     except _InterruptedAttemptAntigravity as error:
         writer.terminal_antigravity(stage="interrupted", latest_error=str(error))
         failure = _failure_payload_antigravity(sequence=sequence, reviewed_commit=reviewed_commit, status="interrupted", error=str(error))
-        _validate_terminal_artifact_governance_antigravity(failure)
+        _validate_failure_artifact_antigravity(failure)
         write_create_only_antigravity(attempt / "failure_antigravity.json", canonical_json_bytes_antigravity(failure))
         raise
     except BaseException as error:
         writer.terminal_antigravity(stage="failed", latest_error=str(error) or type(error).__name__)
         failure = _failure_payload_antigravity(sequence=sequence, reviewed_commit=reviewed_commit, status="failed", error=str(error) or type(error).__name__)
-        _validate_terminal_artifact_governance_antigravity(failure)
+        _validate_failure_artifact_antigravity(failure)
         write_create_only_antigravity(attempt / "failure_antigravity.json", canonical_json_bytes_antigravity(failure))
         raise
     finally:

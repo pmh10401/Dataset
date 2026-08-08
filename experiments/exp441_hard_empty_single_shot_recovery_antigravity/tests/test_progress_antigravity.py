@@ -43,12 +43,12 @@ class ProgressAntigravityTests(unittest.TestCase):
             self.assertEqual(progress["current_dataset"], "B")
             self.assertEqual(progress["active_datasets"], ["B"])
             self.assertIsNone(progress["train_row_count"])
-            self.assertEqual(progress["raw_length"], 64)
+            self.assertIsNone(progress["raw_length"])
             self.assertEqual(progress["dimension_status"], "not_available_in_frozen_selector_source")
             events = (attempt / "events_antigravity.jsonl").read_text().splitlines()
             self.assertEqual(len(events), 1)
             self.assertEqual(json.loads(events[0])["dataset"], "A")
-            self.assertIn("accepted dataset=A", (attempt / "run_antigravity.log").read_text())
+            self.assertIn("accepted dataset=A", (attempt / "text_antigravity.log").read_text())
 
     def test_terminal_state_clears_active_context_and_marks_pid_inactive(self) -> None:
         # Break caught: terminal success/failure leaves a stale current dataset or live PID that invites forbidden resume.
@@ -62,7 +62,7 @@ class ProgressAntigravityTests(unittest.TestCase):
             for stage, error in (("complete", None), ("failed", "source invalid"), ("interrupted", "SIGTERM received")):
                 writer.terminal_antigravity(stage=stage, latest_error=error)
                 progress = json.loads((attempt / "progress_antigravity.json").read_text())
-                pid = json.loads((attempt / "pid_antigravity.json").read_text())
+                pid = json.loads((attempt / "pid_antigravity").read_text())
                 self.assertFalse(progress["active"], stage)
                 self.assertIsNone(progress["current_dataset"], stage)
                 self.assertIsNone(progress["current_record_name"], stage)
@@ -99,5 +99,7 @@ class ProgressAntigravityTests(unittest.TestCase):
             writer.begin_record_antigravity(dataset="A", record_name="0000_record_antigravity.json", active_datasets=("A",))
             writer.accept_record_antigravity(dataset="A", record_name="0000_record_antigravity.json", active_datasets=(), test_row_count=17, raw_length=64)
             progress = json.loads((attempt / "progress_antigravity.json").read_text())
-            self.assertEqual((progress["test_row_count"], progress["raw_length"]), (17, 64))
+            self.assertEqual((progress["test_row_count"], progress["raw_length"]), (None, None))
+            event = json.loads((attempt / "events_antigravity.jsonl").read_text())
+            self.assertEqual((event["test_row_count"], event["raw_length"]), (17, 64))
             self.assertIsNone(progress["train_row_count"])
