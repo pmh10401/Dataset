@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T04:22:30Z",
-  "generated_from_commit": "c450bc59d6d71319057ea0bd8d9fd1ea6d07f5da",
+  "generated_at": "2026-08-08T04:36:18Z",
+  "generated_from_commit": "793eb6ccfe332dbf17edb31ebfb495d2d920dc2b",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2574,7 +2574,7 @@
         "Exp439 keeps up to max-minus-one CPU workers active behind a slow frozen-order head while bounding pending plus buffered results by workers squared; durable commits remain in frozen dataset order.",
         "Exp439 computes each TRAIN row preferred depth once and each used-depth decomposition feature matrix once; held-out depth, fold-local robust transforms, OOF scores, thresholds, candidates, and record bytes remain unchanged.",
         "The interrupted 101-record root is immutable; the scheduler/cache repair uses a distinct run root and imports only the exact 89-record Exp438 prefix under the existing gate.",
-        "Exp441 Task5 records only parent-accepted frozen context order, uses source-owned fixed 11 workers and one numerical thread, has no resume route, retains failed/interrupted attempts, rechecks source identity after create-only artifacts, and does not open SQLite, TEST labels, an evaluator, or Exp440 ranking helpers."
+        "Exp441 Task5 records only parser-submitted parent-accepted frozen context order, uses source-owned fixed 11 workers and one numerical thread, retries a lone PID replace fault through a safe rename path, has no resume route, retains failed/interrupted attempts, rechecks source identity after create-only artifacts, and does not open SQLite, TEST labels, an evaluator, or Exp440 ranking helpers."
       ],
       "evidence": [
         {
