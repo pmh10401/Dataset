@@ -22,6 +22,8 @@ def _json_safe_antigravity(value: object) -> object:
         return _json_safe_antigravity(asdict(value))
     if isinstance(value, Mapping):
         return {str(key): _json_safe_antigravity(item) for key, item in value.items()}
+    if isinstance(value, frozenset):
+        return [_json_safe_antigravity(item) for item in sorted(value)]
     if isinstance(value, tuple):
         return [_json_safe_antigravity(item) for item in value]
     if isinstance(value, list):

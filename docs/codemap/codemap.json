@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T08:53:26Z",
-  "generated_from_commit": "7460c45f01e6f510fcd927c1c33bf07b83b77017",
+  "generated_at": "2026-08-08T09:16:37Z",
+  "generated_from_commit": "03a247d691099246e62289bd8098cac1d2e4cfb6",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2910,7 +2910,7 @@
       "boundary": "Active isolated research",
       "layer": 3,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Replays a complete zero-label-access checkpoint into a deterministic separate-channel review-only publication, then lazily evaluates all three frozen channels only after Exp438, Exp437, Hard comparator, database, population, provenance, and artifact hashes pass. Exp440 owns fixed clean-HEAD readiness, a five-command wrapper, no-clobber hash-bound review-only prediction/depth/ranking/audit publication, and lazy post-freeze TEST-label evaluation against frozen Hard with 20,000 dataset bootstrap samples and all preregistered gates. Exp441 Task 7 adds a fixed four-command CLI and outside-CWD wrapper: readiness/new/inspect cannot import evaluators or SQLite; evaluation remains the sole branch-local lazy evaluator route.",
+      "role": "Replays a complete zero-label-access checkpoint into a deterministic separate-channel review-only publication, then lazily evaluates all three frozen channels only after Exp438, Exp437, Hard comparator, database, population, provenance, and artifact hashes pass. Exp440 owns fixed clean-HEAD readiness, a five-command wrapper, no-clobber hash-bound review-only prediction/depth/ranking/audit publication, and lazy post-freeze TEST-label evaluation against frozen Hard with 20,000 dataset bootstrap samples and all preregistered gates. Exp441 Task 7 adds a fixed four-command CLI and outside-CWD wrapper: readiness/new/inspect cannot import evaluators or SQLite; evaluation remains the sole branch-local lazy evaluator route. Task 7 review evidence exhaustively rejects 30 readiness leaf paths across 90 mutations, chains post-rollback preservation faults without masking the primary error, imports real modules behind fresh-interpreter firewalls for help/readiness/new/inspect, and proves actual CLI inspection preserves an exact isolated 16-entry tree. CLI status serialization converts frozen coordinate sets to sorted canonical JSON lists.",
       "entrypoints": [
         "publish_exp438_antigravity",
         "inspect_publication_antigravity",
@@ -2986,6 +2986,26 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/reporting_antigravity.py",
           "symbol": "def inspect_exp441_publication_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/cli_antigravity.py",
+          "symbol": "def _json_safe_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_task7_route_matrix_antigravity.py",
+          "symbol": "def test_real_readiness_payload_rejects_every_environment_backend_and_source_leaf_mutation("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_task7_route_matrix_antigravity.py",
+          "symbol": "def test_post_rollback_evidence_write_and_failed_directory_fsync_preserve_primary_error("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_task7_route_matrix_antigravity.py",
+          "symbol": "def test_fresh_interpreters_use_real_modules_for_all_four_non_evaluate_routes("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_task7_route_matrix_antigravity.py",
+          "symbol": "def test_real_cli_inspect_is_canonical_and_byte_tree_read_only("
         },
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",

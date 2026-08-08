@@ -1,10 +1,14 @@
 """Production-shaped Task 7 route and malformed-readiness matrix."""
 from __future__ import annotations
 
+from copy import deepcopy
 from contextlib import ExitStack, redirect_stdout
+from hashlib import sha256
 import io
 import json
+import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 import tempfile
@@ -149,3 +153,289 @@ class Task7RouteMatrixAntigravityTests(unittest.TestCase):
         with patch.object(cli,"current_clean_head_antigravity",side_effect=["a"*40,"b"*40]),patch.object(readiness,"validate_readiness_for_run_antigravity",return_value=binding),patch.object(runtime,"run_exp441_new_antigravity") as run:
             with self.assertRaises(ValueError):cli.main_antigravity(["new"])
         run.assert_not_called()
+
+    def test_real_readiness_payload_rejects_every_environment_backend_and_source_leaf_mutation(self):
+        """Every discovered nested readiness leaf has missing, wrong-type, and wrong-value rejection."""
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import readiness_antigravity as readiness
+
+        commit = "a" * 40
+        backend = readiness._backend_antigravity()
+        payload, source, selection = self._payload(readiness, commit)
+        payload["backend"] = backend.to_payload()
+
+        def leaf_paths(value: object, prefix: tuple[str, ...] = ()) -> set[tuple[str, ...]]:
+            if isinstance(value, dict):
+                discovered: set[tuple[str, ...]] = set()
+                for key, item in value.items():
+                    discovered.update(leaf_paths(item, prefix + (key,)))
+                return discovered
+            return {prefix}
+
+        environment_paths = leaf_paths(payload["backend"]["environment"], ("backend", "environment"))
+        backend_core_paths = {("backend", key) for key in payload["backend"] if key != "environment"}
+        source_paths = leaf_paths(payload["source"], ("source",))
+        self.assertEqual(environment_paths, {
+            ("backend", "environment", "python_version"),
+            ("backend", "environment", "numpy_version"),
+            ("backend", "environment", "pytorch_version"),
+            ("backend", "environment", "mps_built"),
+            ("backend", "environment", "mps_available"),
+            ("backend", "environment", "mlx_version"),
+            ("backend", "environment", "mlx_metal_version"),
+            ("backend", "environment", "mlx_default_device"),
+            ("backend", "environment", "acceleration_reason"),
+        })
+        self.assertEqual(backend_core_paths, {
+            ("backend", "canonical_backend"), ("backend", "workers"),
+            ("backend", "tensor_eligible"), ("backend", "acceleration_benchmark_status"),
+            ("backend", "pytorch"), ("backend", "mlx"), ("backend", "mps"),
+        })
+        self.assertEqual(source_paths, {
+            ("source", "context_dataset_count"), ("source", "record_digest_count"),
+            ("source", "hard_coordinate_count"), ("source", "provisional_candidate_count"),
+            ("source", "label_access_count"), ("source", "source_hashes", "context"),
+            ("source", "source_hashes", "state"), ("source", "source_hashes", "retained_inventory"),
+            ("source", "source_hashes", "publication_prediction"),
+            ("source", "source_hashes", "publication_manifest"),
+            ("source", "source_hashes", "publication_artifact_map"),
+            ("source", "source_hashes", "hard_prediction"),
+            ("source", "source_hashes", "hard_manifest"),
+            ("source", "source_hashes", "hard_coordinate_identity"),
+        })
+
+        def parent_and_key(value: dict[str, object], path: tuple[str, ...]) -> tuple[dict[str, object], str]:
+            parent: dict[str, object] = value
+            for part in path[:-1]:
+                parent = parent[part]  # type: ignore[assignment]
+            return parent, path[-1]
+
+        def wrong_value(value: object) -> object:
+            if type(value) is bool:
+                return not value
+            if type(value) is int:
+                return value + 1
+            if type(value) is float:
+                return value + 1.0
+            if isinstance(value, str):
+                return value + "x"
+            if value is None:
+                return "unexpected"
+            raise AssertionError(f"unhandled readiness leaf: {value!r}")
+
+        all_paths = environment_paths | backend_core_paths | source_paths
+        self.assertEqual(len(all_paths), 30)
+        for path in sorted(all_paths):
+            for mutation in ("missing", "type", "value"):
+                with self.subTest(path=".".join(path), mutation=mutation), tempfile.TemporaryDirectory() as temporary:
+                    changed = deepcopy(payload)
+                    parent, key = parent_and_key(changed, path)
+                    original = parent[key]
+                    if mutation == "missing":
+                        del parent[key]
+                    elif mutation == "type":
+                        parent[key] = {"wrong_type": original}
+                    else:
+                        parent[key] = wrong_value(original)
+                    if path[0] == "source":
+                        changed["source_snapshot_sha256"] = sha256(
+                            readiness.canonical_json_bytes_antigravity(changed["source"])
+                        ).hexdigest()
+                    root = Path(temporary) / "run_antigravity"
+                    self._write_root(root, readiness, changed)
+                    with ExitStack() as stack:
+                        stack.enter_context(patch.object(readiness, "_RUN_ROOT_ANTIGRAVITY", root))
+                        stack.enter_context(patch.object(readiness, "_current_clean_head_antigravity", return_value=commit))
+                        stack.enter_context(patch.object(readiness, "verify_frozen_sources_antigravity", return_value=object()))
+                        stack.enter_context(patch.object(readiness, "_source_payload_antigravity", return_value=source))
+                        stack.enter_context(patch.object(readiness, "_selection_payload_antigravity", return_value=selection))
+                        stack.enter_context(patch.object(readiness, "_backend_antigravity", return_value=backend))
+                        with self.assertRaises(ValueError):
+                            readiness.validate_readiness_for_run_antigravity(commit)
+
+    def test_post_rollback_evidence_write_and_failed_directory_fsync_preserve_primary_error(self):
+        """Post-rollback evidence faults stay secondary while the owned inode remains recoverable."""
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import readiness_antigravity as readiness
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_readiness_review_fix_antigravity import ReadinessReviewFixAntigravityTests
+
+        helper = ReadinessReviewFixAntigravityTests()
+        commit = "a" * 40
+        for failure in ("failure_evidence_write", "failed_directory_fsync"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / "run_antigravity"
+                primary = OSError("primary readiness parent fsync")
+                secondary_text = "canonical failure evidence write" if failure == "failure_evidence_write" else "failed directory fsync"
+                original_write = readiness.write_create_only_antigravity
+                original_fsync = readiness.fsync_directory_antigravity
+                original_rename = readiness.exclusive_rename_antigravity
+                moved_identities: list[tuple[int, int]] = []
+
+                def write(path: Path, payload_bytes: bytes) -> None:
+                    if failure == "failure_evidence_write" and path.name == "failure_antigravity.json":
+                        raise OSError(secondary_text)
+                    original_write(path, payload_bytes)
+
+                def fsync(path: Path) -> None:
+                    path = Path(path)
+                    if path == root.parent and root.exists():
+                        raise primary
+                    if failure == "failed_directory_fsync" and path.parent == root.parent and "_failed_" in path.name:
+                        raise OSError(secondary_text)
+                    original_fsync(path)
+
+                def rename(source_path: Path, destination_path: Path) -> None:
+                    before = source_path.lstat()
+                    original_rename(source_path, destination_path)
+                    after = destination_path.lstat()
+                    self.assertEqual((before.st_dev, before.st_ino), (after.st_dev, after.st_ino))
+                    moved_identities.append((after.st_dev, after.st_ino))
+
+                with ExitStack() as stack:
+                    helper._patch_successful_replay_antigravity(stack, readiness, root, commit)
+                    stack.enter_context(patch.object(readiness, "write_create_only_antigravity", side_effect=write))
+                    stack.enter_context(patch.object(readiness, "fsync_directory_antigravity", side_effect=fsync))
+                    stack.enter_context(patch.object(readiness, "exclusive_rename_antigravity", side_effect=rename))
+                    with self.assertRaisesRegex(OSError, "primary readiness parent fsync") as caught:
+                        readiness.run_readiness_antigravity(commit)
+                self.assertIs(caught.exception, primary)
+                self.assertIsInstance(caught.exception.__cause__, OSError)
+                self.assertIn(secondary_text, str(caught.exception.__cause__))
+                self.assertIn("preservation also failed", "\n".join(caught.exception.__notes__))
+                self.assertFalse(root.exists())
+                self.assertEqual(list(root.parent.glob(".run_antigravity_staging_*_antigravity")), [])
+                failed = list(root.parent.glob(".run_antigravity_failed_*_antigravity"))
+                self.assertEqual(len(failed), 1)
+                self.assertEqual(len(moved_identities), 2)
+                self.assertEqual(moved_identities[0], moved_identities[1])
+                self.assertEqual(stat.S_IMODE(failed[0].lstat().st_mode), 0o700)
+                self.assertEqual(stat.S_IMODE((failed[0] / "readiness_antigravity.json").lstat().st_mode), 0o600)
+                evidence = failed[0] / "failure_antigravity.json"
+                if failure == "failure_evidence_write":
+                    self.assertFalse(evidence.exists())
+                else:
+                    encoded = evidence.read_bytes()
+                    self.assertEqual(
+                        encoded,
+                        json.dumps(json.loads(encoded), sort_keys=True, separators=(",", ":")).encode() + b"\n",
+                    )
+
+    def test_fresh_interpreters_use_real_modules_for_all_four_non_evaluate_routes(self):
+        """Help/readiness/new/inspect import real production modules behind SQLite and evaluator bombs."""
+        root = Path(__file__).resolve().parents[3]
+        code = r'''import contextlib,importlib.abc,io,json,pathlib,sqlite3,sys
+from unittest.mock import patch
+def sqlite_bomb(*args,**kwargs): raise AssertionError("sqlite.connect")
+sqlite3.connect=sqlite_bomb
+blocked=("experiments.exp441_hard_empty_single_shot_recovery_antigravity.evaluation_antigravity","experiments.exp440_train_only_low_frequency_precision_gate_antigravity.evaluation_antigravity","experiments.exp417_causal_multihorizon_shadow.inputs")
+class FirewallAntigravity(importlib.abc.MetaPathFinder):
+ def find_spec(self,fullname,path=None,target=None):
+  if any(fullname==name or fullname.startswith(name+".") for name in blocked): raise AssertionError(fullname)
+sys.meta_path.insert(0,FirewallAntigravity())
+from experiments.exp441_hard_empty_single_shot_recovery_antigravity import cli_antigravity as cli
+from experiments.exp441_hard_empty_single_shot_recovery_antigravity import readiness_antigravity as readiness
+from experiments.exp441_hard_empty_single_shot_recovery_antigravity import runtime_antigravity as runtime
+from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity as reporting
+expected_root=(pathlib.Path.cwd()/"experiments"/"exp441_hard_empty_single_shot_recovery_antigravity").resolve()
+for module in (cli,readiness,runtime,reporting):
+ assert pathlib.Path(module.__file__).resolve().is_relative_to(expected_root)
+route=sys.argv[1]
+if route=="--help":
+ try: cli.main_antigravity([route])
+ except SystemExit as error: assert error.code==0
+ else: raise AssertionError("help did not exit")
+else:
+ class BindingAntigravity: reviewed_commit="a"*40
+ with contextlib.ExitStack() as stack:
+  stack.enter_context(patch.object(cli,"current_clean_head_antigravity",return_value="a"*40))
+  stack.enter_context(patch.object(readiness,"run_readiness_antigravity",return_value={}))
+  stack.enter_context(patch.object(readiness,"validate_readiness_for_run_antigravity",return_value=BindingAntigravity()))
+  stack.enter_context(patch.object(runtime,"run_exp441_new_antigravity",return_value={}))
+  stack.enter_context(patch.object(reporting,"publish_exp441_antigravity",return_value={}))
+  stack.enter_context(patch.object(reporting,"inspect_exp441_publication_antigravity",return_value={}))
+  result=cli.main_antigravity([route])
+  assert type(result) is int and result==0
+assert all(name not in sys.modules for name in blocked)
+'''
+        for route in ("--help", "readiness", "new", "inspect"):
+            with self.subTest(route=route):
+                result = subprocess.run(
+                    [sys.executable, "-c", code, route], cwd=root, check=True,
+                    capture_output=True, text=True,
+                )
+                self.assertEqual(result.stderr, "")
+                if route == "--help":
+                    self.assertIn("{readiness,new,inspect,evaluate}", result.stdout)
+                else:
+                    self.assertEqual(result.stdout, f'{{"command":"{route}","result":{{}}}}\n')
+
+    def test_real_cli_inspect_is_canonical_and_byte_tree_read_only(self):
+        """Actual CLI inspect preserves the exact isolated six-file publication tree and bytes."""
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import cli_antigravity as cli
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity as reporting
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_reporting_antigravity import ReportingContractAntigravityTests
+
+        helper = ReportingContractAntigravityTests()
+        snapshot = helper._fixture_snapshot_antigravity()
+
+        def tree_snapshot(root: Path) -> dict[str, tuple[str, int, bytes | None, tuple[int, int]]]:
+            result: dict[str, tuple[str, int, bytes | None, tuple[int, int]]] = {}
+            for path in (root, *sorted(root.rglob("*"))):
+                status = path.lstat()
+                relative = "." if path == root else path.relative_to(root).as_posix()
+                if stat.S_ISDIR(status.st_mode):
+                    kind, payload_bytes = "directory", None
+                elif stat.S_ISREG(status.st_mode):
+                    kind, payload_bytes = "file", path.read_bytes()
+                else:
+                    kind, payload_bytes = "other", None
+                result[relative] = (kind, stat.S_IMODE(status.st_mode), payload_bytes, (status.st_dev, status.st_ino))
+            return result
+
+        expected_paths = {
+            ".", "attempts_antigravity", "attempts_antigravity/attempt_0000_antigravity",
+            "attempts_antigravity/attempt_0000_antigravity/events_antigravity.jsonl",
+            "attempts_antigravity/attempt_0000_antigravity/pid_antigravity",
+            "attempts_antigravity/attempt_0000_antigravity/progress_antigravity.json",
+            "attempts_antigravity/attempt_0000_antigravity/selection_antigravity.json",
+            "attempts_antigravity/attempt_0000_antigravity/source_snapshot_antigravity.json",
+            "attempts_antigravity/attempt_0000_antigravity/text_antigravity.log",
+            "publication_antigravity", "publication_antigravity/prediction_antigravity.jsonl",
+            "publication_antigravity/candidate_ranking_antigravity.jsonl",
+            "publication_antigravity/source_audit_antigravity.json",
+            "publication_antigravity/manifest_antigravity.json",
+            "publication_antigravity/status_antigravity.json",
+            "publication_antigravity/artifact_sha256_antigravity.json",
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            attempt = helper._write_terminal_attempt_antigravity(root, snapshot)
+            with patch.object(reporting, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(reporting, "verify_frozen_sources_antigravity", return_value=snapshot), \
+                 patch.object(reporting, "selected_coordinate_identity_sha256_antigravity", return_value=reporting.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
+                 patch.object(reporting, "exclusive_rename_antigravity", side_effect=os.rename):
+                reporting.publish_exp441_antigravity(attempt)
+                before = tree_snapshot(root)
+                self.assertEqual(set(before), expected_paths)
+                self.assertEqual(
+                    {path for path, evidence in before.items() if path.startswith("publication_antigravity/") and evidence[0] == "file"},
+                    {f"publication_antigravity/{name}" for name in reporting._PUBLICATION_NAMES_ANTIGRAVITY},
+                )
+                stdout = io.StringIO()
+                with redirect_stdout(stdout):
+                    result = cli.main_antigravity(["inspect"])
+                after = tree_snapshot(root)
+            self.assertIs(type(result), int)
+            self.assertEqual(result, 0)
+            self.assertEqual(after, before)
+            parsed = json.loads(stdout.getvalue())
+            self.assertEqual(stdout.getvalue().encode(), json.dumps(parsed, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode() + b"\n")
+            self.assertEqual(parsed["command"], "inspect")
+            self.assertEqual(set(parsed["result"]), {"publication_sha256", "prediction_sha256", "ranking_sha256", "source_audit_sha256", "selection"})
+            publication = root / "publication_antigravity"
+            self.assertEqual(parsed["result"]["publication_sha256"], sha256((publication / "artifact_sha256_antigravity.json").read_bytes()).hexdigest())
+            self.assertEqual(parsed["result"]["prediction_sha256"], sha256((publication / "prediction_antigravity.jsonl").read_bytes()).hexdigest())
+            self.assertEqual(parsed["result"]["ranking_sha256"], sha256((publication / "candidate_ranking_antigravity.jsonl").read_bytes()).hexdigest())
+            self.assertEqual(parsed["result"]["source_audit_sha256"], sha256((publication / "source_audit_antigravity.json").read_bytes()).hexdigest())
+            self.assertEqual(
+                {name: len(parsed["result"]["selection"][name]) for name in ("provisional_candidates", "outside_hard_candidates", "eligible_candidates", "winners", "selected")},
+                {"provisional_candidates": 49, "outside_hard_candidates": 49, "eligible_candidates": 49, "winners": 49, "selected": 30},
+            )
