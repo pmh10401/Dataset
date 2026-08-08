@@ -24,6 +24,14 @@ def _candidate(dataset: str = "A", index: int = 7) -> CandidateEvidenceAntigravi
     )
 
 
+def _ranked(candidates: tuple[CandidateEvidenceAntigravity, ...], selected_count: int | None = None) -> tuple[RankedCandidateAntigravity, ...]:
+    selected_count = len(candidates) if selected_count is None else selected_count
+    return tuple(
+        RankedCandidateAntigravity(item, index, index <= selected_count, index if index <= selected_count else None)
+        for index, item in enumerate(candidates, start=1)
+    )
+
+
 class Exp441ContractsAntigravityTests(unittest.TestCase):
     def test_candidate_roundtrip_and_frozen_rank_keys(self) -> None:
         """A ranking-key mutation or payload drift must be observable at the contract boundary."""
@@ -67,7 +75,48 @@ class Exp441ContractsAntigravityTests(unittest.TestCase):
         )
         selected.clear()
         self.assertEqual(result.selected, (ranked,))
-        self.assertIsInstance(MappingProxyType({}), type(MappingProxyType({})))
+
+    def test_selection_rejects_duplicate_coordinates_in_each_candidate_population(self) -> None:
+        """Set comparison must not hide a duplicate that inflates a production population count."""
+        item = _candidate()
+        ranked = _ranked((item,))[0]
+        fixtures = (
+            ((item, item), (item,), (item,), (ranked,), (ranked,)),
+            ((item,), (item, item), (item,), (ranked,), (ranked,)),
+            ((item,), (item,), (item, item), (ranked,), (ranked,)),
+        )
+        for populations in fixtures:
+            with self.subTest(populations=populations[:3]):
+                with self.assertRaises(ValueError):
+                    SelectionResultAntigravity(*populations, frozenset())
+
+    def test_selection_requires_exact_local_winners_and_global_order(self) -> None:
+        """A worse local candidate or globally misordered winner list cannot be ranked as selected."""
+        best_a = CandidateEvidenceAntigravity("A", 1, 32, (1, 2), 2, 2.0, 0.1)
+        worse_a = CandidateEvidenceAntigravity("A", 2, 32, (1, 2), 2, 1.0, 0.1)
+        best_b = CandidateEvidenceAntigravity("B", 1, 32, (1, 2), 2, 3.0, 0.1)
+        provisional = (best_a, worse_a, best_b)
+        with self.assertRaises(ValueError):
+            SelectionResultAntigravity(
+                provisional, provisional, provisional, _ranked((worse_a, best_b)), _ranked((worse_a, best_b)), frozenset(),
+            )
+        with self.assertRaises(ValueError):
+            SelectionResultAntigravity(
+                provisional, provisional, provisional, _ranked((best_a, best_b)), _ranked((best_a, best_b)), frozenset(),
+            )
+
+    def test_backend_environment_is_recursively_detached_and_roundtrips(self) -> None:
+        """Mutating a nested caller mapping or list must not mutate backend readiness evidence."""
+        environment = {"runtime": {"device": "cpu"}, "versions": ["3.14", {"mlx": None}]}
+        backend = BackendAssessmentAntigravity(
+            "cpu", 11, False, "not_run_inapplicable", "inapplicable_no_tensor_stage",
+            "inapplicable_no_tensor_stage", "inapplicable_no_tensor_stage", environment,
+        )
+        environment["runtime"]["device"] = "changed"
+        environment["versions"][1]["mlx"] = "changed"
+        self.assertEqual(backend.environment["runtime"]["device"], "cpu")
+        self.assertIsInstance(backend.environment, type(MappingProxyType({})))
+        self.assertEqual(BackendAssessmentAntigravity.from_payload(backend.to_payload()), backend)
 
     def test_selection_rejects_hard_active_duplicate_or_over_budget_candidates(self) -> None:
         """A selector bug that leaks a Hard-active, duplicate, or 31st coordinate must fail closed."""

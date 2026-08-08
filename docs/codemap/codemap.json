@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T02:02:32Z",
-  "generated_from_commit": "010b0ca14f6bad78841f314aeb87b6b36efde031",
+  "generated_at": "2026-08-08T02:12:10Z",
+  "generated_from_commit": "26eec288301b90b6500cb40ea61a11c5651f3f27",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2514,7 +2514,8 @@
         "canonical_json_bytes_antigravity",
         "read_pinned_regular_bytes_antigravity",
         "write_create_only_antigravity",
-        "exclusive_rename_antigravity"
+        "exclusive_rename_antigravity",
+        "BackendAssessmentAntigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2753,6 +2754,14 @@
       {
         "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/artifacts_antigravity.py",
         "symbol": "def read_pinned_regular_bytes_antigravity("
+      },
+      {
+        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/config_antigravity.py",
+        "symbol": "def _require_allowlisted_prediction_path_antigravity("
+      },
+      {
+        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/contracts_antigravity.py",
+        "symbol": "class BackendAssessmentAntigravity"
       }
       ]
     },

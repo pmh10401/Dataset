@@ -83,21 +83,23 @@ def _allowlisted_prediction_paths_antigravity() -> frozenset[Path]:
         _EXP440_CHECKPOINT / "context_antigravity.json",
         _EXP440_CHECKPOINT / "state_antigravity.json",
         _EXP440_CHECKPOINT / "retained_candidates_antigravity.json",
-        _EXP440_CHECKPOINT / "records_antigravity",
+    }
+    records = {
+        _EXP440_CHECKPOINT / "records_antigravity" / f"{index:04d}_record_antigravity.json"
+        for index in range(1117)
     }
     publication = {_EXP440_PUBLICATION / name for name in _PUBLICATION_FILENAMES}
     hard = {
         _HARD_ROOT / "exp404_hard_confidence.jsonl",
         _HARD_ROOT / "exp404_prediction_manifest.json",
     }
-    return frozenset(path.resolve(strict=False) for path in checkpoint | publication | hard)
+    return frozenset(path.resolve(strict=False) for path in checkpoint | records | publication | hard)
 
 
 def _require_allowlisted_prediction_path_antigravity(path: Path) -> Path:
     """Reject every resolved prediction source outside the immutable allowlist."""
     resolved = Path(path).resolve(strict=False)
-    records_root = (_EXP440_CHECKPOINT / "records_antigravity").resolve(strict=False)
-    if resolved in _allowlisted_prediction_paths_antigravity() or records_root in resolved.parents:
+    if resolved in _allowlisted_prediction_paths_antigravity():
         return resolved
     raise ValueError("prediction source is outside the positive allowlist")
 

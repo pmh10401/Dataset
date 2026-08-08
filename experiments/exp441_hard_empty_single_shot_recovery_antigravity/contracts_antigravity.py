@@ -50,6 +50,38 @@ def _immutable_digest_map(value: Mapping[str, object]) -> Mapping[str, str]:
     return MappingProxyType(copied)
 
 
+def _freeze_json_safe(value: object) -> object:
+    """Detach recursively while retaining only canonical JSON data types."""
+    if value is None or type(value) in (str, int, bool):
+        return value
+    if type(value) is float:
+        return _finite(value, "environment float")
+    if isinstance(value, Mapping):
+        copied: dict[str, object] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ValueError("environment key is invalid")
+            copied[key] = _freeze_json_safe(item)
+        return MappingProxyType(copied)
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_json_safe(item) for item in value)
+    raise ValueError("environment value is not JSON-safe")
+
+
+def _json_safe_payload(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {key: _json_safe_payload(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_json_safe_payload(item) for item in value]
+    return value
+
+
+def _require_unique_coordinates(items: Iterable[CandidateEvidenceAntigravity | RankedCandidateAntigravity], name: str) -> None:
+    coordinates = [item.coordinate for item in items]
+    if len(coordinates) != len(set(coordinates)):
+        raise ValueError(f"{name} coordinates are duplicated")
+
+
 @dataclass(frozen=True)
 class CandidateEvidenceAntigravity:
     """One copied Exp440 provisional candidate under Exp441's rank policy."""
@@ -229,37 +261,46 @@ class SelectionResultAntigravity:
             raise ValueError("selection ranked population is invalid")
         if any(not isinstance(dataset, str) or not dataset or type(index) is not int or index < 0 for dataset, index in hard):
             raise ValueError("Hard coordinates are invalid")
-        coordinates = [item.coordinate for item in provisional]
-        if len(coordinates) != len(set(coordinates)):
-            raise ValueError("provisional coordinates are duplicated")
-        if set(outside) != {item for item in provisional if item.coordinate not in hard}:
+        _require_unique_coordinates(provisional, "provisional")
+        _require_unique_coordinates(outside, "outside-Hard")
+        _require_unique_coordinates(eligible, "eligible")
+        _require_unique_coordinates(winners, "winner")
+        _require_unique_coordinates(selected, "selected")
+        expected_outside = tuple(item for item in provisional if item.coordinate not in hard)
+        if outside != expected_outside:
             raise ValueError("outside-Hard population is invalid")
         hard_datasets = {dataset for dataset, _ in hard}
-        if set(eligible) != {item for item in outside if item.dataset not in hard_datasets}:
+        expected_eligible = tuple(item for item in outside if item.dataset not in hard_datasets)
+        if eligible != expected_eligible:
             raise ValueError("Hard-empty eligibility population is invalid")
         winner_candidates = tuple(item.candidate for item in winners)
         if any(item.dataset in hard_datasets for item in winner_candidates + tuple(item.candidate for item in selected)):
             raise ValueError("Hard-active dataset was selected")
-        if set(winner_candidates) != set(minimum for minimum in winner_candidates) or not set(winner_candidates).issubset(set(eligible)):
+        grouped: dict[str, list[CandidateEvidenceAntigravity]] = {}
+        for candidate in eligible:
+            grouped.setdefault(candidate.dataset, []).append(candidate)
+        expected_winners = tuple(sorted(
+            (min(items, key=lambda item: item.dataset_key) for items in grouped.values()),
+            key=lambda item: item.global_key,
+        ))
+        if winner_candidates != expected_winners:
             raise ValueError("winner population is invalid")
         winner_datasets = [item.dataset for item in winners]
         if len(winner_datasets) != len(set(winner_datasets)):
             raise ValueError("more than one winner per dataset")
         if tuple(item.global_rank for item in winners) != tuple(range(1, len(winners) + 1)):
             raise ValueError("global ranks are invalid")
-        if set(selected) - set(winners) or len(selected) > 30:
+        if len(selected) > 30 or selected != winners[:len(selected)]:
             raise ValueError("selected population is invalid")
-        selected_coordinates = [item.coordinate for item in selected]
-        if len(selected_coordinates) != len(set(selected_coordinates)) or len({item.dataset for item in selected}) != len(selected):
+        if len({item.dataset for item in selected}) != len(selected):
             raise ValueError("selected coordinates are duplicated")
         if tuple(item.selection_rank for item in selected) != tuple(range(1, len(selected) + 1)):
             raise ValueError("selection ranks are invalid")
         if any(not item.selected for item in selected):
             raise ValueError("selected records are not marked selected")
-        selected_set = set(selected)
-        if any(item.selected != (item in selected_set) for item in winners):
+        if any(item.selected != (index <= len(selected)) for index, item in enumerate(winners, start=1)):
             raise ValueError("winner selected flags are invalid")
-        if any((item.selection_rank is None) == item.selected for item in winners):
+        if any(item.selection_rank != (index if item.selected else None) for index, item in enumerate(winners, start=1)):
             raise ValueError("winner selection ranks are invalid")
         object.__setattr__(self, "provisional_candidates", provisional)
         object.__setattr__(self, "outside_hard_candidates", outside)
@@ -359,7 +400,29 @@ class BackendAssessmentAntigravity:
         ) or type(self.tensor_eligible) is not bool or self.tensor_eligible:
             raise ValueError("backend assessment is not frozen")
         _positive_int(self.workers, "workers")
-        object.__setattr__(self, "environment", MappingProxyType(dict(self.environment)))
+        if not isinstance(self.environment, Mapping):
+            raise ValueError("backend environment is invalid")
+        object.__setattr__(self, "environment", _freeze_json_safe(self.environment))
+
+    def to_payload(self) -> dict[str, object]:
+        return {
+            "canonical_backend": self.canonical_backend,
+            "workers": self.workers,
+            "tensor_eligible": self.tensor_eligible,
+            "acceleration_benchmark_status": self.acceleration_benchmark_status,
+            "pytorch": self.pytorch,
+            "mlx": self.mlx,
+            "mps": self.mps,
+            "environment": _json_safe_payload(self.environment),
+        }
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, object]) -> "BackendAssessmentAntigravity":
+        raw = _exact_payload(payload, {
+            "canonical_backend", "workers", "tensor_eligible", "acceleration_benchmark_status",
+            "pytorch", "mlx", "mps", "environment",
+        })
+        return cls(**raw)
 
 
 @dataclass(frozen=True)

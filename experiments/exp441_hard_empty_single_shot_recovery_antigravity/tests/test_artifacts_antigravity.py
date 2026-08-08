@@ -63,6 +63,38 @@ class Exp441ArtifactsAntigravityTests(unittest.TestCase):
             self.assertEqual(caught.exception.errno, errno.EIO)
             fsync.assert_not_called()
 
+    def test_create_only_write_uses_exact_flags_loops_partial_writes_and_fsyncs(self) -> None:
+        """A short successful write must be completed before one durable successful publication."""
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "partial_antigravity.json"
+            real_open, real_write, real_fsync = os.open, os.write, os.fsync
+            writes: list[int] = []
+
+            def partial_write(descriptor: int, payload: bytes) -> int:
+                writes.append(len(payload))
+                return real_write(descriptor, payload[:2] if len(writes) == 1 else payload)
+
+            with mock.patch("os.open", wraps=real_open) as opened, mock.patch("os.write", side_effect=partial_write), mock.patch("os.fsync", wraps=real_fsync) as fsync:
+                write_create_only_antigravity(destination, b"payload")
+            self.assertEqual(destination.read_bytes(), b"payload")
+            self.assertGreaterEqual(len(writes), 2)
+            self.assertEqual(opened.call_args.args[1], os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW)
+            self.assertEqual(opened.call_args.args[2], 0o600)
+            fsync.assert_called_once()
+
+    def test_exclusive_rename_rejects_destination_created_after_staging(self) -> None:
+        """A destination that appears after staging begins remains the concurrent winner."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "staging_antigravity"
+            destination = root / "winner_antigravity"
+            source.mkdir()
+            destination.mkdir()
+            with self.assertRaises(OSError):
+                exclusive_rename_antigravity(source, destination)
+            self.assertTrue(source.exists())
+            self.assertTrue(destination.exists())
+
     def test_directory_fsync_and_exclusive_rename_preserve_existing_winner(self) -> None:
         """A concurrently created destination must survive the Darwin exclusive-rename path."""
         with tempfile.TemporaryDirectory() as temporary:

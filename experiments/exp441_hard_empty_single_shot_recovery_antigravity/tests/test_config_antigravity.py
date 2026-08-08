@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
 import json
+from pathlib import Path
 import unittest
 
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.config_antigravity import (
@@ -11,6 +12,7 @@ from experiments.exp441_hard_empty_single_shot_recovery_antigravity.config_antig
     cpu_worker_count_antigravity,
     frozen_config_payload_antigravity,
     governance_payload_antigravity,
+    _require_allowlisted_prediction_path_antigravity,
 )
 
 
@@ -75,3 +77,28 @@ class Exp441ConfigAntigravityTests(unittest.TestCase):
             with self.subTest(field=field):
                 with self.assertRaises(ValueError):
                     Exp441FrozenConfig(**{field: value})  # type: ignore[arg-type]
+
+    def test_prediction_allowlist_accepts_only_the_exact_1117_record_members(self) -> None:
+        """An invented record descendant must not become a readable prediction source."""
+        records = Path(FROZEN_CONFIG.checkpoint_records_path)
+        accepted = (
+            Path(FROZEN_CONFIG.checkpoint_context_path),
+            records / "0000_record_antigravity.json",
+            records / "1116_record_antigravity.json",
+            Path(FROZEN_CONFIG.hard_prediction_path),
+        )
+        for path in accepted:
+            with self.subTest(accepted=path):
+                self.assertEqual(_require_allowlisted_prediction_path_antigravity(path), path.resolve(strict=False))
+        rejected = (
+            records,
+            records / "1117_record_antigravity.json",
+            records / "0001_record_antigravity.json.bak",
+            records / "record_antigravity.json",
+            records / "nested_antigravity" / "0001_record_antigravity.json",
+            records / ".." / "invented_antigravity.json",
+        )
+        for path in rejected:
+            with self.subTest(rejected=path):
+                with self.assertRaises(ValueError):
+                    _require_allowlisted_prediction_path_antigravity(path)
