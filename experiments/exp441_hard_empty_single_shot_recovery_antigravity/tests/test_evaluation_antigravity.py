@@ -23,6 +23,7 @@ import unittest
 import numpy as np
 
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity import (
+    PinnedRegularInventoryAntigravity,
     canonical_json_bytes_antigravity,
 )
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_antigravity import (
@@ -454,10 +455,19 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
                 mutations = {
                     "missing": lambda value: value.pop(key),
                     "nested": lambda value: (value.pop(key), value.__setitem__("governance", {key: expected})),
-                    "truthy_type": lambda value: value.__setitem__(key, 1 if type(expected) is bool else True),
-                    "wrong_value": lambda value: value.__setitem__(key, (not expected) if type(expected) is bool else expected + "_wrong"),
                     "extra_alias": lambda value: value.__setitem__(key + "_alias", expected),
                 }
+                if type(expected) is bool:
+                    mutations.update({
+                        "equivalent_wrong_type": lambda value: value.__setitem__(key, 1 if expected else 0),
+                        "opposite_int_wrong_type_value": lambda value: value.__setitem__(key, 0 if expected else 1),
+                        "same_type_wrong_value": lambda value: value.__setitem__(key, not expected),
+                    })
+                else:
+                    mutations.update({
+                        "wrong_type": lambda value: value.__setitem__(key, True),
+                        "same_type_wrong_value": lambda value: value.__setitem__(key, expected + "_wrong"),
+                    })
                 for mutation, apply in mutations.items():
                     altered = dict(original)
                     apply(altered)
@@ -470,13 +480,18 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
         })
         original_failure = evaluation.parse_canonical_json_bytes_antigravity(failure)
         for key, expected in evaluation._GOVERNANCE_ANTIGRAVITY.items():
-            for mutation in ("missing", "nested", "truthy_type", "wrong_value", "extra_alias"):
+            mutations = ["missing", "nested", "extra_alias"]
+            mutations += (["equivalent_wrong_type", "opposite_int_wrong_type_value", "same_type_wrong_value"]
+                          if type(expected) is bool else ["wrong_type", "same_type_wrong_value"])
+            for mutation in mutations:
                 altered = dict(original_failure)
                 if mutation == "missing": del altered[key]
                 elif mutation == "nested":
                     del altered[key]; altered["governance"] = {key: expected}
-                elif mutation == "truthy_type": altered[key] = 1 if type(expected) is bool else True
-                elif mutation == "wrong_value": altered[key] = (not expected) if type(expected) is bool else expected + "_wrong"
+                elif mutation == "equivalent_wrong_type": altered[key] = 1 if expected else 0
+                elif mutation == "opposite_int_wrong_type_value": altered[key] = 0 if expected else 1
+                elif mutation == "same_type_wrong_value": altered[key] = (not expected) if type(expected) is bool else expected + "_wrong"
+                elif mutation == "wrong_type": altered[key] = True
                 else: altered[key + "_alias"] = expected
                 with self.subTest(document="failure", key=key, mutation=mutation), self.assertRaises(ValueError):
                     evaluation._validate_failure_payload_antigravity(evaluation.canonical_json_bytes_antigravity(altered))
@@ -527,11 +542,11 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
             with self.subTest(family=family), self.assertRaises(ValueError):
                 evaluation._replay_evaluation_payloads_antigravity(mutate(family))
 
-    def test_task11_exact_inventory_rejects_missing_extra_link_fifo_and_mode_members(self) -> None:
+    def test_task11_exact_inventory_rejects_missing_extra_link_fifo_and_root_or_member_mode(self) -> None:
         """Pinned replay admits only eight 0600 regular files in one 0700 directory."""
         snapshot, selection = _snapshot_and_selection()
         payloads = evaluation._result_artifacts_antigravity(self._complete_result(snapshot.context_datasets), _publication(snapshot, selection))
-        for mutation in ("missing", "extra", "symlink", "fifo", "mode"):
+        for mutation in ("missing", "extra", "symlink", "fifo", "root_mode", "mode"):
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary) / "evaluation_antigravity"; os.mkdir(root, 0o700)
                 for name, payload in payloads.items(): evaluation.write_create_only_antigravity(root / name, payload)
@@ -542,6 +557,7 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
                     target.unlink(); target.symlink_to(root / "bootstrap_antigravity.json")
                 elif mutation == "fifo":
                     target.unlink(); os.mkfifo(target, 0o600)
+                elif mutation == "root_mode": os.chmod(root, 0o755)
                 else: os.chmod(target, 0o644)
                 with self.assertRaises(ValueError):
                     with evaluation.pin_exact_regular_inventory_antigravity(root, evaluation._EVALUATION_FILENAMES_ANTIGRAVITY):
@@ -557,24 +573,67 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
             self.assertTrue(any("failure preservation failed: OSError: secondary write failure" in note
                                 for note in getattr(primary, "__notes__", ())))
 
-    def test_task11_create_high_level_phases_follow_the_preregistered_order(self) -> None:
-        """The route cannot label/compute/write/rename before its prescribed predecessor gate."""
+    def test_task11_create_route_records_uncompressed_preregistered_order(self) -> None:
+        """Creation records every ordered, pinned, and durable publication boundary."""
         snapshot, _selection = _snapshot_and_selection(); zero = SelectionResultAntigravity((), (), (), (), (), frozenset())
         publication = FrozenPublicationAntigravity("3" * 64, "4" * 64, "5" * 64, "6" * 64, zero)
         labels = evaluation.FrozenContextLabelsAntigravity(snapshot.context_datasets, {d: () for d in snapshot.context_datasets},
             publication.publication_sha256, publication.source_audit_sha256, zero, 1, 1117, 0)
         preflight = (publication, snapshot, zero, snapshot.context_datasets, MappingProxyType(dict(snapshot.test_row_count_by_dataset)))
-        events: list[str] = []; real_write=evaluation.write_create_only_antigravity; real_pin=evaluation.pin_exact_regular_inventory_antigravity
-        real_replay=evaluation._replay_evaluation_payloads_antigravity; real_rename=evaluation.exclusive_rename_antigravity
+        events: list[str] = []
+        real_write = evaluation.write_create_only_antigravity
+        real_pin = evaluation.pin_exact_regular_inventory_antigravity
+        real_replay = evaluation._replay_evaluation_payloads_antigravity
+        real_rename = evaluation.exclusive_rename_antigravity
+        real_fsync = evaluation.fsync_directory_antigravity
+        real_exists = Path.exists
+        real_revalidate = PinnedRegularInventoryAntigravity.revalidate_antigravity
+        real_revalidate_at = PinnedRegularInventoryAntigravity.revalidate_at_antigravity
+        inside_revalidate = [False]
+        pinning = [""]
+        replay_count = [0]
         with tempfile.TemporaryDirectory() as temporary:
             destination = Path(temporary) / "evaluation_antigravity"
             def preflight_call() -> object: events.append("preflight"); return preflight
             def label_call() -> object: events.append("labels"); return labels
             def compute_call(value: object) -> object: events.append("compute"); return self._complete_result(snapshot.context_datasets)
-            def write_call(path: Path, payload: bytes) -> None: events.append("write"); real_write(path, payload)
-            def pin_call(*args: object, **kwargs: object) -> object: events.append("pin"); return real_pin(*args, **kwargs)
-            def replay_call(payloads: object) -> object: events.append("replay"); return real_replay(payloads)
+            def write_call(path: Path, payload: bytes) -> None:
+                events.append(f"write:{path.name}")
+                real_write(path, payload)
+            def pin_call(root: Path, *args: object, **kwargs: object) -> object:
+                location = "destination" if root == destination else "staging"
+                events.append(f"pin:{location}")
+                pinning[0] = location
+                try:
+                    return real_pin(root, *args, **kwargs)
+                finally:
+                    pinning[0] = ""
+            def replay_call(payloads: object) -> object:
+                location = "staging" if replay_count[0] == 0 else "destination"
+                replay_count[0] += 1
+                events.append(f"replay:{location}")
+                return real_replay(payloads)
             def rename_call(source: Path, target: Path) -> None: events.append("rename"); real_rename(source, target)
+            def fsync_call(path: Path) -> None:
+                events.append("fsync:staging" if path != destination.parent else "fsync:parent")
+                real_fsync(path)
+            def exists_call(path: Path) -> bool:
+                if path == destination:
+                    events.append("exists:destination")
+                return real_exists(path)
+            def revalidate_call(pinned: PinnedRegularInventoryAntigravity) -> None:
+                location = "destination" if pinned._root_antigravity == destination else "staging"
+                boundary = "pin" if pinning[0] else "caller"
+                events.append(f"revalidate:{location}:{boundary}")
+                inside_revalidate[0] = True
+                try:
+                    real_revalidate(pinned)
+                finally:
+                    inside_revalidate[0] = False
+            def revalidate_at_call(pinned: PinnedRegularInventoryAntigravity, root: Path, *, renamed_antigravity: bool = False) -> None:
+                if not inside_revalidate[0]:
+                    events.append("revalidate_at:destination")
+                real_revalidate_at(pinned, root, renamed_antigravity=renamed_antigravity)
             with patch.object(evaluation, "_EVALUATION_DESTINATION_ANTIGRAVITY", destination), \
                  patch.object(evaluation, "_preflight_antigravity", side_effect=preflight_call), \
                  patch.object(evaluation, "load_frozen_context_labels_antigravity", side_effect=label_call), \
@@ -582,10 +641,24 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
                  patch.object(evaluation, "write_create_only_antigravity", side_effect=write_call), \
                  patch.object(evaluation, "pin_exact_regular_inventory_antigravity", side_effect=pin_call), \
                  patch.object(evaluation, "_replay_evaluation_payloads_antigravity", side_effect=replay_call), \
-                 patch.object(evaluation, "exclusive_rename_antigravity", side_effect=rename_call):
+                 patch.object(evaluation, "exclusive_rename_antigravity", side_effect=rename_call), \
+                 patch.object(evaluation, "fsync_directory_antigravity", side_effect=fsync_call), \
+                 patch.object(Path, "exists", exists_call), \
+                 patch.object(PinnedRegularInventoryAntigravity, "revalidate_antigravity", revalidate_call), \
+                 patch.object(PinnedRegularInventoryAntigravity, "revalidate_at_antigravity", revalidate_at_call):
                 evaluation.evaluate_exp441_antigravity()
-        compressed = [event for index, event in enumerate(events) if index == 0 or event != events[index - 1]]
-        self.assertEqual(compressed, ["preflight", "labels", "compute", "preflight", "write", "pin", "replay", "preflight", "rename", "pin", "replay", "preflight"])
+        self.assertEqual(events, [
+            "exists:destination", "preflight", "labels", "compute", "preflight",
+            "write:evaluation_antigravity.json", "write:dataset_metrics_antigravity.jsonl",
+            "write:rescued_datasets_antigravity.jsonl", "write:regressed_datasets_antigravity.jsonl",
+            "write:confusion_antigravity.json", "write:bootstrap_antigravity.json",
+            "write:decision_antigravity.json", "write:artifact_sha256_antigravity.json",
+            "pin:staging", "revalidate:staging:pin", "replay:staging", "revalidate:staging:caller", "fsync:staging",
+            "preflight", "exists:destination", "rename", "revalidate_at:destination",
+            "fsync:parent", "revalidate_at:destination", "pin:destination",
+            "revalidate:destination:pin", "replay:destination", "revalidate:destination:caller",
+            "preflight", "revalidate:destination:caller",
+        ])
 
     def test_task11_existing_destination_replays_without_task9_or_exp417_access(self) -> None:
         """An existing valid eight-file destination is inspected, never repaired or relabelled."""
