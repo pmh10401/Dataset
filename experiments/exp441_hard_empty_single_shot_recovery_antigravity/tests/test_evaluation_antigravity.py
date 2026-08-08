@@ -453,7 +453,7 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
             for key, expected in evaluation._GOVERNANCE_ANTIGRAVITY.items():
                 mutations = {
                     "missing": lambda value: value.pop(key),
-                    "nested": lambda value: value.__setitem__(key, {"value": expected}),
+                    "nested": lambda value: (value.pop(key), value.__setitem__("governance", {key: expected})),
                     "truthy_type": lambda value: value.__setitem__(key, 1 if type(expected) is bool else True),
                     "wrong_value": lambda value: value.__setitem__(key, (not expected) if type(expected) is bool else expected + "_wrong"),
                     "extra_alias": lambda value: value.__setitem__(key + "_alias", expected),
@@ -473,12 +473,59 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
             for mutation in ("missing", "nested", "truthy_type", "wrong_value", "extra_alias"):
                 altered = dict(original_failure)
                 if mutation == "missing": del altered[key]
-                elif mutation == "nested": altered[key] = {"value": expected}
+                elif mutation == "nested":
+                    del altered[key]; altered["governance"] = {key: expected}
                 elif mutation == "truthy_type": altered[key] = 1 if type(expected) is bool else True
                 elif mutation == "wrong_value": altered[key] = (not expected) if type(expected) is bool else expected + "_wrong"
                 else: altered[key + "_alias"] = expected
                 with self.subTest(document="failure", key=key, mutation=mutation), self.assertRaises(ValueError):
                     evaluation._validate_failure_payload_antigravity(evaluation.canonical_json_bytes_antigravity(altered))
+
+    def test_task11_semantic_eight_artifact_matrix_rejects_rehashed_attacker_payloads(self) -> None:
+        """An attacker can recompute every direct hash but cannot forge cross-artifact meaning."""
+        snapshot, selection = _snapshot_and_selection()
+        base = evaluation._result_artifacts_antigravity(self._complete_result(snapshot.context_datasets), _publication(snapshot, selection))
+        def repack(payloads: dict[str, bytes]) -> dict[str, bytes]:
+            evaluation_doc = evaluation.parse_canonical_json_bytes_antigravity(payloads["evaluation_antigravity.json"])
+            bootstrap_doc = evaluation.parse_canonical_json_bytes_antigravity(payloads["bootstrap_antigravity.json"])
+            decision_doc = evaluation.parse_canonical_json_bytes_antigravity(payloads["decision_antigravity.json"])
+            refs = {
+                "dataset_metrics_sha256": sha256(payloads["dataset_metrics_antigravity.jsonl"]).hexdigest(),
+                "rescued_datasets_sha256": sha256(payloads["rescued_datasets_antigravity.jsonl"]).hexdigest(),
+                "regressed_datasets_sha256": sha256(payloads["regressed_datasets_antigravity.jsonl"]).hexdigest(),
+                "confusion_sha256": sha256(payloads["confusion_antigravity.json"]).hexdigest(),
+            }
+            evaluation_doc.update(refs); bootstrap_doc["dataset_metrics_sha256"] = refs["dataset_metrics_sha256"]
+            payloads["evaluation_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(evaluation_doc)
+            payloads["bootstrap_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(bootstrap_doc)
+            decision_doc.update(refs); decision_doc["evaluation_sha256"] = sha256(payloads["evaluation_antigravity.json"]).hexdigest(); decision_doc["bootstrap_sha256"] = sha256(payloads["bootstrap_antigravity.json"]).hexdigest()
+            payloads["decision_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(decision_doc)
+            artifact = evaluation.parse_canonical_json_bytes_antigravity(payloads["artifact_sha256_antigravity.json"])
+            artifact["files"] = {name: sha256(payloads[name]).hexdigest() for name in artifact["files"]}
+            payloads["artifact_sha256_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(artifact)
+            return payloads
+        def mutate(family: str) -> dict[str, bytes]:
+            payloads = dict(base)
+            if family == "evaluation":
+                item = evaluation.parse_canonical_json_bytes_antigravity(payloads["evaluation_antigravity.json"]); item["candidate_count"] = 1; payloads["evaluation_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(item)
+            elif family == "dataset_metrics":
+                rows = evaluation._parse_jsonl_antigravity(payloads["dataset_metrics_antigravity.jsonl"], "metrics"); rows[0]["dataset"] = rows[1]["dataset"]; payloads["dataset_metrics_antigravity.jsonl"] = evaluation.canonical_jsonl_bytes_antigravity(rows)
+            elif family == "rescued":
+                payloads["rescued_datasets_antigravity.jsonl"] = evaluation.canonical_jsonl_bytes_antigravity(({"dataset": "T0000"},))
+            elif family == "regressed":
+                payloads["regressed_datasets_antigravity.jsonl"] = evaluation.canonical_jsonl_bytes_antigravity(({"dataset": "T0000"},))
+            elif family == "confusion":
+                item = evaluation.parse_canonical_json_bytes_antigravity(payloads["confusion_antigravity.json"]); item["candidate_tp"] = 1; payloads["confusion_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(item)
+            elif family == "bootstrap":
+                item = evaluation.parse_canonical_json_bytes_antigravity(payloads["bootstrap_antigravity.json"]); item["micro_ci"] = [0.0, 0.1]; payloads["bootstrap_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(item)
+            elif family == "decision":
+                item = evaluation.parse_canonical_json_bytes_antigravity(payloads["decision_antigravity.json"]); item["status"] = "retrospective_reproduction_complete"; payloads["decision_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(item)
+            else:
+                item = evaluation.parse_canonical_json_bytes_antigravity(payloads["artifact_sha256_antigravity.json"]); item["files"]["evaluation_antigravity.json"] = "0" * 64; payloads["artifact_sha256_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(item); return payloads
+            return repack(payloads)
+        for family in ("evaluation", "dataset_metrics", "rescued", "regressed", "confusion", "bootstrap", "decision", "artifact_map"):
+            with self.subTest(family=family), self.assertRaises(ValueError):
+                evaluation._replay_evaluation_payloads_antigravity(mutate(family))
 
     def test_task11_exact_inventory_rejects_missing_extra_link_fifo_and_mode_members(self) -> None:
         """Pinned replay admits only eight 0600 regular files in one 0700 directory."""
