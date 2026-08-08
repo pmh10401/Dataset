@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T14:16:09Z",
-  "generated_from_commit": "b3d4b57364263b4a400cc0ce076f3c55d65c716f",
+  "generated_at": "2026-08-08T14:30:13Z",
+  "generated_from_commit": "544fb6cb478123eece01c82877101e51d950162a",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2926,7 +2926,7 @@
       "boundary": "Active isolated research",
       "layer": 3,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Exp441 Task 9 adds a fail-closed, post-freeze-only TEST-label loader. It replays source and selector identity before a fresh publication gate, then uses one Exp417 descriptor-bound connection for one quick_check and exactly 1,117 ordered context queries. Task 10 consumes only the resulting immutable snapshot: it preserves context and sparse coordinate identities, computes confusion/F1/rescue/regression facts and one exact Task 8 bootstrap input/result entirely in memory, and always records no scientific winner. Its immutable retrospective contract now reconciles each ordered dataset fact, bootstrap row, rescue/regression list, aggregate count/F1/delta/strong-loss field, and the contract-owned frozen status classifier without rerunning bootstrap. It does not reopen Task 9, publication/source/selector routes, SQLite, filesystem, or official evaluation routes. Official readiness/new/inspect/evaluate remain gated until Task 12 final review.",
+      "role": "Exp441 Task 9 adds a fail-closed, post-freeze-only TEST-label loader. It replays source and selector identity before a fresh publication gate, then uses one Exp417 descriptor-bound connection for one quick_check and exactly 1,117 ordered context queries. Task 10 consumes only the resulting immutable snapshot: it preserves context and sparse coordinate identities, computes confusion/F1/rescue/regression facts and one exact Task 8 bootstrap input/result entirely in memory, and always records no scientific winner. Its immutable retrospective contract reconciles ordered dataset facts, baseline-to-union candidate TP/FP transition conservation, bootstrap rows, rescue/regression lists, aggregate count/F1/delta/strong-loss fields, and the contract-owned frozen status classifier without rerunning bootstrap. The public calculation and sparse helper have exact direct-call AST allowlists and do not reopen Task 9, publication/source/selector routes, SQLite, filesystem, or official evaluation routes. Official readiness/new/inspect/evaluate remain gated until Task 12 final review.",
       "entrypoints": [
         "publish_exp438_antigravity",
         "inspect_publication_antigravity",

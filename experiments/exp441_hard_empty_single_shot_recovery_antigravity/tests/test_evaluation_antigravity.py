@@ -471,6 +471,68 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
                 with self.subTest(attribute=attribute, nonfinite=nonfinite):
                     self.assertEqual(evaluation._retrospective_status_antigravity(facts, invalid), "engineering_reproduction_failed")
 
+    def test_each_tolerant_field_uses_the_last_accepted_representable_float(self) -> None:
+        """Every final accepted float has one adjacent +inf value that the real classifier rejects."""
+        facts = EvaluationFactsAntigravity(
+            (1915, 303, 2003, 191679), (1930, 318, 1988, 191664), 15, 15, 15, 0,
+            0.0, 0.6241851368970013, 0.6260136230943887,
+            0.0018284861973874023, 0.012444046553267682,
+        )
+        bootstrap = BootstrapResultAntigravity(
+            (0.00005373870255999115, 0.003814109586073529),
+            (0.006535362578334826, 0.019158460161145925),
+        )
+        def replace_field(position: int, value: float) -> tuple[EvaluationFactsAntigravity, BootstrapResultAntigravity]:
+            if position == 0:
+                return replace(facts, micro_delta=value), bootstrap
+            if position == 1:
+                return replace(facts, macro_delta=value), bootstrap
+            if position < 4:
+                values = list(bootstrap.micro_ci); values[position - 2] = value
+                return facts, replace(bootstrap, micro_ci=tuple(values))
+            values = list(bootstrap.macro_ci); values[position - 4] = value
+            return facts, replace(bootstrap, macro_ci=tuple(values))
+        expected = (facts.micro_delta, facts.macro_delta, *bootstrap.micro_ci, *bootstrap.macro_ci)
+        for position, value in enumerate(expected):
+            accepted = value
+            while math.isclose(math.nextafter(accepted, math.inf), value, rel_tol=0.0, abs_tol=1e-15):
+                accepted = math.nextafter(accepted, math.inf)
+            rejected = math.nextafter(accepted, math.inf)
+            accepted_facts, accepted_bootstrap = replace_field(position, accepted)
+            rejected_facts, rejected_bootstrap = replace_field(position, rejected)
+            with self.subTest(position=position):
+                self.assertEqual(math.nextafter(accepted, math.inf), rejected)
+                self.assertTrue(math.isclose(accepted, value, rel_tol=0.0, abs_tol=1e-15))
+                self.assertFalse(math.isclose(rejected, value, rel_tol=0.0, abs_tol=1e-15))
+                self.assertEqual(evaluation._retrospective_status_antigravity(accepted_facts, accepted_bootstrap), "retrospective_reproduction_complete")
+                self.assertEqual(evaluation._retrospective_status_antigravity(rejected_facts, rejected_bootstrap), "retrospective_reproduction_discrepancy")
+
+    def test_pure_compute_and_helper_direct_call_allowlists_are_exact(self) -> None:
+        """Any unreviewed direct call in the public pure calculation chain is a boundary regression."""
+        source = evaluation.__loader__.get_source(evaluation.__name__) or ""
+        tree = ast.parse(source)
+        functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
+        def calls(name: str) -> set[str]:
+            return {ast.unparse(node.func) for node in ast.walk(functions[name]) if isinstance(node, ast.Call)}
+        self.assertEqual(calls("compute_retrospective_evaluation_antigravity"), {
+            "EvaluationFactsAntigravity", "RetrospectiveEvaluationAntigravity", "ValueError",
+            "_compute_sparse_retrospective_antigravity", "_retrospective_status_antigravity",
+            "_strong_loss_antigravity", "float", "isinstance", "len", "max", "np.asarray",
+            "np.asarray([fact.delta for fact in dataset_facts], dtype=np.float64).mean",
+            "paired_dataset_bootstrap_antigravity", "project_f1_antigravity", "range", "sum", "tuple",
+            "validate_production_selection_antigravity",
+        })
+        self.assertEqual(calls("_compute_sparse_retrospective_antigravity"), {
+            "DatasetEvaluationFactsAntigravity", "ValueError", "_confusion_for_predictions_antigravity",
+            "_is_regression_antigravity", "any", "facts.append", "float", "frozenset",
+            "hard_by_dataset.get", "hard_by_dataset.setdefault", "hard_by_dataset.setdefault(dataset, set()).add",
+            "isinstance", "len", "project_f1_antigravity", "regressed.append", "rescued.append",
+            "rows.append", "selected_by_dataset.get", "selected_by_dataset.setdefault",
+            "selected_by_dataset.setdefault(ranked.dataset, set()).add", "set",
+            "set(hard_by_dataset).difference", "set(selected_by_dataset).difference",
+            "snapshot.labels_by_dataset.get", "sum", "tuple", "type",
+        })
+
     def test_public_calculation_has_one_snapshot_argument_and_never_reopens_task9_boundaries(self) -> None:
         """Adding a retuning parameter or calling a loader/source route would violate the frozen split."""
         source, selection = _snapshot_and_selection()

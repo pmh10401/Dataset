@@ -97,6 +97,17 @@ class Exp441ContractsAntigravityTests(unittest.TestCase):
             replace(result, facts=replace(result.facts, candidate_fp=1))
         with self.assertRaisesRegex(ValueError, "status"):
             replace(result, status="retrospective_reproduction_complete")
+
+    def test_dataset_facts_reject_candidate_tp_and_fp_transition_contradictions(self) -> None:
+        """Candidate labels must exactly explain both TP/FN and FP/TN baseline-to-union transitions."""
+        with self.assertRaisesRegex(ValueError, "candidate transition"):
+            DatasetEvaluationFactsAntigravity(
+                "tp", (0, 0, 1, 1), (1, 0, 0, 1), 0.0, 1.0, 1.0, 0, 0,
+            )
+        with self.assertRaisesRegex(ValueError, "candidate transition"):
+            DatasetEvaluationFactsAntigravity(
+                "fp", (0, 0, 0, 1), (0, 1, 0, 0), 0.0, 0.0, 0.0, 0, 0,
+            )
     def test_terminal_authority_identity_is_ordered_complete_and_byte_sensitive(self) -> None:
         """Every one of the six fixed terminal files participates in one deterministic identity."""
         authority = {

@@ -630,6 +630,13 @@ class DatasetEvaluationFactsAntigravity:
         if (self.baseline_f1 != baseline_f1 or self.union_f1 != union_f1
                 or self.delta != union_f1 - baseline_f1):
             raise ValueError("dataset evaluation metrics are inconsistent")
+        baseline_tp, baseline_fp, baseline_fn, baseline_tn = self.baseline_confusion
+        union_tp, union_fp, union_fn, union_tn = self.union_confusion
+        if (union_tp - baseline_tp != self.candidate_tp
+                or union_fp - baseline_fp != self.candidate_fp
+                or baseline_fn - union_fn != self.candidate_tp
+                or baseline_tn - union_tn != self.candidate_fp):
+            raise ValueError("candidate transition is inconsistent")
 
 
 @dataclass(frozen=True)
