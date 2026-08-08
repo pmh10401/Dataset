@@ -106,6 +106,7 @@ database_sha256 = 8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef
 hard_prediction_sha256 = 437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70
 hard_manifest_sha256 = 41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8
 hard_coordinate_identity_sha256 = 858e24e6aa182e78985f571778be02bcc87332639958fa887515c24074654322
+selected_coordinate_identity_sha256 = db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048
 exp440_prediction_sha256 = 06d905d9d6f96fa67704111b984ed87b74229e13fd0690401db67a4a0fdd79af
 exp440_manifest_sha256 = 3778a0e8770e06f4be87d1b87281c858518169c377ee6c53b78f32ce01d39e85
 exp440_artifact_map_sha256 = 7a083fa8f1287205d3469e36f2f88b95f72adecd90b3b79167aad673b3439a1a
@@ -147,6 +148,21 @@ Exp440 publication은 `artifact_sha256_antigravity.json`을 포함한 정확히 
 `retained_candidates_antigravity.json`만 허용한다. retained 파일은 위 SHA로 무결성만
 확인하고 선택에는 사용하지 않는다. 이 정확한 inventory 밖의 파일, symlink, FIFO,
 디렉터리는 실패다.
+
+두 coordinate identity는 이름만 비슷하고 직렬화 계약이 서로 다르다.
+
+1. `hard_coordinate_identity_sha256`은 Exp416 정본과 동일하게 좌표를
+   `(dataset, candidate_index)`로 정렬하고, `[[dataset,index],...]` 형태의 compact
+   UTF-8 JSON 배열을 `ensure_ascii=False`, `separators=(",", ":")`로 직렬화한다.
+   끝 newline은 붙이지 않는다. 그 SHA256이 `858e24e...54322`여야 한다.
+2. `selected_coordinate_identity_sha256`은 Exp441 선택 좌표를
+   `(dataset, instance_index)`로 정렬하고, 각 좌표를
+   `{"dataset":"...","instance_index":n}` compact canonical JSON object 한 줄로
+   직렬화한다. 각 줄 뒤에는 newline을 하나씩 붙인다. 그 JSONL SHA256이
+   `db0b9ed...a3048`여야 한다.
+
+두 helper, payload, 기대 SHA를 교차 사용하지 않는다. 같은 좌표를 입력해도 두
+identity가 다르다는 fixture와 실제 2,218 Hard/30 selected replay를 각각 테스트한다.
 
 예측 단계에서 허용하는 입력은 다음뿐이다.
 
@@ -540,12 +556,16 @@ operational-alert-ineligible이며 CHAMPION_LEDGER를 Exp441로 바꾸지 않는
 - 전역 순위와 30개 절단이 입력 순서와 worker 완료 순서에 무관함
 - 1,117 record와 840/394/73/49/30 label-free 구조 수 재현
 - source 파일 하나의 바이트 변경, 누락, 추가, symlink를 모두 거부
+- Exp416식 newline 없는 Hard JSON-array identity와 Exp441식 newline 포함 selected
+  JSONL-object identity를 별개로 재현하고 서로 바꾸면 실패
 - candidate와 Hard 좌표를 각 record의 `test_row_count`에 대해 label 전에 범위 검증
 - `readiness`, `new`, `inspect` 각각에서 SQLite connect와 label-capable import를 강제로
   실패시키고 TEST label 및 Exp440 evaluation 경로 접근이 전혀 없음을 증명
 - 11-worker 결과와 1-worker reference의 prediction 바이트 완전 일치
 - 진행 JSON의 PID, 현재 데이터셋, 크기, 단계, backend, 완료 수, 속도, ETA, 오류
 - create-only publication, 모든 artifact tamper, 동시 destination 생성을 거부
+- terminal selection, 모든 failure evidence, readiness/publication/evaluation 및 Exp441
+  control record의 governance 9개 key/type/value를 artifact별로 검증
 - prediction freeze 전 evaluate 금지, DB hash -> quick_check -> context-scoped 1,117 query의
   정확한 post-freeze 순서, context 밖 2개 dataset label 미조회
 - 손으로 계산 가능한 TP/FP/FN/TN, rescue, macro, strong-loss, descriptive bootstrap

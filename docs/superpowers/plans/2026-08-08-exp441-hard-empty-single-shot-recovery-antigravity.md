@@ -12,6 +12,7 @@
 
 - Every newly created filename contains `antigravity`; do not create `__init__.py`.
 - Experiment identity is `Exp441`; run identity is `exp441-hard-empty-single-shot-recovery-antigravity-20260808`.
+- The final reviewed design source is `docs/superpowers/specs/2026-08-08-exp441-hard-empty-single-shot-recovery-antigravity-design.md` in the same commit as this plan, with exact SHA256 `c4d692297290869be90815d115c1fda7f71120326b4be504ebf685619b6545da`; the older `99af339a` revision is historical only.
 - Run root is `/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808`.
 - Prediction inputs are limited to the frozen Exp440 checkpoint/publication, frozen Exp404 Hard prediction/manifest, the current clean reviewed Exp441 code/config, and no other source.
 - Prediction never opens SQLite, TEST labels, anomaly locations, Exp440 evaluation, past family TEST performance, or a label-capable module.
@@ -20,6 +21,7 @@
 - Exp440 checkpoint retained-inventory SHA256 is `c31c0414dced3f463d187e8e17adf84a50eb0c7cf86a6e8399f9074fda94ccf2`; it is integrity-checked but never used for selection.
 - Exp440 publication prediction/manifest/artifact-map SHA256 values are `06d905d9d6f96fa67704111b984ed87b74229e13fd0690401db67a4a0fdd79af`, `3778a0e8770e06f4be87d1b87281c858518169c377ee6c53b78f32ce01d39e85`, and `7a083fa8f1287205d3469e36f2f88b95f72adecd90b3b79167aad673b3439a1a`.
 - Exp404 Hard prediction/manifest/coordinate-identity SHA256 values are `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70`, `41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8`, and `858e24e6aa182e78985f571778be02bcc87332639958fa887515c24074654322`.
+- Hard identity and Exp441 selected identity are distinct: Hard uses Exp416's coordinate-sorted, newline-free compact JSON array of `[dataset,index]` pairs and must hash to `858e24e6aa182e78985f571778be02bcc87332639958fa887515c24074654322`; selected coordinates use coordinate-sorted compact JSONL objects `{"dataset":"...","instance_index":n}` with one newline per row and must hash to `db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048`.
 - Database SHA256 is `8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c`; prediction must not open it.
 - Fixed database path is `/Users/mac/Documents/Dataset/univariate_ts.db`.
 - Fixed Exp440 checkpoint root is `/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/checkpoint_antigravity`, containing only `context_antigravity.json`, `state_antigravity.json`, `retained_candidates_antigravity.json`, and `records_antigravity/{0000..1116}_record_antigravity.json`.
@@ -79,12 +81,12 @@
 - Modify together: `docs/codemap/codemap.lock`
 
 **Interfaces:**
-- Consumes: approved Exp441 design at commit `99af339ae4d7656c2e506e9ec2c123aa332edf4e` and frozen Exp440/Hard artifacts.
+- Consumes: the same-commit reviewed Exp441 design at exact content SHA256 `c4d692297290869be90815d115c1fda7f71120326b4be504ebf685619b6545da` and frozen Exp440/Hard artifacts.
 - Produces: exact identity, source hashes, selector rule, retrospective-only status, commands, log paths, and implementation state used by every later task.
 
 - [ ] **Step 1: Write the exact preregistration contract**
 
-Copy all Global Constraints into the preregistration and include this non-promotion block verbatim:
+Verify the design file SHA before copying all Global Constraints into the preregistration, record that SHA in preregistration/runbook, and include this non-promotion block verbatim:
 
 ```text
 official_run_purpose = deterministic_retrospective_reproduction
@@ -115,6 +117,8 @@ List `readiness_antigravity.json`, `attempts_antigravity/attempt_0000_antigravit
 
 First reconcile the stale Exp440 state: set its catalog/control status to `official_completed_evaluated_not_promoted`, prediction started/completed true, TEST labels opened only after freeze, and bind its frozen publication/evaluation hashes. Append Exp440 to `FAILURE_LEDGER.json.entries` with prediction SHA `06d905d9d6f96fa67704111b984ed87b74229e13fd0690401db67a4a0fdd79af`, evaluation SHA `6cb023b40e02a5caa813c46884b921b76442ef39a736409bff7a32decb546b84`, 100 candidates, TP/FP `40/60`, micro CI lower `-0.000874817656299559`, and maximum strong loss `0.5`. Add Exp441 to the catalog as `design_approved_implementation_planned`; set `RESEARCH_STATE` active experiment/phase accordingly. Update `CHAMPION_LEDGER` only to record that Exp404/Exp416 remains the reference and Exp441 is a retrospective reproduction, not a pending promotion candidate.
 
+For every new Exp441 object in `EXPERIMENT_CATALOG.json`, `RESEARCH_STATE.json`, and `CHAMPION_LEDGER.json`, assert the same nine governance names exist as flat fields with exact string/bool types and values, no nested `governance` key, and no missing or extra governance-name alias. Exp440 and older records retain their historical schema.
+
 - [ ] **Step 4: Regenerate the code-map triplet before product code**
 
 Extend the existing `research_control` evidence with the new preregistration/runbook and the frozen retrospective status. Preserve 20 primary nodes; do not invent code edges before source files exist.
@@ -128,6 +132,33 @@ python3 -m json.tool CHAMPION_LEDGER.json >/dev/null
 python3 -m json.tool RESEARCH_STATE.json >/dev/null
 python3 -m json.tool docs/codemap/codemap.json >/dev/null
 python3 -m json.tool docs/codemap/codemap.lock >/dev/null
+python3 - <<'PY'
+import json
+expected={
+  "official_run_purpose":"deterministic_retrospective_reproduction",
+  "bootstrap_interpretation":"descriptive_post_selection",
+  "adaptive_followup":True,"independent_validation":False,
+  "external_generalization_supported":False,
+  "confirmatory_statistical_claim":False,
+  "scientific_winner_selected":False,"review_only":True,
+  "operational_alert_eligible":False,
+}
+# Locate every Exp441 record in the three control files and require each flat
+catalog=json.load(open("EXPERIMENT_CATALOG.json"))
+state=json.load(open("RESEARCH_STATE.json"))
+champion=json.load(open("CHAMPION_LEDGER.json"))
+records=[
+  next(row for row in catalog["experiments"] if row.get("id")=="Exp441"),
+  state,
+  champion["pending_candidate"],
+]
+assert state["active_experiment"]=="Exp441"
+assert champion["pending_candidate"]["experiment"]=="Exp441"
+for record in records:
+  assert "governance" not in record
+  for key,value in expected.items():
+    assert key in record and type(record[key]) is type(value) and record[key]==value
+PY
 git diff --check
 git add docs/EXP441_PREREGISTRATION_antigravity_KO.md \
   docs/EXP441_RUNBOOK_antigravity_KO.md EXPERIMENT_CATALOG.json \
@@ -160,6 +191,7 @@ git commit -m "docs(exp441): freeze retrospective selector contract"
 
 ```python
 self.assertEqual(FROZEN_CONFIG.experiment_id, "Exp441")
+self.assertEqual(FROZEN_CONFIG.reviewed_design_sha256, "c4d692297290869be90815d115c1fda7f71120326b4be504ebf685619b6545da")
 self.assertEqual(FROZEN_CONFIG.dataset_count, 1117)
 self.assertEqual(FROZEN_CONFIG.candidate_budget, 30)
 self.assertEqual(FROZEN_CONFIG.candidate_per_dataset, 1)
@@ -196,6 +228,7 @@ Use a frozen dataclass and validate every literal at construction:
 class Exp441FrozenConfig:
     experiment_id: str = "Exp441"
     run_identity: str = "exp441-hard-empty-single-shot-recovery-antigravity-20260808"
+    reviewed_design_sha256: str = "c4d692297290869be90815d115c1fda7f71120326b4be504ebf685619b6545da"
     dataset_count: int = 1117
     candidate_budget: int = 30
     candidate_per_dataset: int = 1
@@ -214,7 +247,7 @@ class Exp441FrozenConfig:
     scientific_winner_selected: bool = False
 ```
 
-Add every exact fixed path/hash from Global Constraints, including the retained-inventory hash, ten-file Exp440 publication inventory, and both forbidden Exp440 evaluation surfaces. Expose only `frozen_config_payload_antigravity()`, `governance_payload_antigravity()`, and `cpu_worker_count_antigravity()`. Test that governance has exactly nine flat keys, `type(value) is bool` for seven booleans, exact strings for the other two, and no nested representation.
+Add only the exact positive allowlisted prediction source paths/hashes from Global Constraints: checkpoint context/state/records/retained inventory, ten-file Exp440 publication, and Hard prediction/manifest. Do not carry either forbidden Exp440 evaluation literal in production config, module constants, serialized config, logs, or manifests; those exact negative fixtures live only in this plan, design, and tests. Production accepts no path overrides and rejects any resolved path outside the positive allowlist. Expose only `frozen_config_payload_antigravity()`, `governance_payload_antigravity()`, and `cpu_worker_count_antigravity()`. Test that governance has exactly nine flat keys, `type(value) is bool` for seven booleans, exact strings for the other two, and no nested representation; separately test that serialized production config contains neither forbidden evaluation string.
 
 - [ ] **Step 3: Write RED contract tests**
 
@@ -333,11 +366,11 @@ git commit -m "feat(exp441): freeze selector contracts and artifacts"
 
 **Interfaces:**
 - Consumes: `Exp440DatasetResultAntigravity.from_payload`, fixed checkpoint/publication/Hard paths and hashes, `cpu_worker_count_antigravity()`.
-- Produces: `verify_frozen_sources_antigravity() -> FrozenSourceSnapshotAntigravity`; internal `_parse_record_task_antigravity(task) -> ParsedRecordAntigravity` is safe for `ProcessPoolExecutor`, and internal `_verify_frozen_sources_with_observer_antigravity(observer)` emits parent-ordered immutable progress events without exposing a public override.
+- Produces: `verify_frozen_sources_antigravity() -> FrozenSourceSnapshotAntigravity`, `hard_coordinate_identity_sha256_antigravity(coordinates) -> str`; internal `_parse_record_task_antigravity(task) -> ParsedRecordAntigravity` is safe for `ProcessPoolExecutor`, and internal `_verify_frozen_sources_with_observer_antigravity(observer)` emits parent-ordered immutable progress events without exposing a public override.
 
 - [ ] **Step 1: Write RED source identity and firewall tests**
 
-Reject a wrong context/state/retained-inventory/publication/Hard hash, missing/extra record, wrong checkpoint or ten-file publication inventory, sequence gap, duplicate dataset, record digest mismatch, record dataset mismatch, symlink/FIFO/directory artifact, unknown payload field, noncanonical dataset order, state count other than 1,117, Hard count other than 2,218, Hard coordinate identity mismatch, and either exact forbidden Exp440 evaluation surface.
+Reject a wrong context/state/retained-inventory/publication/Hard hash, missing/extra record, wrong checkpoint or ten-file publication inventory, sequence gap, duplicate dataset, record digest mismatch, record dataset mismatch, symlink/FIFO/directory artifact, unknown payload field, noncanonical dataset order, state count other than 1,117, Hard count other than 2,218, Hard coordinate identity mismatch, and test-supplied paths resolving outside the exact positive allowlist. The two forbidden Exp440 evaluation strings exist only in negative test fixtures; production source/config contains neither literal.
 
 ```python
 with self.assertRaisesRegex(ValueError, "evaluation source is forbidden"):
@@ -362,7 +395,8 @@ validate state completed/record map
 pin and hash the exact ten-file Exp440 publication inventory
 replay the artifact map and all nine declared file hashes
 pin and hash Hard manifest/prediction
-parse 2,218 unique Hard coordinates, 888 Hard-active datasets, 229 Hard-empty datasets, and coordinate identity
+parse 2,218 unique Hard coordinates, 888 Hard-active datasets, 229 Hard-empty datasets
+hash sorted Hard as one newline-free compact JSON array of [dataset,candidate_index] pairs and require 858e24e...54322
 enumerate exactly 1,117 regular record files
 parse records in 11 processes, return in context order
 adapt every Exp440 provisional candidate into CandidateEvidenceAntigravity by explicitly copying the frozen fields
@@ -409,9 +443,9 @@ git commit -m "feat(exp441): verify frozen selector sources"
 
 **Interfaces:**
 - Consumes: `FrozenSourceSnapshotAntigravity`.
-- Produces: `select_hard_empty_single_shot_antigravity(snapshot) -> SelectionResultAntigravity` and `coordinate_identity_sha256_antigravity(candidates) -> str`.
+- Produces: `select_hard_empty_single_shot_antigravity(snapshot) -> SelectionResultAntigravity` and `selected_coordinate_identity_sha256_antigravity(candidates) -> str`.
 
-`coordinate_identity_sha256_antigravity` sorts selected coordinates by `(dataset, instance_index)`, serializes rows shaped exactly as `{"dataset":"A","instance_index":7}` in compact canonical JSONL with one trailing newline per coordinate, and hashes those bytes.
+`selected_coordinate_identity_sha256_antigravity` sorts selected coordinates by `(dataset, instance_index)`, serializes rows shaped exactly as `{"dataset":"A","instance_index":7}` in compact canonical JSONL with one trailing newline per coordinate, and hashes those bytes. It is never used to validate Hard. Add a fixture proving this JSONL hash differs from `hard_coordinate_identity_sha256_antigravity`, whose Exp416 contract is one newline-free compact JSON array of `[dataset,index]` pairs.
 
 - [ ] **Step 1: Write RED eligibility tests**
 
@@ -453,7 +487,7 @@ The pure selector validates unique coordinates and at most one selected item per
 
 - [ ] **Step 4: Add the real 1,117-record label-free replay test**
 
-Call `verify_frozen_sources_antigravity()` and the selector without opening SQLite. Assert `840/394/73/49/30`, label access zero, and coordinate-sorted canonical JSONL identity `db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048` for rows containing only `dataset` and `instance_index`.
+Call `verify_frozen_sources_antigravity()` and the selector without opening SQLite. Independently assert the actual Hard array identity `858e24e6aa182e78985f571778be02bcc87332639958fa887515c24074654322`, structure `840/394/73/49/30`, label access zero, and selected-coordinate JSONL identity `db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048`. Cross-feeding either serialized payload to the other identity contract must fail.
 
 - [ ] **Step 5: Map the selector call and evidence symbols**
 
@@ -504,11 +538,11 @@ While record verification is active, `current_dataset` is the next context-order
 
 - [ ] **Step 2: Write RED attempt allocation and immutability tests**
 
-Assert the first attempt is `attempt_0000_antigravity`, gaps choose the smallest absent sequence, symlink/non-directory attempts fail, existing attempts never change, interrupted/failed attempts remain inspectable, and no `resume` API exists.
+Assert the first attempt is `attempt_0000_antigravity`, gaps choose the smallest absent sequence, symlink/non-directory attempts fail, existing attempts never change, interrupted/failed attempts remain inspectable, and no `resume` API exists. Every attempt-level `failure_antigravity.json` fixture must carry the exact nine flat governance fields; test each missing key, extra governance alias, wrong type/value, and nested replacement.
 
 - [ ] **Step 3: Write RED runtime order, signal, and failure tests**
 
-Patch the source parser with delayed records. Assert 11 workers remain bounded, the runtime-owned observer receives one immutable event only when the parent accepts the next context-ordered record, progress advances only in that order, SIGTERM becomes `interrupted`, source/schema failure becomes `failed`, no publication appears on failure, and a second `new` uses a new attempt rather than repairing the first.
+Patch the source parser with delayed records. Assert 11 workers remain bounded, the runtime-owned observer receives one immutable event only when the parent accepts the next context-ordered record, progress advances only in that order, SIGTERM becomes `interrupted`, source/schema failure becomes `failed`, no publication appears on failure, and a second `new` uses a new attempt rather than repairing the first. Before runtime implementation, add RED assertions that successful terminal `selection_antigravity.json` and each failed-attempt `failure_antigravity.json` contain all and only the exact flat governance names with strict key/type/value checks.
 
 - [ ] **Step 4: Implement the runtime sequence**
 
@@ -525,7 +559,7 @@ mark attempt complete and PID inactive
 return CompletedAttemptAntigravity
 ```
 
-The attempt snapshot stores only hashes, structure counts, record digest-map identity, ranking evidence, and candidate coordinates; it contains no labels or metrics.
+The attempt snapshot stores only hashes, structure counts, record digest-map identity, ranking evidence, and candidate coordinates; it contains no labels or metrics. Terminal `selection_antigravity.json` and every attempt `failure_antigravity.json` carry the exact flat nine-field governance payload, with artifact-specific RED roundtrip/tamper assertions.
 
 - [ ] **Step 5: Map attempt/progress/runtime ownership**
 
@@ -587,7 +621,7 @@ Tamper each artifact, attempt snapshot, Exp440 record, source state, Hard file, 
 
 - [ ] **Step 3: Write RED create-only race tests**
 
-Assert private mode `0700` staging, file mode `0600`, `O_EXCL|O_NOFOLLOW`, fsync, source revalidation immediately before rename, Darwin `RENAME_EXCL`, no adoption of a destination that appears during staging, and replay-only handling of a destination present on entry. A failed staging tree is renamed to a unique `failed_staging_antigravity` evidence path with `failure_antigravity.json` and preserved without creating the publication destination.
+Assert private mode `0700` staging, file mode `0600`, `O_EXCL|O_NOFOLLOW`, fsync, source revalidation immediately before rename, Darwin `RENAME_EXCL`, no adoption of a destination that appears during staging, and replay-only handling of a destination present on entry. A failed staging tree is renamed to a unique `failed_staging_antigravity` evidence path with `failure_antigravity.json` and preserved without creating the publication destination. That failure file carries the exact nine flat governance fields; tamper every key/type/value.
 
 - [ ] **Step 4: Implement deterministic publication and inspection**
 
@@ -644,7 +678,7 @@ The same evidence object also records Python/PyTorch/MLX/mlx-metal versions, MPS
 
 - [ ] **Step 2: Write RED atomic run-parent ownership tests**
 
-Stage `readiness_antigravity.json` in an antigravity-named sibling directory, fsync it, and rename exclusively to the absent fixed parent. Reject an existing parent, symlink parent, concurrent winner, source mutation, and dirty HEAD. Failure must not create the fixed run parent; instead preserve the private staging tree under a unique failed antigravity name with canonical failure evidence.
+Stage `readiness_antigravity.json` in an antigravity-named sibling directory, fsync it, and rename exclusively to the absent fixed parent. Reject an existing parent, symlink parent, concurrent winner, source mutation, and dirty HEAD. Failure must not create the fixed run parent; instead preserve the private staging tree under a unique failed antigravity name with canonical `failure_antigravity.json`. Both readiness and failure fixtures carry the exact nine flat governance fields; tamper every key/type/value and reject nesting.
 
 - [ ] **Step 3: Implement readiness and exact byte validation**
 
@@ -911,11 +945,11 @@ decision_antigravity.json
 artifact_sha256_antigravity.json
 ```
 
-`evaluation_antigravity.json`, `bootstrap_antigravity.json`, and `decision_antigravity.json` each carry the exact flat nine-field governance payload. Data JSONL, confusion, and artifact map carry no governance keys. The artifact map hashes exactly the other seven files and explicitly excludes only itself. Tamper every file/key/hash and require replay failure.
+`evaluation_antigravity.json`, `bootstrap_antigravity.json`, and `decision_antigravity.json` each carry the exact flat nine-field governance payload. Data JSONL, confusion, and artifact map carry no governance keys. The artifact map hashes exactly the other seven files and explicitly excludes only itself. Tamper every file/hash and every governance key/type/value/nesting form and require replay failure.
 
 - [ ] **Step 2: Write RED create-only race and failure-preservation tests**
 
-Use the shared `O_EXCL|O_NOFOLLOW`, fsync, and Darwin `RENAME_EXCL` boundary. A destination present on entry is replayed completely without reopening labels; a destination appearing later is a concurrency failure and is never adopted. Preserve a uniquely named failed evaluation staging tree plus canonical failure evidence while the fixed evaluation destination remains absent.
+Use the shared `O_EXCL|O_NOFOLLOW`, fsync, and Darwin `RENAME_EXCL` boundary. A destination present on entry is replayed completely without reopening labels; a destination appearing later is a concurrency failure and is never adopted. Preserve a uniquely named failed evaluation staging tree plus canonical `failure_antigravity.json` while the fixed evaluation destination remains absent. Evaluation failure fixtures carry the exact nine flat governance fields and have artifact-specific missing/extra/type/value/nesting tests.
 
 - [ ] **Step 3: Implement the exact revalidation and publication order**
 
@@ -997,7 +1031,7 @@ The naming command prints nothing. Classify the label SQL and evaluator-only ref
 
 - [ ] **Step 4: Implement and run the production-shaped real label-free replay twice**
 
-The verifier imports public source/selector APIs, patches `sqlite3.connect` to raise, and replays all 1,117 records once with 11 workers and once through the internal one-worker reference. Require identical selection payloads, coordinate identity `db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048`, counts `1117/840/394/73/49/30`, finite evidence, and label access zero. Record elapsed time and verify the official path used 11 workers.
+The verifier imports public source/selector APIs, patches `sqlite3.connect` to raise, and replays all 1,117 records once with 11 workers and once through the internal one-worker reference. Require identical selection payloads, Exp416-array Hard identity `858e24e6aa182e78985f571778be02bcc87332639958fa887515c24074654322`, Exp441-JSONL selected identity `db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048`, counts `1117/840/394/73/49/30`, finite evidence, and label access zero. Record elapsed time and verify the official path used 11 workers.
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 \
