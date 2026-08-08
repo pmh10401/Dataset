@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T11:55:07Z",
-  "generated_from_commit": "7d403fed108991045d6e97e6370cf61ca30781cc",
+  "generated_at": "2026-08-08T12:09:43Z",
+  "generated_from_commit": "e4452b799d0ea333401f9065d70d179b2a4cb604",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -27,7 +27,7 @@
     "Exp440 test-first implementation plan for isolated multi-depth calibration, budget, acceleration, runtime, publication, and post-freeze evaluation",
     "Exp441 approved selector-only retrospective reproduction design: frozen Exp440 provisional evidence, Hard-empty dataset eligibility, one candidate per dataset, global budget 30, post-freeze descriptive evaluation, exact NumPy 2.4.6 PCG64 bootstrap replay, and no scientific-winner claim",
     "Exp441 twelve-commit test-first implementation plan bound to the final reviewed design SHA, an exact positive prediction-source allowlist, separate Exp416 Hard-array and Exp441 selected-JSONL coordinate identities, exact control-record schemas with non-promotion champion history, an isolated test-only one-worker reference beside the immutable 11-worker production replay, strict nine-field governance tests, pure Hard-empty selection, immutable attempts, fixed four-command lifecycle, frozen-context 1,117-dataset label reads, and create-only prediction/evaluation publication",
-    "Exp441 Task 7 independently reviewed and shipped at 7d403fed: the fixed four-command CLI and outside-CWD wrapper serialize frozen readiness/publication results, reject 30 readiness leaf mutations across 90 cases, preserve failed staging, and keep non-evaluate routes behind fresh-interpreter SQLite/evaluator firewalls; Task 8 pure bootstrap is next but not implemented, and official Exp441 routes remain gated by DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW."
+    "Exp441 Task 8 implemented: the pure project-F1 and exact paired NumPy 2.4.6/PCG64 bootstrap boundary is covered by deterministic tests; its output is retrospective confidence-interval evidence only, prediction remains label-free, and official Exp441 routes remain gated by DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW."
   ],
   "nodes": [
     {
@@ -37,7 +37,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control files reconcile Exp440 as completed but not promoted and record Exp441 Task 7 as implemented, independently reviewed, and shipped at 7d403fed. Task 8 pure bootstrap is next but not implemented; no official Exp441 PID, checkpoint, publication, evaluation, SQLite session, or TEST-label access exists, and readiness/new/inspect/evaluate remain gated until Task 12 final review.",
+      "role": "The control files reconcile Exp440 as completed but not promoted and record Exp441 Task 7 as implemented, independently reviewed, and shipped at 7d403fed. Task 8 pure bootstrap is implemented and independently test-covered; no official Exp441 PID, checkpoint, publication, evaluation, SQLite session, or TEST-label access exists, and readiness/new/inspect/evaluate remain gated until Task 12 final review.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -2918,7 +2918,7 @@
       "boundary": "Active isolated research",
       "layer": 3,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Exp441 Task 7 fixed CLI/readiness/publication boundary is implemented, independently reviewed, and shipped at 7d403fed with 31 focused and 150 full tests passed. Task 8 pure bootstrap is next but not implemented. The Exp441 path remains label-free and review-only: no official process, PID, checkpoint, publication, evaluation, SQLite session, or TEST-label access exists; official readiness/new/inspect/evaluate routes are gated by DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW. Existing Exp438/Exp439/Exp440 publication and lazy-evaluation paths remain frozen historical boundaries.",
+      "role": "Exp441 Task 7 fixed CLI/readiness/publication boundary is implemented, independently reviewed, and shipped at 7d403fed with 31 focused and 150 full tests passed. Task 8 pure bootstrap is implemented and independently test-covered. The Exp441 path remains label-free and review-only: no official process, PID, checkpoint, publication, evaluation, SQLite session, or TEST-label access exists; official readiness/new/inspect/evaluate routes are gated by DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW. Existing Exp438/Exp439/Exp440 publication and lazy-evaluation paths remain frozen historical boundaries.",
       "entrypoints": [
         "publish_exp438_antigravity",
         "inspect_publication_antigravity",
@@ -2930,7 +2930,10 @@
         "main_antigravity",
         "publish_exp441_antigravity",
         "inspect_exp441_publication_antigravity",
-        "canonical_cli_status_antigravity"
+        "canonical_cli_status_antigravity",
+        "project_f1_antigravity",
+        "require_numpy_2_4_6_antigravity",
+        "paired_dataset_bootstrap_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py",
@@ -2942,13 +2945,17 @@
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_cli_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_cli_antigravity.py",
-        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_task7_route_matrix_antigravity.py"
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_task7_route_matrix_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_bootstrap_antigravity.py"
       ],
       "constraints": [
         "Publication requires exactly 1,117 completed datasets, failed=0, inactive PID, current_dataset=null, budget compliance, and prediction TEST-label access exactly zero.",
         "Evaluation is a lazy explicit command and reads TEST labels only after every frozen publication, comparator, source, population, runtime, database, and provenance gate passes.",
         "High-frequency, low-frequency, and amplitude-complexity results remain separate; evaluation selects no winner and publishes eight no-clobber hash-bound artifacts.",
-        "Exp441 final publisher pins the root and six exact authority files, parses and compares them, then explicitly revalidates retained root/namespace/file identities immediately before RENAME_EXCL; no mutable work follows that barrier."
+        "Exp441 final publisher pins the root and six exact authority files, parses and compares them, then explicitly revalidates retained root/namespace/file identities immediately before RENAME_EXCL; no mutable work follows that barrier.",
+        "Task 8 requires NumPy 2.4.6, Generator(PCG64(44120260808)), exactly 20,000 paired int64 draws of shape 1,117, and linear 2.5/97.5 quantiles.",
+        "Project F1 validates four finite nonnegative confusion counts through the precision/recall harmonic path; bootstrap CI endpoints are built-in floats and never feed prediction.",
+        "The Task 8 module imports no evaluator or SQLite dependency and only produces retrospective confidence-interval evidence."
       ],
       "evidence": [
         {
@@ -3090,6 +3097,26 @@
         {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"exp441_task7_handoff\": {"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/bootstrap_antigravity.py",
+          "symbol": "def project_f1_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/bootstrap_antigravity.py",
+          "symbol": "def require_numpy_2_4_6_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/bootstrap_antigravity.py",
+          "symbol": "def paired_dataset_bootstrap_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_bootstrap_antigravity.py",
+          "symbol": "def test_paired_bootstrap_replays_exact_generator_and_linear_quantiles("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_bootstrap_antigravity.py",
+          "symbol": "def test_bootstrap_module_has_no_evaluator_or_sqlite_dependency("
         }
       ]
     }
@@ -3944,13 +3971,13 @@
     },
     {
       "id": "exp441_immutable_attempt_flow",
-      "label": "Exp441 Task 7 reviewed handoff / Task 8 bootstrap next",
-      "trigger": "Task 7 is implemented, independently reviewed, and shipped; Task 8 pure bootstrap is next but not implemented. Do not run official readiness/new/inspect/evaluate until Task 12 final review (DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW).",
+      "label": "Exp441 Task 7 reviewed handoff / Task 8 pure bootstrap",
+      "trigger": "Task 7 is implemented, independently reviewed, and shipped; Task 8 pure bootstrap is implemented and test-covered. Do not run official readiness/new/inspect/evaluate until Task 12 final review (DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW).",
       "steps": [
         "exp438_frequency_runtime",
         "exp438_publication_evaluation"
       ],
-      "outcome": "The grouped Exp441 runtime creates a smallest-gap attempt, records parent-accepted fixed-11-worker source replay progress, finishes terminal progress and PID, pins the root plus all six evidence files, computes the authority identity, constructs CompletedAttempt while all seven descriptors remain open, restores SIGTERM exactly once while they remain open, sets installed false, final-revalidates, and directly returns that object. Independent synchronized construction and restoration mutation probes fail closed; Task 7 atomically writes canonical readiness through private staging and Darwin no-clobber ownership; a failed post-rename parent fsync is rolled back to recoverable failed evidence, and validation retains a descriptor pin through source replay before new starts exactly one immutable attempt; evaluation remains lazy and post-freeze. The stale fixed root is absent after recoverable Trash preservation recorded in docs/EXP441_PRECONTRACT_TRASH_MANIFEST_antigravity.json. The publisher retains a new grouped descriptor pin through strict final comparison and Darwin no-clobber rename. No SQLite, TEST labels, evaluator, official publication, or official process is opened. Task 7 review is shipped; Task 8 pure bootstrap remains unimplemented. No official process, PID, checkpoint, publication, evaluation, SQLite, or TEST-label route was opened."
+      "outcome": "The grouped Exp441 runtime creates a smallest-gap attempt, records parent-accepted fixed-11-worker source replay progress, finishes terminal progress and PID, pins the root plus all six evidence files, computes the authority identity, constructs CompletedAttempt while all seven descriptors remain open, restores SIGTERM exactly once while they remain open, sets installed false, final-revalidates, and directly returns that object. Independent synchronized construction and restoration mutation probes fail closed; Task 7 atomically writes canonical readiness through private staging and Darwin no-clobber ownership; a failed post-rename parent fsync is rolled back to recoverable failed evidence, and validation retains a descriptor pin through source replay before new starts exactly one immutable attempt; evaluation remains lazy and post-freeze. The stale fixed root is absent after recoverable Trash preservation recorded in docs/EXP441_PRECONTRACT_TRASH_MANIFEST_antigravity.json. The publisher retains a new grouped descriptor pin through strict final comparison and Darwin no-clobber rename. No SQLite, TEST labels, evaluator, official publication, or official process is opened. Task 7 review is shipped; Task 8 pure bootstrap computes only retrospective confidence-interval evidence through the exact frozen path. No official process, PID, checkpoint, publication, evaluation, SQLite, or TEST-label route was opened."
     }
   ],
   "unknown_relationships": 0
