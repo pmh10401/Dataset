@@ -115,9 +115,9 @@ List `readiness_antigravity.json`, `attempts_antigravity/attempt_0000_antigravit
 
 - [ ] **Step 3: Update the research ledgers without promoting Exp441**
 
-First reconcile the stale Exp440 state: set its catalog/control status to `official_completed_evaluated_not_promoted`, prediction started/completed true, TEST labels opened only after freeze, and bind its frozen publication/evaluation hashes. Append Exp440 to `FAILURE_LEDGER.json.entries` with prediction SHA `06d905d9d6f96fa67704111b984ed87b74229e13fd0690401db67a4a0fdd79af`, evaluation SHA `6cb023b40e02a5caa813c46884b921b76442ef39a736409bff7a32decb546b84`, 100 candidates, TP/FP `40/60`, micro CI lower `-0.000874817656299559`, and maximum strong loss `0.5`. Add Exp441 to the catalog as `design_approved_implementation_planned`; set `RESEARCH_STATE` active experiment/phase accordingly. Update `CHAMPION_LEDGER` only to record that Exp404/Exp416 remains the reference and Exp441 is a retrospective reproduction, not a pending promotion candidate.
+First reconcile the stale Exp440 state: set its catalog/control status to `official_completed_evaluated_not_promoted`, prediction started/completed true, TEST labels opened only after freeze, and bind its frozen publication/evaluation hashes. Append Exp440 to `FAILURE_LEDGER.json.entries` with prediction SHA `06d905d9d6f96fa67704111b984ed87b74229e13fd0690401db67a4a0fdd79af`, evaluation SHA `6cb023b40e02a5caa813c46884b921b76442ef39a736409bff7a32decb546b84`, 100 candidates, TP/FP `40/60`, micro CI lower `-0.000874817656299559`, and maximum strong loss `0.5`. Add Exp441 to the catalog as `design_approved_implementation_planned`; set `RESEARCH_STATE` active experiment/phase accordingly and create one dedicated `exp441_reproduction` object. Append one Exp441 non-promotion review entry to `CHAMPION_LEDGER.history`; do not store Exp441 in `pending_candidate`, do not promote it, and leave Exp404/Exp416 as the verified reference. An unrelated pre-existing pending candidate may remain, but `pending_candidate` must be null or name an experiment other than Exp441.
 
-For every new Exp441 object in `EXPERIMENT_CATALOG.json`, `RESEARCH_STATE.json`, and `CHAMPION_LEDGER.json`, assert the same nine governance names exist as flat fields with exact string/bool types and values, no nested `governance` key, and no missing or extra governance-name alias. Exp440 and older records retain their historical schema.
+The three new Exp441 control records use exact allowlisted schemas. The catalog entry has only `id`, `kind`, `status`, `documents`, `artifact_root`, `dataset_count`, `reviewed_design_sha256`, `run_identity`, `prediction_sha256`, `evaluation_sha256`, `test_labels_opened`, `notes`, and the nine governance fields. `RESEARCH_STATE.exp441_reproduction` has only `experiment`, `status`, `reviewed_design_sha256`, `run_identity`, `run_root`, `prediction_sha256`, `evaluation_sha256`, `prediction_started`, `test_labels_opened`, `exact_next_command`, and the nine governance fields. The Exp441 `CHAMPION_LEDGER.history` entry has only `experiment`, `status`, `reason`, `reviewed_design_sha256`, `prediction_sha256`, `evaluation`, and the nine governance fields. Exact key-set equality rejects nested governance, alternate governance aliases, and unrelated extra keys; Exp440 and older records retain their historical schema.
 
 - [ ] **Step 4: Regenerate the code-map triplet before product code**
 
@@ -143,21 +143,34 @@ expected={
   "scientific_winner_selected":False,"review_only":True,
   "operational_alert_eligible":False,
 }
-# Locate every Exp441 record in the three control files and require each flat
+# Locate the three dedicated Exp441 records and require exact per-record schemas.
 catalog=json.load(open("EXPERIMENT_CATALOG.json"))
 state=json.load(open("RESEARCH_STATE.json"))
 champion=json.load(open("CHAMPION_LEDGER.json"))
-records=[
-  next(row for row in catalog["experiments"] if row.get("id")=="Exp441"),
-  state,
-  champion["pending_candidate"],
-]
+catalog_records=[row for row in catalog["experiments"] if row.get("id")=="Exp441"]
+champion_records=[row for row in champion["history"] if row.get("experiment")=="Exp441"]
+assert len(catalog_records)==len(champion_records)==1
+catalog_record=catalog_records[0]
+state_record=state["exp441_reproduction"]
+champion_record=champion_records[0]
 assert state["active_experiment"]=="Exp441"
-assert champion["pending_candidate"]["experiment"]=="Exp441"
-for record in records:
-  assert "governance" not in record
+pending=champion["pending_candidate"]
+assert pending is None or (type(pending) is dict and pending.get("experiment")!="Exp441")
+governance_keys=set(expected)
+schemas=[
+  (catalog_record, {"id","kind","status","documents","artifact_root","dataset_count",
+    "reviewed_design_sha256","run_identity","prediction_sha256","evaluation_sha256",
+    "test_labels_opened","notes"}),
+  (state_record, {"experiment","status","reviewed_design_sha256","run_identity","run_root",
+    "prediction_sha256","evaluation_sha256","prediction_started","test_labels_opened",
+    "exact_next_command"}),
+  (champion_record, {"experiment","status","reason","reviewed_design_sha256",
+    "prediction_sha256","evaluation"}),
+]
+for record,base_keys in schemas:
+  assert set(record)==base_keys | governance_keys
   for key,value in expected.items():
-    assert key in record and type(record[key]) is type(value) and record[key]==value
+    assert type(record[key]) is type(value) and record[key]==value
 PY
 git diff --check
 git add docs/EXP441_PREREGISTRATION_antigravity_KO.md \
@@ -366,7 +379,7 @@ git commit -m "feat(exp441): freeze selector contracts and artifacts"
 
 **Interfaces:**
 - Consumes: `Exp440DatasetResultAntigravity.from_payload`, fixed checkpoint/publication/Hard paths and hashes, `cpu_worker_count_antigravity()`.
-- Produces: `verify_frozen_sources_antigravity() -> FrozenSourceSnapshotAntigravity`, `hard_coordinate_identity_sha256_antigravity(coordinates) -> str`; internal `_parse_record_task_antigravity(task) -> ParsedRecordAntigravity` is safe for `ProcessPoolExecutor`, and internal `_verify_frozen_sources_with_observer_antigravity(observer)` emits parent-ordered immutable progress events without exposing a public override.
+- Produces: `verify_frozen_sources_antigravity() -> FrozenSourceSnapshotAntigravity`, `hard_coordinate_identity_sha256_antigravity(coordinates) -> str`; internal `_parse_record_task_antigravity(task) -> ParsedRecordAntigravity` is safe for `ProcessPoolExecutor`, internal `_verify_frozen_sources_with_observer_antigravity(observer)` emits parent-ordered immutable progress events through the fixed 11-worker path without exposing a public override, and private `_verify_frozen_sources_single_worker_reference_antigravity() -> FrozenSourceSnapshotAntigravity` performs the same checks sequentially only for source tests and `scratch/verify_exp441_production_replay_antigravity.py`.
 
 - [ ] **Step 1: Write RED source identity and firewall tests**
 
@@ -381,7 +394,7 @@ with self.assertRaisesRegex(ValueError, "evaluation source is forbidden"):
 
 - [ ] **Step 2: Write RED ordered 11-worker parsing tests**
 
-Use delayed fixture tasks that finish out of order. Assert parent results are ordered by context sequence, the worker count must equal 11 for production, each worker receives only path/dataset/digest/sequence, and numerical-thread environment variables are set to `1`.
+Use delayed fixture tasks that finish out of order. Assert parent results are ordered by context sequence, the worker count must equal 11 for production, each worker receives only path/dataset/digest/sequence, and numerical-thread environment variables are set to `1`. Add AST and call-spy assertions that the public verifier and observer-enabled runtime verifier always enter the fixed 11-worker implementation and never call the single-worker reference. Assert no CLI, readiness, runtime, selector, reporting, or publication module imports or resolves the reference helper; only `test_sources_antigravity.py` and `scratch/verify_exp441_production_replay_antigravity.py` may use it.
 
 - [ ] **Step 3: Implement strict source verification**
 
@@ -407,7 +420,7 @@ reverify every source descriptor/path snapshot
 freeze the snapshot with label_access_count = 0
 ```
 
-The production function has no path, worker, expected-count, or observer arguments. It delegates to the internal observer form with a no-op observer; runtime supplies its process-owned progress writer to that internal form, while readiness uses the public wrapper. Events are emitted only as the parent commits the next context-ordered record, never from workers or completion order. Tests exercise internal pure helpers with temporary fixtures.
+The production function has no path, worker, expected-count, or observer arguments. It delegates to the internal observer form with a no-op observer; runtime supplies its process-owned progress writer to that internal form, while readiness uses the public wrapper. Both production entrances select the constant 11-worker implementation and have no worker override or route to the reference helper. `_verify_frozen_sources_single_worker_reference_antigravity()` is a separate zero-argument, sequential context-order implementation with no `ProcessPoolExecutor`, observer, worker argument, environment switch, or production caller; it exists solely for tests and the final read-only parity script. Events are emitted only as the parent commits the next context-ordered record, never from workers or completion order. Tests exercise internal pure helpers with temporary fixtures.
 
 - [ ] **Step 4: Add exact label-free count validation**
 
@@ -1031,7 +1044,7 @@ The naming command prints nothing. Classify the label SQL and evaluator-only ref
 
 - [ ] **Step 4: Implement and run the production-shaped real label-free replay twice**
 
-The verifier imports public source/selector APIs, patches `sqlite3.connect` to raise, and replays all 1,117 records once with 11 workers and once through the internal one-worker reference. Require identical selection payloads, Exp416-array Hard identity `858e24e6aa182e78985f571778be02bcc87332639958fa887515c24074654322`, Exp441-JSONL selected identity `db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048`, counts `1117/840/394/73/49/30`, finite evidence, and label access zero. Record elapsed time and verify the official path used 11 workers.
+The verifier imports the public source/selector APIs plus the explicitly test-only `_verify_frozen_sources_single_worker_reference_antigravity()` interface, patches `sqlite3.connect` to raise, and replays all 1,117 records once through the immutable public 11-worker route and once through that named sequential reference. Require identical selection payloads, Exp416-array Hard identity `858e24e6aa182e78985f571778be02bcc87332639958fa887515c24074654322`, Exp441-JSONL selected identity `db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048`, counts `1117/840/394/73/49/30`, finite evidence, and label access zero. Record elapsed time, verify the official path used 11 workers, and rerun the AST/call-spy guard proving no production entrypoint can select or invoke the reference interface.
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 \
@@ -1048,7 +1061,7 @@ Keep 20 primary nodes by extending the current frequency runtime and publication
 
 - [ ] **Step 7: Write the implementation report and control state**
 
-Write the exact flat nine-field governance payload into the implementation report and every governance-bearing Exp441 control record. Set Exp441 to `implementation_complete_readiness_pending`, PID null, attempts absent, prediction not started, TEST labels unopened, review-only, and no champion. The exact next command is:
+Write the exact flat nine-field governance payload into the implementation report and every governance-bearing Exp441 control record. Preserve the exact Task 1 allowlisted key sets while setting the catalog entry and `RESEARCH_STATE.exp441_reproduction` to `implementation_complete_readiness_pending`, `run_identity` null, prediction not started, TEST labels unopened, review-only, and no champion. Do not add PID or attempt fields because no process or attempt exists yet. Update the Exp441 `CHAMPION_LEDGER.history` row as a non-promotion implementation review record; never set `pending_candidate` to Exp441, and assert it remains null or names another experiment. The exact next command is:
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 \
@@ -1056,6 +1069,8 @@ PYTHONDONTWRITEBYTECODE=1 python3 \
 ```
 
 - [ ] **Step 8: Final verification and commit**
+
+Rerun the complete Task 1 exact control-record schema validator unchanged after these final ledger edits, then run:
 
 ```bash
 python3 -m json.tool EXPERIMENT_CATALOG.json >/dev/null
