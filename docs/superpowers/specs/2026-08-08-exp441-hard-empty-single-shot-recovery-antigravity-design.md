@@ -111,6 +111,7 @@ exp440_manifest_sha256 = 3778a0e8770e06f4be87d1b87281c858518169c377ee6c53b78f32c
 exp440_artifact_map_sha256 = 7a083fa8f1287205d3469e36f2f88b95f72adecd90b3b79167aad673b3439a1a
 exp440_checkpoint_context_sha256 = d598a159d798f0f1dbdcbf684ef7994c89c982b60bce62b877a82c7e04ba7dfc
 exp440_checkpoint_state_sha256 = 486235b70856247912a02c115748e22477ea11224d3a50de088187903da56268
+exp440_checkpoint_retained_sha256 = c31c0414dced3f463d187e8e17adf84a50eb0c7cf86a6e8399f9074fda94ccf2
 candidate_budget = 30
 candidate_per_dataset = 1
 bootstrap_seed = 44120260808
@@ -124,10 +125,34 @@ reproduction_float_abs_tolerance = 1e-15
 reproduction_float_rel_tolerance = 0.0
 ```
 
+고정 경로 허용 목록은 다음과 같다.
+
+```text
+database = /Users/mac/Documents/Dataset/univariate_ts.db
+exp440_checkpoint = /Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/checkpoint_antigravity
+exp440_context = $exp440_checkpoint/context_antigravity.json
+exp440_state = $exp440_checkpoint/state_antigravity.json
+exp440_records = $exp440_checkpoint/records_antigravity
+exp440_retained_inventory = $exp440_checkpoint/retained_candidates_antigravity.json
+exp440_publication = /Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/publication_antigravity
+hard_prediction = /Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl
+hard_manifest = /Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_prediction_manifest.json
+forbidden_exp440_evaluation_root = /Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/evaluation_antigravity
+forbidden_exp440_evaluation_module = experiments/exp440_train_only_low_frequency_precision_gate_antigravity/evaluation_antigravity.py
+```
+
+Exp440 publication은 `artifact_sha256_antigravity.json`을 포함한 정확히 10개 일반
+파일이어야 하며, artifact map이 선언한 나머지 9개 파일을 모두 descriptor로 읽어
+해시를 다시 확인한다. checkpoint는 context, state, 1,117개 record,
+`retained_candidates_antigravity.json`만 허용한다. retained 파일은 위 SHA로 무결성만
+확인하고 선택에는 사용하지 않는다. 이 정확한 inventory 밖의 파일, symlink, FIFO,
+디렉터리는 실패다.
+
 예측 단계에서 허용하는 입력은 다음뿐이다.
 
-- Exp440의 동결 checkpoint context, state, 1,117개 record 파일
-- Exp440의 동결 publication manifest, artifact map, prediction
+- Exp440의 동결 checkpoint context, state, 1,117개 record와 무결성 전용 retained inventory
+- Exp440의 동결 publication 10개 파일 전체; 선택 의미에는 context/state/record와
+  publication prediction만 사용
 - Exp404 Hard prediction manifest와 2,218개 좌표
 - readiness가 검증한 clean reviewed implementation commit의 Exp441 고정 설정과
   코드 신원
@@ -153,10 +178,13 @@ readiness는 먼저 다음을 모두 확인한다.
    정확히 대응하며 sequence는 0부터 1116까지 빈틈이 없다.
 5. 각 record는 일반 파일이며 state에 기록된 digest와 실제 바이트가 같다.
 6. 모든 record가 Exp440의 정확한 계약으로 다시 파싱된다.
-7. Exp440 publication의 manifest, artifact map, prediction을 다시 검증한다.
-8. Hard manifest와 2,218개 좌표를 SHA256, 구조, canonical coordinate identity로
+7. 각 provisional candidate와 Hard 좌표의 `instance_index`가 해당 record의
+   `test_row_count` 범위 안에 있는지 별도로 확인한다. Exp440 parser 자체가 이 상한을
+   보장한다고 가정하지 않는다.
+8. Exp440 publication의 정확한 10-file inventory와 모든 artifact-map hash를 다시 검증한다.
+9. Hard manifest와 2,218개 좌표를 SHA256, 구조, canonical coordinate identity로
    다시 검증한다.
-9. Exp440 evaluation 경로와 TEST label은 열지 않았고 label access count는 0이다.
+10. Exp440 evaluation 경로와 TEST label은 열지 않았고 label access count는 0이다.
 
 현재 동결 원본에서 예상되는 label-free 구조 수는 다음과 같다. 이 수가 다르면
 선택하지 않고 실패한다.
@@ -302,6 +330,27 @@ instance_index와 label-free 근거만 담고 label, 실제 이상 위치, confu
 후보 수, label access count 0, review-only 상태를 묶는다. artifact map은 자기 자신만
 제외하고 나머지 publication 파일을 모두 해시한다.
 
+publication의 `manifest_antigravity.json`, `status_antigravity.json`과 evaluation의
+`evaluation_antigravity.json`, `bootstrap_antigravity.json`,
+`decision_antigravity.json`에는 아래 9개 governance 값을 flat top-level 필드로 모두
+기록한다. 하나라도 빠지거나 추가된 부분 묶음, 중첩 표현, truthy 대체값은 허용하지
+않는다. JSONL 의미 행, source audit, confusion, telemetry와 artifact map은 이 값을
+반복하지 않고 governing manifest/decision과 hash graph로 결속한다. 같은 flat block은
+사전등록, runbook, 구현 보고서, Exp441 control records, config payload, readiness,
+terminal selection/failure evidence에도 적용한다.
+
+```text
+official_run_purpose = deterministic_retrospective_reproduction
+bootstrap_interpretation = descriptive_post_selection
+adaptive_followup = true
+independent_validation = false
+external_generalization_supported = false
+confirmatory_statistical_claim = false
+scientific_winner_selected = false
+review_only = true
+operational_alert_eligible = false
+```
+
 ## PyTorch, MLX, MPS 판단
 
 Exp441의 핵심은 JSON record 검증, SHA256, 문자열 필터, 짧은 정렬이다. 따라서
@@ -337,6 +386,12 @@ record의 바이트 해시와 파싱을 병렬 확인한다. 이는 AGENTS의
 MLX, MPS가 `inapplicable_no_tensor_stage`로 제외된 이유와 benchmark 미실행 상태를
 기록한다.
 
+이 worker 정책은 현재 worktree 루트의 가장 가까운 `AGENTS.md`가 정한 정책이다.
+상위 checkout의 오래된 `up to seven` 문구보다 가까운 worktree 규칙과 사용자의 후속
+`항상 max - 1` 지시가 우선한다. 구현에는 임의의 7-worker fallback이나 CLI override를
+두지 않는다. 단, 11은 알고리즘 상수가 아니라 현재 12 logical CPU topology에서 나온
+readiness 결과다.
+
 ## 진행 로그
 
 프로세스가 직접 다음을 원자적 JSON과 text log에 쓴다. Codex가 반복 감시하지
@@ -359,10 +414,16 @@ selector-only 실행이라 정상적으로는 짧게 끝나지만, 동일한 관
 
 ## 사후 재현 평가와 기술적 판정표
 
-평가는 publication을 완전히 재검증하고 prediction SHA256을 고정한 뒤에만 SQLite의
-TEST `instance_index,label`을 한 번 읽는다. Frozen Hard와 `Hard union Exp441`을
-전체 1,117개 데이터셋에서 비교한다. 이 순서는 runtime label 누수를 막지만, 이미
-TEST 결과를 보고 선택한 규칙을 독립 검증으로 바꾸지는 않는다.
+평가는 publication을 완전히 재검증하고 prediction SHA256을 고정한 뒤에만 SQLite를
+하나의 descriptor-bound read-only connection으로 연다. 연결을 여는 과정에서 DB
+descriptor SHA가 확인된 뒤 `PRAGMA quick_check`를 정확히 한 번 실행하고 결과가 오직
+`ok`인지 확인한다. 그다음 Exp440 context tuple의 1,117개 dataset만 순서대로
+parameterized query하여 TEST `instance_index,label`을 dataset당 정확히 한 번 읽는다.
+DB 전체 dataset을 열거하거나 전체 TEST row를 bulk SELECT하지 않는다. 현재 DB의
+범위 밖 `CornellWhaleChallenge`, `Wafer_normal_1`을 포함한 어떤 context 밖 dataset도
+label query parameter가 될 수 없다. Frozen Hard와 `Hard union Exp441`을 이 동결된
+1,117개에서만 비교한다. 이 순서는 runtime label 누수를 막지만, 이미 TEST 결과를
+보고 선택한 규칙을 독립 검증으로 바꾸지는 않는다.
 
 다음 항목은 통계적 성공 기준이나 챔피언 승격 gate가 아니라, 공식 구현이 설계 때
 이미 관찰한 결과와 같은 정책을 재현했는지 확인하는 기술적·설명용 판정표다.
@@ -479,11 +540,14 @@ operational-alert-ineligible이며 CHAMPION_LEDGER를 Exp441로 바꾸지 않는
 - 전역 순위와 30개 절단이 입력 순서와 worker 완료 순서에 무관함
 - 1,117 record와 840/394/73/49/30 label-free 구조 수 재현
 - source 파일 하나의 바이트 변경, 누락, 추가, symlink를 모두 거부
-- TEST label 및 Exp440 evaluation 경로 접근을 prediction 전에 거부
+- candidate와 Hard 좌표를 각 record의 `test_row_count`에 대해 label 전에 범위 검증
+- `readiness`, `new`, `inspect` 각각에서 SQLite connect와 label-capable import를 강제로
+  실패시키고 TEST label 및 Exp440 evaluation 경로 접근이 전혀 없음을 증명
 - 11-worker 결과와 1-worker reference의 prediction 바이트 완전 일치
 - 진행 JSON의 PID, 현재 데이터셋, 크기, 단계, backend, 완료 수, 속도, ETA, 오류
 - create-only publication, 모든 artifact tamper, 동시 destination 생성을 거부
-- prediction freeze 전 evaluate 금지와 post-freeze label read 순서
+- prediction freeze 전 evaluate 금지, DB hash -> quick_check -> context-scoped 1,117 query의
+  정확한 post-freeze 순서, context 밖 2개 dataset label 미조회
 - 손으로 계산 가능한 TP/FP/FN/TN, rescue, macro, strong-loss, descriptive bootstrap
   판정표와 세 reproduction 상태
 - 실제 Exp440/Hard artifact를 이용한 production-shaped label-free replay

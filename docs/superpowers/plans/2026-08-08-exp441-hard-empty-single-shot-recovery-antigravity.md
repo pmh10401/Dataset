@@ -17,21 +17,30 @@
 - Prediction never opens SQLite, TEST labels, anomaly locations, Exp440 evaluation, past family TEST performance, or a label-capable module.
 - Evaluation is a separate lazy-import command and may read only TEST `instance_index,label` after prediction publication is frozen and replayed.
 - Exp440 checkpoint context/state SHA256 values are `d598a159d798f0f1dbdcbf684ef7994c89c982b60bce62b877a82c7e04ba7dfc` and `486235b70856247912a02c115748e22477ea11224d3a50de088187903da56268`.
+- Exp440 checkpoint retained-inventory SHA256 is `c31c0414dced3f463d187e8e17adf84a50eb0c7cf86a6e8399f9074fda94ccf2`; it is integrity-checked but never used for selection.
 - Exp440 publication prediction/manifest/artifact-map SHA256 values are `06d905d9d6f96fa67704111b984ed87b74229e13fd0690401db67a4a0fdd79af`, `3778a0e8770e06f4be87d1b87281c858518169c377ee6c53b78f32ce01d39e85`, and `7a083fa8f1287205d3469e36f2f88b95f72adecd90b3b79167aad673b3439a1a`.
 - Exp404 Hard prediction/manifest/coordinate-identity SHA256 values are `437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70`, `41a913415d22bb6cedb692a1c1cce85eafccae49f8a3fd108ed53e1bc3d2a7b8`, and `858e24e6aa182e78985f571778be02bcc87332639958fa887515c24074654322`.
 - Database SHA256 is `8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c`; prediction must not open it.
+- Fixed database path is `/Users/mac/Documents/Dataset/univariate_ts.db`.
+- Fixed Exp440 checkpoint root is `/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/checkpoint_antigravity`, containing only `context_antigravity.json`, `state_antigravity.json`, `retained_candidates_antigravity.json`, and `records_antigravity/{0000..1116}_record_antigravity.json`.
+- Fixed Exp440 publication root is `/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/publication_antigravity`; require exactly the artifact map plus its nine declared regular files and replay all ten bytes.
+- Fixed Hard paths are `/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl` and `/Users/mac/Documents/Dataset/exp403_408_feature_ml_validation/exp404_prediction_manifest.json`.
+- Prediction/readiness forbidden paths are the entire `/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/evaluation_antigravity` subtree and `experiments/exp440_train_only_low_frequency_precision_gate_antigravity/evaluation_antigravity.py`; resolved-path allowlisting fails closed.
+- The exact Exp440 publication filenames are `abstention_ledger_antigravity.jsonl`, `artifact_sha256_antigravity.json`, `backend_decision_antigravity.json`, `dataset_summary_antigravity.jsonl`, `depth_evidence_antigravity.jsonl`, `manifest_antigravity.json`, `prediction_antigravity.jsonl`, `retained_candidate_ranking_antigravity.jsonl`, `status_antigravity.json`, and `train_exclusion_audit_antigravity.jsonl`; each path is the fixed publication root joined with that basename, with no recursive or alternate path resolution.
 - Expected label-free counts are exactly `1117/840/394/73/49/30` for datasets/provisional/outside-Hard/Hard-empty eligible/eligible datasets/retained candidates.
 - Selection admits only datasets with zero frozen Hard coordinates, retains one candidate per dataset, ranks by frozen raw Python floats, and uses a hard global budget of 30.
 - Dataset-local order is `(-second_excess_ratio, second_empirical_rank, instance_index)`; global order is `(-second_excess_ratio, second_empirical_rank, dataset, instance_index)`.
 - `agreement_count` is eligibility evidence only and never a ranking key; no threshold, alpha, depth, source, or budget is retuned.
 - Never call Exp440 `ProvisionalCandidateAntigravity.ranking_key` or `validate_retained_candidates_antigravity`; both encode Exp440's agreement-first/budget-100 policy.
 - Official CPU workers are `max(1, logical CPUs - 1)`, expected exactly 11 on this 12-logical-CPU Mac; each worker has one numerical thread.
+- The nearest worktree `AGENTS.md` and the user's later max-minus-one instruction govern Exp441 over the ancestor checkout's older seven-worker fallback. There is no seven-worker fallback or worker override; 11 is the current topology result, not a scientific constant.
 - PyTorch, MLX, and MPS are recorded as `inapplicable_no_tensor_stage`; no acceleration benchmark or tensor rewrite is allowed in Exp441.
 - Runtime creates a fresh immutable attempt for every `new`; there is no `resume` command or mutable checkpoint.
 - Publication and evaluation use private same-parent staging, create-only files, fsync, Darwin no-clobber rename, and complete byte replay.
 - NumPy is exactly `2.4.6`; bootstrap uses `Generator(PCG64(44120260808))`, 20,000 calls of one `integers(low=0, high=1117, size=1117, dtype=int64, endpoint=False)`, project harmonic F1, and linear 2.5/97.5 percentiles.
 - Structural values compare exactly; the two point deltas and four CI endpoints use `rel_tol=0.0`, `abs_tol=1e-15`.
-- `adaptive_followup=true`, `independent_validation=false`, `confirmatory_statistical_claim=false`, `scientific_winner_selected=false`, `review_only=true`, and `operational_alert_eligible=false` in every applicable artifact.
+- `governance_payload_antigravity()` returns exactly nine flat top-level fields with exact types and values: `official_run_purpose="deterministic_retrospective_reproduction"`, `bootstrap_interpretation="descriptive_post_selection"`, `adaptive_followup=true`, `independent_validation=false`, `external_generalization_supported=false`, `confirmatory_statistical_claim=false`, `scientific_winner_selected=false`, `review_only=true`, and `operational_alert_eligible=false`. Reject missing, extra, nested, truthy-equivalent, or mismatched governance.
+- Governance-bearing records are the preregistration, runbook, implementation report, Exp441 catalog/state/champion entries, frozen config payload, readiness JSON, terminal selection/failure evidence, publication manifest/status, and evaluation evaluation/bootstrap/decision JSON. Data-only JSONL, source audit, confusion, telemetry/PID/logs, and artifact maps do not duplicate governance; the governing manifest/decision binds them transitively.
 - Exp404 Hard audited by Exp416 remains the verified reference; Exp441 never changes `CHAMPION_LEDGER` to a new champion.
 - Code-map HTML, JSON, and lock are regenerated together before implementation and whenever boundaries, dependencies, or major flows change.
 - Use per-boundary code-map synchronization: every boundary-changing task stages the regenerated HTML/JSON/lock triplet in the same commit as its source and tests.
@@ -145,7 +154,7 @@ git commit -m "docs(exp441): freeze retrospective selector contract"
 
 **Interfaces:**
 - Consumes: public `experiments.exp403_408.artifact_io.canonical_json_bytes` and `sha256_bytes`; do not use its replace-style writers.
-- Produces: `Exp441FrozenConfig`, `FROZEN_CONFIG`, `cpu_worker_count_antigravity`, `CandidateEvidenceAntigravity`, `RankedCandidateAntigravity`, `ParsedRecordAntigravity`, `SelectionResultAntigravity`, `FrozenSourceSnapshotAntigravity`, `BackendAssessmentAntigravity`, `ReadinessBindingAntigravity`, `CompletedAttemptAntigravity`, `FrozenPublicationAntigravity`, `BootstrapResultAntigravity`, `EvaluationFactsAntigravity`, `FrozenEvaluationAntigravity`, and safe artifact helpers.
+- Produces: `Exp441FrozenConfig`, `FROZEN_CONFIG`, `cpu_worker_count_antigravity`, `governance_payload_antigravity`, `CandidateEvidenceAntigravity`, `RankedCandidateAntigravity`, `ParsedRecordAntigravity`, `SelectionResultAntigravity`, `FrozenSourceSnapshotAntigravity`, `BackendAssessmentAntigravity`, `ReadinessBindingAntigravity`, `CompletedAttemptAntigravity`, `FrozenPublicationAntigravity`, `BootstrapResultAntigravity`, `EvaluationFactsAntigravity`, `FrozenEvaluationAntigravity`, and safe artifact helpers.
 
 - [ ] **Step 1: Write RED configuration tests**
 
@@ -158,8 +167,17 @@ self.assertEqual(FROZEN_CONFIG.bootstrap_seed, 44120260808)
 self.assertEqual(FROZEN_CONFIG.bootstrap_samples, 20000)
 self.assertEqual(FROZEN_CONFIG.numpy_version, "2.4.6")
 self.assertEqual(cpu_worker_count_antigravity(12), 11)
+self.assertEqual(FROZEN_CONFIG.official_run_purpose, "deterministic_retrospective_reproduction")
+self.assertEqual(FROZEN_CONFIG.bootstrap_interpretation, "descriptive_post_selection")
+self.assertFalse(FROZEN_CONFIG.external_generalization_supported)
 self.assertFalse(FROZEN_CONFIG.tensor_eligible)
 self.assertFalse(FROZEN_CONFIG.scientific_winner_selected)
+self.assertEqual(set(governance_payload_antigravity()), {
+    "official_run_purpose", "bootstrap_interpretation", "adaptive_followup",
+    "independent_validation", "external_generalization_supported",
+    "confirmatory_statistical_claim", "scientific_winner_selected",
+    "review_only", "operational_alert_eligible",
+})
 ```
 
 Run and confirm an import failure because the package does not yet exist:
@@ -185,12 +203,18 @@ class Exp441FrozenConfig:
     bootstrap_samples: int = 20000
     numpy_version: str = "2.4.6"
     tensor_eligible: bool = False
+    official_run_purpose: str = "deterministic_retrospective_reproduction"
+    bootstrap_interpretation: str = "descriptive_post_selection"
+    adaptive_followup: bool = True
+    independent_validation: bool = False
+    external_generalization_supported: bool = False
+    confirmatory_statistical_claim: bool = False
     review_only: bool = True
     operational_alert_eligible: bool = False
     scientific_winner_selected: bool = False
 ```
 
-Add all fixed paths/hashes from Global Constraints and expose only `frozen_config_payload_antigravity()` and `cpu_worker_count_antigravity()`.
+Add every exact fixed path/hash from Global Constraints, including the retained-inventory hash, ten-file Exp440 publication inventory, and both forbidden Exp440 evaluation surfaces. Expose only `frozen_config_payload_antigravity()`, `governance_payload_antigravity()`, and `cpu_worker_count_antigravity()`. Test that governance has exactly nine flat keys, `type(value) is bool` for seven booleans, exact strings for the other two, and no nested representation.
 
 - [ ] **Step 3: Write RED contract tests**
 
@@ -212,7 +236,7 @@ self.assertEqual(
 
 - [ ] **Step 4: Implement immutable contracts**
 
-`SelectionResultAntigravity` must own tuples for all provisional/outside/eligible/winner/selected collections and validate these exact counts for a production result: `840/394/73/49/30`. `FrozenSourceSnapshotAntigravity` owns the context dataset tuple, a read-only record-digest map, frozen Hard coordinates, parsed provisional candidates, all frozen hashes, and label access count zero.
+`ParsedRecordAntigravity` explicitly exposes `dataset: str`, `test_row_count: int`, and the adapted `CandidateEvidenceAntigravity` tuple. `FrozenSourceSnapshotAntigravity` owns the context dataset tuple, immutable `test_row_count_by_dataset`, a read-only record-digest map, frozen Hard coordinates translated from source `candidate_index` to internal `instance_index`, parsed provisional candidates, all frozen hashes, and label access count zero. `SelectionResultAntigravity` owns tuples for all provisional/outside/eligible/winner/selected collections and enforces structural invariants for both sparse fixtures and production. A separate `validate_production_selection_antigravity(result)` enforces exact `840/394/73/49/30`; tests never weaken those production counts or pad sparse fixtures. `RankedCandidateAntigravity.global_rank` is always 1 through the fixture/production winner count; in production it is 1 through 49. `selection_rank: int | None` is 1 through the selected count exactly when selected and otherwise `None`; production requires 1 through 30.
 
 - [ ] **Step 5: Write RED artifact safety tests**
 
@@ -254,7 +278,10 @@ def write_create_only_antigravity(path: Path, payload: bytes) -> None:
     try:
         offset = 0
         while offset < len(payload):
-            offset += os.write(descriptor, payload[offset:])
+            written = os.write(descriptor, payload[offset:])
+            if written == 0:
+                raise OSError(errno.EIO, "create-only write made no progress", str(path))
+            offset += written
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
@@ -275,7 +302,7 @@ def exclusive_rename_antigravity(source: Path, destination: Path) -> None:
         raise OSError(code, os.strerror(code), str(destination))
 ```
 
-The implementation uses canonical sorted compact JSON plus one trailing newline, descriptor hashing, `O_NOFOLLOW`, full write loops, `fsync`, and Darwin `renamex_np` flag `0x00000004`.
+The implementation uses canonical sorted compact JSON plus one trailing newline, descriptor hashing, `O_NOFOLLOW`, progress-checked full write loops, `fsync`, and Darwin `renamex_np` flag `0x00000004`. The artifact tests patch `os.write` to return zero before completion and require one immediate `EIO`, no spin, no false success, and no `fsync` call.
 
 - [ ] **Step 7: Add the new package/artifact boundary to all three code-map files**
 
@@ -306,11 +333,11 @@ git commit -m "feat(exp441): freeze selector contracts and artifacts"
 
 **Interfaces:**
 - Consumes: `Exp440DatasetResultAntigravity.from_payload`, fixed checkpoint/publication/Hard paths and hashes, `cpu_worker_count_antigravity()`.
-- Produces: `verify_frozen_sources_antigravity() -> FrozenSourceSnapshotAntigravity`; internal `_parse_record_task_antigravity(task) -> ParsedRecordAntigravity` is safe for `ProcessPoolExecutor`.
+- Produces: `verify_frozen_sources_antigravity() -> FrozenSourceSnapshotAntigravity`; internal `_parse_record_task_antigravity(task) -> ParsedRecordAntigravity` is safe for `ProcessPoolExecutor`, and internal `_verify_frozen_sources_with_observer_antigravity(observer)` emits parent-ordered immutable progress events without exposing a public override.
 
 - [ ] **Step 1: Write RED source identity and firewall tests**
 
-Reject a wrong context/state/publication/Hard hash, missing/extra record, sequence gap, duplicate dataset, record digest mismatch, record dataset mismatch, symlink/FIFO/directory artifact, unknown payload field, noncanonical dataset order, state count other than 1,117, Hard count other than 2,218, Hard coordinate identity mismatch, and any import/path under Exp440 `evaluation_antigravity`.
+Reject a wrong context/state/retained-inventory/publication/Hard hash, missing/extra record, wrong checkpoint or ten-file publication inventory, sequence gap, duplicate dataset, record digest mismatch, record dataset mismatch, symlink/FIFO/directory artifact, unknown payload field, noncanonical dataset order, state count other than 1,117, Hard count other than 2,218, Hard coordinate identity mismatch, and either exact forbidden Exp440 evaluation surface.
 
 ```python
 with self.assertRaisesRegex(ValueError, "evaluation source is forbidden"):
@@ -329,23 +356,28 @@ The verifier performs this order before returning:
 
 ```text
 pin and hash context/state
+pin and hash the known retained inventory without parsing or selecting from it
 validate exact 1,117 sorted unique context datasets
 validate state completed/record map
-pin and hash Exp440 manifest/artifact map/prediction
-replay the complete Exp440 publication hash graph
+pin and hash the exact ten-file Exp440 publication inventory
+replay the artifact map and all nine declared file hashes
 pin and hash Hard manifest/prediction
 parse 2,218 unique Hard coordinates, 888 Hard-active datasets, 229 Hard-empty datasets, and coordinate identity
 enumerate exactly 1,117 regular record files
 parse records in 11 processes, return in context order
+adapt every Exp440 provisional candidate into CandidateEvidenceAntigravity by explicitly copying the frozen fields
+build immutable per-record test_row_count_by_dataset
+translate Hard source candidate_index to internal instance_index
+validate every provisional and Hard instance_index against that dataset record's test_row_count
 reverify every source descriptor/path snapshot
 freeze the snapshot with label_access_count = 0
 ```
 
-The production function has no path, worker, or expected-count arguments. Tests exercise internal pure helpers with temporary fixtures.
+The production function has no path, worker, expected-count, or observer arguments. It delegates to the internal observer form with a no-op observer; runtime supplies its process-owned progress writer to that internal form, while readiness uses the public wrapper. Events are emitted only as the parent commits the next context-ordered record, never from workers or completion order. Tests exercise internal pure helpers with temporary fixtures.
 
 - [ ] **Step 4: Add exact label-free count validation**
 
-Flatten record candidates in context order and assert provisional `840`, coordinates unique `840`, outside-Hard `394`, and no source payload contains a non-false label or evaluation field. Do not compute Hard-empty filtering here; that belongs to the selector.
+For every parsed record require `type(test_row_count) is int`, `test_row_count >= 0`, candidate dataset equality with the record, and `type(instance_index) is int` with `0 <= instance_index < test_row_count`. After all 1,117 records, build immutable `test_row_count_by_dataset`; require every Hard dataset to exist and every translated Hard `candidate_index` to satisfy the same bound. Test `-1`, `count - 1`, `count`, `bool`, unknown dataset, and zero-row cases. Malformed candidate/Hard ranges must fail before importing or calling Exp417's connection helper. Then flatten the adapted candidates in context order and assert provisional `840`, coordinates unique `840`, outside-Hard `394`, and no source payload contains a non-false label or evaluation field. Do not compute Hard-empty filtering here; that belongs to the selector.
 
 - [ ] **Step 5: Map the evidenced Exp440/Hard source dependencies**
 
@@ -417,7 +449,7 @@ winners = tuple(
 selected = tuple(sorted(winners, key=lambda item: item.global_key)[:30])
 ```
 
-Validate unique coordinates, one selected item per dataset, exactly 49 winners and 30 retained production candidates, and never pad a sparse fixture.
+The pure selector validates unique coordinates and at most one selected item per dataset, assigns complete `global_rank`/`selection_rank`, and never pads a sparse fixture. Call `validate_production_selection_antigravity` only at the production boundary to require exactly 49 winners, 30 retained candidates, and the full `840/394/73/49/30` structure.
 
 - [ ] **Step 4: Add the real 1,117-record label-free replay test**
 
@@ -476,7 +508,7 @@ Assert the first attempt is `attempt_0000_antigravity`, gaps choose the smallest
 
 - [ ] **Step 3: Write RED runtime order, signal, and failure tests**
 
-Patch the source parser with delayed records. Assert 11 workers remain bounded, progress advances only in context order, SIGTERM becomes `interrupted`, source/schema failure becomes `failed`, no publication appears on failure, and a second `new` uses a new attempt rather than repairing the first.
+Patch the source parser with delayed records. Assert 11 workers remain bounded, the runtime-owned observer receives one immutable event only when the parent accepts the next context-ordered record, progress advances only in that order, SIGTERM becomes `interrupted`, source/schema failure becomes `failed`, no publication appears on failure, and a second `new` uses a new attempt rather than repairing the first.
 
 - [ ] **Step 4: Implement the runtime sequence**
 
@@ -484,7 +516,7 @@ Patch the source parser with delayed records. Assert 11 workers remain bounded, 
 allocate create-only attempt
 create PID/progress/events/text artifacts
 verify exact clean reviewed commit again
-verify all frozen sources with 11 workers
+verify all frozen sources with 11 workers through the internal parent-ordered progress observer
 select 30 candidates
 write source_snapshot_antigravity.json create-only
 write selection_antigravity.json create-only
@@ -538,7 +570,7 @@ status_antigravity.json
 artifact_sha256_antigravity.json
 ```
 
-Prediction contains the 30 selected rows sorted by `(dataset, instance_index)`. Ranking contains all 49 dataset winners in global ranking order with `global_rank`, `selected`, and `selection_rank`. Reject duplicate coordinates, wrong order, budget over 30, more than one candidate per dataset, Hard-active datasets, forbidden label/evaluation keys, and any governance value inconsistent with Global Constraints.
+Prediction contains the 30 selected rows sorted by `(dataset, instance_index)`. Ranking contains all 49 dataset winners in global ranking order with `global_rank`, `selected`, and `selection_rank`. Reject duplicate coordinates, wrong order, budget over 30, more than one candidate per dataset, Hard-active datasets, forbidden label/evaluation keys, and any governance value inconsistent with Global Constraints. Require the exact flat nine-field governance payload in `manifest_antigravity.json` and `status_antigravity.json`; reject missing, extra, nested, truthy-equivalent, or partial governance. Prediction/ranking JSONL, source audit, and artifact map carry no governance keys and are bound transitively.
 
 - [ ] **Step 2: Write RED hash-graph and source-coherence tests**
 
@@ -594,7 +626,7 @@ git commit -m "feat(exp441): freeze label-free selector publication"
 
 - [ ] **Step 1: Write RED readiness evidence tests**
 
-Require exact clean 40-character HEAD, absent run parent/output attempts/publication/evaluation, all frozen source hashes/counts, 12 logical CPUs/11 workers, label access zero, NumPy 2.4.6, and environment evidence for Python, PyTorch, MPS built/available, MLX, and mlx-metal. The backend decision core fields must be:
+Require exact clean 40-character HEAD, absent run parent/output attempts/publication/evaluation, all prediction-allowed source hashes/counts, the DB path/hash only as unevaluated frozen literals, 12 logical CPUs/11 workers, label access zero, NumPy 2.4.6, and environment evidence for Python, PyTorch, MPS built/available, MLX, and mlx-metal. Readiness must not verify or open the DB. The readiness JSON carries the exact flat nine-field governance payload. The backend decision core fields must be:
 
 ```json
 {
@@ -622,20 +654,27 @@ Readiness performs one full label-free source/selector replay before publishing 
 
 Parser commands are exactly `readiness`, `new`, `inspect`, and `evaluate`, with no flags for paths, workers, backend, seed, budget, source, threshold, or bootstrap. Assert no `resume` command. Prove `new` rechecks HEAD after readiness and immediately before source replay; `inspect` is byte read-only; prediction commands never import `evaluation_antigravity`; `evaluate` imports only the exact evaluator lazily; wrapper help works outside the repository.
 
+In fresh-interpreter route tests for `--help`, `readiness`, `new`, and `inspect`, make `sqlite3.connect` raise and install an import sentinel rejecting the Exp441 evaluator, Exp440 evaluator, and `experiments.exp417_causal_multihorizon_shadow.inputs`; import the wrapper/CLI and invoke the mocked route. All four routes must complete without either sentinel firing, with byte-identical pre/post trees where the route is read-only. Only `evaluate` may perform the exact branch-local evaluator import. Inside evaluation, import `verified_read_only_connection` function-locally only after publication/source/selector/range preflight. Static AST auditing rejects `sqlite3`, Exp417-input, or evaluator imports from config/contracts/artifacts/sources/selector/progress/runtime/reporting/readiness and the wrapper; the CLI's branch-local Exp441 evaluator import is the sole exception. A unit test of source/selector alone is not a substitute for these route-level firewalls.
+
 - [ ] **Step 5: Implement CLI lifecycle**
 
 ```python
 if command == "readiness":
-    return run_readiness_antigravity(current_clean_head_antigravity())
-if command == "new":
+    result = run_readiness_antigravity(current_clean_head_antigravity())
+elif command == "new":
     binding = validate_readiness_for_run_antigravity(current_clean_head_antigravity())
     attempt = run_exp441_new_antigravity(reviewed_commit=binding.reviewed_commit)
-    return publish_exp441_antigravity(attempt)
-if command == "inspect":
-    return inspect_exp441_publication_antigravity()
-from .evaluation_antigravity import evaluate_exp441_antigravity
-return evaluate_exp441_antigravity()
+    result = publish_exp441_antigravity(attempt)
+elif command == "inspect":
+    result = inspect_exp441_publication_antigravity()
+else:
+    from .evaluation_antigravity import evaluate_exp441_antigravity
+    result = evaluate_exp441_antigravity()
+print(canonical_cli_status_antigravity(command, result))
+return 0
 ```
+
+`main_antigravity` returns integer exit code `0` after every successful route and prints only canonical JSON status to stdout. The wrapper calls `raise SystemExit(main_antigravity())`; domain objects are never passed to `SystemExit`.
 
 - [ ] **Step 6: Map readiness and four-command routes**
 
@@ -655,38 +694,34 @@ git commit -m "feat(exp441): bind fixed selector lifecycle"
 
 ---
 
-### Task 8: Implement the exact post-freeze retrospective evaluation
+### Task 8: Freeze project F1 and the exact paired bootstrap
 
 **Files:**
 - Create: `experiments/exp441_hard_empty_single_shot_recovery_antigravity/bootstrap_antigravity.py`
-- Create: `experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py`
 - Create: `experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_bootstrap_antigravity.py`
-- Create: `experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py`
 - Modify together: `docs/codemap/codemap.html`
 - Modify together: `docs/codemap/codemap.json`
 - Modify together: `docs/codemap/codemap.lock`
 
 **Interfaces:**
-- Consumes: inspected frozen Exp441 publication, frozen Exp440/Hard sources, and one `verified_read_only_connection(database, database_sha256)` from Exp417.
-- Produces: `project_f1_antigravity`, `paired_dataset_bootstrap_antigravity`, `evaluate_exp441_antigravity()`, eight hash-bound evaluation artifacts, and one of the three frozen reproduction statuses.
+- Produces: `project_f1_antigravity(confusion: Sequence[int | float]) -> float`, `require_numpy_2_4_6_antigravity()`, and `paired_dataset_bootstrap_antigravity(rows: np.ndarray) -> BootstrapResultAntigravity`.
 
-- [ ] **Step 1: Write RED project-F1 and bootstrap tests**
+- [ ] **Step 1: Write RED F1 and deterministic-bootstrap tests**
 
-Assert zero-denominator F1 is zero and freeze the project harmonic formula rather than direct `2TP` arithmetic. Use a small hand-derived matrix to prove paired row sampling. Patch a spy generator and require exactly 20,000 calls with this signature:
+`project_f1_antigravity` accepts exactly four values in `(tp, fp, fn, tn)` order, rejects bool, negative, nonfinite, or wrong-length input, and returns a built-in `float`. Assert zero-denominator F1 is zero and freeze the precision/recall harmonic formula rather than direct `2TP` arithmetic. Use a small hand-derived matrix to prove paired row sampling. Patch a spy generator and require exactly 20,000 calls with this signature:
 
 ```python
 rng.integers(
-    low=0,
-    high=1117,
-    size=1117,
-    dtype=np.int64,
-    endpoint=False,
+    low=0, high=1117, size=1117,
+    dtype=np.int64, endpoint=False,
 )
 ```
 
-Reject NumPy versions other than `2.4.6`, other bit generators, other dataset order, other dtype/shape, nonfinite rows, and quantile methods other than `linear`.
+Reject NumPy versions other than `2.4.6`, any other bit generator, dtype/shape/order drift, nonfinite rows, and a quantile method other than `linear`.
 
-- [ ] **Step 2: Implement the one allowed bootstrap path**
+- [ ] **Step 2: Implement the one bootstrap path from Global Constraints**
+
+Use `Generator(PCG64(44120260808))`, one `integers` call per repetition, float64 sums/means, and `np.quantile(..., method="linear")` exactly as preregistered. Convert all NumPy scalar CI endpoints to built-in `float` before contract construction or JSON serialization. No evaluator or SQLite import is permitted in this module.
 
 ```python
 def paired_dataset_bootstrap_antigravity(rows: np.ndarray) -> BootstrapResultAntigravity:
@@ -708,29 +743,98 @@ def paired_dataset_bootstrap_antigravity(rows: np.ndarray) -> BootstrapResultAnt
         micro[repetition] = project_f1_antigravity(union) - project_f1_antigravity(baseline)
         macro[repetition] = sample[:, 8].mean(dtype=np.float64)
     q = np.asarray([0.025, 0.975], dtype=np.float64)
+    micro_ci = np.quantile(micro, q, method="linear")
+    macro_ci = np.quantile(macro, q, method="linear")
     return BootstrapResultAntigravity(
-        micro_ci=tuple(np.quantile(micro, q, method="linear")),
-        macro_ci=tuple(np.quantile(macro, q, method="linear")),
+        micro_ci=tuple(float(value) for value in micro_ci),
+        macro_ci=tuple(float(value) for value in macro_ci),
     )
 ```
 
-- [ ] **Step 3: Write RED label boundary and identity tests**
+- [ ] **Step 3: Map and verify the pure calculation boundary**
 
-Before the first label-capable call, require publication replay, source snapshot/hash replay, DB hash/quick-check, exact 1,117 context datasets, and prediction/Hard coordinate validity. The SQL must be only:
+Add exact bootstrap symbols/tests to the existing publication/evaluation node without adding a database edge. Regenerate all three code-map files, run the focused tests, and commit:
 
-```sql
-SELECT d.name, i.instance_index, i.label
-FROM instances AS i
-JOIN datasets AS d ON d.id = i.dataset_id
-WHERE i.split = 'TEST'
-ORDER BY d.name, i.instance_index
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
+  experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_bootstrap_antigravity -v
+git add experiments/exp441_hard_empty_single_shot_recovery_antigravity \
+  docs/codemap/codemap.html docs/codemap/codemap.json docs/codemap/codemap.lock
+git commit -m "feat(exp441): freeze retrospective bootstrap"
 ```
 
-Use actual noncontiguous `instance_index` values, reject missing/duplicate/out-of-range identities and nonbinary labels, and use one descriptor-bound connection.
+---
 
-- [ ] **Step 4: Write RED hand-derived confusion and status tests**
+### Task 9: Enforce the frozen-context post-freeze label boundary
 
-Verify baseline/union confusion, per-dataset F1, rescued dataset definition, regression definition, strong loss, candidate TP/FP, and exact equality of structural expectations. Status rules are:
+**Files:**
+- Create: `experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py`
+- Create: `experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py`
+- Modify together: `docs/codemap/codemap.html`
+- Modify together: `docs/codemap/codemap.json`
+- Modify together: `docs/codemap/codemap.lock`
+
+**Interfaces:**
+- Consumes: fully inspected Exp441 publication and the reverified `FrozenSourceSnapshotAntigravity`.
+- Produces: internal frozen-context label snapshot with one descriptor-bound connection; it does not yet compute metrics or publish evaluation files.
+
+- [ ] **Step 1: Write RED preflight-before-import tests**
+
+Require publication replay, source/hash replay, selector/count replay, immutable row-count map, and candidate/Hard range validity before importing or calling any label-capable helper. For every preflight failure, install an import sentinel for `experiments.exp417_causal_multihorizon_shadow.inputs` and a connection function that explodes; neither may fire. Import `verified_read_only_connection` function-locally only after all preflight gates pass.
+
+- [ ] **Step 2: Freeze the only permitted database statement sequence**
+
+The helper verifies the DB descriptor/hash when its one Exp417 context manager opens, then executes exactly:
+
+```sql
+PRAGMA quick_check
+```
+
+once, requiring `fetchall() == [("ok",)]`, followed by this sole label-bearing SELECT exactly once for each dataset in the frozen 1,117-name context tuple:
+
+```sql
+SELECT i.instance_index, i.label
+FROM instances AS i
+JOIN datasets AS d ON d.id = i.dataset_id
+WHERE d.name = ? AND i.split = 'TEST'
+ORDER BY i.instance_index
+```
+
+The parameter tuple must be `(dataset,)` in context order. Do not enumerate the DB dataset table and do not issue a bulk TEST query. Assert one connection, one quick-check, 1,117 parameterized label queries, and zero parameters outside context. Explicitly prove `CornellWhaleChallenge` and `Wafer_normal_1` are never queried even though the current DB contains them.
+
+- [ ] **Step 3: Validate actual TEST identities without inventing contiguity**
+
+For each dataset, require returned indices to be strictly increasing unique integers, row count equal to `test_row_count_by_dataset[dataset]`, labels exactly binary after strict normalization, and every Hard/Exp441 coordinate present in the actual identity set. Preserve noncontiguous indices as returned; never substitute `range(test_row_count)`. Record one descriptor-bound connection, 1,117 label-query calls, and zero out-of-scope label rows.
+
+- [ ] **Step 4: Map, run GREEN, and commit**
+
+Add the lazy evaluator read edge from the publication/source preflight through Exp417's descriptor-bound helper to SQLite. Do not map evaluation writes yet. Regenerate the map triplet and run:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
+  experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_evaluation_antigravity -v
+git add experiments/exp441_hard_empty_single_shot_recovery_antigravity \
+  docs/codemap/codemap.html docs/codemap/codemap.json docs/codemap/codemap.lock
+git commit -m "feat(exp441): enforce post-freeze label boundary"
+```
+
+---
+
+### Task 10: Reproduce pure retrospective evaluation facts
+
+**Files:**
+- Modify: `experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py`
+- Modify: `experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py`
+- Modify together: `docs/codemap/codemap.html`
+- Modify together: `docs/codemap/codemap.json`
+- Modify together: `docs/codemap/codemap.lock`
+
+**Interfaces:**
+- Produces pure confusion, per-dataset metrics, rescue/regression facts, exact bootstrap inputs/results, and one of three retrospective reproduction statuses; no filesystem publication occurs yet.
+
+- [ ] **Step 1: Write RED hand-derived confusion and status tests**
+
+Verify baseline/union confusion, candidate TP/FP, project F1, dataset macro F1, and bootstrap-row order. A rescued dataset has baseline TP `== 0` and union TP `>= 1`; a regression has union dataset F1 below baseline; strong loss is measured only when baseline F1 is at least `0.8`. Status rules are:
 
 ```text
 source/hash/population/selector/confusion/label-firewall mismatch -> engineering_reproduction_failed
@@ -739,7 +843,7 @@ all exact/tolerant values match -> retrospective_reproduction_complete
 all three -> scientific_winner_selected=false
 ```
 
-- [ ] **Step 5: Add the frozen full-population expected-value test**
+- [ ] **Step 2: Add the frozen full-population expected-value test**
 
 Require exactly:
 
@@ -761,7 +865,38 @@ micro CI hex = [0x1.c2cafc29c4668p-15, 0x1.f3ec47deffdf7p-9]
 macro CI hex = [0x1.ac4d308a9c7cep-8, 0x1.39e467f55da52p-6]
 ```
 
-- [ ] **Step 6: Implement exact eight-file evaluation publication**
+- [ ] **Step 3: Implement the pure facts/status layer**
+
+Require exact integer structural fields and finite built-in float values. Apply `rel_tol=0.0, abs_tol=1e-15` only to the two point deltas and four CI endpoints; do not round artifacts. All three statuses carry the same no-winner governance. Tests cover every decision boundary and prove no TEST result can retune source, order, threshold, alpha, or budget.
+
+- [ ] **Step 4: Map, run GREEN, and commit**
+
+Add facts/status symbols and tests to the existing evaluation node, regenerate the triplet, run the focused bootstrap/evaluation tests, and commit:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
+  experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_bootstrap_antigravity \
+  experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_evaluation_antigravity -v
+git add experiments/exp441_hard_empty_single_shot_recovery_antigravity \
+  docs/codemap/codemap.html docs/codemap/codemap.json docs/codemap/codemap.lock
+git commit -m "feat(exp441): reproduce retrospective evaluation facts"
+```
+
+---
+
+### Task 11: Freeze and replay the exact eight-file evaluation publication
+
+**Files:**
+- Modify: `experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py`
+- Modify: `experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py`
+- Modify together: `docs/codemap/codemap.html`
+- Modify together: `docs/codemap/codemap.json`
+- Modify together: `docs/codemap/codemap.lock`
+
+**Interfaces:**
+- Produces: `evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity`, exactly eight create-only artifacts, replay-only existing-evaluation handling, and preserved failure evidence.
+
+- [ ] **Step 1: Write RED inventory, governance, and hash-graph tests**
 
 Create only:
 
@@ -776,13 +911,28 @@ decision_antigravity.json
 artifact_sha256_antigravity.json
 ```
 
-Reverify all source/publication bytes after labels, before staging, immediately before exclusive rename, and after reopening. An existing evaluation may only be returned by complete byte replay without reopening labels. Preserve a failed evaluation staging tree with canonical failure evidence while leaving the fixed evaluation destination absent.
+`evaluation_antigravity.json`, `bootstrap_antigravity.json`, and `decision_antigravity.json` each carry the exact flat nine-field governance payload. Data JSONL, confusion, and artifact map carry no governance keys. The artifact map hashes exactly the other seven files and explicitly excludes only itself. Tamper every file/key/hash and require replay failure.
 
-- [ ] **Step 7: Map the lazy label read and evaluation publication flow**
+- [ ] **Step 2: Write RED create-only race and failure-preservation tests**
 
-Add evaluator reads from the descriptor-bound SQLite node only after publication inspection, plus bootstrap and evaluation writes. Regenerate the complete map triplet in this commit.
+Use the shared `O_EXCL|O_NOFOLLOW`, fsync, and Darwin `RENAME_EXCL` boundary. A destination present on entry is replayed completely without reopening labels; a destination appearing later is a concurrency failure and is never adopted. Preserve a uniquely named failed evaluation staging tree plus canonical failure evidence while the fixed evaluation destination remains absent.
 
-- [ ] **Step 8: Run GREEN and commit**
+- [ ] **Step 3: Implement the exact revalidation and publication order**
+
+Execute:
+
+```text
+inspect publication -> reverify source/selector/ranges -> load frozen-context labels
+-> compute facts/bootstrap -> reverify all source/publication bytes
+-> stage eight artifacts -> reverify immediately before exclusive rename
+-> reopen and byte-replay all eight artifacts -> reverify source/publication again
+```
+
+No evaluation destination exists before every post-label revalidation passes. An existing valid evaluation returns by complete replay without importing Exp417 inputs or opening SQLite.
+
+- [ ] **Step 4: Map, run GREEN, and commit**
+
+Add evaluation write/replay edges and exact source symbols to the map, regenerate all three files, run focused tests, and commit:
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
@@ -790,12 +940,12 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
   experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_evaluation_antigravity -v
 git add experiments/exp441_hard_empty_single_shot_recovery_antigravity \
   docs/codemap/codemap.html docs/codemap/codemap.json docs/codemap/codemap.lock
-git commit -m "feat(exp441): reproduce frozen retrospective evaluation"
+git commit -m "feat(exp441): freeze retrospective evaluation publication"
 ```
 
 ---
 
-### Task 9: Run full verification, synchronize the code map, and bind readiness handoff
+### Task 12: Run full verification, synchronize the code map, and bind readiness handoff
 
 **Files:**
 - Create: `docs/EXP441_IMPLEMENTATION_REPORT_antigravity.md`
@@ -856,7 +1006,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 \
 
 - [ ] **Step 5: Run synthetic end-to-end publication/evaluation-order smoke**
 
-Use a temporary fixed-path fixture through CLI-shaped internal helpers. Prove readiness ownership, immutable attempt, six-file publication replay, evaluation loader explosion before freeze, first label access after freeze, exact eight-file evaluation, and zero changes to publication/attempt bytes.
+Use a temporary fixed-path fixture through CLI-shaped internal helpers. Prove readiness ownership, immutable attempt, six-file publication replay, evaluation loader explosion before freeze, first label-capable import only after source/range preflight, one quick-check followed by context-scoped label queries, exact eight-file evaluation, and zero changes to publication/attempt bytes.
 
 - [ ] **Step 6: Regenerate and fully validate the code-map triplet**
 
@@ -864,7 +1014,7 @@ Keep 20 primary nodes by extending the current frequency runtime and publication
 
 - [ ] **Step 7: Write the implementation report and control state**
 
-Set Exp441 to `implementation_complete_readiness_pending`, PID null, attempts absent, prediction not started, TEST labels unopened, review-only, and no champion. The exact next command is:
+Write the exact flat nine-field governance payload into the implementation report and every governance-bearing Exp441 control record. Set Exp441 to `implementation_complete_readiness_pending`, PID null, attempts absent, prediction not started, TEST labels unopened, review-only, and no champion. The exact next command is:
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 \
