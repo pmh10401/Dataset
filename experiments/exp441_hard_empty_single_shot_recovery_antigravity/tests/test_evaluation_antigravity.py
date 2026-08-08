@@ -133,10 +133,16 @@ class Exp441FrozenContextLabelsAntigravityTests(unittest.TestCase):
 
     def _run(self, *, publication_sequence: list[object] | None = None,
              source_sequence: list[object] | None = None,
-             selector_sequence: list[object] | None = None) -> object:
+             selector_sequence: list[object] | None = None,
+             audit_values: list[str] | None = None) -> object:
         publications = iter(publication_sequence or [self.publication] * 3)
         sources = iter(source_sequence or [self.snapshot] * 2)
         selections = iter(selector_sequence or [self.selection] * 2)
+        audits = iter(audit_values or [self.publication.source_audit_sha256] * 3)
+        self.audit_calls = 0
+        def fake_audit(snapshot: object) -> str:
+            self.audit_calls += 1
+            return next(audits)
         self.connection_entries = 0
         @contextmanager
         def fake_connection(path: object, digest: object):
@@ -149,6 +155,7 @@ class Exp441FrozenContextLabelsAntigravityTests(unittest.TestCase):
         with patch.object(evaluation, "inspect_exp441_publication_antigravity", side_effect=lambda: next(publications)), \
              patch.object(evaluation, "verify_frozen_sources_antigravity", side_effect=lambda: next(sources)), \
              patch.object(evaluation, "select_hard_empty_single_shot_antigravity", side_effect=lambda snapshot: next(selections)), \
+             patch.object(evaluation, "_source_audit_sha256_antigravity", side_effect=fake_audit), \
              patch.dict(sys.modules, {inputs.__name__: inputs}):
             return evaluation.load_frozen_context_labels_antigravity()
 
@@ -194,6 +201,10 @@ class Exp441FrozenContextLabelsAntigravityTests(unittest.TestCase):
         bad_audit = FrozenPublicationAntigravity("3" * 64, "4" * 64, "5" * 64, "6" * 64, self.selection)
         self._assert_preflight_rejected("source-audit", [bad_audit], [self.snapshot])
         self._assert_preflight_rejected("production count", [self.publication], [self.snapshot], validator_error=True)
+        _, mismatch_selection = _snapshot_and_selection()
+        object.__setattr__(mismatch_selection, "selected", tuple(reversed(mismatch_selection.selected)))
+        mismatch_publication = _publication(self.snapshot, mismatch_selection)
+        self._assert_preflight_rejected("publication selection", [mismatch_publication], [self.snapshot], [self.selection])
         snapshot, selection = _snapshot_and_selection()
         publication = _publication(snapshot, selection)
         object.__setattr__(snapshot, "test_row_count_by_dataset", dict(snapshot.test_row_count_by_dataset))
@@ -201,6 +212,11 @@ class Exp441FrozenContextLabelsAntigravityTests(unittest.TestCase):
         snapshot, selection = _snapshot_and_selection()
         publication = _publication(snapshot, selection)
         object.__setattr__(snapshot, "hard_coordinates", frozenset({("D0000", 1000)}))
+        self._assert_preflight_rejected("coordinate", [publication], [snapshot], [selection])
+        # Break caught: removing the preflight `index < 0` guard admits an invalid Hard coordinate.
+        snapshot, selection = _snapshot_and_selection()
+        publication = _publication(snapshot, selection)
+        object.__setattr__(snapshot, "hard_coordinates", frozenset({("D0000", -1)}))
         self._assert_preflight_rejected("coordinate", [publication], [snapshot], [selection])
         snapshot, selection = _snapshot_and_selection()
         publication = _publication(snapshot, selection)
@@ -241,9 +257,11 @@ class Exp441FrozenContextLabelsAntigravityTests(unittest.TestCase):
         object.__setattr__(changed_selector, "selected", tuple(reversed(changed_selector.selected)))
         with self.subTest("selector"), self.assertRaisesRegex(ValueError, "source binding"):
             self._run(source_sequence=[self.snapshot, changed_selector_source], selector_sequence=[self.selection, changed_selector])
-        changed_audit = FrozenPublicationAntigravity("3" * 64, "4" * 64, "5" * 64, "8" * 64, self.selection)
-        with self.subTest("source audit"), self.assertRaisesRegex(ValueError, "authority"):
-            self._run(publication_sequence=[self.publication, self.publication, changed_audit])
+        # The third audit invocation is line 183 after post-close source/selector replay.
+        normal = self.publication.source_audit_sha256
+        with self.subTest("source audit"), self.assertRaisesRegex(ValueError, "post-connection source binding changed"):
+            self._run(audit_values=[normal, normal, "8" * 64])
+        self.assertEqual(self.audit_calls, 3)
 
     def test_rejects_quick_check_schema_order_counts_and_labels(self) -> None:
         self.connection.quick_check_rows = [("not ok",)]
@@ -255,6 +273,8 @@ class Exp441FrozenContextLabelsAntigravityTests(unittest.TestCase):
             ([(9, 1), (8, 0)] + [(index, 0) for index in range(10, 1008)], "index"),
             ([(3, "0"), (3, 1)] + [(index, 0) for index in range(10, 1008)], "index"),
             ([(True, 0)] + [(index, 0) for index in range(10, 1008)], "index"),
+            # Break caught: removing the loaded-row `index < 0` guard accepts an invalid TEST identity.
+            ([(-1, 0)] + [(index, 0) for index in range(10, 1009)], "index"),
             ([(3, True), (9, 1)] + [(index, 0) for index in range(10, 1008)], "label"),
             ([(3, "2"), (9, 1)] + [(index, 0) for index in range(10, 1008)], "label"),
         )
