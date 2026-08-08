@@ -38,6 +38,16 @@ _NUMERICAL_THREAD_ENV_ANTIGRAVITY = (
     "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
     "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS",
 )
+_CHECKPOINT_ROOT_FILENAMES_ANTIGRAVITY = (
+    "context_antigravity.json", "state_antigravity.json",
+    "retained_candidates_antigravity.json", "records_antigravity",
+)
+_HARD_MANIFEST_KEYS_ANTIGRAVITY = {
+    "artifact_hashes", "config", "contains_evaluation_metrics", "contains_test_labels",
+    "datasets", "experiment_ids", "feature_manifest_file", "frozen_hard_lanes",
+    "frozen_hard_lanes_sha256", "hard_confidence_file", "provenance",
+    "provenance_contract_sha256", "rows",
+}
 
 
 def hard_coordinate_identity_sha256_antigravity(coordinates: object) -> str:
@@ -92,6 +102,50 @@ def _read_pinned_regular_antigravity(path: Path) -> tuple[bytes, str]:
         return read_pinned_regular_bytes_antigravity(path)
     except OSError as error:
         raise ValueError("source is not a regular file") from error
+
+
+def _validate_named_regular_inventory_antigravity(root: Path, names: tuple[str, ...], label: str) -> None:
+    """Require an exact directory of named, non-symlink regular artifacts."""
+    try:
+        if not stat.S_ISDIR(Path(root).lstat().st_mode):
+            raise ValueError(f"{label} inventory is invalid")
+        entries = {entry.name: entry for entry in Path(root).iterdir()}
+    except OSError as error:
+        raise ValueError(f"{label} inventory is invalid") from error
+    if tuple(sorted(entries)) != tuple(sorted(names)):
+        raise ValueError(f"{label} inventory is invalid")
+    for name in names:
+        try:
+            if not stat.S_ISREG(entries[name].lstat().st_mode):
+                raise ValueError(f"{label} inventory is invalid")
+        except OSError as error:
+            raise ValueError(f"{label} inventory is invalid") from error
+
+
+def _validate_checkpoint_root_inventory_antigravity(root: Path) -> Path:
+    """Fail closed unless the frozen checkpoint root has exactly its four real entries."""
+    root = Path(root)
+    try:
+        if not stat.S_ISDIR(root.lstat().st_mode):
+            raise ValueError("checkpoint inventory is invalid")
+        entries = {entry.name: entry for entry in root.iterdir()}
+    except OSError as error:
+        raise ValueError("checkpoint inventory is invalid") from error
+    if tuple(sorted(entries)) != tuple(sorted(_CHECKPOINT_ROOT_FILENAMES_ANTIGRAVITY)):
+        raise ValueError("checkpoint inventory is invalid")
+    for name in _CHECKPOINT_ROOT_FILENAMES_ANTIGRAVITY[:-1]:
+        try:
+            if not stat.S_ISREG(entries[name].lstat().st_mode):
+                raise ValueError("checkpoint inventory is invalid")
+        except OSError as error:
+            raise ValueError("checkpoint inventory is invalid") from error
+    records = entries["records_antigravity"]
+    try:
+        if not stat.S_ISDIR(records.lstat().st_mode):
+            raise ValueError("checkpoint inventory is invalid")
+    except OSError as error:
+        raise ValueError("checkpoint inventory is invalid") from error
+    return records
 
 
 def _read_pinned_allowed_antigravity(path: Path, expected_sha256: str | None) -> tuple[bytes, Path]:
@@ -152,9 +206,7 @@ def _state_record_digests_antigravity(payload: Mapping[str, object], datasets: t
 
 def _validate_publication_antigravity() -> tuple[dict[Path, str], bytes]:
     root = Path(FROZEN_CONFIG.publication_path)
-    names = tuple(sorted(item.name for item in root.iterdir()))
-    if names != tuple(sorted(_PUBLICATION_FILENAMES_ANTIGRAVITY)):
-        raise ValueError("publication inventory is invalid")
+    _validate_named_regular_inventory_antigravity(root, _PUBLICATION_FILENAMES_ANTIGRAVITY, "publication")
     payloads: dict[Path, bytes] = {}
     digests: dict[Path, str] = {}
     for filename in _PUBLICATION_FILENAMES_ANTIGRAVITY:
@@ -186,10 +238,6 @@ def _validate_publication_antigravity() -> tuple[dict[Path, str], bytes]:
 
 
 def _hard_coordinates_antigravity(payload: bytes, manifest_payload: Mapping[str, object]) -> frozenset[tuple[str, int]]:
-    if set(manifest_payload) < {"contains_test_labels", "contains_evaluation_metrics", "datasets", "frozen_hard_lanes"}:
-        raise ValueError("Hard manifest is invalid")
-    if manifest_payload["contains_test_labels"] is not False or manifest_payload["contains_evaluation_metrics"] is not False:
-        raise ValueError("Hard manifest is not label-free")
     coordinates: set[tuple[str, int]] = set()
     for line in payload.splitlines():
         if not line:
@@ -212,7 +260,59 @@ def _hard_coordinates_antigravity(payload: bytes, manifest_payload: Mapping[str,
         raise ValueError("Hard population is invalid")
     if hard_coordinate_identity_sha256_antigravity(coordinates) != FROZEN_CONFIG.hard_coordinate_identity_sha256:
         raise ValueError("Hard coordinate identity mismatch")
-    return frozenset(coordinates)
+    result = frozenset(coordinates)
+    _validate_hard_manifest_antigravity(manifest_payload, result)
+    return result
+
+
+def _validate_hard_manifest_antigravity(manifest: Mapping[str, object], coordinates: frozenset[tuple[str, int]]) -> None:
+    """Require the complete Exp404 manifest and exact agreement with its label-free rows."""
+    if type(manifest) is not dict or set(manifest) != _HARD_MANIFEST_KEYS_ANTIGRAVITY:
+        raise ValueError("Hard manifest is invalid")
+    if manifest["contains_test_labels"] is not False or manifest["contains_evaluation_metrics"] is not False:
+        raise ValueError("Hard manifest is invalid")
+    if type(manifest["datasets"]) is not int or manifest["datasets"] != 888:
+        raise ValueError("Hard manifest is invalid")
+    if type(manifest["rows"]) is not int or manifest["rows"] != 2218:
+        raise ValueError("Hard manifest is invalid")
+    if type(manifest["experiment_ids"]) is not list or manifest["experiment_ids"] != [403, 404]:
+        raise ValueError("Hard manifest is invalid")
+    if type(manifest["feature_manifest_file"]) is not str or not manifest["feature_manifest_file"]:
+        raise ValueError("Hard manifest is invalid")
+    if type(manifest["hard_confidence_file"]) is not str or manifest["hard_confidence_file"] != Path(FROZEN_CONFIG.hard_prediction_path).name:
+        raise ValueError("Hard manifest is invalid")
+    for name in ("frozen_hard_lanes_sha256", "provenance_contract_sha256"):
+        if type(manifest[name]) is not str or len(manifest[name]) != 64:
+            raise ValueError("Hard manifest is invalid")
+    hashes = manifest["artifact_hashes"]
+    if type(hashes) is not dict or set(hashes) != {"baseline", "code", "config", "feature", "feature_manifest", "input", "prediction"}:
+        raise ValueError("Hard manifest is invalid")
+    if any(type(value) is not str or len(value) != 64 for value in hashes.values()) or hashes["prediction"] != FROZEN_CONFIG.hard_prediction_sha256:
+        raise ValueError("Hard manifest is invalid")
+    config = manifest["config"]
+    if (type(config) is not dict or set(config) != {"alphas", "seed", "target_length"} or
+            type(config["alphas"]) is not list or config["alphas"] != [0.005, 0.01, 0.02, 0.05] or
+            type(config["seed"]) is not int or type(config["target_length"]) is not int):
+        raise ValueError("Hard manifest is invalid")
+    provenance = manifest["provenance"]
+    if type(provenance) is not dict or set(provenance) != {"baseline_artifacts", "code_artifacts", "config_artifacts", "feature_artifacts", "input_artifacts"}:
+        raise ValueError("Hard manifest is invalid")
+    for group in provenance.values():
+        if type(group) is not dict or not group:
+            raise ValueError("Hard manifest is invalid")
+        for descriptor in group.values():
+            if type(descriptor) is not dict or set(descriptor) != {"path", "sha256"} or type(descriptor["path"]) is not str or not descriptor["path"] or type(descriptor["sha256"]) is not str or len(descriptor["sha256"]) != 64:
+                raise ValueError("Hard manifest is invalid")
+    lanes = manifest["frozen_hard_lanes"]
+    if type(lanes) is not dict or len(lanes) != 1117:
+        raise ValueError("Hard manifest is invalid")
+    lane_coordinates: set[tuple[str, int]] = set()
+    for dataset, indices in lanes.items():
+        if type(dataset) is not str or not dataset or type(indices) is not list or any(type(index) is not int or index < 0 for index in indices) or indices != sorted(set(indices)):
+            raise ValueError("Hard manifest is invalid")
+        lane_coordinates.update((dataset, index) for index in indices)
+    if lane_coordinates != set(coordinates) or len(lane_coordinates) != 2218 or len({dataset for dataset, _ in lane_coordinates}) != 888:
+        raise ValueError("Hard manifest is invalid")
 
 
 def _parse_record_task_antigravity(task: tuple[str, str, str, int]) -> ParsedRecordAntigravity:
@@ -261,11 +361,12 @@ def _parse_records_fixed_workers_antigravity(
         os.environ[name] = "1"
     with ProcessPoolExecutor(max_workers=_fixed_worker_count_antigravity()) as executor:
         futures = tuple(executor.submit(_parse_record_task_antigravity, task) for task in tasks)
-        records = tuple(future.result() for future in futures)
-    for task, record in zip(tasks, records, strict=True):
-        event = MappingProxyType({"sequence": task[3], "dataset": record.dataset, "record_digest": task[2]})
-        observer(event)
-    return records
+        records: list[ParsedRecordAntigravity] = []
+        for task, future in zip(tasks, futures, strict=True):
+            record = future.result()
+            records.append(record)
+            observer(MappingProxyType({"sequence": task[3], "dataset": record.dataset, "record_digest": task[2]}))
+    return tuple(records)
 
 
 def _record_tasks_antigravity(datasets: tuple[str, ...], digests: Mapping[str, str]) -> tuple[tuple[str, str, str, int], ...]:
@@ -314,6 +415,7 @@ def _reverify_paths_antigravity(hashes: Mapping[Path, str]) -> None:
 
 def _load_prefix_antigravity() -> tuple[tuple[str, ...], Mapping[str, str], frozenset[tuple[str, int]], dict[str, str], dict[Path, str]]:
     watched: dict[Path, str] = {}
+    _validate_checkpoint_root_inventory_antigravity(Path(FROZEN_CONFIG.checkpoint_context_path).parent)
     context_bytes, context_path = _read_pinned_allowed_antigravity(Path(FROZEN_CONFIG.checkpoint_context_path), FROZEN_CONFIG.checkpoint_context_sha256)
     state_bytes, state_path = _read_pinned_allowed_antigravity(Path(FROZEN_CONFIG.checkpoint_state_path), FROZEN_CONFIG.checkpoint_state_sha256)
     retained_bytes, retained_path = _read_pinned_allowed_antigravity(Path(FROZEN_CONFIG.checkpoint_retained_inventory_path), FROZEN_CONFIG.checkpoint_retained_inventory_sha256)
