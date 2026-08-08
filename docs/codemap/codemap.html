@@ -51,6 +51,24 @@
     const raw=atob(document.getElementById("codemap-data").textContent.trim());
     const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
     const data=JSON.parse(new TextDecoder().decode(bytes));
+    data.generated_at="2026-08-08T12:59:18Z";
+    data.generated_from_commit="93a565d823c76821406fb11dc396115827312529";
+    const exp441=data.nodes.find(n=>n.id==="exp438_publication_evaluation");
+    if(exp441){
+      exp441.role="Exp441 Task 9 adds a fail-closed, post-freeze-only TEST-label loader: exact source/selection/publication preflight, one descriptor-bound connection, one quick_check, 1,117 ordered label queries, and post-close rebinding. It writes no artifacts and computes no metrics.";
+      exp441.entrypoints.push("load_frozen_context_labels_antigravity");
+      exp441.tests.push("experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py");
+      exp441.constraints.push("Task 9 delays the Exp417 import until preflight succeeds, admits no non-context query, and returns nothing after authority drift.");
+      exp441.evidence.push({path:"experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",symbol:"def load_frozen_context_labels_antigravity("});
+    }
+    data.edges.push({from:"exp438_publication_evaluation",to:"exp417_inputs",type:"lazy reads",evidence:[{path:"experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",symbol:"from experiments.exp417_causal_multihorizon_shadow.inputs import verified_read_only_connection"}]});
+    const exp441flow=data.flows.find(f=>f.id==="exp441_immutable_attempt_flow");
+    if(exp441flow){
+      exp441flow.label="Exp441 Task 9 frozen-context lazy label read";
+      exp441flow.trigger="A future evaluation caller explicitly requests frozen-context labels; official readiness/new/inspect/evaluate remain prohibited until Task 12 final review.";
+      exp441flow.steps=["exp438_frequency_runtime","exp438_publication_evaluation","exp417_inputs","sqlite_store"];
+      exp441flow.outcome="The loader binds publication, source, and selection before the delayed Exp417 import; it makes one descriptor-bound quick_check plus one ordered TEST-label query per frozen dataset, closes the connection, then rebinds all authority before returning immutable labels without metrics or writes.";
+    }
     const NS="http://www.w3.org/2000/svg", colors={data:"#55c7a6",database:"#ffb86b",external:"#aab7c4",pipeline:"#7aa7ff",model:"#d692ff",storage:"#ffd166",interface:"#57d0f6"};
     const svg=document.getElementById("graph"),viewport=document.getElementById("viewport"),nodeLayer=document.getElementById("nodes"),edgeLayer=document.getElementById("edges"),labelLayer=document.getElementById("edge-labels"),boundaryLayer=document.getElementById("boundaries"),details=document.getElementById("details");
     const state={selected:null,flow:null,scale:1,tx:0,ty:0,positions:new Map(),visible:new Set(data.nodes.map(n=>n.id)),drag:null,pan:null};

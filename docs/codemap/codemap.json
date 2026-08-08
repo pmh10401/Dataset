@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T12:40:21Z",
-  "generated_from_commit": "81cea98bbac4efb99b9e80455907ea51fd11ac62",
+  "generated_at": "2026-08-08T12:59:18Z",
+  "generated_from_commit": "93a565d823c76821406fb11dc396115827312529",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2918,7 +2918,7 @@
       "boundary": "Active isolated research",
       "layer": 3,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Exp441 Task 7 fixed CLI/readiness/publication boundary is implemented, independently reviewed, and shipped at 7d403fed with 31 focused and 150 full tests passed. Task 8 pure bootstrap is parent-verified, independently reviewed, and shipped at 81cea98 after one test-hardening fix round with 7 focused and 157 full tests passed. Task 9 frozen-context label boundary is next but not implemented. The Exp441 path remains label-free and review-only: no official process, PID, checkpoint, publication, evaluation, SQLite session, or TEST-label access exists; official readiness/new/inspect/evaluate routes are gated by DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW. Existing Exp438/Exp439/Exp440 publication and lazy-evaluation paths remain frozen historical boundaries.",
+    "role": "Exp441 Task 9 adds a fail-closed, post-freeze-only TEST-label loader. It replays source and selector identity before a fresh publication gate, then uses one Exp417 descriptor-bound connection for one quick_check and exactly 1,117 ordered context queries. It validates actual sparse identities, closes the connection, and repeats publication/source/selector binding before returning immutable facts; it computes no metrics and writes no evaluation artifacts. Official readiness/new/inspect/evaluate remain gated until Task 12 final review.",
       "entrypoints": [
         "publish_exp438_antigravity",
         "inspect_publication_antigravity",
@@ -2933,7 +2933,8 @@
         "canonical_cli_status_antigravity",
         "project_f1_antigravity",
         "require_numpy_2_4_6_antigravity",
-        "paired_dataset_bootstrap_antigravity"
+    "paired_dataset_bootstrap_antigravity",
+    "load_frozen_context_labels_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py",
@@ -2946,7 +2947,8 @@
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_cli_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_task7_route_matrix_antigravity.py",
-        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_bootstrap_antigravity.py"
+    "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_bootstrap_antigravity.py",
+    "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py"
       ],
       "constraints": [
         "Publication requires exactly 1,117 completed datasets, failed=0, inactive PID, current_dataset=null, budget compliance, and prediction TEST-label access exactly zero.",
@@ -2955,7 +2957,8 @@
         "Exp441 final publisher pins the root and six exact authority files, parses and compares them, then explicitly revalidates retained root/namespace/file identities immediately before RENAME_EXCL; no mutable work follows that barrier.",
         "Task 8 requires NumPy 2.4.6, Generator(PCG64(44120260808)), exactly 20,000 paired int64 draws of shape 1,117, and linear 2.5/97.5 quantiles.",
         "Project F1 validates four finite nonnegative confusion counts through the precision/recall harmonic path; bootstrap CI endpoints are built-in floats and never feed prediction.",
-        "The Task 8 module imports no evaluator or SQLite dependency and only produces retrospective confidence-interval evidence."
+    "The Task 8 module imports no evaluator or SQLite dependency and only produces retrospective confidence-interval evidence.",
+    "Task 9 imports Exp417 only function-locally after identical publication/source/selector preflight, performs no metric or write operation, and rejects any post-read drift."
       ],
       "evidence": [
         {
@@ -3106,12 +3109,20 @@
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/bootstrap_antigravity.py",
           "symbol": "def require_numpy_2_4_6_antigravity("
         },
-        {
-          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/bootstrap_antigravity.py",
-          "symbol": "def paired_dataset_bootstrap_antigravity("
-        },
-        {
-          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_bootstrap_antigravity.py",
+    {
+      "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/bootstrap_antigravity.py",
+      "symbol": "def paired_dataset_bootstrap_antigravity("
+    },
+    {
+      "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
+      "symbol": "def load_frozen_context_labels_antigravity("
+    },
+    {
+      "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "symbol": "class Exp441FrozenContextLabelsAntigravityTests("
+    },
+    {
+      "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_bootstrap_antigravity.py",
           "symbol": "def test_paired_bootstrap_replays_exact_generator_and_linear_quantiles("
         },
         {
@@ -3767,8 +3778,8 @@
         }
       ]
     },
-    {
-      "from": "exp438_publication_evaluation",
+  {
+    "from": "exp438_publication_evaluation",
       "to": "exp417_inputs",
       "type": "calls",
       "evidence": [
@@ -3777,7 +3788,18 @@
           "symbol": "with verified_read_only_connection("
         }
       ]
-    },
+  },
+  {
+    "from": "exp438_publication_evaluation",
+    "to": "exp417_inputs",
+    "type": "lazy reads",
+    "evidence": [
+      {
+        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
+        "symbol": "from experiments.exp417_causal_multihorizon_shadow.inputs import verified_read_only_connection"
+      }
+    ]
+  },
     {
       "from": "exp438_frequency_runtime",
       "to": "exp425_database",
@@ -3971,13 +3993,15 @@
     },
     {
       "id": "exp441_immutable_attempt_flow",
-      "label": "Exp441 Task 8 reviewed handoff / Task 9 label boundary next",
-      "trigger": "Task 8 pure bootstrap is parent-verified, independently reviewed, and shipped at 81cea98 after one test-hardening fix round; 7 focused and 157 full tests passed. Task 9 frozen-context label boundary is next but not implemented. Do not run official readiness/new/inspect/evaluate until Task 12 final review (DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW).",
+      "label": "Exp441 Task 9 frozen-context lazy label read",
+      "trigger": "A future evaluation caller explicitly requests frozen-context labels; official readiness/new/inspect/evaluate remain prohibited until Task 12 final review (DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW).",
       "steps": [
         "exp438_frequency_runtime",
-        "exp438_publication_evaluation"
+        "exp438_publication_evaluation",
+        "exp417_inputs",
+        "sqlite_store"
       ],
-      "outcome": "The grouped Exp441 runtime creates a smallest-gap attempt, records parent-accepted fixed-11-worker source replay progress, finishes terminal progress and PID, pins the root plus all six evidence files, computes the authority identity, constructs CompletedAttempt while all seven descriptors remain open, restores SIGTERM exactly once while they remain open, sets installed false, final-revalidates, and directly returns that object. Independent synchronized construction and restoration mutation probes fail closed; Task 7 atomically writes canonical readiness through private staging and Darwin no-clobber ownership; a failed post-rename parent fsync is rolled back to recoverable failed evidence, and validation retains a descriptor pin through source replay before new starts exactly one immutable attempt; evaluation remains lazy and post-freeze. The stale fixed root is absent after recoverable Trash preservation recorded in docs/EXP441_PRECONTRACT_TRASH_MANIFEST_antigravity.json. The publisher retains a new grouped descriptor pin through strict final comparison and Darwin no-clobber rename. No SQLite, TEST labels, evaluator, official publication, or official process is opened. Task 8 review is shipped after one test-hardening fix round and computes only retrospective confidence-interval evidence through the exact frozen path; Task 9 frozen-context label boundary remains unimplemented. No official process, PID, checkpoint, publication, evaluation, SQLite, or TEST-label route was opened."
+      "outcome": "The loader first replays the exact label-free source snapshot and pure selection, binds canonical source-audit bytes to the inspected publication, and repeats publication inspection immediately before the delayed Exp417 import. It then opens one descriptor-bound connection, checks SQLite once, issues exactly one TEST-label query for each of the 1,117 frozen context datasets, validates actual returned identities, closes the connection, and repeats all frozen bindings before returning immutable labels. It performs no metric calculation and writes no artifact."
     }
   ],
   "unknown_relationships": 0
