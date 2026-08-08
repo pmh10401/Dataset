@@ -116,6 +116,12 @@ candidate_per_dataset = 1
 bootstrap_seed = 44120260808
 bootstrap_samples = 20000
 bootstrap_quantile_method = linear
+bootstrap_numpy_version = 2.4.6
+bootstrap_bit_generator = PCG64
+bootstrap_index_dtype = int64
+bootstrap_endpoint = false
+reproduction_float_abs_tolerance = 1e-15
+reproduction_float_rel_tolerance = 0.0
 ```
 
 예측 단계에서 허용하는 입력은 다음뿐이다.
@@ -228,10 +234,16 @@ retained = 30
 TP = 15
 FP = 15
 candidate precision = 0.50
-micro F1 delta = +0.0018284862
-micro paired-bootstrap 95% CI = [0.0000454137, 0.0038311981]
-macro F1 delta = +0.0124440466
-macro paired-bootstrap 95% CI = [0.0066248881, 0.0191584602]
+rescued datasets = 15
+regressed datasets = 0
+baseline confusion = TP 1915 / FP 303 / FN 2003 / TN 191679
+Hard union Exp441 confusion = TP 1930 / FP 318 / FN 1988 / TN 191664
+baseline micro F1 = 0.6241851368970013
+Hard union Exp441 micro F1 = 0.6260136230943887
+micro F1 delta = +0.0018284861973874023
+micro paired-bootstrap 95% CI = [0.00005373870255999115, 0.003814109586073529]
+macro F1 delta = +0.012444046553267682
+macro paired-bootstrap 95% CI = [0.006535362578334826, 0.019158460161145925]
 maximum strong-dataset loss = 0
 ```
 
@@ -368,15 +380,77 @@ TEST 결과를 보고 선택한 규칙을 독립 검증으로 바꾸지는 않�
 - prediction 이전 label access count가 정확히 0
 
 bootstrap은 1,117개 dataset cluster를 replacement 방식으로 paired 재표본화하며
-seed `44120260808`, NumPy quantile `method="linear"`, 2.5/97.5 percentile을
-사용한다. zero-denominator F1은 0으로 고정한다. 산출물에는
+다음 구현을 그대로 사용한다. 비슷한 식이나 다른 난수 API로 바꾸지 않는다.
+
+1. dataset 순서는 SHA256이 동결된 Exp440
+   `context_antigravity.json["datasets"]`의 tuple 순서 그대로다. 별도 정렬,
+   set 순회, publication summary 순서는 사용하지 않는다.
+2. 각 dataset 행은
+   `[baseline_tp, baseline_fp, baseline_fn, baseline_tn, union_tp, union_fp,
+   union_fn, union_tn, dataset_f1_delta]` 순서의 `np.float64` 배열이다.
+3. F1은 기존 프로젝트 구현과 같은 아래 precision/recall 조화평균식만 사용한다.
+   직접식 `2TP / (2TP + FP + FN)`은 수학적으로 같지만 마지막 bit가 달라질 수
+   있으므로 공식 재현 계산에는 사용하지 않는다.
+
+```python
+precision = tp / (tp + fp) if tp + fp else 0.0
+recall = tp / (tp + fn) if tp + fn else 0.0
+f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+```
+
+4. 공식 환경은 NumPy `2.4.6`으로 고정한다. readiness는 버전이 다르면 평가를
+   시작하기 전에 실패한다.
+5. 난수 생성과 각 반복의 추출 호출은 정확히 다음과 같다. 20,000개 반복마다
+   `integers`를 정확히 한 번 호출한다.
+
+```python
+rng = np.random.Generator(np.random.PCG64(44120260808))
+for repetition in range(20000):
+    indices = rng.integers(
+        low=0,
+        high=1117,
+        size=1117,
+        dtype=np.int64,
+        endpoint=False,
+    )
+    sample = rows[indices]
+```
+
+6. 각 sample의 micro confusion은 앞의 네 열과 다음 네 열을 각각
+   `sum(axis=0, dtype=np.float64)`로 합친 뒤 위 F1 식의 차이를 구한다. macro는
+   `sample[:, 8].mean(dtype=np.float64)`다.
+7. 구간은 정확히 다음 호출로 계산한다.
+
+```python
+percentiles = np.asarray([0.025, 0.975], dtype=np.float64)
+ci95 = np.quantile(samples, percentiles, method="linear")
+```
+
+이 규칙으로 기대하는 aggregate와 point/bootstrap 값은 위 탐색 replay 블록의
+full-precision 숫자다. 감사용 IEEE-754 신원은 다음과 같다.
+
+```text
+micro_delta.hex = 0x1.df53a1ad05800p-10
+macro_delta.hex = 0x1.97c43a7cf3ab8p-7
+micro_ci_lower.hex = 0x1.c2cafc29c4668p-15
+micro_ci_upper.hex = 0x1.f3ec47deffdf7p-9
+macro_ci_lower.hex = 0x1.ac4d308a9c7cep-8
+macro_ci_upper.hex = 0x1.39e467f55da52p-6
+```
+
+후보 좌표, dataset 순서, 구조 수, confusion 정수, TP/FP, rescue/regression 수는
+정확히 같아야 한다. point와 CI의 유한 float 여섯 개는 각 기대값에 대해
+`math.isclose(observed, expected, rel_tol=0.0, abs_tol=1e-15)`를 모두 만족해야
+같다고 판정한다. tolerance를 반올림에 사용하지 않고 상태 판정에만 사용한다.
+NaN 또는 무한대는 engineering failure다. 산출물에는
 `bootstrap_interpretation = "descriptive_post_selection"`과
 `confirmatory_statistical_claim = false`를 함께 기록한다.
 
-source hash, population, 선택 규칙, 후보 수 또는 label 차단선이 다르면
+source hash, population, 선택 규칙, 후보 수, confusion 정수 또는 label 차단선이 다르면
 `engineering_reproduction_failed`로 기록한다. 구조는 같지만 사후 지표가 위 탐색
-replay와 다르면 `retrospective_reproduction_discrepancy`로 기록하고 원인을 감사한다.
-구조와 지표가 모두 재현되면 `retrospective_reproduction_complete`로 기록한다.
+replay의 full-precision 값에서 위 절대 허용오차를 벗어나면
+`retrospective_reproduction_discrepancy`로 기록하고 원인을 감사한다. 구조와 지표가
+모두 재현되면 `retrospective_reproduction_complete`로 기록한다.
 세 상태 모두 `scientific_winner_selected = false`, review-only,
 operational-alert-ineligible이며 CHAMPION_LEDGER를 Exp441로 바꾸지 않는다. 같은
 실험에서 예산, 순위, source를 바꾸지 않으며 변경은 새 실험 번호와 새 사전등록으로만
