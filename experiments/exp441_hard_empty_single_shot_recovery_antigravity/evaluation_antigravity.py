@@ -20,6 +20,7 @@ from .contracts_antigravity import (
     FrozenSourceSnapshotAntigravity,
     RetrospectiveEvaluationAntigravity,
     SelectionResultAntigravity,
+    retrospective_status_from_evidence_antigravity,
     validate_production_selection_antigravity,
 )
 from .bootstrap_antigravity import paired_dataset_bootstrap_antigravity, project_f1_antigravity
@@ -198,18 +199,6 @@ def load_frozen_context_labels_antigravity() -> FrozenContextLabelsAntigravity:
     )
 
 
-_EXPECTED_BASELINE_CONFUSION_ANTIGRAVITY = (1915, 303, 2003, 191679)
-_EXPECTED_UNION_CONFUSION_ANTIGRAVITY = (1930, 318, 1988, 191664)
-_EXPECTED_CANDIDATE_COUNTS_ANTIGRAVITY = (15, 15)
-_EXPECTED_RESCUED_REGRESSED_ANTIGRAVITY = (15, 0)
-_EXPECTED_EXACT_FLOATS_ANTIGRAVITY = (0.0, 0.6241851368970013, 0.6260136230943887)
-_EXPECTED_TOLERANT_FLOATS_ANTIGRAVITY = (
-    0.0018284861973874023, 0.012444046553267682,
-    0.00005373870255999115, 0.003814109586073529,
-    0.006535362578334826, 0.019158460161145925,
-)
-
-
 def _is_regression_antigravity(union_f1: float, baseline_f1: float) -> bool:
     return union_f1 < baseline_f1
 
@@ -298,27 +287,8 @@ def _compute_sparse_retrospective_antigravity(
 def _retrospective_status_antigravity(
     facts: EvaluationFactsAntigravity, bootstrap: BootstrapResultAntigravity,
 ) -> str:
-    """Classify fixed retrospective constants with engineering failures taking precedence."""
-    if not isinstance(facts, EvaluationFactsAntigravity) or not isinstance(bootstrap, BootstrapResultAntigravity):
-        return "engineering_reproduction_failed"
-    exact = (
-        facts.baseline_confusion == _EXPECTED_BASELINE_CONFUSION_ANTIGRAVITY,
-        facts.union_confusion == _EXPECTED_UNION_CONFUSION_ANTIGRAVITY,
-        (facts.candidate_tp, facts.candidate_fp) == _EXPECTED_CANDIDATE_COUNTS_ANTIGRAVITY,
-        (facts.rescued_datasets, facts.regressed_datasets) == _EXPECTED_RESCUED_REGRESSED_ANTIGRAVITY,
-        (facts.maximum_strong_loss, facts.baseline_f1, facts.union_f1) == _EXPECTED_EXACT_FLOATS_ANTIGRAVITY,
-    )
-    all_values = (
-        facts.maximum_strong_loss, facts.baseline_f1, facts.union_f1, facts.micro_delta, facts.macro_delta,
-        *bootstrap.micro_ci, *bootstrap.macro_ci,
-    )
-    if not all(type(value) is float and math.isfinite(value) for value in all_values) or not all(exact):
-        return "engineering_reproduction_failed"
-    observed = (facts.micro_delta, facts.macro_delta, *bootstrap.micro_ci, *bootstrap.macro_ci)
-    if any(not _is_tolerant_reproduction_value_antigravity(actual, expected)
-           for actual, expected in zip(observed, _EXPECTED_TOLERANT_FLOATS_ANTIGRAVITY, strict=True)):
-        return "retrospective_reproduction_discrepancy"
-    return "retrospective_reproduction_complete"
+    """Compatibility facade for the contract-owned frozen classifier."""
+    return retrospective_status_from_evidence_antigravity(facts, bootstrap)
 
 
 def _is_tolerant_reproduction_value_antigravity(actual: float, expected: float) -> bool:

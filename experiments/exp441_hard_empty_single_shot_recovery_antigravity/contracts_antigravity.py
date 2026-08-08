@@ -7,6 +7,8 @@ import math
 from types import MappingProxyType
 from typing import Iterable, Mapping
 
+import numpy as np
+
 
 _TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY = (
     "source_snapshot_antigravity.json", "selection_antigravity.json", "progress_antigravity.json",
@@ -546,6 +548,51 @@ def _finite_builtin_float_antigravity(value: object, name: str) -> float:
     return value
 
 
+_RETROSPECTIVE_EXPECTED_BASELINE_CONFUSION_ANTIGRAVITY = (1915, 303, 2003, 191679)
+_RETROSPECTIVE_EXPECTED_UNION_CONFUSION_ANTIGRAVITY = (1930, 318, 1988, 191664)
+_RETROSPECTIVE_EXPECTED_CANDIDATE_COUNTS_ANTIGRAVITY = (15, 15)
+_RETROSPECTIVE_EXPECTED_RESCUED_REGRESSED_ANTIGRAVITY = (15, 0)
+_RETROSPECTIVE_EXPECTED_EXACT_FLOATS_ANTIGRAVITY = (0.0, 0.6241851368970013, 0.6260136230943887)
+_RETROSPECTIVE_EXPECTED_TOLERANT_FLOATS_ANTIGRAVITY = (
+    0.0018284861973874023, 0.012444046553267682,
+    0.00005373870255999115, 0.003814109586073529,
+    0.006535362578334826, 0.019158460161145925,
+)
+
+
+def _retrospective_project_f1_antigravity(confusion: tuple[int, int, int, int]) -> float:
+    tp, fp, fn, _tn = (float(value) for value in confusion)
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
+    return float((2.0 * precision * recall) / (precision + recall)) if precision + recall else 0.0
+
+
+def retrospective_status_from_evidence_antigravity(
+    facts: "EvaluationFactsAntigravity", bootstrap: "BootstrapResultAntigravity",
+) -> str:
+    """Classify immutable aggregate and bootstrap evidence without rerunning bootstrap."""
+    if not isinstance(facts, EvaluationFactsAntigravity) or not isinstance(bootstrap, BootstrapResultAntigravity):
+        return "engineering_reproduction_failed"
+    exact = (
+        facts.baseline_confusion == _RETROSPECTIVE_EXPECTED_BASELINE_CONFUSION_ANTIGRAVITY,
+        facts.union_confusion == _RETROSPECTIVE_EXPECTED_UNION_CONFUSION_ANTIGRAVITY,
+        (facts.candidate_tp, facts.candidate_fp) == _RETROSPECTIVE_EXPECTED_CANDIDATE_COUNTS_ANTIGRAVITY,
+        (facts.rescued_datasets, facts.regressed_datasets) == _RETROSPECTIVE_EXPECTED_RESCUED_REGRESSED_ANTIGRAVITY,
+        (facts.maximum_strong_loss, facts.baseline_f1, facts.union_f1) == _RETROSPECTIVE_EXPECTED_EXACT_FLOATS_ANTIGRAVITY,
+    )
+    values = (
+        facts.maximum_strong_loss, facts.baseline_f1, facts.union_f1, facts.micro_delta, facts.macro_delta,
+        *bootstrap.micro_ci, *bootstrap.macro_ci,
+    )
+    if not all(type(value) is float and math.isfinite(value) for value in values) or not all(exact):
+        return "engineering_reproduction_failed"
+    observed = (facts.micro_delta, facts.macro_delta, *bootstrap.micro_ci, *bootstrap.macro_ci)
+    if any(not math.isclose(actual, expected, rel_tol=0.0, abs_tol=1e-15)
+           for actual, expected in zip(observed, _RETROSPECTIVE_EXPECTED_TOLERANT_FLOATS_ANTIGRAVITY, strict=True)):
+        return "retrospective_reproduction_discrepancy"
+    return "retrospective_reproduction_complete"
+
+
 def _evaluation_confusion_antigravity(value: object, name: str) -> tuple[int, int, int, int]:
     try:
         values = tuple(value)  # type: ignore[arg-type]
@@ -578,6 +625,11 @@ class DatasetEvaluationFactsAntigravity:
             object.__setattr__(self, name, _finite_builtin_float_antigravity(getattr(self, name), name))
         for name in ("candidate_tp", "candidate_fp"):
             _positive_int(getattr(self, name), name, allow_zero=True)
+        baseline_f1 = _retrospective_project_f1_antigravity(self.baseline_confusion)
+        union_f1 = _retrospective_project_f1_antigravity(self.union_confusion)
+        if (self.baseline_f1 != baseline_f1 or self.union_f1 != union_f1
+                or self.delta != union_f1 - baseline_f1):
+            raise ValueError("dataset evaluation metrics are inconsistent")
 
 
 @dataclass(frozen=True)
@@ -624,11 +676,39 @@ class RetrospectiveEvaluationAntigravity:
             copied_rows.append((*values[:8], _finite_builtin_float_antigravity(values[8], "bootstrap delta")))  # type: ignore[arg-type]
         if not isinstance(self.facts, EvaluationFactsAntigravity) or not isinstance(self.bootstrap, BootstrapResultAntigravity):
             raise ValueError("retrospective evidence is invalid")
-        if self.status not in {
-            "engineering_reproduction_failed", "retrospective_reproduction_discrepancy",
-            "retrospective_reproduction_complete",
-        }:
-            raise ValueError("retrospective status is invalid")
+        derived_rescued = tuple(item.dataset for item in dataset_facts
+                                if item.baseline_confusion[0] == 0 and item.union_confusion[0] >= 1)
+        derived_regressed = tuple(item.dataset for item in dataset_facts
+                                  if item.union_f1 < item.baseline_f1)
+        if rescued != derived_rescued or regressed != derived_regressed:
+            raise ValueError("retrospective dataset classifications are inconsistent")
+        expected_rows = tuple(
+            (*item.baseline_confusion, *item.union_confusion, item.delta) for item in dataset_facts
+        )
+        if tuple(copied_rows) != expected_rows:
+            raise ValueError("bootstrap rows are inconsistent")
+        baseline = tuple(sum(item.baseline_confusion[index] for item in dataset_facts) for index in range(4))
+        union = tuple(sum(item.union_confusion[index] for item in dataset_facts) for index in range(4))
+        candidate_tp = sum(item.candidate_tp for item in dataset_facts)
+        candidate_fp = sum(item.candidate_fp for item in dataset_facts)
+        baseline_f1 = _retrospective_project_f1_antigravity(baseline)
+        union_f1 = _retrospective_project_f1_antigravity(union)
+        micro_delta = union_f1 - baseline_f1
+        macro_delta = float(np.asarray([item.delta for item in dataset_facts], dtype=np.float64).mean(dtype=np.float64))
+        maximum_strong_loss = max((
+            item.baseline_f1 - item.union_f1
+            for item in dataset_facts
+            if item.union_f1 < item.baseline_f1 and item.baseline_f1 >= 0.8
+        ), default=0.0)
+        if (self.facts.baseline_confusion != baseline or self.facts.union_confusion != union
+                or self.facts.candidate_tp != candidate_tp or self.facts.candidate_fp != candidate_fp
+                or self.facts.rescued_datasets != len(rescued) or self.facts.regressed_datasets != len(regressed)
+                or self.facts.maximum_strong_loss != maximum_strong_loss
+                or self.facts.baseline_f1 != baseline_f1 or self.facts.union_f1 != union_f1
+                or self.facts.micro_delta != micro_delta or self.facts.macro_delta != macro_delta):
+            raise ValueError("retrospective aggregate is inconsistent")
+        if self.status != retrospective_status_from_evidence_antigravity(self.facts, self.bootstrap):
+            raise ValueError("retrospective status is inconsistent")
         if type(self.scientific_winner_selected) is not bool or self.scientific_winner_selected is not False:
             raise ValueError("scientific winner must remain false")
         object.__setattr__(self, "dataset_facts", dataset_facts)

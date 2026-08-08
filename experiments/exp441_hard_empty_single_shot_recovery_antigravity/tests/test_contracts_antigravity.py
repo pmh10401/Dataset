@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 from types import MappingProxyType
 import unittest
 
@@ -37,33 +38,37 @@ def _ranked(candidates: tuple[CandidateEvidenceAntigravity, ...], selected_count
     )
 
 
+def _coherent_retrospective() -> RetrospectiveEvaluationAntigravity:
+    dataset_facts = tuple(DatasetEvaluationFactsAntigravity(
+        f"D{index:04d}", (0, 0, 0, 1), (0, 0, 0, 1), 0.0, 0.0, 0.0, 0, 0,
+    ) for index in range(1117))
+    rows = tuple((0, 0, 0, 1, 0, 0, 0, 1, 0.0) for _ in range(1117))
+    return RetrospectiveEvaluationAntigravity(
+        dataset_facts, (), (), rows,
+        EvaluationFactsAntigravity((0, 0, 0, 1117), (0, 0, 0, 1117), 0, 0, 0, 0,
+                                   0.0, 0.0, 0.0, 0.0, 0.0),
+        BootstrapResultAntigravity((0.0, 0.0), (0.0, 0.0)),
+        "engineering_reproduction_failed", False,
+    )
+
+
 class Exp441ContractsAntigravityTests(unittest.TestCase):
     def test_retrospective_contracts_are_deeply_immutable_and_require_exact_row_shape(self) -> None:
         """Changing a caller-owned fact/row container must not change frozen evaluation evidence."""
-        dataset_facts = [DatasetEvaluationFactsAntigravity(
-            f"D{index:04d}", (0, 0, 1, 1), (0, 1, 1, 1), 0.0, 0.0, 0.0, 0, 1,
-        ) for index in range(1117)]
-        rows = [(0, 0, 1, 1, 0, 1, 1, 1, 0.0) for _ in range(1117)]
-        facts = EvaluationFactsAntigravity(
-            (0, 0, 1117, 1117), (0, 1117, 1117, 1117), 0, 1117, 0, 0,
-            0.0, 0.0, 0.0, 0.0, 0.0,
-        )
-        result = RetrospectiveEvaluationAntigravity(
-            dataset_facts, ["D0000"], [], rows, facts,
-            BootstrapResultAntigravity((0.0, 0.0), (0.0, 0.0)),
-            "engineering_reproduction_failed", False,
-        )
+        result = _coherent_retrospective()
+        dataset_facts = list(result.dataset_facts)
+        rows = list(result.bootstrap_rows)
         dataset_facts[0] = DatasetEvaluationFactsAntigravity(
             "changed", (0, 0, 1, 1), (0, 0, 1, 1), 0.0, 0.0, 0.0, 0, 0,
         )
         rows[0] = (9, 9, 9, 9, 9, 9, 9, 9, 9.0)
         self.assertEqual(result.dataset_facts[0].dataset, "D0000")
-        self.assertEqual(result.bootstrap_rows[0], (0, 0, 1, 1, 0, 1, 1, 1, 0.0))
+        self.assertEqual(result.bootstrap_rows[0], (0, 0, 0, 1, 0, 0, 0, 1, 0.0))
         self.assertIsInstance(result.dataset_facts, tuple)
         self.assertIsInstance(result.bootstrap_rows, tuple)
         with self.assertRaises(ValueError):
             RetrospectiveEvaluationAntigravity(
-                (), (), (), ((0, 0, 0, 0, 0, 0, 0, 0, 0.0),), facts,
+                (), (), (), ((0, 0, 0, 0, 0, 0, 0, 0, 0.0),), result.facts,
                 BootstrapResultAntigravity((0.0, 0.0), (0.0, 0.0)),
                 "engineering_reproduction_failed", False,
             )
@@ -78,15 +83,20 @@ class Exp441ContractsAntigravityTests(unittest.TestCase):
             DatasetEvaluationFactsAntigravity(
                 "B", (0, 0, 1, 1), (0, 1, 1, 1), 0, 0.0, 0.0, 0, 1,
             )
-        facts = EvaluationFactsAntigravity(
-            (0, 0, 1, 1), (0, 0, 1, 1), 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        )
-        rows = tuple((0, 0, 1, 1, 0, 0, 1, 1, 0.0) for _ in range(1117))
         with self.assertRaises(ValueError):
-            RetrospectiveEvaluationAntigravity(
-                (), (), (), rows, facts, BootstrapResultAntigravity((0.0, 0.0), (0.0, 0.0)),
-                "engineering_reproduction_failed", 0,  # type: ignore[arg-type]
-            )
+            replace(_coherent_retrospective(), scientific_winner_selected=0)  # type: ignore[arg-type]
+
+    def test_retrospective_contract_rejects_contradictory_rows_aggregates_and_status(self) -> None:
+        """A Task 11 consumer must not receive a schema-valid but self-contradictory evaluation."""
+        result = _coherent_retrospective()
+        contradictory_rows = list(result.bootstrap_rows)
+        contradictory_rows[0] = (0, 0, 1, 0, 0, 0, 1, 0, 0.0)
+        with self.assertRaisesRegex(ValueError, "bootstrap row"):
+            replace(result, bootstrap_rows=contradictory_rows)
+        with self.assertRaisesRegex(ValueError, "aggregate"):
+            replace(result, facts=replace(result.facts, candidate_fp=1))
+        with self.assertRaisesRegex(ValueError, "status"):
+            replace(result, status="retrospective_reproduction_complete")
     def test_terminal_authority_identity_is_ordered_complete_and_byte_sensitive(self) -> None:
         """Every one of the six fixed terminal files participates in one deterministic identity."""
         authority = {

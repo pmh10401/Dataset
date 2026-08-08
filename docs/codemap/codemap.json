@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T13:54:30Z",
-  "generated_from_commit": "a80d0b008838a0de3c07aaa23ed6978733873422",
+  "generated_at": "2026-08-08T14:16:09Z",
+  "generated_from_commit": "b3d4b57364263b4a400cc0ce076f3c55d65c716f",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2926,7 +2926,7 @@
       "boundary": "Active isolated research",
       "layer": 3,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Exp441 Task 9 adds a fail-closed, post-freeze-only TEST-label loader. It replays source and selector identity before a fresh publication gate, then uses one Exp417 descriptor-bound connection for one quick_check and exactly 1,117 ordered context queries. Task 10 consumes only the resulting immutable snapshot: it preserves context and sparse coordinate identities, computes confusion/F1/rescue/regression facts and one exact Task 8 bootstrap input/result entirely in memory, classifies fixed retrospective constants with 1e-15 tolerance only for two deltas and four CI endpoints, and always records no scientific winner. It does not reopen Task 9, publication/source/selector routes, SQLite, filesystem, or official evaluation routes. Official readiness/new/inspect/evaluate remain gated until Task 12 final review.",
+      "role": "Exp441 Task 9 adds a fail-closed, post-freeze-only TEST-label loader. It replays source and selector identity before a fresh publication gate, then uses one Exp417 descriptor-bound connection for one quick_check and exactly 1,117 ordered context queries. Task 10 consumes only the resulting immutable snapshot: it preserves context and sparse coordinate identities, computes confusion/F1/rescue/regression facts and one exact Task 8 bootstrap input/result entirely in memory, and always records no scientific winner. Its immutable retrospective contract now reconciles each ordered dataset fact, bootstrap row, rescue/regression list, aggregate count/F1/delta/strong-loss field, and the contract-owned frozen status classifier without rerunning bootstrap. It does not reopen Task 9, publication/source/selector routes, SQLite, filesystem, or official evaluation routes. Official readiness/new/inspect/evaluate remain gated until Task 12 final review.",
       "entrypoints": [
         "publish_exp438_antigravity",
         "inspect_publication_antigravity",
@@ -4007,7 +4007,7 @@
         "exp417_inputs",
         "sqlite_store"
       ],
-      "outcome": "The Task 9 loader remains the sole delayed label boundary. Task 10 neither invokes it nor touches any source/publication/selector/SQLite/filesystem route: it uses the snapshot context order and actual sparse identities to calculate immutable per-dataset and aggregate confusion/F1/rescue/regression facts, calls the fixed Task 8 bootstrap once on the exact 1,117 by 9 float64 rows, compares only fixed constants, and returns a no-winner retrospective status. Task 11 alone owns preflight exception classification and artifact publication."
+      "outcome": "The Task 9 loader remains the sole delayed label boundary. Task 10 neither invokes it nor touches any source/publication/selector/SQLite/filesystem route: it uses snapshot context order and actual sparse identities to calculate immutable dataset and aggregate evidence. It calls the fixed Task 8 bootstrap once on exact 1,117 by 9 float64 rows, then the same immutable bundle is structurally reconciled and classified with no winner. Task 11 alone owns preflight exception classification and artifact publication."
     }
   ],
   "unknown_relationships": 0
