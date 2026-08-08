@@ -10,6 +10,8 @@ selector, source, threshold, budget, seed, routing과 TEST-label 차단선은 �
 - 기준 commit: `f5df76e377a355eaf1613b7864186c7a618b7756`
 - 구현 commit: `5747a47f`
 - review-fix commit: `5c946ba73d012760ba4309d46f3b4bcb499cf0cf`
+- reviewed commit: `c4783d695ab3d8b9e03d605a46143c3dcaeb7a6b`
+- Sol 재검토: `VERDICT: ship` (Critical 0, Important 0, Minor 0)
 - reviewed design SHA256: `cf0b6e916a85cdf21c8cc28c735894f927b63e4c33aa4d62e95753540bd06a7b`
 - reviewed preregistration SHA256: `ab909c35d0f4d0252d1a29fa80ea27d51d0ba56175c8cc0d8d3428092ec2746c`
 - Exp442 run identity:
@@ -20,6 +22,15 @@ selector, source, threshold, budget, seed, routing과 TEST-label 차단선은 �
   `d6086725b68aaf3de13c006aa817faa9daa80257a36965729935f1590b389ffb`
 - 동결 selected-coordinate identity SHA256:
   `db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048`
+- readiness SHA256: `0ea3da605eeb3ae08c719c20c895846799a79a52951881fbfccd4217ad25aa14`
+- readiness source snapshot SHA256: `63a54512fbfbf7aef0db2c8ae12fe52af5f9d98a276095c2231e001c2c014f03`
+- frozen prediction SHA256: `b79bad6012ad6bc07050ade9968e815796a2cc871b5c85d63f0bd7dbdf6f81f4`
+- publication artifact-map SHA256: `14e2662a8880bd20658bb849d476391654ee6283f5abc8149656cf73885c69c1`
+- candidate ranking SHA256: `d8d858cd74553aa64f6f0a5424064872b59f682fed1c8b2ace63fffba6ad20cc`
+- source audit SHA256: `36aa46b5c8bc07b7851d84739af7ba123c840a01c85893e56cf0eb4a6b5311ee`
+- selection SHA256: `06004f18dbd9b0df3fa857bb8b1a9fd7eafd4d927f3736fb8cfb25db56b72408`
+- evaluation artifact-map SHA256: `e1155acf05e00935710243e875eaeb2d13047d6236d026ee93fe654fc33c670b`
+- primary evaluation SHA256: `f432ffdf530b2e32bc7a62fec6c7d07cff2eff9f3049489b5e03136b445a33cf`
 
 ## 고친 문제
 
@@ -88,15 +99,37 @@ producer 수정 후 두 테스트와 전체 회귀가 통과했다.
 - selected: 30
 - production workers: CPU 11
 - production source events: 1,117
-- label access: 0
+- pre-freeze label access: 0
 - finite evidence: true
 - 11-worker와 순차 기준 source payload: 완전 동일
 - 11-worker와 순차 기준 selection payload: 완전 동일
 - 11-worker와 순차 기준 snapshot payload: 완전 동일
 
-검증 시 Exp441 불변 root의 7개 파일 tree SHA256은
-`8d72eee1f04529771963da340667b049af2cab7e9aec1a5abdcc4ba5229d0880`이며,
-Exp442 공식 root는 아직 존재하지 않았다.
+검증한 뒤 Exp442 공식 root가 생성되었고 readiness, `new`, `inspect`, `evaluate`가
+모두 끝났다. 공식 실행은 1,117개를 모두 처리했고 오류는 0개였다. 종료 상태에서
+`eta_seconds`는 `null`이며, 마지막 실행 기록은 PID 32029(현재 비활성), CPU 11개
+worker, 경과 49.68초, 처리량 약 22.48개/초다. 최종 후보 수는 provisional 840,
+outside Hard 394, eligible 73, winner 49, selected 30이다.
+
+## 결과를 쉽게 읽기
+
+Exp442가 추가한 30개 후보 중 실제 TEST 이상과 맞은 것은 15개였고, 틀린 경보도
+15개였다. 후보 정밀도는 50%다. 따라서 놓쳤던 이상 15개를 새로 찾았으며, 기존
+강한 데이터셋에서 성능이 떨어진 경우는 0개였다.
+
+| 구분 | 기존 Exp404 Hard | Exp442 union |
+|---|---:|---:|
+| 맞게 찾음(TP) | 1,915 | 1,930 |
+| 잘못 경보(FP) | 303 | 318 |
+| 놓침(FN) | 2,003 | 1,988 |
+| 정상(TN) | 191,679 | 191,664 |
+
+전체 F1은 `0.6242`에서 `0.6260`으로 `+0.00183` 올라갔고, 데이터셋별 평균
+F1 변화는 `+0.01244`였다. 사전등록한 paired bootstrap 95% 구간도 micro
+`[0.000054, 0.003814]`, macro `[0.006535, 0.019158]`로 모두 0보다 컸다.
+다만 이는 TEST label을 prediction에 쓰지 않은 뒤 동결 후 평가한 회고적 결과다.
+prediction 단계에서는 label 접근이 0회였고, TEST label은 freeze 이후 `evaluate`에서만
+열었다.
 
 ## MLX 판단
 
@@ -104,16 +137,14 @@ Exp442 공식 root는 아직 존재하지 않았다.
 MLX로 표현할 대상이 없으므로 `inapplicable_no_tensor_stage`로 고정하고 CPU 11
 workers를 유지한다. 과학 계산을 GPU 사용 명분으로 다시 쓰지 않는다.
 
-## 다음 gate
+## 실행 완료 및 일시정지
 
-현재 남은 gate는 Sol 재검토뿐이다. 이 gate가 끝나기 전에는 공식 Exp442 root가
-없고 readiness와 `new`를 시작하지 않는다.
+공식 readiness, 1,117개 label-free `new`, `inspect`, prediction 동결, 그리고
+freeze 이후 TEST label을 사용하는 `evaluate`까지 모두 완료했다. 모든 사전등록
+회고 평가 gate는 통과했지만, 이번 결과는 기존 연구 흐름에서 정한 adaptive
+follow-up의 기술 재현이므로 `independent_validation=false`, `review_only=true`다.
+따라서 운영 자동 경보나 새 scientific champion으로 승격하지 않는다.
 
-1. fresh Sol High 재검토에서 중요한 문제가 없어야 한다.
-2. 깨끗한 reviewed commit에서 Exp442 readiness를 한 번 생성한다.
-3. 새 root에서 1,117개 label-free `new`를 실행하고 `inspect`로 prediction을 동결한다.
-4. prediction SHA와 label access 0을 확인한 뒤에만 `evaluate`를 실행한다.
-
-현재 공식 Exp442 root/readiness/new/prediction/evaluation은 모두 미시작 또는 부재다.
-기술 실행과 사후 재현이 성공해도 Exp442는 adaptive, descriptive, review-only다.
-독립 검증, 운영 경보 정책 또는 새 champion으로 승격하지 않는다.
+현재 Exp442를 완료·일시정지하고 다음 방향을 함께 결정할 때까지 새 실험은 자동으로
+시작하지 않는다. 다음 실험을 시작할 때는 반드시 새 번호와 새 사전등록으로
+분리한다.

@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-09T03:03:43+09:00",
+  "updated_at": "2026-08-09T03:28:08+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -498,7 +498,7 @@
     {
       "id": "Exp442",
       "kind": "terminal_eta_publication_contract_repair",
-      "status": "review_fix_and_codemap_complete_sol_rereview_pending",
+      "status": "official_completed_evaluated_review_only_paused_awaiting_direction",
       "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
       "base_commit": "f5df76e377a355eaf1613b7864186c7a618b7756",
       "documents": [
@@ -521,23 +521,56 @@
       "implementation_commit": "5747a47fa8d996e549c4b9536e5ecbfeea87dfcf",
       "review_fix_commit": "5c946ba73d012760ba4309d46f3b4bcb499cf0cf",
       "review_fix_codemap_commit": "04560d0d6ecaa43798e07369bea17968a70251dc",
+      "reviewed_commit": "c4783d695ab3d8b9e03d605a46143c3dcaeb7a6b",
+      "review_verdict": "ship",
+      "review_critical_findings": 0,
+      "review_important_findings": 0,
+      "review_minor_findings": 0,
       "implementation_report": "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md",
       "selected_coordinate_identity_sha256": "db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048",
       "scientific_changes": [],
       "engineering_changes": ["normalize inactive terminal eta_seconds to JSON null before publication"],
       "backend": "cpu",
       "cpu_workers": 11,
-      "prediction_phase_started": false,
-      "prediction_sha256": null,
-      "evaluation_sha256": null,
-      "test_labels_opened": false,
-      "label_access_count": 0,
+      "official_readiness": true,
+      "official_run_started": true,
+      "run_root_exists": true,
+      "readiness_sha256": "0ea3da605eeb3ae08c719c20c895846799a79a52951881fbfccd4217ad25aa14",
+      "readiness_source_snapshot_sha256": "63a54512fbfbf7aef0db2c8ae12fe52af5f9d98a276095c2231e001c2c014f03",
+      "runtime": {
+        "pid": 32029,
+        "pid_os_live": false,
+        "completed": 1117,
+        "imported": 1117,
+        "success": 1117,
+        "errors": 0,
+        "eta_seconds": null,
+        "elapsed_seconds": 49.67885833396576,
+        "throughput_records_per_second": 22.48441364113031,
+        "provisional_candidates": 840,
+        "outside_hard_candidates": 394,
+        "eligible_candidates": 73,
+        "winner_datasets": 49,
+        "selected_candidates": 30
+      },
+      "prediction_phase_started": true,
+      "prediction_phase_complete": true,
+      "prediction_sha256": "b79bad6012ad6bc07050ade9968e815796a2cc871b5c85d63f0bd7dbdf6f81f4",
+      "publication_artifact_map_sha256": "14e2662a8880bd20658bb849d476391654ee6283f5abc8149656cf73885c69c1",
+      "candidate_ranking_sha256": "d8d858cd74553aa64f6f0a5424064872b59f682fed1c8b2ace63fffba6ad20cc",
+      "source_audit_sha256": "36aa46b5c8bc07b7851d84739af7ba123c840a01c85893e56cf0eb4a6b5311ee",
+      "selection_sha256": "06004f18dbd9b0df3fa857bb8b1a9fd7eafd4d927f3736fb8cfb25db56b72408",
+      "evaluation_artifact_map_sha256": "e1155acf05e00935710243e875eaeb2d13047d6236d026ee93fe654fc33c670b",
+      "evaluation_sha256": "f432ffdf530b2e32bc7a62fec6c7d07cff2eff9f3049489b5e03136b445a33cf",
+      "publication_status": "complete_inspect_parity",
+      "evaluation_status": "retrospective_reproduction_complete",
+      "test_labels_opened": true,
+      "pre_freeze_label_access_count": 0,
+      "evaluation_label_access_phase": "post_freeze_only",
+      "prediction_label_access_count": 0,
       "review_only": true,
       "operational_alert_eligible": false,
       "scientific_winner_selected": false,
-      "official_readiness": false,
-      "official_run_started": false,
-      "run_root_exists": false,
       "initial_sol_review_fix_status": "resolved",
       "initial_sol_review_findings_resolved": [
         "design_and_preregistration_hash_binding",
@@ -545,7 +578,7 @@
         "codemap_status_evidence",
         "active_eta_regression_test"
       ],
-      "fresh_sol_high_review": "pending_sol_rereview",
+      "fresh_sol_high_review": "passed_ship_no_findings",
       "codemap_sync": "complete_at_04560d0d6ecaa43798e07369bea17968a70251dc",
       "verification": {
         "exp442_lifecycle_tests": 7,
@@ -568,7 +601,30 @@
           "snapshot_parity": true
         }
       },
-      "notes": "Initial Sol High fix-first findings (design/preregistration hash binding, profile root override boundary, codemap status evidence, and active-ETA regression coverage) are resolved. Verification now passes at the review-fix worktree: Exp442 lifecycle 7/7, Exp441 197/197, Exp440 35/35, Exp417 270/270, and the real 1,117-record CPU/11-worker replay has exact source/selection/snapshot parity with zero label access. The synchronized code map is committed at 04560d0d6ecaa43798e07369bea17968a70251dc; only Sol re-review remains pending. Exp442 readiness/new are not started, the official root remains absent, prediction/evaluation remain null, and this engineering-only successor is review-only and not a champion candidate."
+      "evaluation": {
+        "baseline_confusion": {"tp": 1915, "fp": 303, "fn": 2003, "tn": 191679},
+        "union_confusion": {"tp": 1930, "fp": 318, "fn": 1988, "tn": 191664},
+        "candidate_count": 30,
+        "candidate_tp": 15,
+        "candidate_fp": 15,
+        "candidate_precision": 0.5,
+        "rescued_dataset_count": 15,
+        "regressed_dataset_count": 0,
+        "maximum_strong_loss": 0.0,
+        "baseline_f1": 0.6241851368970013,
+        "union_f1": 0.6260136230943887,
+        "micro_delta": 0.0018284861973874023,
+        "macro_delta": 0.012444046553267682,
+        "micro_bootstrap_ci95": [5.373870255999115e-05, 0.003814109586073529],
+        "macro_bootstrap_ci95": [0.006535362578334826, 0.019158460161145925],
+        "bootstrap_samples": 20000,
+        "bootstrap_seed": 44120260808
+      },
+      "retrospective_gates_all_passed": true,
+      "adaptive_followup": true,
+      "independent_validation": false,
+      "confirmatory_statistical_claim": false,
+      "notes": "공식 readiness, 1,117개 label-free new, inspect, prediction freeze, 그리고 freeze 후 evaluate가 모두 완료됐다. 후보 30개 중 TP 15/FP 15로 놓친 이상 15개를 복구했고 기존 강한 데이터셋 악화는 0개였다. micro F1은 0.624185에서 0.626014로, macro delta는 +0.012444로 사전등록 회고 gate를 통과했다. 다만 adaptive follow-up이며 independent_validation=false, review_only=true이므로 운영 경보나 scientific champion으로 승격하지 않는다. 현재 결과를 기록하고 방향 논의까지 일시정지하며 다음 실험은 자동 시작하지 않는다."
     }
   ]
 }
