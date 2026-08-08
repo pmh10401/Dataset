@@ -17,7 +17,7 @@ from .artifacts_antigravity import (
     write_create_only_antigravity,
 )
 from .config_antigravity import FROZEN_CONFIG, governance_payload_antigravity
-from .contracts_antigravity import CompletedAttemptAntigravity, FrozenPublicationAntigravity, SelectionResultAntigravity
+from .contracts_antigravity import CompletedAttemptAntigravity, FrozenPublicationAntigravity, FrozenSourceSnapshotAntigravity, SelectionResultAntigravity
 from .runtime_antigravity import _selection_from_payload_antigravity, _snapshot_payload_antigravity
 from .selector_antigravity import select_hard_empty_single_shot_antigravity, selected_coordinate_identity_sha256_antigravity
 from .sources_antigravity import verify_frozen_sources_antigravity
@@ -124,7 +124,7 @@ def _exact_attempt_progress_antigravity(progress: Mapping[str, object], pid: Map
     }
     if set(progress) != expected or set(pid) != {"pid", "active", "heartbeat"}:
         raise ValueError("attempt progress schema is invalid")
-    integer_values = {"pid": 1, "completed": 1117, "total": 1117, "imported": 1117, "recomputed": 0, "success": 1117, "error": 0,
+    integer_values = {"completed": 1117, "total": 1117, "imported": 1117, "recomputed": 0, "success": 1117, "error": 0,
                       "provisional_candidates": 840, "outside_hard_candidates": 394, "eligible_candidates": 73, "selected_candidates": 30}
     if any(type(progress[name]) is not int or progress[name] != value for name, value in integer_values.items()):
         raise ValueError("attempt progress counts are invalid")
@@ -139,8 +139,10 @@ def _exact_attempt_progress_antigravity(progress: Mapping[str, object], pid: Map
                 FROZEN_CONFIG.checkpoint_records_path):
         raise ValueError("attempt terminal progress is invalid")
     for name in ("throughput", "elapsed_seconds"):
-        if type(progress[name]) not in (int, float) or not math.isfinite(float(progress[name])) or float(progress[name]) < 0.0:
+        if type(progress[name]) is not float or not math.isfinite(progress[name]) or progress[name] < 0.0:
             raise ValueError("attempt progress timing is invalid")
+    if progress["elapsed_seconds"] <= 0.0 or progress["throughput"] != progress["completed"] / progress["elapsed_seconds"]:
+        raise ValueError("attempt progress timing correlation is invalid")
     if _timestamp_antigravity(pid["heartbeat"], "attempt PID heartbeat is invalid") < _timestamp_antigravity(progress["heartbeat"], "attempt progress heartbeat is invalid"):
         raise ValueError("attempt PID heartbeat precedes terminal progress")
 
@@ -157,6 +159,28 @@ def _validate_event_log_antigravity(payload: bytes) -> None:
                 (row["raw_length"] is not None and (type(row["raw_length"]) is not int or row["raw_length"] < 1)) or
                 row["accepted"] is not True):
             raise ValueError("attempt event schema is invalid")
+
+
+def _validate_runtime_attempt_evidence_antigravity(authority: Mapping[str, bytes], snapshot: FrozenSourceSnapshotAntigravity) -> None:
+    """Bind every completed runtime event and log line to the reverified frozen source."""
+    if not isinstance(snapshot, FrozenSourceSnapshotAntigravity) or len(snapshot.context_datasets) != 1117:
+        raise ValueError("attempt source population is invalid")
+    rows = _parse_jsonl_antigravity(authority["events_antigravity.jsonl"], "attempt event")
+    expected_rows: list[dict[str, object]] = []
+    expected_log: list[str] = []
+    for sequence, dataset in enumerate(snapshot.context_datasets):
+        lengths = {item.raw_length for item in snapshot.provisional_candidates if item.dataset == dataset}
+        raw_length = next(iter(lengths)) if len(lengths) == 1 else None
+        row = {
+            "sequence": sequence, "dataset": dataset, "record_name": f"{sequence:04d}_record_antigravity.json",
+            "test_row_count": snapshot.test_row_count_by_dataset[dataset], "raw_length": raw_length, "accepted": True,
+        }
+        expected_rows.append(row)
+        expected_log.append(f"accepted dataset={dataset} record={row['record_name']} test_row_count={row['test_row_count']} raw_length={raw_length}\n")
+    if rows != expected_rows:
+        raise ValueError("attempt events do not match frozen source")
+    if authority["text_antigravity.log"] != "".join(expected_log).encode("utf-8"):
+        raise ValueError("attempt text log does not match frozen source")
 
 
 def _parse_attempt_antigravity(attempt: CompletedAttemptAntigravity) -> tuple[Path, dict[str, object], dict[str, object], dict[str, bytes]]:
@@ -199,7 +223,7 @@ def _parse_attempt_antigravity(attempt: CompletedAttemptAntigravity) -> tuple[Pa
     return path, snapshot, selection, authority
 
 
-def _reverified_selection_antigravity(attempt: CompletedAttemptAntigravity, snapshot_payload: Mapping[str, object], selection_payload: Mapping[str, object]) -> SelectionResultAntigravity:
+def _reverified_selection_antigravity(attempt: CompletedAttemptAntigravity, snapshot_payload: Mapping[str, object], selection_payload: Mapping[str, object]) -> tuple[SelectionResultAntigravity, FrozenSourceSnapshotAntigravity]:
     snapshot = verify_frozen_sources_antigravity()
     if snapshot.label_access_count != 0 or _snapshot_payload_antigravity(snapshot) != snapshot_payload:
         raise ValueError("frozen source authority changed")
@@ -209,7 +233,7 @@ def _reverified_selection_antigravity(attempt: CompletedAttemptAntigravity, snap
     reopened = _selection_from_payload_antigravity(selection_payload)
     if reopened != expected or reopened != attempt.selection:
         raise ValueError("attempt selection is inconsistent")
-    return expected
+    return expected, snapshot
 
 
 def _publication_payloads_antigravity(attempt: CompletedAttemptAntigravity, snapshot_payload: Mapping[str, object], selection: SelectionResultAntigravity) -> dict[str, bytes]:
@@ -398,7 +422,8 @@ def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPu
     if destination.exists() or destination.is_symlink():
         return inspect_exp441_publication_antigravity()
     _attempt_path, snapshot_payload, selection_payload, authority = _parse_attempt_antigravity(attempt)
-    selection = _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload)
+    selection, initial_snapshot = _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload)
+    _validate_runtime_attempt_evidence_antigravity(authority, initial_snapshot)
     staging = destination.with_name(f".publication_{uuid4().hex}_staging_antigravity")
     staging.mkdir(mode=0o700)
     os.chmod(staging, 0o700)
@@ -411,15 +436,17 @@ def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPu
             raise ValueError("staged publication bytes are invalid")
         _inspect_payloads_antigravity(staged, attempt)
         fsync_directory_antigravity(staging)
-        # Reopen all terminal-attempt authority and source bytes after staging.
-        _final_path, final_snapshot, final_selection, final_authority = _parse_attempt_antigravity(attempt)
-        if (final_authority != authority or final_snapshot != snapshot_payload or final_selection != selection_payload):
-            raise ValueError("terminal attempt authority changed before publication rename")
-        # Last source replay closes the staging-to-rename mutation window.
-        if _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload) != selection:
+        # Last expensive source replay is complete before the adjacent byte gate.
+        final_selection_result, final_source_snapshot = _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload)
+        if final_selection_result != selection:
             raise ValueError("frozen sources changed before publication rename")
         if destination.exists() or destination.is_symlink():
             raise ValueError("publication destination raced")
+        # No callback or source replay may occur between this authority gate and RENAME_EXCL.
+        _final_path, final_snapshot, final_selection, final_authority = _parse_attempt_antigravity(attempt)
+        if (final_authority != authority or final_snapshot != snapshot_payload or final_selection != selection_payload):
+            raise ValueError("terminal attempt authority changed before publication rename")
+        _validate_runtime_attempt_evidence_antigravity(final_authority, final_source_snapshot)
         exclusive_rename_antigravity(staging, destination)
         fsync_directory_antigravity(destination.parent)
         return inspect_exp441_publication_antigravity()

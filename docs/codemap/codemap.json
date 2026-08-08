@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T05:18:38Z",
-  "generated_from_commit": "87c401fdacea7fe499ef9eecb4d709e1ed7589a2",
+  "generated_at": "2026-08-08T05:29:20Z",
+  "generated_from_commit": "9d8f5305d593bd8fd1b981b7294a2314773598b8",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2857,7 +2857,7 @@
         "Publication requires exactly 1,117 completed datasets, failed=0, inactive PID, current_dataset=null, budget compliance, and prediction TEST-label access exactly zero.",
         "Evaluation is a lazy explicit command and reads TEST labels only after every frozen publication, comparator, source, population, runtime, database, and provenance gate passes.",
         "High-frequency, low-frequency, and amplitude-complexity results remain separate; evaluation selects no winner and publishes eight no-clobber hash-bound artifacts.",
-        "Exp441 publisher captures and reopens byte-identical terminal attempt authority (snapshot, selection, exact complete progress/PID/events/log) before a private 0700 staging fsync and Darwin no-clobber rename; it writes exactly six 0600 artifacts, and inspection stays label-free with no SQLite or evaluator import."
+        "Exp441 publisher validates a real positive matching PID, exact terminal progress/events/text against frozen source identity, completes its last source replay, then immediately byte-reopens all terminal authority before private 0700 staging can reach Darwin no-clobber rename; it writes exactly six 0600 artifacts and inspection stays label-free with no SQLite or evaluator import."
       ],
       "evidence": [
         {
@@ -2911,6 +2911,10 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",
           "symbol": "def test_publish_final_gate_reopens_attempt_authority_after_staging("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publish_rejects_authority_mutated_during_last_source_replay("
         }
       ]
     }

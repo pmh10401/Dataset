@@ -18,11 +18,11 @@ from experiments.exp441_hard_empty_single_shot_recovery_antigravity.selector_ant
 class ReportingContractAntigravityTests(unittest.TestCase):
     @staticmethod
     def _fixture_snapshot_antigravity() -> FrozenSourceSnapshotAntigravity:
-        datasets = tuple(f"D{index:03d}" for index in range(49))
+        datasets = tuple(f"D{index:04d}" for index in range(1117))
         candidates = tuple(CandidateEvidenceAntigravity(
             dataset=dataset, instance_index=index, raw_length=16, depths=(2, 4), agreement_count=2,
             second_excess_ratio=100.0 - index, second_empirical_rank=0.1,
-        ) for index, dataset in enumerate(datasets))
+        ) for index, dataset in enumerate(datasets[:49]))
         return FrozenSourceSnapshotAntigravity(
             context_datasets=datasets, test_row_count_by_dataset={dataset: 64 for dataset in datasets},
             record_digest_by_dataset={dataset: "a" * 64 for dataset in datasets}, hard_coordinates=frozenset(),
@@ -33,7 +33,7 @@ class ReportingContractAntigravityTests(unittest.TestCase):
             hard_coordinate_identity_sha256="4" * 64,
         )
 
-    def _write_terminal_attempt_antigravity(self, root: Path, snapshot: FrozenSourceSnapshotAntigravity) -> CompletedAttemptAntigravity:
+    def _write_terminal_attempt_antigravity(self, root: Path, snapshot: FrozenSourceSnapshotAntigravity, *, pid_value: int = 1) -> CompletedAttemptAntigravity:
         selection = select_hard_empty_single_shot_antigravity(snapshot)
         attempt_root = root / "attempts_antigravity" / "attempt_0000_antigravity"
         attempt_root.mkdir(parents=True)
@@ -44,7 +44,7 @@ class ReportingContractAntigravityTests(unittest.TestCase):
         (attempt_root / "source_snapshot_antigravity.json").write_bytes(snapshot_bytes)
         (attempt_root / "selection_antigravity.json").write_bytes(selection_bytes)
         (attempt_root / "progress_antigravity.json").write_bytes(canonical_json_bytes_antigravity({
-            "pid": 1, "active": False, "current_dataset": None, "current_record_name": None, "active_datasets": [],
+            "pid": pid_value, "active": False, "current_dataset": None, "current_record_name": None, "active_datasets": [],
             "train_row_count": None, "test_row_count": None, "raw_length": None,
             "dimension_status": "not_available_in_frozen_selector_source", "stage": "complete", "backend": "cpu",
             "completed": 1117, "total": 1117, "imported": 1117, "recomputed": 0, "success": 1117, "error": 0,
@@ -53,13 +53,16 @@ class ReportingContractAntigravityTests(unittest.TestCase):
             "source_checkpoint": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/checkpoint_antigravity/records_antigravity",
             "heartbeat": "2026-08-08T00:00:00Z", "latest_error": None,
         }))
-        (attempt_root / "pid_antigravity").write_bytes(canonical_json_bytes_antigravity({"pid": 1, "active": False, "heartbeat": "2026-08-08T00:00:01Z"}))
+        (attempt_root / "pid_antigravity").write_bytes(canonical_json_bytes_antigravity({"pid": pid_value, "active": False, "heartbeat": "2026-08-08T00:00:01Z"}))
         events = b"".join(canonical_json_bytes_antigravity({
-            "sequence": index, "dataset": "D000", "record_name": f"{index:04d}_record_antigravity.json",
-            "test_row_count": 1, "raw_length": None, "accepted": True,
-        }) for index in range(1117))
+            "sequence": index, "dataset": dataset, "record_name": f"{index:04d}_record_antigravity.json",
+            "test_row_count": 64, "raw_length": 16 if index < 49 else None, "accepted": True,
+        }) for index, dataset in enumerate(snapshot.context_datasets))
         (attempt_root / "events_antigravity.jsonl").write_bytes(events)
-        (attempt_root / "text_antigravity.log").write_text("accepted\n" * 1117)
+        (attempt_root / "text_antigravity.log").write_text("".join(
+            f"accepted dataset={dataset} record={index:04d}_record_antigravity.json test_row_count=64 raw_length={16 if index < 49 else None}\n"
+            for index, dataset in enumerate(snapshot.context_datasets)
+        ))
         for entry in attempt_root.iterdir():
             os.chmod(entry, 0o600)
         return CompletedAttemptAntigravity(0, "a" * 40, snapshot_sha, selection, sha256(selection_bytes).hexdigest())
@@ -161,6 +164,41 @@ class ReportingContractAntigravityTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "PID"):
                     reporting_antigravity.publish_exp441_antigravity(attempt)
 
+    def test_publish_accepts_realistic_positive_nonone_terminal_pid(self) -> None:
+        # Break caught: a production PID is rejected merely because it is not a fixture's constant value.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            attempt = self._write_terminal_attempt_antigravity(root, snapshot, pid_value=43210)
+            with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=snapshot), \
+                 patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
+                 patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=os.rename):
+                frozen = reporting_antigravity.publish_exp441_antigravity(attempt)
+            self.assertEqual(frozen.selection, attempt.selection)
+
+    def test_publish_rejects_zero_boolean_and_mismatched_pid_authority(self) -> None:
+        # Break caught: invalid PID types or cross-file disagreement still authorize the completed attempt.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        cases = ((0, 0), (True, True), (2, 1))
+        for progress_pid, pid_pid in cases:
+            with self.subTest(progress_pid=progress_pid, pid_pid=pid_pid), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                attempt = self._write_terminal_attempt_antigravity(root, snapshot)
+                progress_path = root / "attempts_antigravity" / "attempt_0000_antigravity" / "progress_antigravity.json"
+                pid_path = root / "attempts_antigravity" / "attempt_0000_antigravity" / "pid_antigravity"
+                progress = json.loads(progress_path.read_text()); progress["pid"] = progress_pid
+                pid = json.loads(pid_path.read_text()); pid["pid"] = pid_pid
+                progress_path.write_bytes(canonical_json_bytes_antigravity(progress)); pid_path.write_bytes(canonical_json_bytes_antigravity(pid))
+                with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                     patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=snapshot), \
+                     patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
+                     patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=os.rename):
+                    with self.assertRaises(ValueError):
+                        reporting_antigravity.publish_exp441_antigravity(attempt)
+
     def test_inspect_rejects_nonprivate_publication_root(self) -> None:
         # Break caught: an otherwise valid publication becomes world-readable without replay rejection.
         from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
@@ -201,6 +239,52 @@ class ReportingContractAntigravityTests(unittest.TestCase):
                     reporting_antigravity.publish_exp441_antigravity(attempt)
             self.assertFalse((root / "publication_antigravity").exists())
 
+    def test_publish_rejects_authority_mutated_during_last_source_replay(self) -> None:
+        # Break caught: the final source replay completes after an attempt file changes, leaving an unchecked rename window.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            attempt = self._write_terminal_attempt_antigravity(root, snapshot)
+            calls = {"count": 0}
+            def replay():
+                calls["count"] += 1
+                if calls["count"] == 3:
+                    progress = root / "attempts_antigravity" / "attempt_0000_antigravity" / "progress_antigravity.json"
+                    payload = json.loads(progress.read_text())
+                    payload["throughput"] = 999.0
+                    progress.write_bytes(canonical_json_bytes_antigravity(payload))
+                return snapshot
+            with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", side_effect=replay), \
+                 patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
+                 patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=os.rename):
+                with self.assertRaisesRegex(ValueError, "authority|progress"):
+                    reporting_antigravity.publish_exp441_antigravity(attempt)
+            self.assertFalse((root / "publication_antigravity").exists())
+
+    def test_publish_rejects_preentry_progress_and_text_log_tampering(self) -> None:
+        # Break caught: elapsed/throughput or parent log bytes can drift before publication without being bound to source replay.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        for filename, mutator in (
+            ("progress_antigravity.json", lambda payload: payload.update({"throughput": 2.0})),
+            ("text_antigravity.log", lambda payload: payload + b"extra\n"),
+        ):
+            with self.subTest(filename=filename), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory); attempt = self._write_terminal_attempt_antigravity(root, snapshot)
+                target = root / "attempts_antigravity" / "attempt_0000_antigravity" / filename
+                if filename.endswith(".json"):
+                    payload = json.loads(target.read_text()); mutator(payload); target.write_bytes(canonical_json_bytes_antigravity(payload))
+                else:
+                    target.write_bytes(mutator(target.read_bytes()))
+                with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                     patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=snapshot), \
+                     patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
+                     patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=os.rename):
+                    with self.assertRaises(ValueError):
+                        reporting_antigravity.publish_exp441_antigravity(attempt)
+
     def test_inspect_rejects_status_commit_that_differs_from_manifest(self) -> None:
         # Break caught: status can point at a different implementation commit while its hashes still look valid.
         from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
@@ -223,6 +307,28 @@ class ReportingContractAntigravityTests(unittest.TestCase):
                 (publication / "artifact_sha256_antigravity.json").write_bytes(canonical_json_bytes_antigravity(artifacts))
                 with self.assertRaisesRegex(ValueError, "commit"):
                     reporting_antigravity.inspect_exp441_publication_antigravity()
+
+    def test_inspect_rejects_tampering_of_each_six_file_inventory_member(self) -> None:
+        # Break caught: one of the six immutable publication artifacts can be changed without replay failure.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); attempt = self._write_terminal_attempt_antigravity(root, snapshot)
+            with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=snapshot), \
+                 patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
+                 patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=os.rename):
+                reporting_antigravity.publish_exp441_antigravity(attempt)
+                publication = root / "publication_antigravity"
+                for name in (
+                    "prediction_antigravity.jsonl", "candidate_ranking_antigravity.jsonl", "source_audit_antigravity.json",
+                    "manifest_antigravity.json", "status_antigravity.json", "artifact_sha256_antigravity.json",
+                ):
+                    with self.subTest(name=name):
+                        target = publication / name; original = target.read_bytes(); target.write_bytes(original + b"x")
+                        with self.assertRaises(ValueError):
+                            reporting_antigravity.inspect_exp441_publication_antigravity()
+                        target.write_bytes(original)
 
     def test_publish_fsyncs_populated_private_staging_before_rename(self) -> None:
         # Break caught: directory metadata is renamed before the six create-only entries are durable.
