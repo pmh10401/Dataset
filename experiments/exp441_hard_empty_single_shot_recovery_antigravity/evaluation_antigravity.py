@@ -4,19 +4,27 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 import math
+import os
 from pathlib import Path
 from types import MappingProxyType
 from typing import Mapping
+from uuid import uuid4
 
 import numpy as np
 
-from .artifacts_antigravity import canonical_json_bytes_antigravity
+from .artifacts_antigravity import (
+    canonical_json_bytes_antigravity, canonical_jsonl_bytes_antigravity,
+    exclusive_rename_antigravity, fsync_directory_antigravity,
+    parse_canonical_json_bytes_antigravity, pin_exact_regular_inventory_antigravity,
+    write_create_only_antigravity,
+)
 from .config_antigravity import FROZEN_CONFIG
 from .contracts_antigravity import (
     BootstrapResultAntigravity,
     DatasetEvaluationFactsAntigravity,
     EvaluationFactsAntigravity,
     FrozenPublicationAntigravity,
+    FrozenEvaluationAntigravity,
     FrozenSourceSnapshotAntigravity,
     RetrospectiveEvaluationAntigravity,
     SelectionResultAntigravity,
@@ -327,14 +335,406 @@ def compute_retrospective_evaluation_antigravity(
     )
 
 
+_EVALUATION_FILENAMES_ANTIGRAVITY = (
+    "evaluation_antigravity.json", "dataset_metrics_antigravity.jsonl",
+    "rescued_datasets_antigravity.jsonl", "regressed_datasets_antigravity.jsonl",
+    "confusion_antigravity.json", "bootstrap_antigravity.json", "decision_antigravity.json",
+    "artifact_sha256_antigravity.json",
+)
+_EVALUATION_DESTINATION_ANTIGRAVITY = Path(
+    "/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808/evaluation_antigravity"
+)
+_GOVERNANCE_ANTIGRAVITY: Mapping[str, object] = MappingProxyType({
+    "official_run_purpose": "deterministic_retrospective_reproduction",
+    "bootstrap_interpretation": "descriptive_post_selection",
+    "adaptive_followup": True,
+    "independent_validation": False,
+    "external_generalization_supported": False,
+    "confirmatory_statistical_claim": False,
+    "scientific_winner_selected": False,
+    "review_only": True,
+    "operational_alert_eligible": False,
+})
+_GOVERNANCE_KEYS_ANTIGRAVITY = frozenset(_GOVERNANCE_ANTIGRAVITY)
+_EVALUATION_NON_GOVERNANCE_KEYS_ANTIGRAVITY = frozenset({
+    "schema", "experiment_id", "run_identity", "publication_sha256", "prediction_sha256",
+    "source_audit_sha256", "dataset_count", "candidate_count", "status", "baseline_confusion",
+    "union_confusion", "candidate_tp", "candidate_fp", "rescued_dataset_count",
+    "regressed_dataset_count", "maximum_strong_loss", "baseline_f1", "union_f1", "micro_delta",
+    "macro_delta", "dataset_metrics_sha256", "rescued_datasets_sha256",
+    "regressed_datasets_sha256", "confusion_sha256",
+})
+_BOOTSTRAP_NON_GOVERNANCE_KEYS_ANTIGRAVITY = frozenset({
+    "schema", "seed", "samples", "population", "numpy_version", "bit_generator", "sample_dtype",
+    "endpoint", "quantile_method", "bootstrap_rows_sha256", "dataset_metrics_sha256", "micro_ci", "macro_ci",
+})
+_DECISION_NON_GOVERNANCE_KEYS_ANTIGRAVITY = frozenset({
+    "schema", "experiment_id", "run_identity", "status", "evaluation_sha256", "bootstrap_sha256",
+    "dataset_metrics_sha256", "rescued_datasets_sha256", "regressed_datasets_sha256", "confusion_sha256",
+})
+
+
+def _sha256_antigravity(payload: bytes) -> str:
+    return sha256(payload).hexdigest()
+
+
+def _hash_antigravity(value: object, name: str = "hash") -> str:
+    if type(value) is not str or len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+        raise ValueError(f"{name} is invalid")
+    return value
+
+
+def _strict_payload_antigravity(value: object, keys: frozenset[str], name: str,
+                                *, governance: bool = False) -> dict[str, object]:
+    if not isinstance(value, dict) or set(value) != keys | (_GOVERNANCE_KEYS_ANTIGRAVITY if governance else frozenset()):
+        raise ValueError(f"{name} keys are invalid")
+    if governance:
+        for key, expected in _GOVERNANCE_ANTIGRAVITY.items():
+            if type(value[key]) is not type(expected) or value[key] != expected:
+                raise ValueError(f"{name} governance is invalid")
+    return value
+
+
+def _confusion_antigravity(value: object, name: str) -> tuple[int, int, int, int]:
+    if not isinstance(value, list) or len(value) != 4 or any(type(item) is not int or item < 0 for item in value):
+        raise ValueError(f"{name} is invalid")
+    return tuple(value)  # type: ignore[return-value]
+
+
+def _finite_float_antigravity(value: object, name: str) -> float:
+    if type(value) is not float or not math.isfinite(value):
+        raise ValueError(f"{name} is invalid")
+    return value
+
+
+def _strict_int_antigravity(value: object, expected: int | None, name: str) -> int:
+    if type(value) is not int or value < 0 or (expected is not None and value != expected):
+        raise ValueError(f"{name} is invalid")
+    return value
+
+
+def _validate_failure_payload_antigravity(payload: bytes) -> dict[str, object]:
+    """Validate one standalone immutable engineering-failure document exactly."""
+    value = _strict_payload_antigravity(parse_canonical_json_bytes_antigravity(payload), frozenset({
+        "schema", "status", "phase", "error_type", "error", "labels_opened", "destination_committed",
+    }), "failure", governance=True)
+    if (value["schema"], value["status"]) != ("exp441.evaluation-failure.v1", "engineering_reproduction_failed"):
+        raise ValueError("failure schema is invalid")
+    for name in ("phase", "error_type", "error"):
+        if type(value[name]) is not str or not value[name]:
+            raise ValueError("failure text is invalid")
+    for name in ("labels_opened", "destination_committed"):
+        if type(value[name]) is not bool:
+            raise ValueError("failure flag is invalid")
+    return value
+
+
+def _metric_row_payload_antigravity(fact: DatasetEvaluationFactsAntigravity) -> dict[str, object]:
+    return {
+        "dataset": fact.dataset, "baseline_confusion": list(fact.baseline_confusion),
+        "union_confusion": list(fact.union_confusion), "baseline_f1": fact.baseline_f1,
+        "union_f1": fact.union_f1, "delta": fact.delta, "candidate_tp": fact.candidate_tp,
+        "candidate_fp": fact.candidate_fp,
+    }
+
+
+def _result_artifacts_antigravity(result: RetrospectiveEvaluationAntigravity,
+                                  publication: FrozenPublicationAntigravity) -> Mapping[str, bytes]:
+    """Serialize one already frozen calculation into the closed Task 11 hash graph."""
+    if not isinstance(result, RetrospectiveEvaluationAntigravity) or not isinstance(publication, FrozenPublicationAntigravity):
+        raise ValueError("evaluation result is invalid")
+    metrics = canonical_jsonl_bytes_antigravity(_metric_row_payload_antigravity(item) for item in result.dataset_facts)
+    rescued = canonical_jsonl_bytes_antigravity({"dataset": name} for name in result.rescued_datasets)
+    regressed = canonical_jsonl_bytes_antigravity({"dataset": name} for name in result.regressed_datasets)
+    confusion = canonical_json_bytes_antigravity({
+        "schema": "exp441.evaluation-confusion.v1", "confusion_order": ["tp", "fp", "fn", "tn"],
+        "baseline_confusion": list(result.facts.baseline_confusion), "union_confusion": list(result.facts.union_confusion),
+        "candidate_tp": result.facts.candidate_tp, "candidate_fp": result.facts.candidate_fp,
+    })
+    metrics_sha, rescued_sha, regressed_sha, confusion_sha = map(_sha256_antigravity, (metrics, rescued, regressed, confusion))
+    rows = [list(row) for row in result.bootstrap_rows]
+    bootstrap = canonical_json_bytes_antigravity({
+        "schema": "exp441.bootstrap.v1", "seed": FROZEN_CONFIG.bootstrap_seed, "samples": FROZEN_CONFIG.bootstrap_samples,
+        "population": FROZEN_CONFIG.dataset_count, "numpy_version": FROZEN_CONFIG.numpy_version,
+        "bit_generator": "PCG64", "sample_dtype": "int64", "endpoint": False, "quantile_method": "linear",
+        "bootstrap_rows_sha256": _sha256_antigravity(canonical_json_bytes_antigravity(rows)),
+        "dataset_metrics_sha256": metrics_sha, "micro_ci": list(result.bootstrap.micro_ci), "macro_ci": list(result.bootstrap.macro_ci),
+        **_GOVERNANCE_ANTIGRAVITY,
+    })
+    evaluation = canonical_json_bytes_antigravity({
+        "schema": "exp441.evaluation.v1", "experiment_id": FROZEN_CONFIG.experiment_id,
+        "run_identity": FROZEN_CONFIG.run_identity, "publication_sha256": publication.publication_sha256,
+        "prediction_sha256": publication.prediction_sha256, "source_audit_sha256": publication.source_audit_sha256,
+        "dataset_count": len(result.dataset_facts), "candidate_count": result.facts.candidate_tp + result.facts.candidate_fp,
+        "status": result.status, "baseline_confusion": list(result.facts.baseline_confusion),
+        "union_confusion": list(result.facts.union_confusion), "candidate_tp": result.facts.candidate_tp,
+        "candidate_fp": result.facts.candidate_fp, "rescued_dataset_count": len(result.rescued_datasets),
+        "regressed_dataset_count": len(result.regressed_datasets), "maximum_strong_loss": result.facts.maximum_strong_loss,
+        "baseline_f1": result.facts.baseline_f1, "union_f1": result.facts.union_f1,
+        "micro_delta": result.facts.micro_delta, "macro_delta": result.facts.macro_delta,
+        "dataset_metrics_sha256": metrics_sha, "rescued_datasets_sha256": rescued_sha,
+        "regressed_datasets_sha256": regressed_sha, "confusion_sha256": confusion_sha, **_GOVERNANCE_ANTIGRAVITY,
+    })
+    decision = canonical_json_bytes_antigravity({
+        "schema": "exp441.decision.v1", "experiment_id": FROZEN_CONFIG.experiment_id,
+        "run_identity": FROZEN_CONFIG.run_identity, "status": result.status,
+        "evaluation_sha256": _sha256_antigravity(evaluation), "bootstrap_sha256": _sha256_antigravity(bootstrap),
+        "dataset_metrics_sha256": metrics_sha, "rescued_datasets_sha256": rescued_sha,
+        "regressed_datasets_sha256": regressed_sha, "confusion_sha256": confusion_sha, **_GOVERNANCE_ANTIGRAVITY,
+    })
+    payloads = {
+        "evaluation_antigravity.json": evaluation, "dataset_metrics_antigravity.jsonl": metrics,
+        "rescued_datasets_antigravity.jsonl": rescued, "regressed_datasets_antigravity.jsonl": regressed,
+        "confusion_antigravity.json": confusion, "bootstrap_antigravity.json": bootstrap,
+        "decision_antigravity.json": decision,
+    }
+    artifact = canonical_json_bytes_antigravity({
+        "schema": "exp441.evaluation-artifact-map.v1", "files": {name: _sha256_antigravity(payload)
+                 for name, payload in payloads.items()}, "self_excluded": "artifact_sha256_antigravity.json",
+    })
+    return MappingProxyType({**payloads, "artifact_sha256_antigravity.json": artifact})
+
+
+def _parse_jsonl_antigravity(payload: bytes, name: str, *, empty_allowed: bool = False) -> list[dict[str, object]]:
+    if payload == b"" and empty_allowed:
+        return []
+    if not payload.endswith(b"\n") or payload == b"":
+        raise ValueError(f"{name} is invalid")
+    rows: list[dict[str, object]] = []
+    for line in payload.splitlines(keepends=True):
+        parsed = parse_canonical_json_bytes_antigravity(line)
+        if not isinstance(parsed, dict):
+            raise ValueError(f"{name} is invalid")
+        rows.append(parsed)
+    return rows
+
+
+def _replay_evaluation_payloads_antigravity(payloads: Mapping[str, bytes]) -> FrozenEvaluationAntigravity:
+    """Purely replay the pinned eight byte payloads; this function never opens a path."""
+    if not isinstance(payloads, Mapping) or set(payloads) != set(_EVALUATION_FILENAMES_ANTIGRAVITY) or any(type(value) is not bytes for value in payloads.values()):
+        raise ValueError("evaluation inventory is invalid")
+    artifact = _strict_payload_antigravity(parse_canonical_json_bytes_antigravity(payloads["artifact_sha256_antigravity.json"]),
+        frozenset({"schema", "files", "self_excluded"}), "artifact")
+    if artifact["schema"] != "exp441.evaluation-artifact-map.v1" or artifact["self_excluded"] != "artifact_sha256_antigravity.json" or not isinstance(artifact["files"], dict):
+        raise ValueError("artifact map is invalid")
+    expected_names = set(_EVALUATION_FILENAMES_ANTIGRAVITY) - {"artifact_sha256_antigravity.json"}
+    if set(artifact["files"]) != expected_names:
+        raise ValueError("artifact map is invalid")
+    for name in expected_names:
+        if _hash_antigravity(artifact["files"][name], "artifact hash") != _sha256_antigravity(payloads[name]):
+            raise ValueError("artifact hash graph is invalid")
+    metric_rows = _parse_jsonl_antigravity(payloads["dataset_metrics_antigravity.jsonl"], "metrics")
+    if len(metric_rows) != FROZEN_CONFIG.dataset_count:
+        raise ValueError("metrics population is invalid")
+    facts: list[DatasetEvaluationFactsAntigravity] = []
+    for row in metric_rows:
+        if set(row) != {"dataset", "baseline_confusion", "union_confusion", "baseline_f1", "union_f1", "delta", "candidate_tp", "candidate_fp"}:
+            raise ValueError("metric row keys are invalid")
+        if type(row["dataset"]) is not str or type(row["candidate_tp"]) is not int or type(row["candidate_fp"]) is not int:
+            raise ValueError("metric row types are invalid")
+        facts.append(DatasetEvaluationFactsAntigravity(row["dataset"], _confusion_antigravity(row["baseline_confusion"], "baseline"),
+            _confusion_antigravity(row["union_confusion"], "union"), _finite_float_antigravity(row["baseline_f1"], "baseline f1"),
+            _finite_float_antigravity(row["union_f1"], "union f1"), _finite_float_antigravity(row["delta"], "delta"),
+            row["candidate_tp"], row["candidate_fp"]))
+    rescued_rows = _parse_jsonl_antigravity(payloads["rescued_datasets_antigravity.jsonl"], "rescued", empty_allowed=True)
+    regressed_rows = _parse_jsonl_antigravity(payloads["regressed_datasets_antigravity.jsonl"], "regressed", empty_allowed=True)
+    def names(rows: list[dict[str, object]], label: str) -> tuple[str, ...]:
+        if any(set(row) != {"dataset"} or type(row["dataset"]) is not str or not row["dataset"] for row in rows):
+            raise ValueError(f"{label} rows are invalid")
+        return tuple(row["dataset"] for row in rows)  # type: ignore[return-value]
+    rescued, regressed = names(rescued_rows, "rescued"), names(regressed_rows, "regressed")
+    confusion = _strict_payload_antigravity(parse_canonical_json_bytes_antigravity(payloads["confusion_antigravity.json"]),
+        frozenset({"schema", "confusion_order", "baseline_confusion", "union_confusion", "candidate_tp", "candidate_fp"}), "confusion")
+    if (confusion["schema"], confusion["confusion_order"]) != ("exp441.evaluation-confusion.v1", ["tp", "fp", "fn", "tn"]):
+        raise ValueError("confusion schema is invalid")
+    evaluation = _strict_payload_antigravity(parse_canonical_json_bytes_antigravity(payloads["evaluation_antigravity.json"]),
+        _EVALUATION_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "evaluation", governance=True)
+    bootstrap_payload = _strict_payload_antigravity(parse_canonical_json_bytes_antigravity(payloads["bootstrap_antigravity.json"]),
+        _BOOTSTRAP_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "bootstrap", governance=True)
+    decision = _strict_payload_antigravity(parse_canonical_json_bytes_antigravity(payloads["decision_antigravity.json"]),
+        _DECISION_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "decision", governance=True)
+    if (evaluation["schema"], evaluation["experiment_id"], evaluation["run_identity"], bootstrap_payload["schema"],
+            decision["schema"], decision["experiment_id"], decision["run_identity"]) != (
+                "exp441.evaluation.v1", FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity,
+                "exp441.bootstrap.v1", "exp441.decision.v1", FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity):
+        raise ValueError("evaluation schema is invalid")
+    for key, expected in (("seed", FROZEN_CONFIG.bootstrap_seed), ("samples", FROZEN_CONFIG.bootstrap_samples),
+                          ("population", FROZEN_CONFIG.dataset_count), ("numpy_version", FROZEN_CONFIG.numpy_version),
+                          ("bit_generator", "PCG64"), ("sample_dtype", "int64"), ("endpoint", False), ("quantile_method", "linear")):
+        if type(bootstrap_payload[key]) is not type(expected) or bootstrap_payload[key] != expected:
+            raise ValueError("bootstrap identity is invalid")
+    rows = tuple((*fact.baseline_confusion, *fact.union_confusion, fact.delta) for fact in facts)
+    if _hash_antigravity(bootstrap_payload["bootstrap_rows_sha256"], "bootstrap rows hash") != _sha256_antigravity(canonical_json_bytes_antigravity([list(row) for row in rows])):
+        raise ValueError("bootstrap rows identity is invalid")
+    metrics_sha = _sha256_antigravity(payloads["dataset_metrics_antigravity.jsonl"])
+    if any(_hash_antigravity(value, "artifact reference") != expected for value, expected in (
+        (evaluation["dataset_metrics_sha256"], metrics_sha), (bootstrap_payload["dataset_metrics_sha256"], metrics_sha),
+        (decision["dataset_metrics_sha256"], metrics_sha), (evaluation["rescued_datasets_sha256"], _sha256_antigravity(payloads["rescued_datasets_antigravity.jsonl"])),
+        (decision["rescued_datasets_sha256"], _sha256_antigravity(payloads["rescued_datasets_antigravity.jsonl"])),
+        (evaluation["regressed_datasets_sha256"], _sha256_antigravity(payloads["regressed_datasets_antigravity.jsonl"])),
+        (decision["regressed_datasets_sha256"], _sha256_antigravity(payloads["regressed_datasets_antigravity.jsonl"])),
+        (evaluation["confusion_sha256"], _sha256_antigravity(payloads["confusion_antigravity.json"])),
+        (decision["confusion_sha256"], _sha256_antigravity(payloads["confusion_antigravity.json"])),
+    )):
+        raise ValueError("evaluation hash graph is invalid")
+    if _hash_antigravity(decision["evaluation_sha256"], "decision evaluation") != _sha256_antigravity(payloads["evaluation_antigravity.json"]) or _hash_antigravity(decision["bootstrap_sha256"], "decision bootstrap") != _sha256_antigravity(payloads["bootstrap_antigravity.json"]):
+        raise ValueError("decision hash graph is invalid")
+    bootstrap = paired_dataset_bootstrap_antigravity(np.asarray(rows, dtype=np.float64))
+    for key, actual, expected in (("micro_ci", bootstrap_payload["micro_ci"], list(bootstrap.micro_ci)), ("macro_ci", bootstrap_payload["macro_ci"], list(bootstrap.macro_ci))):
+        if actual != expected:
+            raise ValueError(f"bootstrap {key} is inconsistent")
+    for key, expected in (("dataset_count", FROZEN_CONFIG.dataset_count),):
+        _strict_int_antigravity(evaluation[key], expected, key)
+    candidate_count = _strict_int_antigravity(evaluation["candidate_count"], None, "candidate count")
+    for key in ("candidate_tp", "candidate_fp", "rescued_dataset_count", "regressed_dataset_count"):
+        _strict_int_antigravity(evaluation[key], None, key)
+    if type(evaluation["status"]) is not str or evaluation["status"] not in {
+        "engineering_reproduction_failed", "retrospective_reproduction_discrepancy", "retrospective_reproduction_complete",
+    } or type(decision["status"]) is not str:
+        raise ValueError("evaluation status is invalid")
+    for key in ("micro_ci", "macro_ci"):
+        if (not isinstance(bootstrap_payload[key], list) or len(bootstrap_payload[key]) != 2
+                or any(type(value) is not float or not math.isfinite(value) for value in bootstrap_payload[key])):
+            raise ValueError("bootstrap endpoints are invalid")
+    aggregate = EvaluationFactsAntigravity(
+        _confusion_antigravity(evaluation["baseline_confusion"], "evaluation baseline"),
+        _confusion_antigravity(evaluation["union_confusion"], "evaluation union"),
+        evaluation["candidate_tp"], evaluation["candidate_fp"], evaluation["rescued_dataset_count"],
+        evaluation["regressed_dataset_count"], _finite_float_antigravity(evaluation["maximum_strong_loss"], "maximum loss"),
+        _finite_float_antigravity(evaluation["baseline_f1"], "baseline f1"), _finite_float_antigravity(evaluation["union_f1"], "union f1"),
+        _finite_float_antigravity(evaluation["micro_delta"], "micro delta"), _finite_float_antigravity(evaluation["macro_delta"], "macro delta"),
+    )
+    parsed_confusion = (_confusion_antigravity(confusion["baseline_confusion"], "confusion baseline"),
+                        _confusion_antigravity(confusion["union_confusion"], "confusion union"),
+                        _strict_int_antigravity(confusion["candidate_tp"], None, "confusion candidate tp"),
+                        _strict_int_antigravity(confusion["candidate_fp"], None, "confusion candidate fp"))
+    if (evaluation["status"] != decision["status"] or candidate_count != aggregate.candidate_tp + aggregate.candidate_fp
+            or parsed_confusion != (aggregate.baseline_confusion, aggregate.union_confusion,
+                                    aggregate.candidate_tp, aggregate.candidate_fp)):
+        raise ValueError("evaluation aggregate identity is invalid")
+    result = RetrospectiveEvaluationAntigravity(tuple(facts), rescued, regressed, rows, aggregate, bootstrap, evaluation["status"], False)
+    publication_sha = _hash_antigravity(evaluation["publication_sha256"], "publication")
+    prediction_sha = _hash_antigravity(evaluation["prediction_sha256"], "prediction")
+    source_audit_sha = _hash_antigravity(evaluation["source_audit_sha256"], "source audit")
+    return FrozenEvaluationAntigravity(_sha256_antigravity(payloads["artifact_sha256_antigravity.json"]), publication_sha,
+        prediction_sha, source_audit_sha, result)
+
+
+def _write_failure_antigravity(parent: Path, staging: Path | None, error: BaseException, phase: str,
+                               labels_opened: bool, committed: bool) -> None:
+    """Preserve immutable failure evidence without touching a committed destination."""
+    try:
+        payload = canonical_json_bytes_antigravity({
+            "schema": "exp441.evaluation-failure.v1", "status": "engineering_reproduction_failed", "phase": phase,
+            "error_type": type(error).__name__, "error": str(error) or type(error).__name__,
+            "labels_opened": labels_opened, "destination_committed": committed, **_GOVERNANCE_ANTIGRAVITY,
+        })
+        _validate_failure_payload_antigravity(payload)
+        if committed:
+            failed = parent / f"failed_evaluation_audit_{uuid4().hex}_antigravity"
+            os.mkdir(failed, 0o700)
+            write_create_only_antigravity(failed / "failure_antigravity.json", payload)
+            fsync_directory_antigravity(failed)
+            fsync_directory_antigravity(parent)
+        elif staging is not None and staging.exists() and not staging.is_symlink():
+            write_create_only_antigravity(staging / "failure_antigravity.json", payload)
+            failed = parent / f"failed_evaluation_staging_{uuid4().hex}_antigravity"
+            exclusive_rename_antigravity(staging, failed)
+            fsync_directory_antigravity(parent)
+    except BaseException as preservation_error:
+        if hasattr(error, "add_note"):
+            error.add_note(f"failure preservation failed: {type(preservation_error).__name__}: {preservation_error}")
+
+
+def _preflight_matches_replay_antigravity(replayed: FrozenEvaluationAntigravity,
+                                          publication: FrozenPublicationAntigravity,
+                                          snapshot: FrozenSourceSnapshotAntigravity,
+                                          selection: SelectionResultAntigravity,
+                                          datasets: tuple[str, ...]) -> None:
+    if (replayed.publication_sha256 != publication.publication_sha256
+            or replayed.prediction_sha256 != publication.prediction_sha256
+            or replayed.source_audit_sha256 != publication.source_audit_sha256
+            or tuple(item.dataset for item in replayed.result.dataset_facts) != datasets
+            or replayed.result.facts.candidate_tp + replayed.result.facts.candidate_fp != len(selection.selected)
+            or snapshot.context_datasets != datasets):
+        raise ValueError("replayed evaluation authority changed")
+
+
+def _inspect_evaluation_destination_antigravity(destination: Path) -> FrozenEvaluationAntigravity:
+    with pin_exact_regular_inventory_antigravity(destination, _EVALUATION_FILENAMES_ANTIGRAVITY) as pinned:
+        result = _replay_evaluation_payloads_antigravity(pinned.payloads)
+        pinned.revalidate_antigravity()
+        return result
+
+
+def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
+    """Create once or independently replay the fixed, descriptor-pinned review-only evaluation."""
+    destination = _EVALUATION_DESTINATION_ANTIGRAVITY
+    parent = destination.parent
+    staging: Path | None = None
+    labels_opened = False
+    committed = False
+    phase = "entry"
+    try:
+        if destination.exists() or destination.is_symlink():
+            phase = "existing_replay"
+            committed = True
+            replayed = _inspect_evaluation_destination_antigravity(destination)
+            phase = "existing_preflight"
+            publication, snapshot, selection, datasets, _rows = _preflight_antigravity()
+            _preflight_matches_replay_antigravity(replayed, publication, snapshot, selection, datasets)
+            return replayed
+        if not parent.is_dir() or parent.is_symlink():
+            raise ValueError("evaluation parent is unavailable")
+        staging = parent / f".evaluation_{uuid4().hex}_staging_antigravity"
+        os.mkdir(staging, 0o700)
+        phase = "preflight"
+        publication, snapshot, selection, datasets, _rows = _preflight_antigravity()
+        phase = "labels"
+        labels_opened = True
+        frozen_labels = load_frozen_context_labels_antigravity()
+        phase = "calculation"
+        calculated = compute_retrospective_evaluation_antigravity(frozen_labels)
+        phase = "post_calculation_preflight"
+        post_publication, post_snapshot, post_selection, post_datasets, _post_rows = _preflight_antigravity()
+        if (post_publication != publication or post_snapshot != snapshot or post_selection != selection or post_datasets != datasets
+                or frozen_labels.publication_sha256 != publication.publication_sha256
+                or frozen_labels.source_audit_sha256 != publication.source_audit_sha256):
+            raise ValueError("authority changed after labels")
+        payloads = _result_artifacts_antigravity(calculated, publication)
+        phase = "staging_write"
+        for name in _EVALUATION_FILENAMES_ANTIGRAVITY:
+            write_create_only_antigravity(staging / name, payloads[name])
+        phase = "staging_replay"
+        with pin_exact_regular_inventory_antigravity(staging, _EVALUATION_FILENAMES_ANTIGRAVITY) as pinned:
+            replayed = _replay_evaluation_payloads_antigravity(pinned.payloads)
+            _preflight_matches_replay_antigravity(replayed, publication, snapshot, selection, datasets)
+            pinned.revalidate_antigravity()
+            fsync_directory_antigravity(staging)
+            phase = "pre_rename_preflight"
+            final_publication, final_snapshot, final_selection, final_datasets, _final_rows = _preflight_antigravity()
+            if (final_publication != publication or final_snapshot != snapshot or final_selection != selection or final_datasets != datasets):
+                raise ValueError("authority changed before rename")
+            if destination.exists() or destination.is_symlink():
+                raise FileExistsError("evaluation destination appeared during creation")
+            phase = "rename"
+            exclusive_rename_antigravity(staging, destination)
+            committed = True
+            pinned.revalidate_at_antigravity(destination, renamed_antigravity=True)
+            fsync_directory_antigravity(parent)
+            pinned.revalidate_at_antigravity(destination, renamed_antigravity=True)
+        phase = "destination_replay"
+        replayed = _inspect_evaluation_destination_antigravity(destination)
+        phase = "final_preflight"
+        final_publication, final_snapshot, final_selection, final_datasets, _final_rows = _preflight_antigravity()
+        _preflight_matches_replay_antigravity(replayed, final_publication, final_snapshot, final_selection, final_datasets)
+        return replayed
+    except BaseException as error:
+        _write_failure_antigravity(parent, staging, error, phase, labels_opened, committed)
+        raise
+
+
 __all__ = [
     "FrozenContextLabelsAntigravity", "load_frozen_context_labels_antigravity",
-    "compute_retrospective_evaluation_antigravity",
+    "compute_retrospective_evaluation_antigravity", "evaluate_exp441_antigravity",
 ]
-
-
-def __getattr__(name: str) -> object:
-    """Keep the pre-Task-10 CLI evaluation route unavailable without exporting it."""
-    if name == "evaluate_exp441_antigravity":
-        raise ModuleNotFoundError("Exp441 evaluation is not implemented at the Task 9 label boundary")
-    raise AttributeError(name)

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T14:41:01Z",
-  "generated_from_commit": "cd5709dddda923fa922a7545f4b55c7b8fb5f7a8",
+  "generated_at": "2026-08-08T14:58:59Z",
+  "generated_from_commit": "c499f6c9f430e1ceaccb5c03415490bddab0c5bd",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2934,7 +2934,7 @@
       "boundary": "Active isolated research",
       "layer": 3,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Exp441 Task 9 adds a fail-closed, post-freeze-only TEST-label loader. It replays source and selector identity before a fresh publication gate, then uses one Exp417 descriptor-bound connection for one quick_check and exactly 1,117 ordered context queries. Task 10 consumes only the resulting immutable snapshot: it preserves context and sparse coordinate identities, computes confusion/F1/rescue/regression facts and one exact Task 8 bootstrap input/result entirely in memory, and always records no scientific winner. Its immutable retrospective contract reconciles ordered dataset facts, baseline-to-union candidate TP/FP transition conservation, bootstrap rows, rescue/regression lists, aggregate count/F1/delta/strong-loss fields, and the contract-owned frozen status classifier without rerunning bootstrap. The public calculation and sparse helper have exact direct-call AST allowlists and do not reopen Task 9, publication/source/selector routes, SQLite, filesystem, or official evaluation routes. Task 10 is parent-verified, independently reviewed, and shipped at cd5709d after two fix rounds with 37 focused and 177 full tests passed and 7 mutation red checks. Task 11 architecture is reviewed but not implemented. Official readiness/new/inspect/evaluate remain gated until Task 12 final review.",
+      "role": "Exp441 Task 9 provides the fail-closed, post-freeze-only TEST-label boundary and Task 10 constructs immutable retrospective facts. Task 11 adds the no-argument fixed evaluation route: it serializes exactly eight private canonical artifacts, pins their descriptors, independently replays the full hash graph and one Task 8 bootstrap, and creates or replays without modifying an existing evaluation. Pre-rename failures move only private staging evidence; post-rename failures preserve the eight-file destination and write a separate audit sibling. All production evaluation remains review-only and the official lifecycle is still gated until Task 12 final review.",
       "entrypoints": [
         "publish_exp438_antigravity",
         "inspect_publication_antigravity",
@@ -2951,7 +2951,8 @@
         "require_numpy_2_4_6_antigravity",
         "paired_dataset_bootstrap_antigravity",
         "load_frozen_context_labels_antigravity",
-        "compute_retrospective_evaluation_antigravity"
+        "compute_retrospective_evaluation_antigravity",
+        "evaluate_exp441_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py",
@@ -2975,7 +2976,7 @@
         "Task 8 requires NumPy 2.4.6, Generator(PCG64(44120260808)), exactly 20,000 paired int64 draws of shape 1,117, and linear 2.5/97.5 quantiles.",
         "Project F1 validates four finite nonnegative confusion counts through the precision/recall harmonic path; bootstrap CI endpoints are built-in floats and never feed prediction.",
         "The Task 8 module imports no evaluator or SQLite dependency and only produces retrospective confidence-interval evidence.",
-        "Task 9 imports Exp417 only function-locally after identical publication/source/selector preflight, performs no metric or write operation, and rejects any post-read drift; its parent-verified, independently reviewed, shipped boundary is 615b277 after three fix rounds. Task 10 is parent-verified, independently reviewed, and shipped at cd5709d after two fix rounds with 37 focused and 177 full tests passed and 7 mutation red checks. Task 11 architecture is reviewed but not implemented."
+        "Task 9 imports Exp417 only function-locally after identical publication/source/selector preflight. Task 10 remains pure. Task 11 is an exact descriptor-pinned, create-only review-only evaluation publication/replay with no retuning controls."
       ],
       "evidence": [
         {
@@ -3133,6 +3134,14 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
           "symbol": "def load_frozen_context_labels_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def evaluate_exp441_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _replay_evaluation_payloads_antigravity("
         },
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py",

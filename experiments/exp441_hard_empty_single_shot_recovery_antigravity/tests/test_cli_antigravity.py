@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import types
 from types import MappingProxyType
 import unittest
 from unittest.mock import patch
@@ -48,11 +49,19 @@ class CliAntigravityTests(unittest.TestCase):
             with self.assertRaises(SystemExit, msg=flag): parser.parse_args(["readiness", flag, "x"])
 
     def test_evaluate_is_the_sole_lazy_evaluator_route(self) -> None:
-        """Prediction routes must remain importable when the future evaluator is absent."""
+        """The implemented evaluator stays lazy and emits the same one-document CLI form."""
         from experiments.exp441_hard_empty_single_shot_recovery_antigravity import cli_antigravity as cli
 
-        self.assertNotIn("experiments.exp441_hard_empty_single_shot_recovery_antigravity.evaluation_antigravity", sys.modules)
-        with self.assertRaises(ModuleNotFoundError): cli.main_antigravity(["evaluate"])
+        module_name = "experiments.exp441_hard_empty_single_shot_recovery_antigravity.evaluation_antigravity"
+        fake = types.ModuleType(module_name)
+        fake.evaluate_exp441_antigravity = lambda: {"evaluation_sha256": "a" * 64}  # type: ignore[attr-defined]
+        stream = io.StringIO()
+        with patch.dict(sys.modules, {module_name: fake}):
+            with contextlib.redirect_stdout(stream):
+                self.assertEqual(cli.main_antigravity(["evaluate"]), 0)
+        self.assertEqual(json.loads(stream.getvalue()), {
+            "command": "evaluate", "result": {"evaluation_sha256": "a" * 64},
+        })
 
     def test_outside_cwd_wrapper_help_needs_only_the_wrapper_and_cli(self) -> None:
         """Resolving imports relative to CWD would break the documented outside-CWD command."""

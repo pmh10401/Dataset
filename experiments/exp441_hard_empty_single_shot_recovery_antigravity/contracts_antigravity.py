@@ -726,20 +726,20 @@ class RetrospectiveEvaluationAntigravity:
 
 @dataclass(frozen=True)
 class FrozenEvaluationAntigravity:
+    """Complete descriptor-pinned Task 11 evaluation publication identity."""
     evaluation_sha256: str
-    status: str
-    facts: EvaluationFactsAntigravity
-    bootstrap: BootstrapResultAntigravity
+    publication_sha256: str
+    prediction_sha256: str
+    source_audit_sha256: str
+    result: RetrospectiveEvaluationAntigravity
 
     def __post_init__(self) -> None:
-        if not isinstance(self.evaluation_sha256, str) or len(self.evaluation_sha256) != 64:
-            raise ValueError("evaluation hash is invalid")
-        if self.status not in {
-            "engineering_reproduction_failed", "retrospective_reproduction_discrepancy",
-            "retrospective_reproduction_complete",
-        }:
-            raise ValueError("evaluation status is invalid")
-        if not isinstance(self.facts, EvaluationFactsAntigravity) or not isinstance(self.bootstrap, BootstrapResultAntigravity):
+        for value in (self.evaluation_sha256, self.publication_sha256,
+                      self.prediction_sha256, self.source_audit_sha256):
+            if (type(value) is not str or len(value) != 64
+                    or any(character not in "0123456789abcdef" for character in value)):
+                raise ValueError("evaluation hash is invalid")
+        if not isinstance(self.result, RetrospectiveEvaluationAntigravity):
             raise ValueError("evaluation evidence is invalid")
 
 

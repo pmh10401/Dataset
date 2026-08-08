@@ -11,6 +11,7 @@ from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_an
     CandidateEvidenceAntigravity,
     DatasetEvaluationFactsAntigravity,
     EvaluationFactsAntigravity,
+    FrozenEvaluationAntigravity,
     ParsedRecordAntigravity,
     RankedCandidateAntigravity,
     ReadinessBindingAntigravity,
@@ -53,6 +54,16 @@ def _coherent_retrospective() -> RetrospectiveEvaluationAntigravity:
 
 
 class Exp441ContractsAntigravityTests(unittest.TestCase):
+    def test_frozen_evaluation_binds_complete_result_and_exact_lower_hex_identities(self) -> None:
+        """Task 11 must return a complete replay, not mutable aggregate fragments."""
+        result = _coherent_retrospective()
+        frozen = FrozenEvaluationAntigravity("a" * 64, "b" * 64, "c" * 64, "d" * 64, result)
+        self.assertEqual(frozen.result, result)
+        self.assertEqual(tuple(frozen.__dataclass_fields__), (
+            "evaluation_sha256", "publication_sha256", "prediction_sha256", "source_audit_sha256", "result",
+        ))
+        with self.assertRaises(ValueError):
+            FrozenEvaluationAntigravity("A" * 64, "b" * 64, "c" * 64, "d" * 64, result)
     def test_retrospective_contracts_are_deeply_immutable_and_require_exact_row_shape(self) -> None:
         """Changing a caller-owned fact/row container must not change frozen evaluation evidence."""
         result = _coherent_retrospective()

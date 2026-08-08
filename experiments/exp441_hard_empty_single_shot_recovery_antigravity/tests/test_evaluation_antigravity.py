@@ -16,6 +16,7 @@ import inspect
 import math
 import os
 import sys
+import tempfile
 import types
 import unittest
 
@@ -27,10 +28,12 @@ from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_an
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_antigravity import (
     BootstrapResultAntigravity,
     CandidateEvidenceAntigravity,
+    DatasetEvaluationFactsAntigravity,
     EvaluationFactsAntigravity,
     FrozenPublicationAntigravity,
     FrozenSourceSnapshotAntigravity,
     RankedCandidateAntigravity,
+    RetrospectiveEvaluationAntigravity,
     SelectionResultAntigravity,
 )
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.selector_antigravity import (
@@ -132,6 +135,10 @@ class _InputsResolutionSentinel(importlib.abc.MetaPathFinder, importlib.abc.Load
 
 
 class Exp441FrozenContextLabelsAntigravityTests(unittest.TestCase):
+    def test_task11_public_evaluation_has_no_arguments(self) -> None:
+        """Task 11 is a fixed-root route: callers cannot supply TEST-result controls."""
+        self.assertEqual(tuple(inspect.signature(evaluation.evaluate_exp441_antigravity).parameters), ())
+
     def setUp(self) -> None:
         global evaluation
         evaluation = importlib.import_module(
@@ -310,7 +317,7 @@ class Exp441FrozenContextLabelsAntigravityTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             result.labels_by_dataset["D"] = ((9, 1),)  # type: ignore[index]
 
-    def test_module_has_no_top_level_label_capable_or_write_imports(self) -> None:
+    def test_module_has_no_top_level_label_capable_imports(self) -> None:
         source = evaluation.__loader__.get_source(evaluation.__name__) or ""
         tree = ast.parse(source)
         imports = [node for node in tree.body if isinstance(node, (ast.Import, ast.ImportFrom))]
@@ -318,7 +325,7 @@ class Exp441FrozenContextLabelsAntigravityTests(unittest.TestCase):
         self.assertNotIn("exp417", imported)
         self.assertNotIn("sqlite3", imported)
         self.assertNotIn("evaluation", imported)
-        self.assertNotIn("write_", source)
+        self.assertIn("write_create_only_antigravity", imported)
 
 
 class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
@@ -327,6 +334,213 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
         evaluation = importlib.import_module(
             "experiments.exp441_hard_empty_single_shot_recovery_antigravity.evaluation_antigravity"
         )
+
+    def _complete_result(self, datasets: tuple[str, ...] | None = None) -> RetrospectiveEvaluationAntigravity:
+        """Small-value, full-population synthetic evidence for Task 11 byte replay only."""
+        names = datasets or tuple(f"T{index:04d}" for index in range(1117))
+        facts = tuple(DatasetEvaluationFactsAntigravity(
+            name, (0, 0, 0, 1), (0, 0, 0, 1), 0.0, 0.0, 0.0, 0, 0,
+        ) for name in names)
+        rows = tuple((0, 0, 0, 1, 0, 0, 0, 1, 0.0) for _ in facts)
+        aggregate = EvaluationFactsAntigravity(
+            (0, 0, 0, 1117), (0, 0, 0, 1117), 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        )
+        return RetrospectiveEvaluationAntigravity(
+            facts, (), (), rows, aggregate, BootstrapResultAntigravity((0.0, 0.0), (0.0, 0.0)),
+            "engineering_reproduction_failed", False,
+        )
+
+    def test_task11_pure_replay_validates_closed_hash_graph_and_calls_bootstrap_once(self) -> None:
+        """A byte change in any member must fail before a forged frozen result can return."""
+        snapshot, selection = _snapshot_and_selection()
+        publication = _publication(snapshot, selection)
+        payloads = evaluation._result_artifacts_antigravity(self._complete_result(snapshot.context_datasets), publication)
+        bootstrap_calls: list[tuple[int, int]] = []
+        real_bootstrap = evaluation.paired_dataset_bootstrap_antigravity
+        def counted(rows: object) -> BootstrapResultAntigravity:
+            bootstrap_calls.append(np.asarray(rows).shape)
+            return real_bootstrap(rows)
+        with patch.object(evaluation, "paired_dataset_bootstrap_antigravity", side_effect=counted):
+            replayed = evaluation._replay_evaluation_payloads_antigravity(payloads)
+        self.assertEqual(bootstrap_calls, [(1117, 9)])
+        self.assertEqual(replayed.evaluation_sha256, sha256(payloads["artifact_sha256_antigravity.json"]).hexdigest())
+        self.assertEqual(replayed.publication_sha256, publication.publication_sha256)
+        for name in payloads:
+            tampered = dict(payloads)
+            tampered[name] = payloads[name] + b" "
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                evaluation._replay_evaluation_payloads_antigravity(tampered)
+
+    def test_task11_governance_is_exact_for_all_three_publication_documents(self) -> None:
+        """Missing, truthy and nested governance cannot be smuggled into a replay document."""
+        snapshot, selection = _snapshot_and_selection()
+        payloads = evaluation._result_artifacts_antigravity(self._complete_result(), _publication(snapshot, selection))
+        families = (
+            ("evaluation_antigravity.json", evaluation._EVALUATION_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "evaluation"),
+            ("bootstrap_antigravity.json", evaluation._BOOTSTRAP_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "bootstrap"),
+            ("decision_antigravity.json", evaluation._DECISION_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "decision"),
+        )
+        for name, keys, label in families:
+            parsed = evaluation.parse_canonical_json_bytes_antigravity(payloads[name])
+            for mutation in ("missing", "truthy", "nested"):
+                altered = dict(parsed)
+                if mutation == "missing":
+                    del altered["review_only"]
+                elif mutation == "truthy":
+                    altered["review_only"] = 1
+                else:
+                    altered["governance"] = {"review_only": True}
+                with self.subTest(name=name, mutation=mutation), self.assertRaises(ValueError):
+                    evaluation._strict_payload_antigravity(altered, keys, label, governance=True)
+
+    def test_task11_replay_rejects_hash_valid_confusion_and_builtin_type_forgery(self) -> None:
+        """Hash binding alone cannot hide a confusion mismatch or a JSON bool/float coercion."""
+        snapshot, selection = _snapshot_and_selection()
+        payloads = dict(evaluation._result_artifacts_antigravity(self._complete_result(snapshot.context_datasets), _publication(snapshot, selection)))
+        confusion = evaluation.parse_canonical_json_bytes_antigravity(payloads["confusion_antigravity.json"])
+        confusion["candidate_tp"] = 1
+        payloads["confusion_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(confusion)
+        evaluation_payload = evaluation.parse_canonical_json_bytes_antigravity(payloads["evaluation_antigravity.json"])
+        evaluation_payload["confusion_sha256"] = sha256(payloads["confusion_antigravity.json"]).hexdigest()
+        payloads["evaluation_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(evaluation_payload)
+        decision = evaluation.parse_canonical_json_bytes_antigravity(payloads["decision_antigravity.json"])
+        decision["confusion_sha256"] = sha256(payloads["confusion_antigravity.json"]).hexdigest()
+        decision["evaluation_sha256"] = sha256(payloads["evaluation_antigravity.json"]).hexdigest()
+        payloads["decision_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(decision)
+        artifact = evaluation.parse_canonical_json_bytes_antigravity(payloads["artifact_sha256_antigravity.json"])
+        artifact["files"] = {name: sha256(payloads[name]).hexdigest() for name in artifact["files"]}
+        payloads["artifact_sha256_antigravity.json"] = evaluation.canonical_json_bytes_antigravity(artifact)
+        with self.assertRaisesRegex(ValueError, "aggregate"):
+            evaluation._replay_evaluation_payloads_antigravity(payloads)
+        with self.assertRaises(ValueError):
+            evaluation._strict_int_antigravity(1117.0, 1117, "dataset count")
+        with self.assertRaises(ValueError):
+            evaluation._finite_float_antigravity(0, "float")
+
+    def test_task11_failure_validator_rejects_wrong_flags_and_existing_invalid_destination_audits(self) -> None:
+        """Existing invalid evidence is never repaired, and its audit is itself exact-schema."""
+        failure = evaluation.canonical_json_bytes_antigravity({
+            "schema": "exp441.evaluation-failure.v1", "status": "engineering_reproduction_failed",
+            "phase": "synthetic", "error_type": "ValueError", "error": "synthetic",
+            "labels_opened": False, "destination_committed": True, **evaluation._GOVERNANCE_ANTIGRAVITY,
+        })
+        self.assertEqual(evaluation._validate_failure_payload_antigravity(failure)["phase"], "synthetic")
+        broken = evaluation.parse_canonical_json_bytes_antigravity(failure); broken["labels_opened"] = 0
+        with self.assertRaises(ValueError):
+            evaluation._validate_failure_payload_antigravity(evaluation.canonical_json_bytes_antigravity(broken))
+        with tempfile.TemporaryDirectory() as temporary:
+            parent, destination = Path(temporary), Path(temporary) / "evaluation_antigravity"
+            os.mkdir(destination, 0o700)
+            with patch.object(evaluation, "_EVALUATION_DESTINATION_ANTIGRAVITY", destination):
+                with self.assertRaises(ValueError):
+                    evaluation.evaluate_exp441_antigravity()
+            audit = list(parent.glob("failed_evaluation_audit_*_antigravity"))
+            self.assertEqual(len(audit), 1)
+            evidence = (audit[0] / "failure_antigravity.json").read_bytes()
+            self.assertIs(evaluation._validate_failure_payload_antigravity(evidence)["destination_committed"], True)
+
+    def test_task11_existing_destination_replays_without_task9_or_exp417_access(self) -> None:
+        """An existing valid eight-file destination is inspected, never repaired or relabelled."""
+        snapshot, _selection = _snapshot_and_selection()
+        zero_selection = SelectionResultAntigravity((), (), (), (), (), frozenset())
+        publication = FrozenPublicationAntigravity("3" * 64, "4" * 64, "5" * 64, "6" * 64, zero_selection)
+        payloads = evaluation._result_artifacts_antigravity(self._complete_result(snapshot.context_datasets), publication)
+        with tempfile.TemporaryDirectory() as temporary:
+            parent, destination = Path(temporary), Path(temporary) / "evaluation_antigravity"
+            os.mkdir(destination, 0o700)
+            for name, payload in payloads.items():
+                evaluation.write_create_only_antigravity(destination / name, payload)
+            before = {name: (destination / name).read_bytes() for name in payloads}
+            preflight = (publication, snapshot, zero_selection, snapshot.context_datasets,
+                         MappingProxyType(dict(snapshot.test_row_count_by_dataset)))
+            def explode(*args: object, **kwargs: object) -> object:
+                raise AssertionError("existing evaluation must not open Task9/Exp417")
+            with patch.object(evaluation, "_EVALUATION_DESTINATION_ANTIGRAVITY", destination), \
+                 patch.object(evaluation, "_preflight_antigravity", return_value=preflight), \
+                 patch.object(evaluation, "load_frozen_context_labels_antigravity", side_effect=explode):
+                replayed = evaluation.evaluate_exp441_antigravity()
+            self.assertEqual(replayed.evaluation_sha256, sha256(payloads["artifact_sha256_antigravity.json"]).hexdigest())
+            self.assertEqual({name: (destination / name).read_bytes() for name in payloads}, before)
+
+    def test_task11_pre_rename_failure_preserves_staging_and_never_creates_destination(self) -> None:
+        """A pre-label engineering fault preserves only a failed private staging sibling."""
+        with tempfile.TemporaryDirectory() as temporary:
+            parent, destination = Path(temporary), Path(temporary) / "evaluation_antigravity"
+            with patch.object(evaluation, "_EVALUATION_DESTINATION_ANTIGRAVITY", destination), \
+                 patch.object(evaluation, "_preflight_antigravity", side_effect=ValueError("synthetic preflight")):
+                with self.assertRaisesRegex(ValueError, "synthetic preflight"):
+                    evaluation.evaluate_exp441_antigravity()
+            self.assertFalse(destination.exists())
+            failed = list(parent.glob("failed_evaluation_staging_*_antigravity"))
+            self.assertEqual(len(failed), 1)
+            failure = evaluation.parse_canonical_json_bytes_antigravity((failed[0] / "failure_antigravity.json").read_bytes())
+            self.assertEqual((failure["phase"], failure["labels_opened"], failure["destination_committed"]), ("preflight", False, False))
+            self.assertEqual(set(failure), {
+                "schema", "status", "phase", "error_type", "error", "labels_opened", "destination_committed",
+                *evaluation._GOVERNANCE_KEYS_ANTIGRAVITY,
+            })
+            self.assertEqual({key: failure[key] for key in evaluation._GOVERNANCE_KEYS_ANTIGRAVITY}, dict(evaluation._GOVERNANCE_ANTIGRAVITY))
+
+    def test_task11_destination_race_is_never_adopted_as_a_concurrent_winner(self) -> None:
+        """A directory that appears before RENAME_EXCL is an engineering failure, never a replay input."""
+        snapshot, _selection = _snapshot_and_selection()
+        zero_selection = SelectionResultAntigravity((), (), (), (), (), frozenset())
+        publication = FrozenPublicationAntigravity("3" * 64, "4" * 64, "5" * 64, "6" * 64, zero_selection)
+        labels = evaluation.FrozenContextLabelsAntigravity(snapshot.context_datasets,
+            {dataset: () for dataset in snapshot.context_datasets}, publication.publication_sha256,
+            publication.source_audit_sha256, zero_selection, 1, 1117, 0)
+        preflight = (publication, snapshot, zero_selection, snapshot.context_datasets,
+                     MappingProxyType(dict(snapshot.test_row_count_by_dataset)))
+        with tempfile.TemporaryDirectory() as temporary:
+            parent, destination = Path(temporary), Path(temporary) / "evaluation_antigravity"
+            calls = 0
+            def racing_preflight() -> object:
+                nonlocal calls
+                calls += 1
+                if calls == 3:
+                    os.mkdir(destination, 0o700)
+                return preflight
+            with patch.object(evaluation, "_EVALUATION_DESTINATION_ANTIGRAVITY", destination), \
+                 patch.object(evaluation, "_preflight_antigravity", side_effect=racing_preflight), \
+                 patch.object(evaluation, "load_frozen_context_labels_antigravity", return_value=labels), \
+                 patch.object(evaluation, "compute_retrospective_evaluation_antigravity", return_value=self._complete_result(snapshot.context_datasets)):
+                with self.assertRaisesRegex(FileExistsError, "appeared"):
+                    evaluation.evaluate_exp441_antigravity()
+            self.assertEqual(list(destination.iterdir()), [])
+            self.assertEqual(len(list(parent.glob("failed_evaluation_staging_*_antigravity"))), 1)
+
+    def test_task11_post_rename_failure_keeps_destination_and_writes_separate_audit(self) -> None:
+        """No post-rename fault may repair or add to the immutable eight-file destination."""
+        snapshot, _selection = _snapshot_and_selection()
+        zero_selection = SelectionResultAntigravity((), (), (), (), (), frozenset())
+        publication = FrozenPublicationAntigravity("3" * 64, "4" * 64, "5" * 64, "6" * 64, zero_selection)
+        labels = evaluation.FrozenContextLabelsAntigravity(snapshot.context_datasets,
+            {dataset: () for dataset in snapshot.context_datasets}, publication.publication_sha256,
+            publication.source_audit_sha256, zero_selection, 1, 1117, 0)
+        preflight = (publication, snapshot, zero_selection, snapshot.context_datasets,
+                     MappingProxyType(dict(snapshot.test_row_count_by_dataset)))
+        with tempfile.TemporaryDirectory() as temporary:
+            parent, destination = Path(temporary), Path(temporary) / "evaluation_antigravity"
+            real_inspect = evaluation._inspect_evaluation_destination_antigravity
+            calls = 0
+            def fail_after_commit(path: Path) -> object:
+                nonlocal calls
+                calls += 1
+                if calls == 1:
+                    raise OSError("synthetic post-rename replay")
+                return real_inspect(path)
+            with patch.object(evaluation, "_EVALUATION_DESTINATION_ANTIGRAVITY", destination), \
+                 patch.object(evaluation, "_preflight_antigravity", return_value=preflight), \
+                 patch.object(evaluation, "load_frozen_context_labels_antigravity", return_value=labels), \
+                 patch.object(evaluation, "compute_retrospective_evaluation_antigravity", return_value=self._complete_result(snapshot.context_datasets)), \
+                 patch.object(evaluation, "_inspect_evaluation_destination_antigravity", side_effect=fail_after_commit):
+                with self.assertRaisesRegex(OSError, "post-rename"):
+                    evaluation.evaluate_exp441_antigravity()
+            self.assertEqual(set(path.name for path in destination.iterdir()), set(evaluation._EVALUATION_FILENAMES_ANTIGRAVITY))
+            audits = list(parent.glob("failed_evaluation_audit_*_antigravity"))
+            self.assertEqual(len(audits), 1)
+            failure = evaluation.parse_canonical_json_bytes_antigravity((audits[0] / "failure_antigravity.json").read_bytes())
+            self.assertIs(failure["destination_committed"], True)
 
     def _sparse_snapshot(self) -> object:
         """Hand-derived sparse identities: B/C/A order is intentionally not lexical."""
