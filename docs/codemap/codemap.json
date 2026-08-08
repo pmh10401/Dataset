@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T18:36:25Z",
-  "generated_from_commit": "06a255ec4e1324971576a53f7c85372cf5b83db6",
+  "generated_at": "2026-08-08T22:12:24Z",
+  "generated_from_commit": "3ab28380ba291196c83e8f96095701ac54c9335d",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -31,7 +31,8 @@
     "Exp442 closed lifecycle profile, terminal ETA normalization, fresh-root readiness, label-free replay, immutable publication, inspect, and lazy post-freeze evaluation",
     "Exp441 immutable prepublication failure evidence and Exp442 engineering-only non-promotion governance",
     "Exp442 Sol review-fix: cryptographic document identity, closed production roots, private root-injected test seams, active ETA regression, and verified 1,117-record replay",
-    "Official Exp442 readiness, 1,117-record CPU replay, immutable prediction publication, post-freeze retrospective evaluation, verified improvement, and paused review-only handoff"
+    "Official Exp442 readiness, 1,117-record CPU replay, immutable prediction publication, post-freeze retrospective evaluation, verified improvement, and paused review-only handoff",
+    "Approved, pre-implementation Exp443 three-policy missing normal TRAIN comparison design with frozen MiniROCKET replay, label firewall, and full-population retrospective gates"
   ],
   "nodes": [
     {
@@ -41,7 +42,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve Exp441 as immutable prepublication failure evidence and Exp404/Exp416 as verified references. Exp442 passed fresh Sol High review, completed official readiness/new/inspect/evaluate, and passes every preregistered retrospective success-table gate: 15 rescued datasets, 15 TP, 15 FP, no regressions, no strong loss, positive paired micro and macro confidence-interval lower bounds, and zero pre-freeze label access. Because this is adaptive same-population follow-up rather than independent validation, Exp442 stays review-only, non-operational, and non-champion. Research is paused for direction discussion and no next experiment starts automatically.",
+      "role": "The control ledgers preserve Exp441 as immutable prepublication failure evidence and Exp404/Exp416 as verified references. Exp442 passed fresh Sol High review, completed official readiness/new/inspect/evaluate, and passes every preregistered retrospective success-table gate: 15 rescued datasets, 15 TP, 15 FP, no regressions, no strong loss, positive paired micro and macro confidence-interval lower bounds, and zero pre-freeze label access. Because this is adaptive same-population follow-up rather than independent validation, Exp442 stays review-only, non-operational, and non-champion. Research is paused for direction discussion and no next experiment starts automatically. Exp443 is now design-frozen but not implemented: it compares existing linear repair, whole-row exclusion, and leave-one-out same-length peer-median repair only in the 19 missing-affected normal TRAIN datasets. It must reproduce the original Exp249 control before freezing all three label-free predictions, preserves 1,098 unaffected datasets, and remains review-only after post-freeze evaluation.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -53,7 +54,8 @@
         "reviewed_design_sha256",
         "reviewed_preregistration_sha256",
         "retrospective_gates_all_passed",
-        "paused_awaiting_direction"
+        "paused_awaiting_direction",
+        "Exp443_design_frozen"
       ],
       "tests": [],
       "constraints": [
@@ -72,7 +74,8 @@
         "Exp441 remains official_engineering_failed_prepublication_label_free and its root is immutable.",
         "Exp442 remains review-only, non-operational, and not a champion candidate; readiness/new stay blocked until code-map synchronization and fresh Sol High review.",
         "The code map is regenerated from the Exp442 review-fix source before Sol re-review; official Exp442 readiness remains blocked until that re-review ships.",
-        "No next experiment starts automatically after official Exp442 completion; a new direction requires discussion, a new experiment number, and new preregistration."
+        "No next experiment starts automatically after official Exp442 completion; a new direction requires discussion, a new experiment number, and new preregistration.",
+        "Exp443 implementation may begin only after review of the committed design; control MiniROCKET reproduction must pass before either alternative policy or TEST-label evaluation."
       ],
       "evidence": [
         {
@@ -414,6 +417,10 @@
         {
           "path": "CHAMPION_LEDGER.json",
           "symbol": "\"scientific_winner_selected\": false"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md",
+          "symbol": "## 8. 환경과 대조군 재현 gate"
         }
       ]
     },
