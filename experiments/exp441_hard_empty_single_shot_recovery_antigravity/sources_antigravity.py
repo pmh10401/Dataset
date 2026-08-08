@@ -365,7 +365,12 @@ def _parse_records_fixed_workers_antigravity(
         for task, future in zip(tasks, futures, strict=True):
             record = future.result()
             records.append(record)
-            observer(MappingProxyType({"sequence": task[3], "dataset": record.dataset, "record_digest": task[2]}))
+            raw_lengths = {candidate.raw_length for candidate in record.candidates}
+            observer(MappingProxyType({
+                "sequence": task[3], "dataset": record.dataset, "record_digest": task[2],
+                "test_row_count": record.test_row_count,
+                "raw_length": next(iter(raw_lengths)) if len(raw_lengths) == 1 else None,
+            }))
     return tuple(records)
 
 

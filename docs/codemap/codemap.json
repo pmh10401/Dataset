@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T03:28:04Z",
-  "generated_from_commit": "19d497a242e078713f06ff76ccee8bd0a0f76bb8",
+  "generated_at": "2026-08-08T03:53:41Z",
+  "generated_from_commit": "146d2f647e17b96cbeab2076ce9ac6cfc6c53e00",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2461,12 +2461,12 @@
     },
     {
       "id": "exp438_frequency_runtime",
-      "label": "Exp438 / Exp439 / Exp440 frequency runtime",
+      "label": "Frequency research / Exp441 runtime",
       "type": "pipeline",
       "boundary": "Active isolated research",
       "layer": 2,
-      "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it rejects any checkpoint-root inventory substitution before parsing, parses 1,117 records in fixed context acceptance order through eleven CPU workers with immediate immutable prefix events, validates the complete Exp404 Hard manifest and every candidate/Hard TEST row range, and freezes zero label access without any SQLite or Exp417 input route.",
+      "path": "experiments",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it rejects any checkpoint-root inventory substitution before parsing, parses 1,117 records in fixed context acceptance order through eleven CPU workers with immediate immutable prefix events, validates the complete Exp404 Hard manifest and every candidate/Hard TEST row range, and freezes zero label access without any SQLite or Exp417 input route. Exp441 Task5 adds a process-owned, immutable label-free attempt: it allocates the smallest absent attempt directory, writes atomic progress/PID plus append-only parent acceptance logs, runs the fixed eleven-worker source verifier, performs the pure selector, creates source/selection evidence, replays source authority after artifacts, and never opens SQLite or an evaluator.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2520,7 +2520,11 @@
         "hard_coordinate_identity_sha256_antigravity",
         "_parse_record_task_antigravity",
         "select_hard_empty_single_shot_antigravity",
-        "selected_coordinate_identity_sha256_antigravity"
+        "selected_coordinate_identity_sha256_antigravity",
+        "allocate_attempt_antigravity",
+        "run_exp441_new_antigravity",
+        "ProgressWriterAntigravity",
+        "_reverify_sources_after_artifacts_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2554,7 +2558,9 @@
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_contracts_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_artifacts_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_sources_antigravity.py",
-        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_selector_antigravity.py"
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_selector_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_progress_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_runtime_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2567,7 +2573,8 @@
         "Exp439 parent-side failures preserve dataset name, TRAIN/TEST size metadata, stage, backend, cause type, and cause message in atomic progress JSON, events JSONL, and the text parent log.",
         "Exp439 keeps up to max-minus-one CPU workers active behind a slow frozen-order head while bounding pending plus buffered results by workers squared; durable commits remain in frozen dataset order.",
         "Exp439 computes each TRAIN row preferred depth once and each used-depth decomposition feature matrix once; held-out depth, fold-local robust transforms, OOF scores, thresholds, candidates, and record bytes remain unchanged.",
-        "The interrupted 101-record root is immutable; the scheduler/cache repair uses a distinct run root and imports only the exact 89-record Exp438 prefix under the existing gate."
+        "The interrupted 101-record root is immutable; the scheduler/cache repair uses a distinct run root and imports only the exact 89-record Exp438 prefix under the existing gate.",
+        "Exp441 Task5 records only parent-accepted frozen context order, uses source-owned fixed 11 workers and one numerical thread, has no resume route, retains failed/interrupted attempts, rechecks source identity after create-only artifacts, and does not open SQLite, TEST labels, an evaluator, or Exp440 ranking helpers."
       ],
       "evidence": [
         {
@@ -2797,6 +2804,22 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_selector_antigravity.py",
           "symbol": "class HardEmptySelectorAntigravityTests(unittest.TestCase):"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/progress_antigravity.py",
+          "symbol": "class ProgressWriterAntigravity:"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def allocate_attempt_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def run_exp441_new_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/runtime_antigravity.py",
+          "symbol": "def _reverify_sources_after_artifacts_antigravity("
         }
       ]
     },
@@ -3654,40 +3677,9 @@
           "symbol": "def _validate_publication_antigravity("
         }
       ]
-    },
-    {
-      "from": "exp438_frequency_runtime",
-      "to": "exp438_frequency_runtime",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_selector_antigravity.py",
-          "symbol": "def test_real_replay_is_label_free_and_matches_frozen_selection_identity("
-        },
-        {
-          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
-          "symbol": "def verify_frozen_sources_antigravity("
-        },
-        {
-          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/selector_antigravity.py",
-          "symbol": "def select_hard_empty_single_shot_antigravity("
-        }
-      ]
     }
   ],
   "flows": [
-    {
-      "id": "exp437_fixed_profile_flow",
-      "label": "Exp437 fixed-profile command boundary",
-      "trigger": "Invoke the outside-CWD-safe Exp437 wrapper with the exact readiness/new/resume/inspect/evaluate commands after the clean-HEAD readiness review.",
-      "steps": [
-        "exp436_contract_boundary",
-        "exp425_database",
-        "artifact_utils",
-        "sqlite_store"
-      ],
-      "outcome": "The wrapper resolves the repository before importing the selected profile entrypoint. The parser exposes only five commands; readiness, fixed-root preflight, runtime, publication replay, and lazy evaluation all receive EXP437_PROFILE. New remains label-free and profile-bound, interrupted resume is accepted, checkpoint_complete/failed/running resume is rejected before execute or publication, inspect alone is read-only, and evaluate imports the exact evaluator only after the Exp437 review-only publication is frozen; failed roots remain immutable and require a new experiment number, while no Exp436 compatibility root alias or scientific override can redirect the flow."
-    },
     {
       "id": "exp438_readiness_flow",
       "label": "Exp438 clean-HEAD readiness and acceleration gate",
@@ -3739,6 +3731,15 @@
         "artifact_utils"
       ],
       "outcome": "The lazy evaluator verifies Exp438 publication/output/checkpoint, Exp437 publication, Exp404/Exp291 Hard equality, population, database, provenance, and hashes before one descriptor-bound TEST instance_index,label read; it then publishes separate channel confusion, dataset, bootstrap, correlation/overlap, and decision evidence without choosing a winner or mutating frozen bytes."
+    },
+    {
+      "id": "exp441_immutable_attempt_flow",
+      "label": "Exp441 immutable label-free attempt",
+      "trigger": "Invoke the fixed new command after a clean reviewed commit; no resume exists.",
+      "steps": [
+        "exp438_frequency_runtime"
+      ],
+      "outcome": "The grouped Exp441 runtime creates a smallest-gap immutable attempt, records parent-accepted fixed-11-worker source replay progress, freezes source/selection evidence, rechecks the source authority, and returns a completed attempt without SQLite, TEST labels, evaluation, or publication."
     }
   ],
   "unknown_relationships": 0
