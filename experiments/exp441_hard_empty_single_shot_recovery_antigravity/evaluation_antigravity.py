@@ -100,6 +100,9 @@ def _preflight_antigravity() -> tuple[FrozenPublicationAntigravity, FrozenSource
     if selection != publication.selection:
         raise ValueError("publication selection changed")
     datasets = tuple(snapshot.context_datasets)
+    if (not isinstance(snapshot.test_row_count_by_dataset, MappingProxyType)
+            or set(snapshot.test_row_count_by_dataset) != set(datasets)):
+        raise ValueError("frozen row-count map is invalid")
     row_counts = MappingProxyType({dataset: snapshot.test_row_count_by_dataset[dataset] for dataset in datasets})
     coordinates = set(snapshot.hard_coordinates)
     coordinates.update(item.candidate.coordinate for item in selection.selected)
@@ -162,7 +165,9 @@ def load_frozen_context_labels_antigravity() -> FrozenContextLabelsAntigravity:
     """Load only frozen-context TEST labels after binding publication and source twice."""
     publication, snapshot, selection, datasets, row_counts = _preflight_antigravity()
     from experiments.exp417_causal_multihorizon_shadow.inputs import verified_read_only_connection
+    connection_entries = 0
     with verified_read_only_connection(Path(FROZEN_CONFIG.database_path), FROZEN_CONFIG.database_sha256) as connection:
+        connection_entries += 1
         labels = _load_labels_antigravity(connection, datasets, row_counts)
         _require_loaded_coordinates_antigravity(labels, snapshot, selection)
     post_publication = inspect_exp441_publication_antigravity()
@@ -179,7 +184,7 @@ def load_frozen_context_labels_antigravity() -> FrozenContextLabelsAntigravity:
         raise ValueError("post-connection source binding changed")
     return FrozenContextLabelsAntigravity(
         datasets, labels, publication.publication_sha256, publication.source_audit_sha256,
-        selection, 1, len(datasets), 0,
+        selection, connection_entries, len(datasets), 0,
     )
 
 

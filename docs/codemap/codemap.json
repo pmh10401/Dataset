@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T12:59:18Z",
-  "generated_from_commit": "93a565d823c76821406fb11dc396115827312529",
+  "generated_at": "2026-08-08T13:14:15Z",
+  "generated_from_commit": "af5e1fc098671e94a73c60694957b98ea259b887",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -3786,20 +3786,13 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
           "symbol": "with verified_read_only_connection("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "from experiments.exp417_causal_multihorizon_shadow.inputs import verified_read_only_connection"
         }
       ]
-  },
-  {
-    "from": "exp438_publication_evaluation",
-    "to": "exp417_inputs",
-    "type": "lazy reads",
-    "evidence": [
-      {
-        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
-        "symbol": "from experiments.exp417_causal_multihorizon_shadow.inputs import verified_read_only_connection"
-      }
-    ]
-  },
+    },
     {
       "from": "exp438_frequency_runtime",
       "to": "exp425_database",
