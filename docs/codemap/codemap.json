@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T12:09:43Z",
-  "generated_from_commit": "e4452b799d0ea333401f9065d70d179b2a4cb604",
+  "generated_at": "2026-08-08T12:30:55Z",
+  "generated_from_commit": "2b264d49a4ea9019dd3f96a44376e260f788723f",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -3116,7 +3116,7 @@
         },
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_bootstrap_antigravity.py",
-          "symbol": "def test_bootstrap_module_has_no_evaluator_or_sqlite_dependency("
+          "symbol": "def test_bootstrap_module_allows_only_exact_pure_ast_capabilities("
         }
       ]
     }
