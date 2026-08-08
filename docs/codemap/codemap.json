@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T00:06:01Z",
-  "generated_from_commit": "5cfb823c00dd046770fec071d2a99702da6bca52",
+  "generated_at": "2026-08-08T00:29:29Z",
+  "generated_from_commit": "99af339ae4d7656c2e506e9ec2c123aa332edf4e",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -25,7 +25,8 @@
     "Exp440 approved TRAIN-only low-frequency multi-depth precision gate with deterministic outside-Hard budget 100 and post-freeze evaluation",
     "Exp437 nested JSON surface repair implementation plan with strict-decoder regression proof and immutable real-artifact replay",
     "Exp440 test-first implementation plan for isolated multi-depth calibration, budget, acceleration, runtime, publication, and post-freeze evaluation",
-    "Exp441 approved selector-only retrospective reproduction design: frozen Exp440 provisional evidence, Hard-empty dataset eligibility, one candidate per dataset, global budget 30, post-freeze descriptive evaluation, exact NumPy 2.4.6 PCG64 bootstrap replay, and no scientific-winner claim"
+    "Exp441 approved selector-only retrospective reproduction design: frozen Exp440 provisional evidence, Hard-empty dataset eligibility, one candidate per dataset, global budget 30, post-freeze descriptive evaluation, exact NumPy 2.4.6 PCG64 bootstrap replay, and no scientific-winner claim",
+    "Exp441 test-first implementation plan for governance reconciliation, strict 11-worker source replay, pure Hard-empty selection, immutable attempts, six-file publication, fixed four-command lifecycle, exact retrospective evaluation, and per-boundary code-map synchronization"
   ],
   "nodes": [
     {
@@ -35,7 +36,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "Records Exp439 non-promotion and the verified Exp440 implementation: fold-local adjacent-depth low-frequency consensus, conservative 256-row exact-length feasibility cap, CPU/11-worker selection after MLX/Numba gates, prediction not started, and clean-HEAD readiness pending.",
+      "role": "The current control files still record stale Exp440 readiness-pending state although its frozen publication and evaluation exist; the approved Exp441 plan begins by reconciling that state, then implements a retrospective-only Hard-empty selector without changing the Exp404/Exp416 reference.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -50,7 +51,8 @@
         "Exp437 runs with 11 CPU workers. Exp438 waits because the macOS DB snapshot safety contract permits one owned hardlink/session at a time; after Exp437 completion DB nlink must return to 1 before Exp438 readiness.",
         "Exp438 failed at 89/1,117 on a false fixed-tolerance reconstruction rejection in Chinatown_normal_1; Exp439 preserves the failed root and changes only the validation guard to max(1e-5, one float32 ULP at component scale).",
         "Exp439 direct integration failed its preregistered precision and F1 gates; Exp440 is a new review-only experiment whose prediction uses only TRAIN-calibrated multi-depth low-frequency consensus and never reads Exp439 evaluation artifacts.",
-        "The approved Exp441 design is selector-only: it replays the frozen Exp440 provisional pool, admits only datasets with zero frozen Hard coordinates, retains at most one coordinate per dataset and 30 globally, keeps TEST labels behind a new prediction freeze, and treats the already-observed bootstrap intervals as descriptive post-selection evidence rather than confirmation; retrospective replay freezes context dataset order, NumPy 2.4.6, PCG64, int64 sampling shape, the project F1 formula, linear quantiles, full-precision expected values, and 1e-15 absolute comparison tolerance."
+        "The approved Exp441 design is selector-only: it replays the frozen Exp440 provisional pool, admits only datasets with zero frozen Hard coordinates, retains at most one coordinate per dataset and 30 globally, keeps TEST labels behind a new prediction freeze, and treats the already-observed bootstrap intervals as descriptive post-selection evidence rather than confirmation; retrospective replay freezes context dataset order, NumPy 2.4.6, PCG64, int64 sampling shape, the project F1 formula, linear quantiles, full-precision expected values, and 1e-15 absolute comparison tolerance.",
+        "The Exp441 implementation plan uses nine reviewer-sized TDD commits, never reuses Exp440's agreement-first ranking key, prohibits SQLite in readiness/new/inspect, preserves failed attempts and staging evidence, updates the map triplet in every boundary-changing commit, and requires a fresh Sol/High final review before readiness."
       ],
       "evidence": [
         {
@@ -292,6 +294,10 @@
         {
           "path": "docs/superpowers/specs/2026-08-08-exp441-hard-empty-single-shot-recovery-antigravity-design.md",
           "symbol": "# Exp441 기존 Hard 미탐 데이터셋 단발 복구 설계"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-08-exp441-hard-empty-single-shot-recovery-antigravity.md",
+          "symbol": "# Exp441 Hard-Empty Single-Shot Recovery Implementation Plan"
         }
       ]
     },
