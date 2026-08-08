@@ -1,9 +1,10 @@
 {
-  "current_commit": "025220753f134107f1ef5c15d69fa748cf873740",
+  "current_commit": "f8847b7acc19da2ff56e47b7c19d434552d79bc3",
   "working_tree_dirty": true,
-  "generated_at": "2026-08-08T07:55:17Z",
+  "generated_at": "2026-08-08T08:10:58Z",
   "changed_modules_since_prior_lock": [
-    "root"
+    "experiments",
+    "scratch"
   ],
   "scanned_scope": [
     "tracked root files",
@@ -35,10 +36,6 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each top-level module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Root-level tracked files are grouped as root. docs/codemap is excluded to prevent self-reference.",
   "module_fingerprints": {
-    "root": {
-      "fingerprint": "79fad950bc06df0b8f8ffcf51919ad3b0aa934546d4a1c22a15713d6447b9bf3",
-      "tracked_files": 210
-    },
     ".superpowers": {
       "fingerprint": "6ad326315dbf8e2b9ebcd9e7bd1289ba6eb38c065eb9fe90d07fb217120ea098",
       "tracked_files": 30
@@ -48,8 +45,8 @@
       "tracked_files": 356
     },
     "experiments": {
-      "fingerprint": "29dec0ea08e867f504e4a14df9cff92475eb88b2de9325039d72132a1b0ebc63",
-      "tracked_files": 1197
+      "fingerprint": "1a9cdc77f9130958ac5df095e152799928eb756af7f465c295633fdde497a748",
+      "tracked_files": 1201
     },
     "operational": {
       "fingerprint": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
@@ -59,9 +56,13 @@
       "fingerprint": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
       "tracked_files": 4
     },
+    "root": {
+      "fingerprint": "79fad950bc06df0b8f8ffcf51919ad3b0aa934546d4a1c22a15713d6447b9bf3",
+      "tracked_files": 210
+    },
     "scratch": {
-      "fingerprint": "9b4addad62d7201f215198627d81b083e30952ef8db01c1d19f0483edfbff3e1",
-      "tracked_files": 142
+      "fingerprint": "50ada1cacbc0a0794002a447512882ab14414f7d625697cbf7f17ef376a13260",
+      "tracked_files": 143
     },
     "scripts": {
       "fingerprint": "f4b764d442d0ba39e7af6ed519c08b6e3f49cd8183420fa41a15424279249899",
