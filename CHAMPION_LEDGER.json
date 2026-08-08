@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-09T02:00:02+09:00",
+  "updated_at": "2026-08-09T02:25:39+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -69,12 +69,20 @@
     },
     {
       "experiment": "Exp442",
-      "status": "engineering_only_successor_implementation_in_progress",
-      "reason": "Exp442 repairs only the terminal progress/publication contract in a fresh identity and root. It inherits Exp441's selector without scientific changes and remains review-only, non-operational, and not a champion candidate until a separately frozen prediction and preregistered evaluation exist.",
+      "status": "implementation_verification_complete_fresh_review_codemap_pending",
+      "reason": "Exp442 repairs only the terminal progress/publication contract in a fresh identity and root. Implementation and verification are complete at 5747a47fa8d996e549c4b9536e5ecbfeea87dfcf with 5/5 lifecycle tests, 196/196 Exp441, 35/35 Exp440, 270/270 Exp417 regressions, and exact 1,117-record CPU/11-worker source/selection parity with zero label access. Fresh Sol High review and code-map synchronization remain pending; readiness/new are not started, so Exp442 remains review-only and is not a champion candidate.",
       "reviewed_design_sha256": "b866daa87279143d60b586e61433e33a152d203a915f030fc9b4e991a43fafe8",
+      "implementation_commit": "5747a47fa8d996e549c4b9536e5ecbfeea87dfcf",
+      "implementation_report": "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md",
       "prediction_sha256": null,
       "evaluation": null,
       "test_labels_opened": false,
+      "label_access_count": 0,
+      "official_readiness": false,
+      "official_run_started": false,
+      "run_root_exists": false,
+      "fresh_sol_high_review": "pending",
+      "codemap_sync": "pending",
       "review_only": true,
       "operational_alert_eligible": false,
       "scientific_winner_selected": false

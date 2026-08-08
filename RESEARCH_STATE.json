@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-08T17:00:02Z",
+  "updated_at": "2026-08-08T17:25:39Z",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
-  "last_verified_commit": "f5df76e377a355eaf1613b7864186c7a618b7756",
+  "last_verified_commit": "5747a47fa8d996e549c4b9536e5ecbfeea87dfcf",
   "active_experiment": "Exp442",
-  "active_phase": "exp442_implementation_in_progress_verification_review_pending",
+  "active_phase": "exp442_implementation_verification_complete_fresh_review_codemap_pending",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -205,7 +205,7 @@
     "events_jsonl": null,
     "parent_log": null,
     "pid_file": null,
-    "state": "not_started_exp442_verification_review_pending",
+    "state": "not_started_exp442_readiness_pending",
     "test_labels_opened": false,
     "backend": "cpu",
     "workers": 11
@@ -640,8 +640,8 @@
     "chlorine_cpu_smoke_seconds": 42.57567008398473,
     "chlorine_prediction_label_access": 0
   },
-  "next_action": "FINISH_EXP442_VERIFICATION_AND_FRESH_SOL_HIGH_REVIEW_THEN_CREATE_EXP442_READINESS",
-  "exact_next_command_if_interrupted": "DO_NOT_RUN_EXP442_READINESS_UNTIL_VERIFICATION_AND_FRESH_SOL_HIGH_REVIEW",
+  "next_action": "SYNCHRONIZE_CODEMAP_AND_OBTAIN_FRESH_SOL_HIGH_REVIEW_THEN_CREATE_EXP442_READINESS",
+  "exact_next_command_if_interrupted": "DO_NOT_RUN_EXP442_READINESS_UNTIL_CODEMAP_AND_FRESH_SOL_HIGH_REVIEW",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": false,
@@ -675,9 +675,11 @@
   },
   "exp442_implementation": {
     "experiment": "Exp442",
-    "status": "engineering_only_successor_implementation_in_progress",
+    "status": "implementation_verification_complete_fresh_review_codemap_pending",
     "predecessor": "Exp441",
     "predecessor_reviewed_commit": "f5df76e377a355eaf1613b7864186c7a618b7756",
+    "implementation_commit": "5747a47fa8d996e549c4b9536e5ecbfeea87dfcf",
+    "implementation_report": "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md",
     "predecessor_root": "/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808",
     "run_identity": "exp442-terminal-eta-publication-repair-antigravity-20260808",
     "run_root": "/Users/mac/Documents/Dataset/exp442_terminal_eta_publication_repair_antigravity_20260808",
@@ -695,9 +697,32 @@
     "evaluation_sha256": null,
     "test_labels_opened": false,
     "label_access_count": 0,
+    "official_readiness": false,
+    "official_run_started": false,
+    "run_root_exists": false,
+    "fresh_sol_high_review": "pending",
+    "codemap_sync": "pending",
+    "tests": {
+      "exp442_lifecycle": {"passed": 5, "failed": 0, "errors": 0},
+      "exp441_regression": {"passed": 196, "failed": 0, "errors": 0},
+      "exp440_regression": {"passed": 35, "failed": 0, "errors": 0},
+      "exp417_regression": {"passed": 270, "failed": 0, "errors": 0}
+    },
+    "real_replay": {
+      "records": 1117,
+      "provisional": 840,
+      "outside_hard": 394,
+      "eligible": 73,
+      "winner_datasets": 49,
+      "selected": 30,
+      "backend": "cpu",
+      "workers": 11,
+      "label_access_count": 0,
+      "source_selection_parity": true
+    },
     "review_only": true,
     "operational_alert_eligible": false,
     "scientific_winner_selected": false,
-    "next_action": "finish_verification_review_then_exp442_readiness"
+    "next_action": "synchronize_codemap_and_obtain_fresh_sol_high_review_then_exp442_readiness"
   }
 }

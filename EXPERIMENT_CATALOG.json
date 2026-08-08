@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-08T10:41:00+09:00",
+  "updated_at": "2026-08-09T02:25:39+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -498,14 +498,15 @@
     {
       "id": "Exp442",
       "kind": "terminal_eta_publication_contract_repair",
-      "status": "engineering_only_successor_implementation_in_progress",
+      "status": "implementation_verification_complete_fresh_review_codemap_pending",
       "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
       "base_commit": "f5df76e377a355eaf1613b7864186c7a618b7756",
       "documents": [
         "docs/superpowers/specs/2026-08-08-exp442-terminal-eta-publication-repair-antigravity-design.md",
         "docs/superpowers/plans/2026-08-08-exp442-terminal-eta-publication-repair-antigravity.md",
         "docs/EXP442_PREREGISTRATION_antigravity_KO.md",
-        "docs/EXP442_RUNBOOK_antigravity_KO.md"
+        "docs/EXP442_RUNBOOK_antigravity_KO.md",
+        "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md"
       ],
       "artifact_root": "/Users/mac/Documents/Dataset/exp442_terminal_eta_publication_repair_antigravity_20260808",
       "dataset_count": 1117,
@@ -516,6 +517,8 @@
       "predecessor_terminal_authority_sha256": "726d50e831acdad6728503156137f72aba71c541af82b8b37e6f959d62b0e95b",
       "run_identity": "exp442-terminal-eta-publication-repair-antigravity-20260808",
       "reviewed_design_sha256": "b866daa87279143d60b586e61433e33a152d203a915f030fc9b4e991a43fafe8",
+      "implementation_commit": "5747a47fa8d996e549c4b9536e5ecbfeea87dfcf",
+      "implementation_report": "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md",
       "selected_coordinate_identity_sha256": "db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048",
       "scientific_changes": [],
       "engineering_changes": ["normalize inactive terminal eta_seconds to JSON null before publication"],
@@ -531,7 +534,30 @@
       "scientific_winner_selected": false,
       "official_readiness": false,
       "official_run_started": false,
-      "notes": "Engineering-only successor. Exp442 must create a fresh readiness and fresh 1,117-record label-free replay after verification and review; it may not edit, copy, resume, or publish the immutable Exp441 attempt. It is not a new detector, independent validation, operational alert policy, or champion candidate."
+      "run_root_exists": false,
+      "fresh_sol_high_review": "pending",
+      "codemap_sync": "pending",
+      "verification": {
+        "exp442_lifecycle_tests": 5,
+        "exp441_regression_tests": 196,
+        "exp440_regression_tests": 35,
+        "exp417_regression_tests": 270,
+        "failures": 0,
+        "errors": 0,
+        "real_replay": {
+          "records": 1117,
+          "provisional_candidates": 840,
+          "outside_hard_candidates": 394,
+          "eligible_candidates": 73,
+          "winner_datasets": 49,
+          "selected_candidates": 30,
+          "backend": "cpu",
+          "cpu_workers": 11,
+          "label_access_count": 0,
+          "source_selection_parity": true
+        }
+      },
+      "notes": "Implementation and verification are complete at 5747a47fa8d996e549c4b9536e5ecbfeea87dfcf; Exp442 lifecycle 5/5, Exp441 196/196, Exp440 35/35, Exp417 270/270, and the real 1,117-record CPU/11-worker replay passed with exact source/selection parity and zero label access. Fresh Sol High review and code-map synchronization remain pending. Exp442 readiness/new are not started, the official root remains absent, prediction/evaluation remain null, and this engineering-only successor is review-only and not a champion candidate."
     }
   ]
 }
