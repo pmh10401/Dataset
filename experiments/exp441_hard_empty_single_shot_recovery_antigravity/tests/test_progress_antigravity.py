@@ -104,6 +104,20 @@ class ProgressAntigravityTests(unittest.TestCase):
             event = json.loads((attempt / "events_antigravity.jsonl").read_text())
             self.assertEqual((event["test_row_count"], event["raw_length"]), (17, 64))
             self.assertIsNone(progress["train_row_count"])
+            self.assertEqual(progress["stage"], "summarizing_source_authority")
+            self.assertNotIn("verifying", progress["stage"])
+
+    def test_initial_progress_failure_after_pid_creation_marks_pid_inactive_before_reraising(self) -> None:
+        # Break caught: a partial writer leaves a live PID if its initial atomic progress artifact cannot be created.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity as module
+        with tempfile.TemporaryDirectory() as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"; attempt.mkdir()
+            with patch.object(module.ProgressWriterAntigravity, "_write_progress_antigravity", side_effect=OSError("initial progress failed")):
+                with self.assertRaisesRegex(OSError, "initial progress failed"):
+                    ProgressWriterAntigravity(attempt, total=1, pid=4321)
+            self.assertFalse(json.loads((attempt / "pid_antigravity").read_text())["active"])
+            self.assertTrue((attempt / "events_antigravity.jsonl").exists())
+            self.assertTrue((attempt / "text_antigravity.log").exists())
 
     def test_terminal_replace_failure_preserves_progress_cleans_temp_and_still_attempts_pid(self) -> None:
         # Break caught: failed progress replacement prevents PID shutdown or replaces a known-good JSON.

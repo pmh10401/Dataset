@@ -127,6 +127,33 @@ class RuntimeAntigravityTests(unittest.TestCase):
             self.assertEqual(progress["stage"], "failed")
             self.assertEqual(progress["completed"], 0)
 
+    def test_progress_stays_unsubmitted_until_source_parser_emits_first_parent_event(self) -> None:
+        # Break caught: the runtime reports all datasets active before the source parser has created any futures.
+        snapshot = _snapshot(_fixture_candidates())
+        selection = select_hard_empty_single_shot_antigravity(snapshot)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def replay(observer):
+                attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
+                before = json.loads((attempt / "progress_antigravity.json").read_text())
+                self.assertEqual((before["stage"], before["current_dataset"], before["current_record_name"], before["active_datasets"]), ("allocated", None, None, []))
+                observer({"sequence": 0, "dataset": snapshot.context_datasets[0], "test_row_count": 8, "raw_length": 5})
+                after_first = json.loads((attempt / "progress_antigravity.json").read_text())
+                self.assertEqual((after_first["completed"], after_first["current_dataset"], after_first["active_datasets"]), (1, snapshot.context_datasets[1], list(snapshot.context_datasets[1:])))
+                self.assertEqual(len((attempt / "events_antigravity.jsonl").read_text().splitlines()), 1)
+                for index, dataset in enumerate(snapshot.context_datasets[1:], start=1):
+                    observer({"sequence": index, "dataset": dataset, "test_row_count": 8, "raw_length": None})
+                return snapshot
+            with patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._RUN_ROOT_ANTIGRAVITY", root), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity.FROZEN_CONFIG", SimpleNamespace(dataset_count=len(snapshot.context_datasets))), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._ensure_clean_reviewed_commit_antigravity"), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._verify_with_observer_antigravity", side_effect=replay), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._reverify_sources_after_artifacts_antigravity", return_value=snapshot), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity.select_hard_empty_single_shot_antigravity", return_value=selection), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity.validate_production_selection_antigravity", side_effect=lambda value: value):
+                run_exp441_new_antigravity(reviewed_commit="a" * 40)
+
     def test_sigterm_is_recorded_as_interrupted_not_schema_failure(self) -> None:
         # Break caught: SIGTERM follows the generic failure path and loses the distinct interruption meaning.
         snapshot = _snapshot(_fixture_candidates())
@@ -217,8 +244,24 @@ class RuntimeAntigravityTests(unittest.TestCase):
                     run_exp441_new_antigravity(reviewed_commit="a" * 40)
             attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
             self.assertEqual(json.loads((attempt / "progress_antigravity.json").read_text())["stage"], "failed")
-            self.assertTrue(json.loads((attempt / "pid_antigravity").read_text())["active"])
+            self.assertFalse(json.loads((attempt / "pid_antigravity").read_text())["active"])
             self.assertEqual(json.loads((attempt / "failure_antigravity.json").read_text())["error"], "source failure")
+
+    def test_partial_writer_initial_progress_failure_preserves_original_error_inactive_pid_and_failure_json(self) -> None:
+        # Break caught: a production new attempt leaves a live PID or loses canonical failure evidence after initial progress creation fails.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity as progress
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity as runtime
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(runtime, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(progress.ProgressWriterAntigravity, "_write_progress_antigravity", side_effect=OSError("initial progress failed")):
+                with self.assertRaisesRegex(OSError, "initial progress failed"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            self.assertFalse(json.loads((attempt / "pid_antigravity").read_text())["active"])
+            failure = runtime.parse_canonical_json_bytes_antigravity((attempt / "failure_antigravity.json").read_bytes())
+            runtime._validate_failure_artifact_antigravity(failure)
+            self.assertFalse((root / "publication_antigravity").exists())
 
     def test_runtime_failure_keeps_primary_error_when_failure_json_write_fails(self) -> None:
         # Break caught: a failure-artifact I/O fault masks the source error or rolls back failed progress/PID evidence.

@@ -229,10 +229,6 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
         _ensure_clean_reviewed_commit_antigravity(reviewed_commit)
         context_datasets, _digests, _hard, _hashes, _watched = _load_prefix_antigravity()
         active_datasets = list(context_datasets)
-        writer.begin_record_antigravity(
-            dataset=active_datasets[0], record_name="0000_record_antigravity.json",
-            active_datasets=tuple(active_datasets),
-        )
 
         def observer(event: Mapping[str, object]) -> None:
             dataset = event.get("dataset")
@@ -243,6 +239,11 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
                 raise ValueError("source observer event is invalid")
             if sequence_value != writer.completed_count_antigravity or active_datasets[0] != dataset:
                 raise ValueError("source observer accepted out of context order")
+            if writer.completed_count_antigravity == 0:
+                writer.begin_record_antigravity(
+                    dataset=dataset, record_name=f"{sequence_value:04d}_record_antigravity.json",
+                    active_datasets=tuple(active_datasets),
+                )
             active_datasets.pop(0)
             next_dataset = active_datasets[0] if active_datasets else None
             writer.accept_record_antigravity(

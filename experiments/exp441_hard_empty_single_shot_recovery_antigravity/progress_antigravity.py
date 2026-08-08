@@ -52,7 +52,14 @@ class ProgressWriterAntigravity:
         )
         write_create_only_antigravity(self._attempt_path / "events_antigravity.jsonl", b"")
         write_create_only_antigravity(self._attempt_path / "text_antigravity.log", b"")
-        self._write_progress_antigravity()
+        try:
+            self._write_progress_antigravity()
+        except BaseException:
+            try:
+                self._mark_pid_inactive_antigravity()
+            except BaseException:
+                pass
+            raise
 
     def _base_state_antigravity(self, *, active: bool, stage: str) -> dict[str, object]:
         return {
@@ -116,6 +123,26 @@ class ProgressWriterAntigravity:
         finally:
             os.close(descriptor)
 
+    def _mark_pid_inactive_antigravity(self) -> None:
+        """Replace the owned PID record, retrying once through a separate rename primitive."""
+        final = self._attempt_path / "pid_antigravity"
+        temporary = self._attempt_path / "pid_terminal_antigravity.tmp"
+        write_create_only_antigravity(
+            temporary,
+            canonical_json_bytes_antigravity({"pid": self._pid, "active": False, "heartbeat": _utc_now_antigravity()}),
+        )
+        try:
+            os.replace(temporary, final)
+        except BaseException as replace_error:
+            try:
+                os.rename(temporary, final)
+            except BaseException:
+                try:
+                    temporary.unlink()
+                except FileNotFoundError:
+                    pass
+                raise replace_error
+
     def begin_record_antigravity(self, *, dataset: str, record_name: str, active_datasets: Iterable[str]) -> None:
         if not isinstance(dataset, str) or not dataset or not isinstance(record_name, str) or not record_name:
             raise ValueError("progress record context is invalid")
@@ -153,8 +180,8 @@ class ProgressWriterAntigravity:
         self._state.update({
             "active_datasets": list(active), "success": self._completed,
             "current_dataset": next_dataset, "current_record_name": next_record_name,
-            "test_row_count": None if next_dataset else None, "raw_length": None,
-            "stage": "verifying_frozen_sources" if next_dataset else "verifying_source_summary",
+            "test_row_count": None, "raw_length": None,
+            "stage": "verifying_frozen_sources" if next_dataset else "summarizing_source_authority",
         })
         self._write_progress_antigravity()
 
@@ -173,14 +200,9 @@ class ProgressWriterAntigravity:
             self._write_progress_antigravity()
         except BaseException as error:
             primary = error
-        final_pid = self._attempt_path / "pid_antigravity"
-        temporary = self._attempt_path / "pid_terminal_antigravity.tmp"
         try:
-            write_create_only_antigravity(temporary, canonical_json_bytes_antigravity({"pid": self._pid, "active": False, "heartbeat": _utc_now_antigravity()}))
-            os.replace(temporary, final_pid)
+            self._mark_pid_inactive_antigravity()
         except BaseException as error:
-            try: temporary.unlink()
-            except FileNotFoundError: pass
             if primary is None: primary = error
         if primary is not None:
             raise primary
