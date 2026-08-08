@@ -137,12 +137,14 @@ def _load_labels_antigravity(connection: object, datasets: tuple[str, ...], row_
     for dataset in datasets:
         rows = connection.execute(_LABEL_SQL_ANTIGRAVITY, (dataset,)).fetchall()  # type: ignore[attr-defined]
         normalized: list[tuple[int, int]] = []
-        previous = -1
+        previous: int | None = None
         for row in rows:
             if not isinstance(row, (tuple, list)) or len(row) != 2:
                 raise ValueError("label row schema is invalid")
             index, value = row
-            if type(index) is not int or index < 0 or index <= previous:
+            if type(index) is not int or index < 0:
+                raise ValueError("label index is invalid")
+            if previous is not None and index <= previous:
                 raise ValueError("label index is invalid")
             normalized.append((index, _normalize_label_antigravity(value)))
             previous = index
