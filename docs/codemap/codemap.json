@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T13:34:28Z",
-  "generated_from_commit": "615b277adc0baf6f1ad4200980a3eab29d8ddff9",
+  "generated_at": "2026-08-08T13:54:30Z",
+  "generated_from_commit": "a80d0b008838a0de3c07aaa23ed6978733873422",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2926,7 +2926,7 @@
       "boundary": "Active isolated research",
       "layer": 3,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Exp441 Task 9 adds a fail-closed, post-freeze-only TEST-label loader. It replays source and selector identity before a fresh publication gate, then uses one Exp417 descriptor-bound connection for one quick_check and exactly 1,117 ordered context queries. It validates actual sparse identities, closes the connection, and repeats publication/source/selector binding before returning immutable facts; it computes no metrics and writes no evaluation artifacts. Task 9 is parent-verified, independently reviewed, and shipped at 615b277 after three fix rounds with 9 focused and 166 full tests passed. Task 10 pure retrospective evaluation is next but not implemented. Official readiness/new/inspect/evaluate remain gated until Task 12 final review.",
+      "role": "Exp441 Task 9 adds a fail-closed, post-freeze-only TEST-label loader. It replays source and selector identity before a fresh publication gate, then uses one Exp417 descriptor-bound connection for one quick_check and exactly 1,117 ordered context queries. Task 10 consumes only the resulting immutable snapshot: it preserves context and sparse coordinate identities, computes confusion/F1/rescue/regression facts and one exact Task 8 bootstrap input/result entirely in memory, classifies fixed retrospective constants with 1e-15 tolerance only for two deltas and four CI endpoints, and always records no scientific winner. It does not reopen Task 9, publication/source/selector routes, SQLite, filesystem, or official evaluation routes. Official readiness/new/inspect/evaluate remain gated until Task 12 final review.",
       "entrypoints": [
         "publish_exp438_antigravity",
         "inspect_publication_antigravity",
@@ -2942,7 +2942,8 @@
         "project_f1_antigravity",
         "require_numpy_2_4_6_antigravity",
         "paired_dataset_bootstrap_antigravity",
-        "load_frozen_context_labels_antigravity"
+        "load_frozen_context_labels_antigravity",
+        "compute_retrospective_evaluation_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py",
@@ -3998,15 +3999,15 @@
     },
     {
       "id": "exp441_immutable_attempt_flow",
-      "label": "Exp441 Task 9 reviewed handoff / Task 10 evaluation next",
-      "trigger": "Task 9 frozen-context label boundary is parent-verified, independently reviewed, and shipped at 615b277 after three fix rounds; 9 focused and 166 full Exp441 tests passed. Task 10 pure retrospective evaluation is next but not implemented. Do not run official readiness/new/inspect/evaluate until Task 12 final review (DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW).",
+      "label": "Exp441 Task 10 pure retrospective evaluation / Task 11 publication next",
+      "trigger": "Task 10 is the pure in-memory calculation reached only after a caller has already constructed the immutable Task 9 frozen-context label snapshot; Task 11 publication is next. Do not run official readiness/new/inspect/evaluate until Task 12 final review (DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW).",
       "steps": [
         "exp438_frequency_runtime",
         "exp438_publication_evaluation",
         "exp417_inputs",
         "sqlite_store"
       ],
-      "outcome": "The loader first replays the exact label-free source snapshot and pure selection, binds canonical source-audit bytes to the inspected publication, and repeats publication inspection immediately before the delayed Exp417 import. It then opens one descriptor-bound connection, checks SQLite once, issues exactly one TEST-label query for each of the 1,117 frozen context datasets, validates actual returned identities, closes the connection, and repeats all frozen bindings before returning immutable labels. It performs no metric calculation and writes no artifact. Task 9 review is shipped at 615b277 after three fix rounds; Task 10 pure retrospective evaluation remains unimplemented. No official process, PID, checkpoint, publication, evaluation, run root, SQLite, or TEST-label route was opened."
+      "outcome": "The Task 9 loader remains the sole delayed label boundary. Task 10 neither invokes it nor touches any source/publication/selector/SQLite/filesystem route: it uses the snapshot context order and actual sparse identities to calculate immutable per-dataset and aggregate confusion/F1/rescue/regression facts, calls the fixed Task 8 bootstrap once on the exact 1,117 by 9 float64 rows, compares only fixed constants, and returns a no-winner retrospective status. Task 11 alone owns preflight exception classification and artifact publication."
     }
   ],
   "unknown_relationships": 0

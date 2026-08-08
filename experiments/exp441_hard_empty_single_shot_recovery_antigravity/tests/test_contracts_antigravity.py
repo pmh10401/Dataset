@@ -6,10 +6,14 @@ from types import MappingProxyType
 import unittest
 
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_antigravity import (
+    BootstrapResultAntigravity,
     CandidateEvidenceAntigravity,
+    DatasetEvaluationFactsAntigravity,
+    EvaluationFactsAntigravity,
     ParsedRecordAntigravity,
     RankedCandidateAntigravity,
     ReadinessBindingAntigravity,
+    RetrospectiveEvaluationAntigravity,
     SelectionResultAntigravity,
     BackendAssessmentAntigravity,
     terminal_attempt_authority_sha256_from_bytes_antigravity,
@@ -34,6 +38,55 @@ def _ranked(candidates: tuple[CandidateEvidenceAntigravity, ...], selected_count
 
 
 class Exp441ContractsAntigravityTests(unittest.TestCase):
+    def test_retrospective_contracts_are_deeply_immutable_and_require_exact_row_shape(self) -> None:
+        """Changing a caller-owned fact/row container must not change frozen evaluation evidence."""
+        dataset_facts = [DatasetEvaluationFactsAntigravity(
+            f"D{index:04d}", (0, 0, 1, 1), (0, 1, 1, 1), 0.0, 0.0, 0.0, 0, 1,
+        ) for index in range(1117)]
+        rows = [(0, 0, 1, 1, 0, 1, 1, 1, 0.0) for _ in range(1117)]
+        facts = EvaluationFactsAntigravity(
+            (0, 0, 1117, 1117), (0, 1117, 1117, 1117), 0, 1117, 0, 0,
+            0.0, 0.0, 0.0, 0.0, 0.0,
+        )
+        result = RetrospectiveEvaluationAntigravity(
+            dataset_facts, ["D0000"], [], rows, facts,
+            BootstrapResultAntigravity((0.0, 0.0), (0.0, 0.0)),
+            "engineering_reproduction_failed", False,
+        )
+        dataset_facts[0] = DatasetEvaluationFactsAntigravity(
+            "changed", (0, 0, 1, 1), (0, 0, 1, 1), 0.0, 0.0, 0.0, 0, 0,
+        )
+        rows[0] = (9, 9, 9, 9, 9, 9, 9, 9, 9.0)
+        self.assertEqual(result.dataset_facts[0].dataset, "D0000")
+        self.assertEqual(result.bootstrap_rows[0], (0, 0, 1, 1, 0, 1, 1, 1, 0.0))
+        self.assertIsInstance(result.dataset_facts, tuple)
+        self.assertIsInstance(result.bootstrap_rows, tuple)
+        with self.assertRaises(ValueError):
+            RetrospectiveEvaluationAntigravity(
+                (), (), (), ((0, 0, 0, 0, 0, 0, 0, 0, 0.0),), facts,
+                BootstrapResultAntigravity((0.0, 0.0), (0.0, 0.0)),
+                "engineering_reproduction_failed", False,
+            )
+
+    def test_retrospective_contracts_reject_non_builtin_nonfinite_and_truthy_winner_values(self) -> None:
+        """Permissive number/bool coercion would corrupt immutable reproduction evidence."""
+        with self.assertRaises(ValueError):
+            DatasetEvaluationFactsAntigravity(
+                "B", (0, 0, 1, 1), (0, 1, 1, 1), float("nan"), 0.0, 0.0, 0, 1,
+            )
+        with self.assertRaises(ValueError):
+            DatasetEvaluationFactsAntigravity(
+                "B", (0, 0, 1, 1), (0, 1, 1, 1), 0, 0.0, 0.0, 0, 1,
+            )
+        facts = EvaluationFactsAntigravity(
+            (0, 0, 1, 1), (0, 0, 1, 1), 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        )
+        rows = tuple((0, 0, 1, 1, 0, 0, 1, 1, 0.0) for _ in range(1117))
+        with self.assertRaises(ValueError):
+            RetrospectiveEvaluationAntigravity(
+                (), (), (), rows, facts, BootstrapResultAntigravity((0.0, 0.0), (0.0, 0.0)),
+                "engineering_reproduction_failed", 0,  # type: ignore[arg-type]
+            )
     def test_terminal_authority_identity_is_ordered_complete_and_byte_sensitive(self) -> None:
         """Every one of the six fixed terminal files participates in one deterministic identity."""
         authority = {

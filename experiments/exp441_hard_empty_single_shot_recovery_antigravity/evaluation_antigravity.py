@@ -3,18 +3,26 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
+import math
 from pathlib import Path
 from types import MappingProxyType
 from typing import Mapping
 
+import numpy as np
+
 from .artifacts_antigravity import canonical_json_bytes_antigravity
 from .config_antigravity import FROZEN_CONFIG
 from .contracts_antigravity import (
+    BootstrapResultAntigravity,
+    DatasetEvaluationFactsAntigravity,
+    EvaluationFactsAntigravity,
     FrozenPublicationAntigravity,
     FrozenSourceSnapshotAntigravity,
+    RetrospectiveEvaluationAntigravity,
     SelectionResultAntigravity,
     validate_production_selection_antigravity,
 )
+from .bootstrap_antigravity import paired_dataset_bootstrap_antigravity, project_f1_antigravity
 from .reporting_antigravity import inspect_exp441_publication_antigravity
 from .runtime_antigravity import _snapshot_payload_antigravity
 from .selector_antigravity import select_hard_empty_single_shot_antigravity
@@ -190,7 +198,169 @@ def load_frozen_context_labels_antigravity() -> FrozenContextLabelsAntigravity:
     )
 
 
-__all__ = ["FrozenContextLabelsAntigravity", "load_frozen_context_labels_antigravity"]
+_EXPECTED_BASELINE_CONFUSION_ANTIGRAVITY = (1915, 303, 2003, 191679)
+_EXPECTED_UNION_CONFUSION_ANTIGRAVITY = (1930, 318, 1988, 191664)
+_EXPECTED_CANDIDATE_COUNTS_ANTIGRAVITY = (15, 15)
+_EXPECTED_RESCUED_REGRESSED_ANTIGRAVITY = (15, 0)
+_EXPECTED_EXACT_FLOATS_ANTIGRAVITY = (0.0, 0.6241851368970013, 0.6260136230943887)
+_EXPECTED_TOLERANT_FLOATS_ANTIGRAVITY = (
+    0.0018284861973874023, 0.012444046553267682,
+    0.00005373870255999115, 0.003814109586073529,
+    0.006535362578334826, 0.019158460161145925,
+)
+
+
+def _is_regression_antigravity(union_f1: float, baseline_f1: float) -> bool:
+    return union_f1 < baseline_f1
+
+
+def _strong_loss_antigravity(baseline_f1: float, union_f1: float) -> float:
+    if _is_regression_antigravity(union_f1, baseline_f1) and baseline_f1 >= 0.8:
+        return baseline_f1 - union_f1
+    return 0.0
+
+
+def _confusion_for_predictions_antigravity(
+    labels: tuple[tuple[int, int], ...], positives: frozenset[int],
+) -> tuple[int, int, int, int]:
+    tp = fp = fn = tn = 0
+    for index, label in labels:
+        if index in positives:
+            if label == 1:
+                tp += 1
+            else:
+                fp += 1
+        elif label == 1:
+            fn += 1
+        else:
+            tn += 1
+    return tp, fp, fn, tn
+
+
+def _compute_sparse_retrospective_antigravity(
+    snapshot: FrozenContextLabelsAntigravity,
+) -> tuple[
+    tuple[DatasetEvaluationFactsAntigravity, ...], tuple[str, ...], tuple[str, ...],
+    tuple[tuple[int, int, int, int, int, int, int, int, float], ...],
+]:
+    """Calculate hand-fixture facts without the production population or bootstrap gate."""
+    if not isinstance(snapshot, FrozenContextLabelsAntigravity):
+        raise ValueError("frozen context labels are invalid")
+    selection = snapshot.selection
+    if not isinstance(selection, SelectionResultAntigravity):
+        raise ValueError("frozen selection is invalid")
+    hard_by_dataset: dict[str, set[int]] = {}
+    selected_by_dataset: dict[str, set[int]] = {}
+    for dataset, index in selection.hard_coordinates:
+        hard_by_dataset.setdefault(dataset, set()).add(index)
+    for ranked in selection.selected:
+        selected_by_dataset.setdefault(ranked.dataset, set()).add(ranked.instance_index)
+    facts: list[DatasetEvaluationFactsAntigravity] = []
+    rescued: list[str] = []
+    regressed: list[str] = []
+    rows: list[tuple[int, int, int, int, int, int, int, int, float]] = []
+    for dataset in snapshot.context_datasets:
+        labels = snapshot.labels_by_dataset.get(dataset)
+        if not isinstance(labels, tuple):
+            raise ValueError("frozen labels are invalid")
+        identity_to_label: dict[int, int] = {}
+        for row in labels:
+            if (not isinstance(row, tuple) or len(row) != 2 or type(row[0]) is not int
+                    or row[0] < 0 or type(row[1]) is not int or row[1] not in (0, 1)
+                    or row[0] in identity_to_label):
+                raise ValueError("frozen labels are invalid")
+            identity_to_label[row[0]] = row[1]
+        hard = frozenset(hard_by_dataset.get(dataset, set()))
+        selected = frozenset(selected_by_dataset.get(dataset, set()))
+        if any(index not in identity_to_label for index in hard | selected):
+            raise ValueError("frozen coordinate is absent from loaded TEST identity")
+        baseline = _confusion_for_predictions_antigravity(labels, hard)
+        union = _confusion_for_predictions_antigravity(labels, hard | selected)
+        baseline_f1 = float(project_f1_antigravity(baseline))
+        union_f1 = float(project_f1_antigravity(union))
+        delta = float(union_f1 - baseline_f1)
+        candidate_tp = sum(identity_to_label[index] for index in selected)
+        candidate_fp = len(selected) - candidate_tp
+        fact = DatasetEvaluationFactsAntigravity(
+            dataset, baseline, union, baseline_f1, union_f1, delta, candidate_tp, candidate_fp,
+        )
+        facts.append(fact)
+        rows.append((*baseline, *union, delta))
+        if baseline[0] == 0 and union[0] >= 1:
+            rescued.append(dataset)
+        if _is_regression_antigravity(union_f1, baseline_f1):
+            regressed.append(dataset)
+    if set(hard_by_dataset).difference(snapshot.context_datasets) or set(selected_by_dataset).difference(snapshot.context_datasets):
+        raise ValueError("frozen coordinate dataset is absent from context")
+    return tuple(facts), tuple(rescued), tuple(regressed), tuple(rows)
+
+
+def _retrospective_status_antigravity(
+    facts: EvaluationFactsAntigravity, bootstrap: BootstrapResultAntigravity,
+) -> str:
+    """Classify fixed retrospective constants with engineering failures taking precedence."""
+    if not isinstance(facts, EvaluationFactsAntigravity) or not isinstance(bootstrap, BootstrapResultAntigravity):
+        return "engineering_reproduction_failed"
+    exact = (
+        facts.baseline_confusion == _EXPECTED_BASELINE_CONFUSION_ANTIGRAVITY,
+        facts.union_confusion == _EXPECTED_UNION_CONFUSION_ANTIGRAVITY,
+        (facts.candidate_tp, facts.candidate_fp) == _EXPECTED_CANDIDATE_COUNTS_ANTIGRAVITY,
+        (facts.rescued_datasets, facts.regressed_datasets) == _EXPECTED_RESCUED_REGRESSED_ANTIGRAVITY,
+        (facts.maximum_strong_loss, facts.baseline_f1, facts.union_f1) == _EXPECTED_EXACT_FLOATS_ANTIGRAVITY,
+    )
+    all_values = (
+        facts.maximum_strong_loss, facts.baseline_f1, facts.union_f1, facts.micro_delta, facts.macro_delta,
+        *bootstrap.micro_ci, *bootstrap.macro_ci,
+    )
+    if not all(type(value) is float and math.isfinite(value) for value in all_values) or not all(exact):
+        return "engineering_reproduction_failed"
+    observed = (facts.micro_delta, facts.macro_delta, *bootstrap.micro_ci, *bootstrap.macro_ci)
+    if any(not _is_tolerant_reproduction_value_antigravity(actual, expected)
+           for actual, expected in zip(observed, _EXPECTED_TOLERANT_FLOATS_ANTIGRAVITY, strict=True)):
+        return "retrospective_reproduction_discrepancy"
+    return "retrospective_reproduction_complete"
+
+
+def _is_tolerant_reproduction_value_antigravity(actual: float, expected: float) -> bool:
+    return math.isclose(actual, expected, rel_tol=0.0, abs_tol=1e-15)
+
+
+def compute_retrospective_evaluation_antigravity(
+    snapshot: FrozenContextLabelsAntigravity,
+) -> RetrospectiveEvaluationAntigravity:
+    """Return the fixed pure Exp441 retrospective calculation from one label snapshot."""
+    if not isinstance(snapshot, FrozenContextLabelsAntigravity) or len(snapshot.context_datasets) != 1117:
+        raise ValueError("production frozen context is invalid")
+    validate_production_selection_antigravity(snapshot.selection)
+    dataset_facts, rescued, regressed, rows = _compute_sparse_retrospective_antigravity(snapshot)
+    if len(dataset_facts) != 1117 or len(rows) != 1117:
+        raise ValueError("production retrospective population is invalid")
+    baseline = tuple(sum(fact.baseline_confusion[index] for fact in dataset_facts) for index in range(4))
+    union = tuple(sum(fact.union_confusion[index] for fact in dataset_facts) for index in range(4))
+    candidate_tp = sum(fact.candidate_tp for fact in dataset_facts)
+    candidate_fp = sum(fact.candidate_fp for fact in dataset_facts)
+    baseline_f1 = float(project_f1_antigravity(baseline))
+    union_f1 = float(project_f1_antigravity(union))
+    micro_delta = float(union_f1 - baseline_f1)
+    macro_delta = float(np.asarray([fact.delta for fact in dataset_facts], dtype=np.float64).mean(dtype=np.float64))
+    maximum_strong_loss = float(max(
+        (_strong_loss_antigravity(fact.baseline_f1, fact.union_f1) for fact in dataset_facts), default=0.0,
+    ))
+    aggregate = EvaluationFactsAntigravity(
+        baseline, union, candidate_tp, candidate_fp, len(rescued), len(regressed), maximum_strong_loss,
+        baseline_f1, union_f1, micro_delta, macro_delta,
+    )
+    bootstrap = paired_dataset_bootstrap_antigravity(np.asarray(rows, dtype=np.float64))
+    return RetrospectiveEvaluationAntigravity(
+        dataset_facts, rescued, regressed, rows, aggregate, bootstrap,
+        _retrospective_status_antigravity(aggregate, bootstrap), False,
+    )
+
+
+__all__ = [
+    "FrozenContextLabelsAntigravity", "load_frozen_context_labels_antigravity",
+    "compute_retrospective_evaluation_antigravity",
+]
 
 
 def __getattr__(name: str) -> object:

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager, nullcontext
+from dataclasses import replace
 from hashlib import sha256
 from types import MappingProxyType
 from unittest.mock import patch
@@ -9,17 +10,25 @@ import ast
 import importlib
 import importlib.abc
 import importlib.util
+import inspect
+import math
 import sys
 import types
 import unittest
+
+import numpy as np
 
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity import (
     canonical_json_bytes_antigravity,
 )
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_antigravity import (
+    BootstrapResultAntigravity,
     CandidateEvidenceAntigravity,
+    EvaluationFactsAntigravity,
     FrozenPublicationAntigravity,
     FrozenSourceSnapshotAntigravity,
+    RankedCandidateAntigravity,
+    SelectionResultAntigravity,
 )
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.selector_antigravity import (
     select_hard_empty_single_shot_antigravity,
@@ -307,3 +316,154 @@ class Exp441FrozenContextLabelsAntigravityTests(unittest.TestCase):
         self.assertNotIn("sqlite3", imported)
         self.assertNotIn("evaluation", imported)
         self.assertNotIn("write_", source)
+
+
+class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
+    def _sparse_snapshot(self) -> object:
+        """Hand-derived sparse identities: B/C/A order is intentionally not lexical."""
+        b = _candidate("B", 5, 3.0)
+        c = _candidate("C", 7, 2.0)
+        winners = (
+            RankedCandidateAntigravity(b, 1, True, 1),
+            RankedCandidateAntigravity(c, 2, True, 2),
+        )
+        selection = SelectionResultAntigravity(
+            (b, c), (b, c), (b, c), winners, winners, frozenset({("A", 10)}),
+        )
+        return evaluation.FrozenContextLabelsAntigravity(
+            ("B", "C", "A"), {
+                "B": ((5, 0), (9, 1)),
+                "C": ((7, 1), (11, 0)),
+                "A": ((3, 1), (4, 0), (8, 1), (10, 1), (12, 0)),
+            }, "a" * 64, "b" * 64, selection, 1, 3, 0,
+        )
+
+    def test_sparse_facts_preserve_actual_identity_context_order_and_rescue(self) -> None:
+        """Using ordinal positions, sorting context, or a candidate label inversion changes these literals."""
+        sparse = evaluation._compute_sparse_retrospective_antigravity(self._sparse_snapshot())
+        facts, rescued, regressed, rows = sparse
+        self.assertEqual(tuple(item.dataset for item in facts), ("B", "C", "A"))
+        self.assertEqual(tuple(item.baseline_confusion for item in facts), (
+            (0, 0, 1, 1), (0, 0, 1, 1), (1, 0, 2, 2),
+        ))
+        self.assertEqual(tuple(item.union_confusion for item in facts), (
+            (0, 1, 1, 0), (1, 0, 0, 1), (1, 0, 2, 2),
+        ))
+        self.assertEqual((facts[0].candidate_tp, facts[0].candidate_fp), (0, 1))
+        self.assertEqual((facts[1].candidate_tp, facts[1].candidate_fp), (1, 0))
+        self.assertEqual(rescued, ("C",))
+        self.assertEqual(regressed, ())
+        self.assertEqual(rows[0], (0, 0, 1, 1, 0, 1, 1, 0, 0.0))
+        self.assertEqual(rows[1], (0, 0, 1, 1, 1, 0, 0, 1, 1.0))
+        self.assertEqual(rows[2], (1, 0, 2, 2, 1, 0, 2, 2, 0.0))
+
+    def test_sparse_identity_absence_and_regression_strong_loss_boundaries_fail_or_classify_strictly(self) -> None:
+        """Dropping an actual coordinate, weakening <, or excluding baseline F1 == .8 is a bug."""
+        missing = self._sparse_snapshot()
+        object.__setattr__(missing, "labels_by_dataset", MappingProxyType({
+            "B": ((9, 1),), "C": ((7, 1), (11, 0)),
+            "A": ((3, 1), (4, 0), (8, 1), (10, 1), (12, 0)),
+        }))
+        with self.assertRaisesRegex(ValueError, "absent"):
+            evaluation._compute_sparse_retrospective_antigravity(missing)
+        # These direct per-dataset facts isolate strict regression and the .8 strong-loss threshold.
+        exact = evaluation._strong_loss_antigravity(0.8, 0.7)
+        just_below = evaluation._strong_loss_antigravity(0.7999999999999999, 0.7)
+        self.assertEqual(exact, 0.10000000000000009)
+        self.assertEqual(just_below, 0.0)
+        self.assertTrue(evaluation._is_regression_antigravity(0.7, 0.8))
+        self.assertFalse(evaluation._is_regression_antigravity(0.8, 0.8))
+
+    def test_status_constants_tolerance_and_engineering_precedence_are_frozen(self) -> None:
+        """A rounded value, reversed precedence, or an altered frozen decimal must change status."""
+        facts = EvaluationFactsAntigravity(
+            (1915, 303, 2003, 191679), (1930, 318, 1988, 191664), 15, 15, 15, 0,
+            0.0, 0.6241851368970013, 0.6260136230943887,
+            0.0018284861973874023, 0.012444046553267682,
+        )
+        bootstrap = BootstrapResultAntigravity(
+            (0.00005373870255999115, 0.003814109586073529),
+            (0.006535362578334826, 0.019158460161145925),
+        )
+        self.assertEqual(facts.micro_delta.hex(), "0x1.df53a1ad05800p-10")
+        self.assertEqual(facts.macro_delta.hex(), "0x1.97c43a7cf3ab8p-7")
+        self.assertEqual(tuple(value.hex() for value in bootstrap.micro_ci), (
+            "0x1.c2cafc29c4668p-15", "0x1.f3ec47deffdf7p-9"))
+        self.assertEqual(tuple(value.hex() for value in bootstrap.macro_ci), (
+            "0x1.ac4d308a9c7cep-8", "0x1.39e467f55da52p-6"))
+        self.assertEqual(evaluation._retrospective_status_antigravity(facts, bootstrap), "retrospective_reproduction_complete")
+        self.assertTrue(evaluation._is_tolerant_reproduction_value_antigravity(0.0, 1e-15))
+        self.assertFalse(evaluation._is_tolerant_reproduction_value_antigravity(0.0, math.nextafter(1e-15, math.inf)))
+        at_tolerance = BootstrapResultAntigravity(
+            (math.nextafter(bootstrap.micro_ci[0], math.inf), bootstrap.micro_ci[1]), bootstrap.macro_ci,
+        )
+        self.assertEqual(evaluation._retrospective_status_antigravity(facts, at_tolerance), "retrospective_reproduction_complete")
+        over_tolerance = BootstrapResultAntigravity(
+            (bootstrap.micro_ci[0] + 2e-15, bootstrap.micro_ci[1]), bootstrap.macro_ci,
+        )
+        self.assertEqual(evaluation._retrospective_status_antigravity(facts, over_tolerance), "retrospective_reproduction_discrepancy")
+        engineering_and_discrepant = EvaluationFactsAntigravity(
+            facts.baseline_confusion, facts.union_confusion, 15, 15, 15, 0, 0.0,
+            facts.baseline_f1 + 1e-16, facts.union_f1, facts.micro_delta + 1.1e-15, facts.macro_delta,
+        )
+        self.assertEqual(evaluation._retrospective_status_antigravity(engineering_and_discrepant, bootstrap), "engineering_reproduction_failed")
+        exact_mismatches = (
+            replace(facts, baseline_confusion=(1916, 303, 2003, 191679)),
+            replace(facts, union_confusion=(1930, 319, 1988, 191664)),
+            replace(facts, candidate_tp=14), replace(facts, candidate_fp=14),
+            replace(facts, rescued_datasets=14), replace(facts, regressed_datasets=1),
+            replace(facts, maximum_strong_loss=1.0),
+            replace(facts, baseline_f1=math.nextafter(facts.baseline_f1, math.inf)),
+            replace(facts, union_f1=math.nextafter(facts.union_f1, math.inf)),
+        )
+        for altered in exact_mismatches:
+            with self.subTest(exact=altered):
+                self.assertEqual(evaluation._retrospective_status_antigravity(altered, bootstrap), "engineering_reproduction_failed")
+        tolerant_mismatches = (
+            (replace(facts, micro_delta=facts.micro_delta + 2e-15), bootstrap),
+            (replace(facts, macro_delta=facts.macro_delta + 2e-15), bootstrap),
+            (facts, replace(bootstrap, micro_ci=(bootstrap.micro_ci[0] + 2e-15, bootstrap.micro_ci[1]))),
+            (facts, replace(bootstrap, micro_ci=(bootstrap.micro_ci[0], bootstrap.micro_ci[1] + 2e-15))),
+            (facts, replace(bootstrap, macro_ci=(bootstrap.macro_ci[0] + 2e-15, bootstrap.macro_ci[1]))),
+            (facts, replace(bootstrap, macro_ci=(bootstrap.macro_ci[0], bootstrap.macro_ci[1] + 2e-15))),
+        )
+        for altered_facts, altered_bootstrap in tolerant_mismatches:
+            with self.subTest(tolerant=(altered_facts, altered_bootstrap)):
+                self.assertEqual(evaluation._retrospective_status_antigravity(altered_facts, altered_bootstrap), "retrospective_reproduction_discrepancy")
+        invalid = replace(facts)
+        object.__setattr__(invalid, "micro_delta", float("nan"))
+        self.assertEqual(evaluation._retrospective_status_antigravity(invalid, bootstrap), "engineering_reproduction_failed")
+        invalid = replace(facts)
+        object.__setattr__(invalid, "macro_delta", float("inf"))
+        self.assertEqual(evaluation._retrospective_status_antigravity(invalid, bootstrap), "engineering_reproduction_failed")
+
+    def test_public_calculation_has_one_snapshot_argument_and_never_reopens_task9_boundaries(self) -> None:
+        """Adding a retuning parameter or calling a loader/source route would violate the frozen split."""
+        source, selection = _snapshot_and_selection()
+        required: dict[str, set[int]] = {dataset: set() for dataset in source.context_datasets}
+        for dataset, index in selection.hard_coordinates:
+            required[dataset].add(index)
+        for ranked in selection.selected:
+            required[ranked.dataset].add(ranked.instance_index)
+        snapshot = evaluation.FrozenContextLabelsAntigravity(
+            source.context_datasets,
+            {dataset: tuple((index, 0) for index in sorted(indices)) for dataset, indices in required.items()},
+            "a" * 64, "b" * 64, selection, 1, 1117, 0,
+        )
+        bootstrap_calls: list[tuple[int, int]] = []
+        def fake_bootstrap(rows: object) -> BootstrapResultAntigravity:
+            values = np.asarray(rows)
+            bootstrap_calls.append(values.shape)
+            return BootstrapResultAntigravity((0.0, 0.0), (0.0, 0.0))
+        def explode(*args: object, **kwargs: object) -> object:
+            raise AssertionError("pure retrospective calculation crossed a forbidden boundary")
+        with patch.object(evaluation, "paired_dataset_bootstrap_antigravity", side_effect=fake_bootstrap), \
+             patch.object(evaluation, "load_frozen_context_labels_antigravity", side_effect=explode), \
+             patch.object(evaluation, "inspect_exp441_publication_antigravity", side_effect=explode), \
+             patch.object(evaluation, "verify_frozen_sources_antigravity", side_effect=explode), \
+             patch.object(evaluation, "select_hard_empty_single_shot_antigravity", side_effect=explode):
+            result = evaluation.compute_retrospective_evaluation_antigravity(snapshot)
+        self.assertEqual(bootstrap_calls, [(1117, 9)])
+        self.assertEqual(result.status, "engineering_reproduction_failed")
+        self.assertIs(result.scientific_winner_selected, False)
+        self.assertEqual(tuple(inspect.signature(evaluation.compute_retrospective_evaluation_antigravity).parameters), ("snapshot",))

@@ -540,6 +540,103 @@ class EvaluationFactsAntigravity:
             object.__setattr__(self, name, _finite(getattr(self, name), name))
 
 
+def _finite_builtin_float_antigravity(value: object, name: str) -> float:
+    if type(value) is not float or not math.isfinite(value):
+        raise ValueError(f"{name} must be a finite built-in float")
+    return value
+
+
+def _evaluation_confusion_antigravity(value: object, name: str) -> tuple[int, int, int, int]:
+    try:
+        values = tuple(value)  # type: ignore[arg-type]
+    except TypeError as error:
+        raise ValueError(f"{name} is invalid") from error
+    if len(values) != 4 or any(type(item) is not int or item < 0 for item in values):
+        raise ValueError(f"{name} is invalid")
+    return values  # type: ignore[return-value]
+
+
+@dataclass(frozen=True)
+class DatasetEvaluationFactsAntigravity:
+    """Detached retrospective facts for exactly one context dataset."""
+
+    dataset: str
+    baseline_confusion: tuple[int, int, int, int]
+    union_confusion: tuple[int, int, int, int]
+    baseline_f1: float
+    union_f1: float
+    delta: float
+    candidate_tp: int
+    candidate_fp: int
+
+    def __post_init__(self) -> None:
+        if type(self.dataset) is not str or not self.dataset:
+            raise ValueError("dataset evaluation dataset is invalid")
+        object.__setattr__(self, "baseline_confusion", _evaluation_confusion_antigravity(self.baseline_confusion, "baseline confusion"))
+        object.__setattr__(self, "union_confusion", _evaluation_confusion_antigravity(self.union_confusion, "union confusion"))
+        for name in ("baseline_f1", "union_f1", "delta"):
+            object.__setattr__(self, name, _finite_builtin_float_antigravity(getattr(self, name), name))
+        for name in ("candidate_tp", "candidate_fp"):
+            _positive_int(getattr(self, name), name, allow_zero=True)
+
+
+@dataclass(frozen=True)
+class RetrospectiveEvaluationAntigravity:
+    """The complete immutable in-memory Exp441 retrospective calculation."""
+
+    dataset_facts: tuple[DatasetEvaluationFactsAntigravity, ...]
+    rescued_datasets: tuple[str, ...]
+    regressed_datasets: tuple[str, ...]
+    bootstrap_rows: tuple[tuple[int, int, int, int, int, int, int, int, float], ...]
+    facts: EvaluationFactsAntigravity
+    bootstrap: BootstrapResultAntigravity
+    status: str
+    scientific_winner_selected: bool
+
+    def __post_init__(self) -> None:
+        dataset_facts = tuple(self.dataset_facts)
+        if len(dataset_facts) != 1117 or any(type(item) is not DatasetEvaluationFactsAntigravity for item in dataset_facts):
+            raise ValueError("dataset evaluation facts are invalid")
+        datasets = tuple(item.dataset for item in dataset_facts)
+        if len(datasets) != len(set(datasets)):
+            raise ValueError("dataset evaluation facts are duplicated")
+        rescued = tuple(self.rescued_datasets)
+        regressed = tuple(self.regressed_datasets)
+        if (any(type(item) is not str or not item for item in rescued + regressed)
+                or len(rescued) != len(set(rescued)) or len(regressed) != len(set(regressed))
+                or any(item not in datasets for item in rescued + regressed)):
+            raise ValueError("retrospective dataset names are invalid")
+        copied_rows: list[tuple[int, int, int, int, int, int, int, int, float]] = []
+        try:
+            rows = tuple(self.bootstrap_rows)
+        except TypeError as error:
+            raise ValueError("bootstrap rows are invalid") from error
+        if len(rows) != 1117:
+            raise ValueError("bootstrap rows are invalid")
+        for row in rows:
+            try:
+                values = tuple(row)
+            except TypeError as error:
+                raise ValueError("bootstrap row is invalid") from error
+            if (len(values) != 9
+                    or any(type(value) is not int or value < 0 for value in values[:8])):
+                raise ValueError("bootstrap row is invalid")
+            copied_rows.append((*values[:8], _finite_builtin_float_antigravity(values[8], "bootstrap delta")))  # type: ignore[arg-type]
+        if not isinstance(self.facts, EvaluationFactsAntigravity) or not isinstance(self.bootstrap, BootstrapResultAntigravity):
+            raise ValueError("retrospective evidence is invalid")
+        if self.status not in {
+            "engineering_reproduction_failed", "retrospective_reproduction_discrepancy",
+            "retrospective_reproduction_complete",
+        }:
+            raise ValueError("retrospective status is invalid")
+        if type(self.scientific_winner_selected) is not bool or self.scientific_winner_selected is not False:
+            raise ValueError("scientific winner must remain false")
+        object.__setattr__(self, "dataset_facts", dataset_facts)
+        object.__setattr__(self, "rescued_datasets", rescued)
+        object.__setattr__(self, "regressed_datasets", regressed)
+        object.__setattr__(self, "bootstrap_rows", tuple(copied_rows))
+
+
 @dataclass(frozen=True)
 class FrozenEvaluationAntigravity:
     evaluation_sha256: str
@@ -565,5 +662,6 @@ __all__ = [
     "FrozenSourceSnapshotAntigravity", "BackendAssessmentAntigravity", "ReadinessBindingAntigravity",
     "CompletedAttemptAntigravity", "FrozenPublicationAntigravity", "BootstrapResultAntigravity",
     "terminal_attempt_authority_sha256_from_bytes_antigravity",
-    "EvaluationFactsAntigravity", "FrozenEvaluationAntigravity",
+    "EvaluationFactsAntigravity", "DatasetEvaluationFactsAntigravity",
+    "RetrospectiveEvaluationAntigravity", "FrozenEvaluationAntigravity",
 ]
