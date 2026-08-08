@@ -301,6 +301,8 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
             completed_attempt = CompletedAttemptAntigravity(
                 sequence, reviewed_commit, snapshot_sha256, selection, selection_sha256, authority_sha256,
             )
+            signal.signal(signal.SIGTERM, prior_handler)
+            installed = False
             pinned.revalidate_antigravity()
             return completed_attempt
     except _InterruptedAttemptAntigravity as error:

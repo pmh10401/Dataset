@@ -26,6 +26,14 @@ from experiments.exp441_hard_empty_single_shot_recovery_antigravity.selector_ant
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_selector_antigravity import _snapshot, _fixture_candidates
 
 
+def _descriptor_is_open_antigravity(descriptor: int) -> bool:
+    try:
+        os.fstat(descriptor)
+    except OSError:
+        return False
+    return True
+
+
 class RuntimeAntigravityTests(unittest.TestCase):
     @staticmethod
     def _prefix(snapshot):
@@ -204,6 +212,112 @@ class RuntimeAntigravityTests(unittest.TestCase):
             worker.join(timeout=5)
         self.assertFalse(worker.is_alive())
         self.assertEqual(mutation_errors, [])
+
+    def test_success_signal_restoration_mutation_cannot_escape_final_authority_barrier(self) -> None:
+        # Break caught: outer-finally SIGTERM restoration mutates authority after final revalidation and returns a stale attempt.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import runtime_antigravity
+        snapshot = _snapshot(_fixture_candidates())
+        selection = select_hard_empty_single_shot_antigravity(snapshot)
+        observed: dict[str, object] = {}
+        restore_started = threading.Event()
+        mutation_finished = threading.Event()
+        mutation_errors: list[BaseException] = []
+        order: list[str] = []
+        open_descriptor_counts: list[int] = []
+        real_pin = runtime_antigravity.pin_exact_regular_inventory_antigravity
+        real_signal = signal.signal
+        original_handler = signal.getsignal(signal.SIGTERM)
+
+        def prior_handler(_signum: int, _frame: object) -> None:
+            pass
+
+        def track_pin(*args: object, **kwargs: object):
+            pinned = real_pin(*args, **kwargs)
+            observed["attempt"] = pinned._root_antigravity
+            observed["descriptors"] = (pinned._root_descriptor_antigravity, *pinned._descriptors_antigravity.values())
+            real_revalidate = pinned.revalidate_antigravity
+            def track_final_revalidation() -> None:
+                order.append("final_revalidate")
+                real_revalidate()
+            pinned.revalidate_antigravity = track_final_revalidation
+            return pinned
+
+        def mutate_during_restoration() -> None:
+            try:
+                self.assertTrue(restore_started.wait(timeout=5))
+                (observed["attempt"] / "source_snapshot_antigravity.json").write_bytes(b"mutated\n")
+            except BaseException as error:
+                mutation_errors.append(error)
+            finally:
+                mutation_finished.set()
+
+        def signal_spy(signum: int, handler: object) -> object:
+            if handler is prior_handler:
+                order.append("restore")
+                open_descriptor_counts.append(sum(
+                    1 for descriptor in observed["descriptors"]
+                    if _descriptor_is_open_antigravity(descriptor)
+                ))
+                restore_started.set()
+                self.assertTrue(mutation_finished.wait(timeout=5))
+            return real_signal(signum, handler)
+
+        worker = threading.Thread(target=mutate_during_restoration)
+        worker.start()
+        real_signal(signal.SIGTERM, prior_handler)
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                with patch.object(runtime_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                     patch.object(runtime_antigravity, "FROZEN_CONFIG", SimpleNamespace(dataset_count=len(snapshot.context_datasets))), \
+                     patch.object(runtime_antigravity, "_ensure_clean_reviewed_commit_antigravity"), \
+                     patch.object(runtime_antigravity, "_load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                     patch.object(runtime_antigravity, "_verify_with_observer_antigravity", side_effect=self._replay(snapshot)), \
+                     patch.object(runtime_antigravity, "_reverify_sources_after_artifacts_antigravity", return_value=snapshot), \
+                     patch.object(runtime_antigravity, "select_hard_empty_single_shot_antigravity", return_value=selection), \
+                     patch.object(runtime_antigravity, "validate_production_selection_antigravity", side_effect=lambda value: value), \
+                     patch.object(runtime_antigravity, "pin_exact_regular_inventory_antigravity", side_effect=track_pin), \
+                     patch.object(runtime_antigravity.signal, "signal", side_effect=signal_spy):
+                    with self.assertRaisesRegex(ValueError, "changed"):
+                        run_exp441_new_antigravity(reviewed_commit="a" * 40)
+        finally:
+            worker.join(timeout=5)
+            real_signal(signal.SIGTERM, original_handler)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(mutation_errors, [])
+        self.assertEqual(order, ["restore", "final_revalidate"])
+        self.assertEqual(open_descriptor_counts, [7])
+
+    def test_failed_attempt_restores_sigterm_handler_exactly_once(self) -> None:
+        # Break caught: moving success restoration inside the pin skips or doubles outer-finally restoration after a failure.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import runtime_antigravity
+        snapshot = _snapshot(_fixture_candidates())
+        real_signal = signal.signal
+        original_handler = signal.getsignal(signal.SIGTERM)
+        restorations: list[object] = []
+
+        def prior_handler(_signum: int, _frame: object) -> None:
+            pass
+
+        def signal_spy(signum: int, handler: object) -> object:
+            if handler is prior_handler:
+                restorations.append(handler)
+            return real_signal(signum, handler)
+
+        real_signal(signal.SIGTERM, prior_handler)
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                with patch.object(runtime_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                     patch.object(runtime_antigravity, "_ensure_clean_reviewed_commit_antigravity"), \
+                     patch.object(runtime_antigravity, "_load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                     patch.object(runtime_antigravity, "_verify_with_observer_antigravity", side_effect=ValueError("source failure")), \
+                     patch.object(runtime_antigravity.signal, "signal", side_effect=signal_spy):
+                    with self.assertRaisesRegex(ValueError, "source failure"):
+                        run_exp441_new_antigravity(reviewed_commit="a" * 40)
+        finally:
+            real_signal(signal.SIGTERM, original_handler)
+        self.assertEqual(restorations, [prior_handler])
 
     def test_completed_attempt_is_create_only_and_contains_exact_governance(self) -> None:
         # Break caught: a later new could repair an old attempt, or selection evidence could dilute governance values.
