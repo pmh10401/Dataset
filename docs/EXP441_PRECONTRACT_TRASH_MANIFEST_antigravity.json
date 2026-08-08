@@ -1,0 +1,153 @@
+{
+  "schema": "exp441.precontract-trash-manifest.v1",
+  "generated_at": "2026-08-08T06:35:00Z",
+  "source_root": "/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808",
+  "trash_destination": "/Users/mac/.Trash/exp441_precontract_test_fixtures_20260808T063500Z_antigravity",
+  "reason": "user-approved recoverable removal of three inactive precontract test-fixture attempts before fixed-root readiness",
+  "official_run": false,
+  "test_labels_opened": false,
+  "observed_dead_pid": 36231,
+  "attempt_count": 3,
+  "entries": [
+    {
+      "path": "attempts_antigravity",
+      "type": "directory",
+      "mode": "0o700"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0000_antigravity",
+      "type": "directory",
+      "mode": "0o700"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0000_antigravity/events_antigravity.jsonl",
+      "type": "file",
+      "mode": "0o600",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0000_antigravity/pid_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 64,
+      "sha256": "e834cc25c5529ac368bb63c7cca885486eddf78a2df13331deb38cc9461629b4"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0000_antigravity/progress_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 640,
+      "sha256": "bb8f7813e122701c0dbd52dab1b49a8bc2239e9e0801bb295028a6a81c0bd4d0"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0000_antigravity/run_antigravity.log",
+      "type": "file",
+      "mode": "0o600",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0000_antigravity/selection_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 4263,
+      "sha256": "97e6c9ba99e1f5ce2daf4100e86b80295769e5706874a9b882c93dc74d5563b2"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0000_antigravity/source_snapshot_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 1980,
+      "sha256": "48c7a62823a475d98c44f8834003bbfa5a84b1626cfb4ac0d77f617dde95cad8"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0001_antigravity",
+      "type": "directory",
+      "mode": "0o700"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0001_antigravity/events_antigravity.jsonl",
+      "type": "file",
+      "mode": "0o600",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0001_antigravity/pid_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 64,
+      "sha256": "e834cc25c5529ac368bb63c7cca885486eddf78a2df13331deb38cc9461629b4"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0001_antigravity/progress_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 641,
+      "sha256": "595249646601353ab0bc8dc8a25d54dc1cc614160babb7cd8227267c4c2f390b"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0001_antigravity/run_antigravity.log",
+      "type": "file",
+      "mode": "0o600",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0001_antigravity/selection_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 4263,
+      "sha256": "97e6c9ba99e1f5ce2daf4100e86b80295769e5706874a9b882c93dc74d5563b2"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0001_antigravity/source_snapshot_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 1980,
+      "sha256": "48c7a62823a475d98c44f8834003bbfa5a84b1626cfb4ac0d77f617dde95cad8"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0002_antigravity",
+      "type": "directory",
+      "mode": "0o700"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0002_antigravity/events_antigravity.jsonl",
+      "type": "file",
+      "mode": "0o600",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0002_antigravity/failure_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 471,
+      "sha256": "75b908ad1435a6c5d676c6dc08d98998a9a7d1028cc5663dc48bde6d0125e32e"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0002_antigravity/pid_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 64,
+      "sha256": "e834cc25c5529ac368bb63c7cca885486eddf78a2df13331deb38cc9461629b4"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0002_antigravity/progress_antigravity.json",
+      "type": "file",
+      "mode": "0o600",
+      "size": 647,
+      "sha256": "97fee1e4d8116a93ea9060fd19acb21dbe239cb9a90548c89b1ff8c4105ec452"
+    },
+    {
+      "path": "attempts_antigravity/attempt_0002_antigravity/run_antigravity.log",
+      "type": "file",
+      "mode": "0o600",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "entry_manifest_sha256": "78b0c112af7f6be6e696fde2e4e01438b1d5d078c5ed091bf7a048a60b5dda61"
+}

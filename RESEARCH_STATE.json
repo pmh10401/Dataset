@@ -1,6 +1,6 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-08T15:31:00+09:00",
+  "updated_at": "2026-08-08T15:37:00+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
@@ -57,7 +57,7 @@
     "events_jsonl": null,
     "parent_log": null,
     "pid_file": null,
-    "state": "not_started_blocked_by_code_review_and_preserved_precontract_attempts",
+    "state": "not_started_blocked_by_code_review",
     "test_labels_opened": false,
     "backend": "cpu",
     "workers": 11
@@ -74,7 +74,7 @@
     "exact_next_test_command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_runtime_antigravity experiments.exp441_hard_empty_single_shot_recovery_antigravity.tests.test_reporting_antigravity -v",
     "pid": null,
     "checkpoint": null,
-    "run_root_exists": true,
+    "run_root_exists": false,
     "preserved_precontract_attempts": {
       "count": 3,
       "paths": [
@@ -88,12 +88,17 @@
       "stages": ["complete", "complete", "failed"],
       "failure_error": "bad source",
       "reviewed_commit_literal": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "classification": "precontract_test_fixtures_not_official_attempts",
+      "classification": "precontract_test_fixtures_not_official_attempts_moved_to_trash",
       "publication_exists": false,
       "checkpoint_exists": false,
-      "deletion_performed": false
+      "deletion_performed": false,
+      "moved_to_trash": true,
+      "trash_destination": "/Users/mac/.Trash/exp441_precontract_test_fixtures_20260808T063500Z_antigravity",
+      "trash_manifest": "docs/EXP441_PRECONTRACT_TRASH_MANIFEST_antigravity.json",
+      "entry_manifest_sha256": "78b0c112af7f6be6e696fde2e4e01438b1d5d078c5ed091bf7a048a60b5dda61",
+      "source_root_absent_after_move": true
     },
-    "readiness_root_blocker": "Task 7 requires the fixed run parent to be absent; preserved precontract test fixtures require explicit deletion approval or an approved run-root design change before readiness",
+    "readiness_root_blocker": null,
     "official_run_started": false,
     "test_labels_opened": false
   },
