@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from hashlib import sha256
+from datetime import datetime
+import math
 import os
 from pathlib import Path
 import stat
@@ -44,6 +46,8 @@ def _require_lower_hex_antigravity(value: object, length: int, message: str) -> 
 def _require_regular_inventory_antigravity(root: Path) -> dict[str, bytes]:
     if root.is_symlink() or not root.is_dir():
         raise ValueError("publication root is invalid")
+    if stat.S_IMODE(root.stat(follow_symlinks=False).st_mode) != 0o700:
+        raise ValueError("publication root mode is invalid")
     entries = {entry.name: entry for entry in root.iterdir()}
     if set(entries) != set(_PUBLICATION_NAMES_ANTIGRAVITY):
         raise ValueError("publication inventory is invalid")
@@ -102,18 +106,74 @@ def _attempt_path_antigravity(attempt: CompletedAttemptAntigravity) -> Path:
     return path
 
 
-def _parse_attempt_antigravity(attempt: CompletedAttemptAntigravity) -> tuple[Path, dict[str, object], dict[str, object]]:
+def _timestamp_antigravity(value: object, message: str) -> datetime:
+    if not isinstance(value, str) or not value.endswith("Z"):
+        raise ValueError(message)
+    try:
+        return datetime.fromisoformat(value.removesuffix("Z") + "+00:00")
+    except ValueError as error:
+        raise ValueError(message) from error
+
+
+def _exact_attempt_progress_antigravity(progress: Mapping[str, object], pid: Mapping[str, object]) -> None:
+    expected = {
+        "pid", "active", "current_dataset", "current_record_name", "active_datasets", "train_row_count", "test_row_count", "raw_length",
+        "dimension_status", "stage", "backend", "completed", "total", "imported", "recomputed", "success", "error",
+        "provisional_candidates", "outside_hard_candidates", "eligible_candidates", "selected_candidates", "throughput", "elapsed_seconds",
+        "eta_seconds", "source_checkpoint", "heartbeat", "latest_error",
+    }
+    if set(progress) != expected or set(pid) != {"pid", "active", "heartbeat"}:
+        raise ValueError("attempt progress schema is invalid")
+    integer_values = {"pid": 1, "completed": 1117, "total": 1117, "imported": 1117, "recomputed": 0, "success": 1117, "error": 0,
+                      "provisional_candidates": 840, "outside_hard_candidates": 394, "eligible_candidates": 73, "selected_candidates": 30}
+    if any(type(progress[name]) is not int or progress[name] != value for name, value in integer_values.items()):
+        raise ValueError("attempt progress counts are invalid")
+    if type(pid["pid"]) is not int or pid["pid"] < 1 or pid["pid"] != progress["pid"]:
+        raise ValueError("attempt PID is invalid")
+    if progress["active"] is not False or pid["active"] is not False:
+        raise ValueError("attempt PID remains active")
+    if (progress["stage"], progress["backend"], progress["current_dataset"], progress["current_record_name"], progress["active_datasets"],
+            progress["train_row_count"], progress["test_row_count"], progress["raw_length"], progress["dimension_status"],
+            progress["eta_seconds"], progress["latest_error"], progress["source_checkpoint"]) != (
+                "complete", "cpu", None, None, [], None, None, None, "not_available_in_frozen_selector_source", None, None,
+                FROZEN_CONFIG.checkpoint_records_path):
+        raise ValueError("attempt terminal progress is invalid")
+    for name in ("throughput", "elapsed_seconds"):
+        if type(progress[name]) not in (int, float) or not math.isfinite(float(progress[name])) or float(progress[name]) < 0.0:
+            raise ValueError("attempt progress timing is invalid")
+    if _timestamp_antigravity(pid["heartbeat"], "attempt PID heartbeat is invalid") < _timestamp_antigravity(progress["heartbeat"], "attempt progress heartbeat is invalid"):
+        raise ValueError("attempt PID heartbeat precedes terminal progress")
+
+
+def _validate_event_log_antigravity(payload: bytes) -> None:
+    rows = _parse_jsonl_antigravity(payload, "attempt event")
+    if len(rows) != 1117:
+        raise ValueError("attempt event count is invalid")
+    expected = {"sequence", "dataset", "record_name", "test_row_count", "raw_length", "accepted"}
+    for sequence, row in enumerate(rows):
+        if (set(row) != expected or type(row["sequence"]) is not int or row["sequence"] != sequence or
+                not isinstance(row["dataset"], str) or not row["dataset"] or not isinstance(row["record_name"], str) or
+                type(row["test_row_count"]) is not int or row["test_row_count"] < 0 or
+                (row["raw_length"] is not None and (type(row["raw_length"]) is not int or row["raw_length"] < 1)) or
+                row["accepted"] is not True):
+            raise ValueError("attempt event schema is invalid")
+
+
+def _parse_attempt_antigravity(attempt: CompletedAttemptAntigravity) -> tuple[Path, dict[str, object], dict[str, object], dict[str, bytes]]:
     path = _attempt_path_antigravity(attempt)
-    required = {"source_snapshot_antigravity.json", "selection_antigravity.json", "progress_antigravity.json", "pid_antigravity"}
+    required = {"source_snapshot_antigravity.json", "selection_antigravity.json", "progress_antigravity.json", "pid_antigravity", "events_antigravity.jsonl", "text_antigravity.log"}
     entries = {entry.name: entry for entry in path.iterdir()}
-    if not required <= set(entries):
+    if set(entries) != required:
         raise ValueError("attempt evidence is incomplete")
     values: dict[str, object] = {}
+    authority: dict[str, bytes] = {}
     for name in required:
         item = entries[name]
-        if item.is_symlink() or not stat.S_ISREG(item.stat(follow_symlinks=False).st_mode):
+        if item.is_symlink() or not stat.S_ISREG(item.stat(follow_symlinks=False).st_mode) or stat.S_IMODE(item.stat(follow_symlinks=False).st_mode) != 0o600:
             raise ValueError("attempt evidence is invalid")
-        values[name] = parse_canonical_json_bytes_antigravity(read_pinned_regular_bytes_antigravity(item)[0])
+        authority[name] = read_pinned_regular_bytes_antigravity(item)[0]
+        if name.endswith(".json") or name == "pid_antigravity":
+            values[name] = parse_canonical_json_bytes_antigravity(authority[name])
     snapshot = values["source_snapshot_antigravity.json"]
     selection = values["selection_antigravity.json"]
     progress = values["progress_antigravity.json"]
@@ -124,19 +184,19 @@ def _parse_attempt_antigravity(attempt: CompletedAttemptAntigravity) -> tuple[Pa
         raise ValueError("attempt snapshot hash is invalid")
     if _sha256_antigravity(canonical_json_bytes_antigravity(selection)) != attempt.selection_sha256:
         raise ValueError("attempt selection hash is invalid")
-    if (progress.get("stage"), progress.get("active"), progress.get("completed"), progress.get("total"), progress.get("error")) != ("complete", False, 1117, 1117, 0):
-        raise ValueError("attempt progress is not terminal")
-    if (progress.get("provisional_candidates"), progress.get("outside_hard_candidates"), progress.get("eligible_candidates"), progress.get("selected_candidates")) != (840, 394, 73, 30):
-        raise ValueError("attempt selection counts are invalid")
-    if pid.get("active") is not False or type(pid.get("pid")) is not int:
-        raise ValueError("attempt PID remains active")
+    _exact_attempt_progress_antigravity(progress, pid)
+    _validate_event_log_antigravity(authority["events_antigravity.jsonl"])
+    try:
+        authority["text_antigravity.log"].decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError("attempt text log is invalid") from error
     if selection.get("reviewed_commit") != attempt.reviewed_commit or selection.get("source_snapshot_sha256") != attempt.source_snapshot_sha256:
         raise ValueError("attempt identity is inconsistent")
     required_selection = set(SelectionResultAntigravity.__dataclass_fields__) | {"reviewed_commit", "source_snapshot_sha256"} | _GOVERNANCE_NAMES_ANTIGRAVITY
     if set(selection) != required_selection:
         raise ValueError("attempt selection schema is invalid")
     _exact_governance_antigravity(selection)
-    return path, snapshot, selection
+    return path, snapshot, selection, authority
 
 
 def _reverified_selection_antigravity(attempt: CompletedAttemptAntigravity, snapshot_payload: Mapping[str, object], selection_payload: Mapping[str, object]) -> SelectionResultAntigravity:
@@ -219,17 +279,15 @@ def _validate_failure_payload_antigravity(payload: object) -> None:
 
 
 def _preserve_failed_staging_antigravity(staging: Path, attempt: CompletedAttemptAntigravity, error: BaseException) -> None:
-    try:
-        if not staging.exists():
-            return
-        failure = _failure_payload_antigravity(attempt, error)
-        _validate_failure_payload_antigravity(failure)
-        write_create_only_antigravity(staging / "failure_antigravity.json", canonical_json_bytes_antigravity(failure))
-        failed = staging.with_name(f"failed_staging_{uuid4().hex}_antigravity")
-        os.rename(staging, failed)
-        fsync_directory_antigravity(failed.parent)
-    except BaseException:
-        pass
+    """Preserve failure evidence or make a secondary persistence failure observable."""
+    if not staging.exists():
+        return
+    failure = _failure_payload_antigravity(attempt, error)
+    _validate_failure_payload_antigravity(failure)
+    write_create_only_antigravity(staging / "failure_antigravity.json", canonical_json_bytes_antigravity(failure))
+    failed = staging.with_name(f"failed_staging_{uuid4().hex}_antigravity")
+    os.rename(staging, failed)
+    fsync_directory_antigravity(failed.parent)
 
 
 def _inspect_payloads_antigravity(payloads: Mapping[str, bytes], attempt: CompletedAttemptAntigravity | None = None) -> FrozenPublicationAntigravity:
@@ -270,6 +328,19 @@ def _inspect_payloads_antigravity(payloads: Mapping[str, bytes], attempt: Comple
         raise ValueError("publication manifest counts are invalid")
     if (status.get("schema"), status.get("stage"), status.get("completed_retrospective_only")) != ("exp441.status.v1", "publication_complete", True):
         raise ValueError("publication status is invalid")
+    if _require_lower_hex_antigravity(status.get("reviewed_commit"), 40, "publication status reviewed commit is invalid") != _require_lower_hex_antigravity(manifest.get("reviewed_commit"), 40, "publication reviewed commit is invalid"):
+        raise ValueError("publication reviewed commits disagree")
+    strict_values = {
+        "dataset_count": (int, 1117), "provisional_candidate_count": (int, 840), "outside_hard_candidate_count": (int, 394),
+        "eligible_candidate_count": (int, 73), "winner_count": (int, 49), "candidate_count": (int, 30),
+        "candidate_budget": (int, 30), "candidate_per_dataset": (int, 1), "label_access_count": (int, 0),
+    }
+    if any(type(manifest[name]) is not value_type or manifest[name] != value for name, (value_type, value) in strict_values.items()):
+        raise ValueError("publication manifest value types are invalid")
+    if (any(type(manifest[name]) is not bool for name in ("contains_test_labels", "uses_frozen_test_candidate_empty_gate", "uses_test_labels_for_prediction")) or
+            any(type(status[name]) is not bool for name in ("completed_retrospective_only", "contains_test_labels")) or
+            type(status["label_access_count"]) is not int or status["label_access_count"] != 0):
+        raise ValueError("publication status value types are invalid")
     if set(artifact) != {"schema", "files", "self_excluded"} or artifact.get("schema") != "exp441.artifact-map.v1" or artifact.get("self_excluded") != "artifact_sha256_antigravity.json" or not isinstance(artifact.get("files"), dict):
         raise ValueError("publication artifact map is invalid")
     _forbid_governance_or_evaluation_antigravity(artifact)
@@ -278,6 +349,10 @@ def _inspect_payloads_antigravity(payloads: Mapping[str, bytes], attempt: Comple
     for name, digest in artifact["files"].items():
         if _require_lower_hex_antigravity(digest, 64, "publication artifact map hash is invalid") != _sha256_antigravity(payloads[name]):
             raise ValueError("publication artifact hash is invalid")
+    for name in ("prediction_sha256", "candidate_ranking_sha256", "source_audit_sha256", "source_snapshot_sha256", "selection_sha256", "selected_coordinate_identity_sha256", "hard_coordinate_identity_sha256"):
+        _require_lower_hex_antigravity(manifest[name], 64, "publication manifest hash is invalid")
+    for name in ("manifest_sha256", "prediction_sha256"):
+        _require_lower_hex_antigravity(status[name], 64, "publication status hash is invalid")
     if (manifest.get("prediction_sha256"), manifest.get("candidate_ranking_sha256"), manifest.get("source_audit_sha256")) != (_sha256_antigravity(payloads["prediction_antigravity.jsonl"]), _sha256_antigravity(payloads["candidate_ranking_antigravity.jsonl"]), _sha256_antigravity(payloads["source_audit_antigravity.json"])):
         raise ValueError("publication manifest hash graph is invalid")
     if (status.get("manifest_sha256"), status.get("prediction_sha256"), status.get("label_access_count"), status.get("contains_test_labels")) != (_sha256_antigravity(payloads["manifest_antigravity.json"]), _sha256_antigravity(payloads["prediction_antigravity.jsonl"]), 0, False):
@@ -322,7 +397,7 @@ def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPu
     destination = _RUN_ROOT_ANTIGRAVITY / "publication_antigravity"
     if destination.exists() or destination.is_symlink():
         return inspect_exp441_publication_antigravity()
-    _attempt_path, snapshot_payload, selection_payload = _parse_attempt_antigravity(attempt)
+    _attempt_path, snapshot_payload, selection_payload, authority = _parse_attempt_antigravity(attempt)
     selection = _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload)
     staging = destination.with_name(f".publication_{uuid4().hex}_staging_antigravity")
     staging.mkdir(mode=0o700)
@@ -335,6 +410,11 @@ def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPu
         if staged != payloads:
             raise ValueError("staged publication bytes are invalid")
         _inspect_payloads_antigravity(staged, attempt)
+        fsync_directory_antigravity(staging)
+        # Reopen all terminal-attempt authority and source bytes after staging.
+        _final_path, final_snapshot, final_selection, final_authority = _parse_attempt_antigravity(attempt)
+        if (final_authority != authority or final_snapshot != snapshot_payload or final_selection != selection_payload):
+            raise ValueError("terminal attempt authority changed before publication rename")
         # Last source replay closes the staging-to-rename mutation window.
         if _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload) != selection:
             raise ValueError("frozen sources changed before publication rename")
@@ -344,7 +424,11 @@ def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPu
         fsync_directory_antigravity(destination.parent)
         return inspect_exp441_publication_antigravity()
     except BaseException as error:
-        _preserve_failed_staging_antigravity(staging, attempt, error)
+        try:
+            _preserve_failed_staging_antigravity(staging, attempt, error)
+        except BaseException as preservation_error:
+            error.add_note(f"failed staging preservation also failed: {type(preservation_error).__name__}: {preservation_error}")
+            raise error from preservation_error
         raise
 
 
