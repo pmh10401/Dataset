@@ -296,8 +296,13 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
             raise ValueError("frozen sources changed after attempt artifact creation")
         _ensure_clean_reviewed_commit_antigravity(reviewed_commit)
         writer.terminal_antigravity(stage="complete", latest_error=None)
-        authority_sha256 = terminal_attempt_authority_sha256_antigravity(attempt)
-        return CompletedAttemptAntigravity(sequence, reviewed_commit, snapshot_sha256, selection, selection_sha256, authority_sha256)
+        with pin_exact_regular_inventory_antigravity(attempt, _TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY) as pinned:
+            authority_sha256 = terminal_attempt_authority_sha256_from_bytes_antigravity(pinned.payloads)
+            completed_attempt = CompletedAttemptAntigravity(
+                sequence, reviewed_commit, snapshot_sha256, selection, selection_sha256, authority_sha256,
+            )
+            pinned.revalidate_antigravity()
+            return completed_attempt
     except _InterruptedAttemptAntigravity as error:
         _best_effort_failure_antigravity(writer, attempt, sequence, reviewed_commit, "interrupted", error)
         raise

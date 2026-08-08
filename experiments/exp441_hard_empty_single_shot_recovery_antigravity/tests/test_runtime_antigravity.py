@@ -7,6 +7,7 @@ from pathlib import Path
 from hashlib import sha256
 import signal
 import tempfile
+import threading
 import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
@@ -108,6 +109,101 @@ class RuntimeAntigravityTests(unittest.TestCase):
                 with patch.object(runtime_antigravity, "terminal_attempt_authority_sha256_from_bytes_antigravity", side_effect=hash_then_mutate):
                     with self.assertRaisesRegex(ValueError, "changed"):
                         terminal_attempt_authority_sha256_antigravity(attempt)
+
+    def test_completed_attempt_constructs_while_root_and_all_authority_descriptors_are_retained(self) -> None:
+        # Break caught: returning the terminal hash before construction closes the root and six authority descriptors.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import runtime_antigravity
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_antigravity import CompletedAttemptAntigravity
+        snapshot = _snapshot(_fixture_candidates())
+        selection = select_hard_empty_single_shot_antigravity(snapshot)
+        observed: dict[str, object] = {}
+        real_pin = runtime_antigravity.pin_exact_regular_inventory_antigravity
+        real_post_init = CompletedAttemptAntigravity.__post_init__
+
+        def track_pin(*args: object, **kwargs: object):
+            pinned = real_pin(*args, **kwargs)
+            observed["pinned"] = pinned
+            return pinned
+
+        def inspect_constructor(instance: CompletedAttemptAntigravity) -> None:
+            pinned = observed["pinned"]
+            descriptors = (pinned._root_descriptor_antigravity, *pinned._descriptors_antigravity.values())
+            observed["descriptors"] = descriptors
+            self.assertEqual(len(descriptors), 7)
+            for descriptor in descriptors:
+                os.fstat(descriptor)
+            real_post_init(instance)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(runtime_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(runtime_antigravity, "FROZEN_CONFIG", SimpleNamespace(dataset_count=len(snapshot.context_datasets))), \
+                 patch.object(runtime_antigravity, "_ensure_clean_reviewed_commit_antigravity"), \
+                 patch.object(runtime_antigravity, "_load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                 patch.object(runtime_antigravity, "_verify_with_observer_antigravity", side_effect=self._replay(snapshot)), \
+                 patch.object(runtime_antigravity, "_reverify_sources_after_artifacts_antigravity", return_value=snapshot), \
+                 patch.object(runtime_antigravity, "select_hard_empty_single_shot_antigravity", return_value=selection), \
+                 patch.object(runtime_antigravity, "validate_production_selection_antigravity", side_effect=lambda value: value), \
+                 patch.object(runtime_antigravity, "pin_exact_regular_inventory_antigravity", side_effect=track_pin), \
+                 patch.object(CompletedAttemptAntigravity, "__post_init__", new=inspect_constructor):
+                run_exp441_new_antigravity(reviewed_commit="a" * 40)
+        for descriptor in observed["descriptors"]:
+            with self.assertRaises(OSError):
+                os.fstat(descriptor)
+
+    def test_construction_gap_mutation_cannot_return_a_stale_completed_attempt(self) -> None:
+        # Break caught: an authority mutation synchronized during completed-attempt construction escapes after the old hash helper returns.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import runtime_antigravity
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_antigravity import CompletedAttemptAntigravity
+        snapshot = _snapshot(_fixture_candidates())
+        selection = select_hard_empty_single_shot_antigravity(snapshot)
+        observed: dict[str, object] = {}
+        construction_entered = threading.Event()
+        mutation_finished = threading.Event()
+        mutation_errors: list[BaseException] = []
+        real_pin = runtime_antigravity.pin_exact_regular_inventory_antigravity
+        real_post_init = CompletedAttemptAntigravity.__post_init__
+
+        def track_pin(*args: object, **kwargs: object):
+            pinned = real_pin(*args, **kwargs)
+            observed["attempt"] = pinned._root_antigravity
+            return pinned
+
+        def mutate_during_construction() -> None:
+            try:
+                self.assertTrue(construction_entered.wait(timeout=5))
+                (observed["attempt"] / "source_snapshot_antigravity.json").write_bytes(b"mutated\n")
+            except BaseException as error:
+                mutation_errors.append(error)
+            finally:
+                mutation_finished.set()
+
+        def synchronize_constructor(instance: CompletedAttemptAntigravity) -> None:
+            real_post_init(instance)
+            construction_entered.set()
+            self.assertTrue(mutation_finished.wait(timeout=5))
+
+        worker = threading.Thread(target=mutate_during_construction)
+        worker.start()
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                with patch.object(runtime_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                     patch.object(runtime_antigravity, "FROZEN_CONFIG", SimpleNamespace(dataset_count=len(snapshot.context_datasets))), \
+                     patch.object(runtime_antigravity, "_ensure_clean_reviewed_commit_antigravity"), \
+                     patch.object(runtime_antigravity, "_load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                     patch.object(runtime_antigravity, "_verify_with_observer_antigravity", side_effect=self._replay(snapshot)), \
+                     patch.object(runtime_antigravity, "_reverify_sources_after_artifacts_antigravity", return_value=snapshot), \
+                     patch.object(runtime_antigravity, "select_hard_empty_single_shot_antigravity", return_value=selection), \
+                     patch.object(runtime_antigravity, "validate_production_selection_antigravity", side_effect=lambda value: value), \
+                     patch.object(runtime_antigravity, "pin_exact_regular_inventory_antigravity", side_effect=track_pin), \
+                     patch.object(CompletedAttemptAntigravity, "__post_init__", new=synchronize_constructor):
+                    with self.assertRaisesRegex(ValueError, "changed"):
+                        run_exp441_new_antigravity(reviewed_commit="a" * 40)
+        finally:
+            worker.join(timeout=5)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(mutation_errors, [])
 
     def test_completed_attempt_is_create_only_and_contains_exact_governance(self) -> None:
         # Break caught: a later new could repair an old attempt, or selection evidence could dilute governance values.
