@@ -12,6 +12,7 @@ from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_an
     ReadinessBindingAntigravity,
     SelectionResultAntigravity,
     BackendAssessmentAntigravity,
+    terminal_attempt_authority_sha256_from_bytes_antigravity,
     validate_production_selection_antigravity,
 )
 
@@ -33,6 +34,24 @@ def _ranked(candidates: tuple[CandidateEvidenceAntigravity, ...], selected_count
 
 
 class Exp441ContractsAntigravityTests(unittest.TestCase):
+    def test_terminal_authority_identity_is_ordered_complete_and_byte_sensitive(self) -> None:
+        """Every one of the six fixed terminal files participates in one deterministic identity."""
+        authority = {
+            "source_snapshot_antigravity.json": b"source",
+            "selection_antigravity.json": b"selection",
+            "progress_antigravity.json": b"progress",
+            "pid_antigravity": b"pid",
+            "events_antigravity.jsonl": b"events\n",
+            "text_antigravity.log": b"text\n",
+        }
+        identity = terminal_attempt_authority_sha256_from_bytes_antigravity(authority)
+        self.assertRegex(identity, r"^[0-9a-f]{64}$")
+        self.assertEqual(identity, terminal_attempt_authority_sha256_from_bytes_antigravity(dict(authority)))
+        changed = dict(authority); changed["pid_antigravity"] = b"different-pid"
+        self.assertNotEqual(identity, terminal_attempt_authority_sha256_from_bytes_antigravity(changed))
+        with self.assertRaisesRegex(ValueError, "authority"):
+            terminal_attempt_authority_sha256_from_bytes_antigravity({"pid_antigravity": b"pid"})
+
     def test_candidate_roundtrip_and_frozen_rank_keys(self) -> None:
         """A ranking-key mutation or payload drift must be observable at the contract boundary."""
         candidate = _candidate()

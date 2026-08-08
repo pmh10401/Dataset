@@ -17,7 +17,10 @@ from .artifacts_antigravity import (
     write_create_only_antigravity,
 )
 from .config_antigravity import FROZEN_CONFIG, governance_payload_antigravity
-from .contracts_antigravity import CompletedAttemptAntigravity, FrozenPublicationAntigravity, FrozenSourceSnapshotAntigravity, SelectionResultAntigravity
+from .contracts_antigravity import (
+    CompletedAttemptAntigravity, FrozenPublicationAntigravity, FrozenSourceSnapshotAntigravity,
+    SelectionResultAntigravity, terminal_attempt_authority_sha256_from_bytes_antigravity,
+)
 from .runtime_antigravity import _selection_from_payload_antigravity, _snapshot_payload_antigravity
 from .selector_antigravity import select_hard_empty_single_shot_antigravity, selected_coordinate_identity_sha256_antigravity
 from .sources_antigravity import verify_frozen_sources_antigravity
@@ -101,16 +104,17 @@ def _attempt_path_antigravity(attempt: CompletedAttemptAntigravity) -> Path:
     if not isinstance(attempt, CompletedAttemptAntigravity):
         raise ValueError("completed attempt is invalid")
     path = _RUN_ROOT_ANTIGRAVITY / "attempts_antigravity" / f"attempt_{attempt.attempt_sequence:04d}_antigravity"
-    if path.is_symlink() or not path.is_dir():
+    if (path.is_symlink() or not path.is_dir() or
+            stat.S_IMODE(path.stat(follow_symlinks=False).st_mode) != 0o700):
         raise ValueError("attempt root is invalid")
     return path
 
 
 def _timestamp_antigravity(value: object, message: str) -> datetime:
-    if not isinstance(value, str) or not value.endswith("Z"):
+    if not isinstance(value, str) or len(value) != 20:
         raise ValueError(message)
     try:
-        return datetime.fromisoformat(value.removesuffix("Z") + "+00:00")
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
     except ValueError as error:
         raise ValueError(message) from error
 
@@ -198,6 +202,8 @@ def _parse_attempt_antigravity(attempt: CompletedAttemptAntigravity) -> tuple[Pa
         authority[name] = read_pinned_regular_bytes_antigravity(item)[0]
         if name.endswith(".json") or name == "pid_antigravity":
             values[name] = parse_canonical_json_bytes_antigravity(authority[name])
+    if terminal_attempt_authority_sha256_from_bytes_antigravity(authority) != attempt.terminal_authority_sha256:
+        raise ValueError("attempt terminal authority identity is invalid")
     snapshot = values["source_snapshot_antigravity.json"]
     selection = values["selection_antigravity.json"]
     progress = values["progress_antigravity.json"]
@@ -436,17 +442,16 @@ def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPu
             raise ValueError("staged publication bytes are invalid")
         _inspect_payloads_antigravity(staged, attempt)
         fsync_directory_antigravity(staging)
-        # Last expensive source replay is complete before the adjacent byte gate.
-        final_selection_result, final_source_snapshot = _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload)
+        # The final source replay ends before the terminal, no-callback byte gate.
+        final_selection_result, _final_source_snapshot = _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload)
         if final_selection_result != selection:
             raise ValueError("frozen sources changed before publication rename")
         if destination.exists() or destination.is_symlink():
             raise ValueError("publication destination raced")
-        # No callback or source replay may occur between this authority gate and RENAME_EXCL.
+        # This strict reopen/pin/parse/identity comparison is immediately followed by RENAME_EXCL.
         _final_path, final_snapshot, final_selection, final_authority = _parse_attempt_antigravity(attempt)
         if (final_authority != authority or final_snapshot != snapshot_payload or final_selection != selection_payload):
             raise ValueError("terminal attempt authority changed before publication rename")
-        _validate_runtime_attempt_evidence_antigravity(final_authority, final_source_snapshot)
         exclusive_rename_antigravity(staging, destination)
         fsync_directory_antigravity(destination.parent)
         return inspect_exp441_publication_antigravity()

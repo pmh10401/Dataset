@@ -2,9 +2,34 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 import math
 from types import MappingProxyType
 from typing import Iterable, Mapping
+
+
+_TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY = (
+    "source_snapshot_antigravity.json", "selection_antigravity.json", "progress_antigravity.json",
+    "pid_antigravity", "events_antigravity.jsonl", "text_antigravity.log",
+)
+
+
+def terminal_attempt_authority_sha256_from_bytes_antigravity(authority: Mapping[str, bytes]) -> str:
+    """Return the deterministic identity of Exp441's six terminal evidence files."""
+    if not isinstance(authority, Mapping) or set(authority) != set(_TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY):
+        raise ValueError("terminal attempt authority is invalid")
+    digest = sha256()
+    for name in _TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY:
+        payload = authority[name]
+        if not isinstance(payload, bytes):
+            raise ValueError("terminal attempt authority is invalid")
+        digest.update(name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(str(len(payload)).encode("ascii"))
+        digest.update(b"\0")
+        digest.update(payload)
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 def _finite(value: object, name: str, *, nonnegative: bool = False) -> float:
@@ -447,11 +472,12 @@ class CompletedAttemptAntigravity:
     source_snapshot_sha256: str
     selection: SelectionResultAntigravity
     selection_sha256: str
+    terminal_authority_sha256: str
 
     def __post_init__(self) -> None:
         _positive_int(self.attempt_sequence, "attempt sequence", allow_zero=True)
         if (not isinstance(self.reviewed_commit, str) or len(self.reviewed_commit) != 40 or
-                any(not isinstance(value, str) or len(value) != 64 for value in (self.source_snapshot_sha256, self.selection_sha256))):
+                any(not isinstance(value, str) or len(value) != 64 or any(character not in "0123456789abcdef" for character in value) for value in (self.source_snapshot_sha256, self.selection_sha256, self.terminal_authority_sha256))):
             raise ValueError("attempt identity is invalid")
         if not isinstance(self.selection, SelectionResultAntigravity):
             raise ValueError("attempt selection is invalid")
@@ -538,5 +564,6 @@ __all__ = [
     "SelectionResultAntigravity", "validate_production_selection_antigravity",
     "FrozenSourceSnapshotAntigravity", "BackendAssessmentAntigravity", "ReadinessBindingAntigravity",
     "CompletedAttemptAntigravity", "FrozenPublicationAntigravity", "BootstrapResultAntigravity",
+    "terminal_attempt_authority_sha256_from_bytes_antigravity",
     "EvaluationFactsAntigravity", "FrozenEvaluationAntigravity",
 ]

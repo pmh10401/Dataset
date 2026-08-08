@@ -1,6 +1,7 @@
 """Behavior tests for Exp441's label-free six-file publication boundary."""
 from __future__ import annotations
 
+from dataclasses import replace
 from hashlib import sha256
 import json
 import os
@@ -10,8 +11,13 @@ import unittest
 from unittest.mock import patch
 
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
-from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_antigravity import CandidateEvidenceAntigravity, CompletedAttemptAntigravity, FrozenSourceSnapshotAntigravity
-from experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity import _selection_payload_antigravity, _snapshot_payload_antigravity
+from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_antigravity import (
+    CandidateEvidenceAntigravity, CompletedAttemptAntigravity, FrozenSourceSnapshotAntigravity,
+)
+from experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity import (
+    _selection_payload_antigravity, _snapshot_payload_antigravity,
+    terminal_attempt_authority_sha256_antigravity,
+)
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.selector_antigravity import select_hard_empty_single_shot_antigravity
 
 
@@ -37,6 +43,7 @@ class ReportingContractAntigravityTests(unittest.TestCase):
         selection = select_hard_empty_single_shot_antigravity(snapshot)
         attempt_root = root / "attempts_antigravity" / "attempt_0000_antigravity"
         attempt_root.mkdir(parents=True)
+        os.chmod(attempt_root, 0o700)
         snapshot_bytes = canonical_json_bytes_antigravity(_snapshot_payload_antigravity(snapshot))
         snapshot_sha = sha256(snapshot_bytes).hexdigest()
         selection_payload = _selection_payload_antigravity(selection, reviewed_commit="a" * 40, source_snapshot_sha256=snapshot_sha)
@@ -65,7 +72,10 @@ class ReportingContractAntigravityTests(unittest.TestCase):
         ))
         for entry in attempt_root.iterdir():
             os.chmod(entry, 0o600)
-        return CompletedAttemptAntigravity(0, "a" * 40, snapshot_sha, selection, sha256(selection_bytes).hexdigest())
+        return CompletedAttemptAntigravity(
+            0, "a" * 40, snapshot_sha, selection, sha256(selection_bytes).hexdigest(),
+            terminal_attempt_authority_sha256_antigravity(attempt_root),
+        )
 
     def test_reporting_public_api_exposes_fixed_publish_and_inspect_boundaries(self) -> None:
         # Break caught: a caller cannot freeze or replay the fixed label-free publication boundary.
@@ -73,6 +83,13 @@ class ReportingContractAntigravityTests(unittest.TestCase):
 
         self.assertTrue(callable(reporting_antigravity.publish_exp441_antigravity))
         self.assertTrue(callable(reporting_antigravity.inspect_exp441_publication_antigravity))
+
+    def test_completed_attempt_carries_immutable_six_file_authority_identity(self) -> None:
+        # Break caught: coordinated pre-entry edits can change every semantic field while the attempt object has no byte identity.
+        snapshot = self._fixture_snapshot_antigravity()
+        with tempfile.TemporaryDirectory() as directory:
+            attempt = self._write_terminal_attempt_antigravity(Path(directory), snapshot)
+            self.assertRegex(attempt.terminal_authority_sha256, r"^[0-9a-f]{64}$")
 
     def test_publish_writes_exact_six_files_and_rejects_prediction_tamper(self) -> None:
         # Break caught: publication could silently accept a changed prediction after its hash was frozen.
@@ -140,7 +157,7 @@ class ReportingContractAntigravityTests(unittest.TestCase):
         from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
         snapshot = self._fixture_snapshot_antigravity()
         selection = select_hard_empty_single_shot_antigravity(snapshot)
-        attempt = CompletedAttemptAntigravity(0, "a" * 40, "b" * 64, selection, "c" * 64)
+        attempt = CompletedAttemptAntigravity(0, "a" * 40, "b" * 64, selection, "c" * 64, "d" * 64)
         payload = reporting_antigravity._failure_payload_antigravity(attempt, ValueError("race"))
         reporting_antigravity._validate_failure_payload_antigravity(payload)
         tampered = dict(payload)
@@ -161,7 +178,7 @@ class ReportingContractAntigravityTests(unittest.TestCase):
                  patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=snapshot), \
                  patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
                  patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=os.rename):
-                with self.assertRaisesRegex(ValueError, "PID"):
+                with self.assertRaisesRegex(ValueError, "authority|PID"):
                     reporting_antigravity.publish_exp441_antigravity(attempt)
 
     def test_publish_accepts_realistic_positive_nonone_terminal_pid(self) -> None:
@@ -284,6 +301,87 @@ class ReportingContractAntigravityTests(unittest.TestCase):
                      patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=os.rename):
                     with self.assertRaises(ValueError):
                         reporting_antigravity.publish_exp441_antigravity(attempt)
+
+    def test_publish_rejects_coordinated_preentry_terminal_metadata_tampering(self) -> None:
+        # Break caught: progress and PID can be changed together into a valid-looking terminal state before the first replay.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); attempt = self._write_terminal_attempt_antigravity(root, snapshot, pid_value=43210)
+            attempt_root = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            progress_path = attempt_root / "progress_antigravity.json"; pid_path = attempt_root / "pid_antigravity"
+            progress = json.loads(progress_path.read_text()); progress["heartbeat"] = "2026-08-08T00:00:05Z"
+            pid = json.loads(pid_path.read_text()); pid["heartbeat"] = "2026-08-08T00:00:06Z"
+            progress_path.write_bytes(canonical_json_bytes_antigravity(progress)); pid_path.write_bytes(canonical_json_bytes_antigravity(pid))
+            with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root):
+                with self.assertRaisesRegex(ValueError, "authority identity"):
+                    reporting_antigravity.publish_exp441_antigravity(attempt)
+
+    def test_publish_rejects_noncanonical_terminal_heartbeat_even_with_recomputed_identity(self) -> None:
+        # Break caught: a fractional or shifted timestamp survives byte sealing but is not the canonical UTC-second heartbeat.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); attempt = self._write_terminal_attempt_antigravity(root, snapshot)
+            attempt_root = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            pid_path = attempt_root / "pid_antigravity"
+            pid = json.loads(pid_path.read_text()); pid["heartbeat"] = "2026-08-08T00:00:01.0Z"
+            pid_path.write_bytes(canonical_json_bytes_antigravity(pid))
+            attempt = replace(attempt, terminal_authority_sha256=terminal_attempt_authority_sha256_antigravity(attempt_root))
+            with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root):
+                with self.assertRaisesRegex(ValueError, "heartbeat"):
+                    reporting_antigravity.publish_exp441_antigravity(attempt)
+
+    def test_publish_rejects_attempt_root_with_nonprivate_mode_or_symlink(self) -> None:
+        # Break caught: a terminal authority can be read from a world-readable or redirected root.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        for shape in ("mode", "symlink"):
+            with self.subTest(shape=shape), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory); attempt = self._write_terminal_attempt_antigravity(root, snapshot)
+                attempt_root = root / "attempts_antigravity" / "attempt_0000_antigravity"
+                if shape == "mode":
+                    os.chmod(attempt_root, 0o755)
+                else:
+                    target = root / "redirected_attempt_antigravity"
+                    attempt_root.rename(target)
+                    attempt_root.symlink_to(target, target_is_directory=True)
+                with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root):
+                    with self.assertRaisesRegex(ValueError, "attempt root"):
+                        reporting_antigravity.publish_exp441_antigravity(attempt)
+
+    def test_publish_final_authority_gate_is_adjacent_to_exclusive_rename(self) -> None:
+        # Break caught: an evidence callback or mutable validation hook runs after the final source replay and before rename.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); attempt = self._write_terminal_attempt_antigravity(root, snapshot)
+            order: list[str] = []; runtime_validation_calls = {"count": 0}
+            real_parse = reporting_antigravity._parse_attempt_antigravity
+            real_replay = reporting_antigravity._reverified_selection_antigravity
+            real_runtime_validation = reporting_antigravity._validate_runtime_attempt_evidence_antigravity
+            def parsed(value: CompletedAttemptAntigravity):
+                order.append("parse")
+                return real_parse(value)
+            def replay(*args: object):
+                order.append("source")
+                return real_replay(*args)
+            def validate(*args: object) -> None:
+                runtime_validation_calls["count"] += 1
+                real_runtime_validation(*args)
+            def renamed(source: Path, destination: Path) -> None:
+                order.append("rename")
+                os.rename(source, destination)
+            with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=snapshot), \
+                 patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
+                 patch.object(reporting_antigravity, "_parse_attempt_antigravity", side_effect=parsed), \
+                 patch.object(reporting_antigravity, "_reverified_selection_antigravity", side_effect=replay), \
+                 patch.object(reporting_antigravity, "_validate_runtime_attempt_evidence_antigravity", side_effect=validate), \
+                 patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=renamed):
+                reporting_antigravity.publish_exp441_antigravity(attempt)
+            self.assertEqual(order[-3:], ["source", "parse", "rename"])
+            self.assertEqual(runtime_validation_calls["count"], 1)
 
     def test_inspect_rejects_status_commit_that_differs_from_manifest(self) -> None:
         # Break caught: status can point at a different implementation commit while its hashes still look valid.

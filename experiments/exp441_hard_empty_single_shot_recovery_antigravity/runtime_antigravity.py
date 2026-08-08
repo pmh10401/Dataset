@@ -5,6 +5,7 @@ from hashlib import sha256
 import os
 from pathlib import Path
 import signal
+import stat
 import subprocess
 from typing import Mapping
 
@@ -13,6 +14,7 @@ from .config_antigravity import FROZEN_CONFIG, governance_payload_antigravity
 from .contracts_antigravity import (
     CandidateEvidenceAntigravity, CompletedAttemptAntigravity, FrozenSourceSnapshotAntigravity,
     RankedCandidateAntigravity, SelectionResultAntigravity,
+    terminal_attempt_authority_sha256_from_bytes_antigravity,
     validate_production_selection_antigravity,
 )
 from .progress_antigravity import ProgressWriterAntigravity
@@ -24,10 +26,31 @@ from .sources_antigravity import (
 
 
 _RUN_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808")
+_TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY = (
+    "source_snapshot_antigravity.json", "selection_antigravity.json", "progress_antigravity.json",
+    "pid_antigravity", "events_antigravity.jsonl", "text_antigravity.log",
+)
 
 
 class _InterruptedAttemptAntigravity(RuntimeError):
     pass
+
+
+def terminal_attempt_authority_sha256_antigravity(attempt: Path) -> str:
+    """Hash the exact finalized six-file attempt authority through pinned descriptors."""
+    root = Path(attempt)
+    if root.is_symlink() or not root.is_dir() or stat.S_IMODE(root.stat(follow_symlinks=False).st_mode) != 0o700:
+        raise ValueError("terminal attempt root is invalid")
+    entries = {entry.name: entry for entry in root.iterdir()}
+    if set(entries) != set(_TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY):
+        raise ValueError("terminal attempt inventory is invalid")
+    authority: dict[str, bytes] = {}
+    for name in _TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY:
+        path = entries[name]
+        if path.is_symlink() or not stat.S_ISREG(path.stat(follow_symlinks=False).st_mode) or stat.S_IMODE(path.stat(follow_symlinks=False).st_mode) != 0o600:
+            raise ValueError("terminal attempt authority entry is invalid")
+        authority[name], _sha = read_pinned_regular_bytes_antigravity(path)
+    return terminal_attempt_authority_sha256_from_bytes_antigravity(authority)
 
 
 def _ensure_clean_reviewed_commit_antigravity(reviewed_commit: str) -> None:
@@ -279,7 +302,8 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
             raise ValueError("frozen sources changed after attempt artifact creation")
         _ensure_clean_reviewed_commit_antigravity(reviewed_commit)
         writer.terminal_antigravity(stage="complete", latest_error=None)
-        return CompletedAttemptAntigravity(sequence, reviewed_commit, snapshot_sha256, selection, selection_sha256)
+        authority_sha256 = terminal_attempt_authority_sha256_antigravity(attempt)
+        return CompletedAttemptAntigravity(sequence, reviewed_commit, snapshot_sha256, selection, selection_sha256, authority_sha256)
     except _InterruptedAttemptAntigravity as error:
         _best_effort_failure_antigravity(writer, attempt, sequence, reviewed_commit, "interrupted", error)
         raise
@@ -291,4 +315,4 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
             signal.signal(signal.SIGTERM, prior_handler)
 
 
-__all__ = ["allocate_attempt_antigravity", "run_exp441_new_antigravity"]
+__all__ = ["allocate_attempt_antigravity", "run_exp441_new_antigravity", "terminal_attempt_authority_sha256_antigravity"]

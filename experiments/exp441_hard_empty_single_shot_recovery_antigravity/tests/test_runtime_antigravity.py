@@ -17,6 +17,7 @@ from experiments.exp441_hard_empty_single_shot_recovery_antigravity.sources_anti
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity import (
     allocate_attempt_antigravity,
     run_exp441_new_antigravity,
+    terminal_attempt_authority_sha256_antigravity,
 )
 from experiments.exp441_hard_empty_single_shot_recovery_antigravity.selector_antigravity import (
     select_hard_empty_single_shot_antigravity,
@@ -84,6 +85,14 @@ class RuntimeAntigravityTests(unittest.TestCase):
                 first_bytes = (root / "attempts_antigravity" / "attempt_0000_antigravity" / "selection_antigravity.json").read_bytes()
                 second = run_exp441_new_antigravity(reviewed_commit="a" * 40)
             self.assertEqual((first.attempt_sequence, second.attempt_sequence), (0, 1))
+            self.assertEqual(
+                first.terminal_authority_sha256,
+                terminal_attempt_authority_sha256_antigravity(root / "attempts_antigravity" / "attempt_0000_antigravity"),
+            )
+            self.assertEqual(
+                second.terminal_authority_sha256,
+                terminal_attempt_authority_sha256_antigravity(root / "attempts_antigravity" / "attempt_0001_antigravity"),
+            )
             selection_payload = json.loads((root / "attempts_antigravity" / "attempt_0000_antigravity" / "selection_antigravity.json").read_text())
             governance = governance_payload_antigravity()
             self.assertEqual({name: selection_payload[name] for name in governance}, governance)
