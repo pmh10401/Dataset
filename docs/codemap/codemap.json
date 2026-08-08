@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T02:54:28Z",
-  "generated_from_commit": "c2f5495b1a5be17ed08b3bbe4f0f18192fed19ae",
+  "generated_at": "2026-08-08T03:17:30Z",
+  "generated_from_commit": "148daf63354c64eb61f31a39611ad629f238f76d",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -278,7 +278,7 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_experiment\": \"Exp440\""
+          "symbol": "\"active_experiment\": \"Exp441\""
         },
         {
           "path": "docs/EXP440_IMPLEMENTATION_REPORT_antigravity.md",
@@ -2518,7 +2518,9 @@
         "BackendAssessmentAntigravity",
         "verify_frozen_sources_antigravity",
         "hard_coordinate_identity_sha256_antigravity",
-        "_parse_record_task_antigravity"
+        "_parse_record_task_antigravity",
+        "select_hard_empty_single_shot_antigravity",
+        "selected_coordinate_identity_sha256_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2551,7 +2553,8 @@
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_config_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_contracts_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_artifacts_antigravity.py",
-        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_sources_antigravity.py"
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_sources_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_selector_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2782,6 +2785,18 @@
         {
           "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/contracts_antigravity.py",
           "symbol": "class Exp440DatasetResultAntigravity"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/selector_antigravity.py",
+          "symbol": "def select_hard_empty_single_shot_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/selector_antigravity.py",
+          "symbol": "def selected_coordinate_identity_sha256_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_selector_antigravity.py",
+          "symbol": "class HardEmptySelectorAntigravityTests(unittest.TestCase):"
         }
       ]
     },
@@ -3637,6 +3652,25 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
           "symbol": "def _validate_publication_antigravity("
+        }
+      ]
+    },
+    {
+      "from": "exp438_frequency_runtime",
+      "to": "exp438_frequency_runtime",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_selector_antigravity.py",
+          "symbol": "def test_real_replay_is_label_free_and_matches_frozen_selection_identity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
+          "symbol": "def verify_frozen_sources_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/selector_antigravity.py",
+          "symbol": "def select_hard_empty_single_shot_antigravity("
         }
       ]
     }
