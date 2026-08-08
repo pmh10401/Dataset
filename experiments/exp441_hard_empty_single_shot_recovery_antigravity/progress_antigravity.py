@@ -168,11 +168,22 @@ class ProgressWriterAntigravity:
             "active": False, "stage": stage, "current_dataset": None, "current_record_name": None,
             "active_datasets": [], "error": int(stage == "failed"), "latest_error": latest_error,
         })
-        self._write_progress_antigravity()
+        primary: BaseException | None = None
+        try:
+            self._write_progress_antigravity()
+        except BaseException as error:
+            primary = error
         final_pid = self._attempt_path / "pid_antigravity"
         temporary = self._attempt_path / "pid_terminal_antigravity.tmp"
-        write_create_only_antigravity(temporary, canonical_json_bytes_antigravity({"pid": self._pid, "active": False, "heartbeat": _utc_now_antigravity()}))
-        os.replace(temporary, final_pid)
+        try:
+            write_create_only_antigravity(temporary, canonical_json_bytes_antigravity({"pid": self._pid, "active": False, "heartbeat": _utc_now_antigravity()}))
+            os.replace(temporary, final_pid)
+        except BaseException as error:
+            try: temporary.unlink()
+            except FileNotFoundError: pass
+            if primary is None: primary = error
+        if primary is not None:
+            raise primary
 
     def source_replay_complete_antigravity(self) -> None:
         """Leave verification after the complete parent-accepted prefix before selection."""

@@ -104,3 +104,21 @@ class ProgressAntigravityTests(unittest.TestCase):
             event = json.loads((attempt / "events_antigravity.jsonl").read_text())
             self.assertEqual((event["test_row_count"], event["raw_length"]), (17, 64))
             self.assertIsNone(progress["train_row_count"])
+
+    def test_terminal_replace_failure_preserves_progress_cleans_temp_and_still_attempts_pid(self) -> None:
+        # Break caught: failed progress replacement prevents PID shutdown or replaces a known-good JSON.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity as module
+        with tempfile.TemporaryDirectory() as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"; attempt.mkdir()
+            writer = ProgressWriterAntigravity(attempt, total=1, pid=4321)
+            prior = (attempt / "progress_antigravity.json").read_bytes()
+            real_replace = module.os.replace
+            def fail_progress(source, destination):
+                if Path(destination).name == "progress_antigravity.json": raise OSError("replace failed")
+                return real_replace(source, destination)
+            with patch.object(module.os, "replace", side_effect=fail_progress):
+                with self.assertRaisesRegex(OSError, "replace failed"):
+                    writer.terminal_antigravity(stage="failed", latest_error="source")
+            self.assertEqual((attempt / "progress_antigravity.json").read_bytes(), prior)
+            self.assertFalse((attempt / "progress_antigravity.tmp").exists())
+            self.assertFalse(json.loads((attempt / "pid_antigravity").read_text())["active"])
