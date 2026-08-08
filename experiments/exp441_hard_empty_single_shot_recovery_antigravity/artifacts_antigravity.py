@@ -94,6 +94,33 @@ class PinnedRegularInventoryAntigravity:
     payloads: Mapping[str, bytes]
     metadata: Mapping[str, PinnedFileIdentityAntigravity]
     _descriptors_antigravity: dict[str, int]
+    _root_antigravity: Path
+    _names_antigravity: tuple[str, ...]
+    _directory_mode_antigravity: int
+    _file_mode_antigravity: int
+    _root_metadata_antigravity: PinnedFileIdentityAntigravity
+    _root_descriptor_antigravity: int
+
+    def revalidate_antigravity(self) -> None:
+        """Fail closed if the retained root or any named entry changed after initial pinning."""
+        try:
+            root_descriptor_identity = _pinned_file_identity_antigravity(os.fstat(self._root_descriptor_antigravity))
+            root_namespace_identity = _pinned_file_identity_antigravity(self._root_antigravity.lstat())
+            if (root_descriptor_identity != self._root_metadata_antigravity or
+                    root_namespace_identity != self._root_metadata_antigravity or
+                    not stat.S_ISDIR(root_descriptor_identity.mode) or
+                    stat.S_IMODE(root_descriptor_identity.mode) != self._directory_mode_antigravity):
+                raise ValueError("pinned inventory root changed")
+            if set(os.listdir(self._root_descriptor_antigravity)) != set(self._names_antigravity):
+                raise ValueError("pinned inventory changed")
+            for name in self._names_antigravity:
+                descriptor_identity = _pinned_file_identity_antigravity(os.fstat(self._descriptors_antigravity[name]))
+                namespace_identity = _pinned_file_identity_antigravity(os.stat(name, dir_fd=self._root_descriptor_antigravity, follow_symlinks=False))
+                if (descriptor_identity != self.metadata[name] or namespace_identity != self.metadata[name] or
+                        not stat.S_ISREG(descriptor_identity.mode) or stat.S_IMODE(descriptor_identity.mode) != self._file_mode_antigravity):
+                    raise ValueError("pinned inventory changed")
+        except OSError as error:
+            raise ValueError("pinned inventory changed") from error
 
     def close_antigravity(self) -> None:
         """Close every retained descriptor exactly once, preserving the first close error."""
@@ -102,6 +129,14 @@ class PinnedRegularInventoryAntigravity:
             del self._descriptors_antigravity[name]
             try:
                 os.close(descriptor)
+            except BaseException as error:
+                if primary is None:
+                    primary = error
+        root_descriptor = self._root_descriptor_antigravity
+        self._root_descriptor_antigravity = -1
+        if root_descriptor >= 0:
+            try:
+                os.close(root_descriptor)
             except BaseException as error:
                 if primary is None:
                     primary = error
@@ -123,20 +158,6 @@ class PinnedRegularInventoryAntigravity:
         return False
 
 
-def _exact_regular_inventory_entries_antigravity(root: Path, names: tuple[str, ...], *, directory_mode: int, file_mode: int) -> dict[str, Path]:
-    root_status = root.lstat()
-    if stat.S_ISLNK(root_status.st_mode) or not stat.S_ISDIR(root_status.st_mode) or stat.S_IMODE(root_status.st_mode) != directory_mode:
-        raise ValueError("pinned inventory root is invalid")
-    entries = {entry.name: entry for entry in root.iterdir()}
-    if set(entries) != set(names):
-        raise ValueError("pinned inventory is invalid")
-    for name in names:
-        status = entries[name].stat(follow_symlinks=False)
-        if stat.S_ISLNK(status.st_mode) or not stat.S_ISREG(status.st_mode) or stat.S_IMODE(status.st_mode) != file_mode:
-            raise ValueError("pinned inventory entry is invalid")
-    return entries
-
-
 def pin_exact_regular_inventory_antigravity(
     root: Path, names: Iterable[str], *, directory_mode: int = 0o700, file_mode: int = 0o600,
 ) -> PinnedRegularInventoryAntigravity:
@@ -147,12 +168,21 @@ def pin_exact_regular_inventory_antigravity(
             any(not isinstance(name, str) or not name or "/" in name for name in ordered_names)):
         raise ValueError("pinned inventory names are invalid")
     descriptors: dict[str, int] = {}
+    root_descriptor = -1
     identities: dict[str, PinnedFileIdentityAntigravity] = {}
     try:
-        entries = _exact_regular_inventory_entries_antigravity(root, ordered_names, directory_mode=directory_mode, file_mode=file_mode)
+        root_descriptor = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC | os.O_NOFOLLOW)
+        root_identity = _pinned_file_identity_antigravity(os.fstat(root_descriptor))
+        if (not stat.S_ISDIR(root_identity.mode) or stat.S_IMODE(root_identity.mode) != directory_mode or
+                root_identity != _pinned_file_identity_antigravity(root.lstat())):
+            raise ValueError("pinned inventory root is invalid")
+        if set(os.listdir(root_descriptor)) != set(ordered_names):
+            raise ValueError("pinned inventory is invalid")
         for name in ordered_names:
-            namespace_status = entries[name].stat(follow_symlinks=False)
-            descriptor = os.open(entries[name], os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+            namespace_status = os.stat(name, dir_fd=root_descriptor, follow_symlinks=False)
+            if (not stat.S_ISREG(namespace_status.st_mode) or stat.S_IMODE(namespace_status.st_mode) != file_mode):
+                raise ValueError("pinned inventory entry is invalid")
+            descriptor = os.open(name, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW, dir_fd=root_descriptor)
             descriptors[name] = descriptor
             opened_status = os.fstat(descriptor)
             opened_identity = _pinned_file_identity_antigravity(opened_status)
@@ -166,19 +196,21 @@ def pin_exact_regular_inventory_antigravity(
             while block := os.read(descriptors[name], 1024 * 1024):
                 blocks.append(block)
             payloads[name] = b"".join(blocks)
-        entries_after = _exact_regular_inventory_entries_antigravity(root, ordered_names, directory_mode=directory_mode, file_mode=file_mode)
-        for name in ordered_names:
-            descriptor_identity = _pinned_file_identity_antigravity(os.fstat(descriptors[name]))
-            namespace_identity = _pinned_file_identity_antigravity(entries_after[name].stat(follow_symlinks=False))
-            if descriptor_identity != identities[name] or namespace_identity != identities[name]:
-                raise ValueError("pinned inventory changed while open")
-        return PinnedRegularInventoryAntigravity(
-            MappingProxyType(payloads), MappingProxyType(identities), descriptors,
+        pinned = PinnedRegularInventoryAntigravity(
+            MappingProxyType(payloads), MappingProxyType(identities), descriptors, root,
+            ordered_names, directory_mode, file_mode, root_identity, root_descriptor,
         )
+        pinned.revalidate_antigravity()
+        return pinned
     except BaseException:
         for descriptor in descriptors.values():
             try:
                 os.close(descriptor)
+            except OSError:
+                pass
+        if root_descriptor >= 0:
+            try:
+                os.close(root_descriptor)
             except OSError:
                 pass
         raise

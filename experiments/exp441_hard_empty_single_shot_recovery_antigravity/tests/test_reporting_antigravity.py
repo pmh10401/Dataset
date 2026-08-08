@@ -429,6 +429,34 @@ class ReportingContractAntigravityTests(unittest.TestCase):
                     reporting_antigravity.publish_exp441_antigravity(attempt)
             self.assertFalse((root / "publication_antigravity").exists())
 
+    def test_publish_final_revalidates_every_post_parse_mutation(self) -> None:
+        # Break caught: final parse/compare consumes a stale authority when a file changes after grouped-read validation.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        for mutation in ("write", "replace", "unlink", "chmod", "truncate"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory); attempt = self._write_terminal_attempt_antigravity(root, snapshot)
+                attempt_root = root / "attempts_antigravity" / "attempt_0000_antigravity"; target = attempt_root / "source_snapshot_antigravity.json"
+                real_parse = reporting_antigravity._parse_pinned_attempt_antigravity; calls = {"count": 0}
+                def parse_then_mutate(*args: object):
+                    result = real_parse(*args); calls["count"] += 1
+                    if calls["count"] == 2:
+                        if mutation == "write": target.write_bytes(b"X" + target.read_bytes()[1:])
+                        elif mutation == "replace":
+                            replacement = attempt_root / "replacement_antigravity.tmp"; replacement.write_bytes(target.read_bytes()); os.chmod(replacement, 0o600); os.replace(replacement, target)
+                        elif mutation == "unlink": target.unlink()
+                        elif mutation == "chmod": os.chmod(target, 0o644)
+                        else: target.write_bytes(b"")
+                    return result
+                with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                     patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=snapshot), \
+                     patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
+                     patch.object(reporting_antigravity, "_parse_pinned_attempt_antigravity", side_effect=parse_then_mutate), \
+                     patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=os.rename):
+                    with self.assertRaisesRegex(ValueError, "changed"):
+                        reporting_antigravity.publish_exp441_antigravity(attempt)
+                self.assertFalse((root / "publication_antigravity").exists())
+
     def test_inspect_rejects_status_commit_that_differs_from_manifest(self) -> None:
         # Break caught: status can point at a different implementation commit while its hashes still look valid.
         from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity

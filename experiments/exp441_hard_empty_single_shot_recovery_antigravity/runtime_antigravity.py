@@ -42,7 +42,9 @@ class _InterruptedAttemptAntigravity(RuntimeError):
 def terminal_attempt_authority_sha256_antigravity(attempt: Path) -> str:
     """Hash one grouped, fully revalidated six-file terminal authority snapshot."""
     with pin_exact_regular_inventory_antigravity(attempt, _TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY) as pinned:
-        return terminal_attempt_authority_sha256_from_bytes_antigravity(pinned.payloads)
+        digest = terminal_attempt_authority_sha256_from_bytes_antigravity(pinned.payloads)
+        pinned.revalidate_antigravity()
+        return digest
 
 
 def _ensure_clean_reviewed_commit_antigravity(reviewed_commit: str) -> None:

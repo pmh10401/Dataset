@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T06:06:23Z",
-  "generated_from_commit": "39691c58208d52c521dbe97ab36af67bf2f1e575",
+  "generated_at": "2026-08-08T06:19:38Z",
+  "generated_from_commit": "7c1d5af9703d8ebdd7228255fb417e58f0678a1b",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2579,7 +2579,7 @@
         "Exp439 keeps up to max-minus-one CPU workers active behind a slow frozen-order head while bounding pending plus buffered results by workers squared; durable commits remain in frozen dataset order.",
         "Exp439 computes each TRAIN row preferred depth once and each used-depth decomposition feature matrix once; held-out depth, fold-local robust transforms, OOF scores, thresholds, candidates, and record bytes remain unchanged.",
         "The interrupted 101-record root is immutable; the scheduler/cache repair uses a distinct run root and imports only the exact 89-record Exp438 prefix under the existing gate.",
-        "Exp441 records only parser-submitted parent-accepted frozen context order, uses source-owned fixed 11 workers and one numerical thread, has no resume route, retains failed/interrupted attempts, rechecks source identity after create-only artifacts, and does not open SQLite, TEST labels, an evaluator, or Exp440 ranking helpers. Terminal authority opens all six exact 0600 files before any read, holds every descriptor through all reads and post-read inode/mode/size/mtime/ctime plus exact-namespace validation, then hashes the stable bytes before closing."
+        "Exp441 terminal authority pins the 0700 root directory with openat child descriptors, validates root and exact six-file namespace identity before/after reads, then revalidates retained root and file descriptors immediately after digest computation before return."
       ],
       "evidence": [
         {
@@ -2853,6 +2853,14 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_runtime_antigravity.py",
           "symbol": "def test_terminal_authority_capture_rejects_first_file_mutation_during_later_read("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/artifacts_antigravity.py",
+          "symbol": "def revalidate_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_terminal_authority_capture_revalidates_every_post_hash_mutation("
         }
       ]
     },
@@ -2890,7 +2898,7 @@
         "Publication requires exactly 1,117 completed datasets, failed=0, inactive PID, current_dataset=null, budget compliance, and prediction TEST-label access exactly zero.",
         "Evaluation is a lazy explicit command and reads TEST labels only after every frozen publication, comparator, source, population, runtime, database, and provenance gate passes.",
         "High-frequency, low-frequency, and amplitude-complexity results remain separate; evaluation selects no winner and publishes eight no-clobber hash-bound artifacts.",
-        "Exp441 publisher validates a real positive matching PID, canonical UTC-second heartbeats, exact terminal progress/events/text, and the immutable lower-hex six-file authority identity. Its final gate opens and retains all six descriptor-pinned files, strictly parses and compares the complete stable authority, and calls Darwin no-clobber rename before closing those descriptors; no runtime-evidence callback, source replay, existence check, or mutable work intervenes. Replacement, unlink, write/truncate, append, and chmod during grouped pin fail closed. It writes exactly six 0600 artifacts under private 0700 staging, and inspection stays label-free with no SQLite or evaluator import."
+        "Exp441 final publisher pins the root and six exact authority files, parses and compares them, then explicitly revalidates retained root/namespace/file identities immediately before RENAME_EXCL; no mutable work follows that barrier."
       ],
       "evidence": [
         {
@@ -2976,6 +2984,10 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_artifacts_antigravity.py",
           "symbol": "def test_grouped_pin_rejects_replacement_unlink_chmod_and_truncate_with_descriptor_cleanup("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publish_final_revalidates_every_post_parse_mutation("
         }
       ]
     }

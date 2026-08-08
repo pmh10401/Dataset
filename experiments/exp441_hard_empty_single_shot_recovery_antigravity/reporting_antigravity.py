@@ -460,6 +460,7 @@ def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPu
             final_snapshot, final_selection, final_authority = _parse_pinned_attempt_antigravity(attempt, final_pinned.payloads)
             if (final_authority != authority or final_snapshot != snapshot_payload or final_selection != selection_payload):
                 raise ValueError("terminal attempt authority changed before publication rename")
+            final_pinned.revalidate_antigravity()
             exclusive_rename_antigravity(staging, destination)
         fsync_directory_antigravity(destination.parent)
         return inspect_exp441_publication_antigravity()

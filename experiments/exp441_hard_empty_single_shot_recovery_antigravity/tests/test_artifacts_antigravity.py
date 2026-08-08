@@ -73,7 +73,35 @@ class Exp441ArtifactsAntigravityTests(unittest.TestCase):
                      mock.patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity.os.close", side_effect=record_close):
                     with self.assertRaises(ValueError):
                         pin_exact_regular_inventory_antigravity(root, names)
-                self.assertEqual(len(closed), len(names))
+                self.assertEqual(len(closed), len(names) + 1)
+
+    def test_retained_grouped_pin_revalidates_post_read_mutation_and_closes_root_fd(self) -> None:
+        """A change after initial grouped validation remains detectable before a caller consumes the bytes."""
+        names = ("source_snapshot_antigravity.json", "selection_antigravity.json")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "attempt_antigravity"; root.mkdir(); os.chmod(root, 0o700)
+            for index, name in enumerate(names):
+                (root / name).write_bytes(f"file-{index}\n".encode()); os.chmod(root / name, 0o600)
+            with pin_exact_regular_inventory_antigravity(root, names) as pinned:
+                root_descriptor = pinned._root_descriptor_antigravity
+                (root / names[0]).write_bytes(b"FILE-0\n")
+                with self.assertRaisesRegex(ValueError, "changed"):
+                    pinned.revalidate_antigravity()
+            with self.assertRaises(OSError):
+                os.fstat(root_descriptor)
+
+    def test_retained_grouped_pin_rejects_root_replacement_with_same_inventory(self) -> None:
+        """Replacing the 0700 attempt directory with an identical-name sibling cannot redirect a retained authority."""
+        names = ("source_snapshot_antigravity.json", "selection_antigravity.json")
+        with tempfile.TemporaryDirectory() as temporary:
+            parent = Path(temporary); root = parent / "attempt_antigravity"; replacement = parent / "replacement_antigravity"; root.mkdir(); replacement.mkdir()
+            for directory in (root, replacement):
+                os.chmod(directory, 0o700)
+                for index, name in enumerate(names): (directory / name).write_bytes(f"file-{index}\n".encode()); os.chmod(directory / name, 0o600)
+            with pin_exact_regular_inventory_antigravity(root, names) as pinned:
+                root.rename(parent / "original_attempt_antigravity"); replacement.rename(root)
+                with self.assertRaisesRegex(ValueError, "root changed"):
+                    pinned.revalidate_antigravity()
 
     def test_canonical_parser_rejects_duplicate_keys_and_noncanonical_bytes(self) -> None:
         """A malformed or differently encoded source must not share a frozen JSON identity."""

@@ -87,6 +87,28 @@ class RuntimeAntigravityTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "changed"):
                     terminal_attempt_authority_sha256_antigravity(attempt)
 
+    def test_terminal_authority_capture_revalidates_every_post_hash_mutation(self) -> None:
+        # Break caught: a valid grouped read becomes stale while the digest is consumed before return.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import runtime_antigravity
+        names = ("source_snapshot_antigravity.json", "selection_antigravity.json", "progress_antigravity.json", "pid_antigravity", "events_antigravity.jsonl", "text_antigravity.log")
+        for mutation in ("write", "replace", "unlink", "chmod", "truncate"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                attempt = Path(directory) / "attempt_antigravity"; attempt.mkdir(); os.chmod(attempt, 0o700)
+                for index, name in enumerate(names): (attempt / name).write_bytes(f"file-{index}\n".encode()); os.chmod(attempt / name, 0o600)
+                target = attempt / names[0]; real_hash = runtime_antigravity.terminal_attempt_authority_sha256_from_bytes_antigravity
+                def hash_then_mutate(payloads: object) -> str:
+                    digest = real_hash(payloads)
+                    if mutation == "write": target.write_bytes(b"FILE-0\n")
+                    elif mutation == "replace":
+                        replacement = attempt / "replacement_antigravity.tmp"; replacement.write_bytes(b"FILE-0\n"); os.chmod(replacement, 0o600); os.replace(replacement, target)
+                    elif mutation == "unlink": target.unlink()
+                    elif mutation == "chmod": os.chmod(target, 0o644)
+                    else: target.write_bytes(b"")
+                    return digest
+                with patch.object(runtime_antigravity, "terminal_attempt_authority_sha256_from_bytes_antigravity", side_effect=hash_then_mutate):
+                    with self.assertRaisesRegex(ValueError, "changed"):
+                        terminal_attempt_authority_sha256_antigravity(attempt)
+
     def test_completed_attempt_is_create_only_and_contains_exact_governance(self) -> None:
         # Break caught: a later new could repair an old attempt, or selection evidence could dilute governance values.
         snapshot = _snapshot(_fixture_candidates())
