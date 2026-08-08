@@ -50,9 +50,9 @@ class ProgressWriterAntigravity:
             self._attempt_path / "pid_antigravity",
             canonical_json_bytes_antigravity({"pid": self._pid, "active": True, "heartbeat": _utc_now_antigravity()}),
         )
-        write_create_only_antigravity(self._attempt_path / "events_antigravity.jsonl", b"")
-        write_create_only_antigravity(self._attempt_path / "text_antigravity.log", b"")
         try:
+            write_create_only_antigravity(self._attempt_path / "events_antigravity.jsonl", b"")
+            write_create_only_antigravity(self._attempt_path / "text_antigravity.log", b"")
             self._write_progress_antigravity()
         except BaseException:
             try:

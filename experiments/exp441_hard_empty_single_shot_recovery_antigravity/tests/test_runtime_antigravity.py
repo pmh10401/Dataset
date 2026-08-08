@@ -263,6 +263,30 @@ class RuntimeAntigravityTests(unittest.TestCase):
             runtime._validate_failure_artifact_antigravity(failure)
             self.assertFalse((root / "publication_antigravity").exists())
 
+    def test_partial_writer_event_or_text_creation_failure_keeps_primary_error_inactive_pid_and_canonical_failure(self) -> None:
+        # Break caught: a log-file creation fault after PID creation leaves a live attempt or prevents independent failure evidence.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity as progress
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity as runtime
+        real_create = progress.write_create_only_antigravity
+        for failed_name in ("events_antigravity.jsonl", "text_antigravity.log"):
+            with self.subTest(failed_name=failed_name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                def fail_one_log(path, payload):
+                    if Path(path).name == failed_name:
+                        raise OSError(f"{failed_name} creation failed")
+                    return real_create(path, payload)
+                with patch.object(runtime, "_RUN_ROOT_ANTIGRAVITY", root), \
+                     patch.object(progress, "write_create_only_antigravity", side_effect=fail_one_log):
+                    with self.assertRaisesRegex(OSError, f"{failed_name} creation failed"):
+                        run_exp441_new_antigravity(reviewed_commit="a" * 40)
+                attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
+                self.assertFalse(json.loads((attempt / "pid_antigravity").read_text())["active"])
+                failure = runtime.parse_canonical_json_bytes_antigravity((attempt / "failure_antigravity.json").read_bytes())
+                runtime._validate_failure_artifact_antigravity(failure)
+                self.assertFalse((root / "publication_antigravity").exists())
+                if failed_name == "text_antigravity.log":
+                    self.assertEqual((attempt / "events_antigravity.jsonl").read_bytes(), b"")
+
     def test_runtime_failure_keeps_primary_error_when_failure_json_write_fails(self) -> None:
         # Break caught: a failure-artifact I/O fault masks the source error or rolls back failed progress/PID evidence.
         import experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity as runtime
