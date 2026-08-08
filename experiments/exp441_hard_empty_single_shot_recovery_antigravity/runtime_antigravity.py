@@ -157,11 +157,25 @@ def _reverify_sources_after_artifacts_antigravity() -> FrozenSourceSnapshotAntig
     return verify_frozen_sources_antigravity()
 
 
+def _best_effort_failure_antigravity(writer: ProgressWriterAntigravity | None, attempt: Path, sequence: int, reviewed_commit: str, status: str, error: BaseException) -> None:
+    """Keep the original failure primary while independently attempting each evidence channel."""
+    message = str(error) or type(error).__name__
+    if writer is not None:
+        try: writer.terminal_antigravity(stage=status, latest_error=message)
+        except BaseException: pass
+    try:
+        payload = _failure_payload_antigravity(sequence=sequence, reviewed_commit=reviewed_commit, status=status, error=message)
+        _validate_failure_artifact_antigravity(payload)
+        write_create_only_antigravity(attempt / "failure_antigravity.json", canonical_json_bytes_antigravity(payload))
+    except BaseException:
+        pass
+
+
 def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntigravity:
     """Run one immutable label-free source replay and record selection evidence."""
     attempt = allocate_attempt_antigravity(_RUN_ROOT_ANTIGRAVITY)
     sequence = int(attempt.name.split("_")[1])
-    writer = ProgressWriterAntigravity(attempt, total=FROZEN_CONFIG.dataset_count)
+    writer: ProgressWriterAntigravity | None = None
     interrupted = {"requested": False}
     prior_handler = signal.getsignal(signal.SIGTERM)
 
@@ -169,8 +183,11 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
         interrupted["requested"] = True
         raise _InterruptedAttemptAntigravity("SIGTERM received")
 
-    signal.signal(signal.SIGTERM, _on_sigterm)
+    installed = False
     try:
+        writer = ProgressWriterAntigravity(attempt, total=FROZEN_CONFIG.dataset_count)
+        signal.signal(signal.SIGTERM, _on_sigterm)
+        installed = True
         _ensure_clean_reviewed_commit_antigravity(reviewed_commit)
         context_datasets, _digests, _hard, _hashes, _watched = _load_prefix_antigravity()
         active_datasets = list(context_datasets)
@@ -223,19 +240,14 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
         writer.terminal_antigravity(stage="complete", latest_error=None)
         return CompletedAttemptAntigravity(sequence, reviewed_commit, snapshot_sha256, selection, selection_sha256)
     except _InterruptedAttemptAntigravity as error:
-        writer.terminal_antigravity(stage="interrupted", latest_error=str(error))
-        failure = _failure_payload_antigravity(sequence=sequence, reviewed_commit=reviewed_commit, status="interrupted", error=str(error))
-        _validate_failure_artifact_antigravity(failure)
-        write_create_only_antigravity(attempt / "failure_antigravity.json", canonical_json_bytes_antigravity(failure))
+        _best_effort_failure_antigravity(writer, attempt, sequence, reviewed_commit, "interrupted", error)
         raise
     except BaseException as error:
-        writer.terminal_antigravity(stage="failed", latest_error=str(error) or type(error).__name__)
-        failure = _failure_payload_antigravity(sequence=sequence, reviewed_commit=reviewed_commit, status="failed", error=str(error) or type(error).__name__)
-        _validate_failure_artifact_antigravity(failure)
-        write_create_only_antigravity(attempt / "failure_antigravity.json", canonical_json_bytes_antigravity(failure))
+        _best_effort_failure_antigravity(writer, attempt, sequence, reviewed_commit, "failed", error)
         raise
     finally:
-        signal.signal(signal.SIGTERM, prior_handler)
+        if installed:
+            signal.signal(signal.SIGTERM, prior_handler)
 
 
 __all__ = ["allocate_attempt_antigravity", "run_exp441_new_antigravity"]
