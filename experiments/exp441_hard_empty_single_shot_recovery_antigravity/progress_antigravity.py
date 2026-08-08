@@ -86,7 +86,10 @@ class ProgressWriterAntigravity:
         throughput = self._completed / elapsed if elapsed else 0.0
         self._state["elapsed_seconds"] = elapsed
         self._state["throughput"] = throughput
-        self._state["eta_seconds"] = ((self._total - self._completed) / throughput if throughput else None)
+        self._state["eta_seconds"] = (
+            None if self._state["active"] is False
+            else ((self._total - self._completed) / throughput if throughput else None)
+        )
         self._state["heartbeat"] = _utc_now_antigravity()
         self._state["completed"] = self._completed
         self._state["imported"] = self._completed

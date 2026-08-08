@@ -69,6 +69,25 @@ class ProgressAntigravityTests(unittest.TestCase):
                 self.assertEqual(progress["active_datasets"], [], stage)
                 self.assertFalse(pid["active"], stage)
 
+    def test_completed_terminal_eta_is_null_for_publication_contract(self) -> None:
+        # Break caught: the writer emits numeric zero while the strict publication boundary requires null.
+        with tempfile.TemporaryDirectory() as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"
+            attempt.mkdir()
+            writer = ProgressWriterAntigravity(attempt, total=1, pid=4321)
+            writer.begin_record_antigravity(
+                dataset="A", record_name="0000_record_antigravity.json", active_datasets=("A",),
+            )
+            writer.accept_record_antigravity(
+                dataset="A", record_name="0000_record_antigravity.json", active_datasets=(),
+                test_row_count=17, raw_length=64,
+            )
+            writer.source_replay_complete_antigravity()
+            writer.selection_counts_antigravity(provisional=1, outside_hard=1, eligible=1, selected=1)
+            writer.terminal_antigravity(stage="complete", latest_error=None)
+            progress = json.loads((attempt / "progress_antigravity.json").read_text())
+            self.assertIsNone(progress["eta_seconds"])
+
     def test_short_write_completes_full_json_and_failed_replacement_preserves_previous_json(self) -> None:
         # Break caught: a POSIX short write truncates an artifact, or a failed update replaces the last valid progress JSON.
         import experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity as progress_module

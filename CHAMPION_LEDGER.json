@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-08T10:41:00+09:00",
+  "updated_at": "2026-08-09T02:00:02+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -31,8 +31,8 @@
     "note": "The development base may be the current experiment or selected verified components; this ledger is a comparator, not a forced starting point."
   },
   "pending_candidate": {
-    "experiment": "Exp436",
-    "status": "design_approved_spec_review",
+    "experiment": null,
+    "status": "none_exp442_engineering_only_not_pending_champion",
     "prediction_sha256": null,
     "evaluation": null
   },
@@ -46,11 +46,17 @@
     },
     {
       "experiment": "Exp441",
-      "status": "implementation_complete_not_promoted",
-      "reason": "The 1,117-record label-free implementation replay is verified, but no official prediction or evaluation exists and fresh final review is still required before readiness. Exp404 Hard/Exp416 remains the verified reference; Exp441 is review-only and cannot become a champion or pending candidate.",
+      "status": "official_engineering_failed_prepublication_label_free",
+      "reason": "The official 1,117-record label-free replay completed with 1,117/1,117 success and zero errors, but publication failed closed on ValueError: attempt terminal progress is invalid because terminal eta_seconds=0.0 conflicted with the strict null contract. Exp404 Hard/Exp416 remains the verified reference; Exp441 is immutable review-only failure evidence and cannot become a champion or pending candidate.",
       "reviewed_design_sha256": "c4d692297290869be90815d115c1fda7f71120326b4be504ebf685619b6545da",
+      "reviewed_commit": "f5df76e377a355eaf1613b7864186c7a618b7756",
+      "readiness_sha256": "9d433c59451f6121e11445d724a4f48497f744ecc0917b5b6fc6567449c8948a",
+      "terminal_authority_sha256": "726d50e831acdad6728503156137f72aba71c541af82b8b37e6f959d62b0e95b",
       "prediction_sha256": null,
       "evaluation": null,
+      "publication_exists": false,
+      "test_labels_opened": false,
+      "label_access_count": 0,
       "official_run_purpose": "deterministic_retrospective_reproduction",
       "bootstrap_interpretation": "descriptive_post_selection",
       "adaptive_followup": true,
@@ -60,6 +66,18 @@
       "scientific_winner_selected": false,
       "review_only": true,
       "operational_alert_eligible": false
+    },
+    {
+      "experiment": "Exp442",
+      "status": "engineering_only_successor_implementation_in_progress",
+      "reason": "Exp442 repairs only the terminal progress/publication contract in a fresh identity and root. It inherits Exp441's selector without scientific changes and remains review-only, non-operational, and not a champion candidate until a separately frozen prediction and preregistered evaluation exist.",
+      "reviewed_design_sha256": "b866daa87279143d60b586e61433e33a152d203a915f030fc9b4e991a43fafe8",
+      "prediction_sha256": null,
+      "evaluation": null,
+      "test_labels_opened": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "scientific_winner_selected": false
     }
   ]
 }

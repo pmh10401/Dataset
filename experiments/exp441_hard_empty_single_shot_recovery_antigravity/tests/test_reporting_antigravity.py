@@ -39,7 +39,10 @@ class ReportingContractAntigravityTests(unittest.TestCase):
             hard_coordinate_identity_sha256="4" * 64,
         )
 
-    def _write_terminal_attempt_antigravity(self, root: Path, snapshot: FrozenSourceSnapshotAntigravity, *, pid_value: int = 1) -> CompletedAttemptAntigravity:
+    def _write_terminal_attempt_antigravity(
+        self, root: Path, snapshot: FrozenSourceSnapshotAntigravity, *, pid_value: int = 1,
+        real_progress_writer: bool = False,
+    ) -> CompletedAttemptAntigravity:
         selection = select_hard_empty_single_shot_antigravity(snapshot)
         attempt_root = root / "attempts_antigravity" / "attempt_0000_antigravity"
         attempt_root.mkdir(parents=True)
@@ -50,26 +53,47 @@ class ReportingContractAntigravityTests(unittest.TestCase):
         selection_bytes = canonical_json_bytes_antigravity(selection_payload)
         (attempt_root / "source_snapshot_antigravity.json").write_bytes(snapshot_bytes)
         (attempt_root / "selection_antigravity.json").write_bytes(selection_bytes)
-        (attempt_root / "progress_antigravity.json").write_bytes(canonical_json_bytes_antigravity({
-            "pid": pid_value, "active": False, "current_dataset": None, "current_record_name": None, "active_datasets": [],
-            "train_row_count": None, "test_row_count": None, "raw_length": None,
-            "dimension_status": "not_available_in_frozen_selector_source", "stage": "complete", "backend": "cpu",
-            "completed": 1117, "total": 1117, "imported": 1117, "recomputed": 0, "success": 1117, "error": 0,
-            "provisional_candidates": 840, "outside_hard_candidates": 394, "eligible_candidates": 73, "selected_candidates": 30,
-            "throughput": 1.0, "elapsed_seconds": 1117.0, "eta_seconds": None,
-            "source_checkpoint": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/checkpoint_antigravity/records_antigravity",
-            "heartbeat": "2026-08-08T00:00:00Z", "latest_error": None,
-        }))
-        (attempt_root / "pid_antigravity").write_bytes(canonical_json_bytes_antigravity({"pid": pid_value, "active": False, "heartbeat": "2026-08-08T00:00:01Z"}))
-        events = b"".join(canonical_json_bytes_antigravity({
-            "sequence": index, "dataset": dataset, "record_name": f"{index:04d}_record_antigravity.json",
-            "test_row_count": 64, "raw_length": 16 if index < 49 else None, "accepted": True,
-        }) for index, dataset in enumerate(snapshot.context_datasets))
-        (attempt_root / "events_antigravity.jsonl").write_bytes(events)
-        (attempt_root / "text_antigravity.log").write_text("".join(
-            f"accepted dataset={dataset} record={index:04d}_record_antigravity.json test_row_count=64 raw_length={16 if index < 49 else None}\n"
-            for index, dataset in enumerate(snapshot.context_datasets)
-        ))
+        if real_progress_writer:
+            import experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity as progress_module
+            from experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity import ProgressWriterAntigravity
+            with patch.object(progress_module.os, "fsync", return_value=None):
+                writer = ProgressWriterAntigravity(attempt_root, total=1117, pid=pid_value)
+                datasets = snapshot.context_datasets
+                writer.begin_record_antigravity(
+                    dataset=datasets[0], record_name="0000_record_antigravity.json", active_datasets=datasets,
+                )
+                for index, dataset in enumerate(datasets):
+                    remaining = datasets[index + 1:]
+                    writer.accept_record_antigravity(
+                        dataset=dataset, record_name=f"{index:04d}_record_antigravity.json",
+                        active_datasets=remaining, next_dataset=(remaining[0] if remaining else None),
+                        next_record_name=(f"{index + 1:04d}_record_antigravity.json" if remaining else None),
+                        test_row_count=64, raw_length=(16 if index < 49 else None),
+                    )
+                writer.source_replay_complete_antigravity()
+                writer.selection_counts_antigravity(provisional=840, outside_hard=394, eligible=73, selected=30)
+                writer.terminal_antigravity(stage="complete", latest_error=None)
+        else:
+            (attempt_root / "progress_antigravity.json").write_bytes(canonical_json_bytes_antigravity({
+                "pid": pid_value, "active": False, "current_dataset": None, "current_record_name": None, "active_datasets": [],
+                "train_row_count": None, "test_row_count": None, "raw_length": None,
+                "dimension_status": "not_available_in_frozen_selector_source", "stage": "complete", "backend": "cpu",
+                "completed": 1117, "total": 1117, "imported": 1117, "recomputed": 0, "success": 1117, "error": 0,
+                "provisional_candidates": 840, "outside_hard_candidates": 394, "eligible_candidates": 73, "selected_candidates": 30,
+                "throughput": 1.0, "elapsed_seconds": 1117.0, "eta_seconds": None,
+                "source_checkpoint": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/checkpoint_antigravity/records_antigravity",
+                "heartbeat": "2026-08-08T00:00:00Z", "latest_error": None,
+            }))
+            (attempt_root / "pid_antigravity").write_bytes(canonical_json_bytes_antigravity({"pid": pid_value, "active": False, "heartbeat": "2026-08-08T00:00:01Z"}))
+            events = b"".join(canonical_json_bytes_antigravity({
+                "sequence": index, "dataset": dataset, "record_name": f"{index:04d}_record_antigravity.json",
+                "test_row_count": 64, "raw_length": 16 if index < 49 else None, "accepted": True,
+            }) for index, dataset in enumerate(snapshot.context_datasets))
+            (attempt_root / "events_antigravity.jsonl").write_bytes(events)
+            (attempt_root / "text_antigravity.log").write_text("".join(
+                f"accepted dataset={dataset} record={index:04d}_record_antigravity.json test_row_count=64 raw_length={16 if index < 49 else None}\n"
+                for index, dataset in enumerate(snapshot.context_datasets)
+            ))
         for entry in attempt_root.iterdir():
             os.chmod(entry, 0o600)
         return CompletedAttemptAntigravity(
@@ -90,6 +114,20 @@ class ReportingContractAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             attempt = self._write_terminal_attempt_antigravity(Path(directory), snapshot)
             self.assertRegex(attempt.terminal_authority_sha256, r"^[0-9a-f]{64}$")
+
+    def test_real_progress_writer_terminal_attempt_reaches_publication(self) -> None:
+        # Break caught: hand-written fixtures can hide a writer/reporter terminal ETA contract mismatch.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            attempt = self._write_terminal_attempt_antigravity(root, snapshot, real_progress_writer=True)
+            with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=snapshot), \
+                 patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
+                 patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=os.rename):
+                frozen = reporting_antigravity.publish_exp441_antigravity(attempt)
+            self.assertEqual(frozen.prediction_sha256, sha256((root / "publication_antigravity" / "prediction_antigravity.jsonl").read_bytes()).hexdigest())
 
     def test_publish_writes_exact_six_files_and_rejects_prediction_tamper(self) -> None:
         # Break caught: publication could silently accept a changed prediction after its hash was frozen.
@@ -362,9 +400,9 @@ class ReportingContractAntigravityTests(unittest.TestCase):
             real_replay = reporting_antigravity._reverified_selection_antigravity
             real_runtime_validation = reporting_antigravity._validate_runtime_attempt_evidence_antigravity
             pins: list[object] = []; final_descriptors: tuple[int, ...] = ()
-            def parsed(value: CompletedAttemptAntigravity, authority: dict[str, bytes]):
+            def parsed(value: CompletedAttemptAntigravity, authority: dict[str, bytes], profile: object):
                 order.append("parse")
-                return real_parse(value, authority)
+                return real_parse(value, authority, profile)
             def replay(*args: object):
                 order.append("source")
                 return real_replay(*args)

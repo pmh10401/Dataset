@@ -31,8 +31,15 @@ from .contracts_antigravity import (
     retrospective_status_from_evidence_antigravity,
     validate_production_selection_antigravity,
 )
+from .lifecycle_profile_antigravity import (
+    EXP441_PROFILE_ANTIGRAVITY,
+    RecoveryLifecycleProfileAntigravity,
+)
 from .bootstrap_antigravity import paired_dataset_bootstrap_antigravity, project_f1_antigravity
-from .reporting_antigravity import inspect_exp441_publication_antigravity
+from .reporting_antigravity import (
+    _inspect_for_profile_antigravity,
+    inspect_exp441_publication_antigravity,
+)
 from .runtime_antigravity import _snapshot_payload_antigravity
 from .selector_antigravity import select_hard_empty_single_shot_antigravity
 from .sources_antigravity import verify_frozen_sources_antigravity
@@ -105,8 +112,19 @@ def _source_audit_sha256_antigravity(snapshot: FrozenSourceSnapshotAntigravity) 
     return sha256(canonical_json_bytes_antigravity(_snapshot_payload_antigravity(snapshot))).hexdigest()
 
 
-def _preflight_antigravity() -> tuple[FrozenPublicationAntigravity, FrozenSourceSnapshotAntigravity, SelectionResultAntigravity, tuple[str, ...], Mapping[str, int]]:
-    publication = inspect_exp441_publication_antigravity()
+def _profile_publication_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, run_root: Path | None,
+) -> FrozenPublicationAntigravity:
+    if profile is EXP441_PROFILE_ANTIGRAVITY:
+        return inspect_exp441_publication_antigravity()
+    return _inspect_for_profile_antigravity(profile, run_root=run_root)
+
+
+def _preflight_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+    run_root: Path | None = None,
+) -> tuple[FrozenPublicationAntigravity, FrozenSourceSnapshotAntigravity, SelectionResultAntigravity, tuple[str, ...], Mapping[str, int]]:
+    publication = _profile_publication_antigravity(profile, run_root)
     if not isinstance(publication, FrozenPublicationAntigravity):
         raise ValueError("publication is invalid")
     snapshot = verify_frozen_sources_antigravity()
@@ -128,7 +146,7 @@ def _preflight_antigravity() -> tuple[FrozenPublicationAntigravity, FrozenSource
             raise ValueError("frozen coordinate is outside row-count identity")
     if _source_audit_sha256_antigravity(snapshot) != publication.source_audit_sha256:
         raise ValueError("publication source-audit binding changed")
-    final_publication = inspect_exp441_publication_antigravity()
+    final_publication = _profile_publication_antigravity(profile, run_root)
     if final_publication != publication:
         raise ValueError("publication changed before label import")
     if (not isinstance(final_publication, FrozenPublicationAntigravity)
@@ -180,16 +198,19 @@ def _require_loaded_coordinates_antigravity(labels: Mapping[str, tuple[tuple[int
             raise ValueError("frozen coordinate is absent from loaded TEST identity")
 
 
-def load_frozen_context_labels_antigravity() -> FrozenContextLabelsAntigravity:
+def _load_frozen_context_labels_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity,
+    run_root: Path | None = None,
+) -> FrozenContextLabelsAntigravity:
     """Load only frozen-context TEST labels after binding publication and source twice."""
-    publication, snapshot, selection, datasets, row_counts = _preflight_antigravity()
+    publication, snapshot, selection, datasets, row_counts = _preflight_antigravity(profile, run_root)
     from experiments.exp417_causal_multihorizon_shadow.inputs import verified_read_only_connection
     connection_entries = 0
     with verified_read_only_connection(Path(FROZEN_CONFIG.database_path), FROZEN_CONFIG.database_sha256) as connection:
         connection_entries += 1
         labels = _load_labels_antigravity(connection, datasets, row_counts)
         _require_loaded_coordinates_antigravity(labels, snapshot, selection)
-    post_publication = inspect_exp441_publication_antigravity()
+    post_publication = _profile_publication_antigravity(profile, run_root)
     post_snapshot = verify_frozen_sources_antigravity()
     if (post_publication != publication
             or not isinstance(post_snapshot, FrozenSourceSnapshotAntigravity)
@@ -205,6 +226,11 @@ def load_frozen_context_labels_antigravity() -> FrozenContextLabelsAntigravity:
         datasets, labels, publication.publication_sha256, publication.source_audit_sha256,
         selection, connection_entries, len(datasets), 0,
     )
+
+
+def load_frozen_context_labels_antigravity() -> FrozenContextLabelsAntigravity:
+    """Load labels only for the original fixed Exp441 post-freeze lifecycle."""
+    return _load_frozen_context_labels_for_profile_antigravity(EXP441_PROFILE_ANTIGRAVITY)
 
 
 def _is_regression_antigravity(union_f1: float, baseline_f1: float) -> bool:
@@ -341,9 +367,7 @@ _EVALUATION_FILENAMES_ANTIGRAVITY = (
     "confusion_antigravity.json", "bootstrap_antigravity.json", "decision_antigravity.json",
     "artifact_sha256_antigravity.json",
 )
-_EVALUATION_DESTINATION_ANTIGRAVITY = Path(
-    "/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808/evaluation_antigravity"
-)
+_EVALUATION_DESTINATION_ANTIGRAVITY = EXP441_PROFILE_ANTIGRAVITY.root_antigravity / "evaluation_antigravity"
 _GOVERNANCE_ANTIGRAVITY: Mapping[str, object] = MappingProxyType({
     "official_run_purpose": "deterministic_retrospective_reproduction",
     "bootstrap_interpretation": "descriptive_post_selection",
@@ -362,7 +386,7 @@ _EVALUATION_NON_GOVERNANCE_KEYS_ANTIGRAVITY = frozenset({
     "union_confusion", "candidate_tp", "candidate_fp", "rescued_dataset_count",
     "regressed_dataset_count", "maximum_strong_loss", "baseline_f1", "union_f1", "micro_delta",
     "macro_delta", "dataset_metrics_sha256", "rescued_datasets_sha256",
-    "regressed_datasets_sha256", "confusion_sha256",
+    "regressed_datasets_sha256", "confusion_sha256", "lifecycle_profile_sha256",
 })
 _BOOTSTRAP_NON_GOVERNANCE_KEYS_ANTIGRAVITY = frozenset({
     "schema", "seed", "samples", "population", "numpy_version", "bit_generator", "sample_dtype",
@@ -371,6 +395,7 @@ _BOOTSTRAP_NON_GOVERNANCE_KEYS_ANTIGRAVITY = frozenset({
 _DECISION_NON_GOVERNANCE_KEYS_ANTIGRAVITY = frozenset({
     "schema", "experiment_id", "run_identity", "status", "evaluation_sha256", "bootstrap_sha256",
     "dataset_metrics_sha256", "rescued_datasets_sha256", "regressed_datasets_sha256", "confusion_sha256",
+    "lifecycle_profile_sha256",
 })
 
 
@@ -413,12 +438,22 @@ def _strict_int_antigravity(value: object, expected: int | None, name: str) -> i
     return value
 
 
-def _validate_failure_payload_antigravity(payload: bytes) -> dict[str, object]:
+def _validate_failure_payload_antigravity(
+    payload: bytes,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> dict[str, object]:
     """Validate one standalone immutable engineering-failure document exactly."""
     value = _strict_payload_antigravity(parse_canonical_json_bytes_antigravity(payload), frozenset({
         "schema", "status", "phase", "error_type", "error", "labels_opened", "destination_committed",
+        "experiment_id", "run_identity", "lifecycle_profile_sha256",
     }), "failure", governance=True)
-    if (value["schema"], value["status"]) != ("exp441.evaluation-failure.v1", "engineering_reproduction_failed"):
+    if (
+        value["schema"], value["status"], value["experiment_id"], value["run_identity"],
+        value["lifecycle_profile_sha256"],
+    ) != (
+        profile.schema_antigravity("evaluation-failure"), "engineering_reproduction_failed",
+        profile.experiment_id, profile.run_identity, profile.identity_sha256_antigravity,
+    ):
         raise ValueError("failure schema is invalid")
     for name in ("phase", "error_type", "error"):
         if type(value[name]) is not str or not value[name]:
@@ -438,8 +473,10 @@ def _metric_row_payload_antigravity(fact: DatasetEvaluationFactsAntigravity) -> 
     }
 
 
-def _result_artifacts_antigravity(result: RetrospectiveEvaluationAntigravity,
-                                  publication: FrozenPublicationAntigravity) -> Mapping[str, bytes]:
+def _result_artifacts_antigravity(
+    result: RetrospectiveEvaluationAntigravity, publication: FrozenPublicationAntigravity,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> Mapping[str, bytes]:
     """Serialize one already frozen calculation into the closed Task 11 hash graph."""
     if not isinstance(result, RetrospectiveEvaluationAntigravity) or not isinstance(publication, FrozenPublicationAntigravity):
         raise ValueError("evaluation result is invalid")
@@ -447,14 +484,14 @@ def _result_artifacts_antigravity(result: RetrospectiveEvaluationAntigravity,
     rescued = canonical_jsonl_bytes_antigravity({"dataset": name} for name in result.rescued_datasets)
     regressed = canonical_jsonl_bytes_antigravity({"dataset": name} for name in result.regressed_datasets)
     confusion = canonical_json_bytes_antigravity({
-        "schema": "exp441.evaluation-confusion.v1", "confusion_order": ["tp", "fp", "fn", "tn"],
+        "schema": profile.schema_antigravity("evaluation-confusion"), "confusion_order": ["tp", "fp", "fn", "tn"],
         "baseline_confusion": list(result.facts.baseline_confusion), "union_confusion": list(result.facts.union_confusion),
         "candidate_tp": result.facts.candidate_tp, "candidate_fp": result.facts.candidate_fp,
     })
     metrics_sha, rescued_sha, regressed_sha, confusion_sha = map(_sha256_antigravity, (metrics, rescued, regressed, confusion))
     rows = [list(row) for row in result.bootstrap_rows]
     bootstrap = canonical_json_bytes_antigravity({
-        "schema": "exp441.bootstrap.v1", "seed": FROZEN_CONFIG.bootstrap_seed, "samples": FROZEN_CONFIG.bootstrap_samples,
+        "schema": profile.schema_antigravity("bootstrap"), "seed": FROZEN_CONFIG.bootstrap_seed, "samples": FROZEN_CONFIG.bootstrap_samples,
         "population": FROZEN_CONFIG.dataset_count, "numpy_version": FROZEN_CONFIG.numpy_version,
         "bit_generator": "PCG64", "sample_dtype": "int64", "endpoint": False, "quantile_method": "linear",
         "bootstrap_rows_sha256": _sha256_antigravity(canonical_json_bytes_antigravity(rows)),
@@ -462,8 +499,9 @@ def _result_artifacts_antigravity(result: RetrospectiveEvaluationAntigravity,
         **_GOVERNANCE_ANTIGRAVITY,
     })
     evaluation = canonical_json_bytes_antigravity({
-        "schema": "exp441.evaluation.v1", "experiment_id": FROZEN_CONFIG.experiment_id,
-        "run_identity": FROZEN_CONFIG.run_identity, "publication_sha256": publication.publication_sha256,
+        "schema": profile.schema_antigravity("evaluation"), "experiment_id": profile.experiment_id,
+        "run_identity": profile.run_identity, "lifecycle_profile_sha256": profile.identity_sha256_antigravity,
+        "publication_sha256": publication.publication_sha256,
         "prediction_sha256": publication.prediction_sha256, "source_audit_sha256": publication.source_audit_sha256,
         "dataset_count": len(result.dataset_facts), "candidate_count": result.facts.candidate_tp + result.facts.candidate_fp,
         "status": result.status, "baseline_confusion": list(result.facts.baseline_confusion),
@@ -476,8 +514,9 @@ def _result_artifacts_antigravity(result: RetrospectiveEvaluationAntigravity,
         "regressed_datasets_sha256": regressed_sha, "confusion_sha256": confusion_sha, **_GOVERNANCE_ANTIGRAVITY,
     })
     decision = canonical_json_bytes_antigravity({
-        "schema": "exp441.decision.v1", "experiment_id": FROZEN_CONFIG.experiment_id,
-        "run_identity": FROZEN_CONFIG.run_identity, "status": result.status,
+        "schema": profile.schema_antigravity("decision"), "experiment_id": profile.experiment_id,
+        "run_identity": profile.run_identity, "lifecycle_profile_sha256": profile.identity_sha256_antigravity,
+        "status": result.status,
         "evaluation_sha256": _sha256_antigravity(evaluation), "bootstrap_sha256": _sha256_antigravity(bootstrap),
         "dataset_metrics_sha256": metrics_sha, "rescued_datasets_sha256": rescued_sha,
         "regressed_datasets_sha256": regressed_sha, "confusion_sha256": confusion_sha, **_GOVERNANCE_ANTIGRAVITY,
@@ -489,7 +528,7 @@ def _result_artifacts_antigravity(result: RetrospectiveEvaluationAntigravity,
         "decision_antigravity.json": decision,
     }
     artifact = canonical_json_bytes_antigravity({
-        "schema": "exp441.evaluation-artifact-map.v1", "files": {name: _sha256_antigravity(payload)
+        "schema": profile.schema_antigravity("evaluation-artifact-map"), "files": {name: _sha256_antigravity(payload)
                  for name, payload in payloads.items()}, "self_excluded": "artifact_sha256_antigravity.json",
     })
     return MappingProxyType({**payloads, "artifact_sha256_antigravity.json": artifact})
@@ -509,13 +548,16 @@ def _parse_jsonl_antigravity(payload: bytes, name: str, *, empty_allowed: bool =
     return rows
 
 
-def _replay_evaluation_payloads_antigravity(payloads: Mapping[str, bytes]) -> FrozenEvaluationAntigravity:
+def _replay_evaluation_payloads_antigravity(
+    payloads: Mapping[str, bytes],
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> FrozenEvaluationAntigravity:
     """Purely replay the pinned eight byte payloads; this function never opens a path."""
     if not isinstance(payloads, Mapping) or set(payloads) != set(_EVALUATION_FILENAMES_ANTIGRAVITY) or any(type(value) is not bytes for value in payloads.values()):
         raise ValueError("evaluation inventory is invalid")
     artifact = _strict_payload_antigravity(parse_canonical_json_bytes_antigravity(payloads["artifact_sha256_antigravity.json"]),
         frozenset({"schema", "files", "self_excluded"}), "artifact")
-    if artifact["schema"] != "exp441.evaluation-artifact-map.v1" or artifact["self_excluded"] != "artifact_sha256_antigravity.json" or not isinstance(artifact["files"], dict):
+    if artifact["schema"] != profile.schema_antigravity("evaluation-artifact-map") or artifact["self_excluded"] != "artifact_sha256_antigravity.json" or not isinstance(artifact["files"], dict):
         raise ValueError("artifact map is invalid")
     expected_names = set(_EVALUATION_FILENAMES_ANTIGRAVITY) - {"artifact_sha256_antigravity.json"}
     if set(artifact["files"]) != expected_names:
@@ -545,7 +587,7 @@ def _replay_evaluation_payloads_antigravity(payloads: Mapping[str, bytes]) -> Fr
     rescued, regressed = names(rescued_rows, "rescued"), names(regressed_rows, "regressed")
     confusion = _strict_payload_antigravity(parse_canonical_json_bytes_antigravity(payloads["confusion_antigravity.json"]),
         frozenset({"schema", "confusion_order", "baseline_confusion", "union_confusion", "candidate_tp", "candidate_fp"}), "confusion")
-    if (confusion["schema"], confusion["confusion_order"]) != ("exp441.evaluation-confusion.v1", ["tp", "fp", "fn", "tn"]):
+    if (confusion["schema"], confusion["confusion_order"]) != (profile.schema_antigravity("evaluation-confusion"), ["tp", "fp", "fn", "tn"]):
         raise ValueError("confusion schema is invalid")
     evaluation = _strict_payload_antigravity(parse_canonical_json_bytes_antigravity(payloads["evaluation_antigravity.json"]),
         _EVALUATION_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "evaluation", governance=True)
@@ -555,9 +597,14 @@ def _replay_evaluation_payloads_antigravity(payloads: Mapping[str, bytes]) -> Fr
         _DECISION_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "decision", governance=True)
     if (evaluation["schema"], evaluation["experiment_id"], evaluation["run_identity"], bootstrap_payload["schema"],
             decision["schema"], decision["experiment_id"], decision["run_identity"]) != (
-                "exp441.evaluation.v1", FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity,
-                "exp441.bootstrap.v1", "exp441.decision.v1", FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity):
+                profile.schema_antigravity("evaluation"), profile.experiment_id, profile.run_identity,
+                profile.schema_antigravity("bootstrap"), profile.schema_antigravity("decision"),
+                profile.experiment_id, profile.run_identity):
         raise ValueError("evaluation schema is invalid")
+    if (
+        evaluation["lifecycle_profile_sha256"], decision["lifecycle_profile_sha256"],
+    ) != (profile.identity_sha256_antigravity, profile.identity_sha256_antigravity):
+        raise ValueError("evaluation lifecycle profile identity is invalid")
     for key, expected in (("seed", FROZEN_CONFIG.bootstrap_seed), ("samples", FROZEN_CONFIG.bootstrap_samples),
                           ("population", FROZEN_CONFIG.dataset_count), ("numpy_version", FROZEN_CONFIG.numpy_version),
                           ("bit_generator", "PCG64"), ("sample_dtype", "int64"), ("endpoint", False), ("quantile_method", "linear")):
@@ -620,16 +667,22 @@ def _replay_evaluation_payloads_antigravity(payloads: Mapping[str, bytes]) -> Fr
         prediction_sha, source_audit_sha, result)
 
 
-def _write_failure_antigravity(parent: Path, staging: Path | None, error: BaseException, phase: str,
-                               labels_opened: bool, committed: bool) -> None:
+def _write_failure_antigravity(
+    parent: Path, staging: Path | None, error: BaseException, phase: str,
+    labels_opened: bool, committed: bool,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> None:
     """Preserve immutable failure evidence without touching a committed destination."""
     try:
         payload = canonical_json_bytes_antigravity({
-            "schema": "exp441.evaluation-failure.v1", "status": "engineering_reproduction_failed", "phase": phase,
+            "schema": profile.schema_antigravity("evaluation-failure"), "status": "engineering_reproduction_failed", "phase": phase,
             "error_type": type(error).__name__, "error": str(error) or type(error).__name__,
-            "labels_opened": labels_opened, "destination_committed": committed, **_GOVERNANCE_ANTIGRAVITY,
+            "labels_opened": labels_opened, "destination_committed": committed,
+            "experiment_id": profile.experiment_id, "run_identity": profile.run_identity,
+            "lifecycle_profile_sha256": profile.identity_sha256_antigravity,
+            **_GOVERNANCE_ANTIGRAVITY,
         })
-        _validate_failure_payload_antigravity(payload)
+        _validate_failure_payload_antigravity(payload, profile)
         if committed:
             failed = parent / f"failed_evaluation_audit_{uuid4().hex}_antigravity"
             os.mkdir(failed, 0o700)
@@ -660,17 +713,70 @@ def _preflight_matches_replay_antigravity(replayed: FrozenEvaluationAntigravity,
         raise ValueError("replayed evaluation authority changed")
 
 
-def _replay_pinned_evaluation_antigravity(pinned: object) -> FrozenEvaluationAntigravity:
+def _replay_pinned_evaluation_antigravity(
+    pinned: object,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> FrozenEvaluationAntigravity:
     """Replay retained evaluation descriptors without reopening their namespace."""
     payloads = getattr(pinned, "payloads", None)
-    result = _replay_evaluation_payloads_antigravity(payloads)
+    result = (
+        _replay_evaluation_payloads_antigravity(payloads)
+        if profile is EXP441_PROFILE_ANTIGRAVITY
+        else _replay_evaluation_payloads_antigravity(payloads, profile)
+    )
     pinned.revalidate_antigravity()
     return result
 
 
-def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
+def _route_preflight_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, root: Path,
+) -> tuple[FrozenPublicationAntigravity, FrozenSourceSnapshotAntigravity, SelectionResultAntigravity, tuple[str, ...], Mapping[str, int]]:
+    if profile is EXP441_PROFILE_ANTIGRAVITY:
+        return _preflight_antigravity()
+    return _preflight_antigravity(profile, root)
+
+
+def _route_label_load_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, root: Path,
+) -> FrozenContextLabelsAntigravity:
+    if profile is EXP441_PROFILE_ANTIGRAVITY:
+        return load_frozen_context_labels_antigravity()
+    return _load_frozen_context_labels_for_profile_antigravity(profile, root)
+
+
+def _route_result_artifacts_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, result: RetrospectiveEvaluationAntigravity,
+    publication: FrozenPublicationAntigravity,
+) -> Mapping[str, bytes]:
+    if profile is EXP441_PROFILE_ANTIGRAVITY:
+        return _result_artifacts_antigravity(result, publication)
+    return _result_artifacts_antigravity(result, publication, profile)
+
+
+def _route_replay_payloads_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, payloads: Mapping[str, bytes],
+) -> FrozenEvaluationAntigravity:
+    if profile is EXP441_PROFILE_ANTIGRAVITY:
+        return _replay_evaluation_payloads_antigravity(payloads)
+    return _replay_evaluation_payloads_antigravity(payloads, profile)
+
+
+def _route_replay_pinned_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, pinned: object,
+) -> FrozenEvaluationAntigravity:
+    if profile is EXP441_PROFILE_ANTIGRAVITY:
+        return _replay_pinned_evaluation_antigravity(pinned)
+    return _replay_pinned_evaluation_antigravity(pinned, profile)
+
+
+def _evaluate_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, *,
+    evaluation_destination: Path | None = None,
+    run_root: Path | None = None,
+) -> FrozenEvaluationAntigravity:
     """Create once or independently replay the fixed, descriptor-pinned review-only evaluation."""
-    destination = _EVALUATION_DESTINATION_ANTIGRAVITY
+    root = profile.root_antigravity if run_root is None else Path(run_root)
+    destination = root / "evaluation_antigravity" if evaluation_destination is None else Path(evaluation_destination)
     parent = destination.parent
     staging: Path | None = None
     labels_opened = False
@@ -681,9 +787,9 @@ def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
             phase = "existing_replay"
             committed = True
             with pin_exact_regular_inventory_antigravity(destination, _EVALUATION_FILENAMES_ANTIGRAVITY) as pinned:
-                replayed = _replay_pinned_evaluation_antigravity(pinned)
+                replayed = _route_replay_pinned_antigravity(profile, pinned)
                 phase = "existing_preflight"
-                publication, snapshot, selection, datasets, _rows = _preflight_antigravity()
+                publication, snapshot, selection, datasets, _rows = _route_preflight_antigravity(profile, root)
                 _preflight_matches_replay_antigravity(replayed, publication, snapshot, selection, datasets)
                 pinned.revalidate_antigravity()
                 return replayed
@@ -692,10 +798,10 @@ def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
         staging = parent / f".evaluation_{uuid4().hex}_staging_antigravity"
         os.mkdir(staging, 0o700)
         phase = "preflight"
-        publication, snapshot, selection, datasets, _rows = _preflight_antigravity()
+        publication, snapshot, selection, datasets, _rows = _route_preflight_antigravity(profile, root)
         phase = "labels"
         labels_opened = True
-        frozen_labels = load_frozen_context_labels_antigravity()
+        frozen_labels = _route_label_load_antigravity(profile, root)
         if (frozen_labels.context_datasets != datasets or frozen_labels.selection != selection
                 or frozen_labels.publication_sha256 != publication.publication_sha256
                 or frozen_labels.source_audit_sha256 != publication.source_audit_sha256):
@@ -703,23 +809,23 @@ def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
         phase = "calculation"
         calculated = compute_retrospective_evaluation_antigravity(frozen_labels)
         phase = "post_calculation_preflight"
-        post_publication, post_snapshot, post_selection, post_datasets, _post_rows = _preflight_antigravity()
+        post_publication, post_snapshot, post_selection, post_datasets, _post_rows = _route_preflight_antigravity(profile, root)
         if (post_publication != publication or post_snapshot != snapshot or post_selection != selection or post_datasets != datasets
                 or frozen_labels.publication_sha256 != publication.publication_sha256
                 or frozen_labels.source_audit_sha256 != publication.source_audit_sha256):
             raise ValueError("authority changed after labels")
-        payloads = _result_artifacts_antigravity(calculated, publication)
+        payloads = _route_result_artifacts_antigravity(profile, calculated, publication)
         phase = "staging_write"
         for name in _EVALUATION_FILENAMES_ANTIGRAVITY:
             write_create_only_antigravity(staging / name, payloads[name])
         phase = "staging_replay"
         with pin_exact_regular_inventory_antigravity(staging, _EVALUATION_FILENAMES_ANTIGRAVITY) as pinned:
-            replayed = _replay_evaluation_payloads_antigravity(pinned.payloads)
+            replayed = _route_replay_payloads_antigravity(profile, pinned.payloads)
             _preflight_matches_replay_antigravity(replayed, publication, snapshot, selection, datasets)
             pinned.revalidate_antigravity()
             fsync_directory_antigravity(staging)
             phase = "pre_rename_preflight"
-            final_publication, final_snapshot, final_selection, final_datasets, _final_rows = _preflight_antigravity()
+            final_publication, final_snapshot, final_selection, final_datasets, _final_rows = _route_preflight_antigravity(profile, root)
             if (final_publication != publication or final_snapshot != snapshot or final_selection != selection or final_datasets != datasets):
                 raise ValueError("authority changed before rename")
             if destination.exists() or destination.is_symlink():
@@ -732,15 +838,23 @@ def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
             pinned.revalidate_at_antigravity(destination, renamed_antigravity=True)
         phase = "destination_replay"
         with pin_exact_regular_inventory_antigravity(destination, _EVALUATION_FILENAMES_ANTIGRAVITY) as pinned:
-            replayed = _replay_pinned_evaluation_antigravity(pinned)
+            replayed = _route_replay_pinned_antigravity(profile, pinned)
             phase = "final_preflight"
-            final_publication, final_snapshot, final_selection, final_datasets, _final_rows = _preflight_antigravity()
+            final_publication, final_snapshot, final_selection, final_datasets, _final_rows = _route_preflight_antigravity(profile, root)
             _preflight_matches_replay_antigravity(replayed, final_publication, final_snapshot, final_selection, final_datasets)
             pinned.revalidate_antigravity()
             return replayed
     except BaseException as error:
-        _write_failure_antigravity(parent, staging, error, phase, labels_opened, committed)
+        _write_failure_antigravity(parent, staging, error, phase, labels_opened, committed, profile)
         raise
+
+
+def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
+    """Create or replay the original fixed Exp441 evaluation."""
+    return _evaluate_for_profile_antigravity(
+        EXP441_PROFILE_ANTIGRAVITY,
+        evaluation_destination=_EVALUATION_DESTINATION_ANTIGRAVITY,
+    )
 
 
 __all__ = [

@@ -423,7 +423,11 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
         failure = evaluation.canonical_json_bytes_antigravity({
             "schema": "exp441.evaluation-failure.v1", "status": "engineering_reproduction_failed",
             "phase": "synthetic", "error_type": "ValueError", "error": "synthetic",
-            "labels_opened": False, "destination_committed": True, **evaluation._GOVERNANCE_ANTIGRAVITY,
+            "labels_opened": False, "destination_committed": True,
+            "experiment_id": "Exp441",
+            "run_identity": "exp441-hard-empty-single-shot-recovery-antigravity-20260808",
+            "lifecycle_profile_sha256": evaluation.EXP441_PROFILE_ANTIGRAVITY.identity_sha256_antigravity,
+            **evaluation._GOVERNANCE_ANTIGRAVITY,
         })
         self.assertEqual(evaluation._validate_failure_payload_antigravity(failure)["phase"], "synthetic")
         broken = evaluation.parse_canonical_json_bytes_antigravity(failure); broken["labels_opened"] = 0
@@ -722,6 +726,7 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
             self.assertEqual((failure["phase"], failure["labels_opened"], failure["destination_committed"]), ("preflight", False, False))
             self.assertEqual(set(failure), {
                 "schema", "status", "phase", "error_type", "error", "labels_opened", "destination_committed",
+                "experiment_id", "run_identity", "lifecycle_profile_sha256",
                 *evaluation._GOVERNANCE_KEYS_ANTIGRAVITY,
             })
             self.assertEqual({key: failure[key] for key in evaluation._GOVERNANCE_KEYS_ANTIGRAVITY}, dict(evaluation._GOVERNANCE_ANTIGRAVITY))

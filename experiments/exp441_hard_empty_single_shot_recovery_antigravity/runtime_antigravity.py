@@ -21,6 +21,10 @@ from .contracts_antigravity import (
     validate_production_selection_antigravity,
 )
 from .progress_antigravity import ProgressWriterAntigravity
+from .lifecycle_profile_antigravity import (
+    EXP441_PROFILE_ANTIGRAVITY,
+    RecoveryLifecycleProfileAntigravity,
+)
 from .selector_antigravity import select_hard_empty_single_shot_antigravity
 from .sources_antigravity import (
     _load_prefix_antigravity, _verify_frozen_sources_with_observer_antigravity,
@@ -28,7 +32,7 @@ from .sources_antigravity import (
 )
 
 
-_RUN_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808")
+_RUN_ROOT_ANTIGRAVITY = EXP441_PROFILE_ANTIGRAVITY.root_antigravity
 _TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY = (
     "source_snapshot_antigravity.json", "selection_antigravity.json", "progress_antigravity.json",
     "pid_antigravity", "events_antigravity.jsonl", "text_antigravity.log",
@@ -114,15 +118,30 @@ def _snapshot_payload_antigravity(snapshot: FrozenSourceSnapshotAntigravity) -> 
     }
 
 
-def _selection_payload_antigravity(selection: SelectionResultAntigravity, *, reviewed_commit: str, source_snapshot_sha256: str) -> dict[str, object]:
+def _selection_payload_antigravity(
+    selection: SelectionResultAntigravity, *, reviewed_commit: str, source_snapshot_sha256: str,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> dict[str, object]:
     payload = selection.to_payload()
-    payload.update({"reviewed_commit": reviewed_commit, "source_snapshot_sha256": source_snapshot_sha256})
+    payload.update({
+        "reviewed_commit": reviewed_commit, "source_snapshot_sha256": source_snapshot_sha256,
+        "experiment_id": profile.experiment_id, "run_identity": profile.run_identity,
+        "lifecycle_profile_sha256": profile.identity_sha256_antigravity,
+    })
     payload.update(governance_payload_antigravity())
     return payload
 
 
-def _failure_payload_antigravity(*, sequence: int, reviewed_commit: str, status: str, error: str) -> dict[str, object]:
-    payload: dict[str, object] = {"attempt_sequence": sequence, "reviewed_commit": reviewed_commit, "status": status, "error": error}
+def _failure_payload_antigravity(
+    *, sequence: int, reviewed_commit: str, status: str, error: str,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "attempt_sequence": sequence, "reviewed_commit": reviewed_commit, "status": status,
+        "error": error, "experiment_id": profile.experiment_id,
+        "run_identity": profile.run_identity,
+        "lifecycle_profile_sha256": profile.identity_sha256_antigravity,
+    }
     payload.update(governance_payload_antigravity())
     return payload
 
@@ -150,23 +169,47 @@ def _validate_terminal_artifact_governance_antigravity(payload: Mapping[str, obj
         raise ValueError("terminal artifact governance alias is invalid")
 
 
-def _validate_selection_artifact_antigravity(payload: Mapping[str, object]) -> None:
-    expected = set(SelectionResultAntigravity.__dataclass_fields__) | {"reviewed_commit", "source_snapshot_sha256"} | set(governance_payload_antigravity())
+def _validate_selection_artifact_antigravity(
+    payload: Mapping[str, object],
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> None:
+    expected = set(SelectionResultAntigravity.__dataclass_fields__) | {
+        "reviewed_commit", "source_snapshot_sha256", "experiment_id", "run_identity",
+        "lifecycle_profile_sha256",
+    } | set(governance_payload_antigravity())
     if (set(payload) != expected or not _is_lower_hex_antigravity(payload["reviewed_commit"], 40) or
             not _is_lower_hex_antigravity(payload["source_snapshot_sha256"], 64)):
         raise ValueError("selection artifact schema is invalid")
+    if (
+        payload["experiment_id"], payload["run_identity"], payload["lifecycle_profile_sha256"],
+    ) != (
+        profile.experiment_id, profile.run_identity, profile.identity_sha256_antigravity,
+    ):
+        raise ValueError("selection artifact lifecycle identity is invalid")
     selection = _selection_from_payload_antigravity(payload)
     if selection.to_payload() != {name: payload[name] for name in SelectionResultAntigravity.__dataclass_fields__}:
         raise ValueError("selection artifact content is invalid")
     _validate_terminal_artifact_governance_antigravity(payload)
 
 
-def _validate_failure_artifact_antigravity(payload: Mapping[str, object]) -> None:
-    expected = {"attempt_sequence", "reviewed_commit", "status", "error"} | set(governance_payload_antigravity())
+def _validate_failure_artifact_antigravity(
+    payload: Mapping[str, object],
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> None:
+    expected = {
+        "attempt_sequence", "reviewed_commit", "status", "error", "experiment_id",
+        "run_identity", "lifecycle_profile_sha256",
+    } | set(governance_payload_antigravity())
     if (set(payload) != expected or type(payload["attempt_sequence"]) is not int or payload["attempt_sequence"] < 0 or
             not _is_lower_hex_antigravity(payload["reviewed_commit"], 40) or
             payload["status"] not in {"failed", "interrupted"} or not isinstance(payload["error"], str) or not payload["error"]):
         raise ValueError("failure artifact schema is invalid")
+    if (
+        payload["experiment_id"], payload["run_identity"], payload["lifecycle_profile_sha256"],
+    ) != (
+        profile.experiment_id, profile.run_identity, profile.identity_sha256_antigravity,
+    ):
+        raise ValueError("failure artifact lifecycle identity is invalid")
     _validate_terminal_artifact_governance_antigravity(payload)
 
 
@@ -209,26 +252,34 @@ def _reverify_sources_after_artifacts_antigravity() -> FrozenSourceSnapshotAntig
     return verify_frozen_sources_antigravity()
 
 
-def _best_effort_failure_antigravity(writer: ProgressWriterAntigravity | None, attempt: Path, sequence: int, reviewed_commit: str, status: str, error: BaseException) -> None:
+def _best_effort_failure_antigravity(
+    writer: ProgressWriterAntigravity | None, attempt: Path, sequence: int,
+    reviewed_commit: str, status: str, error: BaseException,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> None:
     """Keep the original failure primary while independently attempting each evidence channel."""
     message = str(error) or type(error).__name__
     if writer is not None:
         try: writer.terminal_antigravity(stage=status, latest_error=message)
         except BaseException: pass
     try:
-        payload = _failure_payload_antigravity(sequence=sequence, reviewed_commit=reviewed_commit, status=status, error=message)
-        _validate_failure_artifact_antigravity(payload)
+        payload = _failure_payload_antigravity(sequence=sequence, reviewed_commit=reviewed_commit, status=status, error=message, profile=profile)
+        _validate_failure_artifact_antigravity(payload, profile)
         path = attempt / "failure_antigravity.json"
         write_create_only_antigravity(path, canonical_json_bytes_antigravity(payload))
         parsed = parse_canonical_json_bytes_antigravity(read_pinned_regular_bytes_antigravity(path)[0])
-        _validate_failure_artifact_antigravity(parsed)  # type: ignore[arg-type]
+        _validate_failure_artifact_antigravity(parsed, profile)  # type: ignore[arg-type]
     except BaseException:
         pass
 
 
-def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntigravity:
+def _run_new_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, *, reviewed_commit: str,
+    run_root: Path | None = None,
+) -> CompletedAttemptAntigravity:
     """Run one immutable label-free source replay and record selection evidence."""
-    attempt = allocate_attempt_antigravity(_RUN_ROOT_ANTIGRAVITY)
+    root = profile.root_antigravity if run_root is None else Path(run_root)
+    attempt = allocate_attempt_antigravity(root)
     sequence = int(attempt.name.split("_")[1])
     writer: ProgressWriterAntigravity | None = None
     interrupted = {"requested": False}
@@ -281,14 +332,17 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
         snapshot_sha256 = sha256(snapshot_bytes).hexdigest()
         selection = validate_production_selection_antigravity(select_hard_empty_single_shot_antigravity(snapshot))
         writer.selection_counts_antigravity(provisional=len(selection.provisional_candidates), outside_hard=len(selection.outside_hard_candidates), eligible=len(selection.eligible_candidates), selected=len(selection.selected))
-        selection_payload = _selection_payload_antigravity(selection, reviewed_commit=reviewed_commit, source_snapshot_sha256=snapshot_sha256)
-        _validate_selection_artifact_antigravity(selection_payload)
+        selection_payload = _selection_payload_antigravity(
+            selection, reviewed_commit=reviewed_commit,
+            source_snapshot_sha256=snapshot_sha256, profile=profile,
+        )
+        _validate_selection_artifact_antigravity(selection_payload, profile)
         selection_bytes = canonical_json_bytes_antigravity(selection_payload)
         selection_sha256 = sha256(selection_bytes).hexdigest()
         write_create_only_antigravity(attempt / "source_snapshot_antigravity.json", snapshot_bytes)
         write_create_only_antigravity(attempt / "selection_antigravity.json", selection_bytes)
         parsed_selection = parse_canonical_json_bytes_antigravity(read_pinned_regular_bytes_antigravity(attempt / "selection_antigravity.json")[0])
-        _validate_selection_artifact_antigravity(parsed_selection)  # type: ignore[arg-type]
+        _validate_selection_artifact_antigravity(parsed_selection, profile)  # type: ignore[arg-type]
         reverified = _reverify_sources_after_artifacts_antigravity()
         if (not isinstance(reverified, FrozenSourceSnapshotAntigravity) or
                 _snapshot_payload_antigravity(reverified) != snapshot_payload or
@@ -306,14 +360,22 @@ def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntig
             pinned.revalidate_antigravity()
             return completed_attempt
     except _InterruptedAttemptAntigravity as error:
-        _best_effort_failure_antigravity(writer, attempt, sequence, reviewed_commit, "interrupted", error)
+        _best_effort_failure_antigravity(writer, attempt, sequence, reviewed_commit, "interrupted", error, profile)
         raise
     except BaseException as error:
-        _best_effort_failure_antigravity(writer, attempt, sequence, reviewed_commit, "failed", error)
+        _best_effort_failure_antigravity(writer, attempt, sequence, reviewed_commit, "failed", error, profile)
         raise
     finally:
         if installed:
             signal.signal(signal.SIGTERM, prior_handler)
+
+
+def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntigravity:
+    """Run the original fixed Exp441 lifecycle."""
+    return _run_new_for_profile_antigravity(
+        EXP441_PROFILE_ANTIGRAVITY, reviewed_commit=reviewed_commit,
+        run_root=_RUN_ROOT_ANTIGRAVITY,
+    )
 
 
 __all__ = ["allocate_attempt_antigravity", "run_exp441_new_antigravity", "terminal_attempt_authority_sha256_antigravity"]

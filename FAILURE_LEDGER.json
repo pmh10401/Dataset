@@ -1,6 +1,6 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-08T10:41:00+09:00",
+  "updated_at": "2026-08-09T02:00:02+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
     {
@@ -205,6 +205,42 @@
         "winner_selected": false
       },
       "lesson": "Exp440's 100-candidate low-frequency pool had TP/FP 40/60, a non-positive micro bootstrap lower bound, and maximum strong-dataset loss 0.5; preserve it as evaluated evidence and require a new selector-only experiment rather than promotion."
+    },
+    {
+      "experiment": "Exp441",
+      "category": "official_engineering_failed_prepublication_label_free",
+      "evidence": "/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808/attempts_antigravity/attempt_0000_antigravity",
+      "facts": {
+        "reviewed_commit": "f5df76e377a355eaf1613b7864186c7a618b7756",
+        "readiness_sha256": "9d433c59451f6121e11445d724a4f48497f744ecc0917b5b6fc6567449c8948a",
+        "terminal_authority_sha256": "726d50e831acdad6728503156137f72aba71c541af82b8b37e6f959d62b0e95b",
+        "root": "/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808",
+        "attempt": "/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808/attempts_antigravity/attempt_0000_antigravity",
+        "pid": 28062,
+        "pid_os_live": false,
+        "completed": 1117,
+        "total": 1117,
+        "imported": 1117,
+        "success": 1117,
+        "error": 0,
+        "provisional_candidates": 840,
+        "outside_hard_candidates": 394,
+        "eligible_candidates": 73,
+        "winner_count": 49,
+        "selected_candidates": 30,
+        "eta_seconds": 0.0,
+        "state": "complete_before_publication_failure",
+        "error_message": "ValueError: attempt terminal progress is invalid",
+        "failure_stage": "publication_pre_freeze",
+        "publication_created": false,
+        "evaluation_created": false,
+        "prediction_sha256": null,
+        "test_values_opened": false,
+        "test_labels_opened": false,
+        "label_access_count": 0,
+        "immutable": true
+      },
+      "lesson": "The frozen Exp441 selector and full label-free replay completed without scientific or data errors, but publication rejected the runtime's terminal eta_seconds=0.0 even though no time remained. Preserve the root as immutable engineering failure evidence; repair only this lifecycle contract in a new Exp442 identity and fresh root, then re-run readiness and the 1,117-record label-free path before any prediction freeze or TEST-label evaluation."
     }
   ]
 }

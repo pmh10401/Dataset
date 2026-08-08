@@ -22,12 +22,16 @@ from .contracts_antigravity import (
     CompletedAttemptAntigravity, FrozenPublicationAntigravity, FrozenSourceSnapshotAntigravity,
     SelectionResultAntigravity, terminal_attempt_authority_sha256_from_bytes_antigravity,
 )
+from .lifecycle_profile_antigravity import (
+    EXP441_PROFILE_ANTIGRAVITY,
+    RecoveryLifecycleProfileAntigravity,
+)
 from .runtime_antigravity import _selection_from_payload_antigravity, _snapshot_payload_antigravity
 from .selector_antigravity import select_hard_empty_single_shot_antigravity, selected_coordinate_identity_sha256_antigravity
 from .sources_antigravity import verify_frozen_sources_antigravity
 
 
-_RUN_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp441_hard_empty_single_shot_recovery_antigravity_20260808")
+_RUN_ROOT_ANTIGRAVITY = EXP441_PROFILE_ANTIGRAVITY.root_antigravity
 _PUBLICATION_NAMES_ANTIGRAVITY = (
     "prediction_antigravity.jsonl", "candidate_ranking_antigravity.jsonl",
     "source_audit_antigravity.json", "manifest_antigravity.json",
@@ -101,10 +105,13 @@ def _exact_governance_antigravity(payload: Mapping[str, object]) -> None:
         raise ValueError("publication governance must be flat")
 
 
-def _attempt_path_antigravity(attempt: CompletedAttemptAntigravity) -> Path:
+def _attempt_path_antigravity(
+    attempt: CompletedAttemptAntigravity, run_root: Path | None = None,
+) -> Path:
     if not isinstance(attempt, CompletedAttemptAntigravity):
         raise ValueError("completed attempt is invalid")
-    path = _RUN_ROOT_ANTIGRAVITY / "attempts_antigravity" / f"attempt_{attempt.attempt_sequence:04d}_antigravity"
+    root = _RUN_ROOT_ANTIGRAVITY if run_root is None else Path(run_root)
+    path = root / "attempts_antigravity" / f"attempt_{attempt.attempt_sequence:04d}_antigravity"
     if (path.is_symlink() or not path.is_dir() or
             stat.S_IMODE(path.stat(follow_symlinks=False).st_mode) != 0o700):
         raise ValueError("attempt root is invalid")
@@ -194,7 +201,10 @@ _TERMINAL_ATTEMPT_AUTHORITY_NAMES_ANTIGRAVITY = (
 )
 
 
-def _parse_pinned_attempt_antigravity(attempt: CompletedAttemptAntigravity, authority_payloads: Mapping[str, bytes]) -> tuple[dict[str, object], dict[str, object], dict[str, bytes]]:
+def _parse_pinned_attempt_antigravity(
+    attempt: CompletedAttemptAntigravity, authority_payloads: Mapping[str, bytes],
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> tuple[dict[str, object], dict[str, object], dict[str, bytes]]:
     if set(authority_payloads) != set(_TERMINAL_ATTEMPT_AUTHORITY_NAMES_ANTIGRAVITY):
         raise ValueError("attempt evidence is incomplete")
     values: dict[str, object] = {}
@@ -222,17 +232,31 @@ def _parse_pinned_attempt_antigravity(attempt: CompletedAttemptAntigravity, auth
         raise ValueError("attempt text log is invalid") from error
     if selection.get("reviewed_commit") != attempt.reviewed_commit or selection.get("source_snapshot_sha256") != attempt.source_snapshot_sha256:
         raise ValueError("attempt identity is inconsistent")
-    required_selection = set(SelectionResultAntigravity.__dataclass_fields__) | {"reviewed_commit", "source_snapshot_sha256"} | _GOVERNANCE_NAMES_ANTIGRAVITY
+    required_selection = set(SelectionResultAntigravity.__dataclass_fields__) | {
+        "reviewed_commit", "source_snapshot_sha256", "experiment_id", "run_identity",
+        "lifecycle_profile_sha256",
+    } | _GOVERNANCE_NAMES_ANTIGRAVITY
     if set(selection) != required_selection:
         raise ValueError("attempt selection schema is invalid")
     _exact_governance_antigravity(selection)
+    if (
+        selection.get("experiment_id"), selection.get("run_identity"),
+        selection.get("lifecycle_profile_sha256"),
+    ) != (
+        profile.experiment_id, profile.run_identity, profile.identity_sha256_antigravity,
+    ):
+        raise ValueError("attempt lifecycle identity is invalid")
     return snapshot, selection, authority
 
 
-def _parse_attempt_antigravity(attempt: CompletedAttemptAntigravity) -> tuple[Path, dict[str, object], dict[str, object], dict[str, bytes]]:
-    path = _attempt_path_antigravity(attempt)
+def _parse_attempt_antigravity(
+    attempt: CompletedAttemptAntigravity,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+    run_root: Path | None = None,
+) -> tuple[Path, dict[str, object], dict[str, object], dict[str, bytes]]:
+    path = _attempt_path_antigravity(attempt, run_root)
     with pin_exact_regular_inventory_antigravity(path, _TERMINAL_ATTEMPT_AUTHORITY_NAMES_ANTIGRAVITY) as pinned:
-        snapshot, selection, authority = _parse_pinned_attempt_antigravity(attempt, pinned.payloads)
+        snapshot, selection, authority = _parse_pinned_attempt_antigravity(attempt, pinned.payloads, profile)
     return path, snapshot, selection, authority
 
 
@@ -249,7 +273,11 @@ def _reverified_selection_antigravity(attempt: CompletedAttemptAntigravity, snap
     return expected, snapshot
 
 
-def _publication_payloads_antigravity(attempt: CompletedAttemptAntigravity, snapshot_payload: Mapping[str, object], selection: SelectionResultAntigravity) -> dict[str, bytes]:
+def _publication_payloads_antigravity(
+    attempt: CompletedAttemptAntigravity, snapshot_payload: Mapping[str, object],
+    selection: SelectionResultAntigravity,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> dict[str, bytes]:
     prediction_rows = [item.to_payload() for item in sorted(selection.selected, key=lambda item: item.coordinate)]
     ranking_rows = [item.to_payload() for item in selection.winners]
     source_audit = dict(snapshot_payload)
@@ -260,8 +288,9 @@ def _publication_payloads_antigravity(attempt: CompletedAttemptAntigravity, snap
     ranking = canonical_jsonl_bytes_antigravity(ranking_rows)
     audit = canonical_json_bytes_antigravity(source_audit)
     manifest: dict[str, object] = {
-        "schema": "exp441.publication.v1", "experiment_id": FROZEN_CONFIG.experiment_id,
-        "run_identity": FROZEN_CONFIG.run_identity, "reviewed_commit": attempt.reviewed_commit,
+        "schema": profile.schema_antigravity("publication"), "experiment_id": profile.experiment_id,
+        "run_identity": profile.run_identity, "reviewed_commit": attempt.reviewed_commit,
+        "lifecycle_profile_sha256": profile.identity_sha256_antigravity,
         "source_snapshot_sha256": attempt.source_snapshot_sha256, "selection_sha256": attempt.selection_sha256,
         "dataset_count": 1117, "provisional_candidate_count": 840, "outside_hard_candidate_count": 394,
         "eligible_candidate_count": 73, "winner_count": 49, "candidate_count": 30,
@@ -276,7 +305,9 @@ def _publication_payloads_antigravity(attempt: CompletedAttemptAntigravity, snap
     manifest.update(governance_payload_antigravity())
     manifest_bytes = canonical_json_bytes_antigravity(manifest)
     status: dict[str, object] = {
-        "schema": "exp441.status.v1", "stage": "publication_complete", "reviewed_commit": attempt.reviewed_commit,
+        "schema": profile.schema_antigravity("status"), "stage": "publication_complete", "reviewed_commit": attempt.reviewed_commit,
+        "experiment_id": profile.experiment_id, "run_identity": profile.run_identity,
+        "lifecycle_profile_sha256": profile.identity_sha256_antigravity,
         "manifest_sha256": _sha256_antigravity(manifest_bytes), "prediction_sha256": _sha256_antigravity(prediction),
         "completed_retrospective_only": True, "label_access_count": 0, "contains_test_labels": False,
     }
@@ -291,43 +322,66 @@ def _publication_payloads_antigravity(attempt: CompletedAttemptAntigravity, snap
     }
     artifact_map = {name: _sha256_antigravity(payload) for name, payload in files.items()}
     files["artifact_sha256_antigravity.json"] = canonical_json_bytes_antigravity({
-        "schema": "exp441.artifact-map.v1", "files": artifact_map,
+        "schema": profile.schema_antigravity("artifact-map"), "files": artifact_map,
         "self_excluded": "artifact_sha256_antigravity.json",
     })
     return files
 
 
-def _failure_payload_antigravity(attempt: CompletedAttemptAntigravity, error: BaseException) -> dict[str, object]:
+def _failure_payload_antigravity(
+    attempt: CompletedAttemptAntigravity, error: BaseException,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> dict[str, object]:
     payload: dict[str, object] = {
         "attempt_sequence": attempt.attempt_sequence, "reviewed_commit": attempt.reviewed_commit,
         "status": "failed", "error": str(error) or type(error).__name__,
+        "experiment_id": profile.experiment_id, "run_identity": profile.run_identity,
+        "lifecycle_profile_sha256": profile.identity_sha256_antigravity,
     }
     payload.update(governance_payload_antigravity())
     return payload
 
 
-def _validate_failure_payload_antigravity(payload: object) -> None:
-    if not isinstance(payload, Mapping) or set(payload) != {"attempt_sequence", "reviewed_commit", "status", "error"} | _GOVERNANCE_NAMES_ANTIGRAVITY:
+def _validate_failure_payload_antigravity(
+    payload: object,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> None:
+    if not isinstance(payload, Mapping) or set(payload) != {
+        "attempt_sequence", "reviewed_commit", "status", "error", "experiment_id",
+        "run_identity", "lifecycle_profile_sha256",
+    } | _GOVERNANCE_NAMES_ANTIGRAVITY:
         raise ValueError("failed staging evidence schema is invalid")
     if type(payload["attempt_sequence"]) is not int or payload["attempt_sequence"] < 0 or payload["status"] != "failed" or not isinstance(payload["error"], str) or not payload["error"]:
         raise ValueError("failed staging evidence is invalid")
     _require_lower_hex_antigravity(payload["reviewed_commit"], 40, "failed staging reviewed commit is invalid")
+    if (
+        payload["experiment_id"], payload["run_identity"], payload["lifecycle_profile_sha256"],
+    ) != (
+        profile.experiment_id, profile.run_identity, profile.identity_sha256_antigravity,
+    ):
+        raise ValueError("failed staging lifecycle identity is invalid")
     _exact_governance_antigravity(payload)
 
 
-def _preserve_failed_staging_antigravity(staging: Path, attempt: CompletedAttemptAntigravity, error: BaseException) -> None:
+def _preserve_failed_staging_antigravity(
+    staging: Path, attempt: CompletedAttemptAntigravity, error: BaseException,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> None:
     """Preserve failure evidence or make a secondary persistence failure observable."""
     if not staging.exists():
         return
-    failure = _failure_payload_antigravity(attempt, error)
-    _validate_failure_payload_antigravity(failure)
+    failure = _failure_payload_antigravity(attempt, error, profile)
+    _validate_failure_payload_antigravity(failure, profile)
     write_create_only_antigravity(staging / "failure_antigravity.json", canonical_json_bytes_antigravity(failure))
     failed = staging.with_name(f"failed_staging_{uuid4().hex}_antigravity")
     os.rename(staging, failed)
     fsync_directory_antigravity(failed.parent)
 
 
-def _inspect_payloads_antigravity(payloads: Mapping[str, bytes], attempt: CompletedAttemptAntigravity | None = None) -> FrozenPublicationAntigravity:
+def _inspect_payloads_antigravity(
+    payloads: Mapping[str, bytes], attempt: CompletedAttemptAntigravity | None = None,
+    profile: RecoveryLifecycleProfileAntigravity = EXP441_PROFILE_ANTIGRAVITY,
+) -> FrozenPublicationAntigravity:
     prediction_rows = _parse_jsonl_antigravity(payloads["prediction_antigravity.jsonl"], "prediction")
     ranking_rows = _parse_jsonl_antigravity(payloads["candidate_ranking_antigravity.jsonl"], "ranking")
     audit = parse_canonical_json_bytes_antigravity(payloads["source_audit_antigravity.json"])
@@ -347,11 +401,12 @@ def _inspect_payloads_antigravity(payloads: Mapping[str, bytes], attempt: Comple
         "winner_count", "candidate_count", "candidate_budget", "candidate_per_dataset", "label_access_count",
         "contains_test_labels", "uses_frozen_test_candidate_empty_gate", "uses_test_labels_for_prediction",
         "prediction_sha256", "candidate_ranking_sha256", "source_audit_sha256", "selected_coordinate_identity_sha256",
-        "hard_coordinate_identity_sha256",
+        "hard_coordinate_identity_sha256", "lifecycle_profile_sha256",
     } | _GOVERNANCE_NAMES_ANTIGRAVITY
     status_required = {
         "schema", "stage", "reviewed_commit", "manifest_sha256", "prediction_sha256",
         "completed_retrospective_only", "label_access_count", "contains_test_labels",
+        "experiment_id", "run_identity", "lifecycle_profile_sha256",
     } | _GOVERNANCE_NAMES_ANTIGRAVITY
     if set(manifest) != manifest_required or set(status) != status_required:
         raise ValueError("publication governing schema is invalid")
@@ -360,10 +415,18 @@ def _inspect_payloads_antigravity(payloads: Mapping[str, bytes], attempt: Comple
             manifest.get("outside_hard_candidate_count"), manifest.get("eligible_candidate_count"),
             manifest.get("winner_count"), manifest.get("candidate_count"), manifest.get("candidate_budget"),
             manifest.get("candidate_per_dataset"), manifest.get("uses_frozen_test_candidate_empty_gate")) != (
-                "exp441.publication.v1", FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity,
+                profile.schema_antigravity("publication"), profile.experiment_id, profile.run_identity,
                 1117, 840, 394, 73, 49, 30, 30, 1, True):
         raise ValueError("publication manifest counts are invalid")
-    if (status.get("schema"), status.get("stage"), status.get("completed_retrospective_only")) != ("exp441.status.v1", "publication_complete", True):
+    if (
+        status.get("schema"), status.get("stage"), status.get("completed_retrospective_only"),
+        status.get("experiment_id"), status.get("run_identity"),
+        status.get("lifecycle_profile_sha256"), manifest.get("lifecycle_profile_sha256"),
+    ) != (
+        profile.schema_antigravity("status"), "publication_complete", True,
+        profile.experiment_id, profile.run_identity, profile.identity_sha256_antigravity,
+        profile.identity_sha256_antigravity,
+    ):
         raise ValueError("publication status is invalid")
     if _require_lower_hex_antigravity(status.get("reviewed_commit"), 40, "publication status reviewed commit is invalid") != _require_lower_hex_antigravity(manifest.get("reviewed_commit"), 40, "publication reviewed commit is invalid"):
         raise ValueError("publication reviewed commits disagree")
@@ -378,7 +441,7 @@ def _inspect_payloads_antigravity(payloads: Mapping[str, bytes], attempt: Comple
             any(type(status[name]) is not bool for name in ("completed_retrospective_only", "contains_test_labels")) or
             type(status["label_access_count"]) is not int or status["label_access_count"] != 0):
         raise ValueError("publication status value types are invalid")
-    if set(artifact) != {"schema", "files", "self_excluded"} or artifact.get("schema") != "exp441.artifact-map.v1" or artifact.get("self_excluded") != "artifact_sha256_antigravity.json" or not isinstance(artifact.get("files"), dict):
+    if set(artifact) != {"schema", "files", "self_excluded"} or artifact.get("schema") != profile.schema_antigravity("artifact-map") or artifact.get("self_excluded") != "artifact_sha256_antigravity.json" or not isinstance(artifact.get("files"), dict):
         raise ValueError("publication artifact map is invalid")
     _forbid_governance_or_evaluation_antigravity(artifact)
     if set(artifact["files"]) != set(_PUBLICATION_NAMES_ANTIGRAVITY) - {"artifact_sha256_antigravity.json"}:
@@ -403,7 +466,10 @@ def _inspect_payloads_antigravity(payloads: Mapping[str, bytes], attempt: Comple
     source_sha256 = _sha256_antigravity(canonical_json_bytes_antigravity(audit))
     selection_sha256 = _sha256_antigravity(canonical_json_bytes_antigravity({
         **expected.to_payload(), "reviewed_commit": manifest.get("reviewed_commit"),
-        "source_snapshot_sha256": source_sha256, **governance_payload_antigravity(),
+        "source_snapshot_sha256": source_sha256, "experiment_id": profile.experiment_id,
+        "run_identity": profile.run_identity,
+        "lifecycle_profile_sha256": profile.identity_sha256_antigravity,
+        **governance_payload_antigravity(),
     }))
     if (manifest.get("source_snapshot_sha256"), manifest.get("selection_sha256"),
             manifest.get("reviewed_commit"), manifest.get("selected_coordinate_identity_sha256"),
@@ -424,30 +490,40 @@ def _inspect_payloads_antigravity(payloads: Mapping[str, bytes], attempt: Comple
     return FrozenPublicationAntigravity(_sha256_antigravity(payloads["artifact_sha256_antigravity.json"]), _sha256_antigravity(payloads["prediction_antigravity.jsonl"]), _sha256_antigravity(payloads["candidate_ranking_antigravity.jsonl"]), _sha256_antigravity(payloads["source_audit_antigravity.json"]), expected)
 
 
-def inspect_exp441_publication_antigravity() -> FrozenPublicationAntigravity:
-    """Read and verify the one fixed publication root without labels or SQLite."""
-    return _inspect_payloads_antigravity(_require_regular_inventory_antigravity(_RUN_ROOT_ANTIGRAVITY / "publication_antigravity"))
+def _inspect_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, *, run_root: Path | None = None,
+) -> FrozenPublicationAntigravity:
+    """Read and verify one profile's fixed publication without labels or SQLite."""
+    root = profile.root_antigravity if run_root is None else Path(run_root)
+    return _inspect_payloads_antigravity(
+        _require_regular_inventory_antigravity(root / "publication_antigravity"),
+        profile=profile,
+    )
 
 
-def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPublicationAntigravity:
+def _publish_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, attempt: CompletedAttemptAntigravity, *,
+    run_root: Path | None = None,
+) -> FrozenPublicationAntigravity:
     """Freeze one terminal attempt through private staging and Darwin no-clobber rename."""
-    destination = _RUN_ROOT_ANTIGRAVITY / "publication_antigravity"
+    root = profile.root_antigravity if run_root is None else Path(run_root)
+    destination = root / "publication_antigravity"
     if destination.exists() or destination.is_symlink():
-        return inspect_exp441_publication_antigravity()
-    _attempt_path, snapshot_payload, selection_payload, authority = _parse_attempt_antigravity(attempt)
+        return _inspect_for_profile_antigravity(profile, run_root=root)
+    _attempt_path, snapshot_payload, selection_payload, authority = _parse_attempt_antigravity(attempt, profile, root)
     selection, initial_snapshot = _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload)
     _validate_runtime_attempt_evidence_antigravity(authority, initial_snapshot)
     staging = destination.with_name(f".publication_{uuid4().hex}_staging_antigravity")
     staging.mkdir(mode=0o700)
     os.chmod(staging, 0o700)
     try:
-        payloads = _publication_payloads_antigravity(attempt, snapshot_payload, selection)
+        payloads = _publication_payloads_antigravity(attempt, snapshot_payload, selection, profile)
         for name in _PUBLICATION_NAMES_ANTIGRAVITY:
             write_create_only_antigravity(staging / name, payloads[name])
         staged = _require_regular_inventory_antigravity(staging)
         if staged != payloads:
             raise ValueError("staged publication bytes are invalid")
-        _inspect_payloads_antigravity(staged, attempt)
+        _inspect_payloads_antigravity(staged, attempt, profile)
         fsync_directory_antigravity(staging)
         # The final source replay ends before the terminal, no-callback byte gate.
         final_selection_result, _final_source_snapshot = _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload)
@@ -457,20 +533,34 @@ def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPu
             raise ValueError("publication destination raced")
         # Keep the complete grouped descriptor pin through strict comparison and RENAME_EXCL.
         with pin_exact_regular_inventory_antigravity(_attempt_path, _TERMINAL_ATTEMPT_AUTHORITY_NAMES_ANTIGRAVITY) as final_pinned:
-            final_snapshot, final_selection, final_authority = _parse_pinned_attempt_antigravity(attempt, final_pinned.payloads)
+            final_snapshot, final_selection, final_authority = _parse_pinned_attempt_antigravity(attempt, final_pinned.payloads, profile)
             if (final_authority != authority or final_snapshot != snapshot_payload or final_selection != selection_payload):
                 raise ValueError("terminal attempt authority changed before publication rename")
             final_pinned.revalidate_antigravity()
             exclusive_rename_antigravity(staging, destination)
         fsync_directory_antigravity(destination.parent)
-        return inspect_exp441_publication_antigravity()
+        return _inspect_for_profile_antigravity(profile, run_root=root)
     except BaseException as error:
         try:
-            _preserve_failed_staging_antigravity(staging, attempt, error)
+            _preserve_failed_staging_antigravity(staging, attempt, error, profile)
         except BaseException as preservation_error:
             error.add_note(f"failed staging preservation also failed: {type(preservation_error).__name__}: {preservation_error}")
             raise error from preservation_error
         raise
+
+
+def inspect_exp441_publication_antigravity() -> FrozenPublicationAntigravity:
+    """Read and verify the original fixed Exp441 publication root."""
+    return _inspect_for_profile_antigravity(
+        EXP441_PROFILE_ANTIGRAVITY, run_root=_RUN_ROOT_ANTIGRAVITY,
+    )
+
+
+def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPublicationAntigravity:
+    """Freeze one attempt under the original fixed Exp441 identity."""
+    return _publish_for_profile_antigravity(
+        EXP441_PROFILE_ANTIGRAVITY, attempt, run_root=_RUN_ROOT_ANTIGRAVITY,
+    )
 
 
 __all__ = ["publish_exp441_antigravity", "inspect_exp441_publication_antigravity"]
