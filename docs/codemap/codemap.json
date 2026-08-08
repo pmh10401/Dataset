@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T09:16:37Z",
-  "generated_from_commit": "03a247d691099246e62289bd8098cac1d2e4cfb6",
+  "generated_at": "2026-08-08T09:31:59Z",
+  "generated_from_commit": "615792515e191ae98ddb4b84097cd162ee722686",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2910,7 +2910,7 @@
       "boundary": "Active isolated research",
       "layer": 3,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Replays a complete zero-label-access checkpoint into a deterministic separate-channel review-only publication, then lazily evaluates all three frozen channels only after Exp438, Exp437, Hard comparator, database, population, provenance, and artifact hashes pass. Exp440 owns fixed clean-HEAD readiness, a five-command wrapper, no-clobber hash-bound review-only prediction/depth/ranking/audit publication, and lazy post-freeze TEST-label evaluation against frozen Hard with 20,000 dataset bootstrap samples and all preregistered gates. Exp441 Task 7 adds a fixed four-command CLI and outside-CWD wrapper: readiness/new/inspect cannot import evaluators or SQLite; evaluation remains the sole branch-local lazy evaluator route. Task 7 review evidence exhaustively rejects 30 readiness leaf paths across 90 mutations, chains post-rollback preservation faults without masking the primary error, imports real modules behind fresh-interpreter firewalls for help/readiness/new/inspect, and proves actual CLI inspection preserves an exact isolated 16-entry tree. CLI status serialization converts frozen coordinate sets to sorted canonical JSON lists.",
+      "role": "Replays a complete zero-label-access checkpoint into a deterministic separate-channel review-only publication, then lazily evaluates all three frozen channels only after Exp438, Exp437, Hard comparator, database, population, provenance, and artifact hashes pass. Exp440 owns fixed clean-HEAD readiness, a five-command wrapper, no-clobber hash-bound review-only prediction/depth/ranking/audit publication, and lazy post-freeze TEST-label evaluation against frozen Hard with 20,000 dataset bootstrap samples and all preregistered gates. Exp441 Task 7 adds a fixed four-command CLI and outside-CWD wrapper: readiness/new/inspect cannot import evaluators or SQLite; evaluation remains the sole branch-local lazy evaluator route. Task 7 review evidence exhaustively rejects 30 readiness leaf paths across 90 mutations, chains post-rollback preservation faults without masking the primary error, imports real modules behind fresh-interpreter firewalls for help/readiness/new/inspect, and proves actual CLI inspection preserves an exact isolated 16-entry tree. CLI status serialization walks dataclass fields without deep copy, recursively converts immutable readiness mappings and publication coordinate sets, orders sets by canonical JSON bytes, and rejects unsupported data rather than leaking it to stdout.",
       "entrypoints": [
         "publish_exp438_antigravity",
         "inspect_publication_antigravity",
@@ -2990,6 +2990,18 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/cli_antigravity.py",
           "symbol": "def _json_safe_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_real_readiness_binding_serializes_directly_and_through_main("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_real_frozen_publication_is_byte_deterministic_across_set_insertion_order("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_serializer_supports_json_containers_and_rejects_unsupported_values("
         },
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_task7_route_matrix_antigravity.py",

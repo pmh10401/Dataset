@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, is_dataclass
+from dataclasses import fields, is_dataclass
+import math
 from typing import Mapping
 
 from .artifacts_antigravity import canonical_json_bytes_antigravity
@@ -18,17 +19,27 @@ def build_parser_antigravity() -> argparse.ArgumentParser:
 
 
 def _json_safe_antigravity(value: object) -> object:
-    if is_dataclass(value):
-        return _json_safe_antigravity(asdict(value))
+    if value is None or type(value) in (str, int, bool):
+        return value
+    if type(value) is float:
+        if not math.isfinite(value):
+            raise TypeError("nonfinite CLI JSON float")
+        return value
+    if is_dataclass(value) and not isinstance(value, type):
+        return {
+            field.name: _json_safe_antigravity(getattr(value, field.name))
+            for field in fields(value)
+        }
     if isinstance(value, Mapping):
-        return {str(key): _json_safe_antigravity(item) for key, item in value.items()}
-    if isinstance(value, frozenset):
-        return [_json_safe_antigravity(item) for item in sorted(value)]
-    if isinstance(value, tuple):
+        if any(type(key) is not str for key in value):
+            raise TypeError("CLI JSON mapping keys must be strings")
+        return {key: _json_safe_antigravity(value[key]) for key in sorted(value)}
+    if isinstance(value, (tuple, list)):
         return [_json_safe_antigravity(item) for item in value]
-    if isinstance(value, list):
-        return [_json_safe_antigravity(item) for item in value]
-    return value
+    if isinstance(value, (set, frozenset)):
+        converted = [_json_safe_antigravity(item) for item in value]
+        return sorted(converted, key=canonical_json_bytes_antigravity)
+    raise TypeError(f"unsupported CLI JSON value: {type(value).__name__}")
 
 
 def canonical_cli_status_antigravity(command: str, result: object) -> str:
