@@ -189,3 +189,14 @@ class Exp441ArtifactsAntigravityTests(unittest.TestCase):
             with self.assertRaises(OSError):
                 exclusive_rename_antigravity(source, destination)
             self.assertTrue(destination.exists())
+
+    def test_post_rename_rebind_baseline_rejects_ctime_only_root_roundtrip(self) -> None:
+        """A chmod away-and-back after rebind must not evade final root validation."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "root_antigravity"; root.mkdir(mode=0o700)
+            evidence = root / "evidence_antigravity.json"; evidence.write_bytes(b"{}\n"); evidence.chmod(0o600)
+            with pin_exact_regular_inventory_antigravity(root, ("evidence_antigravity.json",)) as pinned:
+                pinned.revalidate_at_antigravity(root, renamed_antigravity=True)
+                root.chmod(0o755); root.chmod(0o700)
+                with self.assertRaises(ValueError):
+                    pinned.revalidate_at_antigravity(root, renamed_antigravity=True)

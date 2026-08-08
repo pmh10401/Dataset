@@ -100,6 +100,7 @@ class PinnedRegularInventoryAntigravity:
     _file_mode_antigravity: int
     _root_metadata_antigravity: PinnedFileIdentityAntigravity
     _root_descriptor_antigravity: int
+    _post_rename_root_metadata_antigravity: PinnedFileIdentityAntigravity | None = None
 
     def revalidate_antigravity(self) -> None:
         """Fail closed if the retained root or any named entry changed after initial pinning."""
@@ -128,6 +129,14 @@ class PinnedRegularInventoryAntigravity:
                     root_namespace_identity.size == root_descriptor_identity.size and
                     root_namespace_identity.mtime_ns == root_descriptor_identity.mtime_ns
                 )
+                if root_identity_matches:
+                    if self._post_rename_root_metadata_antigravity is None:
+                        self._post_rename_root_metadata_antigravity = root_descriptor_identity
+                    else:
+                        root_identity_matches = (
+                            root_descriptor_identity == self._post_rename_root_metadata_antigravity and
+                            root_namespace_identity == self._post_rename_root_metadata_antigravity
+                        )
             if (not root_identity_matches or
                     not stat.S_ISDIR(root_descriptor_identity.mode) or
                     stat.S_IMODE(root_descriptor_identity.mode) != self._directory_mode_antigravity):
@@ -140,6 +149,9 @@ class PinnedRegularInventoryAntigravity:
                 if (descriptor_identity != self.metadata[name] or namespace_identity != self.metadata[name] or
                         not stat.S_ISREG(descriptor_identity.mode) or stat.S_IMODE(descriptor_identity.mode) != self._file_mode_antigravity):
                     raise ValueError("pinned inventory changed")
+            root_namespace_after = _pinned_file_identity_antigravity(root_namespace.lstat())
+            if root_namespace_after != root_namespace_identity:
+                raise ValueError("pinned inventory root changed")
         except OSError as error:
             raise ValueError("pinned inventory changed") from error
 
