@@ -439,6 +439,107 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
             evidence = (audit[0] / "failure_antigravity.json").read_bytes()
             self.assertIs(evaluation._validate_failure_payload_antigravity(evidence)["destination_committed"], True)
 
+    def test_task11_every_governance_leaf_rejects_every_document_mutation_family(self) -> None:
+        """All 9 flat governance leaves are exact booleans/strings, never aliases or nested controls."""
+        snapshot, selection = _snapshot_and_selection()
+        payloads = evaluation._result_artifacts_antigravity(self._complete_result(snapshot.context_datasets), _publication(snapshot, selection))
+        documents = (
+            ("evaluation_antigravity.json", evaluation._EVALUATION_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "evaluation"),
+            ("bootstrap_antigravity.json", evaluation._BOOTSTRAP_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "bootstrap"),
+            ("decision_antigravity.json", evaluation._DECISION_NON_GOVERNANCE_KEYS_ANTIGRAVITY, "decision"),
+        )
+        for filename, keys, label in documents:
+            original = evaluation.parse_canonical_json_bytes_antigravity(payloads[filename])
+            for key, expected in evaluation._GOVERNANCE_ANTIGRAVITY.items():
+                mutations = {
+                    "missing": lambda value: value.pop(key),
+                    "nested": lambda value: value.__setitem__(key, {"value": expected}),
+                    "truthy_type": lambda value: value.__setitem__(key, 1 if type(expected) is bool else True),
+                    "wrong_value": lambda value: value.__setitem__(key, (not expected) if type(expected) is bool else expected + "_wrong"),
+                    "extra_alias": lambda value: value.__setitem__(key + "_alias", expected),
+                }
+                for mutation, apply in mutations.items():
+                    altered = dict(original)
+                    apply(altered)
+                    with self.subTest(document=label, key=key, mutation=mutation), self.assertRaises(ValueError):
+                        evaluation._strict_payload_antigravity(altered, keys, label, governance=True)
+        failure = evaluation.canonical_json_bytes_antigravity({
+            "schema": "exp441.evaluation-failure.v1", "status": "engineering_reproduction_failed",
+            "phase": "synthetic", "error_type": "ValueError", "error": "synthetic",
+            "labels_opened": False, "destination_committed": False, **evaluation._GOVERNANCE_ANTIGRAVITY,
+        })
+        original_failure = evaluation.parse_canonical_json_bytes_antigravity(failure)
+        for key, expected in evaluation._GOVERNANCE_ANTIGRAVITY.items():
+            for mutation in ("missing", "nested", "truthy_type", "wrong_value", "extra_alias"):
+                altered = dict(original_failure)
+                if mutation == "missing": del altered[key]
+                elif mutation == "nested": altered[key] = {"value": expected}
+                elif mutation == "truthy_type": altered[key] = 1 if type(expected) is bool else True
+                elif mutation == "wrong_value": altered[key] = (not expected) if type(expected) is bool else expected + "_wrong"
+                else: altered[key + "_alias"] = expected
+                with self.subTest(document="failure", key=key, mutation=mutation), self.assertRaises(ValueError):
+                    evaluation._validate_failure_payload_antigravity(evaluation.canonical_json_bytes_antigravity(altered))
+
+    def test_task11_exact_inventory_rejects_missing_extra_link_fifo_and_mode_members(self) -> None:
+        """Pinned replay admits only eight 0600 regular files in one 0700 directory."""
+        snapshot, selection = _snapshot_and_selection()
+        payloads = evaluation._result_artifacts_antigravity(self._complete_result(snapshot.context_datasets), _publication(snapshot, selection))
+        for mutation in ("missing", "extra", "symlink", "fifo", "mode"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / "evaluation_antigravity"; os.mkdir(root, 0o700)
+                for name, payload in payloads.items(): evaluation.write_create_only_antigravity(root / name, payload)
+                target = root / "evaluation_antigravity.json"
+                if mutation == "missing": target.unlink()
+                elif mutation == "extra": evaluation.write_create_only_antigravity(root / "extra_antigravity.json", b"x")
+                elif mutation == "symlink":
+                    target.unlink(); target.symlink_to(root / "bootstrap_antigravity.json")
+                elif mutation == "fifo":
+                    target.unlink(); os.mkfifo(target, 0o600)
+                else: os.chmod(target, 0o644)
+                with self.assertRaises(ValueError):
+                    with evaluation.pin_exact_regular_inventory_antigravity(root, evaluation._EVALUATION_FILENAMES_ANTIGRAVITY):
+                        pass
+
+    def test_task11_failure_preservation_keeps_primary_error_and_adds_secondary_note(self) -> None:
+        """A failure to write failure evidence must never replace the original engineering error."""
+        with tempfile.TemporaryDirectory() as temporary:
+            primary = ValueError("primary synthetic failure")
+            with patch.object(evaluation, "write_create_only_antigravity", side_effect=OSError("secondary write failure")):
+                evaluation._write_failure_antigravity(Path(temporary), None, primary, "synthetic", False, True)
+            self.assertEqual(str(primary), "primary synthetic failure")
+            self.assertTrue(any("failure preservation failed: OSError: secondary write failure" in note
+                                for note in getattr(primary, "__notes__", ())))
+
+    def test_task11_create_high_level_phases_follow_the_preregistered_order(self) -> None:
+        """The route cannot label/compute/write/rename before its prescribed predecessor gate."""
+        snapshot, _selection = _snapshot_and_selection(); zero = SelectionResultAntigravity((), (), (), (), (), frozenset())
+        publication = FrozenPublicationAntigravity("3" * 64, "4" * 64, "5" * 64, "6" * 64, zero)
+        labels = evaluation.FrozenContextLabelsAntigravity(snapshot.context_datasets, {d: () for d in snapshot.context_datasets},
+            publication.publication_sha256, publication.source_audit_sha256, zero, 1, 1117, 0)
+        preflight = (publication, snapshot, zero, snapshot.context_datasets, MappingProxyType(dict(snapshot.test_row_count_by_dataset)))
+        events: list[str] = []; real_write=evaluation.write_create_only_antigravity; real_pin=evaluation.pin_exact_regular_inventory_antigravity
+        real_replay=evaluation._replay_evaluation_payloads_antigravity; real_rename=evaluation.exclusive_rename_antigravity
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "evaluation_antigravity"
+            def preflight_call() -> object: events.append("preflight"); return preflight
+            def label_call() -> object: events.append("labels"); return labels
+            def compute_call(value: object) -> object: events.append("compute"); return self._complete_result(snapshot.context_datasets)
+            def write_call(path: Path, payload: bytes) -> None: events.append("write"); real_write(path, payload)
+            def pin_call(*args: object, **kwargs: object) -> object: events.append("pin"); return real_pin(*args, **kwargs)
+            def replay_call(payloads: object) -> object: events.append("replay"); return real_replay(payloads)
+            def rename_call(source: Path, target: Path) -> None: events.append("rename"); real_rename(source, target)
+            with patch.object(evaluation, "_EVALUATION_DESTINATION_ANTIGRAVITY", destination), \
+                 patch.object(evaluation, "_preflight_antigravity", side_effect=preflight_call), \
+                 patch.object(evaluation, "load_frozen_context_labels_antigravity", side_effect=label_call), \
+                 patch.object(evaluation, "compute_retrospective_evaluation_antigravity", side_effect=compute_call), \
+                 patch.object(evaluation, "write_create_only_antigravity", side_effect=write_call), \
+                 patch.object(evaluation, "pin_exact_regular_inventory_antigravity", side_effect=pin_call), \
+                 patch.object(evaluation, "_replay_evaluation_payloads_antigravity", side_effect=replay_call), \
+                 patch.object(evaluation, "exclusive_rename_antigravity", side_effect=rename_call):
+                evaluation.evaluate_exp441_antigravity()
+        compressed = [event for index, event in enumerate(events) if index == 0 or event != events[index - 1]]
+        self.assertEqual(compressed, ["preflight", "labels", "compute", "preflight", "write", "pin", "replay", "preflight", "rename", "pin", "replay", "preflight"])
+
     def test_task11_existing_destination_replays_without_task9_or_exp417_access(self) -> None:
         """An existing valid eight-file destination is inspected, never repaired or relabelled."""
         snapshot, _selection = _snapshot_and_selection()
