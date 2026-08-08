@@ -1,6 +1,6 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-08T02:08:56+09:00",
+  "updated_at": "2026-08-08T10:41:00+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
     {
@@ -183,6 +183,28 @@
         "winner_selected": false
       },
       "lesson": "Low-frequency evidence finds missed anomalies but is too broad alone. Require TRAIN-only multi-depth agreement, threshold stability, Hard exclusion, and a fixed global budget in a new experiment."
+    },
+    {
+      "experiment": "Exp440",
+      "category": "completed_research_gate_failed_not_promoted",
+      "evidence": "/Users/mac/Documents/Dataset/exp440_train_only_low_frequency_precision_gate_antigravity_20260808/evaluation_antigravity/evaluation_antigravity.json",
+      "facts": {
+        "prediction_sha256": "06d905d9d6f96fa67704111b984ed87b74229e13fd0690401db67a4a0fdd79af",
+        "evaluation_sha256": "6cb023b40e02a5caa813c46884b921b76442ef39a736409bff7a32decb546b84",
+        "candidate_count": 100,
+        "candidates": 100,
+        "true_positive_count": 40,
+        "false_positive_count": 60,
+        "tp": 40,
+        "fp": 60,
+        "micro_f1_ci_lower": -0.000874817656299559,
+        "micro_ci_lower": -0.000874817656299559,
+        "maximum_strong_dataset_f1_loss": 0.5,
+        "maximum_strong_loss": 0.5,
+        "test_labels_opened_after_prediction_freeze": true,
+        "winner_selected": false
+      },
+      "lesson": "Exp440's 100-candidate low-frequency pool had TP/FP 40/60, a non-positive micro bootstrap lower bound, and maximum strong-dataset loss 0.5; preserve it as evaluated evidence and require a new selector-only experiment rather than promotion."
     }
   ]
 }

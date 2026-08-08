@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T01:20:10Z",
-  "generated_from_commit": "f30bec23d6d948993422b608e1a0495d8e29cdee",
+  "generated_at": "2026-08-08T10:41:00Z",
+  "generated_from_commit": "27f89af2fe62079cc7187c462ef959cd6eb9dc97",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -36,7 +36,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The current control files still record stale Exp440 readiness-pending state although its frozen publication and evaluation exist; the approved Exp441 plan begins by reconciling that state, then implements a retrospective-only Hard-empty selector without changing the Exp404/Exp416 reference.",
+      "role": "The control files reconcile Exp440's frozen publication/evaluation as completed but not promoted and freeze Exp441 as a design-approved retrospective-only Hard-empty selector; Exp404/Exp416 remain the verified reference and Exp441 has no pending or champion state.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -50,9 +50,10 @@
         "Prediction TEST-label access remains zero; post-freeze evaluation stays separate and review-only; Codex performs one liveness check and no recurring polling.",
         "Exp437 runs with 11 CPU workers. Exp438 waits because the macOS DB snapshot safety contract permits one owned hardlink/session at a time; after Exp437 completion DB nlink must return to 1 before Exp438 readiness.",
         "Exp438 failed at 89/1,117 on a false fixed-tolerance reconstruction rejection in Chinatown_normal_1; Exp439 preserves the failed root and changes only the validation guard to max(1e-5, one float32 ULP at component scale).",
-        "Exp439 direct integration failed its preregistered precision and F1 gates; Exp440 is a new review-only experiment whose prediction uses only TRAIN-calibrated multi-depth low-frequency consensus and never reads Exp439 evaluation artifacts.",
+        "Exp439 direct integration failed its preregistered precision and F1 gates; Exp440 is now reconciled as official_completed_evaluated_not_promoted with frozen prediction/evaluation hashes, and Exp441 uses only its TRAIN-calibrated provisional pool without reading Exp440 evaluation artifacts during prediction.",
         "The approved Exp441 design is selector-only: it replays the frozen Exp440 provisional pool, admits only datasets with zero frozen Hard coordinates, retains at most one coordinate per dataset and 30 globally, keeps TEST labels behind a new prediction freeze, and treats the already-observed bootstrap intervals as descriptive post-selection evidence rather than confirmation; retrospective replay freezes context dataset order, NumPy 2.4.6, PCG64, int64 sampling shape, the project F1 formula, linear quantiles, full-precision expected values, and 1e-15 absolute comparison tolerance.",
-        "The Exp441 implementation plan uses twelve reviewer-sized TDD commits bound to the final same-commit design content SHA, keeps forbidden Exp440 evaluation strings out of production config through an exact positive allowlist, tests Exp416 Hard-array and Exp441 selected-JSONL identities separately, stores Exp441 only as exact-schema catalog/state and non-promotion champion-history records rather than a pending candidate, isolates a named sequential reference interface from the fixed 11-worker production route with AST and call-spy guards, requires exact nine-field governance on each governing control/terminal/failure artifact, prohibits SQLite in readiness/new/inspect, validates candidate and Hard ranges before label-capable imports, permits one descriptor-bound post-freeze quick-check followed only by 1,117 context-parameterized TEST-label queries, preserves failed attempts and staging evidence, updates the map triplet in every boundary-changing commit, and requires a fresh Sol/High final review before readiness."
+        "The Exp441 implementation plan uses twelve reviewer-sized TDD commits bound to the final same-commit design content SHA, keeps forbidden Exp440 evaluation strings out of production config through an exact positive allowlist, tests Exp416 Hard-array and Exp441 selected-JSONL identities separately, stores Exp441 only as exact-schema catalog/state and non-promotion champion-history records rather than a pending candidate, isolates a named sequential reference interface from the fixed 11-worker production route with AST and call-spy guards, requires exact nine-field governance on each governing control/terminal/failure artifact, prohibits SQLite in readiness/new/inspect, validates candidate and Hard ranges before label-capable imports, permits one descriptor-bound post-freeze quick-check followed only by 1,117 context-parameterized TEST-label queries, preserves failed attempts and staging evidence, updates the map triplet in every boundary-changing commit, and requires a fresh Sol/High final review before readiness.",
+        "Task 1 freezes the reviewed design SHA, exact four-command runbook, fixed readiness/attempt/publication/evaluation paths, Exp440 failure evidence, Exp441 exact control schemas, and retrospective non-promotion governance before any Exp441 product module exists."
       ],
       "evidence": [
         {
@@ -289,7 +290,7 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"implementation_complete_readiness_pending\""
+          "symbol": "\"status\": \"official_completed_evaluated_not_promoted\""
         },
         {
           "path": "docs/superpowers/specs/2026-08-08-exp441-hard-empty-single-shot-recovery-antigravity-design.md",
@@ -298,6 +299,38 @@
         {
           "path": "docs/superpowers/plans/2026-08-08-exp441-hard-empty-single-shot-recovery-antigravity.md",
           "symbol": "# Exp441 Hard-Empty Single-Shot Recovery Implementation Plan"
+        },
+        {
+          "path": "docs/EXP441_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "# Exp441 Hard-empty 단발 복구 선택기 사전등록"
+        },
+        {
+          "path": "docs/EXP441_RUNBOOK_antigravity_KO.md",
+          "symbol": "# Exp441 Hard-empty 단발 복구 실행 안내서"
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"id\": \"Exp441\""
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"status\": \"design_approved_implementation_planned\""
+        },
+        {
+          "path": "FAILURE_LEDGER.json",
+          "symbol": "\"experiment\": \"Exp440\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"active_experiment\": \"Exp441\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"exp441_reproduction\": {"
+        },
+        {
+          "path": "CHAMPION_LEDGER.json",
+          "symbol": "\"experiment\": \"Exp441\""
         }
       ]
     },
