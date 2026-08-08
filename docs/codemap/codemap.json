@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T04:42:53Z",
-  "generated_from_commit": "112db68c8f566ca3a61370ecd74f780d505656ff",
+  "generated_at": "2026-08-08T05:01:08Z",
+  "generated_from_commit": "aa5d0609f449d08f5c25c3952c75514e5b7069d1",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2839,7 +2839,9 @@
         "publish_exp440_antigravity",
         "evaluate_exp440_antigravity",
         "build_parser_antigravity",
-        "main_antigravity"
+        "main_antigravity",
+        "publish_exp441_antigravity",
+        "inspect_exp441_publication_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py",
@@ -2848,12 +2850,14 @@
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_reporting_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_evaluation_antigravity.py",
-        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_cli_antigravity.py"
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py"
       ],
       "constraints": [
         "Publication requires exactly 1,117 completed datasets, failed=0, inactive PID, current_dataset=null, budget compliance, and prediction TEST-label access exactly zero.",
         "Evaluation is a lazy explicit command and reads TEST labels only after every frozen publication, comparator, source, population, runtime, database, and provenance gate passes.",
-        "High-frequency, low-frequency, and amplitude-complexity results remain separate; evaluation selects no winner and publishes eight no-clobber hash-bound artifacts."
+        "High-frequency, low-frequency, and amplitude-complexity results remain separate; evaluation selects no winner and publishes eight no-clobber hash-bound artifacts.",
+        "Exp441 publisher accepts only a terminal inactive attempt, replays immutable sources/selection before and immediately before a Darwin no-clobber rename, writes exactly six private 0600 artifacts, and inspection stays label-free with no SQLite or evaluator import."
       ],
       "evidence": [
         {
@@ -2891,6 +2895,18 @@
         {
           "path": "scratch/run_exp440_train_only_low_frequency_precision_gate_antigravity.py",
           "symbol": "result=main_antigravity()"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def publish_exp441_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def inspect_exp441_publication_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publish_writes_exact_six_files_and_rejects_prediction_tamper("
         }
       ]
     }
@@ -3677,6 +3693,17 @@
           "symbol": "def _validate_publication_antigravity("
         }
       ]
+    },
+    {
+      "from": "exp438_publication_evaluation",
+      "to": "exp438_frequency_runtime",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "from .runtime_antigravity import _selection_from_payload_antigravity, _snapshot_payload_antigravity"
+        }
+      ]
     }
   ],
   "flows": [
@@ -3737,9 +3764,10 @@
       "label": "Exp441 immutable label-free attempt",
       "trigger": "Invoke the fixed new command after a clean reviewed commit; no resume exists.",
       "steps": [
-        "exp438_frequency_runtime"
+        "exp438_frequency_runtime",
+        "exp438_publication_evaluation"
       ],
-      "outcome": "The grouped Exp441 runtime creates a smallest-gap immutable attempt, records parent-accepted fixed-11-worker source replay progress, freezes source/selection evidence, rechecks the source authority, and returns a completed attempt without SQLite, TEST labels, evaluation, or publication."
+      "outcome": "The grouped Exp441 runtime creates a smallest-gap immutable attempt, records parent-accepted fixed-11-worker source replay progress, freezes source/selection evidence, rechecks the source authority, and returns a completed attempt without SQLite, TEST labels, evaluation, or publication. The publisher then freezes exactly six label-free files through private create-only staging and read-only replay inspection."
     }
   ],
   "unknown_relationships": 0
