@@ -1,9 +1,9 @@
 {
-  "current_commit": "aade7fc301de9fb7d78ddfc6f90f4e2e334af891",
+  "current_commit": "615b277adc0baf6f1ad4200980a3eab29d8ddff9",
   "working_tree_dirty": true,
-  "generated_at": "2026-08-08T13:27:38Z",
+  "generated_at": "2026-08-08T13:34:28Z",
   "changed_modules_since_prior_lock": [
-    "experiments"
+    "root"
   ],
   "scanned_scope": [
     "tracked root files",
@@ -23,8 +23,8 @@
     "vendor",
     "node_modules",
     "build",
-    "dist",
     "cache",
+    "dist",
     "__pycache__",
     ".pytest_cache",
     ".mypy_cache",
@@ -56,7 +56,7 @@
       "tracked_files": 4
     },
     "root": {
-      "fingerprint": "8c55167018a4b3f9d5201649549a8c3bfca47a3376904b3190016546ba32cb40",
+      "fingerprint": "1fcb14770a837213c30505648d36cb558628d680ab141e09c19e26c1b4db25dd",
       "tracked_files": 210
     },
     "scratch": {
