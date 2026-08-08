@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from hashlib import sha256
+import signal
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -35,6 +37,14 @@ class RuntimeAntigravityTests(unittest.TestCase):
                 observer({"sequence": index, "dataset": dataset, "test_row_count": snapshot.test_row_count_by_dataset[dataset], "raw_length": next(iter(values)) if len(values) == 1 else None})
             return snapshot
         return replay
+
+    @staticmethod
+    def _attempt_bytes_antigravity(attempt: Path) -> dict[str, str]:
+        """Fingerprint every immutable attempt file by its relative path and bytes."""
+        return {
+            path.relative_to(attempt).as_posix(): sha256(path.read_bytes()).hexdigest()
+            for path in sorted(attempt.rglob("*")) if path.is_file()
+        }
 
     def test_attempt_allocation_uses_smallest_gap_and_rejects_non_directory_claim(self) -> None:
         # Break caught: allocating monotonically or treating a symlink/file as a completed immutable attempt.
@@ -134,6 +144,105 @@ class RuntimeAntigravityTests(unittest.TestCase):
             failure = json.loads((root / "attempts_antigravity" / "attempt_0000_antigravity" / "failure_antigravity.json").read_text())
             self.assertEqual(failure["status"], "interrupted")
 
+    def test_sigterm_handler_is_restored_after_interrupted_attempt(self) -> None:
+        # Break caught: the runtime leaves its private SIGTERM handler installed after returning to its caller.
+        snapshot = _snapshot(_fixture_candidates())
+        prior = signal.getsignal(signal.SIGTERM)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def interrupt(_observer):
+                os.kill(os.getpid(), signal.SIGTERM)
+                return snapshot
+            with patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._RUN_ROOT_ANTIGRAVITY", root), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._ensure_clean_reviewed_commit_antigravity"), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._verify_with_observer_antigravity", side_effect=interrupt):
+                with self.assertRaisesRegex(RuntimeError, "SIGTERM"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+        self.assertIs(signal.getsignal(signal.SIGTERM), prior)
+
+    def test_writer_initialization_failure_keeps_original_error_and_writes_failure_when_independent_channel_works(self) -> None:
+        # Break caught: a writer construction error prevents the independent immutable failure record from being created.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity as runtime
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(runtime, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(runtime, "ProgressWriterAntigravity", side_effect=OSError("writer initialization failed")):
+                with self.assertRaisesRegex(OSError, "writer initialization failed"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            failure_path = root / "attempts_antigravity" / "attempt_0000_antigravity" / "failure_antigravity.json"
+            failure = runtime.parse_canonical_json_bytes_antigravity(failure_path.read_bytes())
+            runtime._validate_failure_artifact_antigravity(failure)
+            self.assertEqual(failure["error"], "writer initialization failed")
+
+    def test_runtime_failure_keeps_primary_error_when_terminal_progress_write_fails(self) -> None:
+        # Break caught: an evidence-write failure hides the actual source failure or skips PID/failure evidence.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity as progress
+        snapshot = _snapshot(_fixture_candidates())
+        original = progress.ProgressWriterAntigravity._write_progress_antigravity
+        def fail_only_terminal(writer):
+            if writer._state["stage"] == "failed":
+                raise OSError("terminal progress failed")
+            return original(writer)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._RUN_ROOT_ANTIGRAVITY", root), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._ensure_clean_reviewed_commit_antigravity"), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._verify_with_observer_antigravity", side_effect=ValueError("source failure")), \
+                 patch.object(progress.ProgressWriterAntigravity, "_write_progress_antigravity", new=fail_only_terminal):
+                with self.assertRaisesRegex(ValueError, "source failure"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            self.assertFalse(json.loads((attempt / "pid_antigravity").read_text())["active"])
+            self.assertEqual(json.loads((attempt / "failure_antigravity.json").read_text())["error"], "source failure")
+
+    def test_runtime_failure_keeps_primary_error_when_terminal_pid_replace_fails(self) -> None:
+        # Break caught: a PID-replace fault masks the source error or deletes failed progress/failure evidence.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity as progress
+        snapshot = _snapshot(_fixture_candidates())
+        real_replace = progress.os.replace
+        def fail_pid_replace(source, destination):
+            if Path(destination).name == "pid_antigravity":
+                raise OSError("terminal PID replace failed")
+            return real_replace(source, destination)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._RUN_ROOT_ANTIGRAVITY", root), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._ensure_clean_reviewed_commit_antigravity"), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._verify_with_observer_antigravity", side_effect=ValueError("source failure")), \
+                 patch.object(progress.os, "replace", side_effect=fail_pid_replace):
+                with self.assertRaisesRegex(ValueError, "source failure"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            self.assertEqual(json.loads((attempt / "progress_antigravity.json").read_text())["stage"], "failed")
+            self.assertTrue(json.loads((attempt / "pid_antigravity").read_text())["active"])
+            self.assertEqual(json.loads((attempt / "failure_antigravity.json").read_text())["error"], "source failure")
+
+    def test_runtime_failure_keeps_primary_error_when_failure_json_write_fails(self) -> None:
+        # Break caught: a failure-artifact I/O fault masks the source error or rolls back failed progress/PID evidence.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity as runtime
+        snapshot = _snapshot(_fixture_candidates())
+        real_create = runtime.write_create_only_antigravity
+        def fail_only_failure(path, payload):
+            if Path(path).name == "failure_antigravity.json":
+                raise OSError("failure JSON write failed")
+            return real_create(path, payload)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(runtime, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(runtime, "_ensure_clean_reviewed_commit_antigravity"), \
+                 patch.object(runtime, "_load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                 patch.object(runtime, "_verify_with_observer_antigravity", side_effect=ValueError("source failure")), \
+                 patch.object(runtime, "write_create_only_antigravity", side_effect=fail_only_failure):
+                with self.assertRaisesRegex(ValueError, "source failure"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            self.assertEqual(json.loads((attempt / "progress_antigravity.json").read_text())["stage"], "failed")
+            self.assertFalse(json.loads((attempt / "pid_antigravity").read_text())["active"])
+            self.assertFalse((attempt / "failure_antigravity.json").exists())
+
     def test_governance_validator_rejects_missing_extra_wrong_and_nested_values(self) -> None:
         # Break caught: a governing terminal artifact accepts a partial alias, bool-like substitute, or nested replacement.
         import experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity as runtime
@@ -182,6 +291,129 @@ class RuntimeAntigravityTests(unittest.TestCase):
             alias["review_only_alias"] = True
             with self.assertRaisesRegex(ValueError, "alias"):
                 runtime._validate_terminal_artifact_governance_antigravity(alias)
+
+    def test_persisted_selection_and_failure_reopen_with_exact_full_schemas(self) -> None:
+        # Break caught: a canonical file reopens while accepting a missing, extra, wrong, nested, status, commit, or hash field.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity as runtime
+        snapshot = _snapshot(_fixture_candidates())
+        selection = select_hard_empty_single_shot_antigravity(snapshot)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(runtime, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(runtime, "FROZEN_CONFIG", SimpleNamespace(dataset_count=len(snapshot.context_datasets))), \
+                 patch.object(runtime, "_ensure_clean_reviewed_commit_antigravity"), \
+                 patch.object(runtime, "_load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                 patch.object(runtime, "_verify_with_observer_antigravity", side_effect=self._replay(snapshot)), \
+                 patch.object(runtime, "_reverify_sources_after_artifacts_antigravity", return_value=snapshot), \
+                 patch.object(runtime, "select_hard_empty_single_shot_antigravity", return_value=selection), \
+                 patch.object(runtime, "validate_production_selection_antigravity", side_effect=lambda value: value):
+                run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            selection_path = root / "attempts_antigravity" / "attempt_0000_antigravity" / "selection_antigravity.json"
+            selection_payload = runtime.parse_canonical_json_bytes_antigravity(selection_path.read_bytes())
+            runtime._validate_selection_artifact_antigravity(selection_payload)
+            with patch.object(runtime, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(runtime, "_ensure_clean_reviewed_commit_antigravity"), \
+                 patch.object(runtime, "_load_prefix_antigravity", side_effect=ValueError("source failure")):
+                with self.assertRaisesRegex(ValueError, "source failure"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            failure_path = root / "attempts_antigravity" / "attempt_0001_antigravity" / "failure_antigravity.json"
+            failure_payload = runtime.parse_canonical_json_bytes_antigravity(failure_path.read_bytes())
+            runtime._validate_failure_artifact_antigravity(failure_payload)
+        for payload, validator, mutations in (
+            (selection_payload, runtime._validate_selection_artifact_antigravity, (
+                lambda value: value.pop("winners"),
+                lambda value: value.update({"arbitrary": True}),
+                lambda value: value.update({"reviewed_commit": "z" * 40}),
+                lambda value: value.update({"source_snapshot_sha256": "z" * 64}),
+                lambda value: value.update({"selected": {"nested": True}}),
+            )),
+            (failure_payload, runtime._validate_failure_artifact_antigravity, (
+                lambda value: value.pop("error"),
+                lambda value: value.update({"arbitrary": True}),
+                lambda value: value.update({"status": "complete"}),
+                lambda value: value.update({"reviewed_commit": "z" * 40}),
+                lambda value: value.update({"error": {"nested": True}}),
+            )),
+        ):
+            for mutate in mutations:
+                tampered = dict(payload)
+                mutate(tampered)
+                with self.assertRaises(ValueError):
+                    validator(tampered)
+
+    def test_failed_and_interrupted_attempts_remain_byte_identical_when_new_allocates_next_sequence(self) -> None:
+        # Break caught: a later new repairs an old failed/interrupted directory instead of allocating a fresh immutable attempt.
+        snapshot = _snapshot(_fixture_candidates())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._RUN_ROOT_ANTIGRAVITY", root), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._ensure_clean_reviewed_commit_antigravity"), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._load_prefix_antigravity", side_effect=ValueError("failed source")):
+                with self.assertRaisesRegex(ValueError, "failed source"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            first = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            first_before = self._attempt_bytes_antigravity(first)
+            def interrupt(_observer):
+                os.kill(os.getpid(), signal.SIGTERM)
+                return snapshot
+            with patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._RUN_ROOT_ANTIGRAVITY", root), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._ensure_clean_reviewed_commit_antigravity"), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._verify_with_observer_antigravity", side_effect=interrupt):
+                with self.assertRaisesRegex(RuntimeError, "SIGTERM"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            second = root / "attempts_antigravity" / "attempt_0001_antigravity"
+            second_before = self._attempt_bytes_antigravity(second)
+            self.assertEqual(self._attempt_bytes_antigravity(first), first_before)
+            with patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._RUN_ROOT_ANTIGRAVITY", root), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._ensure_clean_reviewed_commit_antigravity"), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._load_prefix_antigravity", side_effect=ValueError("third failure")):
+                with self.assertRaisesRegex(ValueError, "third failure"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            self.assertTrue((root / "attempts_antigravity" / "attempt_0002_antigravity").is_dir())
+            self.assertEqual(self._attempt_bytes_antigravity(first), first_before)
+            self.assertEqual(self._attempt_bytes_antigravity(second), second_before)
+            self.assertFalse((first / "selection_antigravity.json").exists())
+            self.assertFalse((second / "selection_antigravity.json").exists())
+
+    def test_successful_runtime_calls_replay_selection_artifacts_replay_clean_then_complete(self) -> None:
+        # Break caught: the runtime writes either artifact before selection or completes before its final authority/HEAD checks.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity as runtime
+        snapshot = _snapshot(_fixture_candidates())
+        selection = select_hard_empty_single_shot_antigravity(snapshot)
+        calls: list[str] = []
+        real_write = runtime.write_create_only_antigravity
+        real_terminal = runtime.ProgressWriterAntigravity.terminal_antigravity
+        def clean(_commit): calls.append("clean")
+        def first_replay(observer):
+            calls.append("replay")
+            return self._replay(snapshot)(observer)
+        def choose(value):
+            calls.append("selection")
+            return selection
+        def write(path, payload):
+            calls.append(Path(path).name)
+            return real_write(path, payload)
+        def reverify():
+            calls.append("second_replay")
+            return snapshot
+        def terminal(writer, *, stage, latest_error):
+            calls.append(stage)
+            return real_terminal(writer, stage=stage, latest_error=latest_error)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(runtime, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(runtime, "FROZEN_CONFIG", SimpleNamespace(dataset_count=len(snapshot.context_datasets))), \
+                 patch.object(runtime, "_ensure_clean_reviewed_commit_antigravity", side_effect=clean), \
+                 patch.object(runtime, "_load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                 patch.object(runtime, "_verify_with_observer_antigravity", side_effect=first_replay), \
+                 patch.object(runtime, "select_hard_empty_single_shot_antigravity", side_effect=choose), \
+                 patch.object(runtime, "validate_production_selection_antigravity", side_effect=lambda value: value), \
+                 patch.object(runtime, "write_create_only_antigravity", side_effect=write), \
+                 patch.object(runtime, "_reverify_sources_after_artifacts_antigravity", side_effect=reverify), \
+                 patch.object(runtime.ProgressWriterAntigravity, "terminal_antigravity", new=terminal):
+                run_exp441_new_antigravity(reviewed_commit="a" * 40)
+        self.assertEqual(calls, ["clean", "replay", "selection", "source_snapshot_antigravity.json", "selection_antigravity.json", "second_replay", "clean", "complete"])
 
     def test_production_shaped_parent_observer_reaches_1117_terminal_counts_and_rechecks_sources(self) -> None:
         # Break caught: a mocked successful source verifier skips parent events, misses the full prefix, or lacks the second authority check.

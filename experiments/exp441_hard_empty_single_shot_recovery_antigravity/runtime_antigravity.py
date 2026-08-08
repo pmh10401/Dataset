@@ -11,7 +11,8 @@ from typing import Mapping
 from .artifacts_antigravity import canonical_json_bytes_antigravity, parse_canonical_json_bytes_antigravity, read_pinned_regular_bytes_antigravity, write_create_only_antigravity
 from .config_antigravity import FROZEN_CONFIG, governance_payload_antigravity
 from .contracts_antigravity import (
-    CompletedAttemptAntigravity, FrozenSourceSnapshotAntigravity, SelectionResultAntigravity,
+    CandidateEvidenceAntigravity, CompletedAttemptAntigravity, FrozenSourceSnapshotAntigravity,
+    RankedCandidateAntigravity, SelectionResultAntigravity,
     validate_production_selection_antigravity,
 )
 from .progress_antigravity import ProgressWriterAntigravity
@@ -134,18 +135,52 @@ def _validate_terminal_artifact_governance_antigravity(payload: Mapping[str, obj
 
 def _validate_selection_artifact_antigravity(payload: Mapping[str, object]) -> None:
     expected = set(SelectionResultAntigravity.__dataclass_fields__) | {"reviewed_commit", "source_snapshot_sha256"} | set(governance_payload_antigravity())
-    if set(payload) != expected or not isinstance(payload["reviewed_commit"], str) or len(payload["reviewed_commit"]) != 40 or not isinstance(payload["source_snapshot_sha256"], str) or len(payload["source_snapshot_sha256"]) != 64:
+    if (set(payload) != expected or not _is_lower_hex_antigravity(payload["reviewed_commit"], 40) or
+            not _is_lower_hex_antigravity(payload["source_snapshot_sha256"], 64)):
         raise ValueError("selection artifact schema is invalid")
+    selection = _selection_from_payload_antigravity(payload)
+    if selection.to_payload() != {name: payload[name] for name in SelectionResultAntigravity.__dataclass_fields__}:
+        raise ValueError("selection artifact content is invalid")
     _validate_terminal_artifact_governance_antigravity(payload)
 
 
 def _validate_failure_artifact_antigravity(payload: Mapping[str, object]) -> None:
     expected = {"attempt_sequence", "reviewed_commit", "status", "error"} | set(governance_payload_antigravity())
     if (set(payload) != expected or type(payload["attempt_sequence"]) is not int or payload["attempt_sequence"] < 0 or
-            not isinstance(payload["reviewed_commit"], str) or len(payload["reviewed_commit"]) != 40 or
+            not _is_lower_hex_antigravity(payload["reviewed_commit"], 40) or
             payload["status"] not in {"failed", "interrupted"} or not isinstance(payload["error"], str) or not payload["error"]):
         raise ValueError("failure artifact schema is invalid")
     _validate_terminal_artifact_governance_antigravity(payload)
+
+
+def _is_lower_hex_antigravity(value: object, length: int) -> bool:
+    return isinstance(value, str) and len(value) == length and all(character in "0123456789abcdef" for character in value)
+
+
+def _selection_from_payload_antigravity(payload: Mapping[str, object]) -> SelectionResultAntigravity:
+    """Reopen all nested selection fields through their exact immutable contracts."""
+    def candidates(name: str) -> tuple[CandidateEvidenceAntigravity, ...]:
+        rows = payload[name]
+        if not isinstance(rows, list):
+            raise ValueError("selection artifact candidate population is invalid")
+        return tuple(CandidateEvidenceAntigravity.from_payload(row) for row in rows)
+
+    def ranked(name: str) -> tuple[RankedCandidateAntigravity, ...]:
+        rows = payload[name]
+        if not isinstance(rows, list):
+            raise ValueError("selection artifact ranked population is invalid")
+        return tuple(RankedCandidateAntigravity.from_payload(row) for row in rows)
+
+    coordinates = payload["hard_coordinates"]
+    if not isinstance(coordinates, list) or any(not isinstance(item, list) or len(item) != 2 for item in coordinates):
+        raise ValueError("selection artifact Hard coordinates are invalid")
+    return SelectionResultAntigravity(
+        provisional_candidates=candidates("provisional_candidates"),
+        outside_hard_candidates=candidates("outside_hard_candidates"),
+        eligible_candidates=candidates("eligible_candidates"),
+        winners=ranked("winners"), selected=ranked("selected"),
+        hard_coordinates=frozenset((item[0], item[1]) for item in coordinates),
+    )
 
 
 def _verify_with_observer_antigravity(observer):
