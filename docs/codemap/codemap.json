@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T14:58:59Z",
-  "generated_from_commit": "c499f6c9f430e1ceaccb5c03415490bddab0c5bd",
+  "generated_at": "2026-08-08T15:34:38Z",
+  "generated_from_commit": "c4933529d4ac12b0c15d4f21222a1c6ff3241792",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -27,7 +27,7 @@
     "Exp440 test-first implementation plan for isolated multi-depth calibration, budget, acceleration, runtime, publication, and post-freeze evaluation",
     "Exp441 approved selector-only retrospective reproduction design: frozen Exp440 provisional evidence, Hard-empty dataset eligibility, one candidate per dataset, global budget 30, post-freeze descriptive evaluation, exact NumPy 2.4.6 PCG64 bootstrap replay, and no scientific-winner claim",
     "Exp441 twelve-commit test-first implementation plan bound to the final reviewed design SHA, an exact positive prediction-source allowlist, separate Exp416 Hard-array and Exp441 selected-JSONL coordinate identities, exact control-record schemas with non-promotion champion history, an isolated test-only one-worker reference beside the immutable 11-worker production replay, strict nine-field governance tests, pure Hard-empty selection, immutable attempts, fixed four-command lifecycle, frozen-context 1,117-dataset label reads, and create-only prediction/evaluation publication",
-    "Exp441 Task 10 is parent-verified, independently reviewed, and shipped at cd5709d after two fix rounds: pure retrospective evaluation is covered by 37 focused and 177 full passing tests with 7 mutation red checks; no official PID, checkpoint, publication, evaluation, run root, or TEST-label access exists, Task 11 architecture is reviewed but not implemented, and official Exp441 routes remain gated by DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW."
+    "Exp441 Task 11 fixed-root evaluation publication is implemented through c4933529 after three bounded evidence fix rounds: the no-argument route freezes and replays exactly eight descriptor-pinned artifacts, retains source authority through return, binds the exact label snapshot, and rejects rehashed semantic tampering; 54 fresh parent-focused tests and 194 implementer full tests pass, independent re-review remains pending, no official PID, checkpoint, publication, evaluation, run root, SQLite session, or real TEST-label access exists, and official routes remain gated by DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW."
   ],
   "nodes": [
     {
@@ -37,7 +37,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control files reconcile Exp440 as completed but not promoted and record Exp441 Task 7 as implemented, independently reviewed, and shipped at 7d403fed. Task 8 pure bootstrap is parent-verified, independently reviewed, and shipped at 81cea98 after one test-hardening fix round with 7 focused and 157 full tests passed. Task 9 frozen-context label boundary is parent-verified, independently reviewed, and shipped at 615b277 after three fix rounds with 9 focused and 166 full tests passed. Task 10 pure retrospective evaluation is parent-verified, independently reviewed, and shipped at cd5709d after two fix rounds with 37 focused and 177 full tests passed and 7 mutation red checks; Task 11 architecture is reviewed but not implemented. No official Exp441 PID, checkpoint, publication, evaluation, run root, SQLite session, or TEST-label access exists, and readiness/new/inspect/evaluate remain gated until Task 12 final review.",
+      "role": "The control files reconcile Exp440 as completed but not promoted and record Exp441 Tasks 7-10 as independently reviewed. Task 11 fixed-root evaluation publication is implemented through c4933529: it freezes exactly eight private artifacts, replays their closed hash graph and bootstrap, preserves two immutable failure families, retains destination descriptors across the final authority check, binds the exact label snapshot order and selection, and rejects all governance and rehashed semantic artifact mutations. Independent Task 11 re-review is pending. No official Exp441 PID, checkpoint, publication, evaluation, run root, SQLite session, or real TEST-label access exists, and readiness/new/inspect/evaluate remain gated until Task 12 final review.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -55,7 +55,7 @@
         "The approved Exp441 design is selector-only: it replays the frozen Exp440 provisional pool, admits only datasets with zero frozen Hard coordinates, retains at most one coordinate per dataset and 30 globally, keeps TEST labels behind a new prediction freeze, and treats the already-observed bootstrap intervals as descriptive post-selection evidence rather than confirmation; retrospective replay freezes context dataset order, NumPy 2.4.6, PCG64, int64 sampling shape, the project F1 formula, linear quantiles, full-precision expected values, and 1e-15 absolute comparison tolerance.",
         "The Exp441 implementation plan uses twelve reviewer-sized TDD commits bound to the final same-commit design content SHA, keeps forbidden Exp440 evaluation strings out of production config through an exact positive allowlist, tests Exp416 Hard-array and Exp441 selected-JSONL identities separately, stores Exp441 only as exact-schema catalog/state and non-promotion champion-history records rather than a pending candidate, isolates a named sequential reference interface from the fixed 11-worker production route with AST and call-spy guards, requires exact nine-field governance on each governing control/terminal/failure artifact, prohibits SQLite in readiness/new/inspect, validates candidate and Hard ranges before label-capable imports, permits one descriptor-bound post-freeze quick-check followed only by 1,117 context-parameterized TEST-label queries, preserves failed attempts and staging evidence, updates the map triplet in every boundary-changing commit, and requires a fresh Sol/High final review before readiness.",
         "Task 1 freezes the reviewed design SHA, exact four-command runbook, fixed readiness/attempt/publication/evaluation paths, Exp440 failure evidence, Exp441 exact control schemas, and retrospective non-promotion governance before any Exp441 product module exists.",
-        "Task 7 is implemented, independently reviewed, and shipped at 7d403fed; 31 focused and 150 full Exp441 tests passed. Task 8 is parent-verified, independently reviewed, and shipped at 81cea98 after one test-hardening fix round; 7 focused and 157 full Exp441 tests passed. Task 9 is parent-verified, independently reviewed, and shipped at 615b277 after three fix rounds; 9 focused and 166 full Exp441 tests passed. Task 10 is parent-verified, independently reviewed, and shipped at cd5709d after two fix rounds; 37 focused and 177 full Exp441 tests passed with 7 mutation red checks. Task 11 architecture is reviewed but not implemented. The official readiness/new/inspect/evaluate routes must not run until Task 12 final review; the DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW sentinel is authoritative.",
+        "Task 7 is shipped at 7d403fed, Task 8 at 81cea98, Task 9 at 615b277, and Task 10 at cd5709d after independent review. Task 11 implementation and three bounded evidence fix rounds reach c4933529; 54 fresh parent-focused tests and 194 implementer full tests pass, while independent Task 11 re-review is still pending. The official readiness/new/inspect/evaluate routes must not run until Task 12 final review; the DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW sentinel is authoritative.",
         "The fixed Exp441 run parent is absent after the user-approved recoverable Trash move of the three inactive precontract test fixtures. The exact manifest is docs/EXP441_PRECONTRACT_TRASH_MANIFEST_antigravity.json; no official artifact was deleted."
       ],
       "evidence": [
@@ -2485,7 +2485,7 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments",
-      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it rejects any checkpoint-root inventory substitution before parsing, parses 1,117 records in fixed context acceptance order through eleven CPU workers with immediate immutable prefix events, validates the complete Exp404 Hard manifest and every candidate/Hard TEST row range, and freezes zero label access without any SQLite or Exp417 input route. Exp441 Task 7 adds atomic readiness ownership of the formerly absent fixed parent: it records canonical zero-label source/selector replay, exact CPU/11-worker and environment evidence, preserves failed private staging, rolls a post-rename parent-fsync failure back through a no-clobber failed sibling, and binds `new` to byte-identical clean-HEAD source evidence. Exp441 Task5 adds a process-owned, immutable label-free attempt: it allocates the smallest absent attempt directory, writes atomic progress/PID plus append-only parent acceptance logs, runs the fixed eleven-worker source verifier, performs the pure selector, creates source/selection evidence, replays source authority after artifacts, and never opens SQLite or an evaluator. Task 9 frozen-context label loading is parent-verified, independently reviewed, and shipped at 615b277 after three fix rounds. Task 10 pure retrospective evaluation is now parent-verified, independently reviewed, and shipped at cd5709d after two fix rounds with 37 focused and 177 full tests passed and 7 mutation red checks. Task 11 architecture is reviewed but not implemented.",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it rejects any checkpoint-root inventory substitution before parsing, parses 1,117 records in fixed context acceptance order through eleven CPU workers with immediate immutable prefix events, validates the complete Exp404 Hard manifest and every candidate/Hard TEST row range, and freezes zero label access without any SQLite or Exp417 input route. Exp441 Task 7 adds atomic readiness ownership of the formerly absent fixed parent: it records canonical zero-label source/selector replay, exact CPU/11-worker and environment evidence, preserves failed private staging, rolls a post-rename parent-fsync failure back through a no-clobber failed sibling, and binds `new` to byte-identical clean-HEAD source evidence. Exp441 Task5 adds a process-owned, immutable label-free attempt: it allocates the smallest absent attempt directory, writes atomic progress/PID plus append-only parent acceptance logs, runs the fixed eleven-worker source verifier, performs the pure selector, creates source/selection evidence, replays source authority after artifacts, and never opens SQLite or an evaluator. Task 9 frozen-context label loading is parent-verified and shipped at 615b277. Task 10 pure retrospective evaluation is reviewed and shipped at cd5709d. Task 11 fixed eight-file evaluation publication/replay is implemented through c4933529 with retained destination authority, exact label-snapshot binding, two immutable failure families, and adversarial governance, inventory, ordering, preservation, and semantic-tamper evidence; independent re-review remains pending.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2952,7 +2952,8 @@
         "paired_dataset_bootstrap_antigravity",
         "load_frozen_context_labels_antigravity",
         "compute_retrospective_evaluation_antigravity",
-        "evaluate_exp441_antigravity"
+        "evaluate_exp441_antigravity",
+        "FrozenEvaluationAntigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_reporting_antigravity.py",
@@ -2976,7 +2977,7 @@
         "Task 8 requires NumPy 2.4.6, Generator(PCG64(44120260808)), exactly 20,000 paired int64 draws of shape 1,117, and linear 2.5/97.5 quantiles.",
         "Project F1 validates four finite nonnegative confusion counts through the precision/recall harmonic path; bootstrap CI endpoints are built-in floats and never feed prediction.",
         "The Task 8 module imports no evaluator or SQLite dependency and only produces retrospective confidence-interval evidence.",
-        "Task 9 imports Exp417 only function-locally after identical publication/source/selector preflight. Task 10 remains pure. Task 11 is an exact descriptor-pinned, create-only review-only evaluation publication/replay with no retuning controls."
+        "Task 9 imports Exp417 only function-locally after identical publication/source/selector preflight. Task 10 remains pure. Task 11 is an exact descriptor-pinned, create-only review-only evaluation publication/replay with no retuning controls; it retains all eight destination descriptors through final source preflight, binds labels to the exact dataset order and selection, rejects rehashed semantic tampering, and separates pre-rename failed staging from post-rename audit evidence."
       ],
       "evidence": [
         {
@@ -3142,6 +3143,22 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
           "symbol": "def _replay_evaluation_payloads_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/contracts_antigravity.py",
+          "symbol": "class FrozenEvaluationAntigravity:"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "def _write_failure_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_task11_semantic_eight_artifact_matrix_rejects_rehashed_attacker_payloads("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_task11_create_high_level_phases_follow_the_preregistered_order("
         },
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_evaluation_antigravity.py",
@@ -3887,6 +3904,10 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
           "symbol": "SELECT i.instance_index,i.label FROM instances"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "_LABEL_SQL_ANTIGRAVITY ="
         }
       ]
     },
@@ -3902,6 +3923,10 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/cli_antigravity.py",
           "symbol": "evaluate_exp438_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/cli_antigravity.py",
+          "symbol": "result = evaluate_exp441_antigravity()"
         }
       ]
     },
@@ -3913,6 +3938,14 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/reporting_antigravity.py",
           "symbol": "inspect_exp438_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "publication = inspect_exp441_publication_antigravity()"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/evaluation_antigravity.py",
+          "symbol": "snapshot = verify_frozen_sources_antigravity()"
         }
       ]
     },
@@ -4020,15 +4053,15 @@
     },
     {
       "id": "exp441_immutable_attempt_flow",
-      "label": "Exp441 Task 10 reviewed handoff / Task 11 architecture next",
-      "trigger": "Task 10 pure retrospective evaluation is parent-verified, independently reviewed, and shipped at cd5709d after two fix rounds; 37 focused and 177 full Exp441 tests passed with 7 mutation red checks. Task 11 architecture is reviewed but not implemented. Do not run official readiness/new/inspect/evaluate until Task 12 final review (DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW).",
+      "label": "Exp441 Task 11 immutable evaluation publication and review gate",
+      "trigger": "After the reviewed Task 10 pure calculation, the no-argument Task 11 route preflights the frozen publication/source/selector, opens the sole delayed label boundary, computes once, revalidates authority, stages exactly eight private artifacts, and exclusively publishes or fully replays them. Task 11 implementation reaches c4933529 with 54 fresh parent-focused and 194 implementer full tests passing; independent re-review remains required. Do not run official readiness/new/inspect/evaluate until Task 12 final review (DO_NOT_RUN_OFFICIAL_EXP441_UNTIL_TASK12_FINAL_REVIEW).",
       "steps": [
         "exp438_frequency_runtime",
         "exp438_publication_evaluation",
         "exp417_inputs",
         "sqlite_store"
       ],
-      "outcome": "The Task 9 loader remains the sole delayed label boundary. Task 10 does not invoke it or touch any source/publication/selector/SQLite/filesystem route: it uses snapshot context order and actual sparse identities to calculate immutable per-dataset and aggregate confusion/F1/rescue/regression facts, calls the fixed Task 8 bootstrap once on the exact 1,117 by 9 float64 rows, compares only fixed constants, and returns a no-winner retrospective status. Task 10 review is shipped at cd5709d after two fix rounds; Task 11 architecture is reviewed but not implemented, and no official process, PID, checkpoint, publication, evaluation, run root, SQLite, or TEST-label route was opened."
+      "outcome": "Task 11 creates or replays one exact eight-file, descriptor-pinned, review-only evaluation with a closed acyclic hash graph, one deterministic Task 8 bootstrap replay, exact label-snapshot authority, retained destination pins through final preflight, and separate immutable pre- versus post-rename failure evidence. Canonical rehashed semantic tampering of every artifact family and every governance mutation family is rejected. No official process, PID, checkpoint, publication, evaluation, run root, SQLite session, or real TEST-label route was opened during implementation."
     }
   ],
   "unknown_relationships": 0
