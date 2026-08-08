@@ -462,6 +462,30 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
             self.assertEqual(replayed.evaluation_sha256, sha256(payloads["artifact_sha256_antigravity.json"]).hexdigest())
             self.assertEqual({name: (destination / name).read_bytes() for name in payloads}, before)
 
+    def test_task11_existing_pin_rejects_member_replacement_during_preflight(self) -> None:
+        """The existing-destination return retains its first descriptor through later authority checks."""
+        snapshot, _selection = _snapshot_and_selection()
+        zero = SelectionResultAntigravity((), (), (), (), (), frozenset())
+        publication = FrozenPublicationAntigravity("3" * 64, "4" * 64, "5" * 64, "6" * 64, zero)
+        payloads = evaluation._result_artifacts_antigravity(self._complete_result(snapshot.context_datasets), publication)
+        preflight = (publication, snapshot, zero, snapshot.context_datasets, MappingProxyType(dict(snapshot.test_row_count_by_dataset)))
+        with tempfile.TemporaryDirectory() as temporary:
+            parent, destination = Path(temporary), Path(temporary) / "evaluation_antigravity"
+            os.mkdir(destination, 0o700)
+            for name, payload in payloads.items(): evaluation.write_create_only_antigravity(destination / name, payload)
+            target = destination / "evaluation_antigravity.json"
+            def mutate() -> object:
+                replacement = destination / "replacement_antigravity.json"
+                evaluation.write_create_only_antigravity(replacement, target.read_bytes())
+                os.replace(replacement, target)
+                return preflight
+            with patch.object(evaluation, "_EVALUATION_DESTINATION_ANTIGRAVITY", destination), \
+                 patch.object(evaluation, "_preflight_antigravity", side_effect=mutate):
+                with self.assertRaisesRegex(ValueError, "pinned inventory"):
+                    evaluation.evaluate_exp441_antigravity()
+            self.assertTrue(target.exists())
+            self.assertEqual(len(list(parent.glob("failed_evaluation_audit_*_antigravity"))), 1)
+
     def test_task11_pre_rename_failure_preserves_staging_and_never_creates_destination(self) -> None:
         """A pre-label engineering fault preserves only a failed private staging sibling."""
         with tempfile.TemporaryDirectory() as temporary:
@@ -509,6 +533,37 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
             self.assertEqual(list(destination.iterdir()), [])
             self.assertEqual(len(list(parent.glob("failed_evaluation_staging_*_antigravity"))), 1)
 
+    def test_task11_rejects_reordered_or_alternate_label_authority_before_compute(self) -> None:
+        """Task 10 cannot receive labels for a reordered context or an alternate same-sized selection."""
+        snapshot, selection = _snapshot_and_selection()
+        publication = _publication(snapshot, selection)
+        alternate = _snapshot_and_selection()[1]
+        object.__setattr__(alternate, "selected", tuple(reversed(alternate.selected)))
+        original = evaluation.FrozenContextLabelsAntigravity(snapshot.context_datasets,
+            {dataset: () for dataset in snapshot.context_datasets}, publication.publication_sha256,
+            publication.source_audit_sha256, selection, 1, 1117, 0)
+        cases = (
+            evaluation.FrozenContextLabelsAntigravity(tuple(reversed(snapshot.context_datasets)),
+                {dataset: () for dataset in snapshot.context_datasets}, publication.publication_sha256,
+                publication.source_audit_sha256, selection, 1, 1117, 0),
+            evaluation.FrozenContextLabelsAntigravity(snapshot.context_datasets,
+                {dataset: () for dataset in snapshot.context_datasets}, publication.publication_sha256,
+                publication.source_audit_sha256, alternate, 1, 1117, 0),
+        )
+        preflight = (publication, snapshot, selection, snapshot.context_datasets,
+                     MappingProxyType(dict(snapshot.test_row_count_by_dataset)))
+        for altered in cases:
+            with self.subTest(selection=altered.selection != original.selection), tempfile.TemporaryDirectory() as temporary:
+                destination = Path(temporary) / "evaluation_antigravity"
+                with patch.object(evaluation, "_EVALUATION_DESTINATION_ANTIGRAVITY", destination), \
+                     patch.object(evaluation, "_preflight_antigravity", return_value=preflight), \
+                     patch.object(evaluation, "load_frozen_context_labels_antigravity", return_value=altered), \
+                     patch.object(evaluation, "compute_retrospective_evaluation_antigravity", side_effect=AssertionError("compute called")):
+                    with self.assertRaisesRegex(ValueError, "frozen labels"):
+                        evaluation.evaluate_exp441_antigravity()
+                self.assertFalse(destination.exists())
+                self.assertEqual(len(list(Path(temporary).glob("failed_evaluation_staging_*_antigravity"))), 1)
+
     def test_task11_post_rename_failure_keeps_destination_and_writes_separate_audit(self) -> None:
         """No post-rename fault may repair or add to the immutable eight-file destination."""
         snapshot, _selection = _snapshot_and_selection()
@@ -521,19 +576,13 @@ class Exp441RetrospectiveEvaluationAntigravityTests(unittest.TestCase):
                      MappingProxyType(dict(snapshot.test_row_count_by_dataset)))
         with tempfile.TemporaryDirectory() as temporary:
             parent, destination = Path(temporary), Path(temporary) / "evaluation_antigravity"
-            real_inspect = evaluation._inspect_evaluation_destination_antigravity
-            calls = 0
-            def fail_after_commit(path: Path) -> object:
-                nonlocal calls
-                calls += 1
-                if calls == 1:
-                    raise OSError("synthetic post-rename replay")
-                return real_inspect(path)
+            def fail_after_commit(pinned: object) -> object:
+                raise OSError("synthetic post-rename replay")
             with patch.object(evaluation, "_EVALUATION_DESTINATION_ANTIGRAVITY", destination), \
                  patch.object(evaluation, "_preflight_antigravity", return_value=preflight), \
                  patch.object(evaluation, "load_frozen_context_labels_antigravity", return_value=labels), \
                  patch.object(evaluation, "compute_retrospective_evaluation_antigravity", return_value=self._complete_result(snapshot.context_datasets)), \
-                 patch.object(evaluation, "_inspect_evaluation_destination_antigravity", side_effect=fail_after_commit):
+                 patch.object(evaluation, "_replay_pinned_evaluation_antigravity", side_effect=fail_after_commit):
                 with self.assertRaisesRegex(OSError, "post-rename"):
                     evaluation.evaluate_exp441_antigravity()
             self.assertEqual(set(path.name for path in destination.iterdir()), set(evaluation._EVALUATION_FILENAMES_ANTIGRAVITY))

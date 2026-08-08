@@ -660,11 +660,12 @@ def _preflight_matches_replay_antigravity(replayed: FrozenEvaluationAntigravity,
         raise ValueError("replayed evaluation authority changed")
 
 
-def _inspect_evaluation_destination_antigravity(destination: Path) -> FrozenEvaluationAntigravity:
-    with pin_exact_regular_inventory_antigravity(destination, _EVALUATION_FILENAMES_ANTIGRAVITY) as pinned:
-        result = _replay_evaluation_payloads_antigravity(pinned.payloads)
-        pinned.revalidate_antigravity()
-        return result
+def _replay_pinned_evaluation_antigravity(pinned: object) -> FrozenEvaluationAntigravity:
+    """Replay retained evaluation descriptors without reopening their namespace."""
+    payloads = getattr(pinned, "payloads", None)
+    result = _replay_evaluation_payloads_antigravity(payloads)
+    pinned.revalidate_antigravity()
+    return result
 
 
 def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
@@ -679,11 +680,13 @@ def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
         if destination.exists() or destination.is_symlink():
             phase = "existing_replay"
             committed = True
-            replayed = _inspect_evaluation_destination_antigravity(destination)
-            phase = "existing_preflight"
-            publication, snapshot, selection, datasets, _rows = _preflight_antigravity()
-            _preflight_matches_replay_antigravity(replayed, publication, snapshot, selection, datasets)
-            return replayed
+            with pin_exact_regular_inventory_antigravity(destination, _EVALUATION_FILENAMES_ANTIGRAVITY) as pinned:
+                replayed = _replay_pinned_evaluation_antigravity(pinned)
+                phase = "existing_preflight"
+                publication, snapshot, selection, datasets, _rows = _preflight_antigravity()
+                _preflight_matches_replay_antigravity(replayed, publication, snapshot, selection, datasets)
+                pinned.revalidate_antigravity()
+                return replayed
         if not parent.is_dir() or parent.is_symlink():
             raise ValueError("evaluation parent is unavailable")
         staging = parent / f".evaluation_{uuid4().hex}_staging_antigravity"
@@ -693,6 +696,10 @@ def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
         phase = "labels"
         labels_opened = True
         frozen_labels = load_frozen_context_labels_antigravity()
+        if (frozen_labels.context_datasets != datasets or frozen_labels.selection != selection
+                or frozen_labels.publication_sha256 != publication.publication_sha256
+                or frozen_labels.source_audit_sha256 != publication.source_audit_sha256):
+            raise ValueError("frozen labels changed authority")
         phase = "calculation"
         calculated = compute_retrospective_evaluation_antigravity(frozen_labels)
         phase = "post_calculation_preflight"
@@ -724,11 +731,13 @@ def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
             fsync_directory_antigravity(parent)
             pinned.revalidate_at_antigravity(destination, renamed_antigravity=True)
         phase = "destination_replay"
-        replayed = _inspect_evaluation_destination_antigravity(destination)
-        phase = "final_preflight"
-        final_publication, final_snapshot, final_selection, final_datasets, _final_rows = _preflight_antigravity()
-        _preflight_matches_replay_antigravity(replayed, final_publication, final_snapshot, final_selection, final_datasets)
-        return replayed
+        with pin_exact_regular_inventory_antigravity(destination, _EVALUATION_FILENAMES_ANTIGRAVITY) as pinned:
+            replayed = _replay_pinned_evaluation_antigravity(pinned)
+            phase = "final_preflight"
+            final_publication, final_snapshot, final_selection, final_datasets, _final_rows = _preflight_antigravity()
+            _preflight_matches_replay_antigravity(replayed, final_publication, final_snapshot, final_selection, final_datasets)
+            pinned.revalidate_antigravity()
+            return replayed
     except BaseException as error:
         _write_failure_antigravity(parent, staging, error, phase, labels_opened, committed)
         raise
