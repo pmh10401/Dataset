@@ -13,7 +13,8 @@ from typing import Mapping
 from .artifacts_antigravity import (
     canonical_json_bytes_antigravity, canonical_jsonl_bytes_antigravity,
     exclusive_rename_antigravity, fsync_directory_antigravity,
-    parse_canonical_json_bytes_antigravity, read_pinned_regular_bytes_antigravity,
+    parse_canonical_json_bytes_antigravity, pin_exact_regular_inventory_antigravity,
+    read_pinned_regular_bytes_antigravity,
     write_create_only_antigravity,
 )
 from .config_antigravity import FROZEN_CONFIG, governance_payload_antigravity
@@ -187,19 +188,18 @@ def _validate_runtime_attempt_evidence_antigravity(authority: Mapping[str, bytes
         raise ValueError("attempt text log does not match frozen source")
 
 
-def _parse_attempt_antigravity(attempt: CompletedAttemptAntigravity) -> tuple[Path, dict[str, object], dict[str, object], dict[str, bytes]]:
-    path = _attempt_path_antigravity(attempt)
-    required = {"source_snapshot_antigravity.json", "selection_antigravity.json", "progress_antigravity.json", "pid_antigravity", "events_antigravity.jsonl", "text_antigravity.log"}
-    entries = {entry.name: entry for entry in path.iterdir()}
-    if set(entries) != required:
+_TERMINAL_ATTEMPT_AUTHORITY_NAMES_ANTIGRAVITY = (
+    "source_snapshot_antigravity.json", "selection_antigravity.json", "progress_antigravity.json",
+    "pid_antigravity", "events_antigravity.jsonl", "text_antigravity.log",
+)
+
+
+def _parse_pinned_attempt_antigravity(attempt: CompletedAttemptAntigravity, authority_payloads: Mapping[str, bytes]) -> tuple[dict[str, object], dict[str, object], dict[str, bytes]]:
+    if set(authority_payloads) != set(_TERMINAL_ATTEMPT_AUTHORITY_NAMES_ANTIGRAVITY):
         raise ValueError("attempt evidence is incomplete")
     values: dict[str, object] = {}
-    authority: dict[str, bytes] = {}
-    for name in required:
-        item = entries[name]
-        if item.is_symlink() or not stat.S_ISREG(item.stat(follow_symlinks=False).st_mode) or stat.S_IMODE(item.stat(follow_symlinks=False).st_mode) != 0o600:
-            raise ValueError("attempt evidence is invalid")
-        authority[name] = read_pinned_regular_bytes_antigravity(item)[0]
+    authority = dict(authority_payloads)
+    for name in _TERMINAL_ATTEMPT_AUTHORITY_NAMES_ANTIGRAVITY:
         if name.endswith(".json") or name == "pid_antigravity":
             values[name] = parse_canonical_json_bytes_antigravity(authority[name])
     if terminal_attempt_authority_sha256_from_bytes_antigravity(authority) != attempt.terminal_authority_sha256:
@@ -226,6 +226,13 @@ def _parse_attempt_antigravity(attempt: CompletedAttemptAntigravity) -> tuple[Pa
     if set(selection) != required_selection:
         raise ValueError("attempt selection schema is invalid")
     _exact_governance_antigravity(selection)
+    return snapshot, selection, authority
+
+
+def _parse_attempt_antigravity(attempt: CompletedAttemptAntigravity) -> tuple[Path, dict[str, object], dict[str, object], dict[str, bytes]]:
+    path = _attempt_path_antigravity(attempt)
+    with pin_exact_regular_inventory_antigravity(path, _TERMINAL_ATTEMPT_AUTHORITY_NAMES_ANTIGRAVITY) as pinned:
+        snapshot, selection, authority = _parse_pinned_attempt_antigravity(attempt, pinned.payloads)
     return path, snapshot, selection, authority
 
 
@@ -448,11 +455,12 @@ def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPu
             raise ValueError("frozen sources changed before publication rename")
         if destination.exists() or destination.is_symlink():
             raise ValueError("publication destination raced")
-        # This strict reopen/pin/parse/identity comparison is immediately followed by RENAME_EXCL.
-        _final_path, final_snapshot, final_selection, final_authority = _parse_attempt_antigravity(attempt)
-        if (final_authority != authority or final_snapshot != snapshot_payload or final_selection != selection_payload):
-            raise ValueError("terminal attempt authority changed before publication rename")
-        exclusive_rename_antigravity(staging, destination)
+        # Keep the complete grouped descriptor pin through strict comparison and RENAME_EXCL.
+        with pin_exact_regular_inventory_antigravity(_attempt_path, _TERMINAL_ATTEMPT_AUTHORITY_NAMES_ANTIGRAVITY) as final_pinned:
+            final_snapshot, final_selection, final_authority = _parse_pinned_attempt_antigravity(attempt, final_pinned.payloads)
+            if (final_authority != authority or final_snapshot != snapshot_payload or final_selection != selection_payload):
+                raise ValueError("terminal attempt authority changed before publication rename")
+            exclusive_rename_antigravity(staging, destination)
         fsync_directory_antigravity(destination.parent)
         return inspect_exp441_publication_antigravity()
     except BaseException as error:

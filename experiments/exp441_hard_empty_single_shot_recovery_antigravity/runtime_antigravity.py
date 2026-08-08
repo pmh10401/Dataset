@@ -5,11 +5,14 @@ from hashlib import sha256
 import os
 from pathlib import Path
 import signal
-import stat
 import subprocess
 from typing import Mapping
 
-from .artifacts_antigravity import canonical_json_bytes_antigravity, parse_canonical_json_bytes_antigravity, read_pinned_regular_bytes_antigravity, write_create_only_antigravity
+from .artifacts_antigravity import (
+    canonical_json_bytes_antigravity, parse_canonical_json_bytes_antigravity,
+    pin_exact_regular_inventory_antigravity, read_pinned_regular_bytes_antigravity,
+    write_create_only_antigravity,
+)
 from .config_antigravity import FROZEN_CONFIG, governance_payload_antigravity
 from .contracts_antigravity import (
     CandidateEvidenceAntigravity, CompletedAttemptAntigravity, FrozenSourceSnapshotAntigravity,
@@ -37,20 +40,9 @@ class _InterruptedAttemptAntigravity(RuntimeError):
 
 
 def terminal_attempt_authority_sha256_antigravity(attempt: Path) -> str:
-    """Hash the exact finalized six-file attempt authority through pinned descriptors."""
-    root = Path(attempt)
-    if root.is_symlink() or not root.is_dir() or stat.S_IMODE(root.stat(follow_symlinks=False).st_mode) != 0o700:
-        raise ValueError("terminal attempt root is invalid")
-    entries = {entry.name: entry for entry in root.iterdir()}
-    if set(entries) != set(_TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY):
-        raise ValueError("terminal attempt inventory is invalid")
-    authority: dict[str, bytes] = {}
-    for name in _TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY:
-        path = entries[name]
-        if path.is_symlink() or not stat.S_ISREG(path.stat(follow_symlinks=False).st_mode) or stat.S_IMODE(path.stat(follow_symlinks=False).st_mode) != 0o600:
-            raise ValueError("terminal attempt authority entry is invalid")
-        authority[name], _sha = read_pinned_regular_bytes_antigravity(path)
-    return terminal_attempt_authority_sha256_from_bytes_antigravity(authority)
+    """Hash one grouped, fully revalidated six-file terminal authority snapshot."""
+    with pin_exact_regular_inventory_antigravity(attempt, _TERMINAL_ATTEMPT_AUTHORITY_FILENAMES_ANTIGRAVITY) as pinned:
+        return terminal_attempt_authority_sha256_from_bytes_antigravity(pinned.payloads)
 
 
 def _ensure_clean_reviewed_commit_antigravity(reviewed_commit: str) -> None:

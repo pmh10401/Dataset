@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T05:45:20Z",
-  "generated_from_commit": "ac956edfc8d0276a8ee610e731ed573faefe734e",
+  "generated_at": "2026-08-08T06:06:23Z",
+  "generated_from_commit": "39691c58208d52c521dbe97ab36af67bf2f1e575",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2526,7 +2526,9 @@
         "_reverify_sources_after_artifacts_antigravity",
         "CompletedAttemptAntigravity",
         "terminal_attempt_authority_sha256_from_bytes_antigravity",
-        "terminal_attempt_authority_sha256_antigravity"
+        "terminal_attempt_authority_sha256_antigravity",
+        "PinnedRegularInventoryAntigravity",
+        "pin_exact_regular_inventory_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2577,7 +2579,7 @@
         "Exp439 keeps up to max-minus-one CPU workers active behind a slow frozen-order head while bounding pending plus buffered results by workers squared; durable commits remain in frozen dataset order.",
         "Exp439 computes each TRAIN row preferred depth once and each used-depth decomposition feature matrix once; held-out depth, fold-local robust transforms, OOF scores, thresholds, candidates, and record bytes remain unchanged.",
         "The interrupted 101-record root is immutable; the scheduler/cache repair uses a distinct run root and imports only the exact 89-record Exp438 prefix under the existing gate.",
-        "Exp441 records only parser-submitted parent-accepted frozen context order, uses source-owned fixed 11 workers and one numerical thread, has no resume route, retains failed/interrupted attempts, rechecks source identity after create-only artifacts, and does not open SQLite, TEST labels, an evaluator, or Exp440 ranking helpers. After terminal progress and PID are both inactive, runtime descriptor-pins and hashes the exact six-file authority; the completed attempt carries this lower-hex identity."
+        "Exp441 records only parser-submitted parent-accepted frozen context order, uses source-owned fixed 11 workers and one numerical thread, has no resume route, retains failed/interrupted attempts, rechecks source identity after create-only artifacts, and does not open SQLite, TEST labels, an evaluator, or Exp440 ranking helpers. Terminal authority opens all six exact 0600 files before any read, holds every descriptor through all reads and post-read inode/mode/size/mtime/ctime plus exact-namespace validation, then hashes the stable bytes before closing."
       ],
       "evidence": [
         {
@@ -2839,6 +2841,18 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_runtime_antigravity.py",
           "symbol": "def test_completed_attempt_is_create_only_and_contains_exact_governance("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/artifacts_antigravity.py",
+          "symbol": "def pin_exact_regular_inventory_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/artifacts_antigravity.py",
+          "symbol": "class PinnedRegularInventoryAntigravity:"
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_terminal_authority_capture_rejects_first_file_mutation_during_later_read("
         }
       ]
     },
@@ -2876,7 +2890,7 @@
         "Publication requires exactly 1,117 completed datasets, failed=0, inactive PID, current_dataset=null, budget compliance, and prediction TEST-label access exactly zero.",
         "Evaluation is a lazy explicit command and reads TEST labels only after every frozen publication, comparator, source, population, runtime, database, and provenance gate passes.",
         "High-frequency, low-frequency, and amplitude-complexity results remain separate; evaluation selects no winner and publishes eight no-clobber hash-bound artifacts.",
-        "Exp441 publisher validates a real positive matching PID, canonical UTC-second heartbeats, exact terminal progress/events/text, and the immutable lower-hex six-file authority identity. Its last source replay completes before the final descriptor-pinned strict parse and complete-authority comparison; no runtime-evidence callback, source replay, existence check, or mutable work intervenes before Darwin no-clobber rename. It writes exactly six 0600 artifacts under private 0700 staging, and inspection stays label-free with no SQLite or evaluator import."
+        "Exp441 publisher validates a real positive matching PID, canonical UTC-second heartbeats, exact terminal progress/events/text, and the immutable lower-hex six-file authority identity. Its final gate opens and retains all six descriptor-pinned files, strictly parses and compares the complete stable authority, and calls Darwin no-clobber rename before closing those descriptors; no runtime-evidence callback, source replay, existence check, or mutable work intervenes. Replacement, unlink, write/truncate, append, and chmod during grouped pin fail closed. It writes exactly six 0600 artifacts under private 0700 staging, and inspection stays label-free with no SQLite or evaluator import."
       ],
       "evidence": [
         {
@@ -2950,6 +2964,18 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",
           "symbol": "def test_publish_rejects_coordinated_preentry_terminal_metadata_tampering("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/reporting_antigravity.py",
+          "symbol": "def _parse_pinned_attempt_antigravity("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publish_final_grouped_pin_rejects_first_file_mutation_during_later_read("
+        },
+        {
+          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_artifacts_antigravity.py",
+          "symbol": "def test_grouped_pin_rejects_replacement_unlink_chmod_and_truncate_with_descriptor_cleanup("
         }
       ]
     }
@@ -3810,7 +3836,7 @@
         "exp438_frequency_runtime",
         "exp438_publication_evaluation"
       ],
-      "outcome": "The grouped Exp441 runtime creates a smallest-gap immutable attempt, records parent-accepted fixed-11-worker source replay progress, freezes source/selection evidence, finishes terminal progress and PID, and descriptor-pins a deterministic SHA256 across the exact six evidence files before returning a completed attempt. The publisher then validates that committed identity and canonical terminal state, completes the last source replay, immediately reopens/pins and compares the full authority, and uses private create-only staging plus Darwin no-clobber rename; no SQLite, TEST labels, or evaluator are opened."
+      "outcome": "The grouped Exp441 runtime creates a smallest-gap immutable attempt, records parent-accepted fixed-11-worker source replay progress, finishes terminal progress and PID, then opens all six exact evidence files together, reads them while every descriptor stays open, revalidates descriptor and namespace identity metadata, and hashes the stable bytes before returning a completed attempt. The publisher validates that identity and canonical terminal state, completes the last source replay, retains a new grouped descriptor pin through strict final parse/full-authority comparison and Darwin no-clobber rename; no SQLite, TEST labels, or evaluator are opened."
     }
   ],
   "unknown_relationships": 0

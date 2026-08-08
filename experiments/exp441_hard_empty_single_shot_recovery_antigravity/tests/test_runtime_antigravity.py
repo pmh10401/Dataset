@@ -67,6 +67,26 @@ class RuntimeAntigravityTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "attempt"):
                 allocate_attempt_antigravity(root)
 
+    def test_terminal_authority_capture_rejects_first_file_mutation_during_later_read(self) -> None:
+        # Break caught: sequential closes let a changed first authority file escape the runtime's returned digest.
+        names = (
+            "source_snapshot_antigravity.json", "selection_antigravity.json", "progress_antigravity.json",
+            "pid_antigravity", "events_antigravity.jsonl", "text_antigravity.log",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            attempt = Path(directory) / "attempt_antigravity"; attempt.mkdir(); os.chmod(attempt, 0o700)
+            for index, name in enumerate(names):
+                (attempt / name).write_bytes(f"file-{index}\n".encode()); os.chmod(attempt / name, 0o600)
+            real_read = os.read; reads = {"count": 0}
+            def mutate_first_after_eof(descriptor: int, size: int) -> bytes:
+                payload = real_read(descriptor, size); reads["count"] += 1
+                if reads["count"] == 3:
+                    (attempt / names[0]).write_bytes(b"FILE-0\n")
+                return payload
+            with patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity.os.read", side_effect=mutate_first_after_eof):
+                with self.assertRaisesRegex(ValueError, "changed"):
+                    terminal_attempt_authority_sha256_antigravity(attempt)
+
     def test_completed_attempt_is_create_only_and_contains_exact_governance(self) -> None:
         # Break caught: a later new could repair an old attempt, or selection evidence could dilute governance values.
         snapshot = _snapshot(_fixture_candidates())

@@ -357,31 +357,77 @@ class ReportingContractAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); attempt = self._write_terminal_attempt_antigravity(root, snapshot)
             order: list[str] = []; runtime_validation_calls = {"count": 0}
-            real_parse = reporting_antigravity._parse_attempt_antigravity
+            real_parse = reporting_antigravity._parse_pinned_attempt_antigravity
+            real_pin = reporting_antigravity.pin_exact_regular_inventory_antigravity
             real_replay = reporting_antigravity._reverified_selection_antigravity
             real_runtime_validation = reporting_antigravity._validate_runtime_attempt_evidence_antigravity
-            def parsed(value: CompletedAttemptAntigravity):
+            pins: list[object] = []; final_descriptors: tuple[int, ...] = ()
+            def parsed(value: CompletedAttemptAntigravity, authority: dict[str, bytes]):
                 order.append("parse")
-                return real_parse(value)
+                return real_parse(value, authority)
             def replay(*args: object):
                 order.append("source")
                 return real_replay(*args)
             def validate(*args: object) -> None:
                 runtime_validation_calls["count"] += 1
                 real_runtime_validation(*args)
+            def grouped_pin(*args: object, **kwargs: object):
+                pinned = real_pin(*args, **kwargs)
+                pins.append(pinned)
+                return pinned
             def renamed(source: Path, destination: Path) -> None:
+                nonlocal final_descriptors
+                final_descriptors = tuple(pins[-1]._descriptors_antigravity.values())
+                for descriptor in final_descriptors:
+                    os.fstat(descriptor)
                 order.append("rename")
                 os.rename(source, destination)
             with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
                  patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=snapshot), \
                  patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
-                 patch.object(reporting_antigravity, "_parse_attempt_antigravity", side_effect=parsed), \
+                 patch.object(reporting_antigravity, "_parse_pinned_attempt_antigravity", side_effect=parsed), \
                  patch.object(reporting_antigravity, "_reverified_selection_antigravity", side_effect=replay), \
                  patch.object(reporting_antigravity, "_validate_runtime_attempt_evidence_antigravity", side_effect=validate), \
+                 patch.object(reporting_antigravity, "pin_exact_regular_inventory_antigravity", side_effect=grouped_pin), \
                  patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=renamed):
                 reporting_antigravity.publish_exp441_antigravity(attempt)
             self.assertEqual(order[-3:], ["source", "parse", "rename"])
             self.assertEqual(runtime_validation_calls["count"], 1)
+            self.assertEqual(len(final_descriptors), 6)
+            for descriptor in final_descriptors:
+                with self.assertRaises(OSError):
+                    os.fstat(descriptor)
+
+    def test_publish_final_grouped_pin_rejects_first_file_mutation_during_later_read(self) -> None:
+        # Break caught: final publication can accept bytes from a first descriptor that was closed before a later authority read.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import reporting_antigravity
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity import artifacts_antigravity
+        snapshot = self._fixture_snapshot_antigravity()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); attempt = self._write_terminal_attempt_antigravity(root, snapshot)
+            attempt_root = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            real_pin = reporting_antigravity.pin_exact_regular_inventory_antigravity
+            real_read = artifacts_antigravity.os.read; state = {"pins": 0, "final_reads": 0}
+            def grouped_pin(*args: object, **kwargs: object):
+                state["pins"] += 1
+                return real_pin(*args, **kwargs)
+            def mutate_after_final_first_eof(descriptor: int, size: int) -> bytes:
+                payload = real_read(descriptor, size)
+                if state["pins"] == 2:
+                    state["final_reads"] += 1
+                    if state["final_reads"] == 3:
+                        source = attempt_root / "source_snapshot_antigravity.json"
+                        source.write_bytes(b"X" + source.read_bytes()[1:])
+                return payload
+            with patch.object(reporting_antigravity, "_RUN_ROOT_ANTIGRAVITY", root), \
+                 patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=snapshot), \
+                 patch.object(reporting_antigravity, "selected_coordinate_identity_sha256_antigravity", return_value=reporting_antigravity.FROZEN_CONFIG.selected_coordinate_identity_sha256), \
+                 patch.object(reporting_antigravity, "pin_exact_regular_inventory_antigravity", side_effect=grouped_pin), \
+                 patch.object(artifacts_antigravity.os, "read", side_effect=mutate_after_final_first_eof), \
+                 patch.object(reporting_antigravity, "exclusive_rename_antigravity", side_effect=os.rename):
+                with self.assertRaisesRegex(ValueError, "changed"):
+                    reporting_antigravity.publish_exp441_antigravity(attempt)
+            self.assertFalse((root / "publication_antigravity").exists())
 
     def test_inspect_rejects_status_commit_that_differs_from_manifest(self) -> None:
         # Break caught: status can point at a different implementation commit while its hashes still look valid.
