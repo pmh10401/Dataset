@@ -5,6 +5,7 @@ import ast
 import copy
 from concurrent.futures import Future
 from hashlib import sha256
+import inspect
 import json
 import os
 from pathlib import Path
@@ -307,6 +308,37 @@ class FrozenSourcesAntigravityTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "SHA256 mismatch"):
                     sources._reverify_paths_antigravity({path: expected})
 
+    def test_full_public_entrance_rejects_mutation_after_initial_pin_before_final_reverify(self) -> None:
+        # Break caught: a full verifier returning a snapshot after an initially pinned source is later replaced.
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "pinned_source_antigravity.json"
+            path.write_bytes(b"first\n")
+            expected = sha256(path.read_bytes()).hexdigest()
+            phase: list[str] = []
+            sentinel = object()
+
+            def load_prefix():
+                payload, observed = sources._read_pinned_regular_antigravity(path)
+                self.assertEqual((payload, observed), (b"first\n", expected))
+                phase.append("initial-pin")
+                return (), {}, frozenset(), {}, {path: expected}
+
+            def parse_records(_tasks, _observer):
+                self.assertEqual(phase, ["initial-pin"])
+                path.write_bytes(b"replaced\n")
+                phase.append("mutated-before-final-reverify")
+                return ()
+
+            with patch.object(sources, "_load_prefix_antigravity", side_effect=load_prefix), \
+                    patch.object(sources, "_record_tasks_antigravity", return_value=()), \
+                    patch.object(sources, "_parse_records_fixed_workers_antigravity", side_effect=parse_records), \
+                    patch.object(sources, "_snapshot_from_records_antigravity", return_value=sentinel), \
+                    patch.object(sources, "_validate_allowed_prediction_path_antigravity", return_value=path):
+                with self.assertRaisesRegex(ValueError, "SHA256 mismatch"):
+                    sources.verify_frozen_sources_antigravity()
+            self.assertEqual(phase, ["initial-pin", "mutated-before-final-reverify"])
+            self.assertEqual(sources.FrozenSourceSnapshotAntigravity.__dataclass_fields__["label_access_count"].default, 0)
+
     def test_public_and_observer_routes_enter_fixed_worker_parser_never_reference(self) -> None:
         # Break caught: either production entrance bypassing the fixed 11-worker parser or using the test-only reference.
         sentinel = object()
@@ -325,6 +357,45 @@ class FrozenSourcesAntigravityTests(unittest.TestCase):
                 patch.object(sources, "_verify_frozen_sources_single_worker_reference_antigravity") as reference:
             self.assertIs(sources._verify_frozen_sources_with_observer_antigravity(events.append), sentinel)
         parser.assert_called_once()
+        reference.assert_not_called()
+
+    def test_both_entrances_reach_same_fixed_eleven_executor_without_overrides(self) -> None:
+        # Break caught: public and observer routes diverging in worker topology or exposing an override surface.
+        class EmptyExecutor:
+            def __init__(self, *, max_workers: int) -> None:
+                self.max_workers = max_workers
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args: object) -> None:
+                return None
+
+            def submit(self, *_args: object):
+                raise AssertionError("empty controlled task set must not submit")
+
+        prefix = ((), {}, frozenset(), {}, {})
+        sentinel = object()
+        executors: list[EmptyExecutor] = []
+
+        def executor_factory(*, max_workers: int) -> EmptyExecutor:
+            instance = EmptyExecutor(max_workers=max_workers)
+            executors.append(instance)
+            return instance
+
+        with patch.object(sources, "_load_prefix_antigravity", return_value=prefix), \
+                patch.object(sources, "_record_tasks_antigravity", return_value=()), \
+                patch.object(sources, "_snapshot_from_records_antigravity", return_value=sentinel), \
+                patch.object(sources, "_reverify_paths_antigravity"), \
+                patch.object(sources, "ProcessPoolExecutor", side_effect=executor_factory), \
+                patch.object(sources, "_verify_frozen_sources_single_worker_reference_antigravity") as reference:
+            self.assertIs(sources.verify_frozen_sources_antigravity(), sentinel)
+            observer_events: list[Mapping[str, object]] = []
+            self.assertIs(sources._verify_frozen_sources_with_observer_antigravity(observer_events.append), sentinel)
+        self.assertEqual([item.max_workers for item in executors], [11, 11])
+        self.assertEqual(observer_events, [])
+        self.assertEqual(tuple(inspect.signature(sources.verify_frozen_sources_antigravity).parameters), ())
+        self.assertEqual(tuple(inspect.signature(sources._verify_frozen_sources_with_observer_antigravity).parameters), ("observer",))
         reference.assert_not_called()
 
     def test_public_verifier_routes_only_to_fixed_worker_runtime(self) -> None:
@@ -348,29 +419,31 @@ class FrozenSourcesAntigravityTests(unittest.TestCase):
         package = Path(sources.__file__).parent
         reference = "_verify_frozen_sources_single_worker_reference_antigravity"
 
-        def forbidden_uses(tree: ast.AST) -> list[str]:
+        def forbidden_uses(tree: ast.AST, *, allow_private_definition: bool = False) -> list[str]:
             hits: list[str] = []
             for node in ast.walk(tree):
-                if isinstance(node, ast.Name) and node.id == reference:
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == reference:
+                    if not allow_private_definition:
+                        hits.append("definition")
+                elif isinstance(node, ast.Name) and node.id == reference:
                     hits.append("name")
                 elif isinstance(node, ast.Attribute) and node.attr == reference:
                     hits.append("attribute")
                 elif isinstance(node, ast.ImportFrom) and any(alias.name == reference for alias in node.names):
                     hits.append("from-import")
-                elif isinstance(node, ast.Import) and any(alias.name == reference for alias in node.names):
+                elif isinstance(node, ast.Import) and any(alias.name == reference or alias.asname == reference for alias in node.names):
                     hits.append("import")
             return hits
 
         self.assertEqual(forbidden_uses(ast.parse(f"from module import {reference} as alias")), ["from-import"])
         self.assertEqual(forbidden_uses(ast.parse(f"module.{reference}()")), ["attribute"])
         self.assertEqual(forbidden_uses(ast.parse(f"{reference}()")), ["name"])
+        self.assertEqual(forbidden_uses(ast.parse(f"def {reference}():\n    pass"), allow_private_definition=True), [])
+        self.assertIn("name", forbidden_uses(ast.parse(f"def {reference}():\n    pass\n{reference}()"), allow_private_definition=True))
+        self.assertEqual(forbidden_uses(ast.parse(f"def {reference}():\n    pass\nmodule.{reference}()"), allow_private_definition=True), ["attribute"])
         for path in package.glob("*.py"):
             tree = ast.parse(path.read_text())
-            if path.name == "sources_antigravity.py":
-                public_calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == reference]
-                self.assertEqual(public_calls, [])
-            else:
-                self.assertEqual(forbidden_uses(tree), [], path.name)
+            self.assertEqual(forbidden_uses(tree, allow_private_definition=path.name == "sources_antigravity.py"), [], path.name)
 
     def test_real_replay_is_fully_label_free_and_has_frozen_population_counts(self) -> None:
         # Break caught: a replay that silently changes source identity, counts, or touches labels.
