@@ -123,6 +123,54 @@ class HardEmptySelectorAntigravityTests(unittest.TestCase):
         self.assertEqual(tuple(item.global_rank for item in result.winners), (1, 2, 3, 4))
         self.assertEqual(tuple(item.selection_rank for item in result.selected), (1, 2, 3, 4))
 
+    def test_local_excess_ratio_precedes_empirical_rank(self) -> None:
+        # Break caught: ranking local candidates by empirical rank before excess ratio.
+        result = select_hard_empty_single_shot_antigravity(_snapshot((
+            _candidate("A", 7, ratio=2.0, rank=0.1),
+            _candidate("A", 8, ratio=3.0, rank=0.9),
+        )))
+        self.assertEqual(tuple(item.instance_index for item in result.selected), (8,))
+
+    def test_local_empirical_rank_precedes_instance_index_when_ratio_ties(self) -> None:
+        # Break caught: ignoring empirical rank would choose index 7, despite index 12 having the lower rank.
+        result = select_hard_empty_single_shot_antigravity(_snapshot((
+            _candidate("A", 7, ratio=2.0, rank=0.2),
+            _candidate("A", 12, ratio=2.0, rank=0.1),
+        )))
+        self.assertEqual(tuple(item.instance_index for item in result.selected), (12,))
+
+    def test_local_instance_index_breaks_a_complete_tie(self) -> None:
+        # Break caught: a completion-order or input-order tie-break would not choose the smaller index.
+        result = select_hard_empty_single_shot_antigravity(_snapshot((
+            _candidate("A", 8, ratio=2.0, rank=0.2),
+            _candidate("A", 7, ratio=2.0, rank=0.2),
+        )))
+        self.assertEqual(tuple(item.instance_index for item in result.selected), (7,))
+
+    def test_global_excess_ratio_precedes_empirical_rank(self) -> None:
+        # Break caught: ranking global winners by empirical rank before excess ratio.
+        result = select_hard_empty_single_shot_antigravity(_snapshot((
+            _candidate("A", 1, ratio=3.0, rank=0.9),
+            _candidate("B", 1, ratio=2.0, rank=0.1),
+        )))
+        self.assertEqual(tuple((item.dataset, item.instance_index) for item in result.selected), (("A", 1), ("B", 1)))
+
+    def test_global_empirical_rank_precedes_dataset_order(self) -> None:
+        # Break caught: ignoring empirical rank would choose dataset A before Z.
+        result = select_hard_empty_single_shot_antigravity(_snapshot((
+            _candidate("A", 1, ratio=3.0, rank=0.2),
+            _candidate("Z", 99, ratio=3.0, rank=0.1),
+        )))
+        self.assertEqual(tuple((item.dataset, item.instance_index) for item in result.selected), (("Z", 99), ("A", 1)))
+
+    def test_global_dataset_order_precedes_index_for_distinct_datasets(self) -> None:
+        # Break caught: using candidate index before the case-sensitive dataset tie-break.
+        result = select_hard_empty_single_shot_antigravity(_snapshot((
+            _candidate("A", 99, ratio=3.0, rank=0.2),
+            _candidate("Z", 1, ratio=3.0, rank=0.2),
+        )))
+        self.assertEqual(tuple((item.dataset, item.instance_index) for item in result.selected), (("A", 99), ("Z", 1)))
+
     def test_input_shuffle_is_deterministic_and_payload_bytes_are_stable(self) -> None:
         # Break caught: leaking worker/input completion order into any population or rank list.
         baseline = select_hard_empty_single_shot_antigravity(_snapshot(_fixture_candidates()))
@@ -166,10 +214,14 @@ class HardEmptySelectorAntigravityTests(unittest.TestCase):
             selected_coordinate_identity_sha256_antigravity(coordinates),
             hard_coordinate_identity_sha256_antigravity((candidate.coordinate for candidate in coordinates)),
         )
+        selected_rows = tuple(json.loads(line) for line in selected_payload.splitlines())
+        hard_rows = json.loads(hard_payload)
+        self.assertEqual(len(selected_rows), 2)
+        self.assertEqual(len(hard_rows), 2)
         with self.assertRaises(ValueError):
-            hard_coordinate_identity_sha256_antigravity(json.loads(selected_payload))
+            hard_coordinate_identity_sha256_antigravity(selected_rows)
         with self.assertRaises(ValueError):
-            selected_coordinate_identity_sha256_antigravity(json.loads(hard_payload))
+            selected_coordinate_identity_sha256_antigravity(hard_rows)
 
     def test_real_replay_is_label_free_and_matches_frozen_selection_identity(self) -> None:
         # Break caught: opening SQLite/labels or replaying a changed source produces different structure or identity.
@@ -204,10 +256,14 @@ class HardEmptySelectorAntigravityTests(unittest.TestCase):
             [[dataset, index] for dataset, index in sorted(snapshot.hard_coordinates)],
             ensure_ascii=False, separators=(",", ":"),
         ).encode("utf-8")
+        selected_rows = tuple(json.loads(line) for line in selected_payload.splitlines())
+        hard_rows = json.loads(hard_payload)
+        self.assertEqual(len(selected_rows), 30)
+        self.assertEqual(len(hard_rows), 2218)
         with self.assertRaises(ValueError):
-            hard_coordinate_identity_sha256_antigravity(json.loads(selected_payload))
+            hard_coordinate_identity_sha256_antigravity(selected_rows)
         with self.assertRaises(ValueError):
-            selected_coordinate_identity_sha256_antigravity(json.loads(hard_payload))
+            selected_coordinate_identity_sha256_antigravity(hard_rows)
         selector_source = Path(__import__(
             "experiments.exp441_hard_empty_single_shot_recovery_antigravity.selector_antigravity",
             fromlist=["__file__"],
