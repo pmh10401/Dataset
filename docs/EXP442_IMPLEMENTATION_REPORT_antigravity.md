@@ -9,6 +9,9 @@ selector, source, threshold, budget, seed, routing과 TEST-label 차단선은 �
 
 - 기준 commit: `f5df76e377a355eaf1613b7864186c7a618b7756`
 - 구현 commit: `5747a47f`
+- review-fix commit: `5c946ba73d012760ba4309d46f3b4bcb499cf0cf`
+- reviewed design SHA256: `cf0b6e916a85cdf21c8cc28c735894f927b63e4c33aa4d62e95753540bd06a7b`
+- reviewed preregistration SHA256: `ab909c35d0f4d0252d1a29fa80ea27d51d0ba56175c8cc0d8d3428092ec2746c`
 - Exp442 run identity:
   `exp442-terminal-eta-publication-repair-antigravity-20260808`
 - 새 공식 root:
@@ -41,6 +44,20 @@ Exp442 package는 profile, lifecycle, CLI만 가진 얇은 wrapper다. 실제 so
 selector, runtime, reporting, evaluation 구현은 명시적 profile을 받는 공유 함수로
 실행하며 기존 Exp441 공개 함수는 그대로 보존한다.
 
+경로 안전성도 분리했다. Production generic API에는 `run_root` 같은 경로 override를
+더 이상 전달할 수 없고, 고정 profile의 root만 사용한다. 별도 경로가 필요한 테스트는
+private `_run_readiness_at_root_antigravity`와
+`_validate_readiness_at_root_antigravity` seam 아래에서만 실행한다. 따라서 테스트
+편의용 경로 주입이 공식 readiness/new 경로를 풀어버리지 않는다.
+
+첫 Sol High fix-first에서 지적된 두 Important와 두 Minor는 다음처럼 처리했다.
+
+- Important: profile의 design/preregistration hash binding을 최신 동결 SHA로 맞췄다.
+- Important: production root override를 제거하고 private test seam으로 격리했다.
+- Minor: codemap status 근거를 장부와 검증 기록에 반영했으며, 최종 codemap 재생성은
+  아직 남은 gate로 표시했다.
+- Minor: active 상태의 원래 ETA 계산을 보존하는 회귀 테스트를 추가했다.
+
 ## TDD 증거
 
 수정 전에 다음 두 실패를 재현했다.
@@ -53,8 +70,8 @@ producer 수정 후 두 테스트와 전체 회귀가 통과했다.
 
 ## 검증 결과
 
-- Exp442 lifecycle: 5/5 통과
-- Exp441 전체 회귀: 196/196 통과
+- Exp442 lifecycle: 7/7 통과
+- Exp441 전체 회귀: 197/197 통과
 - Exp440 상속 회귀: 35/35 통과
 - Exp417 label·입력·모델 경계 전체 회귀: 270/270 통과
 - Python compile 및 `git diff --check`: 통과
@@ -75,6 +92,7 @@ producer 수정 후 두 테스트와 전체 회귀가 통과했다.
 - finite evidence: true
 - 11-worker와 순차 기준 source payload: 완전 동일
 - 11-worker와 순차 기준 selection payload: 완전 동일
+- 11-worker와 순차 기준 snapshot payload: 완전 동일
 
 검증 시 Exp441 불변 root의 7개 파일 tree SHA256은
 `8d72eee1f04529771963da340667b049af2cab7e9aec1a5abdcc4ba5229d0880`이며,
@@ -88,11 +106,15 @@ workers를 유지한다. 과학 계산을 GPU 사용 명분으로 다시 쓰지 
 
 ## 다음 gate
 
-1. 코드맵 세 파일을 현재 source commit에 맞춰 함께 갱신한다.
-2. fresh Sol High 검토에서 중요한 문제가 없어야 한다.
+현재 gate는 최종 codemap 세 파일 재생성과 Sol 재검토다. 두 gate가 끝나기 전에는
+공식 Exp442 root가 없고 readiness와 `new`를 시작하지 않는다.
+
+1. 코드맵 세 파일을 최신 review-fix source에 맞춰 함께 재생성한다.
+2. fresh Sol High 재검토에서 중요한 문제가 없어야 한다.
 3. 깨끗한 reviewed commit에서 Exp442 readiness를 한 번 생성한다.
 4. 새 root에서 1,117개 label-free `new`를 실행하고 `inspect`로 prediction을 동결한다.
 5. prediction SHA와 label access 0을 확인한 뒤에만 `evaluate`를 실행한다.
 
+현재 공식 Exp442 root/readiness/new/prediction/evaluation은 모두 미시작 또는 부재다.
 기술 실행과 사후 재현이 성공해도 Exp442는 adaptive, descriptive, review-only다.
 독립 검증, 운영 경보 정책 또는 새 champion으로 승격하지 않는다.

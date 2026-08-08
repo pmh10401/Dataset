@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-09T02:25:39+09:00",
+  "updated_at": "2026-08-09T02:54:51+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -498,7 +498,7 @@
     {
       "id": "Exp442",
       "kind": "terminal_eta_publication_contract_repair",
-      "status": "implementation_verification_complete_fresh_review_codemap_pending",
+      "status": "review_fix_verification_complete_sol_rereview_codemap_pending",
       "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
       "base_commit": "f5df76e377a355eaf1613b7864186c7a618b7756",
       "documents": [
@@ -516,8 +516,10 @@
       "predecessor_readiness_sha256": "9d433c59451f6121e11445d724a4f48497f744ecc0917b5b6fc6567449c8948a",
       "predecessor_terminal_authority_sha256": "726d50e831acdad6728503156137f72aba71c541af82b8b37e6f959d62b0e95b",
       "run_identity": "exp442-terminal-eta-publication-repair-antigravity-20260808",
-      "reviewed_design_sha256": "b866daa87279143d60b586e61433e33a152d203a915f030fc9b4e991a43fafe8",
+      "reviewed_design_sha256": "cf0b6e916a85cdf21c8cc28c735894f927b63e4c33aa4d62e95753540bd06a7b",
+      "reviewed_preregistration_sha256": "ab909c35d0f4d0252d1a29fa80ea27d51d0ba56175c8cc0d8d3428092ec2746c",
       "implementation_commit": "5747a47fa8d996e549c4b9536e5ecbfeea87dfcf",
+      "review_fix_commit": "5c946ba73d012760ba4309d46f3b4bcb499cf0cf",
       "implementation_report": "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md",
       "selected_coordinate_identity_sha256": "db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048",
       "scientific_changes": [],
@@ -535,11 +537,18 @@
       "official_readiness": false,
       "official_run_started": false,
       "run_root_exists": false,
-      "fresh_sol_high_review": "pending",
-      "codemap_sync": "pending",
+      "initial_sol_review_fix_status": "resolved",
+      "initial_sol_review_findings_resolved": [
+        "design_and_preregistration_hash_binding",
+        "profile_root_override_boundary",
+        "codemap_status_evidence",
+        "active_eta_regression_test"
+      ],
+      "fresh_sol_high_review": "pending_sol_rereview",
+      "codemap_sync": "pending_final_regeneration",
       "verification": {
-        "exp442_lifecycle_tests": 5,
-        "exp441_regression_tests": 196,
+        "exp442_lifecycle_tests": 7,
+        "exp441_regression_tests": 197,
         "exp440_regression_tests": 35,
         "exp417_regression_tests": 270,
         "failures": 0,
@@ -554,10 +563,11 @@
           "backend": "cpu",
           "cpu_workers": 11,
           "label_access_count": 0,
-          "source_selection_parity": true
+          "source_selection_parity": true,
+          "snapshot_parity": true
         }
       },
-      "notes": "Implementation and verification are complete at 5747a47fa8d996e549c4b9536e5ecbfeea87dfcf; Exp442 lifecycle 5/5, Exp441 196/196, Exp440 35/35, Exp417 270/270, and the real 1,117-record CPU/11-worker replay passed with exact source/selection parity and zero label access. Fresh Sol High review and code-map synchronization remain pending. Exp442 readiness/new are not started, the official root remains absent, prediction/evaluation remain null, and this engineering-only successor is review-only and not a champion candidate."
+      "notes": "Initial Sol High fix-first findings (design/preregistration hash binding, profile root override boundary, codemap status evidence, and active-ETA regression coverage) are resolved. Verification now passes at the review-fix worktree: Exp442 lifecycle 7/7, Exp441 197/197, Exp440 35/35, Exp417 270/270, and the real 1,117-record CPU/11-worker replay has exact source/selection/snapshot parity with zero label access. Sol re-review and final codemap regeneration remain pending. Exp442 readiness/new are not started, the official root remains absent, prediction/evaluation remain null, and this engineering-only successor is review-only and not a champion candidate."
     }
   ]
 }
