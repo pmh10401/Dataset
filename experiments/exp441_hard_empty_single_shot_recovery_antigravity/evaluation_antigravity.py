@@ -37,7 +37,7 @@ from .lifecycle_profile_antigravity import (
 )
 from .bootstrap_antigravity import paired_dataset_bootstrap_antigravity, project_f1_antigravity
 from .reporting_antigravity import (
-    _inspect_for_profile_antigravity,
+    _inspect_at_root_antigravity,
     inspect_exp441_publication_antigravity,
 )
 from .runtime_antigravity import _snapshot_payload_antigravity
@@ -117,7 +117,9 @@ def _profile_publication_antigravity(
 ) -> FrozenPublicationAntigravity:
     if profile is EXP441_PROFILE_ANTIGRAVITY:
         return inspect_exp441_publication_antigravity()
-    return _inspect_for_profile_antigravity(profile, run_root=run_root)
+    return _inspect_at_root_antigravity(
+        profile, profile.root_antigravity if run_root is None else Path(run_root),
+    )
 
 
 def _preflight_antigravity(
@@ -769,14 +771,14 @@ def _route_replay_pinned_antigravity(
     return _replay_pinned_evaluation_antigravity(pinned, profile)
 
 
-def _evaluate_for_profile_antigravity(
+def _evaluate_at_root_antigravity(
     profile: RecoveryLifecycleProfileAntigravity, *,
-    evaluation_destination: Path | None = None,
-    run_root: Path | None = None,
+    evaluation_destination: Path,
+    run_root: Path,
 ) -> FrozenEvaluationAntigravity:
-    """Create once or independently replay the fixed, descriptor-pinned review-only evaluation."""
-    root = profile.root_antigravity if run_root is None else Path(run_root)
-    destination = root / "evaluation_antigravity" if evaluation_destination is None else Path(evaluation_destination)
+    """Internal test seam beneath the fixed production-profile root boundary."""
+    root = Path(run_root)
+    destination = Path(evaluation_destination)
     parent = destination.parent
     staging: Path | None = None
     labels_opened = False
@@ -849,11 +851,24 @@ def _evaluate_for_profile_antigravity(
         raise
 
 
+def _evaluate_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity,
+) -> FrozenEvaluationAntigravity:
+    """Evaluate only at the sole root and destination bound into the closed profile."""
+    root = profile.root_antigravity
+    return _evaluate_at_root_antigravity(
+        profile,
+        evaluation_destination=root / "evaluation_antigravity",
+        run_root=root,
+    )
+
+
 def evaluate_exp441_antigravity() -> FrozenEvaluationAntigravity:
     """Create or replay the original fixed Exp441 evaluation."""
-    return _evaluate_for_profile_antigravity(
+    return _evaluate_at_root_antigravity(
         EXP441_PROFILE_ANTIGRAVITY,
         evaluation_destination=_EVALUATION_DESTINATION_ANTIGRAVITY,
+        run_root=EXP441_PROFILE_ANTIGRAVITY.root_antigravity,
     )
 
 

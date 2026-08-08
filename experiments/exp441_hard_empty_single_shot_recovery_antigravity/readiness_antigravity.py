@@ -329,13 +329,12 @@ def _rollback_owned_parent_antigravity(
         raise ValueError("readiness rollback left the fixed parent present")
 
 
-def _run_readiness_for_profile_antigravity(
-    profile: RecoveryLifecycleProfileAntigravity, reviewed_commit: str, *,
-    run_root: Path | None = None,
+def _run_readiness_at_root_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, reviewed_commit: str, root: Path,
 ) -> ReadinessBindingAntigravity:
-    """Replay label-free authority then atomically claim the formerly absent run parent."""
+    """Internal test seam beneath the fixed production-profile root boundary."""
     reviewed_commit = _require_reviewed_head_antigravity(reviewed_commit)
-    root = profile.root_antigravity if run_root is None else Path(run_root)
+    root = Path(root)
     _require_absent_output_roots_antigravity(root, profile)
     staging = root.with_name(f".{root.name}_staging_{uuid4().hex}_antigravity")
     owned_identity: tuple[int, int, int] | None = None
@@ -373,13 +372,21 @@ def _run_readiness_for_profile_antigravity(
         raise
 
 
-def _validate_readiness_for_profile_antigravity(
-    profile: RecoveryLifecycleProfileAntigravity, reviewed_commit: str, *,
-    run_root: Path | None = None,
+def _run_readiness_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, reviewed_commit: str,
 ) -> ReadinessBindingAntigravity:
-    """Recompute the immutable readiness binding before the one allowed `new` route."""
+    """Replay label-free authority at the sole root bound into the closed profile."""
+    return _run_readiness_at_root_antigravity(
+        profile, reviewed_commit, profile.root_antigravity,
+    )
+
+
+def _validate_readiness_at_root_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, reviewed_commit: str, root: Path,
+) -> ReadinessBindingAntigravity:
+    """Internal test seam beneath the fixed production-profile root boundary."""
     reviewed_commit = _require_reviewed_head_antigravity(reviewed_commit)
-    root = profile.root_antigravity if run_root is None else Path(run_root)
+    root = Path(root)
     artifact = root / _READINESS_NAME_ANTIGRAVITY
     with pin_exact_regular_inventory_antigravity(root, (_READINESS_NAME_ANTIGRAVITY,)) as pinned:
         encoded = pinned.payloads[_READINESS_NAME_ANTIGRAVITY]
@@ -400,17 +407,26 @@ def _validate_readiness_for_profile_antigravity(
         return binding
 
 
+def _validate_readiness_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, reviewed_commit: str,
+) -> ReadinessBindingAntigravity:
+    """Recompute readiness only at the sole root bound into the closed profile."""
+    return _validate_readiness_at_root_antigravity(
+        profile, reviewed_commit, profile.root_antigravity,
+    )
+
+
 def run_readiness_antigravity(reviewed_commit: str) -> ReadinessBindingAntigravity:
     """Run the original fixed Exp441 readiness lifecycle."""
-    return _run_readiness_for_profile_antigravity(
-        EXP441_PROFILE_ANTIGRAVITY, reviewed_commit, run_root=_RUN_ROOT_ANTIGRAVITY,
+    return _run_readiness_at_root_antigravity(
+        EXP441_PROFILE_ANTIGRAVITY, reviewed_commit, _RUN_ROOT_ANTIGRAVITY,
     )
 
 
 def validate_readiness_for_run_antigravity(reviewed_commit: str) -> ReadinessBindingAntigravity:
     """Validate the original fixed Exp441 readiness lifecycle."""
-    return _validate_readiness_for_profile_antigravity(
-        EXP441_PROFILE_ANTIGRAVITY, reviewed_commit, run_root=_RUN_ROOT_ANTIGRAVITY,
+    return _validate_readiness_at_root_antigravity(
+        EXP441_PROFILE_ANTIGRAVITY, reviewed_commit, _RUN_ROOT_ANTIGRAVITY,
     )
 
 

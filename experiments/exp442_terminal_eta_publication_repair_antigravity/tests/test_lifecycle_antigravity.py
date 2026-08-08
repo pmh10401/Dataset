@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from hashlib import sha256
+from inspect import signature
 import json
 from pathlib import Path
 import subprocess
@@ -33,6 +35,46 @@ from experiments.exp442_terminal_eta_publication_repair_antigravity.profile_anti
 
 
 class Exp442LifecycleAntigravityTests(unittest.TestCase):
+    def test_frozen_profile_hashes_match_the_actual_reviewed_documents(self) -> None:
+        # Break caught: readiness can claim a design or preregistration digest that no longer matches the reviewed bytes.
+        repository = Path(__file__).resolve().parents[3]
+        design = repository / "docs/superpowers/specs/2026-08-08-exp442-terminal-eta-publication-repair-antigravity-design.md"
+        preregistration = repository / "docs/EXP442_PREREGISTRATION_antigravity_KO.md"
+        self.assertEqual(
+            EXP442_PROFILE_ANTIGRAVITY.reviewed_design_sha256,
+            sha256(design.read_bytes()).hexdigest(),
+        )
+        self.assertEqual(
+            EXP442_PROFILE_ANTIGRAVITY.reviewed_preregistration_sha256,
+            sha256(preregistration.read_bytes()).hexdigest(),
+        )
+
+    def test_generic_production_lifecycle_has_no_path_override_surface(self) -> None:
+        # Break caught: a fixed Exp442 identity can write or read another root while still claiming the canonical root hash.
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity.evaluation_antigravity import _evaluate_for_profile_antigravity
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity.readiness_antigravity import (
+            _run_readiness_for_profile_antigravity,
+            _validate_readiness_for_profile_antigravity,
+        )
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity.reporting_antigravity import (
+            _inspect_for_profile_antigravity,
+            _publish_for_profile_antigravity,
+        )
+        from experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity import _run_new_for_profile_antigravity
+        forbidden_calls = (
+            (_run_readiness_for_profile_antigravity, (EXP442_PROFILE_ANTIGRAVITY, "a" * 40), {"run_root": Path("/tmp/changed_antigravity")}),
+            (_validate_readiness_for_profile_antigravity, (EXP442_PROFILE_ANTIGRAVITY, "a" * 40), {"run_root": Path("/tmp/changed_antigravity")}),
+            (_run_new_for_profile_antigravity, (EXP442_PROFILE_ANTIGRAVITY,), {"run_root": Path("/tmp/changed_antigravity"), "reviewed_commit": "a" * 40}),
+            (_inspect_for_profile_antigravity, (EXP442_PROFILE_ANTIGRAVITY,), {"run_root": Path("/tmp/changed_antigravity")}),
+            (_publish_for_profile_antigravity, (EXP442_PROFILE_ANTIGRAVITY, object()), {"run_root": Path("/tmp/changed_antigravity")}),
+            (_evaluate_for_profile_antigravity, (EXP442_PROFILE_ANTIGRAVITY,), {"run_root": Path("/tmp/changed_antigravity")}),
+            (_evaluate_for_profile_antigravity, (EXP442_PROFILE_ANTIGRAVITY,), {"evaluation_destination": Path("/tmp/changed_antigravity")}),
+        )
+        for function, args, kwargs in forbidden_calls:
+            with self.subTest(function=function.__name__, keyword=next(iter(kwargs))):
+                with self.assertRaises(TypeError):
+                    signature(function).bind(*args, **kwargs)
+
     def test_profiles_differ_only_in_lifecycle_identity_and_bind_one_scientific_config(self) -> None:
         self.assertIs(PROFILE_ANTIGRAVITY, EXP442_PROFILE_ANTIGRAVITY)
         self.assertEqual(EXP441_PROFILE_ANTIGRAVITY.scientific_config_sha256, EXP442_PROFILE_ANTIGRAVITY.scientific_config_sha256)

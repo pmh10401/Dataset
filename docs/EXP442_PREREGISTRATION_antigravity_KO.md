@@ -8,7 +8,7 @@ Exp442는 새 탐지 방법이 아니다. Exp441의 선택 규칙은 그대로 �
 이며 구현 전에 확인한 SHA256은 다음과 같다.
 
 ```text
-reviewed_design_sha256 = b866daa87279143d60b586e61433e33a152d203a915f030fc9b4e991a43fafe8
+reviewed_design_sha256 = cf0b6e916a85cdf21c8cc28c735894f927b63e4c33aa4d62e95753540bd06a7b
 ```
 
 ```text

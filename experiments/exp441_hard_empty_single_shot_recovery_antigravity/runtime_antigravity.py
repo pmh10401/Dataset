@@ -273,12 +273,12 @@ def _best_effort_failure_antigravity(
         pass
 
 
-def _run_new_for_profile_antigravity(
+def _run_new_at_root_antigravity(
     profile: RecoveryLifecycleProfileAntigravity, *, reviewed_commit: str,
-    run_root: Path | None = None,
+    root: Path,
 ) -> CompletedAttemptAntigravity:
-    """Run one immutable label-free source replay and record selection evidence."""
-    root = profile.root_antigravity if run_root is None else Path(run_root)
+    """Internal test seam beneath the fixed production-profile root boundary."""
+    root = Path(root)
     attempt = allocate_attempt_antigravity(root)
     sequence = int(attempt.name.split("_")[1])
     writer: ProgressWriterAntigravity | None = None
@@ -370,11 +370,20 @@ def _run_new_for_profile_antigravity(
             signal.signal(signal.SIGTERM, prior_handler)
 
 
+def _run_new_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, *, reviewed_commit: str,
+) -> CompletedAttemptAntigravity:
+    """Run one immutable label-free replay at the root bound into the closed profile."""
+    return _run_new_at_root_antigravity(
+        profile, reviewed_commit=reviewed_commit, root=profile.root_antigravity,
+    )
+
+
 def run_exp441_new_antigravity(*, reviewed_commit: str) -> CompletedAttemptAntigravity:
     """Run the original fixed Exp441 lifecycle."""
-    return _run_new_for_profile_antigravity(
+    return _run_new_at_root_antigravity(
         EXP441_PROFILE_ANTIGRAVITY, reviewed_commit=reviewed_commit,
-        run_root=_RUN_ROOT_ANTIGRAVITY,
+        root=_RUN_ROOT_ANTIGRAVITY,
     )
 
 

@@ -88,6 +88,27 @@ class ProgressAntigravityTests(unittest.TestCase):
             progress = json.loads((attempt / "progress_antigravity.json").read_text())
             self.assertIsNone(progress["eta_seconds"])
 
+    def test_active_eta_keeps_the_original_throughput_formula(self) -> None:
+        # Break caught: the terminal-null repair accidentally clears or changes ETA while work is still active.
+        import experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity as module
+        with tempfile.TemporaryDirectory() as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"
+            attempt.mkdir()
+            with patch.object(module.time, "monotonic", side_effect=(10.0, 10.0, 11.0, 12.0)):
+                writer = ProgressWriterAntigravity(attempt, total=4, pid=4321)
+                writer.begin_record_antigravity(
+                    dataset="A", record_name="0000_record_antigravity.json", active_datasets=("A", "B"),
+                )
+                writer.accept_record_antigravity(
+                    dataset="A", record_name="0000_record_antigravity.json", active_datasets=("B",),
+                    next_dataset="B", next_record_name="0001_record_antigravity.json",
+                    test_row_count=17, raw_length=64,
+                )
+            progress = json.loads((attempt / "progress_antigravity.json").read_text())
+            self.assertTrue(progress["active"])
+            self.assertEqual(progress["throughput"], 0.5)
+            self.assertEqual(progress["eta_seconds"], 6.0)
+
     def test_short_write_completes_full_json_and_failed_replacement_preserves_previous_json(self) -> None:
         # Break caught: a POSIX short write truncates an artifact, or a failed update replaces the last valid progress JSON.
         import experiments.exp441_hard_empty_single_shot_recovery_antigravity.progress_antigravity as progress_module

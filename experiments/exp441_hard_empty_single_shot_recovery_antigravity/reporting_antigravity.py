@@ -490,26 +490,33 @@ def _inspect_payloads_antigravity(
     return FrozenPublicationAntigravity(_sha256_antigravity(payloads["artifact_sha256_antigravity.json"]), _sha256_antigravity(payloads["prediction_antigravity.jsonl"]), _sha256_antigravity(payloads["candidate_ranking_antigravity.jsonl"]), _sha256_antigravity(payloads["source_audit_antigravity.json"]), expected)
 
 
-def _inspect_for_profile_antigravity(
-    profile: RecoveryLifecycleProfileAntigravity, *, run_root: Path | None = None,
+def _inspect_at_root_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, root: Path,
 ) -> FrozenPublicationAntigravity:
-    """Read and verify one profile's fixed publication without labels or SQLite."""
-    root = profile.root_antigravity if run_root is None else Path(run_root)
+    """Internal test seam beneath the fixed production-profile root boundary."""
+    root = Path(root)
     return _inspect_payloads_antigravity(
         _require_regular_inventory_antigravity(root / "publication_antigravity"),
         profile=profile,
     )
 
 
-def _publish_for_profile_antigravity(
-    profile: RecoveryLifecycleProfileAntigravity, attempt: CompletedAttemptAntigravity, *,
-    run_root: Path | None = None,
+def _inspect_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity,
 ) -> FrozenPublicationAntigravity:
-    """Freeze one terminal attempt through private staging and Darwin no-clobber rename."""
-    root = profile.root_antigravity if run_root is None else Path(run_root)
+    """Verify publication only at the sole root bound into the closed profile."""
+    return _inspect_at_root_antigravity(profile, profile.root_antigravity)
+
+
+def _publish_at_root_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, attempt: CompletedAttemptAntigravity,
+    root: Path,
+) -> FrozenPublicationAntigravity:
+    """Internal test seam beneath the fixed production-profile root boundary."""
+    root = Path(root)
     destination = root / "publication_antigravity"
     if destination.exists() or destination.is_symlink():
-        return _inspect_for_profile_antigravity(profile, run_root=root)
+        return _inspect_at_root_antigravity(profile, root)
     _attempt_path, snapshot_payload, selection_payload, authority = _parse_attempt_antigravity(attempt, profile, root)
     selection, initial_snapshot = _reverified_selection_antigravity(attempt, snapshot_payload, selection_payload)
     _validate_runtime_attempt_evidence_antigravity(authority, initial_snapshot)
@@ -539,7 +546,7 @@ def _publish_for_profile_antigravity(
             final_pinned.revalidate_antigravity()
             exclusive_rename_antigravity(staging, destination)
         fsync_directory_antigravity(destination.parent)
-        return _inspect_for_profile_antigravity(profile, run_root=root)
+        return _inspect_at_root_antigravity(profile, root)
     except BaseException as error:
         try:
             _preserve_failed_staging_antigravity(staging, attempt, error, profile)
@@ -549,17 +556,26 @@ def _publish_for_profile_antigravity(
         raise
 
 
+def _publish_for_profile_antigravity(
+    profile: RecoveryLifecycleProfileAntigravity, attempt: CompletedAttemptAntigravity,
+) -> FrozenPublicationAntigravity:
+    """Freeze publication only at the sole root bound into the closed profile."""
+    return _publish_at_root_antigravity(
+        profile, attempt, profile.root_antigravity,
+    )
+
+
 def inspect_exp441_publication_antigravity() -> FrozenPublicationAntigravity:
     """Read and verify the original fixed Exp441 publication root."""
-    return _inspect_for_profile_antigravity(
-        EXP441_PROFILE_ANTIGRAVITY, run_root=_RUN_ROOT_ANTIGRAVITY,
+    return _inspect_at_root_antigravity(
+        EXP441_PROFILE_ANTIGRAVITY, _RUN_ROOT_ANTIGRAVITY,
     )
 
 
 def publish_exp441_antigravity(attempt: CompletedAttemptAntigravity) -> FrozenPublicationAntigravity:
     """Freeze one attempt under the original fixed Exp441 identity."""
-    return _publish_for_profile_antigravity(
-        EXP441_PROFILE_ANTIGRAVITY, attempt, run_root=_RUN_ROOT_ANTIGRAVITY,
+    return _publish_at_root_antigravity(
+        EXP441_PROFILE_ANTIGRAVITY, attempt, _RUN_ROOT_ANTIGRAVITY,
     )
 
 

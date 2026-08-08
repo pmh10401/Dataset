@@ -48,8 +48,8 @@ class RecoveryLifecycleProfileAntigravity:
             "Exp442": (
                 "exp442", "exp442-terminal-eta-publication-repair-antigravity-20260808",
                 "/Users/mac/Documents/Dataset/exp442_terminal_eta_publication_repair_antigravity_20260808",
-                "3c472ea2eaa850c5f99a7375633707be0f6463a613abc0562f1662d4e5ebf700",
-                "b866daa87279143d60b586e61433e33a152d203a915f030fc9b4e991a43fafe8",
+                "ab909c35d0f4d0252d1a29fa80ea27d51d0ba56175c8cc0d8d3428092ec2746c",
+                "cf0b6e916a85cdf21c8cc28c735894f927b63e4c33aa4d62e95753540bd06a7b",
                 "run_exp442_terminal_eta_publication_repair_antigravity",
             ),
         }
@@ -107,8 +107,8 @@ EXP442_PROFILE_ANTIGRAVITY = RecoveryLifecycleProfileAntigravity(
     schema_namespace="exp442",
     run_identity="exp442-terminal-eta-publication-repair-antigravity-20260808",
     run_root="/Users/mac/Documents/Dataset/exp442_terminal_eta_publication_repair_antigravity_20260808",
-    reviewed_preregistration_sha256="3c472ea2eaa850c5f99a7375633707be0f6463a613abc0562f1662d4e5ebf700",
-    reviewed_design_sha256="b866daa87279143d60b586e61433e33a152d203a915f030fc9b4e991a43fafe8",
+    reviewed_preregistration_sha256="ab909c35d0f4d0252d1a29fa80ea27d51d0ba56175c8cc0d8d3428092ec2746c",
+    reviewed_design_sha256="cf0b6e916a85cdf21c8cc28c735894f927b63e4c33aa4d62e95753540bd06a7b",
     cli_program="run_exp442_terminal_eta_publication_repair_antigravity",
 )
 
