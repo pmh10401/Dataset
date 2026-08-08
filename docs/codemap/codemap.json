@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T08:37:35Z",
-  "generated_from_commit": "115a784b47f3c8eedaa40f606ced2feada0ffa69",
+  "generated_at": "2026-08-08T08:39:53Z",
+  "generated_from_commit": "941267370fbbe85e1e2bbb3dc9632b6c45ecb266",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2933,7 +2933,8 @@
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_cli_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",
-        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_cli_antigravity.py"
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_task7_route_matrix_antigravity.py"
       ],
       "constraints": [
         "Publication requires exactly 1,117 completed datasets, failed=0, inactive PID, current_dataset=null, budget compliance, and prediction TEST-label access exactly zero.",
