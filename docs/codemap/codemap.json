@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T04:11:16Z",
-  "generated_from_commit": "bec093a117b791bec0a829ee36602972cac580a3",
+  "generated_at": "2026-08-08T04:22:30Z",
+  "generated_from_commit": "c450bc59d6d71319057ea0bd8d9fd1ea6d07f5da",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
