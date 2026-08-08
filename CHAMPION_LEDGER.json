@@ -46,8 +46,8 @@
     },
     {
       "experiment": "Exp441",
-      "status": "design_approved_not_promoted",
-      "reason": "Selector-only retrospective reproduction is planned after the Exp440 review. Exp404 Hard/Exp416 remains the verified reference; Exp441 is review-only and cannot become a champion or pending candidate.",
+      "status": "implementation_complete_not_promoted",
+      "reason": "The 1,117-record label-free implementation replay is verified, but no official prediction or evaluation exists and fresh final review is still required before readiness. Exp404 Hard/Exp416 remains the verified reference; Exp441 is review-only and cannot become a champion or pending candidate.",
       "reviewed_design_sha256": "c4d692297290869be90815d115c1fda7f71120326b4be504ebf685619b6545da",
       "prediction_sha256": null,
       "evaluation": null,
