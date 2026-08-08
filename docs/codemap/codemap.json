@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T10:41:00Z",
-  "generated_from_commit": "27f89af2fe62079cc7187c462ef959cd6eb9dc97",
+  "generated_at": "2026-08-08T02:02:32Z",
+  "generated_from_commit": "010b0ca14f6bad78841f314aeb87b6b36efde031",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2466,7 +2466,7 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments/exp438_frequency_complexity_evidence_antigravity",
-      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement.",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 currently contributes only an evidenced, caller-free package boundary: frozen selector configuration, immutable source/selection/publication/evaluation value contracts, and descriptor-pinned create-only artifact primitives; its callers and later source/selector flows do not yet exist.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2506,7 +2506,15 @@
         "ordered_parallel_map_antigravity",
         "score_dataset_task_antigravity",
         "run_exp440_new_antigravity",
-        "resume_exp440_antigravity"
+        "resume_exp440_antigravity",
+        "Exp441FrozenConfig",
+        "CandidateEvidenceAntigravity",
+        "SelectionResultAntigravity",
+        "FrozenSourceSnapshotAntigravity",
+        "canonical_json_bytes_antigravity",
+        "read_pinned_regular_bytes_antigravity",
+        "write_create_only_antigravity",
+        "exclusive_rename_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2535,7 +2543,10 @@
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_numba_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_checkpoint_antigravity.py",
         "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_progress_antigravity.py",
-        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_runtime_antigravity.py"
+        "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_contracts_antigravity.py",
+        "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_artifacts_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2729,8 +2740,20 @@
         },
         {
           "path": "experiments/exp440_train_only_low_frequency_precision_gate_antigravity/readiness_antigravity.py",
-          "symbol": "acceleration_fixture"
-        }
+        "symbol": "acceleration_fixture"
+      },
+      {
+        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/config_antigravity.py",
+        "symbol": "class Exp441FrozenConfig"
+      },
+      {
+        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/contracts_antigravity.py",
+        "symbol": "class SelectionResultAntigravity"
+      },
+      {
+        "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/artifacts_antigravity.py",
+        "symbol": "def read_pinned_regular_bytes_antigravity("
+      }
       ]
     },
     {
