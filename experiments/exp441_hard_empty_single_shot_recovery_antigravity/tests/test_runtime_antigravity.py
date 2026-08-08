@@ -238,6 +238,23 @@ class RuntimeAntigravityTests(unittest.TestCase):
             self.assertTrue((root / "attempts_antigravity" / "attempt_0000_antigravity" / "source_snapshot_antigravity.json").exists())
             self.assertTrue((root / "attempts_antigravity" / "attempt_0000_antigravity" / "failure_antigravity.json").exists())
 
+    def test_selection_failure_writes_no_snapshot_or_selection_artifact(self) -> None:
+        # Break caught: source evidence is frozen before the pure selector has successfully completed.
+        snapshot = _snapshot(_fixture_candidates())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._RUN_ROOT_ANTIGRAVITY", root), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity.FROZEN_CONFIG", SimpleNamespace(dataset_count=len(snapshot.context_datasets))), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._ensure_clean_reviewed_commit_antigravity"), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._load_prefix_antigravity", return_value=self._prefix(snapshot)), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity._verify_with_observer_antigravity", side_effect=self._replay(snapshot)), \
+                 patch("experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity.select_hard_empty_single_shot_antigravity", side_effect=ValueError("selection failed")):
+                with self.assertRaisesRegex(ValueError, "selection failed"):
+                    run_exp441_new_antigravity(reviewed_commit="a" * 40)
+            attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            self.assertFalse((attempt / "source_snapshot_antigravity.json").exists())
+            self.assertFalse((attempt / "selection_antigravity.json").exists())
+
     def test_source_snapshot_records_only_authority_identity_counts_and_ranking_coordinates(self) -> None:
         # Break caught: an attempt snapshot stores raw source rows, TEST sizes, or any field beyond allowed replay evidence.
         import experiments.exp441_hard_empty_single_shot_recovery_antigravity.runtime_antigravity as runtime
