@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-09T03:28:08+09:00",
+  "updated_at": "2026-08-09T10:15:00+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -625,6 +625,40 @@
       "independent_validation": false,
       "confirmatory_statistical_claim": false,
       "notes": "공식 readiness, 1,117개 label-free new, inspect, prediction freeze, 그리고 freeze 후 evaluate가 모두 완료됐다. 후보 30개 중 TP 15/FP 15로 놓친 이상 15개를 복구했고 기존 강한 데이터셋 악화는 0개였다. micro F1은 0.624185에서 0.626014로, macro delta는 +0.012444로 사전등록 회고 gate를 통과했다. 다만 adaptive follow-up이며 independent_validation=false, review_only=true이므로 운영 경보나 scientific champion으로 승격하지 않는다. 현재 결과를 기록하고 방향 논의까지 일시정지하며 다음 실험은 자동 시작하지 않는다."
+    },
+    {
+      "id": "Exp443",
+      "kind": "missing_normal_train_policy_comparison",
+      "status": "design_approved_implementation_planned",
+      "documents": [
+        "docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md",
+        "docs/superpowers/plans/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity.md",
+        "docs/EXP443_PREREGISTRATION_antigravity_KO.md",
+        "docs/EXP443_RUNBOOK_antigravity_KO.md"
+      ],
+      "artifact_root": "/Users/mac/Documents/Dataset/exp443_missing_normal_train_policy_comparison_antigravity_20260809",
+      "dataset_count": 1117,
+      "policies": [
+        "linear_edge_nearest_control",
+        "exclude_nonfinite_row",
+        "leave_one_out_peer_median"
+      ],
+      "recompute_units": 57,
+      "reviewed_design_sha256": "b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f9b",
+      "run_identity": "exp443-missing-normal-train-policy-comparison-antigravity-20260809",
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "test_labels_opened": false,
+      "official_run_purpose": "controlled_missing_normal_train_policy_comparison",
+      "adaptive_followup": true,
+      "independent_validation": false,
+      "external_generalization_supported": false,
+      "confirmatory_statistical_claim": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "test_informed_reselection_allowed": false,
+      "notes": "구현 전 동결된 정상 TRAIN 결측 정책 비교다. Policy A control reproduction이 먼저 통과해야 B/C와 TEST 평가를 열며, 세 policy를 모두 review-only로 보고하고 Exp404/Exp416을 verified reference로 유지한다. Exp443은 champion이나 pending candidate로 승격하지 않고 결과 기록 후 Exp444 전에 멈춘다."
     }
   ]
 }

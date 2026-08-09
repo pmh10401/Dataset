@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-09T03:28:08+09:00",
+  "updated_at": "2026-08-09T10:15:00+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -131,6 +131,23 @@
       "operational_alert_eligible": false,
       "scientific_winner_selected": false,
       "next_action": "paused_awaiting_direction_discussion_no_auto_next_experiment"
+    },
+    {
+      "experiment": "Exp443",
+      "status": "design_approved_not_promoted",
+      "reason": "정상 TRAIN 결측 처리 세 정책을 비교하는 구현 전 review-only 계획이다. Exp404 Hard와 Exp416 감사본을 계속 verified reference로 남기며, Exp443 prediction/evaluation은 아직 없고 pending_candidate나 champion으로 저장하지 않는다. Policy A control reproduction이 먼저 통과해야 B/C와 TEST 평가를 열고, 결과를 기록한 뒤 Exp444 전에 방향 논의를 위해 멈춘다.",
+      "reviewed_design_sha256": "b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f9b",
+      "prediction_sha256": null,
+      "evaluation": null,
+      "official_run_purpose": "controlled_missing_normal_train_policy_comparison",
+      "adaptive_followup": true,
+      "independent_validation": false,
+      "external_generalization_supported": false,
+      "confirmatory_statistical_claim": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "test_informed_reselection_allowed": false
     }
   ]
 }
