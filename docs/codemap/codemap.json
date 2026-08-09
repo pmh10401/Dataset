@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T02:15:03Z",
-  "generated_from_commit": "6161bc38912bde5f75ccbf999a7b9caa4b7ef059",
+  "generated_at": "2026-08-09T02:26:52Z",
+  "generated_from_commit": "509a7fe19863eb985606330c268f41060e45cd98",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -35,7 +35,8 @@
     "Approved, pre-implementation Exp443 three-policy missing normal TRAIN comparison design with frozen MiniROCKET replay, label firewall, and full-population retrospective gates",
     "Exp443 approved 13-task, 98-check implementation plan: exact Exp249 MiniROCKET control replay, three normal-TRAIN missing policies, pinned Python 3.14.6/aeon 1.5.0/NumPy 2.3.5/scikit-learn 1.8.0 environment, 11-worker ordered 57-unit checkpoint, three label-free prediction freezes, post-freeze paired evaluation, and mandatory pause before Exp444",
     "Exp443 isolated environment, frozen contracts, and create-only artifact boundary",
-    "Exp443 review-round fixes: pre-existing venv immutability, exact checkpoint identity, one-thread evidence, and truthful optional accelerator probes"
+    "Exp443 review-round fixes: pre-existing venv immutability, exact checkpoint identity, one-thread evidence, and truthful optional accelerator probes",
+    "Exp443 review-round 2: sourceable fixed-root preflight seam and strict optional evidence types"
   ],
   "nodes": [
     {
@@ -3465,6 +3466,8 @@
         "scientific_config_sha256_antigravity",
         "validate_antigravity",
         "verify_environment_antigravity",
+        "exp443_validate_existing_venv_antigravity",
+        "exp443_main_antigravity",
         "RawSeriesAntigravity",
         "RunPolicyAuditAntigravity",
         "KernelSeedScoresAntigravity",
@@ -3489,6 +3492,8 @@
         "Official MiniROCKET remains the CPU aeon transformer: outer workers 11, inner numerical threads 1, acceleration inapplicable_official_cpu_transformer.",
         "Prediction payloads recursively reject labels and evaluation keys; arrays are detached, exact dtype/shape, finite where required, and read-only.",
         "Artifact publication is canonical, fsyncing, mode 0600/0700, descriptor-pinned, and create-only/no-clobber; Exp441 primitives are reused narrowly.",
+        "Normal script execution uses only the fixed official venv; the sourceable preflight helper is a private test seam and rejects a mismatching fixture before chmod, pip, or install.",
+        "Environment evidence preserves optional torch/mlx versions as string-or-null and MPS capability as bool-or-null; forged payload types fail closed.",
         "This node covers only Task 2; database, preprocessing, scoring, routing, checkpoint runtime, publication, and evaluation modules are not yet implemented."
       ],
       "evidence": [
@@ -3511,6 +3516,14 @@
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/environment_antigravity.py",
           "symbol": "def verify_environment_antigravity()"
+        },
+        {
+          "path": "scripts/create_exp443_environment_antigravity.sh",
+          "symbol": "exp443_validate_existing_venv_antigravity()"
+        },
+        {
+          "path": "scripts/create_exp443_environment_antigravity.sh",
+          "symbol": "if [[ \"${BASH_SOURCE[0]}\" == \"$0\" ]]"
         },
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/artifacts_antigravity.py",
