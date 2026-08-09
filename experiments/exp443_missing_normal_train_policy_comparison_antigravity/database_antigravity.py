@@ -586,6 +586,67 @@ def pin_database_snapshot_antigravity(database: Path | str, attempt_root: Path |
         raise
 
 
+def reopen_pinned_database_snapshot_antigravity(
+    database: Path | str,
+    attempt_root: Path | str,
+    *,
+    expected_sha256: str | None = None,
+) -> PinnedDatabaseAntigravity:
+    """Rebind a resumable attempt to its existing hard-link pin.
+
+    A resumable interruption deliberately retains ``database_pin_antigravity.db``
+    so that a later owner can prove continuity of the exact input inode.  A
+    normal pin call must reject an existing path (to remain create-only), while
+    resume needs this explicit reopen path instead of trying to create a second
+    link.
+    """
+    source = Path(database)
+    root = Path(attempt_root)
+    _require_directory(root, label="attempt root")
+    pin_path = root / "database_pin_antigravity.db"
+    source_descriptor: int | None = None
+    descriptor: int | None = None
+    try:
+        _require_regular(source, label="database pathname")
+        pin_info = _require_regular(pin_path, label="owned database pin")
+        source_descriptor = os.open(source, _FILE_FLAGS)
+        before = os.fstat(source_descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink < 2:
+            raise ValueError("resumable database pin is not linked")
+        if _identity(pin_info) != _identity(before) or _metadata(pin_info) != _metadata(before):
+            raise ValueError("resumable database pin does not bind the source inode")
+        digest = _hash_descriptor(source_descriptor)
+        expected = EXPECTED_DATABASE_SHA256_ANTIGRAVITY if expected_sha256 is None else expected_sha256
+        if digest != expected:
+            raise ValueError("database SHA256 mismatch")
+        after_hash = os.fstat(source_descriptor)
+        if _metadata(after_hash) != _metadata(before):
+            raise ValueError("database changed while reopening pin")
+        named = _require_regular(source, label="database pathname")
+        if _metadata(named) != _metadata(before):
+            raise ValueError("database pathname changed while reopening pin")
+        descriptor = os.open(pin_path, _FILE_FLAGS)
+        operational = os.fstat(descriptor)
+        if _metadata(operational) != _metadata(before) or _identity(operational) != _identity(before):
+            raise ValueError("owned database pin changed while reopening")
+        return PinnedDatabaseAntigravity(
+            source,
+            root,
+            descriptor,
+            pin_path,
+            digest,
+            _metadata(operational),
+            _identity(operational),
+        )
+    except BaseException:
+        if descriptor is not None:
+            os.close(descriptor)
+        raise
+    finally:
+        if source_descriptor is not None:
+            os.close(source_descriptor)
+
+
 def load_raw_dataset_antigravity(pinned_database: PinnedDatabaseAntigravity, dataset: str) -> RawDatasetAntigravity:
     """Load only normal TRAIN values and values-only TEST identity."""
     if not isinstance(pinned_database, PinnedDatabaseAntigravity) or type(dataset) is not str or not dataset:
@@ -699,6 +760,7 @@ __all__ = [
     "NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY", "TEST_VALUES_SQL_ANTIGRAVITY", "TEST_IDENTITY_SQL_ANTIGRAVITY",
     "POPULATION_SQL_ANTIGRAVITY", "QUICK_CHECK_SQL_ANTIGRAVITY", "FROZEN_DATABASE_EXCLUSIONS_ANTIGRAVITY", "EXPECTED_DATABASE_SHA256_ANTIGRAVITY",
     "PinnedDatabaseAntigravity", "RawDatasetAntigravity", "MissingInventoryAntigravity",
-    "pin_database_snapshot_antigravity", "load_raw_dataset_antigravity", "scan_missing_inventory_antigravity",
+    "pin_database_snapshot_antigravity", "reopen_pinned_database_snapshot_antigravity",
+    "load_raw_dataset_antigravity", "scan_missing_inventory_antigravity",
     "validate_prediction_sql_antigravity", "parse_dataset_family_antigravity",
 ]

@@ -371,11 +371,14 @@ class Exp443CheckpointStoreAntigravity:
         binding: CheckpointBindingAntigravity,
         process: ProcessIdentityAntigravity,
         pid_probe: Callable[[ProcessIdentityAntigravity], bool],
+        *,
+        allow_complete_finalization: bool = False,
     ) -> "Exp443CheckpointStoreAntigravity":
         if (
             type(binding) is not CheckpointBindingAntigravity
             or type(process) is not ProcessIdentityAntigravity
             or not callable(pid_probe)
+            or type(allow_complete_finalization) is not bool
         ):
             raise ValueError("checkpoint resume identity is invalid")
         root = Path(root)
@@ -421,16 +424,18 @@ class Exp443CheckpointStoreAntigravity:
         error_sequence = state_payload["error_sequence"]
         if error_sequence is not None and (type(error_sequence) is not int or error_sequence != completed - 1):
             raise ValueError("checkpoint error sequence is invalid")
-        if status == "complete":
+        if status == "complete" and not allow_complete_finalization:
             raise ValueError("checkpoint attempt is complete")
         if status == "error":
             raise ValueError("checkpoint attempt is terminal error")
-        if completed >= len(units):
+        if status == "complete" and completed != len(units):
+            raise ValueError("checkpoint complete prefix is invalid")
+        if completed >= len(units) and status != "complete":
             raise ValueError("checkpoint attempt is complete")
         prefix, reconciled_error_sequence = _validate_record_inventory_antigravity(
             records_path, units, tuple(prefix_value), error_sequence
         )
-        effective_status = "running"
+        effective_status = "complete" if status == "complete" else "running"
         if reconciled_error_sequence is not None:
             effective_status = "error"
         elif len(prefix) == len(units):

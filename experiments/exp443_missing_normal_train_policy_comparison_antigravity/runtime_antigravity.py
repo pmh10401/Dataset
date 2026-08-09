@@ -439,6 +439,20 @@ def _control_payload_antigravity(control: object) -> dict[str, object]:
     }
 
 
+def _write_prediction_idempotent_antigravity(path: Path, payload: bytes) -> None:
+    """Create a prediction artifact or reuse exactly matching finalization bytes."""
+    if type(payload) is not bytes or not payload:
+        raise ValueError("prediction publication bytes are invalid")
+    path = Path(path)
+    if path.is_symlink() or (path.exists() and not path.is_file()):
+        raise ValueError("prediction publication path is invalid")
+    if path.exists():
+        if path.read_bytes() != payload:
+            raise ValueError("prediction publication bytes changed")
+        return
+    write_create_only_antigravity(path, payload)
+
+
 def _mark_interrupted_antigravity(
     store: Exp443CheckpointStoreAntigravity,
     writer: ProgressWriterAntigravity,
@@ -518,7 +532,11 @@ def _run_exp443_antigravity(
     executor_factory: Callable[..., object] = ProcessPoolExecutor,
 ) -> dict[str, object]:
     """Execute new or resumable production attempt with parent-owned evidence."""
-    from .database_antigravity import load_raw_dataset_antigravity, pin_database_snapshot_antigravity
+    from .database_antigravity import (
+        load_raw_dataset_antigravity,
+        pin_database_snapshot_antigravity,
+        reopen_pinned_database_snapshot_antigravity,
+    )
     from .readiness_antigravity import current_clean_head_antigravity
     from .sources_antigravity import verify_frozen_sources_antigravity
 
@@ -542,13 +560,26 @@ def _run_exp443_antigravity(
             raise ValueError("Exp443 resume attempt is absent")
         attempt = candidates[-1]
         checkpoint_root = attempt / "checkpoint_antigravity"
-        store = Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(checkpoint_root, binding, identity, _pid_probe_antigravity)
+        store = Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
+            checkpoint_root,
+            binding,
+            identity,
+            _pid_probe_antigravity,
+            allow_complete_finalization=True,
+        )
         writer = ProgressWriterAntigravity.open_for_resume_antigravity(attempt, total=len(units), checkpoint_path=checkpoint_root / "state_antigravity.json", checkpoint_store=store, process=identity, pid_probe=_pid_probe_antigravity)
     else:
         raise ValueError("Exp443 runtime mode is invalid")
 
     raw_root = attempt / "database_antigravity"
-    pinned = pin_database_snapshot_antigravity(FROZEN_CONFIG.database_path, raw_root, expected_sha256=FROZEN_CONFIG.database_sha256)
+    if mode == "resume":
+        pinned = reopen_pinned_database_snapshot_antigravity(
+            FROZEN_CONFIG.database_path,
+            raw_root,
+            expected_sha256=FROZEN_CONFIG.database_sha256,
+        )
+    else:
+        pinned = pin_database_snapshot_antigravity(FROZEN_CONFIG.database_path, raw_root, expected_sha256=FROZEN_CONFIG.database_sha256)
     raw_cache: dict[str, object] = {}
 
     def raw_dimensions_antigravity(raw: object) -> dict[str, int | None]:
@@ -563,22 +594,24 @@ def _run_exp443_antigravity(
             "target_length": int(getattr(raw, "target_length")),
         }
 
-    def load_task(unit: WorkUnitAntigravity) -> PolicyTaskAntigravity:
+    def load_raw(unit: WorkUnitAntigravity) -> object:
         if unit.dataset not in raw_cache:
             raw_cache[unit.dataset] = load_raw_dataset_antigravity(pinned, unit.dataset)
-        raw = raw_cache[unit.dataset]
-        if unit.sequence == store.completed_count_antigravity:
-            writer.align_current_dimensions_antigravity(**raw_dimensions_antigravity(raw))
-        return PolicyTaskAntigravity(unit, raw)
+        return raw_cache[unit.dataset]
+
+    def load_task(unit: WorkUnitAntigravity) -> PolicyTaskAntigravity:
+        return PolicyTaskAntigravity(unit, load_raw(unit))
 
     def commit(unit: WorkUnitAntigravity, result: PolicyDatasetResultAntigravity) -> None:
-        store.commit_result_antigravity(unit.sequence, result)
-        writer.accept_unit_antigravity(result)
-        next_sequence = store.completed_count_antigravity
+        next_dimensions: dict[str, int | None] | None = None
+        next_sequence = store.completed_count_antigravity + 1
         if next_sequence < len(units):
-            # Re-open through the same parent pin (or use the cached object) so
-            # the current dataset name and dimensions advance together.
-            load_task(units[next_sequence])
+            # Read the next dataset before advancing either authority.  The
+            # progress seam below then publishes its dimensions together with
+            # the accepted result in one atomic JSON replacement.
+            next_dimensions = raw_dimensions_antigravity(load_raw(units[next_sequence]))
+        store.commit_result_antigravity(unit.sequence, result)
+        writer.accept_unit_and_align_antigravity(result, next_dimensions=next_dimensions)
 
     def progress(**fields: object) -> None:
         active = tuple(unit for unit in units if unit.sequence >= store.completed_count_antigravity)
@@ -595,8 +628,12 @@ def _run_exp443_antigravity(
         raise _InterruptedRuntimeAntigravity("SIGTERM received")
 
     signal.signal(signal.SIGTERM, _on_sigterm_antigravity)
+    finalized = False
     try:
-        writer.begin_units_antigravity(tuple(unit for unit in units if unit.sequence >= store.completed_count_antigravity))
+        active_units = tuple(unit for unit in units if unit.sequence >= store.completed_count_antigravity)
+        writer.begin_units_antigravity(active_units)
+        if active_units:
+            writer.align_current_dimensions_antigravity(**raw_dimensions_antigravity(load_raw(active_units[0])))
         initial_results = store.results_antigravity()
         all_results, control = _execute_policy_phases_antigravity(
             units=units, task_loader=load_task, commit=commit, progress=progress,
@@ -613,10 +650,12 @@ def _run_exp443_antigravity(
             policy_results = {units[sequence].dataset: result for sequence, result in all_results.items() if units[sequence].policy == policy}
             prediction = route_policy_antigravity(snapshot, policy_results, policy)
             path = attempt / f"prediction_{policy}_antigravity.json"
-            write_create_only_antigravity(path, canonical_prediction_bytes_antigravity(prediction))
-            predictions[policy] = sha256(canonical_prediction_bytes_antigravity(prediction)).hexdigest()
+            prediction_bytes = canonical_prediction_bytes_antigravity(prediction)
+            _write_prediction_idempotent_antigravity(path, prediction_bytes)
+            predictions[policy] = sha256(prediction_bytes).hexdigest()
         _source_snapshot_and_environment_antigravity(reviewed_commit, readiness)
         writer.terminal_antigravity("complete", None)
+        finalized = True
         return {
             "attempt": str(attempt), "checkpoint_completed": store.completed_count_antigravity,
             "control": _control_payload_antigravity(control), "prediction_sha256": predictions,
@@ -636,7 +675,10 @@ def _run_exp443_antigravity(
         raise
     finally:
         signal.signal(signal.SIGTERM, prior_sigterm)
-        pinned.close(terminal_evidence_durable=store.status_antigravity == "complete")
+        # A complete checkpoint may still be in finalization (control/prediction
+        # publication).  Keep its input pin across a resumable interruption;
+        # delete it only after the progress terminal-complete write succeeds.
+        pinned.close(terminal_evidence_durable=finalized)
 
 
 def run_exp443_new_antigravity(*, reviewed_commit: str, run_root: Path | str | None = None, executor_factory: Callable[..., object] = ProcessPoolExecutor) -> dict[str, object]:
@@ -654,4 +696,5 @@ __all__ = [
     "_worker_initializer_antigravity", "_THREAD_VARIABLES_ANTIGRAVITY",
     "run_exp443_new_antigravity", "resume_exp443_antigravity",
     "_mark_interrupted_antigravity", "_record_terminal_error_antigravity",
+    "_write_prediction_idempotent_antigravity",
 ]

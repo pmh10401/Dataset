@@ -430,6 +430,83 @@ class ProgressWriterAntigravity:
         self._write_progress_antigravity()
         self._write_pid_antigravity(True)
 
+    def accept_unit_and_align_antigravity(
+        self,
+        result: PolicyDatasetResultAntigravity,
+        *,
+        next_dimensions: Mapping[str, int | None] | None = None,
+    ) -> None:
+        """Advance the ordered prefix and publish the next dimensions once.
+
+        ``accept_unit_antigravity`` remains the Task 7-compatible primitive and
+        records the just-finished result dimensions.  Task 8's production
+        runtime uses this seam so the current dataset and its dimensions are
+        replaced in one atomic progress JSON write; no intermediate state can
+        expose dataset B with dataset A's dimensions.
+        """
+        if type(result) is not PolicyDatasetResultAntigravity:
+            raise ValueError("progress result identity is invalid")
+        matches = [unit for unit in self._active if unit.policy == result.policy and unit.dataset == result.dataset]
+        if len(matches) != 1:
+            raise ValueError("progress result is not an active unit")
+        if result.status not in {"scored", "abstained"}:
+            raise ValueError("progress result status is invalid")
+        unit = matches[0]
+        self._active = tuple(item for item in self._active if item != unit)
+        self._completed += 1
+        self._recomputed += 1
+        if result.status == "scored":
+            self._success += 1
+        else:
+            self._abstention += 1
+        dimensions = {
+            "train_total": result.train_total,
+            "train_missing": result.train_missing,
+            "train_used": result.train_used,
+            "train_excluded": result.train_excluded,
+            "test_rows": result.test_rows,
+            "target_length": result.target_length,
+        }
+        if next_dimensions is not None:
+            if not isinstance(next_dimensions, Mapping) or set(next_dimensions) != set(dimensions):
+                raise ValueError("progress next dimensions are invalid")
+            dimensions = dict(next_dimensions)
+        self._validate_dimensions_antigravity(dimensions)
+        self._dimensions.update(dimensions)
+        self._stage = "scoring" if self._active else "finalizing"
+        self._event_antigravity(
+            "accept_unit",
+            sequence=unit.sequence,
+            policy=unit.policy,
+            dataset=unit.dataset,
+            status=result.status,
+            completed=self._completed,
+            current_policy=self._active[0].policy if self._active else None,
+            current_dataset=self._active[0].dataset if self._active else None,
+            **dimensions,
+        )
+        self._text_antigravity(
+            f"수락 sequence={unit.sequence} 정책={unit.policy} 데이터셋={unit.dataset} 완료={self._completed}/{self._total}"
+        )
+        self._write_progress_antigravity()
+        self._write_pid_antigravity(True)
+
+    def _validate_dimensions_antigravity(self, dimensions: Mapping[str, int | None]) -> None:
+        expected = {"train_total", "train_missing", "train_used", "train_excluded", "test_rows", "target_length"}
+        if not isinstance(dimensions, Mapping) or set(dimensions) != expected:
+            raise ValueError("progress dimensions are invalid")
+        values = tuple(dimensions[name] for name in ("train_total", "train_missing", "test_rows", "target_length"))
+        if any(type(value) is not int or value < 0 for value in values):
+            raise ValueError("progress dimensions are invalid")
+        if dimensions["train_missing"] > dimensions["train_total"]:
+            raise ValueError("progress missing count exceeds train total")
+        for name in ("train_used", "train_excluded"):
+            value = dimensions[name]
+            if value is not None and (type(value) is not int or value < 0):
+                raise ValueError(f"progress {name} is invalid")
+            if value is not None and value > dimensions["train_total"]:
+                raise ValueError(f"progress {name} exceeds train total")
+
     def align_current_dimensions_antigravity(
         self,
         *,
@@ -452,34 +529,19 @@ class ProgressWriterAntigravity:
             raise ValueError("terminal progress is closed")
         if not self._active:
             raise ValueError("no current active unit")
-        values = (train_total, train_missing, test_rows, target_length)
-        if any(type(value) is not int or value < 0 for value in values):
-            raise ValueError("progress dimensions are invalid")
-        if train_missing > train_total:
-            raise ValueError("progress missing count exceeds train total")
-        for name, value in (("train_used", train_used), ("train_excluded", train_excluded)):
-            if value is not None and (type(value) is not int or value < 0):
-                raise ValueError(f"progress {name} is invalid")
-        if train_used is not None and train_used > train_total:
-            raise ValueError("progress train used exceeds train total")
-        if train_excluded is not None and train_excluded > train_total:
-            raise ValueError("progress train excluded exceeds train total")
-        self._dimensions.update({
+        dimensions = {
             "train_total": train_total, "train_missing": train_missing,
             "train_used": train_used, "train_excluded": train_excluded,
             "test_rows": test_rows, "target_length": target_length,
-        })
+        }
+        self._validate_dimensions_antigravity(dimensions)
+        self._dimensions.update(dimensions)
         self._event_antigravity(
             "align_dimensions",
             sequence=self._active[0].sequence,
             policy=self._active[0].policy,
             dataset=self._active[0].dataset,
-            train_total=train_total,
-            train_missing=train_missing,
-            train_used=train_used,
-            train_excluded=train_excluded,
-            test_rows=test_rows,
-            target_length=target_length,
+            **dimensions,
         )
         self._write_progress_antigravity()
         self._write_pid_antigravity(True)

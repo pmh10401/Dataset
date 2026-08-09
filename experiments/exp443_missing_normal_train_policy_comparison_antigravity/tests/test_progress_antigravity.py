@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -120,6 +121,38 @@ class ProgressWriterAntigravityTests(unittest.TestCase):
             events = [json.loads(line) for line in (root / "events_antigravity.jsonl").read_text().splitlines()]
             self.assertEqual([event["event"] for event in events], ["begin_units", "heartbeat", "accept_unit"])
             self.assertIn("수락", (root / "text_antigravity.log").read_text())
+
+    def test_accept_with_next_dimensions_writes_one_atomic_advance_without_mismatch_window(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.progress_antigravity import (
+            ProgressWriterAntigravity,
+        )
+
+        active = (_unit(POLICIES[0], "A", 0), _unit(POLICIES[0], "B", 1))
+        next_dimensions = {
+            "train_total": 99,
+            "train_missing": 7,
+            "train_used": 88,
+            "train_excluded": 11,
+            "test_rows": 12,
+            "target_length": 16,
+        }
+        with tempfile.TemporaryDirectory(prefix="exp443_task8_progress_atomic_antigravity_") as directory:
+            root = Path(directory) / "attempt_antigravity"
+            root.mkdir()
+            writer = ProgressWriterAntigravity(root, total=2, pid=4242)
+            writer.begin_units_antigravity(active)
+            with patch.object(writer, "_write_progress_antigravity", wraps=writer._write_progress_antigravity) as write:
+                writer.accept_unit_and_align_antigravity(_result(POLICIES[0], "A"), next_dimensions=next_dimensions)
+                self.assertEqual(write.call_count, 1)
+            payload = json.loads((root / "progress_antigravity.json").read_text())
+            self.assertEqual(payload["current_dataset"], "B")
+            self.assertEqual(payload["completed"], 1)
+            self.assertEqual(payload["train_total"], 99)
+            self.assertEqual(payload["train_missing"], 7)
+            self.assertEqual(payload["train_used"], 88)
+            self.assertEqual(payload["train_excluded"], 11)
+            self.assertEqual(payload["test_rows"], 12)
+            self.assertEqual(payload["target_length"], 16)
 
     def test_small_simulated_57_unit_replay_is_complete_and_terminal_eta_is_null(self) -> None:
         from experiments.exp443_missing_normal_train_policy_comparison_antigravity.progress_antigravity import (

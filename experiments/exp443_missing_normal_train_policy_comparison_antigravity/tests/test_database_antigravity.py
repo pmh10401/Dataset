@@ -129,6 +129,33 @@ ORDER BY i.instance_index""",
                 pinned.close(terminal_evidence_durable=True)
             self.assertFalse((root / "attempt_antigravity" / "database_pin_antigravity.db").exists())
 
+    def test_resumable_pin_can_be_reopened_without_creating_a_second_hard_link(self) -> None:
+        """An interrupted attempt keeps its pin and resume must reuse it."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self._db(root)
+            expected = sha256(source.read_bytes()).hexdigest()
+            attempt = root / "attempt_resume_antigravity"
+            pinned = database.pin_database_snapshot_antigravity(source, attempt, expected_sha256=expected)
+            original_inode = pinned.pin_inode
+            # A resumable interruption closes the descriptor but intentionally
+            # leaves the attempt-local hard link in place.
+            pinned.close(terminal_evidence_durable=False)
+            self.assertTrue((attempt / "database_pin_antigravity.db").exists())
+            resumed = database.reopen_pinned_database_snapshot_antigravity(
+                source, attempt, expected_sha256=expected
+            )
+            try:
+                self.assertEqual(resumed.pin_inode, original_inode)
+                with resumed.worker_connection_antigravity() as connection:
+                    self.assertEqual(
+                        len(connection.execute(database.TEST_VALUES_SQL_ANTIGRAVITY, ("Tiny_normal_0",)).fetchall()),
+                        2,
+                    )
+            finally:
+                resumed.close(terminal_evidence_durable=True)
+            self.assertFalse((attempt / "database_pin_antigravity.db").exists())
+
     def test_worker_connection_is_bound_to_parent_pin_and_trace_excludes_labels(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

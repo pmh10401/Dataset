@@ -213,6 +213,60 @@ class RuntimeAntigravityTests(unittest.TestCase):
             self.assertIsNone(progress["eta_seconds"])
             self.assertFalse(json.loads((attempt / "pid_antigravity.json").read_text())["active"])
 
+    def test_complete_checkpoint_allows_explicit_finalization_only_resume(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            CheckpointBindingAntigravity,
+            Exp443CheckpointStoreAntigravity,
+            ProcessIdentityAntigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.progress_antigravity import ProgressWriterAntigravity
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import _mark_interrupted_antigravity
+
+        units = (WorkUnitAntigravity(0, POLICIES[0], "dataset_00"),)
+        binding = CheckpointBindingAntigravity("exp443-fixture-antigravity", "a" * 64, "b" * 64, "c" * 64, "d" * 64, "e" * 40)
+        with tempfile.TemporaryDirectory(prefix="exp443_task8_finalization_resume_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_antigravity"
+            attempt.mkdir()
+            checkpoint = attempt / "checkpoint_antigravity"
+            old = ProcessIdentityAntigravity(4242, "old")
+            store = Exp443CheckpointStoreAntigravity.create_antigravity(checkpoint, units, binding, old)
+            writer = ProgressWriterAntigravity(attempt, total=1, checkpoint_path=checkpoint / "state_antigravity.json", process=old)
+            writer.begin_units_antigravity(units)
+            store.commit_result_antigravity(0, _result(units[0]))
+            writer.accept_unit_antigravity(_result(units[0]))
+            self.assertEqual(store.status_antigravity, "complete")
+            _mark_interrupted_antigravity(store, writer, "SIGTERM during finalization")
+            self.assertEqual(store.status_antigravity, "complete")
+            with self.assertRaisesRegex(ValueError, "complete"):
+                Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
+                    checkpoint, binding, ProcessIdentityAntigravity(5252, "new"), lambda _process: False
+                )
+            resumed = Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
+                checkpoint,
+                binding,
+                ProcessIdentityAntigravity(5252, "new"),
+                lambda _process: False,
+                allow_complete_finalization=True,
+            )
+            self.assertEqual(resumed.status_antigravity, "complete")
+            self.assertEqual(resumed.completed_count_antigravity, 1)
+
+    def test_finalization_reuses_identical_prediction_bytes_and_rejects_changes(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import _write_prediction_idempotent_antigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp443_task8_prediction_idempotent_antigravity_") as directory:
+            path = Path(directory) / "prediction_control_antigravity.json"
+            payload = canonical_json_bytes_antigravity({"dataset": "A", "policy": POLICIES[0]})
+            _write_prediction_idempotent_antigravity(path, payload)
+            _write_prediction_idempotent_antigravity(path, payload)
+            self.assertEqual(path.read_bytes(), payload)
+            with self.assertRaisesRegex(ValueError, "prediction publication bytes changed"):
+                _write_prediction_idempotent_antigravity(
+                    path,
+                    canonical_json_bytes_antigravity({"dataset": "A", "policy": POLICIES[1]}),
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

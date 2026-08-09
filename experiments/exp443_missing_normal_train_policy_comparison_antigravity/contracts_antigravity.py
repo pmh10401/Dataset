@@ -413,6 +413,26 @@ class PolicyDatasetResultAntigravity:
             "audits": [item.to_payload() for item in self.audits], "status": self.status,
         }
 
+    def __reduce__(self) -> tuple[object, tuple[object, ...]]:
+        """Keep worker results spawn-picklable despite frozen mapping proxies."""
+        return (
+            type(self),
+            (
+                self.policy,
+                self.dataset,
+                self.target_length,
+                self.train_total,
+                self.train_missing,
+                self.train_used,
+                self.train_excluded,
+                self.test_rows,
+                self.kernel_scores,
+                dict(self.candidates_by_kernel),
+                self.audits,
+                self.status,
+            ),
+        )
+
     @classmethod
     def from_payload(cls, payload: Mapping[str, object]) -> "PolicyDatasetResultAntigravity":
         expected = {"policy", "dataset", "target_length", "train_total", "train_missing", "train_used", "train_excluded", "test_rows", "kernel_scores", "candidates_by_kernel", "audits", "status"}

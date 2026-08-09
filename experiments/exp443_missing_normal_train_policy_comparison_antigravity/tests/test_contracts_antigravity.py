@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from hashlib import sha256
+import pickle
 from types import MappingProxyType
 import unittest
 
@@ -126,6 +127,7 @@ class Exp443ContractsAntigravityTests(unittest.TestCase):
         mapping[1024] = (9,)
         self.assertEqual(result.candidates_by_kernel[1024], (0,))
         self.assertEqual(PolicyDatasetResultAntigravity.from_payload(result.to_payload()), result)
+        self.assertEqual(pickle.loads(pickle.dumps(result)), result)
         with self.assertRaises(ValueError):
             replace(result, train_used=4, train_excluded=1)
         with self.assertRaises(ValueError):
