@@ -656,10 +656,22 @@
         "0639db79",
         "c11da502",
         "d9907603",
-        "e463f26e"
+        "e463f26e",
+        "f4be2c6c",
+        "16d012d3"
       ],
       "second_reviewed_head": "5eb7b39a",
       "second_review_result": "fix_first",
+      "prior_reviewed_implementation_commit": "e3dfb5aaa50dcb4105a6552f81e1b659ef81573d",
+      "prior_review_result": "ship_no_findings",
+      "first_readiness_probe": {
+        "status": "failed_before_root_creation",
+        "error": "Exp443 requires one-thread environment controls: BLIS_NUM_THREADS=None",
+        "root_created": false,
+        "test_labels_opened": false,
+        "red_commit": "f4be2c6c",
+        "fix_commit": "16d012d3"
+      },
       "reviewed_implementation_commit": null,
       "implementation_tests_passed": 174,
       "inherited_regression_tests_passed": 13,
@@ -679,7 +691,7 @@
       "review_only": true,
       "operational_alert_eligible": false,
       "test_informed_reselection_allowed": false,
-      "notes": "구현·174개 전체 회귀·13개 inherited 회귀·실제 19-dataset Policy A control·1-worker/11-worker parity를 통과했고 official root는 아직 없다. 첫 Sol High 검토의 inspect mutation, wrapper traceback, stale review-target 문제를 수정했고, 두 번째 검토의 complete-progress publication 재개 불가 문제를 읽기 전용 finalization-resume으로 수정했다. 실패 후 같은 attempt 재시도에서 checkpoint/progress/PID/log bytes가 불변이고 publication 성공 뒤에만 DB pin이 정리됨을 검증했다. 수정된 current clean HEAD가 scoped re-review에서 ship되기 전에는 readiness를 실행하지 않는다. 세 policy를 모두 review-only로 보고하고 Exp404/Exp416을 verified reference로 유지하며, 결과 기록 후 Exp444 전에 멈춘다."
+      "notes": "구현·174개 전체 회귀·13개 inherited 회귀·실제 19-dataset Policy A control·1-worker/11-worker parity를 통과했고 official root는 아직 없다. 첫 Sol High 검토의 inspect mutation, wrapper traceback, stale review-target 문제와 두 번째 검토의 complete-progress publication 재개 불가 문제를 수정했다. e3dfb5aa가 최종 ship을 받은 뒤 첫 readiness가 root 생성 전에 BLIS_NUM_THREADS 누락을 찾았고 TEST label 접근은 0이었다. f4be2c6c RED와 16d012d3 GREEN으로 runtime/worker의 7개 thread 설정 계약을 맞췄으며 focused 37개 테스트와 실제 공식 Python 환경 검사가 통과했다. 이 수정이 포함된 current clean HEAD가 scoped re-review에서 다시 ship되기 전에는 readiness를 재실행하지 않는다. 세 policy를 모두 review-only로 보고하고 Exp404/Exp416을 verified reference로 유지하며, 결과 기록 후 Exp444 전에 멈춘다."
     }
   ]
 }

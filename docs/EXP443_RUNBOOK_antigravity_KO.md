@@ -13,10 +13,11 @@ run_identity = exp443-missing-normal-train-policy-comparison-antigravity-2026080
 run_root = /Users/mac/Documents/Dataset/exp443_missing_normal_train_policy_comparison_antigravity_20260809
 ```
 
-이 문서의 명령은 구현·회귀·실데이터 label-free 제어 검증을 통과했다. 첫 Sol
-High 검토의 수정도 완료했지만, 수정된 clean HEAD의 scoped re-review가 `ship`을
-주기 전에는 실행하지 않는다. 현재 official root·attempt·prediction·evaluation은
-없다. `REVIEWED_COMMIT`은
+이 문서의 명령은 구현·회귀·실데이터 label-free 제어 검증을 통과했다. 직전
+clean HEAD는 Sol High에서 `ship`을 받았지만, 첫 readiness에서 찾은 BLIS thread
+설정 누락을 TDD로 수정했다. 이 수정이 포함된 새 clean HEAD의 scoped re-review가
+다시 `ship`을 주기 전에는 실행하지 않는다. 현재 official
+root·attempt·prediction·evaluation은 없다. `REVIEWED_COMMIT`은
 readiness/new/resume 시점에
 호출자가 넣는 runtime argument일 뿐 preregistration에 저장하는 placeholder가
 아니다.
@@ -82,8 +83,11 @@ progress/events/text/PID/checkpoint 파일을 직접 갱신한다. 완료 또는
 환경 script는 Python 3.14.6, `aeon==1.5.0`, `numpy==2.3.5`,
 `scikit-learn==1.8.0` 고정 환경을 저장소 밖에 만들도록 설계한다. 공식
 MiniROCKET은 third-party CPU transformer이므로 MLX rewrite를 하지 않고 outer
-11 worker/inner 1 thread CPU를 사용한다. MLX adoption이나 실행 속도 성공을
-이 문서에서 미리 주장하지 않는다.
+11 worker/inner 1 thread CPU를 사용한다. wrapper가 runtime을 import할 때
+OMP/OpenBLAS/MKL/vecLib/NumExpr/Numba/BLIS의 7개 thread 환경값을 모두 `1`로
+설정하므로, 환경 생성 shell이 끝난 뒤 별도 Python 명령으로 실행해도 같은
+계약을 유지한다. MLX adoption이나 실행 속도 성공을 이 문서에서 미리 주장하지
+않는다.
 
 ## 단계 경계와 fail-closed 규칙
 

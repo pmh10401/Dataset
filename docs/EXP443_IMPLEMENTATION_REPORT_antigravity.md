@@ -9,8 +9,10 @@ Exp443의 제품 코드는 구현·회귀·실데이터 label-free 대조 검증
 시작하지 않았다.
 
 이 보고서 시점의 상태는 `implementation_verified_awaiting_scoped_rereview`다.
-두 차례 Sol High 검토에서 나온 문제를 수정했으며, 수정된 clean HEAD가 다시
-`ship`을 받기 전에는 official readiness를 실행하지 않는다.
+clean HEAD `e3dfb5aa`는 Sol High에서 `ship`을 받았지만, 그 commit으로 처음 실행한
+official readiness가 출력 root를 만들기 전에 CPU thread 환경 계약 불일치를
+찾았다. 그 원인을 TDD로 수정했으므로, 수정된 새 clean HEAD가 다시 `ship`을 받기
+전에는 official readiness를 재실행하지 않는다.
 
 ## 구현 경계
 
@@ -18,6 +20,8 @@ Exp443의 제품 코드는 구현·회귀·실데이터 label-free 대조 검증
 - review-fix RED commits: `943e8ce0`, `0639db79`, `d9907603`
 - reviewed-fix source commit: `e463f26e975376f3507306408ca04490eb588df8`
 - source-bound code-map commit: `58e8267e2b2a245341f77bf0f7b7b0f943455855`
+- first-readiness RED commit: `f4be2c6c`
+- first-readiness source fix commit: `16d012d3`
 - 고정 wrapper:
   `scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py`
 - 고정 interpreter:
@@ -58,6 +62,29 @@ clean HEAD `5eb7b39a`의 두 번째 Sol High 검토도 `fix-first`였다. DB pin
 `e463f26e`에서 complete checkpoint용 읽기 전용 finalization-resume을 추가했다.
 실제 제어 흐름 테스트는 첫 publication 실패에서 pin 정리값 `false`, 같은
 attempt 재시도 성공에서 `true`, 네 progress/log bytes 불변을 확인한다.
+
+## 첫 official readiness에서 찾은 환경 문제
+
+clean HEAD `e3dfb5aa`의 최종 Sol High 검토는 blocking finding 없이 `ship`이었다.
+그 정확한 commit으로 official readiness를 한 번 실행했지만 다음 오류로 즉시
+중단됐다.
+
+```text
+Exp443 requires one-thread environment controls: BLIS_NUM_THREADS=None
+```
+
+이 실패는 official root·attempt·prediction을 만들기 전이며 TEST label 접근도
+없었다. 원인은 환경 검사기가 BLIS를 포함한 6개 BLAS/OpenMP 변수를 요구하지만,
+CLI가 import하는 runtime의 사전 설정 목록은 BLIS를 빼고 NUMBA를 포함한 6개만
+설정한 것이었다. 환경 생성 shell의 BLIS export는 별도 child shell 안에서만
+유효하므로 다음 Python 명령으로 이어지지 않는다.
+
+`f4be2c6c`에서 worker/runtime이 BLIS까지 7개를 설정해야 한다는 RED 테스트를
+먼저 고정했고, 실제로 `BLIS_NUM_THREADS=None` 한 항목만 실패함을 확인했다.
+`16d012d3`에서 runtime 사전 설정과 worker initializer에 BLIS를 추가했다. 수정 후
+환경·readiness·runtime·CLI focused 37개 테스트와 실제 공식 Python 환경 검사가
+통과했고, `BLIS_NUM_THREADS=1`, outer worker `11`을 확인했다. 점수·후보·정책·
+threshold·데이터 처리는 바뀌지 않았다.
 
 ## 자동 검증
 

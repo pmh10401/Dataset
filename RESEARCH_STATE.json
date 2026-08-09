@@ -1,10 +1,10 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-09T12:10:31Z",
+  "updated_at": "2026-08-09T12:21:41Z",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
-  "last_verified_commit": "e463f26e975376f3507306408ca04490eb588df8",
+  "last_verified_commit": "16d012d376d6827184271f83bbe5481eec0ed268",
   "active_experiment": "Exp443",
   "active_phase": "implementation_verified_awaiting_scoped_rereview",
   "status": "in_progress",
@@ -38,12 +38,24 @@
       "0639db79",
       "c11da502",
       "d9907603",
-      "e463f26e"
+      "e463f26e",
+      "f4be2c6c",
+      "16d012d3"
     ],
     "second_reviewed_head": "5eb7b39a",
     "second_review_result": "fix_first",
+    "prior_reviewed_implementation_commit": "e3dfb5aaa50dcb4105a6552f81e1b659ef81573d",
+    "prior_review_result": "ship_no_findings",
+    "first_readiness_probe": {
+      "status": "failed_before_root_creation",
+      "error": "Exp443 requires one-thread environment controls: BLIS_NUM_THREADS=None",
+      "root_created": false,
+      "test_labels_opened": false,
+      "red_commit": "f4be2c6c",
+      "fix_commit": "16d012d3"
+    },
     "reviewed_implementation_commit": null,
-    "fresh_sol_high_review": "pending",
+    "fresh_sol_high_review": "pending_after_thread_contract_fix",
     "official_run_started": false,
     "run_root_exists": false,
     "prediction_sha256": null,
@@ -54,6 +66,7 @@
     "verification": {
       "exp443_tests_passed": 174,
       "exp443_expected_skips": 2,
+      "thread_contract_focused_tests_passed": 37,
       "exp249_250_regression_tests_passed": 13,
       "compileall_passed": true,
       "diff_check_passed": true,
