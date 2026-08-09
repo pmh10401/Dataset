@@ -67,6 +67,10 @@ class RuntimeAntigravityTests(unittest.TestCase):
             source.index('writer.terminal_antigravity("complete", None)'),
             source.index("_publish_completed_attempt_antigravity(attempt)"),
         )
+        self.assertLess(
+            source.index("_publish_completed_attempt_antigravity(attempt)"),
+            source.index("finalized = True"),
+        )
         calls: list[tuple[str, object]] = []
 
         def publisher(attempt: Path):
@@ -90,6 +94,8 @@ class RuntimeAntigravityTests(unittest.TestCase):
             completed_count_antigravity = 57
 
         class ClosedWriterAntigravity:
+            stage_antigravity = "complete"
+
             def terminal_antigravity(self, _stage: str, _error: str) -> None:
                 raise AssertionError("completed progress must remain immutable")
 
