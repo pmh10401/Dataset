@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T05:40:00Z",
-  "generated_from_commit": "5ffb3e09",
+  "generated_at": "2026-08-09T05:53:37Z",
+  "generated_from_commit": "476882a0",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -3566,6 +3566,9 @@
         "Task 5 imports the unchanged Exp249 scorer lazily and never rewrites or GPU-ports official aeon MiniROCKET; the four calls per scored dataset are kernels 1024/4096 crossed with seeds 20260721/20261721, dimensions 1008/4032, max reference 1000, query chunk 128, and one inner numerical thread.",
         "Task 5 recalculates empirical candidates at exactly alpha 0.005, intersects both frozen seeds independently per kernel, and rejects altered kernel/seed/alpha identities, non-finite scores, wrong lengths/dimensions, duplicates, and malformed TEST coordinates.",
         "Task 5 routing is pure set algebra: promotion is Standard intersect (Mini1024 union Mini4096), pre-exact is inherited Hard union promotion, final Hard subtracts frozen exact-normal; candidates outside Standard remain audit evidence and Priority/review lanes are preserved.",
+        "Task 5 affected-result routing requires status scored, exact dataset/policy/n_test, exactly four frozen kernel-seed scores (1024/4096 crossed with 20260721/20261721), finite immutable arrays with expected lengths, exact candidate-kernel keys, and alpha=.005 seed-intersection equality; empty, failed, or forged candidates fail closed.",
+        "Task 5 publication enforces an exact row schema, exact false boolean safety flags, recursive reuse of the prediction label/evaluation firewall, detached immutable nested rows/provenance, and a final schema/firewall revalidation immediately before canonical bytes.",
+        "Task 5 rejects out-of-range and pairwise-overlapping Hard/Standard/Priority lanes at the routing boundary; review-round behavior tests cover duplicate fixtures, overlap lanes, forged scores, recursive labels, source mutation, and canonical rejection.",
         "Task 5 produces deterministic rows for all 1,117 datasets with contains_test_labels=false and contains_evaluation_metrics=false, one recomputed policy result for each of the 19 affected datasets, and verified Exp249 candidate-map imports for the 1,098 unaffected datasets; the bounded control reproduces 137/2253/35/2218 and Exp291/Exp404 Hard equality."
       ],
       "evidence": [
