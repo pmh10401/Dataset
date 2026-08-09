@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T04:37:44Z",
-  "generated_from_commit": "8649989a00f55e626f9b6b57bef5d8cde1d63542",
+  "generated_at": "2026-08-09T05:03:09Z",
+  "generated_from_commit": "95250a16",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -43,7 +43,8 @@
     "Exp443 Task 3 review round 1: execution-time SQL gate, adversarial TOCTOU/cache fixtures, exact 1,119-to-1,117 population authority, and deeply immutable source evidence",
     "Exp443 Task 3 review round 2: closure-private sqlite facades, corrected authorizer table/column ordering, and zero actual TEST-label access on denied attempts",
     "Exp443 Task 3 review round 3: zero-state __slots__ facades with closure-only sqlite methods, context-owned raw lifecycle, and reflective no-bound-method escape coverage",
-    "Exp443 Task 4: ragged raw-row support, fixed TEST preprocessing, three normal-TRAIN policies, immutable policy audits, and all-19 Policy A foundation parity"
+    "Exp443 Task 4: ragged raw-row support, fixed TEST preprocessing, three normal-TRAIN policies, immutable policy audits, and all-19 Policy A foundation parity",
+    "Exp443 Task 4 review round 1: exact raw float32 SHA and lossless audit hashes, policy/action semantics, derived target/ragged identity contracts, immutable prepared reconciliation, and expanded 19-dataset parity evidence"
   ],
   "nodes": [
     {
@@ -3467,7 +3468,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity",
-      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation.",
+      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation. Review round 1 closes canonical audit/prepared reconciliation: policy/action/missingness combinations are frozen, raw `<f4` digests are recomputed, missing-position hashes survive the RunPolicyAudit adapter, targets are clipped from original TRAIN medians at every boundary, and TRAIN/TEST identities are gap-checked. The round also records exact A/B/C action totals, immutable byte ownership, and all-19 real parity.",
       "entrypoints": [
         "frozen_config_payload_antigravity",
         "scientific_config_sha256_antigravity",
@@ -3541,7 +3542,12 @@
         "TEST values always use linear interpolation with nearest finite edge extension, alignment, and float32 row-wise z-normalization; all three policy outputs are byte-identical on TEST.",
         "Policy A repairs NaN/+Inf/-Inf exactly like Exp226/Exp249; Policy B excludes complete nonfinite rows with dataset/index/length/positions/missing-mask SHA/raw-blob SHA audits and abstains below five used rows without zero filling.",
         "Policy C uses only other same-original-length normal TRAIN rows, ordinary NumPy per-coordinate finite-peer medians with self-exclusion, and whole-row exclusion when any missing coordinate lacks support; no mask feature or name-specific branch is available.",
-        "Prepared matrices are finite little-endian float32 arrays backed by immutable bytes; finite original TRAIN rows retain order and byte identity across A/B/C, and all-19 Policy A TRAIN/TEST bytes equal experiments.exp239_248_diverse_score_sources.foundation.load_bundle."
+        "Prepared matrices are finite little-endian float32 arrays backed by immutable bytes; finite original TRAIN rows retain order and byte identity across A/B/C, and all-19 Policy A TRAIN/TEST bytes equal experiments.exp239_248_diverse_score_sources.foundation.load_bundle.",
+        "Review round 1 requires exact policy/action/missingness semantics, immutable prepared audit/count/index/status reconciliation, and no forged in-range or out-of-range target.",
+        "RawSeriesAntigravity and preprocessing row adapters recompute SHA256 from exact original little-endian float32 bytes; format-valid forged digests fail closed.",
+        "RunPolicyAuditAntigravity carries missing_positions_sha256 losslessly; PreparedTrain/PreparedDataset enforce derived clipped targets, audit identities, action counts, finite immutable matrices, and contiguous TEST identities.",
+        "The production raw loader rejects TRAIN/TEST identity gaps and RawDatasetAntigravity requires target_length == clip(median(original TRAIN lengths), 8, 2048) for equal and ragged populations.",
+        "Round-1 real evidence fixes action totals at A unchanged 2808/repair 164, B unchanged 2808/excluded 164, and C unchanged 2808/peer repair 162/unsupported excluded 2 across 2,972 TRAIN rows."
       ],
       "evidence": [
         {
@@ -3703,6 +3709,30 @@
         {
           "path": "experiments/exp239_248_diverse_score_sources/foundation.py",
           "symbol": "def load_bundle(dataset: str, path: Path = DB_PATH)"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_raw_series_recomputes_exact_little_endian_float32_digest"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_policy_audit_freezes_action_vocabulary_and_missingness_semantics"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
+          "symbol": "def test_contract_audit_round_trip_preserves_every_audit_field"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
+          "symbol": "def test_prepared_train_reconciles_audits_counts_indices_target_and_status"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_raw_loader_rejects_train_and_test_identity_gaps"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_raw_dataset_target_is_always_clipped_train_length_median"
         }
       ]
     }
