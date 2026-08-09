@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T02:46:23Z",
-  "generated_from_commit": "11b4046894970098e2e69dc446cad6cb73d07735",
+  "generated_at": "2026-08-09T02:54:31Z",
+  "generated_from_commit": "baf330534388843a195dc0371beee0a0ec4f365f",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -38,7 +38,7 @@
     "Exp443 review-round fixes: pre-existing venv immutability, exact checkpoint identity, one-thread evidence, and truthful optional accelerator probes",
     "Exp443 review-round 2: sourceable fixed-root preflight seam and strict optional evidence types",
     "Exp443 review-round 3: centralized fresh-path freeze cleanup with signal-safe trap scope",
-    "Exp443 review-round 4: process-owned bootstrap lock sentinel cleanup across EXIT/HUP/INT/TERM and successful publication ownership release"
+    "Exp443 review-round 5: same-directory complete temporary plus atomic hard-link no-clobber bootstrap-lock publication across signal windows"
   ],
   "nodes": [
     {
@@ -3484,7 +3484,8 @@
         "canonical_json_bytes_antigravity",
         "write_create_only_antigravity",
         "exclusive_rename_antigravity",
-        "exp443_after_bootstrap_sentinel_antigravity"
+        "exp443_before_bootstrap_publication_antigravity",
+        "exp443_after_bootstrap_publication_antigravity"
       ],
       "tests": [
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
@@ -3499,7 +3500,7 @@
         "Artifact publication is canonical, fsyncing, mode 0600/0700, descriptor-pinned, and create-only/no-clobber; Exp441 primitives are reused narrowly.",
         "Normal script execution uses only the fixed official venv; the sourceable preflight helper is a private test seam and rejects a mismatching fixture before chmod, pip, or install.",
         "Environment evidence preserves optional torch/mlx versions as string-or-null and MPS capability as bool-or-null; forged payload types fail closed.",
-        "Fresh default and bootstrap cleanup centrally clears EXIT/HUP/INT/TERM traps; it tracks only the exclusively-created process-owned bootstrap sentinel, removes it before publication on cleanup, and clears that ownership after successful atomic publication so the final lock remains.",
+        "Fresh default cleanup centrally clears EXIT/HUP/INT/TERM traps. Bootstrap creates a uniquely owned antigravity temporary beside the final lock, hard-links its complete bytes into the absent final name without replacement, then cleans only that temporary; signals before linking leave no final lock and signals after linking retain complete final bytes.",
         "This node covers only Task 2; database, preprocessing, scoring, routing, checkpoint runtime, publication, and evaluation modules are not yet implemented."
       ],
       "evidence": [
@@ -3561,11 +3562,15 @@
         },
         {
           "path": "scripts/create_exp443_environment_antigravity.sh",
-          "symbol": "exp443_after_bootstrap_sentinel_antigravity()"
+          "symbol": "exp443_before_bootstrap_publication_antigravity()"
+        },
+        {
+          "path": "scripts/create_exp443_environment_antigravity.sh",
+          "symbol": "exp443_after_bootstrap_publication_antigravity()"
         },
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_environment_antigravity.py",
-          "symbol": "def test_bootstrap_signal_after_sentinel_creation_cleans_and_success_publishes(self) -> None:"
+          "symbol": "def test_bootstrap_atomic_link_publication_handles_signals_and_never_overwrites(self) -> None:"
         }
       ]
     }
