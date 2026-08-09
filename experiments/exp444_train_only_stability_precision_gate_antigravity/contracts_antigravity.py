@@ -192,6 +192,32 @@ def _selected_coordinate_identity_antigravity(candidates: Sequence[SourceCandida
     return hashlib.sha256(payload).hexdigest()
 
 
+def candidate_attestation_sha256_antigravity(
+    candidates: Sequence[SourceCandidateAntigravity],
+) -> str:
+    """Attest the ordered, complete Exp442 candidate replay."""
+    population = tuple(candidates)
+    if any(not isinstance(item, SourceCandidateAntigravity) for item in population):
+        raise ValueError("candidate attestation population is invalid")
+    payload = b"".join(
+        json.dumps(
+            {
+                "order": order,
+                "dataset": candidate.dataset,
+                "instance_index": candidate.instance_index,
+                "raw_length": candidate.raw_length,
+                "original_depths": list(candidate.original_depths),
+                "original_rank": candidate.original_rank,
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8") + b"\n"
+        for order, candidate in enumerate(population, start=1)
+    )
+    return hashlib.sha256(payload).hexdigest()
+
+
 @dataclass(frozen=True)
 class CandidateInputAntigravity:
     """Copied, values-only input for one frozen Exp442 coordinate.
@@ -245,6 +271,7 @@ class FrozenSourceSnapshotAntigravity:
 
     candidates: tuple[SourceCandidateAntigravity, ...]
     selected_coordinate_identity_sha256: str
+    candidate_attestation_sha256: str
     source_hashes: Mapping[str, str]
     database_path: object
     label_access_count: int = 0
@@ -261,12 +288,16 @@ class FrozenSourceSnapshotAntigravity:
             raise ValueError("source candidates contain duplicate coordinates")
         if len({item.dataset for item in candidates}) != len(candidates):
             raise ValueError("source snapshot must contain at most one candidate per dataset")
-        if set(item.original_rank for item in candidates) != set(range(1, FROZEN_CONFIG.source_candidate_count + 1)):
-            raise ValueError("source candidate ranks must be exactly 1-30")
+        expected_rank_order = tuple(range(1, FROZEN_CONFIG.source_candidate_count + 1))
+        if tuple(item.original_rank for item in candidates) != expected_rank_order:
+            raise ValueError("source candidate rank order must be exactly 1-30")
         selected_identity = _digest(self.selected_coordinate_identity_sha256, "selected_coordinate_identity_sha256")
         recomputed_identity = _selected_coordinate_identity_antigravity(candidates)
         if selected_identity != recomputed_identity or selected_identity != FROZEN_CONFIG.exp442_selected_coordinate_identity_sha256:
             raise ValueError("source snapshot coordinate identity is not the frozen selected identity")
+        attestation = _digest(self.candidate_attestation_sha256, "candidate_attestation_sha256")
+        if attestation != candidate_attestation_sha256_antigravity(candidates):
+            raise ValueError("source snapshot candidate attestation is invalid")
         if not isinstance(self.source_hashes, Mapping) or not self.source_hashes:
             raise ValueError("source hashes are invalid")
         if any(type(key) is not str or not key for key in self.source_hashes):
@@ -676,6 +707,7 @@ def canonical_contract_sha256_antigravity(payload: Mapping[str, object]) -> str:
 
 __all__ = [
     "SourceCandidateAntigravity", "CandidateInputAntigravity", "FrozenSourceSnapshotAntigravity",
+    "candidate_attestation_sha256_antigravity",
     "OmissionMaskAntigravity", "DepthViewScoreAntigravity",
     "StabilityViewAntigravity", "CandidateStabilityResultAntigravity",
     "StabilitySelectionAntigravity", "BackendDecisionAntigravity",

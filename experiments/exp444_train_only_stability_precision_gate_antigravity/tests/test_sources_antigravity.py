@@ -1,11 +1,9 @@
 """Adversarial tests for Exp444's frozen-source and values-only boundary."""
 from __future__ import annotations
 
-from hashlib import sha256
 import json
 import os
 from pathlib import Path
-import sqlite3
 import tempfile
 import unittest
 
@@ -17,6 +15,7 @@ from experiments.exp444_train_only_stability_precision_gate_antigravity.contract
     CandidateInputAntigravity,
     FrozenSourceSnapshotAntigravity,
     SourceCandidateAntigravity,
+    candidate_attestation_sha256_antigravity,
 )
 
 
@@ -48,41 +47,6 @@ def _candidate_populations_antigravity() -> tuple[list[dict[str, object]], list[
         for rank in range(1, 50)
     ]
     return [dict(row) for row in ranking[:30]], ranking
-
-
-def _create_values_database_antigravity(path: Path) -> str:
-    connection = sqlite3.connect(path)
-    connection.executescript(
-        """
-        CREATE TABLE datasets (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
-        CREATE TABLE instances (
-            dataset_id INTEGER NOT NULL, split TEXT NOT NULL,
-            instance_index INTEGER NOT NULL, label TEXT NOT NULL,
-            values_blob BLOB NOT NULL, labels_blob BLOB
-        );
-        INSERT INTO datasets(id, name) VALUES(1, 'A');
-        """
-    )
-    rows = [
-        (1, "TRAIN", 0, "0", np.asarray([1, 2, 3, 4], dtype="<f4").tobytes(), None),
-        (1, "TRAIN", 1, "0", np.asarray([2, 3, 4, 5], dtype="<f4").tobytes(), None),
-        (1, "TRAIN", 2, "0", np.asarray([3, 4, 5, 6], dtype="<f4").tobytes(), None),
-        (1, "TRAIN", 3, "0", np.asarray([4, 5, 6, 7], dtype="<f4").tobytes(), None),
-        (1, "TEST", 0, "1", np.asarray([6, 7, 8, 9], dtype="<f4").tobytes(), b"hidden"),
-    ]
-    connection.executemany("INSERT INTO instances VALUES(?, ?, ?, ?, ?, ?)", rows)
-    connection.commit()
-    connection.close()
-    return sha256(path.read_bytes()).hexdigest()
-
-
-def _open_test_session_antigravity(path: Path) -> sources.ValuesOnlyDatabaseSessionAntigravity:
-    return sources.ValuesOnlyDatabaseSessionAntigravity._from_test_fixture_antigravity(
-        path,
-        expected_sha256=sha256(path.read_bytes()).hexdigest(),
-        allowed_train_datasets=frozenset({"A"}),
-        allowed_test_coordinates=frozenset({("A", 0)}),
-    )
 
 
 def _remove_retained_pin_antigravity(pin: Path) -> None:
@@ -117,6 +81,7 @@ class Exp444SourceBoundaryAntigravityTests(unittest.TestCase):
             FrozenSourceSnapshotAntigravity(
                 candidates=(one,),
                 selected_coordinate_identity_sha256="0" * 64,
+                candidate_attestation_sha256="0" * 64,
                 source_hashes={"database": "0" * 64},
                 database_path="/tmp/does-not-open-antigravity.db",
             )
@@ -136,6 +101,7 @@ class Exp444SourceBoundaryAntigravityTests(unittest.TestCase):
         forged = FrozenSourceSnapshotAntigravity(
             candidates=tuple(altered),
             selected_coordinate_identity_sha256=verified.selected_coordinate_identity_sha256,
+            candidate_attestation_sha256=candidate_attestation_sha256_antigravity(altered),
             source_hashes=verified.source_hashes,
             database_path=verified.database_path,
             session=verified.session,
@@ -151,6 +117,7 @@ class Exp444SourceBoundaryAntigravityTests(unittest.TestCase):
             detached = FrozenSourceSnapshotAntigravity(
                 candidates=verified.candidates,
                 selected_coordinate_identity_sha256=verified.selected_coordinate_identity_sha256,
+                candidate_attestation_sha256=verified.candidate_attestation_sha256,
                 source_hashes=verified.source_hashes,
                 database_path=verified.database_path,
                 session=None,
@@ -159,6 +126,66 @@ class Exp444SourceBoundaryAntigravityTests(unittest.TestCase):
             verified.session.close()
         with self.assertRaisesRegex(ValueError, "verified source session"):
             sources.load_candidate_values_antigravity(detached)
+
+    def test_reversed_snapshot_rank_order_is_rejected_before_query_antigravity(self) -> None:
+        verified = sources.verify_frozen_sources_antigravity()
+        self.addCleanup(verified.session.close)
+        before = verified.session.execution_count
+        with self.assertRaisesRegex(ValueError, "rank order"):
+            FrozenSourceSnapshotAntigravity(
+                candidates=tuple(reversed(verified.candidates)),
+                selected_coordinate_identity_sha256=verified.selected_coordinate_identity_sha256,
+                candidate_attestation_sha256=candidate_attestation_sha256_antigravity(tuple(reversed(verified.candidates))),
+                source_hashes=verified.source_hashes,
+                database_path=verified.database_path,
+                session=verified.session,
+            )
+        self.assertEqual(verified.session.execution_count, before)
+
+    def test_public_session_rejects_jointly_forged_depths_before_database_open_antigravity(self) -> None:
+        verified = sources.verify_frozen_sources_antigravity()
+        candidates = list(verified.candidates)
+        first = candidates[0]
+        candidates[0] = SourceCandidateAntigravity(
+            first.dataset,
+            first.instance_index,
+            first.raw_length,
+            (first.original_depths[0], first.original_depths[-1] + 1),
+            first.original_rank,
+        )
+        verified.session.close()
+        source_path = Path(FROZEN_CONFIG.database_path)
+        before_links = source_path.stat().st_nlink
+        escaped = None
+        try:
+            with self.assertRaisesRegex(ValueError, "verified replay"):
+                escaped = sources.ValuesOnlyDatabaseSessionAntigravity(
+                    source_path,
+                    expected_sha256=FROZEN_CONFIG.database_sha256,
+                    candidates=tuple(candidates),
+                )
+        finally:
+            if escaped is not None:
+                escaped.close()
+        self.assertEqual(source_path.stat().st_nlink, before_links)
+
+    def test_public_session_rejects_caller_chosen_database_and_hash_antigravity(self) -> None:
+        verified = sources.verify_frozen_sources_antigravity()
+        candidates = verified.candidates
+        verified.session.close()
+        with tempfile.TemporaryDirectory(prefix="exp444_constructor_escape_antigravity_") as directory:
+            database = Path(directory) / "caller_antigravity.db"
+            database.write_bytes(b"caller chosen database")
+            opened: list[Path] = []
+            sources._DATABASE_PRE_OPEN_HOOK_ANTIGRAVITY = opened.append
+            with self.assertRaisesRegex(ValueError, "verified replay"):
+                sources.ValuesOnlyDatabaseSessionAntigravity(
+                    database,
+                    expected_sha256="0" * 64,
+                    candidates=candidates,
+                )
+            self.assertEqual(opened, [])
+            self.assertFalse(hasattr(sources.ValuesOnlyDatabaseSessionAntigravity, "_from_test_fixture_antigravity"))
         duplicate_dataset = tuple(
             SourceCandidateAntigravity("A", rank - 1, 8, (1, 2), rank)
             for rank in range(1, 31)
@@ -167,6 +194,7 @@ class Exp444SourceBoundaryAntigravityTests(unittest.TestCase):
             FrozenSourceSnapshotAntigravity(
                 candidates=duplicate_dataset,
                 selected_coordinate_identity_sha256=FROZEN_CONFIG.exp442_selected_coordinate_identity_sha256,
+                candidate_attestation_sha256="0" * 64,
                 source_hashes={"database": "0" * 64},
                 database_path="/tmp/does-not-open-antigravity.db",
             )
@@ -178,6 +206,7 @@ class Exp444SourceBoundaryAntigravityTests(unittest.TestCase):
             FrozenSourceSnapshotAntigravity(
                 candidates=arbitrary,
                 selected_coordinate_identity_sha256=FROZEN_CONFIG.exp442_selected_coordinate_identity_sha256,
+                candidate_attestation_sha256=candidate_attestation_sha256_antigravity(arbitrary),
                 source_hashes={"database": "0" * 64},
                 database_path="/tmp/does-not-open-antigravity.db",
             )
@@ -210,51 +239,53 @@ WHERE d.name = ? AND i.split = 'TEST' AND i.instance_index = ?""",
         )
 
     def test_unbound_test_coordinate_is_denied_before_execution_counters_change_antigravity(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="exp444_unbound_test_antigravity_") as directory:
-            database = Path(directory) / "values_antigravity.db"
-            _create_values_database_antigravity(database)
-            session = _open_test_session_antigravity(database)
-            with session:
-                with self.assertRaisesRegex(ValueError, "unbound TEST coordinate"):
-                    session.query_antigravity(sources.BOUND_TEST_VALUE_SQL_ANTIGRAVITY, ("A", 1))
-                self.assertEqual(session.sql_trace, [])
-                self.assertEqual(session.execution_count, 0)
-                self.assertEqual(session.label_access_count, 0)
-                self.assertEqual(session.denied_sql_attempts, 1)
+        snapshot = sources.verify_frozen_sources_antigravity()
+        session = snapshot.session
+        with session:
+            candidate = snapshot.candidates[0]
+            with self.assertRaisesRegex(ValueError, "unbound TEST coordinate"):
+                session.query_antigravity(
+                    sources.BOUND_TEST_VALUE_SQL_ANTIGRAVITY,
+                    (candidate.dataset, candidate.instance_index + 1),
+                )
+            self.assertEqual(session.sql_trace, [])
+            self.assertEqual(session.execution_count, 0)
+            self.assertEqual(session.label_access_count, 0)
+            self.assertEqual(session.denied_sql_attempts, 1)
 
     def test_unbound_train_dataset_and_forbidden_sql_have_zero_execution_and_label_access_antigravity(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="exp444_sql_firewall_antigravity_") as directory:
-            database = Path(directory) / "values_antigravity.db"
-            _create_values_database_antigravity(database)
-            session = _open_test_session_antigravity(database)
-            with session:
-                denied = (
-                    (sources.NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, ("B",)),
-                    ("SELECT instance_index, label FROM instances WHERE split='TEST'", ()),
-                    ("SELECT instance_index, labels_blob FROM instances WHERE split='TEST'", ()),
-                    ("SELECT * FROM instances", ()),
-                    ("SELECT made_up_column FROM instances", ()),
-                )
-                for sql, parameters in denied:
-                    with self.subTest(sql=sql), self.assertRaises(ValueError):
-                        session.query_antigravity(sql, parameters)
-                self.assertEqual(session.execution_count, 0)
-                self.assertEqual(session.sql_trace, [])
-                self.assertEqual(session.label_access_count, 0)
-                self.assertEqual(session.denied_sql_attempts, len(denied))
+        snapshot = sources.verify_frozen_sources_antigravity()
+        session = snapshot.session
+        with session:
+            denied = (
+                (sources.NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, ("not-frozen-antigravity",)),
+                ("SELECT instance_index, label FROM instances WHERE split='TEST'", ()),
+                ("SELECT instance_index, labels_blob FROM instances WHERE split='TEST'", ()),
+                ("SELECT * FROM instances", ()),
+                ("SELECT made_up_column FROM instances", ()),
+            )
+            for sql, parameters in denied:
+                with self.subTest(sql=sql), self.assertRaises(ValueError):
+                    session.query_antigravity(sql, parameters)
+            self.assertEqual(session.execution_count, 0)
+            self.assertEqual(session.sql_trace, [])
+            self.assertEqual(session.label_access_count, 0)
+            self.assertEqual(session.denied_sql_attempts, len(denied))
 
     def test_allowed_values_queries_execute_with_no_label_access_antigravity(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="exp444_allowed_sql_antigravity_") as directory:
-            database = Path(directory) / "values_antigravity.db"
-            _create_values_database_antigravity(database)
-            session = _open_test_session_antigravity(database)
-            with session:
-                train = session.query_antigravity(sources.NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, ("A",))
-                test = session.query_antigravity(sources.BOUND_TEST_VALUE_SQL_ANTIGRAVITY, ("A", 0))
-                self.assertEqual(len(train), 4)
-                self.assertEqual(tuple(row[0] for row in test), (0,))
-                self.assertEqual(session.execution_count, 2)
-                self.assertEqual(session.label_access_count, 0)
+        snapshot = sources.verify_frozen_sources_antigravity()
+        session = snapshot.session
+        with session:
+            candidate = snapshot.candidates[0]
+            train = session.query_antigravity(sources.NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, (candidate.dataset,))
+            test = session.query_antigravity(
+                sources.BOUND_TEST_VALUE_SQL_ANTIGRAVITY,
+                (candidate.dataset, candidate.instance_index),
+            )
+            self.assertGreaterEqual(len(train), 4)
+            self.assertEqual(tuple(row[0] for row in test), (candidate.instance_index,))
+            self.assertEqual(session.execution_count, 2)
+            self.assertEqual(session.label_access_count, 0)
 
     def test_values_preparation_excludes_nonfinite_rows_and_returns_read_only_arrays_antigravity(self) -> None:
         candidate = SourceCandidateAntigravity("A", 0, 4, (1, 2), 1)
@@ -368,21 +399,22 @@ WHERE d.name = ? AND i.split = 'TEST' AND i.instance_index = ?""",
 
     def test_database_replacement_and_metadata_drift_fail_before_query_antigravity(self) -> None:
         for mutation in ("replace", "metadata"):
-            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory(prefix="exp444_db_drift_antigravity_") as directory:
-                root = Path(directory)
-                database = root / "values_antigravity.db"
-                _create_values_database_antigravity(database)
-                session = _open_test_session_antigravity(database)
+            with self.subTest(mutation=mutation):
+                snapshot = sources.verify_frozen_sources_antigravity()
+                session = snapshot.session
                 pin = session.pin_path
-                if mutation == "replace":
-                    replacement = root / "replacement_antigravity.db"
-                    _create_values_database_antigravity(replacement)
-                    os.replace(replacement, database)
-                else:
-                    before = database.stat()
-                    os.utime(database, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
+                replacement = pin.parent / "replacement_antigravity.db"
+                replacement.write_bytes(b"replacement database pin")
+                if mutation == "metadata":
+                    before = replacement.stat()
+                    os.utime(replacement, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
+                os.replace(replacement, pin)
+                candidate = snapshot.candidates[0]
                 with self.assertRaisesRegex(ValueError, "database source or pin identity changed"):
-                    session.query_antigravity(sources.BOUND_TEST_VALUE_SQL_ANTIGRAVITY, ("A", 0))
+                    session.query_antigravity(
+                        sources.BOUND_TEST_VALUE_SQL_ANTIGRAVITY,
+                        (candidate.dataset, candidate.instance_index),
+                    )
                 self.assertEqual(session.execution_count, 0)
                 self.assertEqual(session.label_access_count, 0)
                 with self.assertRaisesRegex(ValueError, "pinned database close failed"):
@@ -394,11 +426,11 @@ WHERE d.name = ? AND i.split = 'TEST' AND i.instance_index = ?""",
     def test_close_failure_injections_preserve_truthful_pin_and_root_antigravity(self) -> None:
         steps = ("before_descriptor_close", "before_pin_unlink", "after_pin_unlink", "before_root_rmdir")
         for step in steps:
-            with self.subTest(step=step), tempfile.TemporaryDirectory(prefix="exp444_close_failure_antigravity_") as directory:
-                database = Path(directory) / "values_antigravity.db"
-                _create_values_database_antigravity(database)
+            with self.subTest(step=step):
+                database = Path(FROZEN_CONFIG.database_path)
                 original_links = database.stat().st_nlink
-                session = _open_test_session_antigravity(database)
+                snapshot = sources.verify_frozen_sources_antigravity()
+                session = snapshot.session
                 pin = session.pin_path
 
                 def fail(actual: str, _pin: Path, _root: Path) -> None:
@@ -417,26 +449,23 @@ WHERE d.name = ? AND i.split = 'TEST' AND i.instance_index = ?""",
                 self.assertEqual(database.stat().st_nlink, original_links)
 
     def test_successful_close_removes_only_owned_pin_and_restores_link_count_antigravity(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="exp444_close_success_antigravity_") as directory:
-            database = Path(directory) / "values_antigravity.db"
-            _create_values_database_antigravity(database)
-            original_links = database.stat().st_nlink
-            session = _open_test_session_antigravity(database)
-            pin = session.pin_path
-            root = pin.parent
-            session.close()
-            self.assertFalse(pin.exists())
-            self.assertFalse(root.exists())
-            self.assertEqual(database.stat().st_nlink, original_links)
+        database = Path(FROZEN_CONFIG.database_path)
+        original_links = database.stat().st_nlink
+        snapshot = sources.verify_frozen_sources_antigravity()
+        session = snapshot.session
+        pin = session.pin_path
+        root = pin.parent
+        session.close()
+        self.assertFalse(pin.exists())
+        self.assertFalse(root.exists())
+        self.assertEqual(database.stat().st_nlink, original_links)
 
     def test_session_exposes_no_raw_connection_or_cursor_antigravity(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="exp444_no_raw_handle_antigravity_") as directory:
-            database = Path(directory) / "values_antigravity.db"
-            _create_values_database_antigravity(database)
-            session = _open_test_session_antigravity(database)
-            with session:
-                for name in ("connection", "cursor", "raw_connection", "raw_cursor"):
-                    self.assertFalse(hasattr(session, name), name)
+        snapshot = sources.verify_frozen_sources_antigravity()
+        session = snapshot.session
+        with session:
+            for name in ("connection", "cursor", "raw_connection", "raw_cursor"):
+                self.assertFalse(hasattr(session, name), name)
 
 
 if __name__ == "__main__":

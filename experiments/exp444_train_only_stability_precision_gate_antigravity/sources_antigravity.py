@@ -30,6 +30,7 @@ from .contracts_antigravity import (
     CandidateInputAntigravity,
     FrozenSourceSnapshotAntigravity,
     SourceCandidateAntigravity,
+    candidate_attestation_sha256_antigravity,
 )
 
 
@@ -228,7 +229,7 @@ def _decode_values_blob_antigravity(blob: object, name: str) -> np.ndarray:
 
 def _validated_candidate_bounds_antigravity(
     candidates: Sequence[SourceCandidateAntigravity],
-) -> tuple[frozenset[str], frozenset[tuple[str, int]], tuple[tuple[object, ...], ...]]:
+) -> tuple[frozenset[str], frozenset[tuple[str, int]], tuple[tuple[object, ...], ...], str]:
     population = tuple(candidates)
     if len(population) != FROZEN_CONFIG.source_candidate_count or any(
         not isinstance(item, SourceCandidateAntigravity) for item in population
@@ -238,13 +239,41 @@ def _validated_candidate_bounds_antigravity(
     coordinates = frozenset(item.coordinate for item in population)
     if len(datasets) != len(population) or len(coordinates) != len(population):
         raise ValueError("database session requires one frozen candidate per dataset")
-    if set(item.original_rank for item in population) != set(range(1, FROZEN_CONFIG.source_candidate_count + 1)):
-        raise ValueError("database session candidate ranks are not 1-30")
+    expected_rank_order = tuple(range(1, FROZEN_CONFIG.source_candidate_count + 1))
+    if tuple(item.original_rank for item in population) != expected_rank_order:
+        raise ValueError("database session candidate rank order is not 1-30")
     identity = selected_coordinate_identity_sha256_antigravity(tuple(coordinates))
     if identity != FROZEN_CONFIG.exp442_selected_coordinate_identity_sha256:
         raise ValueError("database session candidate identity is not frozen")
-    signatures = tuple(sorted(_candidate_signature_antigravity(item) for item in population))
-    return datasets, coordinates, signatures
+    signatures = tuple(_candidate_signature_antigravity(item) for item in population)
+    attestation = candidate_attestation_sha256_antigravity(population)
+    return datasets, coordinates, signatures, attestation
+
+
+_VERIFIED_REPLAY_TOKEN_ANTIGRAVITY = object()
+
+
+class _VerifiedReplayAttestationAntigravity:
+    """Module-private capability created only after exact frozen replay."""
+
+    __slots__ = ("source", "database_sha256", "datasets", "coordinates", "signatures", "candidate_attestation_sha256")
+
+    def __init__(
+        self,
+        token: object,
+        source: Path,
+        database_sha256: str,
+        candidates: Sequence[SourceCandidateAntigravity],
+    ) -> None:
+        if token is not _VERIFIED_REPLAY_TOKEN_ANTIGRAVITY:
+            raise ValueError("verified replay attestation is required")
+        datasets, coordinates, signatures, attestation = _validated_candidate_bounds_antigravity(candidates)
+        self.source = Path(source)
+        self.database_sha256 = _digest(database_sha256, "verified replay database SHA256")
+        self.datasets = datasets
+        self.coordinates = coordinates
+        self.signatures = signatures
+        self.candidate_attestation_sha256 = attestation
 
 
 class ValuesOnlyDatabaseSessionAntigravity:
@@ -254,39 +283,30 @@ class ValuesOnlyDatabaseSessionAntigravity:
         "_source_path", "_pin_path", "_root", "_descriptor", "_source_metadata",
         "_pin_inode", "_source_nlink", "_database_sha256", "_closed", "_label_access_count",
         "_allowed_train_datasets", "_allowed_test_coordinates", "_bound_candidate_signatures",
+        "_candidate_attestation_sha256",
         "denied_sql_attempts", "sql_trace", "_active_sql", "_finalizer", "__weakref__",
     )
 
-    def __init__(
-        self,
-        source: Path,
-        *,
-        expected_sha256: str,
-        candidates: Sequence[SourceCandidateAntigravity],
-    ) -> None:
-        datasets, coordinates, signatures = _validated_candidate_bounds_antigravity(candidates)
-        self._initialize_antigravity(source, expected_sha256, datasets, coordinates, signatures)
+    def __init__(self, *_args: object, **_kwargs: object) -> None:
+        raise ValueError("verified replay session must be created by source verification")
 
     @classmethod
-    def _from_test_fixture_antigravity(
+    def _from_verified_replay_antigravity(
         cls,
-        source: Path,
-        *,
-        expected_sha256: str,
-        allowed_train_datasets: frozenset[str],
-        allowed_test_coordinates: frozenset[tuple[str, int]],
+        attestation: _VerifiedReplayAttestationAntigravity,
+        token: object,
     ) -> "ValuesOnlyDatabaseSessionAntigravity":
-        """Explicit unit-fixture seam; production callers must bind frozen candidates."""
-        datasets = frozenset(allowed_train_datasets)
-        coordinates = frozenset(allowed_test_coordinates)
-        if not datasets or not coordinates or {dataset for dataset, _ in coordinates} != datasets:
-            raise ValueError("test fixture bounds are invalid")
-        if any(type(dataset) is not str or not dataset for dataset in datasets):
-            raise ValueError("test fixture TRAIN bounds are invalid")
-        if any(type(dataset) is not str or not dataset or type(index) is not int or index < 0 for dataset, index in coordinates):
-            raise ValueError("test fixture TEST bounds are invalid")
+        if token is not _VERIFIED_REPLAY_TOKEN_ANTIGRAVITY or not isinstance(attestation, _VerifiedReplayAttestationAntigravity):
+            raise ValueError("verified replay attestation is required")
         instance = cls.__new__(cls)
-        instance._initialize_antigravity(source, expected_sha256, datasets, coordinates, ())
+        instance._initialize_antigravity(
+            attestation.source,
+            attestation.database_sha256,
+            attestation.datasets,
+            attestation.coordinates,
+            attestation.signatures,
+            attestation.candidate_attestation_sha256,
+        )
         return instance
 
     def _initialize_antigravity(
@@ -296,6 +316,7 @@ class ValuesOnlyDatabaseSessionAntigravity:
         allowed_train_datasets: frozenset[str],
         allowed_test_coordinates: frozenset[tuple[str, int]],
         bound_candidate_signatures: tuple[tuple[object, ...], ...],
+        candidate_attestation_sha256: str,
     ) -> None:
         self._source_path = Path(source)
         self._pin_path: Path | None = None
@@ -310,6 +331,7 @@ class ValuesOnlyDatabaseSessionAntigravity:
         self._allowed_train_datasets = allowed_train_datasets
         self._allowed_test_coordinates = allowed_test_coordinates
         self._bound_candidate_signatures = bound_candidate_signatures
+        self._candidate_attestation_sha256 = candidate_attestation_sha256
         self.denied_sql_attempts = 0
         self.sql_trace: list[str] = []
         self._active_sql: str | None = None
@@ -809,10 +831,18 @@ def verify_frozen_sources_antigravity(fixture: object | None = None) -> FrozenSo
         raise ValueError("Exp442 selected candidate overlaps frozen Hard source")
     if hard_coordinates != hard:
         raise ValueError("Exp442 selection Hard coordinates disagree with Exp404")
-    session = ValuesOnlyDatabaseSessionAntigravity(
+    ordered_candidates = tuple(sorted(prediction, key=lambda item: item.original_rank))
+    if tuple(item.original_rank for item in ordered_candidates) != tuple(range(1, 31)):
+        raise ValueError("Exp442 verified candidate rank order is not contiguous 1-30")
+    replay_attestation = _VerifiedReplayAttestationAntigravity(
+        _VERIFIED_REPLAY_TOKEN_ANTIGRAVITY,
         paths.database,
-        expected_sha256=expected["database"],
-        candidates=prediction,
+        expected["database"],
+        ordered_candidates,
+    )
+    session = ValuesOnlyDatabaseSessionAntigravity._from_verified_replay_antigravity(
+        replay_attestation,
+        _VERIFIED_REPLAY_TOKEN_ANTIGRAVITY,
     )
     hashes = {
         "database": expected["database"],
@@ -828,8 +858,9 @@ def verify_frozen_sources_antigravity(fixture: object | None = None) -> FrozenSo
     }
     try:
         return FrozenSourceSnapshotAntigravity(
-            candidates=prediction,
+            candidates=ordered_candidates,
             selected_coordinate_identity_sha256=selected_identity,
+            candidate_attestation_sha256=replay_attestation.candidate_attestation_sha256,
             source_hashes=hashes,
             database_path=paths.database,
             label_access_count=session.label_access_count,
@@ -893,13 +924,15 @@ def _load_candidate_values_from_session_antigravity(snapshot: FrozenSourceSnapsh
 
 def _validate_snapshot_for_loading_antigravity(
     snapshot: FrozenSourceSnapshotAntigravity,
-) -> tuple[frozenset[str], frozenset[tuple[str, int]], tuple[tuple[object, ...], ...]]:
+) -> tuple[frozenset[str], frozenset[tuple[str, int]], tuple[tuple[object, ...], ...], str]:
     if not isinstance(snapshot, FrozenSourceSnapshotAntigravity):
         raise ValueError("source snapshot is invalid")
-    datasets, coordinates, signatures = _validated_candidate_bounds_antigravity(snapshot.candidates)
+    datasets, coordinates, signatures, attestation = _validated_candidate_bounds_antigravity(snapshot.candidates)
     identity = selected_coordinate_identity_sha256_antigravity(tuple(coordinates))
     if snapshot.selected_coordinate_identity_sha256 != identity:
         raise ValueError("source snapshot coordinate identity changed")
+    if snapshot.candidate_attestation_sha256 != attestation:
+        raise ValueError("source snapshot candidate attestation changed")
     expected_hashes = {
         "database": FROZEN_CONFIG.database_sha256,
         "exp404_hard_prediction": FROZEN_CONFIG.exp404_hard_prediction_sha256,
@@ -914,12 +947,12 @@ def _validate_snapshot_for_loading_antigravity(
         raise ValueError("source snapshot database path is not frozen")
     if snapshot.label_access_count != 0:
         raise ValueError("source snapshot has label access")
-    return datasets, coordinates, signatures
+    return datasets, coordinates, signatures, attestation
 
 
 def load_candidate_values_antigravity(snapshot: FrozenSourceSnapshotAntigravity) -> tuple[CandidateInputAntigravity, ...]:
     """Materialize only normal TRAIN and bound TEST values for 30 candidates."""
-    datasets, coordinates, signatures = _validate_snapshot_for_loading_antigravity(snapshot)
+    datasets, coordinates, signatures, attestation = _validate_snapshot_for_loading_antigravity(snapshot)
     supplied = snapshot.session
     if supplied is None:
         raise ValueError("parent-owned verified source session is required")
@@ -929,6 +962,8 @@ def load_candidate_values_antigravity(snapshot: FrozenSourceSnapshotAntigravity)
         raise ValueError("source session bounds do not match snapshot")
     if supplied._bound_candidate_signatures != signatures:
         raise ValueError("source session candidate signatures do not match snapshot")
+    if supplied._candidate_attestation_sha256 != attestation:
+        raise ValueError("source session candidate attestation does not match snapshot")
     return _load_candidate_values_from_session_antigravity(snapshot, supplied)
 
 

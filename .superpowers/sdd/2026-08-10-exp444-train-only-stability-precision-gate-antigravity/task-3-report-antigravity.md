@@ -241,3 +241,94 @@ Ran 18 tests in 1.689s
 
 OK
 ```
+
+## Fix Round 2
+
+### Boundary correction
+
+- Removed production `_from_test_fixture_antigravity`; there is no longer a
+  SQLite-capable fixture or public constructor that accepts caller-selected
+  paths, hashes, datasets, coordinates, or candidate metadata.
+- `verify_frozen_sources_antigravity` first proves exact frozen Exp442
+  prediction/ranking/selection agreement, orders candidates by contiguous
+  original rank 1-30, and only then mints a module-private identity-token
+  attestation used to initialize the database session.
+- The canonical full-candidate SHA covers tuple order, dataset, instance index,
+  raw length, all original depths, and original rank. Snapshot construction,
+  loader preflight, and the verifier-owned session independently retain or
+  recompute that attestation before any query.
+- Existing SQL firewall, zero-label counters, source/pin identity checks, and
+  all four injected close-failure pin-retention guarantees now run against the
+  real verifier-owned frozen session rather than an arbitrary test database.
+
+### Exact RED evidence
+
+Before the production correction, the three new tests were run in the current
+round-1 tree with this exact command:
+
+```text
+/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python -m unittest experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_reversed_snapshot_rank_order_is_rejected_before_query_antigravity experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_public_session_rejects_jointly_forged_depths_before_database_open_antigravity experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_public_session_rejects_caller_chosen_database_and_hash_antigravity
+FFF
+======================================================================
+FAIL: test_reversed_snapshot_rank_order_is_rejected_before_query_antigravity
+AssertionError: ValueError not raised
+======================================================================
+FAIL: test_public_session_rejects_jointly_forged_depths_before_database_open_antigravity
+AssertionError: ValueError not raised
+======================================================================
+FAIL: test_public_session_rejects_caller_chosen_database_and_hash_antigravity
+AssertionError: ValueError not raised
+----------------------------------------------------------------------
+Ran 3 tests in 6.895s
+
+FAILED (failures=3)
+```
+
+The requested historical baseline was also reconstructed without altering the
+branch: disposable worktree
+`/tmp/exp444_round2_red_antigravity_FyiGHY` used detached base
+`127f0dbfbac168357f1eba8db927c7904bcfbd4e` plus the reviewer RED test file.
+The same three-test command failed with three errors (missing execution counter
+and the older constructor rejecting the later `candidates` keyword), proving
+that baseline was not GREEN. `git worktree remove --force` removed that exact
+temporary worktree and `test ! -e` printed `TEMP_RED_WORKTREE_REMOVED`.
+
+### GREEN and real-source evidence
+
+The same three-test command after the correction returned:
+
+```text
+...
+----------------------------------------------------------------------
+Ran 3 tests in 4.954s
+
+OK
+```
+
+Focused and full-package suites returned:
+
+```text
+/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python -m unittest experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity
+.......................
+----------------------------------------------------------------------
+Ran 23 tests in 26.434s
+
+OK
+
+/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python -m unittest discover -s experiments/exp444_train_only_stability_precision_gate_antigravity/tests -p 'test_*antigravity.py'
+............................................
+----------------------------------------------------------------------
+Ran 44 tests in 26.399s
+
+OK
+```
+
+Dedicated close tests passed 2/2 in 8.184s. Exact real replay returned:
+
+```text
+EXP444_SOURCE_OK 30 0 60
+EXP444_PIN_SUCCESS_OK False False
+```
+
+MLX remains inapplicable: this correction changes only source provenance and
+session authorization, not a score-source operation or frozen algorithm.
