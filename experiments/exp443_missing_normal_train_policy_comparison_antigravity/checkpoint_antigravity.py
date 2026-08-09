@@ -567,6 +567,28 @@ class Exp443CheckpointStoreAntigravity:
     def record_sha256_prefix_antigravity(self) -> tuple[str, ...]:
         return tuple(self._prefix)
 
+    @property
+    def error_sequence_antigravity(self) -> int | None:
+        """Return the terminal worker-error sequence, if one was recorded."""
+        return self._error_sequence
+
+    def results_antigravity(self) -> dict[int, PolicyDatasetResultAntigravity]:
+        """Reopen the durable scored prefix for control-gate/resume replay.
+
+        Error records intentionally do not produce a result.  Every returned
+        payload is revalidated through the same contract used by checkpoint
+        creation, so runtime resume cannot bypass score identity checks.
+        """
+        values: dict[int, PolicyDatasetResultAntigravity] = {}
+        for sequence in range(len(self._prefix)):
+            payload, encoded = _read_canonical_antigravity(_record_path_antigravity(self.records_path, sequence))
+            _validate_record_payload_antigravity(payload, encoded, sequence, self.units[sequence])
+            if payload["status"] == "error":
+                continue
+            result = PolicyDatasetResultAntigravity.from_payload(payload["result"])
+            values[sequence] = result
+        return values
+
 
 def _validate_record_inventory_antigravity(
     records: Path,

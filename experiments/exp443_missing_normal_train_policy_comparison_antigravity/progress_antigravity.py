@@ -430,6 +430,60 @@ class ProgressWriterAntigravity:
         self._write_progress_antigravity()
         self._write_pid_antigravity(True)
 
+    def align_current_dimensions_antigravity(
+        self,
+        *,
+        train_total: int,
+        train_missing: int,
+        train_used: int | None,
+        train_excluded: int | None,
+        test_rows: int,
+        target_length: int,
+    ) -> None:
+        """Bind dimensions to the lowest active dataset after an ordered commit.
+
+        Task 7's generic ``accept_unit`` keeps the just-completed result for
+        backwards-compatible simulations.  Task 8 calls this parent-only seam
+        when the active current dataset advances, preventing a progress line
+        whose dataset name belongs to the next unit but whose dimensions belong
+        to the previous one.
+        """
+        if self._stage in _TERMINAL_PROGRESS_STAGES:
+            raise ValueError("terminal progress is closed")
+        if not self._active:
+            raise ValueError("no current active unit")
+        values = (train_total, train_missing, test_rows, target_length)
+        if any(type(value) is not int or value < 0 for value in values):
+            raise ValueError("progress dimensions are invalid")
+        if train_missing > train_total:
+            raise ValueError("progress missing count exceeds train total")
+        for name, value in (("train_used", train_used), ("train_excluded", train_excluded)):
+            if value is not None and (type(value) is not int or value < 0):
+                raise ValueError(f"progress {name} is invalid")
+        if train_used is not None and train_used > train_total:
+            raise ValueError("progress train used exceeds train total")
+        if train_excluded is not None and train_excluded > train_total:
+            raise ValueError("progress train excluded exceeds train total")
+        self._dimensions.update({
+            "train_total": train_total, "train_missing": train_missing,
+            "train_used": train_used, "train_excluded": train_excluded,
+            "test_rows": test_rows, "target_length": target_length,
+        })
+        self._event_antigravity(
+            "align_dimensions",
+            sequence=self._active[0].sequence,
+            policy=self._active[0].policy,
+            dataset=self._active[0].dataset,
+            train_total=train_total,
+            train_missing=train_missing,
+            train_used=train_used,
+            train_excluded=train_excluded,
+            test_rows=test_rows,
+            target_length=target_length,
+        )
+        self._write_progress_antigravity()
+        self._write_pid_antigravity(True)
+
     def heartbeat_antigravity(self, active: tuple[WorkUnitAntigravity, ...]) -> None:
         if self._stage in _TERMINAL_PROGRESS_STAGES:
             raise ValueError("terminal progress is closed")
