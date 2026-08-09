@@ -443,35 +443,44 @@ def load_frozen_test_labels_antigravity(publication: FrozenPublicationAntigravit
     source_identity = _source_identity_antigravity(source_before)
 
     labels: dict[str, tuple[int, ...]] = {}
-    with _open_label_connection_antigravity() as connection:
-        quick_check = connection.execute("PRAGMA quick_check").fetchall()
-        if quick_check != [("ok",)]:
-            raise ValueError("TEST-label database quick_check failed")
-        for dataset in datasets:
-            raw = connection.execute(LABEL_SQL_ANTIGRAVITY, (dataset,)).fetchall()
-            labels[dataset] = _normalize_label_rows_antigravity(
-                raw,
-                expected_count=n_test_by_dataset[dataset],
-                dataset=dataset,
-            )
+    label_access_started = False
+    try:
+        with _open_label_connection_antigravity() as connection:
+            label_access_started = True
+            quick_check = connection.execute("PRAGMA quick_check").fetchall()
+            if quick_check != [("ok",)]:
+                raise ValueError("TEST-label database quick_check failed")
+            for dataset in datasets:
+                raw = connection.execute(LABEL_SQL_ANTIGRAVITY, (dataset,)).fetchall()
+                labels[dataset] = _normalize_label_rows_antigravity(
+                    raw,
+                    expected_count=n_test_by_dataset[dataset],
+                    dataset=dataset,
+                )
 
-    source_after = verify_frozen_sources_antigravity()
-    final = inspect_publication_antigravity(publication.attempt_path)
-    if _source_identity_antigravity(source_after) != source_identity or final != publication:
-        raise ValueError("publication or source changed after TEST-label read")
-    label_identity = sha256(canonical_json_bytes_antigravity({dataset: list(labels[dataset]) for dataset in datasets})).hexdigest()
-    return FrozenLabelsAntigravity(
-        datasets=datasets,
-        labels_by_dataset=labels,
-        publication_manifest_sha256=publication.manifest_sha256,
-        prediction_sha256=publication.prediction_sha256,
-        database_sha256=FROZEN_CONFIG.database_sha256,
-        label_identity_sha256=label_identity,
-        descriptor_bound_connection_count=1,
-        label_query_calls=len(datasets),
-        label_rows=sum(len(values) for values in labels.values()),
-        pre_freeze_label_access_count=publication.label_access_count,
-    )
+        source_after = verify_frozen_sources_antigravity()
+        final = inspect_publication_antigravity(publication.attempt_path)
+        if _source_identity_antigravity(source_after) != source_identity or final != publication:
+            raise ValueError("publication or source changed after TEST-label read")
+        label_identity = sha256(canonical_json_bytes_antigravity({dataset: list(labels[dataset]) for dataset in datasets})).hexdigest()
+        return FrozenLabelsAntigravity(
+            datasets=datasets,
+            labels_by_dataset=labels,
+            publication_manifest_sha256=publication.manifest_sha256,
+            prediction_sha256=publication.prediction_sha256,
+            database_sha256=FROZEN_CONFIG.database_sha256,
+            label_identity_sha256=label_identity,
+            descriptor_bound_connection_count=1,
+            label_query_calls=len(datasets),
+            label_rows=sum(len(values) for values in labels.values()),
+            pre_freeze_label_access_count=publication.label_access_count,
+        )
+    except BaseException as error:
+        try:
+            setattr(error, "exp443_label_access_started_antigravity", label_access_started)
+        except BaseException:
+            error.add_note(f"Exp443 label access started: {label_access_started}")
+        raise
 
 
 def _confusion_for_selection_antigravity(labels: tuple[int, ...], selected: Iterable[int]) -> tuple[int, int, int, int]:
@@ -1281,6 +1290,9 @@ def evaluate_publication_antigravity(
         _evaluation_phase_antigravity(phase)
         return frozen
     except BaseException as error:
+        labels_opened = labels_opened or bool(
+            getattr(error, "exp443_label_access_started_antigravity", False)
+        )
         try:
             _preserve_failed_evaluation_antigravity(
                 parent,

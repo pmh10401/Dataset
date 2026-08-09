@@ -55,8 +55,9 @@ reported as `retrospective_improvement_signal`; all other arms are
 
 The evaluator creates exactly ten files through a private staging directory
 and one no-clobber rename. A pre-existing evaluation is inspection-only and
-does not reopen labels or overwrite any file. Its self-excluding artifact map
-binds the other nine files.
+does not reopen labels or overwrite any file. A mid-label failure is marked
+truthfully as label access started and preserved in a unique failed audit
+sibling. Its self-excluding artifact map binds the other nine files.
 
 Replay reconstructs all dataset rows, transitions, aggregates, family facts,
 gates, decisions, and all three 20,000-sample bootstraps from frozen evaluation
@@ -66,8 +67,8 @@ unaffected-authority checks.
 
 ## Verification
 
-- Focused Task 10 suite: 14 tests passed.
-- Full Exp443 suite: 155 tests passed; two opt-in real-data tests skipped as
+- Focused Task 10 suite: 15 tests passed.
+- Full Exp443 suite: 156 tests passed; two opt-in real-data tests skipped as
   expected.
 - Python compileall: passed.
 - `git diff --check`: passed.

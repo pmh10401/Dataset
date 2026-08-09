@@ -161,6 +161,45 @@ class EvaluationAntigravityTests(unittest.TestCase):
             with self.subTest(rows=rows), self.assertRaises(ValueError):
                 evaluation_antigravity._normalize_label_rows_antigravity(rows, expected_count=1, dataset="bad_normal_0")
 
+    def test_mid_label_failure_is_truthfully_marked_and_preserved(self) -> None:
+        datasets = tuple(f"dataset_{index:04d}" for index in range(FROZEN_CONFIG.dataset_count))
+        rows = tuple({"dataset": dataset, "n_test": 1, "policy": POLICIES[0]} for dataset in datasets)
+        publication_rows = MappingProxyType({policy: rows for policy in POLICIES})
+
+        class FailingConnection(_Connection):
+            def execute(self, sql: str, parameters=()):
+                normalized = " ".join(sql.split())
+                if normalized == "PRAGMA quick_check":
+                    return _Cursor([("ok",)])
+                raise RuntimeError("injected label query failure")
+
+        @contextmanager
+        def open_connection():
+            yield FailingConnection(datasets, [])
+
+        with tempfile.TemporaryDirectory(prefix="exp443_task10_label_failure_antigravity_") as temporary:
+            root = Path(temporary)
+            publication = _publication(root)
+            source = SimpleNamespace(label_access_count=0, datasets=datasets)
+            with patch.object(evaluation_antigravity, "inspect_publication_antigravity", return_value=publication), \
+                 patch.object(evaluation_antigravity, "_publication_rows_antigravity", return_value=publication_rows), \
+                 patch.object(evaluation_antigravity, "_open_label_connection_antigravity", side_effect=lambda: open_connection()), \
+                 patch.object(evaluation_antigravity, "verify_frozen_sources_antigravity", return_value=source), \
+                 self.assertRaisesRegex(RuntimeError, "label query") as caught:
+                evaluation_antigravity.load_frozen_test_labels_antigravity(publication)
+            self.assertTrue(getattr(caught.exception, "exp443_label_access_started_antigravity", False))
+
+            destination = root / "evaluation_antigravity"
+            with patch.object(evaluation_antigravity, "inspect_publication_antigravity", return_value=publication), \
+                 patch.object(evaluation_antigravity, "load_frozen_test_labels_antigravity", side_effect=caught.exception), \
+                 self.assertRaisesRegex(RuntimeError, "label query"):
+                evaluation_antigravity.evaluate_publication_antigravity(publication.attempt_path, destination)
+            failures = tuple(root.glob("_failed_evaluation_*_antigravity"))
+            self.assertEqual(len(failures), 1)
+            failure = json.loads((failures[0] / "failure_antigravity.json").read_text())
+            self.assertTrue(failure["labels_opened"])
+            self.assertFalse(failure["destination_committed"])
+
     def test_success_gate_requires_every_preregistered_condition_without_selecting_winner(self) -> None:
         gates = evaluation_antigravity._success_gates_antigravity(
             micro_delta=0.01,
