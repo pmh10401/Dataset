@@ -165,88 +165,81 @@ def _validate_trace_statement(sql: str) -> None:
     raise ValueError("unregistered expanded prediction SQL")
 
 
-class _ValidatedCursorAntigravity:
-    """Cursor facade whose sqlite cursor exists only inside method closures."""
+def _make_cursor_facade_antigravity(owner: "PinnedDatabaseAntigravity", cursor: sqlite3.Cursor, connection_facade: object) -> object:
+    """Create a zero-state facade whose methods close over the raw cursor."""
+    def execute(_self: object, sql: str, parameters: object = ()) -> object:
+        return owner._execute_validated(cursor, sql, parameters, connection_facade)
 
-    __slots__ = ("_execute_call", "_fetchone_call", "_fetchmany_call", "_fetchall_call", "_description_call", "_rowcount_call", "_close_call", "_next_call", "_connection_facade")
+    def fetchone(_self: object) -> tuple[object, ...] | None:
+        return cursor.fetchone()
 
-    def __init__(self, *, execute_call: Callable[[str, object], "_ValidatedCursorAntigravity"], fetchone_call: Callable[[], tuple[object, ...] | None], fetchmany_call: Callable[[int | None], list[tuple[object, ...]]], fetchall_call: Callable[[], list[tuple[object, ...]]], description_call: Callable[[], object], rowcount_call: Callable[[], int], close_call: Callable[[], None], next_call: Callable[[], tuple[object, ...]], connection_facade: "_ValidatedConnectionAntigravity"):
-        self._execute_call = execute_call
-        self._fetchone_call = fetchone_call
-        self._fetchmany_call = fetchmany_call
-        self._fetchall_call = fetchall_call
-        self._description_call = description_call
-        self._rowcount_call = rowcount_call
-        self._close_call = close_call
-        self._next_call = next_call
-        self._connection_facade = connection_facade
+    def fetchmany(_self: object, size: int | None = None) -> list[tuple[object, ...]]:
+        return cursor.fetchmany() if size is None else cursor.fetchmany(size)
 
-    def execute(self, sql: str, parameters: object = ()) -> "_ValidatedCursorAntigravity":
-        return self._execute_call(sql, parameters)
+    def fetchall(_self: object) -> list[tuple[object, ...]]:
+        return cursor.fetchall()
 
-    def fetchone(self) -> tuple[object, ...] | None:
-        return self._fetchone_call()
+    def description(_self: object) -> object:
+        return cursor.description
 
-    def fetchmany(self, size: int | None = None) -> list[tuple[object, ...]]:
-        return self._fetchmany_call(size)
+    def rowcount(_self: object) -> int:
+        return cursor.rowcount
 
-    def fetchall(self) -> list[tuple[object, ...]]:
-        return self._fetchall_call()
+    def connection(_self: object) -> object:
+        return connection_facade
 
-    @property
-    def description(self) -> object:
-        return self._description_call()
+    def iterate(_self: object) -> object:
+        return _self
 
-    @property
-    def rowcount(self) -> int:
-        return self._rowcount_call()
+    def next_row(_self: object) -> tuple[object, ...]:
+        return next(cursor)
 
-    @property
-    def connection(self) -> "_ValidatedConnectionAntigravity":
-        return self._connection_facade
+    execute_method = execute
+    fetchone_method = fetchone
+    fetchmany_method = fetchmany
+    fetchall_method = fetchall
+    description_property = property(description)
+    rowcount_property = property(rowcount)
+    connection_property = property(connection)
+    iterate_method = iterate
+    next_row_method = next_row
 
-    def close(self) -> None:
-        self._close_call()
+    class ValidatedCursorAntigravity:
+        __slots__ = ()
+        execute = execute_method
+        fetchone = fetchone_method
+        fetchmany = fetchmany_method
+        fetchall = fetchall_method
+        description = description_property
+        rowcount = rowcount_property
+        connection = connection_property
+        __iter__ = iterate_method
+        __next__ = next_row_method
 
-    def __iter__(self) -> "_ValidatedCursorAntigravity":
-        return self
-
-    def __next__(self) -> tuple[object, ...]:
-        return self._next_call()
-
-
-class _ValidatedConnectionAntigravity:
-    """Connection facade whose sqlite connection exists only in closures."""
-
-    __slots__ = ("_execute_call", "_cursor_call", "_close_call")
-
-    def __init__(self, *, execute_call: Callable[[str, object], _ValidatedCursorAntigravity], cursor_call: Callable[[], _ValidatedCursorAntigravity], close_call: Callable[[], None]):
-        self._execute_call = execute_call
-        self._cursor_call = cursor_call
-        self._close_call = close_call
-
-    def execute(self, sql: str, parameters: object = ()) -> _ValidatedCursorAntigravity:
-        return self._execute_call(sql, parameters)
-
-    def cursor(self) -> _ValidatedCursorAntigravity:
-        return self._cursor_call()
-
-    def close(self) -> None:
-        self._close_call()
+    return ValidatedCursorAntigravity()
 
 
-def _make_cursor_facade_antigravity(owner: "PinnedDatabaseAntigravity", cursor: sqlite3.Cursor, connection_facade: _ValidatedConnectionAntigravity) -> _ValidatedCursorAntigravity:
-    return _ValidatedCursorAntigravity(
-        execute_call=lambda sql, parameters=(): owner._execute_validated(cursor, sql, parameters, connection_facade),
-        fetchone_call=cursor.fetchone,
-        fetchmany_call=lambda size=None: cursor.fetchmany() if size is None else cursor.fetchmany(size),
-        fetchall_call=cursor.fetchall,
-        description_call=lambda: cursor.description,
-        rowcount_call=lambda: cursor.rowcount,
-        close_call=cursor.close,
-        next_call=cursor.__next__,
-        connection_facade=connection_facade,
-    )
+def _make_connection_facade_antigravity(owner: "PinnedDatabaseAntigravity", connection: sqlite3.Connection) -> object:
+    """Create a zero-state facade whose methods close over the raw connection."""
+    holder: list[object] = []
+
+    def execute(_self: object, sql: str, parameters: object = ()) -> object:
+        return owner._execute_validated(connection, sql, parameters, holder[0])
+
+    def cursor(_self: object) -> object:
+        return _make_cursor_facade_antigravity(owner, connection.cursor(), holder[0])
+
+    execute_method = execute
+    cursor_method = cursor
+
+    class ValidatedConnectionAntigravity:
+        __slots__ = ()
+        execute = execute_method
+        cursor = cursor_method
+
+    facade = ValidatedConnectionAntigravity()
+    holder.append(facade)
+    return facade
 
 
 def _decode_rows(rows: Sequence[tuple[object, object]], dataset: str, split: str) -> tuple[RawSeriesAntigravity, ...]:
@@ -436,7 +429,7 @@ class PinnedDatabaseAntigravity:
                 return sqlite3.SQLITE_DENY
         return sqlite3.SQLITE_OK
 
-    def _execute_validated(self, executor: sqlite3.Connection | sqlite3.Cursor, sql: str, parameters: object = (), connection_facade: _ValidatedConnectionAntigravity | None = None) -> _ValidatedCursorAntigravity:
+    def _execute_validated(self, executor: sqlite3.Connection | sqlite3.Cursor, sql: str, parameters: object = (), connection_facade: object | None = None) -> object:
         try:
             normalized = _validate_parameter_contract_antigravity(sql, parameters)
         except ValueError:
@@ -453,7 +446,7 @@ class PinnedDatabaseAntigravity:
         return _make_cursor_facade_antigravity(self, cursor, connection_facade)
 
     @contextmanager
-    def worker_connection_antigravity(self) -> Iterator[_ValidatedConnectionAntigravity]:
+    def worker_connection_antigravity(self) -> Iterator[object]:
         """Open a read-only immutable connection from the retained pin inode."""
         self._verify_boundary("worker:before")
         pin_fd: int | None = None
@@ -467,14 +460,7 @@ class PinnedDatabaseAntigravity:
             connection.set_trace_callback(self._trace)
             connection.set_authorizer(self._authorizer)
             connection.execute("PRAGMA query_only=ON")
-            facade_holder: list[_ValidatedConnectionAntigravity] = []
-            facade = _ValidatedConnectionAntigravity(
-                execute_call=lambda sql, parameters=(): self._execute_validated(connection, sql, parameters, facade_holder[0]),
-                cursor_call=lambda: _make_cursor_facade_antigravity(self, connection.cursor(), facade_holder[0]),
-                close_call=connection.close,
-            )
-            facade_holder.append(facade)
-            yield facade
+            yield _make_connection_facade_antigravity(self, connection)
         except sqlite3.Error as error:
             raise ValueError("immutable worker connection failed") from error
         finally:

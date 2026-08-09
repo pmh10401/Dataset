@@ -205,6 +205,36 @@ ORDER BY i.instance_index""",
                 pinned._active_sql = None
                 pinned.close(terminal_evidence_durable=True)
 
+    def test_facade_attributes_have_no_raw_objects_or_bound_sqlite_methods(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self._db(root)
+            expected = sha256(source.read_bytes()).hexdigest()
+            pinned = database.pin_database_snapshot_antigravity(source, root / "attempt_antigravity", expected_sha256=expected)
+            forbidden = "SELECT 1"
+            try:
+                with pinned.worker_connection_antigravity() as connection:
+                    cursor = connection.execute(database.TEST_VALUES_SQL_ANTIGRAVITY, ("Tiny_normal_0",))
+                    for facade in (connection, cursor, cursor.connection):
+                        self.assertFalse(hasattr(facade, "__dict__"))
+                        raw_bound_escape = 0
+                        for name in dir(facade):
+                            if name.startswith("__"):
+                                continue
+                            value = getattr(facade, name)
+                            self.assertFalse(isinstance(value, (sqlite3.Connection, sqlite3.Cursor)), name)
+                            if callable(value):
+                                owner = getattr(value, "__self__", None)
+                                if isinstance(owner, (sqlite3.Connection, sqlite3.Cursor)):
+                                    raw_bound_escape += 1
+                                    with self.assertRaises(ValueError):
+                                        owner.execute(forbidden)
+                        self.assertEqual(raw_bound_escape, 0, facade.__class__.__name__)
+                    self.assertEqual(pinned.denied_sql_attempts, 0)
+                    self.assertEqual(pinned.label_access_count, 0)
+            finally:
+                pinned.close(terminal_evidence_durable=True)
+
     def test_database_pre_open_swap_to_fifo_and_symlink_is_fail_closed(self) -> None:
         for replacement_kind in ("fifo", "symlink"):
             with self.subTest(replacement_kind=replacement_kind), tempfile.TemporaryDirectory() as temporary:
