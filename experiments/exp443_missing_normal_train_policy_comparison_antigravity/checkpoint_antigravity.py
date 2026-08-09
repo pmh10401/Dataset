@@ -236,6 +236,28 @@ def _validate_units_antigravity(units: Sequence[WorkUnitAntigravity]) -> tuple[W
     return normalized
 
 
+def _validate_complete_unit_authority_antigravity(
+    units: tuple[WorkUnitAntigravity, ...],
+) -> None:
+    """Require the frozen three-policy by nineteen-dataset terminal topology."""
+    if len(units) != FROZEN_CONFIG.recompute_units:
+        raise ValueError("completed checkpoint must contain exactly 57 work units")
+    policies = tuple(dict.fromkeys(unit.policy for unit in units))
+    if policies != tuple(FROZEN_CONFIG.policies):
+        raise ValueError("completed checkpoint policy identity is invalid")
+    datasets_by_policy = tuple(
+        tuple(unit.dataset for unit in units if unit.policy == policy)
+        for policy in policies
+    )
+    if any(
+        len(datasets) != FROZEN_CONFIG.affected_dataset_count
+        for datasets in datasets_by_policy
+    ):
+        raise ValueError("completed checkpoint policy population is not 19")
+    if any(datasets != datasets_by_policy[0] for datasets in datasets_by_policy[1:]):
+        raise ValueError("completed checkpoint dataset identity differs by policy")
+
+
 def _root_paths_antigravity(root: Path) -> tuple[Path, Path, Path]:
     root = Path(root)
     if "antigravity" not in root.name:
@@ -551,6 +573,7 @@ class Exp443CheckpointStoreAntigravity:
         if not isinstance(context_payload["units"], list):
             raise ValueError("checkpoint units are invalid")
         units = _validate_units_antigravity(tuple(WorkUnitAntigravity.from_payload_antigravity(item) for item in context_payload["units"]))
+        _validate_complete_unit_authority_antigravity(units)
         state_payload, _ = _read_canonical_antigravity(state_path)
         if not isinstance(state_payload, Mapping):
             raise ValueError("checkpoint state is invalid")

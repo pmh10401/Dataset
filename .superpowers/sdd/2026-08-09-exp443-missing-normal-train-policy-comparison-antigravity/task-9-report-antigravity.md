@@ -55,6 +55,26 @@ The hash graph is acyclic: nine leaves feed the manifest, the manifest feeds
 status, and the artifact map hashes the other 11 files while excluding itself.
 An existing publication is replay-only and is never overwritten.
 
+## Sol review fix round
+
+The first final review found that the publisher structurally checked the saved
+Task 6 control JSON but did not independently reproduce it. Publication now
+reruns `compare_policy_a_to_archive_antigravity()` from the inspected Policy A
+checkpoint results and frozen archive snapshot. The recomputed pass evidence
+must be canonical-byte identical to the runtime control artifact, including all
+76 score/candidate comparisons and complete coordinate identities.
+
+The completed-checkpoint inspection now requires the exact frozen topology:
+57 units, three policies, 19 identically ordered datasets per policy. Progress
+and PID evidence use exact schemas and must point to the inspected checkpoint
+state and its PID/start identity, with counters and final dimensions equal to
+the terminal checkpoint.
+
+Publication failures before the first file, after one file, before rename, and
+after final rename verification now leave a unique `_failed_*_antigravity`
+audit sibling with canonical `failure_antigravity.json`. A verified final
+publication is never removed or replaced when a later audit hook fails.
+
 ## Governance boundary
 
 Prediction construction and inspection import no evaluator and execute no
@@ -71,18 +91,19 @@ TEST labels remain exclusively Task 10 post-freeze input.
 
 ## Verification
 
-- Focused reporting suite: 7/7 passed.
-- Full Exp443 suite: 134 tests passed with two expected opt-in skips.
+- Focused reporting suite: 14/14 passed.
+- Full Exp443 suite: 141 tests passed with two expected opt-in skips.
 - Python compileall: passed.
 - `git diff --check`: passed before commit.
 - Fixture publication: exact 57 records, 3 x 19 results, 3 x 1,117 published
   rows, Policy A routing 137/2,253/35/2,218, zero label access, exact replay.
-- Negative coverage: incomplete checkpoint, failed/mismatched control,
-  changed runtime prediction, forbidden label payload, and artifact-map change.
+- Negative coverage: incomplete or wrong 56/58/policy/dataset checkpoint,
+  failed/fabricated control, changed runtime prediction, progress/PID drift,
+  forbidden label payload, artifact-map change, and four publication-failure
+  phases with preserved audit evidence.
 
 ## Next boundary
 
 Task 10 may read only the three frozen JSONL predictions after successful
 publication inspection. It may open TEST labels only after those hashes are
 fixed and must not alter any policy, score, candidate, or routing input.
-

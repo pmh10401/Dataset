@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from hashlib import sha256
 import math
 from pathlib import Path
-import shutil
 from types import MappingProxyType
 from typing import Mapping
 from uuid import uuid4
@@ -26,6 +25,7 @@ from .checkpoint_antigravity import (
     ordered_work_units_antigravity,
 )
 from .config_antigravity import FROZEN_CONFIG, scientific_config_sha256_antigravity
+from .control_antigravity import compare_policy_a_to_archive_antigravity
 from .readiness_antigravity import _source_evidence_antigravity
 from .routing_antigravity import (
     PolicyPredictionAntigravity,
@@ -56,6 +56,14 @@ _FORBIDDEN_KEYS_ANTIGRAVITY = frozenset({
     "actual_anomaly", "anomaly_location", "evaluation", "evaluation_metrics",
     "confusion", "precision", "recall", "f1", "fpr", "specificity",
 })
+_PROGRESS_KEYS_ANTIGRAVITY = frozenset({
+    "pid", "active", "current_policy", "current_dataset", "active_datasets",
+    "train_total", "train_missing", "train_used", "train_excluded",
+    "test_rows", "target_length", "stage", "backend", "completed", "total",
+    "imported", "recomputed", "success", "abstention", "error", "throughput",
+    "elapsed_seconds", "eta_seconds", "checkpoint", "heartbeat", "latest_error",
+})
+_PID_KEYS_ANTIGRAVITY = frozenset({"pid", "active", "heartbeat", "start_identity"})
 
 
 def _digest_antigravity(payload: bytes) -> str:
@@ -129,26 +137,70 @@ class FrozenPublicationAntigravity:
             raise ValueError("frozen publication label access is nonzero")
 
 
-def _validate_progress_antigravity(attempt: Path) -> tuple[dict[str, object], dict[str, object]]:
+def _validate_progress_antigravity(
+    attempt: Path,
+    inspection: CompletedCheckpointInspectionAntigravity,
+) -> tuple[dict[str, object], dict[str, object]]:
     progress, _progress_bytes, _ = _canonical_file_antigravity(attempt / "progress_antigravity.json", "progress")
     pid, _pid_bytes, _ = _canonical_file_antigravity(attempt / "pid_antigravity.json", "PID evidence")
+    if set(progress) != _PROGRESS_KEYS_ANTIGRAVITY or set(pid) != _PID_KEYS_ANTIGRAVITY:
+        raise ValueError("publication progress/PID schema is invalid")
+    expected_total = len(inspection.units)
+    expected_success = sum(result.status == "scored" for result in inspection.results.values())
+    expected_abstention = sum(result.status == "abstained" for result in inspection.results.values())
     if (
         progress.get("stage") != "complete"
         or progress.get("active") is not False
-        or progress.get("completed") != FROZEN_CONFIG.recompute_units
-        or progress.get("total") != FROZEN_CONFIG.recompute_units
-        or progress.get("recomputed") != FROZEN_CONFIG.recompute_units
+        or progress.get("current_policy") is not None
+        or progress.get("current_dataset") is not None
+        or progress.get("active_datasets") != []
+        or progress.get("completed") != expected_total
+        or progress.get("total") != expected_total
+        or progress.get("imported") != 0
+        or progress.get("recomputed") != expected_total
+        or progress.get("success") != expected_success
+        or progress.get("abstention") != expected_abstention
         or progress.get("error") != 0
+        or progress.get("latest_error") is not None
+        or progress.get("eta_seconds") is not None
+        or progress.get("backend") != "cpu"
     ):
         raise ValueError("publication progress is not complete")
-    if type(progress.get("success")) is not int or type(progress.get("abstention")) is not int or progress["success"] + progress["abstention"] != FROZEN_CONFIG.recompute_units:
-        raise ValueError("publication progress outcomes are incomplete")
-    if pid.get("active") is not False or pid.get("pid") != progress.get("pid"):
-        raise ValueError("publication PID evidence is not inactive")
+    for name in ("throughput", "elapsed_seconds"):
+        value = progress.get(name)
+        if type(value) not in (int, float) or not math.isfinite(float(value)) or float(value) < 0:
+            raise ValueError("publication progress timing is invalid")
+    final_result = inspection.results[len(inspection.units) - 1]
+    expected_dimensions = {
+        "train_total": final_result.train_total,
+        "train_missing": final_result.train_missing,
+        "train_used": final_result.train_used,
+        "train_excluded": final_result.train_excluded,
+        "test_rows": final_result.test_rows,
+        "target_length": final_result.target_length,
+    }
+    if any(progress.get(name) != value for name, value in expected_dimensions.items()):
+        raise ValueError("publication progress dimensions differ from checkpoint")
+    if progress.get("checkpoint") != str(inspection.root / "state_antigravity.json"):
+        raise ValueError("publication progress checkpoint path differs")
+    if (
+        progress.get("pid") != inspection.process.pid
+        or pid.get("pid") != inspection.process.pid
+        or pid.get("start_identity") != inspection.process.start_identity
+        or pid.get("active") is not False
+    ):
+        raise ValueError("publication PID/process identity differs")
+    for heartbeat in (progress.get("heartbeat"), pid.get("heartbeat")):
+        if type(heartbeat) is not str or not heartbeat.endswith("Z"):
+            raise ValueError("publication progress/PID heartbeat is invalid")
     return progress, pid
 
 
-def _validate_control_antigravity(attempt: Path) -> tuple[dict[str, object], bytes]:
+def _validate_control_antigravity(
+    attempt: Path,
+    snapshot: object,
+    inspection: CompletedCheckpointInspectionAntigravity,
+) -> tuple[dict[str, object], bytes]:
     control, payload, _ = _canonical_file_antigravity(attempt / "control_gate_antigravity.json", "control gate")
     required = {
         "status", "passed", "reason", "score_evidence", "routing_identity",
@@ -202,6 +254,19 @@ def _validate_control_antigravity(attempt: Path) -> tuple[dict[str, object], byt
     ):
         if routing.get(name) is not True:
             raise ValueError("publication control routing coordinates differ")
+    recomputed = compare_policy_a_to_archive_antigravity(
+        snapshot,
+        _policy_results_antigravity(inspection, _POLICIES_ANTIGRAVITY[0]),
+    )
+    if (
+        recomputed.status != "control_reproduction_passed"
+        or recomputed.passed is not True
+        or recomputed.label_access_count != 0
+    ):
+        raise ValueError("publication control recomputation did not pass")
+    recomputed_bytes = canonical_json_bytes_antigravity(recomputed.to_payload_antigravity())
+    if recomputed_bytes != payload:
+        raise ValueError("publication control artifact differs from checkpoint recomputation")
     return control, payload
 
 
@@ -349,9 +414,9 @@ def _audit_files_antigravity(inspection: CompletedCheckpointInspectionAntigravit
 
 
 def _build_publication_files_antigravity(attempt: Path) -> tuple[dict[str, bytes], FrozenPublicationAntigravity]:
-    _validate_progress_antigravity(attempt)
     inspection, snapshot, source = _inspect_checkpoint_and_sources_antigravity(attempt)
-    control, control_bytes = _validate_control_antigravity(attempt)
+    _validate_progress_antigravity(attempt, inspection)
+    control, control_bytes = _validate_control_antigravity(attempt, snapshot, inspection)
     if tuple(sorted({row["dataset"] for row in control["score_evidence"]})) != tuple(getattr(snapshot, "affected_datasets", ())):
         raise ValueError("publication control datasets differ from the frozen affected inventory")
     parity, parity_bytes = _validate_parity_antigravity(attempt)
@@ -494,28 +559,97 @@ def inspect_publication_antigravity(attempt: Path | str) -> FrozenPublicationAnt
     return frozen
 
 
+def _publication_phase_antigravity(_phase: str) -> None:
+    """Private deterministic failure-injection seam for publication tests."""
+
+
+def _preserve_failed_publication_antigravity(
+    attempt: Path,
+    staging: Path | None,
+    error: BaseException,
+    *,
+    phase: str,
+    destination_committed: bool,
+) -> None:
+    """Keep a unique, immutable publication-failure audit sibling."""
+    failure = {
+        "schema": "exp443.publication-failure.v1",
+        "experiment_id": FROZEN_CONFIG.experiment_id,
+        "status": "failed",
+        "phase": phase,
+        "error_type": type(error).__name__,
+        "error": str(error) or type(error).__name__,
+        "destination_committed": destination_committed,
+        "contains_test_labels": False,
+        "contains_evaluation_metrics": False,
+        "label_access_count": 0,
+    }
+    failed = attempt / f"_failed_{uuid4().hex}_antigravity"
+    if staging is not None and staging.exists() and not staging.is_symlink():
+        write_create_only_antigravity(
+            staging / "failure_antigravity.json",
+            canonical_json_bytes_antigravity(failure),
+        )
+        fsync_directory_antigravity(staging)
+        exclusive_rename_antigravity(staging, failed)
+    else:
+        failed.mkdir(mode=0o700)
+        write_create_only_antigravity(
+            failed / "failure_antigravity.json",
+            canonical_json_bytes_antigravity(failure),
+        )
+        fsync_directory_antigravity(failed)
+    fsync_directory_antigravity(attempt)
+
+
 def publish_predictions_antigravity(attempt: Path | str) -> FrozenPublicationAntigravity:
     """Create one no-clobber publication, or replay an existing publication."""
     attempt_path = _attempt_antigravity(attempt)
     destination = attempt_path / "publication_antigravity"
     if destination.exists() or destination.is_symlink():
         return inspect_publication_antigravity(attempt_path)
-    files, _frozen = _build_publication_files_antigravity(attempt_path)
-    staging = attempt_path / f".publication_{uuid4().hex}_antigravity"
-    staging.mkdir(mode=0o700)
+    staging: Path | None = None
+    phase = "build_publication"
+    destination_committed = False
     try:
-        for name in PUBLICATION_NAMES_ANTIGRAVITY:
+        files, _frozen = _build_publication_files_antigravity(attempt_path)
+        staging = attempt_path / f".publication_{uuid4().hex}_antigravity"
+        staging.mkdir(mode=0o700)
+        phase = "before_file_write"
+        _publication_phase_antigravity(phase)
+        for index, name in enumerate(PUBLICATION_NAMES_ANTIGRAVITY):
             write_create_only_antigravity(staging / name, files[name])
+            if index == 0:
+                phase = "after_first_file"
+                _publication_phase_antigravity(phase)
         fsync_directory_antigravity(staging)
         staged = _read_publication_inventory_antigravity(staging)
         if any(staged[name] != files[name] for name in PUBLICATION_NAMES_ANTIGRAVITY):
             raise ValueError("publication staging bytes differ")
+        phase = "before_rename"
+        _publication_phase_antigravity(phase)
         exclusive_rename_antigravity(staging, destination)
+        destination_committed = True
         fsync_directory_antigravity(attempt_path)
-    finally:
-        if staging.exists() and not staging.is_symlink():
-            shutil.rmtree(staging)
-    return inspect_publication_antigravity(attempt_path)
+        frozen = inspect_publication_antigravity(attempt_path)
+        phase = "after_rename_verification"
+        _publication_phase_antigravity(phase)
+        return frozen
+    except BaseException as error:
+        try:
+            _preserve_failed_publication_antigravity(
+                attempt_path,
+                staging,
+                error,
+                phase=phase,
+                destination_committed=destination_committed,
+            )
+        except BaseException as preservation_error:
+            error.add_note(
+                "publication failure preservation also failed: "
+                f"{type(preservation_error).__name__}: {preservation_error}"
+            )
+        raise
 
 
 __all__ = [

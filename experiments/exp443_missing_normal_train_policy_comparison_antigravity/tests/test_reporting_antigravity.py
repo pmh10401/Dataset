@@ -563,7 +563,11 @@ class ReportingAntigravityTests(unittest.TestCase):
                     payload = json.loads(path.read_text())
                     mutation(payload)
                     path.write_bytes(canonical_json_bytes_antigravity(payload))
-                    with self.assertRaisesRegex(ValueError, message):
+                    with patch.object(
+                        reporting_antigravity,
+                        "verify_frozen_sources_antigravity",
+                        return_value=fixture.snapshot,
+                    ), self.assertRaisesRegex(ValueError, message):
                         reporting_antigravity.inspect_publication_antigravity(fixture.attempt)
                 finally:
                     fixture.temporary.cleanup()

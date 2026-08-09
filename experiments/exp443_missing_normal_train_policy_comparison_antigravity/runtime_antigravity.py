@@ -426,17 +426,13 @@ def _binding_antigravity(reviewed_commit: str, readiness: Mapping[str, object]) 
 
 
 def _control_payload_antigravity(control: object) -> dict[str, object]:
-    return {
-        "status": getattr(control, "status"),
-        "passed": getattr(control, "passed"),
-        "reason": getattr(control, "reason"),
-        "score_evidence": [dict(item) for item in getattr(control, "score_evidence")],
-        "routing_identity": dict(getattr(control, "routing_identity")),
-        "environment_identity": dict(getattr(control, "environment_identity")),
-        "label_access_count": getattr(control, "label_access_count"),
-        "max_abs_difference": getattr(control, "max_abs_difference"),
-        "candidate_mismatch_count": getattr(control, "candidate_mismatch_count"),
-    }
+    serializer = getattr(control, "to_payload_antigravity", None)
+    if not callable(serializer):
+        raise ValueError("control result has no canonical serializer")
+    payload = serializer()
+    if not isinstance(payload, dict):
+        raise ValueError("control result canonical payload is invalid")
+    return payload
 
 
 def _write_prediction_idempotent_antigravity(path: Path, payload: bytes) -> None:

@@ -72,6 +72,20 @@ class ControlGateResultAntigravity:
         object.__setattr__(self, "routing_identity", MappingProxyType(dict(self.routing_identity)))
         object.__setattr__(self, "environment_identity", MappingProxyType(dict(self.environment_identity)))
 
+    def to_payload_antigravity(self) -> dict[str, object]:
+        """Return the one canonical runtime/publication control schema."""
+        return {
+            "status": self.status,
+            "passed": self.passed,
+            "reason": self.reason,
+            "score_evidence": [dict(item) for item in self.score_evidence],
+            "routing_identity": dict(self.routing_identity),
+            "environment_identity": dict(self.environment_identity),
+            "label_access_count": self.label_access_count,
+            "max_abs_difference": self.max_abs_difference,
+            "candidate_mismatch_count": self.candidate_mismatch_count,
+        }
+
 
 def _failed_result_antigravity(
     reasons: list[str],
