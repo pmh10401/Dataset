@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T11:51:51Z",
-  "generated_from_commit": "c11da502",
+  "generated_at": "2026-08-09T11:54:46Z",
+  "generated_from_commit": "ed4883b6",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -436,10 +436,6 @@
           "symbol": "\"status\": \"in_progress\""
         },
         {
-          "path": "RESEARCH_STATE.json",
-          "symbol": "\"exact_next_command_if_interrupted\": \"bash scripts/create_exp443_environment_antigravity.sh\""
-        },
-        {
           "path": "EXPERIMENT_CATALOG.json",
           "symbol": "\"retrospective_gates_all_passed\": true"
         },
@@ -473,7 +469,7 @@
         },
         {
           "path": "docs/EXP443_RUNBOOK_antigravity_KO.md",
-          "symbol": "## 고정 명령 (fresh review 통과 후에만)"
+          "symbol": "## 고정 명령 (scoped re-review 통과 후에만)"
         },
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/config_antigravity.py",
@@ -493,11 +489,15 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"implementation_verified_awaiting_fresh_review\""
+          "symbol": "\"active_phase\": \"implementation_verified_awaiting_scoped_rereview\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"exact_next_command_if_interrupted\": \"scoped_sol_high_read_only_rereview_current_clean_head\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"implementation_verified_awaiting_fresh_review\""
+          "symbol": "\"status\": \"implementation_verified_awaiting_scoped_rereview\""
         }
       ]
     },
