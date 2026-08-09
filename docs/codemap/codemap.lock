@@ -1,7 +1,7 @@
 {
-  "current_commit": "5c089e88",
+  "current_commit": "f5d28a72",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-09T07:58:26Z",
+  "generated_at": "2026-08-09T08:42:28Z",
   "scanned_scope": [
     "tracked root files",
     ".superpowers",
@@ -32,21 +32,17 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each top-level module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Root-level tracked files are grouped as root. docs/codemap is excluded to prevent self-reference.",
   "module_fingerprints": {
-    "root": {
-      "fingerprint": "4be8104ae1b0c43491f071d37f35b68f04862bcc9ec6aad98bd2be5ce11cbaef",
-      "tracked_files": 210
-    },
     ".superpowers": {
-      "fingerprint": "47282bde0aaad74aeaf05379d3424ae0486595935a771d4b460c5d0e1028b4c2",
-      "tracked_files": 33
+      "fingerprint": "c7aa6ed6d76b6b72dc4a7bdcd6249fe857206dcb9a518403629581a09375c73e",
+      "tracked_files": 34
     },
     "docs": {
       "fingerprint": "8ef8fd1f97a180cb7dabbd06c901f52c918b4843c5d9a4d8012a77661a4a7195",
       "tracked_files": 367
     },
     "experiments": {
-      "fingerprint": "86a95be784f73b3a9a3d0a292525d0f17e919d9b33d32a55cdfc3758b27746e5",
-      "tracked_files": 1238
+      "fingerprint": "a88d599b286e40fd570edfece4e078db7e9098be999cf70b0878f515ad66f59a",
+      "tracked_files": 1243
     },
     "operational": {
       "fingerprint": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
@@ -64,9 +60,13 @@
       "fingerprint": "9d1fbf221195826c63442f6b309e64fa753dfdac6f33b272e453b0fd2a3640b1",
       "tracked_files": 3
     },
+    "root": {
+      "fingerprint": "4be8104ae1b0c43491f071d37f35b68f04862bcc9ec6aad98bd2be5ce11cbaef",
+      "tracked_files": 210
+    },
     "scratch": {
-      "fingerprint": "d818ed107269d2266254842006454afac782f8e58a0b00cbde097879f8fbbb30",
-      "tracked_files": 145
+      "fingerprint": "4ff1ac4cf9ad9b9b4b29ab68d601706752bb567884d5ddcb5c5760ba86de37b6",
+      "tracked_files": 147
     },
     "scripts": {
       "fingerprint": "0a7bed1bf63a9233a5a9e3db710274417dbbb24321703f705efc6bf67ccf6214",
@@ -79,6 +79,7 @@
   },
   "changed_modules_since_prior_lock": [
     ".superpowers",
-    "experiments"
+    "experiments",
+    "scratch"
   ]
 }
