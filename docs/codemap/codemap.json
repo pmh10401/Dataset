@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T22:12:24Z",
-  "generated_from_commit": "3ab28380ba291196c83e8f96095701ac54c9335d",
+  "generated_at": "2026-08-09T00:54:56Z",
+  "generated_from_commit": "9e488048a944d13ff77a9594634c95f8705d7568",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -32,7 +32,8 @@
     "Exp441 immutable prepublication failure evidence and Exp442 engineering-only non-promotion governance",
     "Exp442 Sol review-fix: cryptographic document identity, closed production roots, private root-injected test seams, active ETA regression, and verified 1,117-record replay",
     "Official Exp442 readiness, 1,117-record CPU replay, immutable prediction publication, post-freeze retrospective evaluation, verified improvement, and paused review-only handoff",
-    "Approved, pre-implementation Exp443 three-policy missing normal TRAIN comparison design with frozen MiniROCKET replay, label firewall, and full-population retrospective gates"
+    "Approved, pre-implementation Exp443 three-policy missing normal TRAIN comparison design with frozen MiniROCKET replay, label firewall, and full-population retrospective gates",
+    "Exp443 approved 13-task, 98-check implementation plan: exact Exp249 MiniROCKET control replay, three normal-TRAIN missing policies, pinned Python 3.14.6/aeon 1.5.0/NumPy 2.3.5/scikit-learn 1.8.0 environment, 11-worker ordered 57-unit checkpoint, three label-free prediction freezes, post-freeze paired evaluation, and mandatory pause before Exp444"
   ],
   "nodes": [
     {
@@ -42,7 +43,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve Exp441 as immutable prepublication failure evidence and Exp404/Exp416 as verified references. Exp442 passed fresh Sol High review, completed official readiness/new/inspect/evaluate, and passes every preregistered retrospective success-table gate: 15 rescued datasets, 15 TP, 15 FP, no regressions, no strong loss, positive paired micro and macro confidence-interval lower bounds, and zero pre-freeze label access. Because this is adaptive same-population follow-up rather than independent validation, Exp442 stays review-only, non-operational, and non-champion. Research is paused for direction discussion and no next experiment starts automatically. Exp443 is now design-frozen but not implemented: it compares existing linear repair, whole-row exclusion, and leave-one-out same-length peer-median repair only in the 19 missing-affected normal TRAIN datasets. It must reproduce the original Exp249 control before freezing all three label-free predictions, preserves 1,098 unaffected datasets, and remains review-only after post-freeze evaluation.",
+      "role": "The control ledgers preserve Exp441 as immutable prepublication failure evidence and Exp404/Exp416 as verified references. Exp442 passed fresh Sol High review, completed official readiness/new/inspect/evaluate, and remains adaptive review-only evidence. Exp443 now has an approved corrected design and a committed implementation plan, but no product module, official root, prediction, or evaluation exists yet. The plan changes only missing-value handling in normal TRAIN for the 19 affected datasets, requires exact Exp249 MiniROCKET score/candidate and 2,218-Hard control reproduction before alternatives, freezes all three label-free predictions, evaluates once afterward, and pauses before any Exp444 work.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -55,7 +56,8 @@
         "reviewed_preregistration_sha256",
         "retrospective_gates_all_passed",
         "paused_awaiting_direction",
-        "Exp443_design_frozen"
+        "Exp443_design_frozen",
+        "Exp443_implementation_plan_frozen"
       ],
       "tests": [],
       "constraints": [
@@ -75,7 +77,8 @@
         "Exp442 remains review-only, non-operational, and not a champion candidate; readiness/new stay blocked until code-map synchronization and fresh Sol High review.",
         "The code map is regenerated from the Exp442 review-fix source before Sol re-review; official Exp442 readiness remains blocked until that re-review ships.",
         "No next experiment starts automatically after official Exp442 completion; a new direction requires discussion, a new experiment number, and new preregistration.",
-        "Exp443 implementation may begin only after review of the committed design; control MiniROCKET reproduction must pass before either alternative policy or TEST-label evaluation."
+        "Exp443 implementation may begin only after review of the committed design; control MiniROCKET reproduction must pass before either alternative policy or TEST-label evaluation.",
+        "The committed Exp443 implementation plan has 13 tasks and 98 checklist steps. It pins the existing 10th-to-90th percentile RobustScaler path, defines zero-denominator dataset metrics as 0.0, uses 11 outer and one inner CPU worker, prohibits MLX rewriting of official aeon MiniROCKET, requires control reproduction before Policies B/C, permits TEST labels only after three prediction freezes, selects no TEST-informed winner, and stops before Exp444."
       ],
       "evidence": [
         {
@@ -421,6 +424,22 @@
         {
           "path": "docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md",
           "symbol": "## 8. 환경과 대조군 재현 gate"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md",
+          "symbol": "- fold-fit median centering and 10th-to-90th percentile robust scaling"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity.md",
+          "symbol": "# Exp443 Missing Normal TRAIN Policy Comparison Implementation Plan"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity.md",
+          "symbol": "### Task 6: Implement the fail-closed real control gate"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity.md",
+          "symbol": "### Task 13: Evaluate once, record the result, and pause for direction discussion"
         }
       ]
     },
