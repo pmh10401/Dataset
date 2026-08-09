@@ -2,6 +2,16 @@
 """Run Exp443 from the fixed external environment and any current directory."""
 from __future__ import annotations
 
+import os
+
+_THREAD_VARIABLES_ANTIGRAVITY = (
+    "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS", "NUMBA_NUM_THREADS",
+    "BLIS_NUM_THREADS",
+)
+for _name_antigravity in _THREAD_VARIABLES_ANTIGRAVITY:
+    os.environ[_name_antigravity] = "1"
+
 import json
 from pathlib import Path
 import sys
