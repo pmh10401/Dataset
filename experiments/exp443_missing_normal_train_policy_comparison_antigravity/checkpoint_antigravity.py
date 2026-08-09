@@ -249,6 +249,60 @@ def _write_state_antigravity(path: Path, payload: Mapping[str, object]) -> None:
         raise
 
 
+def _validate_state_temporary_antigravity(
+    path: Path,
+    current_state: Mapping[str, object],
+    context_sha256: str,
+    expected_prefix: tuple[str, ...],
+    expected_error_sequence: int | None,
+    units: tuple[WorkUnitAntigravity, ...],
+    stored_process: ProcessIdentityAntigravity,
+) -> None:
+    """Validate the one state temp produced by a record/state crash window."""
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("checkpoint state temporary is invalid")
+    temporary_payload, _ = _read_canonical_antigravity(path)
+    if not isinstance(temporary_payload, Mapping):
+        raise ValueError("checkpoint state temporary is invalid")
+    expected_keys = {
+        "context_sha256", "status", "completed_count", "record_sha256_prefix",
+        "error_sequence", "process", "updated_at",
+    }
+    if set(temporary_payload) != expected_keys:
+        raise ValueError("checkpoint state temporary schema is invalid")
+    if current_state.get("status") != "running":
+        raise ValueError("checkpoint state temporary is unexpected")
+    current_prefix = current_state.get("record_sha256_prefix")
+    if (
+        not isinstance(current_prefix, list)
+        or len(expected_prefix) != len(current_prefix) + 1
+        or tuple(current_prefix) != expected_prefix[:-1]
+    ):
+        raise ValueError("checkpoint state temporary prefix is invalid")
+    if temporary_payload["context_sha256"] != context_sha256:
+        raise ValueError("checkpoint state temporary context changed")
+    expected_status = "error" if expected_error_sequence is not None else (
+        "complete" if len(expected_prefix) == len(units) else "running"
+    )
+    if temporary_payload["status"] != expected_status:
+        raise ValueError("checkpoint state temporary status is invalid")
+    if temporary_payload["completed_count"] != len(expected_prefix):
+        raise ValueError("checkpoint state temporary prefix is invalid")
+    temporary_prefix = temporary_payload["record_sha256_prefix"]
+    if (
+        not isinstance(temporary_prefix, list)
+        or tuple(temporary_prefix) != expected_prefix
+        or any(_SHA256.fullmatch(value or "") is None for value in temporary_prefix)
+    ):
+        raise ValueError("checkpoint state temporary prefix is invalid")
+    if temporary_payload["error_sequence"] != expected_error_sequence:
+        raise ValueError("checkpoint state temporary error is invalid")
+    temporary_process = ProcessIdentityAntigravity.from_payload_antigravity(temporary_payload["process"])
+    if temporary_process != stored_process:
+        raise ValueError("checkpoint state temporary process changed")
+    _timestamp_antigravity(temporary_payload["updated_at"], "checkpoint state temporary heartbeat")
+
+
 def _record_path_antigravity(records: Path, sequence: int) -> Path:
     return records / f"{sequence:04d}_record_antigravity.json"
 
@@ -315,21 +369,13 @@ class Exp443CheckpointStoreAntigravity:
         cls,
         root: Path,
         binding: CheckpointBindingAntigravity,
-        process: ProcessIdentityAntigravity | Callable[[ProcessIdentityAntigravity], bool] | None = None,
-        pid_probe: Callable[[ProcessIdentityAntigravity], bool] | None = None,
+        process: ProcessIdentityAntigravity,
+        pid_probe: Callable[[ProcessIdentityAntigravity], bool],
     ) -> "Exp443CheckpointStoreAntigravity":
-        # Keep the original three-argument API as a compatibility path while
-        # allowing a resumed process to be explicitly bound and persisted.
-        requested_process: ProcessIdentityAntigravity | None
-        if pid_probe is None and callable(process):
-            requested_process = None
-            pid_probe = process
-        else:
-            requested_process = process
         if (
             type(binding) is not CheckpointBindingAntigravity
+            or type(process) is not ProcessIdentityAntigravity
             or not callable(pid_probe)
-            or (requested_process is not None and type(requested_process) is not ProcessIdentityAntigravity)
         ):
             raise ValueError("checkpoint resume identity is invalid")
         root = Path(root)
@@ -357,9 +403,9 @@ class Exp443CheckpointStoreAntigravity:
         status = state_payload["status"]
         if status not in _STATUSES:
             raise ValueError("checkpoint terminal status is invalid")
-        process = ProcessIdentityAntigravity.from_payload_antigravity(state_payload["process"])
+        stored_process = ProcessIdentityAntigravity.from_payload_antigravity(state_payload["process"])
         try:
-            active = bool(pid_probe(process))
+            active = bool(pid_probe(stored_process))
         except BaseException as error:
             raise ValueError("checkpoint PID probe failed") from error
         if active:
@@ -382,17 +428,30 @@ class Exp443CheckpointStoreAntigravity:
         prefix, reconciled_error_sequence = _validate_record_inventory_antigravity(
             records_path, units, tuple(prefix_value), error_sequence
         )
-        effective_process = requested_process if requested_process is not None else process
         effective_status = "running"
         if reconciled_error_sequence is not None:
             effective_status = "error"
         elif len(prefix) == len(units):
             effective_status = "complete"
+        state_temporary = state_path.with_name("state_antigravity.tmp")
+        state_temporary_present = state_temporary.exists() or state_temporary.is_symlink()
+        if state_temporary_present:
+            if len(prefix) == len(prefix_value):
+                raise ValueError("checkpoint state temporary is unexpected")
+            _validate_state_temporary_antigravity(
+                state_temporary,
+                state_payload,
+                hashlib.sha256(context_bytes).hexdigest(),
+                prefix,
+                reconciled_error_sequence,
+                units,
+                stored_process,
+            )
         resumed = cls(
             root,
             units,
             binding,
-            effective_process,
+            process,
             prefix,
             effective_status,
             reconciled_error_sequence,
@@ -400,7 +459,13 @@ class Exp443CheckpointStoreAntigravity:
         # An orphan record has already been durably created, so advance the
         # state prefix before returning.  A supplied process always becomes
         # the active owner of the resumed attempt.
-        if requested_process is not None or prefix != tuple(prefix_value) or reconciled_error_sequence != error_sequence:
+        if state_temporary_present:
+            try:
+                state_temporary.unlink()
+                fsync_directory_antigravity(state_temporary.parent)
+            except OSError as error:
+                raise ValueError("checkpoint state temporary cleanup failed") from error
+        if prefix != tuple(prefix_value) or reconciled_error_sequence != error_sequence or process != stored_process:
             resumed._write_state_antigravity()
         return resumed
 
