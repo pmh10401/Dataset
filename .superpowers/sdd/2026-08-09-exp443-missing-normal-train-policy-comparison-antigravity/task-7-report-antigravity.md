@@ -23,6 +23,35 @@ TEST evaluation.
 The two skips are the existing opt-in real Policy A source/control fixtures;
 Task 7 itself is fully fixture/simulation verified and performs no scoring.
 
+## Fix round: interrupted resume and terminal ownership
+
+Source/test fix commit: `856cea2e`.
+
+The fix round adds a validated reopen path for parent progress files. It
+restores completed/imported/recomputed/success/abstention/error counters and
+the persisted elapsed-time basis, appends to the existing event/text logs,
+and atomically binds the replacement process identity. Checkpoint resume also
+persists a replacement PID, rejects a second active resume, and reconciles
+only one exact next-record orphan left by record-create followed by
+state-replace interruption. Any gap, extra orphan, changed bytes, or
+record-content mismatch remains fail-closed. Heartbeats after a terminal
+progress state are rejected without changing logs, progress bytes, or PID
+activity.
+
+Fix-round focused behavior suites: `14/14` passed. Pinned full Exp443 suite
+(Python 3.14.6, all numerical inner-thread variables set to `1`) now reports:
+
+```text
+Ran 108 tests in 19.158s
+OK (skipped=2)
+```
+
+The interrupted→resume(new PID)→finish simulation over all 57 ordered units
+reported `checkpoint_completed=57`, `progress_completed=57`, terminal
+`eta_seconds=null`, replacement `pid=9191`, and `pid.active=false`. The
+append-only progress log contained 61 events (two begins, 57 accepts, and
+two terminal events for the interrupted and completed phases).
+
 ## Ordered checkpoint evidence
 
 `Exp443CheckpointStoreAntigravity` writes the canonical context, one
