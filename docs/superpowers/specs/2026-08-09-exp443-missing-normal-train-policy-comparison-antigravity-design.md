@@ -161,7 +161,7 @@ Exp443 입력 adapter는 기존 loader가 결측을 먼저 지우기 전 단계�
 - five-fold TRAIN OOF transformer cross-fit
 - fold-fit TRAIN reference 최대 `1,000`
 - query chunk `128`
-- fold-fit median/IQR robust scaling
+- fold-fit median centering and 10th-to-90th percentile robust scaling
 - KNN-3 local-gap score
 - `seed_intersection`
 - alpha `0.005`
@@ -229,6 +229,12 @@ TEST instance label을 연다. 같은 label snapshot으로 정책 A/B/C와 Exp40
 - rescued, regressed, 기존 강한 데이터셋 악화
 - dataset-paired bootstrap 20,000회 micro/macro F1 delta 95% 구간
 - family concentration과 19개 밖 좌표 불변성
+
+dataset별 precision, recall, F1과 false-positive rate는 기존 프로젝트 방식과
+같이 분모가 0이면 `0.0`으로 둔다. dataset-balanced macro 값은 1,117개 모든
+dataset의 이 값을 단순 평균한다. `rescued`는 기준선 TP가 0이었지만 해당 정책의
+TP가 1 이상이 된 dataset, `regressed`는 dataset F1이 기준선보다 감소한
+dataset으로 고정한다.
 
 bootstrap은 `numpy 2.3.5`, `PCG64`, seed `44320260809`, `int64`, endpoint
 `false`, quantile method `linear`로 동결한다.
