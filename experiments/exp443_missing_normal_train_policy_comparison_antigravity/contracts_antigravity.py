@@ -24,6 +24,19 @@ _POLICIES = frozenset({
     "exclude_nonfinite_row",
     "leave_one_out_peer_median",
 })
+POLICY_AUDIT_ACTIONS_ANTIGRAVITY = frozenset({
+    "unchanged",
+    "linear_and_edge_nearest",
+    "excluded_nonfinite_row",
+    "leave_one_out_peer_median",
+    "excluded_unsupported_peer",
+})
+POLICY_AUDIT_RETAINED_ACTIONS_ANTIGRAVITY = frozenset({
+    "unchanged", "linear_and_edge_nearest", "leave_one_out_peer_median",
+})
+POLICY_AUDIT_EXCLUDED_ACTIONS_ANTIGRAVITY = frozenset({
+    "excluded_nonfinite_row", "excluded_unsupported_peer",
+})
 _FORBIDDEN_PREDICTION_TERMS = frozenset({
     "label", "labels", "labels_blob", "ground_truth", "truth", "target",
     "anomaly", "anomalies", "anomaly_positions", "actual", "evaluation",
@@ -252,15 +265,14 @@ class RunPolicyAuditAntigravity:
         unsupported = _tuple_ints(self.unsupported_positions, "unsupported_positions", sorted_unique=True)
         if any(index >= self.original_length for index in missing + unsupported):
             raise ValueError("audit position is out of range")
+        if any(index not in missing for index in unsupported):
+            raise ValueError("unsupported_positions must be a subset of missing_positions")
         _digest(self.missing_positions_sha256, "missing_positions_sha256")
         if self.missing_positions_sha256 != _missing_positions_sha256(missing):
             raise ValueError("missing_positions_sha256 does not match positions")
         _digest(self.raw_blob_sha256, "raw_blob_sha256")
         _name(self.action, "action")
-        if self.action not in {
-            "unchanged", "linear_and_edge_nearest", "excluded_nonfinite_row",
-            "leave_one_out_peer_median", "excluded_unsupported_peer",
-        }:
+        if self.action not in POLICY_AUDIT_ACTIONS_ANTIGRAVITY:
             raise ValueError("audit action is invalid")
         if self.instance_index in references:
             raise ValueError("audit references must exclude the row itself")
@@ -561,6 +573,8 @@ def canonical_contract_sha256_antigravity(payload: Mapping[str, object]) -> str:
 
 __all__ = [
     "RawSeriesAntigravity", "RunPolicyAuditAntigravity", "KernelSeedScoresAntigravity",
+    "POLICY_AUDIT_ACTIONS_ANTIGRAVITY", "POLICY_AUDIT_RETAINED_ACTIONS_ANTIGRAVITY",
+    "POLICY_AUDIT_EXCLUDED_ACTIONS_ANTIGRAVITY",
     "PolicyDatasetResultAntigravity", "PredictionRowAntigravity",
     "CheckpointContextAntigravity", "CheckpointStateAntigravity",
     "EvaluationEvidenceAntigravity", "canonical_contract_sha256_antigravity",

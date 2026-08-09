@@ -104,6 +104,18 @@ class Exp443ContractsAntigravityTests(unittest.TestCase):
         )
         self.assertEqual(valid.unsupported_positions, ())
 
+    def test_policy_audit_rejects_unsupported_positions_outside_missing_mask_in_memory_and_payload(self) -> None:
+        valid = RunPolicyAuditAntigravity(
+            "Demo", "leave_one_out_peer_median", 0, 3, (1,), _missing_hash((1,)), _DIGEST,
+            "excluded_unsupported_peer", (1, 2), (1,),
+        )
+        with self.assertRaises(ValueError):
+            replace(valid, unsupported_positions=(2,))
+        payload = valid.to_payload()
+        payload["unsupported_positions"] = [2]
+        with self.assertRaises(ValueError):
+            RunPolicyAuditAntigravity.from_payload(payload)
+
     def test_policy_dataset_result_has_consistent_counts_and_detached_mapping(self) -> None:
         score = KernelSeedScoresAntigravity(1024, 20260721, np.asarray([0.1], dtype="<f8"), np.asarray([0.2], dtype="<f8"), (0,))
         mapping = {1024: (0,)}

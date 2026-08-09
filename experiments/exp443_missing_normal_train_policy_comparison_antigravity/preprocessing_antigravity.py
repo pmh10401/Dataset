@@ -17,7 +17,13 @@ from typing import Any
 
 import numpy as np
 
-from .contracts_antigravity import RawSeriesAntigravity, RunPolicyAuditAntigravity
+from .contracts_antigravity import (
+    POLICY_AUDIT_ACTIONS_ANTIGRAVITY,
+    POLICY_AUDIT_EXCLUDED_ACTIONS_ANTIGRAVITY,
+    POLICY_AUDIT_RETAINED_ACTIONS_ANTIGRAVITY,
+    RawSeriesAntigravity,
+    RunPolicyAuditAntigravity,
+)
 
 
 POLICY_A_ANTIGRAVITY = "linear_edge_nearest_control"
@@ -29,13 +35,7 @@ POLICIES_ANTIGRAVITY = (
     POLICY_C_ANTIGRAVITY,
 )
 
-_ACTIONS_ANTIGRAVITY = frozenset({
-    "unchanged",
-    "linear_and_edge_nearest",
-    "excluded_nonfinite_row",
-    "leave_one_out_peer_median",
-    "excluded_unsupported_peer",
-})
+_ACTIONS_ANTIGRAVITY = POLICY_AUDIT_ACTIONS_ANTIGRAVITY
 _SHA256_HEX_ANTIGRAVITY = frozenset("0123456789abcdef")
 
 
@@ -370,8 +370,8 @@ class PreparedTrainAntigravity:
         expected_target = int(np.clip(np.median([audit.original_length for audit in audits]), 8, 2048)) if audits else None
         if expected_target != self.target_length:
             raise ValueError("prepared target length is not derived from original TRAIN audits")
-        retained_actions = {"unchanged", "linear_and_edge_nearest", "leave_one_out_peer_median"}
-        excluded_actions = {"excluded_nonfinite_row", "excluded_unsupported_peer"}
+        retained_actions = POLICY_AUDIT_RETAINED_ACTIONS_ANTIGRAVITY
+        excluded_actions = POLICY_AUDIT_EXCLUDED_ACTIONS_ANTIGRAVITY
         expected_indices = tuple(audit.instance_index for audit in audits if audit.action in retained_actions)
         expected_excluded = tuple(audit.instance_index for audit in audits if audit.action in excluded_actions)
         if any(audit.action not in retained_actions | excluded_actions for audit in audits):
