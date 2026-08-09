@@ -266,6 +266,57 @@ class ProgressWriterAntigravityTests(unittest.TestCase):
             self.assertEqual(json.loads((root / "pid_antigravity.json").read_text()), pid_before)
             self.assertFalse(pid_before["active"])
 
+    def test_complete_finalization_inspection_is_read_only_and_binds_process(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            CheckpointBindingAntigravity,
+            CompletedCheckpointInspectionAntigravity,
+            ProcessIdentityAntigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.progress_antigravity import (
+            ProgressWriterAntigravity,
+            inspect_complete_progress_for_finalization_antigravity,
+        )
+
+        units = (_unit(POLICIES[0], "A", 0), _unit(POLICIES[0], "B", 1))
+        results = {index: _result(unit.policy, unit.dataset) for index, unit in enumerate(units)}
+        binding = CheckpointBindingAntigravity(
+            "exp443-fixture-antigravity", "a" * 64, "b" * 64,
+            "c" * 64, "d" * 64, "e" * 40,
+        )
+        process = ProcessIdentityAntigravity(4242, "fixture-start")
+        with tempfile.TemporaryDirectory(prefix="exp443_complete_progress_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_antigravity"
+            checkpoint = attempt / "checkpoint_antigravity"
+            checkpoint.mkdir(parents=True)
+            writer = ProgressWriterAntigravity(
+                attempt, total=2, checkpoint_path=checkpoint / "state_antigravity.json",
+                process=process,
+            )
+            writer.begin_units_antigravity(units)
+            for unit in units:
+                writer.accept_unit_antigravity(results[unit.sequence])
+            writer.terminal_antigravity("complete", None)
+            inspection = CompletedCheckpointInspectionAntigravity(
+                checkpoint, binding, units, process, ("1" * 64, "2" * 64),
+                results, {0: {}, 1: {}},
+            )
+            names = (
+                "progress_antigravity.json", "pid_antigravity.json",
+                "events_antigravity.jsonl", "text_antigravity.log",
+            )
+            before = {name: (attempt / name).read_bytes() for name in names}
+            evidence = inspect_complete_progress_for_finalization_antigravity(
+                attempt, inspection, pid_probe=lambda _stored: False,
+            )
+            self.assertEqual(evidence.completed_count, 2)
+            self.assertEqual(evidence.stage, "complete")
+            self.assertEqual({name: (attempt / name).read_bytes() for name in names}, before)
+            with self.assertRaisesRegex(ValueError, "active"):
+                inspect_complete_progress_for_finalization_antigravity(
+                    attempt, inspection, pid_probe=lambda _stored: True,
+                )
+            self.assertEqual({name: (attempt / name).read_bytes() for name in names}, before)
+
 
 if __name__ == "__main__":
     unittest.main()

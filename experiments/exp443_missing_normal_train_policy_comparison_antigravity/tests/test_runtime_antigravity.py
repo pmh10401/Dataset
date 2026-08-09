@@ -59,6 +59,72 @@ class _FakeExecutor:
 
 
 class RuntimeAntigravityTests(unittest.TestCase):
+    def test_complete_resume_selects_read_only_finalization_authorities(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            CheckpointBindingAntigravity,
+            CompletedCheckpointInspectionAntigravity,
+            ProcessIdentityAntigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
+            _open_resume_authorities_antigravity,
+        )
+
+        units = (WorkUnitAntigravity(0, POLICIES[0], "dataset_00"),)
+        result = _result(units[0])
+        binding = CheckpointBindingAntigravity(
+            "exp443-fixture-antigravity", "a" * 64, "b" * 64,
+            "c" * 64, "d" * 64, "e" * 40,
+        )
+        stored = ProcessIdentityAntigravity(4242, "stored")
+        replacement = ProcessIdentityAntigravity(5252, "replacement")
+        calls: list[str] = []
+        with tempfile.TemporaryDirectory(prefix="exp443_complete_resume_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_antigravity"
+            checkpoint = attempt / "checkpoint_antigravity"
+            checkpoint.mkdir(parents=True)
+            inspection = CompletedCheckpointInspectionAntigravity(
+                checkpoint, binding, units, stored, ("1" * 64,),
+                {0: result}, {0: {}},
+            )
+
+            def progress_inspector(_attempt, observed, *, pid_probe):
+                calls.append("progress_inspect")
+                self.assertIs(observed, inspection)
+                self.assertFalse(pid_probe(stored))
+                return object()
+
+            store, writer, finalization_only = _open_resume_authorities_antigravity(
+                attempt=attempt,
+                checkpoint_root=checkpoint,
+                units=units,
+                binding=binding,
+                process=replacement,
+                pid_probe=lambda _stored: False,
+                status_reader=lambda _root: "complete",
+                complete_inspector=lambda _root: inspection,
+                checkpoint_opener=lambda *_args, **_kwargs: self.fail("complete checkpoint must not be rebound"),
+                progress_inspector=progress_inspector,
+            )
+            self.assertTrue(finalization_only)
+            self.assertIsNone(writer)
+            self.assertEqual(store.status_antigravity, "complete")
+            self.assertEqual(store.completed_count_antigravity, 1)
+            self.assertEqual(store.results_antigravity(), {0: result})
+            self.assertEqual(calls, ["progress_inspect"])
+
+    def test_runtime_source_keeps_complete_progress_closed_during_publication_retry(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity import runtime_antigravity
+
+        source = __import__("inspect").getsource(runtime_antigravity._run_exp443_antigravity)
+        self.assertIn("if not finalization_only_antigravity:", source)
+        self.assertIn("writer.begin_units_antigravity(active_units)", source)
+        self.assertIn('writer.terminal_antigravity("complete", None)', source)
+        self.assertIn("publisher=publisher", source)
+        self.assertLess(
+            source.index("publication = _publish_completed_attempt_antigravity"),
+            source.index("finalized = True"),
+        )
+
     def test_successful_runtime_finalization_publishes_after_terminal_progress(self) -> None:
         from experiments.exp443_missing_normal_train_policy_comparison_antigravity import runtime_antigravity
 
