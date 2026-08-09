@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-09T22:56:42+09:00",
+  "updated_at": "2026-08-10T09:00:00+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -32,7 +32,7 @@
   },
   "pending_candidate": {
     "experiment": null,
-    "status": "none_exp443_evaluated_no_signal_not_pending_champion",
+    "status": "none_exp444_design_only_not_pending_champion",
     "prediction_sha256": null,
     "evaluation": null
   },
@@ -171,6 +171,26 @@
       "operational_alert_eligible": false,
       "test_informed_reselection_allowed": false,
       "next_action": "paused_awaiting_direction_discussion_no_auto_exp444"
+    },
+    {
+      "experiment": "Exp444",
+      "status": "design_only_not_promoted",
+      "reason": "Exp444는 Exp442의 동결 30개 좌표만 deterministic normal-TRAIN omission view로 재계산하는 구현 전 review-only 계획이다. prediction/evaluation은 아직 없고 TEST label도 열지 않았으며, 과학적 성공 기준·승자·운영 경보·champion 또는 pending candidate를 만들지 않는다. Exp404/Exp416은 verified reference로 보존한다.",
+      "reviewed_design_sha256": "1bb76f19d07ef312d5ac5498414d0c914ce94b99c5912e0bbcf3f0197c1400e8",
+      "run_identity": "exp444-train-only-stability-precision-gate-antigravity-20260810",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp444_train_only_stability_precision_gate_antigravity_20260810",
+      "prediction_sha256": null,
+      "evaluation": null,
+      "test_labels_opened": false,
+      "label_access_count": 0,
+      "scientific_success_criterion": null,
+      "evaluation_status": "descriptive_complete_no_promotion",
+      "adaptive_followup": true,
+      "independent_validation": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "same_experiment_reselection_allowed": false
     }
   ]
 }
