@@ -12,7 +12,7 @@
 
 - Every newly created filename contains `antigravity`; do not create `__init__.py`.
 - Experiment identity is `Exp443`; run identity is `exp443-missing-normal-train-policy-comparison-antigravity-20260809`.
-- The final reviewed design is `docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md` with exact content SHA256 `b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f`.
+- The final reviewed design is `docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md` with exact content SHA256 `b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f9b`.
 - Run root is `/Users/mac/Documents/Dataset/exp443_missing_normal_train_policy_comparison_antigravity_20260809`.
 - Isolated interpreter root is `/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314`.
 - Prediction may use only raw normal TRAIN values, label-free TEST values and identity, the frozen Exp249 prediction/cache, the frozen Exp291 lanes, the frozen Exp414 missing audit, the frozen Exp404 Hard comparator, and reviewed Exp443 code/config.
@@ -108,13 +108,13 @@ FROZEN_INPUT_SHA256_ANTIGRAVITY = {
 - Modify together: `docs/codemap/codemap.lock`
 
 **Interfaces:**
-- Consumes: the approved design at SHA256 `b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f` and the frozen input table above.
+- Consumes: the approved design at SHA256 `b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f9b` and the frozen input table above.
 - Produces: the exact scientific contract, commands, artifact paths, research state, and non-promotion status consumed by later code.
 
 - [ ] **Step 1: Verify the corrected approved design bytes**
 
 ```bash
-test "$(shasum -a 256 docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md | awk '{print $1}')" = "b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f"
+test "$(shasum -a 256 docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md | awk '{print $1}')" = "b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f9b"
 rg -n "10th-to-90th|분모가 0|rescued" docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md
 ```
 
