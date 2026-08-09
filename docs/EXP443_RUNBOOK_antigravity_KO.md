@@ -13,9 +13,10 @@ run_identity = exp443-missing-normal-train-policy-comparison-antigravity-2026080
 run_root = /Users/mac/Documents/Dataset/exp443_missing_normal_train_policy_comparison_antigravity_20260809
 ```
 
-이 문서의 명령은 구현 후 실행할 **예정 명령**이다. 현재 이 runbook을 기록하는
-단계에서는 명령이 동작한다고 주장하지 않으며, official root·attempt·prediction·
-evaluation도 아직 없다. `REVIEWED_COMMIT`은 readiness/new/resume 시점에
+이 문서의 명령은 구현·회귀·실데이터 label-free 제어 검증을 통과했다. 다만 fresh
+Sol High 검토가 clean HEAD에 `ship`을 주기 전에는 실행하지 않는다. 현재 official
+root·attempt·prediction·evaluation은 없다. `REVIEWED_COMMIT`은
+readiness/new/resume 시점에
 호출자가 넣는 runtime argument일 뿐 preregistration에 저장하는 placeholder가
 아니다.
 
@@ -31,7 +32,7 @@ EVENTS=$ATTEMPT/events_antigravity.jsonl
 TEXT_LOG=$ATTEMPT/text_antigravity.log
 PID_FILE=$ATTEMPT/pid_antigravity.json
 CHECKPOINT=$ATTEMPT/checkpoint_antigravity
-PUBLICATION=$RUN_ROOT/publication_antigravity
+PUBLICATION=$ATTEMPT/publication_antigravity
 EVALUATION=$RUN_ROOT/evaluation_antigravity
 ```
 
@@ -52,16 +53,23 @@ input/config/environment hash와 유효 ordered prefix를 검증한 뒤 미완�
 bytes를 재검증한다. `evaluate`만 세 prediction freeze 후 TEST label을 열어
 별도 evaluation을 만든다. 실패 root와 staging은 감사 증거로 보존한다.
 
-## 예정 명령 (구현 후에만)
+## 고정 명령 (fresh review 통과 후에만)
 
 ```bash
 bash scripts/create_exp443_environment_antigravity.sh
-/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT
-/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py new --reviewed-commit REVIEWED_COMMIT
-/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py resume --reviewed-commit REVIEWED_COMMIT --attempt attempt_0000_antigravity
+EXP443_REVIEWED_COMMIT_ANTIGRAVITY="$(git rev-parse HEAD)"
+/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py readiness --reviewed-commit "$EXP443_REVIEWED_COMMIT_ANTIGRAVITY"
+nohup /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py new --reviewed-commit "$EXP443_REVIEWED_COMMIT_ANTIGRAVITY" > /Users/mac/Documents/Dataset/exp443_missing_normal_train_policy_comparison_antigravity_20260809/launch_antigravity.log 2>&1 &
+echo $!
+/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py resume --reviewed-commit "$EXP443_REVIEWED_COMMIT_ANTIGRAVITY" --attempt attempt_0000_antigravity
 /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py inspect
 /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py evaluate
 ```
+
+`new`는 위 한 프로세스만 시작한다. Codex가 반복 감시하지 않고 프로세스가 고정
+progress/events/text/PID/checkpoint 파일을 직접 갱신한다. 완료 또는 오류는 사용자가
+알린 뒤 한 번 확인한다. `evaluate`는 complete publication의 세 prediction SHA를
+검사한 이후에만 실행한다.
 
 환경 script는 Python 3.14.6, `aeon==1.5.0`, `numpy==2.3.5`,
 `scikit-learn==1.8.0` 고정 환경을 저장소 밖에 만들도록 설계한다. 공식
