@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T12:12:09Z",
-  "generated_from_commit": "2b514f1c",
+  "generated_at": "2026-08-09T12:25:35Z",
+  "generated_from_commit": "073786f7",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -56,7 +56,8 @@
     "Exp443 Task 9 non-mutating completed-checkpoint inspection, exact 57-result/three-policy replay, three canonical 1,117-row label-free prediction freezes, and create-only hash-linked publication",
     "Exp443 Task 9 Sol fix: real Policy A archive-control recomputation, exact 57-unit terminal authority, progress/PID checkpoint binding, and preserved publication-failure audits",
     "Exp443 Task 10 post-freeze TEST-label boundary, exact three-policy metrics, paired dataset bootstrap, affected/unaffected diagnostics, and immutable evaluation replay",
-    "Exp443 fixed external-environment five-command CLI, explicit attempt resume, terminal-complete label-free publication, read-only finalization retry and inspection, JSON-safe wrapper failures, and lazy post-freeze evaluator import"
+    "Exp443 fixed external-environment five-command CLI, explicit attempt resume, terminal-complete label-free publication, read-only finalization retry and inspection, JSON-safe wrapper failures, and lazy post-freeze evaluator import",
+    "Exp443 self-contained one-thread numerical runtime contract across seven common CPU thread controls and fixed 11-worker scheduling"
   ],
   "nodes": [
     {
@@ -480,10 +481,6 @@
           "symbol": "def verify_environment_antigravity()"
         },
         {
-          "path": "RESEARCH_STATE.json",
-          "symbol": "\"fresh_sol_high_review\": \"pending\""
-        },
-        {
           "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
           "symbol": "# Exp443 구현 검증 보고서"
         },
@@ -494,6 +491,10 @@
         {
           "path": "RESEARCH_STATE.json",
           "symbol": "\"active_phase\": \"implementation_verified_awaiting_scoped_rereview\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"fresh_sol_high_review\": \"pending_after_thread_contract_fix\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
@@ -3606,7 +3607,8 @@
         "_write_failure_antigravity",
         "_open_resume_authorities_antigravity",
         "_checkpoint_resume_status_antigravity",
-        "inspect_complete_progress_for_finalization_antigravity"
+        "inspect_complete_progress_for_finalization_antigravity",
+        "_worker_initializer_antigravity"
       ],
       "tests": [
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
@@ -3692,6 +3694,7 @@
         "Task 10 bootstrap is exactly NumPy 2.3.5 Generator(PCG64(44320260809)), 20,000 paired dataset samples, int64 indices, endpoint false, and linear 2.5/97.5 quantiles; population, sample, version, or resampling identity drift fails closed.",
         "Task 10 evaluation is exactly ten create-only files. Existing output is replay-only: row facts, transitions, family diagnostics, gates, all three bootstraps, baseline/Policy A authority, decisions, hashes, and bytes are reconstructed without reopening labels; governance remains review-only and no operational alert is eligible.",
         "Task 10 propagates whether the label-capable connection actually started through mid-read exceptions, so preserved failure_antigravity.json records labels_opened=true after any partial label access and never falsely reports a pre-label failure.",
+        "The runtime sets OMP, OpenBLAS, MKL, vecLib, NumExpr, Numba, and BLIS thread controls to one before numerical imports and repeats the same seven-variable contract in every worker; the official outer worker count remains 11.",
         "Task 11 exposes exactly readiness/new/resume/inspect/evaluate; only reviewed-commit and an exact attempt_[0-9]{4}_antigravity basename are accepted, scientific/resource/path overrides are absent, new/resume publishes only after terminal-complete progress, a complete-checkpoint resume validates checkpoint/progress/PID/log bytes read-only and retries publication without rebinding them, inspect is strictly read-only, wrapper preflight failures are JSON-safe, and evaluate inspects the frozen publication before the sole lazy evaluator import."
       ],
       "evidence": [
@@ -4230,6 +4233,18 @@
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_progress_antigravity.py",
           "symbol": "def test_complete_finalization_inspection_is_read_only_and_binds_process"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "\"BLIS_NUM_THREADS\","
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "def _worker_initializer_antigravity()"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_worker_initializer_sets_all_seven_numerical_thread_variables"
         }
       ]
     }
