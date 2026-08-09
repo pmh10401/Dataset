@@ -88,6 +88,21 @@ class Exp444ConfigAntigravityTests(unittest.TestCase):
             with self.subTest(field_name=field_name), self.assertRaises(ValueError):
                 validate_antigravity(replace(FROZEN_CONFIG, **{field_name: value}))
 
+    def test_frozen_numeric_fields_reject_boolean_substitution(self) -> None:
+        numeric_fields = (
+            "dataset_count", "source_candidate_count", "candidate_per_dataset",
+            "maximum_stability_views", "stability_fraction", "mask_seed",
+            "bootstrap_seed", "bootstrap_samples", "acceleration_tolerance",
+            "acceleration_speedup_min", "logical_cpu_count",
+            "expected_cpu_workers_on_current_mac", "cpu_workers",
+            "inner_numeric_threads", "inner_threads", "omit_fraction",
+            "minimum_train_rows", "nearest_k", "quantile",
+            "minimum_consensus_depths", "robust_scale_floor",
+        )
+        for field_name in numeric_fields:
+            with self.subTest(field_name=field_name), self.assertRaises(ValueError):
+                replace(FROZEN_CONFIG, **{field_name: True})
+
 
 if __name__ == "__main__":
     unittest.main()

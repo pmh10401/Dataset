@@ -45,6 +45,20 @@ _INNER_THREAD_ENV_NAMES = (
     "NUMBA_NUM_THREADS",
 )
 
+_EXACT_INTEGER_FIELDS = (
+    "dataset_count", "source_candidate_count", "candidate_per_dataset",
+    "maximum_stability_views", "mask_seed", "bootstrap_seed",
+    "bootstrap_samples", "logical_cpu_count",
+    "expected_cpu_workers_on_current_mac", "cpu_workers",
+    "inner_numeric_threads", "inner_threads", "minimum_train_rows",
+    "nearest_k", "minimum_consensus_depths",
+)
+_EXACT_FLOAT_FIELDS = (
+    "stability_fraction", "acceleration_tolerance",
+    "acceleration_speedup_min", "omit_fraction", "quantile",
+    "robust_scale_floor",
+)
+
 
 @dataclass(frozen=True)
 class Exp444FrozenConfig:
@@ -114,6 +128,12 @@ class Exp444FrozenConfig:
     acceleration_decision: str = "cpu_until_parity_speed_gate"
 
     def __post_init__(self) -> None:
+        for name in _EXACT_INTEGER_FIELDS:
+            if type(getattr(self, name)) is not int:
+                raise ValueError(f"{name} must be an exact integer")
+        for name in _EXACT_FLOAT_FIELDS:
+            if type(getattr(self, name)) is not float:
+                raise ValueError(f"{name} must be an exact float")
         if type(self.experiment_id) is not str or self.experiment_id != "Exp444":
             raise ValueError("Exp444 experiment identity is frozen")
         if type(self.run_identity) is not str or self.run_identity != "exp444-train-only-stability-precision-gate-antigravity-20260810":

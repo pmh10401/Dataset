@@ -1,12 +1,7 @@
 """RED/GREEN tests for immutable Exp444 contracts."""
 from __future__ import annotations
 
-from dataclasses import replace
-from hashlib import sha256
-import json
 import unittest
-
-import numpy as np
 
 from experiments.exp444_train_only_stability_precision_gate_antigravity.config_antigravity import FROZEN_CONFIG, scientific_config_sha256_antigravity
 from experiments.exp444_train_only_stability_precision_gate_antigravity.contracts_antigravity import (
@@ -104,9 +99,66 @@ class Exp444ContractsAntigravityTests(unittest.TestCase):
         for forbidden in ("label", "labels_blob", "evaluation", "precision", "f1", "anomaly_positions"):
             with self.subTest(forbidden=forbidden), self.assertRaises(ValueError):
                 validate_prediction_payload_antigravity({"evidence": [{forbidden: 1}]})
-        source = np.asarray([1.0, 2.0], dtype="<f4")
-        detached = np.frombuffer(source.tobytes(), dtype="<f4")
-        self.assertTrue(np.array_equal(source, detached))
+        caller_depth_array = [2, 3]
+        direct = SourceCandidateAntigravity("CBF", 4, 128, caller_depth_array, 1)  # type: ignore[arg-type]
+        caller_depth_array.append(9)
+        self.assertEqual(direct.original_depths, (2, 3))
+        source_payload = _source().to_payload()
+        original_depths = source_payload["original_depths"]
+        restored = SourceCandidateAntigravity.from_payload(source_payload)
+        original_depths.append(9)
+        self.assertEqual(restored.original_depths, (2, 3))
+        detached_payload = restored.to_payload()
+        detached_payload["original_depths"].append(10)
+        self.assertEqual(restored.original_depths, (2, 3))
+        with self.assertRaises(AttributeError):
+            restored.original_depths.append(11)  # type: ignore[attr-defined]
+
+        view = _view(restored)
+        view_payload = view.to_payload()
+        restored_view = StabilityViewAntigravity.from_payload(view_payload)
+        view_payload["retained_train_indices"].append(99)
+        view_payload["depth_scores"][0]["score"] = 999.0
+        self.assertEqual(restored_view.retained_train_indices, (10, 11, 12, 13))
+        self.assertEqual(restored_view.depth_scores[0].score, 1.5)
+
+    def test_every_contract_rejects_missing_and_extra_payload_keys(self) -> None:
+        source = _source()
+        views = tuple(_view(source, index) for index in range(2))
+        result = CandidateStabilityResultAntigravity(source, views, 2, 2, "stable_review")
+        selection = StabilitySelectionAntigravity((source,), (result,), ())
+        backend = BackendDecisionAntigravity("cpu", 11, (), "fixture")
+        context = CheckpointContextAntigravity(
+            FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity,
+            scientific_config_sha256_antigravity(), FROZEN_CONFIG.environment_lock_sha256,
+            30, 11, 1,
+        )
+        state = CheckpointStateAntigravity("running", 0, 30, 0, None, None, _DIGEST)
+        summary = EvaluationSummaryAntigravity(
+            "descriptive_complete_no_promotion", 30, 1, 29, 0, 0, 0.0, 0.0, _DIGEST,
+        )
+        values = (
+            (source, SourceCandidateAntigravity),
+            (views[0].mask, OmissionMaskAntigravity),
+            (views[0].depth_scores[0], DepthViewScoreAntigravity),
+            (views[0], StabilityViewAntigravity),
+            (result, CandidateStabilityResultAntigravity),
+            (selection, StabilitySelectionAntigravity),
+            (backend, BackendDecisionAntigravity),
+            (context, CheckpointContextAntigravity),
+            (state, CheckpointStateAntigravity),
+            (summary, EvaluationSummaryAntigravity),
+        )
+        for value, contract_type in values:
+            payload = value.to_payload()
+            missing = dict(payload)
+            missing.pop(next(iter(missing)))
+            extra = dict(payload)
+            extra["extra_antigravity"] = None
+            with self.subTest(contract=contract_type.__name__, mutation="missing"), self.assertRaises(ValueError):
+                contract_type.from_payload(missing)
+            with self.subTest(contract=contract_type.__name__, mutation="extra"), self.assertRaises(ValueError):
+                contract_type.from_payload(extra)
 
 
 if __name__ == "__main__":

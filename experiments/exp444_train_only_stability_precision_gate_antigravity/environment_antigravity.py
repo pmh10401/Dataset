@@ -8,12 +8,22 @@ import importlib.metadata
 import os
 from pathlib import Path
 import platform
+import subprocess
+import sys
 from types import MappingProxyType
 
 from .config_antigravity import FROZEN_CONFIG, cpu_worker_count_antigravity, inner_thread_environment_names_antigravity
 
 
-_PACKAGE_NAMES = ("mlx", "numba", "numpy", "pip")
+_LOCKED_PACKAGE_VERSIONS = {
+    "llvmlite": "0.48.0",
+    "mlx-metal": "0.32.0",
+    "mlx": "0.32.0",
+    "numba": "0.66.0",
+    "numpy": "2.4.6",
+    "pip": "26.1.2",
+}
+_PACKAGE_NAMES = tuple(_LOCKED_PACKAGE_VERSIONS)
 
 
 def _digest(path: Path) -> str:
@@ -29,6 +39,28 @@ def _version(name: str) -> str | None:
         return importlib.metadata.version(name)
     except importlib.metadata.PackageNotFoundError:
         return None
+
+
+def _validate_complete_freeze_bytes_antigravity(actual: bytes) -> None:
+    """Fail closed unless ``actual`` is byte-identical to the frozen lock."""
+    if type(actual) is not bytes:
+        raise ValueError("complete pip freeze evidence must be bytes")
+    lock_path = Path(FROZEN_CONFIG.environment_lock_path)
+    if not lock_path.is_file() or _digest(lock_path) != FROZEN_CONFIG.environment_lock_sha256:
+        raise ValueError("complete pip freeze lock SHA256 differs from the frozen contract")
+    if actual != lock_path.read_bytes():
+        raise ValueError("complete pip freeze differs from the frozen lock bytes")
+
+
+def _complete_freeze_bytes_antigravity() -> bytes:
+    completed = subprocess.run(
+        [sys.executable, "-m", "pip", "freeze", "--all"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    lines = sorted(line for line in completed.stdout.splitlines() if line)
+    return b"\n".join(lines) + b"\n"
 
 
 @dataclass(frozen=True)
@@ -65,8 +97,8 @@ class EnvironmentEvidenceAntigravity:
         if not isinstance(self.package_versions, Mapping):
             raise ValueError("package versions must be a mapping")
         packages = dict(self.package_versions)
-        if not set(_PACKAGE_NAMES) <= set(packages):
-            raise ValueError("package provenance is incomplete")
+        if packages != _LOCKED_PACKAGE_VERSIONS:
+            raise ValueError("package provenance must equal the complete frozen lock inventory")
         for key, value in packages.items():
             if type(key) is not str or (value is not None and type(value) is not str):
                 raise ValueError("package provenance has the wrong type")
@@ -199,11 +231,10 @@ def verify_environment_antigravity() -> EnvironmentEvidenceAntigravity:
     lock_path = Path(FROZEN_CONFIG.environment_lock_path)
     if not lock_path.is_file() or _digest(lock_path) != FROZEN_CONFIG.environment_lock_sha256:
         raise ValueError("Exp444 environment lock SHA256 differs from the frozen contract")
+    _validate_complete_freeze_bytes_antigravity(_complete_freeze_bytes_antigravity())
     package_versions = {name: _version(name) for name in _PACKAGE_NAMES}
-    expected = {"mlx": FROZEN_CONFIG.mlx_version, "numba": FROZEN_CONFIG.numba_version, "numpy": FROZEN_CONFIG.numpy_version}
-    for name, version in expected.items():
-        if package_versions.get(name) != version:
-            raise ValueError(f"{name} version differs from the frozen contract")
+    if package_versions != _LOCKED_PACKAGE_VERSIONS:
+        raise ValueError("installed package inventory differs from the complete frozen lock")
     pools = _thread_pools_antigravity()
     for pool in pools:
         if type(pool.get("num_threads")) is not int or pool["num_threads"] != FROZEN_CONFIG.inner_threads:

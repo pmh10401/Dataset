@@ -163,6 +163,10 @@ main_antigravity() {
     return 2
   fi
   if [[ "$#" -eq 1 ]]; then bootstrap=1; fi
+  if (( bootstrap == 1 )) && [[ -s "$LOCK_REQUIREMENTS" ]]; then
+    printf '%s\n' "bootstrap is allowed only while the tracked lock is empty" >&2
+    return 1
+  fi
   if [[ ! -x "$PYTHON_BIN" ]]; then
     printf '%s\n' "Exp444 requires $PYTHON_BIN (Python 3.14.6)" >&2
     return 1
@@ -197,7 +201,9 @@ main_antigravity() {
       printf '%s\n' "bootstrap is creation-only; an existing Exp444 environment is never mutated" >&2
       return 1
     fi
-    validate_existing_antigravity "$VENV_ROOT" "$LOCK_REQUIREMENTS"
+    if ! validate_existing_antigravity "$VENV_ROOT" "$LOCK_REQUIREMENTS"; then
+      return 1
+    fi
     printf '%s\n' "EXP444_ENVIRONMENT_READY"
     return 0
   fi
@@ -207,11 +213,15 @@ main_antigravity() {
   if (( bootstrap == 1 )); then
     "$venv_python" -m pip install --disable-pip-version-check --no-input --no-cache-dir --requirement "$DIRECT_REQUIREMENTS"
     "$venv_python" -m pip check
-    bootstrap_lock_antigravity "$venv_python" "$LOCK_REQUIREMENTS"
+    if ! bootstrap_lock_antigravity "$venv_python" "$LOCK_REQUIREMENTS"; then
+      return 1
+    fi
   else
     "$venv_python" -m pip install --disable-pip-version-check --no-input --no-cache-dir --no-deps --requirement "$LOCK_REQUIREMENTS"
     "$venv_python" -m pip check
-    validate_freeze_antigravity "$venv_python" "$LOCK_REQUIREMENTS" "${LOCK_REQUIREMENTS}.freeze.$$"
+    if ! validate_freeze_antigravity "$venv_python" "$LOCK_REQUIREMENTS" "${LOCK_REQUIREMENTS}.freeze.$$"; then
+      return 1
+    fi
   fi
   printf '%s\n' "EXP444_ENVIRONMENT_READY"
 }

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T22:10:41Z",
-  "generated_from_commit": "99a9d0373ec283fc6ba565ecb8160fdb644449cf",
+  "generated_at": "2026-08-09T22:28:18Z",
+  "generated_from_commit": "7ceab729331b6bb992cf49bb889260750eee2880",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -2641,12 +2641,12 @@
     },
     {
       "id": "exp438_frequency_runtime",
-      "label": "Frequency research / Exp441-442 runtime",
+      "label": "Frequency research / Exp438-443 runtime",
       "type": "pipeline",
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments",
-      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it rejects any checkpoint-root inventory substitution before parsing, parses 1,117 records in fixed context acceptance order through eleven CPU workers with immediate immutable prefix events, validates the complete Exp404 Hard manifest and every candidate/Hard TEST row range, and freezes zero label access without any SQLite or Exp417 input route. Exp441 Task 7 adds atomic readiness ownership of the formerly absent fixed parent: it records canonical zero-label source/selector replay, exact CPU/11-worker and environment evidence, preserves failed private staging, rolls a post-rename parent-fsync failure back through a no-clobber failed sibling, and binds `new` to byte-identical clean-HEAD source evidence. Exp441 Task5 adds a process-owned, immutable label-free attempt: it allocates the smallest absent attempt directory, writes atomic progress/PID plus append-only parent acceptance logs, runs the fixed eleven-worker source verifier, performs the pure selector, creates source/selection evidence, replays source authority after artifacts, and never opens SQLite or an evaluator. Task 9 frozen-context label loading is parent-verified and shipped at 615b277. Task 10 pure retrospective evaluation is reviewed and shipped at cd5709d. Task 11 fixed eight-file evaluation publication/replay is implemented through 6b2ed857 with retained destination authority, exact label-snapshot binding, two immutable failure families, and uncompressed adversarial governance, inventory, ordering, durability, preservation, and semantic-tamper evidence; independent re-review returned ship. Task 12 adds a final audit-only replay entrypoint that calls the fixed public 11-worker source route once and the isolated sequential reference once under a SQLite connection bomb, proves exact source/selection equality, fixed 1,117/840/394/73/49/30 populations, both coordinate identities, finite evidence, 1,117 ordered parent events, eleven production workers, zero label access, and an AST/call-spy firewall. The audit changes no official root or artifact. Exp441's official 1,117-record label-free replay completed with zero errors but failed closed before publication because inactive terminal ETA was 0.0 while the strict publication contract required null. Exp442 is a fresh-root engineering-only successor: a closed lifecycle profile binds its own experiment/schema/run/root and preregistration identities to the unchanged Exp441 scientific configuration. The progress producer now writes null for inactive terminal ETA while active ETA remains unchanged. Generic readiness and runtime entry points require an explicit fixed profile; legacy Exp441 wrappers remain intact and the thin Exp442 wrapper exposes no root, worker, backend, threshold, seed, alpha, or budget override. The Exp442 review fix binds the actual reviewed design and preregistration bytes and removes path injection from every production-profile readiness and runtime function. Root-injected helpers remain private test seams below that boundary. A new active-ETA regression proves that only inactive terminal ETA becomes null. Official Exp442 readiness and new now completed from reviewed commit c4783d69. The fixed CPU/11-worker process committed 1,117 of 1,117 records with zero errors, exact 1117/840/394/73/49/30 populations, and inactive terminal ETA null before immutable publication. Prediction-time label access remained zero. The approved Exp444 design and implementation plan specify a new isolated review-only stability layer over the frozen Exp442 30 coordinates: deterministic normal-TRAIN omission views recompute the unchanged Exp440 two-depth rule, split candidates into stable and unstable review lanes, preserve a zero-label prediction boundary, and make no pass/fail or promotion decision. Exp444 Task 2 now owns the isolated Python 3.14.6 environment, frozen scientific config, immutable source/stability/checkpoint/evaluation contracts, recursive label/evaluation firewall, and thin Exp441 canonical/create-only artifact wrappers; no official run root or prediction runtime exists.",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it rejects any checkpoint-root inventory substitution before parsing, parses 1,117 records in fixed context acceptance order through eleven CPU workers with immediate immutable prefix events, validates the complete Exp404 Hard manifest and every candidate/Hard TEST row range, and freezes zero label access without any SQLite or Exp417 input route. Exp441 Task 7 adds atomic readiness ownership of the formerly absent fixed parent: it records canonical zero-label source/selector replay, exact CPU/11-worker and environment evidence, preserves failed private staging, rolls a post-rename parent-fsync failure back through a no-clobber failed sibling, and binds `new` to byte-identical clean-HEAD source evidence. Exp441 Task5 adds a process-owned, immutable label-free attempt: it allocates the smallest absent attempt directory, writes atomic progress/PID plus append-only parent acceptance logs, runs the fixed eleven-worker source verifier, performs the pure selector, creates source/selection evidence, replays source authority after artifacts, and never opens SQLite or an evaluator. Task 9 frozen-context label loading is parent-verified and shipped at 615b277. Task 10 pure retrospective evaluation is reviewed and shipped at cd5709d. Task 11 fixed eight-file evaluation publication/replay is implemented through 6b2ed857 with retained destination authority, exact label-snapshot binding, two immutable failure families, and uncompressed adversarial governance, inventory, ordering, durability, preservation, and semantic-tamper evidence; independent re-review returned ship. Task 12 adds a final audit-only replay entrypoint that calls the fixed public 11-worker source route once and the isolated sequential reference once under a SQLite connection bomb, proves exact source/selection equality, fixed 1,117/840/394/73/49/30 populations, both coordinate identities, finite evidence, 1,117 ordered parent events, eleven production workers, zero label access, and an AST/call-spy firewall. The audit changes no official root or artifact. Exp441's official 1,117-record label-free replay completed with zero errors but failed closed before publication because inactive terminal ETA was 0.0 while the strict publication contract required null. Exp442 is a fresh-root engineering-only successor: a closed lifecycle profile binds its own experiment/schema/run/root and preregistration identities to the unchanged Exp441 scientific configuration. The progress producer now writes null for inactive terminal ETA while active ETA remains unchanged. Generic readiness and runtime entry points require an explicit fixed profile; legacy Exp441 wrappers remain intact and the thin Exp442 wrapper exposes no root, worker, backend, threshold, seed, alpha, or budget override. The Exp442 review fix binds the actual reviewed design and preregistration bytes and removes path injection from every production-profile readiness and runtime function. Root-injected helpers remain private test seams below that boundary. A new active-ETA regression proves that only inactive terminal ETA becomes null. Official Exp442 readiness and new now completed from reviewed commit c4783d69. The fixed CPU/11-worker process committed 1,117 of 1,117 records with zero errors, exact 1117/840/394/73/49/30 populations, and inactive terminal ETA null before immutable publication. Prediction-time label access remained zero. The approved Exp444 design and implementation plan specify a new isolated review-only stability layer over the frozen Exp442 30 coordinates: deterministic normal-TRAIN omission views recompute the unchanged Exp440 two-depth rule, split candidates into stable and unstable review lanes, preserve a zero-label prediction boundary, and make no pass/fail or promotion decision. Exp444 Task 2 now owns the isolated Python 3.14.6 environment, frozen scientific config, immutable source/stability/checkpoint/evaluation contracts, recursive label/evaluation firewall, and thin Exp441 canonical/create-only artifact wrappers; no official run root or prediction runtime exists. Grouped Exp443 boundary evidence: Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation. Review round 1 closes canonical audit/prepared reconciliation: policy/action/missingness combinations are frozen, raw `<f4` digests are recomputed, missing-position hashes survive the RunPolicyAudit adapter, targets are clipped from original TRAIN medians at every boundary, and TRAIN/TEST identities are gap-checked. The round also records exact A/B/C action totals, immutable byte ownership, and all-19 real parity. Review round 2 closes the unsupported-position subset gap for both in-memory and serialized RunPolicyAudit payloads and centralizes the canonical action vocabulary shared by contracts and preprocessing. Task 5 adds a lazy adapter to the unchanged Exp249 CPU scorer, enforces four frozen kernel/seed calls with alpha=.005 seed intersections, and emits deterministic label-free Standard-gated promotion/pre-exact/exact-normal/final-Hard routing rows; unaffected datasets import verified Exp249 candidate maps while affected datasets require one policy result each. Task 6 adds a fail-closed Policy A control gate: every affected dataset's four TRAIN OOF/TEST arrays is compared with verified Exp249 float64 archive bytes, empirical and frozen candidate sets are checked, complete route coordinates are replayed against Exp291/404, topology and label-free identities are recorded, and B/C/evaluation work remains blocked until control_reproduction_passed. Task 7 adds the internal ordered 57-unit runtime support: policy-major case-sensitive WorkUnit identities, create-only canonical records, binding/PID-gated resumable prefixes, terminal error/interruption semantics, and parent-only atomic progress/events/Korean log/PID heartbeat evidence. The Task 7 fix adds validated interrupted reopen with elapsed/counter restoration, append-only log continuation, replacement process binding, exact single-next orphan reconciliation, active second-resume rejection, and terminal heartbeat no-op/rejection. Fix round 2 removes legacy resume compatibility and validates then clears the one canonical state temp left by a record-create/state-replace crash before rebinding and advancing the prefix. Fix round 3 rejects interrupted resume when the replacement ProcessIdentityAntigravity exactly equals the stored owner; only distinct ownership may be persisted. Task 8 adds clean-HEAD/source/config/environment readiness, exact policy-major case-sensitive 57-unit scheduling with 11 spawned CPU workers, ordered prefix buffering, parent-only progress/checkpoint ownership, and a 19-unit Policy A sequential-versus-parallel semantic parity report. Policy A control remains a hard gate before B/C. Interrupted resumes reuse the retained database hard-link pin; a complete checkpoint has an explicit finalization-only re-entry path, canonical prediction bytes are idempotently reused only when identical, spawn workers return picklable result contracts, and progress advances the next dataset with its dimensions in one atomic write. The real final parity is semantic_equal=true with zero TEST-label access; speed is informative and MLX/MPS remain inapplicable. Task 9 adds a dedicated non-mutating completed-checkpoint inspection path and freezes the three policy predictions without reopening resume state. It requires complete inactive progress, exactly 57 results in three 19-dataset policy groups, the real 76-comparison Policy A control and 137/2253/35/2218 routing topology, exact Task 8 worker-parity linkage, and zero label access. Each runtime canonical JSON is byte-linked to a canonical 1,117-row JSONL, then nine leaf artifacts, manifest, status, and self-excluding artifact map form a create-only replayable hash DAG for Task 10 post-freeze evaluation. The Task 9 Sol fix no longer trusts the saved control self-report: publication recomputes all 76 Policy A archive comparisons and requires canonical equality, constrains completed inspection to the exact three-by-19 topology, binds exact progress/PID schemas and process identity to checkpoint state, and preserves four publication-failure phases in unique label-free audit siblings. Task 10 adds the only label-capable post-freeze module: it inspects all three publications twice before opening one pinned read-only database connection, loads exactly one ordered TEST-label query per dataset, reproduces the fixed Exp404/Exp291 baseline and Policy A, evaluates A/B/C independently with exact project metrics and the NumPy 2.3.5 PCG64 20,000-sample paired bootstrap, and freezes an exact ten-file review-only evaluation that fully replays without reopening labels. Task 11 fixes the readiness/new/resume/inspect/evaluate CLI and external wrapper, binds resume to one explicit safe attempt basename, publishes only after terminal-complete prediction finalization, retries failed publication through read-only complete checkpoint/progress authorities without changing their bytes, keeps inspect read-only, emits JSON-safe wrapper failures, and permits the only evaluator import after frozen-publication inspection. The official reviewed run completed all 57 label-free policy units and froze three 1,117-row predictions. Post-freeze evaluation found A and B identical to baseline; C rescued MelbournePedestrian_normal_8 with TP 1/FP 0 but both paired-bootstrap lower bounds were zero, so no winner was selected. The publication is valid while a post-publication pinned-database close error is preserved as separate engineering evidence.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -2723,7 +2723,108 @@
         "experiments.exp442_terminal_eta_publication_repair_antigravity.lifecycle_antigravity.run_new_antigravity",
         "_run_readiness_at_root_antigravity",
         "_validate_readiness_at_root_antigravity",
-        "_run_new_at_root_antigravity"
+        "_run_new_at_root_antigravity",
+        "frozen_config_payload_antigravity",
+        "scientific_config_sha256_antigravity",
+        "validate_antigravity",
+        "verify_environment_antigravity",
+        "exp443_validate_existing_venv_antigravity",
+        "exp443_main_antigravity",
+        "exp443_validate_fresh_freeze_antigravity",
+        "exp443_bootstrap_lock_antigravity",
+        "RawSeriesAntigravity",
+        "RunPolicyAuditAntigravity",
+        "KernelSeedScoresAntigravity",
+        "PolicyDatasetResultAntigravity",
+        "PredictionRowAntigravity",
+        "CheckpointContextAntigravity",
+        "CheckpointStateAntigravity",
+        "EvaluationEvidenceAntigravity",
+        "validate_prediction_payload_antigravity",
+        "exp443_before_bootstrap_publication_antigravity",
+        "exp443_after_bootstrap_publication_antigravity",
+        "pin_database_snapshot_antigravity",
+        "load_raw_dataset_antigravity",
+        "scan_missing_inventory_antigravity",
+        "validate_prediction_sql_antigravity",
+        "parse_dataset_family_antigravity",
+        "FROZEN_DATABASE_EXCLUSIONS_ANTIGRAVITY",
+        "PinnedDatabaseAntigravity",
+        "RawDatasetAntigravity",
+        "MissingInventoryAntigravity",
+        "POLICY_A_ANTIGRAVITY",
+        "POLICY_B_ANTIGRAVITY",
+        "POLICY_C_ANTIGRAVITY",
+        "POLICIES_ANTIGRAVITY",
+        "PreprocessingAuditAntigravity",
+        "PreparedTrainAntigravity",
+        "PreparedDatasetAntigravity",
+        "original_target_length_antigravity",
+        "repair_linear_edge_nearest_antigravity",
+        "apply_train_policy_antigravity",
+        "prepare_dataset_antigravity",
+        "POLICY_AUDIT_ACTIONS_ANTIGRAVITY",
+        "POLICY_AUDIT_RETAINED_ACTIONS_ANTIGRAVITY",
+        "POLICY_AUDIT_EXCLUDED_ACTIONS_ANTIGRAVITY",
+        "score_configuration",
+        "score_prepared_dataset_antigravity",
+        "seed_intersection_candidates_antigravity",
+        "PolicyPredictionAntigravity",
+        "route_policy_antigravity",
+        "canonical_prediction_bytes_antigravity",
+        "ControlGateResultAntigravity",
+        "compare_policy_a_to_archive_antigravity",
+        "require_control_gate_antigravity",
+        "WorkUnitAntigravity",
+        "CheckpointBindingAntigravity",
+        "ProcessIdentityAntigravity",
+        "Exp443CheckpointStoreAntigravity",
+        "ordered_work_units_antigravity",
+        "Exp443CheckpointStoreAntigravity.open_for_resume_antigravity",
+        "ProgressWriterAntigravity.open_for_resume_antigravity",
+        "ProgressWriterAntigravity.reopen_antigravity",
+        "reopen_pinned_database_snapshot_antigravity",
+        "validate_readiness_payload_antigravity",
+        "run_ordered_policy_schedule_antigravity",
+        "worker_parity_antigravity",
+        "run_policy_a_worker_parity_antigravity",
+        "run_exp443_new_antigravity",
+        "resume_exp443_antigravity",
+        "_write_prediction_idempotent_antigravity",
+        "ProgressWriterAntigravity.accept_unit_and_align_antigravity",
+        "CompletedCheckpointInspectionAntigravity",
+        "Exp443CheckpointStoreAntigravity.inspect_complete_antigravity",
+        "FrozenPublicationAntigravity",
+        "publish_predictions_antigravity",
+        "inspect_publication_antigravity",
+        "ControlGateResultAntigravity.to_payload_antigravity",
+        "_validate_complete_unit_authority_antigravity",
+        "_publication_phase_antigravity",
+        "_preserve_failed_publication_antigravity",
+        "MetricSetAntigravity",
+        "BootstrapResultAntigravity",
+        "project_metrics_antigravity",
+        "paired_dataset_bootstrap_antigravity",
+        "FrozenLabelsAntigravity",
+        "PolicyEvaluationAntigravity",
+        "EvaluationResultAntigravity",
+        "FrozenEvaluationAntigravity",
+        "load_frozen_test_labels_antigravity",
+        "compute_policy_evaluation_antigravity",
+        "evaluate_publication_antigravity",
+        "inspect_evaluation_antigravity",
+        "_source_identity_antigravity",
+        "_evaluation_result_from_payloads_antigravity",
+        "CliDependenciesAntigravity",
+        "build_parser_antigravity",
+        "_resume_attempt_root_antigravity",
+        "_publish_completed_attempt_antigravity",
+        "ProgressWriterAntigravity.stage_antigravity",
+        "_write_failure_antigravity",
+        "_open_resume_authorities_antigravity",
+        "_checkpoint_resume_status_antigravity",
+        "inspect_complete_progress_for_finalization_antigravity",
+        "_worker_initializer_antigravity"
       ],
       "tests": [
         "experiments/exp438_frequency_complexity_evidence_antigravity/tests/test_runtime_antigravity.py",
@@ -2763,7 +2864,26 @@
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_reporting_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp441_hard_empty_single_shot_recovery_antigravity/tests/test_readiness_review_fix_antigravity.py",
-        "experiments/exp442_terminal_eta_publication_repair_antigravity/tests/test_lifecycle_antigravity.py"
+        "experiments/exp442_terminal_eta_publication_repair_antigravity/tests/test_lifecycle_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_artifacts_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_environment_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_minirocket_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_routing_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_control_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_progress_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_readiness_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_worker_parity_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_bootstrap_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_cli_antigravity.py"
       ],
       "constraints": [
         "Prediction reads TEST values only after the bound normal TRAIN object; TEST labels and anomaly positions are forbidden.",
@@ -2786,7 +2906,73 @@
         "Production profile readiness, validation, and runtime functions derive their sole root from the lifecycle profile and expose no path override; only private *_at_root_antigravity helpers provide test isolation.",
         "Exp442 reviewed_design_sha256 and reviewed_preregistration_sha256 must equal the current reviewed document bytes before readiness.",
         "Official Exp442 runtime is complete and immutable: 1,117/1,117 success, zero errors, CPU 11 workers, terminal eta_seconds null, and prediction-time label access zero.",
-        "Exp444 design reuses the exact Exp440 score definition and frozen Exp442 candidate coordinates but does not yet establish a source-level dependency or executable flow; no relationship beyond the design evidence is inferred."
+        "Exp444 design reuses the exact Exp440 score definition and frozen Exp442 candidate coordinates but does not yet establish a source-level dependency or executable flow; no relationship beyond the design evidence is inferred.",
+        "Direct requirements are exactly aeon 1.5.0, NumPy 2.3.5, and scikit-learn 1.8.0; the complete sorted lock is bound by SHA256 bb2de6e2696a3f0d92480f0215b15bdaf6d89375210dd4be48257cfa6b44d548.",
+        "Official MiniROCKET remains the CPU aeon transformer: outer workers 11, inner numerical threads 1, acceleration inapplicable_official_cpu_transformer.",
+        "Prediction payloads recursively reject labels and evaluation keys; arrays are detached, exact dtype/shape, finite where required, and read-only.",
+        "Artifact publication is canonical, fsyncing, mode 0600/0700, descriptor-pinned, and create-only/no-clobber; Exp441 primitives are reused narrowly.",
+        "Normal script execution uses only the fixed official venv; the sourceable preflight helper is a private test seam and rejects a mismatching fixture before chmod, pip, or install.",
+        "Environment evidence preserves optional torch/mlx versions as string-or-null and MPS capability as bool-or-null; forged payload types fail closed.",
+        "Fresh default cleanup centrally clears EXIT/HUP/INT/TERM traps. Bootstrap creates a uniquely owned antigravity temporary beside the final lock, hard-links its complete bytes into the absent final name without replacement, then cleans only that temporary; signals before linking leave no final lock and signals after linking retain complete final bytes.",
+        "The DB pin is opened O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK, regular/symlink/FIFO checked, descriptor-hashed once against the frozen DB SHA, and retained as an owned same-inode database_pin_antigravity.db hard link.",
+        "Workers receive only closure-private validated connection/cursor facades: no raw sqlite object is reachable through attributes, properties, cursor.connection, iteration, or fetch APIs; exact normalized SQL plus parameter contracts are checked before raw execute, corrected authorizer table/column ordering blocks labels_blob/evaluation/TEST-label reads except the exact active normal-TRAIN statement, denied attempts are audited with zero actual TEST-label access, and source/pin boundaries are revalidated after query.",
+        "Round-3 facades are dynamic zero-state __slots__ classes: every non-dunder callable closes over a raw handle without storing it or a raw bound method, cursor.connection returns only the validated connection facade, and the context manager alone owns raw cursor/connection shutdown.",
+        "The population query proves 1,119 sorted DB names, removes exactly frozen CornellWhaleChallenge and Wafer_normal_1, then requires exact equality with the supplied/frozen 1,117 names; every eligible TEST count and contiguous identity matches Exp291 and cache n_test authority.",
+        "Inherited sources are read from descriptor-pinned bytes with duplicate-key rejection, exact hashes/counts/schemas, full 14-column cache fixtures, allow_pickle=False NPZs backed by immutable bytes, missing/extra inventory rejection, malformed/out-of-range coordinate rejection, and Exp291/Exp404 Hard equality.",
+        "The real scan proves 1,117 datasets, 19 affected datasets, 4 families, 164 rows, 983 nonfinite scalars, zero all-missing rows, affected-dataset SHA ca376adad36fd68e65ea54e004fcb1e5288b3e7d243304b56def507ec17aa9b9, and zero label access.",
+        "RawDatasetAntigravity preserves non-empty ragged float32 TRAIN/TEST rows; Task 4 computes a clipped median target from original normal TRAIN lengths before any repair or exclusion.",
+        "TEST values always use linear interpolation with nearest finite edge extension, alignment, and float32 row-wise z-normalization; all three policy outputs are byte-identical on TEST.",
+        "Policy A repairs NaN/+Inf/-Inf exactly like Exp226/Exp249; Policy B excludes complete nonfinite rows with dataset/index/length/positions/missing-mask SHA/raw-blob SHA audits and abstains below five used rows without zero filling.",
+        "Policy C uses only other same-original-length normal TRAIN rows, ordinary NumPy per-coordinate finite-peer medians with self-exclusion, and whole-row exclusion when any missing coordinate lacks support; no mask feature or name-specific branch is available.",
+        "Prepared matrices are finite little-endian float32 arrays backed by immutable bytes; finite original TRAIN rows retain order and byte identity across A/B/C, and all-19 Policy A TRAIN/TEST bytes equal experiments.exp239_248_diverse_score_sources.foundation.load_bundle.",
+        "Review round 1 requires exact policy/action/missingness semantics, immutable prepared audit/count/index/status reconciliation, and no forged in-range or out-of-range target.",
+        "RawSeriesAntigravity and preprocessing row adapters recompute SHA256 from exact original little-endian float32 bytes; format-valid forged digests fail closed.",
+        "RunPolicyAuditAntigravity carries missing_positions_sha256 losslessly; PreparedTrain/PreparedDataset enforce derived clipped targets, audit identities, action counts, finite immutable matrices, and contiguous TEST identities.",
+        "The production raw loader rejects TRAIN/TEST identity gaps and RawDatasetAntigravity requires target_length == clip(median(original TRAIN lengths), 8, 2048) for equal and ragged populations.",
+        "Round-1 real evidence fixes action totals at A unchanged 2808/repair 164, B unchanged 2808/excluded 164, and C unchanged 2808/peer repair 162/unsupported excluded 2 across 2,972 TRAIN rows.",
+        "RunPolicyAuditAntigravity rejects every unsupported position outside missing_positions in direct and from_payload construction; PreprocessingAuditAntigravity uses the same subset and action semantics.",
+        "The five-value audit action vocabulary is defined once in contracts_antigravity.py and reused by preprocessing retained/excluded reconciliation.",
+        "Task 5 imports the unchanged Exp249 scorer lazily and never rewrites or GPU-ports official aeon MiniROCKET; the four calls per scored dataset are kernels 1024/4096 crossed with seeds 20260721/20261721, dimensions 1008/4032, max reference 1000, query chunk 128, and one inner numerical thread.",
+        "Task 5 recalculates empirical candidates at exactly alpha 0.005, intersects both frozen seeds independently per kernel, and rejects altered kernel/seed/alpha identities, non-finite scores, wrong lengths/dimensions, duplicates, and malformed TEST coordinates.",
+        "Task 5 routing is pure set algebra: promotion is Standard intersect (Mini1024 union Mini4096), pre-exact is inherited Hard union promotion, final Hard subtracts frozen exact-normal; candidates outside Standard remain audit evidence and Priority/review lanes are preserved.",
+        "Task 5 affected-result routing requires status scored, exact dataset/policy/n_test, exactly four frozen kernel-seed scores (1024/4096 crossed with 20260721/20261721), finite immutable arrays with expected lengths, exact candidate-kernel keys, and alpha=.005 seed-intersection equality; empty, failed, or forged candidates fail closed.",
+        "Task 5 publication enforces an exact row schema, exact false boolean safety flags, recursive reuse of the prediction label/evaluation firewall, detached immutable nested rows/provenance, and a final schema/firewall revalidation immediately before canonical bytes.",
+        "Task 5 rejects out-of-range and pairwise-overlapping Hard/Standard/Priority lanes at the routing boundary; review-round behavior tests cover duplicate fixtures, overlap lanes, forged scores, recursive labels, source mutation, and canonical rejection.",
+        "Task 5 canonical replay recomputes every row from its own fields: promotion=Standard intersect (Mini1024 union Mini4096), pre-exact=inherited Hard union promotion, exact-normal removals=pre-exact intersect exact-normal evidence, and final Hard=pre-exact minus removals; row policy, provenance candidate_source, frozen routing_rule, lane disjointness, coordinate ranges, and aggregate row unions are all revalidated immediately before bytes.",
+        "Task 5 exact-normal routing derives (Exp236 Hard union Exp236 promotion) minus Exp291 Hard, requires Exp291/Exp404 Hard equality, validates every inherited Exp236 lane even when an explicit exact-normal argument is supplied, and rejects exact-normal evidence outside the canonical row TEST identities.",
+        "Task 5 real pinned-cache replay reconstructs all 19 affected results from two kernels crossed with two frozen seeds with zero candidate-map mismatches; the resulting 1,117-row publication has 137/2253/35/2218 populations, Exp291/Exp404 Hard equality, and canonical byte length 728425.",
+        "Task 5 produces deterministic rows for all 1,117 datasets with contains_test_labels=false and contains_evaluation_metrics=false, one recomputed policy result for each of the 19 affected datasets, and verified Exp249 candidate-map imports for the 1,098 unaffected datasets; the bounded control reproduces 137/2253/35/2218 and Exp291/Exp404 Hard equality.",
+        "Task 6 compares every affected Policy A dataset across two kernels and two frozen seeds, requires read-only little-endian float64 TRAIN OOF/TEST arrays with exact shapes and finite values, computes float64 max absolute differences at or below 1e-6, and checks per-seed empirical candidates plus frozen Exp249 seed intersections.",
+        "Task 6 replays the complete 1,117-row route and requires exact promotion/pre-exact/exact-normal-removal/final-Hard coordinate identity with Exp291 and Exp404 (1117/137/2253/35/2218), including 19 recomputed and 1,098 imported rows.",
+        "Task 6 control evidence is immutable and label-free: status is control_reproduction_failed on any mismatch, label access remains zero, the official aeon CPU scorer stays unchanged at inner_threads=1, and B/C or TEST evaluation cannot proceed without require_control_gate_antigravity.",
+        "Task 7 binds exact case-sensitive policy-major WorkUnit order, run/config/environment/source/database/reviewed-commit identities, and process PID/start identity; context and state are canonical while records 0000..0056 are create-only.",
+        "Task 7 commits only the next ordered result or one terminal error, stores the verified record-SHA prefix and terminal status, rejects active/malformed/changed/terminal/completed resume attempts, and permits interrupted_resumable only without an error record.",
+        "Task 7 progress is parent-owned: atomic progress_antigravity.json plus append-only events_antigravity.jsonl, Korean text_antigravity.log, and PID evidence record current lowest-sequence active unit, 57-unit counters, finite timing, heartbeat, and terminal ETA null; workers have no shared-log writer.",
+        "Task 7 resume accepts only a validated interrupted progress state and inactive prior PID; it atomically binds the replacement process while preserving existing append-only logs.",
+        "Checkpoint resume reconciles only the exact next canonical record orphan and rejects gaps, extra orphans, changed record bytes, and content mismatches.",
+        "Terminal progress heartbeats reject without rewriting progress, logs, or PID activity; the 57-unit interrupted-to-resumed-to-complete replay remains deterministic and CPU-only.",
+        "Checkpoint resume requires an explicit replacement ProcessIdentityAntigravity plus pid_probe; no legacy old-PID resume path exists.",
+        "A leftover state_antigravity.tmp is accepted only with one exact next orphan and matching canonical current/temporary state fields; tampered, unexpected, or non-regular temps fail closed before cleanup.",
+        "A resumable checkpoint must bind a distinct replacement process identity; equal PID/start identity is rejected before ownership publication.",
+        "Task 8 readiness is create-only and fails closed unless the reviewed HEAD is clean and exact, the frozen config/design/lock/source/environment identities match, the fixed official venv exposes 12 logical CPUs with exactly 11 outer workers and seven numerical thread variables set to 1 before the first NumPy import, and the 1,117/19 inventory is label-free.",
+        "The production scheduler uses multiprocessing spawn with exactly 11 workers, buffers out-of-order results, commits only the next ordered policy-major prefix, records terminal worker failures, and admits Policy B/C only after the Policy A control gate passes. Semantic parity compares scores, candidates, control evidence, and routed prediction bytes exactly; timing and PID fields are informational exclusions only.",
+        "A resumable attempt reopens its existing same-inode database hard-link pin rather than creating a second pin. A complete 57-record checkpoint may be explicitly reopened only for finalization; prediction files are reused only when canonical bytes match exactly, and changed/symlinked artifacts fail closed.",
+        "The parent progress seam advances the completed prefix and next dataset dimensions in one atomic progress JSON replacement; PolicyDatasetResultAntigravity is spawn-picklable despite immutable mapping proxies. Official aeon MiniROCKET remains CPU-only and no MLX/MPS rewrite is permitted.",
+        "Task 9 inspection is read-only and accepts only a complete 57-record checkpoint with inactive PID/progress; it never calls the mutating resume path or rewrites checkpoint/progress bytes.",
+        "Task 9 reroutes all three policies from frozen results, requires exact runtime canonical JSON identity, publishes exactly three canonical 1,117-row JSONLs, and records both JSON and JSONL SHA256 identities.",
+        "Task 9 publication is exactly 12 create-only files: nine leaves feed the manifest, the manifest feeds status, and the artifact map hashes the other eleven while excluding itself; existing publication is inspection-only and TEST-label access remains zero.",
+        "Task 9 publication recomputes compare_policy_a_to_archive_antigravity from the inspected Policy A results and frozen snapshot; all 76 comparisons and routing coordinates must serialize byte-identically to the stored runtime control.",
+        "Read-only completion accepts exactly 57 units in frozen policy order with 19 identical sorted datasets per policy; progress/PID schemas, counters, dimensions, checkpoint path, PID, and start identity must match that checkpoint.",
+        "Publication failures before write, after one file, before rename, and after verified rename preserve canonical label-free failure_antigravity.json evidence in a unique _failed_*_antigravity sibling without replacing a final publication.",
+        "Task 10 is the only Exp443 TEST-label boundary: two complete publication inspections precede the lazy label-capable import, one descriptor-bound read-only DB connection executes PRAGMA quick_check plus exactly 1,117 fixed ordered label queries, and source/publication identities are rehashed after close.",
+        "Task 10 requires baseline confusion 1915/303/2003/191679 and F1 0.6241851368970013, exact Policy A coordinate/confusion identity, independent A/B/C metrics, explicit 19 affected and 1,098 unaffected diagnostics, rescued/regressed/strong definitions, and no within-experiment winner.",
+        "Task 10 bootstrap is exactly NumPy 2.3.5 Generator(PCG64(44320260809)), 20,000 paired dataset samples, int64 indices, endpoint false, and linear 2.5/97.5 quantiles; population, sample, version, or resampling identity drift fails closed.",
+        "Task 10 evaluation is exactly ten create-only files. Existing output is replay-only: row facts, transitions, family diagnostics, gates, all three bootstraps, baseline/Policy A authority, decisions, hashes, and bytes are reconstructed without reopening labels; governance remains review-only and no operational alert is eligible.",
+        "Task 10 propagates whether the label-capable connection actually started through mid-read exceptions, so preserved failure_antigravity.json records labels_opened=true after any partial label access and never falsely reports a pre-label failure.",
+        "The official wrapper sets OMP, OpenBLAS, MKL, vecLib, NumExpr, Numba, and BLIS thread controls to one before importing the CLI or NumPy, and runtime repeats the same seven-variable contract in every worker; the official outer worker count remains 11.",
+        "Official Exp443 predictions are immutable and evaluation is post-freeze only: Policy A and exclude-nonfinite-row are baseline-identical; leave-one-out peer median adds TP 1/FP 0 and rescues one dataset without regression, but both bootstrap lower bounds equal zero, so scientific_winner_selected remains false and Exp444 is paused.",
+        "The official new command returned pinned database close failed only after complete progress and verified publication; the attempt pin is absent, source DB nlink is one, and inspect/evaluation hashes validate. Preserve this as an engineering cleanup failure without changing frozen predictions.",
+        "Task 11 exposes exactly readiness/new/resume/inspect/evaluate; only reviewed-commit and an exact attempt_[0-9]{4}_antigravity basename are accepted, scientific/resource/path overrides are absent, new/resume publishes only after terminal-complete progress, a complete-checkpoint resume validates checkpoint/progress/PID/log bytes read-only and retries publication without rebinding them, inspect is strictly read-only, wrapper preflight failures are JSON-safe, and evaluate inspects the frozen publication before the sole lazy evaluator import."
       ],
       "evidence": [
         {
@@ -3204,6 +3390,570 @@
         {
           "path": "docs/superpowers/plans/2026-08-10-exp444-train-only-stability-precision-gate-antigravity.md",
           "symbol": "### Task 7: Execute 30 candidates with deterministic 11-worker ordering and resume"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/config_antigravity.py",
+          "symbol": "class Exp443FrozenConfig:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/config_antigravity.py",
+          "symbol": "def frozen_config_payload_antigravity()"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/contracts_antigravity.py",
+          "symbol": "class RawSeriesAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/contracts_antigravity.py",
+          "symbol": "def validate_prediction_payload_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/environment_antigravity.py",
+          "symbol": "def verify_environment_antigravity()"
+        },
+        {
+          "path": "scripts/create_exp443_environment_antigravity.sh",
+          "symbol": "exp443_validate_existing_venv_antigravity()"
+        },
+        {
+          "path": "scripts/create_exp443_environment_antigravity.sh",
+          "symbol": "if [[ \"${BASH_SOURCE[0]}\" == \"$0\" ]]"
+        },
+        {
+          "path": "scripts/create_exp443_environment_antigravity.sh",
+          "symbol": "exp443_validate_fresh_freeze_antigravity()"
+        },
+        {
+          "path": "scripts/create_exp443_environment_antigravity.sh",
+          "symbol": "exp443_bootstrap_lock_antigravity()"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/artifacts_antigravity.py",
+          "symbol": "def write_create_only_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
+          "symbol": "class Exp443ConfigAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "class Exp443ContractsAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_artifacts_antigravity.py",
+          "symbol": "class Exp443ArtifactsAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_environment_antigravity.py",
+          "symbol": "class Exp443EnvironmentAntigravityTests"
+        },
+        {
+          "path": "scripts/create_exp443_environment_antigravity.sh",
+          "symbol": "exp443_before_bootstrap_publication_antigravity()"
+        },
+        {
+          "path": "scripts/create_exp443_environment_antigravity.sh",
+          "symbol": "exp443_after_bootstrap_publication_antigravity()"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_environment_antigravity.py",
+          "symbol": "def test_bootstrap_atomic_link_publication_handles_signals_and_never_overwrites(self) -> None:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/database_antigravity.py",
+          "symbol": "def pin_database_snapshot_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/database_antigravity.py",
+          "symbol": "def load_raw_dataset_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/database_antigravity.py",
+          "symbol": "def scan_missing_inventory_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/sources_antigravity.py",
+          "symbol": "def verify_frozen_sources_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/sources_antigravity.py",
+          "symbol": "def parse_cache_manifest_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "class Exp443DatabaseAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
+          "symbol": "class Exp443SourcesAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_worker_execute_gate_denies_before_raw_execution_and_audits(self) -> None:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_facades_have_no_raw_escape_and_authorizer_binds_label_reads(self) -> None:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_facade_attributes_have_no_raw_objects_or_bound_sqlite_methods(self) -> None:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
+          "symbol": "def test_cache_manifest_reaches_each_independent_integrity_branch(self) -> None:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
+          "symbol": "def test_cache_arrays_and_snapshot_are_deeply_immutable_and_typed(self) -> None:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "def original_target_length_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "def repair_linear_edge_nearest_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "def apply_train_policy_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "def prepare_dataset_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "class PreprocessingAuditAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "class PreparedDatasetAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
+          "symbol": "class Exp443PreprocessingAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
+          "symbol": "def test_real_19_dataset_policy_invariants_are_label_free"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_raw_loader_preserves_ragged_float32_lengths_and_values"
+        },
+        {
+          "path": "experiments/exp226_235_hard_alert_quality/preprocessing.py",
+          "symbol": "def sanitize_series(values: np.ndarray)"
+        },
+        {
+          "path": "experiments/exp239_248_diverse_score_sources/foundation.py",
+          "symbol": "def load_bundle(dataset: str, path: Path = DB_PATH)"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_raw_series_recomputes_exact_little_endian_float32_digest"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_policy_audit_freezes_action_vocabulary_and_missingness_semantics"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
+          "symbol": "def test_contract_audit_round_trip_preserves_every_audit_field"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
+          "symbol": "def test_prepared_train_reconciles_audits_counts_indices_target_and_status"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_raw_loader_rejects_train_and_test_identity_gaps"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_raw_dataset_target_is_always_clipped_train_length_median"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_policy_audit_rejects_unsupported_positions_outside_missing_mask_in_memory_and_payload"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/minirocket_antigravity.py",
+          "symbol": "def score_prepared_dataset_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/minirocket_antigravity.py",
+          "symbol": "def seed_intersection_candidates_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/routing_antigravity.py",
+          "symbol": "def route_policy_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/routing_antigravity.py",
+          "symbol": "def canonical_prediction_bytes_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_minirocket_antigravity.py",
+          "symbol": "class MiniRocketAdapterAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_routing_antigravity.py",
+          "symbol": "class RoutingAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/control_antigravity.py",
+          "symbol": "def compare_policy_a_to_archive_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/control_antigravity.py",
+          "symbol": "def require_control_gate_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_control_antigravity.py",
+          "symbol": "class ControlGateAntigravityTests"
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-6-report-antigravity.md",
+          "symbol": "## Real 19-dataset control"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
+          "symbol": "class Exp443CheckpointStoreAntigravity"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
+          "symbol": "def ordered_work_units_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/progress_antigravity.py",
+          "symbol": "class ProgressWriterAntigravity"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "class CheckpointStoreAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "class ProgressWriterAntigravityTests"
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-7-report-antigravity.md",
+          "symbol": "## Simulated 57-unit replay"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
+          "symbol": "def open_for_resume_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/progress_antigravity.py",
+          "symbol": "def open_for_resume_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "def test_resume_reconciles_only_single_next_orphan_record"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_resume_reopens_interrupted_logs_and_restores_elapsed_counters"
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-7-report-antigravity.md",
+          "symbol": "## Fix round: interrupted resume and terminal ownership"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _validate_state_temporary_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "def test_resume_requires_explicit_replacement_process_identity"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "def test_resume_reconciles_orphan_and_clears_valid_leftover_state_temp"
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-7-report-antigravity.md",
+          "symbol": "## Fix round 2: explicit resume identity and stale state-temp recovery"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "def test_resume_rejects_replacement_identity_equal_to_stored_process"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/readiness_antigravity.py",
+          "symbol": "def create_readiness_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/readiness_antigravity.py",
+          "symbol": "def validate_readiness_payload_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "def run_ordered_policy_schedule_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "def _write_prediction_idempotent_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "def run_exp443_new_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "def resume_exp443_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/database_antigravity.py",
+          "symbol": "def reopen_pinned_database_snapshot_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/progress_antigravity.py",
+          "symbol": "def accept_unit_and_align_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/contracts_antigravity.py",
+          "symbol": "def __reduce__(self)"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_readiness_antigravity.py",
+          "symbol": "class ReadinessAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "class RuntimeAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_worker_parity_antigravity.py",
+          "symbol": "class WorkerParityAntigravityTests"
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-8-report-antigravity.md",
+          "symbol": "## Real verification"
+        },
+        {
+          "path": "scratch/verify_exp443_worker_parity_antigravity.py",
+          "symbol": "def main()"
+        },
+        {
+          "path": "scratch/exp443_worker_parity_report_antigravity.json",
+          "symbol": "\"schema\":\"exp443.worker_parity.v1\""
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
+          "symbol": "class CompletedCheckpointInspectionAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
+          "symbol": "def inspect_complete_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
+          "symbol": "class FrozenPublicationAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
+          "symbol": "def publish_predictions_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
+          "symbol": "def inspect_publication_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "class ReportingAntigravityTests("
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-9-report-antigravity.md",
+          "symbol": "## Publication and replay"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/control_antigravity.py",
+          "symbol": "def to_payload_antigravity(self)"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _validate_complete_unit_authority_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
+          "symbol": "recomputed = compare_policy_a_to_archive_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
+          "symbol": "def _preserve_failed_publication_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_fabricated_control_is_rejected_when_recomputed_control_disagrees("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_publication_failure_after_rename_verification_preserves_failed_staging_evidence("
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-9-report-antigravity.md",
+          "symbol": "## Sol review fix round"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/bootstrap_antigravity.py",
+          "symbol": "def paired_dataset_bootstrap_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/evaluation_antigravity.py",
+          "symbol": "def load_frozen_test_labels_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/evaluation_antigravity.py",
+          "symbol": "def compute_policy_evaluation_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/evaluation_antigravity.py",
+          "symbol": "def evaluate_publication_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/evaluation_antigravity.py",
+          "symbol": "def _evaluation_result_from_payloads_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_bootstrap_antigravity.py",
+          "symbol": "class BootstrapAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_label_loader_inspects_twice_before_one_connection_and_queries_all_datasets_once("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_full_evaluation_payload_replays_from_rows_without_labels("
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-10-report-antigravity.md",
+          "symbol": "## Immutable artifacts and replay"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_evaluation_antigravity.py",
+          "symbol": "def test_mid_label_failure_is_truthfully_marked_and_preserved("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/cli_antigravity.py",
+          "symbol": "class CliDependenciesAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/cli_antigravity.py",
+          "symbol": "def build_parser_antigravity()"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/cli_antigravity.py",
+          "symbol": "dependencies.inspect(attempt)"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/cli_antigravity.py",
+          "symbol": "module = dependencies.import_module(EVALUATION_MODULE_ANTIGRAVITY)"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "def _resume_attempt_root_antigravity("
+        },
+        {
+          "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
+          "symbol": "OFFICIAL_PYTHON_ANTIGRAVITY = ("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "class CliAntigravityTests"
+        },
+        {
+          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "## 실제 Policy A 대조"
+        },
+        {
+          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "## CPU 1개와 worker 11개 동일성"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "def _publish_completed_attempt_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "writer.terminal_antigravity(\"complete\", None)"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/progress_antigravity.py",
+          "symbol": "def stage_antigravity(self) -> str:"
+        },
+        {
+          "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
+          "symbol": "def _write_failure_antigravity("
+        },
+        {
+          "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
+          "symbol": "return cli_main_antigravity(arguments)"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_successful_runtime_finalization_publishes_after_terminal_progress"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "def _open_resume_authorities_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "return _CompletedCheckpointRuntimeAntigravity(inspection), None, True"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "publication = _publish_completed_attempt_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/progress_antigravity.py",
+          "symbol": "def inspect_complete_progress_for_finalization_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_finalization_only_runtime_retries_publication_and_preserves_progress_bytes"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_complete_finalization_inspection_is_read_only_and_binds_process"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "\"BLIS_NUM_THREADS\","
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
+          "symbol": "def _worker_initializer_antigravity()"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_worker_initializer_sets_all_seven_numerical_thread_variables"
+        },
+        {
+          "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
+          "symbol": "_THREAD_VARIABLES_ANTIGRAVITY = ("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_wrapper_sets_all_seven_thread_controls_before_first_numpy_import"
+        },
+        {
+          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "## 공식 실행과 동결 결과"
+        },
+        {
+          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "## 공식 평가 결과"
+        },
+        {
+          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "## 종료 오류와 보존 상태"
         }
       ]
     },
@@ -3529,793 +4279,13 @@
       ]
     },
     {
-      "id": "exp443_environment_contracts",
-      "label": "Exp443 environment, contracts + raw sources",
-      "type": "pipeline",
-      "boundary": "Active isolated research",
-      "layer": 1,
-      "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity",
-      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation. Review round 1 closes canonical audit/prepared reconciliation: policy/action/missingness combinations are frozen, raw `<f4` digests are recomputed, missing-position hashes survive the RunPolicyAudit adapter, targets are clipped from original TRAIN medians at every boundary, and TRAIN/TEST identities are gap-checked. The round also records exact A/B/C action totals, immutable byte ownership, and all-19 real parity. Review round 2 closes the unsupported-position subset gap for both in-memory and serialized RunPolicyAudit payloads and centralizes the canonical action vocabulary shared by contracts and preprocessing. Task 5 adds a lazy adapter to the unchanged Exp249 CPU scorer, enforces four frozen kernel/seed calls with alpha=.005 seed intersections, and emits deterministic label-free Standard-gated promotion/pre-exact/exact-normal/final-Hard routing rows; unaffected datasets import verified Exp249 candidate maps while affected datasets require one policy result each. Task 6 adds a fail-closed Policy A control gate: every affected dataset's four TRAIN OOF/TEST arrays is compared with verified Exp249 float64 archive bytes, empirical and frozen candidate sets are checked, complete route coordinates are replayed against Exp291/404, topology and label-free identities are recorded, and B/C/evaluation work remains blocked until control_reproduction_passed. Task 7 adds the internal ordered 57-unit runtime support: policy-major case-sensitive WorkUnit identities, create-only canonical records, binding/PID-gated resumable prefixes, terminal error/interruption semantics, and parent-only atomic progress/events/Korean log/PID heartbeat evidence. The Task 7 fix adds validated interrupted reopen with elapsed/counter restoration, append-only log continuation, replacement process binding, exact single-next orphan reconciliation, active second-resume rejection, and terminal heartbeat no-op/rejection. Fix round 2 removes legacy resume compatibility and validates then clears the one canonical state temp left by a record-create/state-replace crash before rebinding and advancing the prefix. Fix round 3 rejects interrupted resume when the replacement ProcessIdentityAntigravity exactly equals the stored owner; only distinct ownership may be persisted. Task 8 adds clean-HEAD/source/config/environment readiness, exact policy-major case-sensitive 57-unit scheduling with 11 spawned CPU workers, ordered prefix buffering, parent-only progress/checkpoint ownership, and a 19-unit Policy A sequential-versus-parallel semantic parity report. Policy A control remains a hard gate before B/C. Interrupted resumes reuse the retained database hard-link pin; a complete checkpoint has an explicit finalization-only re-entry path, canonical prediction bytes are idempotently reused only when identical, spawn workers return picklable result contracts, and progress advances the next dataset with its dimensions in one atomic write. The real final parity is semantic_equal=true with zero TEST-label access; speed is informative and MLX/MPS remain inapplicable. Task 9 adds a dedicated non-mutating completed-checkpoint inspection path and freezes the three policy predictions without reopening resume state. It requires complete inactive progress, exactly 57 results in three 19-dataset policy groups, the real 76-comparison Policy A control and 137/2253/35/2218 routing topology, exact Task 8 worker-parity linkage, and zero label access. Each runtime canonical JSON is byte-linked to a canonical 1,117-row JSONL, then nine leaf artifacts, manifest, status, and self-excluding artifact map form a create-only replayable hash DAG for Task 10 post-freeze evaluation. The Task 9 Sol fix no longer trusts the saved control self-report: publication recomputes all 76 Policy A archive comparisons and requires canonical equality, constrains completed inspection to the exact three-by-19 topology, binds exact progress/PID schemas and process identity to checkpoint state, and preserves four publication-failure phases in unique label-free audit siblings. Task 10 adds the only label-capable post-freeze module: it inspects all three publications twice before opening one pinned read-only database connection, loads exactly one ordered TEST-label query per dataset, reproduces the fixed Exp404/Exp291 baseline and Policy A, evaluates A/B/C independently with exact project metrics and the NumPy 2.3.5 PCG64 20,000-sample paired bootstrap, and freezes an exact ten-file review-only evaluation that fully replays without reopening labels. Task 11 fixes the readiness/new/resume/inspect/evaluate CLI and external wrapper, binds resume to one explicit safe attempt basename, publishes only after terminal-complete prediction finalization, retries failed publication through read-only complete checkpoint/progress authorities without changing their bytes, keeps inspect read-only, emits JSON-safe wrapper failures, and permits the only evaluator import after frozen-publication inspection. The official reviewed run completed all 57 label-free policy units and froze three 1,117-row predictions. Post-freeze evaluation found A and B identical to baseline; C rescued MelbournePedestrian_normal_8 with TP 1/FP 0 but both paired-bootstrap lower bounds were zero, so no winner was selected. The publication is valid while a post-publication pinned-database close error is preserved as separate engineering evidence.",
-      "entrypoints": [
-        "frozen_config_payload_antigravity",
-        "scientific_config_sha256_antigravity",
-        "validate_antigravity",
-        "verify_environment_antigravity",
-        "exp443_validate_existing_venv_antigravity",
-        "exp443_main_antigravity",
-        "exp443_validate_fresh_freeze_antigravity",
-        "exp443_bootstrap_lock_antigravity",
-        "RawSeriesAntigravity",
-        "RunPolicyAuditAntigravity",
-        "KernelSeedScoresAntigravity",
-        "PolicyDatasetResultAntigravity",
-        "PredictionRowAntigravity",
-        "CheckpointContextAntigravity",
-        "CheckpointStateAntigravity",
-        "EvaluationEvidenceAntigravity",
-        "validate_prediction_payload_antigravity",
-        "canonical_json_bytes_antigravity",
-        "write_create_only_antigravity",
-        "exclusive_rename_antigravity",
-        "exp443_before_bootstrap_publication_antigravity",
-        "exp443_after_bootstrap_publication_antigravity",
-        "pin_database_snapshot_antigravity",
-        "load_raw_dataset_antigravity",
-        "scan_missing_inventory_antigravity",
-        "verify_frozen_sources_antigravity",
-        "validate_prediction_sql_antigravity",
-        "parse_dataset_family_antigravity",
-        "FROZEN_DATABASE_EXCLUSIONS_ANTIGRAVITY",
-        "PinnedDatabaseAntigravity",
-        "RawDatasetAntigravity",
-        "MissingInventoryAntigravity",
-        "FrozenSourceSnapshotAntigravity",
-        "POLICY_A_ANTIGRAVITY",
-        "POLICY_B_ANTIGRAVITY",
-        "POLICY_C_ANTIGRAVITY",
-        "POLICIES_ANTIGRAVITY",
-        "PreprocessingAuditAntigravity",
-        "PreparedTrainAntigravity",
-        "PreparedDatasetAntigravity",
-        "original_target_length_antigravity",
-        "repair_linear_edge_nearest_antigravity",
-        "apply_train_policy_antigravity",
-        "prepare_dataset_antigravity",
-        "POLICY_AUDIT_ACTIONS_ANTIGRAVITY",
-        "POLICY_AUDIT_RETAINED_ACTIONS_ANTIGRAVITY",
-        "POLICY_AUDIT_EXCLUDED_ACTIONS_ANTIGRAVITY",
-        "score_configuration",
-        "score_prepared_dataset_antigravity",
-        "seed_intersection_candidates_antigravity",
-        "PolicyPredictionAntigravity",
-        "route_policy_antigravity",
-        "canonical_prediction_bytes_antigravity",
-        "ControlGateResultAntigravity",
-        "compare_policy_a_to_archive_antigravity",
-        "require_control_gate_antigravity",
-        "WorkUnitAntigravity",
-        "CheckpointBindingAntigravity",
-        "ProcessIdentityAntigravity",
-        "Exp443CheckpointStoreAntigravity",
-        "ordered_work_units_antigravity",
-        "ProgressWriterAntigravity",
-        "Exp443CheckpointStoreAntigravity.open_for_resume_antigravity",
-        "ProgressWriterAntigravity.open_for_resume_antigravity",
-        "ProgressWriterAntigravity.reopen_antigravity",
-        "reopen_pinned_database_snapshot_antigravity",
-        "create_readiness_antigravity",
-        "run_readiness_antigravity",
-        "validate_readiness_payload_antigravity",
-        "run_ordered_policy_schedule_antigravity",
-        "worker_parity_antigravity",
-        "run_policy_a_worker_parity_antigravity",
-        "run_exp443_new_antigravity",
-        "resume_exp443_antigravity",
-        "_write_prediction_idempotent_antigravity",
-        "ProgressWriterAntigravity.accept_unit_and_align_antigravity",
-        "CompletedCheckpointInspectionAntigravity",
-        "Exp443CheckpointStoreAntigravity.inspect_complete_antigravity",
-        "FrozenPublicationAntigravity",
-        "publish_predictions_antigravity",
-        "inspect_publication_antigravity",
-        "ControlGateResultAntigravity.to_payload_antigravity",
-        "_validate_complete_unit_authority_antigravity",
-        "_publication_phase_antigravity",
-        "_preserve_failed_publication_antigravity",
-        "MetricSetAntigravity",
-        "BootstrapResultAntigravity",
-        "project_metrics_antigravity",
-        "paired_dataset_bootstrap_antigravity",
-        "FrozenLabelsAntigravity",
-        "PolicyEvaluationAntigravity",
-        "EvaluationResultAntigravity",
-        "FrozenEvaluationAntigravity",
-        "load_frozen_test_labels_antigravity",
-        "compute_policy_evaluation_antigravity",
-        "evaluate_publication_antigravity",
-        "inspect_evaluation_antigravity",
-        "_source_identity_antigravity",
-        "_evaluation_result_from_payloads_antigravity",
-        "CliDependenciesAntigravity",
-        "build_parser_antigravity",
-        "main_antigravity",
-        "_resume_attempt_root_antigravity",
-        "_publish_completed_attempt_antigravity",
-        "ProgressWriterAntigravity.stage_antigravity",
-        "_write_failure_antigravity",
-        "_open_resume_authorities_antigravity",
-        "_checkpoint_resume_status_antigravity",
-        "inspect_complete_progress_for_finalization_antigravity",
-        "_worker_initializer_antigravity"
-      ],
-      "tests": [
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_artifacts_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_environment_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_minirocket_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_routing_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_control_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_progress_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_readiness_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_worker_parity_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_bootstrap_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_evaluation_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_cli_antigravity.py"
-      ],
-      "constraints": [
-        "Direct requirements are exactly aeon 1.5.0, NumPy 2.3.5, and scikit-learn 1.8.0; the complete sorted lock is bound by SHA256 bb2de6e2696a3f0d92480f0215b15bdaf6d89375210dd4be48257cfa6b44d548.",
-        "Official MiniROCKET remains the CPU aeon transformer: outer workers 11, inner numerical threads 1, acceleration inapplicable_official_cpu_transformer.",
-        "Prediction payloads recursively reject labels and evaluation keys; arrays are detached, exact dtype/shape, finite where required, and read-only.",
-        "Artifact publication is canonical, fsyncing, mode 0600/0700, descriptor-pinned, and create-only/no-clobber; Exp441 primitives are reused narrowly.",
-        "Normal script execution uses only the fixed official venv; the sourceable preflight helper is a private test seam and rejects a mismatching fixture before chmod, pip, or install.",
-        "Environment evidence preserves optional torch/mlx versions as string-or-null and MPS capability as bool-or-null; forged payload types fail closed.",
-        "Fresh default cleanup centrally clears EXIT/HUP/INT/TERM traps. Bootstrap creates a uniquely owned antigravity temporary beside the final lock, hard-links its complete bytes into the absent final name without replacement, then cleans only that temporary; signals before linking leave no final lock and signals after linking retain complete final bytes.",
-        "The DB pin is opened O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK, regular/symlink/FIFO checked, descriptor-hashed once against the frozen DB SHA, and retained as an owned same-inode database_pin_antigravity.db hard link.",
-        "Workers receive only closure-private validated connection/cursor facades: no raw sqlite object is reachable through attributes, properties, cursor.connection, iteration, or fetch APIs; exact normalized SQL plus parameter contracts are checked before raw execute, corrected authorizer table/column ordering blocks labels_blob/evaluation/TEST-label reads except the exact active normal-TRAIN statement, denied attempts are audited with zero actual TEST-label access, and source/pin boundaries are revalidated after query.",
-        "Round-3 facades are dynamic zero-state __slots__ classes: every non-dunder callable closes over a raw handle without storing it or a raw bound method, cursor.connection returns only the validated connection facade, and the context manager alone owns raw cursor/connection shutdown.",
-        "The population query proves 1,119 sorted DB names, removes exactly frozen CornellWhaleChallenge and Wafer_normal_1, then requires exact equality with the supplied/frozen 1,117 names; every eligible TEST count and contiguous identity matches Exp291 and cache n_test authority.",
-        "Inherited sources are read from descriptor-pinned bytes with duplicate-key rejection, exact hashes/counts/schemas, full 14-column cache fixtures, allow_pickle=False NPZs backed by immutable bytes, missing/extra inventory rejection, malformed/out-of-range coordinate rejection, and Exp291/Exp404 Hard equality.",
-        "The real scan proves 1,117 datasets, 19 affected datasets, 4 families, 164 rows, 983 nonfinite scalars, zero all-missing rows, affected-dataset SHA ca376adad36fd68e65ea54e004fcb1e5288b3e7d243304b56def507ec17aa9b9, and zero label access.",
-        "RawDatasetAntigravity preserves non-empty ragged float32 TRAIN/TEST rows; Task 4 computes a clipped median target from original normal TRAIN lengths before any repair or exclusion.",
-        "TEST values always use linear interpolation with nearest finite edge extension, alignment, and float32 row-wise z-normalization; all three policy outputs are byte-identical on TEST.",
-        "Policy A repairs NaN/+Inf/-Inf exactly like Exp226/Exp249; Policy B excludes complete nonfinite rows with dataset/index/length/positions/missing-mask SHA/raw-blob SHA audits and abstains below five used rows without zero filling.",
-        "Policy C uses only other same-original-length normal TRAIN rows, ordinary NumPy per-coordinate finite-peer medians with self-exclusion, and whole-row exclusion when any missing coordinate lacks support; no mask feature or name-specific branch is available.",
-        "Prepared matrices are finite little-endian float32 arrays backed by immutable bytes; finite original TRAIN rows retain order and byte identity across A/B/C, and all-19 Policy A TRAIN/TEST bytes equal experiments.exp239_248_diverse_score_sources.foundation.load_bundle.",
-        "Review round 1 requires exact policy/action/missingness semantics, immutable prepared audit/count/index/status reconciliation, and no forged in-range or out-of-range target.",
-        "RawSeriesAntigravity and preprocessing row adapters recompute SHA256 from exact original little-endian float32 bytes; format-valid forged digests fail closed.",
-        "RunPolicyAuditAntigravity carries missing_positions_sha256 losslessly; PreparedTrain/PreparedDataset enforce derived clipped targets, audit identities, action counts, finite immutable matrices, and contiguous TEST identities.",
-        "The production raw loader rejects TRAIN/TEST identity gaps and RawDatasetAntigravity requires target_length == clip(median(original TRAIN lengths), 8, 2048) for equal and ragged populations.",
-        "Round-1 real evidence fixes action totals at A unchanged 2808/repair 164, B unchanged 2808/excluded 164, and C unchanged 2808/peer repair 162/unsupported excluded 2 across 2,972 TRAIN rows.",
-        "RunPolicyAuditAntigravity rejects every unsupported position outside missing_positions in direct and from_payload construction; PreprocessingAuditAntigravity uses the same subset and action semantics.",
-        "The five-value audit action vocabulary is defined once in contracts_antigravity.py and reused by preprocessing retained/excluded reconciliation.",
-        "Task 5 imports the unchanged Exp249 scorer lazily and never rewrites or GPU-ports official aeon MiniROCKET; the four calls per scored dataset are kernels 1024/4096 crossed with seeds 20260721/20261721, dimensions 1008/4032, max reference 1000, query chunk 128, and one inner numerical thread.",
-        "Task 5 recalculates empirical candidates at exactly alpha 0.005, intersects both frozen seeds independently per kernel, and rejects altered kernel/seed/alpha identities, non-finite scores, wrong lengths/dimensions, duplicates, and malformed TEST coordinates.",
-        "Task 5 routing is pure set algebra: promotion is Standard intersect (Mini1024 union Mini4096), pre-exact is inherited Hard union promotion, final Hard subtracts frozen exact-normal; candidates outside Standard remain audit evidence and Priority/review lanes are preserved.",
-        "Task 5 affected-result routing requires status scored, exact dataset/policy/n_test, exactly four frozen kernel-seed scores (1024/4096 crossed with 20260721/20261721), finite immutable arrays with expected lengths, exact candidate-kernel keys, and alpha=.005 seed-intersection equality; empty, failed, or forged candidates fail closed.",
-        "Task 5 publication enforces an exact row schema, exact false boolean safety flags, recursive reuse of the prediction label/evaluation firewall, detached immutable nested rows/provenance, and a final schema/firewall revalidation immediately before canonical bytes.",
-        "Task 5 rejects out-of-range and pairwise-overlapping Hard/Standard/Priority lanes at the routing boundary; review-round behavior tests cover duplicate fixtures, overlap lanes, forged scores, recursive labels, source mutation, and canonical rejection.",
-        "Task 5 canonical replay recomputes every row from its own fields: promotion=Standard intersect (Mini1024 union Mini4096), pre-exact=inherited Hard union promotion, exact-normal removals=pre-exact intersect exact-normal evidence, and final Hard=pre-exact minus removals; row policy, provenance candidate_source, frozen routing_rule, lane disjointness, coordinate ranges, and aggregate row unions are all revalidated immediately before bytes.",
-        "Task 5 exact-normal routing derives (Exp236 Hard union Exp236 promotion) minus Exp291 Hard, requires Exp291/Exp404 Hard equality, validates every inherited Exp236 lane even when an explicit exact-normal argument is supplied, and rejects exact-normal evidence outside the canonical row TEST identities.",
-        "Task 5 real pinned-cache replay reconstructs all 19 affected results from two kernels crossed with two frozen seeds with zero candidate-map mismatches; the resulting 1,117-row publication has 137/2253/35/2218 populations, Exp291/Exp404 Hard equality, and canonical byte length 728425.",
-        "Task 5 produces deterministic rows for all 1,117 datasets with contains_test_labels=false and contains_evaluation_metrics=false, one recomputed policy result for each of the 19 affected datasets, and verified Exp249 candidate-map imports for the 1,098 unaffected datasets; the bounded control reproduces 137/2253/35/2218 and Exp291/Exp404 Hard equality.",
-        "Task 6 compares every affected Policy A dataset across two kernels and two frozen seeds, requires read-only little-endian float64 TRAIN OOF/TEST arrays with exact shapes and finite values, computes float64 max absolute differences at or below 1e-6, and checks per-seed empirical candidates plus frozen Exp249 seed intersections.",
-        "Task 6 replays the complete 1,117-row route and requires exact promotion/pre-exact/exact-normal-removal/final-Hard coordinate identity with Exp291 and Exp404 (1117/137/2253/35/2218), including 19 recomputed and 1,098 imported rows.",
-        "Task 6 control evidence is immutable and label-free: status is control_reproduction_failed on any mismatch, label access remains zero, the official aeon CPU scorer stays unchanged at inner_threads=1, and B/C or TEST evaluation cannot proceed without require_control_gate_antigravity.",
-        "Task 7 binds exact case-sensitive policy-major WorkUnit order, run/config/environment/source/database/reviewed-commit identities, and process PID/start identity; context and state are canonical while records 0000..0056 are create-only.",
-        "Task 7 commits only the next ordered result or one terminal error, stores the verified record-SHA prefix and terminal status, rejects active/malformed/changed/terminal/completed resume attempts, and permits interrupted_resumable only without an error record.",
-        "Task 7 progress is parent-owned: atomic progress_antigravity.json plus append-only events_antigravity.jsonl, Korean text_antigravity.log, and PID evidence record current lowest-sequence active unit, 57-unit counters, finite timing, heartbeat, and terminal ETA null; workers have no shared-log writer.",
-        "Task 7 resume accepts only a validated interrupted progress state and inactive prior PID; it atomically binds the replacement process while preserving existing append-only logs.",
-        "Checkpoint resume reconciles only the exact next canonical record orphan and rejects gaps, extra orphans, changed record bytes, and content mismatches.",
-        "Terminal progress heartbeats reject without rewriting progress, logs, or PID activity; the 57-unit interrupted-to-resumed-to-complete replay remains deterministic and CPU-only.",
-        "Checkpoint resume requires an explicit replacement ProcessIdentityAntigravity plus pid_probe; no legacy old-PID resume path exists.",
-        "A leftover state_antigravity.tmp is accepted only with one exact next orphan and matching canonical current/temporary state fields; tampered, unexpected, or non-regular temps fail closed before cleanup.",
-        "A resumable checkpoint must bind a distinct replacement process identity; equal PID/start identity is rejected before ownership publication.",
-        "Task 8 readiness is create-only and fails closed unless the reviewed HEAD is clean and exact, the frozen config/design/lock/source/environment identities match, the fixed official venv exposes 12 logical CPUs with exactly 11 outer workers and seven numerical thread variables set to 1 before the first NumPy import, and the 1,117/19 inventory is label-free.",
-        "The production scheduler uses multiprocessing spawn with exactly 11 workers, buffers out-of-order results, commits only the next ordered policy-major prefix, records terminal worker failures, and admits Policy B/C only after the Policy A control gate passes. Semantic parity compares scores, candidates, control evidence, and routed prediction bytes exactly; timing and PID fields are informational exclusions only.",
-        "A resumable attempt reopens its existing same-inode database hard-link pin rather than creating a second pin. A complete 57-record checkpoint may be explicitly reopened only for finalization; prediction files are reused only when canonical bytes match exactly, and changed/symlinked artifacts fail closed.",
-        "The parent progress seam advances the completed prefix and next dataset dimensions in one atomic progress JSON replacement; PolicyDatasetResultAntigravity is spawn-picklable despite immutable mapping proxies. Official aeon MiniROCKET remains CPU-only and no MLX/MPS rewrite is permitted.",
-        "Task 9 inspection is read-only and accepts only a complete 57-record checkpoint with inactive PID/progress; it never calls the mutating resume path or rewrites checkpoint/progress bytes.",
-        "Task 9 reroutes all three policies from frozen results, requires exact runtime canonical JSON identity, publishes exactly three canonical 1,117-row JSONLs, and records both JSON and JSONL SHA256 identities.",
-        "Task 9 publication is exactly 12 create-only files: nine leaves feed the manifest, the manifest feeds status, and the artifact map hashes the other eleven while excluding itself; existing publication is inspection-only and TEST-label access remains zero.",
-        "Task 9 publication recomputes compare_policy_a_to_archive_antigravity from the inspected Policy A results and frozen snapshot; all 76 comparisons and routing coordinates must serialize byte-identically to the stored runtime control.",
-        "Read-only completion accepts exactly 57 units in frozen policy order with 19 identical sorted datasets per policy; progress/PID schemas, counters, dimensions, checkpoint path, PID, and start identity must match that checkpoint.",
-        "Publication failures before write, after one file, before rename, and after verified rename preserve canonical label-free failure_antigravity.json evidence in a unique _failed_*_antigravity sibling without replacing a final publication.",
-        "Task 10 is the only Exp443 TEST-label boundary: two complete publication inspections precede the lazy label-capable import, one descriptor-bound read-only DB connection executes PRAGMA quick_check plus exactly 1,117 fixed ordered label queries, and source/publication identities are rehashed after close.",
-        "Task 10 requires baseline confusion 1915/303/2003/191679 and F1 0.6241851368970013, exact Policy A coordinate/confusion identity, independent A/B/C metrics, explicit 19 affected and 1,098 unaffected diagnostics, rescued/regressed/strong definitions, and no within-experiment winner.",
-        "Task 10 bootstrap is exactly NumPy 2.3.5 Generator(PCG64(44320260809)), 20,000 paired dataset samples, int64 indices, endpoint false, and linear 2.5/97.5 quantiles; population, sample, version, or resampling identity drift fails closed.",
-        "Task 10 evaluation is exactly ten create-only files. Existing output is replay-only: row facts, transitions, family diagnostics, gates, all three bootstraps, baseline/Policy A authority, decisions, hashes, and bytes are reconstructed without reopening labels; governance remains review-only and no operational alert is eligible.",
-        "Task 10 propagates whether the label-capable connection actually started through mid-read exceptions, so preserved failure_antigravity.json records labels_opened=true after any partial label access and never falsely reports a pre-label failure.",
-        "The official wrapper sets OMP, OpenBLAS, MKL, vecLib, NumExpr, Numba, and BLIS thread controls to one before importing the CLI or NumPy, and runtime repeats the same seven-variable contract in every worker; the official outer worker count remains 11.",
-        "Official Exp443 predictions are immutable and evaluation is post-freeze only: Policy A and exclude-nonfinite-row are baseline-identical; leave-one-out peer median adds TP 1/FP 0 and rescues one dataset without regression, but both bootstrap lower bounds equal zero, so scientific_winner_selected remains false and Exp444 is paused.",
-        "The official new command returned pinned database close failed only after complete progress and verified publication; the attempt pin is absent, source DB nlink is one, and inspect/evaluation hashes validate. Preserve this as an engineering cleanup failure without changing frozen predictions.",
-        "Task 11 exposes exactly readiness/new/resume/inspect/evaluate; only reviewed-commit and an exact attempt_[0-9]{4}_antigravity basename are accepted, scientific/resource/path overrides are absent, new/resume publishes only after terminal-complete progress, a complete-checkpoint resume validates checkpoint/progress/PID/log bytes read-only and retries publication without rebinding them, inspect is strictly read-only, wrapper preflight failures are JSON-safe, and evaluate inspects the frozen publication before the sole lazy evaluator import."
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/config_antigravity.py",
-          "symbol": "class Exp443FrozenConfig:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/config_antigravity.py",
-          "symbol": "def frozen_config_payload_antigravity()"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/contracts_antigravity.py",
-          "symbol": "class RawSeriesAntigravity:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/contracts_antigravity.py",
-          "symbol": "def validate_prediction_payload_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/environment_antigravity.py",
-          "symbol": "def verify_environment_antigravity()"
-        },
-        {
-          "path": "scripts/create_exp443_environment_antigravity.sh",
-          "symbol": "exp443_validate_existing_venv_antigravity()"
-        },
-        {
-          "path": "scripts/create_exp443_environment_antigravity.sh",
-          "symbol": "if [[ \"${BASH_SOURCE[0]}\" == \"$0\" ]]"
-        },
-        {
-          "path": "scripts/create_exp443_environment_antigravity.sh",
-          "symbol": "exp443_validate_fresh_freeze_antigravity()"
-        },
-        {
-          "path": "scripts/create_exp443_environment_antigravity.sh",
-          "symbol": "exp443_bootstrap_lock_antigravity()"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/artifacts_antigravity.py",
-          "symbol": "def write_create_only_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
-          "symbol": "class Exp443ConfigAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
-          "symbol": "class Exp443ContractsAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_artifacts_antigravity.py",
-          "symbol": "class Exp443ArtifactsAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_environment_antigravity.py",
-          "symbol": "class Exp443EnvironmentAntigravityTests"
-        },
-        {
-          "path": "scripts/create_exp443_environment_antigravity.sh",
-          "symbol": "exp443_before_bootstrap_publication_antigravity()"
-        },
-        {
-          "path": "scripts/create_exp443_environment_antigravity.sh",
-          "symbol": "exp443_after_bootstrap_publication_antigravity()"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_environment_antigravity.py",
-          "symbol": "def test_bootstrap_atomic_link_publication_handles_signals_and_never_overwrites(self) -> None:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/database_antigravity.py",
-          "symbol": "def pin_database_snapshot_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/database_antigravity.py",
-          "symbol": "def load_raw_dataset_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/database_antigravity.py",
-          "symbol": "def scan_missing_inventory_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/sources_antigravity.py",
-          "symbol": "def verify_frozen_sources_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/sources_antigravity.py",
-          "symbol": "def parse_cache_manifest_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
-          "symbol": "class Exp443DatabaseAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
-          "symbol": "class Exp443SourcesAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
-          "symbol": "def test_worker_execute_gate_denies_before_raw_execution_and_audits(self) -> None:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
-          "symbol": "def test_facades_have_no_raw_escape_and_authorizer_binds_label_reads(self) -> None:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
-          "symbol": "def test_facade_attributes_have_no_raw_objects_or_bound_sqlite_methods(self) -> None:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
-          "symbol": "def test_cache_manifest_reaches_each_independent_integrity_branch(self) -> None:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
-          "symbol": "def test_cache_arrays_and_snapshot_are_deeply_immutable_and_typed(self) -> None:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
-          "symbol": "def original_target_length_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
-          "symbol": "def repair_linear_edge_nearest_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
-          "symbol": "def apply_train_policy_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
-          "symbol": "def prepare_dataset_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
-          "symbol": "class PreprocessingAuditAntigravity:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
-          "symbol": "class PreparedDatasetAntigravity:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
-          "symbol": "class Exp443PreprocessingAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
-          "symbol": "def test_real_19_dataset_policy_invariants_are_label_free"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
-          "symbol": "def test_raw_loader_preserves_ragged_float32_lengths_and_values"
-        },
-        {
-          "path": "experiments/exp226_235_hard_alert_quality/preprocessing.py",
-          "symbol": "def sanitize_series(values: np.ndarray)"
-        },
-        {
-          "path": "experiments/exp239_248_diverse_score_sources/foundation.py",
-          "symbol": "def load_bundle(dataset: str, path: Path = DB_PATH)"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
-          "symbol": "def test_raw_series_recomputes_exact_little_endian_float32_digest"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
-          "symbol": "def test_policy_audit_freezes_action_vocabulary_and_missingness_semantics"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
-          "symbol": "def test_contract_audit_round_trip_preserves_every_audit_field"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
-          "symbol": "def test_prepared_train_reconciles_audits_counts_indices_target_and_status"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
-          "symbol": "def test_raw_loader_rejects_train_and_test_identity_gaps"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
-          "symbol": "def test_raw_dataset_target_is_always_clipped_train_length_median"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
-          "symbol": "def test_policy_audit_rejects_unsupported_positions_outside_missing_mask_in_memory_and_payload"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/minirocket_antigravity.py",
-          "symbol": "def score_prepared_dataset_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/minirocket_antigravity.py",
-          "symbol": "def seed_intersection_candidates_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/routing_antigravity.py",
-          "symbol": "def route_policy_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/routing_antigravity.py",
-          "symbol": "def canonical_prediction_bytes_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_minirocket_antigravity.py",
-          "symbol": "class MiniRocketAdapterAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_routing_antigravity.py",
-          "symbol": "class RoutingAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/control_antigravity.py",
-          "symbol": "def compare_policy_a_to_archive_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/control_antigravity.py",
-          "symbol": "def require_control_gate_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_control_antigravity.py",
-          "symbol": "class ControlGateAntigravityTests"
-        },
-        {
-          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-6-report-antigravity.md",
-          "symbol": "## Real 19-dataset control"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
-          "symbol": "class Exp443CheckpointStoreAntigravity"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
-          "symbol": "def ordered_work_units_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/progress_antigravity.py",
-          "symbol": "class ProgressWriterAntigravity"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
-          "symbol": "class CheckpointStoreAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_progress_antigravity.py",
-          "symbol": "class ProgressWriterAntigravityTests"
-        },
-        {
-          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-7-report-antigravity.md",
-          "symbol": "## Simulated 57-unit replay"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
-          "symbol": "def open_for_resume_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/progress_antigravity.py",
-          "symbol": "def open_for_resume_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
-          "symbol": "def test_resume_reconciles_only_single_next_orphan_record"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_progress_antigravity.py",
-          "symbol": "def test_resume_reopens_interrupted_logs_and_restores_elapsed_counters"
-        },
-        {
-          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-7-report-antigravity.md",
-          "symbol": "## Fix round: interrupted resume and terminal ownership"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
-          "symbol": "def _validate_state_temporary_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
-          "symbol": "def test_resume_requires_explicit_replacement_process_identity"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
-          "symbol": "def test_resume_reconciles_orphan_and_clears_valid_leftover_state_temp"
-        },
-        {
-          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-7-report-antigravity.md",
-          "symbol": "## Fix round 2: explicit resume identity and stale state-temp recovery"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_checkpoint_antigravity.py",
-          "symbol": "def test_resume_rejects_replacement_identity_equal_to_stored_process"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/readiness_antigravity.py",
-          "symbol": "def create_readiness_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/readiness_antigravity.py",
-          "symbol": "def validate_readiness_payload_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "def run_ordered_policy_schedule_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "def _write_prediction_idempotent_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "def run_exp443_new_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "def resume_exp443_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/database_antigravity.py",
-          "symbol": "def reopen_pinned_database_snapshot_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
-          "symbol": "def open_for_resume_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/progress_antigravity.py",
-          "symbol": "def accept_unit_and_align_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/contracts_antigravity.py",
-          "symbol": "def __reduce__(self)"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_readiness_antigravity.py",
-          "symbol": "class ReadinessAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
-          "symbol": "class RuntimeAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_worker_parity_antigravity.py",
-          "symbol": "class WorkerParityAntigravityTests"
-        },
-        {
-          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-8-report-antigravity.md",
-          "symbol": "## Real verification"
-        },
-        {
-          "path": "scratch/verify_exp443_worker_parity_antigravity.py",
-          "symbol": "def main()"
-        },
-        {
-          "path": "scratch/exp443_worker_parity_report_antigravity.json",
-          "symbol": "\"schema\":\"exp443.worker_parity.v1\""
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
-          "symbol": "class CompletedCheckpointInspectionAntigravity:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
-          "symbol": "def inspect_complete_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
-          "symbol": "class FrozenPublicationAntigravity:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
-          "symbol": "def publish_predictions_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
-          "symbol": "def inspect_publication_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py",
-          "symbol": "class ReportingAntigravityTests("
-        },
-        {
-          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-9-report-antigravity.md",
-          "symbol": "## Publication and replay"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/control_antigravity.py",
-          "symbol": "def to_payload_antigravity(self)"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
-          "symbol": "def _validate_complete_unit_authority_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
-          "symbol": "recomputed = compare_policy_a_to_archive_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
-          "symbol": "def _preserve_failed_publication_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py",
-          "symbol": "def test_fabricated_control_is_rejected_when_recomputed_control_disagrees("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py",
-          "symbol": "def test_publication_failure_after_rename_verification_preserves_failed_staging_evidence("
-        },
-        {
-          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-9-report-antigravity.md",
-          "symbol": "## Sol review fix round"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/bootstrap_antigravity.py",
-          "symbol": "def paired_dataset_bootstrap_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/evaluation_antigravity.py",
-          "symbol": "def load_frozen_test_labels_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/evaluation_antigravity.py",
-          "symbol": "def compute_policy_evaluation_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/evaluation_antigravity.py",
-          "symbol": "def evaluate_publication_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/evaluation_antigravity.py",
-          "symbol": "def _evaluation_result_from_payloads_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_bootstrap_antigravity.py",
-          "symbol": "class BootstrapAntigravityTests"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_evaluation_antigravity.py",
-          "symbol": "def test_label_loader_inspects_twice_before_one_connection_and_queries_all_datasets_once("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_evaluation_antigravity.py",
-          "symbol": "def test_full_evaluation_payload_replays_from_rows_without_labels("
-        },
-        {
-          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-10-report-antigravity.md",
-          "symbol": "## Immutable artifacts and replay"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_evaluation_antigravity.py",
-          "symbol": "def test_mid_label_failure_is_truthfully_marked_and_preserved("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/cli_antigravity.py",
-          "symbol": "class CliDependenciesAntigravity:"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/cli_antigravity.py",
-          "symbol": "def build_parser_antigravity()"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/cli_antigravity.py",
-          "symbol": "dependencies.inspect(attempt)"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/cli_antigravity.py",
-          "symbol": "module = dependencies.import_module(EVALUATION_MODULE_ANTIGRAVITY)"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "def _resume_attempt_root_antigravity("
-        },
-        {
-          "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
-          "symbol": "OFFICIAL_PYTHON_ANTIGRAVITY = ("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_cli_antigravity.py",
-          "symbol": "class CliAntigravityTests"
-        },
-        {
-          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "## 실제 Policy A 대조"
-        },
-        {
-          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "## CPU 1개와 worker 11개 동일성"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "def _publish_completed_attempt_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "writer.terminal_antigravity(\"complete\", None)"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/progress_antigravity.py",
-          "symbol": "def stage_antigravity(self) -> str:"
-        },
-        {
-          "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
-          "symbol": "def _write_failure_antigravity("
-        },
-        {
-          "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
-          "symbol": "return cli_main_antigravity(arguments)"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
-          "symbol": "def test_successful_runtime_finalization_publishes_after_terminal_progress"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "def _open_resume_authorities_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "return _CompletedCheckpointRuntimeAntigravity(inspection), None, True"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "publication = _publish_completed_attempt_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/progress_antigravity.py",
-          "symbol": "def inspect_complete_progress_for_finalization_antigravity("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
-          "symbol": "def test_finalization_only_runtime_retries_publication_and_preserves_progress_bytes"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_progress_antigravity.py",
-          "symbol": "def test_complete_finalization_inspection_is_read_only_and_binds_process"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "\"BLIS_NUM_THREADS\","
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/runtime_antigravity.py",
-          "symbol": "def _worker_initializer_antigravity()"
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
-          "symbol": "def test_worker_initializer_sets_all_seven_numerical_thread_variables"
-        },
-        {
-          "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
-          "symbol": "_THREAD_VARIABLES_ANTIGRAVITY = ("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_cli_antigravity.py",
-          "symbol": "def test_wrapper_sets_all_seven_thread_controls_before_first_numpy_import"
-        },
-        {
-          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "## 공식 실행과 동결 결과"
-        },
-        {
-          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "## 공식 평가 결과"
-        },
-        {
-          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
-          "symbol": "## 종료 오류와 보존 상태"
-        }
-      ]
-    },
-    {
       "id": "exp444_stability_contracts",
       "label": "Exp444 stability environment + contracts",
       "type": "pipeline",
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
-      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and exact resolved lock, binds the reviewed design and six frozen source identities, enforces descriptive-only governance and the max-minus-one CPU/one-thread contract, and provides immutable source candidate, omission mask, depth/view score, stable/unstable lane, backend, checkpoint, and evaluation value objects. Prediction payloads recursively reject TEST labels and evaluation metrics. Artifact calls are thin wrappers over Exp441 canonical JSON and descriptor-pinned create-only primitives. The official Exp444 run root remains absent; this boundary contains no runtime, SQLite read, evaluator, or official artifact.",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical complete resolved lock inventory, binds the reviewed design and six frozen source identities, enforces descriptive-only governance and the max-minus-one CPU/one-thread contract, and provides immutable source candidate, omission mask, depth/view score, stable/unstable lane, backend, checkpoint, and evaluation value objects. Prediction payloads recursively reject TEST labels and evaluation metrics. Artifact calls are thin wrappers over Exp441 canonical JSON and descriptor-pinned create-only primitives. The official Exp444 run root remains absent; this boundary contains no runtime, SQLite read, evaluator, or official artifact.",
       "entrypoints": [
         "FROZEN_CONFIG",
         "frozen_config_payload_antigravity",
@@ -4336,7 +4306,8 @@
         "validate_prediction_payload_antigravity",
         "canonical_json_bytes_antigravity",
         "write_create_only_antigravity",
-        "pin_exact_regular_inventory_antigravity"
+        "pin_exact_regular_inventory_antigravity",
+        "_validate_complete_freeze_bytes_antigravity"
       ],
       "tests": [
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_config_antigravity.py",
@@ -4345,13 +4316,14 @@
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py"
       ],
       "constraints": [
-        "Direct requirements are exactly mlx==0.32.0, numba==0.66.0, and numpy==2.4.6; the complete sorted lock is bound by SHA256 8835702b9793a5cc08b5e95621b49c0a4a4136325354da7a655761f6b91f3a94.",
+        "Direct requirements are exactly mlx==0.32.0, numba==0.66.0, and numpy==2.4.6; the byte-identical complete six-distribution sorted pip freeze --all lock is bound by SHA256 8835702b9793a5cc08b5e95621b49c0a4a4136325354da7a655761f6b91f3a94.",
         "The fixed venv is /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314, mode 0700, and mismatched existing environments are never mutated.",
         "CPU workers are max(1, logical_cpu_count - 1), expected 11; OMP, OPENBLAS, MKL, VECLIB, NUMEXPR, BLIS, and NUMBA controls are all exactly 1 before NumPy import.",
         "MLX/Numba remain a pre-run eligibility gate; they require finite outputs, identical masks/lanes, <=1e-5 scalar difference, and >=1.1x end-to-end speed including synchronization.",
         "Prediction contracts recursively reject labels, labels_blob, evaluation, confusion, metrics, and anomaly fields; all persisted arrays/containers are detached and immutable.",
         "Exp444 is descriptive-only: no scientific success criterion, winner, promotion, operational alert, or same-experiment reselection is available.",
-        "The official Exp444 run root remains absent and existing Exp440/442/443 roots/artifacts are immutable."
+        "The official Exp444 run root remains absent and existing Exp440/442/443 roots/artifacts are immutable.",
+        "A non-empty tracked lock rejects bootstrap before interpreter invocation, venv-parent creation, installation, or any external mutation."
       ],
       "evidence": [
         {
@@ -4397,6 +4369,14 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py",
           "symbol": "def test_environment_evidence_api_is_present"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/environment_antigravity.py",
+          "symbol": "def _validate_complete_freeze_bytes_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py",
+          "symbol": "def test_complete_freeze_rejects_missing_wrong_transitive_and_extra_distributions"
         }
       ]
     }
@@ -5074,6 +5054,10 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
           "symbol": "from .artifacts_antigravity import ("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/artifacts_antigravity.py",
+          "symbol": "from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity import ("
         }
       ]
     },
@@ -5205,18 +5189,7 @@
       ]
     },
     {
-      "from": "exp443_environment_contracts",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/artifacts_antigravity.py",
-          "symbol": "from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity import ("
-        }
-      ]
-    },
-    {
-      "from": "exp443_environment_contracts",
+      "from": "exp438_frequency_runtime",
       "to": "sqlite_store",
       "type": "reads",
       "evidence": [
@@ -5236,7 +5209,7 @@
     },
     {
       "from": "research_control",
-      "to": "exp443_environment_contracts",
+      "to": "exp438_frequency_runtime",
       "type": "calls",
       "evidence": [
         {
@@ -5331,21 +5304,10 @@
       "trigger": "Invoke the fixed external wrapper with readiness/new/resume/inspect/evaluate; run clean-head readiness and source verification, pass the real Policy A control, finish the parent-owned 57-unit runtime, atomically publish all three label-free predictions after terminal-complete progress, use a read-only finalization-only resume if publication fails, use read-only inspect for replay, then open one fixed TEST-label snapshot only through the separate evaluator.",
       "steps": [
         "research_control",
-        "exp443_environment_contracts",
+        "exp438_frequency_runtime",
         "sqlite_store"
       ],
       "outcome": "Readiness first proves the 1,119-row DB population and exact two frozen exclusions, then hashes and pins raw bytes, enforces values-only SQL before execution, validates inherited authority bytes and immutable cache NPZ metadata, checks every eligible TEST identity against Exp291/cache n_test, proves 2,116 + 137 - 35 = 2,218 and Exp291/Exp404 Hard equality, and confirms 1,117/19/164/983/0 missing inventory with zero label access. Task 6 then compares 76 Policy A score arrays and candidates, replays exact 1117/137/2253/35/2218 route coordinates with 19 recomputed plus 1,098 imported rows, and only permits B/C after control_reproduction_passed. Task 7 persists the ordered policy-major prefix, terminal error/interruption semantics, and parent-only 57-unit progress/PID heartbeat evidence for resumable execution. The fix-round resume path validates the interrupted prefix, binds a replacement PID, reconciles at most one exact next record orphan, and completes the 57-unit replay without truncating parent-owned logs. Round 2 requires explicit replacement process/PID probe and validates/clears a canonical leftover state temp before prefix advancement. Round 3 rejects equal stored/replacement process identity before rebinding while retaining distinct new-PID resume. Task 8 adds readiness evidence, exact 11-worker spawn execution, resumable pin reuse and complete-checkpoint finalization re-entry, idempotent canonical prediction bytes, atomic next-dataset dimensions, and a real 19-unit semantic parity report with zero label access. Task 9 then checks inactive complete progress and all 57 ordered results without resume mutation, binds the 76-comparison control and Task 8 parity evidence, reroutes Policy A/B/C, freezes three canonical 1,117-row JSONLs linked to their runtime JSON identities, and publishes the exact 12-file create-only hash DAG with zero label access for later Task 10 evaluation. The Task 9 Sol fix independently reruns the complete Policy A archive control, requires exact control-byte identity, binds terminal progress/PID ownership to the 57-record checkpoint, and preserves canonical failure evidence at every publication commit phase. Task 10 then inspects the publication twice before any label-capable import, reads one contiguous binary TEST-label sequence per 1,117 frozen datasets through one pinned connection, reproduces the 1915/303/2003/191679 baseline and Policy A identity, computes independent A/B/C whole-population plus 19/1,098 diagnostics and exact 20,000-sample paired intervals, and creates a ten-file review-only evaluation whose full row/transition/bootstrap/hash replay never reopens labels or selects a winner. Mid-label failures carry truthful label-access-started evidence into a unique preserved audit sibling. Task 11 fixes the five-command operator boundary, requires one explicit safe resume basename and the external Python 3.14.6 environment, exposes no scientific override, publishes during successful new/resume finalization, keeps inspect read-only, retains the DB pin across publication failure, uses a finalization-only resume that leaves complete checkpoint/progress/PID/log bytes unchanged, removes the pin only after publication succeeds, emits JSON-safe wrapper failures, and performs the sole lazy evaluator import only after publication inspection. The official reviewed run completed all 57 units, froze three predictions, and evaluated exactly 1,117 datasets after freeze. Policies A and B were baseline-identical; Policy C added TP 1/FP 0 and rescued one dataset without regression, but both bootstrap lower bounds were zero, so no winner was selected. A post-publication database-close error is preserved while valid publication/evaluation hashes remain immutable, and the flow pauses before Exp444."
-    },
-    {
-      "id": "exp444_task2_contract_flow",
-      "label": "Exp444 Task 2 environment and contract boundary",
-      "trigger": "Run the isolated Exp444 environment bootstrap and focused Task 2 tests before any official run root or runtime is authorized.",
-      "steps": [
-        "research_control",
-        "exp444_stability_contracts",
-        "artifact_utils"
-      ],
-      "outcome": "The resolved lock, frozen descriptive configuration, immutable label-free contracts, and canonical/create-only artifact wrappers are verified; official prediction, SQLite, evaluator, and run-root work remain absent."
     }
   ],
   "unknown_relationships": []
