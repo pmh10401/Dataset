@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T12:25:35Z",
-  "generated_from_commit": "073786f7",
+  "generated_at": "2026-08-09T12:33:20Z",
+  "generated_from_commit": "96f6d793",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -494,7 +494,7 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"fresh_sol_high_review\": \"pending_after_thread_contract_fix\""
+          "symbol": "\"fresh_sol_high_review\": \"pending_after_pre_numpy_import_fix\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
@@ -3679,7 +3679,7 @@
         "Checkpoint resume requires an explicit replacement ProcessIdentityAntigravity plus pid_probe; no legacy old-PID resume path exists.",
         "A leftover state_antigravity.tmp is accepted only with one exact next orphan and matching canonical current/temporary state fields; tampered, unexpected, or non-regular temps fail closed before cleanup.",
         "A resumable checkpoint must bind a distinct replacement process identity; equal PID/start identity is rejected before ownership publication.",
-        "Task 8 readiness is create-only and fails closed unless the reviewed HEAD is clean and exact, the frozen config/design/lock/source/environment identities match, the fixed official venv exposes 12 logical CPUs with exactly 11 outer workers and six numerical thread variables set to 1, and the 1,117/19 inventory is label-free.",
+        "Task 8 readiness is create-only and fails closed unless the reviewed HEAD is clean and exact, the frozen config/design/lock/source/environment identities match, the fixed official venv exposes 12 logical CPUs with exactly 11 outer workers and seven numerical thread variables set to 1 before the first NumPy import, and the 1,117/19 inventory is label-free.",
         "The production scheduler uses multiprocessing spawn with exactly 11 workers, buffers out-of-order results, commits only the next ordered policy-major prefix, records terminal worker failures, and admits Policy B/C only after the Policy A control gate passes. Semantic parity compares scores, candidates, control evidence, and routed prediction bytes exactly; timing and PID fields are informational exclusions only.",
         "A resumable attempt reopens its existing same-inode database hard-link pin rather than creating a second pin. A complete 57-record checkpoint may be explicitly reopened only for finalization; prediction files are reused only when canonical bytes match exactly, and changed/symlinked artifacts fail closed.",
         "The parent progress seam advances the completed prefix and next dataset dimensions in one atomic progress JSON replacement; PolicyDatasetResultAntigravity is spawn-picklable despite immutable mapping proxies. Official aeon MiniROCKET remains CPU-only and no MLX/MPS rewrite is permitted.",
@@ -3694,8 +3694,8 @@
         "Task 10 bootstrap is exactly NumPy 2.3.5 Generator(PCG64(44320260809)), 20,000 paired dataset samples, int64 indices, endpoint false, and linear 2.5/97.5 quantiles; population, sample, version, or resampling identity drift fails closed.",
         "Task 10 evaluation is exactly ten create-only files. Existing output is replay-only: row facts, transitions, family diagnostics, gates, all three bootstraps, baseline/Policy A authority, decisions, hashes, and bytes are reconstructed without reopening labels; governance remains review-only and no operational alert is eligible.",
         "Task 10 propagates whether the label-capable connection actually started through mid-read exceptions, so preserved failure_antigravity.json records labels_opened=true after any partial label access and never falsely reports a pre-label failure.",
-        "The runtime sets OMP, OpenBLAS, MKL, vecLib, NumExpr, Numba, and BLIS thread controls to one before numerical imports and repeats the same seven-variable contract in every worker; the official outer worker count remains 11.",
-        "Task 11 exposes exactly readiness/new/resume/inspect/evaluate; only reviewed-commit and an exact attempt_[0-9]{4}_antigravity basename are accepted, scientific/resource/path overrides are absent, new/resume publishes only after terminal-complete progress, a complete-checkpoint resume validates checkpoint/progress/PID/log bytes read-only and retries publication without rebinding them, inspect is strictly read-only, wrapper preflight failures are JSON-safe, and evaluate inspects the frozen publication before the sole lazy evaluator import."
+        "Task 11 exposes exactly readiness/new/resume/inspect/evaluate; only reviewed-commit and an exact attempt_[0-9]{4}_antigravity basename are accepted, scientific/resource/path overrides are absent, new/resume publishes only after terminal-complete progress, a complete-checkpoint resume validates checkpoint/progress/PID/log bytes read-only and retries publication without rebinding them, inspect is strictly read-only, wrapper preflight failures are JSON-safe, and evaluate inspects the frozen publication before the sole lazy evaluator import.",
+        "The official wrapper sets OMP, OpenBLAS, MKL, vecLib, NumExpr, Numba, and BLIS thread controls to one before importing the CLI or NumPy, and runtime repeats the same seven-variable contract in every worker; the official outer worker count remains 11."
       ],
       "evidence": [
         {
@@ -4245,6 +4245,14 @@
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
           "symbol": "def test_worker_initializer_sets_all_seven_numerical_thread_variables"
+        },
+        {
+          "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
+          "symbol": "_THREAD_VARIABLES_ANTIGRAVITY = ("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_cli_antigravity.py",
+          "symbol": "def test_wrapper_sets_all_seven_thread_controls_before_first_numpy_import"
         }
       ]
     }
