@@ -179,6 +179,19 @@ def _freeze_values_array_antigravity(value: object, name: str, *, ndim: int) -> 
     return frozen
 
 
+def _selected_coordinate_identity_antigravity(candidates: Sequence[SourceCandidateAntigravity]) -> str:
+    payload = b"".join(
+        json.dumps(
+            {"dataset": candidate.dataset, "instance_index": candidate.instance_index},
+            ensure_ascii=False,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8") + b"\n"
+        for candidate in sorted(candidates, key=lambda item: item.coordinate)
+    )
+    return hashlib.sha256(payload).hexdigest()
+
+
 @dataclass(frozen=True)
 class CandidateInputAntigravity:
     """Copied, values-only input for one frozen Exp442 coordinate.
@@ -241,12 +254,19 @@ class FrozenSourceSnapshotAntigravity:
         candidates = tuple(self.candidates)
         if any(not isinstance(item, SourceCandidateAntigravity) for item in candidates):
             raise ValueError("source candidates are invalid")
+        if len(candidates) != FROZEN_CONFIG.source_candidate_count:
+            raise ValueError("source snapshot must contain exactly 30 candidates")
         coordinates = tuple(item.coordinate for item in candidates)
         if len(coordinates) != len(set(coordinates)):
             raise ValueError("source candidates contain duplicate coordinates")
-        if not candidates:
-            raise ValueError("source candidates are empty")
-        _digest(self.selected_coordinate_identity_sha256, "selected_coordinate_identity_sha256")
+        if len({item.dataset for item in candidates}) != len(candidates):
+            raise ValueError("source snapshot must contain at most one candidate per dataset")
+        if set(item.original_rank for item in candidates) != set(range(1, FROZEN_CONFIG.source_candidate_count + 1)):
+            raise ValueError("source candidate ranks must be exactly 1-30")
+        selected_identity = _digest(self.selected_coordinate_identity_sha256, "selected_coordinate_identity_sha256")
+        recomputed_identity = _selected_coordinate_identity_antigravity(candidates)
+        if selected_identity != recomputed_identity or selected_identity != FROZEN_CONFIG.exp442_selected_coordinate_identity_sha256:
+            raise ValueError("source snapshot coordinate identity is not the frozen selected identity")
         if not isinstance(self.source_hashes, Mapping) or not self.source_hashes:
             raise ValueError("source hashes are invalid")
         if any(type(key) is not str or not key for key in self.source_hashes):

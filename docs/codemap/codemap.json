@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T22:58:32Z",
-  "generated_from_commit": "74eae2d8034c655856860cc04a68491a26906152",
+  "generated_at": "2026-08-09T23:24:29Z",
+  "generated_from_commit": "127f0dbfbac168357f1eba8db927c7904bcfbd4e",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -63,7 +63,8 @@
     "Exp444 approved 12-task implementation plan covering frozen governance, exact source replay, deterministic omission views, CPU-MLX-Numba parity, 11-worker checkpointed runtime, create-only publication, and descriptive post-freeze evaluation",
     "Exp444 frozen preregistration and pre-implementation runbook: descriptive-only governance, fixed paths, and no source edge before implementation",
     "Exp444 Task 2: isolated Python 3.14.6 environment, immutable TRAIN-only stability contracts, and thin canonical/create-only artifact wrappers",
-    "Exp444 Task 3: exact frozen Exp442/Exp404 source replay, 30-coordinate identity, and descriptor-bound values-only SQLite loading"
+    "Exp444 Task 3: exact frozen Exp442/Exp404 source replay, 30-coordinate identity, and descriptor-bound values-only SQLite loading",
+    "Exp444 Task 3 fix round 1: frozen 30-coordinate snapshot attestation, parameter-bound values-only sessions, adversarial source/SQL/identity coverage, and truthful close-failure pin preservation"
   ],
   "nodes": [
     {
@@ -4286,7 +4287,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
-      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 now verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. The source firewall rejects label-capable SQL before execution, excludes whole nonfinite TRAIN rows, preserves read-only float32 arrays, and keeps the official Exp444 root absent. Task 2 contracts and thin artifact wrappers remain immutable.",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix round 1 binds every session query to those exact candidate datasets/coordinates, rejects fabricated snapshots before database access, and restores a truthful private pin/root after injected close failures. The source firewall rejects label-capable SQL before execution, excludes whole nonfinite TRAIN rows, preserves read-only float32 arrays, and keeps the official Exp444 root absent. Task 2 contracts and thin artifact wrappers remain immutable.",
       "entrypoints": [
         "FROZEN_CONFIG",
         "frozen_config_payload_antigravity",
@@ -4330,8 +4331,10 @@
         "MLX/Numba remain a pre-run parity/speed gate and cannot change frozen source or score semantics.",
         "Prediction contracts recursively reject labels, labels_blob, evaluation, confusion, metrics, and anomaly fields; all persisted containers and loaded float32 arrays are detached and immutable.",
         "Exp444 source verification binds the exact configured 20260808 Exp442 publication/attempt paths, six frozen source hashes, artifact map, 30 coordinates, one candidate per dataset, rank 1-30, raw lengths, depths, and selected-coordinate identity db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048.",
-        "SQLite is immutable/read-only and descriptor-pinned. Only the exact normal-TRAIN values SQL and bound TEST-values SQL are registered; labels/labels_blob, SELECT *, unknown tables/columns, TEST identity scans, and evaluation SQL fail closed before execution.",
+        "SQLite is immutable/read-only and descriptor-pinned. Only the exact normal-TRAIN values SQL and bound TEST-values SQL are registered, and their parameters must belong to the verified 30 candidate datasets/coordinates before execution; labels/labels_blob, SELECT *, unknown tables/columns, TEST identity scans, and evaluation SQL fail closed with zero executions and zero label access.",
         "Whole-row nonfinite normal TRAIN rows are excluded before exact-length grouping; each selected TEST row must exist exactly once and match raw_length. TEST labels and label_access_count remain zero.",
+        "Frozen source snapshots require exactly 30 candidates, one per dataset, ranks 1-30, valid immutable candidate dimensions/depths, and a recomputed canonical coordinate identity equal to db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048 before any database open or query.",
+        "Successful session close removes only its private pin/root and restores the source link count; validation, descriptor-close, pin-unlink, post-unlink, and root-removal failures retain or restore a truthful failure pin/root without garbage-collection cleanup.",
         "Exp444 is descriptive-only: no scientific success criterion, winner, promotion, operational alert, or same-experiment reselection is available; the official run root remains absent and Exp440/442/443 roots/artifacts are immutable."
       ],
       "evidence": [
@@ -4373,11 +4376,11 @@
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py",
-          "symbol": "def test_prediction_sql_rejects_test_labels_antigravity"
+          "symbol": "def test_unbound_test_coordinate_is_denied_before_execution_counters_change_antigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py",
-          "symbol": "def test_values_loader_excludes_nonfinite_rows_and_returns_read_only_arrays_antigravity"
+          "symbol": "def test_close_failure_injections_preserve_truthful_pin_and_root_antigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/environment_antigravity.py",

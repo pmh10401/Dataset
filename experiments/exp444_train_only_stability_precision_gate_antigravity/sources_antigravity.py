@@ -47,6 +47,7 @@ _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _FILE_FLAGS = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
 _SOURCE_PRE_OPEN_HOOK_ANTIGRAVITY: Callable[[Path], None] | None = None
 _DATABASE_PRE_OPEN_HOOK_ANTIGRAVITY: Callable[[Path], None] | None = None
+_CLOSE_STEP_HOOK_ANTIGRAVITY: Callable[[str, Path, Path], None] | None = None
 
 
 class DuplicateJsonKeyError(ValueError):
@@ -196,15 +197,25 @@ def validate_prediction_sql_antigravity(sql: str) -> bool:
     raise ValueError("unregistered prediction SQL")
 
 
-def _validate_query_parameters_antigravity(sql: str, parameters: object) -> tuple[object, ...]:
+def _validate_query_parameters_antigravity(
+    sql: str,
+    parameters: object,
+    *,
+    allowed_train_datasets: frozenset[str],
+    allowed_test_coordinates: frozenset[tuple[str, int]],
+) -> tuple[object, ...]:
     normalized = _normalize_sql_antigravity(sql)
     validate_prediction_sql_antigravity(sql)
     if normalized.casefold() == _normalize_sql_antigravity(NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY).casefold():
         if type(parameters) not in (tuple, list) or len(parameters) != 1 or type(parameters[0]) is not str or not parameters[0]:
             raise ValueError("TRAIN values SQL requires one dataset parameter")
+        if parameters[0] not in allowed_train_datasets:
+            raise ValueError("unbound TRAIN dataset")
         return (parameters[0],)
     if type(parameters) not in (tuple, list) or len(parameters) != 2 or type(parameters[0]) is not str or not parameters[0] or type(parameters[1]) is not int or parameters[1] < 0:
         raise ValueError("TEST values SQL requires dataset and instance parameters")
+    if (parameters[0], parameters[1]) not in allowed_test_coordinates:
+        raise ValueError("unbound TEST coordinate")
     return (parameters[0], parameters[1])
 
 
@@ -215,16 +226,77 @@ def _decode_values_blob_antigravity(blob: object, name: str) -> np.ndarray:
     return values
 
 
+def _validated_candidate_bounds_antigravity(
+    candidates: Sequence[SourceCandidateAntigravity],
+) -> tuple[frozenset[str], frozenset[tuple[str, int]], tuple[tuple[object, ...], ...]]:
+    population = tuple(candidates)
+    if len(population) != FROZEN_CONFIG.source_candidate_count or any(
+        not isinstance(item, SourceCandidateAntigravity) for item in population
+    ):
+        raise ValueError("database session requires exactly 30 frozen candidates")
+    datasets = frozenset(item.dataset for item in population)
+    coordinates = frozenset(item.coordinate for item in population)
+    if len(datasets) != len(population) or len(coordinates) != len(population):
+        raise ValueError("database session requires one frozen candidate per dataset")
+    if set(item.original_rank for item in population) != set(range(1, FROZEN_CONFIG.source_candidate_count + 1)):
+        raise ValueError("database session candidate ranks are not 1-30")
+    identity = selected_coordinate_identity_sha256_antigravity(tuple(coordinates))
+    if identity != FROZEN_CONFIG.exp442_selected_coordinate_identity_sha256:
+        raise ValueError("database session candidate identity is not frozen")
+    signatures = tuple(sorted(_candidate_signature_antigravity(item) for item in population))
+    return datasets, coordinates, signatures
+
+
 class ValuesOnlyDatabaseSessionAntigravity:
     """Parent-owned pin/session with closure-only SQLite handles."""
 
     __slots__ = (
         "_source_path", "_pin_path", "_root", "_descriptor", "_source_metadata",
         "_pin_inode", "_source_nlink", "_database_sha256", "_closed", "_label_access_count",
+        "_allowed_train_datasets", "_allowed_test_coordinates", "_bound_candidate_signatures",
         "denied_sql_attempts", "sql_trace", "_active_sql", "_finalizer", "__weakref__",
     )
 
-    def __init__(self, source: Path, *, expected_sha256: str) -> None:
+    def __init__(
+        self,
+        source: Path,
+        *,
+        expected_sha256: str,
+        candidates: Sequence[SourceCandidateAntigravity],
+    ) -> None:
+        datasets, coordinates, signatures = _validated_candidate_bounds_antigravity(candidates)
+        self._initialize_antigravity(source, expected_sha256, datasets, coordinates, signatures)
+
+    @classmethod
+    def _from_test_fixture_antigravity(
+        cls,
+        source: Path,
+        *,
+        expected_sha256: str,
+        allowed_train_datasets: frozenset[str],
+        allowed_test_coordinates: frozenset[tuple[str, int]],
+    ) -> "ValuesOnlyDatabaseSessionAntigravity":
+        """Explicit unit-fixture seam; production callers must bind frozen candidates."""
+        datasets = frozenset(allowed_train_datasets)
+        coordinates = frozenset(allowed_test_coordinates)
+        if not datasets or not coordinates or {dataset for dataset, _ in coordinates} != datasets:
+            raise ValueError("test fixture bounds are invalid")
+        if any(type(dataset) is not str or not dataset for dataset in datasets):
+            raise ValueError("test fixture TRAIN bounds are invalid")
+        if any(type(dataset) is not str or not dataset or type(index) is not int or index < 0 for dataset, index in coordinates):
+            raise ValueError("test fixture TEST bounds are invalid")
+        instance = cls.__new__(cls)
+        instance._initialize_antigravity(source, expected_sha256, datasets, coordinates, ())
+        return instance
+
+    def _initialize_antigravity(
+        self,
+        source: Path,
+        expected_sha256: str,
+        allowed_train_datasets: frozenset[str],
+        allowed_test_coordinates: frozenset[tuple[str, int]],
+        bound_candidate_signatures: tuple[tuple[object, ...], ...],
+    ) -> None:
         self._source_path = Path(source)
         self._pin_path: Path | None = None
         self._root: Path | None = None
@@ -235,6 +307,9 @@ class ValuesOnlyDatabaseSessionAntigravity:
         self._database_sha256 = ""
         self._closed = False
         self._label_access_count = 0
+        self._allowed_train_datasets = allowed_train_datasets
+        self._allowed_test_coordinates = allowed_test_coordinates
+        self._bound_candidate_signatures = bound_candidate_signatures
         self.denied_sql_attempts = 0
         self.sql_trace: list[str] = []
         self._active_sql: str | None = None
@@ -327,6 +402,10 @@ class ValuesOnlyDatabaseSessionAntigravity:
         return self._label_access_count
 
     @property
+    def execution_count(self) -> int:
+        return len(self.sql_trace)
+
+    @property
     def database_sha256(self) -> str:
         return self._database_sha256
 
@@ -384,7 +463,12 @@ class ValuesOnlyDatabaseSessionAntigravity:
         """Execute one registered statement and return detached tuples only."""
         self._verify_boundary()
         try:
-            bound = _validate_query_parameters_antigravity(sql, parameters)
+            bound = _validate_query_parameters_antigravity(
+                sql,
+                parameters,
+                allowed_train_datasets=self._allowed_train_datasets,
+                allowed_test_coordinates=self._allowed_test_coordinates,
+            )
         except ValueError:
             self.denied_sql_attempts += 1
             raise
@@ -416,51 +500,87 @@ class ValuesOnlyDatabaseSessionAntigravity:
                 os.close(pin_fd)
             self._verify_boundary()
 
+    def _invoke_close_hook_antigravity(self, step: str, pin: Path, root: Path) -> None:
+        hook = _CLOSE_STEP_HOOK_ANTIGRAVITY
+        if hook is not None:
+            hook(step, pin, root)
+
+    def _restore_failure_pin_antigravity(self, pin: Path) -> None:
+        assert self._pin_inode is not None and self._source_nlink is not None
+        if pin.exists():
+            restored = pin.lstat()
+        else:
+            named = self._source_path.lstat()
+            if (named.st_dev, named.st_ino) != self._pin_inode:
+                raise ValueError("database source cannot restore failure pin")
+            os.link(self._source_path, pin, follow_symlinks=False)
+            restored = pin.lstat()
+        if (restored.st_dev, restored.st_ino) != self._pin_inode or restored.st_nlink != self._source_nlink + 1:
+            raise ValueError("restored failure pin identity is invalid")
+
     def close(self) -> None:
         if self._closed:
             return
-        error: BaseException | None = None
-        try:
-            self._verify_boundary(rehash=True)
-        except BaseException as exc:
-            error = exc
         descriptor = self._descriptor
-        if descriptor is not None:
-            try:
-                os.close(descriptor)
-            except BaseException as exc:
-                error = error or exc
         pin = self._pin_path
         root = self._root
-        self._descriptor = None
-        self._closed = True
-        if error is None and pin is not None:
-            try:
-                pin.unlink()
-                remaining = self._source_path.lstat().st_nlink
-                if self._source_nlink is not None and remaining != self._source_nlink:
-                    raise ValueError("database source link count changed after close")
-                if self._finalizer is not None:
-                    self._finalizer.detach()
-                if root is not None:
-                    root.rmdir()
-            except BaseException as exc:
-                error = exc
-            else:
-                # Do not leave a stale path/inode facade available after a
-                # successful close.  Failed closes intentionally retain these
-                # fields so their pin/root remain inspectable evidence.
-                self._pin_path = None
-                self._root = None
-                self._pin_inode = None
-                self._source_metadata = None
-                self._source_nlink = None
-        if error is not None and self._finalizer is not None:
-            # A failed close is durable evidence: do not let a later garbage
-            # collection silently remove the retained pin/failure root.
-            self._finalizer.detach()
-        if error is not None:
+        assert descriptor is not None and pin is not None and root is not None
+        pin_removed = False
+        try:
+            # Validate every condition that can be checked while the evidence
+            # pin still exists.  In particular, no unrelated file may occupy
+            # the private root and no external hard link may have appeared.
+            self._verify_boundary(rehash=True)
+            if tuple(root.iterdir()) != (pin,):
+                raise ValueError("database failure root contains unexpected files")
+            pinned = pin.lstat()
+            if self._source_nlink is None or pinned.st_nlink != self._source_nlink + 1:
+                raise ValueError("database source link count changed before close")
+
+            self._invoke_close_hook_antigravity("before_descriptor_close", pin, root)
+            os.close(descriptor)
+            descriptor = None
+            self._descriptor = None
+
+            self._invoke_close_hook_antigravity("before_pin_unlink", pin, root)
+            pin.unlink()
+            pin_removed = True
+            self._invoke_close_hook_antigravity("after_pin_unlink", pin, root)
+
+            named = self._source_path.lstat()
+            if self._pin_inode is None or (named.st_dev, named.st_ino) != self._pin_inode:
+                raise ValueError("database source inode changed during close")
+            if self._source_nlink is None or named.st_nlink != self._source_nlink:
+                raise ValueError("database source link count changed after close")
+            self._invoke_close_hook_antigravity("before_root_rmdir", pin, root)
+            root.rmdir()
+        except BaseException as error:
+            if descriptor is not None:
+                try:
+                    os.close(descriptor)
+                except BaseException as close_error:
+                    error.add_note(f"database descriptor cleanup failed: {close_error}")
+                self._descriptor = None
+            if pin_removed:
+                try:
+                    self._restore_failure_pin_antigravity(pin)
+                except BaseException as restore_error:
+                    error.add_note(f"failure pin restoration failed: {restore_error}")
+            self._closed = True
+            if self._finalizer is not None:
+                # A failed close is durable evidence: garbage collection must
+                # not erase the retained failure pin/root.
+                self._finalizer.detach()
             raise ValueError("pinned database close failed") from error
+        else:
+            self._closed = True
+            if self._finalizer is not None:
+                self._finalizer.detach()
+            self._pin_path = None
+            self._root = None
+            self._pin_inode = None
+            self._source_metadata = None
+            self._source_nlink = None
 
     def __enter__(self) -> "ValuesOnlyDatabaseSessionAntigravity":
         self._require_live()
@@ -638,6 +758,20 @@ def _validate_hard_prediction_antigravity(payload: bytes) -> frozenset[tuple[str
     return frozenset(coordinates)
 
 
+def _validate_candidate_replay_agreement_antigravity(
+    prediction: Sequence[SourceCandidateAntigravity],
+    ranking: Sequence[SourceCandidateAntigravity],
+    selection: Sequence[SourceCandidateAntigravity],
+) -> None:
+    prediction_signatures = tuple(sorted(_candidate_signature_antigravity(item) for item in prediction))
+    selection_signatures = tuple(sorted(_candidate_signature_antigravity(item) for item in selection))
+    ranking_signatures = tuple(sorted(_candidate_signature_antigravity(item) for item in ranking))
+    if prediction_signatures != selection_signatures:
+        raise ValueError("Exp442 prediction/selection candidate mismatch")
+    if ranking_signatures != selection_signatures:
+        raise ValueError("Exp442 ranking/selection candidate mismatch")
+
+
 def verify_frozen_sources_antigravity(fixture: object | None = None) -> FrozenSourceSnapshotAntigravity:
     """Verify exact Exp442/Exp404 bytes and return a label-free DB session."""
     paths = _source_paths_antigravity(fixture)
@@ -665,10 +799,7 @@ def verify_frozen_sources_antigravity(fixture: object | None = None) -> FrozenSo
         raise ValueError("Exp442 source governance is invalid")
     prediction, ranking = _parse_prediction_and_ranking_antigravity(prediction_payload, ranking_payload)
     selected_from_selection, hard_coordinates = _parse_selection_antigravity(selection_payload, expected)
-    if tuple(sorted(_candidate_signature_antigravity(item) for item in selected_from_selection)) != tuple(sorted(_candidate_signature_antigravity(item) for item in prediction)):
-        raise ValueError("Exp442 prediction/selection candidate mismatch")
-    if tuple(sorted(_candidate_signature_antigravity(item) for item in ranking)) != tuple(sorted(_candidate_signature_antigravity(item) for item in selected_from_selection)):
-        raise ValueError("Exp442 ranking/selection candidate mismatch")
+    _validate_candidate_replay_agreement_antigravity(prediction, ranking, selected_from_selection)
     selected_identity = _canonical_coordinate_identity_antigravity(tuple(item.coordinate for item in prediction))
     if selected_identity != FROZEN_CONFIG.exp442_selected_coordinate_identity_sha256:
         raise ValueError("Exp442 selected coordinate identity SHA256 mismatch")
@@ -678,7 +809,11 @@ def verify_frozen_sources_antigravity(fixture: object | None = None) -> FrozenSo
         raise ValueError("Exp442 selected candidate overlaps frozen Hard source")
     if hard_coordinates != hard:
         raise ValueError("Exp442 selection Hard coordinates disagree with Exp404")
-    session = ValuesOnlyDatabaseSessionAntigravity(paths.database, expected_sha256=expected["database"])
+    session = ValuesOnlyDatabaseSessionAntigravity(
+        paths.database,
+        expected_sha256=expected["database"],
+        candidates=prediction,
+    )
     hashes = {
         "database": expected["database"],
         "exp404_hard_prediction": hard_digest,
@@ -708,63 +843,92 @@ def verify_frozen_sources_antigravity(fixture: object | None = None) -> FrozenSo
         raise
 
 
+def _prepare_candidate_input_antigravity(
+    candidate: SourceCandidateAntigravity,
+    train_rows: Sequence[Sequence[object]],
+    test_rows: Sequence[Sequence[object]],
+) -> CandidateInputAntigravity:
+    decoded: list[tuple[int, np.ndarray]] = []
+    for row in train_rows:
+        if len(row) != 2 or type(row[0]) is not int or row[0] < 0:
+            raise ValueError("TRAIN instance identity is invalid")
+        decoded.append((row[0], _decode_values_blob_antigravity(row[1], "TRAIN")))
+    indices = tuple(index for index, _ in decoded)
+    if indices != tuple(sorted(set(indices))):
+        raise ValueError("TRAIN instance identity is not ordered and unique")
+    finite_group = tuple(
+        (index, values)
+        for index, values in decoded
+        if values.size == candidate.raw_length and np.isfinite(values).all()
+    )
+    if len(finite_group) < FROZEN_CONFIG.minimum_train_rows:
+        raise ValueError("candidate exact-length TRAIN group is too small")
+    if len(test_rows) != 1 or len(test_rows[0]) != 2 or test_rows[0][0] != candidate.instance_index:
+        raise ValueError("bound TEST values row is missing or duplicated")
+    test_values = _decode_values_blob_antigravity(test_rows[0][1], "TEST")
+    if test_values.size != candidate.raw_length:
+        raise ValueError("bound TEST values length disagrees with candidate raw length")
+    train_indices = tuple(index for index, _ in finite_group)
+    train_matrix = np.stack(tuple(values for _, values in finite_group), axis=0)
+    return CandidateInputAntigravity(candidate, train_indices, train_matrix, test_values)
+
+
 def _load_candidate_values_from_session_antigravity(snapshot: FrozenSourceSnapshotAntigravity, session: ValuesOnlyDatabaseSessionAntigravity) -> tuple[CandidateInputAntigravity, ...]:
     if session.database_sha256 != snapshot.database_sha256:
         raise ValueError("database hash does not match source snapshot")
-    train_cache: dict[str, tuple[tuple[int, np.ndarray], ...]] = {}
+    train_cache: dict[str, tuple[tuple[object, ...], ...]] = {}
     result: list[CandidateInputAntigravity] = []
     for candidate in snapshot.candidates:
         if candidate.dataset not in train_cache:
-            rows = session.query_antigravity(NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, (candidate.dataset,))
-            decoded: list[tuple[int, np.ndarray]] = []
-            for row in rows:
-                if len(row) != 2 or type(row[0]) is not int or row[0] < 0:
-                    raise ValueError("TRAIN instance identity is invalid")
-                values = _decode_values_blob_antigravity(row[1], "TRAIN")
-                decoded.append((row[0], values))
-            if tuple(index for index, _ in decoded) != tuple(sorted(set(index for index, _ in decoded))):
-                raise ValueError("TRAIN instance identity is not ordered and unique")
-            train_cache[candidate.dataset] = tuple(decoded)
+            train_cache[candidate.dataset] = session.query_antigravity(
+                NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, (candidate.dataset,)
+            )
         train_rows = train_cache[candidate.dataset]
-        finite_group = tuple((index, values) for index, values in train_rows if values.size == candidate.raw_length and np.isfinite(values).all())
-        if len(finite_group) < FROZEN_CONFIG.minimum_train_rows:
-            raise ValueError("candidate exact-length TRAIN group is too small")
         test_rows = session.query_antigravity(BOUND_TEST_VALUE_SQL_ANTIGRAVITY, (candidate.dataset, candidate.instance_index))
-        if len(test_rows) != 1 or len(test_rows[0]) != 2 or test_rows[0][0] != candidate.instance_index:
-            raise ValueError("bound TEST values row is missing or duplicated")
-        test_values = _decode_values_blob_antigravity(test_rows[0][1], "TEST")
-        if test_values.size != candidate.raw_length:
-            raise ValueError("bound TEST values length disagrees with candidate raw length")
-        train_indices = tuple(index for index, _ in finite_group)
-        train_matrix = np.stack(tuple(values for _, values in finite_group), axis=0)
-        result.append(CandidateInputAntigravity(candidate, train_indices, train_matrix, test_values))
+        result.append(_prepare_candidate_input_antigravity(candidate, train_rows, test_rows))
     if session.label_access_count != 0:
         raise ValueError("TEST label access was observed")
     return tuple(result)
 
 
-def load_candidate_values_antigravity(snapshot: FrozenSourceSnapshotAntigravity) -> tuple[CandidateInputAntigravity, ...]:
-    """Materialize only normal TRAIN and bound TEST values for 30 candidates."""
+def _validate_snapshot_for_loading_antigravity(
+    snapshot: FrozenSourceSnapshotAntigravity,
+) -> tuple[frozenset[str], frozenset[tuple[str, int]], tuple[tuple[object, ...], ...]]:
     if not isinstance(snapshot, FrozenSourceSnapshotAntigravity):
         raise ValueError("source snapshot is invalid")
+    datasets, coordinates, signatures = _validated_candidate_bounds_antigravity(snapshot.candidates)
+    identity = selected_coordinate_identity_sha256_antigravity(tuple(coordinates))
+    if snapshot.selected_coordinate_identity_sha256 != identity:
+        raise ValueError("source snapshot coordinate identity changed")
+    expected_hashes = {
+        "database": FROZEN_CONFIG.database_sha256,
+        "exp404_hard_prediction": FROZEN_CONFIG.exp404_hard_prediction_sha256,
+        "exp442_prediction": FROZEN_CONFIG.exp442_prediction_sha256,
+        "exp442_candidate_ranking": FROZEN_CONFIG.exp442_candidate_ranking_sha256,
+        "exp442_selection": FROZEN_CONFIG.exp442_selection_sha256,
+        "exp442_selected_coordinate_identity": FROZEN_CONFIG.exp442_selected_coordinate_identity_sha256,
+    }
+    if any(snapshot.source_hashes.get(name) != digest for name, digest in expected_hashes.items()):
+        raise ValueError("source snapshot frozen hashes are invalid")
+    if Path(snapshot.database_path) != Path(FROZEN_CONFIG.database_path):
+        raise ValueError("source snapshot database path is not frozen")
     if snapshot.label_access_count != 0:
         raise ValueError("source snapshot has label access")
+    return datasets, coordinates, signatures
+
+
+def load_candidate_values_antigravity(snapshot: FrozenSourceSnapshotAntigravity) -> tuple[CandidateInputAntigravity, ...]:
+    """Materialize only normal TRAIN and bound TEST values for 30 candidates."""
+    datasets, coordinates, signatures = _validate_snapshot_for_loading_antigravity(snapshot)
     supplied = snapshot.session
     if supplied is None:
-        session = ValuesOnlyDatabaseSessionAntigravity(Path(snapshot.database_path), expected_sha256=snapshot.database_sha256)
-        try:
-            result = _load_candidate_values_from_session_antigravity(snapshot, session)
-        except BaseException as error:
-            try:
-                session.close()
-            except BaseException as close_error:
-                error.add_note(f"source session cleanup failed: {close_error}")
-            raise
-        else:
-            session.close()
-            return result
+        raise ValueError("parent-owned verified source session is required")
     if not isinstance(supplied, ValuesOnlyDatabaseSessionAntigravity):
         raise ValueError("source session is invalid")
+    if supplied._allowed_train_datasets != datasets or supplied._allowed_test_coordinates != coordinates:
+        raise ValueError("source session bounds do not match snapshot")
+    if supplied._bound_candidate_signatures != signatures:
+        raise ValueError("source session candidate signatures do not match snapshot")
     return _load_candidate_values_from_session_antigravity(snapshot, supplied)
 
 
