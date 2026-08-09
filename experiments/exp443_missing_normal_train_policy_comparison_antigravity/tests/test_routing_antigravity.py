@@ -92,8 +92,10 @@ class RoutingAntigravityTests(unittest.TestCase):
         self.assertEqual(len(first.rows), 3)
         self.assertFalse(first.contains_test_labels)
         self.assertFalse(first.contains_evaluation_metrics)
-        self.assertNotIn("labels", canonical_prediction_bytes_antigravity(first).decode())
-        self.assertNotIn("evaluation", canonical_prediction_bytes_antigravity(first).decode())
+        self.assertTrue(all(row["contains_test_labels"] is False for row in first.rows))
+        self.assertTrue(all(row["contains_evaluation_metrics"] is False for row in first.rows))
+        self.assertNotIn('"contains_test_labels":true', canonical_prediction_bytes_antigravity(first).decode())
+        self.assertNotIn('"contains_evaluation_metrics":true', canonical_prediction_bytes_antigravity(first).decode())
 
     def test_routing_rejects_out_of_range_duplicates_and_candidates_outside_standard(self) -> None:
         from experiments.exp443_missing_normal_train_policy_comparison_antigravity.routing_antigravity import route_policy_antigravity

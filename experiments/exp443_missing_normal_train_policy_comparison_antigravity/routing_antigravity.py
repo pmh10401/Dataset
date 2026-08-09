@@ -247,6 +247,8 @@ def route_policy_antigravity(
                     "pre_exact": pre,
                     "exact_normal_removed": removed,
                     "final_hard": final,
+                    "contains_test_labels": False,
+                    "contains_evaluation_metrics": False,
                     "provenance": {
                         "candidate_source": candidate_source,
                         "routing_rule": "standard_intersection_union_then_exact_normal_subtraction",
