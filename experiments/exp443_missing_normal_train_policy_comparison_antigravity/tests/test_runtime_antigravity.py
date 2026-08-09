@@ -324,15 +324,23 @@ class RuntimeAntigravityTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "absent"):
                 _resume_attempt_root_antigravity(root, "attempt_9999_antigravity")
 
-    def test_worker_initializer_sets_all_six_numerical_thread_variables(self) -> None:
+    def test_worker_initializer_sets_all_seven_numerical_thread_variables(self) -> None:
         from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
             _worker_initializer_antigravity,
         )
 
-        for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS", "NUMBA_NUM_THREADS"):
+        names = (
+            "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS",
+            "NUMBA_NUM_THREADS", "BLIS_NUM_THREADS",
+        )
+        for name in names:
             os.environ.pop(name, None)
         _worker_initializer_antigravity()
-        self.assertEqual({name: os.environ[name] for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS", "NUMBA_NUM_THREADS")}, {name: "1" for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS", "NUMBA_NUM_THREADS")})
+        self.assertEqual(
+            {name: os.environ.get(name) for name in names},
+            {name: "1" for name in names},
+        )
 
     def test_scheduler_uses_exactly_eleven_spawn_workers_and_commits_only_ordered_prefix(self) -> None:
         from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
