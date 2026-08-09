@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T08:44:08Z",
-  "generated_from_commit": "54ccbc9e",
+  "generated_at": "2026-08-09T10:11:18Z",
+  "generated_from_commit": "6f621c2c",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -52,7 +52,8 @@
     "Exp443 Task 7 fix: validated interrupted reopen, process rebinding, single-next orphan reconciliation, append-only progress resume, and terminal heartbeat closure",
     "Exp443 Task 7 fix round 2: explicit replacement process/PID probe and validated stale state-antigravity temp recovery",
     "Exp443 Task 7 fix round 3: reject replacement process identity equal to stored ownership",
-    "Exp443 Task 8 readiness, exact 11-worker spawned ordered runtime, Policy A 19-unit sequential/parallel semantic parity, resumable database-pin reuse, complete-checkpoint finalization re-entry, idempotent prediction publication, and atomic next-dataset progress dimensions"
+    "Exp443 Task 8 readiness, exact 11-worker spawned ordered runtime, Policy A 19-unit sequential/parallel semantic parity, resumable database-pin reuse, complete-checkpoint finalization re-entry, idempotent prediction publication, and atomic next-dataset progress dimensions",
+    "Exp443 Task 9 non-mutating completed-checkpoint inspection, exact 57-result/three-policy replay, three canonical 1,117-row label-free prediction freezes, and create-only hash-linked publication"
   ],
   "nodes": [
     {
@@ -3476,7 +3477,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity",
-      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation. Review round 1 closes canonical audit/prepared reconciliation: policy/action/missingness combinations are frozen, raw `<f4` digests are recomputed, missing-position hashes survive the RunPolicyAudit adapter, targets are clipped from original TRAIN medians at every boundary, and TRAIN/TEST identities are gap-checked. The round also records exact A/B/C action totals, immutable byte ownership, and all-19 real parity. Review round 2 closes the unsupported-position subset gap for both in-memory and serialized RunPolicyAudit payloads and centralizes the canonical action vocabulary shared by contracts and preprocessing. Task 5 adds a lazy adapter to the unchanged Exp249 CPU scorer, enforces four frozen kernel/seed calls with alpha=.005 seed intersections, and emits deterministic label-free Standard-gated promotion/pre-exact/exact-normal/final-Hard routing rows; unaffected datasets import verified Exp249 candidate maps while affected datasets require one policy result each. Task 6 adds a fail-closed Policy A control gate: every affected dataset's four TRAIN OOF/TEST arrays is compared with verified Exp249 float64 archive bytes, empirical and frozen candidate sets are checked, complete route coordinates are replayed against Exp291/404, topology and label-free identities are recorded, and B/C/evaluation work remains blocked until control_reproduction_passed. Task 7 adds the internal ordered 57-unit runtime support: policy-major case-sensitive WorkUnit identities, create-only canonical records, binding/PID-gated resumable prefixes, terminal error/interruption semantics, and parent-only atomic progress/events/Korean log/PID heartbeat evidence. The Task 7 fix adds validated interrupted reopen with elapsed/counter restoration, append-only log continuation, replacement process binding, exact single-next orphan reconciliation, active second-resume rejection, and terminal heartbeat no-op/rejection. Fix round 2 removes legacy resume compatibility and validates then clears the one canonical state temp left by a record-create/state-replace crash before rebinding and advancing the prefix. Fix round 3 rejects interrupted resume when the replacement ProcessIdentityAntigravity exactly equals the stored owner; only distinct ownership may be persisted. Task 8 adds clean-HEAD/source/config/environment readiness, exact policy-major case-sensitive 57-unit scheduling with 11 spawned CPU workers, ordered prefix buffering, parent-only progress/checkpoint ownership, and a 19-unit Policy A sequential-versus-parallel semantic parity report. Policy A control remains a hard gate before B/C. Interrupted resumes reuse the retained database hard-link pin; a complete checkpoint has an explicit finalization-only re-entry path, canonical prediction bytes are idempotently reused only when identical, spawn workers return picklable result contracts, and progress advances the next dataset with its dimensions in one atomic write. The real final parity is semantic_equal=true with zero TEST-label access; speed is informative and MLX/MPS remain inapplicable.",
+      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation. Review round 1 closes canonical audit/prepared reconciliation: policy/action/missingness combinations are frozen, raw `<f4` digests are recomputed, missing-position hashes survive the RunPolicyAudit adapter, targets are clipped from original TRAIN medians at every boundary, and TRAIN/TEST identities are gap-checked. The round also records exact A/B/C action totals, immutable byte ownership, and all-19 real parity. Review round 2 closes the unsupported-position subset gap for both in-memory and serialized RunPolicyAudit payloads and centralizes the canonical action vocabulary shared by contracts and preprocessing. Task 5 adds a lazy adapter to the unchanged Exp249 CPU scorer, enforces four frozen kernel/seed calls with alpha=.005 seed intersections, and emits deterministic label-free Standard-gated promotion/pre-exact/exact-normal/final-Hard routing rows; unaffected datasets import verified Exp249 candidate maps while affected datasets require one policy result each. Task 6 adds a fail-closed Policy A control gate: every affected dataset's four TRAIN OOF/TEST arrays is compared with verified Exp249 float64 archive bytes, empirical and frozen candidate sets are checked, complete route coordinates are replayed against Exp291/404, topology and label-free identities are recorded, and B/C/evaluation work remains blocked until control_reproduction_passed. Task 7 adds the internal ordered 57-unit runtime support: policy-major case-sensitive WorkUnit identities, create-only canonical records, binding/PID-gated resumable prefixes, terminal error/interruption semantics, and parent-only atomic progress/events/Korean log/PID heartbeat evidence. The Task 7 fix adds validated interrupted reopen with elapsed/counter restoration, append-only log continuation, replacement process binding, exact single-next orphan reconciliation, active second-resume rejection, and terminal heartbeat no-op/rejection. Fix round 2 removes legacy resume compatibility and validates then clears the one canonical state temp left by a record-create/state-replace crash before rebinding and advancing the prefix. Fix round 3 rejects interrupted resume when the replacement ProcessIdentityAntigravity exactly equals the stored owner; only distinct ownership may be persisted. Task 8 adds clean-HEAD/source/config/environment readiness, exact policy-major case-sensitive 57-unit scheduling with 11 spawned CPU workers, ordered prefix buffering, parent-only progress/checkpoint ownership, and a 19-unit Policy A sequential-versus-parallel semantic parity report. Policy A control remains a hard gate before B/C. Interrupted resumes reuse the retained database hard-link pin; a complete checkpoint has an explicit finalization-only re-entry path, canonical prediction bytes are idempotently reused only when identical, spawn workers return picklable result contracts, and progress advances the next dataset with its dimensions in one atomic write. The real final parity is semantic_equal=true with zero TEST-label access; speed is informative and MLX/MPS remain inapplicable. Task 9 adds a dedicated non-mutating completed-checkpoint inspection path and freezes the three policy predictions without reopening resume state. It requires complete inactive progress, exactly 57 results in three 19-dataset policy groups, the real 76-comparison Policy A control and 137/2253/35/2218 routing topology, exact Task 8 worker-parity linkage, and zero label access. Each runtime canonical JSON is byte-linked to a canonical 1,117-row JSONL, then nine leaf artifacts, manifest, status, and self-excluding artifact map form a create-only replayable hash DAG for Task 10 post-freeze evaluation.",
       "entrypoints": [
         "frozen_config_payload_antigravity",
         "scientific_config_sha256_antigravity",
@@ -3553,7 +3554,12 @@
         "run_exp443_new_antigravity",
         "resume_exp443_antigravity",
         "_write_prediction_idempotent_antigravity",
-        "ProgressWriterAntigravity.accept_unit_and_align_antigravity"
+        "ProgressWriterAntigravity.accept_unit_and_align_antigravity",
+        "CompletedCheckpointInspectionAntigravity",
+        "Exp443CheckpointStoreAntigravity.inspect_complete_antigravity",
+        "FrozenPublicationAntigravity",
+        "publish_predictions_antigravity",
+        "inspect_publication_antigravity"
       ],
       "tests": [
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
@@ -3570,7 +3576,8 @@
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_progress_antigravity.py",
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_readiness_antigravity.py",
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_runtime_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_worker_parity_antigravity.py"
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_worker_parity_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py"
       ],
       "constraints": [
         "Direct requirements are exactly aeon 1.5.0, NumPy 2.3.5, and scikit-learn 1.8.0; the complete sorted lock is bound by SHA256 bb2de6e2696a3f0d92480f0215b15bdaf6d89375210dd4be48257cfa6b44d548.",
@@ -3623,7 +3630,10 @@
         "Task 8 readiness is create-only and fails closed unless the reviewed HEAD is clean and exact, the frozen config/design/lock/source/environment identities match, the fixed official venv exposes 12 logical CPUs with exactly 11 outer workers and six numerical thread variables set to 1, and the 1,117/19 inventory is label-free.",
         "The production scheduler uses multiprocessing spawn with exactly 11 workers, buffers out-of-order results, commits only the next ordered policy-major prefix, records terminal worker failures, and admits Policy B/C only after the Policy A control gate passes. Semantic parity compares scores, candidates, control evidence, and routed prediction bytes exactly; timing and PID fields are informational exclusions only.",
         "A resumable attempt reopens its existing same-inode database hard-link pin rather than creating a second pin. A complete 57-record checkpoint may be explicitly reopened only for finalization; prediction files are reused only when canonical bytes match exactly, and changed/symlinked artifacts fail closed.",
-        "The parent progress seam advances the completed prefix and next dataset dimensions in one atomic progress JSON replacement; PolicyDatasetResultAntigravity is spawn-picklable despite immutable mapping proxies. Official aeon MiniROCKET remains CPU-only and no MLX/MPS rewrite is permitted."
+        "The parent progress seam advances the completed prefix and next dataset dimensions in one atomic progress JSON replacement; PolicyDatasetResultAntigravity is spawn-picklable despite immutable mapping proxies. Official aeon MiniROCKET remains CPU-only and no MLX/MPS rewrite is permitted.",
+        "Task 9 inspection is read-only and accepts only a complete 57-record checkpoint with inactive PID/progress; it never calls the mutating resume path or rewrites checkpoint/progress bytes.",
+        "Task 9 reroutes all three policies from frozen results, requires exact runtime canonical JSON identity, publishes exactly three canonical 1,117-row JSONLs, and records both JSON and JSONL SHA256 identities.",
+        "Task 9 publication is exactly 12 create-only files: nine leaves feed the manifest, the manifest feeds status, and the artifact map hashes the other eleven while excluding itself; existing publication is inspection-only and TEST-label access remains zero."
       ],
       "evidence": [
         {
@@ -3980,7 +3990,35 @@
         },
         {
           "path": "scratch/exp443_worker_parity_report_antigravity.json",
-          "symbol": "schema=exp443.worker_parity.v1"
+          "symbol": "\"schema\":\"exp443.worker_parity.v1\""
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
+          "symbol": "class CompletedCheckpointInspectionAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/checkpoint_antigravity.py",
+          "symbol": "def inspect_complete_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
+          "symbol": "class FrozenPublicationAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
+          "symbol": "def publish_predictions_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py",
+          "symbol": "def inspect_publication_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "class ReportingAntigravityTests("
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-9-report-antigravity.md",
+          "symbol": "## Publication and replay"
         }
       ]
     }
@@ -4870,14 +4908,14 @@
     },
     {
       "id": "exp443_source_freeze_flow",
-      "label": "Exp443 readiness, source freeze, Policy A control, ordered 11-worker runtime, and parity",
-      "trigger": "Run clean-head readiness and the Task 3 source verifier, execute the real Policy A control gate, then parent-owned Task 7/8 checkpoint-progress runtime and exact 19-unit worker parity before any alternative policy or prediction route.",
+      "label": "Exp443 source freeze, control, 11-worker runtime, parity, and three-policy publication",
+      "trigger": "Run clean-head readiness and source verification, pass the real Policy A control, finish the parent-owned 57-unit runtime and worker parity, then inspect the complete checkpoint without mutation and freeze all three label-free policy predictions.",
       "steps": [
         "research_control",
         "exp443_environment_contracts",
         "sqlite_store"
       ],
-      "outcome": "Readiness first proves the 1,119-row DB population and exact two frozen exclusions, then hashes and pins raw bytes, enforces values-only SQL before execution, validates inherited authority bytes and immutable cache NPZ metadata, checks every eligible TEST identity against Exp291/cache n_test, proves 2,116 + 137 - 35 = 2,218 and Exp291/Exp404 Hard equality, and confirms 1,117/19/164/983/0 missing inventory with zero label access. Task 6 then compares 76 Policy A score arrays and candidates, replays exact 1117/137/2253/35/2218 route coordinates with 19 recomputed plus 1,098 imported rows, and only permits B/C after control_reproduction_passed. Task 7 persists the ordered policy-major prefix, terminal error/interruption semantics, and parent-only 57-unit progress/PID heartbeat evidence for resumable execution. The fix-round resume path validates the interrupted prefix, binds a replacement PID, reconciles at most one exact next record orphan, and completes the 57-unit replay without truncating parent-owned logs. Round 2 requires explicit replacement process/PID probe and validates/clears a canonical leftover state temp before prefix advancement. Round 3 rejects equal stored/replacement process identity before rebinding while retaining distinct new-PID resume. Task 8 adds readiness evidence, exact 11-worker spawn execution, resumable pin reuse and complete-checkpoint finalization re-entry, idempotent canonical prediction bytes, atomic next-dataset dimensions, and a real 19-unit semantic parity report with zero label access."
+      "outcome": "Readiness first proves the 1,119-row DB population and exact two frozen exclusions, then hashes and pins raw bytes, enforces values-only SQL before execution, validates inherited authority bytes and immutable cache NPZ metadata, checks every eligible TEST identity against Exp291/cache n_test, proves 2,116 + 137 - 35 = 2,218 and Exp291/Exp404 Hard equality, and confirms 1,117/19/164/983/0 missing inventory with zero label access. Task 6 then compares 76 Policy A score arrays and candidates, replays exact 1117/137/2253/35/2218 route coordinates with 19 recomputed plus 1,098 imported rows, and only permits B/C after control_reproduction_passed. Task 7 persists the ordered policy-major prefix, terminal error/interruption semantics, and parent-only 57-unit progress/PID heartbeat evidence for resumable execution. The fix-round resume path validates the interrupted prefix, binds a replacement PID, reconciles at most one exact next record orphan, and completes the 57-unit replay without truncating parent-owned logs. Round 2 requires explicit replacement process/PID probe and validates/clears a canonical leftover state temp before prefix advancement. Round 3 rejects equal stored/replacement process identity before rebinding while retaining distinct new-PID resume. Task 8 adds readiness evidence, exact 11-worker spawn execution, resumable pin reuse and complete-checkpoint finalization re-entry, idempotent canonical prediction bytes, atomic next-dataset dimensions, and a real 19-unit semantic parity report with zero label access. Task 9 then checks inactive complete progress and all 57 ordered results without resume mutation, binds the 76-comparison control and Task 8 parity evidence, reroutes Policy A/B/C, freezes three canonical 1,117-row JSONLs linked to their runtime JSON identities, and publishes the exact 12-file create-only hash DAG with zero label access for later Task 10 evaluation."
     }
   ],
   "unknown_relationships": []
