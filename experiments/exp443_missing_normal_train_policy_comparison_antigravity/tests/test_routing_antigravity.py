@@ -68,8 +68,16 @@ class RoutingAntigravityTests(unittest.TestCase):
     def test_routing_intersects_standard_promotes_union_and_removes_exact_normal(self) -> None:
         from experiments.exp443_missing_normal_train_policy_comparison_antigravity.routing_antigravity import route_policy_antigravity
 
+        explicit_snapshot = _snapshot()
+        explicit_snapshot.exp236_lanes = dict(explicit_snapshot.exp236_lanes)
+        explicit_snapshot.exp236_lanes["A"] = {
+            **explicit_snapshot.exp236_lanes["A"],
+            "promotion": (3,),
+        }
+        explicit_snapshot.hard_coordinates_exp291 = frozenset({("B", 1)})
+        explicit_snapshot.hard_coordinates_exp404 = frozenset({("B", 1)})
         prediction = route_policy_antigravity(
-            _snapshot(),
+            explicit_snapshot,
             {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
             POLICY,
             exact_normal_coordinates=frozenset({("A", 0), ("A", 3)}),
@@ -156,7 +164,10 @@ class RoutingAntigravityTests(unittest.TestCase):
             canonical_prediction_bytes_antigravity,
         )
 
-        provenance = {"candidate_source": "x", "routing_rule": "y"}
+        provenance = {
+            "candidate_source": "recomputed_policy",
+            "routing_rule": "standard_intersection_union_then_exact_normal_subtraction",
+        }
         row = {
             "dataset": "A", "policy": POLICY, "n_test": 1,
             "mini1024": (), "mini4096": (), "inherited_hard": (),
@@ -172,7 +183,11 @@ class RoutingAntigravityTests(unittest.TestCase):
         self.assertEqual(canonical_prediction_bytes_antigravity(prediction), before)
 
         forged_row = dict(prediction.rows[0])
-        forged_row["provenance"] = {"candidate_source": "x", "routing_rule": "y", "labels": {"secret": 1}}
+        forged_row["provenance"] = {
+            "candidate_source": "recomputed_policy",
+            "routing_rule": "standard_intersection_union_then_exact_normal_subtraction",
+            "labels": {"secret": 1},
+        }
         object.__setattr__(prediction, "rows", (MappingProxyType(forged_row),))
         with self.assertRaises(ValueError):
             canonical_prediction_bytes_antigravity(prediction)
@@ -183,12 +198,152 @@ class RoutingAntigravityTests(unittest.TestCase):
         forged = SimpleNamespace(**vars(_snapshot()))
         forged.exp236_lanes = dict(forged.exp236_lanes)
         forged.exp236_lanes["A"] = {**forged.exp236_lanes["A"], "standard": (1, 1)}
-        with self.assertRaises(ValueError):
-            route_policy_antigravity(forged, {}, POLICY)
+        with self.assertRaisesRegex(ValueError, "not sorted and unique"):
+            route_policy_antigravity(
+                forged,
+                {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
+                POLICY,
+            )
         forged_result = _result("A", candidates_1024=(1, 3), candidates_4096=())
         object.__setattr__(forged_result, "candidates_by_kernel", {1024: (6,), 4096: ()})
         with self.assertRaises(ValueError):
             route_policy_antigravity(_snapshot(), {"A": forged_result}, POLICY)
+
+    def test_explicit_exact_normal_path_validates_inherited_promotion_and_frozen_relation(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.routing_antigravity import route_policy_antigravity
+
+        duplicate_promotion = SimpleNamespace(**vars(_snapshot()))
+        duplicate_promotion.exp236_lanes = dict(duplicate_promotion.exp236_lanes)
+        duplicate_promotion.exp236_lanes["A"] = {
+            **duplicate_promotion.exp236_lanes["A"],
+            "promotion": (3, 3),
+        }
+        with self.assertRaisesRegex(ValueError, "not sorted and unique"):
+            route_policy_antigravity(
+                duplicate_promotion,
+                {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
+                POLICY,
+                exact_normal_coordinates=frozenset(),
+            )
+
+        out_of_range_promotion = SimpleNamespace(**vars(_snapshot()))
+        out_of_range_promotion.exp236_lanes = dict(out_of_range_promotion.exp236_lanes)
+        out_of_range_promotion.exp236_lanes["A"] = {
+            **out_of_range_promotion.exp236_lanes["A"],
+            "promotion": (6,),
+        }
+        with self.assertRaisesRegex(ValueError, "outside TEST identity"):
+            route_policy_antigravity(
+                out_of_range_promotion,
+                {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
+                POLICY,
+                exact_normal_coordinates=frozenset(),
+            )
+
+        with self.assertRaisesRegex(ValueError, "exact-normal coordinates disagree"):
+            route_policy_antigravity(
+                _snapshot(),
+                {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
+                POLICY,
+                exact_normal_coordinates=frozenset({("A", 0)}),
+            )
+
+    def test_canonical_replay_rejects_row_policy_and_provenance_tampering(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.routing_antigravity import (
+            canonical_prediction_bytes_antigravity,
+            route_policy_antigravity,
+        )
+
+        for update in (
+            {"policy": "exclude_nonfinite_row"},
+            {"provenance": {"candidate_source": "forged", "routing_rule": "standard_intersection_union_then_exact_normal_subtraction"}},
+            {"provenance": {"candidate_source": "recomputed_policy", "routing_rule": "forged"}},
+        ):
+            prediction = route_policy_antigravity(
+                _snapshot(),
+                {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
+                POLICY,
+            )
+            row = dict(prediction.rows[0])
+            row.update(update)
+            object.__setattr__(prediction, "rows", (row, *prediction.rows[1:]))
+            with self.assertRaises(ValueError):
+                canonical_prediction_bytes_antigravity(prediction)
+
+        prediction = route_policy_antigravity(
+            _snapshot(),
+            {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
+            POLICY,
+        )
+        object.__setattr__(prediction, "policy", "exclude_nonfinite_row")
+        with self.assertRaises(ValueError):
+            canonical_prediction_bytes_antigravity(prediction)
+
+    def test_canonical_replay_recomputes_row_routing_algebra(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.routing_antigravity import (
+            canonical_prediction_bytes_antigravity,
+            route_policy_antigravity,
+        )
+
+        for field, value in (
+            ("promotion", (1,)),
+            ("pre_exact", (0, 1)),
+            ("exact_normal_removed", (5,)),
+            ("final_hard", (0, 1, 2, 5)),
+        ):
+            prediction = route_policy_antigravity(
+                _snapshot(),
+                {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
+                POLICY,
+            )
+            row = dict(prediction.rows[0])
+            row[field] = value
+            object.__setattr__(prediction, "rows", (row, *prediction.rows[1:]))
+            with self.assertRaises(ValueError):
+                canonical_prediction_bytes_antigravity(prediction)
+
+    def test_canonical_replay_requires_aggregate_coordinates_to_equal_row_union(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.routing_antigravity import (
+            canonical_prediction_bytes_antigravity,
+            route_policy_antigravity,
+        )
+
+        for field in ("promotions", "pre_exact_coordinates", "exact_normal_removals", "final_hard_coordinates"):
+            prediction = route_policy_antigravity(
+                _snapshot(),
+                {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
+                POLICY,
+            )
+            value = getattr(prediction, field)
+            object.__setattr__(prediction, field, frozenset(set(value) | {("A", 5)}))
+            with self.assertRaises(ValueError):
+                canonical_prediction_bytes_antigravity(prediction)
+
+    def test_canonical_replay_rejects_tampered_lane_disjointness_or_exact_evidence_range(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.routing_antigravity import (
+            canonical_prediction_bytes_antigravity,
+            route_policy_antigravity,
+        )
+
+        prediction = route_policy_antigravity(
+            _snapshot(),
+            {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
+            POLICY,
+        )
+        row = dict(prediction.rows[0])
+        row["inherited_standard"] = (0, 1, 2)
+        object.__setattr__(prediction, "rows", (row, *prediction.rows[1:]))
+        with self.assertRaises(ValueError):
+            canonical_prediction_bytes_antigravity(prediction)
+
+        prediction = route_policy_antigravity(
+            _snapshot(),
+            {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))},
+            POLICY,
+        )
+        object.__setattr__(prediction, "exact_normal_coordinates", frozenset({("A", 6)}))
+        with self.assertRaises(ValueError):
+            canonical_prediction_bytes_antigravity(prediction)
 
     def test_affected_result_requires_scored_exact_four_seed_kernel_scores_and_recomputed_candidates(self) -> None:
         from types import MappingProxyType
@@ -223,6 +378,63 @@ class RoutingAntigravityTests(unittest.TestCase):
             forged.exp236_lanes["A"] = lanes
             with self.assertRaises(ValueError):
                 route_policy_antigravity(forged, {"A": _result("A", candidates_1024=(1, 3), candidates_4096=(2, 3))}, POLICY)
+
+    def test_real_source_backed_affected_replay_uses_pinned_cache_arrays(self) -> None:
+        from experiments.exp239_248_diverse_score_sources.calibration import empirical_candidates
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.config_antigravity import FROZEN_CONFIG
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.minirocket_antigravity import seed_intersection_candidates_antigravity
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.routing_antigravity import (
+            canonical_prediction_bytes_antigravity,
+            route_policy_antigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.sources_antigravity import verify_frozen_sources_antigravity
+
+        snapshot = verify_frozen_sources_antigravity()
+        results: dict[str, PolicyDatasetResultAntigravity] = {}
+        for dataset in snapshot.affected_datasets:
+            authority = snapshot.cache_inventory[dataset]
+            arrays = authority["arrays"]
+            scores: list[KernelSeedScoresAntigravity] = []
+            candidates_by_kernel: dict[int, tuple[int, ...]] = {}
+            for kernel in FROZEN_CONFIG.kernel_requests:
+                train_by_seed = arrays[f"kernels_{kernel}__train_by_seed"]
+                test_by_seed = arrays[f"kernels_{kernel}__test_by_seed"]
+                pair: list[KernelSeedScoresAntigravity] = []
+                for seed_index, seed in enumerate(FROZEN_CONFIG.seeds):
+                    oof = np.asarray(train_by_seed[seed_index], dtype="<f8")
+                    test_scores = np.asarray(test_by_seed[seed_index], dtype="<f8")
+                    empirical = empirical_candidates(oof, test_scores, FROZEN_CONFIG.alpha)
+                    candidates = tuple(int(index) for index in empirical.indices)
+                    pair.append(KernelSeedScoresAntigravity(kernel, seed, oof, test_scores, candidates))
+                scores.extend(pair)
+                candidates_by_kernel[kernel] = seed_intersection_candidates_antigravity(
+                    pair, alpha=FROZEN_CONFIG.alpha
+                )
+                self.assertEqual(candidates_by_kernel[kernel], snapshot.exp249_candidate_maps[dataset][kernel])
+            results[dataset] = PolicyDatasetResultAntigravity(
+                POLICY,
+                dataset,
+                authority["target_length"],
+                authority["n_train"],
+                0,
+                authority["n_train"],
+                0,
+                authority["n_test"],
+                tuple(scores),
+                candidates_by_kernel,
+                (),
+                "scored",
+            )
+        prediction = route_policy_antigravity(snapshot, results, POLICY)
+        self.assertEqual(set(results), set(snapshot.affected_datasets))
+        self.assertEqual(len(prediction.rows), 1117)
+        self.assertEqual(len(prediction.promotions), 137)
+        self.assertEqual(len(prediction.pre_exact_coordinates), 2253)
+        self.assertEqual(len(prediction.exact_normal_removals), 35)
+        self.assertEqual(len(prediction.final_hard_coordinates), 2218)
+        self.assertEqual(prediction.final_hard_coordinates, snapshot.hard_coordinates_exp291)
+        self.assertEqual(prediction.final_hard_coordinates, snapshot.hard_coordinates_exp404)
+        self.assertEqual(len(canonical_prediction_bytes_antigravity(prediction)), 728425)
 
 
 if __name__ == "__main__":

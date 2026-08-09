@@ -7,7 +7,7 @@ database, reads labels, or computes an evaluation metric.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from types import MappingProxyType
 
@@ -37,6 +37,10 @@ _PREDICTION_FLAG_FIELDS_ANTIGRAVITY = frozenset({
     "contains_test_labels", "contains_evaluation_metrics",
 })
 _PROVENANCE_KEYS_ANTIGRAVITY = frozenset({"candidate_source", "routing_rule"})
+_ALLOWED_CANDIDATE_SOURCES_ANTIGRAVITY = frozenset({
+    "recomputed_policy", "exp249_frozen_seed_intersection",
+})
+_ROUTING_RULE_ANTIGRAVITY = "standard_intersection_union_then_exact_normal_subtraction"
 
 
 def _indices(value: object, *, dataset: str, n_test: int, field: str) -> tuple[int, ...]:
@@ -82,31 +86,53 @@ def _exact_normal_coordinates(
     n_test_by_dataset: Mapping[str, int],
     explicit: object | None,
 ) -> frozenset[tuple[str, int]]:
-    if explicit is not None:
-        coordinates = _coordinates(explicit, field="exact normal coordinates")
-    elif hasattr(snapshot, "exact_normal_coordinates"):
-        coordinates = _coordinates(getattr(snapshot, "exact_normal_coordinates"), field="exact normal coordinates")
-    else:
-        # FrozenSourceSnapshot intentionally stores Exp236 lanes and the
-        # verified Exp291 Hard set, not a duplicate Exp291 normal map.  The
-        # exact-normal set is nevertheless determined by the frozen algebra:
-        # (Exp236 Hard ∪ Exp236 promotion) − Exp291 Hard.
-        lanes = getattr(snapshot, "exp236_lanes", None)
-        hard291 = _coordinates(getattr(snapshot, "hard_coordinates_exp291", ()), field="Exp291 Hard coordinates")
-        if not isinstance(lanes, Mapping):
-            raise ValueError("snapshot has no exact-normal authority")
-        base: set[tuple[str, int]] = set()
-        for dataset in datasets:
-            entry = lanes.get(dataset)
-            if not isinstance(entry, Mapping):
-                raise ValueError("snapshot Exp236 lane is missing")
-            base.update((dataset, index) for index in _indices(entry.get("hard"), dataset=dataset, n_test=n_test_by_dataset[dataset], field="Exp236 hard"))
-            base.update((dataset, index) for index in _indices(entry.get("promotion"), dataset=dataset, n_test=n_test_by_dataset[dataset], field="Exp236 promotion"))
-        coordinates = frozenset(base.difference(hard291))
-    for dataset, index in coordinates:
+    # FrozenSourceSnapshot intentionally stores Exp236 lanes and the verified
+    # Exp291/Exp404 Hard sets, not a duplicate exact-normal map.  Validate all
+    # four inherited lanes before honoring an explicit override, then derive
+    # the only permitted exact-normal authority:
+    # (Exp236 Hard ∪ Exp236 promotion) − Exp291 Hard.
+    lanes = getattr(snapshot, "exp236_lanes", None)
+    hard291 = _coordinates(
+        getattr(snapshot, "hard_coordinates_exp291", ()),
+        field="Exp291 Hard coordinates",
+    )
+    if not isinstance(lanes, Mapping):
+        raise ValueError("snapshot has no exact-normal authority")
+    hard404_value = getattr(snapshot, "hard_coordinates_exp404", None)
+    if hard404_value is not None:
+        hard404 = _coordinates(hard404_value, field="Exp404 Hard coordinates")
+        if hard404 != hard291:
+            raise ValueError("frozen Hard authorities disagree")
+    base: set[tuple[str, int]] = set()
+    for dataset in datasets:
+        entry = lanes.get(dataset)
+        if not isinstance(entry, Mapping) or set(entry) != {"hard", "standard", "priority", "promotion"}:
+            raise ValueError("snapshot Exp236 lane is missing or malformed")
+        n_test = n_test_by_dataset[dataset]
+        hard = _indices(entry["hard"], dataset=dataset, n_test=n_test, field="Exp236 hard")
+        standard = _indices(entry["standard"], dataset=dataset, n_test=n_test, field="Exp236 standard")
+        priority = _indices(entry["priority"], dataset=dataset, n_test=n_test, field="Exp236 priority")
+        promotion = _indices(entry["promotion"], dataset=dataset, n_test=n_test, field="Exp236 promotion")
+        if set(hard) & set(standard) or set(hard) & set(priority) or set(standard) & set(priority):
+            raise ValueError(f"Exp236 Hard, Standard, and Priority lanes overlap for {dataset}")
+        base.update((dataset, index) for index in hard)
+        base.update((dataset, index) for index in promotion)
+    for dataset, index in hard291:
         if dataset not in n_test_by_dataset or index >= n_test_by_dataset[dataset]:
-            raise ValueError("exact-normal coordinate is outside TEST identity")
-    return coordinates
+            raise ValueError("Exp291 Hard coordinate is outside TEST identity")
+    frozen = frozenset(base.difference(hard291))
+    if hasattr(snapshot, "exact_normal_coordinates"):
+        declared = _coordinates(
+            getattr(snapshot, "exact_normal_coordinates"),
+            field="exact normal coordinates",
+        )
+        if declared != frozen:
+            raise ValueError("snapshot exact-normal coordinates disagree with frozen relation")
+    if explicit is not None:
+        declared = _coordinates(explicit, field="exact normal coordinates")
+        if declared != frozen:
+            raise ValueError("exact-normal coordinates disagree with frozen relation")
+    return frozen
 
 
 def _freeze_prediction_value_antigravity(value: object) -> object:
@@ -212,6 +238,61 @@ def _validated_prediction_payload_antigravity(
         except AttributeError as exc:
             raise ValueError("prediction coordinates are incomplete") from exc
         coordinates[name] = _coordinates(value, field=name)
+    exact_normal = _coordinates(
+        getattr(prediction, "exact_normal_coordinates", ()),
+        field="exact_normal_coordinates",
+    )
+    row_unions: dict[str, set[tuple[str, int]]] = {
+        "promotions": set(),
+        "pre_exact_coordinates": set(),
+        "exact_normal_removals": set(),
+        "final_hard_coordinates": set(),
+    }
+    row_n_test_by_dataset = {row["dataset"]: row["n_test"] for row in rows}
+    for dataset, index in exact_normal:
+        if dataset not in row_n_test_by_dataset or index >= row_n_test_by_dataset[dataset]:
+            raise ValueError("exact-normal evidence is outside TEST identity")
+    for row in rows:
+        if row["policy"] != policy:
+            raise ValueError("prediction row policy disagrees with top-level policy")
+        provenance = row["provenance"]
+        if provenance["candidate_source"] not in _ALLOWED_CANDIDATE_SOURCES_ANTIGRAVITY:
+            raise ValueError("prediction candidate source is not an allowed frozen literal")
+        if provenance["routing_rule"] != _ROUTING_RULE_ANTIGRAVITY:
+            raise ValueError("prediction routing rule is not the frozen literal")
+        dataset = row["dataset"]
+        hard_set = set(row["inherited_hard"])
+        standard_set = set(row["inherited_standard"])
+        priority_set = set(row["inherited_priority"])
+        if hard_set & standard_set or hard_set & priority_set or standard_set & priority_set:
+            raise ValueError(f"prediction inherited lanes overlap for {dataset}")
+        mini_union = set(row["mini1024"]) | set(row["mini4096"])
+        expected_promotion = tuple(sorted(set(row["inherited_standard"]).intersection(mini_union)))
+        expected_outside_standard = tuple(sorted(mini_union.difference(row["inherited_standard"])))
+        expected_pre = tuple(sorted(set(row["inherited_hard"]) | set(expected_promotion)))
+        removed = tuple(row["exact_normal_removed"])
+        exact_for_dataset = {
+            index for exact_dataset, index in exact_normal if exact_dataset == dataset
+        }
+        expected_removed = tuple(sorted(set(expected_pre).intersection(exact_for_dataset)))
+        expected_final = tuple(sorted(set(expected_pre).difference(expected_removed)))
+        if row["promotion"] != expected_promotion:
+            raise ValueError(f"prediction promotion algebra is invalid for {dataset}")
+        if row["outside_standard"] != expected_outside_standard:
+            raise ValueError(f"prediction outside-standard algebra is invalid for {dataset}")
+        if removed != expected_removed:
+            raise ValueError(f"prediction exact-normal removal algebra is invalid for {dataset}")
+        if row["pre_exact"] != expected_pre:
+            raise ValueError(f"prediction pre-exact algebra is invalid for {dataset}")
+        if row["final_hard"] != expected_final:
+            raise ValueError(f"prediction final-Hard algebra is invalid for {dataset}")
+        row_unions["promotions"].update((dataset, index) for index in row["promotion"])
+        row_unions["pre_exact_coordinates"].update((dataset, index) for index in row["pre_exact"])
+        row_unions["exact_normal_removals"].update((dataset, index) for index in row["exact_normal_removed"])
+        row_unions["final_hard_coordinates"].update((dataset, index) for index in row["final_hard"])
+    for name, union in row_unions.items():
+        if coordinates[name] != frozenset(union):
+            raise ValueError(f"prediction aggregate {name} disagrees with row union")
     return {
         "policy": policy,
         "rows": [
@@ -310,6 +391,9 @@ class PolicyPredictionAntigravity:
     final_hard_coordinates: frozenset[tuple[str, int]]
     contains_test_labels: bool = False
     contains_evaluation_metrics: bool = False
+    exact_normal_coordinates: frozenset[tuple[str, int]] = field(
+        default_factory=frozenset, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         if self.policy not in FROZEN_CONFIG.policies:
@@ -326,6 +410,7 @@ class PolicyPredictionAntigravity:
         object.__setattr__(self, "rows", normalized_rows)
         for name in ("promotions", "pre_exact_coordinates", "exact_normal_removals", "final_hard_coordinates"):
             object.__setattr__(self, name, _coordinates(getattr(self, name), field=name))
+        object.__setattr__(self, "exact_normal_coordinates", _coordinates(self.exact_normal_coordinates, field="exact_normal_coordinates"))
 
     @property
     def dataset_rows(self) -> tuple[Mapping[str, object], ...]:
@@ -463,7 +548,7 @@ def route_policy_antigravity(
                     "contains_evaluation_metrics": False,
                     "provenance": {
                         "candidate_source": candidate_source,
-                        "routing_rule": "standard_intersection_union_then_exact_normal_subtraction",
+                        "routing_rule": _ROUTING_RULE_ANTIGRAVITY,
                     },
                 }
             )
@@ -478,6 +563,7 @@ def route_policy_antigravity(
         frozenset(final_hard),
         False,
         False,
+        exact_normal,
     )
 
 
