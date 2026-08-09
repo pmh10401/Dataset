@@ -199,6 +199,50 @@ class Exp443EnvironmentAntigravityTests(unittest.TestCase):
             self.assertFalse(lock.exists())
             self.assertEqual(list(root.glob("requirements_lock_antigravity.txt.tmp.*")), [])
 
+    def test_bootstrap_signal_after_sentinel_creation_cleans_and_success_publishes(self) -> None:
+        """Signals in the publication window clean only the owned sentinel.
+
+        Removing the bootstrap-sentinel ownership tracking would make this leave
+        the empty fixture lock behind.  The hook runs in the real subprocess
+        after its exclusive create and before ``mv``; it does not alter the
+        official venv or tracked lock.
+        """
+        with tempfile.TemporaryDirectory(prefix="exp443_bootstrap_signal_antigravity_") as temporary:
+            root = Path(temporary)
+            lock = root / "requirements_lock_antigravity.txt"
+            fake_python = root / "python_antigravity"
+            fake_python.write_text(
+                "#!/bin/sh\n"
+                "if [ \"$3\" = freeze ]; then printf '%s\\n' 'a==1'; else exit 7; fi\n",
+                encoding="utf-8",
+            )
+            fake_python.chmod(0o755)
+            success_lock = root / "published_requirements_lock_antigravity.txt"
+            success = subprocess.run(
+                [
+                    "bash", "-c", 'source "$1"; exp443_bootstrap_lock_antigravity "$2" "$3"',
+                    "bash", str(_SCRIPT), str(fake_python), str(success_lock),
+                ],
+                cwd=_REPO_ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(success.returncode, 0, success.stderr)
+            self.assertEqual(success_lock.read_text(encoding="utf-8"), "a==1\n")
+            for signal, expected_status in (("HUP", 129), ("INT", 130), ("TERM", 143)):
+                with self.subTest(signal=signal):
+                    lock = root / f"{signal.lower()}_requirements_lock_antigravity.txt"
+                    command = (
+                        'source "$1"; '
+                        f'exp443_after_bootstrap_sentinel_antigravity() {{ kill -{signal} "$$"; }}; '
+                        'exp443_bootstrap_lock_antigravity "$2" "$3"'
+                    )
+                    result = subprocess.run(
+                        ["bash", "-c", command, "bash", str(_SCRIPT), str(fake_python), str(lock)],
+                        cwd=_REPO_ROOT, text=True, capture_output=True, check=False,
+                    )
+                    self.assertEqual(result.returncode, expected_status, result.stderr)
+                    self.assertFalse(lock.exists(), f"{signal} left the bootstrap sentinel behind")
+                    self.assertEqual(list(root.glob(f"{lock.name}.tmp.*")), [])
+
 
 if __name__ == "__main__":
     unittest.main()
