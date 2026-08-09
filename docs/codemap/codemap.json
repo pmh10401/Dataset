@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T11:30:00Z",
-  "generated_from_commit": "6c4c9501cfb273ba9435b7aa6c687be55be8691d",
+  "generated_at": "2026-08-09T03:50:39Z",
+  "generated_from_commit": "433c3e43074692d4fec41c215a08495c2f829e1e",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -39,7 +39,8 @@
     "Exp443 review-round 2: sourceable fixed-root preflight seam and strict optional evidence types",
     "Exp443 review-round 3: centralized fresh-path freeze cleanup with signal-safe trap scope",
     "Exp443 review-round 5: same-directory complete temporary plus atomic hard-link no-clobber bootstrap-lock publication across signal windows",
-    "Exp443 Task 3: descriptor-bound raw DB pin, exact prediction SQL allowlist, inherited Exp249/291/404/414 source hashes, and real missing inventory"
+    "Exp443 Task 3: descriptor-bound raw DB pin, exact prediction SQL allowlist, inherited Exp249/291/404/414 source hashes, and real missing inventory",
+    "Exp443 Task 3 review round 1: execution-time SQL gate, adversarial TOCTOU/cache fixtures, exact 1,119-to-1,117 population authority, and deeply immutable source evidence"
   ],
   "nodes": [
     {
@@ -3463,7 +3464,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity",
-      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,117-dataset missing inventory without labels.",
+      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels.",
       "entrypoints": [
         "frozen_config_payload_antigravity",
         "scientific_config_sha256_antigravity",
@@ -3492,6 +3493,8 @@
         "scan_missing_inventory_antigravity",
         "verify_frozen_sources_antigravity",
         "validate_prediction_sql_antigravity",
+        "parse_dataset_family_antigravity",
+        "FROZEN_DATABASE_EXCLUSIONS_ANTIGRAVITY",
         "PinnedDatabaseAntigravity",
         "RawDatasetAntigravity",
         "MissingInventoryAntigravity",
@@ -3514,8 +3517,9 @@
         "Environment evidence preserves optional torch/mlx versions as string-or-null and MPS capability as bool-or-null; forged payload types fail closed.",
         "Fresh default cleanup centrally clears EXIT/HUP/INT/TERM traps. Bootstrap creates a uniquely owned antigravity temporary beside the final lock, hard-links its complete bytes into the absent final name without replacement, then cleans only that temporary; signals before linking leave no final lock and signals after linking retain complete final bytes.",
         "The DB pin is opened O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK, regular/symlink/FIFO checked, descriptor-hashed once against the frozen DB SHA, and retained as an owned same-inode database_pin_antigravity.db hard link.",
-        "Workers use mode=ro&immutable=1 connections from the parent pin, trace every statement, allow only exact values-only TRAIN/TEST, identity, population, and quick_check SQL, and revalidate source pathname, descriptor, and pin before/after queries.",
-        "Inherited sources are read from descriptor-pinned bytes with duplicate-key rejection, exact hashes/counts/schemas, cache NPZ allow_pickle=False, missing/extra inventory rejection, malformed/out-of-range coordinate rejection, and Exp291/Exp404 Hard equality.",
+        "Workers receive only validated connection/cursor facades: exact normalized SQL plus parameter contracts are checked before raw execute, authorizer blocks labels_blob/evaluation/TEST-label reads, denied attempts are audited, and source/pin boundaries are revalidated after query.",
+        "The population query proves 1,119 sorted DB names, removes exactly frozen CornellWhaleChallenge and Wafer_normal_1, then requires exact equality with the supplied/frozen 1,117 names; every eligible TEST count and contiguous identity matches Exp291 and cache n_test authority.",
+        "Inherited sources are read from descriptor-pinned bytes with duplicate-key rejection, exact hashes/counts/schemas, full 14-column cache fixtures, allow_pickle=False NPZs backed by immutable bytes, missing/extra inventory rejection, malformed/out-of-range coordinate rejection, and Exp291/Exp404 Hard equality.",
         "The real scan proves 1,117 datasets, 19 affected datasets, 4 families, 164 rows, 983 nonfinite scalars, zero all-missing rows, affected-dataset SHA ca376adad36fd68e65ea54e004fcb1e5288b3e7d243304b56def507ec17aa9b9, and zero label access."
       ],
       "evidence": [
@@ -3614,6 +3618,18 @@
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
           "symbol": "class Exp443SourcesAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_worker_execute_gate_denies_before_raw_execution_and_audits(self) -> None:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
+          "symbol": "def test_cache_manifest_reaches_each_independent_integrity_branch(self) -> None:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
+          "symbol": "def test_cache_arrays_and_snapshot_are_deeply_immutable_and_typed(self) -> None:"
         }
       ]
     }
@@ -4502,29 +4518,15 @@
       "outcome": "The lazy evaluator verifies Exp438 publication/output/checkpoint, Exp437 publication, Exp404/Exp291 Hard equality, population, database, provenance, and hashes before one descriptor-bound TEST instance_index,label read; it then publishes separate channel confusion, dataset, bootstrap, correlation/overlap, and decision evidence without choosing a winner or mutating frozen bytes."
     },
     {
-      "id": "exp442_terminal_eta_repair_flow",
-      "label": "Exp441 failure handoff to Exp442 fresh publication",
-      "trigger": "After the Exp441 label-free attempt completed 1,117 records but failed before publication on terminal ETA 0.0 versus null, Exp442 repaired only that lifecycle contract in a fresh identity. It passed Sol High review and ran the fixed readiness, new, inspect, and post-freeze evaluate routes.",
-      "steps": [
-        "research_control",
-        "exp438_frequency_runtime",
-        "exp438_publication_evaluation",
-        "exp417_inputs",
-        "sqlite_store",
-        "artifact_utils"
-      ],
-      "outcome": "Exp442 froze prediction b79bad6012ad6bc07050ade9968e815796a2cc871b5c85d63f0bd7dbdf6f81f4 with zero label access, then retrospectively recovered 15 previously missed datasets with 15 FP, no regressions, no strong loss, positive micro/macro paired confidence-interval lower bounds, and every preregistered retrospective gate passing. It remains review-only and non-champion, and research pauses for direction discussion."
-    },
-    {
       "id": "exp443_source_freeze_flow",
-      "label": "Exp443 pinned raw-source freeze and missing inventory",
+      "label": "Exp443 readiness and pinned raw-source freeze",
       "trigger": "Run the Task 3 source verifier before any policy scoring or prediction route.",
       "steps": [
         "research_control",
         "exp443_environment_contracts",
         "sqlite_store"
       ],
-      "outcome": "The verifier hashes and pins the raw DB, allows only values-only SQL, validates all inherited authority bytes and cache NPZ metadata, proves 2,116 + 137 - 35 = 2,218 and Exp291/Exp404 Hard equality, then confirms 1,117/19/164/983/0 missing inventory with zero label access."
+      "outcome": "Readiness first proves the 1,119-row DB population and exact two frozen exclusions, then hashes and pins raw bytes, enforces values-only SQL before execution, validates inherited authority bytes and immutable cache NPZ metadata, checks every eligible TEST identity against Exp291/cache n_test, proves 2,116 + 137 - 35 = 2,218 and Exp291/Exp404 Hard equality, and confirms 1,117/19/164/983/0 missing inventory with zero label access."
     }
   ],
   "unknown_relationships": []

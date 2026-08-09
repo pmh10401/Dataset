@@ -1,7 +1,7 @@
 {
-  "current_commit": "6c4c9501cfb273ba9435b7aa6c687be55be8691d",
+  "current_commit": "433c3e43074692d4fec41c215a08495c2f829e1e",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-09T11:30:00Z",
+  "generated_at": "2026-08-09T03:50:39Z",
   "scanned_scope": [
     "tracked root files",
     ".superpowers",
@@ -45,7 +45,7 @@
       "tracked_files": 367
     },
     "experiments": {
-      "fingerprint": "99aa32cf26c27614858e83fd91661bc7ad44d17d2c0cd4ea468960457e982388",
+      "fingerprint": "11b36b9fe90b4be3a365e85fca04b093a82e92e5d35478d03fcec60525c64020",
       "tracked_files": 1226
     },
     "operational": {
