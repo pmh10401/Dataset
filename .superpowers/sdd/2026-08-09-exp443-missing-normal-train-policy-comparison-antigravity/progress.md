@@ -37,5 +37,8 @@
 - Task 9: completed.
 - 2026-08-09: Task 10 BASE is `c1b6832b`. Pre-task map: grouped `exp443_environment_contracts` has no incoming caller, imports `artifact_utils`, reads `sqlite_store`, participates in the source-freeze flow, and lists 16 Exp443 test modules. Task 10 adds a separate post-freeze evaluator and paired-dataset bootstrap under the same grouped node; prediction remains unable to import the evaluator. The evaluator may open TEST labels only after two successful publication inspections and must never mutate frozen prediction bytes.
 - 2026-08-09: Task 10 implementation candidate adds the only post-freeze TEST-label loader, exact project metrics, deterministic 20,000-sample paired bootstrap, independent A/B/C evaluation, explicit 19/1,098 diagnostics, all preregistered gates, and an exact ten-file create-only evaluation replay. A follow-up audit fix makes mid-label failures truthfully preserve `labels_opened=true`. Focused Task 10 verification passed 15 tests; the full Exp443 suite passed 156 tests with two expected opt-in skips. No official labels were opened and no official evaluation was created.
-- Task 10: in progress.
-- Tasks 11-13: pending.
+- 2026-08-09: Task 10 final source/fix commits are `db7dfec9` and `25dc3e9e`; map children are `d730318a` and `ee362b79`. Fresh Sol High review at clean HEAD `ee362b79` found no Critical, Important, or Minor issue and returned `ship`. Focused 15/15 and full 156 with two expected opt-in skips passed; no official TEST label was opened.
+- Task 10: completed.
+- 2026-08-09: Task 11 BASE is `ee362b79`. Pre-task code-map answer: the grouped `exp443_environment_contracts` node currently has no incoming caller, reads the frozen SQLite source and imports shared artifact utilities, participates in all five Exp443 flows, and lists 18 Exp443 test modules. Task 11 will add the first fixed CLI/wrapper caller, one CLI test module, and the lazy post-publication evaluation edge without changing any frozen scientific setting.
+- Task 11: in progress.
+- Tasks 12-13: pending.
