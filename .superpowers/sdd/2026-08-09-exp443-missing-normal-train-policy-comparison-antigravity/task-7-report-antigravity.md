@@ -52,6 +52,34 @@ reported `checkpoint_completed=57`, `progress_completed=57`, terminal
 append-only progress log contained 61 events (two begins, 57 accepts, and
 two terminal events for the interrupted and completed phases).
 
+## Fix round 2: explicit resume identity and stale state-temp recovery
+
+Source/test fix commit: `2a0fbb85`.
+
+Checkpoint resume now requires both a replacement
+`ProcessIdentityAntigravity` and a PID probe; the former three-argument
+legacy path is removed, so a resumed attempt cannot retain or silently reuse
+the old PID. A second resume is rejected when the newly bound PID probes
+active. When a crash leaves `state_antigravity.tmp` alongside one exact next
+orphan record, resume validates the canonical current state, canonical temp
+schema/bytes, prior process binding, expected prefix and status, then removes
+the validated stale temp and atomically publishes the reconciled prefix under
+the replacement process. Tampered, non-regular, unexpected, or mismatched
+temps remain fail-closed.
+
+Round-2 focused behavior suites: `16/16` passed. Pinned full Exp443 suite
+(Python 3.14.6, all numerical inner-thread variables set to `1`) reports:
+
+```text
+Ran 110 tests in 19.894s
+OK (skipped=2)
+```
+
+The explicit-process interrupted→resume(new PID)→finish simulation over all
+57 ordered units again reported `checkpoint_completed=57`,
+`progress_completed=57`, terminal `eta_seconds=null`, replacement
+`pid=9191`, `pid.active=false`, and 61 append-only progress events.
+
 ## Ordered checkpoint evidence
 
 `Exp443CheckpointStoreAntigravity` writes the canonical context, one
