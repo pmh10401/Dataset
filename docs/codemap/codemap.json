@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T05:30:06Z",
-  "generated_from_commit": "ef1e7c07",
+  "generated_at": "2026-08-09T05:40:00Z",
+  "generated_from_commit": "5ffb3e09",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -3566,7 +3566,7 @@
         "Task 5 imports the unchanged Exp249 scorer lazily and never rewrites or GPU-ports official aeon MiniROCKET; the four calls per scored dataset are kernels 1024/4096 crossed with seeds 20260721/20261721, dimensions 1008/4032, max reference 1000, query chunk 128, and one inner numerical thread.",
         "Task 5 recalculates empirical candidates at exactly alpha 0.005, intersects both frozen seeds independently per kernel, and rejects altered kernel/seed/alpha identities, non-finite scores, wrong lengths/dimensions, duplicates, and malformed TEST coordinates.",
         "Task 5 routing is pure set algebra: promotion is Standard intersect (Mini1024 union Mini4096), pre-exact is inherited Hard union promotion, final Hard subtracts frozen exact-normal; candidates outside Standard remain audit evidence and Priority/review lanes are preserved.",
-        "Task 5 produces deterministic label-free rows for all 1,117 datasets, with one recomputed policy result for each of the 19 affected datasets and verified Exp249 candidate-map imports for the 1,098 unaffected datasets; the bounded control reproduces 137/2253/35/2218 and Exp291/Exp404 Hard equality."
+        "Task 5 produces deterministic rows for all 1,117 datasets with contains_test_labels=false and contains_evaluation_metrics=false, one recomputed policy result for each of the 19 affected datasets, and verified Exp249 candidate-map imports for the 1,098 unaffected datasets; the bounded control reproduces 137/2253/35/2218 and Exp291/Exp404 Hard equality."
       ],
       "evidence": [
         {
