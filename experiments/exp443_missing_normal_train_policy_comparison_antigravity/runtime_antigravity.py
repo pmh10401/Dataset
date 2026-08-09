@@ -20,6 +20,7 @@ import json
 import math
 from multiprocessing import get_context
 from pathlib import Path
+import re
 import signal
 import time
 from typing import Any
@@ -414,6 +415,22 @@ def _attempt_root_antigravity(root: Path) -> Path:
     return attempt
 
 
+_ATTEMPT_BASENAME_ANTIGRAVITY = re.compile(r"attempt_[0-9]{4}_antigravity")
+
+
+def _resume_attempt_root_antigravity(root: Path, attempt_name: str) -> Path:
+    """Resolve exactly one caller-selected attempt without path traversal."""
+    if type(attempt_name) is not str or _ATTEMPT_BASENAME_ANTIGRAVITY.fullmatch(attempt_name) is None:
+        raise ValueError("Exp443 resume attempt basename is invalid")
+    attempts = Path(root) / "attempts_antigravity"
+    if attempts.is_symlink() or not attempts.is_dir():
+        raise ValueError("Exp443 resume attempt root is absent or invalid")
+    attempt = attempts / attempt_name
+    if attempt.is_symlink() or not attempt.is_dir():
+        raise ValueError("Exp443 resume attempt is absent or invalid")
+    return attempt
+
+
 def _binding_antigravity(reviewed_commit: str, readiness: Mapping[str, object]) -> CheckpointBindingAntigravity:
     return CheckpointBindingAntigravity(
         run_identity=FROZEN_CONFIG.run_identity,
@@ -524,6 +541,7 @@ def _run_exp443_antigravity(
     *,
     reviewed_commit: str,
     mode: str,
+    attempt_name: str | None = None,
     run_root: Path | str | None = None,
     executor_factory: Callable[..., object] = ProcessPoolExecutor,
 ) -> dict[str, object]:
@@ -545,16 +563,14 @@ def _run_exp443_antigravity(
     binding = _binding_antigravity(reviewed_commit, readiness)
     identity = _process_identity_antigravity()
     if mode == "new":
+        if attempt_name is not None:
+            raise ValueError("Exp443 new run cannot select a prior attempt")
         attempt = _attempt_root_antigravity(root)
         checkpoint_root = attempt / "checkpoint_antigravity"
         store = Exp443CheckpointStoreAntigravity.create_antigravity(checkpoint_root, units, binding, identity)
         writer = ProgressWriterAntigravity(attempt, total=len(units), checkpoint_path=checkpoint_root / "state_antigravity.json", process=identity)
     elif mode == "resume":
-        attempts = root / "attempts_antigravity"
-        candidates = sorted(path for path in attempts.glob("attempt_*_antigravity") if path.is_dir())
-        if not candidates:
-            raise ValueError("Exp443 resume attempt is absent")
-        attempt = candidates[-1]
+        attempt = _resume_attempt_root_antigravity(root, attempt_name)
         checkpoint_root = attempt / "checkpoint_antigravity"
         store = Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
             checkpoint_root,
@@ -678,11 +694,11 @@ def _run_exp443_antigravity(
 
 
 def run_exp443_new_antigravity(*, reviewed_commit: str, run_root: Path | str | None = None, executor_factory: Callable[..., object] = ProcessPoolExecutor) -> dict[str, object]:
-    return _run_exp443_antigravity(reviewed_commit=reviewed_commit, mode="new", run_root=run_root, executor_factory=executor_factory)
+    return _run_exp443_antigravity(reviewed_commit=reviewed_commit, mode="new", attempt_name=None, run_root=run_root, executor_factory=executor_factory)
 
 
-def resume_exp443_antigravity(*, reviewed_commit: str, run_root: Path | str | None = None, executor_factory: Callable[..., object] = ProcessPoolExecutor) -> dict[str, object]:
-    return _run_exp443_antigravity(reviewed_commit=reviewed_commit, mode="resume", run_root=run_root, executor_factory=executor_factory)
+def resume_exp443_antigravity(*, reviewed_commit: str, attempt_name: str, run_root: Path | str | None = None, executor_factory: Callable[..., object] = ProcessPoolExecutor) -> dict[str, object]:
+    return _run_exp443_antigravity(reviewed_commit=reviewed_commit, mode="resume", attempt_name=attempt_name, run_root=run_root, executor_factory=executor_factory)
 
 
 __all__ = [
@@ -692,5 +708,5 @@ __all__ = [
     "_worker_initializer_antigravity", "_THREAD_VARIABLES_ANTIGRAVITY",
     "run_exp443_new_antigravity", "resume_exp443_antigravity",
     "_mark_interrupted_antigravity", "_record_terminal_error_antigravity",
-    "_write_prediction_idempotent_antigravity",
+    "_write_prediction_idempotent_antigravity", "_resume_attempt_root_antigravity",
 ]
