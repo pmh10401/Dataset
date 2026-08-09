@@ -1,7 +1,7 @@
 {
-  "current_commit": "63daac46842be4604abce5155e6f64c09c24e85c",
+  "current_commit": "ed71fe52b3ae82f08debd7e997098ae90ee18b22",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-09T01:28:35Z",
+  "generated_at": "2026-08-09T01:55:39Z",
   "scanned_scope": [
     "tracked root files",
     ".superpowers",
@@ -32,6 +32,10 @@
   ],
   "fingerprint_algorithm": "sha256-v1: for each top-level module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Root-level tracked files are grouped as root. docs/codemap is excluded to prevent self-reference.",
   "module_fingerprints": {
+    "root": {
+      "fingerprint": "4be8104ae1b0c43491f071d37f35b68f04862bcc9ec6aad98bd2be5ce11cbaef",
+      "tracked_files": 210
+    },
     ".superpowers": {
       "fingerprint": "0ee1d6ed8519b898c8110b05a522b9c8d73b8a4d92a5a1028b6a8999c1ac373d",
       "tracked_files": 31
@@ -41,8 +45,8 @@
       "tracked_files": 367
     },
     "experiments": {
-      "fingerprint": "9d971564bb7be96c2b601fa80d43f0c9bc872ffd1ef4fa950befd15f0d3c9c7c",
-      "tracked_files": 1212
+      "fingerprint": "657d409b4e11594ae480154102828a5de17fa29305bf5a97bd27aba792b3084e",
+      "tracked_files": 1222
     },
     "operational": {
       "fingerprint": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
@@ -52,17 +56,13 @@
       "fingerprint": "0b6f237a0c0e01ecac0e0fefd6734adfd32821be91baea0d37d481190e50ac22",
       "tracked_files": 4
     },
-    "root": {
-      "fingerprint": "4be8104ae1b0c43491f071d37f35b68f04862bcc9ec6aad98bd2be5ce11cbaef",
-      "tracked_files": 210
-    },
     "scratch": {
       "fingerprint": "d818ed107269d2266254842006454afac782f8e58a0b00cbde097879f8fbbb30",
       "tracked_files": 145
     },
     "scripts": {
-      "fingerprint": "f4b764d442d0ba39e7af6ed519c08b6e3f49cd8183420fa41a15424279249899",
-      "tracked_files": 1
+      "fingerprint": "347a119338b7379100e08f9ab58f9e51b811cf927a1b1acccdd718c87359911a",
+      "tracked_files": 2
     },
     "vercel-dashboard": {
       "fingerprint": "065d9ce1fecc46b83bf7960513052c78a1c82d725a257c3ac152f22ec737f54d",
@@ -70,7 +70,7 @@
     }
   },
   "changed_modules_since_prior_lock": [
-    "docs",
-    "root"
+    "experiments",
+    "scripts"
   ]
 }

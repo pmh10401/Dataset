@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T01:28:35Z",
-  "generated_from_commit": "63daac46842be4604abce5155e6f64c09c24e85c",
+  "generated_at": "2026-08-09T01:55:39Z",
+  "generated_from_commit": "ed71fe52b3ae82f08debd7e997098ae90ee18b22",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -33,7 +33,8 @@
     "Exp442 Sol review-fix: cryptographic document identity, closed production roots, private root-injected test seams, active ETA regression, and verified 1,117-record replay",
     "Official Exp442 readiness, 1,117-record CPU replay, immutable prediction publication, post-freeze retrospective evaluation, verified improvement, and paused review-only handoff",
     "Approved, pre-implementation Exp443 three-policy missing normal TRAIN comparison design with frozen MiniROCKET replay, label firewall, and full-population retrospective gates",
-    "Exp443 approved 13-task, 98-check implementation plan: exact Exp249 MiniROCKET control replay, three normal-TRAIN missing policies, pinned Python 3.14.6/aeon 1.5.0/NumPy 2.3.5/scikit-learn 1.8.0 environment, 11-worker ordered 57-unit checkpoint, three label-free prediction freezes, post-freeze paired evaluation, and mandatory pause before Exp444"
+    "Exp443 approved 13-task, 98-check implementation plan: exact Exp249 MiniROCKET control replay, three normal-TRAIN missing policies, pinned Python 3.14.6/aeon 1.5.0/NumPy 2.3.5/scikit-learn 1.8.0 environment, 11-worker ordered 57-unit checkpoint, three label-free prediction freezes, post-freeze paired evaluation, and mandatory pause before Exp444",
+    "Exp443 isolated environment, frozen contracts, and create-only artifact boundary"
   ],
   "nodes": [
     {
@@ -43,7 +44,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve Exp441 as immutable prepublication failure evidence and Exp404/Exp416 as verified references. Exp442 passed fresh Sol High review, completed official readiness/new/inspect/evaluate, and remains adaptive review-only evidence. Exp443 now has an approved corrected design and a committed implementation plan, but no product module, official root, prediction, or evaluation exists yet. The plan changes only missing-value handling in normal TRAIN for the 19 affected datasets, requires exact Exp249 MiniROCKET score/candidate and 2,218-Hard control reproduction before alternatives, freezes all three label-free predictions, evaluates once afterward, and pauses before any Exp444 work.",
+      "role": "The control ledgers preserve verified Exp404/Exp416 references and the approved Exp443 review-only design. Task 2 now provides the first grouped Exp443 product node: a Python 3.14.6 lock-bound CPU environment, frozen scientific config, label-free immutable contracts, and narrow create-only artifact wrappers. Prediction/evaluation runtime modules remain future tasks; no official run root or prediction exists.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -57,7 +58,8 @@
         "retrospective_gates_all_passed",
         "paused_awaiting_direction",
         "Exp443_design_frozen",
-        "Exp443_implementation_plan_frozen"
+        "Exp443_implementation_plan_frozen",
+        "Exp443_environment_contracts"
       ],
       "tests": [],
       "constraints": [
@@ -78,7 +80,9 @@
         "The code map is regenerated from the Exp442 review-fix source before Sol re-review; official Exp442 readiness remains blocked until that re-review ships.",
         "No next experiment starts automatically after official Exp442 completion; a new direction requires discussion, a new experiment number, and new preregistration.",
         "Exp443 implementation may begin only after review of the committed design; control MiniROCKET reproduction must pass before either alternative policy or TEST-label evaluation.",
-        "The committed Exp443 implementation plan has 13 tasks and 98 checklist steps. It pins the existing 10th-to-90th percentile RobustScaler path, defines zero-denominator dataset metrics as 0.0, uses 11 outer and one inner CPU worker, prohibits MLX rewriting of official aeon MiniROCKET, requires control reproduction before Policies B/C, permits TEST labels only after three prediction freezes, selects no TEST-informed winner, and stops before Exp444."
+        "The committed Exp443 implementation plan has 13 tasks and 98 checklist steps. It pins the existing 10th-to-90th percentile RobustScaler path, defines zero-denominator dataset metrics as 0.0, uses 11 outer and one inner CPU worker, prohibits MLX rewriting of official aeon MiniROCKET, requires control reproduction before Policies B/C, permits TEST labels only after three prediction freezes, selects no TEST-informed winner, and stops before Exp444.",
+        "Exp443 Task 2 binds the exact resolved lock SHA, direct aeon/NumPy/scikit-learn pins, 11 outer CPU workers, one inner thread, and inapplicable official CPU-transformer acceleration.",
+        "Exp443 contracts recursively reject label/evaluation keys, copy read-only exact-dtype arrays, and keep artifact writes create-only; later prediction/evaluation boundaries remain unmapped until implemented."
       ],
       "evidence": [
         {
@@ -407,11 +411,11 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"status\": \"paused_awaiting_direction\""
+          "symbol": "\"status\": \"in_progress\""
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"exact_next_command_if_interrupted\": \"DO_NOT_START_NEXT_EXPERIMENT_UNTIL_DIRECTION_DISCUSSION\""
+          "symbol": "\"exact_next_command_if_interrupted\": \"bash scripts/create_exp443_environment_antigravity.sh\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
@@ -448,6 +452,14 @@
         {
           "path": "docs/EXP443_RUNBOOK_antigravity_KO.md",
           "symbol": "## 예정 명령 (구현 후에만)"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/config_antigravity.py",
+          "symbol": "class Exp443FrozenConfig:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/environment_antigravity.py",
+          "symbol": "def verify_environment_antigravity()"
         }
       ]
     },
@@ -3455,6 +3467,88 @@
           "symbol": "후보 정밀도는 50%다."
         }
       ]
+    },
+    {
+      "id": "exp443_environment_contracts",
+      "label": "Exp443 environment + contracts",
+      "type": "data",
+      "boundary": "Active isolated research",
+      "layer": 1,
+      "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity",
+      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable raw-series, policy-audit, score, prediction, checkpoint, and evaluation contracts, and wraps Exp441 descriptor/canonical artifact primitives without duplicating their implementation.",
+      "entrypoints": [
+        "frozen_config_payload_antigravity",
+        "scientific_config_sha256_antigravity",
+        "validate_antigravity",
+        "verify_environment_antigravity",
+        "RawSeriesAntigravity",
+        "RunPolicyAuditAntigravity",
+        "KernelSeedScoresAntigravity",
+        "PolicyDatasetResultAntigravity",
+        "PredictionRowAntigravity",
+        "CheckpointContextAntigravity",
+        "CheckpointStateAntigravity",
+        "EvaluationEvidenceAntigravity",
+        "validate_prediction_payload_antigravity",
+        "canonical_json_bytes_antigravity",
+        "write_create_only_antigravity",
+        "exclusive_rename_antigravity"
+      ],
+      "tests": [
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_artifacts_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_environment_antigravity.py"
+      ],
+      "constraints": [
+        "Direct requirements are exactly aeon 1.5.0, NumPy 2.3.5, and scikit-learn 1.8.0; the complete sorted lock is bound by SHA256 bb2de6e2696a3f0d92480f0215b15bdaf6d89375210dd4be48257cfa6b44d548.",
+        "Official MiniROCKET remains the CPU aeon transformer: outer workers 11, inner numerical threads 1, acceleration inapplicable_official_cpu_transformer.",
+        "Prediction payloads recursively reject labels and evaluation keys; arrays are detached, exact dtype/shape, finite where required, and read-only.",
+        "Artifact publication is canonical, fsyncing, mode 0600/0700, descriptor-pinned, and create-only/no-clobber; Exp441 primitives are reused narrowly.",
+        "This node covers only Task 2; database, preprocessing, scoring, routing, checkpoint runtime, publication, and evaluation modules are not yet implemented."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/config_antigravity.py",
+          "symbol": "class Exp443FrozenConfig:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/config_antigravity.py",
+          "symbol": "def frozen_config_payload_antigravity()"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/contracts_antigravity.py",
+          "symbol": "class RawSeriesAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/contracts_antigravity.py",
+          "symbol": "def validate_prediction_payload_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/environment_antigravity.py",
+          "symbol": "def verify_environment_antigravity()"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/artifacts_antigravity.py",
+          "symbol": "def write_create_only_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
+          "symbol": "class Exp443ConfigAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "class Exp443ContractsAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_artifacts_antigravity.py",
+          "symbol": "class Exp443ArtifactsAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_environment_antigravity.py",
+          "symbol": "class Exp443EnvironmentAntigravityTests"
+        }
+      ]
     }
   ],
   "edges": [
@@ -4268,6 +4362,17 @@
         {
           "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/reporting_antigravity.py",
           "symbol": "from .runtime_antigravity import _selection_from_payload_antigravity, _snapshot_payload_antigravity"
+        }
+      ]
+    },
+    {
+      "from": "exp443_environment_contracts",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/artifacts_antigravity.py",
+          "symbol": "from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity import ("
         }
       ]
     }
