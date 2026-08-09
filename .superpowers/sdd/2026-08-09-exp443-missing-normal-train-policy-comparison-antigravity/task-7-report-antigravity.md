@@ -80,6 +80,27 @@ The explicit-process interrupted→resume(new PID)→finish simulation over all
 `progress_completed=57`, terminal `eta_seconds=null`, replacement
 `pid=9191`, `pid.active=false`, and 61 append-only progress events.
 
+## Fix round 3: distinct replacement ownership
+
+Source/test fix commit: `9ab7f45c`.
+
+Interrupted checkpoint resume now rejects a replacement identity exactly equal
+to the stored process identity. Distinct replacement identities continue to
+persist `running` ownership, and a second resume is blocked when its probe
+reports that newly persisted identity active.
+
+Round-3 focused behavior suites: `17/17` passed. The pinned full Exp443 suite
+reports:
+
+```text
+Ran 111 tests in 18.997s
+OK (skipped=2)
+```
+
+The explicit old→new PID 57-unit replay remained complete with checkpoint and
+progress counts at `57`, terminal `eta_seconds=null`, `pid=9191` inactive,
+and 61 append-only progress events.
+
 ## Ordered checkpoint evidence
 
 `Exp443CheckpointStoreAntigravity` writes the canonical context, one
