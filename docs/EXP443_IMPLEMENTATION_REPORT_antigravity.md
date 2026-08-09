@@ -11,8 +11,9 @@ Exp443의 제품 코드는 구현·회귀·실데이터 label-free 대조 검증
 이 보고서 시점의 상태는 `implementation_verified_awaiting_scoped_rereview`다.
 clean HEAD `e3dfb5aa`는 Sol High에서 `ship`을 받았지만, 그 commit으로 처음 실행한
 official readiness가 출력 root를 만들기 전에 CPU thread 환경 계약 불일치를
-찾았다. 그 원인을 TDD로 수정했으므로, 수정된 새 clean HEAD가 다시 `ship`을 받기
-전에는 official readiness를 재실행하지 않는다.
+찾았다. 첫 수정을 포함한 `1c4a7880` 재검토에서는 값이 너무 늦게 설정된다는
+문제를 추가로 찾았다. 이를 fresh-process TDD로 수정했으므로, 수정된 새 clean
+HEAD가 다시 `ship`을 받기 전에는 official readiness를 재실행하지 않는다.
 
 ## 구현 경계
 
@@ -22,6 +23,8 @@ official readiness가 출력 root를 만들기 전에 CPU thread 환경 계약 �
 - source-bound code-map commit: `58e8267e2b2a245341f77bf0f7b7b0f943455855`
 - first-readiness RED commit: `f4be2c6c`
 - first-readiness source fix commit: `16d012d3`
+- pre-NumPy-import RED commit: `88a14ea0`
+- pre-NumPy-import source fix commit: `93471c0462fa85e33f280b0496d756c62a25d71c`
 - 고정 wrapper:
   `scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py`
 - 고정 interpreter:
@@ -86,10 +89,18 @@ CLI가 import하는 runtime의 사전 설정 목록은 BLIS를 빼고 NUMBA를 �
 통과했고, `BLIS_NUM_THREADS=1`, outer worker `11`을 확인했다. 점수·후보·정책·
 threshold·데이터 처리는 바뀌지 않았다.
 
+첫 수정을 포함한 clean HEAD `1c4a7880`의 Sol High 검토는 `fix-first`였다. CLI가
+`reporting → checkpoint → contracts`를 runtime보다 먼저 import해 NumPy가 7개
+값 설정 전에 로드된다는 지적이었다. `88a14ea0`에서 별도 fresh Python process의
+첫 NumPy import 순간 환경값을 기록하는 RED 테스트를 추가했고, 실제로 7개가 모두
+`None`임을 재현했다. `93471c04`에서 공식 wrapper가 CLI를 import하기 전에 7개
+값을 모두 `1`로 설정하도록 고쳤다. 이제 fresh process의 첫 NumPy import와 CLI
+import 완료 후 값이 모두 `1`이며, child worker도 같은 7개 계약을 사용한다.
+
 ## 자동 검증
 
-- CLI + runtime + progress focused: 33/33 passed.
-- 전체 Exp443: 174 passed, 실데이터 opt-in 2개 expected skip.
+- environment + readiness + runtime + CLI focused: 38/38 passed.
+- 전체 Exp443: 175 passed, 실데이터 opt-in 2개 expected skip.
 - inherited Exp249/250 MiniROCKET regression: 13/13 passed.
 - compileall: passed.
 - `git diff --check`: passed.

@@ -658,7 +658,9 @@
         "d9907603",
         "e463f26e",
         "f4be2c6c",
-        "16d012d3"
+        "16d012d3",
+        "88a14ea0",
+        "93471c04"
       ],
       "second_reviewed_head": "5eb7b39a",
       "second_review_result": "fix_first",
@@ -672,8 +674,15 @@
         "red_commit": "f4be2c6c",
         "fix_commit": "16d012d3"
       },
+      "thread_contract_reviewed_head": "1c4a788078c34fa3c480fdba0cd23b1dc1c71457",
+      "thread_contract_review_result": "fix_first_pre_numpy_import_order",
+      "pre_numpy_import_fix": {
+        "red_commit": "88a14ea0",
+        "fix_commit": "93471c0462fa85e33f280b0496d756c62a25d71c",
+        "fresh_process_first_numpy_import_all_seven_controls_equal_one": true
+      },
       "reviewed_implementation_commit": null,
-      "implementation_tests_passed": 174,
+      "implementation_tests_passed": 175,
       "inherited_regression_tests_passed": 13,
       "real_policy_a_control_passed": true,
       "worker_parity_passed": true,
@@ -691,7 +700,7 @@
       "review_only": true,
       "operational_alert_eligible": false,
       "test_informed_reselection_allowed": false,
-      "notes": "구현·174개 전체 회귀·13개 inherited 회귀·실제 19-dataset Policy A control·1-worker/11-worker parity를 통과했고 official root는 아직 없다. 첫 Sol High 검토의 inspect mutation, wrapper traceback, stale review-target 문제와 두 번째 검토의 complete-progress publication 재개 불가 문제를 수정했다. e3dfb5aa가 최종 ship을 받은 뒤 첫 readiness가 root 생성 전에 BLIS_NUM_THREADS 누락을 찾았고 TEST label 접근은 0이었다. f4be2c6c RED와 16d012d3 GREEN으로 runtime/worker의 7개 thread 설정 계약을 맞췄으며 focused 37개 테스트와 실제 공식 Python 환경 검사가 통과했다. 이 수정이 포함된 current clean HEAD가 scoped re-review에서 다시 ship되기 전에는 readiness를 재실행하지 않는다. 세 policy를 모두 review-only로 보고하고 Exp404/Exp416을 verified reference로 유지하며, 결과 기록 후 Exp444 전에 멈춘다."
+      "notes": "구현·175개 전체 회귀·13개 inherited 회귀·실제 19-dataset Policy A control·1-worker/11-worker parity를 통과했고 official root는 아직 없다. 첫 Sol High 검토의 inspect mutation, wrapper traceback, stale review-target 문제와 두 번째 검토의 complete-progress publication 재개 불가 문제를 수정했다. e3dfb5aa가 최종 ship을 받은 뒤 첫 readiness가 root 생성 전에 BLIS_NUM_THREADS 누락을 찾았고 TEST label 접근은 0이었다. f4be2c6c RED와 16d012d3 GREEN으로 runtime/worker의 7개 thread 설정 계약을 맞췄다. 1c4a7880 재검토가 NumPy가 그 설정 전 먼저 import되는 문제를 찾아 fix-first를 냈고, 88a14ea0 RED와 93471c04 GREEN으로 공식 wrapper가 CLI/NumPy import 전에 7개를 모두 1로 설정하게 했다. fresh-process 첫 NumPy import 검사와 focused 38개 테스트가 통과했다. 이 수정이 포함된 current clean HEAD가 scoped re-review에서 다시 ship되기 전에는 readiness를 재실행하지 않는다. 세 policy를 모두 review-only로 보고하고 Exp404/Exp416을 verified reference로 유지하며, 결과 기록 후 Exp444 전에 멈춘다."
     }
   ]
 }

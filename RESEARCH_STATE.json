@@ -1,10 +1,10 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-09T12:21:41Z",
+  "updated_at": "2026-08-09T12:31:35Z",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
-  "last_verified_commit": "16d012d376d6827184271f83bbe5481eec0ed268",
+  "last_verified_commit": "93471c0462fa85e33f280b0496d756c62a25d71c",
   "active_experiment": "Exp443",
   "active_phase": "implementation_verified_awaiting_scoped_rereview",
   "status": "in_progress",
@@ -40,7 +40,9 @@
       "d9907603",
       "e463f26e",
       "f4be2c6c",
-      "16d012d3"
+      "16d012d3",
+      "88a14ea0",
+      "93471c04"
     ],
     "second_reviewed_head": "5eb7b39a",
     "second_review_result": "fix_first",
@@ -54,8 +56,15 @@
       "red_commit": "f4be2c6c",
       "fix_commit": "16d012d3"
     },
+    "thread_contract_reviewed_head": "1c4a788078c34fa3c480fdba0cd23b1dc1c71457",
+    "thread_contract_review_result": "fix_first_pre_numpy_import_order",
+    "pre_numpy_import_fix": {
+      "red_commit": "88a14ea0",
+      "fix_commit": "93471c0462fa85e33f280b0496d756c62a25d71c",
+      "fresh_process_first_numpy_import_all_seven_controls_equal_one": true
+    },
     "reviewed_implementation_commit": null,
-    "fresh_sol_high_review": "pending_after_thread_contract_fix",
+    "fresh_sol_high_review": "pending_after_pre_numpy_import_fix",
     "official_run_started": false,
     "run_root_exists": false,
     "prediction_sha256": null,
@@ -64,9 +73,9 @@
     "test_labels_opened": false,
     "exact_next_command": "scoped_sol_high_read_only_rereview_current_clean_head",
     "verification": {
-      "exp443_tests_passed": 174,
+      "exp443_tests_passed": 175,
       "exp443_expected_skips": 2,
-      "thread_contract_focused_tests_passed": 37,
+      "thread_contract_focused_tests_passed": 38,
       "exp249_250_regression_tests_passed": 13,
       "compileall_passed": true,
       "diff_check_passed": true,
