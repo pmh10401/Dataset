@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T06:12:53Z",
-  "generated_from_commit": "84f7ab5f",
+  "generated_at": "2026-08-09T06:54:07Z",
+  "generated_from_commit": "37f7f765",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -46,7 +46,8 @@
     "Exp443 Task 4: ragged raw-row support, fixed TEST preprocessing, three normal-TRAIN policies, immutable policy audits, and all-19 Policy A foundation parity",
     "Exp443 Task 4 review round 1: exact raw float32 SHA and lossless audit hashes, policy/action semantics, derived target/ragged identity contracts, immutable prepared reconciliation, and expanded 19-dataset parity evidence",
     "Exp443 Task 4 review round 2: unsupported-position subset enforcement, public forged-payload rejection, and shared canonical action vocabulary",
-    "Exp443 Task 5: lazy unchanged Exp249 MiniROCKET adapter, exact seed intersections, pure Standard-gated routing, and source-backed control parity"
+    "Exp443 Task 5: lazy unchanged Exp249 MiniROCKET adapter, exact seed intersections, pure Standard-gated routing, and source-backed control parity",
+    "Exp443 Task 6: fail-closed Policy A archive-score, candidate, routing, and topology control gate with real 19-dataset evidence"
   ],
   "nodes": [
     {
@@ -3470,7 +3471,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity",
-      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation. Review round 1 closes canonical audit/prepared reconciliation: policy/action/missingness combinations are frozen, raw `<f4` digests are recomputed, missing-position hashes survive the RunPolicyAudit adapter, targets are clipped from original TRAIN medians at every boundary, and TRAIN/TEST identities are gap-checked. The round also records exact A/B/C action totals, immutable byte ownership, and all-19 real parity. Review round 2 closes the unsupported-position subset gap for both in-memory and serialized RunPolicyAudit payloads and centralizes the canonical action vocabulary shared by contracts and preprocessing. Task 5 adds a lazy adapter to the unchanged Exp249 CPU scorer, enforces four frozen kernel/seed calls with alpha=.005 seed intersections, and emits deterministic label-free Standard-gated promotion/pre-exact/exact-normal/final-Hard routing rows; unaffected datasets import verified Exp249 candidate maps while affected datasets require one policy result each.",
+      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation. Review round 1 closes canonical audit/prepared reconciliation: policy/action/missingness combinations are frozen, raw `<f4` digests are recomputed, missing-position hashes survive the RunPolicyAudit adapter, targets are clipped from original TRAIN medians at every boundary, and TRAIN/TEST identities are gap-checked. The round also records exact A/B/C action totals, immutable byte ownership, and all-19 real parity. Review round 2 closes the unsupported-position subset gap for both in-memory and serialized RunPolicyAudit payloads and centralizes the canonical action vocabulary shared by contracts and preprocessing. Task 5 adds a lazy adapter to the unchanged Exp249 CPU scorer, enforces four frozen kernel/seed calls with alpha=.005 seed intersections, and emits deterministic label-free Standard-gated promotion/pre-exact/exact-normal/final-Hard routing rows; unaffected datasets import verified Exp249 candidate maps while affected datasets require one policy result each. Task 6 adds a fail-closed Policy A control gate: every affected dataset's four TRAIN OOF/TEST arrays is compared with verified Exp249 float64 archive bytes, empirical and frozen candidate sets are checked, complete route coordinates are replayed against Exp291/Exp404, topology and label-free identities are recorded, and B/C/evaluation work remains blocked until control_reproduction_passed.",
       "entrypoints": [
         "frozen_config_payload_antigravity",
         "scientific_config_sha256_antigravity",
@@ -3524,7 +3525,10 @@
         "seed_intersection_candidates_antigravity",
         "PolicyPredictionAntigravity",
         "route_policy_antigravity",
-        "canonical_prediction_bytes_antigravity"
+        "canonical_prediction_bytes_antigravity",
+        "ControlGateResultAntigravity",
+        "compare_policy_a_to_archive_antigravity",
+        "require_control_gate_antigravity"
       ],
       "tests": [
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
@@ -3535,7 +3539,8 @@
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_minirocket_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_routing_antigravity.py"
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_routing_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_control_antigravity.py"
       ],
       "constraints": [
         "Direct requirements are exactly aeon 1.5.0, NumPy 2.3.5, and scikit-learn 1.8.0; the complete sorted lock is bound by SHA256 bb2de6e2696a3f0d92480f0215b15bdaf6d89375210dd4be48257cfa6b44d548.",
@@ -3572,7 +3577,10 @@
         "Task 5 canonical replay recomputes every row from its own fields: promotion=Standard intersect (Mini1024 union Mini4096), pre-exact=inherited Hard union promotion, exact-normal removals=pre-exact intersect exact-normal evidence, and final Hard=pre-exact minus removals; row policy, provenance candidate_source, frozen routing_rule, lane disjointness, coordinate ranges, and aggregate row unions are all revalidated immediately before bytes.",
         "Task 5 exact-normal routing derives (Exp236 Hard union Exp236 promotion) minus Exp291 Hard, requires Exp291/Exp404 Hard equality, validates every inherited Exp236 lane even when an explicit exact-normal argument is supplied, and rejects exact-normal evidence outside the canonical row TEST identities.",
         "Task 5 real pinned-cache replay reconstructs all 19 affected results from two kernels crossed with two frozen seeds with zero candidate-map mismatches; the resulting 1,117-row publication has 137/2253/35/2218 populations, Exp291/Exp404 Hard equality, and canonical byte length 728425.",
-        "Task 5 produces deterministic rows for all 1,117 datasets with contains_test_labels=false and contains_evaluation_metrics=false, one recomputed policy result for each of the 19 affected datasets, and verified Exp249 candidate-map imports for the 1,098 unaffected datasets; the bounded control reproduces 137/2253/35/2218 and Exp291/Exp404 Hard equality."
+        "Task 5 produces deterministic rows for all 1,117 datasets with contains_test_labels=false and contains_evaluation_metrics=false, one recomputed policy result for each of the 19 affected datasets, and verified Exp249 candidate-map imports for the 1,098 unaffected datasets; the bounded control reproduces 137/2253/35/2218 and Exp291/Exp404 Hard equality.",
+        "Task 6 compares every affected Policy A dataset across two kernels and two frozen seeds, requires read-only little-endian float64 TRAIN OOF/TEST arrays with exact shapes and finite values, computes float64 max absolute differences at or below 1e-6, and checks per-seed empirical candidates plus frozen Exp249 seed intersections.",
+        "Task 6 replays the complete 1,117-row route and requires exact promotion/pre-exact/exact-normal-removal/final-Hard coordinate identity with Exp291 and Exp404 (1117/137/2253/35/2218), including 19 recomputed and 1,098 imported rows.",
+        "Task 6 control evidence is immutable and label-free: status is control_reproduction_failed on any mismatch, label access remains zero, the official aeon CPU scorer stays unchanged at inner_threads=1, and B/C or TEST evaluation cannot proceed without require_control_gate_antigravity."
       ],
       "evidence": [
         {
@@ -3786,6 +3794,22 @@
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_routing_antigravity.py",
           "symbol": "class RoutingAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/control_antigravity.py",
+          "symbol": "def compare_policy_a_to_archive_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/control_antigravity.py",
+          "symbol": "def require_control_gate_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_control_antigravity.py",
+          "symbol": "class ControlGateAntigravityTests"
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-6-report-antigravity.md",
+          "symbol": "## Real 19-dataset control"
         }
       ]
     }
@@ -4675,14 +4699,14 @@
     },
     {
       "id": "exp443_source_freeze_flow",
-      "label": "Exp443 readiness and pinned raw-source freeze",
-      "trigger": "Run the Task 3 source verifier before any policy scoring or prediction route.",
+      "label": "Exp443 readiness, source freeze, and Policy A control gate",
+      "trigger": "Run the Task 3 source verifier and then the opt-in Task 6 Policy A control before any alternative policy or prediction route.",
       "steps": [
         "research_control",
         "exp443_environment_contracts",
         "sqlite_store"
       ],
-      "outcome": "Readiness first proves the 1,119-row DB population and exact two frozen exclusions, then hashes and pins raw bytes, enforces values-only SQL before execution, validates inherited authority bytes and immutable cache NPZ metadata, checks every eligible TEST identity against Exp291/cache n_test, proves 2,116 + 137 - 35 = 2,218 and Exp291/Exp404 Hard equality, and confirms 1,117/19/164/983/0 missing inventory with zero label access."
+      "outcome": "Readiness first proves the 1,119-row DB population and exact two frozen exclusions, then hashes and pins raw bytes, enforces values-only SQL before execution, validates inherited authority bytes and immutable cache NPZ metadata, checks every eligible TEST identity against Exp291/cache n_test, proves 2,116 + 137 - 35 = 2,218 and Exp291/Exp404 Hard equality, and confirms 1,117/19/164/983/0 missing inventory with zero label access. Task 6 then compares 76 Policy A score arrays and candidates, replays exact 1117/137/2253/35/2218 route coordinates with 19 recomputed plus 1,098 imported rows, and only permits B/C after control_reproduction_passed."
     }
   ],
   "unknown_relationships": []
