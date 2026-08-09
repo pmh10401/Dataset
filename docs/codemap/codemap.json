@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T11:24:18Z",
-  "generated_from_commit": "41019f1c",
+  "generated_at": "2026-08-09T11:30:18Z",
+  "generated_from_commit": "1cc97727",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -482,6 +482,22 @@
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/environment_antigravity.py",
           "symbol": "def verify_environment_antigravity()"
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"active_phase\": \"implementation_verified_awaiting_fresh_review\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"fresh_sol_high_review\": \"pending\""
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"status\": \"implementation_verified_awaiting_fresh_review\""
+        },
+        {
+          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "# Exp443 구현 검증 보고서"
         }
       ]
     },
@@ -4156,6 +4172,14 @@
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_cli_antigravity.py",
           "symbol": "class CliAntigravityTests"
+        },
+        {
+          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "## 실제 Policy A 대조"
+        },
+        {
+          "path": "docs/EXP443_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "## CPU 1개와 worker 11개 동일성"
         }
       ]
     }
