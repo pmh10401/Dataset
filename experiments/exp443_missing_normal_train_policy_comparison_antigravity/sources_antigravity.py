@@ -17,13 +17,14 @@ from pathlib import Path
 import re
 import stat
 from types import MappingProxyType
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 import numpy as np
 
 from .config_antigravity import FROZEN_CONFIG
 from .database_antigravity import (
     MissingInventoryAntigravity,
+    parse_dataset_family_antigravity,
     pin_database_snapshot_antigravity,
     scan_missing_inventory_antigravity,
 )
@@ -53,6 +54,8 @@ _EXP414_FIELDS = frozenset({
     "nan_count", "posinf_count", "neginf_count", "missing_positions_sha256", "repair_method",
 })
 EXP249_CACHE_CONFIG_HASH_ANTIGRAVITY = "8ae2ab74764db26d76e563030ad99346fa3c1a6ef97164c3b5d590b443735921"
+
+_SOURCE_PRE_OPEN_HOOK_ANTIGRAVITY: Callable[[Path], None] | None = None
 
 
 class DuplicateJsonKeyError(ValueError):
@@ -99,7 +102,13 @@ def _read_regular_bytes_antigravity(path: Path, expected_sha256: str | None = No
         raise ValueError(f"source is unavailable: {path}") from error
     if stat.S_ISLNK(initial.st_mode) or not stat.S_ISREG(initial.st_mode) or initial.st_nlink < 1:
         raise ValueError(f"source is not a regular linked file: {path}")
-    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    hook = _SOURCE_PRE_OPEN_HOOK_ANTIGRAVITY
+    if hook is not None:
+        hook(path)
+    try:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    except OSError as error:
+        raise ValueError(f"source open failed: {path}") from error
     try:
         before = os.fstat(descriptor)
         if stat.S_ISLNK(before.st_mode) or not stat.S_ISREG(before.st_mode) or (before.st_dev, before.st_ino) != (initial.st_dev, initial.st_ino):
@@ -149,7 +158,17 @@ def _sha256_canonical(value: object) -> str:
 
 
 def _family(dataset: str) -> str:
-    return dataset.rsplit("_normal_", 1)[0] if "_normal_" in dataset else dataset
+    return parse_dataset_family_antigravity(dataset)
+
+
+def _freeze_array_antigravity(array: np.ndarray) -> np.ndarray:
+    """Return a read-only ndarray backed by an immutable bytes object."""
+    contiguous = np.array(array, copy=True, order="C")
+    payload = contiguous.tobytes(order="C")
+    frozen = np.frombuffer(payload, dtype=contiguous.dtype).reshape(contiguous.shape)
+    if frozen.flags.writeable:
+        frozen.setflags(write=False)
+    return frozen
 
 
 def load_pinned_npz_antigravity(path: Path, payload: bytes | None = None) -> Mapping[str, np.ndarray]:
@@ -157,7 +176,7 @@ def load_pinned_npz_antigravity(path: Path, payload: bytes | None = None) -> Map
         payload, _ = _read_regular_bytes_antigravity(Path(path))
     try:
         with np.load(io.BytesIO(payload), allow_pickle=False) as archive:
-            arrays = {str(name): np.asarray(archive[name]) for name in archive.files}
+            arrays = {str(name): _freeze_array_antigravity(np.asarray(archive[name])) for name in archive.files}
     except (ValueError, OSError, EOFError) as error:
         raise ValueError(f"NPZ cache is invalid: {Path(path).name}") from error
     if any(array.dtype.hasobject for array in arrays.values()):
@@ -165,8 +184,16 @@ def load_pinned_npz_antigravity(path: Path, payload: bytes | None = None) -> Map
     return MappingProxyType(arrays)
 
 
-def parse_cache_manifest_antigravity(manifest_path: Path, source_root: Path | None = None, *, expected_sha256: str | None = None) -> Mapping[str, Mapping[str, object]]:
+def parse_cache_manifest_antigravity(
+    manifest_path: Path,
+    source_root: Path | None = None,
+    *,
+    expected_sha256: str | None = None,
+    expected_dataset_count: int = 1117,
+) -> Mapping[str, Mapping[str, object]]:
     manifest_path = Path(manifest_path)
+    if type(expected_dataset_count) is not int or expected_dataset_count < 1:
+        raise ValueError("cache dataset authority is invalid")
     payload, _ = _read_regular_bytes_antigravity(manifest_path, expected_sha256)
     root = Path(source_root) if source_root is not None else manifest_path.parent
     try:
@@ -218,7 +245,20 @@ def parse_cache_manifest_antigravity(manifest_path: Path, source_root: Path | No
         metadata = parse_json_object_antigravity(metadata_payload, metadata_path.name)
         if set(metadata) != {"abstained", "abstention_reason", "cache_file", "cache_sha256", "config", "config_hash", "contains_test_labels", "dataset", "experiment", "feature_dimensions", "n_test", "n_train", "source", "target_length"}:
             raise ValueError("cache metadata schema is invalid")
-        if metadata["dataset"] != dataset or metadata["cache_sha256"] != npz_digest or metadata["config_hash"] != config_hash or metadata["contains_test_labels"] is not False:
+        if (
+            metadata["dataset"] != dataset
+            or metadata["cache_file"] != row["cache_file"]
+            or metadata["cache_sha256"] != npz_digest
+            or metadata["config_hash"] != config_hash
+            or metadata["contains_test_labels"] is not False
+            or metadata["abstained"] is not (row["abstained"] == "True")
+            or (metadata["abstention_reason"] or "") != row["abstention_reason"]
+            or metadata["experiment"] != 249
+            or metadata["source"] != "official_minirocket"
+            or metadata["n_train"] != n_train
+            or metadata["n_test"] != n_test
+            or metadata["target_length"] != target
+        ):
             raise ValueError("cache metadata identity is invalid")
         arrays = load_pinned_npz_antigravity(cache_path, npz_payload)
         expected_arrays = {"kernels_1024__train_by_seed", "kernels_1024__test_by_seed", "kernels_4096__train_by_seed", "kernels_4096__test_by_seed"}
@@ -226,13 +266,20 @@ def parse_cache_manifest_antigravity(manifest_path: Path, source_root: Path | No
             raise ValueError("cache NPZ schema is invalid")
         expected_train = 0 if row["abstained"] == "True" else n_train
         expected_test = 0 if row["abstained"] == "True" else n_test
-        if arrays["kernels_1024__train_by_seed"].shape[1] != expected_train or arrays["kernels_1024__test_by_seed"].shape[1] != expected_test or arrays["kernels_4096__train_by_seed"].shape[1] != expected_train or arrays["kernels_4096__test_by_seed"].shape[1] != expected_test:
-            raise ValueError("cache NPZ dimensions disagree with manifest")
+        for name, expected_columns in (
+            ("kernels_1024__train_by_seed", expected_train),
+            ("kernels_1024__test_by_seed", expected_test),
+            ("kernels_4096__train_by_seed", expected_train),
+            ("kernels_4096__test_by_seed", expected_test),
+        ):
+            array = arrays[name]
+            if array.dtype != np.dtype("<f8") or array.ndim != 2 or array.shape != (2, expected_columns) or not np.isfinite(array).all():
+                raise ValueError("cache NPZ type, shape, or finite contract is invalid")
         result[dataset] = MappingProxyType({
             "cache_file": cache_path, "metadata_file": metadata_path,
             "cache_sha256": npz_digest, "metadata_sha256": metadata_digest,
             "config_hash": config_hash, "n_train": n_train, "n_test": n_test,
-            "target_length": target, "arrays": arrays,
+            "target_length": target, "abstained": row["abstained"] == "True", "arrays": arrays,
         })
     cache_dir = root / "cache"
     try:
@@ -242,8 +289,8 @@ def parse_cache_manifest_antigravity(manifest_path: Path, source_root: Path | No
     expected_entries = cache_files | metadata_files
     if entries != expected_entries:
         raise ValueError("cache inventory has missing or extra artifacts")
-    if len(result) != 1117:
-        raise ValueError("Exp249 cache manifest must contain 1,117 datasets")
+    if len(result) != expected_dataset_count:
+        raise ValueError("Exp249 cache manifest dataset count disagrees with authority")
     return MappingProxyType(result)
 
 
@@ -393,6 +440,18 @@ def _parse_exp414(path: Path, expected_sha256: str) -> Mapping[tuple[str, int], 
     return MappingProxyType(result)
 
 
+_CACHE_ARRAY_NAMES_ANTIGRAVITY = frozenset({
+    "kernels_1024__train_by_seed", "kernels_1024__test_by_seed",
+    "kernels_4096__train_by_seed", "kernels_4096__test_by_seed",
+})
+
+
+def _validate_coordinate_tuple_antigravity(value: object, dataset: str, n_test: int) -> tuple[int, ...]:
+    if type(value) is not tuple or value != tuple(sorted(set(value))) or any(type(index) is not int or index < 0 or index >= n_test for index in value):
+        raise ValueError("frozen coordinate lane is invalid")
+    return value
+
+
 @dataclass(frozen=True)
 class FrozenSourceSnapshotAntigravity:
     datasets: tuple[str, ...]
@@ -418,22 +477,108 @@ class FrozenSourceSnapshotAntigravity:
     label_access_count: int = 0
 
     def __post_init__(self) -> None:
-        if self.datasets != tuple(sorted(set(self.datasets))) or len(self.datasets) != 1117:
+        datasets = tuple(self.datasets)
+        if type(self.datasets) is not tuple or any(type(dataset) is not str or not dataset for dataset in datasets) or datasets != tuple(sorted(set(datasets))) or len(datasets) != 1117:
             raise ValueError("source dataset population is invalid")
-        if self.affected_datasets != tuple(sorted(set(self.affected_datasets))) or len(self.affected_datasets) != 19:
+        affected_datasets = tuple(self.affected_datasets)
+        if type(self.affected_datasets) is not tuple or any(type(dataset) is not str for dataset in affected_datasets) or affected_datasets != tuple(sorted(set(affected_datasets))):
             raise ValueError("source affected population is invalid")
+        if len(affected_datasets) != 19 or not set(affected_datasets).issubset(datasets):
+            raise ValueError("source affected population is invalid")
+        affected_families = tuple(self.affected_families)
+        if affected_families != tuple(sorted(set(affected_families))) or len(affected_families) != 4 or set(affected_families) != {parse_dataset_family_antigravity(dataset) for dataset in affected_datasets}:
+            raise ValueError("source affected families are invalid")
+        scalar_fields = ("affected_rows", "nonfinite_scalars", "all_missing_rows", "automatic_hard_count", "exact_normal_count", "standard_count", "priority_count", "label_access_count")
+        if any(type(getattr(self, field)) is not int or getattr(self, field) < 0 for field in scalar_fields):
+            raise ValueError("source scalar evidence types are invalid")
         if self.routing_algebra != (2116, 137, 35, 2218) or (self.automatic_hard_count, self.exact_normal_count, self.standard_count, self.priority_count) != (2218, 35, 806, 31):
             raise ValueError("source routing counts are invalid")
+        if type(self.routing_algebra) is not tuple or any(type(value) is not int for value in self.routing_algebra):
+            raise ValueError("source routing algebra types are invalid")
+        if type(self.hard_coordinates_exp291) is not frozenset or type(self.hard_coordinates_exp404) is not frozenset or any(type(dataset) is not str or type(index) is not int or index < 0 for dataset, index in self.hard_coordinates_exp291 | self.hard_coordinates_exp404):
+            raise ValueError("source Hard coordinate types are invalid")
         if self.hard_coordinates_exp291 != self.hard_coordinates_exp404 or len(self.hard_coordinates_exp291) != 2218:
             raise ValueError("Exp291/Exp404 Hard coordinates disagree")
         if self.label_access_count != 0:
             raise ValueError("source verification accessed labels")
-        object.__setattr__(self, "exp236_lanes", MappingProxyType({str(k): MappingProxyType(dict(v)) for k, v in self.exp236_lanes.items()}))
-        object.__setattr__(self, "exp249_candidate_maps", MappingProxyType({str(k): MappingProxyType(dict(v)) for k, v in self.exp249_candidate_maps.items()}))
-        object.__setattr__(self, "cache_inventory", MappingProxyType(dict(self.cache_inventory)))
-        object.__setattr__(self, "test_row_count_by_dataset", MappingProxyType(dict(self.test_row_count_by_dataset)))
-        object.__setattr__(self, "target_length_by_dataset", MappingProxyType(dict(self.target_length_by_dataset)))
-        object.__setattr__(self, "source_hashes", MappingProxyType(dict(self.source_hashes)))
+        if not isinstance(self.test_row_count_by_dataset, Mapping) or set(self.test_row_count_by_dataset) != set(datasets) or any(type(value) is not int or value < 1 for value in self.test_row_count_by_dataset.values()):
+            raise ValueError("source TEST identity authority is invalid")
+        if not isinstance(self.target_length_by_dataset, Mapping) or set(self.target_length_by_dataset) != set(datasets) or any(type(value) is not int or value < 1 for value in self.target_length_by_dataset.values()):
+            raise ValueError("source target-length authority is invalid")
+        if not isinstance(self.source_hashes, Mapping) or any(type(value) is not str or re.fullmatch(r"[0-9a-f]{64}", value) is None for value in self.source_hashes.values()):
+            raise ValueError("source hashes are invalid")
+        expected_hash_names = {"exp249_prediction", "exp249_prediction_manifest", "exp249_artifact_manifest", "exp249_cache_manifest", "exp249_audit", "exp291_routing", "exp291_manifest", "exp414_repair_audit", "exp414_manifest", "exp404_hard", "exp404_manifest", "database"}
+        if set(self.source_hashes) != expected_hash_names or type(self.affected_datasets_sha256) is not str or re.fullmatch(r"[0-9a-f]{64}", self.affected_datasets_sha256) is None:
+            raise ValueError("source hash authority schema is invalid")
+
+        n_test = {str(dataset): int(value) for dataset, value in self.test_row_count_by_dataset.items()}
+        lane_copy: dict[str, Mapping[str, tuple[int, ...]]] = {}
+        if not isinstance(self.exp236_lanes, Mapping) or set(self.exp236_lanes) != set(datasets):
+            raise ValueError("Exp236 lane authority is incomplete")
+        for dataset in datasets:
+            lanes = self.exp236_lanes[dataset]
+            if not isinstance(lanes, Mapping) or set(lanes) != {"hard", "standard", "priority", "promotion"}:
+                raise ValueError("Exp236 lane schema is invalid")
+            lane_copy[dataset] = MappingProxyType({name: _validate_coordinate_tuple_antigravity(lanes[name], dataset, n_test[dataset]) for name in ("hard", "standard", "priority", "promotion")})
+
+        candidate_copy: dict[str, Mapping[int, tuple[int, ...]]] = {}
+        if not isinstance(self.exp249_candidate_maps, Mapping) or set(self.exp249_candidate_maps) != set(datasets):
+            raise ValueError("Exp249 candidate authority is incomplete")
+        for dataset in datasets:
+            candidates = self.exp249_candidate_maps[dataset]
+            if not isinstance(candidates, Mapping) or set(candidates) != {1024, 4096}:
+                raise ValueError("Exp249 candidate schema is invalid")
+            candidate_copy[dataset] = MappingProxyType({kernel: _validate_coordinate_tuple_antigravity(candidates[kernel], dataset, n_test[dataset]) for kernel in (1024, 4096)})
+
+        for coordinate in self.hard_coordinates_exp291 | self.hard_coordinates_exp404:
+            dataset, index = coordinate
+            if dataset not in n_test or index >= n_test[dataset]:
+                raise ValueError("Hard coordinate is outside TEST identity authority")
+
+        cache_copy: dict[str, Mapping[str, object]] = {}
+        if not isinstance(self.cache_inventory, Mapping) or set(self.cache_inventory) != set(datasets):
+            raise ValueError("cache authority population is incomplete")
+        for dataset in datasets:
+            entry = self.cache_inventory[dataset]
+            if not isinstance(entry, Mapping):
+                raise ValueError("cache authority entry is not a mapping")
+            required = {"cache_file", "metadata_file", "cache_sha256", "metadata_sha256", "config_hash", "n_train", "n_test", "target_length", "abstained", "arrays"}
+            if set(entry) != required or not isinstance(entry["cache_file"], Path) or not isinstance(entry["metadata_file"], Path):
+                raise ValueError("cache authority entry schema is invalid")
+            if any(type(entry[field]) is not str or re.fullmatch(r"[0-9a-f]{64}", entry[field]) is None for field in ("cache_sha256", "metadata_sha256", "config_hash")):
+                raise ValueError("cache authority hashes are invalid")
+            if type(entry["abstained"]) is not bool or any(type(entry[field]) is not int or entry[field] < 1 for field in ("n_train", "n_test", "target_length")):
+                raise ValueError("cache authority dimensions are invalid")
+            if entry["n_test"] != n_test[dataset] or entry["target_length"] != self.target_length_by_dataset[dataset]:
+                raise ValueError("cache authority disagrees with TEST/target identity")
+            arrays = entry["arrays"]
+            if not isinstance(arrays, Mapping) or set(arrays) != _CACHE_ARRAY_NAMES_ANTIGRAVITY:
+                raise ValueError("cache authority arrays are incomplete")
+            expected_train = 0 if entry["abstained"] else entry["n_train"]
+            frozen_arrays: dict[str, np.ndarray] = {}
+            for name, expected_columns in (
+                ("kernels_1024__train_by_seed", expected_train),
+                ("kernels_1024__test_by_seed", entry["n_test"] if not entry["abstained"] else 0),
+                ("kernels_4096__train_by_seed", expected_train),
+                ("kernels_4096__test_by_seed", entry["n_test"] if not entry["abstained"] else 0),
+            ):
+                array = arrays[name]
+                if type(array) is not np.ndarray or array.dtype != np.dtype("<f8") or array.ndim != 2 or array.shape != (2, expected_columns) or not np.isfinite(array).all():
+                    raise ValueError("cache authority array type, shape, or finite contract is invalid")
+                frozen_arrays[name] = _freeze_array_antigravity(array)
+            frozen_entry = dict(entry)
+            frozen_entry["arrays"] = MappingProxyType(frozen_arrays)
+            cache_copy[dataset] = MappingProxyType(frozen_entry)
+
+        object.__setattr__(self, "datasets", datasets)
+        object.__setattr__(self, "affected_datasets", affected_datasets)
+        object.__setattr__(self, "affected_families", affected_families)
+        object.__setattr__(self, "exp236_lanes", MappingProxyType(lane_copy))
+        object.__setattr__(self, "exp249_candidate_maps", MappingProxyType(candidate_copy))
+        object.__setattr__(self, "cache_inventory", MappingProxyType(cache_copy))
+        object.__setattr__(self, "test_row_count_by_dataset", MappingProxyType(n_test))
+        object.__setattr__(self, "target_length_by_dataset", MappingProxyType({str(k): int(v) for k, v in self.target_length_by_dataset.items()}))
+        object.__setattr__(self, "source_hashes", MappingProxyType({str(k): str(v) for k, v in self.source_hashes.items()}))
 
     @property
     def context_datasets(self) -> tuple[str, ...]:
@@ -508,10 +653,16 @@ def verify_frozen_sources_antigravity() -> FrozenSourceSnapshotAntigravity:
     exp414_manifest = parse_json_object_antigravity(_read_expected(source_paths["exp414_manifest"], hashes["exp414_manifest"]), "Exp414 manifest")
     if exp414_manifest.get("experiment_id") != "Exp414" or not isinstance(exp414_manifest.get("artifact_sha256"), Mapping):
         raise ValueError("Exp414 manifest is invalid")
+    target_lengths = {dataset: int(cache_inventory[dataset]["target_length"]) for dataset in datasets}
     with __import__("tempfile").TemporaryDirectory(prefix="exp443_sources_antigravity_") as temporary:
         pinned = pin_database_snapshot_antigravity(cfg.database_path, Path(temporary) / "attempt_antigravity")
         try:
-            inventory = scan_missing_inventory_antigravity(pinned, datasets)
+            inventory = scan_missing_inventory_antigravity(
+                pinned,
+                datasets,
+                expected_test_rows_by_dataset=n_test,
+                expected_target_length_by_dataset=target_lengths,
+            )
             _compare_inventory(inventory, exp414_rows)
         finally:
             pinned.close(terminal_evidence_durable=True)
@@ -528,7 +679,6 @@ def verify_frozen_sources_antigravity() -> FrozenSourceSnapshotAntigravity:
         raise ValueError("frozen routing algebra is invalid")
     if (hard236 | promotions) - exact_normal != hard291:
         raise ValueError("frozen routing coordinates disagree")
-    target_lengths = {dataset: int(cache_inventory[dataset]["target_length"]) for dataset in datasets}
     source_hashes = {name: hashes[name] for name in source_paths}
     source_hashes["database"] = cfg.database_sha256
     return FrozenSourceSnapshotAntigravity(

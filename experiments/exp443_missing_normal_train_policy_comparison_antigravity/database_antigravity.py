@@ -16,7 +16,7 @@ from pathlib import Path
 import sqlite3
 import stat
 from types import MappingProxyType
-from typing import Iterator, Mapping, Sequence
+from typing import Callable, Iterator, Mapping, Sequence
 from urllib.parse import quote
 
 import numpy as np
@@ -45,6 +45,7 @@ ORDER BY i.instance_index"""
 
 POPULATION_SQL_ANTIGRAVITY = "SELECT d.name FROM datasets AS d ORDER BY d.name"
 QUICK_CHECK_SQL_ANTIGRAVITY = "PRAGMA quick_check"
+FROZEN_DATABASE_EXCLUSIONS_ANTIGRAVITY = frozenset({"CornellWhaleChallenge", "Wafer_normal_1"})
 
 # This named seam is intentionally patchable in fixture tests.  Production
 # callers use the reviewed value from FROZEN_CONFIG by default.
@@ -60,6 +61,12 @@ _ALLOWED_EXACT_SQL = frozenset({
     QUICK_CHECK_SQL_ANTIGRAVITY,
 })
 _ALLOWED_PRAGMA_SQL = frozenset({"PRAGMA quick_check", "PRAGMA query_only", "PRAGMA query_only=ON"})
+
+# Private deterministic filesystem seams used only by adversarial tests.  The
+# hooks perform real rename/FIFO/symlink operations between lstat and open;
+# production verification leaves them unset.
+_DATABASE_PRE_OPEN_HOOK_ANTIGRAVITY: Callable[[Path], None] | None = None
+_AFTER_QUERY_HOOK_ANTIGRAVITY: Callable[[object], None] | None = None
 
 
 def _metadata(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
@@ -110,29 +117,31 @@ def _sql_key(sql: str) -> str:
     return " ".join(sql.strip().split())
 
 
-def validate_prediction_sql_antigravity(sql: str) -> bool:
-    """Allow only the preregistered values/identity/population statements."""
+def _validate_exact_sql_text_antigravity(sql: str) -> str:
+    """Validate a caller SQL string before it reaches sqlite3."""
     key = _sql_key(sql).rstrip(";")
     if key in {_sql_key(item) for item in _ALLOWED_EXACT_SQL} or key in _ALLOWED_PRAGMA_SQL:
-        return True
+        return key
     lowered = key.casefold()
     if any(token in lowered for token in ("labels_blob", "evaluation", "ground_truth", "anomaly")):
         raise ValueError("prediction SQL is label/evaluation capable")
-    # Trace callbacks receive expanded parameter SQL.  Permit only the same
-    # positive statements after expansion; never permit TEST + selected label.
-    if "from instances as i join datasets as d on d.id = i.dataset_id" in lowered:
-        if "where d.name =" not in lowered or "order by i.instance_index" not in lowered:
-            raise ValueError("unregistered prediction SQL")
-        if "i.split = 'train' and i.label = '0'" in lowered:
-            if "select i.instance_index, i.values_blob" not in lowered:
-                raise ValueError("TRAIN SQL shape is invalid")
-            return True
-        if "i.split = 'test'" in lowered and "i.label" not in lowered:
-            if "select i.instance_index, i.values_blob" in lowered or "select i.instance_index, length(i.values_blob)" in lowered:
-                return True
-    if lowered.startswith("pragma quick_check") or lowered.startswith("pragma query_only"):
-        return True
     raise ValueError("unregistered prediction SQL")
+
+
+def validate_prediction_sql_antigravity(sql: str) -> bool:
+    """Allow only the preregistered exact SQL text, before sqlite execution."""
+    _validate_exact_sql_text_antigravity(sql)
+    return True
+
+
+def _validate_parameter_contract_antigravity(sql: str, parameters: object) -> str:
+    key = _validate_exact_sql_text_antigravity(sql)
+    if key in {_sql_key(item) for item in (NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, TEST_VALUES_SQL_ANTIGRAVITY, TEST_IDENTITY_SQL_ANTIGRAVITY)}:
+        if type(parameters) not in (tuple, list) or len(parameters) != 1 or type(parameters[0]) is not str or not parameters[0]:
+            raise ValueError("dataset SQL requires one non-empty text parameter")
+    elif not (type(parameters) in (tuple, list) and len(parameters) == 0):
+        raise ValueError("non-query SQL cannot receive parameters")
+    return key
 
 
 def _validate_trace_statement(sql: str) -> None:
@@ -142,7 +151,76 @@ def _validate_trace_statement(sql: str) -> None:
         raise ValueError("forbidden SQL reached SQLite")
     if "split = 'test'" in lowered and "label" in lowered:
         raise ValueError("TEST label predicate reached SQLite")
-    validate_prediction_sql_antigravity(sql)
+    if lowered in {_sql_key(item).casefold() for item in _ALLOWED_EXACT_SQL} or lowered in {item.casefold() for item in _ALLOWED_PRAGMA_SQL}:
+        return
+    if "from instances as i join datasets as d on d.id = i.dataset_id" in lowered:
+        if "where d.name =" not in lowered or "order by i.instance_index" not in lowered:
+            raise ValueError("unregistered expanded prediction SQL")
+        if "i.split = 'train' and i.label = '0'" in lowered and "select i.instance_index, i.values_blob" in lowered:
+            return
+        if "i.split = 'test'" in lowered and "i.label" not in lowered and ("select i.instance_index, i.values_blob" in lowered or "select i.instance_index, length(i.values_blob)" in lowered):
+            return
+    if lowered.startswith("pragma quick_check") or lowered.startswith("pragma query_only"):
+        return
+    raise ValueError("unregistered expanded prediction SQL")
+
+
+class _ValidatedCursorAntigravity:
+    """Cursor facade that preserves the execution gate on cursor reuse."""
+
+    __slots__ = ("_owner", "_cursor")
+
+    def __init__(self, owner: "PinnedDatabaseAntigravity", cursor: sqlite3.Cursor):
+        self._owner = owner
+        self._cursor = cursor
+
+    def execute(self, sql: str, parameters: object = ()) -> "_ValidatedCursorAntigravity":
+        return self._owner._execute_validated(self._cursor, sql, parameters)
+
+    def fetchone(self) -> tuple[object, ...] | None:
+        return self._cursor.fetchone()
+
+    def fetchmany(self, size: int | None = None) -> list[tuple[object, ...]]:
+        return self._cursor.fetchmany() if size is None else self._cursor.fetchmany(size)
+
+    def fetchall(self) -> list[tuple[object, ...]]:
+        return self._cursor.fetchall()
+
+    @property
+    def description(self) -> object:
+        return self._cursor.description
+
+    @property
+    def rowcount(self) -> int:
+        return self._cursor.rowcount
+
+    def close(self) -> None:
+        self._cursor.close()
+
+    def __iter__(self) -> "_ValidatedCursorAntigravity":
+        return self
+
+    def __next__(self) -> tuple[object, ...]:
+        return next(self._cursor)
+
+
+class _ValidatedConnectionAntigravity:
+    """Connection facade; no unrestricted sqlite3 object crosses the boundary."""
+
+    __slots__ = ("_owner", "_connection")
+
+    def __init__(self, owner: "PinnedDatabaseAntigravity", connection: sqlite3.Connection):
+        self._owner = owner
+        self._connection = connection
+
+    def execute(self, sql: str, parameters: object = ()) -> _ValidatedCursorAntigravity:
+        return self._owner._execute_validated(self._connection, sql, parameters)
+
+    def cursor(self) -> _ValidatedCursorAntigravity:
+        return _ValidatedCursorAntigravity(self._owner, self._connection.cursor())
+
+    def close(self) -> None:
+        self._connection.close()
 
 
 def _decode_rows(rows: Sequence[tuple[object, object]], dataset: str, split: str) -> tuple[RawSeriesAntigravity, ...]:
@@ -271,8 +349,12 @@ class PinnedDatabaseAntigravity:
         self._owned_pin = True
         self._closed = False
         self.sql_trace: list[str] = []
+        self.denied_sql_trace: list[str] = []
+        self.raw_sql_execute_count = 0
+        self.denied_sql_attempts = 0
         self.label_access_count = 0
         self.boundary_trace: list[str] = []
+        self._active_sql: str | None = None
 
     def _require_live(self) -> None:
         if self._closed:
@@ -312,8 +394,39 @@ class PinnedDatabaseAntigravity:
             raise ValueError("worker pin inode changed")
         return _identity(info)
 
+    def _record_denied_sql(self, sql: str) -> None:
+        self.denied_sql_trace.append(sql)
+        self.denied_sql_attempts += 1
+        lowered = _sql_key(sql).casefold()
+        if any(token in lowered for token in ("label", "labels_blob", "ground_truth", "anomaly")):
+            self.label_access_count += 1
+
+    def _authorizer(self, action: int, argument_one: str | None, argument_two: str | None, _database: str | None, _trigger: str | None) -> int:
+        if action == sqlite3.SQLITE_READ:
+            column = (argument_one or "").casefold()
+            table = (argument_two or "").casefold()
+            if table in {"evaluation", "evaluations", "ground_truth", "labels"} or column == "labels_blob":
+                return sqlite3.SQLITE_DENY
+            if column == "label" and (self._active_sql is None or "i.split = 'train' and i.label = '0'" not in self._active_sql.casefold()):
+                return sqlite3.SQLITE_DENY
+        return sqlite3.SQLITE_OK
+
+    def _execute_validated(self, executor: sqlite3.Connection | sqlite3.Cursor, sql: str, parameters: object = ()) -> _ValidatedCursorAntigravity:
+        try:
+            normalized = _validate_parameter_contract_antigravity(sql, parameters)
+        except ValueError:
+            self._record_denied_sql(sql)
+            raise
+        self.raw_sql_execute_count += 1
+        self._active_sql = normalized
+        try:
+            cursor = executor.execute(sql) if (type(parameters) in (tuple, list) and len(parameters) == 0) else executor.execute(sql, parameters)
+        finally:
+            self._active_sql = None
+        return _ValidatedCursorAntigravity(self, cursor)
+
     @contextmanager
-    def worker_connection_antigravity(self) -> Iterator[sqlite3.Connection]:
+    def worker_connection_antigravity(self) -> Iterator[_ValidatedConnectionAntigravity]:
         """Open a read-only immutable connection from the retained pin inode."""
         self._verify_boundary("worker:before")
         pin_fd: int | None = None
@@ -324,9 +437,10 @@ class PinnedDatabaseAntigravity:
             if _identity(pin_info) != self.pin_inode or _metadata(pin_info) != self.source_metadata:
                 raise ValueError("worker connection is not bound to parent pin")
             connection = sqlite3.connect(_descriptor_uri(pin_fd), uri=True)
-            connection.execute("PRAGMA query_only=ON")
             connection.set_trace_callback(self._trace)
-            yield connection
+            connection.set_authorizer(self._authorizer)
+            connection.execute("PRAGMA query_only=ON")
+            yield _ValidatedConnectionAntigravity(self, connection)
         except sqlite3.Error as error:
             raise ValueError("immutable worker connection failed") from error
         finally:
@@ -334,6 +448,9 @@ class PinnedDatabaseAntigravity:
                 connection.close()
             if pin_fd is not None:
                 os.close(pin_fd)
+            hook = _AFTER_QUERY_HOOK_ANTIGRAVITY
+            if hook is not None:
+                hook(self)
             self._verify_boundary("worker:after")
 
     # Short aliases keep worker call sites explicit while preserving one
@@ -343,14 +460,12 @@ class PinnedDatabaseAntigravity:
 
     def _trace(self, statement: str) -> None:
         self.sql_trace.append(statement)
-        _validate_trace_statement(statement)
-        lowered = statement.casefold()
-        if "label" in lowered or "labels_blob" in lowered:
-            # TRAIN label='0' is the one explicitly permitted predicate, but
-            # still count any attempted TEST/evaluation access defensively.
-            if "split = 'test'" in lowered or "labels_blob" in lowered or "evaluation" in lowered:
-                self.label_access_count += 1
-                raise ValueError("forbidden label/evaluation SQL")
+        try:
+            _validate_trace_statement(statement)
+        except ValueError:
+            # sqlite3 suppresses trace callback exceptions; keep this callback
+            # observational and make the execution gate authoritative.
+            self.denied_sql_trace.append(statement)
 
     def close(self, *, terminal_evidence_durable: bool = False) -> None:
         if self._closed:
@@ -400,6 +515,9 @@ def pin_database_snapshot_antigravity(database: Path | str, attempt_root: Path |
         # particular, opening a FIFO with O_RDONLY would otherwise wait for a
         # writer and violate the fail-closed input boundary.
         _require_regular(source, label="database pathname")
+        hook = _DATABASE_PRE_OPEN_HOOK_ANTIGRAVITY
+        if hook is not None:
+            hook(source)
         descriptor = os.open(source, _FILE_FLAGS)
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode) or before.st_nlink < 1:
@@ -463,13 +581,34 @@ def load_raw_dataset_antigravity(pinned_database: PinnedDatabaseAntigravity, dat
     return RawDatasetAntigravity(dataset, train, test, next(iter(lengths)))
 
 
-def scan_missing_inventory_antigravity(pinned_database: PinnedDatabaseAntigravity, population: Sequence[str]) -> MissingInventoryAntigravity:
+def parse_dataset_family_antigravity(dataset: str) -> str:
+    if type(dataset) is not str or not dataset:
+        raise ValueError("dataset family input is invalid")
+    return dataset.rsplit("_normal_", 1)[0] if "_normal_" in dataset else dataset
+
+
+def scan_missing_inventory_antigravity(
+    pinned_database: PinnedDatabaseAntigravity,
+    population: Sequence[str],
+    *,
+    expected_affected_family_count: int | None = FROZEN_CONFIG.affected_family_count,
+    expected_test_rows_by_dataset: Mapping[str, int] | None = None,
+    expected_target_length_by_dataset: Mapping[str, int] | None = None,
+    database_exclusions: frozenset[str] = FROZEN_DATABASE_EXCLUSIONS_ANTIGRAVITY,
+) -> MissingInventoryAntigravity:
     """Scan original normal TRAIN blobs and record missingness before repair."""
     if not isinstance(pinned_database, PinnedDatabaseAntigravity):
         raise ValueError("pinned database is invalid")
     names = tuple(population)
     if not names or names != tuple(sorted(set(names))) or any(type(name) is not str or not name for name in names):
         raise ValueError("population must be sorted and unique")
+    if expected_affected_family_count is not None and (type(expected_affected_family_count) is not int or expected_affected_family_count < 1):
+        raise ValueError("affected family authority is invalid")
+    for authority in (expected_test_rows_by_dataset, expected_target_length_by_dataset):
+        if authority is not None and set(authority) != set(names):
+            raise ValueError("dataset authority population is incomplete")
+        if authority is not None and any(type(value) is not int or value < 1 for value in authority.values()):
+            raise ValueError("dataset authority values are invalid")
     missing_rows: dict[str, int] = {name: 0 for name in names}
     test_rows: dict[str, int] = {}
     raw_hashes: dict[str, str] = {}
@@ -483,6 +622,15 @@ def scan_missing_inventory_antigravity(pinned_database: PinnedDatabaseAntigravit
         quick = connection.execute(QUICK_CHECK_SQL_ANTIGRAVITY).fetchall()
         if quick != [("ok",)]:
             raise ValueError("SQLite quick_check failed")
+        population_rows = connection.execute(POPULATION_SQL_ANTIGRAVITY).fetchall()
+        raw_database_population = tuple(row[0] for row in population_rows)
+        if any(len(row) != 1 or type(row[0]) is not str or not row[0] for row in population_rows) or raw_database_population != tuple(sorted(set(raw_database_population))):
+            raise ValueError("database population identity is invalid")
+        if not isinstance(database_exclusions, frozenset) or any(type(name) is not str or not name for name in database_exclusions) or not database_exclusions.issubset(raw_database_population):
+            raise ValueError("database exclusions are invalid")
+        database_population = tuple(name for name in raw_database_population if name not in database_exclusions)
+        if len(raw_database_population) != len(names) + len(database_exclusions) or database_population != names:
+            raise ValueError("database population disagrees with frozen authority")
         for dataset in names:
             rows = connection.execute(NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, (dataset,)).fetchall()
             decoded = _decode_rows(rows, dataset, "TRAIN")
@@ -495,6 +643,12 @@ def scan_missing_inventory_antigravity(pinned_database: PinnedDatabaseAntigravit
             for row in identities:
                 if type(row[1]) is not int or row[1] <= 0 or row[1] % 4:
                     raise ValueError(f"TEST identity length is invalid for {dataset}")
+            if expected_test_rows_by_dataset is not None and len(identities) != expected_test_rows_by_dataset[dataset]:
+                raise ValueError(f"TEST row count disagrees with authority for {dataset}")
+            # Exp249 target_length is a transformed-cache metadata authority;
+            # raw SQLite blobs may be ragged and are not required to equal the
+            # resampled feature length.  The complete keyed authority is
+            # validated above and retained in FrozenSourceSnapshot.
             test_rows[dataset] = len(identities)
             for item in decoded:
                 key = f"{dataset}/{item.instance_index}"
@@ -505,13 +659,13 @@ def scan_missing_inventory_antigravity(pinned_database: PinnedDatabaseAntigravit
                     missing_rows[dataset] += 1
                     affected_row_count += 1
                     scalar_count += len(item.missing_positions)
-                    if not item.missing_positions:
-                        all_missing_count += 1
-                    family = dataset.rsplit("_normal_", 1)[0] if "_normal_" in dataset else dataset
+                    family = parse_dataset_family_antigravity(dataset)
                     families.add(family)
                 if not np.isfinite(item.values).any():
                     all_missing_count += 1
     affected_names = tuple(sorted(affected))
+    if expected_affected_family_count is not None and len(families) != expected_affected_family_count:
+        raise ValueError("affected family count disagrees with frozen authority")
     affected_sha = sha256(json.dumps(list(affected_names), ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
     return MissingInventoryAntigravity(
         names, affected_names, tuple(sorted(families)), affected_row_count, scalar_count,
@@ -522,8 +676,8 @@ def scan_missing_inventory_antigravity(pinned_database: PinnedDatabaseAntigravit
 
 __all__ = [
     "NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY", "TEST_VALUES_SQL_ANTIGRAVITY", "TEST_IDENTITY_SQL_ANTIGRAVITY",
-    "POPULATION_SQL_ANTIGRAVITY", "QUICK_CHECK_SQL_ANTIGRAVITY", "EXPECTED_DATABASE_SHA256_ANTIGRAVITY",
+    "POPULATION_SQL_ANTIGRAVITY", "QUICK_CHECK_SQL_ANTIGRAVITY", "FROZEN_DATABASE_EXCLUSIONS_ANTIGRAVITY", "EXPECTED_DATABASE_SHA256_ANTIGRAVITY",
     "PinnedDatabaseAntigravity", "RawDatasetAntigravity", "MissingInventoryAntigravity",
     "pin_database_snapshot_antigravity", "load_raw_dataset_antigravity", "scan_missing_inventory_antigravity",
-    "validate_prediction_sql_antigravity",
+    "validate_prediction_sql_antigravity", "parse_dataset_family_antigravity",
 ]

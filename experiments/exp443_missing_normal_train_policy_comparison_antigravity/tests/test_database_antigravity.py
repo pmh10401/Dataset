@@ -124,12 +124,96 @@ ORDER BY i.instance_index""",
                 self.assertTrue(all("labels_blob" not in sql.lower() for sql in pinned.sql_trace))
                 self.assertFalse(any("split = 'test'" in sql.lower() and "label" in sql.lower() for sql in pinned.sql_trace))
             finally:
+                pinned.close(terminal_evidence_durable=True)
+
+    def test_worker_execute_gate_denies_before_raw_execution_and_audits(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self._db(root)
+            expected = sha256(source.read_bytes()).hexdigest()
+            pinned = database.pin_database_snapshot_antigravity(source, root / "attempt_antigravity", expected_sha256=expected)
+            try:
+                with pinned.worker_connection_antigravity() as connection:
+                    before = pinned.raw_sql_execute_count
+                    forbidden = (
+                        "SELECT i.instance_index, i.values_blob FROM instances AS i JOIN datasets AS d ON d.id = i.dataset_id WHERE d.name = ? AND i.split = 'TEST' AND i.label = '0' ORDER BY i.instance_index",
+                        "SELECT i.instance_index, i.labels_blob FROM instances AS i JOIN datasets AS d ON d.id = i.dataset_id WHERE d.name = ? AND i.split = 'TRAIN' AND i.label = '0' ORDER BY i.instance_index",
+                        "SELECT * FROM evaluation",
+                    )
+                    for sql in forbidden:
+                        with self.assertRaises(ValueError):
+                            connection.execute(sql, ("Tiny_normal_0",))
+                    self.assertEqual(pinned.raw_sql_execute_count, before)
+                    self.assertEqual(pinned.denied_sql_attempts, 3)
+                    self.assertEqual(pinned.label_access_count, 2)
+                    self.assertEqual(len(pinned.denied_sql_trace), 3)
+                    cursor = connection.execute(database.TEST_VALUES_SQL_ANTIGRAVITY, ("Tiny_normal_0",))
+                    with self.assertRaises(ValueError):
+                        cursor.execute("SELECT * FROM evaluation")
+                    self.assertEqual(pinned.raw_sql_execute_count, before + 1)
+                    approved = connection.execute(database.NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, ("Tiny_normal_0",)).fetchall()
+                    self.assertEqual([row[0] for row in approved], [0, 1])
+                self.assertEqual(pinned.label_access_count, 2)
+            finally:
+                pinned.close(terminal_evidence_durable=True)
+
+    def test_database_pre_open_swap_to_fifo_and_symlink_is_fail_closed(self) -> None:
+        for replacement_kind in ("fifo", "symlink"):
+            with self.subTest(replacement_kind=replacement_kind), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                source = self._db(root)
+                expected = sha256(source.read_bytes()).hexdigest()
+                backup = root / "source_backup_antigravity.db"
+
+                def swap(_path: Path, *, kind: str = replacement_kind) -> None:
+                    source.rename(backup)
+                    if kind == "fifo":
+                        os.mkfifo(source)
+                    else:
+                        source.symlink_to(backup)
+
+                previous = database._DATABASE_PRE_OPEN_HOOK_ANTIGRAVITY
+                database._DATABASE_PRE_OPEN_HOOK_ANTIGRAVITY = swap
                 try:
-                    pinned.close(terminal_evidence_durable=True)
-                except ValueError:
-                    # The deliberately replaced source pathname is retained as
-                    # mutation evidence; cleanup must not hide that failure.
-                    pass
+                    with self.assertRaises((OSError, ValueError)):
+                        database.pin_database_snapshot_antigravity(source, root / "attempt_antigravity", expected_sha256=expected)
+                finally:
+                    database._DATABASE_PRE_OPEN_HOOK_ANTIGRAVITY = previous
+                    if source.is_symlink() or source.exists():
+                        source.unlink()
+                    backup.rename(source)
+
+    def test_after_query_source_or_pin_mutation_fails_revalidation(self) -> None:
+        for target in ("source", "pin"):
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                source = self._db(root)
+                expected = sha256(source.read_bytes()).hexdigest()
+                pinned = database.pin_database_snapshot_antigravity(source, root / "attempt_antigravity", expected_sha256=expected)
+                target_path = source if target == "source" else pinned.pin_path
+                backup = target_path.with_name(target_path.name + ".backup_antigravity")
+
+                def swap(_owner: object) -> None:
+                    target_path.rename(backup)
+                    target_path.symlink_to(backup)
+
+                previous = database._AFTER_QUERY_HOOK_ANTIGRAVITY
+                database._AFTER_QUERY_HOOK_ANTIGRAVITY = swap
+                try:
+                    with self.assertRaises(ValueError):
+                        with pinned.worker_connection_antigravity() as connection:
+                            connection.execute(database.TEST_VALUES_SQL_ANTIGRAVITY, ("Tiny_normal_0",)).fetchall()
+                finally:
+                    database._AFTER_QUERY_HOOK_ANTIGRAVITY = previous
+                    if target_path.is_symlink() or target_path.exists():
+                        target_path.unlink()
+                    backup.rename(target_path)
+                    try:
+                        pinned.close(terminal_evidence_durable=True)
+                    except ValueError:
+                        # Boundary failure is the assertion; descriptor cleanup
+                        # has already run and the mutation evidence is retained.
+                        pass
 
     def test_raw_loader_decodes_nonfinite_mask_and_rejects_path_replacement(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -166,7 +250,7 @@ ORDER BY i.instance_index""",
             try:
                 with self.assertRaises(ValueError):
                     database.scan_missing_inventory_antigravity(pinned, ("Tiny_normal_0", "Tiny_normal_0"))
-                inventory = database.scan_missing_inventory_antigravity(pinned, ("Tiny_normal_0",))
+                inventory = database.scan_missing_inventory_antigravity(pinned, ("Tiny_normal_0",), expected_affected_family_count=1, database_exclusions=frozenset())
                 self.assertEqual(inventory.population, ("Tiny_normal_0",))
                 self.assertEqual(inventory.affected_rows, 1)
                 self.assertEqual(inventory.nonfinite_scalars, 1)
