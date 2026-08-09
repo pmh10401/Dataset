@@ -1,10 +1,10 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-09T11:52:02Z",
+  "updated_at": "2026-08-09T12:10:31Z",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
-  "last_verified_commit": "c11da5021ba68e1a67a54c661b0e5a29d35da703",
+  "last_verified_commit": "e463f26e975376f3507306408ca04490eb588df8",
   "active_experiment": "Exp443",
   "active_phase": "implementation_verified_awaiting_scoped_rereview",
   "status": "in_progress",
@@ -29,15 +29,19 @@
       "leave_one_out_peer_median"
     ],
     "recompute_units": 57,
-    "implementation_commit": "c11da5021ba68e1a67a54c661b0e5a29d35da703",
-    "implementation_map_commit": "e59a8db7ff4305da9927e7367d2e44d2d707de40",
+    "implementation_commit": "e463f26e975376f3507306408ca04490eb588df8",
+    "implementation_map_commit": "58e8267e2b2a245341f77bf0f7b7b0f943455855",
     "first_reviewed_head": "40ddc4e5",
     "first_review_result": "fix_first",
     "review_fix_commits": [
       "943e8ce0",
       "0639db79",
-      "c11da502"
+      "c11da502",
+      "d9907603",
+      "e463f26e"
     ],
+    "second_reviewed_head": "5eb7b39a",
+    "second_review_result": "fix_first",
     "reviewed_implementation_commit": null,
     "fresh_sol_high_review": "pending",
     "official_run_started": false,
@@ -48,7 +52,7 @@
     "test_labels_opened": false,
     "exact_next_command": "scoped_sol_high_read_only_rereview_current_clean_head",
     "verification": {
-      "exp443_tests_passed": 170,
+      "exp443_tests_passed": 174,
       "exp443_expected_skips": 2,
       "exp249_250_regression_tests_passed": 13,
       "compileall_passed": true,

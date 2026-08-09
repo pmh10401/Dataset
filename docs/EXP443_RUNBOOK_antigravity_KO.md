@@ -52,10 +52,13 @@ ordered `(policy, dataset)` prefix와 payload SHA를 보존한다. 프로세스�
 input/config/environment hash와 유효 ordered prefix를 검증한 뒤 미완료 unit만
 계산한다. 성공한 `new`/`resume`은 terminal-complete progress를 먼저 기록하고
 세 prediction publication을 create-only로 만든다. publication 실패 시 DB pin을
-남겨 같은 attempt를 재개한다. `inspect`는 SQLite label query나 파일 생성 없이
-기존 publication/checkpoint/source bytes만 재검증한다. `evaluate`만 세
-prediction freeze 후 TEST label을 열어 별도 evaluation을 만든다. 실패 root와
-staging은 감사 증거로 보존한다.
+남긴다. 같은 attempt의 `resume`은 complete checkpoint와
+progress/PID/events/text bytes를 읽기 전용으로 확인하고, 완료 로그나 저장된
+process identity를 바꾸지 않은 채 publication만 재시도한다. 성공 후에만 pin을
+정리한다. `inspect`는 SQLite label query나 파일 생성 없이 기존
+publication/checkpoint/source bytes만 재검증한다. `evaluate`만 세 prediction
+freeze 후 TEST label을 열어 별도 evaluation을 만든다. 실패 root와 staging은
+감사 증거로 보존한다.
 
 ## 고정 명령 (scoped re-review 통과 후에만)
 
