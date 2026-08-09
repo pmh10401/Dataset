@@ -404,6 +404,8 @@ class Exp443CheckpointStoreAntigravity:
         if status not in _STATUSES:
             raise ValueError("checkpoint terminal status is invalid")
         stored_process = ProcessIdentityAntigravity.from_payload_antigravity(state_payload["process"])
+        if process == stored_process:
+            raise ValueError("checkpoint replacement process identity is unchanged")
         try:
             active = bool(pid_probe(stored_process))
         except BaseException as error:

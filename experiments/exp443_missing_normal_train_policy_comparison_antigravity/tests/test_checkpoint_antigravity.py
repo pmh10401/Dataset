@@ -60,6 +60,14 @@ def _process():
     return ProcessIdentityAntigravity(pid=4242, start_identity="start-A")
 
 
+def _replacement_process(pid: int = 5252, start_identity: str = "resume-B"):
+    from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+        ProcessIdentityAntigravity,
+    )
+
+    return ProcessIdentityAntigravity(pid=pid, start_identity=start_identity)
+
+
 def _result(policy: str, dataset: str) -> PolicyDatasetResultAntigravity:
     scores = []
     for kernel in (1024, 4096):
@@ -160,7 +168,7 @@ class CheckpointStoreAntigravityTests(unittest.TestCase):
                 store.commit_result_antigravity(2, _result(units[2].policy, units[2].dataset))
             with self.assertRaisesRegex(ValueError, "terminal"):
                 Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
-                    root, _binding(), _process(), lambda _: False
+                    root, _binding(), _replacement_process(5201), lambda _: False
                 )
 
     def test_resume_rejects_active_binding_and_corrupted_prefix(self) -> None:
@@ -177,17 +185,17 @@ class CheckpointStoreAntigravityTests(unittest.TestCase):
             store.commit_result_antigravity(0, _result(units[0].policy, units[0].dataset))
             with self.assertRaisesRegex(ValueError, "active"):
                 Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
-                    root, _binding(), _process(), lambda _: True
+                    root, _binding(), _replacement_process(5202), lambda _: True
                 )
             resumed = Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
-                root, _binding(), _process(), lambda _: False
+                root, _binding(), _replacement_process(5203), lambda _: False
             )
             resumed.commit_result_antigravity(1, _result(units[1].policy, units[1].dataset))
             record = root / "records_antigravity" / "0001_record_antigravity.json"
             record.write_bytes(record.read_bytes() + b"\n")
             with self.assertRaisesRegex(ValueError, "record"):
                 Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
-                    root, _binding(), _process(), lambda _: False
+                    root, _binding(), _replacement_process(5204), lambda _: False
                 )
 
     def test_resume_rejects_missing_record_and_malformed_state_prefix(self) -> None:
@@ -208,7 +216,7 @@ class CheckpointStoreAntigravityTests(unittest.TestCase):
             (root / "records_antigravity" / "0000_record_antigravity.json").unlink()
             with self.assertRaisesRegex(ValueError, "inventory"):
                 Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
-                    root, _binding(), _process(), lambda _: False
+                    root, _binding(), _replacement_process(5205), lambda _: False
                 )
 
         with tempfile.TemporaryDirectory(prefix="exp443_task7_checkpoint_antigravity_") as directory:
@@ -223,7 +231,7 @@ class CheckpointStoreAntigravityTests(unittest.TestCase):
             state_path.write_bytes(canonical_json_bytes_antigravity(state))
             with self.assertRaisesRegex(ValueError, "prefix"):
                 Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
-                    root, _binding(), _process(), lambda _: False
+                    root, _binding(), _replacement_process(5206), lambda _: False
                 )
 
         with tempfile.TemporaryDirectory(prefix="exp443_task7_checkpoint_antigravity_") as directory:
@@ -237,7 +245,7 @@ class CheckpointStoreAntigravityTests(unittest.TestCase):
             state_path.write_bytes(canonical_json_bytes_antigravity(state))
             with self.assertRaisesRegex(ValueError, "heartbeat"):
                 Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
-                    root, _binding(), _process(), lambda _: False
+                    root, _binding(), _replacement_process(5207), lambda _: False
                 )
 
     def test_binding_change_completed_attempt_and_interruption_are_gated(self) -> None:
@@ -256,7 +264,7 @@ class CheckpointStoreAntigravityTests(unittest.TestCase):
             state = json.loads((root / "state_antigravity.json").read_text())
             self.assertEqual(state["status"], "interrupted_resumable")
             resumed = Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
-                root, _binding(), _process(), lambda _: False
+                root, _binding(), _replacement_process(5208), lambda _: False
             )
             with self.assertRaisesRegex(ValueError, "binding"):
                 Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
@@ -269,14 +277,14 @@ class CheckpointStoreAntigravityTests(unittest.TestCase):
                         database_sha256=_binding().database_sha256,
                         reviewed_commit=_binding().reviewed_commit,
                     ),
-                    _process(),
+                    _replacement_process(5209),
                     lambda _: False,
                 )
             for unit in units[1:]:
                 resumed.commit_result_antigravity(unit.sequence, _result(unit.policy, unit.dataset))
             with self.assertRaisesRegex(ValueError, "complete"):
                 Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
-                    root, _binding(), _process(), lambda _: False
+                    root, _binding(), _replacement_process(5210), lambda _: False
                 )
 
     def test_resume_rebinds_new_process_and_blocks_second_active_resume(self) -> None:
@@ -425,6 +433,24 @@ class CheckpointStoreAntigravityTests(unittest.TestCase):
             reconciled = json.loads(state_path.read_text())
             self.assertEqual(reconciled["completed_count"], 1)
             self.assertEqual(reconciled["process"], new_process.to_payload_antigravity())
+
+    def test_resume_rejects_replacement_identity_equal_to_stored_process(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            Exp443CheckpointStoreAntigravity,
+        )
+
+        units = _units()
+        stored_process = _process()
+        with tempfile.TemporaryDirectory(prefix="exp443_task7_checkpoint_same_process_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            store = Exp443CheckpointStoreAntigravity.create_antigravity(
+                root, units, _binding(), stored_process
+            )
+            store.mark_interrupted_resumable_antigravity()
+            with self.assertRaisesRegex(ValueError, "replacement|identity"):
+                Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
+                    root, _binding(), stored_process, lambda _: False
+                )
 
 
 if __name__ == "__main__":
