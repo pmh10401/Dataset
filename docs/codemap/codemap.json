@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-09T11:30:18Z",
+  "generated_at": "2026-08-09T11:31:15Z",
   "generated_from_commit": "1cc97727",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
@@ -473,7 +473,7 @@
         },
         {
           "path": "docs/EXP443_RUNBOOK_antigravity_KO.md",
-          "symbol": "## 예정 명령 (구현 후에만)"
+          "symbol": "## 고정 명령 (fresh review 통과 후에만)"
         },
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/config_antigravity.py",
