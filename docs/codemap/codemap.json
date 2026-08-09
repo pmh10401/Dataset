@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T00:59:24Z",
-  "generated_from_commit": "d8d96664ca541074694aea3846ffcef5ddaa8063",
+  "generated_at": "2026-08-09T01:19:29Z",
+  "generated_from_commit": "2281e2091b5e36cd8012a926ffb840d329e20fec",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -440,6 +440,14 @@
         {
           "path": "docs/superpowers/plans/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity.md",
           "symbol": "### Task 13: Evaluate once, record the result, and pause for direction discussion"
+        },
+        {
+          "path": "docs/EXP443_PREREGISTRATION_antigravity_KO.md",
+          "symbol": "## 거버넌스 해석 (flat block)"
+        },
+        {
+          "path": "docs/EXP443_RUNBOOK_antigravity_KO.md",
+          "symbol": "## 예정 명령 (구현 후에만)"
         }
       ]
     },
