@@ -14,7 +14,7 @@ from typing import TextIO
 
 from .config_antigravity import FROZEN_CONFIG
 from .readiness_antigravity import run_readiness_antigravity
-from .reporting_antigravity import inspect_publication_antigravity, publish_predictions_antigravity
+from .reporting_antigravity import inspect_publication_antigravity
 from .runtime_antigravity import resume_exp443_antigravity, run_exp443_new_antigravity
 
 
@@ -38,7 +38,7 @@ class _ArgumentParserAntigravity(argparse.ArgumentParser):
 class CliDependenciesAntigravity:
     """Small injectable command seams; evaluator import remains explicit."""
 
-    __slots__ = ("readiness", "new", "resume", "publish", "inspect", "import_module")
+    __slots__ = ("readiness", "new", "resume", "inspect", "import_module")
 
     def __init__(
         self,
@@ -46,7 +46,6 @@ class CliDependenciesAntigravity:
         readiness: Callable[[str], object],
         new: Callable[[str], object],
         resume: Callable[[str, str], object],
-        publish: Callable[[Path], object],
         inspect: Callable[[Path], object],
         import_module: Callable[[str], object],
     ) -> None:
@@ -54,7 +53,6 @@ class CliDependenciesAntigravity:
             "readiness": readiness,
             "new": new,
             "resume": resume,
-            "publish": publish,
             "inspect": inspect,
             "import_module": import_module,
         }
@@ -71,7 +69,6 @@ def _default_dependencies_antigravity() -> CliDependenciesAntigravity:
         resume=lambda commit, attempt: resume_exp443_antigravity(
             reviewed_commit=commit, attempt_name=attempt,
         ),
-        publish=publish_predictions_antigravity,
         inspect=inspect_publication_antigravity,
         import_module=importlib.import_module,
     )
@@ -167,7 +164,7 @@ def _run_command_antigravity(args: argparse.Namespace, dependencies: CliDependen
         )
     attempt = _attempt_path_antigravity()
     if args.command == "inspect":
-        return dependencies.publish(attempt)
+        return dependencies.inspect(attempt)
     if args.command == "evaluate":
         # This inspection must complete before the only label-capable module is
         # imported. The evaluator independently repeats the inspection.

@@ -582,5 +582,10 @@ class ProgressWriterAntigravity:
     def completed_count_antigravity(self) -> int:
         return self._completed
 
+    @property
+    def stage_antigravity(self) -> str:
+        """Expose the immutable current stage for runtime failure routing."""
+        return self._stage
+
 
 __all__ = ["ProgressWriterAntigravity"]

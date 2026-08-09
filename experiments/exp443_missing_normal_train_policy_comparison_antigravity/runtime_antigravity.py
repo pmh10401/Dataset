@@ -484,10 +484,44 @@ def _record_terminal_error_antigravity(
     error: BaseException,
 ) -> None:
     """Write one ordered terminal error and close the parent progress log."""
+    if getattr(writer, "stage_antigravity", None) == "complete":
+        # Prediction is already durably complete. Publication owns its own
+        # immutable failure evidence and completed progress must not be
+        # rewritten as a scoring error.
+        return
     if store.status_antigravity not in {"error", "complete"} and store.completed_count_antigravity < len(units):
         next_sequence = store.completed_count_antigravity
         store.commit_error_antigravity(next_sequence, units[next_sequence], error)
     writer.terminal_antigravity("error", str(error) or type(error).__name__)
+
+
+def _publish_completed_attempt_antigravity(
+    attempt: Path,
+    *,
+    publisher: Callable[[Path], object] | None = None,
+) -> object:
+    """Publish after terminal progress, using one lazy label-free import."""
+    if publisher is None:
+        from .reporting_antigravity import publish_predictions_antigravity
+
+        publisher = publish_predictions_antigravity
+    return publisher(Path(attempt))
+
+
+def _publication_result_antigravity(publication: object) -> dict[str, object]:
+    required = (
+        "publication_path", "manifest_sha256", "artifact_map_sha256",
+        "prediction_sha256", "label_access_count",
+    )
+    if any(not hasattr(publication, name) for name in required):
+        raise ValueError("runtime publication result is invalid")
+    return {
+        "publication_path": str(getattr(publication, "publication_path")),
+        "manifest_sha256": str(getattr(publication, "manifest_sha256")),
+        "artifact_map_sha256": str(getattr(publication, "artifact_map_sha256")),
+        "prediction_sha256": dict(getattr(publication, "prediction_sha256")),
+        "label_access_count": getattr(publication, "label_access_count"),
+    }
 
 
 def _execute_policy_phases_antigravity(
@@ -667,22 +701,32 @@ def _run_exp443_antigravity(
             predictions[policy] = sha256(prediction_bytes).hexdigest()
         _source_snapshot_and_environment_antigravity(reviewed_commit, readiness)
         writer.terminal_antigravity("complete", None)
+        publication = _publish_completed_attempt_antigravity(attempt)
         finalized = True
         return {
             "attempt": str(attempt), "checkpoint_completed": store.completed_count_antigravity,
             "control": _control_payload_antigravity(control), "prediction_sha256": predictions,
+            "publication": _publication_result_antigravity(publication),
             "label_access_count": 0,
         }
     except WorkerFailureAntigravity as failure:
+        if finalized or writer.stage_antigravity == "complete":
+            raise
         _record_terminal_error_antigravity(store, writer, units, failure)
         raise
     except _InterruptedRuntimeAntigravity as interruption:
+        if finalized or writer.stage_antigravity == "complete":
+            raise
         _mark_interrupted_antigravity(store, writer, str(interruption))
         raise
     except KeyboardInterrupt as interruption:
+        if finalized or writer.stage_antigravity == "complete":
+            raise
         _mark_interrupted_antigravity(store, writer, str(interruption) or "KeyboardInterrupt")
         raise
     except BaseException as error:
+        if finalized or writer.stage_antigravity == "complete":
+            raise
         _record_terminal_error_antigravity(store, writer, units, error)
         raise
     finally:
@@ -709,4 +753,5 @@ __all__ = [
     "run_exp443_new_antigravity", "resume_exp443_antigravity",
     "_mark_interrupted_antigravity", "_record_terminal_error_antigravity",
     "_write_prediction_idempotent_antigravity", "_resume_attempt_root_antigravity",
+    "_publish_completed_attempt_antigravity", "_publication_result_antigravity",
 ]

@@ -2,6 +2,7 @@
 """Run Exp443 from the fixed external environment and any current directory."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import sys
 from typing import Sequence
@@ -27,17 +28,41 @@ def _validate_interpreter_antigravity(*, executable: str | None = None) -> None:
         raise RuntimeError("Exp443 official interpreter environment is not active")
 
 
+def _write_failure_antigravity(command: str | None, error: BaseException) -> None:
+    payload = {
+        "schema": "exp443.wrapper-status.v1",
+        "command": command,
+        "status": "error",
+        "error_type": type(error).__name__,
+        "error": str(error) or type(error).__name__,
+    }
+    sys.stderr.write(json.dumps(
+        payload, sort_keys=True, separators=(",", ":"),
+        ensure_ascii=False, allow_nan=False,
+    ) + "\n")
+    sys.stderr.flush()
+
+
 def main_antigravity(argv: Sequence[str] | None = None) -> int:
-    _validate_interpreter_antigravity()
-    repository = Path(__file__).resolve().parents[1]
-    if not (repository / "experiments").is_dir():
-        raise RuntimeError("Exp443 repository root is invalid")
-    if str(repository) not in sys.path:
-        sys.path.insert(0, str(repository))
-    from experiments.exp443_missing_normal_train_policy_comparison_antigravity.cli_antigravity import (
-        main_antigravity as cli_main_antigravity,
-    )
-    return cli_main_antigravity(argv)
+    arguments = tuple(sys.argv[1:] if argv is None else argv)
+    command = arguments[0] if arguments else None
+    try:
+        _validate_interpreter_antigravity()
+        repository = Path(__file__).resolve().parents[1]
+        if not (repository / "experiments").is_dir():
+            raise RuntimeError("Exp443 repository root is invalid")
+        if str(repository) not in sys.path:
+            sys.path.insert(0, str(repository))
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.cli_antigravity import (
+            main_antigravity as cli_main_antigravity,
+        )
+        return cli_main_antigravity(arguments)
+    except KeyboardInterrupt as error:
+        _write_failure_antigravity(command, error)
+        return 130
+    except Exception as error:
+        _write_failure_antigravity(command, error)
+        return 1
 
 
 if __name__ == "__main__":
