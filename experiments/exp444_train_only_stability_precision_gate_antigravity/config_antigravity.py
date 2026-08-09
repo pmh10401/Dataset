@@ -90,11 +90,11 @@ class Exp444FrozenConfig:
     database_sha256: str = FROZEN_INPUT_SHA256_ANTIGRAVITY["database"]
     exp404_hard_prediction_path: str = str(_DATASET_ROOT / "exp403_408_feature_ml_validation/exp404_hard_confidence.jsonl")
     exp404_hard_prediction_sha256: str = FROZEN_INPUT_SHA256_ANTIGRAVITY["exp404_hard_prediction"]
-    exp442_prediction_path: str = str(_DATASET_ROOT / "exp442_terminal_eta_publication_repair_antigravity_20260809/prediction_antigravity.jsonl")
+    exp442_prediction_path: str = str(_DATASET_ROOT / "exp442_terminal_eta_publication_repair_antigravity_20260808/publication_antigravity/prediction_antigravity.jsonl")
     exp442_prediction_sha256: str = FROZEN_INPUT_SHA256_ANTIGRAVITY["exp442_prediction"]
-    exp442_candidate_ranking_path: str = str(_DATASET_ROOT / "exp442_terminal_eta_publication_repair_antigravity_20260809/candidate_ranking_antigravity.jsonl")
+    exp442_candidate_ranking_path: str = str(_DATASET_ROOT / "exp442_terminal_eta_publication_repair_antigravity_20260808/publication_antigravity/candidate_ranking_antigravity.jsonl")
     exp442_candidate_ranking_sha256: str = FROZEN_INPUT_SHA256_ANTIGRAVITY["exp442_candidate_ranking"]
-    exp442_selection_path: str = str(_DATASET_ROOT / "exp442_terminal_eta_publication_repair_antigravity_20260809/selection_antigravity.json")
+    exp442_selection_path: str = str(_DATASET_ROOT / "exp442_terminal_eta_publication_repair_antigravity_20260808/attempts_antigravity/attempt_0000_antigravity/selection_antigravity.json")
     exp442_selection_sha256: str = FROZEN_INPUT_SHA256_ANTIGRAVITY["exp442_selection"]
     exp442_selected_coordinate_identity_sha256: str = FROZEN_INPUT_SHA256_ANTIGRAVITY["exp442_selected_coordinate_identity"]
     run_root: str = str(_RUN_ROOT)

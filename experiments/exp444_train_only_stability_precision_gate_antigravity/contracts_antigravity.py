@@ -17,6 +17,8 @@ import re
 from types import MappingProxyType
 from typing import Any
 
+import numpy as np
+
 from .config_antigravity import FROZEN_CONFIG, scientific_config_sha256_antigravity
 
 
@@ -162,6 +164,111 @@ class SourceCandidateAntigravity:
             raise ValueError("original_depths must be a list")
         raw["original_depths"] = tuple(raw["original_depths"])
         return cls(**raw)
+
+
+def _freeze_values_array_antigravity(value: object, name: str, *, ndim: int) -> np.ndarray:
+    """Copy a numeric values matrix/vector onto immutable bytes."""
+    array = np.asarray(value)
+    if array.dtype != np.dtype("<f4") or array.ndim != ndim:
+        raise ValueError(f"{name} must be a little-endian float32 array")
+    if not np.isfinite(array).all() and name == "train_values":
+        raise ValueError("train_values must contain only finite rows")
+    contiguous = np.array(array, dtype="<f4", copy=True, order="C")
+    frozen = np.frombuffer(contiguous.tobytes(order="C"), dtype="<f4").reshape(contiguous.shape)
+    frozen.setflags(write=False)
+    return frozen
+
+
+@dataclass(frozen=True)
+class CandidateInputAntigravity:
+    """Copied, values-only input for one frozen Exp442 coordinate.
+
+    ``train_values`` contains only finite normal TRAIN rows in the candidate's
+    exact-length group.  ``test_values`` is the one bound TEST values row and
+    intentionally carries no label or evaluation metadata.
+    """
+
+    candidate: SourceCandidateAntigravity
+    train_indices: tuple[int, ...]
+    train_values: np.ndarray
+    test_values: np.ndarray
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.candidate, SourceCandidateAntigravity):
+            raise ValueError("candidate input identity is invalid")
+        indices = _tuple_ints(self.train_indices, "train_indices", sorted_unique=True)
+        if not indices or len(indices) != len(set(indices)):
+            raise ValueError("train_indices are invalid")
+        train = _freeze_values_array_antigravity(self.train_values, "train_values", ndim=2)
+        test = _freeze_values_array_antigravity(self.test_values, "test_values", ndim=1)
+        if train.shape[0] != len(indices) or train.shape[1] != self.candidate.raw_length:
+            raise ValueError("TRAIN values do not match candidate raw length")
+        if test.shape[0] != self.candidate.raw_length:
+            raise ValueError("TEST values do not match candidate raw length")
+        object.__setattr__(self, "train_indices", indices)
+        object.__setattr__(self, "train_values", train)
+        object.__setattr__(self, "test_values", test)
+
+    @property
+    def dataset(self) -> str:
+        return self.candidate.dataset
+
+    @property
+    def instance_index(self) -> int:
+        return self.candidate.instance_index
+
+    @property
+    def raw_length(self) -> int:
+        return self.candidate.raw_length
+
+    @property
+    def train_instance_indices(self) -> tuple[int, ...]:
+        return self.train_indices
+
+
+@dataclass(frozen=True)
+class FrozenSourceSnapshotAntigravity:
+    """Immutable source identity plus the parent-owned values session."""
+
+    candidates: tuple[SourceCandidateAntigravity, ...]
+    selected_coordinate_identity_sha256: str
+    source_hashes: Mapping[str, str]
+    database_path: object
+    label_access_count: int = 0
+    session: object | None = None
+
+    def __post_init__(self) -> None:
+        candidates = tuple(self.candidates)
+        if any(not isinstance(item, SourceCandidateAntigravity) for item in candidates):
+            raise ValueError("source candidates are invalid")
+        coordinates = tuple(item.coordinate for item in candidates)
+        if len(coordinates) != len(set(coordinates)):
+            raise ValueError("source candidates contain duplicate coordinates")
+        if not candidates:
+            raise ValueError("source candidates are empty")
+        _digest(self.selected_coordinate_identity_sha256, "selected_coordinate_identity_sha256")
+        if not isinstance(self.source_hashes, Mapping) or not self.source_hashes:
+            raise ValueError("source hashes are invalid")
+        if any(type(key) is not str or not key for key in self.source_hashes):
+            raise ValueError("source hash names are invalid")
+        copied_hashes = {key: _digest(value, f"source hash {key}") for key, value in self.source_hashes.items()}
+        if type(self.label_access_count) is not int or self.label_access_count != 0:
+            raise ValueError("source verification accessed labels")
+        if not isinstance(self.database_path, (str, bytes)) and not hasattr(self.database_path, "__fspath__"):
+            raise ValueError("database path is invalid")
+        object.__setattr__(self, "candidates", candidates)
+        object.__setattr__(self, "source_hashes", MappingProxyType(copied_hashes))
+
+    @property
+    def database_sha256(self) -> str:
+        try:
+            return self.source_hashes["database"]
+        except KeyError as error:
+            raise ValueError("database source hash is unavailable") from error
+
+    @property
+    def selected_coordinates(self) -> tuple[tuple[str, int], ...]:
+        return tuple(item.coordinate for item in self.candidates)
 
 
 @dataclass(frozen=True)
@@ -548,7 +655,8 @@ def canonical_contract_sha256_antigravity(payload: Mapping[str, object]) -> str:
 
 
 __all__ = [
-    "SourceCandidateAntigravity", "OmissionMaskAntigravity", "DepthViewScoreAntigravity",
+    "SourceCandidateAntigravity", "CandidateInputAntigravity", "FrozenSourceSnapshotAntigravity",
+    "OmissionMaskAntigravity", "DepthViewScoreAntigravity",
     "StabilityViewAntigravity", "CandidateStabilityResultAntigravity",
     "StabilitySelectionAntigravity", "BackendDecisionAntigravity",
     "CheckpointContextAntigravity", "CheckpointStateAntigravity",

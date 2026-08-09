@@ -64,6 +64,21 @@ class Exp444ConfigAntigravityTests(unittest.TestCase):
         for key, value in expected.items():
             self.assertEqual(payload[key], value, key)
 
+    def test_exp442_source_paths_are_exact_existing_frozen_artifacts_antigravity(self) -> None:
+        payload = frozen_config_payload_antigravity()
+        self.assertEqual(
+            payload["exp442_prediction_path"],
+            "/Users/mac/Documents/Dataset/exp442_terminal_eta_publication_repair_antigravity_20260808/publication_antigravity/prediction_antigravity.jsonl",
+        )
+        self.assertEqual(
+            payload["exp442_candidate_ranking_path"],
+            "/Users/mac/Documents/Dataset/exp442_terminal_eta_publication_repair_antigravity_20260808/publication_antigravity/candidate_ranking_antigravity.jsonl",
+        )
+        self.assertEqual(
+            payload["exp442_selection_path"],
+            "/Users/mac/Documents/Dataset/exp442_terminal_eta_publication_repair_antigravity_20260808/attempts_antigravity/attempt_0000_antigravity/selection_antigravity.json",
+        )
+
     def test_cpu_worker_formula_and_canonical_sha(self) -> None:
         self.assertEqual(cpu_worker_count_antigravity(12), 11)
         self.assertEqual(cpu_worker_count_antigravity(1), 1)

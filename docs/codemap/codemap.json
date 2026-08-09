@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T22:28:18Z",
-  "generated_from_commit": "7ceab729331b6bb992cf49bb889260750eee2880",
+  "generated_at": "2026-08-09T22:58:32Z",
+  "generated_from_commit": "74eae2d8034c655856860cc04a68491a26906152",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -62,7 +62,8 @@
     "Exp444 written design for deterministic TRAIN-only stability review of the frozen Exp442 30 candidates, with descriptive reporting and no implementation, success gate, winner, or promotion",
     "Exp444 approved 12-task implementation plan covering frozen governance, exact source replay, deterministic omission views, CPU-MLX-Numba parity, 11-worker checkpointed runtime, create-only publication, and descriptive post-freeze evaluation",
     "Exp444 frozen preregistration and pre-implementation runbook: descriptive-only governance, fixed paths, and no source edge before implementation",
-    "Exp444 Task 2: isolated Python 3.14.6 environment, immutable TRAIN-only stability contracts, and thin canonical/create-only artifact wrappers"
+    "Exp444 Task 2: isolated Python 3.14.6 environment, immutable TRAIN-only stability contracts, and thin canonical/create-only artifact wrappers",
+    "Exp444 Task 3: exact frozen Exp442/Exp404 source replay, 30-coordinate identity, and descriptor-bound values-only SQLite loading"
   ],
   "nodes": [
     {
@@ -4285,7 +4286,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
-      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical complete resolved lock inventory, binds the reviewed design and six frozen source identities, enforces descriptive-only governance and the max-minus-one CPU/one-thread contract, and provides immutable source candidate, omission mask, depth/view score, stable/unstable lane, backend, checkpoint, and evaluation value objects. Prediction payloads recursively reject TEST labels and evaluation metrics. Artifact calls are thin wrappers over Exp441 canonical JSON and descriptor-pinned create-only primitives. The official Exp444 run root remains absent; this boundary contains no runtime, SQLite read, evaluator, or official artifact.",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 now verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. The source firewall rejects label-capable SQL before execution, excludes whole nonfinite TRAIN rows, preserves read-only float32 arrays, and keeps the official Exp444 root absent. Task 2 contracts and thin artifact wrappers remain immutable.",
       "entrypoints": [
         "FROZEN_CONFIG",
         "frozen_config_payload_antigravity",
@@ -4294,6 +4295,8 @@
         "cpu_worker_count_antigravity",
         "verify_environment_antigravity",
         "SourceCandidateAntigravity",
+        "CandidateInputAntigravity",
+        "FrozenSourceSnapshotAntigravity",
         "OmissionMaskAntigravity",
         "DepthViewScoreAntigravity",
         "StabilityViewAntigravity",
@@ -4304,6 +4307,10 @@
         "CheckpointStateAntigravity",
         "EvaluationSummaryAntigravity",
         "validate_prediction_payload_antigravity",
+        "verify_frozen_sources_antigravity",
+        "load_candidate_values_antigravity",
+        "validate_prediction_sql_antigravity",
+        "ValuesOnlyDatabaseSessionAntigravity",
         "canonical_json_bytes_antigravity",
         "write_create_only_antigravity",
         "pin_exact_regular_inventory_antigravity",
@@ -4313,17 +4320,19 @@
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_config_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_contracts_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_artifacts_antigravity.py",
-        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py"
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py"
       ],
       "constraints": [
-        "Direct requirements are exactly mlx==0.32.0, numba==0.66.0, and numpy==2.4.6; the byte-identical complete six-distribution sorted pip freeze --all lock is bound by SHA256 8835702b9793a5cc08b5e95621b49c0a4a4136325354da7a655761f6b91f3a94.",
-        "The fixed venv is /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314, mode 0700, and mismatched existing environments are never mutated.",
-        "CPU workers are max(1, logical_cpu_count - 1), expected 11; OMP, OPENBLAS, MKL, VECLIB, NUMEXPR, BLIS, and NUMBA controls are all exactly 1 before NumPy import.",
-        "MLX/Numba remain a pre-run eligibility gate; they require finite outputs, identical masks/lanes, <=1e-5 scalar difference, and >=1.1x end-to-end speed including synchronization.",
-        "Prediction contracts recursively reject labels, labels_blob, evaluation, confusion, metrics, and anomaly fields; all persisted arrays/containers are detached and immutable.",
-        "Exp444 is descriptive-only: no scientific success criterion, winner, promotion, operational alert, or same-experiment reselection is available.",
-        "The official Exp444 run root remains absent and existing Exp440/442/443 roots/artifacts are immutable.",
-        "A non-empty tracked lock rejects bootstrap before interpreter invocation, venv-parent creation, installation, or any external mutation."
+        "Direct requirements remain exactly mlx==0.32.0, numba==0.66.0, and numpy==2.4.6; the complete six-distribution lock is bound by SHA256 8835702b9793a5cc08b5e95621b49c0a4a4136325354da7a655761f6b91f3a94.",
+        "The fixed venv is /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314; mismatched existing environments are never mutated.",
+        "CPU workers are max(1, logical_cpu_count - 1), expected 11; all seven numeric thread controls are exactly 1 before NumPy import.",
+        "MLX/Numba remain a pre-run parity/speed gate and cannot change frozen source or score semantics.",
+        "Prediction contracts recursively reject labels, labels_blob, evaluation, confusion, metrics, and anomaly fields; all persisted containers and loaded float32 arrays are detached and immutable.",
+        "Exp444 source verification binds the exact configured 20260808 Exp442 publication/attempt paths, six frozen source hashes, artifact map, 30 coordinates, one candidate per dataset, rank 1-30, raw lengths, depths, and selected-coordinate identity db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048.",
+        "SQLite is immutable/read-only and descriptor-pinned. Only the exact normal-TRAIN values SQL and bound TEST-values SQL are registered; labels/labels_blob, SELECT *, unknown tables/columns, TEST identity scans, and evaluation SQL fail closed before execution.",
+        "Whole-row nonfinite normal TRAIN rows are excluded before exact-length grouping; each selected TEST row must exist exactly once and match raw_length. TEST labels and label_access_count remain zero.",
+        "Exp444 is descriptive-only: no scientific success criterion, winner, promotion, operational alert, or same-experiment reselection is available; the official run root remains absent and Exp440/442/443 roots/artifacts are immutable."
       ],
       "evidence": [
         {
@@ -4340,11 +4349,35 @@
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
-          "symbol": "class StabilitySelectionAntigravity"
+          "symbol": "class CandidateInputAntigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
-          "symbol": "def validate_prediction_payload_antigravity"
+          "symbol": "class FrozenSourceSnapshotAntigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/sources_antigravity.py",
+          "symbol": "def verify_frozen_sources_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/sources_antigravity.py",
+          "symbol": "def load_candidate_values_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/sources_antigravity.py",
+          "symbol": "def validate_prediction_sql_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/sources_antigravity.py",
+          "symbol": "class ValuesOnlyDatabaseSessionAntigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py",
+          "symbol": "def test_prediction_sql_rejects_test_labels_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py",
+          "symbol": "def test_values_loader_excludes_nonfinite_rows_and_returns_read_only_arrays_antigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/environment_antigravity.py",
@@ -4356,27 +4389,7 @@
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_config_antigravity.py",
-          "symbol": "def test_frozen_config_has_descriptive_governance_antigravity"
-        },
-        {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_contracts_antigravity.py",
-          "symbol": "def test_selection_conserves_two_review_lanes_and_rejects_duplicate_coordinates"
-        },
-        {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_artifacts_antigravity.py",
-          "symbol": "def test_create_only_write_refuses_replacement_and_pinned_read"
-        },
-        {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py",
-          "symbol": "def test_environment_evidence_api_is_present"
-        },
-        {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/environment_antigravity.py",
-          "symbol": "def _validate_complete_freeze_bytes_antigravity"
-        },
-        {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py",
-          "symbol": "def test_complete_freeze_rejects_missing_wrong_transitive_and_extra_distributions"
+          "symbol": "def test_exp442_source_paths_are_exact_existing_frozen_artifacts_antigravity"
         }
       ]
     }
