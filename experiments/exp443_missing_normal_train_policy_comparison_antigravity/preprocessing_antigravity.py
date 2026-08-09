@@ -89,10 +89,14 @@ def _row_index_antigravity(row: object, fallback: int) -> int:
 
 
 def _row_digest_antigravity(row: object, values: np.ndarray) -> str:
+    actual = sha256(np.asarray(values, dtype="<f4").tobytes(order="C")).hexdigest()
     value = getattr(row, "raw_blob_sha256", None)
     if value is None:
-        value = sha256(np.asarray(values, dtype="<f4").tobytes(order="C")).hexdigest()
-    return _digest_antigravity(value, "raw_blob_sha256")
+        return actual
+    _digest_antigravity(value, "raw_blob_sha256")
+    if value != actual:
+        raise ValueError("raw_blob_sha256 does not match exact float32 values")
+    return actual
 
 
 def _row_missing_antigravity(row: object, values: np.ndarray) -> tuple[int, ...]:
@@ -177,6 +181,15 @@ def original_target_length_antigravity(train_rows: Sequence[object] | object) ->
     return int(np.clip(np.median(lengths), 8, 2048))
 
 
+def _require_target_antigravity(target_length: int, rows: Sequence[_RowAntigravity]) -> int:
+    if type(target_length) is not int or not 8 <= target_length <= 2048:
+        raise ValueError("target_length must be within [8, 2048]")
+    expected = int(np.clip(np.median([len(row.values) for row in rows]), 8, 2048))
+    if target_length != expected:
+        raise ValueError("target_length does not equal original TRAIN derived target")
+    return expected
+
+
 def repair_linear_edge_nearest_antigravity(values: np.ndarray) -> np.ndarray:
     """Repair non-finite values on the original time grid, fail closed otherwise."""
     series = np.asarray(values, dtype="<f4").reshape(-1)
@@ -255,8 +268,29 @@ class PreprocessingAuditAntigravity:
         unsupported = tuple(self.unsupported_positions)
         if references != tuple(sorted(set(references))) or any(type(value) is not int or value < 0 for value in references):
             raise ValueError("audit references are invalid")
+        if self.instance_index in references:
+            raise ValueError("audit references must exclude the row itself")
         if unsupported != tuple(sorted(set(unsupported))) or any(type(value) is not int or value not in missing for value in unsupported):
             raise ValueError("audit unsupported positions are invalid")
+        if self.action not in _ACTIONS_ANTIGRAVITY:
+            raise ValueError("audit action is invalid")
+        if not missing:
+            if self.action != "unchanged" or references or unsupported:
+                raise ValueError("finite audit action is inconsistent")
+        elif self.policy == POLICY_A_ANTIGRAVITY:
+            if self.action != "linear_and_edge_nearest" or references or unsupported:
+                raise ValueError("Policy A audit action is inconsistent")
+        elif self.policy == POLICY_B_ANTIGRAVITY:
+            if self.action != "excluded_nonfinite_row" or references or unsupported:
+                raise ValueError("Policy B audit action is inconsistent")
+        elif self.action == "leave_one_out_peer_median":
+            if unsupported or not references:
+                raise ValueError("Policy C peer-median audit action is inconsistent")
+        elif self.action == "excluded_unsupported_peer":
+            if not unsupported:
+                raise ValueError("Policy C unsupported audit action is inconsistent")
+        else:
+            raise ValueError("Policy C audit action is inconsistent")
         object.__setattr__(self, "missing_positions", missing)
         object.__setattr__(self, "reference_instance_indices", references)
         object.__setattr__(self, "unsupported_positions", unsupported)
@@ -294,6 +328,7 @@ class PreprocessingAuditAntigravity:
             self.instance_index,
             self.original_length,
             self.missing_positions,
+            self.missing_positions_sha256,
             self.raw_blob_sha256,
             self.action,
             self.reference_instance_indices,
@@ -318,22 +353,40 @@ class PreparedTrainAntigravity:
     def __post_init__(self) -> None:
         if type(self.dataset) is not str or not self.dataset or self.policy not in POLICIES_ANTIGRAVITY:
             raise ValueError("prepared TRAIN identity is invalid")
-        if type(self.target_length) is not int or self.target_length < 1:
-            raise ValueError("prepared target length is invalid")
+        if type(self.target_length) is not int or not 8 <= self.target_length <= 2048:
+            raise ValueError("prepared target length must be within [8, 2048]")
         values = _freeze_array_antigravity(self.train_values, ndim=2)
         indices = tuple(self.instance_indices)
-        if len(indices) != values.shape[0] or values.shape[1] != self.target_length:
-            raise ValueError("prepared TRAIN shape/order is invalid")
         if indices != tuple(dict.fromkeys(indices)) or any(type(value) is not int or value < 0 for value in indices):
             raise ValueError("prepared TRAIN instance indices are invalid")
-        counts = (self.train_total, self.train_missing, self.train_used, self.train_excluded)
-        if any(type(value) is not int or value < 0 for value in counts) or self.train_missing > self.train_total or self.train_used + self.train_excluded != self.train_total or self.train_used != len(indices):
-            raise ValueError("prepared TRAIN counts are inconsistent")
         audits = tuple(self.audits)
         if len(audits) != self.train_total or any(not isinstance(audit, PreprocessingAuditAntigravity) for audit in audits):
             raise ValueError("prepared TRAIN audits are incomplete")
-        if self.status not in {"scored", "abstained"}:
-            raise ValueError("prepared TRAIN status is invalid")
+        if any(audit.dataset != self.dataset or audit.policy != self.policy for audit in audits):
+            raise ValueError("prepared TRAIN audit identity disagrees")
+        audit_indices = tuple(audit.instance_index for audit in audits)
+        if audit_indices != tuple(dict.fromkeys(audit_indices)):
+            raise ValueError("prepared TRAIN audit identities are duplicated")
+        expected_target = int(np.clip(np.median([audit.original_length for audit in audits]), 8, 2048)) if audits else None
+        if expected_target != self.target_length:
+            raise ValueError("prepared target length is not derived from original TRAIN audits")
+        retained_actions = {"unchanged", "linear_and_edge_nearest", "leave_one_out_peer_median"}
+        excluded_actions = {"excluded_nonfinite_row", "excluded_unsupported_peer"}
+        expected_indices = tuple(audit.instance_index for audit in audits if audit.action in retained_actions)
+        expected_excluded = tuple(audit.instance_index for audit in audits if audit.action in excluded_actions)
+        if any(audit.action not in retained_actions | excluded_actions for audit in audits):
+            raise ValueError("prepared TRAIN audit action is invalid")
+        if indices != expected_indices or len(indices) != values.shape[0] or values.shape[1] != self.target_length:
+            raise ValueError("prepared TRAIN shape/order does not reconcile audits")
+        counts = (self.train_total, self.train_missing, self.train_used, self.train_excluded)
+        if any(type(value) is not int or value < 0 for value in counts):
+            raise ValueError("prepared TRAIN counts are inconsistent")
+        expected_missing = sum(bool(audit.missing_positions) for audit in audits)
+        if self.train_total != len(audits) or self.train_missing != expected_missing or self.train_used != len(expected_indices) or self.train_excluded != len(expected_excluded) or self.train_used + self.train_excluded != self.train_total:
+            raise ValueError("prepared TRAIN counts do not reconcile audits")
+        expected_status = "scored" if self.train_used >= 5 else "abstained"
+        if self.status != expected_status:
+            raise ValueError("prepared TRAIN status does not reconcile used rows")
         object.__setattr__(self, "train_values", values)
         object.__setattr__(self, "instance_indices", indices)
         object.__setattr__(self, "audits", audits)
@@ -372,26 +425,32 @@ class PreparedDatasetAntigravity:
     status: str
 
     def __post_init__(self) -> None:
-        if type(self.target_length) is not int or self.target_length < 1:
-            raise ValueError("prepared dataset target length is invalid")
+        if type(self.dataset) is not str or not self.dataset or self.policy not in POLICIES_ANTIGRAVITY:
+            raise ValueError("prepared dataset identity is invalid")
+        if type(self.target_length) is not int or not 8 <= self.target_length <= 2048:
+            raise ValueError("prepared dataset target length must be within [8, 2048]")
         train = _freeze_array_antigravity(self.train_values, ndim=2)
         test = _freeze_array_antigravity(self.test_values, ndim=2)
-        if train.shape[1] != self.target_length or test.shape[1] != self.target_length or test.shape[0] != len(self.test_instance_indices):
-            raise ValueError("prepared dataset shapes are invalid")
-        if len(self.train_instance_indices) != train.shape[0]:
-            raise ValueError("prepared dataset TRAIN identity is invalid")
         test_indices = tuple(self.test_instance_indices)
         train_indices = tuple(self.train_instance_indices)
         if test_indices != tuple(dict.fromkeys(test_indices)) or train_indices != tuple(dict.fromkeys(train_indices)) or any(type(value) is not int or value < 0 for value in test_indices + train_indices):
             raise ValueError("prepared dataset instance identity is duplicated")
-        counts = (self.train_total, self.train_missing, self.train_used, self.train_excluded)
-        if any(type(value) is not int or value < 0 for value in counts) or self.train_missing > self.train_total or self.train_used + self.train_excluded != self.train_total or self.train_used != len(train_indices):
-            raise ValueError("prepared dataset counts are inconsistent")
+        if test_indices != tuple(range(len(test_indices))):
+            raise ValueError("prepared dataset TEST identity is not contiguous from zero")
         audits = tuple(self.audits)
         if len(audits) != self.train_total or any(not isinstance(audit, PreprocessingAuditAntigravity) for audit in audits):
             raise ValueError("prepared dataset audits are incomplete")
-        if self.status not in {"scored", "abstained"}:
-            raise ValueError("prepared dataset status is invalid")
+        train_result = PreparedTrainAntigravity(
+            self.dataset, self.policy, self.target_length, train, train_indices,
+            self.train_total, self.train_missing, self.train_used, self.train_excluded,
+            audits, self.status,
+        )
+        if train.shape[1] != self.target_length or test.shape[1] != self.target_length:
+            raise ValueError("prepared dataset matrices do not use the derived target")
+        if test.shape[0] < 1 or test.shape[0] != len(test_indices):
+            raise ValueError("prepared dataset TEST identity is incomplete")
+        if train_result.dataset != self.dataset or train_result.policy != self.policy or train_result.target_length != self.target_length or train_result.instance_indices != train_indices or train_result.audits != audits or train_result.status != self.status:
+            raise ValueError("prepared dataset TRAIN boundary disagrees")
         object.__setattr__(self, "train_values", train)
         object.__setattr__(self, "test_values", test)
         object.__setattr__(self, "train_instance_indices", train_indices)
@@ -481,9 +540,8 @@ def apply_train_policy_antigravity(raw: object, policy: str, target_length: int)
     """Apply exactly one frozen policy to raw normal TRAIN rows."""
     if policy not in POLICIES_ANTIGRAVITY:
         raise ValueError("policy is not preregistered")
-    if type(target_length) is not int or target_length < 1:
-        raise ValueError("target_length is invalid")
     rows = _train_rows_antigravity(raw)
+    _require_target_antigravity(target_length, rows)
     dataset = _dataset_name_antigravity(raw, rows)
     _require_no_all_missing_antigravity(rows)
     groups: dict[int, tuple[_RowAntigravity, ...]] = {}

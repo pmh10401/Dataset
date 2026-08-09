@@ -6,8 +6,9 @@ database/source layer and is run separately during Task 4 evidence collection.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from hashlib import sha256
+from collections import Counter
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,9 @@ import unittest
 import numpy as np
 
 from experiments.exp443_missing_normal_train_policy_comparison_antigravity.contracts_antigravity import RawSeriesAntigravity
+from experiments.exp443_missing_normal_train_policy_comparison_antigravity.preprocessing_antigravity import (
+    PreprocessingAuditAntigravity,
+)
 from experiments.exp443_missing_normal_train_policy_comparison_antigravity.database_antigravity import (
     load_raw_dataset_antigravity,
     pin_database_snapshot_antigravity,
@@ -38,9 +42,6 @@ from experiments.exp443_missing_normal_train_policy_comparison_antigravity.prepr
 )
 
 
-_DIGEST = "a" * 64
-
-
 def _position_hash(positions: tuple[int, ...] | list[int]) -> str:
     payload = json.dumps(list(positions), sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
     return sha256(payload).hexdigest()
@@ -52,11 +53,16 @@ def _raw(
     *,
     dataset: str = "Demo",
     split: str = "TRAIN",
-    digest: str = _DIGEST,
+    digest: str | None = None,
 ) -> RawSeriesAntigravity:
     array = np.asarray(values, dtype="<f4")
     positions = tuple(int(item) for item in np.flatnonzero(~np.isfinite(array)))
-    return RawSeriesAntigravity(dataset, split, index, digest, array, positions)
+    actual_digest = sha256(array.tobytes(order="C")).hexdigest() if digest is None else digest
+    return RawSeriesAntigravity(dataset, split, index, actual_digest, array, positions)
+
+
+def _digest(values: list[float]) -> str:
+    return sha256(np.asarray(values, dtype="<f4").tobytes(order="C")).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -96,22 +102,19 @@ class Exp443PreprocessingAntigravityTests(unittest.TestCase):
         self.assertEqual(actual.tobytes(), sanitize_series(source).astype("<f4").tobytes())
 
     def test_linear_repair_handles_negative_infinity_one_finite_and_all_finite(self) -> None:
-        self.assertTrue(
-            np.array_equal(
-                repair_linear_edge_nearest_antigravity(np.asarray([-np.inf, 2.0, np.nan, 8.0], dtype="<f4")),
-                np.asarray([2.0, 2.0, 5.0, 8.0], dtype="<f4"),
-            )
+        from experiments.exp226_235_hard_alert_quality.preprocessing import sanitize_series
+
+        cases = (
+            (np.asarray([-np.inf, 2.0, np.nan, 8.0], dtype="<f4"), np.asarray([2.0, 2.0, 5.0, 8.0], dtype="<f4")),
+            (np.asarray([np.nan, 4.0, np.inf], dtype="<f4"), np.asarray([4.0, 4.0, 4.0], dtype="<f4")),
+            (np.asarray([1.0, 2.0, 3.0], dtype="<f4"), np.asarray([1.0, 2.0, 3.0], dtype="<f4")),
         )
-        self.assertTrue(
-            np.array_equal(
-                repair_linear_edge_nearest_antigravity(np.asarray([np.nan, 4.0, np.inf], dtype="<f4")),
-                np.asarray([4.0, 4.0, 4.0], dtype="<f4"),
-            )
-        )
-        finite = np.asarray([1.0, 2.0, 3.0], dtype="<f4")
-        repaired = repair_linear_edge_nearest_antigravity(finite)
-        self.assertTrue(np.array_equal(repaired, finite))
-        self.assertEqual(repaired.dtype, np.dtype("<f4"))
+        for source, expected in cases:
+            with self.subTest(source=source.tolist()):
+                repaired = repair_linear_edge_nearest_antigravity(source)
+                self.assertTrue(np.array_equal(repaired, expected))
+                self.assertEqual(repaired.dtype, np.dtype("<f4"))
+                self.assertEqual(repaired.tobytes(), sanitize_series(source).astype("<f4").tobytes())
 
     def test_linear_repair_fails_closed_for_empty_and_all_missing(self) -> None:
         with self.assertRaises(ValueError):
@@ -127,9 +130,16 @@ class Exp443PreprocessingAntigravityTests(unittest.TestCase):
         filtered = tuple(row for row in rows if row.instance_index != 2)
         self.assertNotEqual(original_target_length_antigravity(rows), original_target_length_antigravity(filtered))
 
+    def test_policy_boundaries_require_derived_target_inclusive_range(self) -> None:
+        raw = _fixture_raw()
+        self.assertEqual(original_target_length_antigravity(raw.train), 8)
+        for target in (7, 9, 2049):
+            with self.subTest(target=target), self.assertRaises(ValueError):
+                apply_train_policy_antigravity(raw, POLICY_A_ANTIGRAVITY, target)
+
     def test_policy_a_repairs_rows_and_records_exact_audit_identity(self) -> None:
         raw = _fixture_raw()
-        prepared = apply_train_policy_antigravity(raw, POLICY_A_ANTIGRAVITY, 4)
+        prepared = apply_train_policy_antigravity(raw, POLICY_A_ANTIGRAVITY, original_target_length_antigravity(raw.train))
         self.assertIsInstance(prepared, PreparedTrainAntigravity)
         self.assertEqual(prepared.instance_indices, (0, 1, 2, 3, 4, 5))
         self.assertEqual(prepared.train_total, 6)
@@ -144,13 +154,25 @@ class Exp443PreprocessingAntigravityTests(unittest.TestCase):
         self.assertEqual(by_index[1].action, "linear_and_edge_nearest")
         self.assertEqual(by_index[1].missing_positions, (1,))
         self.assertEqual(by_index[1].missing_positions_sha256, _position_hash((1,)))
-        self.assertEqual(by_index[1].raw_blob_sha256, _DIGEST)
+        self.assertEqual(by_index[1].raw_blob_sha256, _digest([1.0, np.nan, 3.0, 4.0]))
         self.assertEqual(by_index[4].missing_positions, (2,))
         self.assertEqual(by_index[4].action, "linear_and_edge_nearest")
 
+    def test_contract_audit_round_trip_preserves_every_audit_field(self) -> None:
+        prepared = apply_train_policy_antigravity(
+            _fixture_raw(), POLICY_A_ANTIGRAVITY, original_target_length_antigravity(_fixture_raw().train)
+        )
+        for source, contract in zip(prepared.audits, prepared.contract_audits):
+            self.assertEqual(contract.missing_positions_sha256, source.missing_positions_sha256)
+            self.assertEqual(contract.to_payload()["missing_positions_sha256"], source.missing_positions_sha256)
+            self.assertEqual(contract.to_payload()["raw_blob_sha256"], source.raw_blob_sha256)
+            self.assertEqual(contract.to_payload()["action"], source.action)
+            self.assertEqual(contract.to_payload()["reference_instance_indices"], list(source.reference_instance_indices))
+            self.assertEqual(contract.to_payload()["unsupported_positions"], list(source.unsupported_positions))
+
     def test_policy_b_excludes_complete_nonfinite_rows_and_abstains_below_five(self) -> None:
         raw = _fixture_raw()
-        prepared = apply_train_policy_antigravity(raw, POLICY_B_ANTIGRAVITY, 4)
+        prepared = apply_train_policy_antigravity(raw, POLICY_B_ANTIGRAVITY, original_target_length_antigravity(raw.train))
         self.assertEqual(prepared.instance_indices, (0, 2, 3, 5))
         self.assertEqual(prepared.train_total, 6)
         self.assertEqual(prepared.train_missing, 2)
@@ -159,48 +181,43 @@ class Exp443PreprocessingAntigravityTests(unittest.TestCase):
         self.assertEqual(prepared.status, "abstained")
         # Abstention is a status, not synthetic zero filling: finite rows stay
         # available in the prepared matrix for the runtime to reject cleanly.
-        self.assertEqual(prepared.train_values.shape, (4, 4))
+        self.assertEqual(prepared.train_values.shape, (4, 8))
         self.assertTrue(np.isfinite(prepared.train_values).all())
         excluded = [audit for audit in prepared.audits if audit.action == "excluded_nonfinite_row"]
         self.assertEqual([audit.instance_index for audit in excluded], [1, 4])
         self.assertEqual(excluded[0].original_length, 4)
         self.assertEqual(excluded[0].missing_positions, (1,))
         self.assertEqual(excluded[0].missing_positions_sha256, _position_hash((1,)))
-        self.assertEqual(excluded[0].raw_blob_sha256, _DIGEST)
+        self.assertEqual(excluded[0].raw_blob_sha256, _digest([1.0, np.nan, 3.0, 4.0]))
         self.assertEqual(excluded[0].action, "excluded_nonfinite_row")
 
     def test_policy_c_uses_same_length_leave_one_out_peers_and_even_median(self) -> None:
         train = (
-            _raw([1.0, np.nan, 3.0, 4.0], 0),
-            _raw([2.0, 10.0, 4.0, 5.0], 1),
-            _raw([3.0, 20.0, 5.0, 6.0], 2),
-            _raw([4.0, 30.0, 6.0, 7.0], 3),
+            _raw([1.0, np.nan, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], 0),
+            _raw([2.0, 10.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 1),
+            _raw([3.0, 30.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0], 2),
             # Different original length: it must not contribute to index 1.
-            _raw([100.0, 999.0, 100.0, 100.0, 100.0], 4),
+            _raw([4.0, 40.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0], 3),
+            _raw([100.0, 999.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0], 4),
             # Missing peer at the repaired coordinate is ignored.
-            _raw([5.0, np.nan, 7.0, 8.0], 5),
+            _raw([5.0, np.nan, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0], 5),
         )
         raw = _UnequalRaw("Demo", train, (_raw([0.0, 1.0, 2.0, 3.0], 0, split="TEST"),))
-        prepared = apply_train_policy_antigravity(raw, POLICY_C_ANTIGRAVITY, 4)
+        prepared = apply_train_policy_antigravity(raw, POLICY_C_ANTIGRAVITY, original_target_length_antigravity(raw.train))
         self.assertEqual(prepared.instance_indices, (0, 1, 2, 3, 4, 5))
         repaired_row = prepared.train_values[0]
-        # Same-length finite peers at coordinate 1 are [10, 20, 30]; the
-        # different-length 999 and self NaN are not used.  Prepared rows are
+        # Same-length finite peers at coordinate 1 are exactly [10, 30]; the
+        # different-length 40/999 and self NaN are not used.  Prepared rows are
         # z-normalized after repair, exactly like Exp249.
-        expected_repaired = np.asarray([1.0, 20.0, 3.0, 4.0], dtype="<f4")
+        # The SUT must use the arithmetic mean of the two finite peers: (10+30)/2 = 20.
+        expected_repaired = np.asarray([1.0, 20.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], dtype="<f4")
         expected_center = expected_repaired.mean(dtype=np.float32)
         expected_scale = expected_repaired.std(dtype=np.float32)
         expected_normalized = ((expected_repaired - expected_center) / expected_scale).astype("<f4")
         self.assertEqual(repaired_row.tobytes(), expected_normalized.tobytes())
         audit = next(audit for audit in prepared.audits if audit.instance_index == 0)
-        self.assertEqual(audit.reference_instance_indices, (1, 2, 3, 5))
+        self.assertEqual(audit.reference_instance_indices, (1, 2, 5))
         self.assertEqual(audit.action, "leave_one_out_peer_median")
-        # The median of an even peer set is the ordinary NumPy average of the
-        # two central values, not a lower/upper selection.
-        self.assertEqual(
-            np.median(np.asarray([10.0, 20.0, 30.0, 40.0], dtype="<f4")),
-            np.float32(25.0),
-        )
 
     def test_policy_c_excludes_row_when_any_coordinate_has_no_finite_peer(self) -> None:
         train = (
@@ -212,7 +229,7 @@ class Exp443PreprocessingAntigravityTests(unittest.TestCase):
             _raw([5.0, 13.0, 8.0, 9.0], 4),
         )
         raw = _UnequalRaw("Demo", train, (_raw([0.0, 1.0, 2.0], 0, split="TEST"),))
-        prepared = apply_train_policy_antigravity(raw, POLICY_C_ANTIGRAVITY, 3)
+        prepared = apply_train_policy_antigravity(raw, POLICY_C_ANTIGRAVITY, original_target_length_antigravity(raw.train))
         self.assertEqual(prepared.instance_indices, (1, 2, 3, 4))
         self.assertEqual(prepared.train_used, 4)
         self.assertEqual(prepared.train_excluded, 1)
@@ -263,6 +280,70 @@ class Exp443PreprocessingAntigravityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             prepared.train_values.setflags(write=True)
 
+    def test_preprocessing_audit_rejects_impossible_policy_action_combinations(self) -> None:
+        invalid_cases = (
+            (POLICY_A_ANTIGRAVITY, (), "linear_and_edge_nearest"),
+            (POLICY_A_ANTIGRAVITY, (1,), "unchanged"),
+            (POLICY_B_ANTIGRAVITY, (1,), "unchanged"),
+            (POLICY_B_ANTIGRAVITY, (), "excluded_nonfinite_row"),
+            (POLICY_C_ANTIGRAVITY, (1,), "excluded_nonfinite_row"),
+        )
+        for policy, missing, action in invalid_cases:
+            with self.subTest(policy=policy, missing=missing, action=action):
+                with self.assertRaises(ValueError):
+                    PreprocessingAuditAntigravity(
+                        "Demo", policy, 0, 3, missing, _position_hash(missing), "a" * 64, action,
+                        (1,) if action == "leave_one_out_peer_median" and missing else (),
+                    )
+
+    def test_preprocessing_recomputes_raw_digest_for_duck_typed_rows(self) -> None:
+        values = np.asarray([1.0, 2.0, 3.0], dtype="<f4")
+        forged_train = SimpleNamespace(
+            dataset="Demo", split="TRAIN", instance_index=0, values=values,
+            raw_blob_sha256="a" * 64, missing_positions=(),
+        )
+        valid_test = SimpleNamespace(
+            dataset="Demo", split="TEST", instance_index=0, values=values,
+            raw_blob_sha256=_digest([1.0, 2.0, 3.0]), missing_positions=(),
+        )
+        raw = SimpleNamespace(dataset="Demo", train=(forged_train,), test=(valid_test,))
+        with self.assertRaisesRegex(ValueError, "raw_blob_sha256"):
+            apply_train_policy_antigravity(raw, POLICY_A_ANTIGRAVITY, 8)
+
+    def test_prepared_train_reconciles_audits_counts_indices_target_and_status(self) -> None:
+        raw = _fixture_raw()
+        base = apply_train_policy_antigravity(raw, POLICY_A_ANTIGRAVITY, original_target_length_antigravity(raw.train))
+        invalid = (
+            ("wrong_target", lambda: replace(base, target_length=9)),
+            ("wrong_missing_count", lambda: replace(base, train_missing=0)),
+            ("wrong_status", lambda: replace(base, status="abstained")),
+            ("duplicate_used_identity", lambda: replace(base, instance_indices=(0, 0, 2, 3, 4, 5))),
+            ("audit_dataset", lambda: replace(base, audits=(replace(base.audits[0], dataset="Other"),) + base.audits[1:])),
+            ("audit_order", lambda: replace(base, audits=tuple(reversed(base.audits)))),
+        )
+        for name, factory in invalid:
+            with self.subTest(name=name):
+                with self.assertRaises(ValueError):
+                    factory()
+
+    def test_prepared_dataset_reconciles_identity_policy_target_and_test_matrix(self) -> None:
+        raw = _fixture_raw()
+        base = prepare_dataset_antigravity(raw, POLICY_A_ANTIGRAVITY)
+        with self.assertRaises(ValueError):
+            replace(base, dataset="")
+        with self.assertRaises(ValueError):
+            replace(base, policy=POLICY_B_ANTIGRAVITY)
+        with self.assertRaises(ValueError):
+            replace(base, target_length=9)
+        with self.assertRaises(ValueError):
+            replace(base, test_instance_indices=(0, 0))
+        with self.assertRaises(ValueError):
+            replace(base, test_instance_indices=(0, 2))
+        with self.assertRaises(ValueError):
+            replace(base, test_values=np.empty((0, 8), dtype="<f4"))
+        with self.assertRaises(ValueError):
+            replace(base, train_used=base.train_used - 1)
+
     @unittest.skipUnless(os.environ.get("EXP443_REAL_TASK4_ANTIGRAVITY") == "1", "opt-in real pinned source evidence")
     def test_real_19_dataset_policy_invariants_are_label_free(self) -> None:
         """Run once with the pinned source layer; no TEST labels are imported."""
@@ -285,6 +366,38 @@ class Exp443PreprocessingAntigravityTests(unittest.TestCase):
         finally:
             pinned.close(terminal_evidence_durable=True)
         self.assertEqual(len(real_results), 19)
+        action_counts = {policy: Counter() for policy in (POLICY_A_ANTIGRAVITY, POLICY_B_ANTIGRAVITY, POLICY_C_ANTIGRAVITY)}
+        retained_actions = {"unchanged", "linear_and_edge_nearest", "leave_one_out_peer_median"}
+        excluded_actions = {"excluded_nonfinite_row", "excluded_unsupported_peer"}
+        total_rows = 0
+        for dataset, raw in raw_by_dataset.items():
+            total_rows += len(raw.train)
+            expected_target = original_target_length_antigravity(raw.train)
+            self.assertEqual(expected_target, snapshot.target_length_by_dataset[dataset])
+            source_train_indices = tuple(row.instance_index for row in raw.train)
+            source_test_indices = tuple(row.instance_index for row in raw.test)
+            for policy, output in real_results[dataset].items():
+                self.assertEqual(output.target_length, expected_target)
+                self.assertEqual(tuple(audit.instance_index for audit in output.audits), source_train_indices)
+                self.assertEqual(output.test_instance_indices, source_test_indices)
+                self.assertEqual(output.test_values.shape[0], len(raw.test))
+                for matrix in (output.train_values, output.test_values):
+                    self.assertEqual(matrix.dtype, np.dtype("<f4"))
+                    self.assertFalse(matrix.flags.writeable)
+                    self.assertIsInstance(matrix.base, np.ndarray)
+                    self.assertIsInstance(matrix.base.base, bytes)
+                    with self.assertRaises(ValueError):
+                        matrix.setflags(write=True)
+                action_counts[policy].update(audit.action for audit in output.audits)
+                expected_used = tuple(audit.instance_index for audit in output.audits if audit.action in retained_actions)
+                expected_excluded = tuple(audit.instance_index for audit in output.audits if audit.action in excluded_actions)
+                self.assertEqual(output.train_instance_indices, expected_used)
+                self.assertEqual(output.train_used, len(expected_used))
+                self.assertEqual(output.train_excluded, len(expected_excluded))
+        self.assertEqual(total_rows, 2972)
+        self.assertEqual(action_counts[POLICY_A_ANTIGRAVITY], Counter({"unchanged": 2808, "linear_and_edge_nearest": 164}))
+        self.assertEqual(action_counts[POLICY_B_ANTIGRAVITY], Counter({"unchanged": 2808, "excluded_nonfinite_row": 164}))
+        self.assertEqual(action_counts[POLICY_C_ANTIGRAVITY], Counter({"unchanged": 2808, "leave_one_out_peer_median": 162, "excluded_unsupported_peer": 2}))
         self.assertEqual(sum(value[POLICY_C_ANTIGRAVITY].train_excluded for value in real_results.values()), 2)
         self.assertEqual(sum(value[POLICY_C_ANTIGRAVITY].train_missing - value[POLICY_C_ANTIGRAVITY].train_excluded for value in real_results.values()), 162)
         self.assertEqual(snapshot.label_access_count, 0)

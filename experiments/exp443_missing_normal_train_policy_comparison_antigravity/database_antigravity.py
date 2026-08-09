@@ -248,8 +248,8 @@ def _decode_rows(rows: Sequence[tuple[object, object]], dataset: str, split: str
     indices = tuple(index for index, _ in rows)
     if any(type(index) is not int or index < 0 for index in indices):
         raise ValueError(f"{split} instance identity is invalid")
-    if indices != tuple(sorted(indices)) or len(indices) != len(set(indices)):
-        raise ValueError(f"{split} instance identity is not sorted and unique")
+    if indices != tuple(range(len(indices))):
+        raise ValueError(f"{split} instance identity is not contiguous from zero")
     decoded: list[RawSeriesAntigravity] = []
     for index, blob in rows:
         if type(blob) is not bytes or not blob or len(blob) % 4:
@@ -270,15 +270,17 @@ class RawDatasetAntigravity:
     def __post_init__(self) -> None:
         if type(self.dataset) is not str or not self.dataset:
             raise ValueError("dataset is invalid")
-        if not self.train or not self.test or type(self.target_length) is not int or self.target_length < 1:
+        if not self.train or not self.test:
             raise ValueError("raw dataset population is invalid")
+        if type(self.target_length) is not int or not 8 <= self.target_length <= 2048:
+            raise ValueError("target_length must be within [8, 2048]")
         if any(item.dataset != self.dataset or item.split != "TRAIN" for item in self.train):
             raise ValueError("TRAIN rows are invalid")
         if any(item.dataset != self.dataset or item.split != "TEST" for item in self.test):
             raise ValueError("TEST rows are invalid")
-        # Exp443 computes its target from original normal TRAIN lengths and
-        # aligns TEST independently.  A legitimate ragged source population
-        # must therefore remain representable at this raw boundary.
+        expected_target = int(np.clip(np.median([len(item.values) for item in self.train]), 8, 2048))
+        if self.target_length != expected_target:
+            raise ValueError("target_length must equal clipped original TRAIN median")
 
     @property
     def train_rows(self) -> tuple[RawSeriesAntigravity, ...]:
@@ -596,13 +598,7 @@ def load_raw_dataset_antigravity(pinned_database: PinnedDatabaseAntigravity, dat
         test_rows = connection.execute(TEST_VALUES_SQL_ANTIGRAVITY, (dataset,)).fetchall()
     train = _decode_rows(train_rows, dataset, "TRAIN")
     test = _decode_rows(test_rows, dataset, "TEST")
-    lengths = {len(item.values) for item in train + test}
-    if len(lengths) == 1:
-        target_length = next(iter(lengths))
-    else:
-        # Preserve a useful legacy field while Task 4 independently computes
-        # the same clipped median from normal TRAIN rows before policy use.
-        target_length = int(np.clip(np.median([len(item.values) for item in train]), 8, 2048))
+    target_length = int(np.clip(np.median([len(item.values) for item in train]), 8, 2048))
     return RawDatasetAntigravity(dataset, train, test, target_length)
 
 

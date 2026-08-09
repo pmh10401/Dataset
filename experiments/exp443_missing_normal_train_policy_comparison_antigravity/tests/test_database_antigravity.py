@@ -12,10 +12,19 @@ import unittest
 import numpy as np
 
 from experiments.exp443_missing_normal_train_policy_comparison_antigravity import database_antigravity as database
+from experiments.exp443_missing_normal_train_policy_comparison_antigravity.contracts_antigravity import RawSeriesAntigravity
 
 
 class Exp443DatabaseAntigravityTests(unittest.TestCase):
-    def _db(self, root: Path, name: str = "Tiny_normal_0", *, ragged: bool = False) -> Path:
+    def _db(
+        self,
+        root: Path,
+        name: str = "Tiny_normal_0",
+        *,
+        ragged: bool = False,
+        train_indices: tuple[int, int] = (0, 1),
+        test_indices: tuple[int, int] = (0, 1),
+    ) -> Path:
         path = root / "source_antigravity.db"
         connection = sqlite3.connect(path)
         connection.executescript(
@@ -56,7 +65,7 @@ class Exp443DatabaseAntigravityTests(unittest.TestCase):
         else:
             train = [np.asarray([1.0, np.nan, 3.0], dtype="<f4"), np.asarray([2.0, 4.0, 6.0], dtype="<f4")]
             test = [np.asarray([7.0, 8.0, 9.0], dtype="<f4"), np.asarray([10.0, 11.0, 12.0], dtype="<f4")]
-        rows = [(1, "TRAIN", 0, "0", train[0].tobytes(), b"must-not-read"), (1, "TRAIN", 1, "0", train[1].tobytes(), b"must-not-read"), (1, "TEST", 0, "0", test[0].tobytes(), b"must-not-read"), (1, "TEST", 1, "1", test[1].tobytes(), b"must-not-read")]
+        rows = [(1, "TRAIN", train_indices[0], "0", train[0].tobytes(), b"must-not-read"), (1, "TRAIN", train_indices[1], "0", train[1].tobytes(), b"must-not-read"), (1, "TEST", test_indices[0], "0", test[0].tobytes(), b"must-not-read"), (1, "TEST", test_indices[1], "1", test[1].tobytes(), b"must-not-read")]
         connection.executemany("INSERT INTO instances(dataset_id, split, instance_index, label, values_blob, labels_blob) VALUES (?, ?, ?, ?, ?, ?)", rows)
         connection.commit()
         connection.close()
@@ -347,10 +356,48 @@ ORDER BY i.instance_index""",
                 self.assertTrue(np.array_equal(raw.train[1].values, np.asarray([2.0, 4.0, 6.0, 8.0], dtype="<f4")))
                 self.assertEqual(tuple(row.instance_index for row in raw.train), (0, 1))
                 self.assertEqual(tuple(row.instance_index for row in raw.test), (0, 1))
+                self.assertEqual(raw.target_length, 8)
                 self.assertFalse(raw.train[0].values.flags.writeable)
                 self.assertEqual(pinned.label_access_count, 0)
             finally:
                 pinned.close(terminal_evidence_durable=True)
+
+    def test_raw_loader_rejects_train_and_test_identity_gaps(self) -> None:
+        for kwargs in (
+            {"train_indices": (0, 2)},
+            {"test_indices": (0, 2)},
+        ):
+            with self.subTest(kwargs=kwargs), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                source = self._db(root, **kwargs)
+                expected = sha256(source.read_bytes()).hexdigest()
+                pinned = database.pin_database_snapshot_antigravity(
+                    source, root / "attempt_gap_antigravity", expected_sha256=expected
+                )
+                try:
+                    with self.assertRaisesRegex(ValueError, "identity"):
+                        database.load_raw_dataset_antigravity(pinned, "Tiny_normal_0")
+                finally:
+                    pinned.close(terminal_evidence_durable=True)
+
+    def test_raw_dataset_target_is_always_clipped_train_length_median(self) -> None:
+        def raw_series(length: int, split: str, index: int) -> RawSeriesAntigravity:
+            values = np.arange(length, dtype="<f4")
+            return RawSeriesAntigravity(
+                "Demo", split, index, sha256(values.tobytes(order="C")).hexdigest(), values, ()
+            )
+
+        short = raw_series(3, "TRAIN", 0)
+        test = raw_series(100, "TEST", 0)
+        with self.assertRaisesRegex(ValueError, "target_length"):
+            database.RawDatasetAntigravity("Demo", (short,), (test,), 3)
+        self.assertEqual(database.RawDatasetAntigravity("Demo", (short,), (test,), 8).target_length, 8)
+
+        long = raw_series(3000, "TRAIN", 0)
+        long_test = raw_series(3000, "TEST", 0)
+        with self.assertRaisesRegex(ValueError, "target_length"):
+            database.RawDatasetAntigravity("Demo", (long,), (long_test,), 3000)
+        self.assertEqual(database.RawDatasetAntigravity("Demo", (long,), (long_test,), 2048).target_length, 2048)
 
     def test_missing_inventory_requires_sorted_population_and_reports_real_shape(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

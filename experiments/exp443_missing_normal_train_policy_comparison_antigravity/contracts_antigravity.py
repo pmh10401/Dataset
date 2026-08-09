@@ -32,6 +32,11 @@ _FORBIDDEN_PREDICTION_TERMS = frozenset({
 })
 
 
+def _missing_positions_sha256(value: tuple[int, ...]) -> str:
+    encoded = json.dumps(list(value), sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+    return sha256(encoded).hexdigest()
+
+
 def _name(value: object, field_name: str) -> str:
     if type(value) is not str or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string")
@@ -196,6 +201,9 @@ class RawSeriesAntigravity:
             raise ValueError("missing_positions must equal the non-finite mask")
         if any(index >= len(values) for index in missing):
             raise ValueError("missing_positions are out of range")
+        actual_digest = sha256(values.tobytes(order="C")).hexdigest()
+        if self.raw_blob_sha256 != actual_digest:
+            raise ValueError("raw_blob_sha256 does not match exact float32 values")
         object.__setattr__(self, "values", values)
         object.__setattr__(self, "missing_positions", missing)
 
@@ -227,6 +235,7 @@ class RunPolicyAuditAntigravity:
     instance_index: int
     original_length: int
     missing_positions: tuple[int, ...]
+    missing_positions_sha256: str
     raw_blob_sha256: str
     action: str
     reference_instance_indices: tuple[int, ...] = ()
@@ -243,8 +252,35 @@ class RunPolicyAuditAntigravity:
         unsupported = _tuple_ints(self.unsupported_positions, "unsupported_positions", sorted_unique=True)
         if any(index >= self.original_length for index in missing + unsupported):
             raise ValueError("audit position is out of range")
+        _digest(self.missing_positions_sha256, "missing_positions_sha256")
+        if self.missing_positions_sha256 != _missing_positions_sha256(missing):
+            raise ValueError("missing_positions_sha256 does not match positions")
         _digest(self.raw_blob_sha256, "raw_blob_sha256")
         _name(self.action, "action")
+        if self.action not in {
+            "unchanged", "linear_and_edge_nearest", "excluded_nonfinite_row",
+            "leave_one_out_peer_median", "excluded_unsupported_peer",
+        }:
+            raise ValueError("audit action is invalid")
+        if self.instance_index in references:
+            raise ValueError("audit references must exclude the row itself")
+        if not missing:
+            if self.action != "unchanged" or references or unsupported:
+                raise ValueError("finite audit action is inconsistent")
+        elif self.policy == "linear_edge_nearest_control":
+            if self.action != "linear_and_edge_nearest" or references or unsupported:
+                raise ValueError("Policy A audit action is inconsistent")
+        elif self.policy == "exclude_nonfinite_row":
+            if self.action != "excluded_nonfinite_row" or references or unsupported:
+                raise ValueError("Policy B audit action is inconsistent")
+        elif self.action == "leave_one_out_peer_median":
+            if unsupported or not references:
+                raise ValueError("Policy C peer-median audit action is inconsistent")
+        elif self.action == "excluded_unsupported_peer":
+            if not unsupported:
+                raise ValueError("Policy C unsupported audit action is inconsistent")
+        else:
+            raise ValueError("Policy C audit action is inconsistent")
         object.__setattr__(self, "missing_positions", missing)
         object.__setattr__(self, "reference_instance_indices", references)
         object.__setattr__(self, "unsupported_positions", unsupported)
@@ -253,6 +289,7 @@ class RunPolicyAuditAntigravity:
         return {
             "dataset": self.dataset, "policy": self.policy, "instance_index": self.instance_index,
             "original_length": self.original_length, "missing_positions": list(self.missing_positions),
+            "missing_positions_sha256": self.missing_positions_sha256,
             "raw_blob_sha256": self.raw_blob_sha256, "action": self.action,
             "reference_instance_indices": list(self.reference_instance_indices),
             "unsupported_positions": list(self.unsupported_positions),
@@ -260,7 +297,7 @@ class RunPolicyAuditAntigravity:
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, object]) -> "RunPolicyAuditAntigravity":
-        expected = {"dataset", "policy", "instance_index", "original_length", "missing_positions", "raw_blob_sha256", "action", "reference_instance_indices", "unsupported_positions"}
+        expected = {"dataset", "policy", "instance_index", "original_length", "missing_positions", "missing_positions_sha256", "raw_blob_sha256", "action", "reference_instance_indices", "unsupported_positions"}
         if not isinstance(payload, Mapping) or set(payload) != expected:
             raise ValueError("policy audit payload keys are invalid")
         raw = dict(payload)
