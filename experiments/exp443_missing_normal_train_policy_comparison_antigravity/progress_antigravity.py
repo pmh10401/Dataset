@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from hashlib import sha256
 import math
 import os
 from pathlib import Path
@@ -13,7 +15,11 @@ from .artifacts_antigravity import (
     fsync_directory_antigravity,
     parse_canonical_json_bytes_antigravity,
 )
-from .checkpoint_antigravity import ProcessIdentityAntigravity, WorkUnitAntigravity
+from .checkpoint_antigravity import (
+    CompletedCheckpointInspectionAntigravity,
+    ProcessIdentityAntigravity,
+    WorkUnitAntigravity,
+)
 from .config_antigravity import FROZEN_CONFIG
 from .contracts_antigravity import PolicyDatasetResultAntigravity
 
@@ -46,6 +52,162 @@ def _normalize_active_antigravity(active: Iterable[WorkUnitAntigravity]) -> tupl
 _TERMINAL_PROGRESS_STAGES = frozenset({
     "complete", "error", "failed", "interrupted_resumable", "interrupted",
 })
+
+_PROGRESS_KEYS_ANTIGRAVITY = frozenset({
+    "pid", "active", "current_policy", "current_dataset", "active_datasets",
+    "train_total", "train_missing", "train_used", "train_excluded", "test_rows",
+    "target_length", "stage", "backend", "completed", "total", "imported",
+    "recomputed", "success", "abstention", "error", "throughput", "elapsed_seconds",
+    "eta_seconds", "checkpoint", "heartbeat", "latest_error",
+})
+_PID_KEYS_ANTIGRAVITY = frozenset({"pid", "active", "heartbeat", "start_identity"})
+
+
+@dataclass(frozen=True)
+class CompleteProgressFinalizationEvidenceAntigravity:
+    """Hashes proving a complete progress surface was inspected without writes."""
+
+    attempt_path: str
+    completed_count: int
+    stage: str
+    progress_sha256: str
+    pid_sha256: str
+    events_sha256: str
+    text_sha256: str
+
+    def __post_init__(self) -> None:
+        if not self.attempt_path or self.completed_count < 1 or self.stage != "complete":
+            raise ValueError("complete progress evidence is invalid")
+        for digest in (
+            self.progress_sha256, self.pid_sha256,
+            self.events_sha256, self.text_sha256,
+        ):
+            if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+                raise ValueError("complete progress evidence SHA256 is invalid")
+
+
+def inspect_complete_progress_for_finalization_antigravity(
+    attempt_path: Path,
+    checkpoint: CompletedCheckpointInspectionAntigravity,
+    *,
+    pid_probe: object,
+) -> CompleteProgressFinalizationEvidenceAntigravity:
+    """Validate terminal progress for publication retry without changing any byte."""
+    if type(checkpoint) is not CompletedCheckpointInspectionAntigravity or not callable(pid_probe):
+        raise ValueError("complete progress inspection identity is invalid")
+    attempt = Path(attempt_path)
+    if not attempt.is_dir() or attempt.is_symlink():
+        raise ValueError("complete progress attempt is invalid")
+
+    def read_regular(filename: str) -> bytes:
+        path = attempt / filename
+        if path.is_symlink() or not path.is_file():
+            raise ValueError(f"complete progress file is invalid: {filename}")
+        try:
+            return path.read_bytes()
+        except OSError as error:
+            raise ValueError(f"complete progress file is invalid: {filename}") from error
+
+    def read_payload(filename: str) -> tuple[Mapping[str, object], bytes]:
+        payload = read_regular(filename)
+        try:
+            parsed = parse_canonical_json_bytes_antigravity(payload)
+        except ValueError as error:
+            raise ValueError(f"complete progress JSON is invalid: {filename}") from error
+        if not isinstance(parsed, Mapping) or canonical_json_bytes_antigravity(parsed) != payload:
+            raise ValueError(f"complete progress JSON is invalid: {filename}")
+        return parsed, payload
+
+    progress, progress_bytes = read_payload("progress_antigravity.json")
+    pid, pid_bytes = read_payload("pid_antigravity.json")
+    if set(progress) != _PROGRESS_KEYS_ANTIGRAVITY or set(pid) != _PID_KEYS_ANTIGRAVITY:
+        raise ValueError("complete progress schema is invalid")
+    total = len(checkpoint.units)
+    expected_success = sum(result.status == "scored" for result in checkpoint.results.values())
+    expected_abstention = sum(result.status == "abstained" for result in checkpoint.results.values())
+    if (
+        progress.get("stage") != "complete"
+        or progress.get("active") is not False
+        or progress.get("current_policy") is not None
+        or progress.get("current_dataset") is not None
+        or progress.get("active_datasets") != []
+        or progress.get("completed") != total
+        or progress.get("total") != total
+        or progress.get("imported") != 0
+        or progress.get("recomputed") != total
+        or progress.get("success") != expected_success
+        or progress.get("abstention") != expected_abstention
+        or progress.get("error") != 0
+        or progress.get("latest_error") is not None
+        or progress.get("eta_seconds") is not None
+        or progress.get("backend") != "cpu"
+        or progress.get("checkpoint") != str(checkpoint.root / "state_antigravity.json")
+    ):
+        raise ValueError("complete progress state differs from checkpoint")
+    for name in ("throughput", "elapsed_seconds"):
+        value = progress.get(name)
+        if type(value) not in (int, float) or not math.isfinite(float(value)) or float(value) < 0:
+            raise ValueError("complete progress timing is invalid")
+    final_result = checkpoint.results[total - 1]
+    expected_dimensions = {
+        "train_total": final_result.train_total,
+        "train_missing": final_result.train_missing,
+        "train_used": final_result.train_used,
+        "train_excluded": final_result.train_excluded,
+        "test_rows": final_result.test_rows,
+        "target_length": final_result.target_length,
+    }
+    if any(progress.get(name) != value for name, value in expected_dimensions.items()):
+        raise ValueError("complete progress dimensions differ from checkpoint")
+    if (
+        progress.get("pid") != checkpoint.process.pid
+        or pid.get("pid") != checkpoint.process.pid
+        or pid.get("start_identity") != checkpoint.process.start_identity
+        or pid.get("active") is not False
+    ):
+        raise ValueError("complete progress process identity differs from checkpoint")
+    for heartbeat in (progress.get("heartbeat"), pid.get("heartbeat")):
+        if type(heartbeat) is not str or not heartbeat.endswith("Z"):
+            raise ValueError("complete progress heartbeat is invalid")
+    try:
+        if bool(pid_probe(checkpoint.process)):
+            raise ValueError("complete progress process is active")
+    except ValueError:
+        raise
+    except BaseException as error:
+        raise ValueError("complete progress PID probe failed") from error
+
+    events_bytes = read_regular("events_antigravity.jsonl")
+    event_lines = events_bytes.splitlines(keepends=True)
+    if not event_lines or any(not line.endswith(b"\n") for line in event_lines):
+        raise ValueError("complete progress events log is invalid")
+    try:
+        last_event = parse_canonical_json_bytes_antigravity(event_lines[-1])
+    except ValueError as error:
+        raise ValueError("complete progress terminal event is invalid") from error
+    if (
+        not isinstance(last_event, Mapping)
+        or last_event.get("event") != "terminal"
+        or last_event.get("stage") != "complete"
+        or last_event.get("latest_error") is not None
+    ):
+        raise ValueError("complete progress terminal event is invalid")
+    text_bytes = read_regular("text_antigravity.log")
+    try:
+        text = text_bytes.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError("complete progress text log is invalid") from error
+    if not text.endswith(f"종료 stage=complete 오류=- 완료={total}/{total}\n"):
+        raise ValueError("complete progress terminal text is invalid")
+    for temporary in ("progress_antigravity.tmp", "pid_antigravity.tmp"):
+        path = attempt / temporary
+        if path.exists() or path.is_symlink():
+            raise ValueError("complete progress temporary is unexpected")
+    return CompleteProgressFinalizationEvidenceAntigravity(
+        str(attempt), total, "complete",
+        sha256(progress_bytes).hexdigest(), sha256(pid_bytes).hexdigest(),
+        sha256(events_bytes).hexdigest(), sha256(text_bytes).hexdigest(),
+    )
 
 
 class ProgressWriterAntigravity:
@@ -588,4 +750,8 @@ class ProgressWriterAntigravity:
         return self._stage
 
 
-__all__ = ["ProgressWriterAntigravity"]
+__all__ = [
+    "ProgressWriterAntigravity",
+    "CompleteProgressFinalizationEvidenceAntigravity",
+    "inspect_complete_progress_for_finalization_antigravity",
+]

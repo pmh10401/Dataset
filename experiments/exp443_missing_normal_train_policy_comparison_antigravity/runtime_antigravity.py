@@ -25,9 +25,15 @@ import signal
 import time
 from typing import Any
 
-from .artifacts_antigravity import canonical_json_bytes_antigravity, write_create_only_antigravity
+from .artifacts_antigravity import (
+    canonical_json_bytes_antigravity,
+    parse_canonical_json_bytes_antigravity,
+    read_pinned_regular_bytes_antigravity,
+    write_create_only_antigravity,
+)
 from .checkpoint_antigravity import (
     CheckpointBindingAntigravity,
+    CompletedCheckpointInspectionAntigravity,
     Exp443CheckpointStoreAntigravity,
     ProcessIdentityAntigravity,
     WorkUnitAntigravity,
@@ -35,7 +41,10 @@ from .checkpoint_antigravity import (
 )
 from .config_antigravity import FROZEN_CONFIG, cpu_worker_count_antigravity, scientific_config_sha256_antigravity
 from .contracts_antigravity import PolicyDatasetResultAntigravity
-from .progress_antigravity import ProgressWriterAntigravity
+from .progress_antigravity import (
+    ProgressWriterAntigravity,
+    inspect_complete_progress_for_finalization_antigravity,
+)
 
 
 def _worker_initializer_antigravity() -> None:
@@ -431,6 +440,98 @@ def _resume_attempt_root_antigravity(root: Path, attempt_name: str) -> Path:
     return attempt
 
 
+@dataclass(frozen=True)
+class _CompletedCheckpointRuntimeAntigravity:
+    """Read-only complete checkpoint view used only to retry publication."""
+
+    inspection: CompletedCheckpointInspectionAntigravity
+
+    def __post_init__(self) -> None:
+        if type(self.inspection) is not CompletedCheckpointInspectionAntigravity:
+            raise ValueError("complete runtime checkpoint inspection is invalid")
+
+    @property
+    def status_antigravity(self) -> str:
+        return "complete"
+
+    @property
+    def completed_count_antigravity(self) -> int:
+        return len(self.inspection.units)
+
+    def results_antigravity(self) -> dict[int, PolicyDatasetResultAntigravity]:
+        return dict(self.inspection.results)
+
+
+def _checkpoint_resume_status_antigravity(checkpoint_root: Path) -> str:
+    """Read only enough canonical state to select complete versus interrupted resume."""
+    payload, _digest = read_pinned_regular_bytes_antigravity(
+        Path(checkpoint_root) / "state_antigravity.json"
+    )
+    parsed = parse_canonical_json_bytes_antigravity(payload)
+    expected = {
+        "context_sha256", "status", "completed_count", "record_sha256_prefix",
+        "error_sequence", "process", "updated_at",
+    }
+    if not isinstance(parsed, Mapping) or set(parsed) != expected:
+        raise ValueError("checkpoint resume state is invalid")
+    status = parsed.get("status")
+    if type(status) is not str or not status:
+        raise ValueError("checkpoint resume status is invalid")
+    return status
+
+
+def _open_resume_authorities_antigravity(
+    *,
+    attempt: Path,
+    checkpoint_root: Path,
+    units: tuple[WorkUnitAntigravity, ...],
+    binding: CheckpointBindingAntigravity,
+    process: ProcessIdentityAntigravity,
+    pid_probe: Callable[[ProcessIdentityAntigravity], bool],
+    status_reader: Callable[[Path], str] | None = None,
+    complete_inspector: Callable[[Path], CompletedCheckpointInspectionAntigravity] | None = None,
+    checkpoint_opener: Callable[..., object] | None = None,
+    progress_inspector: Callable[..., object] | None = None,
+) -> tuple[object, ProgressWriterAntigravity | None, bool]:
+    """Open interrupted work mutably or complete finalization strictly read-only."""
+    status_reader = _checkpoint_resume_status_antigravity if status_reader is None else status_reader
+    complete_inspector = (
+        Exp443CheckpointStoreAntigravity.inspect_complete_antigravity
+        if complete_inspector is None else complete_inspector
+    )
+    checkpoint_opener = (
+        Exp443CheckpointStoreAntigravity.open_for_resume_antigravity
+        if checkpoint_opener is None else checkpoint_opener
+    )
+    progress_inspector = (
+        inspect_complete_progress_for_finalization_antigravity
+        if progress_inspector is None else progress_inspector
+    )
+    if not all(callable(item) for item in (
+        pid_probe, status_reader, complete_inspector, checkpoint_opener, progress_inspector,
+    )):
+        raise ValueError("resume authority dependency is invalid")
+    if status_reader(Path(checkpoint_root)) == "complete":
+        inspection = complete_inspector(Path(checkpoint_root))
+        if (
+            type(inspection) is not CompletedCheckpointInspectionAntigravity
+            or inspection.binding != binding
+            or inspection.units != units
+        ):
+            raise ValueError("complete finalization checkpoint authority differs")
+        progress_inspector(Path(attempt), inspection, pid_probe=pid_probe)
+        return _CompletedCheckpointRuntimeAntigravity(inspection), None, True
+    store = checkpoint_opener(
+        Path(checkpoint_root), binding, process, pid_probe,
+    )
+    writer = ProgressWriterAntigravity.open_for_resume_antigravity(
+        Path(attempt), total=len(units),
+        checkpoint_path=Path(checkpoint_root) / "state_antigravity.json",
+        checkpoint_store=store, process=process, pid_probe=pid_probe,
+    )
+    return store, writer, False
+
+
 def _binding_antigravity(reviewed_commit: str, readiness: Mapping[str, object]) -> CheckpointBindingAntigravity:
     return CheckpointBindingAntigravity(
         run_identity=FROZEN_CONFIG.run_identity,
@@ -578,6 +679,7 @@ def _run_exp443_antigravity(
     attempt_name: str | None = None,
     run_root: Path | str | None = None,
     executor_factory: Callable[..., object] = ProcessPoolExecutor,
+    publisher: Callable[[Path], object] | None = None,
 ) -> dict[str, object]:
     """Execute new or resumable production attempt with parent-owned evidence."""
     from .database_antigravity import (
@@ -603,17 +705,14 @@ def _run_exp443_antigravity(
         checkpoint_root = attempt / "checkpoint_antigravity"
         store = Exp443CheckpointStoreAntigravity.create_antigravity(checkpoint_root, units, binding, identity)
         writer = ProgressWriterAntigravity(attempt, total=len(units), checkpoint_path=checkpoint_root / "state_antigravity.json", process=identity)
+        finalization_only_antigravity = False
     elif mode == "resume":
         attempt = _resume_attempt_root_antigravity(root, attempt_name)
         checkpoint_root = attempt / "checkpoint_antigravity"
-        store = Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
-            checkpoint_root,
-            binding,
-            identity,
-            _pid_probe_antigravity,
-            allow_complete_finalization=True,
+        store, writer, finalization_only_antigravity = _open_resume_authorities_antigravity(
+            attempt=attempt, checkpoint_root=checkpoint_root, units=units,
+            binding=binding, process=identity, pid_probe=_pid_probe_antigravity,
         )
-        writer = ProgressWriterAntigravity.open_for_resume_antigravity(attempt, total=len(units), checkpoint_path=checkpoint_root / "state_antigravity.json", checkpoint_store=store, process=identity, pid_probe=_pid_probe_antigravity)
     else:
         raise ValueError("Exp443 runtime mode is invalid")
 
@@ -649,6 +748,8 @@ def _run_exp443_antigravity(
         return PolicyTaskAntigravity(unit, load_raw(unit))
 
     def commit(unit: WorkUnitAntigravity, result: PolicyDatasetResultAntigravity) -> None:
+        if writer is None:
+            raise ValueError("complete finalization cannot commit a score result")
         next_dimensions: dict[str, int | None] | None = None
         next_sequence = store.completed_count_antigravity + 1
         if next_sequence < len(units):
@@ -660,6 +761,8 @@ def _run_exp443_antigravity(
         writer.accept_unit_and_align_antigravity(result, next_dimensions=next_dimensions)
 
     def progress(**fields: object) -> None:
+        if writer is None:
+            raise ValueError("complete finalization cannot write progress")
         active = tuple(unit for unit in units if unit.sequence >= store.completed_count_antigravity)
         if fields.get("stage") in {"submit", "worker_result"}:
             writer.heartbeat_antigravity(active)
@@ -677,9 +780,15 @@ def _run_exp443_antigravity(
     finalized = False
     try:
         active_units = tuple(unit for unit in units if unit.sequence >= store.completed_count_antigravity)
-        writer.begin_units_antigravity(active_units)
-        if active_units:
-            writer.align_current_dimensions_antigravity(**raw_dimensions_antigravity(load_raw(active_units[0])))
+        if finalization_only_antigravity:
+            if active_units or writer is not None:
+                raise ValueError("complete finalization authority is inconsistent")
+        else:
+            if writer is None:
+                raise ValueError("active runtime progress writer is unavailable")
+            writer.begin_units_antigravity(active_units)
+            if active_units:
+                writer.align_current_dimensions_antigravity(**raw_dimensions_antigravity(load_raw(active_units[0])))
         initial_results = store.results_antigravity()
         all_results, control = _execute_policy_phases_antigravity(
             units=units, task_loader=load_task, commit=commit, progress=progress,
@@ -700,40 +809,46 @@ def _run_exp443_antigravity(
             _write_prediction_idempotent_antigravity(path, prediction_bytes)
             predictions[policy] = sha256(prediction_bytes).hexdigest()
         _source_snapshot_and_environment_antigravity(reviewed_commit, readiness)
-        writer.terminal_antigravity("complete", None)
-        publication = _publish_completed_attempt_antigravity(attempt)
+        if not finalization_only_antigravity:
+            if writer is None:
+                raise ValueError("terminal progress writer is unavailable")
+            writer.terminal_antigravity("complete", None)
+        publication = _publish_completed_attempt_antigravity(
+            attempt, publisher=publisher,
+        )
+        publication_result = _publication_result_antigravity(publication)
         finalized = True
         return {
             "attempt": str(attempt), "checkpoint_completed": store.completed_count_antigravity,
             "control": _control_payload_antigravity(control), "prediction_sha256": predictions,
-            "publication": _publication_result_antigravity(publication),
+            "publication": publication_result,
             "label_access_count": 0,
         }
     except WorkerFailureAntigravity as failure:
-        if finalized or writer.stage_antigravity == "complete":
+        if finalization_only_antigravity or finalized or writer is None or writer.stage_antigravity == "complete":
             raise
         _record_terminal_error_antigravity(store, writer, units, failure)
         raise
     except _InterruptedRuntimeAntigravity as interruption:
-        if finalized or writer.stage_antigravity == "complete":
+        if finalization_only_antigravity or finalized or writer is None or writer.stage_antigravity == "complete":
             raise
         _mark_interrupted_antigravity(store, writer, str(interruption))
         raise
     except KeyboardInterrupt as interruption:
-        if finalized or writer.stage_antigravity == "complete":
+        if finalization_only_antigravity or finalized or writer is None or writer.stage_antigravity == "complete":
             raise
         _mark_interrupted_antigravity(store, writer, str(interruption) or "KeyboardInterrupt")
         raise
     except BaseException as error:
-        if finalized or writer.stage_antigravity == "complete":
+        if finalization_only_antigravity or finalized or writer is None or writer.stage_antigravity == "complete":
             raise
         _record_terminal_error_antigravity(store, writer, units, error)
         raise
     finally:
         signal.signal(signal.SIGTERM, prior_sigterm)
-        # A complete checkpoint may still be in finalization (control/prediction
-        # publication).  Keep its input pin across a resumable interruption;
-        # delete it only after the progress terminal-complete write succeeds.
+        # A complete checkpoint may still be retrying create-only publication.
+        # Keep its exact input pin until publication and its returned identity
+        # both succeed; only then is finalization durably complete.
         pinned.close(terminal_evidence_durable=finalized)
 
 
@@ -754,4 +869,5 @@ __all__ = [
     "_mark_interrupted_antigravity", "_record_terminal_error_antigravity",
     "_write_prediction_idempotent_antigravity", "_resume_attempt_root_antigravity",
     "_publish_completed_attempt_antigravity", "_publication_result_antigravity",
+    "_checkpoint_resume_status_antigravity", "_open_resume_authorities_antigravity",
 ]

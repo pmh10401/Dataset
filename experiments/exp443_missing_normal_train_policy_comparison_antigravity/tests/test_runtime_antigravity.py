@@ -6,6 +6,7 @@ from pathlib import Path
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -125,16 +126,143 @@ class RuntimeAntigravityTests(unittest.TestCase):
             source.index("finalized = True"),
         )
 
+    def test_finalization_only_runtime_retries_publication_and_preserves_progress_bytes(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity import (
+            database_antigravity,
+            readiness_antigravity,
+            routing_antigravity,
+            runtime_antigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            CheckpointBindingAntigravity,
+            ProcessIdentityAntigravity,
+        )
+
+        unit = WorkUnitAntigravity(0, POLICIES[0], "dataset_00")
+        scored = _result(unit)
+
+        class StoreAntigravity:
+            status_antigravity = "complete"
+            completed_count_antigravity = 1
+
+            @staticmethod
+            def results_antigravity():
+                return {0: scored}
+
+        class PinAntigravity:
+            def __init__(self) -> None:
+                self.close_calls: list[bool] = []
+
+            def close(self, *, terminal_evidence_durable: bool = False) -> None:
+                self.close_calls.append(terminal_evidence_durable)
+
+        class ControlAntigravity:
+            passed = True
+
+        class PredictionAntigravity:
+            def __init__(self, policy: str) -> None:
+                self.policy = policy
+
+        class PublicationAntigravity:
+            publication_path = "publication_antigravity"
+            manifest_sha256 = "a" * 64
+            artifact_map_sha256 = "b" * 64
+            prediction_sha256 = tuple((policy, "c" * 64) for policy in POLICIES)
+            label_access_count = 0
+
+        class SnapshotAntigravity:
+            affected_datasets = ("dataset_00",)
+
+        binding = CheckpointBindingAntigravity(
+            "exp443-fixture-antigravity", "a" * 64, "b" * 64,
+            "c" * 64, "d" * 64, "e" * 40,
+        )
+        identity = ProcessIdentityAntigravity(5252, "replacement")
+        reviewed = "f" * 40
+        pins = [PinAntigravity(), PinAntigravity()]
+        publisher_calls: list[Path] = []
+
+        def failed_publisher(attempt: Path):
+            publisher_calls.append(attempt)
+            raise RuntimeError("publication fixture failure")
+
+        def successful_publisher(attempt: Path):
+            publisher_calls.append(attempt)
+            return PublicationAntigravity()
+
+        with tempfile.TemporaryDirectory(prefix="exp443_finalization_retry_antigravity_") as directory:
+            root = Path(directory) / "root_antigravity"
+            attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            attempt.mkdir(parents=True)
+            progress_names = (
+                "progress_antigravity.json", "pid_antigravity.json",
+                "events_antigravity.jsonl", "text_antigravity.log",
+            )
+            for index, name in enumerate(progress_names):
+                (attempt / name).write_bytes(f"fixed-{index}-antigravity\n".encode())
+            progress_before = {name: (attempt / name).read_bytes() for name in progress_names}
+
+            common_patches = (
+                patch.object(runtime_antigravity, "_load_readiness_antigravity", return_value={}),
+                patch.object(runtime_antigravity, "_source_snapshot_and_environment_antigravity", return_value=SnapshotAntigravity()),
+                patch.object(runtime_antigravity, "ordered_work_units_antigravity", return_value=(unit,)),
+                patch.object(runtime_antigravity, "_binding_antigravity", return_value=binding),
+                patch.object(runtime_antigravity, "_process_identity_antigravity", return_value=identity),
+                patch.object(runtime_antigravity, "_resume_attempt_root_antigravity", return_value=attempt),
+                patch.object(runtime_antigravity, "_open_resume_authorities_antigravity", return_value=(StoreAntigravity(), None, True)),
+                patch.object(runtime_antigravity, "_execute_policy_phases_antigravity", return_value=({0: scored}, ControlAntigravity())),
+                patch.object(runtime_antigravity, "_control_payload_antigravity", return_value={"passed": True}),
+                patch.object(readiness_antigravity, "current_clean_head_antigravity", return_value=reviewed),
+                patch.object(database_antigravity, "load_raw_dataset_antigravity", side_effect=AssertionError("finalization must not load raw rows")),
+                patch.object(database_antigravity, "pin_database_snapshot_antigravity", side_effect=AssertionError("resume must not create a new pin")),
+                patch.object(routing_antigravity, "route_policy_antigravity", side_effect=lambda _snapshot, _results, policy: PredictionAntigravity(policy)),
+                patch.object(routing_antigravity, "canonical_prediction_bytes_antigravity", side_effect=lambda prediction: (prediction.policy + "-antigravity\n").encode()),
+            )
+            for active_patch in common_patches:
+                active_patch.start()
+            try:
+                with patch.object(database_antigravity, "reopen_pinned_database_snapshot_antigravity", return_value=pins[0]):
+                    with self.assertRaisesRegex(RuntimeError, "publication fixture failure"):
+                        runtime_antigravity._run_exp443_antigravity(
+                            reviewed_commit=reviewed, mode="resume",
+                            attempt_name="attempt_0000_antigravity", run_root=root,
+                            publisher=failed_publisher,
+                        )
+                self.assertEqual(pins[0].close_calls, [False])
+                self.assertEqual(
+                    {name: (attempt / name).read_bytes() for name in progress_names},
+                    progress_before,
+                )
+                with patch.object(database_antigravity, "reopen_pinned_database_snapshot_antigravity", return_value=pins[1]):
+                    result = runtime_antigravity._run_exp443_antigravity(
+                        reviewed_commit=reviewed, mode="resume",
+                        attempt_name="attempt_0000_antigravity", run_root=root,
+                        publisher=successful_publisher,
+                    )
+                self.assertEqual(pins[1].close_calls, [True])
+                self.assertEqual(result["publication"]["manifest_sha256"], "a" * 64)
+                self.assertEqual(publisher_calls, [attempt, attempt])
+                self.assertEqual(
+                    {name: (attempt / name).read_bytes() for name in progress_names},
+                    progress_before,
+                )
+            finally:
+                for active_patch in reversed(common_patches):
+                    active_patch.stop()
+
     def test_successful_runtime_finalization_publishes_after_terminal_progress(self) -> None:
         from experiments.exp443_missing_normal_train_policy_comparison_antigravity import runtime_antigravity
 
         source = __import__("inspect").getsource(runtime_antigravity._run_exp443_antigravity)
-        self.assertLess(
-            source.index('writer.terminal_antigravity("complete", None)'),
-            source.index("_publish_completed_attempt_antigravity(attempt)"),
+        publication_call = source.index(
+            "publication = _publish_completed_attempt_antigravity("
         )
         self.assertLess(
-            source.index("_publish_completed_attempt_antigravity(attempt)"),
+            source.index('writer.terminal_antigravity("complete", None)'),
+            publication_call,
+        )
+        self.assertLess(
+            publication_call,
             source.index("finalized = True"),
         )
         calls: list[tuple[str, object]] = []
