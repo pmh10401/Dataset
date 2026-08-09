@@ -1,7 +1,7 @@
 {
-  "current_commit": "28a5f793",
+  "current_commit": "2f82f9f8",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-09T10:36:47Z",
+  "generated_at": "2026-08-09T10:46:56Z",
   "scanned_scope": [
     "tracked root files",
     ".superpowers",
@@ -33,8 +33,8 @@
   "fingerprint_algorithm": "sha256-v1: for each top-level module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Root-level tracked files are grouped as root. docs/codemap is excluded to prevent self-reference.",
   "module_fingerprints": {
     ".superpowers": {
-      "fingerprint": "44f9348b35723400e2672913132728bba315ed5898cd3211dffdd47eb00f37e4",
-      "tracked_files": 37
+      "fingerprint": "6208015e1576ad609b86a0c9939501aaf8fb8e048a9662156b452ac65ac40ef0",
+      "tracked_files": 38
     },
     "docs": {
       "fingerprint": "8ef8fd1f97a180cb7dabbd06c901f52c918b4843c5d9a4d8012a77661a4a7195",
@@ -78,7 +78,6 @@
     }
   },
   "changed_modules_since_prior_lock": [
-    ".superpowers",
-    "experiments"
+    ".superpowers"
   ]
 }
