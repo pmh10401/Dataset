@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 import json
 from pathlib import Path
+import shutil
 from types import SimpleNamespace
 import tempfile
 import unittest
@@ -36,6 +37,28 @@ from experiments.exp443_missing_normal_train_policy_comparison_antigravity.routi
 POLICIES = tuple(FROZEN_CONFIG.policies)
 DATASETS = tuple(f"dataset_{index:04d}" for index in range(FROZEN_CONFIG.dataset_count))
 AFFECTED = DATASETS[: FROZEN_CONFIG.affected_dataset_count]
+
+
+def _fixture_promotion_indices(dataset: str) -> tuple[int, ...]:
+    """Cheap deterministic reproduction of the fixture's 137 promotions."""
+    hard: set[tuple[str, int]] = set()
+    remaining = 2116
+    for candidate in DATASETS:
+        if remaining <= 0:
+            break
+        count = min(5, remaining)
+        hard.update((candidate, index) for index in range(count))
+        remaining -= count
+    promotions: set[tuple[str, int]] = set()
+    remaining = 137
+    for candidate in DATASETS:
+        if remaining <= 0:
+            break
+        available = tuple(index for index in range(5) if (candidate, index) not in hard)
+        chosen = available[: min(len(available), remaining)]
+        promotions.update((candidate, index) for index in chosen)
+        remaining -= len(chosen)
+    return tuple(index for candidate, index in sorted(promotions) if candidate == dataset)
 
 
 def _fixture_snapshot() -> SimpleNamespace:
@@ -77,11 +100,41 @@ def _fixture_snapshot() -> SimpleNamespace:
         if count:
             chosen = available[:count]
             lanes[dataset]["standard"] = chosen
+            lanes[dataset]["promotion"] = chosen
             candidates[dataset][1024] = chosen
             promotion_coordinates.update((dataset, index) for index in chosen)
     pre_exact = hard_coordinates | promotion_coordinates
     exact_normal = frozenset(sorted(hard_coordinates)[:35])
     final_hard = frozenset(pre_exact - exact_normal)
+    # The real control recomputation reads the frozen score-cache authority.
+    # Keep the fixture cache descriptor-shaped and immutable while using a
+    # large TRAIN reference so alpha=0.005 can attain the expected candidates.
+    cache_inventory = {}
+    for dataset in AFFECTED:
+        train_by_seed = np.zeros((2, 1000), dtype="<f8")
+        train_by_seed_4096 = np.zeros((2, 1000), dtype="<f8")
+        test_by_seed_1024 = np.zeros((2, 5), dtype="<f8")
+        test_by_seed_1024[:, tuple(candidates[dataset][1024])] = 1.0
+        test_by_seed_4096 = np.zeros((2, 5), dtype="<f8")
+        for array in (train_by_seed, train_by_seed_4096, test_by_seed_1024, test_by_seed_4096):
+            array.setflags(write=False)
+        cache_inventory[dataset] = {
+            "cache_file": Path(f"{dataset}_cache_antigravity.npz"),
+            "metadata_file": Path(f"{dataset}_metadata_antigravity.json"),
+            "cache_sha256": "6" * 64,
+            "metadata_sha256": "7" * 64,
+            "config_hash": "8" * 64,
+            "n_train": 1000,
+            "n_test": 5,
+            "target_length": 8,
+            "abstained": False,
+            "arrays": {
+                "kernels_1024__train_by_seed": train_by_seed,
+                "kernels_1024__test_by_seed": test_by_seed_1024,
+                "kernels_4096__train_by_seed": train_by_seed_4096,
+                "kernels_4096__test_by_seed": test_by_seed_4096,
+            },
+        }
     return SimpleNamespace(
         datasets=DATASETS,
         affected_datasets=AFFECTED,
@@ -96,6 +149,7 @@ def _fixture_snapshot() -> SimpleNamespace:
         routing_algebra=(2116, 137, 35, 2218),
         exp236_lanes=lanes,
         exp249_candidate_maps=candidates,
+        cache_inventory=cache_inventory,
         test_row_count_by_dataset={dataset: 5 for dataset in DATASETS},
         target_length_by_dataset={dataset: 8 for dataset in DATASETS},
         hard_coordinates_exp291=final_hard,
@@ -107,14 +161,30 @@ def _fixture_snapshot() -> SimpleNamespace:
 
 
 def _result(policy: str, dataset: str) -> PolicyDatasetResultAntigravity:
+    # Match the fixture cache authority's alpha-attainable candidate sets for
+    # Policy A while retaining deterministic no-candidate alternatives.
+    promotion = _fixture_promotion_indices(dataset)
+    oof = np.zeros(1000, dtype="<f8")
+    test_1024 = np.zeros(5, dtype="<f8")
+    test_1024[list(promotion)] = 1.0
+    oof.setflags(write=False)
+    test_1024.setflags(write=False)
+    test_4096 = np.zeros(5, dtype="<f8")
+    test_4096.setflags(write=False)
     scores = tuple(
-        KernelSeedScoresAntigravity(kernel, seed, np.zeros(5, dtype="<f8"), np.zeros(5, dtype="<f8"), ())
+        KernelSeedScoresAntigravity(
+            kernel,
+            seed,
+            oof,
+            test_1024 if kernel == 1024 else test_4096,
+            promotion if kernel == 1024 else (),
+        )
         for kernel in (1024, 4096)
         for seed in FROZEN_CONFIG.seeds
     )
     return PolicyDatasetResultAntigravity(
-        policy, dataset, 8, 5, 0, 5, 0, 5, scores,
-        {1024: (), 4096: ()}, (), "scored",
+        policy, dataset, 8, 1000, 0, 1000, 0, 5, scores,
+        {1024: promotion, 4096: ()}, (), "scored",
     )
 
 
@@ -159,50 +229,27 @@ def _write_fixture() -> _Fixture:
         writer.accept_unit_antigravity(result)
     writer.terminal_antigravity("complete", None)
 
-    control_evidence = [
+    from experiments.exp443_missing_normal_train_policy_comparison_antigravity.control_antigravity import (
+        compare_policy_a_to_archive_antigravity,
+    )
+    control_object = compare_policy_a_to_archive_antigravity(
+        snapshot,
         {
-            "dataset": dataset,
-            "kernel": kernel,
-            "seed": seed,
-            "train_shape": [5],
-            "test_shape": [5],
-            "archive_train_shape": [5],
-            "archive_test_shape": [5],
-            "finite": True,
-            "train_max_abs_difference": 0.0,
-            "test_max_abs_difference": 0.0,
-            "max_abs_difference": 0.0,
-            "candidate_equal": True,
-            "archive_candidates": [],
-            "policy_candidates": [],
-        }
-        for dataset in AFFECTED
-        for kernel in (1024, 4096)
-        for seed in FROZEN_CONFIG.seeds
-    ]
+            unit.dataset: results[unit.sequence]
+            for unit in units
+            if unit.policy == POLICIES[0]
+        },
+    )
     control = {
-        "status": "control_reproduction_passed", "passed": True, "reason": None,
-        "score_evidence": control_evidence,
-        "routing_identity": {
-            "rows": 1117, "promotions": 137, "pre_exact": 2253,
-            "exact_normal_removals": 35, "final_hard": 2218,
-            "promotions_coordinate_equal": True, "pre_exact_coordinate_equal": True,
-            "exact_normal_removals_coordinate_equal": True,
-            "exp291_coordinate_equal": True, "exp404_coordinate_equal": True,
-            "recomputed_rows": 19, "imported_rows": 1098,
-        },
-        "environment_identity": {
-            "python_version": FROZEN_CONFIG.python_version,
-            "aeon_version": FROZEN_CONFIG.aeon_version,
-            "numpy_version": FROZEN_CONFIG.numpy_version,
-            "scikit_learn_version": FROZEN_CONFIG.scikit_learn_version,
-            "environment_lock_sha256": FROZEN_CONFIG.environment_lock_sha256,
-            "outer_workers": 11, "inner_threads": 1,
-            "acceleration_decision": FROZEN_CONFIG.acceleration_decision,
-            "acceleration_reason": "official_aeon_minirocket_cpu_transformer_no_mlx_rewrite",
-        },
-        "label_access_count": 0, "max_abs_difference": 0.0,
-        "candidate_mismatch_count": 0,
+        "status": control_object.status,
+        "passed": control_object.passed,
+        "reason": control_object.reason,
+        "score_evidence": [dict(item) for item in control_object.score_evidence],
+        "routing_identity": dict(control_object.routing_identity),
+        "environment_identity": dict(control_object.environment_identity),
+        "label_access_count": control_object.label_access_count,
+        "max_abs_difference": control_object.max_abs_difference,
+        "candidate_mismatch_count": control_object.candidate_mismatch_count,
     }
     (attempt / "control_gate_antigravity.json").write_bytes(canonical_json_bytes_antigravity(control))
     parity = {
@@ -224,6 +271,29 @@ def _write_fixture() -> _Fixture:
     (attempt / "worker_parity_antigravity.json").write_bytes(canonical_json_bytes_antigravity(parity))
 
     return _Fixture(root, attempt, snapshot, reviewed_commit, temporary)
+
+
+def _replace_complete_checkpoint(fixture: _Fixture, units) -> None:
+    """Write a self-consistent terminal checkpoint for authority-boundary tests."""
+    checkpoint = fixture.attempt / "checkpoint_antigravity"
+    shutil.rmtree(checkpoint)
+    binding = CheckpointBindingAntigravity(
+        FROZEN_CONFIG.run_identity,
+        scientific_config_sha256_antigravity(),
+        FROZEN_CONFIG.environment_lock_sha256,
+        sha256(canonical_json_bytes_antigravity(
+            __import__(
+                "experiments.exp443_missing_normal_train_policy_comparison_antigravity.readiness_antigravity",
+                fromlist=["_source_evidence_antigravity"],
+            )._source_evidence_antigravity(fixture.snapshot)
+        )).hexdigest(),
+        FROZEN_CONFIG.database_sha256,
+        fixture.reviewed_commit,
+    )
+    process = ProcessIdentityAntigravity(4242, "fixture-start")
+    store = Exp443CheckpointStoreAntigravity.create_antigravity(checkpoint, tuple(units), binding, process)
+    for unit in units:
+        store.commit_result_antigravity(unit.sequence, _result(unit.policy, unit.dataset))
 
 
 class ReportingAntigravityTests(unittest.TestCase):
@@ -352,6 +422,199 @@ class ReportingAntigravityTests(unittest.TestCase):
                 artifact.write_bytes(canonical_json_bytes_antigravity(payload))
                 with self.assertRaisesRegex(ValueError, "artifact"):
                     reporting_antigravity.inspect_publication_antigravity(fixture.attempt)
+        finally:
+            fixture.temporary.cleanup()
+
+    def test_fabricated_control_is_rejected_when_recomputed_control_disagrees(self) -> None:
+        """Publication must bind Task 6 control bytes to a fresh checkpoint replay.
+
+        A passing control file is only a self-report.  The publisher must call
+        the canonical archive comparison with the inspected Policy A result
+        map and reject when that recomputation is not the same pass evidence.
+        """
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity import reporting_antigravity
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.control_antigravity import (
+            ControlGateResultAntigravity,
+        )
+
+        fixture = _write_fixture()
+        try:
+            # Keep the fixture's stored control internally passing while making
+            # the patched canonical comparison fail.  This catches an
+            # implementation that trusts only the JSON's self-reported flags.
+            recomputed = ControlGateResultAntigravity(
+                "control_reproduction_failed",
+                False,
+                "archive evidence does not match checkpoint",
+                (),
+                {},
+                {},
+                0,
+                0.0,
+                0,
+            )
+            with patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=fixture.snapshot), \
+                 patch.object(
+                     reporting_antigravity,
+                     "compare_policy_a_to_archive_antigravity",
+                     return_value=recomputed,
+                     create=True,
+                 ) as compare:
+                with self.assertRaisesRegex(ValueError, "control"):
+                    reporting_antigravity.publish_predictions_antigravity(fixture.attempt)
+            compare.assert_called_once()
+            snapshot_arg, results_arg = compare.call_args.args[:2]
+            self.assertIs(snapshot_arg, fixture.snapshot)
+            self.assertEqual(set(results_arg), set(AFFECTED))
+        finally:
+            fixture.temporary.cleanup()
+
+    def test_completed_inspection_rejects_56_58_missing_policy_and_wrong_dataset_units(self) -> None:
+        """Terminal inspection must retain the exact 57-unit identity/order."""
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity import reporting_antigravity
+
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import WorkUnitAntigravity
+
+        units_56 = tuple(
+            WorkUnitAntigravity(sequence, policy, dataset)
+            for sequence, (policy, dataset) in enumerate(
+                ( (policy, dataset) for policy, count in zip(POLICIES, (19, 19, 18)) for dataset in AFFECTED[:count] )
+            )
+        )
+        units_58 = tuple(
+            WorkUnitAntigravity(sequence, policy, dataset)
+            for sequence, (policy, dataset) in enumerate(
+                ( (policy, dataset) for policy, count in zip(POLICIES, (19, 19, 20)) for dataset in DATASETS[:count] )
+            )
+        )
+        units_missing_policy = tuple(
+            WorkUnitAntigravity(sequence, policy, dataset)
+            for sequence, (policy, dataset) in enumerate(
+                (
+                    (policy, dataset)
+                    for policy, names in ((POLICIES[0], AFFECTED), (POLICIES[1], DATASETS[:38]))
+                    for dataset in names
+                )
+            )
+        )
+        units_wrong_dataset = tuple(
+            WorkUnitAntigravity(sequence, policy, dataset)
+            for sequence, (policy, dataset) in enumerate(
+                (
+                    (policy, "dataset_zzzz" if policy == POLICIES[1] and dataset == AFFECTED[-1] else dataset)
+                    for policy in POLICIES
+                    for dataset in AFFECTED
+                )
+            )
+        )
+
+        for label, units in (
+            ("56 units", units_56),
+            ("58 units", units_58),
+            ("missing policy", units_missing_policy),
+            ("wrong dataset", units_wrong_dataset),
+        ):
+            with self.subTest(label=label):
+                fixture = _write_fixture()
+                try:
+                    _replace_complete_checkpoint(fixture, units)
+                    with self.assertRaisesRegex(ValueError, "complete|unit|57|policy|dataset"):
+                        Exp443CheckpointStoreAntigravity.inspect_complete_antigravity(
+                            fixture.attempt / "checkpoint_antigravity"
+                        )
+                finally:
+                    fixture.temporary.cleanup()
+
+    def test_progress_pid_schema_path_and_start_identity_are_bound(self) -> None:
+        """Publication must reject progress/PID shape and ownership drift."""
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity import reporting_antigravity
+
+        mutations = (
+            (
+                "progress extra field",
+                "progress_antigravity.json",
+                lambda payload: payload.__setitem__("unexpected", 1),
+                "progress",
+            ),
+            (
+                "PID extra field",
+                "pid_antigravity.json",
+                lambda payload: payload.__setitem__("unexpected", 1),
+                "PID",
+            ),
+            (
+                "checkpoint path drift",
+                "progress_antigravity.json",
+                lambda payload: payload.__setitem__("checkpoint", "other_checkpoint_antigravity/state_antigravity.json"),
+                "progress",
+            ),
+            (
+                "process start identity drift",
+                "pid_antigravity.json",
+                lambda payload: payload.__setitem__("start_identity", "different-process-start"),
+                "PID|process|identity",
+            ),
+        )
+        for label, filename, mutation, message in mutations:
+            with self.subTest(label=label):
+                fixture = _write_fixture()
+                try:
+                    path = fixture.attempt / filename
+                    payload = json.loads(path.read_text())
+                    mutation(payload)
+                    path.write_bytes(canonical_json_bytes_antigravity(payload))
+                    with self.assertRaisesRegex(ValueError, message):
+                        reporting_antigravity.inspect_publication_antigravity(fixture.attempt)
+                finally:
+                    fixture.temporary.cleanup()
+
+    def test_publication_failure_before_first_write_preserves_failed_staging_evidence(self) -> None:
+        self._assert_failed_staging_preserved("before_file_write", destination_committed=False)
+
+    def test_publication_failure_after_one_file_preserves_failed_staging_evidence(self) -> None:
+        self._assert_failed_staging_preserved("after_first_file", destination_committed=False)
+
+    def test_publication_failure_before_rename_preserves_failed_staging_evidence(self) -> None:
+        self._assert_failed_staging_preserved("before_rename", destination_committed=False)
+
+    def test_publication_failure_after_rename_verification_preserves_failed_staging_evidence(self) -> None:
+        self._assert_failed_staging_preserved("after_rename_verification", destination_committed=True)
+
+    def _assert_failed_staging_preserved(self, phase: str, *, destination_committed: bool) -> None:
+        """Every publication phase retains one private failed audit sibling."""
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity import reporting_antigravity
+
+        def inject(observed: str) -> None:
+            if observed == phase:
+                raise RuntimeError(f"publication injected failure at {phase}")
+
+        fixture = _write_fixture()
+        try:
+            with patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=fixture.snapshot), \
+                 patch.object(reporting_antigravity, "_publication_phase_antigravity", side_effect=inject, create=True), \
+                 self.assertRaisesRegex(RuntimeError, phase):
+                    reporting_antigravity.publish_predictions_antigravity(fixture.attempt)
+            failed = sorted(
+                path
+                for path in fixture.attempt.iterdir()
+                if path.name.startswith("_failed_") and path.name.endswith("_antigravity")
+            )
+            self.assertEqual(len(failed), 1)
+            failure_path = failed[0] / "failure_antigravity.json"
+            self.assertTrue(failure_path.is_file())
+            failure = json.loads(failure_path.read_text())
+            self.assertEqual(failure.get("status"), "failed")
+            self.assertTrue(failure.get("error"))
+            self.assertEqual(failure.get("phase"), phase)
+            self.assertEqual(failure.get("destination_committed"), destination_committed)
+            publication = fixture.attempt / "publication_antigravity"
+            self.assertEqual(publication.exists(), destination_committed)
+            if destination_committed:
+                with patch.object(reporting_antigravity, "verify_frozen_sources_antigravity", return_value=fixture.snapshot):
+                    self.assertEqual(
+                        reporting_antigravity.inspect_publication_antigravity(fixture.attempt).label_access_count,
+                        0,
+                    )
         finally:
             fixture.temporary.cleanup()
 
