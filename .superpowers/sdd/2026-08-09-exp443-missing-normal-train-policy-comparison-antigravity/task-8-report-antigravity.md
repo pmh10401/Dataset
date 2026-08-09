@@ -69,7 +69,7 @@ dataset, completed/total, elapsed seconds, and ETA.  The compact report is
 
 - `semantic_equal=true` for all 19 Policy A units; sequential and parallel
   semantic payload SHA256 are both
-  `16ae73ac00c63e5db3d...d2a3f79c7ea7b4da3033552`.
+  `16ae73ac00c63e5dbd3adcf39bd3a1d5d580fd17db2a3f79c7ea7b4da3033552`.
 - Sequential elapsed was `49.7410828751` seconds and parallel elapsed was
   `7.6217000410` seconds (`speed_ratio=6.5262451431`, informative only).
 - The Task 6 control gate passed with max absolute score difference
