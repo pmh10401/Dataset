@@ -26,16 +26,20 @@ HTML, JSON, and lock together.
 - Create `experiments/exp443_missing_normal_train_policy_comparison_antigravity/reporting_antigravity.py`
 - Create `experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_reporting_antigravity.py`
 - Create `.superpowers/sdd/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity/task-9-report-antigravity.md`
-- Narrow checkpoint/runtime integration is allowed only when a read-only
-  completed-checkpoint inspection seam is required.
+- Add a dedicated read-only completed-checkpoint inspection seam when needed.
+  It must validate context, state, all 57 records, and the record-SHA prefix
+  without rebinding PID ownership, changing `updated_at`, or writing any file.
+  Do not reuse the mutating `open_for_resume_antigravity` path.
 - Regenerate `docs/codemap/codemap.html`, `docs/codemap/codemap.json`, and
   `docs/codemap/codemap.lock` together.
 
 ## Required input gates
 
-1. The attempt checkpoint is complete with exactly 57 successful records and
-   no error record.
-2. Progress is complete, PID is inactive, and the Task 6 control passed.
+1. The attempt checkpoint is inspected read-only, is complete with exactly 57
+   successful records and no error record, and its context/state/record bytes
+   remain unchanged before and after inspection.
+2. Progress is `complete`, PID evidence is inactive, their completed counts are
+   57, and the Task 6 control passed.
 3. Results contain exactly 19 case-sensitive sorted datasets for each of the
    three frozen policies.
 4. Frozen source/config/database identities still match and label access is 0.
@@ -62,16 +66,31 @@ Create exactly these files under `publication_antigravity`:
 11. `status_antigravity.json`
 12. `artifact_sha256_antigravity.json`
 
-Each prediction contains exactly 1,117 case-sensitive sorted dataset rows. The
-score audit contains 57 policy-major result summaries and binds the checkpoint
-record hash. The TRAIN audit remains compact: one row per policy/dataset with
-counts, action counts, and a canonical detailed-audit digest; the durable
-checkpoint remains the detailed source of truth.
+Each prediction contains exactly 1,117 case-sensitive sorted dataset rows. A
+published line is exactly `canonical_json_bytes_antigravity(row) + b"\n"` for
+one row from the rerouted prediction; concatenating the lines produces the
+published JSONL bytes. The runtime artifact remains the canonical top-level
+prediction JSON. For each policy, the manifest records both the runtime JSON
+SHA256 and the published JSONL SHA256 and inspection recomputes both, so the
+format conversion cannot change a row. Task 10 evaluates the frozen JSONL.
 
-The manifest binds every semantic artifact hash and the three separate
-prediction hashes. Status binds the manifest and reports
-`complete_review_only`. The artifact map hashes every other publication file
-and explicitly excludes itself. Manifest and status must state:
+The score audit contains 57 policy-major result summaries and binds the
+checkpoint record hash. The TRAIN audit remains compact: one row per
+policy/dataset with counts, action counts, and a canonical detailed-audit
+digest; the durable checkpoint remains the detailed source of truth.
+
+Use this acyclic hash graph:
+
+1. The nine leaf artifacts are the three predictions plus score audit, TRAIN
+   audit, control, parity, source audit, and backend decision.
+2. Manifest hashes those nine leaves and stores the three runtime-JSON hashes
+   beside the three published-JSONL hashes.
+3. Status hashes the manifest and repeats the three published prediction
+   hashes; it reports `complete_review_only`.
+4. The artifact map hashes all other 11 files and explicitly excludes only
+   itself.
+
+Manifest and status must state:
 
 - `contains_test_labels=false`
 - `contains_evaluation_metrics=false`
@@ -103,4 +122,3 @@ and explicitly excludes itself. Manifest and status must state:
 5. Regenerate/validate the code-map triplet and run `git diff --check`.
 6. One focused Sol review limited to scientific correctness, reproducibility,
    label-free boundaries, and whether Task 10 can evaluate the frozen bytes.
-
