@@ -18,6 +18,10 @@ from experiments.exp443_missing_normal_train_policy_comparison_antigravity.contr
     RunPolicyAuditAntigravity,
     validate_prediction_payload_antigravity,
 )
+from experiments.exp443_missing_normal_train_policy_comparison_antigravity.config_antigravity import (
+    FROZEN_CONFIG,
+    scientific_config_sha256_antigravity,
+)
 
 
 _DIGEST = "a" * 64
@@ -75,6 +79,16 @@ class Exp443ContractsAntigravityTests(unittest.TestCase):
         self.assertEqual(PolicyDatasetResultAntigravity.from_payload(result.to_payload()), result)
         with self.assertRaises(ValueError):
             replace(result, train_used=4, train_excluded=1)
+        with self.assertRaises(ValueError):
+            PolicyDatasetResultAntigravity(
+                "linear_edge_nearest_control", "Demo", 3, 4, 1, 3, 0, 1,
+                (score,), mapping, (), "scored",
+            )
+        with self.assertRaises(ValueError):
+            PolicyDatasetResultAntigravity(
+                "linear_edge_nearest_control", "Demo", 3, 4, 5, 0, 4, 1,
+                (score,), mapping, (), "scored",
+            )
 
     def test_prediction_recursively_rejects_label_and_evaluation_keys(self) -> None:
         row = PredictionRowAntigravity("Demo", "linear_edge_nearest_control", (1, 4), (0.2, 0.1))
@@ -87,7 +101,16 @@ class Exp443ContractsAntigravityTests(unittest.TestCase):
                     validate_prediction_payload_antigravity(payload)
 
     def test_checkpoint_context_state_and_evaluation_round_trip_and_wrong_types(self) -> None:
-        context = CheckpointContextAntigravity("Exp443", "run", _DIGEST, _DIGEST, 57, 11, 1)
+        context = CheckpointContextAntigravity(
+            FROZEN_CONFIG.experiment_id,
+            FROZEN_CONFIG.run_identity,
+            scientific_config_sha256_antigravity(),
+            FROZEN_CONFIG.environment_lock_sha256,
+            FROZEN_CONFIG.recompute_units,
+            FROZEN_CONFIG.outer_workers,
+            FROZEN_CONFIG.inner_threads,
+        )
+        self.assertTrue(context.validate_antigravity())
         self.assertEqual(CheckpointContextAntigravity.from_payload(context.to_payload()), context)
         state = CheckpointStateAntigravity("running", 2, 57, 0, None, _DIGEST)
         self.assertEqual(CheckpointStateAntigravity.from_payload(state.to_payload()), state)
@@ -97,6 +120,54 @@ class Exp443ContractsAntigravityTests(unittest.TestCase):
             CheckpointStateAntigravity("running", 2.0, 57, 0, None, _DIGEST)  # type: ignore[arg-type]
         with self.assertRaises(ValueError):
             EvaluationEvidenceAntigravity("linear_edge_nearest_control", 1915, 303, 2003, 191679, float("nan"), True)
+
+    def test_checkpoint_context_rejects_each_identity_or_unit_mismatch(self) -> None:
+        context = CheckpointContextAntigravity(
+            FROZEN_CONFIG.experiment_id,
+            FROZEN_CONFIG.run_identity,
+            scientific_config_sha256_antigravity(),
+            FROZEN_CONFIG.environment_lock_sha256,
+            FROZEN_CONFIG.recompute_units,
+            FROZEN_CONFIG.outer_workers,
+            FROZEN_CONFIG.inner_threads,
+        )
+        for field_name, value in (
+            ("experiment_id", "Exp442"),
+            ("run_identity", "fabricated-run"),
+            ("scientific_config_sha256", _DIGEST),
+            ("environment_lock_sha256", _DIGEST),
+            ("total_units", 56),
+        ):
+            with self.subTest(field_name=field_name):
+                with self.assertRaises(ValueError):
+                    replace(context, **{field_name: value})
+
+    def test_each_core_contract_rejects_wrong_types_or_invalid_values(self) -> None:
+        score = KernelSeedScoresAntigravity(
+            1024, 20260721, np.asarray([0.1], dtype="<f8"),
+            np.asarray([0.2], dtype="<f8"), (0,),
+        )
+        invalid_cases = (
+            ("raw_dataset", lambda: replace(_raw(), dataset=3)),
+            ("raw_split", lambda: replace(_raw(), split="VAL")),
+            ("raw_index", lambda: replace(_raw(), instance_index=1.0)),
+            ("audit_policy", lambda: replace(RunPolicyAuditAntigravity("Demo", "exclude_nonfinite_row", 0, 3, (1,), _DIGEST, "excluded_nonfinite_row"), policy="bad")),
+            ("audit_position", lambda: RunPolicyAuditAntigravity("Demo", "exclude_nonfinite_row", 0, 3, (3,), _DIGEST, "excluded_nonfinite_row")),
+            ("score_kernel", lambda: replace(score, kernel=512)),
+            ("score_seed", lambda: replace(score, seed=123456)),
+            ("score_candidates", lambda: replace(score, candidate_indices=(1,))),
+            ("result_status", lambda: PolicyDatasetResultAntigravity("linear_edge_nearest_control", "Demo", 3, 1, 0, 1, 0, 1, (score,), {1024: (0,)}, (), "unknown")),
+            ("prediction_score", lambda: PredictionRowAntigravity("Demo", "linear_edge_nearest_control", (0,), (float("nan"),))),
+            ("prediction_indices", lambda: PredictionRowAntigravity("Demo", "linear_edge_nearest_control", (1, 0), (0.1, 0.2))),
+            ("state_status", lambda: CheckpointStateAntigravity("unknown", 0, 57, 0, None, _DIGEST)),
+            ("state_digest", lambda: CheckpointStateAntigravity("running", 0, 57, 0, None, "not-a-digest")),
+            ("evaluation_policy", lambda: EvaluationEvidenceAntigravity("bad", 0, 0, 0, 0, 0.0, False)),
+            ("evaluation_gate", lambda: EvaluationEvidenceAntigravity("linear_edge_nearest_control", 0, 0, 0, 0, 0.0, 1)),
+        )
+        for name, factory in invalid_cases:
+            with self.subTest(name=name):
+                with self.assertRaises(ValueError):
+                    factory()
 
 
 if __name__ == "__main__":

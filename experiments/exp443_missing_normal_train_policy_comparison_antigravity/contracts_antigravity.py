@@ -16,6 +16,8 @@ from types import MappingProxyType
 
 import numpy as np
 
+from .config_antigravity import FROZEN_CONFIG, scientific_config_sha256_antigravity
+
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _POLICIES = frozenset({
     "linear_edge_nearest_control",
@@ -279,7 +281,8 @@ class KernelSeedScoresAntigravity:
     def __post_init__(self) -> None:
         if self.kernel not in {1024, 4096}:
             raise ValueError("kernel is not preregistered")
-        _integer(self.seed, "seed", minimum=1)
+        if type(self.seed) is not int or self.seed not in FROZEN_CONFIG.seeds:
+            raise ValueError("seed is not one of the two preregistered seeds")
         oof = _readonly_array(self.oof_scores, "oof_scores", dtype="<f8", ndim=1, finite=True)
         test = _readonly_array(self.test_scores, "test_scores", dtype="<f8", ndim=1, finite=True)
         candidates = _tuple_ints(self.candidate_indices, "candidate_indices", sorted_unique=True)
@@ -329,7 +332,7 @@ class PolicyDatasetResultAntigravity:
         _name(self.dataset, "dataset")
         _integer(self.target_length, "target_length", minimum=1)
         counts = tuple(_integer(getattr(self, name), name) for name in ("train_total", "train_missing", "train_used", "train_excluded", "test_rows"))
-        if counts[1] > counts[0] or counts[2] + counts[3] > counts[0]:
+        if counts[1] > counts[0] or counts[2] > counts[0] or counts[3] > counts[0] or counts[2] + counts[3] != counts[0]:
             raise ValueError("policy result counts are inconsistent")
         scores = tuple(self.kernel_scores)
         if any(type(item) is not KernelSeedScoresAntigravity for item in scores):
@@ -419,17 +422,26 @@ class CheckpointContextAntigravity:
     inner_threads: int
 
     def __post_init__(self) -> None:
-        if self.experiment_id != "Exp443":
+        if self.experiment_id != FROZEN_CONFIG.experiment_id:
             raise ValueError("checkpoint context experiment is invalid")
-        _name(self.run_identity, "run_identity")
-        _digest(self.scientific_config_sha256, "scientific_config_sha256")
-        _digest(self.environment_lock_sha256, "environment_lock_sha256")
-        _integer(self.total_units, "total_units", minimum=1)
-        if self.outer_workers != 11 or self.inner_threads != 1:
+        if self.run_identity != FROZEN_CONFIG.run_identity:
+            raise ValueError("checkpoint context run identity is not the frozen Exp443 run")
+        if self.scientific_config_sha256 != scientific_config_sha256_antigravity():
+            raise ValueError("checkpoint context scientific config hash is not the frozen Exp443 hash")
+        if self.environment_lock_sha256 != FROZEN_CONFIG.environment_lock_sha256:
+            raise ValueError("checkpoint context environment lock hash is not the frozen Exp443 lock")
+        if self.total_units != FROZEN_CONFIG.recompute_units:
+            raise ValueError("checkpoint context total units are not the frozen Exp443 count")
+        if self.outer_workers != FROZEN_CONFIG.outer_workers or self.inner_threads != FROZEN_CONFIG.inner_threads:
             raise ValueError("checkpoint topology is invalid")
 
     def to_payload(self) -> dict[str, object]:
         return self.__dict__.copy()
+
+    def validate_antigravity(self) -> bool:
+        """Recheck the exact Exp443 identity before checkpoint use."""
+        self.__post_init__()
+        return True
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, object]) -> "CheckpointContextAntigravity":

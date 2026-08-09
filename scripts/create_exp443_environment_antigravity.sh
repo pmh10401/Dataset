@@ -50,25 +50,100 @@ if (( BOOTSTRAP == 0 )) && [[ ! -f "$LOCK_REQUIREMENTS" ]]; then
   exit 1
 fi
 
+# The official CPU route is launched with every common BLAS/OpenMP control set
+# explicitly.  These are process-local settings; no project .venv is edited.
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+export VECLIB_MAXIMUM_THREADS=1
+export BLIS_NUM_THREADS=1
+
 umask 077
 VENV_PARENT="$(dirname -- "$VENV_ROOT")"
-mkdir -p -m 700 "$VENV_PARENT"
+if [[ -e "$VENV_PARENT" && ! -d "$VENV_PARENT" ]]; then
+  printf '%s\n' "Exp443 venv parent is not a directory; refusing overwrite" >&2
+  exit 1
+fi
+if [[ ! -e "$VENV_PARENT" ]]; then
+  mkdir -p -m 700 "$VENV_PARENT"
+fi
+
 if [[ -e "$VENV_ROOT" ]]; then
-  if [[ ! -d "$VENV_ROOT" || ! -x "$VENV_ROOT/bin/python" ]]; then
+  # A pre-existing environment is read-only from this script's perspective.
+  # Validate it completely before any chmod, pip invocation, or installation.
+  if (( BOOTSTRAP == 1 )); then
+    printf '%s\n' "bootstrap is creation-only; an existing Exp443 environment is never mutated" >&2
+    exit 1
+  fi
+  if [[ -L "$VENV_ROOT" || ! -d "$VENV_ROOT" || ! -x "$VENV_ROOT/bin/python" ]]; then
     printf '%s\n' "existing Exp443 environment is not a valid Python venv; refusing overwrite" >&2
     exit 1
   fi
-  chmod 700 "$VENV_ROOT"
-  EXISTING_VERSION="$($VENV_ROOT/bin/python -c 'import platform; print(platform.python_version())' 2>/dev/null || true)"
+  EXISTING_MODE="$(stat -f '%Lp' "$VENV_ROOT" 2>/dev/null || stat -c '%a' "$VENV_ROOT")"
+  if [[ "$EXISTING_MODE" != "700" ]]; then
+    printf '%s\n' "existing Exp443 venv mode is $EXISTING_MODE, expected 700; refusing overwrite" >&2
+    exit 1
+  fi
+  VENV_PYTHON="$VENV_ROOT/bin/python"
+  EXISTING_VERSION="$($VENV_PYTHON -c 'import platform; print(platform.python_version())' 2>/dev/null || true)"
   if [[ "$EXISTING_VERSION" != "3.14.6" ]]; then
     printf '%s\n' "existing Exp443 venv has Python $EXISTING_VERSION; refusing overwrite" >&2
     exit 1
   fi
+  EXISTING_PREFIX="$($VENV_PYTHON -c 'import sys; print(sys.prefix); print(sys.base_prefix)' 2>/dev/null || true)"
+  if [[ "$EXISTING_PREFIX" != "$VENV_ROOT"$'\n'* || "$EXISTING_PREFIX" == "$VENV_ROOT"$'\n'"$VENV_ROOT" ]]; then
+    printf '%s\n' "existing Exp443 environment is not an isolated venv; refusing overwrite" >&2
+    exit 1
+  fi
+  # Distribution metadata is checked with the venv interpreter before pip is
+  # touched, so a package-mismatched venv also fails without mutation.
+  if ! "$VENV_PYTHON" - "$LOCK_REQUIREMENTS" <<'PY'
+import importlib.metadata
+from pathlib import Path
+import sys
+
+lock_path = Path(sys.argv[1])
+expected = {}
+for raw in lock_path.read_text(encoding="utf-8").splitlines():
+    if not raw or raw.startswith("#"):
+        continue
+    name, separator, version = raw.partition("==")
+    if not separator or not name or not version:
+        raise SystemExit(f"invalid lock entry: {raw}")
+    expected[name] = version
+for name, version in expected.items():
+    try:
+        actual = importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        raise SystemExit(f"missing locked distribution: {name}")
+    if actual != version:
+        raise SystemExit(f"locked distribution mismatch: {name} {actual} != {version}")
+if importlib.metadata.version("pip") != "26.1.2":
+    raise SystemExit("pip is not pinned to 26.1.2")
+PY
+  then
+    printf '%s\n' "existing Exp443 environment does not match the lock metadata; refusing overwrite" >&2
+    exit 1
+  fi
+  ACTUAL_FREEZE="${LOCK_REQUIREMENTS}.preflight.$$"
+  trap 'rm -f "$ACTUAL_FREEZE"' EXIT HUP INT TERM
+  "$VENV_PYTHON" -m pip check
+  "$VENV_PYTHON" -m pip freeze --all | LC_ALL=C sort > "$ACTUAL_FREEZE"
+  if ! cmp -s "$LOCK_REQUIREMENTS" "$ACTUAL_FREEZE"; then
+    printf '%s\n' "existing Exp443 environment does not match the byte-identical sorted lock" >&2
+    diff -u "$LOCK_REQUIREMENTS" "$ACTUAL_FREEZE" >&2 || true
+    exit 1
+  fi
+  rm -f "$ACTUAL_FREEZE"
+  trap - EXIT HUP INT TERM
+  printf '%s\n' "EXP443_ENVIRONMENT_READY"
+  exit 0
 else
   "$PYTHON_BIN" -m venv "$VENV_ROOT"
   chmod 700 "$VENV_ROOT"
+  VENV_PYTHON="$VENV_ROOT/bin/python"
 fi
-VENV_PYTHON="$VENV_ROOT/bin/python"
 
 # Pin the package manager before resolving anything else.
 "$VENV_PYTHON" -m pip install --disable-pip-version-check --no-input --upgrade --no-cache-dir 'pip==26.1.2'

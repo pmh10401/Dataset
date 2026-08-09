@@ -14,6 +14,10 @@ from .config_antigravity import FROZEN_CONFIG, cpu_worker_count_antigravity
 
 
 _PACKAGE_NAMES = ("aeon", "numpy", "scikit-learn", "numba", "scipy", "pandas", "threadpoolctl")
+_INNER_THREAD_ENV_NAMES = (
+    "OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "BLIS_NUM_THREADS",
+)
 
 
 def _digest(path: Path) -> str:
@@ -41,12 +45,14 @@ class EnvironmentEvidenceAntigravity:
     inner_threads: int
     package_versions: Mapping[str, str | None]
     lock_sha256: str
+    inner_thread_env: Mapping[str, str]
     blas_thread_pools: tuple[Mapping[str, object], ...]
     acceleration_decision: str
     acceleration_reason: str
     pytorch_version: str | None = None
     mlx_version: str | None = None
     mps_version: str | None = None
+    mps_available: bool | None = None
 
     def __post_init__(self) -> None:
         if self.python_version != FROZEN_CONFIG.python_version:
@@ -70,13 +76,22 @@ class EnvironmentEvidenceAntigravity:
                 raise ValueError("package provenance has the wrong type")
         if type(self.lock_sha256) is not str or len(self.lock_sha256) != 64 or any(char not in "0123456789abcdef" for char in self.lock_sha256) or self.lock_sha256 != FROZEN_CONFIG.environment_lock_sha256:
             raise ValueError("lock SHA256 is invalid")
+        if not isinstance(self.inner_thread_env, Mapping):
+            raise ValueError("inner-thread environment evidence must be a mapping")
+        thread_env = dict(self.inner_thread_env)
+        if set(thread_env) != set(_INNER_THREAD_ENV_NAMES) or any(value != "1" for value in thread_env.values()):
+            raise ValueError("all inner-thread environment variables must be exactly 1")
         if type(self.blas_thread_pools) is not tuple:
             raise ValueError("BLAS thread-pool evidence must be a tuple")
+        for pool in self.blas_thread_pools:
+            if not isinstance(pool, Mapping) or type(pool.get("num_threads")) is not int or pool["num_threads"] != 1:
+                raise ValueError("every discovered numerical thread pool must use one thread")
         if self.acceleration_decision != "inapplicable_official_cpu_transformer":
             raise ValueError("Exp443 acceleration decision is invalid")
         if self.acceleration_reason != "official_aeon_minirocket_cpu_transformer_no_mlx_rewrite":
             raise ValueError("Exp443 acceleration reason is invalid")
         object.__setattr__(self, "package_versions", MappingProxyType(packages))
+        object.__setattr__(self, "inner_thread_env", MappingProxyType(thread_env))
 
     def to_payload(self) -> dict[str, object]:
         return {
@@ -88,12 +103,14 @@ class EnvironmentEvidenceAntigravity:
             "inner_threads": self.inner_threads,
             "package_versions": dict(self.package_versions),
             "lock_sha256": self.lock_sha256,
+            "inner_thread_env": dict(self.inner_thread_env),
             "blas_thread_pools": [dict(pool) for pool in self.blas_thread_pools],
             "acceleration_decision": self.acceleration_decision,
             "acceleration_reason": self.acceleration_reason,
             "pytorch_version": self.pytorch_version,
             "mlx_version": self.mlx_version,
             "mps_version": self.mps_version,
+            "mps_available": self.mps_available,
         }
 
     @classmethod
@@ -101,7 +118,7 @@ class EnvironmentEvidenceAntigravity:
         expected = set(cls.__dataclass_fields__)
         if not isinstance(payload, Mapping) or set(payload) != expected:
             raise ValueError("environment evidence payload keys are invalid")
-        if not isinstance(payload["package_versions"], Mapping) or not isinstance(payload["blas_thread_pools"], list):
+        if not isinstance(payload["package_versions"], Mapping) or not isinstance(payload["inner_thread_env"], Mapping) or not isinstance(payload["blas_thread_pools"], list):
             raise ValueError("environment evidence nested payload is invalid")
         pools: list[Mapping[str, object]] = []
         for pool in payload["blas_thread_pools"]:
@@ -111,9 +128,9 @@ class EnvironmentEvidenceAntigravity:
         return cls(
             payload["python_version"], payload["platform"], payload["machine"],
             payload["logical_cpu_count"], payload["outer_workers"], payload["inner_threads"],
-            dict(payload["package_versions"]), payload["lock_sha256"], tuple(pools),
+            dict(payload["package_versions"]), payload["lock_sha256"], dict(payload["inner_thread_env"]), tuple(pools),
             payload["acceleration_decision"], payload["acceleration_reason"],
-            payload["pytorch_version"], payload["mlx_version"], payload["mps_version"],
+            payload["pytorch_version"], payload["mlx_version"], payload["mps_version"], payload["mps_available"],
         )
 
 
@@ -133,8 +150,50 @@ def _thread_pools_antigravity() -> tuple[Mapping[str, object], ...]:
     return tuple(pools)
 
 
+def _inner_thread_env_antigravity() -> Mapping[str, str]:
+    values = {name: os.environ.get(name) for name in _INNER_THREAD_ENV_NAMES}
+    if any(value != "1" for value in values.values()):
+        missing_or_wrong = ", ".join(f"{name}={value!r}" for name, value in values.items() if value != "1")
+        raise ValueError(f"Exp443 requires one-thread environment controls: {missing_or_wrong}")
+    return values  # type: ignore[return-value]
+
+
+def _optional_acceleration_evidence_antigravity() -> tuple[str | None, str | None, str | None, bool | None]:
+    """Probe optional frameworks without making them dependencies or assumptions."""
+    torch_version = _version("torch")
+    mps_version: str | None = None
+    mps_available: bool | None = None
+    if torch_version is not None:
+        try:
+            import torch  # type: ignore[import-not-found]
+        except Exception:
+            # A distribution can be installed but unusable on this interpreter.
+            mps_available = None
+        else:
+            torch_version = str(getattr(torch, "__version__", torch_version))
+            backend = getattr(getattr(torch, "backends", None), "mps", None)
+            if backend is None:
+                mps_available = False
+            else:
+                try:
+                    mps_available = bool(backend.is_available())
+                except Exception:
+                    mps_available = False
+                mps_version = torch_version
+    mlx_version = _version("mlx")
+    if mlx_version is not None:
+        try:
+            import mlx  # type: ignore[import-not-found]
+        except Exception:
+            pass
+        else:
+            mlx_version = str(getattr(mlx, "__version__", mlx_version))
+    return torch_version, mlx_version, mps_version, mps_available
+
+
 def verify_environment_antigravity() -> EnvironmentEvidenceAntigravity:
     """Verify interpreter, package pins, lock identity, CPU topology, and CPU-only routing."""
+    inner_thread_env = _inner_thread_env_antigravity()
     python_version = platform.python_version()
     if python_version != FROZEN_CONFIG.python_version:
         raise ValueError(f"Exp443 requires Python {FROZEN_CONFIG.python_version}, got {python_version}")
@@ -153,6 +212,11 @@ def verify_environment_antigravity() -> EnvironmentEvidenceAntigravity:
     for name, expected in expected_versions.items():
         if package_versions.get(name) != expected:
             raise ValueError(f"{name} version differs from the frozen contract")
+    pools = _thread_pools_antigravity()
+    for pool in pools:
+        if type(pool.get("num_threads")) is not int or pool["num_threads"] != FROZEN_CONFIG.inner_threads:
+            raise ValueError("a discovered numerical thread pool exceeds the one-thread contract")
+    pytorch_version, mlx_version, mps_version, mps_available = _optional_acceleration_evidence_antigravity()
     return EnvironmentEvidenceAntigravity(
         python_version=python_version,
         platform=platform.platform(),
@@ -162,12 +226,14 @@ def verify_environment_antigravity() -> EnvironmentEvidenceAntigravity:
         inner_threads=FROZEN_CONFIG.inner_threads,
         package_versions=package_versions,
         lock_sha256=FROZEN_CONFIG.environment_lock_sha256,
-        blas_thread_pools=_thread_pools_antigravity(),
+        inner_thread_env=inner_thread_env,
+        blas_thread_pools=pools,
         acceleration_decision=FROZEN_CONFIG.acceleration_decision,
         acceleration_reason="official_aeon_minirocket_cpu_transformer_no_mlx_rewrite",
-        pytorch_version=_version("torch"),
-        mlx_version=_version("mlx"),
-        mps_version=None,
+        pytorch_version=pytorch_version,
+        mlx_version=mlx_version,
+        mps_version=mps_version,
+        mps_available=mps_available,
     )
 
 
