@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T21:45:08Z",
-  "generated_from_commit": "8b9201ff",
+  "generated_at": "2026-08-09T22:10:41Z",
+  "generated_from_commit": "99a9d0373ec283fc6ba565ecb8160fdb644449cf",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -61,7 +61,8 @@
     "Exp443 official frozen three-policy evaluation, one-dataset peer-median rescue, non-promotion, terminal cleanup-error evidence, and pause before Exp444",
     "Exp444 written design for deterministic TRAIN-only stability review of the frozen Exp442 30 candidates, with descriptive reporting and no implementation, success gate, winner, or promotion",
     "Exp444 approved 12-task implementation plan covering frozen governance, exact source replay, deterministic omission views, CPU-MLX-Numba parity, 11-worker checkpointed runtime, create-only publication, and descriptive post-freeze evaluation",
-    "Exp444 frozen preregistration and pre-implementation runbook: descriptive-only governance, fixed paths, and no source edge before implementation"
+    "Exp444 frozen preregistration and pre-implementation runbook: descriptive-only governance, fixed paths, and no source edge before implementation",
+    "Exp444 Task 2: isolated Python 3.14.6 environment, immutable TRAIN-only stability contracts, and thin canonical/create-only artifact wrappers"
   ],
   "nodes": [
     {
@@ -2645,7 +2646,7 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments",
-      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it rejects any checkpoint-root inventory substitution before parsing, parses 1,117 records in fixed context acceptance order through eleven CPU workers with immediate immutable prefix events, validates the complete Exp404 Hard manifest and every candidate/Hard TEST row range, and freezes zero label access without any SQLite or Exp417 input route. Exp441 Task 7 adds atomic readiness ownership of the formerly absent fixed parent: it records canonical zero-label source/selector replay, exact CPU/11-worker and environment evidence, preserves failed private staging, rolls a post-rename parent-fsync failure back through a no-clobber failed sibling, and binds `new` to byte-identical clean-HEAD source evidence. Exp441 Task5 adds a process-owned, immutable label-free attempt: it allocates the smallest absent attempt directory, writes atomic progress/PID plus append-only parent acceptance logs, runs the fixed eleven-worker source verifier, performs the pure selector, creates source/selection evidence, replays source authority after artifacts, and never opens SQLite or an evaluator. Task 9 frozen-context label loading is parent-verified and shipped at 615b277. Task 10 pure retrospective evaluation is reviewed and shipped at cd5709d. Task 11 fixed eight-file evaluation publication/replay is implemented through 6b2ed857 with retained destination authority, exact label-snapshot binding, two immutable failure families, and uncompressed adversarial governance, inventory, ordering, durability, preservation, and semantic-tamper evidence; independent re-review returned ship. Task 12 adds a final audit-only replay entrypoint that calls the fixed public 11-worker source route once and the isolated sequential reference once under a SQLite connection bomb, proves exact source/selection equality, fixed 1,117/840/394/73/49/30 populations, both coordinate identities, finite evidence, 1,117 ordered parent events, eleven production workers, zero label access, and an AST/call-spy firewall. The audit changes no official root or artifact. Exp441's official 1,117-record label-free replay completed with zero errors but failed closed before publication because inactive terminal ETA was 0.0 while the strict publication contract required null. Exp442 is a fresh-root engineering-only successor: a closed lifecycle profile binds its own experiment/schema/run/root and preregistration identities to the unchanged Exp441 scientific configuration. The progress producer now writes null for inactive terminal ETA while active ETA remains unchanged. Generic readiness and runtime entry points require an explicit fixed profile; legacy Exp441 wrappers remain intact and the thin Exp442 wrapper exposes no root, worker, backend, threshold, seed, alpha, or budget override. The Exp442 review fix binds the actual reviewed design and preregistration bytes and removes path injection from every production-profile readiness and runtime function. Root-injected helpers remain private test seams below that boundary. A new active-ETA regression proves that only inactive terminal ETA becomes null. Official Exp442 readiness and new now completed from reviewed commit c4783d69. The fixed CPU/11-worker process committed 1,117 of 1,117 records with zero errors, exact 1117/840/394/73/49/30 populations, and inactive terminal ETA null before immutable publication. Prediction-time label access remained zero. The approved Exp444 design and implementation plan specify a new isolated review-only stability layer over the frozen Exp442 30 coordinates: deterministic normal-TRAIN omission views recompute the unchanged Exp440 two-depth rule, split candidates into stable and unstable review lanes, preserve a zero-label prediction boundary, and make no pass/fail or promotion decision. The plan has 12 implementation tasks, but no Exp444 runtime code exists yet.",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it rejects any checkpoint-root inventory substitution before parsing, parses 1,117 records in fixed context acceptance order through eleven CPU workers with immediate immutable prefix events, validates the complete Exp404 Hard manifest and every candidate/Hard TEST row range, and freezes zero label access without any SQLite or Exp417 input route. Exp441 Task 7 adds atomic readiness ownership of the formerly absent fixed parent: it records canonical zero-label source/selector replay, exact CPU/11-worker and environment evidence, preserves failed private staging, rolls a post-rename parent-fsync failure back through a no-clobber failed sibling, and binds `new` to byte-identical clean-HEAD source evidence. Exp441 Task5 adds a process-owned, immutable label-free attempt: it allocates the smallest absent attempt directory, writes atomic progress/PID plus append-only parent acceptance logs, runs the fixed eleven-worker source verifier, performs the pure selector, creates source/selection evidence, replays source authority after artifacts, and never opens SQLite or an evaluator. Task 9 frozen-context label loading is parent-verified and shipped at 615b277. Task 10 pure retrospective evaluation is reviewed and shipped at cd5709d. Task 11 fixed eight-file evaluation publication/replay is implemented through 6b2ed857 with retained destination authority, exact label-snapshot binding, two immutable failure families, and uncompressed adversarial governance, inventory, ordering, durability, preservation, and semantic-tamper evidence; independent re-review returned ship. Task 12 adds a final audit-only replay entrypoint that calls the fixed public 11-worker source route once and the isolated sequential reference once under a SQLite connection bomb, proves exact source/selection equality, fixed 1,117/840/394/73/49/30 populations, both coordinate identities, finite evidence, 1,117 ordered parent events, eleven production workers, zero label access, and an AST/call-spy firewall. The audit changes no official root or artifact. Exp441's official 1,117-record label-free replay completed with zero errors but failed closed before publication because inactive terminal ETA was 0.0 while the strict publication contract required null. Exp442 is a fresh-root engineering-only successor: a closed lifecycle profile binds its own experiment/schema/run/root and preregistration identities to the unchanged Exp441 scientific configuration. The progress producer now writes null for inactive terminal ETA while active ETA remains unchanged. Generic readiness and runtime entry points require an explicit fixed profile; legacy Exp441 wrappers remain intact and the thin Exp442 wrapper exposes no root, worker, backend, threshold, seed, alpha, or budget override. The Exp442 review fix binds the actual reviewed design and preregistration bytes and removes path injection from every production-profile readiness and runtime function. Root-injected helpers remain private test seams below that boundary. A new active-ETA regression proves that only inactive terminal ETA becomes null. Official Exp442 readiness and new now completed from reviewed commit c4783d69. The fixed CPU/11-worker process committed 1,117 of 1,117 records with zero errors, exact 1117/840/394/73/49/30 populations, and inactive terminal ETA null before immutable publication. Prediction-time label access remained zero. The approved Exp444 design and implementation plan specify a new isolated review-only stability layer over the frozen Exp442 30 coordinates: deterministic normal-TRAIN omission views recompute the unchanged Exp440 two-depth rule, split candidates into stable and unstable review lanes, preserve a zero-label prediction boundary, and make no pass/fail or promotion decision. Exp444 Task 2 now owns the isolated Python 3.14.6 environment, frozen scientific config, immutable source/stability/checkpoint/evaluation contracts, recursive label/evaluation firewall, and thin Exp441 canonical/create-only artifact wrappers; no official run root or prediction runtime exists.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -4306,6 +4307,98 @@
           "symbol": "## 종료 오류와 보존 상태"
         }
       ]
+    },
+    {
+      "id": "exp444_stability_contracts",
+      "label": "Exp444 stability environment + contracts",
+      "type": "pipeline",
+      "boundary": "Active isolated research",
+      "layer": 1,
+      "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and exact resolved lock, binds the reviewed design and six frozen source identities, enforces descriptive-only governance and the max-minus-one CPU/one-thread contract, and provides immutable source candidate, omission mask, depth/view score, stable/unstable lane, backend, checkpoint, and evaluation value objects. Prediction payloads recursively reject TEST labels and evaluation metrics. Artifact calls are thin wrappers over Exp441 canonical JSON and descriptor-pinned create-only primitives. The official Exp444 run root remains absent; this boundary contains no runtime, SQLite read, evaluator, or official artifact.",
+      "entrypoints": [
+        "FROZEN_CONFIG",
+        "frozen_config_payload_antigravity",
+        "scientific_config_sha256_antigravity",
+        "validate_antigravity",
+        "cpu_worker_count_antigravity",
+        "verify_environment_antigravity",
+        "SourceCandidateAntigravity",
+        "OmissionMaskAntigravity",
+        "DepthViewScoreAntigravity",
+        "StabilityViewAntigravity",
+        "CandidateStabilityResultAntigravity",
+        "StabilitySelectionAntigravity",
+        "BackendDecisionAntigravity",
+        "CheckpointContextAntigravity",
+        "CheckpointStateAntigravity",
+        "EvaluationSummaryAntigravity",
+        "validate_prediction_payload_antigravity",
+        "canonical_json_bytes_antigravity",
+        "write_create_only_antigravity",
+        "pin_exact_regular_inventory_antigravity"
+      ],
+      "tests": [
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_contracts_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_artifacts_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py"
+      ],
+      "constraints": [
+        "Direct requirements are exactly mlx==0.32.0, numba==0.66.0, and numpy==2.4.6; the complete sorted lock is bound by SHA256 8835702b9793a5cc08b5e95621b49c0a4a4136325354da7a655761f6b91f3a94.",
+        "The fixed venv is /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314, mode 0700, and mismatched existing environments are never mutated.",
+        "CPU workers are max(1, logical_cpu_count - 1), expected 11; OMP, OPENBLAS, MKL, VECLIB, NUMEXPR, BLIS, and NUMBA controls are all exactly 1 before NumPy import.",
+        "MLX/Numba remain a pre-run eligibility gate; they require finite outputs, identical masks/lanes, <=1e-5 scalar difference, and >=1.1x end-to-end speed including synchronization.",
+        "Prediction contracts recursively reject labels, labels_blob, evaluation, confusion, metrics, and anomaly fields; all persisted arrays/containers are detached and immutable.",
+        "Exp444 is descriptive-only: no scientific success criterion, winner, promotion, operational alert, or same-experiment reselection is available.",
+        "The official Exp444 run root remains absent and existing Exp440/442/443 roots/artifacts are immutable."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/config_antigravity.py",
+          "symbol": "class Exp444FrozenConfig"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/config_antigravity.py",
+          "symbol": "def frozen_config_payload_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
+          "symbol": "class SourceCandidateAntigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
+          "symbol": "class StabilitySelectionAntigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
+          "symbol": "def validate_prediction_payload_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/environment_antigravity.py",
+          "symbol": "def verify_environment_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/artifacts_antigravity.py",
+          "symbol": "def write_create_only_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_config_antigravity.py",
+          "symbol": "def test_frozen_config_has_descriptive_governance_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_contracts_antigravity.py",
+          "symbol": "def test_selection_conserves_two_review_lanes_and_rejects_duplicate_coordinates"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_artifacts_antigravity.py",
+          "symbol": "def test_create_only_write_refuses_replacement_and_pinned_read"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py",
+          "symbol": "def test_environment_evidence_api_is_present"
+        }
+      ]
     }
   ],
   "edges": [
@@ -5155,6 +5248,28 @@
           "symbol": "return cli_main_antigravity(arguments)"
         }
       ]
+    },
+    {
+      "from": "research_control",
+      "to": "exp444_stability_contracts",
+      "type": "calls",
+      "evidence": [
+        {
+          "path": "docs/superpowers/plans/2026-08-10-exp444-train-only-stability-precision-gate-antigravity.md",
+          "symbol": "### Task 2: Freeze environment, configuration, immutable contracts, and artifact primitives"
+        }
+      ]
+    },
+    {
+      "from": "exp444_stability_contracts",
+      "to": "artifact_utils",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/artifacts_antigravity.py",
+          "symbol": "from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity import ("
+        }
+      ]
     }
   ],
   "flows": [
@@ -5220,6 +5335,17 @@
         "sqlite_store"
       ],
       "outcome": "Readiness first proves the 1,119-row DB population and exact two frozen exclusions, then hashes and pins raw bytes, enforces values-only SQL before execution, validates inherited authority bytes and immutable cache NPZ metadata, checks every eligible TEST identity against Exp291/cache n_test, proves 2,116 + 137 - 35 = 2,218 and Exp291/Exp404 Hard equality, and confirms 1,117/19/164/983/0 missing inventory with zero label access. Task 6 then compares 76 Policy A score arrays and candidates, replays exact 1117/137/2253/35/2218 route coordinates with 19 recomputed plus 1,098 imported rows, and only permits B/C after control_reproduction_passed. Task 7 persists the ordered policy-major prefix, terminal error/interruption semantics, and parent-only 57-unit progress/PID heartbeat evidence for resumable execution. The fix-round resume path validates the interrupted prefix, binds a replacement PID, reconciles at most one exact next record orphan, and completes the 57-unit replay without truncating parent-owned logs. Round 2 requires explicit replacement process/PID probe and validates/clears a canonical leftover state temp before prefix advancement. Round 3 rejects equal stored/replacement process identity before rebinding while retaining distinct new-PID resume. Task 8 adds readiness evidence, exact 11-worker spawn execution, resumable pin reuse and complete-checkpoint finalization re-entry, idempotent canonical prediction bytes, atomic next-dataset dimensions, and a real 19-unit semantic parity report with zero label access. Task 9 then checks inactive complete progress and all 57 ordered results without resume mutation, binds the 76-comparison control and Task 8 parity evidence, reroutes Policy A/B/C, freezes three canonical 1,117-row JSONLs linked to their runtime JSON identities, and publishes the exact 12-file create-only hash DAG with zero label access for later Task 10 evaluation. The Task 9 Sol fix independently reruns the complete Policy A archive control, requires exact control-byte identity, binds terminal progress/PID ownership to the 57-record checkpoint, and preserves canonical failure evidence at every publication commit phase. Task 10 then inspects the publication twice before any label-capable import, reads one contiguous binary TEST-label sequence per 1,117 frozen datasets through one pinned connection, reproduces the 1915/303/2003/191679 baseline and Policy A identity, computes independent A/B/C whole-population plus 19/1,098 diagnostics and exact 20,000-sample paired intervals, and creates a ten-file review-only evaluation whose full row/transition/bootstrap/hash replay never reopens labels or selects a winner. Mid-label failures carry truthful label-access-started evidence into a unique preserved audit sibling. Task 11 fixes the five-command operator boundary, requires one explicit safe resume basename and the external Python 3.14.6 environment, exposes no scientific override, publishes during successful new/resume finalization, keeps inspect read-only, retains the DB pin across publication failure, uses a finalization-only resume that leaves complete checkpoint/progress/PID/log bytes unchanged, removes the pin only after publication succeeds, emits JSON-safe wrapper failures, and performs the sole lazy evaluator import only after publication inspection. The official reviewed run completed all 57 units, froze three predictions, and evaluated exactly 1,117 datasets after freeze. Policies A and B were baseline-identical; Policy C added TP 1/FP 0 and rescued one dataset without regression, but both bootstrap lower bounds were zero, so no winner was selected. A post-publication database-close error is preserved while valid publication/evaluation hashes remain immutable, and the flow pauses before Exp444."
+    },
+    {
+      "id": "exp444_task2_contract_flow",
+      "label": "Exp444 Task 2 environment and contract boundary",
+      "trigger": "Run the isolated Exp444 environment bootstrap and focused Task 2 tests before any official run root or runtime is authorized.",
+      "steps": [
+        "research_control",
+        "exp444_stability_contracts",
+        "artifact_utils"
+      ],
+      "outcome": "The resolved lock, frozen descriptive configuration, immutable label-free contracts, and canonical/create-only artifact wrappers are verified; official prediction, SQLite, evaluator, and run-root work remain absent."
     }
   ],
   "unknown_relationships": []
