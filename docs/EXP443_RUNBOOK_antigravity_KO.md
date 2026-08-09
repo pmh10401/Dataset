@@ -13,12 +13,10 @@ run_identity = exp443-missing-normal-train-policy-comparison-antigravity-2026080
 run_root = /Users/mac/Documents/Dataset/exp443_missing_normal_train_policy_comparison_antigravity_20260809
 ```
 
-이 문서의 명령은 구현·회귀·실데이터 label-free 제어 검증을 통과했다. 직전
-clean HEAD는 Sol High에서 `ship`을 받았지만, 첫 readiness에서 찾은 BLIS thread
-설정 누락과 이어진 재검토에서 찾은 pre-NumPy-import 순서 문제를 TDD로 수정했다.
-이 수정이 포함된 새 clean HEAD의 scoped re-review가 다시 `ship`을 주기 전에는
-실행하지 않는다. 현재 official
-root·attempt·prediction·evaluation은 없다. `REVIEWED_COMMIT`은
+이 문서의 명령은 구현·회귀·실데이터 label-free 제어 검증과 clean HEAD
+`081b94b0`의 Sol High `ship`을 거쳐 이미 공식 실행됐다. readiness, 57/57
+prediction, publication freeze, inspect, post-freeze evaluation이 완료됐으므로 같은
+root에서 다시 실행하거나 TEST 결과를 보고 정책을 바꾸지 않는다. `REVIEWED_COMMIT`은
 readiness/new/resume 시점에
 호출자가 넣는 runtime argument일 뿐 preregistration에 저장하는 placeholder가
 아니다.
@@ -62,7 +60,7 @@ publication/checkpoint/source bytes만 재검증한다. `evaluate`만 세 predic
 freeze 후 TEST label을 열어 별도 evaluation을 만든다. 실패 root와 staging은
 감사 증거로 보존한다.
 
-## 고정 명령 (scoped re-review 통과 후에만)
+## 실행한 고정 명령 (감사용; 재실행 금지)
 
 ```bash
 bash scripts/create_exp443_environment_antigravity.sh
@@ -75,8 +73,10 @@ echo $!
 /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py evaluate
 ```
 
-`new`는 위 한 프로세스만 시작한다. 성공 반환 시 publication까지 이미 만들어져
-있다. Codex가 반복 감시하지 않고 프로세스가 고정
+`new`는 위 한 프로세스만 시작한다. 이번 official attempt는 publication까지
+만든 뒤 마지막 DB close 검증에서 `pinned database close failed`를 반환했다.
+실제 pin은 제거됐고 원본 DB nlink는 `1`, inspect와 evaluation SHA 검증은
+통과했다. Codex가 반복 감시하지 않고 프로세스가 고정
 progress/events/text/PID/checkpoint 파일을 직접 갱신한다. 완료 또는 오류는 사용자가
 알린 뒤 한 번 확인한다. `evaluate`는 complete publication의 세 prediction SHA를
 검사한 이후에만 실행한다.

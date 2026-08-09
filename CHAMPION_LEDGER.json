@@ -1,6 +1,6 @@
 {
   "schema": "champion-ledger.v1",
-  "updated_at": "2026-08-09T10:15:00+09:00",
+  "updated_at": "2026-08-09T22:56:42+09:00",
   "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
   "champion_status": "no_new_champion_verified_in_current_loop",
   "verified_references": [
@@ -32,7 +32,7 @@
   },
   "pending_candidate": {
     "experiment": null,
-    "status": "none_exp442_engineering_only_not_pending_champion",
+    "status": "none_exp443_evaluated_no_signal_not_pending_champion",
     "prediction_sha256": null,
     "evaluation": null
   },
@@ -134,11 +134,33 @@
     },
     {
       "experiment": "Exp443",
-      "status": "design_approved_not_promoted",
-      "reason": "정상 TRAIN 결측 처리 세 정책을 비교하는 구현 전 review-only 계획이다. Exp404 Hard와 Exp416 감사본을 계속 verified reference로 남기며, Exp443 prediction/evaluation은 아직 없고 pending_candidate나 champion으로 저장하지 않는다. Policy A control reproduction이 먼저 통과해야 B/C와 TEST 평가를 열고, 결과를 기록한 뒤 Exp444 전에 방향 논의를 위해 멈춘다.",
+      "status": "official_evaluated_no_retrospective_improvement_signal_not_promoted",
+      "reason": "세 정책의 frozen prediction을 1,117개 데이터셋에서 평가했다. control과 전체 결측행 제외 정책은 기준과 같았다. leave-one-out peer median은 MelbournePedestrian_normal_8에서 TP 1개를 FP 없이 복구하고 기존 강한 데이터셋을 악화시키지 않았지만, micro/macro paired-bootstrap 95% 하한이 모두 0이므로 사전등록 개선 신호를 통과하지 못했다. 좁은 결측 처리 근거로만 보존하고 champion이나 pending candidate로 승격하지 않는다.",
       "reviewed_design_sha256": "b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f9b",
-      "prediction_sha256": null,
-      "evaluation": null,
+      "reviewed_commit": "081b94b0485da7e59b1523d481031daf11d3fc65",
+      "prediction_sha256": {
+        "linear_edge_nearest_control": "2974d7da3967653c1530e4c2b830d8e689e8befb99e1339bf78b0dd88c60f965",
+        "exclude_nonfinite_row": "a304ba2deba886964e5487e15776e3fd36e0ecb0ea697cba1712107c79c37e3e",
+        "leave_one_out_peer_median": "1e5801fdd9f8eb60e4f1f0ab75f2cec697d7fa953aa1b78ec2efb7b003e1a07d"
+      },
+      "evaluation_sha256": "85a64e626aff1049a588c8013d1b6ff836502b5c0a619246347529236bc5d7a8",
+      "evaluation": {
+        "baseline_confusion": {"tp": 1915, "fp": 303, "fn": 2003, "tn": 191679},
+        "peer_median_confusion": {"tp": 1916, "fp": 303, "fn": 2002, "tn": 191679},
+        "added_tp": 1,
+        "added_fp": 0,
+        "rescued_datasets": ["MelbournePedestrian_normal_8"],
+        "regressed_dataset_count": 0,
+        "micro_f1": 0.6244093205149096,
+        "micro_delta": 0.00022418361790832453,
+        "macro_delta": 0.00022381378692926113,
+        "micro_bootstrap_ci95": [0.0, 0.0007423410221952668],
+        "macro_bootstrap_ci95": [0.0, 0.0006714413607878246]
+      },
+      "terminal_cleanup_error": "pinned database close failed",
+      "database_pin_removed": true,
+      "database_nlink_after_run": 1,
+      "test_labels_opened_after_prediction_freeze": true,
       "official_run_purpose": "controlled_missing_normal_train_policy_comparison",
       "adaptive_followup": true,
       "independent_validation": false,
@@ -147,7 +169,8 @@
       "scientific_winner_selected": false,
       "review_only": true,
       "operational_alert_eligible": false,
-      "test_informed_reselection_allowed": false
+      "test_informed_reselection_allowed": false,
+      "next_action": "paused_awaiting_direction_discussion_no_auto_exp444"
     }
   ]
 }

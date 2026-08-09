@@ -1,6 +1,6 @@
 {
   "schema": "failure-ledger.v1",
-  "updated_at": "2026-08-09T02:00:02+09:00",
+  "updated_at": "2026-08-09T22:56:42+09:00",
   "rule": "Append unfavorable, blocked, interrupted, or scientifically invalid attempts; never delete them to make a lineage look successful.",
   "entries": [
     {
@@ -241,6 +241,35 @@
         "immutable": true
       },
       "lesson": "The frozen Exp441 selector and full label-free replay completed without scientific or data errors, but publication rejected the runtime's terminal eta_seconds=0.0 even though no time remained. Preserve the root as immutable engineering failure evidence; repair only this lifecycle contract in a new Exp442 identity and fresh root, then re-run readiness and the 1,117-record label-free path before any prediction freeze or TEST-label evaluation."
+    },
+    {
+      "experiment": "Exp443",
+      "category": "official_evaluated_no_signal_with_terminal_cleanup_error",
+      "evidence": "/Users/mac/Documents/Dataset/exp443_missing_normal_train_policy_comparison_antigravity_20260809/evaluation_antigravity/evaluation_antigravity.json",
+      "facts": {
+        "reviewed_commit": "081b94b0485da7e59b1523d481031daf11d3fc65",
+        "completed": 57,
+        "total": 57,
+        "scientific_errors": 0,
+        "prediction_publication_verified": true,
+        "evaluation_sha256": "85a64e626aff1049a588c8013d1b6ff836502b5c0a619246347529236bc5d7a8",
+        "control_added_tp": 0,
+        "exclude_nonfinite_row_added_tp": 0,
+        "peer_median_added_tp": 1,
+        "peer_median_added_fp": 0,
+        "peer_median_rescued_dataset": "MelbournePedestrian_normal_8",
+        "peer_median_micro_f1_delta": 0.00022418361790832453,
+        "peer_median_macro_f1_delta": 0.00022381378692926113,
+        "peer_median_micro_ci_lower": 0.0,
+        "peer_median_macro_ci_lower": 0.0,
+        "regressed_datasets": 0,
+        "winner_selected": false,
+        "terminal_error": "pinned database close failed",
+        "database_pin_removed": true,
+        "database_nlink_after_run": 1,
+        "test_labels_opened_after_prediction_freeze": true
+      },
+      "lesson": "Leave-one-out peer median repair can recover a real missed anomaly without adding a false alarm, but the signal appeared in only one dataset and both paired-bootstrap lower bounds were zero. Preserve it as narrow mechanism evidence, not a winner. The post-publication close verification also needs an engineering-only repair with the frozen Exp443 artifacts left unchanged."
     }
   ]
 }

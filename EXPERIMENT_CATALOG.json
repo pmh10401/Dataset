@@ -629,7 +629,7 @@
     {
       "id": "Exp443",
       "kind": "missing_normal_train_policy_comparison",
-      "status": "implementation_verified_awaiting_scoped_rereview",
+      "status": "official_evaluated_no_retrospective_improvement_signal_cleanup_error",
       "documents": [
         "docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md",
         "docs/superpowers/plans/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity.md",
@@ -681,16 +681,55 @@
         "fix_commit": "93471c0462fa85e33f280b0496d756c62a25d71c",
         "fresh_process_first_numpy_import_all_seven_controls_equal_one": true
       },
-      "reviewed_implementation_commit": null,
+      "reviewed_implementation_commit": "081b94b0485da7e59b1523d481031daf11d3fc65",
+      "fresh_sol_high_review": "passed_ship_no_findings",
       "implementation_tests_passed": 175,
       "inherited_regression_tests_passed": 13,
       "real_policy_a_control_passed": true,
       "worker_parity_passed": true,
       "worker_speed_ratio": 6.643098899503702,
-      "official_run_started": false,
-      "prediction_sha256": null,
-      "evaluation_sha256": null,
-      "test_labels_opened": false,
+      "official_run_started": true,
+      "run_root_exists": true,
+      "prediction_sha256": {
+        "linear_edge_nearest_control": "2974d7da3967653c1530e4c2b830d8e689e8befb99e1339bf78b0dd88c60f965",
+        "exclude_nonfinite_row": "a304ba2deba886964e5487e15776e3fd36e0ecb0ea697cba1712107c79c37e3e",
+        "leave_one_out_peer_median": "1e5801fdd9f8eb60e4f1f0ab75f2cec697d7fa953aa1b78ec2efb7b003e1a07d"
+      },
+      "evaluation_sha256": "85a64e626aff1049a588c8013d1b6ff836502b5c0a619246347529236bc5d7a8",
+      "test_labels_opened": true,
+      "official_run": {
+        "pid": 34590,
+        "completed": 57,
+        "total": 57,
+        "success": 57,
+        "errors": 0,
+        "elapsed_seconds": 49.55091841612011,
+        "readiness_sha256": "aedf2908d71a809d663408dde3fb2167b00a45a1902c7e34a70739a9439944ad",
+        "publication_manifest_sha256": "0fdfc6c9af65d4b9434c58cc6a34fd03ae1e5917cd97b4e7ae5f68bd801b49aa",
+        "publication_artifact_map_sha256": "385a3bcaec39968f2f89c4171a9e94daa532a79fccaaf3082def224cf1e0b21b",
+        "evaluation_artifact_map_sha256": "6940775588bfbd3be68fc9686913eb294d7b00ef5c19c1792766e4135cb21eee",
+        "terminal_cleanup_error": "pinned database close failed",
+        "database_pin_removed": true,
+        "database_nlink_after_run": 1
+      },
+      "evaluation": {
+        "label_query_calls": 1117,
+        "label_rows": 195900,
+        "baseline_confusion": [1915, 303, 2003, 191679],
+        "control_confusion": [1915, 303, 2003, 191679],
+        "exclude_nonfinite_row_confusion": [1915, 303, 2003, 191679],
+        "leave_one_out_peer_median_confusion": [1916, 303, 2002, 191679],
+        "peer_median_added_tp": 1,
+        "peer_median_added_fp": 0,
+        "peer_median_rescued_datasets": ["MelbournePedestrian_normal_8"],
+        "peer_median_regressed_dataset_count": 0,
+        "peer_median_micro_f1": 0.6244093205149096,
+        "peer_median_micro_delta": 0.00022418361790832453,
+        "peer_median_macro_delta": 0.00022381378692926113,
+        "peer_median_micro_bootstrap_ci95": [0.0, 0.0007423410221952668],
+        "peer_median_macro_bootstrap_ci95": [0.0, 0.0006714413607878246],
+        "status": "no_retrospective_improvement_signal"
+      },
       "official_run_purpose": "controlled_missing_normal_train_policy_comparison",
       "adaptive_followup": true,
       "independent_validation": false,
@@ -700,7 +739,7 @@
       "review_only": true,
       "operational_alert_eligible": false,
       "test_informed_reselection_allowed": false,
-      "notes": "구현·175개 전체 회귀·13개 inherited 회귀·실제 19-dataset Policy A control·1-worker/11-worker parity를 통과했고 official root는 아직 없다. 첫 Sol High 검토의 inspect mutation, wrapper traceback, stale review-target 문제와 두 번째 검토의 complete-progress publication 재개 불가 문제를 수정했다. e3dfb5aa가 최종 ship을 받은 뒤 첫 readiness가 root 생성 전에 BLIS_NUM_THREADS 누락을 찾았고 TEST label 접근은 0이었다. f4be2c6c RED와 16d012d3 GREEN으로 runtime/worker의 7개 thread 설정 계약을 맞췄다. 1c4a7880 재검토가 NumPy가 그 설정 전 먼저 import되는 문제를 찾아 fix-first를 냈고, 88a14ea0 RED와 93471c04 GREEN으로 공식 wrapper가 CLI/NumPy import 전에 7개를 모두 1로 설정하게 했다. fresh-process 첫 NumPy import 검사와 focused 38개 테스트가 통과했다. 이 수정이 포함된 current clean HEAD가 scoped re-review에서 다시 ship되기 전에는 readiness를 재실행하지 않는다. 세 policy를 모두 review-only로 보고하고 Exp404/Exp416을 verified reference로 유지하며, 결과 기록 후 Exp444 전에 멈춘다."
+      "notes": "clean HEAD 081b94b0이 Sol High ship을 받은 뒤 official readiness와 57/57 label-free 계산, 세 prediction 동결, read-only inspect, post-freeze 1,117-dataset 평가를 완료했다. control과 exclude-nonfinite-row는 baseline과 완전히 같았다. leave-one-out peer median은 MelbournePedestrian_normal_8의 TEST index 343에서 TP 1개를 FP 없이 복구했고 기존 강한 데이터셋 악화는 0이었다. micro F1은 0.624185에서 0.624409로 증가했지만 micro/macro bootstrap 95% 하한이 모두 0이라 no_retrospective_improvement_signal이며 winner를 선택하지 않는다. new 명령은 publication 성공 뒤 pinned database close failed로 비정상 종료했지만 pin은 제거됐고 DB nlink는 1, inspect와 evaluation artifact는 검증됐다. Exp404/Exp416을 verified reference로 유지하고 Exp444를 자동 시작하지 않은 채 방향 논의를 위해 멈춘다."
     }
   ]
 }

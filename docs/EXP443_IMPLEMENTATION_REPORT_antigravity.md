@@ -5,15 +5,14 @@
 Exp443의 제품 코드는 구현·회귀·실데이터 label-free 대조 검증을 마쳤다.
 다섯 명령 `readiness`, `new`, `resume`, `inspect`, `evaluate` 외에는 열지
 않았고, worker·정책·alpha·kernel·seed·입력·출력 경로를 실행 시점에 바꾸는
-옵션은 없다. 공식 root는 아직 없고 official prediction 및 TEST-label 평가는
-시작하지 않았다.
+옵션은 없다. clean HEAD `081b94b0`이 Sol High `ship`을 받은 뒤 official
+readiness, 57-unit label-free prediction, publication freeze, read-only inspect,
+post-freeze TEST-label 평가까지 완료했다.
 
-이 보고서 시점의 상태는 `implementation_verified_awaiting_scoped_rereview`다.
-clean HEAD `e3dfb5aa`는 Sol High에서 `ship`을 받았지만, 그 commit으로 처음 실행한
-official readiness가 출력 root를 만들기 전에 CPU thread 환경 계약 불일치를
-찾았다. 첫 수정을 포함한 `1c4a7880` 재검토에서는 값이 너무 늦게 설정된다는
-문제를 추가로 찾았다. 이를 fresh-process TDD로 수정했으므로, 수정된 새 clean
-HEAD가 다시 `ship`을 받기 전에는 official readiness를 재실행하지 않는다.
+이 보고서 시점의 상태는 `official_evaluated_paused_for_direction`이다. 세 정책 중
+leave-one-out peer median만 기존 미탐 이상 1개를 오경보 없이 복구했지만 paired
+bootstrap 95% 구간의 하한이 micro와 macro 모두 `0`이어서 사전등록 개선 신호를
+통과하지 못했다. winner를 선택하지 않고 Exp444 전에 방향 논의를 위해 멈춘다.
 
 ## 구현 경계
 
@@ -138,30 +137,55 @@ import 완료 후 값이 모두 `1`이며, child worker도 같은 7개 계약을
 속도 값 자체는 장비 상태에 따라 바뀔 수 있는 참고값이다. 결과 bytes와 후보
 동일성이 통과 조건이며, 이번 재실행에서도 두 경로가 동일했다.
 
-## 아직 하지 않은 일
+## 공식 실행과 동결 결과
 
-- `/Users/mac/Documents/Dataset/exp443_missing_normal_train_policy_comparison_antigravity_20260809`
-  root 생성
-- official readiness
-- 57-unit A/B/C prediction
-- prediction publication freeze
-- TEST-label query
-- retrospective evaluation
-- Exp444 설계 또는 실행
+- reviewed commit: `081b94b0485da7e59b1523d481031daf11d3fc65`
+- readiness SHA256:
+  `aedf2908d71a809d663408dde3fb2167b00a45a1902c7e34a70739a9439944ad`
+- PID: `34590`
+- 57/57 recompute success, scientific error 0
+- elapsed: 49.55091841612011 s
+- publication manifest SHA256:
+  `0fdfc6c9af65d4b9434c58cc6a34fd03ae1e5917cd97b4e7ae5f68bd801b49aa`
+- evaluation SHA256:
+  `85a64e626aff1049a588c8013d1b6ff836502b5c0a619246347529236bc5d7a8`
+- prediction 이전 TEST-label access: 0
+- prediction freeze 이후 label query: 1,117 calls / 195,900 rows
 
-## scoped re-review 뒤의 공식 첫 명령
+`inspect`가 동결한 policy별 prediction SHA256은 다음과 같다.
 
-scoped re-review가 현재 clean HEAD를 `ship`한 뒤 그 정확한 40자 commit을
-사용한다.
+| 정책 | SHA256 |
+|---|---|
+| linear-edge-nearest control | `2974d7da3967653c1530e4c2b830d8e689e8befb99e1339bf78b0dd88c60f965` |
+| 결측 정상행 전체 제외 | `a304ba2deba886964e5487e15776e3fd36e0ecb0ea697cba1712107c79c37e3e` |
+| leave-one-out peer median | `1e5801fdd9f8eb60e4f1f0ab75f2cec697d7fa953aa1b78ec2efb7b003e1a07d` |
 
-```bash
-EXP443_REVIEWED_COMMIT_ANTIGRAVITY="$(git rev-parse HEAD)"
-/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python \
-  scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py \
-  readiness --reviewed-commit "$EXP443_REVIEWED_COMMIT_ANTIGRAVITY"
-```
+## 공식 평가 결과
 
-공식 `new` 또는 `resume`이 성공하면 prediction과 publication은 이미 동결되어
-있다. 그다음 `inspect`로 bytes를 읽기 전용 재검증하고, 사용자가 완료를 알린 뒤
-한 번만 `evaluate`한다. 결과 기록 후 Exp444를 자동 시작하지 않고 방향 논의를
-위해 멈춘다.
+혼동행렬 순서는 `[TP, FP, FN, TN]`이다.
+
+| 정책 | 혼동행렬 | 추가 TP/FP | rescued | micro F1 | 판정 |
+|---|---:|---:|---:|---:|---|
+| 기준/linear control | `[1915,303,2003,191679]` | `0/0` | 0 | 0.624185 | 동일 |
+| 결측 정상행 전체 제외 | `[1915,303,2003,191679]` | `0/0` | 0 | 0.624185 | 동일 |
+| peer median | `[1916,303,2002,191679]` | `1/0` | 1 | 0.624409 | 좁은 양성 신호 |
+
+peer median은 `MelbournePedestrian_normal_8`의 TEST index `343`을 새로 맞혔다.
+이 데이터셋은 기존에 실제 이상 7개를 모두 놓쳐 F1이 0이었으나, 새 정책은 1개를
+맞혀 F1 `0.25`, precision `1.0`, recall `1/7`이 됐다. 결측 정상 TRAIN 행 37개 중
+36개는 해당 행을 제외한 정상 동료 파형의 median으로 보완했고, 동료 근거가 없는
+1개만 제외했다. 다른 1,116개 데이터셋은 악화되지 않았고 추가 FP도 없다.
+
+전체 micro F1 delta는 `+0.0002241836`, macro F1 delta는 `+0.0002238138`이다.
+그러나 20,000회 paired-bootstrap 95% 구간은 각각
+`[0, 0.0007423410]`, `[0, 0.0006714414]`로 하한이 0이다. 따라서 공식 상태는
+`no_retrospective_improvement_signal`이며 scientific winner나 운영 경보로
+승격하지 않는다.
+
+## 종료 오류와 보존 상태
+
+publication과 progress가 완성된 뒤 `new` 명령은 `pinned database close failed`로
+비정상 종료했다. 그러나 DB pin 파일은 실제로 제거됐고 원본 DB nlink는 `1`이며,
+read-only `inspect`와 post-freeze evaluation은 모든 artifact SHA를 검증했다.
+과학 결과는 동결해 보존하고, 이 종료 검증 문제는 별도 engineering repair로
+다룬다. Exp444는 시작하지 않았다.
