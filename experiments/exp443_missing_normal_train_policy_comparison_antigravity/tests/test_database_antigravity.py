@@ -40,6 +40,7 @@ class Exp443DatabaseAntigravityTests(unittest.TestCase):
                 split TEXT NOT NULL, instance_index INTEGER NOT NULL,
                 label TEXT NOT NULL, values_blob BLOB NOT NULL, labels_blob BLOB
             );
+            CREATE TABLE evaluation (dataset TEXT NOT NULL, metric REAL);
             INSERT INTO datasets(id, name, series_length) VALUES (1, 'Tiny_normal_0', 3);
             """
         )
@@ -145,7 +146,7 @@ ORDER BY i.instance_index""",
                             connection.execute(sql, ("Tiny_normal_0",))
                     self.assertEqual(pinned.raw_sql_execute_count, before)
                     self.assertEqual(pinned.denied_sql_attempts, 3)
-                    self.assertEqual(pinned.label_access_count, 2)
+                    self.assertEqual(pinned.label_access_count, 0)
                     self.assertEqual(len(pinned.denied_sql_trace), 3)
                     cursor = connection.execute(database.TEST_VALUES_SQL_ANTIGRAVITY, ("Tiny_normal_0",))
                     with self.assertRaises(ValueError):
@@ -153,8 +154,55 @@ ORDER BY i.instance_index""",
                     self.assertEqual(pinned.raw_sql_execute_count, before + 1)
                     approved = connection.execute(database.NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY, ("Tiny_normal_0",)).fetchall()
                     self.assertEqual([row[0] for row in approved], [0, 1])
-                self.assertEqual(pinned.label_access_count, 2)
+                self.assertEqual(pinned.label_access_count, 0)
             finally:
+                pinned.close(terminal_evidence_durable=True)
+
+    def test_facades_have_no_raw_escape_and_authorizer_binds_label_reads(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self._db(root)
+            expected = sha256(source.read_bytes()).hexdigest()
+            pinned = database.pin_database_snapshot_antigravity(source, root / "attempt_antigravity", expected_sha256=expected)
+            forbidden_test_label = "SELECT i.instance_index, i.values_blob FROM instances AS i JOIN datasets AS d ON d.id = i.dataset_id WHERE d.name = ? AND i.split = 'TEST' AND i.label = '0' ORDER BY i.instance_index"
+            forbidden_blob = "SELECT i.instance_index, i.labels_blob FROM instances AS i JOIN datasets AS d ON d.id = i.dataset_id WHERE d.name = ? AND i.split = 'TRAIN' AND i.label = '0' ORDER BY i.instance_index"
+            try:
+                with pinned.worker_connection_antigravity() as connection:
+                    self.assertFalse(hasattr(connection, "_connection"))
+                    cursor = connection.execute(database.TEST_VALUES_SQL_ANTIGRAVITY, ("Tiny_normal_0",))
+                    self.assertFalse(hasattr(cursor, "_cursor"))
+                    if hasattr(cursor, "connection"):
+                        self.assertFalse(hasattr(cursor.connection, "_connection"))
+                        with self.assertRaises(ValueError):
+                            cursor.connection.execute(forbidden_test_label, ("Tiny_normal_0",))
+                    for surface_name in ("_connection", "connection", "raw_connection"):
+                        if hasattr(connection, surface_name):
+                            surface = getattr(connection, surface_name)
+                            with self.assertRaises((AttributeError, ValueError)):
+                                surface.execute(forbidden_test_label, ("Tiny_normal_0",))
+                    for surface_name in ("_cursor", "raw_cursor"):
+                        if hasattr(cursor, surface_name):
+                            surface = getattr(cursor, surface_name)
+                            with self.assertRaises((AttributeError, ValueError)):
+                                surface.execute(forbidden_blob, ("Tiny_normal_0",))
+                    denied_before = pinned.denied_sql_attempts
+                    with self.assertRaises(ValueError):
+                        connection.execute(forbidden_test_label, ("Tiny_normal_0",))
+                    with self.assertRaises(ValueError):
+                        cursor.execute(forbidden_blob, ("Tiny_normal_0",))
+                    self.assertEqual(pinned.denied_sql_attempts, denied_before + 2)
+                    self.assertEqual(pinned.label_access_count, 0)
+                self.assertEqual(pinned.label_access_count, 0)
+
+                pinned._active_sql = database.NORMAL_TRAIN_VALUES_SQL_ANTIGRAVITY
+                self.assertEqual(pinned._authorizer(sqlite3.SQLITE_READ, "instances", "label", None, None), sqlite3.SQLITE_OK)
+                pinned._active_sql = database.TEST_VALUES_SQL_ANTIGRAVITY
+                self.assertEqual(pinned._authorizer(sqlite3.SQLITE_READ, "instances", "label", None, None), sqlite3.SQLITE_DENY)
+                self.assertEqual(pinned._authorizer(sqlite3.SQLITE_READ, "instances", "labels_blob", None, None), sqlite3.SQLITE_DENY)
+                self.assertEqual(pinned._authorizer(sqlite3.SQLITE_READ, "evaluation", "metric", None, None), sqlite3.SQLITE_DENY)
+                self.assertEqual(pinned.label_access_count, 0)
+            finally:
+                pinned._active_sql = None
                 pinned.close(terminal_evidence_durable=True)
 
     def test_database_pre_open_swap_to_fifo_and_symlink_is_fail_closed(self) -> None:
