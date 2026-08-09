@@ -86,6 +86,12 @@ class EnvironmentEvidenceAntigravity:
         for pool in self.blas_thread_pools:
             if not isinstance(pool, Mapping) or type(pool.get("num_threads")) is not int or pool["num_threads"] != 1:
                 raise ValueError("every discovered numerical thread pool must use one thread")
+        for field_name in ("pytorch_version", "mlx_version", "mps_version"):
+            value = getattr(self, field_name)
+            if value is not None and type(value) is not str:
+                raise ValueError(f"{field_name} must be a string or None")
+        if self.mps_available is not None and type(self.mps_available) is not bool:
+            raise ValueError("mps_available must be a bool or None")
         if self.acceleration_decision != "inapplicable_official_cpu_transformer":
             raise ValueError("Exp443 acceleration decision is invalid")
         if self.acceleration_reason != "official_aeon_minirocket_cpu_transformer_no_mlx_rewrite":

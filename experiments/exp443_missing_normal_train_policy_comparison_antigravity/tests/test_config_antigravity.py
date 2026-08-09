@@ -90,6 +90,7 @@ class Exp443ConfigAntigravityTests(unittest.TestCase):
         mutations = {
             # identity, paths, and input hashes
             "experiment_id": "Exp442",
+            "run_identity": "fabricated-run-antigravity",
             "reviewed_design_sha256": "b" * 64,
             "database_path": "/tmp/database_antigravity.db",
             "database_sha256": "c" * 64,
@@ -155,6 +156,7 @@ class Exp443ConfigAntigravityTests(unittest.TestCase):
             "environment_lock_sha256": "e" * 64,
             "outer_workers": 12,
             "inner_threads": 2,
+            "logical_cpu_count": 11,
             # governance and routing
             "official_run_purpose": "other",
             "adaptive_followup": False,
