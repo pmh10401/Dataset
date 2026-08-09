@@ -22,6 +22,13 @@ import sys
 import tempfile
 import time
 
+# ``python scratch/<script>`` places only ``scratch`` on sys.path.  Make the
+# checked-out repository importable without requiring callers to remember a
+# PYTHONPATH override, while retaining the script's explicit opt-in gate.
+_REPO_ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT_ANTIGRAVITY) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT_ANTIGRAVITY))
+
 from experiments.exp443_missing_normal_train_policy_comparison_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
 from experiments.exp443_missing_normal_train_policy_comparison_antigravity.config_antigravity import FROZEN_CONFIG
 from experiments.exp443_missing_normal_train_policy_comparison_antigravity.control_antigravity import compare_policy_a_to_archive_antigravity, require_control_gate_antigravity
@@ -156,7 +163,11 @@ def main() -> int:
         output = Path("scratch/exp443_worker_parity_report_antigravity.json")
         output.write_bytes(canonical_json_bytes_antigravity(report))
         print(json.dumps(report, sort_keys=True, ensure_ascii=False))
-    pinned.close(terminal_evidence_durable=True)
+        # Close while the attempt-local pin still exists.  The close boundary
+        # rehashes the retained descriptor and removes the owned hard link as
+        # durable terminal evidence; doing this after TemporaryDirectory exits
+        # would make the boundary unverifiable.
+        pinned.close(terminal_evidence_durable=True)
     return 0
 
 
