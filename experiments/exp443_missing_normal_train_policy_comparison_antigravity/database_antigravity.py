@@ -276,8 +276,9 @@ class RawDatasetAntigravity:
             raise ValueError("TRAIN rows are invalid")
         if any(item.dataset != self.dataset or item.split != "TEST" for item in self.test):
             raise ValueError("TEST rows are invalid")
-        if any(len(item.values) != self.target_length for item in self.train + self.test):
-            raise ValueError("raw dataset lengths are inconsistent")
+        # Exp443 computes its target from original normal TRAIN lengths and
+        # aligns TEST independently.  A legitimate ragged source population
+        # must therefore remain representable at this raw boundary.
 
     @property
     def train_rows(self) -> tuple[RawSeriesAntigravity, ...]:
@@ -596,9 +597,13 @@ def load_raw_dataset_antigravity(pinned_database: PinnedDatabaseAntigravity, dat
     train = _decode_rows(train_rows, dataset, "TRAIN")
     test = _decode_rows(test_rows, dataset, "TEST")
     lengths = {len(item.values) for item in train + test}
-    if len(lengths) != 1:
-        raise ValueError("raw TRAIN/TEST lengths are not equal")
-    return RawDatasetAntigravity(dataset, train, test, next(iter(lengths)))
+    if len(lengths) == 1:
+        target_length = next(iter(lengths))
+    else:
+        # Preserve a useful legacy field while Task 4 independently computes
+        # the same clipped median from normal TRAIN rows before policy use.
+        target_length = int(np.clip(np.median([len(item.values) for item in train]), 8, 2048))
+    return RawDatasetAntigravity(dataset, train, test, target_length)
 
 
 def parse_dataset_family_antigravity(dataset: str) -> str:

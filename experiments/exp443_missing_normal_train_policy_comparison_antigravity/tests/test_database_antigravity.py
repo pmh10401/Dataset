@@ -15,7 +15,7 @@ from experiments.exp443_missing_normal_train_policy_comparison_antigravity impor
 
 
 class Exp443DatabaseAntigravityTests(unittest.TestCase):
-    def _db(self, root: Path, name: str = "Tiny_normal_0") -> Path:
+    def _db(self, root: Path, name: str = "Tiny_normal_0", *, ragged: bool = False) -> Path:
         path = root / "source_antigravity.db"
         connection = sqlite3.connect(path)
         connection.executescript(
@@ -44,8 +44,18 @@ class Exp443DatabaseAntigravityTests(unittest.TestCase):
             INSERT INTO datasets(id, name, series_length) VALUES (1, 'Tiny_normal_0', 3);
             """
         )
-        train = [np.asarray([1.0, np.nan, 3.0], dtype="<f4"), np.asarray([2.0, 4.0, 6.0], dtype="<f4")]
-        test = [np.asarray([7.0, 8.0, 9.0], dtype="<f4"), np.asarray([10.0, 11.0, 12.0], dtype="<f4")]
+        if ragged:
+            train = [
+                np.asarray([1.0, np.nan, 3.0], dtype="<f4"),
+                np.asarray([2.0, 4.0, 6.0, 8.0], dtype="<f4"),
+            ]
+            test = [
+                np.asarray([7.0, 8.0], dtype="<f4"),
+                np.asarray([10.0, 11.0, 12.0, 13.0, 14.0], dtype="<f4"),
+            ]
+        else:
+            train = [np.asarray([1.0, np.nan, 3.0], dtype="<f4"), np.asarray([2.0, 4.0, 6.0], dtype="<f4")]
+            test = [np.asarray([7.0, 8.0, 9.0], dtype="<f4"), np.asarray([10.0, 11.0, 12.0], dtype="<f4")]
         rows = [(1, "TRAIN", 0, "0", train[0].tobytes(), b"must-not-read"), (1, "TRAIN", 1, "0", train[1].tobytes(), b"must-not-read"), (1, "TEST", 0, "0", test[0].tobytes(), b"must-not-read"), (1, "TEST", 1, "1", test[1].tobytes(), b"must-not-read")]
         connection.executemany("INSERT INTO instances(dataset_id, split, instance_index, label, values_blob, labels_blob) VALUES (?, ?, ?, ?, ?, ?)", rows)
         connection.commit()
@@ -318,6 +328,29 @@ ORDER BY i.instance_index""",
                     # The deliberately replaced source pathname is retained as
                     # mutation evidence; cleanup must not hide that failure.
                     pass
+
+    def test_raw_loader_preserves_ragged_float32_lengths_and_values(self) -> None:
+        """The frozen Task 4 contract permits variable original row lengths."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = self._db(root, ragged=True)
+            expected = sha256(source.read_bytes()).hexdigest()
+            pinned = database.pin_database_snapshot_antigravity(
+                source, root / "attempt_ragged_antigravity", expected_sha256=expected
+            )
+            try:
+                raw = database.load_raw_dataset_antigravity(pinned, "Tiny_normal_0")
+                self.assertEqual(tuple(len(row.values) for row in raw.train), (3, 4))
+                self.assertEqual(tuple(len(row.values) for row in raw.test), (2, 5))
+                self.assertEqual(raw.train[0].values.dtype, np.dtype("<f4"))
+                self.assertTrue(np.array_equal(raw.train[0].values, np.asarray([1.0, np.nan, 3.0], dtype="<f4"), equal_nan=True))
+                self.assertTrue(np.array_equal(raw.train[1].values, np.asarray([2.0, 4.0, 6.0, 8.0], dtype="<f4")))
+                self.assertEqual(tuple(row.instance_index for row in raw.train), (0, 1))
+                self.assertEqual(tuple(row.instance_index for row in raw.test), (0, 1))
+                self.assertFalse(raw.train[0].values.flags.writeable)
+                self.assertEqual(pinned.label_access_count, 0)
+            finally:
+                pinned.close(terminal_evidence_durable=True)
 
     def test_missing_inventory_requires_sorted_population_and_reports_real_shape(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
