@@ -278,6 +278,103 @@ class CheckpointStoreAntigravityTests(unittest.TestCase):
                     root, _binding(), lambda _: False
                 )
 
+    def test_resume_rebinds_new_process_and_blocks_second_active_resume(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            Exp443CheckpointStoreAntigravity,
+            ProcessIdentityAntigravity,
+        )
+
+        units = _units()
+        old_process = _process()
+        new_process = ProcessIdentityAntigravity(pid=5252, start_identity="start-B")
+        with tempfile.TemporaryDirectory(prefix="exp443_task7_checkpoint_resume_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            store = Exp443CheckpointStoreAntigravity.create_antigravity(
+                root, units, _binding(), old_process
+            )
+            store.commit_result_antigravity(0, _result(units[0].policy, units[0].dataset))
+            store.mark_interrupted_resumable_antigravity()
+
+            resumed = Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
+                root,
+                _binding(),
+                new_process,
+                lambda _: False,
+            )
+            self.assertEqual(resumed.process, new_process)
+            state = json.loads((root / "state_antigravity.json").read_text())
+            self.assertEqual(state["process"], new_process.to_payload_antigravity())
+
+            with self.assertRaisesRegex(ValueError, "active"):
+                Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
+                    root,
+                    _binding(),
+                    ProcessIdentityAntigravity(pid=6363, start_identity="start-C"),
+                    lambda identity: identity == new_process,
+                )
+
+    def test_resume_reconciles_only_single_next_orphan_record(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.artifacts_antigravity import (
+            canonical_json_bytes_antigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            Exp443CheckpointStoreAntigravity,
+            ProcessIdentityAntigravity,
+        )
+
+        units = _units()
+        old_process = _process()
+        new_process = ProcessIdentityAntigravity(pid=7373, start_identity="start-D")
+        with tempfile.TemporaryDirectory(prefix="exp443_task7_checkpoint_orphan_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            store = Exp443CheckpointStoreAntigravity.create_antigravity(
+                root, units, _binding(), old_process
+            )
+            store.commit_result_antigravity(0, _result(units[0].policy, units[0].dataset))
+            state_path = root / "state_antigravity.json"
+            state = json.loads(state_path.read_text())
+            state.update(
+                completed_count=0,
+                record_sha256_prefix=[],
+                status="interrupted_resumable",
+                error_sequence=None,
+            )
+            state_path.write_bytes(canonical_json_bytes_antigravity(state))
+
+            resumed = Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
+                root, _binding(), new_process, lambda _: False
+            )
+            self.assertEqual(resumed.completed_count_antigravity, 1)
+            state = json.loads(state_path.read_text())
+            self.assertEqual(state["completed_count"], 1)
+            self.assertEqual(state["record_sha256_prefix"], list(resumed.record_sha256_prefix_antigravity))
+            resumed.commit_result_antigravity(1, _result(units[1].policy, units[1].dataset))
+
+        with tempfile.TemporaryDirectory(prefix="exp443_task7_checkpoint_orphan_extra_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            store = Exp443CheckpointStoreAntigravity.create_antigravity(
+                root, units, _binding(), old_process
+            )
+            store.commit_result_antigravity(0, _result(units[0].policy, units[0].dataset))
+            record_zero = root / "records_antigravity" / "0000_record_antigravity.json"
+            (root / "records_antigravity" / "0001_record_antigravity.json").write_bytes(record_zero.read_bytes())
+            state_path = root / "state_antigravity.json"
+            state = json.loads(state_path.read_text())
+            state.update(
+                completed_count=0,
+                record_sha256_prefix=[],
+                status="interrupted_resumable",
+                error_sequence=None,
+            )
+            state_path.write_bytes(canonical_json_bytes_antigravity(state))
+            with self.assertRaisesRegex(ValueError, "inventory|orphan"):
+                Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
+                    root,
+                    _binding(),
+                    new_process,
+                    lambda _: False,
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -314,9 +315,22 @@ class Exp443CheckpointStoreAntigravity:
         cls,
         root: Path,
         binding: CheckpointBindingAntigravity,
-        pid_probe: Callable[[ProcessIdentityAntigravity], bool],
+        process: ProcessIdentityAntigravity | Callable[[ProcessIdentityAntigravity], bool] | None = None,
+        pid_probe: Callable[[ProcessIdentityAntigravity], bool] | None = None,
     ) -> "Exp443CheckpointStoreAntigravity":
-        if type(binding) is not CheckpointBindingAntigravity or not callable(pid_probe):
+        # Keep the original three-argument API as a compatibility path while
+        # allowing a resumed process to be explicitly bound and persisted.
+        requested_process: ProcessIdentityAntigravity | None
+        if pid_probe is None and callable(process):
+            requested_process = None
+            pid_probe = process
+        else:
+            requested_process = process
+        if (
+            type(binding) is not CheckpointBindingAntigravity
+            or not callable(pid_probe)
+            or (requested_process is not None and type(requested_process) is not ProcessIdentityAntigravity)
+        ):
             raise ValueError("checkpoint resume identity is invalid")
         root = Path(root)
         context_path, state_path, records_path = _root_paths_antigravity(root)
@@ -365,8 +379,30 @@ class Exp443CheckpointStoreAntigravity:
             raise ValueError("checkpoint attempt is terminal error")
         if completed >= len(units):
             raise ValueError("checkpoint attempt is complete")
-        _validate_record_inventory_antigravity(records_path, units, tuple(prefix_value), error_sequence)
-        return cls(root, units, binding, process, tuple(prefix_value), "running", None)
+        prefix, reconciled_error_sequence = _validate_record_inventory_antigravity(
+            records_path, units, tuple(prefix_value), error_sequence
+        )
+        effective_process = requested_process if requested_process is not None else process
+        effective_status = "running"
+        if reconciled_error_sequence is not None:
+            effective_status = "error"
+        elif len(prefix) == len(units):
+            effective_status = "complete"
+        resumed = cls(
+            root,
+            units,
+            binding,
+            effective_process,
+            prefix,
+            effective_status,
+            reconciled_error_sequence,
+        )
+        # An orphan record has already been durably created, so advance the
+        # state prefix before returning.  A supplied process always becomes
+        # the active owner of the resumed attempt.
+        if requested_process is not None or prefix != tuple(prefix_value) or reconciled_error_sequence != error_sequence:
+            resumed._write_state_antigravity()
+        return resumed
 
     def _write_state_antigravity(self) -> None:
         context_bytes = self.context_path.read_bytes()
@@ -470,27 +506,96 @@ def _validate_record_inventory_antigravity(
     units: tuple[WorkUnitAntigravity, ...],
     prefix: tuple[str, ...],
     error_sequence: int | None,
-) -> None:
+) -> tuple[tuple[str, ...], int | None]:
     names = []
     for path in records.iterdir():
         match = _RECORD.fullmatch(path.name)
         if match is None or path.is_symlink() or not path.is_file():
             raise ValueError("checkpoint record inventory is invalid")
         names.append(int(match.group(1)))
-    if sorted(names) != list(range(len(prefix))):
+    completed = len(prefix)
+    sorted_names = sorted(names)
+    orphan_sequence: int | None = None
+    if sorted_names == list(range(completed)):
+        pass
+    elif completed < len(units) and sorted_names == list(range(completed + 1)):
+        orphan_sequence = completed
+    else:
         raise ValueError("checkpoint record inventory is invalid")
     for sequence, digest in enumerate(prefix):
         payload, encoded = _read_canonical_antigravity(_record_path_antigravity(records, sequence))
         if hashlib.sha256(encoded).hexdigest() != digest or not isinstance(payload, Mapping):
             raise ValueError("checkpoint record bytes changed")
-        if payload.get("sequence") != sequence or payload.get("policy") != units[sequence].policy or payload.get("dataset") != units[sequence].dataset:
-            raise ValueError("checkpoint record identity mismatch")
+        _validate_record_payload_antigravity(payload, encoded, sequence, units[sequence])
         if payload.get("status") == "error" and sequence != error_sequence:
             raise ValueError("checkpoint error record is misplaced")
     if error_sequence is not None:
         payload, _ = _read_canonical_antigravity(_record_path_antigravity(records, error_sequence))
         if not isinstance(payload, Mapping) or payload.get("status") != "error":
             raise ValueError("checkpoint error record is invalid")
+    if orphan_sequence is None:
+        return prefix, error_sequence
+    if error_sequence is not None:
+        raise ValueError("checkpoint orphan follows terminal error")
+    orphan_payload, orphan_encoded = _read_canonical_antigravity(
+        _record_path_antigravity(records, orphan_sequence)
+    )
+    _validate_record_payload_antigravity(
+        orphan_payload, orphan_encoded, orphan_sequence, units[orphan_sequence]
+    )
+    orphan_status = orphan_payload["status"]
+    return (
+        (*prefix, hashlib.sha256(orphan_encoded).hexdigest()),
+        orphan_sequence if orphan_status == "error" else None,
+    )
+
+
+def _validate_record_payload_antigravity(
+    payload: object,
+    encoded: bytes,
+    sequence: int,
+    unit: WorkUnitAntigravity,
+) -> None:
+    """Validate the canonical bytes before they can extend the prefix."""
+    if not isinstance(payload, Mapping):
+        raise ValueError("checkpoint record payload is invalid")
+    expected_keys = {
+        "sequence", "policy", "dataset", "result", "timing",
+        "sql_trace_sha256", "status", "error",
+    }
+    if set(payload) != expected_keys:
+        raise ValueError("checkpoint record content is invalid")
+    if payload["sequence"] != sequence or payload["policy"] != unit.policy or payload["dataset"] != unit.dataset:
+        raise ValueError("checkpoint record identity mismatch")
+    status = payload["status"]
+    if status not in {"scored", "abstained", "error"}:
+        raise ValueError("checkpoint record status is invalid")
+    trace_digest = payload["sql_trace_sha256"]
+    if _SHA256.fullmatch(trace_digest or "") is None:
+        raise ValueError("checkpoint record trace is invalid")
+    timing = payload["timing"]
+    if not isinstance(timing, Mapping) or set(timing) != {"elapsed_seconds", "throughput"}:
+        raise ValueError("checkpoint record timing is invalid")
+    if any(type(timing[key]) not in (int, float) or not math.isfinite(float(timing[key])) for key in timing):
+        raise ValueError("checkpoint record timing is invalid")
+    if status == "error":
+        error = payload["error"]
+        if payload["result"] is not None or not isinstance(error, Mapping) or set(error) != {"type", "message"}:
+            raise ValueError("checkpoint error record is invalid")
+        if type(error["type"]) is not str or not error["type"] or type(error["message"]) is not str or not error["message"]:
+            raise ValueError("checkpoint error record is invalid")
+        return
+    if payload["error"] is not None or not isinstance(payload["result"], Mapping):
+        raise ValueError("checkpoint record result is invalid")
+    try:
+        result = PolicyDatasetResultAntigravity.from_payload(payload["result"])
+    except (TypeError, ValueError) as error:
+        raise ValueError("checkpoint record result is invalid") from error
+    if result.policy != unit.policy or result.dataset != unit.dataset or result.status != status:
+        raise ValueError("checkpoint record result identity mismatch")
+    expected_trace = hashlib.sha256(canonical_json_bytes_antigravity(payload["result"])).hexdigest()
+    if trace_digest != expected_trace:
+        raise ValueError("checkpoint record trace changed")
 
 
 __all__ = [

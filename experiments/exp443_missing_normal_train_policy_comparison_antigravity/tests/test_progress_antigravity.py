@@ -169,6 +169,70 @@ class ProgressWriterAntigravityTests(unittest.TestCase):
             pid = json.loads((root / "pid_antigravity.json").read_text())
             self.assertFalse(pid["active"])
 
+    def test_resume_reopens_interrupted_logs_and_restores_elapsed_counters(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.progress_antigravity import (
+            ProgressWriterAntigravity,
+        )
+
+        units = (_unit(POLICIES[0], "A", 0), _unit(POLICIES[0], "B", 1))
+        with tempfile.TemporaryDirectory(prefix="exp443_task7_progress_resume_antigravity_") as directory:
+            root = Path(directory) / "attempt_antigravity"
+            root.mkdir()
+            writer = ProgressWriterAntigravity(root, total=2, pid=4242)
+            writer.begin_units_antigravity(units)
+            writer.accept_unit_antigravity(_result(POLICIES[0], "A"))
+            writer.terminal_antigravity("interrupted_resumable", "SIGTERM")
+            before = json.loads((root / "progress_antigravity.json").read_text())
+            events_before = (root / "events_antigravity.jsonl").read_bytes()
+            text_before = (root / "text_antigravity.log").read_bytes()
+
+            resumed = ProgressWriterAntigravity.open_for_resume_antigravity(
+                root,
+                total=2,
+                pid=5252,
+            )
+            self.assertEqual(resumed.completed_count_antigravity, 1)
+            reopened = json.loads((root / "progress_antigravity.json").read_text())
+            self.assertTrue(reopened["active"])
+            self.assertEqual(reopened["completed"], before["completed"])
+            self.assertEqual(reopened["recomputed"], before["recomputed"])
+            self.assertEqual(reopened["success"], before["success"])
+            self.assertGreaterEqual(reopened["elapsed_seconds"], before["elapsed_seconds"])
+            self.assertTrue((root / "events_antigravity.jsonl").read_bytes().startswith(events_before))
+            self.assertTrue((root / "text_antigravity.log").read_bytes().startswith(text_before))
+            pid = json.loads((root / "pid_antigravity.json").read_text())
+            self.assertEqual(pid["pid"], 5252)
+            self.assertTrue(pid["active"])
+
+            resumed.begin_units_antigravity((units[1],))
+            resumed.accept_unit_antigravity(_result(POLICIES[0], "B"))
+            resumed.terminal_antigravity("complete", None)
+            finished = json.loads((root / "progress_antigravity.json").read_text())
+            self.assertEqual(finished["completed"], 2)
+            self.assertEqual(finished["stage"], "complete")
+
+    def test_heartbeat_after_terminal_rejects_without_reactivating_pid_or_logs(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.progress_antigravity import (
+            ProgressWriterAntigravity,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="exp443_task7_progress_terminal_heartbeat_antigravity_") as directory:
+            root = Path(directory) / "attempt_antigravity"
+            root.mkdir()
+            writer = ProgressWriterAntigravity(root, total=2, pid=4242)
+            writer.terminal_antigravity("complete", None)
+            progress_before = (root / "progress_antigravity.json").read_bytes()
+            events_before = (root / "events_antigravity.jsonl").read_bytes()
+            text_before = (root / "text_antigravity.log").read_bytes()
+            pid_before = json.loads((root / "pid_antigravity.json").read_text())
+            with self.assertRaisesRegex(ValueError, "terminal"):
+                writer.heartbeat_antigravity(())
+            self.assertEqual((root / "progress_antigravity.json").read_bytes(), progress_before)
+            self.assertEqual((root / "events_antigravity.jsonl").read_bytes(), events_before)
+            self.assertEqual((root / "text_antigravity.log").read_bytes(), text_before)
+            self.assertEqual(json.loads((root / "pid_antigravity.json").read_text()), pid_before)
+            self.assertFalse(pid_before["active"])
+
 
 if __name__ == "__main__":
     unittest.main()

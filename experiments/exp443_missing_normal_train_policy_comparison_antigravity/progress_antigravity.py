@@ -1,7 +1,7 @@
 """Parent-owned atomic progress and append-only logs for Exp443."""
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import datetime, timezone
 import math
 import os
@@ -11,8 +11,9 @@ import time
 from .artifacts_antigravity import (
     canonical_json_bytes_antigravity,
     fsync_directory_antigravity,
+    parse_canonical_json_bytes_antigravity,
 )
-from .checkpoint_antigravity import WorkUnitAntigravity
+from .checkpoint_antigravity import ProcessIdentityAntigravity, WorkUnitAntigravity
 from .config_antigravity import FROZEN_CONFIG
 from .contracts_antigravity import PolicyDatasetResultAntigravity
 
@@ -42,6 +43,11 @@ def _normalize_active_antigravity(active: Iterable[WorkUnitAntigravity]) -> tupl
     return tuple(sorted(units, key=lambda unit: unit.sequence))
 
 
+_TERMINAL_PROGRESS_STAGES = frozenset({
+    "complete", "error", "failed", "interrupted_resumable", "interrupted",
+})
+
+
 class ProgressWriterAntigravity:
     """The parent process owns all shared progress files; workers get no writer."""
 
@@ -52,6 +58,7 @@ class ProgressWriterAntigravity:
         total: int = FROZEN_CONFIG.recompute_units,
         pid: int | None = None,
         checkpoint_path: Path | None = None,
+        process: ProcessIdentityAntigravity | None = None,
     ) -> None:
         if type(total) is not int or total < 1:
             raise ValueError("progress total is invalid")
@@ -59,7 +66,16 @@ class ProgressWriterAntigravity:
         if not self._attempt_path.is_dir() or self._attempt_path.is_symlink():
             raise ValueError("attempt path is invalid")
         self._total = total
-        self._pid = os.getpid() if pid is None else pid
+        if process is not None:
+            if type(process) is not ProcessIdentityAntigravity:
+                raise ValueError("progress process identity is invalid")
+            if pid is not None and pid != process.pid:
+                raise ValueError("progress PID does not match process identity")
+            self._pid = process.pid
+            self._process_start_identity: str | None = process.start_identity
+        else:
+            self._pid = os.getpid() if pid is None else pid
+            self._process_start_identity = None
         if type(self._pid) is not int or self._pid < 1:
             raise ValueError("progress PID is invalid")
         self._checkpoint_path = str(
@@ -86,6 +102,164 @@ class ProgressWriterAntigravity:
         self._write_pid_antigravity(True)
         self._write_progress_antigravity()
 
+    @classmethod
+    def open_for_resume_antigravity(
+        cls,
+        attempt_path: Path,
+        *,
+        total: int = FROZEN_CONFIG.recompute_units,
+        pid: int | ProcessIdentityAntigravity | None = None,
+        process: ProcessIdentityAntigravity | None = None,
+        checkpoint_path: Path | None = None,
+        checkpoint_store: object | None = None,
+        pid_probe: object | None = None,
+    ) -> "ProgressWriterAntigravity":
+        """Reopen one interrupted attempt without truncating its evidence."""
+        if type(total) is not int or total < 1:
+            raise ValueError("progress total is invalid")
+        if process is None and type(pid) is ProcessIdentityAntigravity:
+            process = pid
+            pid = None
+        if process is not None and type(process) is not ProcessIdentityAntigravity:
+            raise ValueError("progress process identity is invalid")
+        attempt = Path(attempt_path)
+        if not attempt.is_dir() or attempt.is_symlink():
+            raise ValueError("attempt path is invalid")
+
+        def read_payload(path: Path, label: str) -> Mapping[str, object]:
+            if path.is_symlink() or not path.is_file():
+                raise ValueError(f"progress {label} is invalid")
+            try:
+                payload = parse_canonical_json_bytes_antigravity(path.read_bytes())
+            except (OSError, ValueError) as error:
+                raise ValueError(f"progress {label} is invalid") from error
+            if not isinstance(payload, Mapping):
+                raise ValueError(f"progress {label} is invalid")
+            return payload
+
+        progress = read_payload(attempt / "progress_antigravity.json", "state")
+        expected_progress = {
+            "pid", "active", "current_policy", "current_dataset", "active_datasets",
+            "train_total", "train_missing", "train_used", "train_excluded", "test_rows",
+            "target_length", "stage", "backend", "completed", "total", "imported",
+            "recomputed", "success", "abstention", "error", "throughput", "elapsed_seconds",
+            "eta_seconds", "checkpoint", "heartbeat", "latest_error",
+        }
+        if set(progress) != expected_progress:
+            raise ValueError("progress state schema is invalid")
+        if progress["total"] != total:
+            raise ValueError("progress total does not match persisted state")
+        stage = progress["stage"]
+        if stage not in {"interrupted_resumable", "interrupted"} or progress["active"] is not False:
+            raise ValueError("progress attempt is not resumable")
+        if type(progress["pid"]) is not int or progress["pid"] < 1:
+            raise ValueError("progress persisted PID is invalid")
+        if not isinstance(progress["active_datasets"], list) or any(type(item) is not str for item in progress["active_datasets"]):
+            raise ValueError("progress active dataset list is invalid")
+        for field in ("completed", "imported", "recomputed", "success", "abstention", "error"):
+            value = progress[field]
+            if type(value) is not int or value < 0:
+                raise ValueError(f"progress {field} is invalid")
+        if progress["completed"] > total or progress["recomputed"] > progress["completed"]:
+            raise ValueError("progress counters are invalid")
+        if progress["success"] + progress["abstention"] + progress["error"] > progress["completed"]:
+            raise ValueError("progress outcome counters are invalid")
+        for field in ("throughput", "elapsed_seconds"):
+            value = progress[field]
+            if type(value) not in (int, float) or not math.isfinite(float(value)) or value < 0:
+                raise ValueError(f"progress {field} is invalid")
+        if progress["eta_seconds"] is not None:
+            raise ValueError("progress terminal ETA is invalid")
+        if type(progress["checkpoint"]) is not str or not progress["checkpoint"]:
+            raise ValueError("progress checkpoint path is invalid")
+        if checkpoint_path is not None and str(checkpoint_path) != progress["checkpoint"]:
+            raise ValueError("progress checkpoint path changed")
+        if type(progress["backend"]) is not str or not progress["backend"]:
+            raise ValueError("progress backend is invalid")
+        if type(progress["heartbeat"]) is not str or not progress["heartbeat"].endswith("Z"):
+            raise ValueError("progress heartbeat is invalid")
+        latest_error = progress["latest_error"]
+        if latest_error is not None and (type(latest_error) is not str or not latest_error):
+            raise ValueError("progress latest error is invalid")
+        dimension_values: dict[str, int | None] = {}
+        for field in ("train_total", "train_missing", "train_used", "train_excluded", "test_rows", "target_length"):
+            value = progress[field]
+            if value is not None and (type(value) is not int or value < 0):
+                raise ValueError(f"progress dimension {field} is invalid")
+            dimension_values[field] = value
+
+        pid_payload = read_payload(attempt / "pid_antigravity.json", "PID")
+        if set(pid_payload) not in ({"pid", "active", "heartbeat"}, {"pid", "active", "heartbeat", "start_identity"}):
+            raise ValueError("progress PID schema is invalid")
+        if type(pid_payload["pid"]) is not int or pid_payload["pid"] < 1 or pid_payload["pid"] != progress["pid"]:
+            raise ValueError("progress PID identity is invalid")
+        if pid_payload["active"] is not False:
+            raise ValueError("progress process is active")
+        stored_process: ProcessIdentityAntigravity | None = None
+        if "start_identity" in pid_payload:
+            stored_process = ProcessIdentityAntigravity(pid_payload["pid"], pid_payload["start_identity"])
+        if pid_probe is not None:
+            if not callable(pid_probe) or stored_process is None:
+                raise ValueError("progress PID probe identity is invalid")
+            try:
+                if bool(pid_probe(stored_process)):
+                    raise ValueError("progress process is active")
+            except ValueError:
+                raise
+            except BaseException as error:
+                raise ValueError("progress PID probe failed") from error
+
+        if checkpoint_store is not None:
+            checkpoint_completed = getattr(checkpoint_store, "completed_count_antigravity", None)
+            if callable(checkpoint_completed):
+                checkpoint_completed = checkpoint_completed()
+            if checkpoint_completed != progress["completed"]:
+                raise ValueError("progress checkpoint count does not match")
+
+        for filename in ("events_antigravity.jsonl", "text_antigravity.log"):
+            path = attempt / filename
+            if path.is_symlink() or not path.is_file():
+                raise ValueError(f"progress log is invalid: {filename}")
+        if process is None:
+            resumed_pid = os.getpid() if pid is None else pid
+            if type(resumed_pid) is not int or resumed_pid < 1:
+                raise ValueError("progress PID is invalid")
+            process_start_identity: str | None = None
+        else:
+            if pid is not None and pid != process.pid:
+                raise ValueError("progress PID does not match process identity")
+            resumed_pid = process.pid
+            process_start_identity = process.start_identity
+
+        resumed = cls.__new__(cls)
+        resumed._attempt_path = attempt
+        resumed._total = total
+        resumed._pid = resumed_pid
+        resumed._process_start_identity = process_start_identity
+        resumed._checkpoint_path = progress["checkpoint"]
+        resumed._started = time.monotonic() - float(progress["elapsed_seconds"])
+        resumed._active = ()
+        resumed._completed = progress["completed"]
+        resumed._imported = progress["imported"]
+        resumed._recomputed = progress["recomputed"]
+        resumed._success = progress["success"]
+        resumed._abstention = progress["abstention"]
+        resumed._error = progress["error"]
+        resumed._latest_error = latest_error
+        resumed._stage = "resuming"
+        resumed._backend = progress["backend"]
+        resumed._dimensions = dimension_values
+        # The progress JSON is replaced atomically; both append-only logs are
+        # left untouched.  The PID record is then bound to the new owner.
+        resumed._write_progress_antigravity()
+        resumed._write_pid_antigravity(True)
+        return resumed
+
+    @classmethod
+    def reopen_antigravity(cls, *args: object, **kwargs: object) -> "ProgressWriterAntigravity":
+        """Alias for callers that describe the operation as a reopen."""
+        return cls.open_for_resume_antigravity(*args, **kwargs)
+
     def _active_file_antigravity(self, filename: str) -> None:
         path = self._attempt_path / filename
         descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
@@ -96,11 +270,14 @@ class ProgressWriterAntigravity:
         temporary = self._attempt_path / "pid_antigravity.tmp"
         if temporary.exists() or temporary.is_symlink():
             raise ValueError("PID temporary already exists")
-        payload = canonical_json_bytes_antigravity({
+        payload_fields: dict[str, object] = {
             "pid": self._pid,
             "active": active,
             "heartbeat": _utc_now_antigravity(),
-        })
+        }
+        if self._process_start_identity is not None:
+            payload_fields["start_identity"] = self._process_start_identity
+        payload = canonical_json_bytes_antigravity(payload_fields)
         descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
         try:
             _write_all_antigravity(descriptor, payload)
@@ -254,6 +431,8 @@ class ProgressWriterAntigravity:
         self._write_pid_antigravity(True)
 
     def heartbeat_antigravity(self, active: tuple[WorkUnitAntigravity, ...]) -> None:
+        if self._stage in _TERMINAL_PROGRESS_STAGES:
+            raise ValueError("terminal progress is closed")
         self._active = _normalize_active_antigravity(active)
         if self._stage not in {"complete", "error", "failed", "interrupted_resumable", "interrupted"}:
             self._stage = "waiting_for_results"
