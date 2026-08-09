@@ -10,6 +10,7 @@ import math
 import os
 from pathlib import Path
 import re
+from types import MappingProxyType
 
 from .artifacts_antigravity import (
     canonical_json_bytes_antigravity,
@@ -170,6 +171,42 @@ class ProcessIdentityAntigravity:
         if not isinstance(payload, Mapping) or set(payload) != {"pid", "start_identity"}:
             raise ValueError("process identity payload is invalid")
         return cls(payload["pid"], payload["start_identity"])
+
+
+@dataclass(frozen=True)
+class CompletedCheckpointInspectionAntigravity:
+    """Read-only authority for a terminal complete checkpoint.
+
+    This value is deliberately separate from ``Exp443CheckpointStoreAntigravity``
+    resume ownership.  Inspection never probes or replaces the stored PID and
+    never writes state, records, or a process heartbeat.
+    """
+
+    root: Path
+    binding: CheckpointBindingAntigravity
+    units: tuple[WorkUnitAntigravity, ...]
+    process: ProcessIdentityAntigravity
+    record_sha256_prefix: tuple[str, ...]
+    results: Mapping[int, PolicyDatasetResultAntigravity]
+    record_payloads: Mapping[int, Mapping[str, object]]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.root, Path) or self.root.is_symlink() or not self.root.is_dir():
+            raise ValueError("completed checkpoint inspection root is invalid")
+        if type(self.binding) is not CheckpointBindingAntigravity or type(self.process) is not ProcessIdentityAntigravity:
+            raise ValueError("completed checkpoint inspection identity is invalid")
+        if type(self.units) is not tuple or not self.units or tuple(unit.sequence for unit in self.units) != tuple(range(len(self.units))):
+            raise ValueError("completed checkpoint inspection units are invalid")
+        prefix = tuple(self.record_sha256_prefix)
+        if len(prefix) != len(self.units) or any(_SHA256.fullmatch(value or "") is None for value in prefix):
+            raise ValueError("completed checkpoint inspection prefix is invalid")
+        if not isinstance(self.results, Mapping) or set(self.results) != set(range(len(self.units))):
+            raise ValueError("completed checkpoint inspection results are incomplete")
+        if not isinstance(self.record_payloads, Mapping) or set(self.record_payloads) != set(range(len(self.units))):
+            raise ValueError("completed checkpoint inspection records are incomplete")
+        object.__setattr__(self, "record_sha256_prefix", prefix)
+        object.__setattr__(self, "results", MappingProxyType(dict(self.results)))
+        object.__setattr__(self, "record_payloads", MappingProxyType({int(k): MappingProxyType(dict(v)) for k, v in self.record_payloads.items()}))
 
 
 def _validate_units_antigravity(units: Sequence[WorkUnitAntigravity]) -> tuple[WorkUnitAntigravity, ...]:
@@ -491,6 +528,74 @@ class Exp443CheckpointStoreAntigravity:
             },
         )
 
+    @classmethod
+    def inspect_complete_antigravity(
+        cls,
+        root: Path,
+    ) -> CompletedCheckpointInspectionAntigravity:
+        """Validate a complete checkpoint without changing ownership or bytes.
+
+        Unlike ``open_for_resume_antigravity`` this seam does not accept a
+        replacement process, call a PID probe, rewrite state, clear a temp, or
+        otherwise mutate the checkpoint.  It is the sole Task 9 entry point for
+        replaying a completed 57-record prefix.
+        """
+        root = Path(root)
+        context_path, state_path, records_path = _root_paths_antigravity(root)
+        if not root.is_dir() or root.is_symlink() or not records_path.is_dir() or records_path.is_symlink():
+            raise ValueError("checkpoint root is invalid")
+        context_payload, context_bytes = _read_canonical_antigravity(context_path)
+        if not isinstance(context_payload, Mapping) or set(context_payload) != {"binding", "units"}:
+            raise ValueError("checkpoint context is invalid")
+        binding = CheckpointBindingAntigravity.from_payload_antigravity(context_payload["binding"])
+        if not isinstance(context_payload["units"], list):
+            raise ValueError("checkpoint units are invalid")
+        units = _validate_units_antigravity(tuple(WorkUnitAntigravity.from_payload_antigravity(item) for item in context_payload["units"]))
+        state_payload, _ = _read_canonical_antigravity(state_path)
+        if not isinstance(state_payload, Mapping):
+            raise ValueError("checkpoint state is invalid")
+        expected_state = {"context_sha256", "status", "completed_count", "record_sha256_prefix", "error_sequence", "process", "updated_at"}
+        if set(state_payload) != expected_state or state_payload["context_sha256"] != hashlib.sha256(context_bytes).hexdigest():
+            raise ValueError("checkpoint state identity is invalid")
+        _timestamp_antigravity(state_payload["updated_at"], "checkpoint heartbeat")
+        if state_payload["status"] != "complete" or state_payload["error_sequence"] is not None:
+            raise ValueError("checkpoint attempt is not complete")
+        process = ProcessIdentityAntigravity.from_payload_antigravity(state_payload["process"])
+        completed = state_payload["completed_count"]
+        prefix_value = state_payload["record_sha256_prefix"]
+        if type(completed) is not int or completed != len(units) or not isinstance(prefix_value, list):
+            raise ValueError("checkpoint complete prefix is invalid")
+        if len(prefix_value) != completed or any(_SHA256.fullmatch(value or "") is None for value in prefix_value):
+            raise ValueError("checkpoint complete prefix is invalid")
+        temporary = state_path.with_name("state_antigravity.tmp")
+        if temporary.exists() or temporary.is_symlink():
+            raise ValueError("checkpoint state temporary is unexpected")
+        prefix, error_sequence = _validate_record_inventory_antigravity(records_path, units, tuple(prefix_value), None)
+        if error_sequence is not None or prefix != tuple(prefix_value) or len(prefix) != len(units):
+            raise ValueError("checkpoint complete records are invalid")
+        results: dict[int, PolicyDatasetResultAntigravity] = {}
+        records: dict[int, Mapping[str, object]] = {}
+        for sequence, unit in enumerate(units):
+            payload, encoded = _read_canonical_antigravity(_record_path_antigravity(records_path, sequence))
+            if not isinstance(payload, Mapping) or payload.get("status") not in {"scored", "abstained"}:
+                raise ValueError("checkpoint complete record is invalid")
+            result = PolicyDatasetResultAntigravity.from_payload(payload["result"])
+            if result.policy != unit.policy or result.dataset != unit.dataset:
+                raise ValueError("checkpoint complete result identity is invalid")
+            if hashlib.sha256(encoded).hexdigest() != prefix[sequence]:
+                raise ValueError("checkpoint complete record hash changed")
+            results[sequence] = result
+            records[sequence] = payload
+        return CompletedCheckpointInspectionAntigravity(
+            root=root,
+            binding=binding,
+            units=units,
+            process=process,
+            record_sha256_prefix=prefix,
+            results=results,
+            record_payloads=records,
+        )
+
     def _require_next_antigravity(self, sequence: int, unit: WorkUnitAntigravity) -> None:
         if self._status in {"error", "complete"}:
             raise ValueError("checkpoint is terminal")
@@ -694,6 +799,7 @@ def _validate_record_payload_antigravity(
 
 __all__ = [
     "CheckpointBindingAntigravity",
+    "CompletedCheckpointInspectionAntigravity",
     "Exp443CheckpointStoreAntigravity",
     "ProcessIdentityAntigravity",
     "WorkUnitAntigravity",
