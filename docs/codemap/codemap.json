@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T01:55:39Z",
-  "generated_from_commit": "ed71fe52b3ae82f08debd7e997098ae90ee18b22",
+  "generated_at": "2026-08-09T02:15:03Z",
+  "generated_from_commit": "6161bc38912bde5f75ccbf999a7b9caa4b7ef059",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -34,7 +34,8 @@
     "Official Exp442 readiness, 1,117-record CPU replay, immutable prediction publication, post-freeze retrospective evaluation, verified improvement, and paused review-only handoff",
     "Approved, pre-implementation Exp443 three-policy missing normal TRAIN comparison design with frozen MiniROCKET replay, label firewall, and full-population retrospective gates",
     "Exp443 approved 13-task, 98-check implementation plan: exact Exp249 MiniROCKET control replay, three normal-TRAIN missing policies, pinned Python 3.14.6/aeon 1.5.0/NumPy 2.3.5/scikit-learn 1.8.0 environment, 11-worker ordered 57-unit checkpoint, three label-free prediction freezes, post-freeze paired evaluation, and mandatory pause before Exp444",
-    "Exp443 isolated environment, frozen contracts, and create-only artifact boundary"
+    "Exp443 isolated environment, frozen contracts, and create-only artifact boundary",
+    "Exp443 review-round fixes: pre-existing venv immutability, exact checkpoint identity, one-thread evidence, and truthful optional accelerator probes"
   ],
   "nodes": [
     {
@@ -522,24 +523,30 @@
     },
     {
       "id": "exp417_contracts",
-      "label": "Exp417 scientific contracts",
+      "label": "Exp417 contracts + checkpoint foundation",
       "type": "data",
       "boundary": "Exp417 foundation",
       "layer": 1,
-      "path": "experiments/exp417_causal_multihorizon_shadow/contracts.py",
-      "role": "Defines frozen run context, raw TRAIN/TEST structures, processed groups, model evidence and dataset results.",
+      "path": "experiments/exp417_causal_multihorizon_shadow",
+      "role": "Groups the Exp417 low-level contract and checkpoint store under one foundation boundary: frozen run context, raw TRAIN/TEST structures, processed groups, model evidence, dataset results, progress, and crash-recovery state.",
       "entrypoints": [
         "FrozenRunContext",
         "RawTrainDataset",
         "ProcessedGroup",
-        "DatasetResult"
+        "DatasetResult",
+        "Exp417CheckpointStore",
+        "canonical_result_sha256",
+        "_record_from_bytes"
       ],
       "tests": [
-        "experiments/exp417_causal_multihorizon_shadow/tests/test_contracts.py"
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_contracts.py",
+        "experiments/exp417_causal_multihorizon_shadow/tests/test_checkpoints.py"
       ],
       "constraints": [
         "Frozen immutable scientific structures",
-        "TRAIN and TEST structures are distinct"
+        "TRAIN and TEST structures are distinct",
+        "Descriptor and inode checks",
+        "Atomic no-clobber publication"
       ],
       "evidence": [
         {
@@ -549,6 +556,14 @@
         {
           "path": "experiments/exp417_causal_multihorizon_shadow/contracts.py",
           "symbol": "RawTrainDataset"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "Exp417CheckpointStore"
+        },
+        {
+          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
+          "symbol": "canonical_result_sha256"
         }
       ]
     },
@@ -626,37 +641,6 @@
         {
           "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
           "symbol": "fit_final_seed_models"
-        }
-      ]
-    },
-    {
-      "id": "exp417_checkpoint",
-      "label": "Exp417 checkpoint store",
-      "type": "storage",
-      "boundary": "Exp417 foundation",
-      "layer": 4,
-      "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
-      "role": "Persists and verifies Exp417 contexts, dataset results, progress and crash-recovery state.",
-      "entrypoints": [
-        "Exp417CheckpointStore",
-        "canonical_result_sha256",
-        "_record_from_bytes"
-      ],
-      "tests": [
-        "experiments/exp417_causal_multihorizon_shadow/tests/test_checkpoints.py"
-      ],
-      "constraints": [
-        "Descriptor and inode checks",
-        "Atomic no-clobber publication"
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
-          "symbol": "Exp417CheckpointStore"
-        },
-        {
-          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
-          "symbol": "canonical_result_sha256"
         }
       ]
     },
@@ -3590,18 +3574,7 @@
       ]
     },
     {
-      "from": "exp417_checkpoint",
-      "to": "exp417_contracts",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
-          "symbol": "from .contracts import"
-        }
-      ]
-    },
-    {
-      "from": "exp417_checkpoint",
+      "from": "exp417_contracts",
       "to": "artifact_utils",
       "type": "imports",
       "evidence": [
@@ -3635,7 +3608,7 @@
     },
     {
       "from": "exp425_predecessor",
-      "to": "exp417_checkpoint",
+      "to": "exp417_contracts",
       "type": "imports",
       "evidence": [
         {
@@ -3701,7 +3674,7 @@
     },
     {
       "from": "exp426_intake_parallel",
-      "to": "exp417_checkpoint",
+      "to": "exp417_contracts",
       "type": "imports",
       "evidence": [
         {
