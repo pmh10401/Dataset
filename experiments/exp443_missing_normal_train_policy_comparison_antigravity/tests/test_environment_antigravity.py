@@ -150,6 +150,55 @@ class Exp443EnvironmentAntigravityTests(unittest.TestCase):
             self.assertIn("refusing", result.stderr.lower())
             self.assertEqual(before, after)
 
+    def test_fresh_default_freeze_validation_cleans_fixture_temp_on_success_and_failure(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp443_fresh_freeze_antigravity_") as temporary:
+            root = Path(temporary)
+            lock = root / "requirements_lock_antigravity.txt"
+            payload = root / "freeze_payload_antigravity.txt"
+            fake_python = root / "python_antigravity"
+            freeze_path = root / "default_freeze_antigravity.tmp"
+            lock.write_text("a==2\nz==1\n", encoding="utf-8")
+            payload.write_text("z==1\na==2\n", encoding="utf-8")
+            fake_python.write_text(
+                "#!/bin/sh\n"
+                "if [ \"$3\" = freeze ]; then cat \"%s\"; else exit 7; fi\n" % payload,
+                encoding="utf-8",
+            )
+            fake_python.chmod(0o755)
+            command = 'source "$1"; exp443_validate_fresh_freeze_antigravity "$2" "$3" "$4"'
+            success = subprocess.run(
+                ["bash", "-c", command, "bash", str(_SCRIPT), str(fake_python), str(lock), str(freeze_path)],
+                cwd=_REPO_ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(success.returncode, 0, success.stderr)
+            self.assertFalse(freeze_path.exists())
+
+            payload.write_text("wrong==9\n", encoding="utf-8")
+            failure = subprocess.run(
+                ["bash", "-c", command, "bash", str(_SCRIPT), str(fake_python), str(lock), str(freeze_path)],
+                cwd=_REPO_ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertNotEqual(failure.returncode, 0)
+            self.assertIn("fresh Exp443 freeze validation", failure.stderr)
+            self.assertFalse(freeze_path.exists())
+
+    def test_bootstrap_freeze_failure_cleans_fixture_temp_without_lock(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp443_bootstrap_freeze_antigravity_") as temporary:
+            root = Path(temporary)
+            lock = root / "requirements_lock_antigravity.txt"
+            fake_python = root / "python_antigravity"
+            fake_python.write_text("#!/bin/sh\nexit 7\n", encoding="utf-8")
+            fake_python.chmod(0o755)
+            command = 'source "$1"; exp443_bootstrap_lock_antigravity "$2" "$3"'
+            failure = subprocess.run(
+                ["bash", "-c", command, "bash", str(_SCRIPT), str(fake_python), str(lock)],
+                cwd=_REPO_ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertNotEqual(failure.returncode, 0)
+            self.assertIn("fresh Exp443 bootstrap freeze failed", failure.stderr)
+            self.assertFalse(lock.exists())
+            self.assertEqual(list(root.glob("requirements_lock_antigravity.txt.tmp.*")), [])
+
 
 if __name__ == "__main__":
     unittest.main()

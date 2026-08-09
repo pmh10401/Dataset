@@ -13,6 +13,97 @@ LOCK_REQUIREMENTS="${REPO_ROOT}/experiments/exp443_missing_normal_train_policy_c
 VENV_ROOT="/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314"
 PYTHON_BIN="/usr/local/bin/python3.14"
 BOOTSTRAP_FLAG="--bootstrap-lock-antigravity"
+EXP443_FREEZE_PATH_ANTIGRAVITY=""
+
+exp443_cleanup_freeze_antigravity() {
+  local status="${1:-$?}"
+  local freeze_path="${EXP443_FREEZE_PATH_ANTIGRAVITY:-}"
+  trap - EXIT HUP INT TERM
+  EXP443_FREEZE_PATH_ANTIGRAVITY=""
+  if [[ -n "$freeze_path" ]] && ! rm -f -- "$freeze_path"; then
+    status=1
+  fi
+  return "$status"
+}
+
+exp443_freeze_signal_antigravity() {
+  local status="$1"
+  exp443_cleanup_freeze_antigravity "$status" || true
+  exit "$status"
+}
+
+exp443_install_freeze_traps_antigravity() {
+  trap 'exp443_cleanup_freeze_antigravity' EXIT
+  trap 'exp443_freeze_signal_antigravity 129' HUP
+  trap 'exp443_freeze_signal_antigravity 130' INT
+  trap 'exp443_freeze_signal_antigravity 143' TERM
+}
+
+exp443_validate_fresh_freeze_antigravity() {
+  local venv_python="${1:-}"
+  local lock_requirements="${2:-}"
+  local actual_freeze="${3:-}"
+  if [[ -z "$venv_python" || -z "$lock_requirements" || -z "$actual_freeze" ]]; then
+    printf '%s\n' "usage: exp443_validate_fresh_freeze_antigravity PYTHON LOCK FREEZE_PATH" >&2
+    return 2
+  fi
+  EXP443_FREEZE_PATH_ANTIGRAVITY="$actual_freeze"
+  exp443_install_freeze_traps_antigravity
+  local status=0
+  if ! "$venv_python" -m pip freeze --all | LC_ALL=C sort > "$actual_freeze"; then
+    printf '%s\n' "fresh Exp443 freeze validation failed while collecting freeze" >&2
+    status=1
+  elif ! cmp -s "$lock_requirements" "$actual_freeze"; then
+    printf '%s\n' "fresh Exp443 freeze validation does not match the lock" >&2
+    diff -u "$lock_requirements" "$actual_freeze" >&2 || true
+    status=1
+  fi
+  if exp443_cleanup_freeze_antigravity "$status"; then
+    :
+  else
+    status=$?
+  fi
+  return "$status"
+}
+
+exp443_bootstrap_lock_antigravity() {
+  local venv_python="${1:-}"
+  local lock_requirements="${2:-}"
+  if [[ -z "$venv_python" || -z "$lock_requirements" ]]; then
+    printf '%s\n' "usage: exp443_bootstrap_lock_antigravity PYTHON LOCK" >&2
+    return 2
+  fi
+  if [[ -e "$lock_requirements" ]]; then
+    printf '%s\n' "bootstrap lock already exists; refusing overwrite" >&2
+    return 1
+  fi
+  local tmp_lock="${lock_requirements}.tmp.$$"
+  EXP443_FREEZE_PATH_ANTIGRAVITY="$tmp_lock"
+  exp443_install_freeze_traps_antigravity
+  local status=0
+  if ! "$venv_python" -m pip freeze --all | LC_ALL=C sort > "$tmp_lock"; then
+    printf '%s\n' "fresh Exp443 bootstrap freeze failed while collecting freeze" >&2
+    status=1
+  elif [[ ! -s "$tmp_lock" ]]; then
+    printf '%s\n' "fresh Exp443 bootstrap freeze failed with an empty lock" >&2
+    status=1
+  elif ! ( set -C; : > "$lock_requirements" ) 2>/dev/null; then
+    printf '%s\n' "lock appeared concurrently; refusing overwrite" >&2
+    status=1
+  elif ! mv "$tmp_lock" "$lock_requirements"; then
+    rm -f -- "$lock_requirements"
+    printf '%s\n' "fresh Exp443 bootstrap lock publication failed" >&2
+    status=1
+  else
+    EXP443_FREEZE_PATH_ANTIGRAVITY=""
+  fi
+  if exp443_cleanup_freeze_antigravity "$status"; then
+    :
+  else
+    status=$?
+  fi
+  return "$status"
+}
 
 exp443_validate_existing_venv_antigravity() {
   local venv_root="${1:-}"
@@ -79,23 +170,13 @@ PY
     printf '%s\n' "existing Exp443 environment does not match the lock metadata; refusing overwrite" >&2
     return 1
   fi
-  local actual_freeze="${lock_requirements}.preflight.$$"
   if ! "$venv_python" -m pip check; then
-    rm -f "$actual_freeze"
     printf '%s\n' "existing Exp443 environment failed pip check; refusing overwrite" >&2
     return 1
   fi
-  if ! "$venv_python" -m pip freeze --all | LC_ALL=C sort > "$actual_freeze"; then
-    rm -f "$actual_freeze"
-    printf '%s\n' "existing Exp443 environment freeze failed; refusing overwrite" >&2
+  if ! exp443_validate_fresh_freeze_antigravity "$venv_python" "$lock_requirements" "${lock_requirements}.preflight.$$"; then
     return 1
   fi
-  if ! cmp -s "$lock_requirements" "$actual_freeze"; then
-    rm -f "$actual_freeze"
-    printf '%s\n' "existing Exp443 environment does not match the byte-identical sorted lock; refusing overwrite" >&2
-    return 1
-  fi
-  rm -f "$actual_freeze"
   return 0
 }
 
@@ -178,28 +259,13 @@ exp443_main_antigravity() {
   if (( bootstrap == 1 )); then
     "$venv_python" -m pip install --disable-pip-version-check --no-input --no-cache-dir --requirement "$DIRECT_REQUIREMENTS"
     "$venv_python" -m pip check
-    local tmp_lock="${LOCK_REQUIREMENTS}.tmp.$$"
-    trap 'rm -f "$tmp_lock"' EXIT HUP INT TERM
-    "$venv_python" -m pip freeze --all | LC_ALL=C sort > "$tmp_lock"
-    if [[ ! -s "$tmp_lock" ]]; then
-      printf '%s\n' "pip freeze produced an empty Exp443 lock" >&2
+    if ! exp443_bootstrap_lock_antigravity "$venv_python" "$LOCK_REQUIREMENTS"; then
       return 1
     fi
-    if ! ( set -C; : > "$LOCK_REQUIREMENTS" ) 2>/dev/null; then
-      printf '%s\n' "lock appeared concurrently; refusing overwrite" >&2
-      return 1
-    fi
-    mv "$tmp_lock" "$LOCK_REQUIREMENTS"
-    trap - EXIT HUP INT TERM
   else
     "$venv_python" -m pip install --disable-pip-version-check --no-input --no-cache-dir --no-deps --requirement "$LOCK_REQUIREMENTS"
     "$venv_python" -m pip check
-    local actual_freeze="${LOCK_REQUIREMENTS}.freeze.$$"
-    trap 'rm -f "$actual_freeze"' EXIT HUP INT TERM
-    "$venv_python" -m pip freeze --all | LC_ALL=C sort > "$actual_freeze"
-    if ! cmp -s "$LOCK_REQUIREMENTS" "$actual_freeze"; then
-      printf '%s\n' "installed Exp443 environment does not match the byte-identical sorted lock" >&2
-      diff -u "$LOCK_REQUIREMENTS" "$actual_freeze" >&2 || true
+    if ! exp443_validate_fresh_freeze_antigravity "$venv_python" "$LOCK_REQUIREMENTS" "${LOCK_REQUIREMENTS}.freeze.$$"; then
       return 1
     fi
   fi
