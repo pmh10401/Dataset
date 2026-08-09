@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T21:35:00Z",
-  "generated_from_commit": "b6354c52",
+  "generated_at": "2026-08-09T21:45:08Z",
+  "generated_from_commit": "8b9201ff",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -498,7 +498,7 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"active_phase\": \"official_evaluated_paused_for_direction\""
+          "symbol": "\"status\": \"official_evaluated_no_retrospective_improvement_signal_cleanup_error\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -506,7 +506,7 @@
         },
         {
           "path": "RESEARCH_STATE.json",
-          "symbol": "\"exact_next_command_if_interrupted\": \"discuss_exp443_result_before_any_exp444_work\""
+          "symbol": "\"exact_next_command\": \"discuss_exp443_result_before_any_exp444_work\""
         },
         {
           "path": "EXPERIMENT_CATALOG.json",

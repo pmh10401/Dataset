@@ -1,7 +1,7 @@
 {
-  "current_commit": "b6354c52",
+  "current_commit": "8b9201ff",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-09T21:35:00Z",
+  "generated_at": "2026-08-09T21:45:08Z",
   "scanned_scope": [
     "tracked root files",
     ".superpowers",
@@ -69,8 +69,5 @@
       "tracked_files": 81
     }
   },
-  "changed_modules_since_prior_lock": [
-    "docs",
-    "root"
-  ]
+  "changed_modules_since_prior_lock": []
 }
