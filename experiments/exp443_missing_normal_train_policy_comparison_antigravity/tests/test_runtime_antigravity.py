@@ -59,6 +59,32 @@ class _FakeExecutor:
 
 
 class RuntimeAntigravityTests(unittest.TestCase):
+    def test_resume_target_is_one_explicit_safe_attempt_directory(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
+            _resume_attempt_root_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="exp443_resume_target_antigravity_") as temporary:
+            root = Path(temporary)
+            attempts = root / "attempts_antigravity"
+            attempts.mkdir()
+            first = attempts / "attempt_0000_antigravity"
+            second = attempts / "attempt_0001_antigravity"
+            first.mkdir()
+            second.mkdir()
+            self.assertEqual(
+                _resume_attempt_root_antigravity(root, "attempt_0000_antigravity"),
+                first,
+            )
+            for invalid in (
+                "/tmp/attempt_0000_antigravity", "../attempt_0000_antigravity",
+                "attempt_0_antigravity", "attempt_0000", "attempt_0000_antigravity/..",
+            ):
+                with self.assertRaises(ValueError, msg=invalid):
+                    _resume_attempt_root_antigravity(root, invalid)
+            with self.assertRaisesRegex(ValueError, "absent"):
+                _resume_attempt_root_antigravity(root, "attempt_9999_antigravity")
+
     def test_worker_initializer_sets_all_six_numerical_thread_variables(self) -> None:
         from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
             _worker_initializer_antigravity,
