@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T03:50:39Z",
-  "generated_from_commit": "433c3e43074692d4fec41c215a08495c2f829e1e",
+  "generated_at": "2026-08-09T04:04:06Z",
+  "generated_from_commit": "624767f84bda221c066ed081eeee45e7522ebd4c",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -40,7 +40,8 @@
     "Exp443 review-round 3: centralized fresh-path freeze cleanup with signal-safe trap scope",
     "Exp443 review-round 5: same-directory complete temporary plus atomic hard-link no-clobber bootstrap-lock publication across signal windows",
     "Exp443 Task 3: descriptor-bound raw DB pin, exact prediction SQL allowlist, inherited Exp249/291/404/414 source hashes, and real missing inventory",
-    "Exp443 Task 3 review round 1: execution-time SQL gate, adversarial TOCTOU/cache fixtures, exact 1,119-to-1,117 population authority, and deeply immutable source evidence"
+    "Exp443 Task 3 review round 1: execution-time SQL gate, adversarial TOCTOU/cache fixtures, exact 1,119-to-1,117 population authority, and deeply immutable source evidence",
+    "Exp443 Task 3 review round 2: closure-private sqlite facades, corrected authorizer table/column ordering, and zero actual TEST-label access on denied attempts"
   ],
   "nodes": [
     {
@@ -3517,7 +3518,7 @@
         "Environment evidence preserves optional torch/mlx versions as string-or-null and MPS capability as bool-or-null; forged payload types fail closed.",
         "Fresh default cleanup centrally clears EXIT/HUP/INT/TERM traps. Bootstrap creates a uniquely owned antigravity temporary beside the final lock, hard-links its complete bytes into the absent final name without replacement, then cleans only that temporary; signals before linking leave no final lock and signals after linking retain complete final bytes.",
         "The DB pin is opened O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK, regular/symlink/FIFO checked, descriptor-hashed once against the frozen DB SHA, and retained as an owned same-inode database_pin_antigravity.db hard link.",
-        "Workers receive only validated connection/cursor facades: exact normalized SQL plus parameter contracts are checked before raw execute, authorizer blocks labels_blob/evaluation/TEST-label reads, denied attempts are audited, and source/pin boundaries are revalidated after query.",
+        "Workers receive only closure-private validated connection/cursor facades: no raw sqlite object is reachable through attributes, properties, cursor.connection, iteration, or fetch APIs; exact normalized SQL plus parameter contracts are checked before raw execute, corrected authorizer table/column ordering blocks labels_blob/evaluation/TEST-label reads except the exact active normal-TRAIN statement, denied attempts are audited with zero actual TEST-label access, and source/pin boundaries are revalidated after query.",
         "The population query proves 1,119 sorted DB names, removes exactly frozen CornellWhaleChallenge and Wafer_normal_1, then requires exact equality with the supplied/frozen 1,117 names; every eligible TEST count and contiguous identity matches Exp291 and cache n_test authority.",
         "Inherited sources are read from descriptor-pinned bytes with duplicate-key rejection, exact hashes/counts/schemas, full 14-column cache fixtures, allow_pickle=False NPZs backed by immutable bytes, missing/extra inventory rejection, malformed/out-of-range coordinate rejection, and Exp291/Exp404 Hard equality.",
         "The real scan proves 1,117 datasets, 19 affected datasets, 4 families, 164 rows, 983 nonfinite scalars, zero all-missing rows, affected-dataset SHA ca376adad36fd68e65ea54e004fcb1e5288b3e7d243304b56def507ec17aa9b9, and zero label access."
@@ -3622,6 +3623,10 @@
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
           "symbol": "def test_worker_execute_gate_denies_before_raw_execution_and_audits(self) -> None:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_facades_have_no_raw_escape_and_authorizer_binds_label_reads(self) -> None:"
         },
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
