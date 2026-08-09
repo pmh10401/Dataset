@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T04:13:32Z",
-  "generated_from_commit": "a442de8e2be7f11d7e09d51dbb51b6848cf2c6f6",
+  "generated_at": "2026-08-09T04:37:44Z",
+  "generated_from_commit": "8649989a00f55e626f9b6b57bef5d8cde1d63542",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -42,7 +42,8 @@
     "Exp443 Task 3: descriptor-bound raw DB pin, exact prediction SQL allowlist, inherited Exp249/291/404/414 source hashes, and real missing inventory",
     "Exp443 Task 3 review round 1: execution-time SQL gate, adversarial TOCTOU/cache fixtures, exact 1,119-to-1,117 population authority, and deeply immutable source evidence",
     "Exp443 Task 3 review round 2: closure-private sqlite facades, corrected authorizer table/column ordering, and zero actual TEST-label access on denied attempts",
-    "Exp443 Task 3 review round 3: zero-state __slots__ facades with closure-only sqlite methods, context-owned raw lifecycle, and reflective no-bound-method escape coverage"
+    "Exp443 Task 3 review round 3: zero-state __slots__ facades with closure-only sqlite methods, context-owned raw lifecycle, and reflective no-bound-method escape coverage",
+    "Exp443 Task 4: ragged raw-row support, fixed TEST preprocessing, three normal-TRAIN policies, immutable policy audits, and all-19 Policy A foundation parity"
   ],
   "nodes": [
     {
@@ -3466,7 +3467,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity",
-      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels.",
+      "role": "Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation.",
       "entrypoints": [
         "frozen_config_payload_antigravity",
         "scientific_config_sha256_antigravity",
@@ -3500,7 +3501,18 @@
         "PinnedDatabaseAntigravity",
         "RawDatasetAntigravity",
         "MissingInventoryAntigravity",
-        "FrozenSourceSnapshotAntigravity"
+        "FrozenSourceSnapshotAntigravity",
+        "POLICY_A_ANTIGRAVITY",
+        "POLICY_B_ANTIGRAVITY",
+        "POLICY_C_ANTIGRAVITY",
+        "POLICIES_ANTIGRAVITY",
+        "PreprocessingAuditAntigravity",
+        "PreparedTrainAntigravity",
+        "PreparedDatasetAntigravity",
+        "original_target_length_antigravity",
+        "repair_linear_edge_nearest_antigravity",
+        "apply_train_policy_antigravity",
+        "prepare_dataset_antigravity"
       ],
       "tests": [
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_config_antigravity.py",
@@ -3508,7 +3520,8 @@
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_artifacts_antigravity.py",
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_environment_antigravity.py",
         "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
-        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py"
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
+        "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py"
       ],
       "constraints": [
         "Direct requirements are exactly aeon 1.5.0, NumPy 2.3.5, and scikit-learn 1.8.0; the complete sorted lock is bound by SHA256 bb2de6e2696a3f0d92480f0215b15bdaf6d89375210dd4be48257cfa6b44d548.",
@@ -3523,7 +3536,12 @@
         "Round-3 facades are dynamic zero-state __slots__ classes: every non-dunder callable closes over a raw handle without storing it or a raw bound method, cursor.connection returns only the validated connection facade, and the context manager alone owns raw cursor/connection shutdown.",
         "The population query proves 1,119 sorted DB names, removes exactly frozen CornellWhaleChallenge and Wafer_normal_1, then requires exact equality with the supplied/frozen 1,117 names; every eligible TEST count and contiguous identity matches Exp291 and cache n_test authority.",
         "Inherited sources are read from descriptor-pinned bytes with duplicate-key rejection, exact hashes/counts/schemas, full 14-column cache fixtures, allow_pickle=False NPZs backed by immutable bytes, missing/extra inventory rejection, malformed/out-of-range coordinate rejection, and Exp291/Exp404 Hard equality.",
-        "The real scan proves 1,117 datasets, 19 affected datasets, 4 families, 164 rows, 983 nonfinite scalars, zero all-missing rows, affected-dataset SHA ca376adad36fd68e65ea54e004fcb1e5288b3e7d243304b56def507ec17aa9b9, and zero label access."
+        "The real scan proves 1,117 datasets, 19 affected datasets, 4 families, 164 rows, 983 nonfinite scalars, zero all-missing rows, affected-dataset SHA ca376adad36fd68e65ea54e004fcb1e5288b3e7d243304b56def507ec17aa9b9, and zero label access.",
+        "RawDatasetAntigravity preserves non-empty ragged float32 TRAIN/TEST rows; Task 4 computes a clipped median target from original normal TRAIN lengths before any repair or exclusion.",
+        "TEST values always use linear interpolation with nearest finite edge extension, alignment, and float32 row-wise z-normalization; all three policy outputs are byte-identical on TEST.",
+        "Policy A repairs NaN/+Inf/-Inf exactly like Exp226/Exp249; Policy B excludes complete nonfinite rows with dataset/index/length/positions/missing-mask SHA/raw-blob SHA audits and abstains below five used rows without zero filling.",
+        "Policy C uses only other same-original-length normal TRAIN rows, ordinary NumPy per-coordinate finite-peer medians with self-exclusion, and whole-row exclusion when any missing coordinate lacks support; no mask feature or name-specific branch is available.",
+        "Prepared matrices are finite little-endian float32 arrays backed by immutable bytes; finite original TRAIN rows retain order and byte identity across A/B/C, and all-19 Policy A TRAIN/TEST bytes equal experiments.exp239_248_diverse_score_sources.foundation.load_bundle."
       ],
       "evidence": [
         {
@@ -3641,6 +3659,50 @@
         {
           "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_sources_antigravity.py",
           "symbol": "def test_cache_arrays_and_snapshot_are_deeply_immutable_and_typed(self) -> None:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "def original_target_length_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "def repair_linear_edge_nearest_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "def apply_train_policy_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "def prepare_dataset_antigravity("
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "class PreprocessingAuditAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/preprocessing_antigravity.py",
+          "symbol": "class PreparedDatasetAntigravity:"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
+          "symbol": "class Exp443PreprocessingAntigravityTests"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_preprocessing_antigravity.py",
+          "symbol": "def test_real_19_dataset_policy_invariants_are_label_free"
+        },
+        {
+          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/tests/test_database_antigravity.py",
+          "symbol": "def test_raw_loader_preserves_ragged_float32_lengths_and_values"
+        },
+        {
+          "path": "experiments/exp226_235_hard_alert_quality/preprocessing.py",
+          "symbol": "def sanitize_series(values: np.ndarray)"
+        },
+        {
+          "path": "experiments/exp239_248_diverse_score_sources/foundation.py",
+          "symbol": "def load_bundle(dataset: str, path: Path = DB_PATH)"
         }
       ]
     }
