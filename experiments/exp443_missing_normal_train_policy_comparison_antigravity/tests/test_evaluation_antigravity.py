@@ -212,6 +212,133 @@ class EvaluationAntigravityTests(unittest.TestCase):
         self.assertEqual(set(parsed["files"]), set(payloads))
         self.assertEqual(parsed["files"]["decision_antigravity.json"], sha256(b"{}\n").hexdigest())
 
+    def test_public_compute_rejects_nonreproduced_official_baseline(self) -> None:
+        datasets = tuple(f"Family_normal_{index:04d}" for index in range(FROZEN_CONFIG.dataset_count))
+        publication_rows = MappingProxyType({
+            policy: tuple(
+                {"dataset": dataset, "n_test": 1, "policy": policy, "final_hard": ()}
+                for dataset in datasets
+            )
+            for policy in POLICIES
+        })
+        labels = evaluation_antigravity.FrozenLabelsAntigravity(
+            datasets=datasets,
+            labels_by_dataset={dataset: (0,) for dataset in datasets},
+            publication_manifest_sha256="a" * 64,
+            prediction_sha256=tuple((policy, str(index + 1) * 64) for index, policy in enumerate(POLICIES)),
+            database_sha256=FROZEN_CONFIG.database_sha256,
+            label_identity_sha256="d" * 64,
+            descriptor_bound_connection_count=1,
+            label_query_calls=FROZEN_CONFIG.dataset_count,
+            label_rows=FROZEN_CONFIG.dataset_count,
+        )
+        source = SimpleNamespace(
+            datasets=datasets,
+            affected_datasets=datasets[: FROZEN_CONFIG.affected_dataset_count],
+            hard_coordinates_exp404=frozenset(),
+            hard_coordinates_exp291=frozenset(),
+            label_access_count=0,
+        )
+        with tempfile.TemporaryDirectory(prefix="exp443_task10_baseline_antigravity_") as temporary:
+            publication = _publication(Path(temporary))
+            with patch.object(evaluation_antigravity, "_publication_rows_antigravity", return_value=publication_rows), \
+                 patch.object(evaluation_antigravity, "verify_frozen_sources_antigravity", return_value=source), \
+                 self.assertRaisesRegex(ValueError, "baseline reproduction"):
+                evaluation_antigravity.compute_policy_evaluation_antigravity(publication, labels)
+
+    def test_full_evaluation_payload_replays_from_rows_without_labels(self) -> None:
+        datasets = tuple(f"Family_normal_{index:04d}" for index in range(FROZEN_CONFIG.dataset_count))
+        labels = {dataset: (0,) for dataset in datasets}
+        coordinates = {dataset: () for dataset in datasets}
+        affected = set(datasets[: FROZEN_CONFIG.affected_dataset_count])
+        policy_results = tuple(
+            evaluation_antigravity._compute_policy_evaluation_for_test_antigravity(
+                policy,
+                coordinates,
+                coordinates,
+                labels,
+                affected,
+                bootstrap_runner=evaluation_antigravity.paired_dataset_bootstrap_antigravity,
+                maximum_fp=FROZEN_CONFIG.baseline_fp,
+                expected_unaffected_count=FROZEN_CONFIG.dataset_count - FROZEN_CONFIG.affected_dataset_count,
+                pre_freeze_label_access_count=0,
+            )
+            for policy in POLICIES
+        )
+        result = evaluation_antigravity.EvaluationResultAntigravity(
+            publication_manifest_sha256="a" * 64,
+            prediction_sha256=tuple((policy, str(index + 1) * 64) for index, policy in enumerate(POLICIES)),
+            database_sha256=FROZEN_CONFIG.database_sha256,
+            label_identity_sha256="d" * 64,
+            label_rows=FROZEN_CONFIG.dataset_count,
+            label_query_calls=FROZEN_CONFIG.dataset_count,
+            policy_results=policy_results,
+        )
+        payloads = evaluation_antigravity._evaluation_payloads_antigravity(result)
+        evaluation_payload = json.loads(payloads["evaluation_antigravity.json"])
+        for summary in evaluation_payload["policy_summaries"]:
+            self.assertEqual(summary["affected_diagnostic"]["dataset_count"], 19)
+            self.assertEqual(summary["unaffected_diagnostic"]["dataset_count"], 1098)
+            self.assertEqual(summary["pre_freeze_label_access_count"], 0)
+            self.assertEqual(summary["error_count"], 0)
+            self.assertEqual(summary["nonfinite_count"], 0)
+        replay = evaluation_antigravity._evaluation_result_from_payloads_antigravity(
+            payloads, _enforce_official_antigravity=False,
+        )
+        self.assertEqual(replay, result)
+        self.assertEqual(
+            {policy.policy: policy.status for policy in replay.policy_results},
+            {policy: "no_retrospective_improvement_signal" for policy in POLICIES},
+        )
+
+    def test_create_only_evaluation_replay_does_not_reopen_labels_or_overwrite(self) -> None:
+        datasets = tuple(f"Family_normal_{index:04d}" for index in range(FROZEN_CONFIG.dataset_count))
+        labels_by_dataset = {dataset: (0,) for dataset in datasets}
+        coordinates = {dataset: () for dataset in datasets}
+        affected = set(datasets[: FROZEN_CONFIG.affected_dataset_count])
+        policy_results = tuple(
+            evaluation_antigravity._compute_policy_evaluation_for_test_antigravity(
+                policy,
+                coordinates,
+                coordinates,
+                labels_by_dataset,
+                affected,
+                bootstrap_runner=lambda rows: _positive_bootstrap(len(rows)),
+                maximum_fp=FROZEN_CONFIG.baseline_fp,
+                expected_unaffected_count=FROZEN_CONFIG.dataset_count - FROZEN_CONFIG.affected_dataset_count,
+                pre_freeze_label_access_count=0,
+            )
+            for policy in POLICIES
+        )
+        result = evaluation_antigravity.EvaluationResultAntigravity(
+            publication_manifest_sha256="a" * 64,
+            prediction_sha256=tuple((policy, str(index + 1) * 64) for index, policy in enumerate(POLICIES)),
+            database_sha256=FROZEN_CONFIG.database_sha256,
+            label_identity_sha256="d" * 64,
+            label_rows=FROZEN_CONFIG.dataset_count,
+            label_query_calls=FROZEN_CONFIG.dataset_count,
+            policy_results=policy_results,
+        )
+        with tempfile.TemporaryDirectory(prefix="exp443_task10_create_only_antigravity_") as temporary:
+            root = Path(temporary)
+            publication = _publication(root)
+            destination = root / "evaluation_antigravity"
+            with patch.object(evaluation_antigravity, "inspect_publication_antigravity", return_value=publication), \
+                 patch.object(evaluation_antigravity, "load_frozen_test_labels_antigravity", return_value=object()) as load_labels, \
+                 patch.object(evaluation_antigravity, "compute_policy_evaluation_antigravity", return_value=result) as compute, \
+                 patch.object(evaluation_antigravity, "_evaluation_result_from_payloads_antigravity", return_value=result):
+                first = evaluation_antigravity.evaluate_publication_antigravity(publication.attempt_path, destination)
+                before = {path.name: path.read_bytes() for path in destination.iterdir()}
+                load_labels.reset_mock()
+                compute.reset_mock()
+                second = evaluation_antigravity.evaluate_publication_antigravity(publication.attempt_path, destination)
+                after = {path.name: path.read_bytes() for path in destination.iterdir()}
+                load_labels.assert_not_called()
+                compute.assert_not_called()
+            self.assertEqual(first, second)
+            self.assertEqual(before, after)
+            self.assertEqual(set(before), set(evaluation_antigravity.EVALUATION_NAMES_ANTIGRAVITY))
+
 
 if __name__ == "__main__":
     unittest.main()
