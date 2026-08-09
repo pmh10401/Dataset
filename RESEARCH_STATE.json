@@ -1,12 +1,12 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-09T11:27:42Z",
+  "updated_at": "2026-08-09T11:52:02Z",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp440-train-only-low-frequency-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
-  "last_verified_commit": "639400a63fa6b5560df0a88624c0471a8d66af06",
+  "last_verified_commit": "c11da5021ba68e1a67a54c661b0e5a29d35da703",
   "active_experiment": "Exp443",
-  "active_phase": "implementation_verified_awaiting_fresh_review",
+  "active_phase": "implementation_verified_awaiting_scoped_rereview",
   "status": "in_progress",
   "dataset_count": 1117,
   "active_documents": {
@@ -18,7 +18,7 @@
   },
   "exp443_missing_train_policy_comparison": {
     "experiment": "Exp443",
-    "status": "implementation_verified_awaiting_fresh_review",
+    "status": "implementation_verified_awaiting_scoped_rereview",
     "reviewed_design_sha256": "b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f9b",
     "run_identity": "exp443-missing-normal-train-policy-comparison-antigravity-20260809",
     "run_root": "/Users/mac/Documents/Dataset/exp443_missing_normal_train_policy_comparison_antigravity_20260809",
@@ -29,8 +29,15 @@
       "leave_one_out_peer_median"
     ],
     "recompute_units": 57,
-    "implementation_commit": "41019f1cb81e8fca16d0c037d5cbe365ecd266dd",
-    "implementation_map_commit": "639400a63fa6b5560df0a88624c0471a8d66af06",
+    "implementation_commit": "c11da5021ba68e1a67a54c661b0e5a29d35da703",
+    "implementation_map_commit": "e59a8db7ff4305da9927e7367d2e44d2d707de40",
+    "first_reviewed_head": "40ddc4e5",
+    "first_review_result": "fix_first",
+    "review_fix_commits": [
+      "943e8ce0",
+      "0639db79",
+      "c11da502"
+    ],
     "reviewed_implementation_commit": null,
     "fresh_sol_high_review": "pending",
     "official_run_started": false,
@@ -39,9 +46,9 @@
     "evaluation_sha256": null,
     "prediction_started": false,
     "test_labels_opened": false,
-    "exact_next_command": "fresh_sol_high_read_only_review_clean_head_639400a63fa6b5560df0a88624c0471a8d66af06",
+    "exact_next_command": "scoped_sol_high_read_only_rereview_current_clean_head",
     "verification": {
-      "exp443_tests_passed": 167,
+      "exp443_tests_passed": 170,
       "exp443_expected_skips": 2,
       "exp249_250_regression_tests_passed": 13,
       "compileall_passed": true,
@@ -689,8 +696,8 @@
     "chlorine_cpu_smoke_seconds": 42.57567008398473,
     "chlorine_prediction_label_access": 0
   },
-  "next_action": "IMPLEMENT_EXP443_FROM_FROZEN_DESIGN_WITH_CONTROL_GATE_FIRST",
-  "exact_next_command_if_interrupted": "bash scripts/create_exp443_environment_antigravity.sh",
+  "next_action": "SCOPED_SOL_HIGH_REREVIEW_EXP443_CURRENT_CLEAN_HEAD",
+  "exact_next_command_if_interrupted": "scoped_sol_high_read_only_rereview_current_clean_head",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": false,
@@ -698,7 +705,7 @@
   "test_labels_opened": false,
   "pre_freeze_label_access_count": 0,
   "evaluation_label_access_phase": "not_started",
-  "pause_reason": "Exp443 is implementation-planning complete and remains review-only; Policy A control reproduction must pass before alternatives or TEST evaluation, and no Exp444 work starts.",
+  "pause_reason": "Exp443 implementation and first-review fixes are verified, but official readiness waits for scoped Sol High ship on the current clean HEAD; TEST labels remain unopened and no Exp444 work starts.",
   "exp440_implementation": {
     "implementation_commit": "178d49bc9f6a418902d28031ee311e8e0270f1e1",
     "status": "official_completed_evaluated_not_promoted",

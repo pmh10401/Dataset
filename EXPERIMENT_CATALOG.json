@@ -629,7 +629,7 @@
     {
       "id": "Exp443",
       "kind": "missing_normal_train_policy_comparison",
-      "status": "implementation_verified_awaiting_fresh_review",
+      "status": "implementation_verified_awaiting_scoped_rereview",
       "documents": [
         "docs/superpowers/specs/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity-design.md",
         "docs/superpowers/plans/2026-08-09-exp443-missing-normal-train-policy-comparison-antigravity.md",
@@ -647,10 +647,17 @@
       "recompute_units": 57,
       "reviewed_design_sha256": "b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f9b",
       "run_identity": "exp443-missing-normal-train-policy-comparison-antigravity-20260809",
-      "implementation_commit": "41019f1cb81e8fca16d0c037d5cbe365ecd266dd",
-      "implementation_map_commit": "639400a63fa6b5560df0a88624c0471a8d66af06",
+      "implementation_commit": "c11da5021ba68e1a67a54c661b0e5a29d35da703",
+      "implementation_map_commit": "e59a8db7ff4305da9927e7367d2e44d2d707de40",
+      "first_reviewed_head": "40ddc4e5",
+      "first_review_result": "fix_first",
+      "review_fix_commits": [
+        "943e8ce0",
+        "0639db79",
+        "c11da502"
+      ],
       "reviewed_implementation_commit": null,
-      "implementation_tests_passed": 167,
+      "implementation_tests_passed": 170,
       "inherited_regression_tests_passed": 13,
       "real_policy_a_control_passed": true,
       "worker_parity_passed": true,
@@ -668,7 +675,7 @@
       "review_only": true,
       "operational_alert_eligible": false,
       "test_informed_reselection_allowed": false,
-      "notes": "구현·167개 전체 회귀·13개 inherited 회귀·실제 19-dataset Policy A control·1-worker/11-worker parity를 통과했고 official root는 아직 없다. fresh Sol High review가 ship하기 전에는 readiness를 실행하지 않는다. 세 policy를 모두 review-only로 보고하고 Exp404/Exp416을 verified reference로 유지하며, 결과 기록 후 Exp444 전에 멈춘다."
+      "notes": "구현·170개 전체 회귀·13개 inherited 회귀·실제 19-dataset Policy A control·1-worker/11-worker parity를 통과했고 official root는 아직 없다. 첫 Sol High 검토의 inspect mutation, wrapper traceback, stale review-target 문제와 추가 DB-pin 재개 순서 문제를 수정했다. 수정된 current clean HEAD가 scoped re-review에서 ship되기 전에는 readiness를 실행하지 않는다. 세 policy를 모두 review-only로 보고하고 Exp404/Exp416을 verified reference로 유지하며, 결과 기록 후 Exp444 전에 멈춘다."
     }
   ]
 }

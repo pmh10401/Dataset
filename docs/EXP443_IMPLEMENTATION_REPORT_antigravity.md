@@ -8,14 +8,16 @@ Exp443의 제품 코드는 구현·회귀·실데이터 label-free 대조 검증
 옵션은 없다. 공식 root는 아직 없고 official prediction 및 TEST-label 평가는
 시작하지 않았다.
 
-이 보고서 시점의 상태는 `implementation_verified_awaiting_fresh_review`다.
-fresh Sol High 검토가 `ship`을 주기 전에는 official readiness를 실행하지 않는다.
+이 보고서 시점의 상태는 `implementation_verified_awaiting_scoped_rereview`다.
+첫 Sol High 검토에서 나온 세 문제를 수정했으며, 수정된 clean HEAD가 다시
+`ship`을 받기 전에는 official readiness를 실행하지 않는다.
 
 ## 구현 경계
 
 - RED CLI 계약 commit: `8d4b345d`
-- CLI/runtime/wrapper source commit: `41019f1c`
-- source-bound code-map commit: `639400a6`
+- review-fix RED commits: `943e8ce0`, `0639db79`
+- reviewed-fix source commit: `c11da5021ba68e1a67a54c661b0e5a29d35da703`
+- source-bound code-map commit: `e59a8db7ff4305da9927e7367d2e44d2d707de40`
 - 고정 wrapper:
   `scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py`
 - 고정 interpreter:
@@ -25,15 +27,32 @@ fresh Sol High 검토가 `ship`을 주기 전에는 official readiness를 실행
 - MLX/MPS 판단: `inapplicable_official_cpu_transformer`; aeon MiniROCKET을
   GPU용으로 다시 쓰지 않는다.
 
-`inspect`는 complete checkpoint에서 세 label-free prediction publication을
-create-only로 만들거나 기존 bytes를 재검증한다. `evaluate`는 그 publication
-검사를 먼저 통과한 뒤에만 `evaluation_antigravity`를 lazy import한다. 다른 네
-명령은 evaluator를 import할 수 없다.
+`new` 또는 `resume`이 57개 계산과 세 prediction을 끝내고 progress를
+`complete`로 기록한 다음 label-free publication을 create-only로 만든다.
+publication 중 실패하면 완료 progress를 오류로 되돌리지 않고 DB pin을 남겨
+같은 attempt를 재개할 수 있다. `inspect`는 기존 publication bytes만 읽어
+재검증하며 아무 파일도 만들지 않는다. `evaluate`는 그 검사를 먼저 통과한
+뒤에만 `evaluation_antigravity`를 lazy import한다. 다른 네 명령은 evaluator를
+import할 수 없다.
+
+## 첫 검토 지적과 수정
+
+clean HEAD `40ddc4e5`의 첫 Sol High 검토는 `fix-first`였다.
+
+- `inspect`가 publication을 만드는 문제: 읽기 전용 검사로 분리했다.
+- 잘못된 Python으로 wrapper를 실행할 때 traceback이 나오는 문제: stderr에
+  단일 `exp443.wrapper-status.v1` JSON만 기록하도록 고쳤다.
+- 상태 문서의 검토 대상이 오래된 commit을 가리키는 문제: 고정된 과거 HEAD
+  문자열 대신 현재 clean HEAD를 재검토 대상으로 삼도록 바꿨다.
+
+추가 자체 검토에서 publication 실패 전에 DB pin을 지울 수 있는 순서 문제도
+발견했다. 이제 `complete progress → publication 성공 → pin 정리` 순서이며,
+publication이 실패하면 같은 attempt를 명시적으로 resume할 수 있다.
 
 ## 자동 검증
 
-- CLI + runtime focused: 19/19 passed.
-- 전체 Exp443: 167 passed, 실데이터 opt-in 2개 expected skip.
+- CLI + runtime + progress focused: 29/29 passed.
+- 전체 Exp443: 170 passed, 실데이터 opt-in 2개 expected skip.
 - inherited Exp249/250 MiniROCKET regression: 13/13 passed.
 - compileall: passed.
 - `git diff --check`: passed.
@@ -82,9 +101,10 @@ create-only로 만들거나 기존 bytes를 재검증한다. `evaluate`는 그 p
 - retrospective evaluation
 - Exp444 설계 또는 실행
 
-## fresh review 뒤의 공식 첫 명령
+## scoped re-review 뒤의 공식 첫 명령
 
-fresh review가 clean HEAD를 `ship`한 뒤 그 정확한 40자 commit을 사용한다.
+scoped re-review가 현재 clean HEAD를 `ship`한 뒤 그 정확한 40자 commit을
+사용한다.
 
 ```bash
 EXP443_REVIEWED_COMMIT_ANTIGRAVITY="$(git rev-parse HEAD)"
@@ -93,6 +113,7 @@ EXP443_REVIEWED_COMMIT_ANTIGRAVITY="$(git rev-parse HEAD)"
   readiness --reviewed-commit "$EXP443_REVIEWED_COMMIT_ANTIGRAVITY"
 ```
 
-공식 실행이 완료되면 prediction을 `inspect`로 동결·재검증하고, 사용자가 완료를
-알린 뒤 한 번만 `evaluate`한다. 결과 기록 후 Exp444를 자동 시작하지 않고 방향
-논의를 위해 멈춘다.
+공식 `new` 또는 `resume`이 성공하면 prediction과 publication은 이미 동결되어
+있다. 그다음 `inspect`로 bytes를 읽기 전용 재검증하고, 사용자가 완료를 알린 뒤
+한 번만 `evaluate`한다. 결과 기록 후 Exp444를 자동 시작하지 않고 방향 논의를
+위해 멈춘다.

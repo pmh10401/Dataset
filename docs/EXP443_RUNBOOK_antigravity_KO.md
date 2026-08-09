@@ -13,9 +13,10 @@ run_identity = exp443-missing-normal-train-policy-comparison-antigravity-2026080
 run_root = /Users/mac/Documents/Dataset/exp443_missing_normal_train_policy_comparison_antigravity_20260809
 ```
 
-이 문서의 명령은 구현·회귀·실데이터 label-free 제어 검증을 통과했다. 다만 fresh
-Sol High 검토가 clean HEAD에 `ship`을 주기 전에는 실행하지 않는다. 현재 official
-root·attempt·prediction·evaluation은 없다. `REVIEWED_COMMIT`은
+이 문서의 명령은 구현·회귀·실데이터 label-free 제어 검증을 통과했다. 첫 Sol
+High 검토의 수정도 완료했지만, 수정된 clean HEAD의 scoped re-review가 `ship`을
+주기 전에는 실행하지 않는다. 현재 official root·attempt·prediction·evaluation은
+없다. `REVIEWED_COMMIT`은
 readiness/new/resume 시점에
 호출자가 넣는 runtime argument일 뿐 preregistration에 저장하는 placeholder가
 아니다.
@@ -49,11 +50,14 @@ ordered `(policy, dataset)` prefix와 payload SHA를 보존한다. 프로세스�
 출력 root를 확인한다. `new`는 가장 작은 absent attempt sequence를 새로 만들고
 기존 실패 attempt를 resume하거나 덮지 않는다. `resume`은 inactive PID, 고정
 input/config/environment hash와 유효 ordered prefix를 검증한 뒤 미완료 unit만
-계산한다. `inspect`는 SQLite label query 없이 publication/checkpoint/source
-bytes를 재검증한다. `evaluate`만 세 prediction freeze 후 TEST label을 열어
-별도 evaluation을 만든다. 실패 root와 staging은 감사 증거로 보존한다.
+계산한다. 성공한 `new`/`resume`은 terminal-complete progress를 먼저 기록하고
+세 prediction publication을 create-only로 만든다. publication 실패 시 DB pin을
+남겨 같은 attempt를 재개한다. `inspect`는 SQLite label query나 파일 생성 없이
+기존 publication/checkpoint/source bytes만 재검증한다. `evaluate`만 세
+prediction freeze 후 TEST label을 열어 별도 evaluation을 만든다. 실패 root와
+staging은 감사 증거로 보존한다.
 
-## 고정 명령 (fresh review 통과 후에만)
+## 고정 명령 (scoped re-review 통과 후에만)
 
 ```bash
 bash scripts/create_exp443_environment_antigravity.sh
@@ -66,7 +70,8 @@ echo $!
 /Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314/bin/python scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py evaluate
 ```
 
-`new`는 위 한 프로세스만 시작한다. Codex가 반복 감시하지 않고 프로세스가 고정
+`new`는 위 한 프로세스만 시작한다. 성공 반환 시 publication까지 이미 만들어져
+있다. Codex가 반복 감시하지 않고 프로세스가 고정
 progress/events/text/PID/checkpoint 파일을 직접 갱신한다. 완료 또는 오류는 사용자가
 알린 뒤 한 번 확인한다. `evaluate`는 complete publication의 세 prediction SHA를
 검사한 이후에만 실행한다.
