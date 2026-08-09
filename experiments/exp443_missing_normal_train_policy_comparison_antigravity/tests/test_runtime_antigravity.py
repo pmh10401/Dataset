@@ -59,6 +59,45 @@ class _FakeExecutor:
 
 
 class RuntimeAntigravityTests(unittest.TestCase):
+    def test_successful_runtime_finalization_publishes_after_terminal_progress(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity import runtime_antigravity
+
+        source = __import__("inspect").getsource(runtime_antigravity._run_exp443_antigravity)
+        self.assertLess(
+            source.index('writer.terminal_antigravity("complete", None)'),
+            source.index("_publish_completed_attempt_antigravity(attempt)"),
+        )
+        calls: list[tuple[str, object]] = []
+
+        def publisher(attempt: Path):
+            calls.append(("publish", attempt))
+            return {"state": "published"}
+
+        attempt = Path("attempt_0000_antigravity")
+        result = runtime_antigravity._publish_completed_attempt_antigravity(
+            attempt, publisher=publisher,
+        )
+        self.assertEqual(result, {"state": "published"})
+        self.assertEqual(calls, [("publish", attempt)])
+
+    def test_post_complete_publication_failure_does_not_rewrite_terminal_progress(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
+            _record_terminal_error_antigravity,
+        )
+
+        class CompleteStoreAntigravity:
+            status_antigravity = "complete"
+            completed_count_antigravity = 57
+
+        class ClosedWriterAntigravity:
+            def terminal_antigravity(self, _stage: str, _error: str) -> None:
+                raise AssertionError("completed progress must remain immutable")
+
+        _record_terminal_error_antigravity(
+            CompleteStoreAntigravity(), ClosedWriterAntigravity(), (),
+            RuntimeError("publication failed"),
+        )
+
     def test_resume_target_is_one_explicit_safe_attempt_directory(self) -> None:
         from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
             _resume_attempt_root_antigravity,

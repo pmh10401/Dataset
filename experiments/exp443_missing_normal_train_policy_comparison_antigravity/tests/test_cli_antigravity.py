@@ -53,7 +53,6 @@ class CliAntigravityTests(unittest.TestCase):
             readiness=action("readiness", {"state": "ready", "nested": (1, 2)}),
             new=action("new", _FixtureResultAntigravity("complete")),
             resume=action("resume", {"state": "complete"}),
-            publish=action("publish", _FixtureResultAntigravity("published")),
             inspect=action("inspect", _FixtureResultAntigravity("published")),
             import_module=import_module,
         )
@@ -142,7 +141,7 @@ class CliAntigravityTests(unittest.TestCase):
 
         dependencies = module.CliDependenciesAntigravity(
             readiness=lambda _commit: {}, new=lambda _commit: {}, resume=lambda _commit, _attempt: {},
-            publish=lambda _attempt: {}, inspect=inspect,
+            inspect=inspect,
             import_module=lambda name: calls.append(("import", name)),
         )
         code, _stdout, stderr = self._main_antigravity(["evaluate"], dependencies)
@@ -176,6 +175,14 @@ class CliAntigravityTests(unittest.TestCase):
         self.assertNotIn("from .evaluation_antigravity", source)
         self.assertNotIn("import evaluation_antigravity", source)
 
+    def test_inspect_calls_only_the_read_only_inspection_dependency(self) -> None:
+        calls: list[object] = []
+        code, _stdout, _stderr = self._main_antigravity(
+            ["inspect"], self._dependencies_antigravity(calls=calls),
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual([call[0] for call in calls], ["inspect"])
+
     def test_wrapper_is_fixed_to_official_interpreter_and_works_outside_repo_cwd(self) -> None:
         repository = Path(__file__).resolve().parents[3]
         wrapper = repository / "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py"
@@ -190,6 +197,18 @@ class CliAntigravityTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "official interpreter"):
             module._validate_interpreter_antigravity(executable="/tmp/not-the-official-python-antigravity")
         expected = Path(module.OFFICIAL_PYTHON_ANTIGRAVITY)
+        wrong = Path(__import__("sys")._base_executable)
+        self.assertNotEqual(wrong.absolute(), expected.absolute())
+        failed = subprocess.run(
+            [str(wrong), str(wrapper), "inspect"], text=True,
+            capture_output=True, check=False,
+        )
+        self.assertNotEqual(failed.returncode, 0)
+        self.assertNotIn("Traceback", failed.stderr)
+        failure_payload = json.loads(failed.stderr)
+        self.assertEqual(failure_payload["schema"], "exp443.wrapper-status.v1")
+        self.assertEqual(failure_payload["command"], "inspect")
+        self.assertEqual(failure_payload["status"], "error")
         with tempfile.TemporaryDirectory(prefix="exp443_cli_cwd_antigravity_") as temporary:
             completed = subprocess.run(
                 [str(expected), str(wrapper), "--help"], cwd=temporary,
