@@ -5,8 +5,10 @@ from dataclasses import dataclass
 import importlib.util
 from io import StringIO
 import json
+import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -217,6 +219,55 @@ class CliAntigravityTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("readiness", completed.stdout)
         self.assertIn("evaluate", completed.stdout)
+
+    def test_wrapper_sets_all_seven_thread_controls_before_first_numpy_import(self) -> None:
+        repository = Path(__file__).resolve().parents[3]
+        wrapper = repository / "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py"
+        names = (
+            "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS",
+            "NUMBA_NUM_THREADS", "BLIS_NUM_THREADS",
+        )
+        environment = dict(os.environ)
+        for name in names:
+            environment.pop(name, None)
+        probe = f"""
+import builtins
+import importlib.util
+import json
+import os
+from pathlib import Path
+import sys
+
+names = {names!r}
+first_numpy_import = []
+original_import = builtins.__import__
+def observed_import(name, *args, **kwargs):
+    if (name == 'numpy' or name.startswith('numpy.')) and not first_numpy_import:
+        first_numpy_import.append({{key: os.environ.get(key) for key in names}})
+    return original_import(name, *args, **kwargs)
+builtins.__import__ = observed_import
+wrapper = Path({str(wrapper)!r})
+specification = importlib.util.spec_from_file_location('exp443_fresh_wrapper_antigravity', wrapper)
+module = importlib.util.module_from_spec(specification)
+specification.loader.exec_module(module)
+repository = wrapper.parents[1]
+sys.path.insert(0, str(repository))
+__import__('experiments.exp443_missing_normal_train_policy_comparison_antigravity.cli_antigravity')
+print(json.dumps({{
+    'first_numpy_import': first_numpy_import[0] if first_numpy_import else None,
+    'after_cli_import': {{key: os.environ.get(key) for key in names}},
+}}, sort_keys=True))
+"""
+        completed = subprocess.run(
+            [sys.executable, "-c", probe], cwd=repository, env=environment,
+            text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        payload = json.loads(completed.stdout)
+        expected = {name: "1" for name in names}
+        self.assertEqual(payload["first_numpy_import"], expected)
+        self.assertEqual(payload["after_cli_import"], expected)
 
 
 if __name__ == "__main__":
