@@ -14,19 +14,13 @@ VENV_ROOT="/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py31
 PYTHON_BIN="/usr/local/bin/python3.14"
 BOOTSTRAP_FLAG="--bootstrap-lock-antigravity"
 EXP443_FREEZE_PATH_ANTIGRAVITY=""
-EXP443_BOOTSTRAP_LOCK_SENTINEL_ANTIGRAVITY=""
 
 exp443_cleanup_freeze_antigravity() {
   local status="${1:-$?}"
   local freeze_path="${EXP443_FREEZE_PATH_ANTIGRAVITY:-}"
-  local bootstrap_lock_sentinel="${EXP443_BOOTSTRAP_LOCK_SENTINEL_ANTIGRAVITY:-}"
   trap - EXIT HUP INT TERM
   EXP443_FREEZE_PATH_ANTIGRAVITY=""
-  EXP443_BOOTSTRAP_LOCK_SENTINEL_ANTIGRAVITY=""
   if [[ -n "$freeze_path" ]] && ! rm -f -- "$freeze_path"; then
-    status=1
-  fi
-  if [[ -n "$bootstrap_lock_sentinel" ]] && ! rm -f -- "$bootstrap_lock_sentinel"; then
     status=1
   fi
   return "$status"
@@ -45,7 +39,11 @@ exp443_install_freeze_traps_antigravity() {
   trap 'exp443_freeze_signal_antigravity 143' TERM
 }
 
-exp443_after_bootstrap_sentinel_antigravity() {
+exp443_before_bootstrap_publication_antigravity() {
+  :
+}
+
+exp443_after_bootstrap_publication_antigravity() {
   :
 }
 
@@ -87,7 +85,11 @@ exp443_bootstrap_lock_antigravity() {
     printf '%s\n' "bootstrap lock already exists; refusing overwrite" >&2
     return 1
   fi
-  local tmp_lock="${lock_requirements}.tmp.$$"
+  local tmp_lock
+  if ! tmp_lock="$(mktemp "${lock_requirements}.tmp.antigravity.XXXXXX")"; then
+    printf '%s\n' "fresh Exp443 bootstrap lock could not create a same-directory temporary" >&2
+    return 1
+  fi
   EXP443_FREEZE_PATH_ANTIGRAVITY="$tmp_lock"
   exp443_install_freeze_traps_antigravity
   local status=0
@@ -97,18 +99,21 @@ exp443_bootstrap_lock_antigravity() {
   elif [[ ! -s "$tmp_lock" ]]; then
     printf '%s\n' "fresh Exp443 bootstrap freeze failed with an empty lock" >&2
     status=1
-  elif ! ( set -C; : > "$lock_requirements" ) 2>/dev/null; then
-    printf '%s\n' "lock appeared concurrently; refusing overwrite" >&2
-    status=1
   else
-    EXP443_BOOTSTRAP_LOCK_SENTINEL_ANTIGRAVITY="$lock_requirements"
-    exp443_after_bootstrap_sentinel_antigravity
-    if ! mv "$tmp_lock" "$lock_requirements"; then
-      printf '%s\n' "fresh Exp443 bootstrap lock publication failed" >&2
+    exp443_before_bootstrap_publication_antigravity
+    # BSD ln creates a hard link without replacing an existing destination.
+    # The temporary is created beside the final lock, so both names share a
+    # filesystem and the final path is never an empty publication sentinel.
+    if ! ln "$tmp_lock" "$lock_requirements"; then
+      printf '%s\n' "lock appeared concurrently; refusing overwrite" >&2
       status=1
     else
+      exp443_after_bootstrap_publication_antigravity
+      if ! rm -f -- "$tmp_lock"; then
+        printf '%s\n' "fresh Exp443 bootstrap lock temporary cleanup failed" >&2
+        status=1
+      fi
       EXP443_FREEZE_PATH_ANTIGRAVITY=""
-      EXP443_BOOTSTRAP_LOCK_SENTINEL_ANTIGRAVITY=""
     fi
   fi
   if exp443_cleanup_freeze_antigravity "$status"; then
