@@ -38,7 +38,7 @@ Exp236 lane, frozen exact-normal 보호 규칙은 바꾸지 않는다. Exp443은
 1. 새 파일 이름에는 반드시 `antigravity`를 포함하고 `__init__.py`는 만들지 않는다.
 2. 실험 ID는 `Exp443`, 실행 ID는 위의 고정 문자열이다.
 3. 최종 검토 설계와 SHA256은 위에서 고정한 한 쌍이며, 내용이 달라지면 실행을 중단한다.
-4. 고정 run root와 별도 Python 3.14.6 환경 root는 저장소 밖에 둔다.
+4. 고정 run root와 별도 Python 3.14.6 환경 root는 저장소 밖에 둔다. isolated interpreter root는 정확히 `/Users/mac/Documents/Dataset/venvs/exp443_minirocket_antigravity_py314`다.
 5. prediction은 원시 정상 TRAIN 값, label-free TEST 값과 identity, 동결된 Exp249/291/414/404 산출물, 검토된 Exp443 코드·설정만 읽는다.
 6. prediction은 evaluator, TEST `label`, `labels_blob`, 실제 이상 위치, Exp416/Exp442 평가, 과거 family TEST 성능을 import하거나 읽지 않는다.
 7. TEST는 기존 Exp249 선형 보간과 가장 가까운 유한값의 edge extension을 그대로 사용하고 정상 TRAIN 처리만 바꾼다.
@@ -54,12 +54,12 @@ Exp236 lane, frozen exact-normal 보호 규칙은 바꾸지 않는다. Exp443은
 17. Policy A는 B/C 전에 finite score, 두 kernel 후보 index 완전 일치, scalar 최대 절대오차 `1e-6` 이하, Exp291/Exp404 최종 Hard 좌표 완전 일치를 모두 재현해야 한다. 하나라도 실패하면 `control_reproduction_failed`로 닫고 B/C·TEST evaluator를 만들지 않는다.
 18. 공식 CPU topology는 논리 CPU 12개에서 outer worker 11개, 각 numerical inner thread 1개다. 1-worker와 11-worker payload·candidate·routing·canonical prediction bytes가 같아야 한다.
 19. 공식 aeon MiniROCKET은 MLX/MPS로 다시 구현하지 않는다. acceleration 상태는 `inapplicable_official_cpu_transformer`이며 MLX/MPS-heavy process는 실행하지 않는다.
-20. checkpoint는 57개 recompute unit의 ordered prefix와 payload SHA에 묶인 create-only 기록이다. 오류 record를 성공으로 덮거나 완료 record를 덮어쓰지 않는다.
-21. 세 정책의 label-free prediction을 각각 동결·inspect한 뒤에만 별도 evaluator가 TEST label을 연다. prediction 파일에는 label·confusion·F1을 넣지 않는다.
+20. checkpoint는 57개 recompute unit의 ordered prefix와 payload SHA에 묶인 create-only 기록이다. 오류 record를 성공으로 덮거나 완료 record를 덮어쓰지 않는다. resume은 검증된 ordered checkpoint prefix와 inactive PID에서만 허용하며, active PID·terminal error·completed attempt에서는 차단한다. error는 절대로 success로 바뀌지 않는다.
+21. 각 policy는 정확히 1,098개 unaffected dataset을 별도로 import하며 이는 57개 recompute unit과 분리해 세고 recomputation으로 보고하지 않는다. 세 정책의 label-free prediction을 각각 동결·inspect한 뒤에만 별도 evaluator가 TEST label을 연다. prediction 파일에는 label·confusion·F1을 넣지 않는다.
 22. baseline은 TP 1,915 / FP 303 / FN 2,003 / TN 191,679, micro F1 `0.6241851368970013`을 재현해야 한다.
 23. dataset precision·recall·F1·false-positive rate의 분모가 0이면 `0.0`을 사용하고, macro는 1,117개 dataset 단순 평균이다.
 24. `rescued`는 baseline TP가 0이고 정책 TP가 1 이상인 dataset, `regressed`는 정책 dataset F1이 baseline보다 감소한 dataset이다.
-25. bootstrap은 NumPy 2.3.5 `PCG64`, seed `44320260809`, `int64`, `endpoint=False`, quantile method `linear`, 20,000 paired dataset samples로 고정한다.
+25. bootstrap은 NumPy 2.3.5 `PCG64`, seed `44320260809`, `int64`, `endpoint=False`, 20,000 paired dataset samples와 LINEAR 2.5/97.5 percentiles(`quantile method = linear`)로 고정한다.
 26. 세 정책은 각각 독립적으로 분류·보고하고 TEST 결과를 보고 같은 Exp443 안에서 하나를 승자로 재선택하지 않는다.
 27. Exp443은 adaptive, retrospective, `review-only`, independently unvalidated, non-operational이다. Exp404/Exp416은 검증된 reference로 유지한다.
 28. 결과를 기록한 뒤 Exp444를 시작하지 않고 방향 논의를 위해 멈춘다.
