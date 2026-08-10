@@ -24,6 +24,12 @@ GAPS: none.
 FULL: exact discovery exited 0; count 165.
 COMMITS: `f843642f` functional review-gap closure; `51daf95f` map synchronization.
 
+## Fix round 3/5 — sealed facade and replay schemas
+
+CORRECTION: round2 focused evidence was 13/13 (not 12/12); its statement that dedicated fixture coverage was complete is superseded here.
+
+RED/GREEN: facade reflection RED exposed `_connection`; GREEN uses a zero-state `__slots__` facade and closure-owned verified connection. Replay now rejects metric/transition schema or deterministic-order drift independently of regenerated maps.
+
 ## Fix round 1/5 — hardened evaluation authority
 
 STATUS: DONE
