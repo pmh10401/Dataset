@@ -636,19 +636,24 @@ def _quarantine_rejected_destination_antigravity(parent_fd: int, destination_nam
     rename moves and leaves the canonical destination absent on success.
     """
     for _ in range(8):
-        quarantine_name = _quarantine_name_antigravity(destination_name, uuid4().hex)
+        try:
+            quarantine_name = _quarantine_name_antigravity(destination_name, uuid4().hex)
+        except BaseException as error:
+            return _PublicationQuarantineAntigravity(None, False, f"quarantine_name={type(error).__name__}")
         try:
             if _QUARANTINE_BEFORE_RENAME_HOOK_ANTIGRAVITY is not None:
                 _QUARANTINE_BEFORE_RENAME_HOOK_ANTIGRAVITY(parent_fd, destination_name, quarantine_name)
             _exclusive_rename_aside_at_antigravity(parent_fd, destination_name, quarantine_name)
-        except OSError as error:
-            if error.errno == errno.EEXIST:
+        except BaseException as error:
+            if isinstance(error, OSError) and error.errno == errno.EEXIST:
                 continue
-            return _PublicationQuarantineAntigravity(None, False, f"rename_aside={error.errno or errno.EIO}")
+            code = error.errno if isinstance(error, OSError) and error.errno is not None else type(error).__name__
+            return _PublicationQuarantineAntigravity(None, False, f"rename_aside={code}")
         try:
             os.fsync(parent_fd)
-        except OSError as error:
-            return _PublicationQuarantineAntigravity(quarantine_name, False, f"parent_fsync={error.errno or errno.EIO}")
+        except BaseException as error:
+            code = error.errno if isinstance(error, OSError) and error.errno is not None else type(error).__name__
+            return _PublicationQuarantineAntigravity(quarantine_name, False, f"parent_fsync={code}")
         return _PublicationQuarantineAntigravity(quarantine_name, True, None)
     return _PublicationQuarantineAntigravity(None, False, "rename_aside=collision_limit")
 
