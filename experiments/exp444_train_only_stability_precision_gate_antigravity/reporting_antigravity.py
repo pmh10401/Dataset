@@ -1079,6 +1079,31 @@ def _write_exp445_publication_failure_antigravity(attempt: Path, error: BaseExce
         pass
 
 
+def _quarantine_exp445_caller_rejection_antigravity(
+    snapshot: _AttemptSnapshotAntigravity | None,
+    destination: Path,
+    error: BaseException,
+) -> None:
+    """Remove a caller-rejected post-rename destination without deleting evidence."""
+    if snapshot is None or snapshot.attempt_fd < 0:
+        return
+    try:
+        current = os.stat(destination.name, dir_fd=snapshot.attempt_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    except OSError as cleanup_error:
+        try:
+            error.add_note(f"Exp445 post-publication cleanup stat={type(cleanup_error).__name__}")
+        except BaseException:
+            pass
+        return
+    if not stat.S_ISDIR(current.st_mode):
+        return
+    evidence = _quarantine_rejected_destination_antigravity(snapshot.attempt_fd, destination.name)
+    if evidence.name is None or not evidence.parent_fsynced:
+        _add_quarantine_note_antigravity(error, destination, evidence, (current.st_dev, current.st_ino), None)
+
+
 def _publish_exp445_prediction_antigravity(
     profile: LifecycleProfileAntigravity = EXP445_PROFILE_ANTIGRAVITY,
 ) -> FrozenPublicationAntigravity:
@@ -1090,8 +1115,9 @@ def _publish_exp445_prediction_antigravity(
     destination = attempt / PUBLICATION_DIRECTORY_ANTIGRAVITY
     if destination.exists() or destination.is_symlink():
         raise ValueError("Exp445 publication already exists; same-root retry is forbidden")
-    snapshot = _capture_attempt_antigravity(attempt)
+    snapshot: _AttemptSnapshotAntigravity | None = None
     try:
+        snapshot = _capture_attempt_antigravity(attempt)
         # Ordering is intentionally explicit: no source capture or staging may
         # happen until the new terminal bytes and predecessor parity are known.
         results = _complete_checkpoint_results_antigravity(
@@ -1130,10 +1156,12 @@ def _publish_exp445_prediction_antigravity(
         _assert_attempt_namespace_antigravity(attempt, snapshot, allow_owned_mutation=True)
         return FrozenPublicationAntigravity(destination, manifest, inspected_selection)
     except BaseException as error:
+        _quarantine_exp445_caller_rejection_antigravity(snapshot, destination, error)
         _write_exp445_publication_failure_antigravity(attempt, error)
         raise
     finally:
-        snapshot.close_antigravity()
+        if snapshot is not None:
+            snapshot.close_antigravity()
 
 
 def publish_prediction_antigravity(attempt_root: Path) -> FrozenPublicationAntigravity:

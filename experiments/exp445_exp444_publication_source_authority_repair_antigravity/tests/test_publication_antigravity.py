@@ -1,6 +1,7 @@
 """TDD coverage for Exp445's create-only parity-gated publication boundary."""
 from __future__ import annotations
 
+import os
 import unittest
 from contextlib import contextmanager
 from pathlib import Path
@@ -36,6 +37,65 @@ class Exp445PublicationAntigravityTests(unittest.TestCase):
         attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
         attempt.mkdir(parents=True)
         return root, attempt, self._snapshot_antigravity()
+
+    @staticmethod
+    def _capture_fixture_antigravity(attempt: Path, reporting) -> None:
+        """Create the exact pathname inventory required by the real capture helper."""
+        checkpoint = attempt / "checkpoint_antigravity"
+        records = checkpoint / "records_antigravity"
+        records.mkdir(parents=True)
+        for name in reporting._ATTEMPT_FILES_ANTIGRAVITY:
+            (attempt / name).write_bytes(b"{}\n")
+        for name in reporting._CHECKPOINT_FILES_ANTIGRAVITY:
+            (checkpoint / name).write_bytes(b"{}\n")
+        for name in reporting._RECORD_NAMES_ANTIGRAVITY:
+            (records / name).write_bytes(b"{}\n")
+
+    def test_real_capture_failure_after_allocation_writes_create_only_failure_evidence_antigravity(self) -> None:
+        """A descriptor capture failure still leaves immutable Exp445 failure evidence."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
+
+        with tempfile.TemporaryDirectory(prefix="exp445_publication_capture_failure_antigravity_") as directory:
+            root, attempt, _ = self._attempt_antigravity(directory)
+            profile = self._profile_antigravity(root)
+            self._capture_fixture_antigravity(attempt, reporting)
+            progress = attempt / "progress_antigravity.json"
+            os.link(progress, root / "progress_capture_hardlink_antigravity.json")
+            with mock.patch.object(reporting, "EXP445_PROFILE_ANTIGRAVITY", profile):
+                with self.assertRaisesRegex(ValueError, "single-linked|attempt"):
+                    reporting._publish_exp445_prediction_antigravity(profile)
+            self.assertTrue((attempt / reporting._EXP445_PUBLICATION_FAILURE_FILE_ANTIGRAVITY).is_file())
+            self.assertFalse((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
+
+    def test_real_postrename_replay_failure_quarantines_canonical_destination_antigravity(self) -> None:
+        """The caller's post-rename frozen-leaf audit cannot leave a canonical publication."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import reporting_antigravity as reporting
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import provenance_antigravity
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import predecessor_antigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp445_publication_real_postrename_antigravity_") as directory:
+            root, attempt, _ = self._attempt_antigravity(directory)
+            profile = self._profile_antigravity(root)
+            self._capture_fixture_antigravity(attempt, reporting)
+            predecessor = SimpleNamespace(record_sha256_prefix=("a" * 64,) * 30, record_prefix_payload_sha256="b" * 64)
+            expected = {name: f"{index}".encode() for index, name in enumerate(reporting._PUBLICATION_FILES_ANTIGRAVITY)}
+            with (
+                mock.patch.object(reporting, "EXP445_PROFILE_ANTIGRAVITY", profile),
+                mock.patch.object(reporting, "_complete_checkpoint_results_antigravity", return_value=()),
+                mock.patch.object(predecessor_antigravity, "verify_exp444_predecessor_antigravity", return_value=predecessor),
+                mock.patch.object(reporting, "_assert_exp445_predecessor_parity_antigravity"),
+                mock.patch.object(provenance_antigravity, "verify_exp444_provenance_antigravity", return_value=SimpleNamespace(dataset_summary_bytes=b"", backend_authority={})),
+                mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=object()),
+                mock.patch.object(reporting, "_payloads_antigravity", return_value=({}, object())),
+                mock.patch.object(reporting, "_final_payloads_antigravity", return_value=expected),
+                mock.patch.object(reporting, "_inspect_publication_payloads_antigravity", side_effect=ValueError("caller replay audit failure")),
+            ):
+                with self.assertRaisesRegex(ValueError, "caller replay audit failure"):
+                    reporting._publish_exp445_prediction_antigravity(profile)
+            destination = attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY
+            self.assertFalse(destination.exists())
+            self.assertTrue((attempt / reporting._EXP445_PUBLICATION_FAILURE_FILE_ANTIGRAVITY).is_file())
+            self.assertEqual(len([path for path in attempt.iterdir() if "quarantine_antigravity" in path.name]), 1)
 
     def test_terminal_failure_stops_before_predecessor_and_staging_antigravity(self) -> None:
         """An incomplete checkpoint cannot open predecessor/source or publication paths."""
