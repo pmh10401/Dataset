@@ -377,6 +377,205 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
             reporting._write_staging_antigravity(destination, payloads)
             self.assertTrue(destination.is_dir())
 
+    def test_rejected_publication_never_deletes_empty_replacement_after_final_stat_antigravity(self) -> None:
+        """The old stat-then-rmdir rollback must not delete a just-substituted empty directory."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_rmdir_race_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payloads = {name: (frozen.publication_root / name).read_bytes() for name in reporting._PUBLICATION_FILES_ANTIGRAVITY}
+            destination = frozen.publication_root.parent / "rmdir_race_publication_antigravity"
+            original_rename = reporting._exclusive_rename_at_antigravity
+            original_rmdir = reporting.os.rmdir
+
+            def replace_source(parent_fd: int, staging_name: str, destination_name: str) -> None:
+                moved = f"{staging_name}.moved_antigravity"
+                __import__("os").replace(staging_name, moved, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+                __import__("os").mkdir(staging_name, mode=0o700, dir_fd=parent_fd)
+                original_rename(parent_fd, staging_name, destination_name)
+
+            def fail_if_destination_rmdir(path, *args, **kwargs):
+                if path == destination.name and kwargs.get("dir_fd") is not None:
+                    raise AssertionError("rejected publication destination must never be removed")
+                return original_rmdir(path, *args, **kwargs)
+
+            with (
+                mock.patch.object(reporting, "_exclusive_rename_at_antigravity", side_effect=replace_source),
+                mock.patch.object(reporting.os, "rmdir", side_effect=fail_if_destination_rmdir),
+            ):
+                with self.assertRaisesRegex(ValueError, "publication destination changed"):
+                    reporting._write_staging_antigravity(destination, payloads)
+            self.assertFalse(destination.exists())
+            quarantines = [path for path in destination.parent.iterdir() if destination.name in path.name and "quarantine_antigravity" in path.name]
+            self.assertEqual(len(quarantines), 1)
+
+    def test_post_rename_unknown_identity_quarantines_without_deletion_antigravity(self) -> None:
+        """A parent-fsync failure before open cannot authorize deletion of a replacement directory."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_unknown_identity_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payloads = {name: (frozen.publication_root / name).read_bytes() for name in reporting._PUBLICATION_FILES_ANTIGRAVITY}
+            destination = frozen.publication_root.parent / "unknown_identity_publication_antigravity"
+            parent_identity = (destination.parent.stat().st_dev, destination.parent.stat().st_ino)
+            original_fsync = reporting.os.fsync
+            replacement_identity: dict[str, tuple[int, int]] = {}
+
+            def replace_then_fail_parent_fsync(fd: int) -> None:
+                current = reporting.os.fstat(fd)
+                if destination.exists() and (current.st_dev, current.st_ino) == parent_identity:
+                    moved = destination.with_name("published_before_fsync_antigravity")
+                    __import__("os").replace(destination, moved)
+                    destination.mkdir(mode=0o700)
+                    replacement = destination.stat()
+                    replacement_identity["value"] = (replacement.st_dev, replacement.st_ino)
+                    raise OSError("injected post-rename parent fsync failure")
+                original_fsync(fd)
+
+            with mock.patch.object(reporting.os, "fsync", side_effect=replace_then_fail_parent_fsync):
+                with self.assertRaisesRegex(OSError, "injected post-rename") as raised:
+                    reporting._write_staging_antigravity(destination, payloads)
+            self.assertIn("value", replacement_identity)
+            self.assertFalse(destination.exists())
+            quarantines = [path for path in destination.parent.iterdir() if "unknown_identity_publication_antigravity" in path.name and "quarantine_antigravity" in path.name]
+            self.assertEqual(len(quarantines), 1)
+            preserved = quarantines[0].stat()
+            self.assertEqual((preserved.st_dev, preserved.st_ino), replacement_identity["value"])
+            self.assertTrue(any("identity_known=False" in note and "identity_match=unknown" in note for note in getattr(raised.exception, "__notes__", ())))
+
+    def test_nonempty_replacement_is_quarantined_with_operator_bytes_antigravity(self) -> None:
+        """A nonempty substituted destination must survive in quarantine, never at the canonical name."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_nonempty_quarantine_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payloads = {name: (frozen.publication_root / name).read_bytes() for name in reporting._PUBLICATION_FILES_ANTIGRAVITY}
+            destination = frozen.publication_root.parent / "nonempty_publication_antigravity"
+            evidence = b"operator-owned-evidence-antigravity\x00"
+            original_rename = reporting._exclusive_rename_at_antigravity
+
+            def replace_source(parent_fd: int, staging_name: str, destination_name: str) -> None:
+                moved = f"{staging_name}.moved_antigravity"
+                __import__("os").replace(staging_name, moved, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+                __import__("os").mkdir(staging_name, mode=0o700, dir_fd=parent_fd)
+                staging_fd = __import__("os").open(staging_name, __import__("os").O_RDONLY | __import__("os").O_DIRECTORY, dir_fd=parent_fd)
+                try:
+                    evidence_fd = __import__("os").open("operator_evidence_antigravity.bin", __import__("os").O_WRONLY | __import__("os").O_CREAT | __import__("os").O_EXCL, 0o600, dir_fd=staging_fd)
+                    try:
+                        __import__("os").write(evidence_fd, evidence)
+                    finally:
+                        __import__("os").close(evidence_fd)
+                finally:
+                    __import__("os").close(staging_fd)
+                original_rename(parent_fd, staging_name, destination_name)
+
+            with mock.patch.object(reporting, "_exclusive_rename_at_antigravity", side_effect=replace_source):
+                with self.assertRaisesRegex(ValueError, "publication destination changed") as raised:
+                    reporting._write_staging_antigravity(destination, payloads)
+            self.assertFalse(destination.exists())
+            quarantines = [path for path in destination.parent.iterdir() if "nonempty_publication_antigravity" in path.name and "quarantine_antigravity" in path.name]
+            self.assertEqual(len(quarantines), 1)
+            self.assertEqual((quarantines[0] / "operator_evidence_antigravity.bin").read_bytes(), evidence)
+            self.assertTrue(any("identity_known=True" in note and "identity_match=False" in note for note in getattr(raised.exception, "__notes__", ())))
+
+    def test_rename_aside_race_preserves_substituted_empty_and_nonempty_objects_antigravity(self) -> None:
+        """The no-replace rename-aside moves whichever contested object wins, without deleting either race variant."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_quarantine_race_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payloads = {name: (frozen.publication_root / name).read_bytes() for name in reporting._PUBLICATION_FILES_ANTIGRAVITY}
+            original_publish_rename = reporting._exclusive_rename_at_antigravity
+            original_aside = getattr(reporting, "_exclusive_rename_aside_at_antigravity", None)
+            for suffix, bytes_expected in (("empty", b""), ("nonempty", b"race-bytes-antigravity")):
+                with self.subTest(suffix=suffix):
+                    destination = frozen.publication_root.parent / f"rename_aside_{suffix}_publication_antigravity"
+                    moved: dict[str, tuple[int, int]] = {}
+
+                    def replace_source(parent_fd: int, staging_name: str, destination_name: str) -> None:
+                        original = f"{staging_name}.moved_{suffix}_antigravity"
+                        __import__("os").replace(staging_name, original, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+                        __import__("os").mkdir(staging_name, mode=0o700, dir_fd=parent_fd)
+                        original_publish_rename(parent_fd, staging_name, destination_name)
+
+                    def substitute_at_aside(parent_fd: int, source_name: str, quarantine_name: str) -> None:
+                        self.assertIsNotNone(original_aside)
+                        preserved = f"{source_name}.before_aside_{suffix}_antigravity"
+                        __import__("os").replace(source_name, preserved, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+                        __import__("os").mkdir(source_name, mode=0o700, dir_fd=parent_fd)
+                        if bytes_expected:
+                            source_fd = __import__("os").open(source_name, __import__("os").O_RDONLY | __import__("os").O_DIRECTORY, dir_fd=parent_fd)
+                            try:
+                                replacement_fd = __import__("os").open("race_evidence_antigravity.bin", __import__("os").O_WRONLY | __import__("os").O_CREAT | __import__("os").O_EXCL, 0o600, dir_fd=source_fd)
+                                try:
+                                    __import__("os").write(replacement_fd, bytes_expected)
+                                finally:
+                                    __import__("os").close(replacement_fd)
+                            finally:
+                                __import__("os").close(source_fd)
+                        replacement = __import__("os").stat(source_name, dir_fd=parent_fd, follow_symlinks=False)
+                        moved["identity"] = (replacement.st_dev, replacement.st_ino)
+                        original_aside(parent_fd, source_name, quarantine_name)
+
+                    with (
+                        mock.patch.object(reporting, "_exclusive_rename_at_antigravity", side_effect=replace_source),
+                        mock.patch.object(reporting, "_exclusive_rename_aside_at_antigravity", side_effect=substitute_at_aside, create=True),
+                    ):
+                        with self.assertRaisesRegex(ValueError, "publication destination changed"):
+                            reporting._write_staging_antigravity(destination, payloads)
+                    self.assertFalse(destination.exists())
+                    quarantines = [path for path in destination.parent.iterdir() if destination.name in path.name and "quarantine_antigravity" in path.name]
+                    self.assertEqual(len(quarantines), 1)
+                    quarantined = quarantines[0].stat()
+                    self.assertEqual((quarantined.st_dev, quarantined.st_ino), moved["identity"])
+                    if bytes_expected:
+                        self.assertEqual((quarantines[0] / "race_evidence_antigravity.bin").read_bytes(), bytes_expected)
+                    else:
+                        self.assertEqual(list(quarantines[0].iterdir()), [])
+
+    def test_quarantine_collision_leaves_destination_and_reports_operator_intervention_antigravity(self) -> None:
+        """Exhausted no-replace quarantine names fail closed without deleting the contested destination."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_quarantine_collision_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payloads = {name: (frozen.publication_root / name).read_bytes() for name in reporting._PUBLICATION_FILES_ANTIGRAVITY}
+            destination = frozen.publication_root.parent / "collision_publication_antigravity"
+            original_publish_rename = reporting._exclusive_rename_at_antigravity
+
+            def replace_source(parent_fd: int, staging_name: str, destination_name: str) -> None:
+                moved = f"{staging_name}.moved_antigravity"
+                __import__("os").replace(staging_name, moved, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+                __import__("os").mkdir(staging_name, mode=0o700, dir_fd=parent_fd)
+                original_publish_rename(parent_fd, staging_name, destination_name)
+
+            with (
+                mock.patch.object(reporting, "_exclusive_rename_at_antigravity", side_effect=replace_source),
+                mock.patch.object(reporting, "_exclusive_rename_aside_at_antigravity", side_effect=OSError(reporting.errno.EEXIST, "collision")),
+            ):
+                with self.assertRaisesRegex(ValueError, "publication destination changed") as raised:
+                    reporting._write_staging_antigravity(destination, payloads)
+            self.assertTrue(destination.is_dir())
+            self.assertTrue(any("requires operator intervention" in note and "collision_limit" in note for note in getattr(raised.exception, "__notes__", ())))
+
+    def test_successful_quarantine_allows_clean_retry_without_inventory_contamination_antigravity(self) -> None:
+        """A retained, validated quarantine is excluded from capture and cannot alter republished bytes."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_retry_quarantine_antigravity_") as directory:
+            attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, self._full_controls_antigravity(inputs))
+            calls = 0
+
+            def fail_only_after_final_pinned_read(_root: Path | None) -> None:
+                nonlocal calls
+                calls += 1
+                if calls == 3:
+                    raise ValueError("injected rejected publication after rename")
+
+            with (
+                mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority),
+                mock.patch.object(reporting, "_PINNED_PUBLICATION_HOOK_ANTIGRAVITY", fail_only_after_final_pinned_read),
+            ):
+                with self.assertRaisesRegex(ValueError, "injected rejected publication"):
+                    reporting.publish_prediction_antigravity(attempt)
+            destination = attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY
+            self.assertFalse(destination.exists())
+            quarantines = [path for path in attempt.iterdir() if destination.name in path.name and "quarantine_antigravity" in path.name]
+            self.assertEqual(len(quarantines), 1)
+            quarantined_bytes = {path.name: path.read_bytes() for path in quarantines[0].iterdir()}
+            with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
+                retried = reporting.publish_prediction_antigravity(attempt)
+            self.assertEqual({path.name: path.read_bytes() for path in retried.publication_root.iterdir()}, quarantined_bytes)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -70,6 +70,7 @@ _RECORD_NAMES_ANTIGRAVITY = tuple(f"{index:04d}_record_antigravity.json" for ind
 _PINNED_PUBLICATION_HOOK_ANTIGRAVITY = None  # deterministic test-only race seam
 _STAGING_BEFORE_RENAME_HOOK_ANTIGRAVITY = None  # deterministic test-only race seam
 _ATTEMPT_CAPTURE_HOOK_ANTIGRAVITY = None  # deterministic test-only race seam
+_QUARANTINE_BEFORE_RENAME_HOOK_ANTIGRAVITY = None  # deterministic test-only race seam
 
 _ATTEMPT_FILES_ANTIGRAVITY = ("progress_antigravity.json", "pid_antigravity.json", "events_antigravity.jsonl", "text_antigravity.log")
 _CHECKPOINT_FILES_ANTIGRAVITY = ("context_antigravity.json", "state_antigravity.json")
@@ -89,8 +90,45 @@ class _AttemptSnapshotAntigravity:
             object.__setattr__(self, "attempt_fd", -1)
 
 
+@dataclass(frozen=True)
+class _PublicationQuarantineAntigravity:
+    """Non-destructive evidence for a rejected post-rename publication."""
+
+    name: str | None
+    parent_fsynced: bool
+    error: str | None
+
+
 def _sha256_antigravity(value: bytes) -> str:
     return sha256(value).hexdigest()
+
+
+def _quarantine_name_antigravity(destination_name: str, nonce: str) -> str:
+    return f".{destination_name}.{nonce}.quarantine_antigravity"
+
+
+def _is_quarantine_name_antigravity(name: str, destination_name: str = PUBLICATION_DIRECTORY_ANTIGRAVITY) -> bool:
+    prefix = f".{destination_name}."
+    suffix = ".quarantine_antigravity"
+    nonce = name.removeprefix(prefix).removesuffix(suffix)
+    return name.startswith(prefix) and name.endswith(suffix) and len(nonce) == 32 and all(character in "0123456789abcdef" for character in nonce)
+
+
+def _validated_attempt_quarantine_names_antigravity(attempt_fd: int, names: set[str]) -> set[str]:
+    """Accept only directory-backed Exp444 quarantine names beside frozen inputs."""
+    expected = set((*_ATTEMPT_FILES_ANTIGRAVITY, "checkpoint_antigravity"))
+    quarantines = names - expected
+    if names != expected | quarantines or any(not _is_quarantine_name_antigravity(name) for name in quarantines):
+        raise ValueError("Exp444 attempt inventory is invalid")
+    for name in quarantines:
+        descriptor = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=attempt_fd)
+        try:
+            status = os.fstat(descriptor)
+            if not stat.S_ISDIR(status.st_mode):
+                raise ValueError("Exp444 attempt quarantine is invalid")
+        finally:
+            os.close(descriptor)
+    return quarantines
 
 
 def _capture_attempt_antigravity(attempt: Path) -> _AttemptSnapshotAntigravity:
@@ -101,8 +139,7 @@ def _capture_attempt_antigravity(attempt: Path) -> _AttemptSnapshotAntigravity:
         attempt_status = os.fstat(attempt_fd)
         if not stat.S_ISDIR(attempt_status.st_mode):
             raise ValueError("Exp444 attempt authority is invalid")
-        if set(os.listdir(attempt_fd)) != set((*_ATTEMPT_FILES_ANTIGRAVITY, "checkpoint_antigravity")):
-            raise ValueError("Exp444 attempt inventory is invalid")
+        _validated_attempt_quarantine_names_antigravity(attempt_fd, set(os.listdir(attempt_fd)))
         checkpoint_fd = os.open("checkpoint_antigravity", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=attempt_fd); descriptors.append(checkpoint_fd)
         if set(os.listdir(checkpoint_fd)) != set((*_CHECKPOINT_FILES_ANTIGRAVITY, "records_antigravity")):
             raise ValueError("Exp444 checkpoint inventory is invalid")
@@ -125,7 +162,8 @@ def _capture_attempt_antigravity(attempt: Path) -> _AttemptSnapshotAntigravity:
                 identities.append((directory_fd, name, (first.st_dev, first.st_ino, first.st_size, first.st_mtime_ns, first.st_ctime_ns)))
         if _ATTEMPT_CAPTURE_HOOK_ANTIGRAVITY is not None:
             _ATTEMPT_CAPTURE_HOOK_ANTIGRAVITY(attempt)
-        if set(os.listdir(attempt_fd)) != set((*_ATTEMPT_FILES_ANTIGRAVITY, "checkpoint_antigravity")) or set(os.listdir(checkpoint_fd)) != set((*_CHECKPOINT_FILES_ANTIGRAVITY, "records_antigravity")) or tuple(sorted(os.listdir(records_fd))) != _RECORD_NAMES_ANTIGRAVITY:
+        _validated_attempt_quarantine_names_antigravity(attempt_fd, set(os.listdir(attempt_fd)))
+        if set(os.listdir(checkpoint_fd)) != set((*_CHECKPOINT_FILES_ANTIGRAVITY, "records_antigravity")) or tuple(sorted(os.listdir(records_fd))) != _RECORD_NAMES_ANTIGRAVITY:
             raise ValueError("Exp444 attempt inventory changed during capture")
         for directory_fd, name, identity in identities:
             current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
@@ -569,8 +607,8 @@ def _final_payloads_antigravity(leaf_payloads: Mapping[str, bytes], selection: S
     return {**leaf_payloads, MANIFEST_FILE_ANTIGRAVITY: manifest_bytes, STATUS_FILE_ANTIGRAVITY: status_bytes, ARTIFACT_SHA256_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(artifact_map)}
 
 
-def _exclusive_rename_at_antigravity(parent_fd: int, source_name: str, destination_name: str) -> None:
-    """Perform Darwin's no-replace rename without reopening the attempt path."""
+def _rename_no_replace_at_antigravity(parent_fd: int, source_name: str, destination_name: str) -> None:
+    """Perform Darwin's dirfd-relative no-replace rename without reopening authority."""
     renameatx_np = ctypes.CDLL(None, use_errno=True).renameatx_np
     renameatx_np.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
     renameatx_np.restype = ctypes.c_int
@@ -579,34 +617,51 @@ def _exclusive_rename_at_antigravity(parent_fd: int, source_name: str, destinati
         raise OSError(code, os.strerror(code), destination_name)
 
 
-def _rollback_empty_destination_antigravity(parent_fd: int, destination_name: str, expected_identity: tuple[int, int] | None) -> bool:
-    """Remove only the exact empty directory observed after a rejected rename.
+def _exclusive_rename_at_antigravity(parent_fd: int, source_name: str, destination_name: str) -> None:
+    """Publish a staging name through Darwin's no-replace rename primitive."""
+    _rename_no_replace_at_antigravity(parent_fd, source_name, destination_name)
 
-    Darwin's renameatx_np accepts directory paths rather than an open source
-    descriptor, so it cannot atomically prove that the name it resolves still
-    denotes our staged inode.  On rejection, this conservative rollback only
-    removes an empty no-follow directory after descriptor and namespace inode
-    identities agree with the directory observed by this publication call.
+
+def _exclusive_rename_aside_at_antigravity(parent_fd: int, source_name: str, quarantine_name: str) -> None:
+    """Move a rejected destination aside with the same Darwin no-replace primitive."""
+    _rename_no_replace_at_antigravity(parent_fd, source_name, quarantine_name)
+
+
+def _quarantine_rejected_destination_antigravity(parent_fd: int, destination_name: str) -> _PublicationQuarantineAntigravity:
+    """Preserve a contested destination under a unique no-replace quarantine name.
+
+    No pathname deletion is attempted.  Darwin only provides pathname-based
+    renameatx_np, so a same-user race can change the source before this call;
+    the operation deliberately preserves whichever directory that atomic
+    rename moves and leaves the canonical destination absent on success.
     """
-    destination_fd = -1
-    try:
-        destination_fd = os.open(destination_name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent_fd)
-        opened = os.fstat(destination_fd)
-        identity = (opened.st_dev, opened.st_ino)
-        named = os.stat(destination_name, dir_fd=parent_fd, follow_symlinks=False)
-        if (expected_identity is not None and identity != expected_identity) or identity != (named.st_dev, named.st_ino) or not stat.S_ISDIR(opened.st_mode) or os.listdir(destination_fd):
-            return False
-        current = os.stat(destination_name, dir_fd=parent_fd, follow_symlinks=False)
-        if identity != (current.st_dev, current.st_ino):
-            return False
-        os.rmdir(destination_name, dir_fd=parent_fd)
-        os.fsync(parent_fd)
-        return True
-    except OSError:
-        return False
-    finally:
-        if destination_fd >= 0:
-            os.close(destination_fd)
+    for _ in range(8):
+        quarantine_name = _quarantine_name_antigravity(destination_name, uuid4().hex)
+        try:
+            if _QUARANTINE_BEFORE_RENAME_HOOK_ANTIGRAVITY is not None:
+                _QUARANTINE_BEFORE_RENAME_HOOK_ANTIGRAVITY(parent_fd, destination_name, quarantine_name)
+            _exclusive_rename_aside_at_antigravity(parent_fd, destination_name, quarantine_name)
+        except OSError as error:
+            if error.errno == errno.EEXIST:
+                continue
+            return _PublicationQuarantineAntigravity(None, False, f"rename_aside={error.errno or errno.EIO}")
+        try:
+            os.fsync(parent_fd)
+        except OSError as error:
+            return _PublicationQuarantineAntigravity(quarantine_name, False, f"parent_fsync={error.errno or errno.EIO}")
+        return _PublicationQuarantineAntigravity(quarantine_name, True, None)
+    return _PublicationQuarantineAntigravity(None, False, "rename_aside=collision_limit")
+
+
+def _add_quarantine_note_antigravity(error: BaseException, destination: Path, evidence: _PublicationQuarantineAntigravity, observed_identity: tuple[int, int] | None, staging_identity: tuple[int, int] | None) -> None:
+    """Keep the original rejection while attaching bounded quarantine evidence."""
+    identity_known = observed_identity is not None
+    identity_match = "unknown" if not identity_known else str(observed_identity == staging_identity)
+    if evidence.name is None:
+        note = f"Exp444 rejected publication quarantine requires operator intervention; canonical={destination}; identity_known={identity_known}; identity_match={identity_match}; {evidence.error}"
+    else:
+        note = f"Exp444 rejected publication quarantined at {destination.parent / evidence.name}; identity_known={identity_known}; identity_match={identity_match}; parent_fsynced={evidence.parent_fsynced}; error={evidence.error or 'none'}"
+    error.add_note(note)
 
 
 def _write_staging_antigravity(destination: Path, payloads: Mapping[str, bytes], *, parent_fd: int | None = None) -> None:
@@ -680,9 +735,10 @@ def _write_staging_antigravity(destination: Path, payloads: Mapping[str, bytes],
                     raise ValueError("Exp444 publication destination bytes changed")
         finally:
             os.close(published_fd)
-    except BaseException:
+    except BaseException as error:
         if rename_succeeded:
-            _rollback_empty_destination_antigravity(parent_fd, destination.name, published_identity)
+            evidence = _quarantine_rejected_destination_antigravity(parent_fd, destination.name)
+            _add_quarantine_note_antigravity(error, destination, evidence, published_identity, staging_identity)
         if staging_identity is not None:
             try:
                 current = os.stat(staging.name, dir_fd=parent_fd, follow_symlinks=False)
