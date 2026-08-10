@@ -163,7 +163,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp444_task7_runtime_antigravity_") as directory:
             root = Path(directory) / "run_antigravity"
             with (
-                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(61001, "start-A")),
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(9_100_001, "start-A")),
                 mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
             ):
@@ -177,7 +177,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
             self.assertEqual((progress["stage"], progress["completed"], progress["active"]), ("interrupted", 1, False))
 
             with (
-                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(61002, "start-B")),
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(9_100_002, "start-B")),
                 mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=completed_map),
             ):
@@ -188,7 +188,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
             self.assertEqual(tuple(item.candidate.original_rank for item in outcome.results), tuple(range(1, 31)))
 
             with (
-                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(61003, "start-C")),
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(9_100_003, "start-C")),
                 mock.patch.object(runtime, "_load_source_inputs_antigravity", side_effect=AssertionError("complete re-entry must not open source")),
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=AssertionError("complete re-entry must not schedule")),
             ):
@@ -207,7 +207,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp444_task7_context_antigravity_") as directory:
             root = Path(directory) / "run_antigravity"
             with (
-                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(62001, "start-A")),
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(9_200_001, "start-A")),
                 mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
             ):
@@ -220,7 +220,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
             context_path.write_bytes(runtime.canonical_json_bytes_antigravity(payload))
             progress_path = attempt / "progress_antigravity.json"
             before = progress_path.read_bytes()
-            with mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(62002, "start-B")):
+            with mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(9_200_002, "start-B")):
                 with self.assertRaisesRegex(ValueError, "context"):
                     runtime.run_resume_antigravity("reviewed", "attempt_0000_antigravity", run_root=root)
             self.assertEqual(before, progress_path.read_bytes())
@@ -294,7 +294,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                     errors.append(error)
 
             with (
-                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(63001, "start-live-progress")),
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(9_300_001, "start-live-progress")),
                 mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
             ):
                 thread = threading.Thread(target=target_antigravity, daemon=True)
@@ -381,8 +381,8 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
         for offset, case in enumerate(cases):
             with self.subTest(case=case), tempfile.TemporaryDirectory(prefix=f"exp444_task7_complete_{case}_antigravity_") as directory:
                 root = Path(directory) / "run_antigravity"
-                owner = ProcessIdentityAntigravity(64001 + offset * 2, f"owner-{case}")
-                replacement = ProcessIdentityAntigravity(64002 + offset * 2, f"replacement-{case}")
+                owner = ProcessIdentityAntigravity(9_400_001 + offset * 2, f"owner-{case}")
+                replacement = ProcessIdentityAntigravity(9_400_002 + offset * 2, f"replacement-{case}")
                 with (
                     mock.patch.object(runtime, "current_process_identity_antigravity", return_value=owner),
                     mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
@@ -545,6 +545,116 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
             }
             self.assertGreaterEqual(calls, 2)
             self.assertEqual(corrupted_authority, after)
+
+    def test_resume_reconciles_exact_next_result_orphan_before_scheduling_antigravity(self) -> None:
+        """Dropping progress reconciliation leaves checkpoint and progress one apart."""
+        inputs = _inputs_antigravity(30)
+
+        def interrupted_map(active, *, commit, progress, **_kwargs):
+            progress(stage="active", sequence=0)
+            commit(0, active[0], _result_antigravity(active[0]))
+            raise KeyboardInterrupt("fixture SIGINT")
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task7_result_orphan_antigravity_") as directory:
+            root = Path(directory) / "run_antigravity"
+            owner = ProcessIdentityAntigravity(9_700_001, "owner-result-orphan")
+            replacement = ProcessIdentityAntigravity(9_700_002, "replacement-result-orphan")
+            with (
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=owner),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
+                mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
+            ):
+                with self.assertRaises(KeyboardInterrupt):
+                    runtime.run_new_antigravity("reviewed", run_root=root)
+
+            attempt = root / "attempts_antigravity/attempt_0000_antigravity"
+            orphan_result = _result_antigravity(inputs[1])
+            orphan_record = runtime.canonical_json_bytes_antigravity({
+                "sequence": 1,
+                "result": orphan_result.to_payload(),
+            })
+            orphan_path = attempt / "checkpoint_antigravity/records_antigravity/0001_record_antigravity.json"
+            orphan_path.write_bytes(orphan_record)
+            orphan_sha = hashlib.sha256(orphan_record).hexdigest()
+
+            def completed_map(active, *, commit, progress, **_kwargs):
+                state = json.loads((attempt / "checkpoint_antigravity/state_antigravity.json").read_text())
+                live = json.loads((attempt / "progress_antigravity.json").read_text())
+                self.assertEqual((state["completed_units"], live["completed"]), (2, 2))
+                self.assertEqual((live["recomputed"], live["success"], live["error"]), (2, 2, 0))
+                self.assertEqual(active[0].candidate.original_rank, 3)
+                results = tuple(_result_antigravity(item) for item in active)
+                for sequence, (candidate, result) in enumerate(zip(active, results, strict=True)):
+                    progress(stage="active", sequence=sequence)
+                    commit(sequence, candidate, result)
+                return results
+
+            with (
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=replacement),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
+                mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=completed_map),
+            ):
+                outcome = runtime.run_resume_antigravity(
+                    "reviewed", "attempt_0000_antigravity", run_root=root
+                )
+            state = json.loads((attempt / "checkpoint_antigravity/state_antigravity.json").read_text())
+            progress_payload = json.loads((attempt / "progress_antigravity.json").read_text())
+            events = [json.loads(line) for line in (attempt / "events_antigravity.jsonl").read_text().splitlines()]
+            reconciled = next(event for event in events if event["event"] == "orphan_reconciled")
+            self.assertEqual((outcome.status, outcome.completed_count), ("complete", 30))
+            self.assertEqual((state["completed_units"], progress_payload["completed"]), (30, 30))
+            self.assertEqual(reconciled["record_sha256"], orphan_sha)
+            self.assertIn("고아 레코드 복구", (attempt / "text_antigravity.log").read_text())
+
+    def test_resume_reconciles_exact_next_error_orphan_to_terminal_error_antigravity(self) -> None:
+        """A durable error orphan must terminate both authorities without scheduling."""
+        inputs = _inputs_antigravity(30)
+
+        def interrupted_map(active, *, commit, progress, **_kwargs):
+            progress(stage="active", sequence=0)
+            commit(0, active[0], _result_antigravity(active[0]))
+            raise KeyboardInterrupt("fixture SIGINT")
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task7_error_orphan_antigravity_") as directory:
+            root = Path(directory) / "run_antigravity"
+            owner = ProcessIdentityAntigravity(9_800_001, "owner-error-orphan")
+            replacement = ProcessIdentityAntigravity(9_800_002, "replacement-error-orphan")
+            with (
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=owner),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
+                mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
+            ):
+                with self.assertRaises(KeyboardInterrupt):
+                    runtime.run_new_antigravity("reviewed", run_root=root)
+
+            attempt = root / "attempts_antigravity/attempt_0000_antigravity"
+            orphan_record = runtime.canonical_json_bytes_antigravity({
+                "sequence": 1,
+                "result": None,
+                "status": "error",
+                "error": {"type": "RuntimeError", "message": "orphan worker failed"},
+            })
+            orphan_path = attempt / "checkpoint_antigravity/records_antigravity/0001_record_antigravity.json"
+            orphan_path.write_bytes(orphan_record)
+            with (
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=replacement),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
+                mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=AssertionError("terminal orphan must not schedule")),
+            ):
+                with self.assertRaises(runtime.WorkerFailureAntigravity) as captured:
+                    runtime.run_resume_antigravity(
+                        "reviewed", "attempt_0000_antigravity", run_root=root
+                    )
+            state = json.loads((attempt / "checkpoint_antigravity/state_antigravity.json").read_text())
+            progress_payload = json.loads((attempt / "progress_antigravity.json").read_text())
+            events = [json.loads(line) for line in (attempt / "events_antigravity.jsonl").read_text().splitlines()]
+            self.assertEqual(captured.exception.candidate_index, 1)
+            self.assertIn("orphan worker failed", str(captured.exception))
+            self.assertEqual((state["status"], state["completed_units"], state["error_count"]), ("error", 2, 1))
+            self.assertEqual((progress_payload["stage"], progress_payload["completed"], progress_payload["error"]), ("error", 2, 1))
+            self.assertEqual((progress_payload["recomputed"], progress_payload["success"]), (2, 1))
+            self.assertEqual(events[-2]["event"], "orphan_reconciled")
+            self.assertEqual(events[-1]["event"], "terminal")
 
 
 class _ViewFailureAntigravity(RuntimeError):

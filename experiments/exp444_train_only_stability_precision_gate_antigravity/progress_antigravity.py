@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 import time
+import re
 
 from .artifacts_antigravity import canonical_json_bytes_antigravity, fsync_directory_antigravity
 from .checkpoint_antigravity import ProcessIdentityAntigravity, current_process_identity_antigravity
@@ -26,6 +27,7 @@ _PROGRESS_KEYS = frozenset({
     "eta_seconds", "checkpoint", "heartbeat", "latest_error", "total",
 })
 _PID_KEYS = frozenset({"pid", "start_identity", "active", "heartbeat"})
+_SHA256_ANTIGRAVITY = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _utc_now_antigravity() -> str:
@@ -429,6 +431,91 @@ class ProgressWriterAntigravity:
         self._write_progress_antigravity()
         self._append_event_antigravity("candidate_complete", self._stage, {"dataset": dataset, "status": status})
         self._append_text_antigravity(f"후보 완료 dataset={dataset} status={status} 완료={self._counters['completed']}/{self.total}\n")
+
+    def reconcile_orphan_antigravity(
+        self,
+        dataset: str,
+        candidate_index: int,
+        *,
+        record_sha256: str,
+        status: str,
+        train_count: int,
+        test_count: int,
+        raw_length: int,
+        test_rows: int | None = None,
+        target_length: int | None = None,
+        backend: str = "cpu",
+        abstention: bool = False,
+        error: str | None = None,
+    ) -> None:
+        """Atomically advance progress for one already-durable exact-next record."""
+        self._require_active_antigravity()
+        if type(dataset) is not str or not dataset:
+            raise ValueError("progress orphan dataset is invalid")
+        if type(candidate_index) is not int or candidate_index != self._counters["completed"]:
+            raise ValueError("progress orphan is not the exact next candidate")
+        if candidate_index < 0 or candidate_index >= self.total:
+            raise ValueError("progress orphan candidate index is invalid")
+        if type(record_sha256) is not str or _SHA256_ANTIGRAVITY.fullmatch(record_sha256) is None:
+            raise ValueError("progress orphan record hash is invalid")
+        if status not in {"success", "abstained", "error"}:
+            raise ValueError("progress orphan status is invalid")
+        if type(abstention) is not bool or abstention != (status == "abstained"):
+            raise ValueError("progress orphan abstention is invalid")
+        if status == "error":
+            if type(error) is not str or not error:
+                raise ValueError("progress orphan error detail is invalid")
+        elif error is not None:
+            raise ValueError("progress orphan success cannot contain an error")
+        for value, name in (
+            (train_count, "train_count"), (test_count, "test_count"),
+            (raw_length, "raw_length"),
+        ):
+            _exact_nonnegative_antigravity(value, name)
+        for value, name in ((test_rows, "test_rows"), (target_length, "target_length")):
+            if value is not None:
+                _exact_nonnegative_antigravity(value, name)
+        if backend not in {"cpu", "mlx", "numba"}:
+            raise ValueError("progress orphan backend is invalid")
+        if any(value is not None for value in (
+            self._current_dataset, self._current_candidate_index, self._current_view,
+            self._view_count, self._excluded_count,
+        )):
+            raise ValueError("progress orphan cannot replace an active candidate")
+
+        self._dimensions.update({
+            "train_count": train_count,
+            "test_count": test_count,
+            "test_rows": test_count if test_rows is None else test_rows,
+            "raw_length": raw_length,
+            "target_length": raw_length if target_length is None else target_length,
+        })
+        self._backend = backend
+        self._counters["completed"] += 1
+        self._counters["recomputed"] += 1
+        self._counters["abstention"] += int(abstention)
+        if status == "error":
+            self._counters["error"] += 1
+            self._latest_error = error
+        else:
+            self._counters["success"] += 1
+        self._stage = "resuming"
+        self._write_progress_antigravity()
+        self._append_event_antigravity(
+            "orphan_reconciled",
+            self._stage,
+            {
+                "dataset": dataset,
+                "candidate_index": candidate_index,
+                "status": status,
+                "record_sha256": record_sha256,
+            },
+        )
+        self._append_text_antigravity(
+            f"고아 레코드 복구 dataset={dataset} index={candidate_index} "
+            f"status={status} sha256={record_sha256} "
+            f"완료={self._counters['completed']}/{self.total}\n"
+        )
 
     def close_antigravity(self, status: str, latest_error: str | None = None) -> None:
         if os.getpid() != self._local_owner_pid:

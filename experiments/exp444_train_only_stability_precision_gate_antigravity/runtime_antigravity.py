@@ -30,6 +30,7 @@ from typing import Any
 
 from .artifacts_antigravity import canonical_json_bytes_antigravity, parse_canonical_json_bytes_antigravity
 from .checkpoint_antigravity import (
+    CheckpointResumeInspectionAntigravity,
     Exp444CheckpointStoreAntigravity,
     ProcessIdentityAntigravity,
     current_process_identity_antigravity,
@@ -664,11 +665,17 @@ def _execute_runtime_antigravity(
         # Full record/prefix/orphan validation is read-only and must succeed
         # before progress/PID/events/text can be rebound.  The writable open
         # below repeats the same validation at the checkpoint mutation boundary.
-        Exp444CheckpointStoreAntigravity.inspect_interrupted_antigravity(
+        resume_inspection = Exp444CheckpointStoreAntigravity.inspect_interrupted_antigravity(
             checkpoint_root,
             context,
             process,
         )
+        def require_same_authority_antigravity() -> None:
+            current = Exp444CheckpointStoreAntigravity.inspect_interrupted_antigravity(
+                checkpoint_root, context, process,
+            )
+            if current != resume_inspection:
+                raise ValueError("Exp444 checkpoint authority changed during resume")
         # Progress validation must see the inactive interrupted checkpoint;
         # checkpoint opening then binds the new owner and switches to running.
         writer = ProgressWriterAntigravity.open_interrupted(
@@ -676,11 +683,7 @@ def _execute_runtime_antigravity(
             total=FROZEN_CONFIG.source_candidate_count,
             process=process,
             checkpoint_path=checkpoint_root / "state_antigravity.json",
-            authority_preflight=lambda: Exp444CheckpointStoreAntigravity.inspect_interrupted_antigravity(
-                checkpoint_root,
-                context,
-                process,
-            ),
+            authority_preflight=require_same_authority_antigravity,
         )
         store = Exp444CheckpointStoreAntigravity.open_interrupted(
             checkpoint_root,
@@ -695,6 +698,57 @@ def _execute_runtime_antigravity(
 
     try:
         inputs, label_access_count = _load_source_inputs_antigravity()
+        if resumed:
+            if not isinstance(resume_inspection, CheckpointResumeInspectionAntigravity):
+                raise AssertionError("Exp444 resume inspection is unavailable")
+            if (
+                store.completed_count_antigravity != resume_inspection.accepted_completed_units
+                or store.record_sha256_prefix_antigravity
+                != resume_inspection.accepted_record_sha256_prefix
+            ):
+                raise ValueError("Exp444 reconciled checkpoint differs from accepted authority")
+            orphan_sequence = resume_inspection.orphan_sequence
+            if orphan_sequence is not None:
+                if orphan_sequence >= len(inputs):
+                    raise ValueError("Exp444 orphan sequence exceeds source inputs")
+                orphan_input = inputs[orphan_sequence]
+                dimensions = _dimensions_antigravity(orphan_input)
+                record_sha = resume_inspection.accepted_record_sha256_prefix[orphan_sequence]
+                if resume_inspection.orphan_is_error_antigravity:
+                    detail = (
+                        f"{resume_inspection.orphan_error_type}: "
+                        f"{resume_inspection.orphan_error_message}"
+                    )
+                    writer.reconcile_orphan_antigravity(
+                        orphan_input.dataset,
+                        orphan_sequence,
+                        record_sha256=record_sha,
+                        status="error",
+                        error=detail,
+                        backend="cpu",
+                        **dimensions,
+                    )
+                    writer.close_antigravity("error", detail)
+                    raise WorkerFailureAntigravity(
+                        orphan_sequence,
+                        orphan_input,
+                        RuntimeError(detail),
+                    )
+                orphan_result = resume_inspection.orphan_result
+                if orphan_result is None:
+                    raise ValueError("Exp444 accepted orphan result is unavailable")
+                stored_result = store.results_antigravity().get(orphan_sequence)
+                if stored_result != orphan_result:
+                    raise ValueError("Exp444 orphan result changed after acceptance")
+                writer.reconcile_orphan_antigravity(
+                    orphan_input.dataset,
+                    orphan_sequence,
+                    record_sha256=record_sha,
+                    status="abstained" if orphan_result.lane == "unstable_review" else "success",
+                    abstention=orphan_result.lane == "unstable_review",
+                    backend="cpu",
+                    **dimensions,
+                )
         completed = store.completed_count_antigravity
         if completed > len(inputs):
             raise ValueError("Exp444 checkpoint prefix exceeds source inputs")

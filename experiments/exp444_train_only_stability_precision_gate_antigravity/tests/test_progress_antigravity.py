@@ -113,6 +113,52 @@ class Exp444ProgressAntigravityTests(unittest.TestCase):
             self.assertEqual(resumed.error_count_antigravity, 0)
             self.assertEqual(json.loads((attempt / "progress_antigravity.json").read_text())["active"], True)
 
+    def test_orphan_reconciliation_is_exact_next_validated_and_truthful_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task7_progress_orphan_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"
+            attempt.mkdir()
+            writer = ProgressWriterAntigravity.create(
+                attempt, total=30, pid=9_120_001, start_identity="owner-orphan"
+            )
+            writer.start_candidate_antigravity("A", 0, train_count=5, test_count=1, raw_length=16)
+            writer.complete_candidate_antigravity()
+            writer.close_antigravity("interrupted")
+            _write_checkpoint_state_antigravity(
+                attempt, pid=9_120_001, start_identity="owner-orphan", completed=1, total=30
+            )
+            resumed = ProgressWriterAntigravity.open_interrupted(
+                attempt,
+                total=30,
+                pid=9_120_002,
+                start_identity="replacement-orphan",
+                pid_probe=lambda _: False,
+            )
+            evidence_paths = (
+                attempt / "progress_antigravity.json",
+                attempt / "events_antigravity.jsonl",
+                attempt / "text_antigravity.log",
+            )
+            before = tuple(path.read_bytes() for path in evidence_paths)
+            with self.assertRaisesRegex(ValueError, "hash"):
+                resumed.reconcile_orphan_antigravity(
+                    "B", 1, record_sha256="bad", status="success",
+                    train_count=6, test_count=1, raw_length=20,
+                )
+            self.assertEqual(before, tuple(path.read_bytes() for path in evidence_paths))
+            digest = hashlib.sha256(b"accepted orphan record").hexdigest()
+            resumed.reconcile_orphan_antigravity(
+                "B", 1, record_sha256=digest, status="success",
+                train_count=6, test_count=1, raw_length=20,
+            )
+            state = json.loads((attempt / "progress_antigravity.json").read_text())
+            event = json.loads((attempt / "events_antigravity.jsonl").read_text().splitlines()[-1])
+            self.assertEqual((state["completed"], state["recomputed"], state["success"], state["error"]), (2, 2, 2, 0))
+            self.assertEqual((state["current_dataset"], state["current_candidate_index"]), (None, None))
+            self.assertEqual((event["event"], event["dataset"], event["record_sha256"]), ("orphan_reconciled", "B", digest))
+            self.assertIn("고아 레코드 복구 dataset=B", (attempt / "text_antigravity.log").read_text())
+
     def test_resume_authority_preflight_runs_before_first_owner_write_antigravity(self) -> None:
         from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
 

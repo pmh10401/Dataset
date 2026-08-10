@@ -103,6 +103,57 @@ class Exp444CheckpointAntigravityTests(unittest.TestCase):
                         bad_root, _context_antigravity(), _process_antigravity(41003, "start-C"), pid_probe=lambda _: False
                     )
 
+    def test_read_only_inspection_describes_result_and_error_orphans_without_writes_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
+
+        cases = (
+            ("result", {"sequence": 1, "result": _result_antigravity(1).to_payload()}),
+            (
+                "error",
+                {
+                    "sequence": 1,
+                    "result": None,
+                    "status": "error",
+                    "error": {"type": "RuntimeError", "message": "durable failure"},
+                },
+            ),
+        )
+        for offset, (case, payload) in enumerate(cases):
+            with self.subTest(case=case), tempfile.TemporaryDirectory(prefix="exp444_task7_inspection_antigravity_") as directory:
+                root = Path(directory) / "checkpoint_antigravity"
+                store = Exp444CheckpointStoreAntigravity.create(
+                    root, _context_antigravity(), _process_antigravity(9_110_001 + offset * 2, f"owner-{case}")
+                )
+                store.commit_antigravity(0, _result_antigravity(0))
+                record_bytes = canonical_json_bytes_antigravity(payload)
+                (root / "records_antigravity/0001_record_antigravity.json").write_bytes(record_bytes)
+                before = {
+                    path.relative_to(root).as_posix(): path.read_bytes()
+                    for path in sorted(root.rglob("*")) if path.is_file()
+                }
+                inspection = Exp444CheckpointStoreAntigravity.inspect_interrupted_antigravity(
+                    root,
+                    _context_antigravity(),
+                    _process_antigravity(9_110_002 + offset * 2, f"replacement-{case}"),
+                    pid_probe=lambda _: False,
+                )
+                after = {
+                    path.relative_to(root).as_posix(): path.read_bytes()
+                    for path in sorted(root.rglob("*")) if path.is_file()
+                }
+                self.assertEqual(before, after)
+                self.assertEqual((inspection.stored_completed_units, inspection.accepted_completed_units), (1, 2))
+                self.assertEqual(inspection.orphan_sequence, 1)
+                self.assertEqual(inspection.accepted_record_sha256_prefix[-1], hashlib.sha256(record_bytes).hexdigest())
+                if case == "result":
+                    self.assertEqual(inspection.orphan_result, _result_antigravity(1))
+                    self.assertFalse(inspection.orphan_is_error_antigravity)
+                else:
+                    self.assertIsNone(inspection.orphan_result)
+                    self.assertEqual((inspection.orphan_error_type, inspection.orphan_error_message), ("RuntimeError", "durable failure"))
+                    self.assertTrue(inspection.orphan_is_error_antigravity)
+
     def test_resume_pid_rules_interruption_and_complete_finalization_reopen_antigravity(self) -> None:
         from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
 

@@ -143,6 +143,28 @@ class ProcessIdentityAntigravity:
         return cls(payload["pid"], payload["start_identity"])
 
 
+@dataclass(frozen=True)
+class CheckpointResumeInspectionAntigravity:
+    """Immutable, read-only description of the prefix accepted for resume."""
+
+    stored_status: str
+    stored_completed_units: int
+    accepted_completed_units: int
+    accepted_record_sha256_prefix: tuple[str, ...]
+    orphan_sequence: int | None
+    orphan_result: CandidateStabilityResultAntigravity | None
+    orphan_error_type: str | None
+    orphan_error_message: str | None
+
+    @property
+    def has_orphan_antigravity(self) -> bool:
+        return self.orphan_sequence is not None
+
+    @property
+    def orphan_is_error_antigravity(self) -> bool:
+        return self.orphan_error_type is not None
+
+
 def current_process_identity_antigravity() -> ProcessIdentityAntigravity:
     """Return a stable-enough local process token for production callers."""
     pid = os.getpid()
@@ -441,7 +463,7 @@ class Exp444CheckpointStoreAntigravity:
         *,
         allow_complete_finalization: bool = False,
         _read_only_preflight: bool = False,
-    ) -> "Exp444CheckpointStoreAntigravity" | None:
+    ) -> "Exp444CheckpointStoreAntigravity" | CheckpointResumeInspectionAntigravity:
         expected_context = _context_payload_antigravity(context)
         if type(replacement_process) is not ProcessIdentityAntigravity:
             raise ValueError("checkpoint replacement process identity is invalid")
@@ -533,7 +555,10 @@ class Exp444CheckpointStoreAntigravity:
             if not allow_complete_finalization or completed != total or orphan is not None or tuple(prefix) != tuple(prefix_payload):
                 raise ValueError("checkpoint is complete")
             if _read_only_preflight:
-                return None
+                return CheckpointResumeInspectionAntigravity(
+                    status, completed, completed, tuple(prefix_payload), None,
+                    None, None, None,
+                )
             return cls(root, context, stored_process, tuple(prefix_payload), "complete", error_count, finalization_only=True)
         orphan_error: Mapping[str, object] | None = None
         if orphan is not None and orphan_result is None:
@@ -545,7 +570,16 @@ class Exp444CheckpointStoreAntigravity:
                 raise ValueError("checkpoint orphan result is invalid")
             orphan_error = orphan_payload.get("error")
         if _read_only_preflight:
-            return None
+            return CheckpointResumeInspectionAntigravity(
+                status,
+                completed,
+                len(prefix),
+                tuple(prefix),
+                orphan,
+                orphan_result,
+                None if orphan_error is None else str(orphan_error["type"]),
+                None if orphan_error is None else str(orphan_error["message"]),
+            )
         if orphan_error is not None:
             # A durable error record is itself terminal even if the process
             # died before the state replacement.  Reconcile it once, then
@@ -570,7 +604,7 @@ class Exp444CheckpointStoreAntigravity:
         context: CheckpointContextAntigravity,
         replacement_process: ProcessIdentityAntigravity,
         pid_probe: Callable[[ProcessIdentityAntigravity], bool] | None = None,
-    ) -> None:
+    ) -> CheckpointResumeInspectionAntigravity:
         """Validate the complete resumable authority without changing any bytes."""
         result = cls.open_interrupted(
             root,
@@ -579,8 +613,9 @@ class Exp444CheckpointStoreAntigravity:
             pid_probe=pid_probe,
             _read_only_preflight=True,
         )
-        if result is not None:
-            raise AssertionError("checkpoint read-only preflight mutated into a writable store")
+        if not isinstance(result, CheckpointResumeInspectionAntigravity):
+            raise AssertionError("checkpoint read-only preflight returned a writable store")
+        return result
 
     open_for_resume_antigravity = open_interrupted
 
@@ -597,6 +632,7 @@ class Exp444CheckpointStoreAntigravity:
 
 
 __all__ = [
-    "Exp444CheckpointStoreAntigravity", "ProcessIdentityAntigravity",
+    "CheckpointResumeInspectionAntigravity", "Exp444CheckpointStoreAntigravity",
+    "ProcessIdentityAntigravity",
     "current_process_identity_antigravity",
 ]
