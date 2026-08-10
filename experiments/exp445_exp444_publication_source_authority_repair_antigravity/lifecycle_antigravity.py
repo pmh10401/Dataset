@@ -18,10 +18,17 @@ def run_new_antigravity(reviewed_commit: str):
     return run_new_for_profile_antigravity(_EXP445_PROFILE_ANTIGRAVITY, reviewed_commit)
 
 
+def _publish_exp445_prediction_antigravity(profile: object):
+    """Keep the private patch seam lazy so inspection never imports sources."""
+    from experiments.exp444_train_only_stability_precision_gate_antigravity.reporting_antigravity import (
+        _publish_exp445_prediction_antigravity as publish,
+    )
+
+    return publish(profile)
+
+
 def publish_prediction_antigravity():
     """Publish the fixed Exp445 replay through its closed no-retry boundary."""
-    from experiments.exp444_train_only_stability_precision_gate_antigravity.reporting_antigravity import _publish_exp445_prediction_antigravity
-
     return _publish_exp445_prediction_antigravity(_EXP445_PROFILE_ANTIGRAVITY)
 
 
