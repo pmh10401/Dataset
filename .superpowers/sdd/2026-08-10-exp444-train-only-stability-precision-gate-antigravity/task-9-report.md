@@ -69,4 +69,8 @@ ROUND 4 GREEN: `/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_
 
 GAPS: none.
 
-COMMITS: `c5fdf2d1` test/evidence closure; documentation and map commits follow this ledger entry.
+FINAL VERIFICATION: the exact full discovery pattern `/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python -B -m unittest discover -s experiments/exp444_train_only_stability_precision_gate_antigravity/tests -p 'test_*_antigravity.py'` exited 0. Its same-pattern loader count is 170/170. The isolated import/replay firewall command passed 2/2: no module-scope SQLite import and complete evaluation re-entry remains label-free with no audit.
+
+FINAL MAP: `c4be50b0` binds the preceding documentation commit. The versioned triplet has current lock fingerprints, 20 nodes, 64 edges, 6 flows, valid evidence references, byte-identical embedded HTML JSON, and no unversioned triplet.
+
+COMMITS: `c5fdf2d1` test coverage; `1547e4a0` ledger correction; `c4be50b0` initial round-4 map synchronization. This final-verification appendix and its immediate map refresh follow.
