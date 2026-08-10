@@ -52,6 +52,82 @@ def _result_antigravity(item: CandidateInputAntigravity) -> CandidateStabilityRe
 
 
 class Exp444RuntimeAntigravityTests(unittest.TestCase):
+    def test_new_source_failure_precedes_root_allocation_antigravity(self) -> None:
+        """Allocating a new root before failed source materialization would retain unsafe attempt bytes."""
+        with tempfile.TemporaryDirectory(prefix="exp444_task10_new_antigravity_") as directory:
+            root = Path(directory) / "run_antigravity"
+            with (
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", side_effect=ValueError("source failed")),
+                mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+            ):
+                with self.assertRaisesRegex(ValueError, "source failed"):
+                    runtime.run_new_antigravity("reviewed", run_root=root)
+            self.assertFalse(root.exists())
+
+    def test_interrupted_resume_source_failure_preserves_every_existing_byte_antigravity(self) -> None:
+        """Rebinding progress/checkpoint before failed source replay would mutate the recoverable attempt."""
+        inputs = _inputs_antigravity(30)
+
+        def interrupted_map(active, *, commit, progress, **_kwargs):
+            progress(stage="active", sequence=0)
+            commit(0, active[0], _result_antigravity(active[0]))
+            raise KeyboardInterrupt("fixture SIGINT")
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task10_resume_antigravity_") as directory:
+            root = Path(directory) / "run_antigravity"
+            owner = ProcessIdentityAntigravity(9_610_001, "owner-task10")
+            replacement = ProcessIdentityAntigravity(9_610_002, "replacement-task10")
+            with (
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=owner),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
+                mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
+            ):
+                with self.assertRaises(KeyboardInterrupt):
+                    runtime.run_new_antigravity("reviewed", run_root=root)
+            attempt = root / "attempts_antigravity/attempt_0000_antigravity"
+            before = {path.relative_to(attempt).as_posix(): path.read_bytes() for path in sorted(attempt.rglob("*")) if path.is_file()}
+            original_open = runtime.Exp444CheckpointStoreAntigravity.open_interrupted
+            def only_read_only_preflight(*args, **kwargs):
+                if kwargs.get("_read_only_preflight"):
+                    return original_open(*args, **kwargs)
+                raise AssertionError("checkpoint must not rebind")
+            with (
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=replacement),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", side_effect=ValueError("source failed")),
+                mock.patch.object(runtime.ProgressWriterAntigravity, "open_interrupted", side_effect=AssertionError("writer must not rebind")),
+                mock.patch.object(runtime.Exp444CheckpointStoreAntigravity, "open_interrupted", side_effect=only_read_only_preflight),
+            ):
+                with self.assertRaisesRegex(ValueError, "source failed"):
+                    runtime.run_resume_antigravity("reviewed", "attempt_0000_antigravity", run_root=root)
+            after = {path.relative_to(attempt).as_posix(): path.read_bytes() for path in sorted(attempt.rglob("*")) if path.is_file()}
+            self.assertEqual(before, after)
+
+    def test_source_inputs_are_ready_before_new_root_or_resume_owner_mutation_antigravity(self) -> None:
+        """A live source session crossing either mutation boundary would violate the values-only capability limit."""
+        sequence: list[str] = []
+        inputs = _inputs_antigravity(30)
+        with tempfile.TemporaryDirectory(prefix="exp444_task10_order_antigravity_") as directory:
+            root = Path(directory) / "run_antigravity"
+            original_root = runtime._attempt_root_antigravity
+            def checked_root(path):
+                self.assertEqual(sequence, ["source-closed"])
+                return original_root(path)
+            def loaded():
+                sequence.append("source-closed")
+                return inputs, 0
+            def complete_map(active, *, commit, progress, **_kwargs):
+                for index, item in enumerate(active):
+                    progress(stage="active", sequence=index)
+                    commit(index, item, _result_antigravity(item))
+                return tuple(_result_antigravity(item) for item in active)
+            with (
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", side_effect=loaded),
+                mock.patch.object(runtime, "_attempt_root_antigravity", side_effect=checked_root),
+                mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=complete_map),
+                mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+            ):
+                runtime.run_new_antigravity("reviewed", run_root=root)
+
     def test_parallel_and_sequential_bytes_match_antigravity(self) -> None:
         inputs = _inputs_antigravity()
         sequential = runtime.sequential_reference_antigravity(inputs, score_task=_result_antigravity)
@@ -532,7 +608,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
             with (
                 mock.patch.object(runtime, "current_process_identity_antigravity", return_value=replacement),
                 mock.patch.object(runtime.Exp444CheckpointStoreAntigravity, "inspect_interrupted_antigravity", side_effect=racing_preflight),
-                mock.patch.object(runtime, "_load_source_inputs_antigravity", side_effect=AssertionError("racing corruption must fail before source access")),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
             ):
                 with self.assertRaisesRegex(ValueError, "record"):
                     runtime.run_resume_antigravity(

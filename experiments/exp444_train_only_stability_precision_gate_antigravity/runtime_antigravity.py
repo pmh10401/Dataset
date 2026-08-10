@@ -633,9 +633,15 @@ def _execute_runtime_antigravity(
     root = Path(FROZEN_CONFIG.run_root if run_root is None else run_root)
     context = _context_antigravity()
     process = current_process_identity_antigravity()
+    # The source session is a values-only capability.  It must be fully
+    # materialized and closed before *any* new-root or interrupted-owner
+    # mutation.  Complete re-entry intentionally remains entirely source-free.
+    inputs: tuple[CandidateInputAntigravity, ...] | None = None
+    label_access_count = 0
     if mode == "new":
         if attempt_name is not None:
             raise ValueError("Exp444 new run cannot select an attempt")
+        inputs, label_access_count = _load_source_inputs_antigravity()
         attempt = _attempt_root_antigravity(root)
         checkpoint_root = attempt / "checkpoint_antigravity"
         store = Exp444CheckpointStoreAntigravity.create(checkpoint_root, context, process)
@@ -648,7 +654,6 @@ def _execute_runtime_antigravity(
         )
         resumed = False
         finalization_only = False
-        label_access_count = 0
     elif mode == "resume":
         if attempt_name is None:
             raise ValueError("Exp444 resume requires an attempt")
@@ -684,6 +689,7 @@ def _execute_runtime_antigravity(
             )
             if current != resume_inspection:
                 raise ValueError("Exp444 checkpoint authority changed during resume")
+        inputs, label_access_count = _load_source_inputs_antigravity()
         # Progress validation must see the inactive interrupted checkpoint;
         # checkpoint opening then binds the new owner and switches to running.
         writer = ProgressWriterAntigravity.open_interrupted(
@@ -700,12 +706,12 @@ def _execute_runtime_antigravity(
         )
         resumed = True
         finalization_only = False
-        label_access_count = 0
     else:
         raise ValueError("Exp444 runtime mode is invalid")
 
     try:
-        inputs, label_access_count = _load_source_inputs_antigravity()
+        if inputs is None:
+            raise AssertionError("Exp444 materialized source inputs are unavailable")
         if resumed:
             if not isinstance(resume_inspection, CheckpointResumeInspectionAntigravity):
                 raise AssertionError("Exp444 resume inspection is unavailable")

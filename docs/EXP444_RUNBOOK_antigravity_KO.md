@@ -1,11 +1,11 @@
 # Exp444 TRAIN-only 안정성 정밀화 실행 안내서
 
-## 구현 전 고정 상태
+## 검토 후 고정 상태
 
-아래 명령은 승인 설계와 이 사전등록의 bytes, 그리고 clean reviewed commit에
-묶인다. 아직 Exp444 runtime 구현·회귀·label-free smoke와 fresh review가 끝나지
-않았으므로 지금은 모두 unavailable이다. 구현이 검토된 clean HEAD와 별도 환경을
-확인하기 전에는 공식 root를 만들지 않는다.
+아래 명령은 승인 설계와 이 사전등록의 bytes, clean reviewed commit, 그리고 별도
+Exp444 환경에 묶인다. 공식 실행은 fresh Sol/High final review가 `ship`이고 미해결
+Critical/Important finding이 없을 때까지 금지된다. `readiness`와 `new`는 모두
+official root를 만들기 전에 source values를 materialize하고 session을 닫는다.
 
 ```text
 DESIGN_SOURCE=docs/superpowers/specs/2026-08-10-exp444-train-only-stability-precision-gate-antigravity-design.md
@@ -32,7 +32,7 @@ counter, 처리속도·경과시간·ETA, checkpoint, 마지막 오류를 쓴다
 30개 후보의 ordered prefix, context/state hash와 오류·중단 상태를 보존한다. 사용자는
 실행 중 이 파일을 수정하지 않으며 Codex는 장기 process를 반복 polling하지 않는다.
 
-## 고정된 미래 명령 (현재 실행 불가)
+## 고정된 다섯 명령 (final review 전 실행 금지)
 
 `REVIEWED_COMMIT`은 명령 호출자가 넣는 runtime argument이며 문서나 publication에
 placeholder로 저장하지 않는다. 아래 고정 명령은 clean reviewed implementation과
@@ -48,12 +48,15 @@ bash scripts/create_exp444_environment_antigravity.sh
 ```
 
 `readiness`는 설계·사전등록 SHA, clean reviewed HEAD, 고정 input bytes와 30개
-좌표, 1,117개 population, environment, backend parity, zero label access, 그리고
-빈 `RUN_ROOT`를 확인한다. `new`는 가장 작은 absent attempt를 만들고 정상 TRAIN
-control replay가 Exp442와 정확히 맞은 뒤에만 omission view를 계산한다. `resume`은
-inactive PID와 유효한 ordered prefix만 읽어 실패한 attempt를 보존한 채 이어간다.
-complete checkpoint의 publication 실패에는 checkpoint/progress/PID/events/text bytes를
-수정하지 않는 finalization-only resume만 허용한다.
+좌표, 1,117개 population, environment lock, backend decision, 1-worker/11-worker
+parity, zero label access, 그리고 빈 `RUN_ROOT`를 확인한다. `new`는 같은 process에서
+source provenance를 다시 확인하고 values-only source session을 닫은 뒤에만 absent
+root를 만들며 정상 TRAIN control replay가 Exp442와 정확히 맞은 뒤 omission view를
+계산한다. `resume`은 하나의 `attempt_####_antigravity` basename만 받고, interrupted
+checkpoint의 read-only authority 확인과 source materialization/close를 모두 끝낸 뒤에만
+progress/PID/checkpoint owner를 rebind한다. complete checkpoint의 publication 실패에는
+checkpoint/progress/PID/events/text bytes를 수정하지 않는 source-free finalization-only
+resume만 허용한다.
 
 성공한 `new`/`resume`는 먼저 label-free publication을 create-only로 동결한다.
 publication에는 1,117개 summary, 30개 원본 좌표, mask/view/score evidence,
@@ -84,5 +87,10 @@ Exp440/442/443 root와 artifact는 절대 수정하지 않는다.
 4. prediction SHA와 label-access count가 동결된 뒤 `evaluate`를 한 번 실행한다.
 5. 결과는 설명용으로만 기록하고 Exp444 내부에서 규칙을 다시 선택하지 않는다.
 
-본 문서는 구현 전 runbook이다. 위 명령은 현재 branch에 해당 runtime·환경·회귀·fresh
-review가 없으므로 unavailable이며, 준비가 끝났다는 신호나 공식 실행 증거가 아니다.
+`inspect`는 publication, checkpoint, progress, PID, events, text, prediction bytes를
+변경하지 않는다. `evaluate`는 publication을 먼저 완전히 inspect한 뒤에만 evaluator를
+lazy import하며, evaluator도 label access 전 독립된 두 번째 inspection을 수행한다.
+Wrapper 실패는 stdout에 하나의 canonical JSON error object만 남긴다.
+
+이 runbook은 구현된 고정 인터페이스를 설명할 뿐 준비 완료나 공식 실행 증거가 아니다.
+Codex는 장기 process를 polling하지 않는다.
