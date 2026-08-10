@@ -579,6 +579,36 @@ def _exclusive_rename_at_antigravity(parent_fd: int, source_name: str, destinati
         raise OSError(code, os.strerror(code), destination_name)
 
 
+def _rollback_empty_destination_antigravity(parent_fd: int, destination_name: str, expected_identity: tuple[int, int] | None) -> bool:
+    """Remove only the exact empty directory observed after a rejected rename.
+
+    Darwin's renameatx_np accepts directory paths rather than an open source
+    descriptor, so it cannot atomically prove that the name it resolves still
+    denotes our staged inode.  On rejection, this conservative rollback only
+    removes an empty no-follow directory after descriptor and namespace inode
+    identities agree with the directory observed by this publication call.
+    """
+    destination_fd = -1
+    try:
+        destination_fd = os.open(destination_name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent_fd)
+        opened = os.fstat(destination_fd)
+        identity = (opened.st_dev, opened.st_ino)
+        named = os.stat(destination_name, dir_fd=parent_fd, follow_symlinks=False)
+        if (expected_identity is not None and identity != expected_identity) or identity != (named.st_dev, named.st_ino) or not stat.S_ISDIR(opened.st_mode) or os.listdir(destination_fd):
+            return False
+        current = os.stat(destination_name, dir_fd=parent_fd, follow_symlinks=False)
+        if identity != (current.st_dev, current.st_ino):
+            return False
+        os.rmdir(destination_name, dir_fd=parent_fd)
+        os.fsync(parent_fd)
+        return True
+    except OSError:
+        return False
+    finally:
+        if destination_fd >= 0:
+            os.close(destination_fd)
+
+
 def _write_staging_antigravity(destination: Path, payloads: Mapping[str, bytes], *, parent_fd: int | None = None) -> None:
     """Durably publish only through a pinned attempt descriptor when supplied."""
     staging = destination.with_name(f".{destination.name}.{uuid4().hex}.staging_antigravity")
@@ -588,6 +618,8 @@ def _write_staging_antigravity(destination: Path, payloads: Mapping[str, bytes],
     staging_fd = -1
     staging_identity: tuple[int, int] | None = None
     staging_children: dict[str, tuple[int, int, int, int, int]] = {}
+    rename_succeeded = False
+    published_identity: tuple[int, int] | None = None
     try:
         try:
             os.stat(staging.name, dir_fd=parent_fd, follow_symlinks=False)
@@ -635,10 +667,12 @@ def _write_staging_antigravity(destination: Path, payloads: Mapping[str, bytes],
             if staged != payloads:
                 raise ValueError("Exp444 publication staging bytes changed")
         _exclusive_rename_at_antigravity(parent_fd, staging.name, destination.name)
+        rename_succeeded = True
         os.fsync(parent_fd)
         published_fd = os.open(destination.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent_fd)
         try:
             published = os.fstat(published_fd)
+            published_identity = (published.st_dev, published.st_ino)
             if staging_identity != (published.st_dev, published.st_ino):
                 raise ValueError("Exp444 publication destination changed")
             with _pinned_publication_payloads_antigravity(root_fd=published_fd) as published_payloads:
@@ -647,6 +681,8 @@ def _write_staging_antigravity(destination: Path, payloads: Mapping[str, bytes],
         finally:
             os.close(published_fd)
     except BaseException:
+        if rename_succeeded:
+            _rollback_empty_destination_antigravity(parent_fd, destination.name, published_identity)
         if staging_identity is not None:
             try:
                 current = os.stat(staging.name, dir_fd=parent_fd, follow_symlinks=False)

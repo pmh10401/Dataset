@@ -352,6 +352,31 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
                     reporting._write_staging_antigravity(destination, payloads)
             self.assertFalse(destination.exists())
 
+    def test_rename_boundary_rejection_removes_destination_and_allows_retry_antigravity(self) -> None:
+        """A replacement resolved only by Darwin rename cannot poison the final create-only name."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_rename_boundary_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payloads = {name: (frozen.publication_root / name).read_bytes() for name in reporting._PUBLICATION_FILES_ANTIGRAVITY}
+            destination = frozen.publication_root.parent / "rename_boundary_publication_antigravity"
+
+            def replace_source(parent_fd: int, staging_name: str, _destination_name: str) -> None:
+                moved = f"{staging_name}.moved_antigravity"
+                __import__("os").replace(staging_name, moved, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+                __import__("os").mkdir(staging_name, mode=0o700, dir_fd=parent_fd)
+
+            original_rename = reporting._exclusive_rename_at_antigravity
+
+            def replace_source_then_rename(parent_fd: int, staging_name: str, destination_name: str) -> None:
+                replace_source(parent_fd, staging_name, destination_name)
+                original_rename(parent_fd, staging_name, destination_name)
+
+            with mock.patch.object(reporting, "_exclusive_rename_at_antigravity", side_effect=replace_source_then_rename):
+                with self.assertRaisesRegex(ValueError, "publication destination changed"):
+                    reporting._write_staging_antigravity(destination, payloads)
+            self.assertFalse(destination.exists())
+            reporting._write_staging_antigravity(destination, payloads)
+            self.assertTrue(destination.is_dir())
+
 
 if __name__ == "__main__":
     unittest.main()
