@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T22:34:05Z",
-  "generated_from_commit": "c7142b5561f69362d8357345acbd9f2a20335019",
+  "generated_at": "2026-08-10T22:43:59Z",
+  "generated_from_commit": "7899b7b7d3fa460d14645a048c79afbc06b5483c",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -147,7 +147,8 @@
         "Exp445 Task 2 exposes no profile selector or lifecycle route: only two reviewed profile constants exist, arbitrary identity/root/schema values fail closed, and the Exp444 config/checkpoint internals accept only the Exp444 singleton.",
         "Task 5 round 3 validates the fixed Exp445 readiness entrypoint through wrong/dirty commit, document, config, environment/package/topology, provenance/backend, worker-parity, label-access, predecessor, and existing/symlink-root boundaries before root allocation; a fully valid mocked handoff remains CPU/11, inner-1, and zero-label.",
         "Exp445 Task 6 has no CLI/evaluation route: publication is create-only and same-root retry is rejected; terminal, predecessor, record-prefix, aggregate, and descriptor-pinned Exp440-summary gates fail before staging, while partial/post-rename failures retain create-only failure evidence and no canonical complete publication.",
-        "Exp445 publication inspection replays only frozen publication leaves; it does not reopen live checkpoint, predecessor, provenance, values-only source, SQLite, or TEST-label authorities."
+        "Exp445 publication inspection replays only frozen publication leaves; it does not reopen live checkpoint, predecessor, provenance, values-only source, SQLite, or TEST-label authorities.",
+        "Exp445 publication capture failure after fixed-root allocation creates only immutable publication_failure_antigravity.json and no canonical publication. If a caller-side frozen-leaf replay/audit rejects after atomic rename, the retained attempt descriptor quarantines the canonical destination before failure evidence is written; it is never returned as clean publication."
       ],
       "evidence": [
         {
@@ -681,6 +682,14 @@
         {
           "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_publication_antigravity.py",
           "symbol": "class Exp445PublicationAntigravityTests"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_publication_antigravity.py",
+          "symbol": "def test_real_capture_failure_after_allocation_writes_create_only_failure_evidence_antigravity"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_publication_antigravity.py",
+          "symbol": "def test_real_postrename_replay_failure_quarantines_canonical_destination_antigravity"
         }
       ]
     },
@@ -4573,7 +4582,8 @@
         "Fix Round 1 requires an exact lowercase 40-hex reviewed_commit equal to current clean HEAD before CLI or direct new/resume mutation or publication; checkpoint context persists it and resume matches it. The actual reviewed design and preregistration paths must hash to their distinct frozen SHA256 values, and the hard-bound Task7 canonical worker-parity authority must validate schema, bytes, and 30-candidate/11-worker/zero-label-access fields; complete finalization remains source-free.",
         "Exp445 has one closed root and new-only route; its checkpoint carries Exp445 identity/schema/document hashes, but canonical successful record bytes remain exactly {\"sequence\": sequence, \"result\": result.to_payload()}. Every record SHA is checked before create-only success write; sequence 29 reauthenticates predecessor and aggregate before terminal completion.",
         "Exp445-only manifest, status, artifact-map, runtime, and checkpoint-context identity are profile-aware internally; candidate rows, control rows, rank order, lane conservation, source hashes, and Exp444 wrapper bytes remain unchanged.",
-        "The Exp445 private publisher performs terminal checkpoint -> fresh predecessor -> ordered prefix/aggregate parity -> descriptor-pinned Exp440 provenance -> source composition -> staging -> atomic no-replace rename; source/provenance is not opened by frozen-leaf inspection."
+        "The Exp445 private publisher performs terminal checkpoint -> fresh predecessor -> ordered prefix/aggregate parity -> descriptor-pinned Exp440 provenance -> source composition -> staging -> atomic no-replace rename; source/provenance is not opened by frozen-leaf inspection.",
+        "Exp445 caller-side post-rename frozen-leaf audit failure uses the existing no-replace quarantine authority through the retained attempt descriptor; capture failure has no descriptor but still attempts create-only failure evidence. Neither path alters Exp444 behavior."
       ],
       "evidence": [
         {
@@ -5147,6 +5157,10 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
           "symbol": "def _inspect_exp445_publication_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _quarantine_exp445_caller_rejection_antigravity"
         }
       ]
     },
@@ -5184,7 +5198,8 @@
         "Active committed recovery requires type(current_candidate_index) is exactly int before sequence equality, so JSON false/true cannot impersonate candidate zero/one.",
         "A pre-existing regular or symlink log_failure_antigravity.json is never trusted or replaced as current failure evidence; it sets the irreversible Exp445 clean-success block while preserving create-only safety.",
         "Publication revalidates the immutable predecessor only after terminal checkpoint authentication and before Exp440 provenance or staging; ordered record hashes and aggregate prefix SHA must match exactly.",
-        "A pre-stage, partial-staging, or post-rename audit failure writes only an Exp445 create-only publication-failure marker when possible and never overwrites a prior marker or returns a clean publication."
+        "A pre-stage, partial-staging, or post-rename audit failure writes only an Exp445 create-only publication-failure marker when possible and never overwrites a prior marker or returns a clean publication.",
+        "After fixed-root allocation, even a real descriptor-capture failure preserves one create-only publication failure marker. A caller audit/replay rejection after rename must leave the canonical Exp445 publication path absent and preserve the renamed bytes in quarantine."
       ],
       "evidence": [
         {
@@ -5290,6 +5305,14 @@
         {
           "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_publication_antigravity.py",
           "symbol": "def test_post_rename_audit_failure_keeps_exp445_canonical_destination_absent_antigravity"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_publication_antigravity.py",
+          "symbol": "def test_real_capture_failure_after_allocation_writes_create_only_failure_evidence_antigravity"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_publication_antigravity.py",
+          "symbol": "def test_real_postrename_replay_failure_quarantines_canonical_destination_antigravity"
         }
       ]
     }
@@ -6130,7 +6153,7 @@
         "exp445_predecessor_authority",
         "exp444_stability_contracts"
       ],
-      "outcome": "The publisher authenticates the frozen Exp445 terminal checkpoint, freshly descriptor-verifies the immutable Exp444 predecessor, requires all ordered 30 wrapper SHA256 values plus aggregate prefix SHA to match, then freshly captures descriptor-pinned Exp440 summary bytes before values-only source composition. Only then may it stage and atomically no-replace rename the review-only publication. Every failure leaves no canonical complete publication; same-root publish retry is rejected, and frozen-leaf inspection remains source-free and label-free."
+      "outcome": "The publisher authenticates the frozen Exp445 terminal checkpoint, freshly descriptor-verifies the immutable Exp444 predecessor, requires all ordered 30 wrapper SHA256 values plus aggregate prefix SHA to match, then freshly captures descriptor-pinned Exp440 summary bytes before values-only source composition. Only then may it stage and atomically no-replace rename the review-only publication. A real post-allocation capture failure leaves create-only failure evidence; a caller-side post-rename frozen-leaf audit rejection quarantines the canonical destination before that evidence is recorded. Same-root retry is rejected, and frozen-leaf inspection remains source-free and label-free."
     }
   ],
   "unknown_relationships": [],
