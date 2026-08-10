@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T12:28:44Z",
-  "generated_from_commit": "ab13712376e35736e748e35e6a47ba46f7577fd8",
+  "generated_at": "2026-08-10T12:56:17Z",
+  "generated_from_commit": "84b9361bdaab14a06aade74e0455c793b9236615",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -83,7 +83,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve Exp404/Exp416 as the verified full-population reference and the completed review-only Exp442/Exp443 evidence. Exp444 governance reviews only the frozen Exp442 30 candidates through deterministic normal-TRAIN perturbation stability, with descriptive-only status and no scientific success or promotion rule. Exp444 Task 10 implementation is complete: its reviewed five-command readiness/new/resume/inspect/evaluate boundary preserves source-before-mutation and the lazy post-freeze label boundary. A fresh Sol High final review returned SPEC compliant, QUALITY approved, and VERDICT ship after all four prior findings were addressed; parent verification passed focused 79/79 and full Exp444 discovery 188/188. No official lifecycle command or TEST-label access occurred, the official root remains absent, and Task 11 has not started.",
+      "role": "The control ledgers preserve Exp404/Exp416 as the verified full-population reference and completed review-only Exp442/Exp443 evidence. Exp444's frozen Exp442 30-candidate normal-TRAIN stability implementation is verified and awaits a fresh Sol High read-only review; it has no scientific success or promotion rule. Task 11 records the inherited zero-failure regressions, CPU/11-worker backend decision, and revalidated Task 7 parity authority. No official lifecycle command, prediction, evaluation, or TEST-label access occurred; the official root remains absent.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -124,8 +124,9 @@
         "Exp443 Task 2 binds the exact resolved lock SHA, direct aeon/NumPy/scikit-learn pins, 11 outer CPU workers, one inner thread, and inapplicable official CPU-transformer acceleration.",
         "Exp443 is official_evaluated_paused_for_direction: A and exclude-nonfinite-row are baseline-identical; peer median rescues one dataset with TP 1/FP 0 and zero regressions, but micro/macro bootstrap lower bounds equal zero, so there is no scientific winner or operational promotion.",
         "Exp443 prediction publication and evaluation hashes are frozen. The terminal pinned database close failure is retained in FAILURE_LEDGER even though the pin is absent and source DB nlink is one. No Exp444 work starts before direction discussion.",
-        "Exp444 is design-only. It may not implement or run until the written design is reviewed; it adds no candidate outside the frozen Exp442 30, uses no TEST labels before publication freeze, and defines no experiment pass/fail or promotion rule.",
-        "Exp444 has no source implementation or source edge in this map yet; only its approved design, plan, preregistration, runbook, and descriptive governance are mapped under research_control."
+        "Exp444 preserves the frozen Exp442 30-coordinate population, prohibits TEST labels before publication freeze, and defines no experiment pass/fail or promotion rule.",
+        "Exp444 is implementation_verified_awaiting_fresh_review: prediction/evaluation hashes remain null, official readiness/root remain false, prediction and TEST-label access remain absent, and governance remains review-only/no-promotion.",
+        "Task 11 worker parity is satisfied by revalidated Task 7 authority: 30 candidates, CPU/11 workers, zero labels, canonical SHA 729b31c0698fda6b60c17012a3fd2cae3f4b0899e01e5a3bf4d569902e814857, authority SHA 79b6a5847a01f594d140c73aa587589413b4933ac7d53dcf07d2bb478a5f771e. The fresh Task 11 smoke was interrupted during sequential rank 7 before parallel work, created no evidence, and is not claimed complete."
       ],
       "evidence": [
         {
@@ -547,6 +548,30 @@
         {
           "path": ".superpowers/sdd/2026-08-10-exp444-train-only-stability-precision-gate-antigravity/progress.md",
           "symbol": "Task 10: complete ("
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"id\": \"Exp444\""
+        },
+        {
+          "path": "EXPERIMENT_CATALOG.json",
+          "symbol": "\"status\": \"implementation_verified_awaiting_fresh_review\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"worker_parity_evidence\": \"satisfied_by_revalidated_task7_authority\""
+        },
+        {
+          "path": "RESEARCH_STATE.json",
+          "symbol": "\"fresh_task11_worker_parity_rerun\": \"not_completed_not_required\""
+        },
+        {
+          "path": "docs/EXP444_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "# Exp444 구현 검증 기록"
+        },
+        {
+          "path": "docs/EXP444_IMPLEMENTATION_REPORT_antigravity.md",
+          "symbol": "## Worker parity 권한"
         }
       ]
     },
@@ -5771,17 +5796,6 @@
         {
           "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
           "symbol": "return cli_main_antigravity(arguments)"
-        }
-      ]
-    },
-    {
-      "from": "research_control",
-      "to": "exp444_stability_contracts",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "docs/superpowers/plans/2026-08-10-exp444-train-only-stability-precision-gate-antigravity.md",
-          "symbol": "### Task 2: Freeze environment, configuration, immutable contracts, and artifact primitives"
         }
       ]
     },
