@@ -8,8 +8,12 @@ import numpy as np
 
 from experiments.exp444_train_only_stability_precision_gate_antigravity.contracts_antigravity import (
     CandidateInputAntigravity,
+    CandidateStabilityResultAntigravity,
     DepthViewScoreAntigravity,
+    OmissionMaskAntigravity,
     SourceCandidateAntigravity,
+    StabilitySelectionAntigravity,
+    StabilityViewAntigravity,
 )
 from experiments.exp444_train_only_stability_precision_gate_antigravity.stability_antigravity import (
     classify_view_antigravity,
@@ -122,6 +126,36 @@ class Exp444StabilityAntigravityTests(unittest.TestCase):
         finally:
             module.fit_group_calibration_antigravity = original_fit
             module.score_test_row_antigravity = original_score
+
+    def test_stable_and_unstable_lanes_conserve_exact_coordinates_antigravity(self) -> None:
+        sources = tuple(
+            SourceCandidateAntigravity(f"Dataset{index:02d}", index, 32, (1, 2), index + 1)
+            for index in range(30)
+        )
+        stable_score = (_depth_antigravity(1, True), _depth_antigravity(2, True))
+        unstable_score = (_depth_antigravity(1, True), _depth_antigravity(2, False))
+        stable: list[CandidateStabilityResultAntigravity] = []
+        unstable: list[CandidateStabilityResultAntigravity] = []
+        for index, source in enumerate(sources):
+            score = stable_score if index < 15 else unstable_score
+            agreeing = (1, 2) if index < 15 else (1,)
+            survived = index < 15
+            view = StabilityViewAntigravity(
+                OmissionMaskAntigravity(0, (0,), "0" * 64),
+                (1, 2, 3, 4),
+                score,
+                agreeing,
+                survived,
+            )
+            result = CandidateStabilityResultAntigravity(source, (view,), int(survived), 1, "stable_review" if survived else "unstable_review")
+            (stable if survived else unstable).append(result)
+        selection = StabilitySelectionAntigravity(sources, tuple(stable), tuple(unstable))
+        self.assertEqual(selection.source_count, 30)
+        self.assertEqual(selection.stable_count + selection.unstable_count, selection.source_count)
+        self.assertEqual(
+            {item.coordinate for item in selection.stable} | {item.coordinate for item in selection.unstable},
+            {item.coordinate for item in selection.source},
+        )
 
 
 if __name__ == "__main__":
