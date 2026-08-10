@@ -374,6 +374,25 @@ class _PublishSourceAuthorityAntigravity:
             raise ValueError("Exp444 original-control replay count is invalid")
 
 
+@dataclass(frozen=True)
+class _ValuesOnlyPublishAuthorityAntigravity:
+    """Detached, closed-session authority for the publication source replay."""
+
+    candidates: tuple[SourceCandidateAntigravity, ...]
+    source_hashes: Mapping[str, str]
+    control_rows: tuple[Mapping[str, object], ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "candidates", tuple(self.candidates))
+        object.__setattr__(self, "source_hashes", MappingProxyType(dict(self.source_hashes)))
+        object.__setattr__(self, "control_rows", tuple(MappingProxyType(dict(row)) for row in self.control_rows))
+        if len(self.candidates) != FROZEN_CONFIG.source_candidate_count or any(not isinstance(item, SourceCandidateAntigravity) for item in self.candidates):
+            raise ValueError("Exp444 values-only authority candidates are invalid")
+        if len(self.control_rows) != FROZEN_CONFIG.source_candidate_count:
+            raise ValueError("Exp444 values-only authority controls are invalid")
+        _ensure_label_free_antigravity(self.control_rows, "control replay")
+
+
 def _complete_checkpoint_results_antigravity(attempt_root: Path, snapshot: _AttemptSnapshotAntigravity | None = None) -> tuple[CandidateStabilityResultAntigravity, ...]:
     attempt = Path(attempt_root)
     owns_snapshot = snapshot is None
@@ -421,15 +440,22 @@ def _complete_checkpoint_results_antigravity(attempt_root: Path, snapshot: _Atte
             snapshot.close_antigravity()
 
 
-def _exp442_dataset_summaries_antigravity() -> tuple[dict[str, object], ...]:
-    """Read the already frozen Exp442 summary, never an unbounded database query."""
-    source = Path(FROZEN_CONFIG.exp442_prediction_path).with_name(DATASET_SUMMARY_FILE_ANTIGRAVITY)
-    rows = _read_canonical_jsonl_antigravity(source, "frozen source dataset summary")
+def _parse_dataset_summaries_antigravity(dataset_summary_bytes: bytes) -> tuple[dict[str, object], ...]:
+    """Parse only the descriptor-pinned Exp440 summary bytes, without I/O."""
+    if not isinstance(dataset_summary_bytes, bytes):
+        raise ValueError("Exp444 dataset summary bytes are invalid")
+    rows = _read_canonical_jsonl_bytes_antigravity(dataset_summary_bytes, "frozen source dataset summary")
+    if len(rows) != FROZEN_CONFIG.dataset_count:
+        raise ValueError("Exp444 dataset summary count is invalid")
+    names = tuple(row.get("dataset") for row in rows)
+    if any(type(name) is not str or not name for name in names) or len(set(names)) != len(names) or tuple(sorted(names)) != names:
+        raise ValueError("Exp444 dataset summaries are not in canonical order")
+    _ensure_label_free_antigravity(rows, "dataset summary")
     return rows
 
 
-def _publish_source_authority_antigravity() -> _PublishSourceAuthorityAntigravity:
-    """Lazy values-only source replay used only before first publication creation."""
+def _capture_values_only_publish_authority_antigravity() -> _ValuesOnlyPublishAuthorityAntigravity:
+    """Replay allowed values, then close the source session before authority handoff."""
     from .sources_antigravity import load_candidate_values_antigravity, verify_frozen_sources_antigravity
     from .stability_antigravity import replay_original_candidates_antigravity
 
@@ -453,10 +479,35 @@ def _publish_source_authority_antigravity() -> _PublishSourceAuthorityAntigravit
             }
             for control in controls
         )
-        return _PublishSourceAuthorityAntigravity(snapshot.candidates, _exp442_dataset_summaries_antigravity(), dict(snapshot.source_hashes), control_rows)
+        return _ValuesOnlyPublishAuthorityAntigravity(snapshot.candidates, dict(snapshot.source_hashes), control_rows)
     finally:
         if session is not None:
             session.close()
+
+
+def _compose_publish_source_authority_antigravity(
+    dataset_summaries: tuple[dict[str, object], ...],
+    values_authority: _ValuesOnlyPublishAuthorityAntigravity,
+) -> _PublishSourceAuthorityAntigravity:
+    """Combine already-detached summary and values authorities without I/O."""
+    if not isinstance(values_authority, _ValuesOnlyPublishAuthorityAntigravity):
+        raise ValueError("Exp444 values-only publication authority is invalid")
+    return _PublishSourceAuthorityAntigravity(
+        values_authority.candidates,
+        tuple(dict(row) for row in dataset_summaries),
+        dict(values_authority.source_hashes),
+        values_authority.control_rows,
+    )
+
+
+def _publish_source_authority_antigravity(dataset_summary_bytes: bytes | None = None) -> _PublishSourceAuthorityAntigravity:
+    """Preserve private no-argument callers while keeping lifecycle provenance single-read."""
+    if dataset_summary_bytes is None:
+        from .provenance_antigravity import verify_exp444_provenance_antigravity
+        dataset_summary_bytes = verify_exp444_provenance_antigravity().dataset_summary_bytes
+    summaries = _parse_dataset_summaries_antigravity(dataset_summary_bytes)
+    values = _capture_values_only_publish_authority_antigravity()
+    return _compose_publish_source_authority_antigravity(summaries, values)
 
 
 def _result_rows_antigravity(results: Sequence[CandidateStabilityResultAntigravity]) -> tuple[dict[str, object], ...]:
@@ -898,7 +949,7 @@ def publish_prediction_antigravity(attempt_root: Path) -> FrozenPublicationAntig
     try:
         from .provenance_antigravity import verify_exp444_provenance_antigravity
         provenance = verify_exp444_provenance_antigravity()
-        authority = _publish_source_authority_antigravity()
+        authority = _publish_source_authority_antigravity(provenance.dataset_summary_bytes)
         payloads, selection = _payloads_antigravity(attempt, authority, snapshot, summary_bytes=provenance.dataset_summary_bytes, backend_authority=provenance.backend_authority)
         expected = _final_payloads_antigravity(payloads, selection)
         _assert_attempt_namespace_antigravity(attempt, snapshot)
