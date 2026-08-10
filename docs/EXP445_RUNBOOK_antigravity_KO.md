@@ -33,6 +33,24 @@ create-only artifacts = record, failure, publication, evaluation
 commitment-boundary review, candidate commit, 그리고 exact clean HEAD에 대한 다른 fresh
 Sol High final review가 통과하기 전에는 실행하지 않는다.
 
+## 구현 검증 현황
+
+구현은 `implementation_verified_awaiting_clean_head_final_review` 상태다. 기능 commit은
+`c8a0ad351d701b11df69fac66bd7c95284e644be`, map commit은
+`477399062818b49dcc01101e3a83e723c8ec7d44`이다. 컨트롤러가 캡처한 전체 회귀는
+Exp444 205개(`195.955`초), Exp445 39개(`1.397`초), 총 244개이며 모두 성공했고
+sentinel과 outer exit code도 모두 0이다.
+
+비공식 읽기 전용 확인으로 CLI help는 exit 0, 금지된 `resume`은 exit 2로 거절됐고,
+30개 임시 입력의 sequential/CPU 11-worker canonical SHA256은
+`267449fa3a4d00e3d214ca3fa5b5f38c1f73ecd07ec3d33545003e0b92a76b30`로 일치했다.
+DB inode `1048138`의 link count는 1이며 fixed Exp445 root는 없다. 별도
+real-composition 시도는 출력 handle 유실로 독립 성공 근거로 쓰지 않으며, 전체 회귀에
+포함된 동일 real-composition 테스트를 근거로 사용한다. TEST label은 열지 않았다.
+
+따라서 다음 단계는 공식 명령이 아니라 exact clean HEAD에 대한 fresh Sol High final
+review다. 그 review 전에는 아래 네 명령을 실행하지 않는다.
+
 ```bash
 /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp445_exp444_publication_source_authority_repair_antigravity.py readiness --reviewed-commit REVIEWED_COMMIT
 /Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python scratch/run_exp445_exp444_publication_source_authority_repair_antigravity.py new --reviewed-commit REVIEWED_COMMIT

@@ -4,10 +4,10 @@
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
   "branch": "codex/exp444-train-only-stability-precision-gate-antigravity",
   "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
-  "last_verified_commit": "6f2972c81c8bb606722acafd29a56ea6ee390a3d",
+  "last_verified_commit": "c8a0ad351d701b11df69fac66bd7c95284e644be",
   "active_experiment": "Exp445",
-  "active_phase": "implementation_planning",
-  "status": "design_approved_implementation_planned",
+  "active_phase": "implementation_verified_awaiting_clean_head_final_review",
+  "status": "implementation_verified_awaiting_clean_head_final_review",
   "dataset_count": 1117,
   "active_documents": {
     "design": "docs/superpowers/specs/2026-08-10-exp445-exp444-publication-source-authority-repair-antigravity-design.md",
@@ -55,7 +55,7 @@
   },
   "exp445_exp444_publication_source_authority_repair": {
     "experiment": "Exp445",
-    "status": "design_approved_implementation_planned",
+    "status": "implementation_verified_awaiting_clean_head_final_review",
     "reviewed_design_sha256": "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
     "reviewed_plan_sha256": "4b369f044456ce9e3cca0abad141beb28b5b3431691677f19a2900997dc5ac9a",
     "run_identity": "exp445-exp444-publication-source-authority-repair-antigravity-20260810",
@@ -67,6 +67,7 @@
     "inherited_scientific_configuration_sha256": "8ba0a9524600bef7479df0626834bfeef4b3410f64d3f2d1cbd3885c784eb11a",
     "prediction_sha256": null,
     "evaluation_sha256": null,
+    "publication_sha256": null,
     "prediction_started": false,
     "test_labels_opened": false,
     "pre_freeze_label_access_count": 0,
@@ -86,7 +87,26 @@
     "same_experiment_reselection_allowed": false,
     "test_informed_reselection_allowed": false,
     "implementation_report": "docs/EXP445_IMPLEMENTATION_REPORT_antigravity.md",
-    "exact_next_command": "implement_exp445_closed_profiles_and_readiness_contract"
+    "implementation_verification": {
+      "functional_commit": "c8a0ad351d701b11df69fac66bd7c95284e644be",
+      "map_commit": "477399062818b49dcc01101e3a83e723c8ec7d44",
+      "full_regression": {
+        "exp444_tests": 205,
+        "exp444_seconds": 195.955,
+        "exp445_tests": 39,
+        "exp445_seconds": 1.397,
+        "sentinel_exp444": 0,
+        "sentinel_exp445": 0,
+        "outer_exit_code": 0
+      },
+      "real_composition_standalone": "inconclusive_output_handle_lost_full_regression_covers_exact_test",
+      "temporary_30_record_parity_sha256": "267449fa3a4d00e3d214ca3fa5b5f38c1f73ecd07ec3d33545003e0b92a76b30",
+      "database_inode": 1048138,
+      "database_link_count": 1,
+      "official_root_absent": true,
+      "test_labels_opened": false
+    },
+    "exact_next_command": "fresh_sol_high_read_only_review_current_clean_head"
   },
   "exp443_missing_train_policy_comparison": {
     "experiment": "Exp443",
@@ -832,8 +852,8 @@
     "chlorine_cpu_smoke_seconds": 42.57567008398473,
     "chlorine_prediction_label_access": 0
   },
-  "next_action": "IMPLEMENT_EXP445_CLOSED_PROFILES_AND_READINESS_CONTRACT",
-  "exact_next_command_if_interrupted": "implement_exp445_closed_profiles_and_readiness_contract",
+  "next_action": "FRESH_SOL_HIGH_READ_ONLY_REVIEW_CURRENT_CLEAN_HEAD",
+  "exact_next_command_if_interrupted": "fresh_sol_high_read_only_review_current_clean_head",
   "approval_scope": "Local preregistered research/implementation/run/evaluation iterations are approved until verified improvement; no renewed routine approval is required.",
   "monitoring_policy": "Long processes write atomic logs/checkpoints themselves; do not repeatedly poll unchanged processes with Codex tokens.",
   "prediction_phase_started": false,
@@ -841,7 +861,7 @@
   "test_labels_opened": false,
   "pre_freeze_label_access_count": 0,
   "evaluation_label_access_phase": "not_started",
-  "pause_reason": "Exp445 design is approved and implementation is planned. Official readiness, new, inspect, evaluate, publication, TEST-label access, and promotion remain blocked; the fixed Exp445 root is absent.",
+  "pause_reason": "Exp445 implementation is verified by the controller-captured 244-test regression and read-only boundary evidence, but official readiness, new, inspect, evaluate, publication, TEST-label access, and promotion remain blocked pending a fresh Sol High review of the exact clean HEAD; the fixed root is absent.",
   "exp440_implementation": {
     "implementation_commit": "178d49bc9f6a418902d28031ee311e8e0270f1e1",
     "status": "official_completed_evaluated_not_promoted",
