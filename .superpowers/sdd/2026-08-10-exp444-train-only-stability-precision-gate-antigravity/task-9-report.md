@@ -74,3 +74,11 @@ FINAL VERIFICATION: the exact full discovery pattern `/Users/mac/Documents/Datas
 FINAL MAP: `c4be50b0` binds the preceding documentation commit. The versioned triplet has current lock fingerprints, 20 nodes, 64 edges, 6 flows, valid evidence references, byte-identical embedded HTML JSON, and no unversioned triplet.
 
 COMMITS: `c5fdf2d1` test coverage; `1547e4a0` ledger correction; `c4be50b0` initial round-4 map synchronization. This final-verification appendix and its immediate map refresh follow.
+
+## Task-scoped acceptance — final closeout
+
+STATUS: COMPLETE. Task-scoped commits span `a8fc8867` through `de326fb9`; the final round-4 test/evidence/map commits are `c5fdf2d1`, `1547e4a0`/`12e498cc`, and `c4be50b0`/`de326fb9`.
+
+ACCEPTANCE: parent fresh focused verification passed 18/18 and exact full discovery passed 170/170, both with exit 0. `TASK9_MAP_OK` verified the 20-node/64-edge/6-flow versioned map with parent `12e498cc`, byte-identical HTML/JSON, current fingerprints, and a clean tree. A fresh Sol High scoped re-review returned SPEC ✅, QUALITY Approved, and task-scoped `ship`; all seven round-4 findings are addressed with no Critical or Important finding.
+
+BOUNDARY: the review was behaviorally read-only under observed danger-full-access/disabled. This closeout asserts no official evaluation result: no real Dataset DB, official root, official evaluation, or TEST-label access occurred, and Task 10 has not started.
