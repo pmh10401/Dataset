@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T14:14:30Z",
-  "generated_from_commit": "e8b36c57e360bcabe1d182b32312b7a95f35418a",
+  "generated_at": "2026-08-10T15:45:16Z",
+  "generated_from_commit": "014633a4da24c3ecc3a88a6c19df891419f8ca7e",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -74,7 +74,7 @@
     "Exp444 Task 6 review round 1: crash-recoverable unique-temp checkpoint/progress writes, strict prefix and checkpoint identity validation, numerically distinct replacement PIDs, and parent-owned terminal immutability",
     "Exp444 Task 7: copied values-only inputs, closed source sessions before scheduling, exact 11-worker spawn execution, bounded out-of-order buffering, parent-only ordered persistence, interruption/resume/finalization re-entry, real PID ownership probes, truthful next-commit live progress, non-waiting cancellation, complete evidence-surface validation, read-only full checkpoint resume preflight with mutation-boundary revalidation, and real 30-candidate canonical-byte parity with zero TEST-label access",
     "Repository execution policy and native Terra/Sol delegation routing",
-    "Exp445 design-only engineering recovery: Exp444 publication source authority repair with no product or source edge before implementation"
+    "Exp445 approved 10-task/39-step implementation plan: closed profiles, pure summary-parser plus closed values-only handoff composition, pre-write 30-record parity, create-only publication/evaluation, and clean-HEAD candidate-commit then final-review gates; no Exp445 product/source edge before implementation"
   ],
   "nodes": [
     {
@@ -84,7 +84,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve Exp404/Exp416 as the verified full-population reference and completed review-only Exp442/Exp443 evidence. Exp444 completed its 30/30 label-free CPU/11-worker terminal replay but failed prepublication at publication source authority; its root is immutable and publication/evaluation are absent. Exp445 is design-only engineering recovery for that authority boundary, with no scientific rule, candidate, or promotion change and no Exp445 product/source edge until implementation.",
+      "role": "The control ledgers preserve Exp404/Exp416 as the verified full-population reference and completed review-only Exp442/Exp443 evidence. Exp444 completed its 30/30 label-free CPU/11-worker terminal replay but failed prepublication at publication source authority; its root is immutable and publication/evaluation are absent. Exp445 now has an approved 10-task/39-step engineering-only plan for that authority repair: closed profiles, pure descriptor-pinned summary parsing plus a closed values-only handoff, pre-write predecessor parity, and create-only publication/evaluation. It changes no scientific rule, candidate, backend selection, or promotion status and retains no Exp445 product/source edge until implementation.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -128,7 +128,11 @@
         "Exp444 preserves the frozen Exp442 30-coordinate population, prohibits TEST labels before publication freeze, and defines no experiment pass/fail or promotion rule.",
         "Exp444 is immutable after its 30/30 label-free terminal replay and prepublication publication-source-authority failure; publication/evaluation are absent, TEST-label access remains zero, and its root is preserved.",
         "Task 11 worker parity is satisfied by revalidated Task 7 authority: 30 candidates, CPU/11 workers, zero labels, canonical SHA 729b31c0698fda6b60c17012a3fd2cae3f4b0899e01e5a3bf4d569902e814857, authority SHA 79b6a5847a01f594d140c73aa587589413b4933ac7d53dcf07d2bb478a5f771e. The fresh Task 11 smoke was interrupted during sequential rank 7 before parallel work, created no evidence, and is not claimed complete.",
-        "Exp445 is design-only: it must use a new root and closed Exp444/Exp445 profiles, preserve Exp444/Exp442 bytes, recompute and exactly match the 30 ordered predecessor record SHA values before publication, and add no product/source edge before implementation."
+        "The approved Exp445 plan has 10 tasks and 39 steps. It confines profile differences to identity/schema/root/documents/predecessor authority; the parser accepts only descriptor-pinned Exp440 summary bytes, values-only replay closes its SQLite session before returning an immutable handoff, and composition has no Exp442 sibling, fallback, synthesis, pathname, or SQLite access.",
+        "Exp445 preserves Exp444/Exp442 bytes, keeps the inherited CPU worker policy at max(1, logical_cpu_count - 1) = 11 on this 12-logical-CPU Mac with one inner thread, and revalidates the inherited backend-decision and sequential/11-worker parity authority by SHA without a new benchmark or backend reselection.",
+        "Before each candidate record write, Exp445 compares the canonical wrapper SHA with the same ordered predecessor SHA; before the 30th write it revalidates the predecessor and aggregate prefix authority. A mismatch preserves post-allocation failed evidence and blocks terminal completion/publication rather than rolling back completed state.",
+        "Readiness and new failures before fixed-root allocation are mutation-free and leave the root absent. After allocation, failures preserve the single-use Exp445 root with create-only records/failure/publication/evaluation artifacts; Exp444 and Exp442 are never mutated and Exp445 has no same-root retry or resume command.",
+        "Implementation completion requires full regression and read-only smokes, deterministic map validation, a fresh Sol High commitment-boundary review, a candidate commit, then a different fresh Sol High review of that exact clean HEAD. Official readiness/new/evaluate remain blocked until that final review passes; no Exp445 product/source edge exists before implementation."
       ],
       "evidence": [
         {
@@ -581,11 +585,39 @@
         },
         {
           "path": "docs/superpowers/specs/2026-08-10-exp445-exp444-publication-source-authority-repair-antigravity-design.md",
-          "symbol": "def _publish_source_authority_antigravity("
+          "symbol": "def _parse_dataset_summaries_antigravity("
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-10-exp445-exp444-publication-source-authority-repair-antigravity-design.md",
+          "symbol": "def _compose_publish_source_authority_antigravity("
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-10-exp445-exp444-publication-source-authority-repair-antigravity-design.md",
+          "symbol": "## 5. 새 root 실행과 publication 전 parity"
+        },
+        {
+          "path": "docs/superpowers/specs/2026-08-10-exp445-exp444-publication-source-authority-repair-antigravity-design.md",
+          "symbol": "## 7. 가속과 실행 topology"
         },
         {
           "path": "docs/superpowers/specs/2026-08-10-exp445-exp444-publication-source-authority-repair-antigravity-design.md",
           "symbol": "## 8. 실패 보존과 거절한 대안"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-11-exp445-exp444-publication-source-authority-repair-antigravity.md",
+          "symbol": "## Global Constraints"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-11-exp445-exp444-publication-source-authority-repair-antigravity.md",
+          "symbol": "### Task 5: Make readiness and runtime profile-aware while preserving record bytes"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-11-exp445-exp444-publication-source-authority-repair-antigravity.md",
+          "symbol": "### Task 8: Run complete regression and fresh reviews before official execution"
+        },
+        {
+          "path": "docs/superpowers/plans/2026-08-11-exp445-exp444-publication-source-authority-repair-antigravity.md",
+          "symbol": "### Task 9: Run one official label-free Exp445 computation and freeze publication"
         }
       ]
     },
