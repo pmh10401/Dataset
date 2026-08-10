@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T07:24:18Z",
-  "generated_from_commit": "239343bf304e5040540bfffcd9ce7dd09bddc1c0",
+  "generated_at": "2026-08-10T07:35:31Z",
+  "generated_from_commit": "f5d7931452a992d8f4360cea1a5489b0604da5ea",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -4723,7 +4723,7 @@
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/backend_decision_authority_antigravity.json",
-          "symbol": "Task5 canonical backend authority"
+          "symbol": "exp444.backend-decision-authority.v1"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_provenance_antigravity.py",

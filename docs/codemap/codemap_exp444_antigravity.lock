@@ -1,7 +1,7 @@
 {
-  "current_commit": "239343bf304e5040540bfffcd9ce7dd09bddc1c0",
+  "current_commit": "f5d7931452a992d8f4360cea1a5489b0604da5ea",
   "working_tree_dirty": false,
-  "generated_at": "2026-08-10T07:24:18Z",
+  "generated_at": "2026-08-10T07:35:31Z",
   "scanned_scope": [
     "tracked root files including AGENTS.md",
     ".superpowers",
@@ -30,14 +30,14 @@
     "outputs",
     "results"
   ],
-  "fingerprint_algorithm": "sha256-v1: for each top-level module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Root-level tracked files are grouped as root. docs/codemap is excluded to prevent self-reference.",
+  "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
   "module_fingerprints": {
     ".superpowers": {
       "fingerprint": "426a3a8e10628febf65c71c0d74a10a48bc0833bba06861ff946f64915c62ad0",
       "tracked_files": 42
     },
     "docs": {
-      "fingerprint": "42bd79cb878fa9b720c431f0908cd007e08d0b87eed00422f61805ee6ac17462",
+      "fingerprint": "4af0fe911be60963b236f71baac536329cdb846c333c7f5786fc1cdd54685fcc",
       "tracked_files": 372
     },
     "experiments": {
@@ -53,8 +53,8 @@
       "tracked_files": 4
     },
     "root": {
-      "fingerprint": "df9160c2d7a2405413fe466db3e644460af971f686b652541300fc17d7be9b3c",
-      "tracked_files": 482
+      "fingerprint": "add88a2f1f72c62959ae721e4b85d10a40faaf24943dafb8931fd8fdb77bd164",
+      "tracked_files": 210
     },
     "scratch": {
       "fingerprint": "9099b3a7931c38fd628b3b82b6790dcf9450761a20dbf08f282b89a03e821aa8",
@@ -70,6 +70,7 @@
     }
   },
   "changed_modules_since_prior_lock": [
-    "experiments"
+    "docs",
+    "root"
   ]
 }
