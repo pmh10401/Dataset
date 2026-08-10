@@ -2,10 +2,140 @@
 from __future__ import annotations
 
 import inspect
+from pathlib import Path
+from types import SimpleNamespace
+import tempfile
 import unittest
+from unittest import mock
 
 
 class Exp445ReadinessAntigravityTests(unittest.TestCase):
+    def _profile_antigravity(self, root: Path):
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.profiles_antigravity import EXP445_PROFILE_ANTIGRAVITY
+
+        profile = object.__new__(type(EXP445_PROFILE_ANTIGRAVITY))
+        for name in (
+            "experiment_id", "schema", "run_identity", "reviewed_design_path",
+            "preregistration_path", "predecessor_required",
+        ):
+            object.__setattr__(profile, name, getattr(EXP445_PROFILE_ANTIGRAVITY, name))
+        object.__setattr__(profile, "run_root", root)
+        return profile
+
+    def test_profile_readiness_boundary_matrix_preserves_absent_root_antigravity(self) -> None:
+        """Every live Exp445 readiness gate rejects before this test-local root is allocated."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import readiness_antigravity as readiness
+
+        commit = "a" * 40
+        with tempfile.TemporaryDirectory(prefix="exp445_readiness_matrix_antigravity_") as directory:
+            official_root = readiness.EXP445_PROFILE_ANTIGRAVITY.run_root
+            self.assertFalse(official_root.exists() or official_root.is_symlink())
+            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"
+            profile = self._profile_antigravity(root)
+            good_environment = SimpleNamespace(inner_threads=1, outer_workers=11)
+            good_provenance = SimpleNamespace(backend_decision=SimpleNamespace(backend="cpu", workers=11))
+            good_controls = tuple(SimpleNamespace(matches_source=True) for _ in range(30))
+            good_documents = {
+                "reviewed_design_sha256": "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
+                "preregistration_sha256": "20d73ed9cebfbd4cd40d4d3354197907483ac9092a8392e93e9bf1b44027a37a",
+            }
+            frozen_config = readiness.FROZEN_CONFIG
+            predecessor_path = (
+                "experiments.exp445_exp444_publication_source_authority_repair_antigravity."
+                "predecessor_antigravity.verify_exp444_predecessor_antigravity"
+            )
+
+            def run_case(failure: str | None = None) -> tuple[object | None, tuple[str, ...]]:
+                """Use the real closed Exp445 entrypoint; fake only each external gate's evidence."""
+                calls: list[str] = []
+
+                def gate(name: str, value: object = None):
+                    def invoke(*_args, **_kwargs):
+                        calls.append(name)
+                        if failure == name and name != "labels":
+                            raise ValueError(f"{name} fault")
+                        return value
+                    return invoke
+
+                class ConfigGateAntigravity:
+                    def __getattr__(self, name: str) -> object:
+                        return getattr(frozen_config, name)
+
+                    def validate(self) -> None:
+                        calls.append("scientific_config")
+                        if failure == "scientific_config":
+                            raise ValueError("scientific config fault")
+                        frozen_config.validate()
+
+                materialized = (tuple(range(30)), {"database": "b" * 64}, 1 if failure == "labels" else 0)
+                def current_head() -> str:
+                    calls.append("current_commit")
+                    return "c" * 40 if failure == "wrong_commit" else commit
+                with (
+                    mock.patch.object(readiness, "EXP445_PROFILE_ANTIGRAVITY", profile),
+                    mock.patch.object(readiness, "current_clean_head_antigravity", side_effect=gate("dirty_commit") if failure == "dirty_commit" else current_head),
+                    mock.patch.object(readiness, "load_worker_parity_authority_antigravity", side_effect=gate("worker_parity")),
+                    mock.patch.object(readiness, "_profile_document_sha256_antigravity", side_effect=gate("documents", good_documents)),
+                    mock.patch.object(readiness, "FROZEN_CONFIG", ConfigGateAntigravity()),
+                    mock.patch.object(readiness, "verify_environment_antigravity", side_effect=gate("environment_package_topology", SimpleNamespace(inner_threads=1, outer_workers=10) if failure == "environment_package_topology" else good_environment)),
+                    mock.patch.object(readiness, "verify_exp444_provenance_antigravity", side_effect=gate("provenance_backend", SimpleNamespace(backend_decision=SimpleNamespace(backend="mlx", workers=11)) if failure == "provenance_backend" else good_provenance)),
+                    mock.patch(predecessor_path, side_effect=gate("predecessor")),
+                    mock.patch.object(readiness, "_materialize_values_antigravity", side_effect=gate("labels", materialized)),
+                    mock.patch.object(readiness, "replay_original_candidates_antigravity", side_effect=gate("controls", good_controls)),
+                ):
+                    if failure in {"wrong_commit", "environment_package_topology", "provenance_backend", "labels"}:
+                        with self.assertRaises(ValueError):
+                            readiness.readiness_for_profile_antigravity(profile, commit)
+                        return None, tuple(calls)
+                    try:
+                        return readiness.readiness_for_profile_antigravity(profile, commit), tuple(calls)
+                    except ValueError:
+                        if failure is None:
+                            raise
+                        return None, tuple(calls)
+
+            evidence, calls = run_case()
+            self.assertIsNotNone(evidence)
+            self.assertEqual(calls, (
+                "current_commit", "worker_parity", "documents", "scientific_config",
+                "environment_package_topology", "provenance_backend", "predecessor",
+                "labels", "controls", "documents",
+            ))
+            self.assertEqual((evidence.to_payload_antigravity()["schema"], evidence.workers, evidence.label_access_count), ("exp445.readiness.v1", 11, 0))
+            self.assertFalse(root.exists())
+
+            cases = {
+                "wrong_commit": ("current_commit",),
+                "dirty_commit": ("dirty_commit",),
+                "worker_parity": ("current_commit", "worker_parity"),
+                "documents": ("current_commit", "worker_parity", "documents"),
+                "scientific_config": ("current_commit", "worker_parity", "documents", "scientific_config"),
+                "environment_package_topology": ("current_commit", "worker_parity", "documents", "scientific_config", "environment_package_topology"),
+                "provenance_backend": ("current_commit", "worker_parity", "documents", "scientific_config", "environment_package_topology", "provenance_backend"),
+                "predecessor": ("current_commit", "worker_parity", "documents", "scientific_config", "environment_package_topology", "provenance_backend", "predecessor"),
+                "labels": ("current_commit", "worker_parity", "documents", "scientific_config", "environment_package_topology", "provenance_backend", "predecessor", "labels", "controls", "documents"),
+            }
+            for name, expected_calls in cases.items():
+                with self.subTest(name=name):
+                    _evidence, observed_calls = run_case(name)
+                    self.assertEqual(observed_calls, expected_calls)
+                self.assertFalse(root.exists(), name)
+
+            for name, make_root in (("existing_root", lambda: root.mkdir()), ("symlink_root", lambda: root.symlink_to(Path(directory)))):
+                with self.subTest(name=name):
+                    make_root()
+                    identity_before = root.lstat()
+                    target_before = root.resolve() if root.is_symlink() else None
+                    with mock.patch.object(readiness, "EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(readiness, "current_clean_head_antigravity", return_value=commit), mock.patch.object(readiness, "load_worker_parity_authority_antigravity"), mock.patch.object(readiness, "_profile_document_sha256_antigravity", return_value=good_documents):
+                        with self.assertRaises(ValueError):
+                            readiness.readiness_for_profile_antigravity(profile, commit)
+                    self.assertTrue(root.exists() or root.is_symlink())
+                    self.assertEqual((root.lstat().st_dev, root.lstat().st_ino), (identity_before.st_dev, identity_before.st_ino))
+                    if target_before is not None:
+                        self.assertEqual(root.resolve(), target_before)
+                    root.unlink() if root.is_symlink() else root.rmdir()
+                self.assertFalse(root.exists(), name)
+            self.assertFalse(official_root.exists() or official_root.is_symlink())
     def test_exp445_readiness_evidence_keeps_its_own_document_authority_antigravity(self) -> None:
         """Substituting Exp444 document hashes would hide an Exp445 governance drift."""
         from experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity import ReadinessEvidenceAntigravity
