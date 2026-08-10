@@ -58,9 +58,10 @@ def _write_atomic_json_antigravity(path: Path, payload: Mapping[str, object]) ->
     if path.is_symlink():
         raise ValueError(f"{path.name} is a symlink")
     encoded = canonical_json_bytes_antigravity(payload)
-    temporary = path.with_name(path.name.replace(".json", ".tmp"))
-    if temporary.exists() or temporary.is_symlink():
-        raise ValueError(f"{temporary.name} already exists")
+    _discard_stale_atomic_temps_antigravity(path)
+    temporary = path.with_name(
+        f".{path.name}.antigravity-{os.getpid()}-{time_ns_antigravity()}.tmp"
+    )
     descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     try:
         offset = 0
@@ -88,6 +89,22 @@ def _write_atomic_json_antigravity(path: Path, payload: Mapping[str, object]) ->
             pass
         raise
     return encoded
+
+
+def _discard_stale_atomic_temps_antigravity(path: Path) -> None:
+    """Remove abandoned temp files without ever parsing or promoting them."""
+    legacy = path.with_name(path.name.replace(".json", ".tmp"))
+    candidates = {legacy, *path.parent.glob(f".{path.name}.antigravity-*.tmp")}
+    removed = False
+    for temporary in sorted(candidates, key=lambda item: item.name):
+        if not temporary.exists() and not temporary.is_symlink():
+            continue
+        if temporary.is_symlink() or not temporary.is_file():
+            raise ValueError(f"stale atomic temp is invalid: {temporary.name}")
+        temporary.unlink()
+        removed = True
+    if removed:
+        fsync_directory_antigravity(path.parent)
 
 
 def _read_canonical_antigravity(path: Path) -> tuple[Mapping[str, object], bytes]:
@@ -268,6 +285,7 @@ class Exp444CheckpointStoreAntigravity:
         self._status = status
         self._error_count = error_count
         self._finalization_only = finalization_only
+        self._local_owner_pid = os.getpid()
 
     @classmethod
     def create(
@@ -347,14 +365,18 @@ class Exp444CheckpointStoreAntigravity:
         return self._finalization_only
 
     def _require_writable_antigravity(self) -> None:
+        if os.getpid() != self._local_owner_pid:
+            raise ValueError("checkpoint mutation requires the parent owner process")
         if self._finalization_only:
             raise ValueError("checkpoint is finalization-only")
         if self._status in _TERMINAL:
             raise ValueError("checkpoint is terminal")
-        if self._status not in {"running", "interrupted", "interrupted_resumable"}:
-            raise ValueError("checkpoint status is invalid")
+        if self._status != "running":
+            raise ValueError("checkpoint is interrupted and no longer writable")
 
     def _write_state_antigravity(self, *, error: Mapping[str, object] | None = None) -> None:
+        if os.getpid() != self._local_owner_pid:
+            raise ValueError("checkpoint mutation requires the parent owner process")
         context_path = self.root / "context_antigravity.json"
         _, context_bytes = _read_canonical_antigravity(context_path)
         payload = self._state_payload(
@@ -449,6 +471,8 @@ class Exp444CheckpointStoreAntigravity:
         if status not in _RESUMABLE | _TERMINAL | {"running"}:
             raise ValueError("checkpoint is not resumable")
         stored_process = ProcessIdentityAntigravity.from_payload_antigravity(state_payload["process"])
+        if stored_process.pid == replacement_process.pid:
+            raise ValueError("replacement process numeric PID must be distinct")
         if stored_process == replacement_process:
             raise ValueError("replacement process must be distinct")
         probe = _default_pid_probe_antigravity if pid_probe is None else pid_probe
@@ -472,16 +496,39 @@ class Exp444CheckpointStoreAntigravity:
         _valid_sha_antigravity(state_payload["payload_sha256"], "checkpoint payload hash")
         if type(completed) is not int or completed < 0 or completed > total or not isinstance(prefix_payload, list):
             raise ValueError("checkpoint prefix is invalid")
-        if len(prefix_payload) != completed or any(_SHA256.fullmatch(value or "") is None for value in prefix_payload):
+        if len(prefix_payload) != completed or any(
+            type(value) is not str or _SHA256.fullmatch(value) is None
+            for value in prefix_payload
+        ):
             raise ValueError("checkpoint prefix is invalid")
+        if state_payload["payload_sha256"] != _payload_hash_antigravity(tuple(prefix_payload)):
+            raise ValueError("checkpoint payload hash changed")
+        if state_payload["current_unit"] is not None or state_payload["current_view"] is not None:
+            raise ValueError("checkpoint current fields are invalid")
+        if type(state_payload["updated_at"]) is not str:
+            raise ValueError("checkpoint update time is invalid")
+        try:
+            datetime.fromisoformat(state_payload["updated_at"].replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("checkpoint update time is invalid") from error
+        state_error = state_payload["error"]
+        if status == "error":
+            if error_count != 1 or not isinstance(state_error, Mapping) or set(state_error) != {"type", "message"}:
+                raise ValueError("checkpoint terminal error state is invalid")
+            if any(type(state_error[name]) is not str or not state_error[name] for name in ("type", "message")):
+                raise ValueError("checkpoint terminal error state is invalid")
+        elif error_count != 0 or state_error is not None:
+            raise ValueError("checkpoint error state is invalid")
+        if status == "complete" and completed != total:
+            raise ValueError("checkpoint complete count is invalid")
+        if status != "complete" and completed == total:
+            raise ValueError("checkpoint nonterminal count is invalid")
         prefix, orphan, orphan_result = _scan_records_antigravity(root, tuple(prefix_payload), total)
         if status in _TERMINAL and status != "complete":
             raise ValueError("checkpoint terminal error is not resumable")
         if status == "complete":
             if not allow_complete_finalization or completed != total or orphan is not None or tuple(prefix) != tuple(prefix_payload):
                 raise ValueError("checkpoint is complete")
-            if state_payload["payload_sha256"] != _payload_hash_antigravity(tuple(prefix_payload)):
-                raise ValueError("checkpoint payload hash changed")
             return cls(root, context, stored_process, tuple(prefix_payload), "complete", error_count, finalization_only=True)
         orphan_error: Mapping[str, object] | None = None
         if orphan is not None and orphan_result is None:

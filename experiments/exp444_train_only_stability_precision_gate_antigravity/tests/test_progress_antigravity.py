@@ -1,10 +1,47 @@
 """TDD tests for the Exp444 self-written progress/PID evidence."""
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
+
+from experiments.exp444_train_only_stability_precision_gate_antigravity.artifacts_antigravity import (
+    canonical_json_bytes_antigravity,
+)
+
+
+def _write_checkpoint_state_antigravity(
+    attempt: Path,
+    *,
+    pid: int,
+    start_identity: str,
+    completed: int,
+    total: int,
+) -> Path:
+    checkpoint = attempt / "checkpoint_antigravity"
+    checkpoint.mkdir(exist_ok=True)
+    prefix = [hashlib.sha256(f"record-{index}".encode()).hexdigest() for index in range(completed)]
+    payload = {
+        "context_sha256": "1" * 64,
+        "status": "interrupted",
+        "completed_units": completed,
+        "total_units": total,
+        "error_count": 0,
+        "current_unit": None,
+        "current_view": None,
+        "payload_sha256": hashlib.sha256(canonical_json_bytes_antigravity(prefix)).hexdigest(),
+        "record_sha256_prefix": prefix,
+        "process": {"pid": pid, "start_identity": start_identity},
+        "error": None,
+        "updated_at": "2026-08-10T00:00:00.000Z",
+    }
+    state = checkpoint / "state_antigravity.json"
+    state.write_bytes(canonical_json_bytes_antigravity(payload))
+    return state
 
 
 class Exp444ProgressAntigravityTests(unittest.TestCase):
@@ -62,16 +99,157 @@ class Exp444ProgressAntigravityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="exp444_task6_progress_antigravity_") as directory:
             attempt = Path(directory) / "attempt_0000_antigravity"
             attempt.mkdir()
-            writer = ProgressWriterAntigravity.create(attempt, total=2, pid=42003, start_identity="start-A")
+            writer = ProgressWriterAntigravity.create(attempt, total=30, pid=42003, start_identity="start-A")
             writer.start_candidate_antigravity("A", 0, train_count=5, test_count=1, raw_length=16)
             writer.complete_candidate_antigravity()
             writer.close_antigravity("interrupted")
+            _write_checkpoint_state_antigravity(
+                attempt, pid=42003, start_identity="start-A", completed=1, total=30
+            )
             with self.assertRaisesRegex(ValueError, "active"):
-                ProgressWriterAntigravity.open_interrupted(attempt, total=2, pid=42004, start_identity="start-B", pid_probe=lambda _: True)
-            resumed = ProgressWriterAntigravity.open_interrupted(attempt, total=2, pid=42004, start_identity="start-B", pid_probe=lambda _: False)
+                ProgressWriterAntigravity.open_interrupted(attempt, total=30, pid=42004, start_identity="start-B", pid_probe=lambda _: True)
+            resumed = ProgressWriterAntigravity.open_interrupted(attempt, total=30, pid=42004, start_identity="start-B", pid_probe=lambda _: False)
             self.assertEqual(resumed.completed_count_antigravity, 1)
             self.assertEqual(resumed.error_count_antigravity, 0)
             self.assertEqual(json.loads((attempt / "progress_antigravity.json").read_text())["active"], True)
+
+    def test_stale_temps_are_discarded_without_becoming_progress_authority_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task6_progress_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"
+            attempt.mkdir()
+            writer = ProgressWriterAntigravity.create(attempt, total=30, pid=42003, start_identity="start-A")
+            writer.start_candidate_antigravity("A", 0, train_count=5, test_count=1, raw_length=16)
+            writer.complete_candidate_antigravity()
+            writer.close_antigravity("interrupted")
+            _write_checkpoint_state_antigravity(
+                attempt, pid=42003, start_identity="start-A", completed=1, total=30
+            )
+            stale_progress = attempt / "progress_antigravity.tmp"
+            stale_pid = attempt / "pid_antigravity.tmp"
+            stale_progress.write_bytes(b'{"completed":999}\n')
+            stale_pid.write_bytes(b'{"pid":999}\n')
+
+            resumed = ProgressWriterAntigravity.open_interrupted(
+                attempt, total=30, pid=42004, start_identity="start-B", pid_probe=lambda _: False
+            )
+
+            self.assertEqual(resumed.completed_count_antigravity, 1)
+            self.assertFalse(stale_progress.exists())
+            self.assertFalse(stale_pid.exists())
+
+    def test_resume_validates_all_progress_semantics_before_mutation_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        corruptions = {
+            "completed exceeds total": {"completed": 31},
+            "backend changed": {"backend": "mlx"},
+            "inactive current dataset": {"current_dataset": "should-be-null"},
+            "negative dimensions": {"train_count": -1},
+            "counter mismatch": {"success": 0},
+            "checkpoint path changed": {"checkpoint": "/tmp/wrong_antigravity.json"},
+        }
+        for label, mutation in corruptions.items():
+            with self.subTest(label=label), tempfile.TemporaryDirectory(prefix="exp444_task6_progress_antigravity_") as directory:
+                attempt = Path(directory) / "attempt_0000_antigravity"
+                attempt.mkdir()
+                writer = ProgressWriterAntigravity.create(attempt, total=30, pid=42003, start_identity="start-A")
+                writer.start_candidate_antigravity("A", 0, train_count=5, test_count=1, raw_length=16)
+                writer.complete_candidate_antigravity()
+                writer.close_antigravity("interrupted")
+                _write_checkpoint_state_antigravity(
+                    attempt, pid=42003, start_identity="start-A", completed=1, total=30
+                )
+                progress_path = attempt / "progress_antigravity.json"
+                payload = json.loads(progress_path.read_text())
+                payload.update(mutation)
+                progress_path.write_bytes(canonical_json_bytes_antigravity(payload))
+                before = {path.name: path.read_bytes() for path in attempt.iterdir() if path.is_file()}
+
+                with self.assertRaisesRegex(ValueError, "invalid|changed|mismatch"):
+                    ProgressWriterAntigravity.open_interrupted(
+                        attempt, total=30, pid=42004, start_identity="start-B", pid_probe=lambda _: False
+                    )
+                after = {path.name: path.read_bytes() for path in attempt.iterdir() if path.is_file()}
+                self.assertEqual(before, after)
+
+    def test_replacement_pid_old_writer_and_parent_owner_are_enforced_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task6_progress_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"
+            attempt.mkdir()
+            writer = ProgressWriterAntigravity.create(attempt, total=30, pid=42003, start_identity="start-A")
+            with mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity.os.getpid", return_value=os.getpid() + 1):
+                with self.assertRaisesRegex(ValueError, "parent owner"):
+                    writer.start_candidate_antigravity("A", 0, train_count=5, test_count=1, raw_length=16)
+            writer.start_candidate_antigravity("A", 0, train_count=5, test_count=1, raw_length=16)
+            writer.complete_candidate_antigravity()
+            writer.close_antigravity("interrupted")
+            _write_checkpoint_state_antigravity(
+                attempt, pid=42003, start_identity="start-A", completed=1, total=30
+            )
+            with self.assertRaisesRegex(ValueError, "PID|numeric"):
+                ProgressWriterAntigravity.open_interrupted(
+                    attempt, total=30, pid=42003, start_identity="different-token", pid_probe=lambda _: False
+                )
+            with self.assertRaisesRegex(ValueError, "terminal"):
+                writer.close_antigravity("interrupted")
+            with self.assertRaisesRegex(ValueError, "terminal"):
+                writer.start_candidate_antigravity("B", 1, train_count=5, test_count=1, raw_length=16)
+
+    def test_resume_rejects_checkpoint_identity_mismatch_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task6_progress_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"
+            attempt.mkdir()
+            writer = ProgressWriterAntigravity.create(attempt, total=30, pid=42003, start_identity="start-A")
+            writer.start_candidate_antigravity("A", 0, train_count=5, test_count=1, raw_length=16)
+            writer.complete_candidate_antigravity()
+            writer.close_antigravity("interrupted")
+            checkpoint = _write_checkpoint_state_antigravity(
+                attempt, pid=99999, start_identity="wrong-owner", completed=1, total=30
+            )
+            before = checkpoint.read_bytes()
+            with self.assertRaisesRegex(ValueError, "checkpoint.*identity|checkpoint.*PID"):
+                ProgressWriterAntigravity.open_interrupted(
+                    attempt, total=30, pid=42004, start_identity="start-B", pid_probe=lambda _: False
+                )
+            self.assertEqual(before, checkpoint.read_bytes())
+
+    def test_resume_rejects_corrupt_checkpoint_semantics_before_mutation_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        corruptions = {
+            "payload hash": {"payload_sha256": "0" * 64},
+            "completed mismatch": {"completed_units": 2},
+            "active checkpoint current": {"current_unit": 0},
+            "bad context hash": {"context_sha256": "not-a-sha"},
+        }
+        for label, mutation in corruptions.items():
+            with self.subTest(label=label), tempfile.TemporaryDirectory(prefix="exp444_task6_progress_antigravity_") as directory:
+                attempt = Path(directory) / "attempt_0000_antigravity"
+                attempt.mkdir()
+                writer = ProgressWriterAntigravity.create(attempt, total=30, pid=42003, start_identity="start-A")
+                writer.start_candidate_antigravity("A", 0, train_count=5, test_count=1, raw_length=16)
+                writer.complete_candidate_antigravity()
+                writer.close_antigravity("interrupted")
+                checkpoint = _write_checkpoint_state_antigravity(
+                    attempt, pid=42003, start_identity="start-A", completed=1, total=30
+                )
+                payload = json.loads(checkpoint.read_text())
+                payload.update(mutation)
+                checkpoint.write_bytes(canonical_json_bytes_antigravity(payload))
+                before = {path.name: path.read_bytes() for path in attempt.iterdir() if path.is_file()}
+
+                with self.assertRaisesRegex(ValueError, "checkpoint.*invalid|checkpoint.*mismatch|checkpoint.*changed"):
+                    ProgressWriterAntigravity.open_interrupted(
+                        attempt, total=30, pid=42004, start_identity="start-B", pid_probe=lambda _: False
+                    )
+                after = {path.name: path.read_bytes() for path in attempt.iterdir() if path.is_file()}
+                self.assertEqual(before, after)
 
 
 if __name__ == "__main__":

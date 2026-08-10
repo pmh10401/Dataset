@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 from experiments.exp444_train_only_stability_precision_gate_antigravity.config_antigravity import (
     FROZEN_CONFIG,
@@ -132,6 +134,92 @@ class Exp444CheckpointAntigravityTests(unittest.TestCase):
             self.assertEqual(before, (root / "state_antigravity.json").read_bytes())
             with self.assertRaisesRegex(ValueError, "finalization|terminal"):
                 final.commit_antigravity(0, _result_antigravity(0))
+
+    def test_stale_atomic_temp_is_discarded_and_never_authoritative_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task6_checkpoint_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            store = Exp444CheckpointStoreAntigravity.create(root, _context_antigravity(), _process_antigravity())
+            store.commit_antigravity(0, _result_antigravity(0))
+            store.mark_interrupted_antigravity()
+            stale = root / "state_antigravity.tmp"
+            stale.write_bytes(b'{"completed_units":999}\n')
+
+            resumed = Exp444CheckpointStoreAntigravity.open_interrupted(
+                root, _context_antigravity(), _process_antigravity(41002, "start-B"), pid_probe=lambda _: False
+            )
+
+            self.assertFalse(stale.exists())
+            self.assertEqual(resumed.completed_count_antigravity, 1)
+            self.assertEqual(set(resumed.results_antigravity()), {0})
+
+    def test_resume_rejects_tampered_prefix_hash_before_mutation_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
+
+        for status in ("running", "interrupted", "complete"):
+            with self.subTest(status=status), tempfile.TemporaryDirectory(prefix="exp444_task6_checkpoint_antigravity_") as directory:
+                root = Path(directory) / "checkpoint_antigravity"
+                store = Exp444CheckpointStoreAntigravity.create(root, _context_antigravity(), _process_antigravity())
+                limit = 30 if status == "complete" else 1
+                for sequence in range(limit):
+                    store.commit_antigravity(sequence, _result_antigravity(sequence))
+                if status == "interrupted":
+                    store.mark_interrupted_antigravity()
+                state_path = root / "state_antigravity.json"
+                payload = json.loads(state_path.read_text())
+                payload["payload_sha256"] = "0" * 64
+                state_path.write_bytes(canonical_json_bytes_antigravity(payload))
+                before = state_path.read_bytes()
+
+                with self.assertRaisesRegex(ValueError, "payload hash"):
+                    Exp444CheckpointStoreAntigravity.open_interrupted(
+                        root, _context_antigravity(), _process_antigravity(41002, "start-B"),
+                        pid_probe=lambda _: False, allow_complete_finalization=status == "complete",
+                    )
+                self.assertEqual(before, state_path.read_bytes())
+
+    def test_same_numeric_pid_and_interrupted_old_writer_are_rejected_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task6_checkpoint_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            store = Exp444CheckpointStoreAntigravity.create(root, _context_antigravity(), _process_antigravity())
+            store.commit_antigravity(0, _result_antigravity(0))
+            store.mark_interrupted_antigravity()
+            before = (root / "state_antigravity.json").read_bytes()
+            with self.assertRaisesRegex(ValueError, "PID|numeric"):
+                Exp444CheckpointStoreAntigravity.open_interrupted(
+                    root, _context_antigravity(), _process_antigravity(41001, "different-token"), pid_probe=lambda _: False
+                )
+            with self.assertRaisesRegex(ValueError, "interrupted|writable"):
+                store.commit_antigravity(1, _result_antigravity(1))
+            self.assertEqual(before, (root / "state_antigravity.json").read_bytes())
+
+    def test_parent_owner_and_terminal_error_record_are_enforced_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task6_checkpoint_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            store = Exp444CheckpointStoreAntigravity.create(root, _context_antigravity(), _process_antigravity())
+            with mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity.os.getpid", return_value=os.getpid() + 1):
+                with self.assertRaisesRegex(ValueError, "parent owner"):
+                    store.commit_antigravity(0, _result_antigravity(0))
+            store.commit_error_antigravity(0, RuntimeError("fixture failure"))
+            state = json.loads((root / "state_antigravity.json").read_text())
+            record = json.loads((root / "records_antigravity/0000_record_antigravity.json").read_text())
+            self.assertEqual(state["status"], "error")
+            self.assertEqual(state["error_count"], 1)
+            self.assertEqual(record["status"], "error")
+            before = (root / "state_antigravity.json").read_bytes()
+            with self.assertRaisesRegex(ValueError, "terminal"):
+                store.commit_antigravity(1, _result_antigravity(1))
+            with self.assertRaisesRegex(ValueError, "terminal error"):
+                Exp444CheckpointStoreAntigravity.open_interrupted(
+                    root, _context_antigravity(), _process_antigravity(41002, "start-B"), pid_probe=lambda _: False
+                )
+            self.assertEqual(before, (root / "state_antigravity.json").read_bytes())
 
 
 if __name__ == "__main__":

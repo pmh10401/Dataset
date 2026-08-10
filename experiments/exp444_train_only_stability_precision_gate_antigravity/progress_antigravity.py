@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
+import hashlib
 import json
 import math
 import os
@@ -47,9 +48,10 @@ def _write_atomic_json_antigravity(path: Path, payload: Mapping[str, object]) ->
     if path.is_symlink():
         raise ValueError(f"{path.name} is a symlink")
     encoded = canonical_json_bytes_antigravity(payload)
-    temporary = path.with_name(path.name.replace(".json", ".tmp"))
-    if temporary.exists() or temporary.is_symlink():
-        raise ValueError(f"{temporary.name} already exists")
+    _discard_stale_atomic_temps_antigravity(path)
+    temporary = path.with_name(
+        f".{path.name}.antigravity-{os.getpid()}-{time.time_ns()}.tmp"
+    )
     descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     try:
         offset = 0
@@ -76,6 +78,22 @@ def _write_atomic_json_antigravity(path: Path, payload: Mapping[str, object]) ->
         except FileNotFoundError:
             pass
         raise
+
+
+def _discard_stale_atomic_temps_antigravity(path: Path) -> None:
+    """Delete abandoned write temps; only canonical JSON is authoritative."""
+    legacy = path.with_name(path.name.replace(".json", ".tmp"))
+    candidates = {legacy, *path.parent.glob(f".{path.name}.antigravity-*.tmp")}
+    removed = False
+    for temporary in sorted(candidates, key=lambda item: item.name):
+        if not temporary.exists() and not temporary.is_symlink():
+            continue
+        if temporary.is_symlink() or not temporary.is_file():
+            raise ValueError(f"stale atomic temp is invalid: {temporary.name}")
+        temporary.unlink()
+        removed = True
+    if removed:
+        fsync_directory_antigravity(path.parent)
 
 
 def _read_canonical_antigravity(path: Path) -> Mapping[str, object]:
@@ -153,6 +171,7 @@ class ProgressWriterAntigravity:
                 initial[name] = value
         self._counters = initial
         self._latest_error: str | None = None
+        self._local_owner_pid = os.getpid()
         self._ensure_append_files_antigravity()
 
     @classmethod
@@ -305,6 +324,8 @@ class ProgressWriterAntigravity:
             os.close(descriptor)
 
     def _require_active_antigravity(self) -> None:
+        if os.getpid() != self._local_owner_pid:
+            raise ValueError("progress mutation requires the parent owner process")
         if not self._active or self._stage in _TERMINAL:
             raise ValueError("progress is terminal")
 
@@ -410,7 +431,9 @@ class ProgressWriterAntigravity:
         self._append_text_antigravity(f"후보 완료 dataset={dataset} status={status} 완료={self._counters['completed']}/{self.total}\n")
 
     def close_antigravity(self, status: str, latest_error: str | None = None) -> None:
-        if self._stage in _TERMINAL or not self._active and self._stage not in _RESUMABLE:
+        if os.getpid() != self._local_owner_pid:
+            raise ValueError("progress mutation requires the parent owner process")
+        if not self._active or self._stage in _TERMINAL:
             raise ValueError("progress is terminal")
         if status not in _TERMINAL | _RESUMABLE:
             raise ValueError("progress terminal status is invalid")
@@ -454,8 +477,31 @@ class ProgressWriterAntigravity:
             raise ValueError("progress is not resumable")
         if pid_payload["pid"] != progress["pid"] or pid_payload["start_identity"] != progress["start_identity"] or pid_payload["active"] is not False:
             raise ValueError("progress PID state is invalid")
+        if progress["backend"] != "cpu":
+            raise ValueError("progress backend changed")
         if progress["eta_seconds"] is not None:
-            _finite_nonnegative_antigravity(progress["eta_seconds"], "eta_seconds")
+            raise ValueError("progress inactive ETA is invalid")
+        if any(progress[name] is not None for name in (
+            "current_dataset", "current_candidate_index", "current_view",
+            "view_count", "excluded_count",
+        )):
+            raise ValueError("progress inactive current fields are invalid")
+        for name in (
+            "train_count", "train_missing", "train_used", "train_excluded",
+            "test_count", "test_rows", "raw_length", "target_length",
+        ):
+            if progress[name] is not None:
+                _exact_nonnegative_antigravity(progress[name], name)
+        for name in ("heartbeat",):
+            if type(progress[name]) is not str:
+                raise ValueError(f"progress {name} is invalid")
+            try:
+                datetime.fromisoformat(progress[name].replace("Z", "+00:00"))
+            except ValueError as error:
+                raise ValueError(f"progress {name} is invalid") from error
+        latest_error = progress["latest_error"]
+        if latest_error is not None and (type(latest_error) is not str or not latest_error):
+            raise ValueError("progress latest error is invalid")
         stored = ProcessIdentityAntigravity(pid_payload["pid"], pid_payload["start_identity"])
         if process is None:
             if pid is None:
@@ -464,6 +510,8 @@ class ProgressWriterAntigravity:
                 process = ProcessIdentityAntigravity(pid, start_identity or f"{pid}:{time.time_ns()}")
         elif pid is not None and pid != process.pid:
             raise ValueError("progress PID does not match process")
+        if process.pid == stored.pid:
+            raise ValueError("replacement process numeric PID must be distinct")
         if process == stored:
             raise ValueError("replacement process must be distinct")
         probe = _pid_probe_default_antigravity if pid_probe is None else pid_probe
@@ -477,16 +525,78 @@ class ProgressWriterAntigravity:
         counters = {name: progress[name] for name in ("completed", "imported", "recomputed", "success", "abstention", "error")}
         for name, value in counters.items():
             _exact_nonnegative_antigravity(value, name)
+        if counters["completed"] > total:
+            raise ValueError("progress completed count is invalid")
+        if counters["imported"] + counters["recomputed"] != counters["completed"]:
+            raise ValueError("progress source counter mismatch")
+        if counters["success"] + counters["error"] != counters["completed"]:
+            raise ValueError("progress outcome counter mismatch")
+        if counters["abstention"] > counters["success"]:
+            raise ValueError("progress abstention counter mismatch")
+        if counters["completed"] and any(progress[name] is None for name in ("train_count", "test_count", "raw_length")):
+            raise ValueError("progress completed dimensions are invalid")
+        if counters["error"] and latest_error is None:
+            raise ValueError("progress error detail is invalid")
         elapsed = _finite_nonnegative_antigravity(progress["elapsed_seconds"], "elapsed_seconds")
+        _finite_nonnegative_antigravity(progress["throughput"], "throughput")
+        if type(pid_payload["heartbeat"]) is not str:
+            raise ValueError("progress PID heartbeat is invalid")
+        try:
+            datetime.fromisoformat(pid_payload["heartbeat"].replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("progress PID heartbeat is invalid") from error
         for filename in ("events_antigravity.jsonl", "text_antigravity.log"):
             path = attempt / filename
             if path.is_symlink() or not path.is_file():
                 raise ValueError(f"progress log is invalid: {filename}")
-        if checkpoint_path is not None and str(checkpoint_path) != str(progress["checkpoint"]):
+        expected_checkpoint = attempt / "checkpoint_antigravity/state_antigravity.json"
+        if type(progress["checkpoint"]) is not str or progress["checkpoint"] != str(expected_checkpoint):
             raise ValueError("progress checkpoint path changed")
+        if checkpoint_path is not None and str(checkpoint_path) != str(expected_checkpoint):
+            raise ValueError("progress checkpoint path changed")
+        checkpoint = _read_canonical_antigravity(expected_checkpoint)
+        checkpoint_keys = {
+            "context_sha256", "status", "completed_units", "total_units", "error_count",
+            "current_unit", "current_view", "payload_sha256", "record_sha256_prefix",
+            "process", "error", "updated_at",
+        }
+        if set(checkpoint) != checkpoint_keys:
+            raise ValueError("progress checkpoint schema is invalid")
+        checkpoint_process = checkpoint["process"]
+        if not isinstance(checkpoint_process, Mapping) or set(checkpoint_process) != {"pid", "start_identity"}:
+            raise ValueError("progress checkpoint identity is invalid")
+        if checkpoint_process["pid"] != stored.pid or checkpoint_process["start_identity"] != stored.start_identity:
+            raise ValueError("progress checkpoint identity mismatch")
+        if checkpoint["status"] not in _RESUMABLE or checkpoint["current_unit"] is not None or checkpoint["current_view"] is not None:
+            raise ValueError("progress checkpoint state is invalid")
+        for name in ("context_sha256", "payload_sha256"):
+            value = checkpoint[name]
+            if type(value) is not str or len(value) != 64 or any(
+                character not in "0123456789abcdef" for character in value
+            ):
+                raise ValueError(f"progress checkpoint {name} is invalid")
+        if type(checkpoint["updated_at"]) is not str:
+            raise ValueError("progress checkpoint update time is invalid")
+        try:
+            datetime.fromisoformat(checkpoint["updated_at"].replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("progress checkpoint update time is invalid") from error
+        if checkpoint["completed_units"] != counters["completed"] or checkpoint["total_units"] != total or checkpoint["error_count"] != counters["error"]:
+            raise ValueError("progress checkpoint counter mismatch")
+        prefix = checkpoint["record_sha256_prefix"]
+        if not isinstance(prefix, list) or len(prefix) != counters["completed"] or any(
+            type(value) is not str or len(value) != 64 or any(character not in "0123456789abcdef" for character in value)
+            for value in prefix
+        ):
+            raise ValueError("progress checkpoint prefix is invalid")
+        expected_payload_sha = hashlib.sha256(canonical_json_bytes_antigravity(prefix)).hexdigest()
+        if checkpoint["payload_sha256"] != expected_payload_sha:
+            raise ValueError("progress checkpoint payload hash changed")
+        if checkpoint["error"] is not None:
+            raise ValueError("progress checkpoint error state is invalid")
         writer = cls(
             attempt, total=total, process=process,
-            checkpoint_path=checkpoint_path or Path(progress["checkpoint"]),
+            checkpoint_path=expected_checkpoint,
             elapsed_offset=elapsed, counters=counters,
         )
         writer._stage = "resuming"
