@@ -24,6 +24,7 @@ from concurrent.futures import FIRST_COMPLETED, Future, ProcessPoolExecutor, wai
 from dataclasses import dataclass
 from multiprocessing import get_context
 from pathlib import Path
+import math
 import re
 from typing import Any
 
@@ -43,6 +44,23 @@ from .progress_antigravity import ProgressWriterAntigravity
 
 
 _ATTEMPT_NAME_ANTIGRAVITY = re.compile(r"attempt_[0-9]{4}_antigravity$")
+_COMPLETE_PROGRESS_KEYS_ANTIGRAVITY = frozenset({
+    "pid", "start_identity", "active", "current_dataset", "current_candidate_index",
+    "current_view", "view_count", "excluded_count", "train_count", "train_missing",
+    "train_used", "train_excluded", "test_count", "test_rows", "raw_length",
+    "target_length", "stage", "backend", "completed", "total", "imported",
+    "recomputed", "success", "abstention", "error", "throughput", "elapsed_seconds",
+    "eta_seconds", "checkpoint", "heartbeat", "latest_error",
+})
+_COMPLETE_PID_KEYS_ANTIGRAVITY = frozenset({"pid", "start_identity", "active", "heartbeat"})
+
+
+def _error_view_index_antigravity(error: BaseException) -> int | None:
+    value = getattr(error, "view_index", None)
+    if type(value) is int and value >= 0:
+        return value
+    match = re.search(r"\b(?:omission\s+)?view(?:=|\s+)([0-9]+)\b", str(error))
+    return int(match.group(1)) if match is not None else None
 
 
 def _worker_initializer_antigravity() -> None:
@@ -74,9 +92,9 @@ class WorkerFailureAntigravity(RuntimeError):
         self.candidate_index = sequence
         self.dataset = candidate.dataset
         self.instance_index = candidate.instance_index
-        self.view_index = view_index
+        self.view_index = _error_view_index_antigravity(cause) if view_index is None else view_index
         self.cause = cause
-        suffix = f" view={view_index}" if view_index is not None else ""
+        suffix = f" view={self.view_index}" if self.view_index is not None else ""
         message = str(cause) or type(cause).__name__
         super().__init__(
             f"worker failed dataset={candidate.dataset} "
@@ -191,6 +209,7 @@ def ordered_parallel_map_antigravity(
     committed: list[CandidateStabilityResultAntigravity] = []
     submit_index = 0
     commit_index = 0
+    active_notified: int | None = None
     reorder_capacity = workers * workers
     executor = _executor_antigravity(factory, workers)
 
@@ -204,52 +223,63 @@ def ordered_parallel_map_antigravity(
             buffered=tuple(sorted(buffered)),
         )
 
+    def notify_active() -> None:
+        nonlocal active_notified
+        if commit_index < len(frozen) and active_notified != commit_index:
+            notify("active", commit_index)
+            active_notified = commit_index
+
     try:
-        with executor:  # type: ignore[union-attr]
-            while submit_index < len(frozen) or pending or buffered:
-                while (
-                    submit_index < len(frozen)
-                    and len(pending) < workers
-                    and len(pending) + len(buffered) < reorder_capacity
-                ):
-                    candidate = frozen[submit_index]
-                    notify("submit", submit_index)
-                    future = executor.submit(scorer, candidate)  # type: ignore[union-attr]
-                    pending[future] = (submit_index, candidate)
-                    submit_index += 1
-                if pending:
-                    done = _done_futures_antigravity(pending)
-                    for future in done:
-                        sequence, candidate = pending.pop(future)
-                        notify("worker_result", sequence)
-                        try:
-                            result = future.result()
-                        except KeyboardInterrupt:
-                            raise
-                        except BaseException as error:
-                            raise WorkerFailureAntigravity(sequence, candidate, error) from error
-                        buffered[sequence] = _validate_result_antigravity(sequence, candidate, result)
-                while commit_index in buffered:
-                    candidate = frozen[commit_index]
-                    result = buffered.pop(commit_index)
-                    notify("commit", commit_index)
-                    if commit is not None:
-                        commit(commit_index, candidate, result)
-                    committed.append(result)
-                    commit_index += 1
-                if not pending and not buffered and submit_index >= len(frozen):
-                    break
-                if not pending and submit_index < len(frozen):
-                    # This path is only reachable with an unusual fixture
-                    # executor that completes and removes futures eagerly.
-                    continue
+        while submit_index < len(frozen) or pending or buffered:
+            while (
+                submit_index < len(frozen)
+                and len(pending) < workers
+                and len(pending) + len(buffered) < reorder_capacity
+            ):
+                candidate = frozen[submit_index]
+                notify("submit", submit_index)
+                future = executor.submit(scorer, candidate)  # type: ignore[union-attr]
+                pending[future] = (submit_index, candidate)
+                submit_index += 1
+                notify_active()
+            notify_active()
+            if pending:
+                done = _done_futures_antigravity(pending)
+                for future in done:
+                    sequence, candidate = pending.pop(future)
+                    notify("worker_result", sequence)
+                    try:
+                        result = future.result()
+                    except KeyboardInterrupt:
+                        raise
+                    except BaseException as error:
+                        raise WorkerFailureAntigravity(sequence, candidate, error) from error
+                    buffered[sequence] = _validate_result_antigravity(sequence, candidate, result)
+            while commit_index in buffered:
+                notify_active()
+                candidate = frozen[commit_index]
+                result = buffered.pop(commit_index)
+                notify("commit", commit_index)
+                if commit is not None:
+                    commit(commit_index, candidate, result)
+                committed.append(result)
+                commit_index += 1
+                active_notified = None
+            if not pending and not buffered and submit_index >= len(frozen):
+                break
+            if not pending and submit_index < len(frozen):
+                # This path is only reachable with an unusual fixture
+                # executor that completes and removes futures eagerly.
+                continue
     except BaseException:
         for future in pending:
             try:
                 future.cancel()
             except BaseException:
                 pass
+        executor.shutdown(wait=False, cancel_futures=True)  # type: ignore[union-attr]
         raise
+    executor.shutdown(wait=True)  # type: ignore[union-attr]
     if commit_index != len(frozen) or pending or buffered:
         raise RuntimeError("Exp444 ordered scheduler did not complete the frozen prefix")
     return tuple(committed)
@@ -391,23 +421,6 @@ def _persist_commit_antigravity(
     candidate: CandidateInputAntigravity,
     result: CandidateStabilityResultAntigravity,
 ) -> None:
-    dimensions = _dimensions_antigravity(candidate)
-    writer.start_candidate_antigravity(
-        candidate.dataset,
-        sequence,
-        train_count=dimensions["train_count"],
-        test_count=dimensions["test_count"],
-        test_rows=dimensions["test_rows"],
-        raw_length=dimensions["raw_length"],
-        target_length=dimensions["target_length"],
-        backend="cpu",
-    )
-    for view in result.views:
-        writer.start_view_antigravity(
-            view_index=view.view_index,
-            view_count=len(result.views),
-            excluded_count=len(view.mask.excluded_train_indices),
-        )
     # Durable result first; progress is advanced only after checkpoint bytes
     # and its state prefix have both been fsynced.
     store.commit_antigravity(sequence, result)
@@ -428,6 +441,130 @@ def _state_status_antigravity(checkpoint_path: Path) -> str:
     if not isinstance(payload, Mapping) or type(payload.get("status")) is not str:
         raise ValueError("Exp444 checkpoint state is invalid")
     return payload["status"]
+
+
+def _read_complete_json_antigravity(path: Path, name: str) -> Mapping[str, object]:
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(f"Exp444 complete {name} is absent or invalid")
+    encoded = path.read_bytes()
+    try:
+        payload = parse_canonical_json_bytes_antigravity(encoded)
+    except ValueError as error:
+        raise ValueError(f"Exp444 complete {name} is invalid") from error
+    if not isinstance(payload, Mapping) or canonical_json_bytes_antigravity(payload) != encoded:
+        raise ValueError(f"Exp444 complete {name} is not canonical")
+    return payload
+
+
+def _validate_complete_attempt_antigravity(attempt: Path, checkpoint_root: Path) -> None:
+    """Read-only cross-check of every terminal runtime surface before re-entry."""
+    progress = _read_complete_json_antigravity(
+        attempt / "progress_antigravity.json", "progress"
+    )
+    pid_payload = _read_complete_json_antigravity(
+        attempt / "pid_antigravity.json", "PID"
+    )
+    state = _read_complete_json_antigravity(
+        checkpoint_root / "state_antigravity.json", "checkpoint state"
+    )
+    if set(progress) != _COMPLETE_PROGRESS_KEYS_ANTIGRAVITY:
+        raise ValueError("Exp444 complete progress schema is invalid")
+    if set(pid_payload) != _COMPLETE_PID_KEYS_ANTIGRAVITY:
+        raise ValueError("Exp444 complete PID schema is invalid")
+    total = FROZEN_CONFIG.source_candidate_count
+    inactive_fields = (
+        "current_dataset", "current_candidate_index", "current_view",
+        "view_count", "excluded_count", "eta_seconds",
+    )
+    if (
+        progress["stage"] != "complete"
+        or progress["active"] is not False
+        or progress["backend"] != "cpu"
+        or progress["completed"] != total
+        or progress["total"] != total
+        or any(progress[name] is not None for name in inactive_fields)
+    ):
+        raise ValueError("Exp444 complete progress terminal state is invalid")
+    latest_error = progress["latest_error"]
+    if latest_error is not None and (type(latest_error) is not str or not latest_error):
+        raise ValueError("Exp444 complete progress latest error is invalid")
+    counters = tuple(progress[name] for name in (
+        "completed", "imported", "recomputed", "success", "abstention", "error"
+    ))
+    if any(type(value) is not int or value < 0 for value in counters):
+        raise ValueError("Exp444 complete progress counters are invalid")
+    completed, imported, recomputed, success, abstention, error_count = counters
+    if (
+        imported + recomputed != completed
+        or success + error_count != completed
+        or abstention > success
+        or error_count != 0
+    ):
+        raise ValueError("Exp444 complete progress counters are incoherent")
+    for name in ("elapsed_seconds", "throughput"):
+        value = progress[name]
+        if type(value) not in (int, float) or not math.isfinite(float(value)) or float(value) < 0:
+            raise ValueError(f"Exp444 complete progress {name} is invalid")
+    for name in ("train_count", "test_count", "test_rows", "raw_length", "target_length"):
+        if type(progress[name]) is not int or progress[name] < 0:
+            raise ValueError(f"Exp444 complete progress {name} is invalid")
+    expected_checkpoint = checkpoint_root / "state_antigravity.json"
+    if progress["checkpoint"] != str(expected_checkpoint):
+        raise ValueError("Exp444 complete progress checkpoint path changed")
+    identity = (progress["pid"], progress["start_identity"])
+    if (
+        type(identity[0]) is not int or identity[0] < 1
+        or type(identity[1]) is not str or not identity[1]
+        or pid_payload["active"] is not False
+        or (pid_payload["pid"], pid_payload["start_identity"]) != identity
+    ):
+        raise ValueError("Exp444 complete PID identity is invalid")
+    state_process = state.get("process")
+    if (
+        state.get("status") != "complete"
+        or state.get("completed_units") != total
+        or state.get("total_units") != total
+        or state.get("current_unit") is not None
+        or state.get("current_view") is not None
+        or not isinstance(state_process, Mapping)
+        or (state_process.get("pid"), state_process.get("start_identity")) != identity
+    ):
+        raise ValueError("Exp444 complete checkpoint/progress identity is invalid")
+
+    events_path = attempt / "events_antigravity.jsonl"
+    if events_path.is_symlink() or not events_path.is_file():
+        raise ValueError("Exp444 complete event log is absent or invalid")
+    lines = events_path.read_bytes().splitlines(keepends=True)
+    if not lines:
+        raise ValueError("Exp444 complete event log is empty")
+    events: list[Mapping[str, object]] = []
+    for line in lines:
+        try:
+            event = parse_canonical_json_bytes_antigravity(line)
+        except ValueError as error:
+            raise ValueError("Exp444 complete event log is invalid") from error
+        if not isinstance(event, Mapping) or canonical_json_bytes_antigravity(event) != line:
+            raise ValueError("Exp444 complete event log is not canonical")
+        events.append(event)
+    terminal = events[-1]
+    if (
+        terminal.get("event") != "terminal"
+        or terminal.get("stage") != "complete"
+        or terminal.get("pid") != identity[0]
+        or terminal.get("completed") != total
+        or terminal.get("total") != total
+        or terminal.get("latest_error") != latest_error
+    ):
+        raise ValueError("Exp444 complete event log terminal record is invalid")
+    text_path = attempt / "text_antigravity.log"
+    if text_path.is_symlink() or not text_path.is_file():
+        raise ValueError("Exp444 complete text log is absent or invalid")
+    try:
+        text = text_path.read_text()
+    except (OSError, UnicodeError) as error:
+        raise ValueError("Exp444 complete text log is invalid") from error
+    if not text.endswith("\n") or "종료 stage=complete" not in text.splitlines()[-1]:
+        raise ValueError("Exp444 complete text log terminal record is invalid")
 
 
 def _validate_checkpoint_context_antigravity(
@@ -513,6 +650,7 @@ def _execute_runtime_antigravity(
         _validate_checkpoint_context_antigravity(checkpoint_root, context)
         status = _state_status_antigravity(checkpoint_root)
         if status == "complete":
+            _validate_complete_attempt_antigravity(attempt, checkpoint_root)
             store = Exp444CheckpointStoreAntigravity.open_interrupted(
                 checkpoint_root,
                 context,
@@ -530,13 +668,11 @@ def _execute_runtime_antigravity(
             total=FROZEN_CONFIG.source_candidate_count,
             process=process,
             checkpoint_path=checkpoint_root / "state_antigravity.json",
-            pid_probe=lambda _stored: False,
         )
         store = Exp444CheckpointStoreAntigravity.open_interrupted(
             checkpoint_root,
             context,
             process,
-            pid_probe=lambda _stored: False,
         )
         resumed = True
         finalization_only = False
@@ -556,12 +692,29 @@ def _execute_runtime_antigravity(
                 raise ValueError("Exp444 active progress writer is unavailable")
             _persist_commit_antigravity(store, writer, sequence, candidate, result)
 
+        def progress(*, stage: str, sequence: int | None, **_state: object) -> None:
+            if stage != "active" or sequence is None:
+                return
+            candidate = active[sequence]
+            dimensions = _dimensions_antigravity(candidate)
+            writer.start_candidate_antigravity(
+                candidate.dataset,
+                completed + sequence,
+                train_count=dimensions["train_count"],
+                test_count=dimensions["test_count"],
+                test_rows=dimensions["test_rows"],
+                raw_length=dimensions["raw_length"],
+                target_length=dimensions["target_length"],
+                backend="cpu",
+            )
+
         ordered_parallel_map_antigravity(
             active,
             workers=production_worker_count_antigravity(),
             distance_backend="cpu",
             executor_factory=executor_factory,
             commit=lambda local_sequence, candidate, result: commit(completed + local_sequence, candidate, result),
+            progress=progress,
         )
         if writer is None:
             raise ValueError("Exp444 active progress writer is unavailable")
