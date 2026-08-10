@@ -51,7 +51,7 @@ class Exp445PublicationSourceAuthorityAntigravityTests(unittest.TestCase):
         self.assertEqual(authority.dataset_summaries, summaries)
         self.assertEqual((len(authority.candidates), len(authority.dataset_summaries), len(authority.control_rows)), (30, 1117, 30))
         control_payload = artifacts.canonical_json_bytes_antigravity(
-            {"schema": "exp444.control-replay.v1", "rows": reporting._json_payload_value_antigravity(values.control_rows)}
+            {"schema": "exp444.control-replay.v1", "rows": reporting._json_payload_value_antigravity(authority.control_rows)}
         )
         self.assertEqual(len(artifacts.parse_canonical_json_bytes_antigravity(control_payload)["rows"]), 30)
 

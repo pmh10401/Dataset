@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T18:42:17Z",
-  "generated_from_commit": "41b7245e883c38e91ac1df5a9c06916bfa4e3a4c",
+  "generated_at": "2026-08-10T18:49:29Z",
+  "generated_from_commit": "c07a63bdcd9f342473118dfa38b198a4a540569e",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -4526,7 +4526,8 @@
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_bootstrap_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_readiness_antigravity.py",
-        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_cli_antigravity.py"
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_cli_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_publication_source_authority_antigravity.py"
       ],
       "constraints": [
         "Direct requirements remain exactly mlx==0.32.0, numba==0.66.0, and numpy==2.4.6; the complete six-distribution lock is bound by SHA256 8835702b9793a5cc08b5e95621b49c0a4a4136325354da7a655761f6b91f3a94.",
@@ -5066,6 +5067,30 @@
         {
           "path": ".superpowers/sdd/2026-08-10-exp444-train-only-stability-precision-gate-antigravity/progress.md",
           "symbol": "Task 10: complete ("
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _capture_values_only_publish_authority_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _parse_dataset_summaries_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _compose_publish_source_authority_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _json_payload_value_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_publication_source_authority_antigravity.py",
+          "symbol": "def test_real_composition_uses_pinned_exp440_bytes_and_closes_values_session_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_publication_source_authority_antigravity.py",
+          "symbol": "def test_values_only_handoff_freezes_nested_rows_and_materializes_for_payloads_antigravity"
         }
       ]
     }
