@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T21:48:51Z",
-  "generated_from_commit": "273a1201ce78937f4783cc549af75458c1869c97",
+  "generated_at": "2026-08-10T22:09:15Z",
+  "generated_from_commit": "80cea54f4d19ef404b7c8936ccb47bf0027fd797",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -83,7 +83,8 @@
     "Exp445 Task 5 closed profile readiness and new-only CPU/11 replay: profile-specific checkpoint identity/document authority, pre-write 30-record predecessor SHA parity, final aggregate revalidation, immutable error preservation, and unchanged Exp444 wrapper bytes.",
     "Exp445 Task 5 fix round 3: table-driven live readiness boundary coverage for clean/dirty commit, documents, config, environment/topology, CPU backend, labels, predecessor, and existing/symlink roots before allocation",
     "Exp445 descriptor-pinned Exp444 committed-prefix recovery authority and persistent diagnostic-log fault containment; clean terminal authority remains non-publishable when a terminal log cannot append",
-    "Exp445 exact typed checkpoint-state and raw-context binding, immutable lane-prefix counter recovery, and irreversible no-marker diagnostic failure gating"
+    "Exp445 exact typed checkpoint-state and raw-context binding, immutable lane-prefix counter recovery, and irreversible no-marker diagnostic failure gating",
+    "Exp445 exact active candidate-index type boundary and pre-existing diagnostic-marker/symlink clean-success block"
   ],
   "nodes": [
     {
@@ -5126,7 +5127,7 @@
       "boundary": "Exp445 predecessor authority",
       "layer": 2,
       "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity",
-      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks exact terminal and ordered 30-wrapper SHA authorities, and rejects a mutable or live state. The Exp445 new-only facade uses verified authority before allocation, compares every result wrapper SHA before record creation, and rechecks authority plus the 30-prefix aggregate before final success. Committed-success recovery receives only an Exp444 checkpoint-store descriptor-pinned immutable prefix: raw canonical context bytes, exact typed state schema, no-follow single-link records and exact in-memory SHA prefix must all agree. The authority includes every successful lane, prior/after abstention totals and the exact current result. Progress accepts only the matching official CPU history (no imported records, all completed recomputed/successful, zero errors, exact lane abstentions and dimensions). For Exp445 only, diagnostic append faults preserve aligned inactive core authority; an unrecorded marker-write failure or terminal append failure irreversibly blocks a clean returned success.",
+      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks exact terminal and ordered 30-wrapper SHA authorities, and rejects a mutable or live state. The Exp445 new-only facade uses verified authority before allocation, compares every result wrapper SHA before record creation, and rechecks authority plus the 30-prefix aggregate before final success. Committed-success recovery receives only an Exp444 checkpoint-store descriptor-pinned immutable prefix and accepts an active progress state only when current_candidate_index is an exact int equal to the sequence (JSON booleans never qualify). For Exp445 only, diagnostic append faults preserve aligned inactive core authority; a terminal append fault, failed marker creation, or any pre-existing marker/symlink at the marker pathname irreversibly blocks a clean returned success without replacing the existing path.",
       "entrypoints": [
         "verify_exp444_predecessor_antigravity",
         "Exp444PredecessorAuthorityAntigravity",
@@ -5147,7 +5148,9 @@
         "Exp445 diagnostic event/text append faults are best-effort-marked by create-only log_failure_antigravity.json without masking core computation or progress errors; terminal append faults leave PID inactive and block a clean returned success.",
         "Checkpoint committed-prefix context raw bytes must equal the canonical bytes for the fixed context, while every state field has an exact JSON Python type (bool never satisfies an integer field).",
         "Progress reconciliation is bound to authority lanes: imported=0, recomputed=success=completed, error=0, exact prior/after abstention count, null TRAIN missing/used/excluded fields, and exact current candidate dimensions.",
-        "An Exp445 failed append whose create-only marker cannot be written sets an irreversible in-memory clean-success block even if later logs append successfully; Exp444 diagnostic behavior remains unchanged."
+        "An Exp445 failed append whose create-only marker cannot be written sets an irreversible in-memory clean-success block even if later logs append successfully; Exp444 diagnostic behavior remains unchanged.",
+        "Active committed recovery requires type(current_candidate_index) is exactly int before sequence equality, so JSON false/true cannot impersonate candidate zero/one.",
+        "A pre-existing regular or symlink log_failure_antigravity.json is never trusted or replaced as current failure evidence; it sets the irreversible Exp445 clean-success block while preserving create-only safety."
       ],
       "evidence": [
         {
@@ -5229,6 +5232,18 @@
         {
           "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_lifecycle_antigravity.py",
           "symbol": "def test_nonterminal_log_and_marker_failure_still_blocks_clean_success_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/progress_antigravity.py",
+          "symbol": "type(persisted[\"current_candidate_index\"]) is not int"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_exp445_committed_recovery_rejects_boolean_current_candidate_index_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_exp445_preexisting_log_failure_marker_blocks_clean_success_antigravity"
         }
       ]
     }
@@ -6056,7 +6071,7 @@
         "exp445_predecessor_authority",
         "exp444_stability_contracts"
       ],
-      "outcome": "The descriptor-pinned predecessor authority is required before root allocation and again before record 30. After a post-checkpoint progress failure, only the checkpoint store authenticates the accepted prefix through raw-byte context equality, exact typed state fields, O_NOFOLLOW descriptors and exact record inventory. Its immutable lane history binds progress to the official no-import CPU prefix: all completed work is recomputed successful work, abstention totals equal pinned lanes, and missing/used/excluded TRAIN fields remain null. A nonfinal failure writes the exact-next error with aligned progress, while the final prefix completes only after reconciliation. Exp445 append failures preserve inactive core authority; a missing diagnostic marker or terminal append failure blocks a clean success return. Setup failures retain create-only evidence and inactive progress/PID where writable."
+      "outcome": "The descriptor-pinned predecessor authority is required before root allocation and again before record 30. Recovery accepts only the exact typed active candidate state and authoritative history; JSON boolean candidate indexes are rejected before equality. A nonfinal failure writes the exact-next error with aligned progress, while the final prefix completes only after reconciliation. Exp445 append failures preserve inactive core authority; failed marker creation, a terminal append fault, or any pre-existing regular/symlink marker at the create-only marker pathname blocks a clean success return without clobbering that pathname. Setup failures retain create-only evidence and inactive progress/PID where writable."
     }
   ],
   "unknown_relationships": [],
