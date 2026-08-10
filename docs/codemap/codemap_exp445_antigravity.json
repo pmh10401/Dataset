@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T20:33:01Z",
-  "generated_from_commit": "12b116975b40ef19dddd323129250d61808e16f1",
+  "generated_at": "2026-08-10T21:31:45Z",
+  "generated_from_commit": "952630854c34238f69caf42fb1bb83492108ab28",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -81,7 +81,8 @@
     "Exp445 Task 4 immutable predecessor authentication: descriptor-pinned Exp444 30-record terminal authority with no label, SQLite, publication, resume, evaluation, or mutation path.",
     "Exp445 Task 4 review fix: post-read descriptor and namespace mtime/ctime identity revalidation plus return-bound source DB link-count recheck.",
     "Exp445 Task 5 closed profile readiness and new-only CPU/11 replay: profile-specific checkpoint identity/document authority, pre-write 30-record predecessor SHA parity, final aggregate revalidation, immutable error preservation, and unchanged Exp444 wrapper bytes.",
-    "Exp445 Task 5 fix round 3: table-driven live readiness boundary coverage for clean/dirty commit, documents, config, environment/topology, CPU backend, labels, predecessor, and existing/symlink roots before allocation"
+    "Exp445 Task 5 fix round 3: table-driven live readiness boundary coverage for clean/dirty commit, documents, config, environment/topology, CPU backend, labels, predecessor, and existing/symlink roots before allocation",
+    "Exp445 descriptor-pinned Exp444 committed-prefix recovery authority and persistent diagnostic-log fault containment; clean terminal authority remains non-publishable when a terminal log cannot append"
   ],
   "nodes": [
     {
@@ -5124,7 +5125,7 @@
       "boundary": "Exp445 predecessor authority",
       "layer": 2,
       "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity",
-      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks exact terminal and ordered 30-wrapper SHA authorities, and rejects a mutable or live state. It revalidates descriptor and namespace identity including mtime_ns/ctime_ns after each read, rechecks source DB nlink immediately before return, and returns only immutable parity authority. It neither opens SQLite nor invokes Exp444 publication, resume, checkpoint, or evaluation code. Task 5 adds the fixed Exp445 facade that exposes only reviewed-commit readiness and new replay. It uses the verified authority before allocation, compares every result wrapper SHA before record creation, and rechecks authority plus the 30-prefix aggregate before the final successful write. Fix Round 1 makes the facade imports private and makes the direct Exp445 new route rerun the same live readiness before root mutation; a post-commit progress failure first reconciles the durable success and then either records an aligned next error or completes the final prefix. Fix Round 3 adds table-driven gate-order coverage for every closed Exp445 readiness boundary and verifies every pre-root failure leaves the official root absent; existing and symlink roots are rejected without replacement.",
+      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks exact terminal and ordered 30-wrapper SHA authorities, and rejects a mutable or live state. It revalidates descriptor and namespace identity including mtime_ns/ctime_ns after each read, rechecks source DB nlink immediately before return, and returns only immutable parity authority. It neither opens SQLite nor invokes Exp444 publication, resume, checkpoint, or evaluation code. Task 5 adds the fixed Exp445 facade that exposes only reviewed-commit readiness and new replay. It uses verified authority before allocation, compares every result wrapper SHA before record creation, and rechecks authority plus the 30-prefix aggregate before the final successful write. A recovery reconciliation receives only an Exp444 checkpoint-store descriptor-pinned immutable committed-prefix authority, never a caller-supplied path or record bytes. Persistent Exp445 diagnostic append faults create a no-clobber marker when possible while core checkpoint/progress/PID authority becomes aligned and inactive; a terminal append failure blocks a clean successful return.",
       "entrypoints": [
         "verify_exp444_predecessor_antigravity",
         "Exp444PredecessorAuthorityAntigravity",
@@ -5140,7 +5141,9 @@
         "Fixed Exp444 root, attempt name, reviewed commit, terminal SHA256 values, ordered 30-wrapper SHA prefix, and aggregate prefix SHA are closed constants.",
         "All reads are descriptor-relative no-follow checks over an exact inventory; terminal and record leaves must be single-linked regular files and descriptor plus namespace identities including mtime_ns/ctime_ns are revalidated after reading.",
         "The source database is not opened and must have exactly one link at start and immediately before return. The verifier never writes, renames, unlinks, publishes, resumes, evaluates, or creates the Exp445 official root.",
-        "No profile/root/attempt/worker/backend/source/resume/science/seed/mask override is exposed. The real fixed readiness entrypoint rejects wrong/dirty commit, documents, config, environment/package/topology, provenance/backend, worker parity, labels, predecessor, and existing/symlink roots before allocating the official root. A mismatch creates only the exact next error record and terminal error evidence; it never creates a complete state, publication, or evaluation."
+        "No profile/root/attempt/worker/backend/source/resume/science/seed/mask override is exposed. The real fixed readiness entrypoint rejects wrong/dirty commit, documents, config, environment/package/topology, provenance/backend, worker parity, labels, predecessor, and existing/symlink roots before allocating the official root. A mismatch creates only the exact next error record and terminal error evidence; it never creates a complete state, publication, or evaluation.",
+        "Committed-success recovery accepts only Exp444CheckpointStoreAntigravity.committed_prefix_authority_antigravity: descriptor-pinned O_NOFOLLOW checkpoint context/state/records with exact inventory, canonical schema, single-link leaves, identity rechecks, in-memory prefix SHA parity, and exact candidate/dimension binding.",
+        "Exp445 diagnostic event/text append faults are best-effort-marked by create-only log_failure_antigravity.json without masking core computation or progress errors; terminal append faults leave PID inactive and block a clean returned success."
       ],
       "evidence": [
         {
@@ -5186,6 +5189,26 @@
         {
           "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_readiness_antigravity.py",
           "symbol": "def test_profile_readiness_boundary_matrix_preserves_absent_root_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/checkpoint_antigravity.py",
+          "symbol": "def committed_prefix_authority_antigravity("
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/progress_antigravity.py",
+          "symbol": "def reconcile_committed_success_antigravity("
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "def test_committed_prefix_authority_rejects_forged_state_and_namespace_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_exp445_persistent_log_fault_does_not_mask_orphan_error_closeout_antigravity"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_lifecycle_antigravity.py",
+          "symbol": "def test_persistent_exp445_log_fault_closes_authority_and_blocks_clean_success_antigravity"
         }
       ]
     }
@@ -6013,7 +6036,7 @@
         "exp445_predecessor_authority",
         "exp444_stability_contracts"
       ],
-      "outcome": "The descriptor-pinned predecessor authority is required before root allocation and again before record 30. The parent checks each canonical wrapper SHA before its create-only success write. A progress failure after a durable success is reconciled from the accepted checkpoint prefix; a nonfinal failure then writes the exact-next error with aligned progress, while the final prefix completes only after reconciliation. Setup failures have create-only evidence and inactive progress/PID where writable. Recovery authenticates canonical progress JSON and its exact checkpoint record/state prefix before accepting an already-written progress completion; malformed or mismatched evidence is rejected without a compensating write."
+      "outcome": "The descriptor-pinned predecessor authority is required before root allocation and again before record 30. The parent checks each canonical wrapper SHA before its create-only success write. After a progress failure following a durable checkpoint success, only the checkpoint store may authenticate the exact committed prefix through O_NOFOLLOW descriptors, strict canonical state/record schemas, exact inventory and pinned identities; progress then validates its own durable JSON, PID, candidate and dimensions before reconciling. A nonfinal failure writes the exact-next error with aligned progress, while the final prefix completes only after reconciliation. Persistent Exp445 event/text append faults cannot mask core progress or computation failures: PID becomes inactive, a no-clobber diagnostic marker is attempted, and any terminal append fault blocks a clean successful return. Setup failures have create-only evidence and inactive progress/PID where writable."
     }
   ],
   "unknown_relationships": [],
