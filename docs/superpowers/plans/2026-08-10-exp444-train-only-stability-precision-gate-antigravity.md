@@ -751,7 +751,7 @@ def test_evaluator_reads_labels_only_after_double_inspection_antigravity():
     assert result.scientific_winner_selected is False
 ```
 
-Cover publication tamper before labels, exactly 1,117 ordered label queries, 195,900 labels, baseline confusion 1,915/303/2,003/191,679, Exp442 30-coordinate reproduction, stable subset relation, retained/excluded TP/FP conservation, rescued/regressed datasets, strong regression table, failure after label access with truthful audit sibling, and existing evaluation replay without reopening labels.
+Cover publication tamper before labels, exactly 1,117 ordered label queries from the Task8-published, Exp440-bound dataset summary (not an Exp442 dataset-summary authority), 195,900 labels, baseline confusion 1,915/303/2,003/191,679, Exp442-origin 30-coordinate reproduction cross-attested by Task8, stable subset relation, retained/excluded TP/FP conservation, rescued/regressed datasets, strong regression table, failure after label access with truthful audit sibling, and existing evaluation replay without reopening labels.
 
 - [ ] **Step 3: Run RED tests**
 
