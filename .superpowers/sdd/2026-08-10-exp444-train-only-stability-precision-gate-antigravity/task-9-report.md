@@ -54,3 +54,19 @@ COMMITS: `38d74bd4` functional authority hardening; `7ceedec2` code-map synchron
 RED/GREEN: exact-query test RED raised the old helper arity error, then GREEN proved the descriptor/SHA-bound temporary SQLite session accepts only its frozen next ordered dataset and exposes no arbitrary execution method. Production replay now passes its official flag into semantic reconstruction. A partial writer fixture GREEN records `phase=commit_write` and `commit_state=partial`; the existing three swap tests continue to cover close/compute/pre-commit identity checks. The independent 1,117-row bootstrap fixture uses literals generated once with a standalone NumPy PCG64 script: index SHA `a1ecb839...`, micro interval `(0.0, 0.0011926058437686793)`, macro interval `(0.0, 0.0008952551477171555)`.
 
 GAPS: none.
+
+## Ledger correction — round 4/5 audit and replay completion
+
+STATUS: DONE.
+
+HISTORICAL EVIDENCE PRESERVED: parent round 2 focused evidence was 13/13 and exact full discovery was 165/165. The round-2 statement that dedicated fixture coverage was complete, and its `GAPS: none`, are superseded by this correction; they are retained above as history rather than rewritten.
+
+ROUND 3 STATUS: DONE_WITH_CONCERNS. Its sealed-facade and replay-schema work was accepted, but it did not add dedicated coverage for: (1) a second label-query failure with first-dataset accounting and a closed session, (2) label-session close failure with successful-query totals, (3) a writer that completes all ten leaves then raises and must audit `commit_state=complete`, (4) complete evaluation re-entry that proves replay occurs before label open and creates no audit, or (5) all six coherent semantic mutations after payload/artifact-map refresh: nonofficial two-row production replay, metric extra key/reorder, transition extra key/reorder, and `frozen_source_predicted=false`.
+
+ROUND 4 TDD: five dedicated regressions were written before any production edit. The new focused command ran them and all passed immediately against the sealed implementation, so these are truthful characterizations rather than behavior-relevant REDs and no production code changed. They prove the exact second-query audit `{phase: labels_open, query_attempts: 2, query_completions: 1, rows: 2, session_state: closed, commit_state: none}`, the exact close-failure audit with `{2, 2, 4, close_failed, none}`, a post-complete writer error with one `commit_write` / `complete` audit and byte/hash-identical ten-leaf inventory, replay-only complete re-entry with no label open or audit, and each requested semantic rejection after a freshly regenerated artifact map.
+
+ROUND 4 GREEN: `/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python -B -m unittest -v` over the five new cases exited 0 (5 tests). The Task9 bootstrap/evaluation focused command exited 0 with 18 tests (3 bootstrap + 15 evaluation). No official root, Dataset DB, official evaluation, or TEST label session was accessed; all tests used temporary fake boundaries.
+
+GAPS: none.
+
+COMMITS: `c5fdf2d1` test/evidence closure; documentation and map commits follow this ledger entry.
