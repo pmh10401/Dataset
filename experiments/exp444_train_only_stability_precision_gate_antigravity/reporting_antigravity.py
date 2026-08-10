@@ -68,10 +68,60 @@ _PUBLICATION_FILES_ANTIGRAVITY = frozenset((*_LEAF_FILES_ANTIGRAVITY, MANIFEST_F
 _RECORD_NAMES_ANTIGRAVITY = tuple(f"{index:04d}_record_antigravity.json" for index in range(FROZEN_CONFIG.source_candidate_count))
 _PINNED_PUBLICATION_HOOK_ANTIGRAVITY = None  # deterministic test-only race seam
 _STAGING_BEFORE_RENAME_HOOK_ANTIGRAVITY = None  # deterministic test-only race seam
+_ATTEMPT_CAPTURE_HOOK_ANTIGRAVITY = None  # deterministic test-only race seam
+
+_ATTEMPT_FILES_ANTIGRAVITY = ("progress_antigravity.json", "pid_antigravity.json", "events_antigravity.jsonl", "text_antigravity.log")
+_CHECKPOINT_FILES_ANTIGRAVITY = ("context_antigravity.json", "state_antigravity.json")
+
+
+@dataclass(frozen=True)
+class _AttemptSnapshotAntigravity:
+    attempt_name: str
+    payloads: Mapping[str, bytes]
 
 
 def _sha256_antigravity(value: bytes) -> str:
     return sha256(value).hexdigest()
+
+
+def _capture_attempt_antigravity(attempt: Path) -> _AttemptSnapshotAntigravity:
+    """Capture the complete terminal authority through retained no-follow dirfds."""
+    attempt_fd = os.open(attempt, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    descriptors: list[int] = [attempt_fd]
+    try:
+        if set(os.listdir(attempt_fd)) != set((*_ATTEMPT_FILES_ANTIGRAVITY, "checkpoint_antigravity")):
+            raise ValueError("Exp444 attempt inventory is invalid")
+        checkpoint_fd = os.open("checkpoint_antigravity", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=attempt_fd); descriptors.append(checkpoint_fd)
+        if set(os.listdir(checkpoint_fd)) != set((*_CHECKPOINT_FILES_ANTIGRAVITY, "records_antigravity")):
+            raise ValueError("Exp444 checkpoint inventory is invalid")
+        records_fd = os.open("records_antigravity", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=checkpoint_fd); descriptors.append(records_fd)
+        if tuple(sorted(os.listdir(records_fd))) != _RECORD_NAMES_ANTIGRAVITY:
+            raise ValueError("Exp444 checkpoint record inventory is invalid")
+        payloads: dict[str, bytes] = {}
+        identities: list[tuple[int, str, tuple[int, int, int, int, int]]] = []
+        for directory_fd, names, prefix in ((attempt_fd, _ATTEMPT_FILES_ANTIGRAVITY, ""), (checkpoint_fd, _CHECKPOINT_FILES_ANTIGRAVITY, "checkpoint/"), (records_fd, _RECORD_NAMES_ANTIGRAVITY, "records/")):
+            for name in names:
+                fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory_fd); descriptors.append(fd)
+                first = os.fstat(fd)
+                if not stat.S_ISREG(first.st_mode) or first.st_nlink != 1:
+                    raise ValueError("Exp444 attempt authority must be a single-linked regular file")
+                raw = b"".join(iter(lambda: os.read(fd, 1024 * 1024), b""))
+                last = os.fstat(fd); named = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+                if (first.st_dev, first.st_ino, first.st_size, first.st_mtime_ns, first.st_ctime_ns) != (last.st_dev, last.st_ino, last.st_size, last.st_mtime_ns, last.st_ctime_ns) or (first.st_dev, first.st_ino) != (named.st_dev, named.st_ino):
+                    raise ValueError("Exp444 attempt authority changed during capture")
+                payloads[prefix + name] = raw
+                identities.append((directory_fd, name, (first.st_dev, first.st_ino, first.st_size, first.st_mtime_ns, first.st_ctime_ns)))
+        if _ATTEMPT_CAPTURE_HOOK_ANTIGRAVITY is not None:
+            _ATTEMPT_CAPTURE_HOOK_ANTIGRAVITY(attempt)
+        if set(os.listdir(attempt_fd)) != set((*_ATTEMPT_FILES_ANTIGRAVITY, "checkpoint_antigravity")) or set(os.listdir(checkpoint_fd)) != set((*_CHECKPOINT_FILES_ANTIGRAVITY, "records_antigravity")) or tuple(sorted(os.listdir(records_fd))) != _RECORD_NAMES_ANTIGRAVITY:
+            raise ValueError("Exp444 attempt inventory changed during capture")
+        for directory_fd, name, identity in identities:
+            current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+            if identity != (current.st_dev, current.st_ino, current.st_size, current.st_mtime_ns, current.st_ctime_ns):
+                raise ValueError("Exp444 attempt entry changed during capture")
+        return _AttemptSnapshotAntigravity(attempt.name, MappingProxyType(payloads))
+    finally:
+        for fd in reversed(descriptors): os.close(fd)
 
 
 def _read_canonical_json_bytes_antigravity(encoded: bytes, name: str) -> Mapping[str, object]:
@@ -258,20 +308,18 @@ def _checkpoint_context_antigravity() -> CheckpointContextAntigravity:
     )
 
 
-def _complete_checkpoint_results_antigravity(attempt_root: Path) -> tuple[CandidateStabilityResultAntigravity, ...]:
+def _complete_checkpoint_results_antigravity(attempt_root: Path, snapshot: _AttemptSnapshotAntigravity | None = None) -> tuple[CandidateStabilityResultAntigravity, ...]:
     attempt = Path(attempt_root)
-    if attempt.is_symlink() or not attempt.is_dir():
-        raise ValueError("Exp444 attempt root is absent or invalid")
-    checkpoint = attempt / "checkpoint_antigravity"
-    context = _read_canonical_json_antigravity(checkpoint / "context_antigravity.json", "checkpoint context")
+    snapshot = _capture_attempt_antigravity(attempt) if snapshot is None else snapshot
+    context = _read_canonical_json_bytes_antigravity(snapshot.payloads["checkpoint/context_antigravity.json"], "checkpoint context")
     if context != _checkpoint_context_antigravity().to_payload():
         raise ValueError("Exp444 checkpoint context changed")
-    state = _read_canonical_json_antigravity(checkpoint / "state_antigravity.json", "checkpoint state")
+    state = _read_canonical_json_bytes_antigravity(snapshot.payloads["checkpoint/state_antigravity.json"], "checkpoint state")
     expected_state = {"context_sha256", "status", "completed_units", "total_units", "error_count", "current_unit", "current_view", "payload_sha256", "record_sha256_prefix", "process", "error", "updated_at"}
     if set(state) != expected_state or state["status"] != "complete" or state["completed_units"] != 30 or state["total_units"] != 30 or state["error_count"] != 0 or state["current_unit"] is not None or state["current_view"] is not None or state["error"] is not None:
         raise ValueError("Exp444 checkpoint is not a complete inactive 30-record authority")
-    progress = _read_canonical_json_antigravity(attempt / "progress_antigravity.json", "progress")
-    pid = _read_canonical_json_antigravity(attempt / "pid_antigravity.json", "PID")
+    progress = _read_canonical_json_bytes_antigravity(snapshot.payloads["progress_antigravity.json"], "progress")
+    pid = _read_canonical_json_bytes_antigravity(snapshot.payloads["pid_antigravity.json"], "PID")
     if progress.get("stage") != "complete" or progress.get("active") is not False or progress.get("completed") != 30 or progress.get("total") != 30 or progress.get("backend") != "cpu" or pid.get("active") is not False:
         raise ValueError("Exp444 attempt is not complete and inactive")
     prefix = state["record_sha256_prefix"]
@@ -279,16 +327,12 @@ def _complete_checkpoint_results_antigravity(attempt_root: Path) -> tuple[Candid
         raise ValueError("Exp444 checkpoint record prefix is invalid")
     if state["payload_sha256"] != _sha256_antigravity(canonical_json_bytes_antigravity(prefix)):
         raise ValueError("Exp444 checkpoint prefix hash changed")
-    records = checkpoint / "records_antigravity"
-    if records.is_symlink() or not records.is_dir() or tuple(sorted(item.name for item in records.iterdir())) != _RECORD_NAMES_ANTIGRAVITY:
-        raise ValueError("Exp444 checkpoint record inventory is invalid")
     results: list[CandidateStabilityResultAntigravity] = []
     for sequence, name in enumerate(_RECORD_NAMES_ANTIGRAVITY):
-        path = records / name
-        payload = _read_canonical_json_antigravity(path, f"checkpoint record {sequence}")
+        encoded = snapshot.payloads[f"records/{name}"]
+        payload = _read_canonical_json_bytes_antigravity(encoded, f"checkpoint record {sequence}")
         if set(payload) != {"sequence", "result"} or payload["sequence"] != sequence or not isinstance(payload["result"], Mapping):
             raise ValueError("Exp444 checkpoint record is invalid")
-        encoded = path.read_bytes()
         if _sha256_antigravity(encoded) != prefix[sequence]:
             raise ValueError("Exp444 checkpoint record hash changed")
         try:
@@ -370,20 +414,18 @@ def _terminal_authority_surface_antigravity(path: Path, name: str) -> dict[str, 
     return {"byte_size": len(encoded), "sha256": _sha256_antigravity(encoded), "utf8": text}
 
 
-def _runtime_payload_antigravity(attempt: Path, results: Sequence[CandidateStabilityResultAntigravity]) -> dict[str, object]:
-    state = _read_canonical_json_antigravity(attempt / "checkpoint_antigravity/state_antigravity.json", "checkpoint state")
-    checkpoint = attempt / "checkpoint_antigravity"
+def _runtime_payload_antigravity(attempt: Path, results: Sequence[CandidateStabilityResultAntigravity], snapshot: _AttemptSnapshotAntigravity) -> dict[str, object]:
+    state = _read_canonical_json_bytes_antigravity(snapshot.payloads["checkpoint/state_antigravity.json"], "checkpoint state")
     authorities = {
-        "context": _terminal_authority_surface_antigravity(checkpoint / "context_antigravity.json", "checkpoint context"),
-        "state": _terminal_authority_surface_antigravity(checkpoint / "state_antigravity.json", "checkpoint state"),
-        "progress": _terminal_authority_surface_antigravity(attempt / "progress_antigravity.json", "progress"),
-        "pid": _terminal_authority_surface_antigravity(attempt / "pid_antigravity.json", "PID"),
-        "events": _terminal_authority_surface_antigravity(attempt / "events_antigravity.jsonl", "events"),
-        "text": _terminal_authority_surface_antigravity(attempt / "text_antigravity.log", "text"),
+        "context": {"byte_size": len(snapshot.payloads["checkpoint/context_antigravity.json"]), "sha256": _sha256_antigravity(snapshot.payloads["checkpoint/context_antigravity.json"]), "utf8": snapshot.payloads["checkpoint/context_antigravity.json"].decode()},
+        "state": {"byte_size": len(snapshot.payloads["checkpoint/state_antigravity.json"]), "sha256": _sha256_antigravity(snapshot.payloads["checkpoint/state_antigravity.json"]), "utf8": snapshot.payloads["checkpoint/state_antigravity.json"].decode()},
+        "progress": {"byte_size": len(snapshot.payloads["progress_antigravity.json"]), "sha256": _sha256_antigravity(snapshot.payloads["progress_antigravity.json"]), "utf8": snapshot.payloads["progress_antigravity.json"].decode()},
+        "pid": {"byte_size": len(snapshot.payloads["pid_antigravity.json"]), "sha256": _sha256_antigravity(snapshot.payloads["pid_antigravity.json"]), "utf8": snapshot.payloads["pid_antigravity.json"].decode()},
+        "events": {"byte_size": len(snapshot.payloads["events_antigravity.jsonl"]), "sha256": _sha256_antigravity(snapshot.payloads["events_antigravity.jsonl"]), "utf8": snapshot.payloads["events_antigravity.jsonl"].decode()},
+        "text": {"byte_size": len(snapshot.payloads["text_antigravity.log"]), "sha256": _sha256_antigravity(snapshot.payloads["text_antigravity.log"]), "utf8": snapshot.payloads["text_antigravity.log"].decode()},
     }
-    records_root = checkpoint / "records_antigravity"
     records = [
-        {"sequence": sequence, **_terminal_authority_surface_antigravity(records_root / name, f"checkpoint record {sequence}")}
+        {"sequence": sequence, "byte_size": len(snapshot.payloads[f"records/{name}"]), "sha256": _sha256_antigravity(snapshot.payloads[f"records/{name}"]), "utf8": snapshot.payloads[f"records/{name}"].decode()}
         for sequence, name in enumerate(_RECORD_NAMES_ANTIGRAVITY)
     ]
     return {"schema": "exp444.runtime.v2", "attempt_name": attempt.name, "backend": "cpu", "workers": 11, "completed": len(results), "record_sha256_prefix": list(state["record_sha256_prefix"]), "authorities": authorities, "records": records, "label_access_count": 0}
@@ -438,7 +480,8 @@ def _parse_control_replays_antigravity(rows: object, source: Sequence[SourceCand
 
 
 def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntigravity, *, summary_bytes: bytes | None = None, backend_authority: Mapping[str, object] | None = None) -> tuple[dict[str, bytes], StabilitySelectionAntigravity]:
-    results = _complete_checkpoint_results_antigravity(attempt)
+    snapshot = _capture_attempt_antigravity(attempt)
+    results = _complete_checkpoint_results_antigravity(attempt, snapshot)
     source = tuple(authority.candidates)
     if tuple(item.candidate for item in results) != source:
         raise ValueError("Exp444 checkpoint coordinates differ from frozen source")
@@ -459,7 +502,7 @@ def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntig
         CONTROL_REPLAY_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity({"schema": "exp444.control-replay.v1", "rows": list(authority.control_rows)}),
         SOURCE_AUDIT_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_source_audit_payload_antigravity(authority)),
         BACKEND_DECISION_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_backend_payload_antigravity()) if backend_authority is None else canonical_json_bytes_antigravity({"schema": "exp444.backend-decision-wrapper.v1", "authority": dict(backend_authority), "decision": dict(backend_authority["decision"])}),
-        RUNTIME_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_runtime_payload_antigravity(attempt, results)),
+        RUNTIME_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_runtime_payload_antigravity(attempt, results, snapshot)),
     }
     return payloads, selection
 

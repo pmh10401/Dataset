@@ -238,6 +238,40 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "original-control"):
                 reporting.inspect_publication_antigravity(frozen.publication_root)
 
+    def test_attempt_capture_rejects_hardlinked_progress_antigravity(self) -> None:
+        """A progress authority with another namespace link cannot be captured."""
+        with tempfile.TemporaryDirectory(prefix="exp444_attempt_hardlink_antigravity_") as directory:
+            attempt, _ = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            __import__("os").link(attempt / "progress_antigravity.json", attempt / "progress_link_antigravity.json")
+            with self.assertRaisesRegex(ValueError, "single-linked|attempt"):
+                reporting._complete_checkpoint_results_antigravity(attempt)
+
+    def test_attempt_capture_rejects_post_open_state_replacement_antigravity(self) -> None:
+        """A state pathname replacement after descriptor capture is never accepted."""
+        with tempfile.TemporaryDirectory(prefix="exp444_attempt_state_replace_antigravity_") as directory:
+            attempt, _ = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            def replace_state(root: Path) -> None:
+                state = root / "checkpoint_antigravity/state_antigravity.json"
+                replacement = state.with_name("state_replacement_antigravity.json")
+                replacement.write_bytes(state.read_bytes())
+                __import__("os").replace(replacement, state)
+            with mock.patch.object(reporting, "_ATTEMPT_CAPTURE_HOOK_ANTIGRAVITY", replace_state):
+                with self.assertRaisesRegex(ValueError, "entry changed"):
+                    reporting._complete_checkpoint_results_antigravity(attempt)
+
+    def test_attempt_capture_rejects_post_open_record_replacement_antigravity(self) -> None:
+        """A record pathname replacement after descriptor capture is never accepted."""
+        with tempfile.TemporaryDirectory(prefix="exp444_attempt_record_replace_antigravity_") as directory:
+            attempt, _ = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            def replace_record(root: Path) -> None:
+                record = root / "checkpoint_antigravity/records_antigravity/0000_record_antigravity.json"
+                replacement = record.with_name("record_replacement_antigravity.json")
+                replacement.write_bytes(record.read_bytes())
+                __import__("os").replace(replacement, record)
+            with mock.patch.object(reporting, "_ATTEMPT_CAPTURE_HOOK_ANTIGRAVITY", replace_record):
+                with self.assertRaisesRegex(ValueError, "entry changed"):
+                    reporting._complete_checkpoint_results_antigravity(attempt)
+
     def test_staging_rejects_entry_replacement_before_rename_antigravity(self) -> None:
         with tempfile.TemporaryDirectory(prefix="exp444_reporting_staging_entry_antigravity_") as directory:
             frozen = self._published_antigravity(directory)
