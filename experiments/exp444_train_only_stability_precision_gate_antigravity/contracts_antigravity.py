@@ -19,7 +19,11 @@ from typing import Any
 
 import numpy as np
 
-from .config_antigravity import FROZEN_CONFIG, scientific_config_sha256_antigravity
+from .config_antigravity import (
+    FROZEN_CONFIG,
+    _validate_exp444_lifecycle_profile_antigravity,
+    scientific_config_sha256_antigravity,
+)
 
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -619,6 +623,7 @@ class CheckpointContextAntigravity:
     reviewed_commit: str
 
     def __post_init__(self) -> None:
+        _validate_exp444_lifecycle_profile_antigravity()
         if self.experiment_id != FROZEN_CONFIG.experiment_id or self.run_identity != FROZEN_CONFIG.run_identity:
             raise ValueError("checkpoint identity is not the frozen Exp444 identity")
         if self.scientific_config_sha256 != scientific_config_sha256_antigravity() or self.environment_lock_sha256 != FROZEN_CONFIG.environment_lock_sha256:

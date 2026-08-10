@@ -13,6 +13,8 @@ import os
 from pathlib import Path
 from typing import Mapping
 
+from .profiles_antigravity import EXP444_PROFILE_ANTIGRAVITY, _require_exp444_profile_antigravity
+
 
 _DATASET_ROOT = Path("/Users/mac/Documents/Dataset")
 _RUN_ROOT = _DATASET_ROOT / "exp444_train_only_stability_precision_gate_antigravity_20260810"
@@ -197,6 +199,17 @@ class Exp444FrozenConfig:
 FROZEN_CONFIG = Exp444FrozenConfig()
 
 
+def _validate_exp444_lifecycle_profile_antigravity() -> None:
+    """Keep the legacy Exp444 config bound to its sole closed lifecycle profile."""
+    profile = _require_exp444_profile_antigravity(EXP444_PROFILE_ANTIGRAVITY)
+    if (
+        profile.experiment_id != FROZEN_CONFIG.experiment_id
+        or profile.run_identity != FROZEN_CONFIG.run_identity
+        or profile.run_root != Path(FROZEN_CONFIG.run_root)
+    ):
+        raise ValueError("Exp444 lifecycle profile diverges from frozen configuration")
+
+
 def cpu_worker_count_antigravity(logical_cpus: int | None = None) -> int:
     count = os.cpu_count() if logical_cpus is None else logical_cpus
     if type(count) is not int or count < 1:
@@ -238,6 +251,7 @@ def validate_antigravity(config: Exp444FrozenConfig | None = None) -> bool:
     encoded = json.dumps(candidate_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     if hashlib.sha256(encoded).hexdigest() != _CANONICAL_SHA256_ANTIGRAVITY:
         raise ValueError("Exp444 configuration identity changed")
+    _validate_exp444_lifecycle_profile_antigravity()
     return True
 
 
