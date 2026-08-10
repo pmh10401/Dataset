@@ -26,5 +26,12 @@ artifacts are not touched by this governance record.
 The future implementation must expose exactly four commands: `readiness`,
 single-use `new`, read-only Exp445-only `inspect`, and post-double-inspection
 `evaluate`. It has no resume or override surface. Exact record parity is required
-before publication; failures after root allocation remain create-only evidence;
-evaluation is descriptive-only and cannot promote a champion.
+before publication; record, failure, publication, and evaluation artifacts after
+root allocation remain create-only evidence. The only same-run exception is that
+checkpoint state, progress, and PID retain the existing frozen atomic-replacement
+behavior. Evaluation is descriptive-only and cannot promote a champion.
+
+```text
+same-run mutable artifacts = checkpoint state, progress, PID (atomic replacement only)
+create-only artifacts = record, failure, publication, evaluation
+```

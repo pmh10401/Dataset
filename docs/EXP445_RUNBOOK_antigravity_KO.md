@@ -18,7 +18,14 @@ EVALUATION=$RUN_ROOT/evaluation_antigravity
 Exp445는 Exp444 terminal predecessor를 읽기 전용으로 검증하는 단일-use 새 root다.
 Exp444/Exp442 artifact는 어떤 경우에도 수정하지 않는다. root allocation 전 실패는
 mutation-free이고 root를 남기지 않는다. allocation 뒤 실패는 create-only evidence로
-보존하며, 같은 root의 resume/retry/overwrite는 없다.
+보존하며, 같은 root의 resume/retry/overwrite는 없다. 단, 같은 run의 checkpoint state,
+progress, PID는 기존 동결 방식대로 atomic replacement를 허용한다. 이 예외는
+create-only record, failure, publication, evaluation artifact에는 적용되지 않는다.
+
+```text
+same-run mutable artifacts = checkpoint state, progress, PID (atomic replacement only)
+create-only artifacts = record, failure, publication, evaluation
+```
 
 ## 정확히 네 명령
 

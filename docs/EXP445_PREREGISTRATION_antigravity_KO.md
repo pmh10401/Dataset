@@ -59,6 +59,14 @@ candidate index 위치와 tail rule이 없다. `evaluate`만 Exp445 publication�
 science/worker/backend/evaluation override는 없다. root allocation 전 provenance/source/
 predecessor failure는 mutation-free이고 root를 만들지 않는다. allocation 뒤 failure는
 새 Exp445 root의 create-only record/failure/publication/evaluation evidence로 보존한다.
+단, 같은 run의 checkpoint state, progress, PID만은 기존 동결 방식대로 atomic
+replacement를 허용한다. 이 예외는 create-only record, failure, publication,
+evaluation artifact에는 적용되지 않는다.
+
+```text
+same-run mutable artifacts = checkpoint state, progress, PID (atomic replacement only)
+create-only artifacts = record, failure, publication, evaluation
+```
 
 다음 wrapper만 operator surface다.
 

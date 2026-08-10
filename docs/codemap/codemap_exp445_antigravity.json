@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T16:26:39Z",
-  "generated_from_commit": "bf6fec46b09b4a0785fa28d2c860385f14a1ebdb",
+  "generated_at": "2026-08-10T16:34:10Z",
+  "generated_from_commit": "84162cd9f3b6a8883200874cba26c17576a39ae0",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -134,7 +134,7 @@
         "Before each candidate record write, Exp445 compares the canonical wrapper SHA with the same ordered predecessor SHA; before the 30th write it revalidates the predecessor and aggregate prefix authority. A mismatch preserves post-allocation failed evidence and blocks terminal completion/publication rather than rolling back completed state.",
         "Readiness and new failures before fixed-root allocation are mutation-free and leave the root absent. After allocation, failures preserve the single-use Exp445 root with create-only records/failure/publication/evaluation artifacts; Exp444 and Exp442 are never mutated and Exp445 has no same-root retry or resume command.",
         "Implementation completion requires full regression and read-only smokes, deterministic map validation, a fresh Sol High commitment-boundary review, a candidate commit, then a different fresh Sol High review of that exact clean HEAD. Official readiness/new/evaluate remain blocked until that final review passes; no Exp445 product/source edge exists before implementation.",
-        "Exp445 is design_approved_implementation_planned: its four-command operator contract has no resume or scientific override; Exp444/Exp442 bytes are immutable; new performs index-by-index and aggregate 30-record parity before create-only publication; CPU/11 backend authority is revalidated without backend reselection; evaluation remains descriptive-only with no champion or operational promotion."
+        "Exp445 is design_approved_implementation_planned: its four-command operator contract has no resume or scientific override; Exp444/Exp442 bytes are immutable; new performs index-by-index and aggregate 30-record parity before create-only publication; post-allocation record/failure/publication/evaluation artifacts are create-only while same-run checkpoint state, progress, and PID retain frozen atomic replacement; CPU/11 backend authority is revalidated without backend reselection; evaluation remains descriptive-only with no champion or operational promotion."
       ],
       "evidence": [
         {
