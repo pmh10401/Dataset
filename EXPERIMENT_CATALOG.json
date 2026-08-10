@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-09T10:15:00+09:00",
+  "updated_at": "2026-08-11T01:26:11+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -786,6 +786,49 @@
       "implementation_report": "docs/EXP444_IMPLEMENTATION_REPORT_antigravity.md",
       "exact_next_command": "fresh_sol_high_read_only_review_current_clean_head",
       "notes": "구현 검증은 완료됐지만 fresh Sol High read-only review 전까지 official readiness, prediction, evaluation, champion/pending-candidate 승격은 금지된다. Exp442의 동결 30개 좌표만 deterministic normal-TRAIN omission view로 재계산하며 prediction/evaluation hash는 null, TEST label 접근은 0이다."
+    },
+    {
+      "id": "Exp445",
+      "kind": "exp444_publication_source_authority_repair",
+      "status": "design_approved_implementation_planned",
+      "documents": [
+        "docs/superpowers/specs/2026-08-10-exp445-exp444-publication-source-authority-repair-antigravity-design.md",
+        "docs/superpowers/plans/2026-08-11-exp445-exp444-publication-source-authority-repair-antigravity.md",
+        "docs/EXP445_PREREGISTRATION_antigravity_KO.md",
+        "docs/EXP445_RUNBOOK_antigravity_KO.md",
+        "docs/EXP445_IMPLEMENTATION_REPORT_antigravity.md"
+      ],
+      "reviewed_design_sha256": "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
+      "reviewed_plan_sha256": "4b369f044456ce9e3cca0abad141beb28b5b3431691677f19a2900997dc5ac9a",
+      "run_identity": "exp445-exp444-publication-source-authority-repair-antigravity-20260810",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp445_exp444_publication_source_authority_repair_antigravity_20260810",
+      "run_root": "/Users/mac/Documents/Dataset/exp445_exp444_publication_source_authority_repair_antigravity_20260810",
+      "predecessor": "Exp444",
+      "predecessor_reviewed_commit": "f4ae53c46422a46cc880d5d204f68a6a3971e92d",
+      "source_candidate_count": 30,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "prediction_phase_started": false,
+      "prediction_phase_complete": false,
+      "test_labels_opened": false,
+      "pre_freeze_label_access_count": 0,
+      "official_readiness": false,
+      "run_root_exists": false,
+      "backend": "cpu",
+      "cpu_workers": 11,
+      "cpu_worker_rule": "max(1, logical CPU - 1)",
+      "inner_numerical_threads": 1,
+      "backend_reselection": "not_applicable_inherited_exp444_authority_revalidation_only",
+      "scientific_success_criterion": null,
+      "evaluation_status": "descriptive_complete_no_promotion",
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "same_experiment_reselection_allowed": false,
+      "test_informed_reselection_allowed": false,
+      "implementation_report": "docs/EXP445_IMPLEMENTATION_REPORT_antigravity.md",
+      "exact_next_command": "implement_exp445_closed_profiles_and_readiness_contract",
+      "notes": "Exp444 publication source authority만 복구하는 engineering-only 계획이다. Exp444/Exp442 bytes는 immutable이며 Exp445는 새 root에서 30 ordered record wrapper SHA와 aggregate prefix payload SHA를 정확히 재현해야만 create-only publication을 시작할 수 있다. prediction/evaluation hash는 null이고 pending candidate, champion, operational promotion은 만들지 않는다."
     }
   ]
 }
