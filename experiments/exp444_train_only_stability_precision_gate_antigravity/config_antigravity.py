@@ -30,6 +30,7 @@ FROZEN_INPUT_SHA256_ANTIGRAVITY: dict[str, str] = {
 
 _SHA256_FIELDS = {
     "reviewed_design_sha256",
+    "preregistration_sha256",
     "database_sha256",
     "exp404_hard_prediction_sha256",
     "exp442_prediction_sha256",
@@ -38,6 +39,7 @@ _SHA256_FIELDS = {
     "exp442_selected_coordinate_identity_sha256",
     "environment_lock_sha256",
     "backend_decision_authority_sha256",
+    "worker_parity_authority_sha256",
     "exp440_summary_sha256",
     "exp440_manifest_sha256",
     "exp440_artifact_map_sha256",
@@ -71,6 +73,7 @@ class Exp444FrozenConfig:
     experiment_id: str = "Exp444"
     run_identity: str = "exp444-train-only-stability-precision-gate-antigravity-20260810"
     reviewed_design_sha256: str = "1bb76f19d07ef312d5ac5498414d0c914ce94b99c5912e0bbcf3f0197c1400e8"
+    preregistration_sha256: str = "347ba8f0e37d2f185b98ed65acdc936fd2238cea5e97ed0fecd34cabcc1974db"
     dataset_count: int = 1117
     source_candidate_count: int = 30
     candidate_per_dataset: int = 1
@@ -110,6 +113,8 @@ class Exp444FrozenConfig:
     exp440_artifact_map_sha256: str = "7a083fa8f1287205d3469e36f2f88b95f72adecd90b3b79167aad673b3439a1a"
     backend_decision_authority_identifier: str = "backend_decision_authority_antigravity.json"
     backend_decision_authority_sha256: str = "6d2c614cd1ef81ecd1f3cc7e4c6f697122cbbf93f59286592ae54fc1f4cc1136"
+    worker_parity_authority_identifier: str = "worker_parity_authority_antigravity.json"
+    worker_parity_authority_sha256: str = "79b6a5847a01f594d140c73aa587589413b4933ac7d53dcf07d2bb478a5f771e"
     run_root: str = str(_RUN_ROOT)
     isolated_environment_root: str = str(_ENV_ROOT)
     environment_lock_path: str = str(Path(__file__).with_name("requirements_lock_antigravity.txt"))
@@ -181,7 +186,7 @@ class Exp444FrozenConfig:
             value = getattr(self, name)
             if type(value) is not str or len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
                 raise ValueError(f"{name} must be a lowercase SHA256")
-        for name in ("run_root", "isolated_environment_root", "environment_lock_path", "backend_decision_authority_identifier"):
+        for name in ("run_root", "isolated_environment_root", "environment_lock_path", "backend_decision_authority_identifier", "worker_parity_authority_identifier"):
             if type(getattr(self, name)) is not str or "antigravity" not in getattr(self, name):
                 raise ValueError(f"{name} must remain in the antigravity namespace")
 

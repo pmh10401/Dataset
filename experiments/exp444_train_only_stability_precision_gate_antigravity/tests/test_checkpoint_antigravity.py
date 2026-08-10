@@ -32,6 +32,7 @@ def _context_antigravity(total: int = 30) -> CheckpointContextAntigravity:
         total,
         FROZEN_CONFIG.cpu_workers,
         FROZEN_CONFIG.inner_threads,
+        "a" * 40,
     )
 
 
@@ -56,6 +57,26 @@ def _process_antigravity(pid: int = 41001, start: str = "start-A"):
 
 
 class Exp444CheckpointAntigravityTests(unittest.TestCase):
+    def test_resume_rejects_a_different_reviewed_commit_before_checkpoint_mutation_antigravity(self) -> None:
+        """A different reviewed commit cannot take ownership of a valid interrupted checkpoint."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp444_checkpoint_commit_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            store = Exp444CheckpointStoreAntigravity.create(root, _context_antigravity(), _process_antigravity())
+            store.mark_interrupted_antigravity()
+            before = (root / "state_antigravity.json").read_bytes()
+            other = CheckpointContextAntigravity(
+                FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity,
+                scientific_config_sha256_antigravity(), FROZEN_CONFIG.environment_lock_sha256,
+                30, FROZEN_CONFIG.cpu_workers, FROZEN_CONFIG.inner_threads, "b" * 40,
+            )
+            with self.assertRaisesRegex(ValueError, "context"):
+                Exp444CheckpointStoreAntigravity.open_interrupted(
+                    root, other, _process_antigravity(41002, "replacement"), pid_probe=lambda _: False,
+                )
+            self.assertEqual(before, (root / "state_antigravity.json").read_bytes())
+
     def test_create_only_order_and_terminal_immutability_antigravity(self) -> None:
         from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
 

@@ -27,6 +27,9 @@ from experiments.exp440_train_only_low_frequency_precision_gate_antigravity.cont
 )
 
 
+_REVIEWED_COMMIT_ANTIGRAVITY = "a" * 40
+
+
 class Exp444ReportingAntigravityTests(unittest.TestCase):
     def test_publication_module_exposes_the_frozen_review_interfaces_antigravity(self) -> None:
         """Removing the Task 8 boundary must fail before a label-capable stage exists."""
@@ -72,11 +75,12 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
             return values
 
         with (
+            mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_REVIEWED_COMMIT_ANTIGRAVITY),
             mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(9_900_001, "reporting-A")),
             mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
             mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=completed_map),
         ):
-            outcome = runtime.run_new_antigravity("reviewed", run_root=root)
+            outcome = runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
         self.assertEqual((outcome.status, outcome.completed_count), ("complete", 30))
         return root / "attempts_antigravity/attempt_0000_antigravity", inputs
 

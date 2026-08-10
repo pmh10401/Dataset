@@ -79,6 +79,35 @@ def validate_backend_authority_payload_antigravity(authority: Mapping[str, objec
     return decision
 
 
+def validate_worker_parity_authority_payload_antigravity(authority: Mapping[str, object]) -> dict[str, object]:
+    """Validate the exact Task7 sequential-versus-eleven-worker authority."""
+    required = {
+        "schema", "candidate_count", "canonical_byte_equal", "workers", "label_access_count",
+        "sequential_sha256", "parallel_sha256",
+    }
+    expected_sha256 = "729b31c0698fda6b60c17012a3fd2cae3f4b0899e01e5a3bf4d569902e814857"
+    if (
+        set(authority) != required
+        or authority.get("schema") != "exp444.worker-parity-authority.v1"
+        or authority.get("candidate_count") != 30
+        or authority.get("canonical_byte_equal") is not True
+        or authority.get("workers") != 11
+        or authority.get("label_access_count") != 0
+        or authority.get("sequential_sha256") != expected_sha256
+        or authority.get("parallel_sha256") != expected_sha256
+    ):
+        raise ValueError("Task7 worker parity authority is invalid")
+    return dict(authority)
+
+
+def load_worker_parity_authority_antigravity() -> dict[str, object]:
+    """Read Task7 parity bytes through a fixed independent SHA256 binding."""
+    local = Path(__file__).with_name(FROZEN_CONFIG.worker_parity_authority_identifier)
+    raw = _read_pinned_antigravity(local.parent, local.name, FROZEN_CONFIG.worker_parity_authority_sha256)
+    authority = _canonical_mapping_antigravity(raw, "Task7 worker parity authority")
+    return validate_worker_parity_authority_payload_antigravity(authority)
+
+
 @dataclass(frozen=True)
 class Exp444ProvenanceAntigravity:
     dataset_summary_bytes: bytes
@@ -132,4 +161,8 @@ def verify_exp444_provenance_antigravity() -> Exp444ProvenanceAntigravity:
     return Exp444ProvenanceAntigravity(summary, authority)
 
 
-__all__ = ["Exp444ProvenanceAntigravity", "verify_exp444_provenance_antigravity", "validate_backend_authority_payload_antigravity"]
+__all__ = [
+    "Exp444ProvenanceAntigravity", "verify_exp444_provenance_antigravity",
+    "validate_backend_authority_payload_antigravity", "validate_worker_parity_authority_payload_antigravity",
+    "load_worker_parity_authority_antigravity",
+]

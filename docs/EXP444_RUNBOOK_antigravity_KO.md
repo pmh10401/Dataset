@@ -12,7 +12,6 @@ DESIGN_SOURCE=docs/superpowers/specs/2026-08-10-exp444-train-only-stability-prec
 DESIGN_SHA256=1bb76f19d07ef312d5ac5498414d0c914ce94b99c5912e0bbcf3f0197c1400e8
 PREREGISTRATION=docs/EXP444_PREREGISTRATION_antigravity_KO.md
 RUN_ROOT=/Users/mac/Documents/Dataset/exp444_train_only_stability_precision_gate_antigravity_20260810
-READINESS=$RUN_ROOT/readiness_antigravity.json
 ATTEMPTS=$RUN_ROOT/attempts_antigravity
 ATTEMPT=$ATTEMPTS/attempt_0000_antigravity
 CHECKPOINT=$ATTEMPT/checkpoint_antigravity
@@ -57,6 +56,10 @@ checkpoint의 read-only authority 확인과 source materialization/close를 모�
 progress/PID/checkpoint owner를 rebind한다. complete checkpoint의 publication 실패에는
 checkpoint/progress/PID/events/text bytes를 수정하지 않는 source-free finalization-only
 resume만 허용한다.
+
+`readiness` 증거는 official root 아래 파일로 저장하지 않고 명령의 detached stdout JSON으로만
+반환된다. 따라서 `RUN_ROOT`가 absent여야 한다는 사전 조건과 충돌하지 않으며, 운영자는
+stdout을 별도 검토 기록으로 보관한다.
 
 성공한 `new`/`resume`는 먼저 label-free publication을 create-only로 동결한다.
 publication에는 1,117개 summary, 30개 원본 좌표, mask/view/score evidence,

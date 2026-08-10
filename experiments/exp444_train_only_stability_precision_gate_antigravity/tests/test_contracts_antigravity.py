@@ -95,6 +95,7 @@ class Exp444ContractsAntigravityTests(unittest.TestCase):
             30,
             11,
             1,
+            "a" * 40,
         )
         self.assertEqual(CheckpointContextAntigravity.from_payload(context.to_payload()), context)
         state = CheckpointStateAntigravity("running", 2, 30, 0, "A", None, _DIGEST)
@@ -141,7 +142,7 @@ class Exp444ContractsAntigravityTests(unittest.TestCase):
         context = CheckpointContextAntigravity(
             FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity,
             scientific_config_sha256_antigravity(), FROZEN_CONFIG.environment_lock_sha256,
-            30, 11, 1,
+            30, 11, 1, "a" * 40,
         )
         state = CheckpointStateAntigravity("running", 0, 30, 0, None, None, _DIGEST)
         summary = EvaluationSummaryAntigravity(

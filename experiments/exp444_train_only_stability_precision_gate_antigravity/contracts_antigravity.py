@@ -616,6 +616,7 @@ class CheckpointContextAntigravity:
     total_units: int
     outer_workers: int
     inner_threads: int
+    reviewed_commit: str
 
     def __post_init__(self) -> None:
         if self.experiment_id != FROZEN_CONFIG.experiment_id or self.run_identity != FROZEN_CONFIG.run_identity:
@@ -624,6 +625,8 @@ class CheckpointContextAntigravity:
             raise ValueError("checkpoint hash does not match frozen Exp444 identity")
         if self.total_units != FROZEN_CONFIG.source_candidate_count or self.outer_workers != FROZEN_CONFIG.cpu_workers or self.inner_threads != FROZEN_CONFIG.inner_threads:
             raise ValueError("checkpoint topology is invalid")
+        if type(self.reviewed_commit) is not str or len(self.reviewed_commit) != 40 or any(character not in "0123456789abcdef" for character in self.reviewed_commit):
+            raise ValueError("checkpoint reviewed commit is invalid")
 
     def to_payload(self) -> dict[str, object]:
         return {name: getattr(self, name) for name in self.__dataclass_fields__}

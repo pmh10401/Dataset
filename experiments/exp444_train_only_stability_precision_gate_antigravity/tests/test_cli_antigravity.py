@@ -47,6 +47,26 @@ class CliAntigravityTests(unittest.TestCase):
         self.assertEqual(imported, [])
         self.assertEqual(json.loads(stream.getvalue()), {"error": "publication invalid"})
 
+    def test_resume_rejects_dirty_or_mismatched_head_before_runtime_or_publication_antigravity(self) -> None:
+        """A CLI resume must stop at the commit gate before any mutable lifecycle component runs."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import cli_antigravity as cli
+
+        cases = (
+            ("dirty", ValueError("Exp444 readiness requires a clean working tree"), "Exp444 readiness requires a clean working tree"),
+            ("mismatch", "b" * 40, "Exp444 reviewed commit is not the current clean HEAD"),
+        )
+        for case, head, expected_error in cases:
+            def forbidden_resume(*_args: object, **_kwargs: object) -> object:
+                raise AssertionError("run_resume invoked before commit gate")
+
+            with self.subTest(case=case), patch.object(cli, "current_clean_head_antigravity", side_effect=head if isinstance(head, BaseException) else None, return_value=None if isinstance(head, BaseException) else head), patch.object(cli, "run_resume_antigravity", side_effect=forbidden_resume) as resume, patch.object(cli, "publish_prediction_antigravity") as publish:
+                stream = io.StringIO()
+                with contextlib.redirect_stdout(stream):
+                    self.assertEqual(cli.main_antigravity(["resume", "--reviewed-commit", "a" * 40, "--attempt", "attempt_0000_antigravity"]), 2)
+                resume.assert_not_called()
+                publish.assert_not_called()
+                self.assertEqual(json.loads(stream.getvalue()), {"error": expected_error})
+
     def test_wrapper_sets_threads_before_first_numpy_import_antigravity(self) -> None:
         """Importing NumPy before the wrapper pins threads would leak multi-threaded numerical state."""
         wrapper = Path(__file__).resolve().parents[3] / "scratch" / "run_exp444_train_only_stability_precision_gate_antigravity.py"

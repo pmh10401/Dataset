@@ -27,6 +27,9 @@ from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoi
 )
 
 
+_REVIEWED_COMMIT_ANTIGRAVITY = "a" * 40
+
+
 def _inputs_antigravity(count: int = 6) -> tuple[CandidateInputAntigravity, ...]:
     values: list[CandidateInputAntigravity] = []
     for sequence in range(count):
@@ -52,6 +55,83 @@ def _result_antigravity(item: CandidateInputAntigravity) -> CandidateStabilityRe
 
 
 class Exp444RuntimeAntigravityTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._clean_head_patch = mock.patch.object(
+            runtime, "current_clean_head_antigravity", return_value=_REVIEWED_COMMIT_ANTIGRAVITY,
+        )
+        self._clean_head_patch.start()
+
+    def tearDown(self) -> None:
+        self._clean_head_patch.stop()
+
+    def test_direct_runtime_rejects_noncanonical_or_mismatched_commit_before_mutation_antigravity(self) -> None:
+        """Direct callers cannot bypass the exact clean-HEAD commit gate before root or resume ownership changes."""
+        for command, reviewed_commit, head in (
+            ("new", "a" * 39, "a" * 40),
+            ("new", "A" * 40, "a" * 40),
+            ("new", "a" * 40, "b" * 40),
+            ("resume", "a" * 40, "b" * 40),
+        ):
+            with self.subTest(command=command, reviewed_commit=reviewed_commit), tempfile.TemporaryDirectory(prefix="exp444_direct_commit_gate_antigravity_") as directory:
+                root = Path(directory) / "run_antigravity"
+                with (
+                    mock.patch.object(runtime, "current_clean_head_antigravity", return_value=head) as clean_head,
+                    mock.patch.object(runtime, "_attempt_root_antigravity", side_effect=AssertionError("new root mutation")) as new_root,
+                    mock.patch.object(runtime, "_resume_attempt_antigravity", side_effect=AssertionError("resume path access")) as resume_root,
+                    mock.patch.object(runtime.ProgressWriterAntigravity, "open_interrupted", side_effect=AssertionError("writer mutation")) as writer,
+                    mock.patch.object(runtime.Exp444CheckpointStoreAntigravity, "open_interrupted", side_effect=AssertionError("checkpoint mutation")) as checkpoint,
+                ):
+                    with self.assertRaisesRegex(ValueError, "reviewed commit"):
+                        if command == "new":
+                            runtime.run_new_antigravity(reviewed_commit, run_root=root)
+                        else:
+                            runtime.run_resume_antigravity(reviewed_commit, "attempt_0000_antigravity", run_root=root)
+                if len(reviewed_commit) != 40 or reviewed_commit.lower() != reviewed_commit:
+                    clean_head.assert_not_called()
+                new_root.assert_not_called()
+                resume_root.assert_not_called()
+                writer.assert_not_called()
+                checkpoint.assert_not_called()
+                self.assertFalse(root.exists())
+
+    def test_valid_new_and_resume_bind_the_exact_reviewed_commit_into_checkpoint_context_antigravity(self) -> None:
+        """The exact accepted commit is persisted and then required for a successful interrupted resume."""
+        reviewed_commit = "a" * 40
+        inputs = _inputs_antigravity(30)
+
+        def interrupted_map(active, *, commit, progress, **_kwargs):
+            progress(stage="active", sequence=0)
+            commit(0, active[0], _result_antigravity(active[0]))
+            raise KeyboardInterrupt("fixture SIGINT")
+
+        def completed_map(active, *, commit, progress, **_kwargs):
+            for sequence, item in enumerate(active):
+                progress(stage="active", sequence=sequence)
+                commit(sequence, item, _result_antigravity(item))
+            return tuple(_result_antigravity(item) for item in active)
+
+        with tempfile.TemporaryDirectory(prefix="exp444_context_commit_antigravity_") as directory:
+            root = Path(directory) / "run_antigravity"
+            with (
+                mock.patch.object(runtime, "current_clean_head_antigravity", return_value=reviewed_commit),
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(9_610_101, "context-owner")),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
+                mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
+                mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+            ):
+                with self.assertRaises(KeyboardInterrupt):
+                    runtime.run_new_antigravity(reviewed_commit, run_root=root)
+            context_path = root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity/context_antigravity.json"
+            self.assertEqual(json.loads(context_path.read_text())["reviewed_commit"], reviewed_commit)
+            with (
+                mock.patch.object(runtime, "current_clean_head_antigravity", return_value=reviewed_commit),
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(9_610_102, "context-resume")),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
+                mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=completed_map),
+            ):
+                outcome = runtime.run_resume_antigravity(reviewed_commit, "attempt_0000_antigravity", run_root=root)
+            self.assertEqual((outcome.status, outcome.completed_count), ("complete", 30))
+
     def test_new_source_failure_precedes_root_allocation_antigravity(self) -> None:
         """Allocating a new root before failed source materialization would retain unsafe attempt bytes."""
         with tempfile.TemporaryDirectory(prefix="exp444_task10_new_antigravity_") as directory:
@@ -61,7 +141,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
             ):
                 with self.assertRaisesRegex(ValueError, "source failed"):
-                    runtime.run_new_antigravity("reviewed", run_root=root)
+                    runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
             self.assertFalse(root.exists())
 
     def test_interrupted_resume_source_failure_preserves_every_existing_byte_antigravity(self) -> None:
@@ -83,7 +163,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
             ):
                 with self.assertRaises(KeyboardInterrupt):
-                    runtime.run_new_antigravity("reviewed", run_root=root)
+                    runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
             attempt = root / "attempts_antigravity/attempt_0000_antigravity"
             before = {path.relative_to(attempt).as_posix(): path.read_bytes() for path in sorted(attempt.rglob("*")) if path.is_file()}
             original_open = runtime.Exp444CheckpointStoreAntigravity.open_interrupted
@@ -98,7 +178,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime.Exp444CheckpointStoreAntigravity, "open_interrupted", side_effect=only_read_only_preflight),
             ):
                 with self.assertRaisesRegex(ValueError, "source failed"):
-                    runtime.run_resume_antigravity("reviewed", "attempt_0000_antigravity", run_root=root)
+                    runtime.run_resume_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, "attempt_0000_antigravity", run_root=root)
             after = {path.relative_to(attempt).as_posix(): path.read_bytes() for path in sorted(attempt.rglob("*")) if path.is_file()}
             self.assertEqual(before, after)
 
@@ -126,7 +206,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=complete_map),
                 mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
             ):
-                runtime.run_new_antigravity("reviewed", run_root=root)
+                runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
 
     def test_parallel_and_sequential_bytes_match_antigravity(self) -> None:
         inputs = _inputs_antigravity()
@@ -244,7 +324,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
             ):
                 with self.assertRaises(KeyboardInterrupt):
-                    runtime.run_new_antigravity("reviewed", run_root=root)
+                    runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
 
             attempt = root / "attempts_antigravity/attempt_0000_antigravity"
             state = __import__("json").loads((attempt / "checkpoint_antigravity/state_antigravity.json").read_text())
@@ -258,7 +338,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=completed_map),
             ):
                 outcome = runtime.run_resume_antigravity(
-                    "reviewed", "attempt_0000_antigravity", run_root=root
+                    _REVIEWED_COMMIT_ANTIGRAVITY, "attempt_0000_antigravity", run_root=root
                 )
             self.assertEqual((outcome.status, outcome.completed_count, outcome.resumed), ("complete", 30, True))
             self.assertEqual(tuple(item.candidate.original_rank for item in outcome.results), tuple(range(1, 31)))
@@ -269,7 +349,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=AssertionError("complete re-entry must not schedule")),
             ):
                 final = runtime.run_resume_antigravity(
-                    "reviewed", "attempt_0000_antigravity", run_root=root
+                    _REVIEWED_COMMIT_ANTIGRAVITY, "attempt_0000_antigravity", run_root=root
                 )
             self.assertTrue(final.finalization_only)
             self.assertEqual(final.completed_count, 30)
@@ -288,7 +368,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
             ):
                 with self.assertRaises(KeyboardInterrupt):
-                    runtime.run_new_antigravity("reviewed", run_root=root)
+                    runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
             attempt = root / "attempts_antigravity/attempt_0000_antigravity"
             context_path = attempt / "checkpoint_antigravity/context_antigravity.json"
             payload = __import__("json").loads(context_path.read_text())
@@ -298,7 +378,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
             before = progress_path.read_bytes()
             with mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(9_200_002, "start-B")):
                 with self.assertRaisesRegex(ValueError, "context"):
-                    runtime.run_resume_antigravity("reviewed", "attempt_0000_antigravity", run_root=root)
+                    runtime.run_resume_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, "attempt_0000_antigravity", run_root=root)
             self.assertEqual(before, progress_path.read_bytes())
 
     def test_resume_rejects_live_stored_owner_with_real_pid_probe_antigravity(self) -> None:
@@ -317,7 +397,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
             ):
                 with self.assertRaises(KeyboardInterrupt):
-                    runtime.run_new_antigravity("reviewed", run_root=root)
+                    runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
 
             attempt = root / "attempts_antigravity/attempt_0000_antigravity"
             progress_path = attempt / "progress_antigravity.json"
@@ -329,7 +409,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "_load_source_inputs_antigravity", side_effect=AssertionError("live owner must fail before source access")),
             ):
                 with self.assertRaisesRegex(ValueError, "active"):
-                    runtime.run_resume_antigravity("reviewed", "attempt_0000_antigravity", run_root=root)
+                    runtime.run_resume_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, "attempt_0000_antigravity", run_root=root)
             self.assertEqual(before, (progress_path.read_bytes(), checkpoint_path.read_bytes()))
 
     def test_live_progress_names_next_commit_candidate_while_worker_is_blocked_antigravity(self) -> None:
@@ -364,7 +444,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
             def target_antigravity() -> None:
                 try:
                     runtime.run_new_antigravity(
-                        "reviewed", run_root=root, executor_factory=BlockingExecutorAntigravity
+                        _REVIEWED_COMMIT_ANTIGRAVITY, run_root=root, executor_factory=BlockingExecutorAntigravity
                     )
                 except BaseException as error:
                     errors.append(error)
@@ -464,7 +544,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                     mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
                     mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=completed_map),
                 ):
-                    runtime.run_new_antigravity("reviewed", run_root=root)
+                    runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
 
                 attempt = root / "attempts_antigravity/attempt_0000_antigravity"
                 progress_path = attempt / "progress_antigravity.json"
@@ -507,7 +587,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 with mock.patch.object(runtime, "current_process_identity_antigravity", return_value=replacement):
                     with self.assertRaisesRegex(ValueError, "progress|PID|log|checkpoint|context|complete"):
                         runtime.run_resume_antigravity(
-                            "reviewed", "attempt_0000_antigravity", run_root=root
+                            _REVIEWED_COMMIT_ANTIGRAVITY, "attempt_0000_antigravity", run_root=root
                         )
 
     def test_resume_rejects_corrupt_committed_authority_before_any_owner_bytes_change_antigravity(self) -> None:
@@ -530,7 +610,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                     mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
                 ):
                     with self.assertRaises(KeyboardInterrupt):
-                        runtime.run_new_antigravity("reviewed", run_root=root)
+                        runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
 
                 attempt = root / "attempts_antigravity/attempt_0000_antigravity"
                 checkpoint = attempt / "checkpoint_antigravity"
@@ -555,7 +635,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 ):
                     with self.assertRaisesRegex(ValueError, "checkpoint|record|payload"):
                         runtime.run_resume_antigravity(
-                            "reviewed", "attempt_0000_antigravity", run_root=root
+                            _REVIEWED_COMMIT_ANTIGRAVITY, "attempt_0000_antigravity", run_root=root
                         )
                 after = {
                     path.relative_to(attempt).as_posix(): path.read_bytes()
@@ -583,7 +663,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
             ):
                 with self.assertRaises(KeyboardInterrupt):
-                    runtime.run_new_antigravity("reviewed", run_root=root)
+                    runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
 
             attempt = root / "attempts_antigravity/attempt_0000_antigravity"
             record_path = attempt / "checkpoint_antigravity/records_antigravity/0000_record_antigravity.json"
@@ -612,7 +692,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
             ):
                 with self.assertRaisesRegex(ValueError, "record"):
                     runtime.run_resume_antigravity(
-                        "reviewed", "attempt_0000_antigravity", run_root=root
+                        _REVIEWED_COMMIT_ANTIGRAVITY, "attempt_0000_antigravity", run_root=root
                     )
             after = {
                 path.relative_to(attempt).as_posix(): path.read_bytes()
@@ -641,7 +721,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
             ):
                 with self.assertRaises(KeyboardInterrupt):
-                    runtime.run_new_antigravity("reviewed", run_root=root)
+                    runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
 
             attempt = root / "attempts_antigravity/attempt_0000_antigravity"
             orphan_result = _result_antigravity(inputs[1])
@@ -671,7 +751,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=completed_map),
             ):
                 outcome = runtime.run_resume_antigravity(
-                    "reviewed", "attempt_0000_antigravity", run_root=root
+                    _REVIEWED_COMMIT_ANTIGRAVITY, "attempt_0000_antigravity", run_root=root
                 )
             state = json.loads((attempt / "checkpoint_antigravity/state_antigravity.json").read_text())
             progress_payload = json.loads((attempt / "progress_antigravity.json").read_text())
@@ -701,7 +781,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                 mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
             ):
                 with self.assertRaises(KeyboardInterrupt):
-                    runtime.run_new_antigravity("reviewed", run_root=root)
+                    runtime.run_new_antigravity(_REVIEWED_COMMIT_ANTIGRAVITY, run_root=root)
 
             attempt = root / "attempts_antigravity/attempt_0000_antigravity"
             orphan_record = runtime.canonical_json_bytes_antigravity({
@@ -719,7 +799,7 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
             ):
                 with self.assertRaises(runtime.WorkerFailureAntigravity) as captured:
                     runtime.run_resume_antigravity(
-                        "reviewed", "attempt_0000_antigravity", run_root=root
+                    _REVIEWED_COMMIT_ANTIGRAVITY, "attempt_0000_antigravity", run_root=root
                     )
             state = json.loads((attempt / "checkpoint_antigravity/state_antigravity.json").read_text())
             progress_payload = json.loads((attempt / "progress_antigravity.json").read_text())

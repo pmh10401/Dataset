@@ -42,6 +42,7 @@ from .contracts_antigravity import (
     CheckpointContextAntigravity,
 )
 from .progress_antigravity import ProgressWriterAntigravity
+from .readiness_antigravity import current_clean_head_antigravity
 
 
 _ATTEMPT_NAME_ANTIGRAVITY = re.compile(r"attempt_[0-9]{4}_antigravity$")
@@ -355,7 +356,7 @@ class RuntimeOutcomeAntigravity:
         object.__setattr__(self, "results", results)
 
 
-def _context_antigravity() -> CheckpointContextAntigravity:
+def _context_antigravity(reviewed_commit: str) -> CheckpointContextAntigravity:
     return CheckpointContextAntigravity(
         FROZEN_CONFIG.experiment_id,
         FROZEN_CONFIG.run_identity,
@@ -364,7 +365,20 @@ def _context_antigravity() -> CheckpointContextAntigravity:
         FROZEN_CONFIG.source_candidate_count,
         FROZEN_CONFIG.cpu_workers,
         FROZEN_CONFIG.inner_threads,
+        reviewed_commit,
     )
+
+
+def _validate_reviewed_commit_antigravity(reviewed_commit: str) -> str:
+    """Reject non-current review identities before any source or runtime mutation."""
+    if type(reviewed_commit) is not str or len(reviewed_commit) != 40 or any(character not in "0123456789abcdef" for character in reviewed_commit):
+        raise ValueError("Exp444 reviewed commit is invalid")
+    if current_clean_head_antigravity() != reviewed_commit:
+        raise ValueError("Exp444 reviewed commit is not the current clean HEAD")
+    from .readiness_antigravity import _review_document_sha256_antigravity, load_worker_parity_authority_antigravity
+    _review_document_sha256_antigravity()
+    load_worker_parity_authority_antigravity()
+    return reviewed_commit
 
 
 def _attempt_root_antigravity(run_root: Path) -> Path:
@@ -621,8 +635,7 @@ def _execute_runtime_antigravity(
     run_root: Path | str | None,
     executor_factory: Callable[..., object] | None,
 ) -> RuntimeOutcomeAntigravity:
-    if type(reviewed_commit) is not str or not reviewed_commit:
-        raise ValueError("Exp444 reviewed commit is invalid")
+    _validate_reviewed_commit_antigravity(reviewed_commit)
     FROZEN_CONFIG.validate()
     # The official checkpoint must never be created or rebound without the
     # authenticated full-population summary and Task5 CPU decision evidence.
@@ -631,7 +644,7 @@ def _execute_runtime_antigravity(
         from .provenance_antigravity import verify_exp444_provenance_antigravity
         verify_exp444_provenance_antigravity()
     root = Path(FROZEN_CONFIG.run_root if run_root is None else run_root)
-    context = _context_antigravity()
+    context = _context_antigravity(reviewed_commit)
     process = current_process_identity_antigravity()
     # The source session is a values-only capability.  It must be fully
     # materialized and closed before *any* new-root or interrupted-owner

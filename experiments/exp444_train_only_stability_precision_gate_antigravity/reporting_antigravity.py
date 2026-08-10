@@ -374,18 +374,6 @@ class _PublishSourceAuthorityAntigravity:
             raise ValueError("Exp444 original-control replay count is invalid")
 
 
-def _checkpoint_context_antigravity() -> CheckpointContextAntigravity:
-    return CheckpointContextAntigravity(
-        FROZEN_CONFIG.experiment_id,
-        FROZEN_CONFIG.run_identity,
-        scientific_config_sha256_antigravity(),
-        FROZEN_CONFIG.environment_lock_sha256,
-        FROZEN_CONFIG.source_candidate_count,
-        FROZEN_CONFIG.cpu_workers,
-        FROZEN_CONFIG.inner_threads,
-    )
-
-
 def _complete_checkpoint_results_antigravity(attempt_root: Path, snapshot: _AttemptSnapshotAntigravity | None = None) -> tuple[CandidateStabilityResultAntigravity, ...]:
     attempt = Path(attempt_root)
     owns_snapshot = snapshot is None
@@ -393,7 +381,11 @@ def _complete_checkpoint_results_antigravity(attempt_root: Path, snapshot: _Atte
     try:
         _assert_attempt_namespace_antigravity(attempt, snapshot)
         context = _read_canonical_json_bytes_antigravity(snapshot.payloads["checkpoint/context_antigravity.json"], "checkpoint context")
-        if context != _checkpoint_context_antigravity().to_payload():
+        try:
+            checked_context = CheckpointContextAntigravity.from_payload(context)
+        except ValueError as error:
+            raise ValueError("Exp444 checkpoint context changed") from error
+        if context != checked_context.to_payload():
             raise ValueError("Exp444 checkpoint context changed")
         state = _read_canonical_json_bytes_antigravity(snapshot.payloads["checkpoint/state_antigravity.json"], "checkpoint state")
         expected_state = {"context_sha256", "status", "completed_units", "total_units", "error_count", "current_unit", "current_view", "payload_sha256", "record_sha256_prefix", "process", "error", "updated_at"}
@@ -800,7 +792,11 @@ def _inspect_terminal_runtime_antigravity(runtime: Mapping[str, object], selecti
     state = parse_canonical_json_bytes_antigravity(raw["state"])
     progress = parse_canonical_json_bytes_antigravity(raw["progress"])
     pid = parse_canonical_json_bytes_antigravity(raw["pid"])
-    if not all(isinstance(value, Mapping) for value in (context, state, progress, pid)) or dict(context) != _checkpoint_context_antigravity().to_payload() or state.get("context_sha256") != _sha256_antigravity(raw["context"]) or state.get("status") != "complete" or state.get("completed_units") != 30 or state.get("total_units") != 30 or state.get("error_count") != 0 or state.get("current_unit") is not None or state.get("current_view") is not None or state.get("error") is not None:
+    try:
+        checked_context = CheckpointContextAntigravity.from_payload(context) if isinstance(context, Mapping) else None
+    except ValueError:
+        checked_context = None
+    if not all(isinstance(value, Mapping) for value in (context, state, progress, pid)) or checked_context is None or dict(context) != checked_context.to_payload() or state.get("context_sha256") != _sha256_antigravity(raw["context"]) or state.get("status") != "complete" or state.get("completed_units") != 30 or state.get("total_units") != 30 or state.get("error_count") != 0 or state.get("current_unit") is not None or state.get("current_view") is not None or state.get("error") is not None:
         raise ValueError("Exp444 publication terminal checkpoint state is invalid")
     if state.get("record_sha256_prefix") != prefix or state.get("payload_sha256") != _sha256_antigravity(canonical_json_bytes_antigravity(prefix)):
         raise ValueError("Exp444 publication terminal checkpoint prefix changed")

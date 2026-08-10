@@ -16,6 +16,7 @@ from .runtime_antigravity import run_new_antigravity, run_resume_antigravity
 
 
 _ATTEMPT_ANTIGRAVITY = re.compile(r"attempt_[0-9]{4}_antigravity$")
+_REVIEWED_COMMIT_ANTIGRAVITY = re.compile(r"[0-9a-f]{40}$")
 
 
 def build_parser_antigravity() -> argparse.ArgumentParser:
@@ -62,14 +63,25 @@ def _publication_root_antigravity() -> Path:
     return Path(FROZEN_CONFIG.run_root) / "attempts_antigravity" / "attempt_0000_antigravity" / "publication_antigravity"
 
 
+def _validate_cli_reviewed_commit_antigravity(reviewed_commit: str) -> str:
+    """Stop lifecycle commands before runtime or publication on dirty/mismatched HEAD."""
+    if type(reviewed_commit) is not str or _REVIEWED_COMMIT_ANTIGRAVITY.fullmatch(reviewed_commit) is None:
+        raise ValueError("Exp444 reviewed commit is invalid")
+    if current_clean_head_antigravity() != reviewed_commit:
+        raise ValueError("Exp444 reviewed commit is not the current clean HEAD")
+    return reviewed_commit
+
+
 def _dispatch_antigravity(arguments: argparse.Namespace) -> object:
     if arguments.command == "readiness":
         return run_readiness_antigravity(arguments.reviewed_commit)
     if arguments.command == "new":
+        _validate_cli_reviewed_commit_antigravity(arguments.reviewed_commit)
         validate_readiness_for_run_antigravity(arguments.reviewed_commit)
         outcome = run_new_antigravity(arguments.reviewed_commit)
         return {"runtime": outcome, "publication": publish_prediction_antigravity(outcome.attempt_path)}
     if arguments.command == "resume":
+        _validate_cli_reviewed_commit_antigravity(arguments.reviewed_commit)
         outcome = run_resume_antigravity(arguments.reviewed_commit, arguments.attempt)
         return {"runtime": outcome, "publication": publish_prediction_antigravity(outcome.attempt_path)}
     if arguments.command == "inspect":
