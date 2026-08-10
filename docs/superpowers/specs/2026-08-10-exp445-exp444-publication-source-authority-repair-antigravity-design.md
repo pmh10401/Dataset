@@ -81,32 +81,50 @@ Exp444의 결함은 publication source authority가 frozen Exp442 sibling summar
 파생하는 데 있었다. Exp445는 이 경로, fallback, synthesis 및 database full query를
 모두 제거한다.
 
-새 publication helper의 고정 interface는 다음과 같다.
+publication source authority는 두 개의 닫힌 내부 구성요소와 하나의 합성 단계로 만든다.
+첫 구성요소는 summary bytes만 받는 순수 parser다.
 
 ```python
-def _publish_source_authority_antigravity(
+def _parse_dataset_summaries_antigravity(
     dataset_summary_bytes: bytes,
+) -> tuple[dict[str, object], ...]:
+```
+
+두 번째 구성요소는 기존 descriptor-bound values-only source snapshot으로 candidate,
+source hash 및 original-control replay를 만들고 SQLite session을 닫은 뒤 불변 handoff를
+반환한다. 최종 합성 interface는 다음과 같다.
+
+```python
+def _compose_publish_source_authority_antigravity(
+    dataset_summaries: tuple[dict[str, object], ...],
+    values_authority: _ValuesOnlyPublishAuthorityAntigravity,
 ) -> _PublishSourceAuthorityAntigravity:
 ```
 
 `dataset_summary_bytes`는 Exp445 provenance verifier가 descriptor-pinned Exp440
 publication directory에서 단 한 번 capture한 canonical
 `dataset_summary_antigravity.jsonl` bytes다. Helper는 전달된 bytes만 canonical JSONL로
-parse하고, 1,117개 ordered summary row, Exp440 provenance SHA256 및 label-free schema를
-검증한다. Helper 내부에서 pathname을 열거나 SQLite를 열지 않으며, Exp442 summary를
-찾거나 만들어내지 않는다.
+parse하고, 1,117개 ordered summary row 및 label-free schema를 검증한다. 순수 parser와
+합성 helper는 pathname이나 SQLite를 열지 않으며, Exp442 summary를 찾거나 만들어내지
+않는다. Values-only 구성요소만 기존 허용 SQL로 frozen candidate/control evidence를
+재생하며 label access 0을 확인하고 session을 닫는다. 세 구성요소 어느 것도 public
+override로 노출하지 않는다.
 
 Provenance capture는 Exp440 summary, manifest, artifact map을 같은 retained descriptor
 authority로 확인한다. Capture가 실패하거나 byte identity가 달라지면 publication 전에
-실패한다. Exp445 runtime은 그 validated bytes와 terminal predecessor authority로만
-publication payload를 만들고, public publication API에 다른 source-bytes 인자를 허용하지
-않는다.
+실패한다. Exp445 lifecycle은 그 validated bytes, 닫힌 values-only handoff 및 terminal
+predecessor authority로만 publication payload를 만들고, public publication API에 source
+bytes나 values authority 인자를 허용하지 않는다.
 
 ## 5. 새 root 실행과 publication 전 parity
 
 Exp445 `new`는 새 fixed root에서 정상 label-free runtime을 처음부터 실행한다. resume은
-없다. 30개의 frozen coordinate를 동결 Exp444 규칙으로 재계산하고, 새 checkpoint가
-complete가 된 다음 publication 전에 다음을 모두 요구한다.
+없다. 30개의 frozen coordinate를 동결 Exp444 규칙으로 재계산하되, 각 record를 create-only로
+쓰기 전에 canonical wrapper SHA256을 같은 index의 predecessor SHA256과 비교한다. 마지막
+30번째 record를 쓰기 직전에 predecessor authority와 aggregate prefix authority를 다시
+검증한다. 따라서 불일치는 terminal complete를 쓴 뒤 되돌리는 방식이 아니라, 해당
+sequence의 immutable error record와 failed progress로 보존된다. 모든 index가 일치한
+경우에만 checkpoint/progress를 complete로 닫고 publication 전에 다음을 모두 요구한다.
 
 1. 새 context가 Exp445 profile identity/root/document authority를 갖고, inherited
    scientific configuration/environment authority는 전임과 정확히 같다.
@@ -148,23 +166,34 @@ argument이며, 어떤 scientific configuration value도 아니다.
 
 ## 7. 가속과 실행 topology
 
-각 새 score-source experiment에는 full run 전에 AGENTS.md의 MLX gate를 적용한다.
-MLX는 정확한 동결 algorithm과 data definition을 표현하고, 동일 input/seed CPU parity,
-finite output, 모든 preregistered alpha의 동일 candidate index, preregistered tolerance
-이내 score difference, transfer/synchronization 포함 exact-stage 1.1x 이상 speed를
-모두 만족할 때만 선택한다. Manifest에는 MLX/mlx-metal version, device, timing, parity 및
-fallback reason을 기록한다.
+새 score-source experiment에는 full run 전에 AGENTS.md의 PyTorch·MLX·MPS gate를
+적용하지만, Exp445는 새 score source가 아니라 Exp444의 publication engineering 복구다.
+따라서 Exp445 안에서 backend를 새로 benchmark하거나 재선택하지 않고, 동결 Exp444
+backend-decision authority와 30-candidate sequential/11-worker byte parity authority를
+각각 SHA256으로 다시 검증한다.
 
-어느 조건이라도 충족하지 않으면 CPU를 사용한다. 현재 설계의 default는 CPU 11 outer
-workers와 worker당 inner numerical thread 1이다. 한 번에 하나의 MLX/MPS-heavy process만
-허용하며 outer multiprocessing와 concurrent GPU job을 함께 사용하지 않는다.
+공식 worker 정책은 `max(1, logical_cpu_count - 1)`이며, 동결 실행 환경의 logical CPU
+12개에서 CPU 11 outer workers와 worker당 inner numerical thread 1이다. 이 11-worker 값은
+inherited scientific configuration, checkpoint context 및 provenance authority의 일부라서
+Exp445 안에서 7이나 다른 값으로 바꿀 수 없다.
+
+PyTorch와 PyTorch MPS는 동결 environment lock에 없고 새 설치는 environment SHA256을
+바꾸므로 unavailable/inapplicable이다. 기존 Exp444 authority에서 MLX exact-float64 probe는
+통과하지 못했고 Numba는 `0.9968x < 1.1x`라서 CPU가 canonical backend다. Exp445는 이
+실패·fallback 근거를 재사용하고 재벤치마크나 backend 재선택을 하지 않는다. 한 번에 하나의
+MLX/MPS-heavy process라는 일반 규칙은 유지되지만 Exp445 공식 경로는 GPU process를
+시작하지 않는다.
 
 ## 8. 실패 보존과 거절한 대안
 
-모든 readiness/runtime/source/parity/publication/evaluation failure는 새 Exp445 root 안의
-create-only evidence로 보존한다. Exp444 및 Exp442 authority에는 failure marker조차
-쓰지 않는다. 실패한 Exp445 root는 재시도하거나 덮어쓰지 않으며, operator는 새
-실험/새 preregistration 없이는 동일 root에서 continuation을 만들 수 없다.
+Readiness와 `new`의 root allocation 전 provenance/source/predecessor failure는 mutation-free로
+끝나며 fixed Exp445 root를 만들지 않는다. Root allocation 뒤의 runtime/parity/publication/
+evaluation failure만 새 Exp445 root 안의 immutable failure evidence로 보존한다. 같은 run이
+활성인 동안 checkpoint state, progress 및 PID는 기존 동결 방식의 atomic replacement를
+사용하지만, record, failure, publication 및 evaluation artifact는 create-only다. Exp444 및
+Exp442 authority에는 failure marker조차 쓰지 않는다. 실패한 Exp445 root는 재시도하거나
+덮어쓰지 않으며, operator는 새 실험/새 preregistration 없이는 동일 root에서 continuation을
+만들 수 없다.
 
 다음 두 대안은 명시적으로 거절한다.
 
@@ -189,9 +218,9 @@ evidence로 사용하지 않는다.
   wrapper compatibility, 그리고 모든 forbidden override rejection
 - descriptor-pinned Exp440 summary/manifest/artifact-map capture의 byte SHA 및
   directory replacement/symlink/sibling substitution rejection
-- `_publish_source_authority_antigravity(dataset_summary_bytes)`가 전달된 bytes만
-  사용하고 Exp442 sibling, fallback, synthesis, database full query를 호출하지 않는 spy
-  및 failure tests
+- `_parse_dataset_summaries_antigravity(dataset_summary_bytes)`가 전달된 bytes만 사용하고,
+  닫힌 values-only handoff와의 최종 composition이 Exp442 sibling, fallback, synthesis 또는
+  database full query를 호출하지 않는 real-composition spy 및 failure tests
 - 30 ordered record SHA index parity, aggregate prefix payload SHA parity, 30/30 terminal
   state, CPU/11/inner-1 topology, zero-label boundary
 - source or record parity failure가 publication 전에 failed root를 보존하는 test
@@ -199,7 +228,8 @@ evidence로 사용하지 않는다.
   evaluator import, and no evaluation publication before those gates
 - create-only publication/evaluation, failure preservation, no-clobber retry rejection,
   and Exp444/Exp442 byte identity regression
-- CPU-versus-MLX fresh gate parity/speed evidence와 CPU fallback regression
+- 기존 backend-decision 및 30-candidate sequential/11-worker parity authority의 byte/SHA
+  재검증, 그리고 backend 재벤치마크·재선택이 없음을 보장하는 regression
 
 Likely implementation files are the existing
 `experiments/exp444_train_only_stability_precision_gate_antigravity/config_antigravity.py`,
