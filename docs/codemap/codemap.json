@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T00:41:34Z",
-  "generated_from_commit": "163587862cb7a268957d822c3f51d962628e4a39",
+  "generated_at": "2026-08-10T01:15:10Z",
+  "generated_from_commit": "76f930304955b66f38f116ec2987c90d03d63904",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -66,7 +66,9 @@
     "Exp444 Task 3: exact frozen Exp442/Exp404 source replay, 30-coordinate identity, and descriptor-bound values-only SQLite loading",
     "Exp444 Task 3 fix round 1: frozen 30-coordinate snapshot attestation, parameter-bound values-only sessions, adversarial source/SQL/identity coverage, and truthful close-failure pin preservation",
     "Exp444 Task 3 fix round 2: verifier-only database sessions, exact rank-ordered full-candidate attestation, and removal of the SQLite-capable fixture escape",
-    "Exp444 Task 3 fix round 3: truthful original-inode failure pins across pin, source-path, and source-metadata attacks with descriptor-backed fallback evidence"
+    "Exp444 Task 3 fix round 3: truthful original-inode failure pins across pin, source-path, and source-metadata attacks with descriptor-backed fallback evidence",
+    "Exp444 Task 4: unchanged Exp440 control replay, deterministic TRAIN omission masks, and stable/unstable review lanes",
+    "Exp444 Task 5: CPU/MLX/Numba dense-distance parity and fixed whole-view speed gate with explicit CPU fallback"
   ],
   "nodes": [
     {
@@ -4289,7 +4291,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
-      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix round 1 binds every session query to those exact candidate datasets/coordinates, rejects fabricated snapshots before database access, and restores a truthful private pin/root after injected close failures. Fix round 2 removes the SQLite-capable fixture constructor: only the exact verified replay can mint the module-private session capability, and snapshot/session/loader cross-check a canonical rank-ordered attestation of dataset, instance, raw length, depths, and original rank before query. Fix round 3 removes attacker pin replacements on close failure, restores the original verified inode when possible, validates retained dev/inode/SHA, and preserves separate descriptor-backed evidence if exact relinking is impossible; pin replacement, source pathname replacement, and source metadata drift have separate behavioral coverage. Task 4 replays the unchanged Exp440 calibration/scoring rule on all 30 frozen source candidates, generates seed-bound deterministic omission masks, copies score evidence into immutable Exp444 view contracts, and classifies the same coordinates into exhaustive stable/unstable review lanes without TEST labels. Task 4 fix round 1 independently rebuilds all 30 ranks from replayed score evidence with the public Exp441 global key inherited by Exp442, freezes the 14/16 review boundary in pure aggregation tests, and discards exceeding depth evidence whenever an omitted candidate is absent. The source firewall rejects label-capable SQL before execution, excludes whole nonfinite TRAIN rows, preserves read-only float32 arrays, and keeps the official Exp444 root absent. Task 2 contracts and thin artifact wrappers remain immutable.",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix round 1 binds every session query to those exact candidate datasets/coordinates, rejects fabricated snapshots before database access, and restores a truthful private pin/root after injected close failures. Fix round 2 removes the SQLite-capable fixture constructor: only the exact verified replay can mint the module-private session capability, and snapshot/session/loader cross-check a canonical rank-ordered attestation of dataset, instance, raw length, depths, and original rank before query. Fix round 3 removes attacker pin replacements on close failure, restores the original verified inode when possible, validates retained dev/inode/SHA, and preserves separate descriptor-backed evidence if exact relinking is impossible; pin replacement, source pathname replacement, and source metadata drift have separate behavioral coverage. Task 4 replays the unchanged Exp440 calibration/scoring rule on all 30 frozen source candidates, generates seed-bound deterministic omission masks, copies score evidence into immutable Exp444 view contracts, and classifies the same coordinates into exhaustive stable/unstable review lanes without TEST labels. Task 5 injects only the exact dense distance primitive for CPU, guarded float64 MLX, and float64 Numba paths, benchmarks the complete fixed size-5/lower-median/size-160 view stage in one process, records transfer/synchronization/materialization/device provenance and scalar/semantic parity, and retains CPU/11 workers when any backend is unavailable, lane-different, numerically different, or below the inclusive 1.1 speed gate. Task 2 contracts, Task 4 engine, and thin artifact wrappers remain immutable.",
       "entrypoints": [
         "FROZEN_CONFIG",
         "frozen_config_payload_antigravity",
@@ -4328,7 +4330,15 @@
         "canonical_json_bytes_antigravity",
         "write_create_only_antigravity",
         "pin_exact_regular_inventory_antigravity",
-        "_validate_complete_freeze_bytes_antigravity"
+        "_validate_complete_freeze_bytes_antigravity",
+        "BackendRunAntigravity",
+        "BackendUnavailableAntigravity",
+        "score_distance_cpu_antigravity",
+        "score_distance_mlx_antigravity",
+        "score_distance_numba_antigravity",
+        "fixed_benchmark_selection_antigravity",
+        "choose_backend_antigravity",
+        "benchmark_backends_antigravity"
       ],
       "tests": [
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_config_antigravity.py",
@@ -4337,7 +4347,8 @@
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_masks_antigravity.py",
-        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_stability_antigravity.py"
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_stability_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_backend_antigravity.py"
       ],
       "constraints": [
         "Direct requirements remain exactly mlx==0.32.0, numba==0.66.0, and numpy==2.4.6; the complete six-distribution lock is bound by SHA256 8835702b9793a5cc08b5e95621b49c0a4a4136325354da7a655761f6b91f3a94.",
@@ -4357,7 +4368,12 @@
         "Task 4 aggregate control accepts exactly 30 unique source coordinates with original ranks 1-30, independently sorts replayed score evidence by CandidateEvidenceAntigravity.global_key, assigns fresh replayed ranks, and requires every rank and coordinate to equal the frozen Exp442 ordering.",
         "Task 4 review aggregation requires 14 of 16 deterministic TRAIN-only views for stable_review; 13 of 16 is unstable_review, and candidate-absent views carry no agreeing depths even when copied scores exceed their strict thresholds.",
         "Task 4 stable_review and unstable_review are exhaustive and disjoint over the same frozen 30 source coordinates; no candidate is added, replaced, relocated, padded, promoted, or evaluated with TEST labels.",
-        "Exp444 is descriptive-only: no scientific success criterion, winner, promotion, operational alert, or same-experiment reselection is available; the official run root remains absent and Exp440/442/443 roots/artifacts are immutable."
+        "Exp444 is descriptive-only: no scientific success criterion, winner, promotion, operational alert, or same-experiment reselection is available; the official run root remains absent and Exp440/442/443 roots/artifacts are immutable.",
+        "Task 5 may replace only the exact Exp440 dense distance seam; no feature, calibration, threshold, mask, candidate, view, lane, ranking, or outer-worker rule is changed.",
+        "The fixed benchmark selects exact group sizes 5 and 160 plus the lower median element of the total (group size, dataset, instance) order; warmups=0 and repetitions=1 are fixed and all device transfer, compile, synchronization, and result materialization costs remain timed.",
+        "MLX requires an Apple GPU float64 execution probe and records MLX/Metal device/version; float64 unsupported on the installed Metal GPU is an explicit unavailable fallback, never a float32 substitution.",
+        "Numba uses one serial compiled float64 accumulation loop and deterministic median-of-three; CPU remains selected unless finite scalar max diff <= 1e-5, independent mask/candidate/survival/lane parity, and end-to-end speed ratio >= 1.1 all pass.",
+        "The real fixed benchmark loaded 30 values-only inputs with label access 0; CPU 221.6705296661239s versus Numba 224.07627420895733s (0.9892637248127841x) retained CPU/11 workers, while MLX failed closed for float64 Metal support."
       ],
       "evidence": [
         {
@@ -4475,6 +4491,34 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_stability_antigravity.py",
           "symbol": "def test_candidate_absent_discards_exceeding_agreement_evidence_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/backend_antigravity.py",
+          "symbol": "class BackendRunAntigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/backend_antigravity.py",
+          "symbol": "def score_distance_cpu_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/backend_antigravity.py",
+          "symbol": "def score_distance_mlx_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/backend_antigravity.py",
+          "symbol": "def score_distance_numba_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/backend_antigravity.py",
+          "symbol": "def choose_backend_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/backend_antigravity.py",
+          "symbol": "def benchmark_backends_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_backend_antigravity.py",
+          "symbol": "class BackendContractAntigravityTests"
         }
       ]
     }
