@@ -61,3 +61,9 @@ JUDGMENT CALLS:
 - Reviewed-document checks occur in readiness and runtime’s pre-mutation commit gate. The complete-finalization branch remains values-source-free: it does not call provenance verification or values materialization after commit/context validation.
 
 GAPS: No official readiness/new/resume/inspect/evaluate command was run, no publication was created, and no TEST label was opened.
+
+## Closeout correction
+
+- Regenerated the HTML embedded base64 mechanically from `docs/codemap/codemap_exp444_antigravity.json`; decoding `const encoded` is byte-identical to that JSON. The temporary runtime overlay was deleted while preserving the existing interactive renderer.
+- Removed this ignored scratch report from Git tracking with index-only removal. The local report remains available for audit, but the corrective commit does not add it to repository history.
+- Verified embedded equality, 20 nodes/65 edges/5 flows, documented evidence symbols and paths, lock fingerprints, no unversioned codemap triplet, no tracked Exp444 Task 10 report, diff whitespace, and clean status after commit.
