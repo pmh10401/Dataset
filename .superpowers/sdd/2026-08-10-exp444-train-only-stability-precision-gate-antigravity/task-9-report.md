@@ -21,6 +21,9 @@ JUDGMENT CALLS: Strong regression is the inherited descriptive definition: basel
 
 GAPS: none.
 
+FULL: exact discovery exited 0; count 165.
+COMMITS: `f843642f` functional review-gap closure; `51daf95f` map synchronization.
+
 ## Fix round 1/5 — hardened evaluation authority
 
 STATUS: DONE
@@ -39,3 +42,9 @@ JUDGMENT CALLS: the production-only exact population/confusion gate is selected 
 GAPS: partial-query and partial-publication audit pathways use the existing generic audit handler and create-only destination state logic; their additional dedicated fixture cases remain for the next review round if requested.
 
 COMMITS: `38d74bd4` functional authority hardening; `7ceedec2` code-map synchronization.
+
+## Fix round 2/5 — closed evaluation review gaps
+
+RED/GREEN: exact-query test RED raised the old helper arity error, then GREEN proved the descriptor/SHA-bound temporary SQLite session accepts only its frozen next ordered dataset and exposes no arbitrary execution method. Production replay now passes its official flag into semantic reconstruction. A partial writer fixture GREEN records `phase=commit_write` and `commit_state=partial`; the existing three swap tests continue to cover close/compute/pre-commit identity checks. The independent 1,117-row bootstrap fixture uses literals generated once with a standalone NumPy PCG64 script: index SHA `a1ecb839...`, micro interval `(0.0, 0.0011926058437686793)`, macro interval `(0.0, 0.0008952551477171555)`.
+
+GAPS: none.
