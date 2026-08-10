@@ -45,6 +45,72 @@ def _write_checkpoint_state_antigravity(
 
 
 class Exp444ProgressAntigravityTests(unittest.TestCase):
+    def test_exp445_diagnostic_log_failures_do_not_block_core_terminal_authority_antigravity(self) -> None:
+        """Persistent append faults must leave Exp445 progress/PID complete and auditable."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp445_log_failure_progress_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"
+            attempt.mkdir()
+            writer = ProgressWriterAntigravity.create(
+                attempt, total=1, pid=44_501,
+                _exp445_diagnostic_log_failures_antigravity=True,
+            )
+            with mock.patch.object(ProgressWriterAntigravity, "_append_event_antigravity", side_effect=OSError("persistent event fault")), mock.patch.object(ProgressWriterAntigravity, "_append_text_antigravity", side_effect=OSError("persistent text fault")):
+                writer.start_candidate_antigravity("A", 0, train_count=5, test_count=1, raw_length=16)
+                first_marker = (attempt / "log_failure_antigravity.json").read_bytes()
+                writer.complete_candidate_antigravity()
+                writer.close_antigravity("complete")
+            progress = json.loads((attempt / "progress_antigravity.json").read_text())
+            pid = json.loads((attempt / "pid_antigravity.json").read_text())
+            marker = json.loads((attempt / "log_failure_antigravity.json").read_text())
+            self.assertEqual((progress["stage"], progress["completed"], pid["active"]), ("complete", 1, False))
+            self.assertEqual(marker["schema"], "exp445.log_failure.v1")
+            self.assertEqual((attempt / "log_failure_antigravity.json").read_bytes(), first_marker)
+
+    def test_exp445_secondary_log_marker_failure_never_blocks_core_closeout_antigravity(self) -> None:
+        """If marker creation also fails, the terminal in-memory flag still blocks clean success."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import progress_antigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp445_log_marker_secondary_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"
+            attempt.mkdir()
+            writer = progress_antigravity.ProgressWriterAntigravity.create(
+                attempt, total=1, pid=44_503,
+                _exp445_diagnostic_log_failures_antigravity=True,
+            )
+            with mock.patch.object(progress_antigravity.ProgressWriterAntigravity, "_append_event_antigravity", side_effect=OSError("persistent event fault")), mock.patch.object(progress_antigravity.ProgressWriterAntigravity, "_append_text_antigravity", side_effect=OSError("persistent text fault")), mock.patch.object(progress_antigravity, "write_create_only_antigravity", side_effect=OSError("marker write fault")):
+                writer.start_candidate_antigravity("A", 0, train_count=5, test_count=1, raw_length=16)
+                writer.complete_candidate_antigravity()
+                writer.close_antigravity("complete")
+            progress = json.loads((attempt / "progress_antigravity.json").read_text())
+            pid = json.loads((attempt / "pid_antigravity.json").read_text())
+            self.assertEqual((progress["stage"], pid["active"], writer.terminal_log_failure_antigravity), ("complete", False, True))
+            self.assertFalse((attempt / "log_failure_antigravity.json").exists())
+
+    def test_exp445_persistent_log_fault_does_not_mask_orphan_error_closeout_antigravity(self) -> None:
+        """A durable orphan error still reaches inactive terminal progress if every append fails."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp445_log_failure_orphan_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"
+            attempt.mkdir()
+            writer = ProgressWriterAntigravity.create(
+                attempt, total=2, pid=44_502,
+                _exp445_diagnostic_log_failures_antigravity=True,
+            )
+            digest = hashlib.sha256(b"durable error").hexdigest()
+            with mock.patch.object(ProgressWriterAntigravity, "_append_event_antigravity", side_effect=OSError("persistent event fault")), mock.patch.object(ProgressWriterAntigravity, "_append_text_antigravity", side_effect=OSError("persistent text fault")):
+                writer.reconcile_orphan_antigravity(
+                    "B", 0, record_sha256=digest, status="error", error="original compute error",
+                    train_count=5, test_count=1, raw_length=16,
+                )
+                writer.close_antigravity("error", "original compute error")
+            progress = json.loads((attempt / "progress_antigravity.json").read_text())
+            pid = json.loads((attempt / "pid_antigravity.json").read_text())
+            self.assertEqual((progress["stage"], progress["completed"], progress["error"], pid["active"]), ("error", 1, 1, False))
+            self.assertTrue((attempt / "log_failure_antigravity.json").is_file())
+
     def test_progress_records_current_dimensions_and_eta_antigravity(self) -> None:
         from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
 

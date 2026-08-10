@@ -11,8 +11,16 @@ from pathlib import Path
 import time
 import re
 
-from .artifacts_antigravity import canonical_json_bytes_antigravity, fsync_directory_antigravity
-from .checkpoint_antigravity import ProcessIdentityAntigravity, current_process_identity_antigravity
+from .artifacts_antigravity import (
+    canonical_json_bytes_antigravity,
+    fsync_directory_antigravity,
+    write_create_only_antigravity,
+)
+from .checkpoint_antigravity import (
+    CommittedPrefixAuthorityAntigravity,
+    ProcessIdentityAntigravity,
+    current_process_identity_antigravity,
+)
 from .config_antigravity import FROZEN_CONFIG
 
 
@@ -135,6 +143,7 @@ class ProgressWriterAntigravity:
         checkpoint_path: Path,
         elapsed_offset: float = 0.0,
         counters: Mapping[str, int] | None = None,
+        _exp445_diagnostic_log_failures_antigravity: bool = False,
     ) -> None:
         if type(total) is not int or total < 1:
             raise ValueError("progress total is invalid")
@@ -174,6 +183,10 @@ class ProgressWriterAntigravity:
         self._counters = initial
         self._latest_error: str | None = None
         self._local_owner_pid = os.getpid()
+        if type(_exp445_diagnostic_log_failures_antigravity) is not bool:
+            raise ValueError("progress diagnostic log policy is invalid")
+        self._exp445_diagnostic_log_failures_antigravity = _exp445_diagnostic_log_failures_antigravity
+        self._terminal_log_failure_antigravity = False
         self._ensure_append_files_antigravity()
 
     @classmethod
@@ -187,6 +200,7 @@ class ProgressWriterAntigravity:
         process: ProcessIdentityAntigravity | None = None,
         checkpoint_path: Path | None = None,
         backend: str = "cpu",
+        _exp445_diagnostic_log_failures_antigravity: bool = False,
     ) -> "ProgressWriterAntigravity":
         attempt = Path(attempt_path)
         if process is None:
@@ -210,11 +224,16 @@ class ProgressWriterAntigravity:
         writer = cls(
             attempt, total=total, process=process,
             checkpoint_path=checkpoint_path or attempt / "checkpoint_antigravity/state_antigravity.json",
+            _exp445_diagnostic_log_failures_antigravity=_exp445_diagnostic_log_failures_antigravity,
         )
         writer._write_pid_antigravity(True)
         writer._write_progress_antigravity()
-        writer._append_event_antigravity("start", "initializing", {"completed": 0})
-        writer._append_text_antigravity(f"시작 pid={process.pid} 완료=0/{total}\n")
+        writer._append_or_record_log_failure_antigravity(
+            lambda: writer._append_event_antigravity("start", "initializing", {"completed": 0})
+        )
+        writer._append_or_record_log_failure_antigravity(
+            lambda: writer._append_text_antigravity(f"시작 pid={process.pid} 완료=0/{total}\n")
+        )
         return writer
 
     def _ensure_append_files_antigravity(self) -> None:
@@ -325,6 +344,37 @@ class ProgressWriterAntigravity:
         finally:
             os.close(descriptor)
 
+    def _append_or_record_log_failure_antigravity(
+        self, operation: Callable[[], None], *, terminal: bool = False,
+    ) -> None:
+        """Keep Exp445 core authority durable when its diagnostic logs are unavailable."""
+        try:
+            operation()
+        except BaseException as error:
+            if not self._exp445_diagnostic_log_failures_antigravity:
+                raise
+            self._terminal_log_failure_antigravity = self._terminal_log_failure_antigravity or terminal
+            marker = self.attempt_path / "log_failure_antigravity.json"
+            if marker.exists() or marker.is_symlink():
+                return
+            try:
+                write_create_only_antigravity(
+                    marker,
+                    canonical_json_bytes_antigravity({
+                        "schema": "exp445.log_failure.v1",
+                        "stage": self._stage,
+                        "completed": self._counters["completed"],
+                        "error": {
+                            "type": type(error).__name__,
+                            "message": str(error) or type(error).__name__,
+                        },
+                    }),
+                )
+            except BaseException:
+                # Diagnostic persistence must never replace the original
+                # compute/progress failure or block core JSON/PID closeout.
+                pass
+
     def _require_active_antigravity(self) -> None:
         if os.getpid() != self._local_owner_pid:
             raise ValueError("progress mutation requires the parent owner process")
@@ -376,8 +426,8 @@ class ProgressWriterAntigravity:
         self._backend = backend
         self._stage = "candidate"
         self._write_progress_antigravity()
-        self._append_event_antigravity("candidate_start", self._stage, {"dataset": dataset, "candidate_index": candidate_index})
-        self._append_text_antigravity(f"후보 시작 dataset={dataset} index={candidate_index} train={train_count} test={test_count} raw_length={raw_length}\n")
+        self._append_or_record_log_failure_antigravity(lambda: self._append_event_antigravity("candidate_start", self._stage, {"dataset": dataset, "candidate_index": candidate_index}))
+        self._append_or_record_log_failure_antigravity(lambda: self._append_text_antigravity(f"후보 시작 dataset={dataset} index={candidate_index} train={train_count} test={test_count} raw_length={raw_length}\n"))
 
     def start_view_antigravity(self, *, view_index: int, view_count: int, excluded_count: int) -> None:
         self._require_active_antigravity()
@@ -391,8 +441,8 @@ class ProgressWriterAntigravity:
         self._excluded_count = excluded_count
         self._stage = "view"
         self._write_progress_antigravity()
-        self._append_event_antigravity("view_start", self._stage, {"view_index": view_index, "view_count": view_count, "excluded_count": excluded_count})
-        self._append_text_antigravity(f"뷰 시작 dataset={self._current_dataset} view={view_index}/{view_count} 제외={excluded_count}\n")
+        self._append_or_record_log_failure_antigravity(lambda: self._append_event_antigravity("view_start", self._stage, {"view_index": view_index, "view_count": view_count, "excluded_count": excluded_count}))
+        self._append_or_record_log_failure_antigravity(lambda: self._append_text_antigravity(f"뷰 시작 dataset={self._current_dataset} view={view_index}/{view_count} 제외={excluded_count}\n"))
 
     def complete_candidate_antigravity(
         self,
@@ -429,15 +479,13 @@ class ProgressWriterAntigravity:
         self._excluded_count = None
         self._stage = "running"
         self._write_progress_antigravity()
-        self._append_event_antigravity("candidate_complete", self._stage, {"dataset": dataset, "status": status})
-        self._append_text_antigravity(f"후보 완료 dataset={dataset} status={status} 완료={self._counters['completed']}/{self.total}\n")
+        self._append_or_record_log_failure_antigravity(lambda: self._append_event_antigravity("candidate_complete", self._stage, {"dataset": dataset, "status": status}))
+        self._append_or_record_log_failure_antigravity(lambda: self._append_text_antigravity(f"후보 완료 dataset={dataset} status={status} 완료={self._counters['completed']}/{self.total}\n"))
 
     def reconcile_committed_success_antigravity(
         self,
-        sequence: int,
+        authority: CommittedPrefixAuthorityAntigravity,
         *,
-        record_sha256: str,
-        checkpoint_root: Path,
         dataset: str,
         dimensions: Mapping[str, int],
         abstention: bool = False,
@@ -449,10 +497,11 @@ class ProgressWriterAntigravity:
         changed in-memory counters in a failed normal completion call.
         """
         self._require_active_antigravity()
-        if type(sequence) is not int or sequence < 0 or sequence >= self.total:
-            raise ValueError("progress committed sequence is invalid")
-        if type(record_sha256) is not str or _SHA256_ANTIGRAVITY.fullmatch(record_sha256) is None:
-            raise ValueError("progress committed record hash is invalid")
+        if type(authority) is not CommittedPrefixAuthorityAntigravity:
+            raise ValueError("progress committed checkpoint authority is invalid")
+        sequence = authority.sequence
+        if sequence >= self.total or authority.total_units != self.total or authority.process != self.process:
+            raise ValueError("progress committed checkpoint authority is invalid")
         if type(dataset) is not str or not dataset:
             raise ValueError("progress committed dataset is invalid")
         if not isinstance(dimensions, Mapping) or set(dimensions) != {
@@ -461,41 +510,11 @@ class ProgressWriterAntigravity:
             raise ValueError("progress committed dimensions are invalid")
         for name, value in dimensions.items():
             _exact_nonnegative_antigravity(value, name)
-        checkpoint = Path(checkpoint_root)
-        state_path = checkpoint / "state_antigravity.json"
-        record_path = checkpoint / "records_antigravity" / f"{sequence:04d}_record_antigravity.json"
-        if checkpoint.is_symlink() or not checkpoint.is_dir() or record_path.is_symlink() or not record_path.is_file():
-            raise ValueError("progress committed checkpoint authority is invalid")
-        try:
-            record_bytes = record_path.read_bytes()
-            record_payload = json.loads(record_bytes)
-            state = json.loads(state_path.read_text())
-        except (OSError, ValueError, json.JSONDecodeError) as error:
-            raise ValueError("progress committed checkpoint authority is invalid") from error
         if (
-            not isinstance(record_payload, Mapping)
-            or canonical_json_bytes_antigravity(record_payload) != record_bytes
-            or set(record_payload) != {"sequence", "result"}
-            or record_payload["sequence"] != sequence
-            or not isinstance(record_payload["result"], Mapping)
-            or hashlib.sha256(record_bytes).hexdigest() != record_sha256
-            or not isinstance(state, Mapping)
-            or canonical_json_bytes_antigravity(state) != state_path.read_bytes()
-            or state.get("total_units") != self.total
-            or type(state.get("completed_units")) is not int
-            or state["completed_units"] < sequence + 1
-            or state.get("status") not in {"running", "complete"}
-            or not isinstance(state.get("process"), Mapping)
-            or dict(state["process"]) != self.process.to_payload_antigravity()
-            or not isinstance(state.get("record_sha256_prefix"), list)
-            or len(state["record_sha256_prefix"]) < sequence + 1
-            or state["record_sha256_prefix"][sequence] != record_sha256
-        ):
-            raise ValueError("progress committed checkpoint authority is invalid")
-        prefix = state["record_sha256_prefix"]
-        if (
-            any(type(item) is not str or _SHA256_ANTIGRAVITY.fullmatch(item) is None for item in prefix)
-            or state.get("payload_sha256") != hashlib.sha256(canonical_json_bytes_antigravity(prefix)).hexdigest()
+            authority.result.candidate.dataset != dataset
+            or authority.result.candidate.original_rank != sequence + 1
+            or len(authority.record_sha256_prefix) != sequence + 1
+            or authority.record_sha256_prefix[-1] != authority.record_sha256
         ):
             raise ValueError("progress committed checkpoint authority is invalid")
         persisted = _read_canonical_antigravity(self.progress_path)
@@ -521,6 +540,13 @@ class ProgressWriterAntigravity:
             or counters["abstention"] > counters["success"]
         ):
             raise ValueError("progress committed recovery authority is invalid")
+        for name in (
+            "train_count", "train_missing", "train_used", "train_excluded",
+            "test_count", "test_rows", "raw_length", "target_length",
+        ):
+            value = persisted[name]
+            if value is not None and (type(value) is not int or value < 0):
+                raise ValueError("progress committed recovery authority is invalid")
         for name in ("throughput", "elapsed_seconds", "eta_seconds"):
             value = persisted[name]
             if type(value) not in (int, float) or not math.isfinite(float(value)) or float(value) < 0:
@@ -571,14 +597,14 @@ class ProgressWriterAntigravity:
         self._excluded_count = None
         self._stage = "running"
         self._write_progress_antigravity()
-        self._append_event_antigravity(
+        self._append_or_record_log_failure_antigravity(lambda: self._append_event_antigravity(
             "committed_success_reconciled", self._stage,
-            {"dataset": dataset, "candidate_index": sequence, "record_sha256": record_sha256},
-        )
-        self._append_text_antigravity(
-            f"커밋 성공 복구 dataset={dataset} index={sequence} sha256={record_sha256} "
+            {"dataset": dataset, "candidate_index": sequence, "record_sha256": authority.record_sha256},
+        ))
+        self._append_or_record_log_failure_antigravity(lambda: self._append_text_antigravity(
+            f"커밋 성공 복구 dataset={dataset} index={sequence} sha256={authority.record_sha256} "
             f"완료={self._counters['completed']}/{self.total}\n"
-        )
+        ))
 
     @classmethod
     def close_setup_failure_antigravity(
@@ -667,7 +693,7 @@ class ProgressWriterAntigravity:
             self._counters["success"] += 1
         self._stage = "resuming"
         self._write_progress_antigravity()
-        self._append_event_antigravity(
+        self._append_or_record_log_failure_antigravity(lambda: self._append_event_antigravity(
             "orphan_reconciled",
             self._stage,
             {
@@ -676,12 +702,12 @@ class ProgressWriterAntigravity:
                 "status": status,
                 "record_sha256": record_sha256,
             },
-        )
-        self._append_text_antigravity(
+        ))
+        self._append_or_record_log_failure_antigravity(lambda: self._append_text_antigravity(
             f"고아 레코드 복구 dataset={dataset} index={candidate_index} "
             f"status={status} sha256={record_sha256} "
             f"완료={self._counters['completed']}/{self.total}\n"
-        )
+        ))
 
     def close_antigravity(self, status: str, latest_error: str | None = None) -> None:
         if os.getpid() != self._local_owner_pid:
@@ -704,8 +730,8 @@ class ProgressWriterAntigravity:
         self._excluded_count = None
         self._write_progress_antigravity()
         self._write_pid_antigravity(False)
-        self._append_event_antigravity("terminal", status, {"latest_error": self._latest_error})
-        self._append_text_antigravity(f"종료 stage={status} 오류={self._latest_error or '-'} 완료={self._counters['completed']}/{self.total}\n")
+        self._append_or_record_log_failure_antigravity(lambda: self._append_event_antigravity("terminal", status, {"latest_error": self._latest_error}), terminal=True)
+        self._append_or_record_log_failure_antigravity(lambda: self._append_text_antigravity(f"종료 stage={status} 오류={self._latest_error or '-'} 완료={self._counters['completed']}/{self.total}\n"), terminal=True)
 
     @classmethod
     def open_interrupted(
@@ -887,6 +913,10 @@ class ProgressWriterAntigravity:
     @property
     def stage_antigravity(self) -> str:
         return self._stage
+
+    @property
+    def terminal_log_failure_antigravity(self) -> bool:
+        return self._terminal_log_failure_antigravity
 
 
 __all__ = ["ProgressWriterAntigravity"]

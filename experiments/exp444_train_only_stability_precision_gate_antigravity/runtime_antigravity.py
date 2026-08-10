@@ -716,6 +716,9 @@ def _execute_runtime_antigravity(
                 process=process,
                 checkpoint_path=checkpoint_root / "state_antigravity.json",
                 backend="cpu",
+                _exp445_diagnostic_log_failures_antigravity=(
+                    profile is EXP445_PROFILE_ANTIGRAVITY
+                ),
             )
         except BaseException as setup_error:
             if profile is EXP445_PROFILE_ANTIGRAVITY and attempt is not None:
@@ -891,9 +894,7 @@ def _execute_runtime_antigravity(
                 if predecessor is None or store.completed_count_antigravity != sequence + 1:
                     raise
                 writer.reconcile_committed_success_antigravity(
-                    sequence,
-                    record_sha256=store.record_sha256_prefix_antigravity[-1],
-                    checkpoint_root=checkpoint_root,
+                    store.committed_prefix_authority_antigravity(sequence),
                     dataset=candidate.dataset,
                     dimensions=_dimensions_antigravity(candidate),
                     abstention=result.lane == "unstable_review",
@@ -929,6 +930,8 @@ def _execute_runtime_antigravity(
         if writer is None:
             raise ValueError("Exp444 active progress writer is unavailable")
         writer.close_antigravity("complete")
+        if profile is EXP445_PROFILE_ANTIGRAVITY and writer.terminal_log_failure_antigravity:
+            raise RuntimeError("Exp445 diagnostic log failure blocks clean success")
         return _outcome_antigravity(
             attempt, store, writer, status="complete", label_access_count=label_access_count,
             resumed=resumed, finalization_only=finalization_only,

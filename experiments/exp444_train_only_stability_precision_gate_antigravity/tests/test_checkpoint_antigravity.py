@@ -9,6 +9,9 @@ import tempfile
 import unittest
 from unittest import mock
 
+from experiments.exp444_train_only_stability_precision_gate_antigravity.artifacts_antigravity import (
+    canonical_json_bytes_antigravity,
+)
 from experiments.exp444_train_only_stability_precision_gate_antigravity.config_antigravity import (
     FROZEN_CONFIG,
     scientific_config_sha256_antigravity,
@@ -57,6 +60,59 @@ def _process_antigravity(pid: int = 41001, start: str = "start-A"):
 
 
 class Exp444CheckpointAntigravityTests(unittest.TestCase):
+    def test_committed_prefix_authority_pins_exact_checkpoint_bytes_antigravity(self) -> None:
+        """Progress recovery must receive a checkpoint-owned immutable prefix, not loose paths."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import (
+            CommittedPrefixAuthorityAntigravity,
+            Exp444CheckpointStoreAntigravity,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="exp445_committed_prefix_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            store = Exp444CheckpointStoreAntigravity.create(root, _context_antigravity(), _process_antigravity())
+            store.commit_antigravity(0, _result_antigravity(0))
+            authority = store.committed_prefix_authority_antigravity(0)
+            self.assertIs(type(authority), CommittedPrefixAuthorityAntigravity)
+            self.assertEqual(
+                (authority.sequence, authority.total_units, authority.record_sha256_prefix),
+                (0, 30, store.record_sha256_prefix_antigravity),
+            )
+            self.assertEqual(authority.result, _result_antigravity(0))
+
+            state_path = root / "state_antigravity.json"
+            state = json.loads(state_path.read_text())
+            state["unexpected"] = "forged"
+            state_path.write_bytes(canonical_json_bytes_antigravity(state))
+            with self.assertRaisesRegex(ValueError, "authority|schema"):
+                store.committed_prefix_authority_antigravity(0)
+
+    def test_committed_prefix_authority_rejects_forged_state_and_namespace_antigravity(self) -> None:
+        """No symlink, extra entry, forged state, or changed record can become recovery authority."""
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
+
+        def mutate_state(path: Path, mutation) -> None:
+            payload = json.loads(path.read_text())
+            mutation(payload)
+            path.write_bytes(canonical_json_bytes_antigravity(payload))
+
+        cases = (
+            ("extra_state_key", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"extra": 1}))),
+            ("forged_completed", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"completed_units": 0}))),
+            ("forged_context", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"context_sha256": "0" * 64}))),
+            ("forged_error", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"status": "error", "error_count": 1, "error": {"type": "RuntimeError", "message": "forged"}}))),
+            ("forged_prefix", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"record_sha256_prefix": ["0" * 64], "payload_sha256": hashlib.sha256(canonical_json_bytes_antigravity(["0" * 64])).hexdigest()}))),
+            ("extra_root_entry", lambda root: (root / "extra_antigravity.json").write_text("{}\n")),
+            ("record_symlink", lambda root: ((root / "records_antigravity/0000_record_antigravity.json").unlink(), (root / "records_antigravity/0000_record_antigravity.json").symlink_to(root / "context_antigravity.json"))),
+        )
+        for name, mutate in cases:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(prefix="exp445_committed_prefix_attack_antigravity_") as directory:
+                root = Path(directory) / "checkpoint_antigravity"
+                store = Exp444CheckpointStoreAntigravity.create(root, _context_antigravity(), _process_antigravity())
+                store.commit_antigravity(0, _result_antigravity(0))
+                mutate(root)
+                with self.assertRaisesRegex(ValueError, "authority|changed|invalid"):
+                    store.committed_prefix_authority_antigravity(0)
+
     def test_resume_rejects_a_different_reviewed_commit_before_checkpoint_mutation_antigravity(self) -> None:
         """A different reviewed commit cannot take ownership of a valid interrupted checkpoint."""
         from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity

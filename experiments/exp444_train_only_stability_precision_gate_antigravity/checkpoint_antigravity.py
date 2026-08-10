@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 import re
 import signal
+import stat
 from typing import Any
 
 from .artifacts_antigravity import (
@@ -38,6 +39,15 @@ _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _RECORD = re.compile(r"^(\d{4})_record_antigravity\.json$")
 _TERMINAL = frozenset({"error", "failed", "complete"})
 _RESUMABLE = frozenset({"interrupted", "interrupted_resumable"})
+_CHECKPOINT_STATE_KEYS_ANTIGRAVITY = frozenset({
+    "context_sha256", "status", "completed_units", "total_units", "error_count",
+    "current_unit", "current_view", "payload_sha256", "record_sha256_prefix",
+    "process", "error", "updated_at",
+})
+_CHECKPOINT_DIRECTORY_FLAGS_ANTIGRAVITY = (
+    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+)
+_CHECKPOINT_LEAF_FLAGS_ANTIGRAVITY = os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
 
 
 def _utc_now_antigravity() -> str:
@@ -164,6 +174,127 @@ class CheckpointResumeInspectionAntigravity:
     @property
     def orphan_is_error_antigravity(self) -> bool:
         return self.orphan_error_type is not None
+
+
+@dataclass(frozen=True)
+class CommittedPrefixAuthorityAntigravity:
+    """Exact immutable checkpoint prefix handed to Exp445 progress recovery only."""
+
+    sequence: int
+    record_sha256: str
+    record_sha256_prefix: tuple[str, ...]
+    context_sha256: str
+    total_units: int
+    status: str
+    process: ProcessIdentityAntigravity
+    result: CandidateStabilityResultAntigravity
+
+    def __post_init__(self) -> None:
+        if type(self.sequence) is not int or self.sequence < 0:
+            raise ValueError("committed prefix sequence is invalid")
+        if type(self.record_sha256) is not str or _SHA256.fullmatch(self.record_sha256) is None:
+            raise ValueError("committed prefix record SHA256 is invalid")
+        if (
+            type(self.record_sha256_prefix) is not tuple
+            or len(self.record_sha256_prefix) != self.sequence + 1
+            or any(type(value) is not str or _SHA256.fullmatch(value) is None for value in self.record_sha256_prefix)
+            or self.record_sha256_prefix[-1] != self.record_sha256
+        ):
+            raise ValueError("committed prefix SHA256 values are invalid")
+        if type(self.context_sha256) is not str or _SHA256.fullmatch(self.context_sha256) is None:
+            raise ValueError("committed prefix context SHA256 is invalid")
+        if type(self.total_units) is not int or self.total_units < self.sequence + 1:
+            raise ValueError("committed prefix total is invalid")
+        if self.status not in {"running", "complete"}:
+            raise ValueError("committed prefix status is invalid")
+        if type(self.process) is not ProcessIdentityAntigravity:
+            raise ValueError("committed prefix process is invalid")
+        if type(self.result) is not CandidateStabilityResultAntigravity:
+            raise ValueError("committed prefix result is invalid")
+
+
+def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
+    return (
+        info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size,
+        info.st_mtime_ns, info.st_ctime_ns,
+    )
+
+
+def _open_pinned_directory_antigravity(
+    parent_fd: int | None, name: str | os.PathLike[str],
+) -> tuple[int, tuple[int, int, int, int, int, int, int]]:
+    try:
+        before = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        descriptor = os.open(name, _CHECKPOINT_DIRECTORY_FLAGS_ANTIGRAVITY, dir_fd=parent_fd)
+    except OSError as error:
+        raise ValueError("checkpoint committed authority directory is invalid") from error
+    try:
+        after = os.fstat(descriptor)
+        if not stat.S_ISDIR(before.st_mode) or _identity_antigravity(before) != _identity_antigravity(after):
+            raise ValueError("checkpoint committed authority directory changed")
+        return descriptor, _identity_antigravity(after)
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _assert_pinned_directory_antigravity(
+    parent_fd: int | None, name: str | os.PathLike[str], descriptor: int,
+    expected: tuple[int, int, int, int, int, int, int],
+) -> None:
+    try:
+        opened = os.fstat(descriptor)
+        current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    except OSError as error:
+        raise ValueError("checkpoint committed authority directory changed") from error
+    if (
+        not stat.S_ISDIR(opened.st_mode) or not stat.S_ISDIR(current.st_mode)
+        or _identity_antigravity(opened) != expected or _identity_antigravity(current) != expected
+    ):
+        raise ValueError("checkpoint committed authority directory changed")
+
+
+def _read_pinned_canonical_leaf_antigravity(
+    directory_fd: int, name: str,
+) -> tuple[Mapping[str, object], bytes]:
+    try:
+        before = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        descriptor = os.open(name, _CHECKPOINT_LEAF_FLAGS_ANTIGRAVITY, dir_fd=directory_fd)
+    except OSError as error:
+        raise ValueError("checkpoint committed authority leaf is invalid") from error
+    try:
+        opened = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(before.st_mode) or before.st_nlink != 1
+            or _identity_antigravity(before) != _identity_antigravity(opened)
+        ):
+            raise ValueError("checkpoint committed authority leaf changed")
+        chunks: list[bytes] = []
+        while True:
+            chunk = os.read(descriptor, 1 << 20)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        encoded = b"".join(chunks)
+        after = os.fstat(descriptor)
+        current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(after.st_mode) or after.st_nlink != 1
+            or not stat.S_ISREG(current.st_mode) or current.st_nlink != 1
+            or _identity_antigravity(after) != _identity_antigravity(opened)
+            or _identity_antigravity(current) != _identity_antigravity(opened)
+        ):
+            raise ValueError("checkpoint committed authority leaf changed")
+        payload = parse_canonical_json_bytes_antigravity(encoded)
+        if not isinstance(payload, Mapping) or canonical_json_bytes_antigravity(payload) != encoded:
+            raise ValueError("checkpoint committed authority leaf is not canonical")
+        return payload, encoded
+    except ValueError:
+        raise
+    except (OSError, UnicodeDecodeError) as error:
+        raise ValueError("checkpoint committed authority leaf is invalid") from error
+    finally:
+        os.close(descriptor)
 
 
 def current_process_identity_antigravity() -> ProcessIdentityAntigravity:
@@ -389,6 +520,100 @@ class Exp444CheckpointStoreAntigravity:
     @property
     def finalization_only_antigravity(self) -> bool:
         return self._finalization_only
+
+    def committed_prefix_authority_antigravity(
+        self, sequence: int,
+    ) -> CommittedPrefixAuthorityAntigravity:
+        """Return a descriptor-pinned successful prefix for Exp445 recovery.
+
+        This deliberately re-reads every authoritative checkpoint byte through
+        no-follow descriptors instead of trusting caller-supplied paths.  It
+        is read-only and compares the durable state with this store's complete
+        in-memory prefix before handing any value to progress recovery.
+        """
+        if type(sequence) is not int or sequence < 0 or sequence >= len(self._prefix):
+            raise ValueError("checkpoint committed authority sequence is invalid")
+        if self._status not in {"running", "complete"} or self._error_count != 0:
+            raise ValueError("checkpoint committed authority status is invalid")
+        expected_context = _context_payload_antigravity(self.context)
+        root_fd, root_identity = _open_pinned_directory_antigravity(None, self.root)
+        try:
+            try:
+                if tuple(sorted(os.listdir(root_fd))) != (
+                    "context_antigravity.json", "records_antigravity", "state_antigravity.json",
+                ):
+                    raise ValueError("checkpoint committed authority inventory is invalid")
+            except OSError as error:
+                raise ValueError("checkpoint committed authority inventory is invalid") from error
+            context_payload, context_bytes = _read_pinned_canonical_leaf_antigravity(
+                root_fd, "context_antigravity.json"
+            )
+            if dict(context_payload) != expected_context:
+                raise ValueError("checkpoint committed authority context changed")
+            context_sha = _context_sha_antigravity(context_bytes)
+            state, _state_bytes = _read_pinned_canonical_leaf_antigravity(
+                root_fd, "state_antigravity.json"
+            )
+            if set(state) != _CHECKPOINT_STATE_KEYS_ANTIGRAVITY:
+                raise ValueError("checkpoint committed authority state schema is invalid")
+            prefix_payload = state["record_sha256_prefix"]
+            if (
+                state["context_sha256"] != context_sha
+                or state["status"] != self._status
+                or state["total_units"] != self.context.total_units
+                or state["completed_units"] != sequence + 1
+                or state["completed_units"] != len(self._prefix)
+                or type(prefix_payload) is not list
+                or tuple(prefix_payload) != tuple(self._prefix)
+                or state["payload_sha256"] != _payload_hash_antigravity(tuple(self._prefix))
+                or state["process"] != self.process.to_payload_antigravity()
+                or state["error_count"] != 0
+                or state["error"] is not None
+                or state["current_unit"] is not None
+                or state["current_view"] is not None
+                or type(state["updated_at"]) is not str
+            ):
+                raise ValueError("checkpoint committed authority state changed")
+            try:
+                datetime.fromisoformat(state["updated_at"].replace("Z", "+00:00"))
+            except ValueError as error:
+                raise ValueError("checkpoint committed authority timestamp is invalid") from error
+            if (
+                any(type(value) is not str or _SHA256.fullmatch(value) is None for value in prefix_payload)
+                or (state["status"] == "complete") != (len(self._prefix) == self.context.total_units)
+            ):
+                raise ValueError("checkpoint committed authority state changed")
+            records_fd, records_identity = _open_pinned_directory_antigravity(root_fd, "records_antigravity")
+            try:
+                expected_names = tuple(
+                    f"{index:04d}_record_antigravity.json" for index in range(sequence + 1)
+                )
+                if tuple(sorted(os.listdir(records_fd))) != expected_names:
+                    raise ValueError("checkpoint committed authority record inventory is invalid")
+                result: CandidateStabilityResultAntigravity | None = None
+                for index, expected_sha in enumerate(self._prefix):
+                    record, encoded = _read_pinned_canonical_leaf_antigravity(
+                        records_fd, f"{index:04d}_record_antigravity.json"
+                    )
+                    if _sha256_bytes_antigravity(encoded) != expected_sha:
+                        raise ValueError("checkpoint committed authority record changed")
+                    parsed = _validate_record_payload_antigravity(index, record, encoded)
+                    if parsed is None:
+                        raise ValueError("checkpoint committed authority record is not a success")
+                    if index == sequence:
+                        result = parsed
+                _assert_pinned_directory_antigravity(root_fd, "records_antigravity", records_fd, records_identity)
+                if result is None:
+                    raise AssertionError("checkpoint committed authority result is unavailable")
+            finally:
+                os.close(records_fd)
+            _assert_pinned_directory_antigravity(None, self.root, root_fd, root_identity)
+            return CommittedPrefixAuthorityAntigravity(
+                sequence, self._prefix[sequence], tuple(self._prefix), context_sha,
+                self.context.total_units, self._status, self.process, result,
+            )
+        finally:
+            os.close(root_fd)
 
     def _require_writable_antigravity(self) -> None:
         if os.getpid() != self._local_owner_pid:
@@ -636,7 +861,7 @@ class Exp444CheckpointStoreAntigravity:
 
 
 __all__ = [
-    "CheckpointResumeInspectionAntigravity", "Exp444CheckpointStoreAntigravity",
+    "CheckpointResumeInspectionAntigravity", "CommittedPrefixAuthorityAntigravity", "Exp444CheckpointStoreAntigravity",
     "ProcessIdentityAntigravity",
     "current_process_identity_antigravity",
 ]
