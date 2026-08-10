@@ -157,6 +157,26 @@ class Exp445LifecycleAntigravityTests(unittest.TestCase):
             progress = json.loads((attempt / "progress_antigravity.json").read_text())
             self.assertEqual((progress["active"], progress["stage"]), (False, "error"))
 
+    def test_progress_setup_failure_reconciles_checkpoint_to_terminal_error_antigravity(self) -> None:
+        """Progress initialization failure must not leave its already-created checkpoint running."""
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        inputs = _inputs_antigravity(); authority = self._authority_antigravity(inputs)
+        with tempfile.TemporaryDirectory(prefix="exp445_progress_setup_failure_antigravity_") as directory:
+            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"
+            profile = self._test_profile_antigravity(lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY, root)
+            with (
+                mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY), mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99107, "exp445-test")), mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority), mock.patch.object(ProgressWriterAntigravity, "create", side_effect=OSError("progress setup fault")), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+            ):
+                with self.assertRaisesRegex(OSError, "progress setup fault"):
+                    lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)
+            attempt = root / "attempts_antigravity/attempt_0000_antigravity"; checkpoint = attempt / "checkpoint_antigravity"
+            self.assertEqual(json.loads((checkpoint / "state_antigravity.json").read_text())["status"], "error")
+            progress = json.loads((attempt / "progress_antigravity.json").read_text())
+            self.assertEqual((progress["active"], progress["stage"], progress["completed"], progress["error"]), (False, "error", 1, 1))
+
     def test_nonfinal_progress_fault_reconciles_success_then_writes_exact_next_error_antigravity(self) -> None:
         """A durable success cannot be followed by a stale progress prefix."""
         from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
