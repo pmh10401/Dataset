@@ -66,8 +66,11 @@ class Exp444PredecessorAuthorityAntigravityTests(unittest.TestCase):
                 return original_open(path, flags, mode, dir_fd=dir_fd)
 
             with mock.patch.object(predecessor.os, "open", side_effect=read_only_open):
-                first = predecessor.verify_exp444_predecessor_antigravity()
-                second = predecessor.verify_exp444_predecessor_antigravity()
+                with mock.patch.object(predecessor.os, "rename", side_effect=AssertionError("rename is forbidden")), mock.patch.object(
+                    predecessor.os, "replace", side_effect=AssertionError("replace is forbidden")
+                ), mock.patch.object(predecessor.os, "unlink", side_effect=AssertionError("unlink is forbidden")):
+                    first = predecessor.verify_exp444_predecessor_antigravity()
+                    second = predecessor.verify_exp444_predecessor_antigravity()
 
             self.assertEqual(first, second)
             self.assertEqual(first.attempt_root, root / "attempts_antigravity/attempt_0000_antigravity")
@@ -75,6 +78,29 @@ class Exp444PredecessorAuthorityAntigravityTests(unittest.TestCase):
             self.assertTrue(observed_flags)
             self.assertEqual(_tree_bytes_antigravity(root), before)
             self.assertEqual(hashlib.sha256(database.read_bytes()).hexdigest(), database_before)
+
+    def test_rejects_semantic_state_prefix_and_aggregate_drift_antigravity(self) -> None:
+        mutations = (
+            ("nonterminal", lambda state: state.update(status="running")),
+            ("error", lambda state: state.update(error_count=1, error="preserved failure")),
+            ("short_prefix", lambda state: state.update(record_sha256_prefix=state["record_sha256_prefix"][:-1])),
+            ("reordered_prefix", lambda state: state.update(record_sha256_prefix=list(reversed(state["record_sha256_prefix"])))),
+            ("aggregate", lambda state: state.update(payload_sha256="0" * 64)),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name), _fixture_authority_antigravity() as (root, _, predecessor):
+                state_path = root / "attempts_antigravity/attempt_0000_antigravity/checkpoint_antigravity/state_antigravity.json"
+                state = json.loads(state_path.read_text(encoding="utf-8"))
+                mutate(state)
+                state_bytes = _canonical_json_antigravity(state)
+                state_path.write_bytes(state_bytes)
+                before_failure = _tree_bytes_antigravity(root)
+                hashes = dict(predecessor.EXP444_TERMINAL_SHA256_ANTIGRAVITY)
+                hashes["checkpoint/state_antigravity.json"] = hashlib.sha256(state_bytes).hexdigest()
+                with mock.patch.object(predecessor, "EXP444_TERMINAL_SHA256_ANTIGRAVITY", hashes):
+                    with self.assertRaises(ValueError):
+                        predecessor.verify_exp444_predecessor_antigravity()
+                self.assertEqual(_tree_bytes_antigravity(root), before_failure)
 
     def test_rejects_terminal_state_context_and_runtime_binding_drift_antigravity(self) -> None:
         mutations = (
@@ -159,6 +185,36 @@ class Exp444PredecessorAuthorityAntigravityTests(unittest.TestCase):
                     predecessor.verify_exp444_predecessor_antigravity()
             self.assertTrue(replaced)
 
+        with _fixture_authority_antigravity() as (root, _, predecessor):
+            attempt = root / "attempts_antigravity/attempt_0000_antigravity"
+            record = attempt / "checkpoint_antigravity/records_antigravity/0000_record_antigravity.json"
+            original = record.read_bytes()
+            writer = os.open(record, os.O_WRONLY)
+            original_read = predecessor.os.read
+            overwritten = False
+            after_overwrite: dict[str, str] | None = None
+
+            def overwrite_after_read(fd: int, size: int) -> bytes:
+                nonlocal after_overwrite, overwritten
+                payload = original_read(fd, size)
+                if not overwritten and os.fstat(fd).st_ino == record.stat().st_ino:
+                    os.lseek(writer, 0, os.SEEK_SET)
+                    os.write(writer, b"X" + original[1:])
+                    os.fsync(writer)
+                    overwritten = True
+                    after_overwrite = _tree_bytes_antigravity(root)
+                return payload
+
+            try:
+                with mock.patch.object(predecessor.os, "read", side_effect=overwrite_after_read):
+                    with self.assertRaises(ValueError):
+                        predecessor.verify_exp444_predecessor_antigravity()
+            finally:
+                os.close(writer)
+            self.assertTrue(overwritten)
+            self.assertIsNotNone(after_overwrite)
+            self.assertEqual(_tree_bytes_antigravity(root), after_overwrite)
+
     def test_rejects_inventory_prefix_lifecycle_publication_and_database_drift_antigravity(self) -> None:
         with _fixture_authority_antigravity() as (root, database, predecessor):
             attempt = root / "attempts_antigravity/attempt_0000_antigravity"
@@ -181,3 +237,22 @@ class Exp444PredecessorAuthorityAntigravityTests(unittest.TestCase):
             os.link(database, database.with_name("linked_database_antigravity.db"))
             with self.assertRaises(ValueError):
                 predecessor.verify_exp444_predecessor_antigravity()
+
+    def test_rechecks_database_link_count_immediately_before_return_antigravity(self) -> None:
+        with _fixture_authority_antigravity() as (root, database, predecessor):
+            original_check = predecessor._assert_source_database_antigravity
+            calls = 0
+
+            def link_before_final_check() -> None:
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    os.link(database, database.with_name("late_database_link_antigravity.db"))
+                original_check()
+
+            before_failure = _tree_bytes_antigravity(root)
+            with mock.patch.object(predecessor, "_assert_source_database_antigravity", side_effect=link_before_final_check):
+                with self.assertRaises(ValueError):
+                    predecessor.verify_exp444_predecessor_antigravity()
+            self.assertEqual(calls, 2)
+            self.assertEqual(_tree_bytes_antigravity(root), before_failure)

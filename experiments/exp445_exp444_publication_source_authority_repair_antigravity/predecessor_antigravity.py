@@ -46,11 +46,20 @@ class Exp444PredecessorAuthorityAntigravity:
     record_prefix_payload_sha256: str
 
 
-def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int]:
-    return info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode), info.st_nlink, info.st_size
+def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
+    """Return every metadata field that can expose a same-inode overwrite."""
+    return (
+        info.st_dev,
+        info.st_ino,
+        info.st_mode,
+        info.st_nlink,
+        info.st_size,
+        info.st_mtime_ns,
+        info.st_ctime_ns,
+    )
 
 
-def _checked_directory_antigravity(parent_fd: int | None, name: str | os.PathLike[str]) -> tuple[int, tuple[int, int, int, int, int]]:
+def _checked_directory_antigravity(parent_fd: int | None, name: str | os.PathLike[str]) -> tuple[int, tuple[int, int, int, int, int, int, int]]:
     try:
         before = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
         descriptor = os.open(name, _DIRECTORY_FLAGS_ANTIGRAVITY, dir_fd=parent_fd)
@@ -66,7 +75,18 @@ def _checked_directory_antigravity(parent_fd: int | None, name: str | os.PathLik
         raise
 
 
-def _assert_directory_antigravity(parent_fd: int | None, name: str | os.PathLike[str], expected: tuple[int, int, int, int, int]) -> None:
+def _assert_directory_antigravity(
+    parent_fd: int | None,
+    name: str | os.PathLike[str],
+    descriptor: int,
+    expected: tuple[int, int, int, int, int, int, int],
+) -> None:
+    try:
+        opened = os.fstat(descriptor)
+    except OSError as error:
+        raise ValueError("Exp444 predecessor directory descriptor changed during verification") from error
+    if not stat.S_ISDIR(opened.st_mode) or _identity_antigravity(opened) != expected:
+        raise ValueError("Exp444 predecessor directory descriptor changed during verification")
     try:
         current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
     except OSError as error:
@@ -101,8 +121,16 @@ def _read_leaf_antigravity(directory_fd: int, name: str, expected_sha256: str) -
                 break
             chunks.append(chunk)
         payload = b"".join(chunks)
+        after = os.fstat(descriptor)
         current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
-        if not stat.S_ISREG(current.st_mode) or current.st_nlink != 1 or _identity_antigravity(current) != _identity_antigravity(opened):
+        if (
+            not stat.S_ISREG(after.st_mode)
+            or after.st_nlink != 1
+            or _identity_antigravity(after) != _identity_antigravity(opened)
+            or not stat.S_ISREG(current.st_mode)
+            or current.st_nlink != 1
+            or _identity_antigravity(current) != _identity_antigravity(opened)
+        ):
             raise ValueError("Exp444 predecessor terminal leaf changed during verification")
         if hashlib.sha256(payload).hexdigest() != expected_sha256:
             raise ValueError("Exp444 predecessor terminal SHA256 changed")
@@ -215,11 +243,12 @@ def verify_exp444_predecessor_antigravity() -> Exp444PredecessorAuthorityAntigra
             if _canonical_prefix_payload_sha256_antigravity(prefix) != EXP444_RECORD_PREFIX_PAYLOAD_SHA256_ANTIGRAVITY:
                 raise ValueError("Exp444 predecessor aggregate prefix authority is invalid")
             _assert_terminal_semantics_antigravity(context, state, progress, pid, prefix)
-            _assert_directory_antigravity(checkpoint_fd, "records_antigravity", records_identity)
-            _assert_directory_antigravity(attempt_fd, "checkpoint_antigravity", checkpoint_identity)
-            _assert_directory_antigravity(attempts_fd, attempt_name, attempt_identity)
-            _assert_directory_antigravity(root_fd, EXP444_ATTEMPT_SEGMENTS_ANTIGRAVITY[0], attempts_identity)
-            _assert_directory_antigravity(None, _EXP444_ROOT_ANTIGRAVITY, root_identity)
+            _assert_directory_antigravity(checkpoint_fd, "records_antigravity", records_fd, records_identity)
+            _assert_directory_antigravity(attempt_fd, "checkpoint_antigravity", checkpoint_fd, checkpoint_identity)
+            _assert_directory_antigravity(attempts_fd, attempt_name, attempt_fd, attempt_identity)
+            _assert_directory_antigravity(root_fd, EXP444_ATTEMPT_SEGMENTS_ANTIGRAVITY[0], attempts_fd, attempts_identity)
+            _assert_directory_antigravity(None, _EXP444_ROOT_ANTIGRAVITY, root_fd, root_identity)
+            _assert_source_database_antigravity()
             return Exp444PredecessorAuthorityAntigravity(
                 reviewed_commit=EXP444_REVIEWED_COMMIT_ANTIGRAVITY,
                 attempt_root=_EXP444_ROOT_ANTIGRAVITY.joinpath(*EXP444_ATTEMPT_SEGMENTS_ANTIGRAVITY),

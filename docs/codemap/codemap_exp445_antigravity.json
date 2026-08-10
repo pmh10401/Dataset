@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T19:07:16Z",
-  "generated_from_commit": "a254e29a1093705ffe2d0bfe0a921629ed688fa6",
+  "generated_at": "2026-08-10T19:18:03Z",
+  "generated_from_commit": "c608275d8bc6731472ba883d2be6bc15c5a457b2",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -78,7 +78,8 @@
     "Exp445 Task 2 closed two-profile lifecycle identity boundary: fixed Exp444/Exp445 identity, schema, root, governing-document paths, predecessor requirement, and legacy-wrapper compatibility",
     "Exp445 Task 3: descriptor-pinned Exp440 summary-byte parser, closed values-only candidate/source-hash/control handoff, and path/SQLite-free publication authority composition without Exp442 sibling derivation",
     "Exp445 Task 3 review fix: recursively immutable values-only control handoff, JSON materialization only at control-replay encoding, and real composed-control serialization evidence",
-    "Exp445 Task 4 immutable predecessor authentication: descriptor-pinned Exp444 30-record terminal authority with no label, SQLite, publication, resume, evaluation, or mutation path."
+    "Exp445 Task 4 immutable predecessor authentication: descriptor-pinned Exp444 30-record terminal authority with no label, SQLite, publication, resume, evaluation, or mutation path.",
+    "Exp445 Task 4 review fix: post-read descriptor and namespace mtime/ctime identity revalidation plus return-bound source DB link-count recheck."
   ],
   "nodes": [
     {
@@ -687,37 +688,6 @@
         {
           "path": "experiments/exp425_selective_recovery/database.py",
           "symbol": "open_database_snapshot"
-        }
-      ]
-    },
-    {
-      "id": "artifact_utils",
-      "label": "Canonical artifact I/O",
-      "type": "storage",
-      "boundary": "Shared research core",
-      "layer": 1,
-      "path": "experiments/exp403_408/artifact_io.py",
-      "role": "Provides canonical JSON bytes, SHA256 helpers, and atomic JSON/CSV/JSONL writes.",
-      "entrypoints": [
-        "canonical_json_bytes",
-        "write_json_atomic",
-        "write_jsonl_atomic",
-        "write_csv_atomic"
-      ],
-      "tests": [
-        "experiments/exp403_408/tests/test_prediction_boundary.py"
-      ],
-      "constraints": [
-        "Canonical bytes define scientific hashes"
-      ],
-      "evidence": [
-        {
-          "path": "experiments/exp403_408/artifact_io.py",
-          "symbol": "canonical_json_bytes"
-        },
-        {
-          "path": "experiments/exp403_408/artifact_io.py",
-          "symbol": "write_json_atomic"
         }
       ]
     },
@@ -2779,7 +2749,7 @@
       "boundary": "Active isolated research",
       "layer": 2,
       "path": "experiments",
-      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it rejects any checkpoint-root inventory substitution before parsing, parses 1,117 records in fixed context acceptance order through eleven CPU workers with immediate immutable prefix events, validates the complete Exp404 Hard manifest and every candidate/Hard TEST row range, and freezes zero label access without any SQLite or Exp417 input route. Exp441 Task 7 adds atomic readiness ownership of the formerly absent fixed parent: it records canonical zero-label source/selector replay, exact CPU/11-worker and environment evidence, preserves failed private staging, rolls a post-rename parent-fsync failure back through a no-clobber failed sibling, and binds `new` to byte-identical clean-HEAD source evidence. Exp441 Task5 adds a process-owned, immutable label-free attempt: it allocates the smallest absent attempt directory, writes atomic progress/PID plus append-only parent acceptance logs, runs the fixed eleven-worker source verifier, performs the pure selector, creates source/selection evidence, replays source authority after artifacts, and never opens SQLite or an evaluator. Task 9 frozen-context label loading is parent-verified and shipped at 615b277. Task 10 pure retrospective evaluation is reviewed and shipped at cd5709d. Task 11 fixed eight-file evaluation publication/replay is implemented through 6b2ed857 with retained destination authority, exact label-snapshot binding, two immutable failure families, and uncompressed adversarial governance, inventory, ordering, durability, preservation, and semantic-tamper evidence; independent re-review returned ship. Task 12 adds a final audit-only replay entrypoint that calls the fixed public 11-worker source route once and the isolated sequential reference once under a SQLite connection bomb, proves exact source/selection equality, fixed 1,117/840/394/73/49/30 populations, both coordinate identities, finite evidence, 1,117 ordered parent events, eleven production workers, zero label access, and an AST/call-spy firewall. The audit changes no official root or artifact. Exp441's official 1,117-record label-free replay completed with zero errors but failed closed before publication because inactive terminal ETA was 0.0 while the strict publication contract required null. Exp442 is a fresh-root engineering-only successor: a closed lifecycle profile binds its own experiment/schema/run/root and preregistration identities to the unchanged Exp441 scientific configuration. The progress producer now writes null for inactive terminal ETA while active ETA remains unchanged. Generic readiness and runtime entry points require an explicit fixed profile; legacy Exp441 wrappers remain intact and the thin Exp442 wrapper exposes no root, worker, backend, threshold, seed, alpha, or budget override. The Exp442 review fix binds the actual reviewed design and preregistration bytes and removes path injection from every production-profile readiness and runtime function. Root-injected helpers remain private test seams below that boundary. A new active-ETA regression proves that only inactive terminal ETA becomes null. Official Exp442 readiness and new now completed from reviewed commit c4783d69. The fixed CPU/11-worker process committed 1,117 of 1,117 records with zero errors, exact 1117/840/394/73/49/30 populations, and inactive terminal ETA null before immutable publication. Prediction-time label access remained zero. The approved Exp444 design and implementation plan specify a new isolated review-only stability layer over the frozen Exp442 30 coordinates: deterministic normal-TRAIN omission views recompute the unchanged Exp440 two-depth rule, split candidates into stable and unstable review lanes, preserve a zero-label prediction boundary, and make no pass/fail or promotion decision. Exp444 Task 2 now owns the isolated Python 3.14.6 environment, frozen scientific config, immutable source/stability/checkpoint/evaluation contracts, recursive label/evaluation firewall, and thin Exp441 canonical/create-only artifact wrappers; no official run root or prediction runtime exists. Grouped Exp443 boundary evidence: Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation. Review round 1 closes canonical audit/prepared reconciliation: policy/action/missingness combinations are frozen, raw `<f4` digests are recomputed, missing-position hashes survive the RunPolicyAudit adapter, targets are clipped from original TRAIN medians at every boundary, and TRAIN/TEST identities are gap-checked. The round also records exact A/B/C action totals, immutable byte ownership, and all-19 real parity. Review round 2 closes the unsupported-position subset gap for both in-memory and serialized RunPolicyAudit payloads and centralizes the canonical action vocabulary shared by contracts and preprocessing. Task 5 adds a lazy adapter to the unchanged Exp249 CPU scorer, enforces four frozen kernel/seed calls with alpha=.005 seed intersections, and emits deterministic label-free Standard-gated promotion/pre-exact/exact-normal/final-Hard routing rows; unaffected datasets import verified Exp249 candidate maps while affected datasets require one policy result each. Task 6 adds a fail-closed Policy A control gate: every affected dataset's four TRAIN OOF/TEST arrays is compared with verified Exp249 float64 archive bytes, empirical and frozen candidate sets are checked, complete route coordinates are replayed against Exp291/404, topology and label-free identities are recorded, and B/C/evaluation work remains blocked until control_reproduction_passed. Task 7 adds the internal ordered 57-unit runtime support: policy-major case-sensitive WorkUnit identities, create-only canonical records, binding/PID-gated resumable prefixes, terminal error/interruption semantics, and parent-only atomic progress/events/Korean log/PID heartbeat evidence. The Task 7 fix adds validated interrupted reopen with elapsed/counter restoration, append-only log continuation, replacement process binding, exact single-next orphan reconciliation, active second-resume rejection, and terminal heartbeat no-op/rejection. Fix round 2 removes legacy resume compatibility and validates then clears the one canonical state temp left by a record-create/state-replace crash before rebinding and advancing the prefix. Fix round 3 rejects interrupted resume when the replacement ProcessIdentityAntigravity exactly equals the stored owner; only distinct ownership may be persisted. Task 8 adds clean-HEAD/source/config/environment readiness, exact policy-major case-sensitive 57-unit scheduling with 11 spawned CPU workers, ordered prefix buffering, parent-only progress/checkpoint ownership, and a 19-unit Policy A sequential-versus-parallel semantic parity report. Policy A control remains a hard gate before B/C. Interrupted resumes reuse the retained database hard-link pin; a complete checkpoint has an explicit finalization-only re-entry path, canonical prediction bytes are idempotently reused only when identical, spawn workers return picklable result contracts, and progress advances the next dataset with its dimensions in one atomic write. The real final parity is semantic_equal=true with zero TEST-label access; speed is informative and MLX/MPS remain inapplicable. Task 9 adds a dedicated non-mutating completed-checkpoint inspection path and freezes the three policy predictions without reopening resume state. It requires complete inactive progress, exactly 57 results in three 19-dataset policy groups, the real 76-comparison Policy A control and 137/2253/35/2218 routing topology, exact Task 8 worker-parity linkage, and zero label access. Each runtime canonical JSON is byte-linked to a canonical 1,117-row JSONL, then nine leaf artifacts, manifest, status, and self-excluding artifact map form a create-only replayable hash DAG for Task 10 post-freeze evaluation. The Task 9 Sol fix no longer trusts the saved control self-report: publication recomputes all 76 Policy A archive comparisons and requires canonical equality, constrains completed inspection to the exact three-by-19 topology, binds exact progress/PID schemas and process identity to checkpoint state, and preserves four publication-failure phases in unique label-free audit siblings. Task 10 adds the only label-capable post-freeze module: it inspects all three publications twice before opening one pinned read-only database connection, loads exactly one ordered TEST-label query per dataset, reproduces the fixed Exp404/Exp291 baseline and Policy A, evaluates A/B/C independently with exact project metrics and the NumPy 2.3.5 PCG64 20,000-sample paired bootstrap, and freezes an exact ten-file review-only evaluation that fully replays without reopening labels. Task 11 fixes the readiness/new/resume/inspect/evaluate CLI and external wrapper, binds resume to one explicit safe attempt basename, publishes only after terminal-complete prediction finalization, retries failed publication through read-only complete checkpoint/progress authorities without changing their bytes, keeps inspect read-only, emits JSON-safe wrapper failures, and permits the only evaluator import after frozen-publication inspection. The official reviewed run completed all 57 label-free policy units and froze three 1,117-row predictions. Post-freeze evaluation found A and B identical to baseline; C rescued MelbournePedestrian_normal_8 with TP 1/FP 0 but both paired-bootstrap lower bounds were zero, so no winner was selected. The publication is valid while a post-publication pinned-database close error is preserved as separate engineering evidence.",
+      "role": "Owns Exp438 frequency evidence and the isolated Exp439 scale-aware repair, including bounded slow-head CPU dispatch, TRAIN-only calibration feature reuse, distinct immutable roots, readiness, checkpoints, logs, and label-free execution. Exp440 now owns a separate frozen configuration and strict immutable multi-depth calibration, score, provisional-candidate, retained-candidate, and dataset-result contracts. Exp440 adds a narrow label-free Exp439 raw-input adapter, whole-row TRAIN nonfinite exclusion, per-row TEST abstention, and a SHA-bound Exp439/Hard source firewall without importing evaluation code. Exp440 fold-locally calibrates adjacent low-frequency FFT depths, applies delete-one threshold stability, and requires strict two-depth TEST consensus with deterministic empirical-rank evidence. Exp440 removes frozen Hard coordinates before a globally deterministic ranking and retains at most 100 without padding. Exp440 records optional MLX and Numba dense-distance parity, synchronization, provenance, tolerance, and 1.1x speed gates, otherwise retaining CPU max-minus-one workers. Exp440 adds create-only ordered hash-bound checkpoint records, atomic self-written progress, event/text/PID logs, and the fixed 11-worker ordered-map primitive. The production Exp440 parent loads label-free values, keeps up to workers-squared CPU tasks in flight, commits in frozen order, applies Hard exclusion and the global budget only after the complete prefix, and resumes only inactive interrupted progress. Before prediction, Exp440 conservatively marks exact-length groups above 256 finite TRAIN rows unavailable without subsampling; this prevents infeasible quadratic work while leaving frozen Hard untouched. A real CBF end-to-end gate retained CPU/11 workers because MLX and Numba failed the 1.1x full-stage speed rule despite numerical agreement. Exp441 now adds a closed, descriptor-pinned, label-free source verifier that hashes the frozen Exp440 checkpoint, retained inventory, ten-file publication, and Exp404 Hard artifacts; it rejects any checkpoint-root inventory substitution before parsing, parses 1,117 records in fixed context acceptance order through eleven CPU workers with immediate immutable prefix events, validates the complete Exp404 Hard manifest and every candidate/Hard TEST row range, and freezes zero label access without any SQLite or Exp417 input route. Exp441 Task 7 adds atomic readiness ownership of the formerly absent fixed parent: it records canonical zero-label source/selector replay, exact CPU/11-worker and environment evidence, preserves failed private staging, rolls a post-rename parent-fsync failure back through a no-clobber failed sibling, and binds `new` to byte-identical clean-HEAD source evidence. Exp441 Task5 adds a process-owned, immutable label-free attempt: it allocates the smallest absent attempt directory, writes atomic progress/PID plus append-only parent acceptance logs, runs the fixed eleven-worker source verifier, performs the pure selector, creates source/selection evidence, replays source authority after artifacts, and never opens SQLite or an evaluator. Task 9 frozen-context label loading is parent-verified and shipped at 615b277. Task 10 pure retrospective evaluation is reviewed and shipped at cd5709d. Task 11 fixed eight-file evaluation publication/replay is implemented through 6b2ed857 with retained destination authority, exact label-snapshot binding, two immutable failure families, and uncompressed adversarial governance, inventory, ordering, durability, preservation, and semantic-tamper evidence; independent re-review returned ship. Task 12 adds a final audit-only replay entrypoint that calls the fixed public 11-worker source route once and the isolated sequential reference once under a SQLite connection bomb, proves exact source/selection equality, fixed 1,117/840/394/73/49/30 populations, both coordinate identities, finite evidence, 1,117 ordered parent events, eleven production workers, zero label access, and an AST/call-spy firewall. The audit changes no official root or artifact. Exp441's official 1,117-record label-free replay completed with zero errors but failed closed before publication because inactive terminal ETA was 0.0 while the strict publication contract required null. Exp442 is a fresh-root engineering-only successor: a closed lifecycle profile binds its own experiment/schema/run/root and preregistration identities to the unchanged Exp441 scientific configuration. The progress producer now writes null for inactive terminal ETA while active ETA remains unchanged. Generic readiness and runtime entry points require an explicit fixed profile; legacy Exp441 wrappers remain intact and the thin Exp442 wrapper exposes no root, worker, backend, threshold, seed, alpha, or budget override. The Exp442 review fix binds the actual reviewed design and preregistration bytes and removes path injection from every production-profile readiness and runtime function. Root-injected helpers remain private test seams below that boundary. A new active-ETA regression proves that only inactive terminal ETA becomes null. Official Exp442 readiness and new now completed from reviewed commit c4783d69. The fixed CPU/11-worker process committed 1,117 of 1,117 records with zero errors, exact 1117/840/394/73/49/30 populations, and inactive terminal ETA null before immutable publication. Prediction-time label access remained zero. The approved Exp444 design and implementation plan specify a new isolated review-only stability layer over the frozen Exp442 30 coordinates: deterministic normal-TRAIN omission views recompute the unchanged Exp440 two-depth rule, split candidates into stable and unstable review lanes, preserve a zero-label prediction boundary, and make no pass/fail or promotion decision. Exp444 Task 2 now owns the isolated Python 3.14.6 environment, frozen scientific config, immutable source/stability/checkpoint/evaluation contracts, recursive label/evaluation firewall, and thin Exp441 canonical/create-only artifact wrappers; no official run root or prediction runtime exists. Grouped Exp443 boundary evidence: Task 2 freezes the Exp443 Python 3.14.6 environment and scientific config, validates immutable contracts, and wraps Exp441 artifact primitives. Task 3 pins the raw SQLite inode, exposes only values-only TRAIN/TEST reads through an execution-time SQL/parameter facade, verifies source hashes and schemas for Exp249/291/404/414, reproduces 2,116 + 137 - 35 = 2,218 routing algebra, and scans the real 1,119-row DB population after exact frozen exclusions to the 1,117-dataset inventory without labels. Task 4 preserves ragged raw row lengths, computes the original normal-TRAIN target once, applies the three frozen TRAIN policies, keeps TEST repair/alignment/z-normalization byte-identical, records immutable audit hashes, and proves all-19 Policy A parity against the Exp249 foundation. Review round 1 closes canonical audit/prepared reconciliation: policy/action/missingness combinations are frozen, raw `<f4` digests are recomputed, missing-position hashes survive the RunPolicyAudit adapter, targets are clipped from original TRAIN medians at every boundary, and TRAIN/TEST identities are gap-checked. The round also records exact A/B/C action totals, immutable byte ownership, and all-19 real parity. Review round 2 closes the unsupported-position subset gap for both in-memory and serialized RunPolicyAudit payloads and centralizes the canonical action vocabulary shared by contracts and preprocessing. Task 5 adds a lazy adapter to the unchanged Exp249 CPU scorer, enforces four frozen kernel/seed calls with alpha=.005 seed intersections, and emits deterministic label-free Standard-gated promotion/pre-exact/exact-normal/final-Hard routing rows; unaffected datasets import verified Exp249 candidate maps while affected datasets require one policy result each. Task 6 adds a fail-closed Policy A control gate: every affected dataset's four TRAIN OOF/TEST arrays is compared with verified Exp249 float64 archive bytes, empirical and frozen candidate sets are checked, complete route coordinates are replayed against Exp291/404, topology and label-free identities are recorded, and B/C/evaluation work remains blocked until control_reproduction_passed. Task 7 adds the internal ordered 57-unit runtime support: policy-major case-sensitive WorkUnit identities, create-only canonical records, binding/PID-gated resumable prefixes, terminal error/interruption semantics, and parent-only atomic progress/events/Korean log/PID heartbeat evidence. The Task 7 fix adds validated interrupted reopen with elapsed/counter restoration, append-only log continuation, replacement process binding, exact single-next orphan reconciliation, active second-resume rejection, and terminal heartbeat no-op/rejection. Fix round 2 removes legacy resume compatibility and validates then clears the one canonical state temp left by a record-create/state-replace crash before rebinding and advancing the prefix. Fix round 3 rejects interrupted resume when the replacement ProcessIdentityAntigravity exactly equals the stored owner; only distinct ownership may be persisted. Task 8 adds clean-HEAD/source/config/environment readiness, exact policy-major case-sensitive 57-unit scheduling with 11 spawned CPU workers, ordered prefix buffering, parent-only progress/checkpoint ownership, and a 19-unit Policy A sequential-versus-parallel semantic parity report. Policy A control remains a hard gate before B/C. Interrupted resumes reuse the retained database hard-link pin; a complete checkpoint has an explicit finalization-only re-entry path, canonical prediction bytes are idempotently reused only when identical, spawn workers return picklable result contracts, and progress advances the next dataset with its dimensions in one atomic write. The real final parity is semantic_equal=true with zero TEST-label access; speed is informative and MLX/MPS remain inapplicable. Task 9 adds a dedicated non-mutating completed-checkpoint inspection path and freezes the three policy predictions without reopening resume state. It requires complete inactive progress, exactly 57 results in three 19-dataset policy groups, the real 76-comparison Policy A control and 137/2253/35/2218 routing topology, exact Task 8 worker-parity linkage, and zero label access. Each runtime canonical JSON is byte-linked to a canonical 1,117-row JSONL, then nine leaf artifacts, manifest, status, and self-excluding artifact map form a create-only replayable hash DAG for Task 10 post-freeze evaluation. The Task 9 Sol fix no longer trusts the saved control self-report: publication recomputes all 76 Policy A archive comparisons and requires canonical equality, constrains completed inspection to the exact three-by-19 topology, binds exact progress/PID schemas and process identity to checkpoint state, and preserves four publication-failure phases in unique label-free audit siblings. Task 10 adds the only label-capable post-freeze module: it inspects all three publications twice before opening one pinned read-only database connection, loads exactly one ordered TEST-label query per dataset, reproduces the fixed Exp404/Exp291 baseline and Policy A, evaluates A/B/C independently with exact project metrics and the NumPy 2.3.5 PCG64 20,000-sample paired bootstrap, and freezes an exact ten-file review-only evaluation that fully replays without reopening labels. Task 11 fixes the readiness/new/resume/inspect/evaluate CLI and external wrapper, binds resume to one explicit safe attempt basename, publishes only after terminal-complete prediction finalization, retries failed publication through read-only complete checkpoint/progress authorities without changing their bytes, keeps inspect read-only, emits JSON-safe wrapper failures, and permits the only evaluator import after frozen-publication inspection. The official reviewed run completed all 57 label-free policy units and froze three 1,117-row predictions. Post-freeze evaluation found A and B identical to baseline; C rescued MelbournePedestrian_normal_8 with TP 1/FP 0 but both paired-bootstrap lower bounds were zero, so no winner was selected. The publication is valid while a post-publication pinned-database close error is preserved as separate engineering evidence. Canonical artifact I/O is grouped into this parent module in the Exp445 map.",
       "entrypoints": [
         "create_readiness_antigravity",
         "main_antigravity",
@@ -4418,7 +4388,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
-      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix rounds bind every query to those coordinates, remove caller-minted SQLite sessions, and preserve truthful descriptor-bound failure evidence. Task 4 replays the unchanged Exp440 calibration/scoring rule, creates deterministic omission views, and classifies the same 30 coordinates into exhaustive stable/unstable review lanes; corrective review preserves a valid empty score tuple when a view has no stable depth model and rejects reordered score evidence. Task 5 benchmarks only the exact dense-distance seam and retains CPU/11 workers because Numba is below 1.1x and MLX float64 is unavailable. Task 6 provides crash-recoverable ordered checkpoints and parent-owned atomic progress. Task 7 closes the verified values-only source session before scheduling, passes only copied immutable inputs to a spawn ProcessPoolExecutor, bounds pending plus buffered results by workers squared, commits the exact case-sensitive rank prefix in the parent, records worker attribution, supports SIGINT exact-prefix resume and complete finalization re-entry, and proves real sequential versus 11-worker canonical-byte identity for all 30 candidates with zero TEST-label access. Task 8 freezes the complete inactive checkpoint into a create-only thirteen-file stable/unstable review publication, requires original-control parity and exact 1,117 summary ordering, and provides an offline inspector that reparses every contract and recomputes all leaf, manifest, status, and self-excluding map bytes without database, worker, checkpoint mutation, or evaluator access. Corrected Task 8 authenticates the exact Exp440 1,117-row summary, manifest, and artifact map through one retained publication-directory descriptor, pins the canonical Task5 backend authority, verifies it before any new or interrupted mutation, and embeds raw terminal context/state/progress/PID/events/text plus all 30 record wrappers in the publication; offline inspection reconstitutes full OriginalReplay controls and terminal record results, validates rank/prefix/process/event/text invariants, and accepts an existing publication before any source/provenance/checkpoint access. Residual Task 8 hardening retains every publication leaf descriptor under one root dirfd for the whole offline semantic replay, requires single-linked regular entries and exact pre/post inventory identities, and writes staging children via dirfd-exclusive/no-follow handles with fsync plus pre-rename root/child inode revalidation; destination is re-pinned and attempt directory fsynced after no-replace rename. Final Task 8 capture binds context/state/progress/PID/events/text and all thirty records to one no-follow, single-link, exact-inventory attempt/checkpoint/records snapshot before publication payload construction; post-open namespace replacement is rejected before the same bytes feed result validation and runtime evidence. Final Task 8 publication validates the complete detached terminal runtime before staging visibility, retains the captured attempt dirfd and identity through fsync plus no-replace rename, and rejects whole-attempt namespace replacement before a replacement can receive a publication. Final Task 8 rejected-publication recovery never pathname-deletes a contested canonical destination: any post-rename rejection preserves the original exception with identity-known/match and quarantine-path evidence, then uses a bounded unique Darwin no-replace rename-aside relative to the retained attempt parent descriptor. Capture excludes only exact no-follow directory-backed Exp444 quarantine names from scientific runtime inventory, so a successfully quarantined retry republishes the same bytes; exhausted rename-aside collisions retain the canonical name and truthfully require operator intervention. Quarantine nonce, hook, rename-aside, and parent-fsync failures become deterministic operator evidence, never mask the original publication rejection, and never delete a contested object. Quarantine-note formatting and add_note failures are swallowed strictly as annotation failures, so the same bare original exception re-raises after quarantine without changing retention semantics. Task 9 adds a post-freeze, descriptive-only evaluator: it derives its 1,117 TEST query order from the Task8-published Exp440-bound summary, reads Exp442-origin coordinates only through Task8 selection identity, performs two independent full inspection/content-root identity matches before lazy SQLite label access, publishes a create-only ten-leaf evaluation, and replays an existing evaluation without reopening labels. Fix round 1 hardens Task9 with lazy Exp417 descriptor/SHA-bound label SQLite, exact authorizer, production population/baseline/lane-conservation gates, three post-label Task8 identity checks, and ten-leaf semantic replay. Fix round 2 removes arbitrary SQL, enforces immutable ordered label queries, official replay gates, and truthful commit-write audit state. Round 3 sealed the verified label facade and exact metric/transition replay schemas. Round 4 adds dedicated temporary-boundary characterizations for second-query and close failures, complete-write audit truth, label-free complete re-entry, and refreshed-artifact-map semantic replay; the accepted evaluator required no product change. Task 10 implements the reviewed five-command readiness/new/resume/inspect/evaluate operator boundary. Readiness and new verify source provenance, materialize values, prove zero TEST-label access, and close the values-only session before new-root allocation. Interrupted resume performs its read-only authority inspection, then materializes and closes those exact inputs before writer/checkpoint owner rebinding; complete finalization remains source-free. Inspect is read-only, and evaluate performs publication inspection before lazy evaluator import. Fix Round 1 binds the runtime lifecycle to the current clean exact reviewed commit, independently hashes the reviewed design and preregistration documents, and verifies the canonical Task7 worker-parity authority before a new or interrupted resume can mutate execution state or publish. Task 10 is complete: a fresh Sol High final review returned SPEC compliant, QUALITY approved, and VERDICT ship after all four prior findings were addressed; parent verification passed focused 79/79 and full Exp444 discovery 188/188. No official readiness/new/resume/inspect/evaluate command or TEST-label access occurred, the official root remains absent, and Task 11 has not started. Exp445 Task 2 adds the only shared lifecycle boundary: exactly two fixed profiles separate Exp444 and Exp445 identity/schema/root/governing documents/predecessor requirement; Exp444 config and checkpoint validation remain bound to the Exp444 singleton, preserving every Exp444 public wrapper signature and scientific payload SHA. Exp445 Task 3 removes Exp442 sibling summary derivation: reporting receives descriptor-pinned Exp440 summary bytes from provenance, validates canonical 1,117-row sorted label-free JSONL in a pure parser, closes values-only candidate/source-hash/control replay before an immutable handoff, then composes publication authority without paths or SQLite; the Exp444 public publication wrapper remains unchanged.",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix rounds bind every query to those coordinates, remove caller-minted SQLite sessions, and preserve truthful descriptor-bound failure evidence. Task 4 replays the unchanged Exp440 calibration/scoring rule, creates deterministic omission views, and classifies the same 30 coordinates into exhaustive stable/unstable review lanes; corrective review preserves a valid empty score tuple when a view has no stable depth model and rejects reordered score evidence. Task 5 benchmarks only the exact dense-distance seam and retains CPU/11 workers because Numba is below 1.1x and MLX float64 is unavailable. Task 6 provides crash-recoverable ordered checkpoints and parent-owned atomic progress. Task 7 closes the verified values-only source session before scheduling, passes only copied immutable inputs to a spawn ProcessPoolExecutor, bounds pending plus buffered results by workers squared, commits the exact case-sensitive rank prefix in the parent, records worker attribution, supports SIGINT exact-prefix resume and complete finalization re-entry, and proves real sequential versus 11-worker canonical-byte identity for all 30 candidates with zero TEST-label access. Task 8 freezes the complete inactive checkpoint into a create-only thirteen-file stable/unstable review publication, requires original-control parity and exact 1,117 summary ordering, and provides an offline inspector that reparses every contract and recomputes all leaf, manifest, status, and self-excluding map bytes without database, worker, checkpoint mutation, or evaluator access. Corrected Task 8 authenticates the exact Exp440 1,117-row summary, manifest, and artifact map through one retained publication-directory descriptor, pins the canonical Task5 backend authority, verifies it before any new or interrupted mutation, and embeds raw terminal context/state/progress/PID/events/text plus all 30 record wrappers in the publication; offline inspection reconstitutes full OriginalReplay controls and terminal record results, validates rank/prefix/process/event/text invariants, and accepts an existing publication before any source/provenance/checkpoint access. Residual Task 8 hardening retains every publication leaf descriptor under one root dirfd for the whole offline semantic replay, requires single-linked regular entries and exact pre/post inventory identities, and writes staging children via dirfd-exclusive/no-follow handles with fsync plus pre-rename root/child inode revalidation; destination is re-pinned and attempt directory fsynced after no-replace rename. Final Task 8 capture binds context/state/progress/PID/events/text and all thirty records to one no-follow, single-link, exact-inventory attempt/checkpoint/records snapshot before publication payload construction; post-open namespace replacement is rejected before the same bytes feed result validation and runtime evidence. Final Task 8 publication validates the complete detached terminal runtime before staging visibility, retains the captured attempt dirfd and identity through fsync plus no-replace rename, and rejects whole-attempt namespace replacement before a replacement can receive a publication. Final Task 8 rejected-publication recovery never pathname-deletes a contested canonical destination: any post-rename rejection preserves the original exception with identity-known/match and quarantine-path evidence, then uses a bounded unique Darwin no-replace rename-aside relative to the retained attempt parent descriptor. Capture excludes only exact no-follow directory-backed Exp444 quarantine names from scientific runtime inventory, so a successfully quarantined retry republishes the same bytes; exhausted rename-aside collisions retain the canonical name and truthfully require operator intervention. Quarantine nonce, hook, rename-aside, and parent-fsync failures become deterministic operator evidence, never mask the original publication rejection, and never delete a contested object. Quarantine-note formatting and add_note failures are swallowed strictly as annotation failures, so the same bare original exception re-raises after quarantine without changing retention semantics. Task 9 adds a post-freeze, descriptive-only evaluator: it derives its 1,117 TEST query order from the Task8-published Exp440-bound summary, reads Exp442-origin coordinates only through Task8 selection identity, performs two independent full inspection/content-root identity matches before lazy SQLite label access, publishes a create-only ten-leaf evaluation, and replays an existing evaluation without reopening labels. Fix round 1 hardens Task9 with lazy Exp417 descriptor/SHA-bound label SQLite, exact authorizer, production population/baseline/lane-conservation gates, three post-label Task8 identity checks, and ten-leaf semantic replay. Fix round 2 removes arbitrary SQL, enforces immutable ordered label queries, official replay gates, and truthful commit-write audit state. Round 3 sealed the verified label facade and exact metric/transition replay schemas. Round 4 adds dedicated temporary-boundary characterizations for second-query and close failures, complete-write audit truth, label-free complete re-entry, and refreshed-artifact-map semantic replay; the accepted evaluator required no product change. Task 10 implements the reviewed five-command readiness/new/resume/inspect/evaluate operator boundary. Readiness and new verify source provenance, materialize values, prove zero TEST-label access, and close the values-only session before new-root allocation. Interrupted resume performs its read-only authority inspection, then materializes and closes those exact inputs before writer/checkpoint owner rebinding; complete finalization remains source-free. Inspect is read-only, and evaluate performs publication inspection before lazy evaluator import. Fix Round 1 binds the runtime lifecycle to the current clean exact reviewed commit, independently hashes the reviewed design and preregistration documents, and verifies the canonical Task7 worker-parity authority before a new or interrupted resume can mutate execution state or publish. Task 10 is complete: a fresh Sol High final review returned SPEC compliant, QUALITY approved, and VERDICT ship after all four prior findings were addressed; parent verification passed focused 79/79 and full Exp444 discovery 188/188. No official readiness/new/resume/inspect/evaluate command or TEST-label access occurred, the official root remains absent, and Task 11 has not started. Exp445 Task 2 adds the only shared lifecycle boundary: exactly two fixed profiles separate Exp444 and Exp445 identity/schema/root/governing documents/predecessor requirement; Exp444 config and checkpoint validation remain bound to the Exp444 singleton, preserving every Exp444 public wrapper signature and scientific payload SHA. Exp445 Task 3 removes Exp442 sibling summary derivation: reporting receives descriptor-pinned Exp440 summary bytes from provenance, validates canonical 1,117-row sorted label-free JSONL in a pure parser, closes values-only candidate/source-hash/control replay before an immutable handoff, then composes publication authority without paths or SQLite; the Exp444 public publication wrapper remains unchanged. Canonical artifact I/O is grouped into this parent module in the Exp445 map.",
       "entrypoints": [
         "EXP445_PROFILE_ANTIGRAVITY",
         "EXP444_PROFILE_ANTIGRAVITY",
@@ -5102,7 +5072,7 @@
       "boundary": "Exp445 predecessor authority",
       "layer": 2,
       "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity",
-      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks the exact terminal and ordered 30-wrapper SHA authorities, rejects mutable or live state, and returns only immutable parity authority. It neither opens SQLite nor invokes Exp444 publication, resume, checkpoint, or evaluation code.",
+      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks exact terminal and ordered 30-wrapper SHA authorities, and rejects a mutable or live state. It revalidates descriptor and namespace identity including mtime_ns/ctime_ns after each read, rechecks source DB nlink immediately before return, and returns only immutable parity authority. It neither opens SQLite nor invokes Exp444 publication, resume, checkpoint, or evaluation code.",
       "entrypoints": [
         "verify_exp444_predecessor_antigravity",
         "Exp444PredecessorAuthorityAntigravity"
@@ -5112,8 +5082,8 @@
       ],
       "constraints": [
         "Fixed Exp444 root, attempt name, reviewed commit, terminal SHA256 values, ordered 30-wrapper SHA prefix, and aggregate prefix SHA are closed constants.",
-        "All reads are descriptor-relative no-follow checks over an exact inventory; terminal and record leaves must be single-linked regular files and identities are revalidated after reading.",
-        "The source database is not opened and must have exactly one link. The verifier never writes, renames, unlinks, publishes, resumes, evaluates, or creates the Exp445 official root."
+        "All reads are descriptor-relative no-follow checks over an exact inventory; terminal and record leaves must be single-linked regular files and descriptor plus namespace identities including mtime_ns/ctime_ns are revalidated after reading.",
+        "The source database is not opened and must have exactly one link at start and immediately before return. The verifier never writes, renames, unlinks, publishes, resumes, evaluates, or creates the Exp445 official root."
       ],
       "evidence": [
         {
@@ -5127,6 +5097,14 @@
         {
           "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/predecessor_antigravity.py",
           "symbol": "def verify_exp444_predecessor_antigravity"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/predecessor_antigravity.py",
+          "symbol": "def _identity_antigravity"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_predecessor_antigravity.py",
+          "symbol": "def test_rechecks_database_link_count_immediately_before_return_antigravity"
         }
       ]
     }
@@ -5166,17 +5144,6 @@
         {
           "path": "experiments/exp417_causal_multihorizon_shadow/model.py",
           "symbol": "from .contracts import"
-        }
-      ]
-    },
-    {
-      "from": "exp417_contracts",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp417_causal_multihorizon_shadow/checkpoints.py",
-          "symbol": "canonical_json_bytes"
         }
       ]
     },
@@ -5247,17 +5214,6 @@
       ]
     },
     {
-      "from": "exp425_checkpoint",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp425_selective_recovery/checkpoints.py",
-          "symbol": "canonical_json_bytes"
-        }
-      ]
-    },
-    {
       "from": "exp426_intake_parallel",
       "to": "exp425_predecessor",
       "type": "imports",
@@ -5313,17 +5269,6 @@
       ]
     },
     {
-      "from": "exp426_contracts",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/contracts_antigravity.py",
-          "symbol": "canonical_json_bytes"
-        }
-      ]
-    },
-    {
       "from": "exp426_checkpoint",
       "to": "exp426_contracts",
       "type": "imports",
@@ -5331,17 +5276,6 @@
         {
           "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
           "symbol": "Exp426DatasetRecord"
-        }
-      ]
-    },
-    {
-      "from": "exp426_checkpoint",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/checkpoint_antigravity.py",
-          "symbol": "canonical_json_bytes"
         }
       ]
     },
@@ -5405,17 +5339,6 @@
         {
           "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
           "symbol": "Exp426CheckpointStore.inspect_read_only"
-        }
-      ]
-    },
-    {
-      "from": "exp426_runtime",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp426_verified_baseline/reporting_antigravity.py",
-          "symbol": "canonical_json_bytes"
         }
       ]
     },
@@ -5587,36 +5510,6 @@
       ]
     },
     {
-      "from": "exp435_runtime",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/cli_antigravity.py",
-          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
-        }
-      ]
-    },
-    {
-      "from": "exp435_checkpoint_progress",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/checkpoint_antigravity.py",
-          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/progress_antigravity.py",
-          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
-        },
-        {
-          "path": "experiments/exp435_train_only_consensus_recovery_antigravity/evaluation_antigravity.py",
-          "symbol": "canonical_json_bytes"
-        }
-      ]
-    },
-    {
       "from": "exp435_checkpoint_progress",
       "to": "sqlite_store",
       "type": "reads",
@@ -5711,29 +5604,6 @@
     },
     {
       "from": "exp436_contract_boundary",
-      "to": "artifact_utils",
-      "type": "calls",
-      "evidence": [
-        {
-          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
-          "symbol": "canonical_json_bytes("
-        },
-        {
-          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
-          "symbol": "profile=selected"
-        },
-        {
-          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
-          "symbol": "def _verify_bytes("
-        },
-        {
-          "path": "experiments/exp436_missing_safe_strict_consensus_antigravity/reporting_antigravity.py",
-          "symbol": "def _validated_context_fingerprint("
-        }
-      ]
-    },
-    {
-      "from": "exp436_contract_boundary",
       "to": "sqlite_store",
       "type": "reads",
       "evidence": [
@@ -5789,36 +5659,6 @@
         {
           "path": "experiments/exp438_frequency_complexity_evidence_antigravity/inputs_antigravity.py",
           "symbol": "open_database_snapshot("
-        }
-      ]
-    },
-    {
-      "from": "exp438_frequency_runtime",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/checkpoint_antigravity.py",
-          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
-        },
-        {
-          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
-          "symbol": "from .artifacts_antigravity import ("
-        },
-        {
-          "path": "experiments/exp443_missing_normal_train_policy_comparison_antigravity/artifacts_antigravity.py",
-          "symbol": "from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity import ("
-        }
-      ]
-    },
-    {
-      "from": "exp438_publication_evaluation",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp438_frequency_complexity_evidence_antigravity/evaluation_antigravity.py",
-          "symbol": "from experiments.exp403_408.artifact_io import canonical_json_bytes"
         }
       ]
     },
@@ -5907,17 +5747,6 @@
     },
     {
       "from": "exp438_frequency_runtime",
-      "to": "artifact_utils",
-      "type": "reads",
-      "evidence": [
-        {
-          "path": "experiments/exp441_hard_empty_single_shot_recovery_antigravity/sources_antigravity.py",
-          "symbol": "def _hard_coordinates_antigravity("
-        }
-      ]
-    },
-    {
-      "from": "exp438_frequency_runtime",
       "to": "exp438_publication_evaluation",
       "type": "reads",
       "evidence": [
@@ -5969,17 +5798,6 @@
         {
           "path": "scratch/run_exp443_missing_normal_train_policy_comparison_antigravity.py",
           "symbol": "return cli_main_antigravity(arguments)"
-        }
-      ]
-    },
-    {
-      "from": "exp444_stability_contracts",
-      "to": "artifact_utils",
-      "type": "imports",
-      "evidence": [
-        {
-          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/artifacts_antigravity.py",
-          "symbol": "from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity import ("
         }
       ]
     },
@@ -6045,8 +5863,7 @@
         "research_control",
         "exp444_stability_contracts",
         "exp438_frequency_runtime",
-        "sqlite_store",
-        "artifact_utils"
+        "sqlite_store"
       ],
       "outcome": "Eleven spawn workers receive only copied immutable TRAIN/TEST values and contracts, compute views out of order within a bounded window, and return results to the parent. The parent exposes the truthful next-commit candidate without inventing worker-internal view progress, extends only the exact rank prefix, writes all progress evidence itself, rejects live old owners through real PID probes, performs full read-only context/state/prefix/record/orphan validation before and at ownership mutation boundaries, returns from SIGINT without waiting for unrelated active workers, validates every complete terminal evidence surface before read-only re-entry, and preserves the same canonical 30-result SHA256 as the sequential reference with zero TEST-label access. Exact-next durable result/error orphans are described by an immutable read-only inspection and bound to their record SHA. Checkpoint and progress are reconciled to the same accepted count before scheduling; a result continues at the following candidate and an error writes truthful terminal evidence without invoking the scheduler. Task 10 pins the five-command operator boundary: no scientific/path override is parsable, inspect stays offline/read-only, and evaluate first replays publication before importing the label-capable evaluator, which retains independent double inspection before TEST labels. Readiness is emitted as detached stdout JSON rather than a run-root readiness artifact."
     },
@@ -6056,8 +5873,7 @@
       "trigger": "The ordered checkpoint and process-owned progress both reach complete with the full conserved population and zero label access.",
       "steps": [
         "exp438_frequency_runtime",
-        "exp438_publication_evaluation",
-        "artifact_utils"
+        "exp438_publication_evaluation"
       ],
       "outcome": "Publication replays complete ordered checkpoint records into separate-channel prediction, summary, abstention, TRAIN audit, backend, manifest, status, and hash artifacts through a no-clobber rename. Inspect recomputes all publication bytes without opening SQLite labels or workers."
     },
@@ -6070,8 +5886,7 @@
         "exp438_publication_evaluation",
         "exp436_contract_boundary",
         "exp417_inputs",
-        "sqlite_store",
-        "artifact_utils"
+        "sqlite_store"
       ],
       "outcome": "The lazy evaluator verifies Exp438 publication/output/checkpoint, Exp437 publication, Exp404/Exp291 Hard equality, population, database, provenance, and hashes before one descriptor-bound TEST instance_index,label read; it then publishes separate channel confusion, dataset, bootstrap, correlation/overlap, and decision evidence without choosing a winner or mutating frozen bytes."
     },
@@ -6093,7 +5908,6 @@
       "steps": [
         "research_control",
         "exp444_stability_contracts",
-        "artifact_utils",
         "sqlite_store"
       ],
       "outcome": "The evaluator opens one read-only TEST-label session only after matching Task8 content and root identity, queries Task8 summary order, computes baseline/frozen/stable/unstable lanes and deterministic paired bootstrap, rechecks Task8 after close/computation/pre-commit, and creates a ten-leaf descriptive-only evaluation. Existing replay remains label-free. Round-4 regressions preserve truthful audit state across label/query/close/complete-write failures and require semantic replay rejection after a refreshed artifact map. Task 3 publication composition authenticates Exp440 summary bytes through provenance and keeps the Exp442 source boundary values-only and closed before authority composition."
