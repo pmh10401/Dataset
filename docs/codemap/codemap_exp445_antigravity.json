@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T20:20:25Z",
-  "generated_from_commit": "b38afd768b94298fe32930b606857b9b23d527d0",
+  "generated_at": "2026-08-10T20:33:01Z",
+  "generated_from_commit": "12b116975b40ef19dddd323129250d61808e16f1",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -80,7 +80,8 @@
     "Exp445 Task 3 review fix: recursively immutable values-only control handoff, JSON materialization only at control-replay encoding, and real composed-control serialization evidence",
     "Exp445 Task 4 immutable predecessor authentication: descriptor-pinned Exp444 30-record terminal authority with no label, SQLite, publication, resume, evaluation, or mutation path.",
     "Exp445 Task 4 review fix: post-read descriptor and namespace mtime/ctime identity revalidation plus return-bound source DB link-count recheck.",
-    "Exp445 Task 5 closed profile readiness and new-only CPU/11 replay: profile-specific checkpoint identity/document authority, pre-write 30-record predecessor SHA parity, final aggregate revalidation, immutable error preservation, and unchanged Exp444 wrapper bytes."
+    "Exp445 Task 5 closed profile readiness and new-only CPU/11 replay: profile-specific checkpoint identity/document authority, pre-write 30-record predecessor SHA parity, final aggregate revalidation, immutable error preservation, and unchanged Exp444 wrapper bytes.",
+    "Exp445 Task 5 fix round 3: table-driven live readiness boundary coverage for clean/dirty commit, documents, config, environment/topology, CPU backend, labels, predecessor, and existing/symlink roots before allocation"
   ],
   "nodes": [
     {
@@ -90,7 +91,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve Exp404/Exp416 as the verified full-population reference and completed review-only Exp442/Exp443 evidence. Exp444 completed its 30/30 label-free CPU/11-worker terminal replay but failed prepublication at publication source authority; its root is immutable and publication/evaluation are absent. Exp445 is design_approved_implementation_planned: its preregistration and runbook freeze a four-command, single-use recovery contract with immutable predecessor verification, exact ordered-record parity, label firewall, failure preservation, inherited CPU/11 backend authority, and descriptive-only non-promotion governance. Exp445 Task 5 now supplies a fixed two-wrapper lifecycle only: direct new execution reruns live profile readiness before root allocation, preserves setup-failure evidence with inactive progress/PID where writable, reconciles a durable checkpoint success before terminal progress, and keeps Exp444 public wrappers unchanged. Exp445 still has no publication or evaluation route.",
+      "role": "The control ledgers preserve Exp404/Exp416 as the verified full-population reference and completed review-only Exp442/Exp443 evidence. Exp444 completed its 30/30 label-free CPU/11-worker terminal replay but failed prepublication at publication source authority; its root is immutable and publication/evaluation are absent. Exp445 is design_approved_implementation_planned: its preregistration and runbook freeze a four-command, single-use recovery contract with immutable predecessor verification, exact ordered-record parity, label firewall, failure preservation, inherited CPU/11 backend authority, and descriptive-only non-promotion governance. Exp445 Task 5 now supplies a fixed two-wrapper lifecycle only: direct new execution reruns live profile readiness before root allocation, preserves setup-failure evidence with inactive progress/PID where writable, reconciles a durable checkpoint success before terminal progress, and keeps Exp444 public wrappers unchanged. Exp445 still has no publication or evaluation route. The current readiness matrix exercises the real closed Exp445 readiness entrypoint through every gate and proves each pre-root rejection leaves the official root absent.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -141,7 +142,8 @@
         "Readiness and new failures before fixed-root allocation are mutation-free and leave the root absent. After allocation, failures preserve the single-use Exp445 root with create-only records/failure/publication/evaluation artifacts; Exp444 and Exp442 are never mutated and Exp445 has no same-root retry or resume command.",
         "Implementation completion requires full regression and read-only smokes, deterministic map validation, a fresh Sol High commitment-boundary review, a candidate commit, then a different fresh Sol High review of that exact clean HEAD. Official readiness/new/evaluate remain blocked until that final review passes; no Exp445 product/source edge exists before implementation.",
         "Exp445 is design_approved_implementation_planned: its four-command operator contract has no resume or scientific override; Exp444/Exp442 bytes are immutable; new performs index-by-index and aggregate 30-record parity before create-only publication; post-allocation record/failure/publication/evaluation artifacts are create-only while same-run checkpoint state, progress, and PID retain frozen atomic replacement; CPU/11 backend authority is revalidated without backend reselection; evaluation remains descriptive-only with no champion or operational promotion.",
-        "Exp445 Task 2 exposes no profile selector or lifecycle route: only two reviewed profile constants exist, arbitrary identity/root/schema values fail closed, and the Exp444 config/checkpoint internals accept only the Exp444 singleton."
+        "Exp445 Task 2 exposes no profile selector or lifecycle route: only two reviewed profile constants exist, arbitrary identity/root/schema values fail closed, and the Exp444 config/checkpoint internals accept only the Exp444 singleton.",
+        "Task 5 round 3 validates the fixed Exp445 readiness entrypoint through wrong/dirty commit, document, config, environment/package/topology, provenance/backend, worker-parity, label-access, predecessor, and existing/symlink-root boundaries before root allocation; a fully valid mocked handoff remains CPU/11, inner-1, and zero-label."
       ],
       "evidence": [
         {
@@ -5122,7 +5124,7 @@
       "boundary": "Exp445 predecessor authority",
       "layer": 2,
       "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity",
-      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks exact terminal and ordered 30-wrapper SHA authorities, and rejects a mutable or live state. It revalidates descriptor and namespace identity including mtime_ns/ctime_ns after each read, rechecks source DB nlink immediately before return, and returns only immutable parity authority. It neither opens SQLite nor invokes Exp444 publication, resume, checkpoint, or evaluation code. Task 5 adds the fixed Exp445 facade that exposes only reviewed-commit readiness and new replay. It uses the verified authority before allocation, compares every result wrapper SHA before record creation, and rechecks authority plus the 30-prefix aggregate before the final successful write. Fix Round 1 makes the facade imports private and makes the direct Exp445 new route rerun the same live readiness before root mutation; a post-commit progress failure first reconciles the durable success and then either records an aligned next error or completes the final prefix.",
+      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks exact terminal and ordered 30-wrapper SHA authorities, and rejects a mutable or live state. It revalidates descriptor and namespace identity including mtime_ns/ctime_ns after each read, rechecks source DB nlink immediately before return, and returns only immutable parity authority. It neither opens SQLite nor invokes Exp444 publication, resume, checkpoint, or evaluation code. Task 5 adds the fixed Exp445 facade that exposes only reviewed-commit readiness and new replay. It uses the verified authority before allocation, compares every result wrapper SHA before record creation, and rechecks authority plus the 30-prefix aggregate before the final successful write. Fix Round 1 makes the facade imports private and makes the direct Exp445 new route rerun the same live readiness before root mutation; a post-commit progress failure first reconciles the durable success and then either records an aligned next error or completes the final prefix. Fix Round 3 adds table-driven gate-order coverage for every closed Exp445 readiness boundary and verifies every pre-root failure leaves the official root absent; existing and symlink roots are rejected without replacement.",
       "entrypoints": [
         "verify_exp444_predecessor_antigravity",
         "Exp444PredecessorAuthorityAntigravity",
@@ -5138,7 +5140,7 @@
         "Fixed Exp444 root, attempt name, reviewed commit, terminal SHA256 values, ordered 30-wrapper SHA prefix, and aggregate prefix SHA are closed constants.",
         "All reads are descriptor-relative no-follow checks over an exact inventory; terminal and record leaves must be single-linked regular files and descriptor plus namespace identities including mtime_ns/ctime_ns are revalidated after reading.",
         "The source database is not opened and must have exactly one link at start and immediately before return. The verifier never writes, renames, unlinks, publishes, resumes, evaluates, or creates the Exp445 official root.",
-        "No profile/root/attempt/worker/backend/source/resume/science/seed/mask override is exposed. A mismatch creates only the exact next error record and terminal error evidence; it never creates a complete state, publication, or evaluation."
+        "No profile/root/attempt/worker/backend/source/resume/science/seed/mask override is exposed. The real fixed readiness entrypoint rejects wrong/dirty commit, documents, config, environment/package/topology, provenance/backend, worker parity, labels, predecessor, and existing/symlink roots before allocating the official root. A mismatch creates only the exact next error record and terminal error evidence; it never creates a complete state, publication, or evaluation."
       ],
       "evidence": [
         {
@@ -5180,6 +5182,10 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
           "symbol": "def run_new_for_profile_antigravity"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_readiness_antigravity.py",
+          "symbol": "def test_profile_readiness_boundary_matrix_preserves_absent_root_antigravity"
         }
       ]
     }
