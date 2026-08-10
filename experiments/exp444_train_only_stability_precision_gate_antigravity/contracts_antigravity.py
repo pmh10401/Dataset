@@ -400,12 +400,17 @@ class StabilityViewAntigravity:
         if set(retained) & set(self.mask.excluded_train_indices):
             raise ValueError("retained and excluded TRAIN indices overlap")
         scores = tuple(self.depth_scores)
-        if not scores or any(not isinstance(item, DepthViewScoreAntigravity) for item in scores):
+        if any(not isinstance(item, DepthViewScoreAntigravity) for item in scores):
             raise ValueError("view depth scores are invalid")
-        depths = tuple(item.depth for item in scores)
-        if depths != tuple(sorted(set(depths))):
-            raise ValueError("view depth scores must be sorted and unique")
         agreeing = _tuple_ints(self.agreeing_depths, "agreeing_depths", sorted_unique=True)
+        if not scores:
+            if agreeing or self.survived:
+                raise ValueError("empty view requires no agreeing depths and survived=False")
+            depths = ()
+        else:
+            depths = tuple(item.depth for item in scores)
+            if depths != tuple(sorted(set(depths))):
+                raise ValueError("view depth scores must be sorted and unique")
         if any(depth not in depths for depth in agreeing):
             raise ValueError("agreeing depth is not present in view scores")
         if type(self.survived) is not bool:

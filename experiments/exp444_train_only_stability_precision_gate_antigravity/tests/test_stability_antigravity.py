@@ -131,6 +131,30 @@ class Exp444StabilityAntigravityTests(unittest.TestCase):
         self.assertEqual(view.agreeing_depths, ())
         self.assertFalse(view.survived)
 
+    def test_empty_score_records_without_candidate_are_non_surviving_and_round_trip_antigravity(self) -> None:
+        source = SourceCandidateAntigravity("Empty", 1, 32, (1, 2), 1)
+        self.assertEqual(stability_module._copy_scores_antigravity(()), ())
+        view = stability_module._view_from_scores_antigravity(
+            OmissionMaskAntigravity(13, (0,), "2" * 64),
+            (1, 2, 3, 4),
+            (),
+            source.original_depths,
+            False,
+        )
+
+        self.assertEqual(view.depth_scores, ())
+        self.assertEqual(view.agreeing_depths, ())
+        self.assertFalse(view.survived)
+        restored = StabilityViewAntigravity.from_payload(view.to_payload())
+        self.assertEqual(restored, view)
+
+    def test_empty_score_records_reject_survival_or_agreement_antigravity(self) -> None:
+        mask = OmissionMaskAntigravity(13, (0,), "3" * 64)
+        with self.assertRaisesRegex(ValueError, "empty view"):
+            StabilityViewAntigravity(mask, (1, 2, 3, 4), (), (), True)
+        with self.assertRaisesRegex(ValueError, "empty view"):
+            StabilityViewAntigravity(mask, (1, 2, 3, 4), (), (1,), False)
+
     def test_original_replay_requires_exact_exp442_candidate_antigravity(self) -> None:
         fixture = _fixture_input_antigravity()
         replay = replay_original_candidate_antigravity(fixture)

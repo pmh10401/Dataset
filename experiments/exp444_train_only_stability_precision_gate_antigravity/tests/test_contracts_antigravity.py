@@ -63,6 +63,16 @@ class Exp444ContractsAntigravityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             CandidateStabilityResultAntigravity(source, views, 6, 7, "stable_review")
 
+    def test_empty_stability_view_payload_round_trip_is_non_surviving_antigravity(self) -> None:
+        mask = OmissionMaskAntigravity(0, (0,), _DIGEST)
+        view = StabilityViewAntigravity(mask, (10, 11, 12, 13), (), (), False)
+        restored = StabilityViewAntigravity.from_payload(view.to_payload())
+        self.assertEqual(restored, view)
+        with self.assertRaises(ValueError):
+            StabilityViewAntigravity(mask, (10, 11, 12, 13), (), (), True)
+        with self.assertRaises(ValueError):
+            StabilityViewAntigravity(mask, (10, 11, 12, 13), (), (2,), False)
+
     def test_selection_conserves_two_review_lanes_and_rejects_duplicate_coordinates(self) -> None:
         source = (_source("A", rank=1), _source("B", rank=2))
         a = CandidateStabilityResultAntigravity(source[0], tuple(_view(source[0], i) for i in range(8)), 8, 7, "stable_review")

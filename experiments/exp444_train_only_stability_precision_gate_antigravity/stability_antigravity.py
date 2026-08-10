@@ -57,7 +57,7 @@ def _copy_depth_score_antigravity(score: object) -> DepthViewScoreAntigravity:
 
 def _copy_scores_antigravity(scores: Iterable[object]) -> tuple[DepthViewScoreAntigravity, ...]:
     result = tuple(sorted((_copy_depth_score_antigravity(score) for score in scores), key=lambda item: item.depth))
-    if not result or tuple(item.depth for item in result) != tuple(sorted({item.depth for item in result})):
+    if result and tuple(item.depth for item in result) != tuple(sorted({item.depth for item in result})):
         raise ValueError("Exp440 score depths are not sorted and unique")
     return result
 
