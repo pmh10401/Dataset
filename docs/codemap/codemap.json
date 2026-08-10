@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T01:54:06Z",
-  "generated_from_commit": "b43ec000c51b0fe4bdf54140e1445160791d3961",
+  "generated_at": "2026-08-10T02:10:00Z",
+  "generated_from_commit": "d9ef121d9a76c65f1c535d20bb9c36c74e563e21",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -70,7 +70,8 @@
     "Exp444 Task 4: unchanged Exp440 control replay, deterministic TRAIN omission masks, and stable/unstable review lanes",
     "Exp444 Task 5: CPU/MLX/Numba dense-distance parity and fixed whole-view speed gate with explicit CPU fallback",
     "Exp444 Task 5 fix round 1: fail-closed canonical backend evidence, exact runtime provenance, and fresh real parity/speed rerun",
-    "Exp444 Task 5 fix round 2: MLX versions authority and truthful unexpected-failure provenance"
+    "Exp444 Task 5 fix round 2: MLX versions authority and truthful unexpected-failure provenance",
+    "Exp444 Task 6: ordered create-only checkpoint prefix, stale-PID/orphan reconciliation, and parent-owned atomic progress/PID/event/text evidence"
   ],
   "nodes": [
     {
@@ -4341,6 +4342,10 @@
         "fixed_benchmark_selection_antigravity",
         "choose_backend_antigravity",
         "benchmark_backends_antigravity"
+        ,"Exp444CheckpointStoreAntigravity"
+        ,"ProcessIdentityAntigravity"
+        ,"current_process_identity_antigravity"
+        ,"ProgressWriterAntigravity"
       ],
       "tests": [
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_config_antigravity.py",
@@ -4350,7 +4355,9 @@
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_masks_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_stability_antigravity.py",
-        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_backend_antigravity.py"
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_backend_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_checkpoint_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_progress_antigravity.py"
       ],
       "constraints": [
         "Direct requirements remain exactly mlx==0.32.0, numba==0.66.0, and numpy==2.4.6; the complete six-distribution lock is bound by SHA256 8835702b9793a5cc08b5e95621b49c0a4a4136325354da7a655761f6b91f3a94.",
@@ -4377,7 +4384,9 @@
         "Numba uses one serial compiled float64 accumulation loop and deterministic median-of-three; CPU remains selected unless finite scalar max diff <= 1e-5, independent mask/candidate/survival/lane parity, and end-to-end speed ratio >= 1.1 all pass.",
         "Every accelerated gate field must be explicitly present and exactly true: availability, finite output, mask/candidate-presence/survival/lane identity, synchronization, device transfer, compile/warmup policy, result materialization, single process, and no process pool; timing and scalar evidence must be finite exact numbers, process count an exact integer one, scalar difference <= 1e-5, and speed ratio >= 1.1.",
         "MLX selection additionally requires a versions mapping with valid non-sentinel string values for both mlx and mlx-metal and requires the primary version to equal versions.mlx. Unexpected failures preserve measured values or explicitly record unknown when lookup did not complete; frozen package versions and Apple hardware labels are never substituted as measurements.",
-        "The fresh fix-round-1 fixed benchmark loaded 30 values-only inputs with label access 0; CPU 222.18546649999917s versus Numba 222.89457920892164s (0.9968186184184505x) retained CPU/11 workers. Numba finite output, masks, candidate presence, survival counts, and lane coordinates all matched with max scalar diff 7.22356281457337e-08; MLX failed closed on Apple M2 Max with mlx==0.32.0 and mlx-metal==0.32.0 because the exact float64 Metal probe raised ValueError."
+        "The Task 6 checkpoint is create-only and candidate-major over the exact 0..29 prefix: result bytes are fsynced before atomic state replacement, state stores the record hash prefix, only one exact-next orphan may be reconciled, terminal errors are immutable, and resume requires a distinct replacement process with an inactive stored PID."
+        ,"The Task 6 parent progress writer atomically replaces canonical progress/PID JSON and appends fsynced JSONL/Korean text events; it records dataset/candidate/view dimensions, TRAIN/TEST sizes, backend, counters, throughput, elapsed time, ETA, checkpoint, and latest error, and terminal fields are null/immutable."
+        ,"The fresh fix-round-1 fixed benchmark loaded 30 values-only inputs with label access 0; CPU 222.18546649999917s versus Numba 222.89457920892164s (0.9968186184184505x) retained CPU/11 workers. Numba finite output, masks, candidate presence, survival counts, and lane coordinates all matched with max scalar diff 7.22356281457337e-08; MLX failed closed on Apple M2 Max with mlx==0.32.0 and mlx-metal==0.32.0 because the exact float64 Metal probe raised ValueError."
       ],
       "evidence": [
         {
@@ -4523,6 +4532,26 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_backend_antigravity.py",
           "symbol": "class BackendContractAntigravityTests"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/checkpoint_antigravity.py",
+          "symbol": "class Exp444CheckpointStoreAntigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/checkpoint_antigravity.py",
+          "symbol": "def current_process_identity_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/progress_antigravity.py",
+          "symbol": "class ProgressWriterAntigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "class Exp444CheckpointAntigravityTests"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "class Exp444ProgressAntigravityTests"
         }
       ]
     }
