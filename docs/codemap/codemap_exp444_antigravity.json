@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T07:35:31Z",
-  "generated_from_commit": "f5d7931452a992d8f4360cea1a5489b0604da5ea",
+  "generated_at": "2026-08-10T07:51:10Z",
+  "generated_from_commit": "0e1b9773764174053edf0adb5ee41ff58455fec6",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -83,7 +83,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve Exp404/Exp416 as the verified full-population reference and the completed review-only Exp442/Exp443 evidence. Exp444 governance is frozen in its approved design, implementation plan, preregistration, and runbook: it reviews only the frozen Exp442 30 candidates through deterministic normal-TRAIN perturbation stability, has descriptive-only status without a scientific success or promotion rule, and has no runtime source edge or official root yet.",
+      "role": "The control ledgers preserve Exp404/Exp416 as the verified full-population reference and the completed review-only Exp442/Exp443 evidence. Exp444 governance is frozen in its approved design, implementation plan, preregistration, and runbook: it reviews only the frozen Exp442 30 candidates through deterministic normal-TRAIN perturbation stability, has descriptive-only status without a scientific success or promotion rule, and is implemented by exp444_stability_contracts through the research_control -> exp444_stability_contracts call edge; its official root remains absent.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -4776,6 +4776,14 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_reporting_antigravity.py",
           "symbol": "def test_attempt_directory_replacement_after_capture_receives_no_publication_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _rollback_empty_destination_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_reporting_antigravity.py",
+          "symbol": "def test_rename_boundary_rejection_removes_destination_and_allows_retry_antigravity"
         }
       ]
     }
