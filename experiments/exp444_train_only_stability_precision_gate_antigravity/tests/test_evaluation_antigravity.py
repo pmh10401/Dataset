@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,7 @@ from experiments.exp444_train_only_stability_precision_gate_antigravity.evaluati
     evaluate_frozen_publication_antigravity,
     inspect_evaluation_antigravity,
 )
+from experiments.exp444_train_only_stability_precision_gate_antigravity import evaluation_antigravity as evaluation
 
 
 @dataclass(frozen=True)
@@ -50,9 +52,9 @@ class _DependenciesAntigravity:
     dataset_count = 2
     label_count = 4
 
-    def __init__(self, root: Path, *, tamper_second: bool = False, fail_after_labels: bool = False) -> None:
+    def __init__(self, root: Path, *, tamper_second: bool = False, tamper_inspection: int | None = None, fail_open: bool = False, fail_after_labels: bool = False) -> None:
         self.root, self.events = root, []
-        self.tamper_second, self.fail_after_labels = tamper_second, fail_after_labels
+        self.tamper_second, self.tamper_inspection, self.fail_open, self.fail_after_labels = tamper_second, tamper_inspection, fail_open, fail_after_labels
         candidates = (_CandidateAntigravity("A", 1), _CandidateAntigravity("B", 0))
         self.selection = type("SelectionAntigravity", (), {"source": candidates, "stable": (candidates[0],), "unstable": (candidates[1],)})()
         leaf = {"dataset_summary_antigravity.jsonl": "a" * 64, "source_audit_antigravity.json": "b" * 64}
@@ -61,6 +63,8 @@ class _DependenciesAntigravity:
     def inspect_publication_antigravity(self) -> _PublicationAntigravity:
         self.events.append("inspect_publication")
         if self.tamper_second and self.events.count("inspect_publication") == 2:
+            self.publication.manifest["prediction_sha256"] = "d" * 64
+        if self.tamper_inspection == self.events.count("inspect_publication"):
             self.publication.manifest["prediction_sha256"] = "d" * 64
         return self.publication
 
@@ -85,6 +89,8 @@ class _DependenciesAntigravity:
 
     def open_labels_antigravity(self, _identity: dict[str, object]) -> _LabelsAntigravity:
         self.events.append("open_labels")
+        if self.fail_open:
+            raise RuntimeError("open failed")
         return _LabelsAntigravity({"A": ((0, 0), (1, 1)), "B": ((0, 0), (1, 0))}, self.events)
 
     def evaluation_root_antigravity(self) -> Path:
@@ -96,6 +102,37 @@ class _DependenciesAntigravity:
 
 
 class FrozenEvaluationAntigravityTests(unittest.TestCase):
+    def test_production_population_baseline_and_lane_conservation_gates_fail_closed_antigravity(self) -> None:
+        """Wrong frozen population, baseline, or lane deltas must fail before payload creation."""
+        identity = {"source_order": [["A", 0]], "stable": [["A", 0]], "unstable": []}
+        rows = ({"dataset": "A", "baseline": [1915, 303, 2003, 191679], "frozen_source": [1916, 303, 2002, 191679], "stable": [1916, 303, 2002, 191679], "unstable": [1915, 303, 2003, 191679]},)
+        transitions = ({"dataset": "A", "instance_index": 0, "lane": "stable_review", "label": 1, "baseline_predicted": False, "frozen_source_predicted": True, "stable_predicted": True, "unstable_predicted": False},)
+        with self.assertRaisesRegex(ValueError, "dataset|query|rows"):
+            evaluation._validate_prepublication_antigravity(identity, rows, transitions, attempts=1, completions=1, label_rows=1, production=True)
+        wrong = dict(rows[0]); wrong["baseline"] = [1914, 303, 2003, 191680]
+        with self.assertRaisesRegex(ValueError, "baseline"):
+            evaluation._validate_prepublication_antigravity(identity, (wrong,), transitions, attempts=1117, completions=1117, label_rows=195900, production=True)
+        bad_transition = dict(transitions[0]); bad_transition["label"] = 0
+        with self.assertRaisesRegex(ValueError, "conservation"):
+            evaluation._validate_prepublication_antigravity(identity, rows, (bad_transition,), attempts=1, completions=1, label_rows=195900, production=False)
+
+    def test_verified_label_session_hash_binds_and_authorizes_only_frozen_query_antigravity(self) -> None:
+        """Replacing the descriptor helper or widening its SQL boundary must fail."""
+        with tempfile.TemporaryDirectory(prefix="exp444_verified_labels_antigravity_") as directory:
+            database = Path(directory) / "labels_antigravity.sqlite"
+            connection = sqlite3.connect(database)
+            connection.executescript("CREATE TABLE datasets(id INTEGER PRIMARY KEY,name TEXT); CREATE TABLE instances(dataset_id INTEGER,instance_index INTEGER,split TEXT,label INTEGER);")
+            connection.execute("INSERT INTO datasets VALUES(1,'A')")
+            connection.executemany("INSERT INTO instances VALUES(1,?, 'TEST',?)", ((0, 0), (1, 1)))
+            connection.commit(); connection.close()
+            digest = sha256(database.read_bytes()).hexdigest()
+            with evaluation._open_verified_labels_antigravity(database, digest) as labels:
+                self.assertEqual(labels.labels_for_dataset_antigravity("A"), ((0, 0), (1, 1)))
+                with self.assertRaisesRegex(ValueError, "authorizer|query"):
+                    labels.execute_for_test_antigravity("SELECT label FROM instances")
+            with self.assertRaisesRegex(ValueError, "SHA256"):
+                with evaluation._open_verified_labels_antigravity(database, "0" * 64):
+                    pass
     def test_import_firewall_keeps_sqlite_unloaded_until_post_freeze_branch_antigravity(self) -> None:
         """Moving the real label dependency to module scope must fail this isolated import."""
         completed = subprocess.run(
@@ -133,6 +170,20 @@ class FrozenEvaluationAntigravityTests(unittest.TestCase):
             self.assertEqual(first.evaluation_sha256, replay.evaluation_sha256)
             self.assertEqual(dependencies.events.count("open_labels"), 1)
 
+    def test_replay_reconstructs_derived_leaves_even_when_artifact_map_is_regenerated_antigravity(self) -> None:
+        """Changing a derived diagnostic and its map hash must not make replay accept it."""
+        with tempfile.TemporaryDirectory(prefix="exp444_evaluation_replay_antigravity_") as directory:
+            dependencies = _DependenciesAntigravity(Path(directory))
+            evaluate_frozen_publication_antigravity(dependencies=dependencies)
+            root = dependencies.evaluation_root_antigravity()
+            leaf = root / "rescued_datasets_antigravity.jsonl"
+            leaf.write_text('{"dataset":"B"}\n')
+            artifact = __import__("json").loads((root / "artifact_sha256_antigravity.json").read_text())
+            artifact["files"][leaf.name] = sha256(leaf.read_bytes()).hexdigest()
+            (root / "artifact_sha256_antigravity.json").write_bytes(evaluation.canonical_json_bytes_antigravity(artifact))
+            with self.assertRaisesRegex(ValueError, "derived|replay|evaluation"):
+                inspect_evaluation_antigravity(dependencies=dependencies)
+
     def test_post_label_failure_writes_a_unique_audit_sibling_antigravity(self) -> None:
         """Post-label exceptions preserve a new audit record without mutating a commit."""
         with tempfile.TemporaryDirectory(prefix="exp444_evaluation_audit_antigravity_") as directory:
@@ -142,3 +193,23 @@ class FrozenEvaluationAntigravityTests(unittest.TestCase):
             audits = list(Path(directory).glob("evaluation_audit_*_antigravity.json"))
             self.assertEqual(len(audits), 1)
             self.assertIn('"query_attempts":2', audits[0].read_text())
+
+    def test_each_post_label_identity_checkpoint_blocks_publication_antigravity(self) -> None:
+        """Removing any close/compute/pre-publish reinspection would commit after a Task8 swap."""
+        for inspection in (3, 4, 5):
+            with self.subTest(inspection=inspection), tempfile.TemporaryDirectory(prefix="exp444_identity_checkpoint_antigravity_") as directory:
+                dependencies = _DependenciesAntigravity(Path(directory), tamper_inspection=inspection)
+                with self.assertRaisesRegex(ValueError, "Task8 publication changed"):
+                    evaluate_frozen_publication_antigravity(dependencies=dependencies)
+                self.assertFalse(dependencies.evaluation_root_antigravity().exists())
+
+    def test_open_failure_starts_audit_before_first_label_query_antigravity(self) -> None:
+        """Deferring audit until query one would lose a failed label-bound open."""
+        with tempfile.TemporaryDirectory(prefix="exp444_open_audit_antigravity_") as directory:
+            dependencies = _DependenciesAntigravity(Path(directory), fail_open=True)
+            with self.assertRaisesRegex(RuntimeError, "open"):
+                evaluate_frozen_publication_antigravity(dependencies=dependencies)
+            audits = list(Path(directory).glob("evaluation_audit_*_antigravity.json"))
+            self.assertEqual(len(audits), 1)
+            self.assertIn('"commit_state":"none"', audits[0].read_text())
+            self.assertIn('"query_attempts":0', audits[0].read_text())

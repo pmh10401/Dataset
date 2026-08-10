@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import contextmanager
 from hashlib import sha256
 import importlib
 import json
@@ -118,11 +119,7 @@ class _FrozenDependenciesAntigravity:
         return values
 
     def open_labels_antigravity(self, _identity: Mapping[str, object]) -> _LabelSessionAntigravity:
-        # Deliberately local: importing this evaluator or replaying evaluation cannot import SQLite.
-        sqlite3 = importlib.import_module("sqlite3")
-        database = Path(FROZEN_CONFIG.database_path)
-        connection = sqlite3.connect(f"file:{database}?mode=ro&immutable=1", uri=True)
-        return _SqliteLabelsAntigravity(connection)
+        return _open_verified_labels_antigravity(Path(FROZEN_CONFIG.database_path), FROZEN_CONFIG.database_sha256)
 
     def evaluation_root_antigravity(self) -> Path:
         return Path(FROZEN_CONFIG.run_root) / "evaluation_antigravity"
@@ -133,13 +130,43 @@ class _SqliteLabelsAntigravity:
         self._connection = connection
 
     def labels_for_dataset_antigravity(self, dataset: str) -> tuple[tuple[int, int], ...]:
+        if type(dataset) is not str or not dataset:
+            raise ValueError("label query dataset is invalid")
         cursor = self._connection.execute("""SELECT i.instance_index, i.label
 FROM instances AS i JOIN datasets AS d ON d.id = i.dataset_id
 WHERE d.name = ? AND i.split = 'TEST' ORDER BY i.instance_index""", (dataset,))
         return tuple(cursor.fetchall())
 
+    def execute_for_test_antigravity(self, query: str) -> None:
+        """Narrow test probe proving the authorizer, never a production escape hatch."""
+        try:
+            self._connection.execute(query)
+        except Exception as error:
+            raise ValueError("label authorizer rejected query") from error
+        raise ValueError("label query boundary accepted an unexpected query")
+
     def close_antigravity(self) -> None:
         self._connection.close()
+
+
+@contextmanager
+def _open_verified_labels_antigravity(database: Path, expected_sha256: str):
+    """Open exactly one descriptor-bound, hash-bound TEST-label session lazily."""
+    inputs = importlib.import_module("experiments.exp417_causal_multihorizon_shadow.inputs")
+    sqlite3 = importlib.import_module("sqlite3")
+    with inputs.verified_read_only_connection(Path(database), expected_sha256) as connection:
+        allowed_reads = {("instances", "instance_index"), ("instances", "label"), ("instances", "split"), ("instances", "dataset_id"), ("datasets", "id"), ("datasets", "name")}
+        def authorizer(action: int, arg1: str | None, arg2: str | None, _database: str | None, _source: str | None) -> int:
+            if action == sqlite3.SQLITE_SELECT:
+                return sqlite3.SQLITE_OK
+            if action == sqlite3.SQLITE_READ and (arg1, arg2) in allowed_reads:
+                return sqlite3.SQLITE_OK
+            return sqlite3.SQLITE_DENY
+        connection.set_authorizer(authorizer)
+        try:
+            yield _SqliteLabelsAntigravity(connection)
+        finally:
+            connection.set_authorizer(None)
 
 
 @dataclass(frozen=True)
@@ -204,6 +231,47 @@ def _sum_confusion_antigravity(rows: Sequence[Mapping[str, object]], field: str)
     return tuple(sum(row[field][index] for row in rows) for index in range(4))  # type: ignore[index,return-value]
 
 
+def _validate_prepublication_antigravity(identity: Mapping[str, object], rows: Sequence[Mapping[str, object]], transitions: Sequence[Mapping[str, object],], *, attempts: int, completions: int, label_rows: int, production: bool) -> None:
+    """Validate frozen counts and the complete source/stable/unstable delta partition."""
+    if attempts != completions:
+        raise ValueError("evaluation dataset/query count is invalid")
+    if production and (attempts, completions, label_rows) != (1117, 1117, 195900):
+        raise ValueError("evaluation frozen dataset/query/rows count is invalid")
+    if sum(sum(row["baseline"]) for row in rows) != label_rows:
+        raise ValueError("evaluation label rows are invalid")
+    baseline, all_rows, stable, unstable = (_sum_confusion_antigravity(rows, field) for field in ("baseline", "frozen_source", "stable", "unstable"))
+    if production and baseline != (1915, 303, 2003, 191679):
+        raise ValueError("evaluation baseline confusion is invalid")
+    if len(rows) != attempts:
+        raise ValueError("evaluation dataset/query count is invalid")
+    source = tuple(tuple(item) for item in identity.get("source_order", ()))
+    stable_coordinates = tuple(tuple(item) for item in identity.get("stable", ()))
+    unstable_coordinates = tuple(tuple(item) for item in identity.get("unstable", ()))
+    if len(source) != len(set(source)) or set(stable_coordinates).intersection(unstable_coordinates) or set(stable_coordinates) | set(unstable_coordinates) != set(source):
+        raise ValueError("evaluation source lane partition is invalid")
+    if production and len(source) != 30:
+        raise ValueError("evaluation source count is invalid")
+    transition_coordinates = tuple((row.get("dataset"), row.get("instance_index")) for row in transitions)
+    if set(transition_coordinates) != set(source) or len(transition_coordinates) != len(set(transition_coordinates)):
+        raise ValueError("evaluation transition partition is invalid")
+    lane_delta = {"stable_review": [0, 0], "unstable_review": [0, 0]}
+    for transition in transitions:
+        lane, label, already = transition.get("lane"), transition.get("label"), transition.get("baseline_predicted")
+        if lane not in lane_delta or type(label) is not int or label not in (0, 1) or type(already) is not bool:
+            raise ValueError("evaluation transition is invalid")
+        coordinate = (transition.get("dataset"), transition.get("instance_index"))
+        expected_lane = "stable_review" if coordinate in set(stable_coordinates) else "unstable_review"
+        if lane != expected_lane or transition.get("stable_predicted") is not (lane == "stable_review") or transition.get("unstable_predicted") is not (lane == "unstable_review"):
+            raise ValueError("evaluation transition lane is invalid")
+        if not already:
+            lane_delta[lane][0 if label else 1] += 1
+    def delta(confusion: tuple[int, int, int, int]) -> tuple[int, int]:
+        return (confusion[0] - baseline[0], confusion[1] - baseline[1])
+    all_delta = delta(all_rows)
+    if (lane_delta["stable_review"][0] + lane_delta["unstable_review"][0], lane_delta["stable_review"][1] + lane_delta["unstable_review"][1]) != all_delta or tuple(lane_delta["stable_review"]) != delta(stable) or tuple(lane_delta["unstable_review"]) != delta(unstable):
+        raise ValueError("evaluation lane TP/FP conservation is invalid")
+
+
 def _payloads_antigravity(identity: Mapping[str, object], rows: Sequence[Mapping[str, object]], transitions: Sequence[Mapping[str, object]]) -> dict[str, bytes]:
     baseline, all_rows, stable, unstable = (_sum_confusion_antigravity(rows, name) for name in ("baseline", "frozen_source", "stable", "unstable"))
     bootstrap = paired_bootstrap_antigravity(
@@ -250,7 +318,14 @@ def _audit_antigravity(dependencies: object, *, phase: str, identity: Mapping[st
     root = Path(dependencies.evaluation_root_antigravity()).parent
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
     path = root / f"evaluation_audit_{uuid4().hex}_antigravity.json"
-    payload = {"schema": "exp444.evaluation-audit.v1", "phase": phase, "publication_identity": dict(identity or {}), "query_attempts": attempts, "query_completions": completions, "rows": rows, "session_state": session_state, "commit_state": "uncommitted", "error": f"{type(error).__name__}: {error}"}
+    destination = Path(dependencies.evaluation_root_antigravity())
+    if not destination.exists() and not destination.is_symlink():
+        commit_state = "none"
+    elif destination.is_dir() and not destination.is_symlink() and set(path.name for path in destination.iterdir()) == set(EVALUATION_NAMES_ANTIGRAVITY):
+        commit_state = "complete"
+    else:
+        commit_state = "partial"
+    payload = {"schema": "exp444.evaluation-audit.v1", "phase": phase, "publication_identity": dict(identity or {}), "query_attempts": attempts, "query_completions": completions, "rows": rows, "session_state": session_state, "commit_state": commit_state, "error": f"{type(error).__name__}: {error}"}
     write_create_only_antigravity(path, canonical_json_bytes_antigravity(payload))
 
 
@@ -273,6 +348,13 @@ def _result_from_payloads_antigravity(payloads: Mapping[str, bytes]) -> FrozenEv
     rows = [parse_canonical_json_bytes_antigravity(line + b"\n") for line in metrics]
     if not all(isinstance(row, Mapping) for row in rows):
         raise ValueError("evaluation metrics are invalid")
+    transitions = [parse_canonical_json_bytes_antigravity(line + b"\n") for line in payloads["candidate_transitions_antigravity.jsonl"].splitlines()]
+    if not all(isinstance(row, Mapping) for row in transitions):
+        raise ValueError("evaluation transitions are invalid")
+    _validate_prepublication_antigravity(identity, rows, transitions, attempts=len(rows), completions=len(rows), label_rows=sum(sum(row["baseline"]) for row in rows), production=False)
+    reconstructed = _payloads_antigravity(identity, rows, transitions)
+    if any(payloads[name] != reconstructed[name] for name in EVALUATION_NAMES_ANTIGRAVITY):
+        raise ValueError("evaluation derived replay changed")
     return FrozenEvaluationAntigravity("descriptive_complete_no_promotion", False, sha256(payloads["evaluation_antigravity.json"]).hexdigest(), identity, len(rows), len(rows), sum(sum(row["baseline"]) for row in rows), tuple(facts["baseline_confusion"]), tuple(facts["frozen_source_confusion"]), tuple(facts["stable_confusion"]), tuple(facts["unstable_confusion"]))
 
 
@@ -299,7 +381,7 @@ def evaluate_frozen_publication_antigravity(*, dependencies: object | None = Non
     root = Path(dependencies.evaluation_root_antigravity())
     if root.exists() or root.is_symlink():
         return inspect_evaluation_antigravity(dependencies=dependencies)
-    phase, identity, attempts, completions, row_count, session_state = "pre_label_inspection", None, 0, 0, 0, "not_opened"
+    phase, identity, attempts, completions, row_count, session_state, label_boundary_entered = "pre_label_inspection", None, 0, 0, 0, "not_opened", False
     try:
         first = dependencies.inspect_publication_antigravity(); first_identity = dependencies.publication_identity_antigravity(first)
         # Exp404 is hash-bound before the independent repeat; labels remain unreachable.
@@ -308,8 +390,11 @@ def evaluate_frozen_publication_antigravity(*, dependencies: object | None = Non
         second = dependencies.inspect_publication_antigravity(); identity = dependencies.publication_identity_antigravity(second)
         if not _identity_equal_antigravity(first_identity, identity):
             raise ValueError("Task8 publication content/root identity changed")
-        phase = "labels_open"
-        session = dependencies.open_labels_antigravity(identity); session_state = "open"
+        phase = "labels_open"; label_boundary_entered = True
+        opened = dependencies.open_labels_antigravity(identity)
+        manager = opened if hasattr(opened, "__enter__") and hasattr(opened, "__exit__") else None
+        session = manager.__enter__() if manager is not None else opened
+        session_state = "open"
         try:
             labels_by_dataset: dict[str, tuple[int, ...]] = {}
             for dataset in identity["dataset_order"]:
@@ -317,7 +402,15 @@ def evaluate_frozen_publication_antigravity(*, dependencies: object | None = Non
                 labels = _labels_antigravity(session.labels_for_dataset_antigravity(dataset), dataset)
                 completions += 1; row_count += len(labels); labels_by_dataset[dataset] = labels
         finally:
-            session.close_antigravity(); session_state = "closed"
+            if manager is not None:
+                manager.__exit__(None, None, None)
+            else:
+                session.close_antigravity()
+            session_state = "closed"
+        phase = "post_close_reinspection"
+        post_close = dependencies.inspect_publication_antigravity(); post_close_identity = dependencies.publication_identity_antigravity(post_close)
+        if not _identity_equal_antigravity(identity, post_close_identity):
+            raise ValueError("Task8 publication changed after label close")
         if len(labels_by_dataset) != getattr(dependencies, "dataset_count") or row_count != getattr(dependencies, "label_count"):
             raise ValueError("evaluation label population differs from frozen Task8 summary")
         source, stable, unstable = ({tuple(value) for value in identity[name]} for name in ("source_order", "stable", "unstable"))
@@ -333,6 +426,7 @@ def evaluate_frozen_publication_antigravity(*, dependencies: object | None = Non
             metric_rows.append({"dataset": dataset, **{name: list(value) for name, value in values.items()}})
             for index in sorted(added):
                 transitions.append({"dataset": dataset, "instance_index": index, "lane": "stable_review" if (dataset, index) in stable else "unstable_review", "label": labels[index], "baseline_predicted": index in baseline, "frozen_source_predicted": True, "stable_predicted": index in stable_added, "unstable_predicted": index in unstable_added})
+        _validate_prepublication_antigravity(identity, metric_rows, transitions, attempts=attempts, completions=completions, label_rows=row_count, production=isinstance(dependencies, _FrozenDependenciesAntigravity))
         hook = getattr(dependencies, "after_labels_antigravity", None)
         if hook is not None: hook()
         phase = "post_compute_reinspection"
@@ -348,7 +442,7 @@ def evaluate_frozen_publication_antigravity(*, dependencies: object | None = Non
         result = _result_from_payloads_antigravity(payloads)
         return FrozenEvaluationAntigravity(result.status, result.scientific_winner_selected, result.evaluation_sha256, result.publication_identity, attempts, completions, row_count, result.baseline_confusion, result.frozen_source_confusion, result.stable_confusion, result.unstable_confusion)
     except BaseException as error:
-        if attempts:
+        if label_boundary_entered:
             _audit_antigravity(dependencies, phase=phase, identity=identity, attempts=attempts, completions=completions, rows=row_count, session_state=session_state, error=error)
         raise
 
