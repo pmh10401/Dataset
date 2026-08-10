@@ -1,18 +1,8 @@
 {
-  "current_commit": "7899b7b7d3fa460d14645a048c79afbc06b5483c",
-  "working_tree_dirty": false,
-  "generated_at": "2026-08-10T22:43:59Z",
-  "scanned_scope": [
-    "tracked root files including AGENTS.md",
-    ".superpowers",
-    "docs except docs/codemap",
-    "experiments",
-    "operational",
-    "reports",
-    "scratch",
-    "scripts",
-    "vercel-dashboard"
+  "changed_modules_since_prior_lock": [
+    "docs"
   ],
+  "current_commit": "3dc3c8c86a45bfb296b0d441129b8dca02086345",
   "excluded_directories": [
     ".git",
     ".worktrees",
@@ -31,6 +21,7 @@
     "results"
   ],
   "fingerprint_algorithm": "sha256-v1: for each scanned module, sort tracked repo-relative paths; append path UTF-8, NUL, decimal byte length, NUL, current file bytes, NUL; hash the concatenation. Only tracked files with no slash are grouped as root. Excluded directories, including docs/codemap, outputs, and results, are skipped entirely to prevent self-reference and excluded-content folding.",
+  "generated_at": "2026-08-10T22:59:56Z",
   "module_fingerprints": {
     ".superpowers": {
       "fingerprint": "60eaabaa6cda7c4614929741c95cb9e13eb7d07be82229f0320a4d4bc7bd6003",
@@ -41,8 +32,8 @@
       "tracked_files": 378
     },
     "experiments": {
-      "fingerprint": "e91f3bcd7a52f235ce749240dde8fc95d3db19db808ee0b1722a948fee7a0798",
-      "tracked_files": 1300
+      "fingerprint": "092b50459db1c8dff3f1b097f2fbb10a2a5e253d3fc47527f08f1fd9f9943060",
+      "tracked_files": 1303
     },
     "operational": {
       "fingerprint": "b726ba55ad5394c557bb74d16f69ad3ae610b8c2fdedc339f24ff50453cdb305",
@@ -57,8 +48,8 @@
       "tracked_files": 210
     },
     "scratch": {
-      "fingerprint": "99d254199882d7d43336bf0f3b4169c076fe4b78c232ca385b807e429bccb0c9",
-      "tracked_files": 150
+      "fingerprint": "f313ff343b05200ac67afa6869f2bf9646b417cd376d3988eb448d539b471d12",
+      "tracked_files": 151
     },
     "scripts": {
       "fingerprint": "610b86a44d7cbb601cc88713ee25c78811802df4af485635009c0635db46a776",
@@ -69,7 +60,16 @@
       "tracked_files": 81
     }
   },
-  "changed_modules_since_prior_lock": [
-    "experiments"
-  ]
+  "scanned_scope": [
+    "tracked root files including AGENTS.md",
+    ".superpowers",
+    "docs except docs/codemap",
+    "experiments",
+    "operational",
+    "reports",
+    "scratch",
+    "scripts",
+    "vercel-dashboard"
+  ],
+  "working_tree_dirty": false
 }
