@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T05:29:17Z",
-  "generated_from_commit": "347a462d4b56dff17cdab0cd3f93be8a8c669339",
+  "generated_at": "2026-08-10T06:30:45Z",
+  "generated_from_commit": "5a224d47b028bace1149809e348659dfd2a213f8",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -4296,7 +4296,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
-      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix rounds bind every query to those coordinates, remove caller-minted SQLite sessions, and preserve truthful descriptor-bound failure evidence. Task 4 replays the unchanged Exp440 calibration/scoring rule, creates deterministic omission views, and classifies the same 30 coordinates into exhaustive stable/unstable review lanes; corrective review preserves a valid empty score tuple when a view has no stable depth model and rejects reordered score evidence. Task 5 benchmarks only the exact dense-distance seam and retains CPU/11 workers because Numba is below 1.1x and MLX float64 is unavailable. Task 6 provides crash-recoverable ordered checkpoints and parent-owned atomic progress. Task 7 closes the verified values-only source session before scheduling, passes only copied immutable inputs to a spawn ProcessPoolExecutor, bounds pending plus buffered results by workers squared, commits the exact case-sensitive rank prefix in the parent, records worker attribution, supports SIGINT exact-prefix resume and complete finalization re-entry, and proves real sequential versus 11-worker canonical-byte identity for all 30 candidates with zero TEST-label access. Task 8 freezes the complete inactive checkpoint into a create-only thirteen-file stable/unstable review publication, requires original-control parity and exact 1,117 summary ordering, and provides an offline inspector that reparses every contract and recomputes all leaf, manifest, status, and self-excluding map bytes without database, worker, checkpoint mutation, or evaluator access.",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix rounds bind every query to those coordinates, remove caller-minted SQLite sessions, and preserve truthful descriptor-bound failure evidence. Task 4 replays the unchanged Exp440 calibration/scoring rule, creates deterministic omission views, and classifies the same 30 coordinates into exhaustive stable/unstable review lanes; corrective review preserves a valid empty score tuple when a view has no stable depth model and rejects reordered score evidence. Task 5 benchmarks only the exact dense-distance seam and retains CPU/11 workers because Numba is below 1.1x and MLX float64 is unavailable. Task 6 provides crash-recoverable ordered checkpoints and parent-owned atomic progress. Task 7 closes the verified values-only source session before scheduling, passes only copied immutable inputs to a spawn ProcessPoolExecutor, bounds pending plus buffered results by workers squared, commits the exact case-sensitive rank prefix in the parent, records worker attribution, supports SIGINT exact-prefix resume and complete finalization re-entry, and proves real sequential versus 11-worker canonical-byte identity for all 30 candidates with zero TEST-label access. Task 8 freezes the complete inactive checkpoint into a create-only thirteen-file stable/unstable review publication, requires original-control parity and exact 1,117 summary ordering, and provides an offline inspector that reparses every contract and recomputes all leaf, manifest, status, and self-excluding map bytes without database, worker, checkpoint mutation, or evaluator access. Corrected Task 8 authenticates the exact Exp440 1,117-row summary, manifest, and artifact map through one retained publication-directory descriptor, pins the canonical Task5 backend authority, verifies it before any new or interrupted mutation, and embeds raw terminal context/state/progress/PID/events/text plus all 30 record wrappers in the publication; offline inspection reconstitutes full OriginalReplay controls and terminal record results, validates rank/prefix/process/event/text invariants, and accepts an existing publication before any source/provenance/checkpoint access.",
       "entrypoints": [
         "FROZEN_CONFIG",
         "frozen_config_payload_antigravity",
@@ -4362,7 +4362,9 @@
         "reconcile_orphan_antigravity",
         "FrozenPublicationAntigravity",
         "publish_prediction_antigravity",
-        "inspect_publication_antigravity"
+        "inspect_publication_antigravity",
+        "Exp444ProvenanceAntigravity",
+        "verify_exp444_provenance_antigravity"
       ],
       "tests": [
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_config_antigravity.py",
@@ -4377,7 +4379,8 @@
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_progress_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_runtime_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_worker_parity_antigravity.py",
-        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_reporting_antigravity.py"
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_reporting_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_provenance_antigravity.py"
       ],
       "constraints": [
         "Direct requirements remain exactly mlx==0.32.0, numba==0.66.0, and numpy==2.4.6; the complete six-distribution lock is bound by SHA256 8835702b9793a5cc08b5e95621b49c0a4a4136325354da7a655761f6b91f3a94.",
@@ -4416,7 +4419,8 @@
         "Complete finalization-only re-entry is read-only and requires canonical coherent checkpoint, progress, PID, JSONL event, and Korean text-log surfaces with matching process identity, counts, terminal state, checkpoint path, hashes, and context before accepting the 30-record result prefix.",
         "Task 7 fix round 2 rejects a changed committed record, payload hash, malformed prefix, invalid exact-next orphan, context drift, or live stored owner through a full read-only checkpoint preflight before any progress authority mutation. The same preflight is invoked again inside ProgressWriter.open_interrupted immediately before its first owner write, and Exp444CheckpointStoreAntigravity.open_interrupted performs the full validation again before checkpoint rebinding.",
         "The real Task 7 parity command processed all 30 candidates with sequential SHA256 and 11-worker SHA256 both 729b31c0698fda6b60c17012a3fd2cae3f4b0899e01e5a3bf4d569902e814857, canonical byte equality true, and label access count zero.",
-        "Task 7 fix round 3 accepts at most one exact-next durable orphan through an immutable inspection containing its record SHA and decoded result or error identity. The writable checkpoint must reproduce the entire accepted SHA prefix before progress advances exactly once; a result orphan resumes at the following candidate, while an error orphan atomically advances truthful success/error counters, writes terminal error progress, and schedules no work."
+        "Task 7 fix round 3 accepts at most one exact-next durable orphan through an immutable inspection containing its record SHA and decoded result or error identity. The writable checkpoint must reproduce the entire accepted SHA prefix before progress advances exactly once; a result orphan resumes at the following candidate, while an error orphan atomically advances truthful success/error counters, writes terminal error progress, and schedules no work.",
+        "Corrected Task 8 binds configured exact SHA256 values for the Exp440 publication summary/manifest/artifact map and the tracked backend_decision_authority_antigravity.json. New and interrupted runtime mutation verifies those authorities first; existing publication re-entry is inspect-only. The publication carries a full Task5 authority wrapper, raw terminal runtime surfaces and all record wrappers with byte-size/SHA seals, while inspection recomputes the complete 30-record/result prefix and full OriginalReplay rank contract without reopening source or checkpoint paths."
       ],
       "evidence": [
         {
@@ -4710,6 +4714,22 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_reporting_antigravity.py",
           "symbol": "def test_publish_and_read_only_inspect_conserve_every_source_coordinate_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/provenance_antigravity.py",
+          "symbol": "def verify_exp444_provenance_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/backend_decision_authority_antigravity.json",
+          "symbol": "Task5 canonical backend authority"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_provenance_antigravity.py",
+          "symbol": "class Exp444ProvenanceAntigravityTests"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/reporting_antigravity.py",
+          "symbol": "def _inspect_terminal_runtime_antigravity"
         }
       ]
     }
