@@ -28,7 +28,7 @@
 - MLX or Numba is eligible only with identical masks, candidate/view survival, stable/unstable lane coordinates, finite outputs, maximum absolute scalar difference at most `1e-5`, and end-to-end stage speed at least 1.1x CPU including transfer and synchronization.
 - Run only one MLX/MPS-heavy process. Never combine outer multiprocessing with concurrent MLX jobs.
 - Long execution writes atomic progress JSON, PID JSON, append-only event JSONL and text log, current dataset/candidate/view dimensions, counters, throughput, elapsed time, ETA, checkpoint, and latest error itself. Codex does not poll repeatedly.
-- Compare `docs/codemap/codemap.lock` before every code change. Query `codemap.json` for callers, effects, and tests before editing a mapped module. Regenerate `codemap.html`, `codemap.json`, and `codemap.lock` together when a boundary or major flow changes.
+- Compare `docs/codemap/codemap_exp444_antigravity.lock` before every code change. Query `docs/codemap/codemap_exp444_antigravity.json` for callers, effects, and tests before editing a mapped module. Regenerate `docs/codemap/codemap_exp444_antigravity.html`, `docs/codemap/codemap_exp444_antigravity.json`, and `docs/codemap/codemap_exp444_antigravity.lock` together when a boundary or major flow changes.
 
 ## File Structure
 
@@ -68,9 +68,9 @@
 - Modify: `EXPERIMENT_CATALOG.json`
 - Modify: `RESEARCH_STATE.json`
 - Modify: `CHAMPION_LEDGER.json`
-- Modify together: `docs/codemap/codemap.html`
-- Modify together: `docs/codemap/codemap.json`
-- Modify together: `docs/codemap/codemap.lock`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.html`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.json`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.lock`
 
 **Interfaces:**
 - Consumes: approved design SHA256 `1bb76f19d07ef312d5ac5498414d0c914ce94b99c5912e0bbcf3f0197c1400e8` and the Global Constraints.
@@ -80,7 +80,7 @@
 
 ```bash
 test "$(shasum -a 256 docs/superpowers/specs/2026-08-10-exp444-train-only-stability-precision-gate-antigravity-design.md | awk '{print $1}')" = "1bb76f19d07ef312d5ac5498414d0c914ce94b99c5912e0bbcf3f0197c1400e8"
-python3 -m json.tool docs/codemap/codemap.lock >/dev/null
+python3 -m json.tool docs/codemap/codemap_exp444_antigravity.lock >/dev/null
 git status --short --branch
 ```
 
@@ -132,12 +132,12 @@ Keep the existing 20 primary nodes. Add the plan/preregistration/runbook to `res
 python3 -m json.tool EXPERIMENT_CATALOG.json >/dev/null
 python3 -m json.tool RESEARCH_STATE.json >/dev/null
 python3 -m json.tool CHAMPION_LEDGER.json >/dev/null
-python3 -m json.tool docs/codemap/codemap.json >/dev/null
-python3 -m json.tool docs/codemap/codemap.lock >/dev/null
+python3 -m json.tool docs/codemap/codemap_exp444_antigravity.json >/dev/null
+python3 -m json.tool docs/codemap/codemap_exp444_antigravity.lock >/dev/null
 git diff --check
 git add docs/EXP444_PREREGISTRATION_antigravity_KO.md docs/EXP444_RUNBOOK_antigravity_KO.md \
   EXPERIMENT_CATALOG.json RESEARCH_STATE.json CHAMPION_LEDGER.json \
-  docs/codemap/codemap.html docs/codemap/codemap.json docs/codemap/codemap.lock
+  docs/codemap/codemap_exp444_antigravity.html docs/codemap/codemap_exp444_antigravity.json docs/codemap/codemap_exp444_antigravity.lock
 git commit -m "docs(exp444): freeze TRAIN stability contract"
 ```
 
@@ -157,9 +157,9 @@ git commit -m "docs(exp444): freeze TRAIN stability contract"
 - Create: `experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_contracts_antigravity.py`
 - Create: `experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_artifacts_antigravity.py`
 - Create: `experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_environment_antigravity.py`
-- Modify together: `docs/codemap/codemap.html`
-- Modify together: `docs/codemap/codemap.json`
-- Modify together: `docs/codemap/codemap.lock`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.html`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.json`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.lock`
 
 **Interfaces:**
 - Produces: `FROZEN_CONFIG`, `frozen_config_payload_antigravity()`, `scientific_config_sha256_antigravity()`, `verify_environment_antigravity() -> EnvironmentEvidenceAntigravity`, canonical/create-only artifact wrappers, and immutable value objects consumed by Tasks 3-12.
@@ -878,9 +878,9 @@ git commit -m "feat(exp444): expose fixed stability lifecycle"
 - Create: `docs/EXP444_IMPLEMENTATION_REPORT_antigravity.md`
 - Modify: `EXPERIMENT_CATALOG.json`
 - Modify: `RESEARCH_STATE.json`
-- Modify together: `docs/codemap/codemap.html`
-- Modify together: `docs/codemap/codemap.json`
-- Modify together: `docs/codemap/codemap.lock`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.html`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.json`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.lock`
 
 **Interfaces:**
 - Consumes: all Task 1-10 commits and real smoke evidence.
@@ -939,9 +939,9 @@ Review the exact clean HEAD for Critical/Important/Minor findings, label-boundar
 - Modify: `RESEARCH_STATE.json`
 - Modify: `FAILURE_LEDGER.json` when any unfavorable/engineering failure occurs
 - Modify: `CHAMPION_LEDGER.json`
-- Modify together: `docs/codemap/codemap.html`
-- Modify together: `docs/codemap/codemap.json`
-- Modify together: `docs/codemap/codemap.lock`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.html`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.json`
+- Modify together: `docs/codemap/codemap_exp444_antigravity.lock`
 
 **Interfaces:**
 - Produces: immutable official readiness, 30-coordinate stable/unstable prediction publication, post-freeze descriptive evaluation, hashes, ledgers, and a paused research state.
@@ -996,8 +996,8 @@ python3 -m json.tool RESEARCH_STATE.json >/dev/null
 python3 -m json.tool EXPERIMENT_CATALOG.json >/dev/null
 python3 -m json.tool FAILURE_LEDGER.json >/dev/null
 python3 -m json.tool CHAMPION_LEDGER.json >/dev/null
-python3 -m json.tool docs/codemap/codemap.json >/dev/null
-python3 -m json.tool docs/codemap/codemap.lock >/dev/null
+python3 -m json.tool docs/codemap/codemap_exp444_antigravity.json >/dev/null
+python3 -m json.tool docs/codemap/codemap_exp444_antigravity.lock >/dev/null
 git diff --check
 git add docs/EXP444_IMPLEMENTATION_REPORT_antigravity.md docs/EXP444_RUNBOOK_antigravity_KO.md \
   EXPERIMENT_CATALOG.json RESEARCH_STATE.json FAILURE_LEDGER.json CHAMPION_LEDGER.json docs/codemap

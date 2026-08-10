@@ -60,14 +60,25 @@ All newly created files across all tasks and experiments must include `antigravi
 
 ## Code Map Synchronization
 
-At the start of every code-changing task, compare the current repo with docs/codemap/codemap.lock.
+At the start of every code-changing task, resolve the current experiment version
+from the active research state or the user-declared version, then compare the
+repo with its versioned triplet:
+`docs/codemap/codemap_<version>_antigravity.html`,
+`docs/codemap/codemap_<version>_antigravity.json`, and
+`docs/codemap/codemap_<version>_antigravity.lock`. For Exp444 the canonical
+triplet is `docs/codemap/codemap_exp444_antigravity.html`,
+`docs/codemap/codemap_exp444_antigravity.json`, and
+`docs/codemap/codemap_exp444_antigravity.lock`.
 
-Before modifying a module, use docs/codemap/codemap.json to answer three questions:
+Before modifying a module, use the current version's `codemap_<version>_antigravity.json`
+to answer three questions:
 
 1. What calls it?
 2. What does it affect?
 3. Which tests cover it?
 
-If the map is stale or cannot answer those questions, regenerate codemap.html, codemap.json, and codemap.lock before changing the code.
+If the map is stale or cannot answer those questions, regenerate all three
+versioned files together before changing the code. A new experiment/version
+creates its own versioned triplet; it never overwrites a prior version map.
 
-Whenever module boundaries, dependencies, routes, databases, queues, or major data flows change, update the code map in the same commit as the code.
+Whenever module boundaries, dependencies, routes, databases, queues, or major data flows change, update that version's complete triplet in the same commit as the code.
