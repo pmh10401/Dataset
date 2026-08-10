@@ -180,6 +180,40 @@ class Exp444CheckpointAntigravityTests(unittest.TestCase):
                     )
                 self.assertEqual(before, state_path.read_bytes())
 
+    def test_read_only_interrupted_preflight_rejects_changed_record_without_mutation_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task7_preflight_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            store = Exp444CheckpointStoreAntigravity.create(
+                root, _context_antigravity(), _process_antigravity()
+            )
+            store.commit_antigravity(0, _result_antigravity(0))
+            store.mark_interrupted_antigravity()
+            record_path = root / "records_antigravity/0000_record_antigravity.json"
+            payload = json.loads(record_path.read_text())
+            payload["result"]["candidate"]["dataset"] = "TamperedDatasetAntigravity"
+            record_path.write_bytes(canonical_json_bytes_antigravity(payload))
+            before = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in sorted(root.rglob("*"))
+                if path.is_file()
+            }
+            with self.assertRaisesRegex(ValueError, "record"):
+                Exp444CheckpointStoreAntigravity.inspect_interrupted_antigravity(
+                    root,
+                    _context_antigravity(),
+                    _process_antigravity(41002, "start-B"),
+                    pid_probe=lambda _: False,
+                )
+            after = {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in sorted(root.rglob("*"))
+                if path.is_file()
+            }
+            self.assertEqual(before, after)
+
     def test_same_numeric_pid_and_interrupted_old_writer_are_rejected_antigravity(self) -> None:
         from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import Exp444CheckpointStoreAntigravity
 

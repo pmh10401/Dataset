@@ -465,10 +465,13 @@ class ProgressWriterAntigravity:
         process: ProcessIdentityAntigravity | None = None,
         checkpoint_path: Path | None = None,
         pid_probe: Callable[[ProcessIdentityAntigravity], bool] | None = None,
+        authority_preflight: Callable[[], None] | None = None,
     ) -> "ProgressWriterAntigravity":
         attempt = Path(attempt_path)
         if not attempt.is_dir() or attempt.is_symlink():
             raise ValueError("progress attempt path is invalid")
+        if authority_preflight is not None and not callable(authority_preflight):
+            raise ValueError("progress authority preflight is invalid")
         progress = _read_canonical_antigravity(attempt / "progress_antigravity.json")
         pid_payload = _read_canonical_antigravity(attempt / "pid_antigravity.json")
         if set(progress) != _PROGRESS_KEYS or set(pid_payload) != _PID_KEYS:
@@ -594,6 +597,13 @@ class ProgressWriterAntigravity:
             raise ValueError("progress checkpoint payload hash changed")
         if checkpoint["error"] is not None:
             raise ValueError("progress checkpoint error state is invalid")
+        if authority_preflight is not None:
+            try:
+                authority_preflight()
+            except ValueError:
+                raise
+            except BaseException as error:
+                raise ValueError("progress authority preflight failed") from error
         writer = cls(
             attempt, total=total, process=process,
             checkpoint_path=expected_checkpoint,

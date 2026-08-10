@@ -113,6 +113,52 @@ class Exp444ProgressAntigravityTests(unittest.TestCase):
             self.assertEqual(resumed.error_count_antigravity, 0)
             self.assertEqual(json.loads((attempt / "progress_antigravity.json").read_text())["active"], True)
 
+    def test_resume_authority_preflight_runs_before_first_owner_write_antigravity(self) -> None:
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task7_progress_preflight_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_0000_antigravity"
+            attempt.mkdir()
+            writer = ProgressWriterAntigravity.create(
+                attempt, total=30, pid=42003, start_identity="start-A"
+            )
+            writer.start_candidate_antigravity(
+                "A", 0, train_count=5, test_count=1, raw_length=16
+            )
+            writer.complete_candidate_antigravity()
+            writer.close_antigravity("interrupted")
+            _write_checkpoint_state_antigravity(
+                attempt, pid=42003, start_identity="start-A", completed=1, total=30
+            )
+            before = {
+                path.relative_to(attempt).as_posix(): path.read_bytes()
+                for path in sorted(attempt.rglob("*"))
+                if path.is_file()
+            }
+            calls = 0
+
+            def reject_changed_authority_antigravity() -> None:
+                nonlocal calls
+                calls += 1
+                raise ValueError("checkpoint record changed")
+
+            with self.assertRaisesRegex(ValueError, "record changed"):
+                ProgressWriterAntigravity.open_interrupted(
+                    attempt,
+                    total=30,
+                    pid=42004,
+                    start_identity="start-B",
+                    pid_probe=lambda _: False,
+                    authority_preflight=reject_changed_authority_antigravity,
+                )
+            after = {
+                path.relative_to(attempt).as_posix(): path.read_bytes()
+                for path in sorted(attempt.rglob("*"))
+                if path.is_file()
+            }
+            self.assertEqual(calls, 1)
+            self.assertEqual(before, after)
+
     def test_stale_temps_are_discarded_without_becoming_progress_authority_antigravity(self) -> None:
         from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
 

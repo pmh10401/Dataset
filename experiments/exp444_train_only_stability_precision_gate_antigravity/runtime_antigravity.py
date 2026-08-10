@@ -661,6 +661,14 @@ def _execute_runtime_antigravity(
                 attempt, store, None, status="complete", label_access_count=0,
                 resumed=True, finalization_only=True,
             )
+        # Full record/prefix/orphan validation is read-only and must succeed
+        # before progress/PID/events/text can be rebound.  The writable open
+        # below repeats the same validation at the checkpoint mutation boundary.
+        Exp444CheckpointStoreAntigravity.inspect_interrupted_antigravity(
+            checkpoint_root,
+            context,
+            process,
+        )
         # Progress validation must see the inactive interrupted checkpoint;
         # checkpoint opening then binds the new owner and switches to running.
         writer = ProgressWriterAntigravity.open_interrupted(
@@ -668,6 +676,11 @@ def _execute_runtime_antigravity(
             total=FROZEN_CONFIG.source_candidate_count,
             process=process,
             checkpoint_path=checkpoint_root / "state_antigravity.json",
+            authority_preflight=lambda: Exp444CheckpointStoreAntigravity.inspect_interrupted_antigravity(
+                checkpoint_root,
+                context,
+                process,
+            ),
         )
         store = Exp444CheckpointStoreAntigravity.open_interrupted(
             checkpoint_root,

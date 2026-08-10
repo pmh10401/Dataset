@@ -440,12 +440,15 @@ class Exp444CheckpointStoreAntigravity:
         pid_probe: Callable[[ProcessIdentityAntigravity], bool] | None = None,
         *,
         allow_complete_finalization: bool = False,
-    ) -> "Exp444CheckpointStoreAntigravity":
+        _read_only_preflight: bool = False,
+    ) -> "Exp444CheckpointStoreAntigravity" | None:
         expected_context = _context_payload_antigravity(context)
         if type(replacement_process) is not ProcessIdentityAntigravity:
             raise ValueError("checkpoint replacement process identity is invalid")
         if type(allow_complete_finalization) is not bool:
             raise ValueError("checkpoint finalization flag is invalid")
+        if type(_read_only_preflight) is not bool:
+            raise ValueError("checkpoint preflight flag is invalid")
         root = Path(root)
         if "antigravity" not in root.name or root.is_symlink() or not root.is_dir():
             raise ValueError("checkpoint root is invalid")
@@ -529,6 +532,8 @@ class Exp444CheckpointStoreAntigravity:
         if status == "complete":
             if not allow_complete_finalization or completed != total or orphan is not None or tuple(prefix) != tuple(prefix_payload):
                 raise ValueError("checkpoint is complete")
+            if _read_only_preflight:
+                return None
             return cls(root, context, stored_process, tuple(prefix_payload), "complete", error_count, finalization_only=True)
         orphan_error: Mapping[str, object] | None = None
         if orphan is not None and orphan_result is None:
@@ -539,6 +544,8 @@ class Exp444CheckpointStoreAntigravity:
             if orphan_payload.get("status") != "error":
                 raise ValueError("checkpoint orphan result is invalid")
             orphan_error = orphan_payload.get("error")
+        if _read_only_preflight:
+            return None
         if orphan_error is not None:
             # A durable error record is itself terminal even if the process
             # died before the state replacement.  Reconcile it once, then
@@ -555,6 +562,25 @@ class Exp444CheckpointStoreAntigravity:
         else:
             resumed._write_state_antigravity()
         return resumed
+
+    @classmethod
+    def inspect_interrupted_antigravity(
+        cls,
+        root: Path,
+        context: CheckpointContextAntigravity,
+        replacement_process: ProcessIdentityAntigravity,
+        pid_probe: Callable[[ProcessIdentityAntigravity], bool] | None = None,
+    ) -> None:
+        """Validate the complete resumable authority without changing any bytes."""
+        result = cls.open_interrupted(
+            root,
+            context,
+            replacement_process,
+            pid_probe=pid_probe,
+            _read_only_preflight=True,
+        )
+        if result is not None:
+            raise AssertionError("checkpoint read-only preflight mutated into a writable store")
 
     open_for_resume_antigravity = open_interrupted
 

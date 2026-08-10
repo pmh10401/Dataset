@@ -434,6 +434,118 @@ class Exp444RuntimeAntigravityTests(unittest.TestCase):
                             "reviewed", "attempt_0000_antigravity", run_root=root
                         )
 
+    def test_resume_rejects_corrupt_committed_authority_before_any_owner_bytes_change_antigravity(self) -> None:
+        """Opening progress before full record validation would rebind a corrupt attempt."""
+        inputs = _inputs_antigravity(30)
+
+        def interrupted_map(active, *, commit, progress, **_kwargs):
+            progress(stage="active", sequence=0)
+            commit(0, active[0], _result_antigravity(active[0]))
+            raise KeyboardInterrupt("fixture SIGINT")
+
+        for offset, corruption in enumerate(("record", "payload_sha")):
+            with self.subTest(corruption=corruption), tempfile.TemporaryDirectory(prefix=f"exp444_task7_preflight_{corruption}_antigravity_") as directory:
+                root = Path(directory) / "run_antigravity"
+                owner = ProcessIdentityAntigravity(9_500_001 + offset * 2, f"owner-{corruption}")
+                replacement = ProcessIdentityAntigravity(9_500_002 + offset * 2, f"replacement-{corruption}")
+                with (
+                    mock.patch.object(runtime, "current_process_identity_antigravity", return_value=owner),
+                    mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
+                    mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
+                ):
+                    with self.assertRaises(KeyboardInterrupt):
+                        runtime.run_new_antigravity("reviewed", run_root=root)
+
+                attempt = root / "attempts_antigravity/attempt_0000_antigravity"
+                checkpoint = attempt / "checkpoint_antigravity"
+                if corruption == "record":
+                    record_path = checkpoint / "records_antigravity/0000_record_antigravity.json"
+                    payload = json.loads(record_path.read_text())
+                    payload["result"]["candidate"]["dataset"] = "TamperedDatasetAntigravity"
+                    record_path.write_bytes(runtime.canonical_json_bytes_antigravity(payload))
+                else:
+                    state_path = checkpoint / "state_antigravity.json"
+                    payload = json.loads(state_path.read_text())
+                    payload["payload_sha256"] = "0" * 64
+                    state_path.write_bytes(runtime.canonical_json_bytes_antigravity(payload))
+                before = {
+                    path.relative_to(attempt).as_posix(): path.read_bytes()
+                    for path in sorted(attempt.rglob("*"))
+                    if path.is_file()
+                }
+                with (
+                    mock.patch.object(runtime, "current_process_identity_antigravity", return_value=replacement),
+                    mock.patch.object(runtime, "_load_source_inputs_antigravity", side_effect=AssertionError("corrupt authority must fail before source access")),
+                ):
+                    with self.assertRaisesRegex(ValueError, "checkpoint|record|payload"):
+                        runtime.run_resume_antigravity(
+                            "reviewed", "attempt_0000_antigravity", run_root=root
+                        )
+                after = {
+                    path.relative_to(attempt).as_posix(): path.read_bytes()
+                    for path in sorted(attempt.rglob("*"))
+                    if path.is_file()
+                }
+                self.assertEqual(before, after)
+
+    def test_resume_revalidates_checkpoint_at_progress_rebind_boundary_antigravity(self) -> None:
+        """A record changed after initial preflight must not permit progress rebinding."""
+        inputs = _inputs_antigravity(30)
+
+        def interrupted_map(active, *, commit, progress, **_kwargs):
+            progress(stage="active", sequence=0)
+            commit(0, active[0], _result_antigravity(active[0]))
+            raise KeyboardInterrupt("fixture SIGINT")
+
+        with tempfile.TemporaryDirectory(prefix="exp444_task7_preflight_race_antigravity_") as directory:
+            root = Path(directory) / "run_antigravity"
+            owner = ProcessIdentityAntigravity(9_600_001, "owner-race")
+            replacement = ProcessIdentityAntigravity(9_600_002, "replacement-race")
+            with (
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=owner),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)),
+                mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=interrupted_map),
+            ):
+                with self.assertRaises(KeyboardInterrupt):
+                    runtime.run_new_antigravity("reviewed", run_root=root)
+
+            attempt = root / "attempts_antigravity/attempt_0000_antigravity"
+            record_path = attempt / "checkpoint_antigravity/records_antigravity/0000_record_antigravity.json"
+            original_preflight = runtime.Exp444CheckpointStoreAntigravity.inspect_interrupted_antigravity
+            corrupted_authority: dict[str, bytes] = {}
+            calls = 0
+
+            def racing_preflight(*args, **kwargs):
+                nonlocal calls
+                calls += 1
+                original_preflight(*args, **kwargs)
+                if calls == 1:
+                    payload = json.loads(record_path.read_text())
+                    payload["result"]["candidate"]["dataset"] = "RacingDatasetAntigravity"
+                    record_path.write_bytes(runtime.canonical_json_bytes_antigravity(payload))
+                    corrupted_authority.update({
+                        path.relative_to(attempt).as_posix(): path.read_bytes()
+                        for path in sorted(attempt.rglob("*"))
+                        if path.is_file()
+                    })
+
+            with (
+                mock.patch.object(runtime, "current_process_identity_antigravity", return_value=replacement),
+                mock.patch.object(runtime.Exp444CheckpointStoreAntigravity, "inspect_interrupted_antigravity", side_effect=racing_preflight),
+                mock.patch.object(runtime, "_load_source_inputs_antigravity", side_effect=AssertionError("racing corruption must fail before source access")),
+            ):
+                with self.assertRaisesRegex(ValueError, "record"):
+                    runtime.run_resume_antigravity(
+                        "reviewed", "attempt_0000_antigravity", run_root=root
+                    )
+            after = {
+                path.relative_to(attempt).as_posix(): path.read_bytes()
+                for path in sorted(attempt.rglob("*"))
+                if path.is_file()
+            }
+            self.assertGreaterEqual(calls, 2)
+            self.assertEqual(corrupted_authority, after)
+
 
 class _ViewFailureAntigravity(RuntimeError):
     view_index = 7
