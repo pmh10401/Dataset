@@ -1,9 +1,11 @@
 """Adversarial tests for Exp444's frozen-source and values-only boundary."""
 from __future__ import annotations
 
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 
@@ -56,6 +58,35 @@ def _remove_retained_pin_antigravity(pin: Path) -> None:
         for child in tuple(pin.parent.iterdir()):
             child.unlink()
         pin.parent.rmdir()
+
+
+def _verified_fixture_snapshot_antigravity(directory: str) -> FrozenSourceSnapshotAntigravity:
+    database = Path(directory) / "frozen_database_antigravity.db"
+    shutil.copyfile(FROZEN_CONFIG.database_path, database)
+    fixture = {
+        "database": database,
+        "exp404_hard_prediction": FROZEN_CONFIG.exp404_hard_prediction_path,
+        "exp442_prediction": FROZEN_CONFIG.exp442_prediction_path,
+        "exp442_candidate_ranking": FROZEN_CONFIG.exp442_candidate_ranking_path,
+        "exp442_selection": FROZEN_CONFIG.exp442_selection_path,
+    }
+    return sources.verify_frozen_sources_antigravity(fixture)
+
+
+def _assert_truthful_failure_pin_antigravity(
+    testcase: unittest.TestCase,
+    session: sources.ValuesOnlyDatabaseSessionAntigravity,
+    pin: Path,
+) -> None:
+    testcase.assertTrue(pin.exists())
+    testcase.assertTrue(pin.parent.exists())
+    testcase.assertEqual((pin.stat().st_dev, pin.stat().st_ino), session.descriptor_inode)
+    testcase.assertEqual(sha256(pin.read_bytes()).hexdigest(), FROZEN_CONFIG.database_sha256)
+
+
+def _remove_descriptor_evidence_antigravity(evidence: Path) -> None:
+    evidence.unlink()
+    evidence.parent.rmdir()
 
 
 class Exp444SourceBoundaryAntigravityTests(unittest.TestCase):
@@ -397,31 +428,87 @@ WHERE d.name = ? AND i.split = 'TEST' AND i.instance_index = ?""",
                     paths, {"prediction": "0" * 64, "ranking": "0" * 64, "selection": "0" * 64}
                 )
 
-    def test_database_replacement_and_metadata_drift_fail_before_query_antigravity(self) -> None:
-        for mutation in ("replace", "metadata"):
-            with self.subTest(mutation=mutation):
-                snapshot = sources.verify_frozen_sources_antigravity()
-                session = snapshot.session
-                pin = session.pin_path
-                replacement = pin.parent / "replacement_antigravity.db"
-                replacement.write_bytes(b"replacement database pin")
-                if mutation == "metadata":
-                    before = replacement.stat()
-                    os.utime(replacement, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
-                os.replace(replacement, pin)
-                candidate = snapshot.candidates[0]
-                with self.assertRaisesRegex(ValueError, "database source or pin identity changed"):
-                    session.query_antigravity(
-                        sources.BOUND_TEST_VALUE_SQL_ANTIGRAVITY,
-                        (candidate.dataset, candidate.instance_index),
-                    )
-                self.assertEqual(session.execution_count, 0)
-                self.assertEqual(session.label_access_count, 0)
-                with self.assertRaisesRegex(ValueError, "pinned database close failed"):
-                    session.close()
-                self.assertTrue(pin.exists())
-                self.assertTrue(pin.parent.exists())
-                _remove_retained_pin_antigravity(pin)
+    def test_owned_pin_inode_replacement_restores_truthful_evidence_antigravity(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp444_pin_replacement_antigravity_") as directory:
+            snapshot = _verified_fixture_snapshot_antigravity(directory)
+            session = snapshot.session
+            pin = session.pin_path
+            replacement = pin.parent / "attacker_replacement_antigravity.db"
+            replacement.write_bytes(b"attacker replacement")
+            os.replace(replacement, pin)
+            candidate = snapshot.candidates[0]
+            with self.assertRaisesRegex(ValueError, "database source or pin identity changed"):
+                session.query_antigravity(
+                    sources.BOUND_TEST_VALUE_SQL_ANTIGRAVITY,
+                    (candidate.dataset, candidate.instance_index),
+                )
+            self.assertEqual(session.execution_count, 0)
+            with self.assertRaisesRegex(ValueError, "pinned database close failed"):
+                session.close()
+            _assert_truthful_failure_pin_antigravity(self, session, pin)
+            _remove_retained_pin_antigravity(pin)
+
+    def test_source_database_pathname_replacement_retains_original_pin_antigravity(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp444_source_replacement_antigravity_") as directory:
+            snapshot = _verified_fixture_snapshot_antigravity(directory)
+            session = snapshot.session
+            pin = session.pin_path
+            database = Path(snapshot.database_path)
+            replacement = Path(directory) / "source_replacement_antigravity.db"
+            shutil.copyfile(FROZEN_CONFIG.database_path, replacement)
+            os.replace(replacement, database)
+            candidate = snapshot.candidates[0]
+            with self.assertRaisesRegex(ValueError, "database source or pin identity changed"):
+                session.query_antigravity(
+                    sources.BOUND_TEST_VALUE_SQL_ANTIGRAVITY,
+                    (candidate.dataset, candidate.instance_index),
+                )
+            with self.assertRaisesRegex(ValueError, "pinned database close failed"):
+                session.close()
+            _assert_truthful_failure_pin_antigravity(self, session, pin)
+            _remove_retained_pin_antigravity(pin)
+
+    def test_source_database_metadata_drift_retains_original_pin_antigravity(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp444_source_metadata_antigravity_") as directory:
+            snapshot = _verified_fixture_snapshot_antigravity(directory)
+            session = snapshot.session
+            pin = session.pin_path
+            database = Path(snapshot.database_path)
+            before = database.stat()
+            os.utime(database, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
+            candidate = snapshot.candidates[0]
+            with self.assertRaisesRegex(ValueError, "database source or pin identity changed"):
+                session.query_antigravity(
+                    sources.BOUND_TEST_VALUE_SQL_ANTIGRAVITY,
+                    (candidate.dataset, candidate.instance_index),
+                )
+            with self.assertRaisesRegex(ValueError, "pinned database close failed"):
+                session.close()
+            _assert_truthful_failure_pin_antigravity(self, session, pin)
+            _remove_retained_pin_antigravity(pin)
+
+    def test_unrestorable_pin_preserves_truthful_descriptor_evidence_antigravity(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp444_unrestorable_pin_antigravity_") as directory:
+            snapshot = _verified_fixture_snapshot_antigravity(directory)
+            session = snapshot.session
+            pin = session.pin_path
+            database = Path(snapshot.database_path)
+            source_attacker = Path(directory) / "source_attacker_antigravity.db"
+            pin_attacker = pin.parent / "pin_attacker_antigravity.db"
+            source_attacker.write_bytes(b"source attacker")
+            pin_attacker.write_bytes(b"pin attacker")
+            os.replace(source_attacker, database)
+            os.replace(pin_attacker, pin)
+            with self.assertRaisesRegex(ValueError, "pinned database close failed"):
+                session.close()
+            evidence = session.failure_evidence_path
+            self.assertIsNotNone(evidence)
+            assert evidence is not None
+            self.assertTrue(evidence.exists())
+            self.assertEqual(sha256(evidence.read_bytes()).hexdigest(), FROZEN_CONFIG.database_sha256)
+            self.assertFalse(pin.exists())
+            _remove_retained_pin_antigravity(pin)
+            _remove_descriptor_evidence_antigravity(evidence)
 
     def test_close_failure_injections_preserve_truthful_pin_and_root_antigravity(self) -> None:
         steps = ("before_descriptor_close", "before_pin_unlink", "after_pin_unlink", "before_root_rmdir")
@@ -440,9 +527,7 @@ WHERE d.name = ? AND i.split = 'TEST' AND i.instance_index = ?""",
                 sources._CLOSE_STEP_HOOK_ANTIGRAVITY = fail
                 with self.assertRaisesRegex(ValueError, "pinned database close failed"):
                     session.close()
-                self.assertTrue(pin.exists(), step)
-                self.assertTrue(pin.parent.exists(), step)
-                self.assertEqual((pin.stat().st_dev, pin.stat().st_ino), session.descriptor_inode)
+                _assert_truthful_failure_pin_antigravity(self, session, pin)
                 self.assertEqual(database.stat().st_nlink, original_links + 1)
                 sources._CLOSE_STEP_HOOK_ANTIGRAVITY = None
                 _remove_retained_pin_antigravity(pin)

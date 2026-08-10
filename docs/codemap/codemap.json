@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-09T23:44:23Z",
-  "generated_from_commit": "9046ac3df51056edfcd738b30f1f127cd2bb9c73",
+  "generated_at": "2026-08-10T00:00:57Z",
+  "generated_from_commit": "40fa7a0471bb2e52ccbc168dea07bfa2fddf9b81",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -65,7 +65,8 @@
     "Exp444 Task 2: isolated Python 3.14.6 environment, immutable TRAIN-only stability contracts, and thin canonical/create-only artifact wrappers",
     "Exp444 Task 3: exact frozen Exp442/Exp404 source replay, 30-coordinate identity, and descriptor-bound values-only SQLite loading",
     "Exp444 Task 3 fix round 1: frozen 30-coordinate snapshot attestation, parameter-bound values-only sessions, adversarial source/SQL/identity coverage, and truthful close-failure pin preservation",
-    "Exp444 Task 3 fix round 2: verifier-only database sessions, exact rank-ordered full-candidate attestation, and removal of the SQLite-capable fixture escape"
+    "Exp444 Task 3 fix round 2: verifier-only database sessions, exact rank-ordered full-candidate attestation, and removal of the SQLite-capable fixture escape",
+    "Exp444 Task 3 fix round 3: truthful original-inode failure pins across pin, source-path, and source-metadata attacks with descriptor-backed fallback evidence"
   ],
   "nodes": [
     {
@@ -4288,7 +4289,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
-      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix round 1 binds every session query to those exact candidate datasets/coordinates, rejects fabricated snapshots before database access, and restores a truthful private pin/root after injected close failures. Fix round 2 removes the SQLite-capable fixture constructor: only the exact verified replay can mint the module-private session capability, and snapshot/session/loader cross-check a canonical rank-ordered attestation of dataset, instance, raw length, depths, and original rank before query. The source firewall rejects label-capable SQL before execution, excludes whole nonfinite TRAIN rows, preserves read-only float32 arrays, and keeps the official Exp444 root absent. Task 2 contracts and thin artifact wrappers remain immutable.",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix round 1 binds every session query to those exact candidate datasets/coordinates, rejects fabricated snapshots before database access, and restores a truthful private pin/root after injected close failures. Fix round 2 removes the SQLite-capable fixture constructor: only the exact verified replay can mint the module-private session capability, and snapshot/session/loader cross-check a canonical rank-ordered attestation of dataset, instance, raw length, depths, and original rank before query. Fix round 3 removes attacker pin replacements on close failure, restores the original verified inode when possible, validates retained dev/inode/SHA, and preserves separate descriptor-backed evidence if exact relinking is impossible; pin replacement, source pathname replacement, and source metadata drift have separate behavioral coverage. The source firewall rejects label-capable SQL before execution, excludes whole nonfinite TRAIN rows, preserves read-only float32 arrays, and keeps the official Exp444 root absent. Task 2 contracts and thin artifact wrappers remain immutable.",
       "entrypoints": [
         "FROZEN_CONFIG",
         "frozen_config_payload_antigravity",
@@ -4338,6 +4339,7 @@
         "Frozen source snapshots require exactly 30 candidates in rank order 1-30, one per dataset, valid immutable candidate dimensions/depths, a recomputed canonical coordinate identity equal to db0b9ed00ed5b9313fef10306d04bb539136c5b28b97ebcd325662d9302a3048, and a canonical full ordered candidate attestation before any database open or query.",
         "Public session construction rejects every caller-chosen database path, digest, candidate population, and bound before database access. Only exact verified Exp442 prediction/ranking/selection replay can mint the private identity-token attestation used to initialize a session; no SQLite-capable test fixture seam exists in production.",
         "Successful session close removes only its private pin/root and restores the source link count; validation, descriptor-close, pin-unlink, post-unlink, and root-removal failures retain or restore a truthful failure pin/root without garbage-collection cleanup.",
+        "Every failed close verifies that retained pin dev/inode and SHA are the original descriptor-bound database. An attacker replacement at the owned pin is removed without touching other paths and relinked from verified source authority; if exact inode restoration is impossible, a separate private descriptor-backed SHA-verified evidence file/root is retained and the combined failure is surfaced.",
         "Exp444 is descriptive-only: no scientific success criterion, winner, promotion, operational alert, or same-experiment reselection is available; the official run root remains absent and Exp440/442/443 roots/artifacts are immutable."
       ],
       "evidence": [
@@ -4392,6 +4394,10 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py",
           "symbol": "def test_close_failure_injections_preserve_truthful_pin_and_root_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py",
+          "symbol": "def test_owned_pin_inode_replacement_restores_truthful_evidence_antigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/environment_antigravity.py",

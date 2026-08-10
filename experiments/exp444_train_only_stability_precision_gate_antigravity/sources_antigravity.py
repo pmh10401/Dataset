@@ -284,7 +284,7 @@ class ValuesOnlyDatabaseSessionAntigravity:
         "_pin_inode", "_source_nlink", "_database_sha256", "_closed", "_label_access_count",
         "_allowed_train_datasets", "_allowed_test_coordinates", "_bound_candidate_signatures",
         "_candidate_attestation_sha256",
-        "denied_sql_attempts", "sql_trace", "_active_sql", "_finalizer", "__weakref__",
+        "_failure_evidence_path", "denied_sql_attempts", "sql_trace", "_active_sql", "_finalizer", "__weakref__",
     )
 
     def __init__(self, *_args: object, **_kwargs: object) -> None:
@@ -332,6 +332,7 @@ class ValuesOnlyDatabaseSessionAntigravity:
         self._allowed_test_coordinates = allowed_test_coordinates
         self._bound_candidate_signatures = bound_candidate_signatures
         self._candidate_attestation_sha256 = candidate_attestation_sha256
+        self._failure_evidence_path: Path | None = None
         self.denied_sql_attempts = 0
         self.sql_trace: list[str] = []
         self._active_sql: str | None = None
@@ -443,6 +444,10 @@ class ValuesOnlyDatabaseSessionAntigravity:
             raise ValueError("database session is closed")
         return self._pin_inode
 
+    @property
+    def failure_evidence_path(self) -> Path | None:
+        return self._failure_evidence_path
+
     def _require_live(self) -> None:
         if self._closed or self._descriptor is None or self._pin_path is None or self._source_metadata is None:
             raise ValueError("database session is closed")
@@ -529,16 +534,60 @@ class ValuesOnlyDatabaseSessionAntigravity:
 
     def _restore_failure_pin_antigravity(self, pin: Path) -> None:
         assert self._pin_inode is not None and self._source_nlink is not None
-        if pin.exists():
-            restored = pin.lstat()
-        else:
+        try:
+            current = pin.lstat()
+        except FileNotFoundError:
+            current = None
+        if current is not None and (current.st_dev, current.st_ino) != self._pin_inode:
+            if stat.S_ISDIR(current.st_mode):
+                raise ValueError("attacker replacement at failure pin is a directory")
+            pin.unlink()
+            current = None
+        if current is None:
             named = self._source_path.lstat()
             if (named.st_dev, named.st_ino) != self._pin_inode:
                 raise ValueError("database source cannot restore failure pin")
             os.link(self._source_path, pin, follow_symlinks=False)
-            restored = pin.lstat()
-        if (restored.st_dev, restored.st_ino) != self._pin_inode or restored.st_nlink != self._source_nlink + 1:
+        restored = pin.lstat()
+        if (restored.st_dev, restored.st_ino) != self._pin_inode:
             raise ValueError("restored failure pin identity is invalid")
+        _, digest = _read_regular_bytes_antigravity(pin, self._database_sha256)
+        if digest != self._database_sha256:
+            raise ValueError("restored failure pin SHA256 is invalid")
+
+    def _preserve_descriptor_failure_evidence_antigravity(self, descriptor: int) -> Path:
+        root = Path(tempfile.mkdtemp(prefix="exp444_values_failure_evidence_antigravity_"))
+        evidence = root / "database_descriptor_evidence_antigravity.db"
+        output: int | None = None
+        try:
+            output = os.open(
+                evidence,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0),
+                0o400,
+            )
+            digest = sha256()
+            os.lseek(descriptor, 0, os.SEEK_SET)
+            while block := os.read(descriptor, 1024 * 1024):
+                digest.update(block)
+                view = memoryview(block)
+                while view:
+                    written = os.write(output, view)
+                    view = view[written:]
+            os.fsync(output)
+            os.lseek(descriptor, 0, os.SEEK_SET)
+            if digest.hexdigest() != self._database_sha256:
+                raise ValueError("descriptor failure evidence SHA256 is invalid")
+            self._failure_evidence_path = evidence
+            return evidence
+        except BaseException:
+            if evidence.exists():
+                evidence.unlink()
+            if root.exists():
+                root.rmdir()
+            raise
+        finally:
+            if output is not None:
+                os.close(output)
 
     def close(self) -> None:
         if self._closed:
@@ -547,7 +596,7 @@ class ValuesOnlyDatabaseSessionAntigravity:
         pin = self._pin_path
         root = self._root
         assert descriptor is not None and pin is not None and root is not None
-        pin_removed = False
+        evidence_descriptor = os.dup(descriptor)
         try:
             # Validate every condition that can be checked while the evidence
             # pin still exists.  In particular, no unrelated file may occupy
@@ -566,7 +615,6 @@ class ValuesOnlyDatabaseSessionAntigravity:
 
             self._invoke_close_hook_antigravity("before_pin_unlink", pin, root)
             pin.unlink()
-            pin_removed = True
             self._invoke_close_hook_antigravity("after_pin_unlink", pin, root)
 
             named = self._source_path.lstat()
@@ -577,17 +625,25 @@ class ValuesOnlyDatabaseSessionAntigravity:
             self._invoke_close_hook_antigravity("before_root_rmdir", pin, root)
             root.rmdir()
         except BaseException as error:
+            try:
+                self._restore_failure_pin_antigravity(pin)
+            except BaseException as restore_error:
+                error.add_note(f"failure pin restoration failed: {restore_error}")
+                try:
+                    evidence = self._preserve_descriptor_failure_evidence_antigravity(evidence_descriptor)
+                    error.add_note(f"truthful descriptor evidence retained: {evidence}")
+                except BaseException as evidence_error:
+                    error.add_note(f"descriptor evidence preservation failed: {evidence_error}")
             if descriptor is not None:
                 try:
                     os.close(descriptor)
                 except BaseException as close_error:
                     error.add_note(f"database descriptor cleanup failed: {close_error}")
                 self._descriptor = None
-            if pin_removed:
-                try:
-                    self._restore_failure_pin_antigravity(pin)
-                except BaseException as restore_error:
-                    error.add_note(f"failure pin restoration failed: {restore_error}")
+            try:
+                os.close(evidence_descriptor)
+            except BaseException as close_error:
+                error.add_note(f"evidence descriptor cleanup failed: {close_error}")
             self._closed = True
             if self._finalizer is not None:
                 # A failed close is durable evidence: garbage collection must
@@ -595,6 +651,7 @@ class ValuesOnlyDatabaseSessionAntigravity:
                 self._finalizer.detach()
             raise ValueError("pinned database close failed") from error
         else:
+            os.close(evidence_descriptor)
             self._closed = True
             if self._finalizer is not None:
                 self._finalizer.detach()

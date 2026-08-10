@@ -332,3 +332,101 @@ EXP444_PIN_SUCCESS_OK False False
 
 MLX remains inapplicable: this correction changes only source provenance and
 session authorization, not a score-source operation or frozen algorithm.
+
+## Fix Round 3
+
+### Truthful failure evidence correction
+
+On every failed close, the session now verifies the retained pin against the
+original descriptor-bound device, inode, and database SHA. If the owned pin was
+replaced, only that replacement is unlinked and the exact original inode is
+relinked from verified source authority. A duplicated verified descriptor stays
+open through cleanup; if exact relinking is impossible, its exact bytes are
+written to a separate private `antigravity` evidence root, SHA-verified, retained,
+and reported in the combined close error. Pin inode replacement, source pathname
+replacement, and source metadata drift are separate behavioral tests.
+
+### Exact reconstructed RED
+
+Disposable worktree `/tmp/exp444_round3_red_antigravity_qhWCWb` used detached
+base `40fa7a04` plus only the new RED test changes. Exact command:
+
+```text
+/Users/mac/Documents/Dataset/venvs/exp444_stability_antigravity_py314/bin/python -m unittest -v experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_owned_pin_inode_replacement_restores_truthful_evidence_antigravity experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_source_database_pathname_replacement_retains_original_pin_antigravity experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_source_database_metadata_drift_retains_original_pin_antigravity experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_unrestorable_pin_preserves_truthful_descriptor_evidence_antigravity experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_close_failure_injections_preserve_truthful_pin_and_root_antigravity
+test_owned_pin_inode_replacement_restores_truthful_evidence_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_owned_pin_inode_replacement_restores_truthful_evidence_antigravity) ... FAIL
+test_source_database_pathname_replacement_retains_original_pin_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_source_database_pathname_replacement_retains_original_pin_antigravity) ... ok
+test_source_database_metadata_drift_retains_original_pin_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_source_database_metadata_drift_retains_original_pin_antigravity) ... ok
+test_unrestorable_pin_preserves_truthful_descriptor_evidence_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_unrestorable_pin_preserves_truthful_descriptor_evidence_antigravity) ... ERROR
+test_close_failure_injections_preserve_truthful_pin_and_root_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_close_failure_injections_preserve_truthful_pin_and_root_antigravity) ... ok
+
+======================================================================
+ERROR: test_unrestorable_pin_preserves_truthful_descriptor_evidence_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_unrestorable_pin_preserves_truthful_descriptor_evidence_antigravity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/exp444_round3_red_antigravity_qhWCWb/experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py", line 504, in test_unrestorable_pin_preserves_truthful_descriptor_evidence_antigravity
+    evidence = session.failure_evidence_path
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ValuesOnlyDatabaseSessionAntigravity' object has no attribute 'failure_evidence_path'
+
+======================================================================
+FAIL: test_owned_pin_inode_replacement_restores_truthful_evidence_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_owned_pin_inode_replacement_restores_truthful_evidence_antigravity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/exp444_round3_red_antigravity_qhWCWb/experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py", line 448, in test_owned_pin_inode_replacement_restores_truthful_evidence_antigravity
+    _assert_truthful_failure_pin_antigravity(self, session, pin)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/exp444_round3_red_antigravity_qhWCWb/experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_sources_antigravity.py", line 83, in _assert_truthful_failure_pin_antigravity
+    testcase.assertEqual((pin.stat().st_dev, pin.stat().st_ino), session.descriptor_inode)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (16777230, 17367064) != (16777230, 17367059)
+
+First differing element 1:
+17367064
+17367059
+
+- (16777230, 17367064)
+?                  ^^
+
++ (16777230, 17367059)
+?                  ^^
+
+
+----------------------------------------------------------------------
+Ran 5 tests in 16.350s
+
+FAILED (failures=1, errors=1)
+```
+
+The exact cleanup returned:
+
+```text
+ROUND3_RED_WORKTREE_REMOVED /tmp/exp444_round3_red_antigravity_qhWCWb
+```
+
+### Exact GREEN
+
+The identical five-test `unittest -v` command returned:
+
+```text
+test_owned_pin_inode_replacement_restores_truthful_evidence_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_owned_pin_inode_replacement_restores_truthful_evidence_antigravity) ... ok
+test_source_database_pathname_replacement_retains_original_pin_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_source_database_pathname_replacement_retains_original_pin_antigravity) ... ok
+test_source_database_metadata_drift_retains_original_pin_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_source_database_metadata_drift_retains_original_pin_antigravity) ... ok
+test_unrestorable_pin_preserves_truthful_descriptor_evidence_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_unrestorable_pin_preserves_truthful_descriptor_evidence_antigravity) ... ok
+test_close_failure_injections_preserve_truthful_pin_and_root_antigravity (experiments.exp444_train_only_stability_precision_gate_antigravity.tests.test_sources_antigravity.Exp444SourceBoundaryAntigravityTests.test_close_failure_injections_preserve_truthful_pin_and_root_antigravity) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 25.394s
+
+OK
+```
+
+The final focused source suite passed 26 tests in 45.098s. The full package
+suite passed 47 tests in 51.230s. Real frozen replay returned:
+
+```text
+EXP444_SOURCE_OK 30 0 60
+EXP444_PIN_SUCCESS_OK False False
+```
+
+MLX remains inapplicable because this is a source-boundary correctness repair,
+not a new score-source operation.
