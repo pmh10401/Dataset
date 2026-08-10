@@ -272,6 +272,57 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "entry changed"):
                     reporting._complete_checkpoint_results_antigravity(attempt)
 
+    def test_invalid_terminal_context_never_creates_a_publication_antigravity(self) -> None:
+        """Terminal validation must finish before the create-only destination becomes visible."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_terminal_preflight_antigravity_") as directory:
+            attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            state_path = attempt / "checkpoint_antigravity/state_antigravity.json"
+            state = __import__("json").loads(state_path.read_text())
+            state["context_sha256"] = "0" * 64
+            state_path.write_bytes(reporting.canonical_json_bytes_antigravity(state))
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, self._full_controls_antigravity(inputs))
+            with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
+                with self.assertRaisesRegex(ValueError, "terminal checkpoint state"):
+                    reporting.publish_prediction_antigravity(attempt)
+                self.assertFalse((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
+                state["context_sha256"] = hashlib.sha256((attempt / "checkpoint_antigravity/context_antigravity.json").read_bytes()).hexdigest()
+                state_path.write_bytes(reporting.canonical_json_bytes_antigravity(state))
+                self.assertEqual(reporting.publish_prediction_antigravity(attempt).stable_count, 15)
+
+    def test_invalid_terminal_process_binding_never_creates_a_publication_antigravity(self) -> None:
+        """A detached state PID must fail before a create-only publication is visible."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_terminal_process_antigravity_") as directory:
+            attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            state_path = attempt / "checkpoint_antigravity/state_antigravity.json"
+            state = __import__("json").loads(state_path.read_text())
+            state["process"]["pid"] = 9_900_002
+            state_path.write_bytes(reporting.canonical_json_bytes_antigravity(state))
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, self._full_controls_antigravity(inputs))
+            with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
+                with self.assertRaisesRegex(ValueError, "terminal process identity"):
+                    reporting.publish_prediction_antigravity(attempt)
+            self.assertFalse((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
+
+    def test_attempt_directory_replacement_after_capture_receives_no_publication_antigravity(self) -> None:
+        """Publication must not move captured checkpoint evidence under a replacement attempt path."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_attempt_replace_antigravity_") as directory:
+            attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            moved = attempt.with_name("captured_attempt_authority_antigravity")
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, self._full_controls_antigravity(inputs))
+
+            def replace_attempt(root: Path) -> None:
+                __import__("os").replace(root, moved)
+                root.mkdir(mode=0o700)
+
+            with (
+                mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority),
+                mock.patch.object(reporting, "_ATTEMPT_CAPTURE_HOOK_ANTIGRAVITY", replace_attempt),
+            ):
+                with self.assertRaisesRegex(ValueError, "attempt.*changed|attempt.*namespace|authority"):
+                    reporting.publish_prediction_antigravity(attempt)
+            self.assertFalse((attempt / reporting.PUBLICATION_DIRECTORY_ANTIGRAVITY).exists())
+            self.assertEqual(len(reporting._complete_checkpoint_results_antigravity(moved)), 30)
+
     def test_staging_rejects_entry_replacement_before_rename_antigravity(self) -> None:
         with tempfile.TemporaryDirectory(prefix="exp444_reporting_staging_entry_antigravity_") as directory:
             frozen = self._published_antigravity(directory)
