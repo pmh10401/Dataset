@@ -14,6 +14,7 @@ synthetic distance loop alone.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import importlib.metadata as importlib_metadata
 import math
 import platform
 import time
@@ -46,6 +47,17 @@ BENCHMARK_SELECTION_POLICY_ANTIGRAVITY = "size-ordered lower median; first coord
 class BackendUnavailableAntigravity(ValueError):
     """Raised when an optional backend cannot satisfy the frozen contract."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        versions: Mapping[str, str] | None = None,
+        device: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.versions = dict(versions or {})
+        self.device = device
+
 
 @dataclass(frozen=True)
 class BackendRunAntigravity:
@@ -70,9 +82,12 @@ class BackendRunAntigravity:
     available: bool = True
     device: str | None = "CPU"
     version: str | None = ""
+    versions: Mapping[str, str] = field(default_factory=dict)
     compile_warmup_included: bool = True
     transfer_included: bool = True
     materialization_included: bool = True
+    single_process: bool = True
+    no_process_pool: bool = True
     process_count: int = 1
     warmups: int = BENCHMARK_WARMUPS_ANTIGRAVITY
     repetitions: int = BENCHMARK_REPETITIONS_ANTIGRAVITY
@@ -111,6 +126,8 @@ class BackendRunAntigravity:
             "compile_warmup_included",
             "transfer_included",
             "materialization_included",
+            "single_process",
+            "no_process_pool",
         ):
             if type(getattr(self, name)) is not bool:
                 raise ValueError(f"{name} must be a bool")
@@ -125,9 +142,13 @@ class BackendRunAntigravity:
             raise ValueError("backend error must be a non-empty string")
         copied_selection = tuple(dict(item) for item in self.selection)
         copied_details = dict(self.details)
+        copied_versions = dict(self.versions)
+        if any(type(key) is not str or not key or type(value) is not str or not value for key, value in copied_versions.items()):
+            raise ValueError("backend versions must be non-empty string pairs")
         object.__setattr__(self, "lanes", lanes)
         object.__setattr__(self, "selection", copied_selection)
         object.__setattr__(self, "details", copied_details)
+        object.__setattr__(self, "versions", copied_versions)
         object.__setattr__(self, "seconds", float(self.seconds))
         if self.max_diff is not None:
             object.__setattr__(self, "max_diff", float(self.max_diff))
@@ -166,6 +187,8 @@ class BackendRunAntigravity:
             and self.compile_warmup_included
             and self.transfer_included
             and self.materialization_included
+            and self.single_process
+            and self.no_process_pool
             and self.process_count == 1
             and self.max_diff is not None
             and self.max_diff <= ACCELERATION_TOLERANCE_ANTIGRAVITY
@@ -188,8 +211,8 @@ class BackendRunAntigravity:
             "speed_ratio_vs_cpu": speed_ratio,
             "warmups": self.warmups,
             "repetitions": self.repetitions,
-            "compile_warmup_included": self.compile_warmup_included,
-            "transfer_included": self.transfer_included,
+            "compile_warmup_policy_included": self.compile_warmup_included,
+            "device_transfer_included": self.transfer_included,
             "synchronization_included": self.synchronized,
             "result_materialization_included": self.materialization_included,
             "finite_outputs": self.finite,
@@ -201,6 +224,9 @@ class BackendRunAntigravity:
             "lanes": [list(item) for item in self.lanes],
             "device": self.device,
             "version": self.version,
+            "versions": dict(self.versions),
+            "single_process": self.single_process,
+            "no_process_pool": self.no_process_pool,
             "process_count": self.process_count,
             "inner_threads": self.inner_threads,
             "selection": [dict(item) for item in self.selection],
@@ -215,6 +241,7 @@ class BackendRunAntigravity:
         reason: str,
         *,
         version: str | None = None,
+        versions: Mapping[str, str] | None = None,
         device: str | None = None,
         selection: tuple[Mapping[str, object], ...] = (),
     ) -> "BackendRunAntigravity":
@@ -232,9 +259,12 @@ class BackendRunAntigravity:
             available=False,
             device=device,
             version=version,
+            versions=dict(versions or {}),
             compile_warmup_included=False,
             transfer_included=False,
             materialization_included=False,
+            single_process=True,
+            no_process_pool=True,
             selection=selection,
             error=reason,
         )
@@ -259,66 +289,113 @@ def _run_seconds(value: object) -> float:
         return float("nan")
 
 
-def _run_passes(value: object, *, cpu_seconds: float, cpu_lanes: object) -> tuple[bool, str]:
-    backend = _run_backend_name(value)
-    reasons: list[str] = []
-    available = _read_field(value, "available", True)
-    if available is not True:
-        reasons.append("unavailable")
-    if _read_field(value, "finite", _read_field(value, "finite_outputs", True)) is not True:
-        reasons.append("nonfinite_output")
-    if _read_field(value, "synchronized", _read_field(value, "synchronization_included", _read_field(value, "sync_included", True))) is not True:
-        reasons.append("synchronization_missing")
-    if _read_field(value, "transfer_included", _read_field(value, "transfer_device_included", _read_field(value, "device_transfer_included", True))) is not True:
-        reasons.append("device_transfer_missing")
-    if _read_field(value, "compile_warmup_included", True) is not True:
-        reasons.append("compile_warmup_policy_missing")
-    if _read_field(value, "materialization_included", _read_field(value, "result_materialization_included", _read_field(value, "materialization", True))) is not True:
-        reasons.append("result_materialization_missing")
-    for field_name, aliases, label in (
-        ("masks_match", ("mask_match",), "mask"),
-        ("candidate_presence_match", ("candidate_presence",), "candidate_presence"),
-        ("survival_counts_match", ("survival_counts",), "survival_count"),
-        ("lane_coordinates_match", ("lane_match", "lane_identity_match"), "lane"),
-    ):
-        flag = _read_field(value, field_name, None)
-        if flag is None:
-            for alias in aliases:
-                flag = _read_field(value, alias, None)
-                if flag is not None:
-                    break
-        if flag is False:
-            reasons.append(f"{label}_mismatch")
-    process_count = _read_field(value, "process_count", 1)
-    if backend == "mlx" and process_count != 1:
-        reasons.append("mlx_process_pool_forbidden")
-    raw_diff = _read_field(
-        value,
-        "max_diff",
-        _read_field(
-            value,
+_REQUIRED_TRUE_GATE_FIELDS_ANTIGRAVITY = (
+    "available",
+    "finite_outputs",
+    "synchronization_included",
+    "device_transfer_included",
+    "compile_warmup_policy_included",
+    "result_materialization_included",
+    "masks_match",
+    "candidate_presence_match",
+    "survival_counts_match",
+    "lane_coordinates_match",
+    "single_process",
+    "no_process_pool",
+)
+
+
+def _canonical_gate_payload_antigravity(value: object, *, cpu_seconds: float | None = None) -> dict[str, object]:
+    if isinstance(value, BackendRunAntigravity):
+        return value.to_payload(cpu_seconds=cpu_seconds)
+    if isinstance(value, Mapping):
+        return dict(value)
+    return {
+        name: getattr(value, name)
+        for name in (
+            "backend",
+            *_REQUIRED_TRUE_GATE_FIELDS_ANTIGRAVITY,
+            "process_count",
+            "seconds",
             "max_abs_scalar_diff",
-            _read_field(value, "max_abs_diff", _read_field(value, "max_abs_error", None)),
-        ),
-    )
-    try:
-        max_diff = float(raw_diff)
-    except (TypeError, ValueError):
-        max_diff = float("inf")
-    if not math.isfinite(max_diff) or max_diff > ACCELERATION_TOLERANCE_ANTIGRAVITY:
+            "lanes",
+            "device",
+            "version",
+            "versions",
+        )
+        if hasattr(value, name)
+    }
+
+
+def _lanes_antigravity(value: object) -> tuple[tuple[str, int, str], ...] | None:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        return None
+    lanes: list[tuple[str, int, str]] = []
+    for item in value:
+        if (
+            isinstance(item, (str, bytes))
+            or not isinstance(item, Sequence)
+            or len(item) != 3
+            or type(item[0]) is not str
+            or type(item[1]) is not int
+            or type(item[2]) is not str
+        ):
+            return None
+        lanes.append((item[0], item[1], item[2]))
+    return tuple(lanes)
+
+
+def _finite_positive_antigravity(value: object) -> float | None:
+    if type(value) not in (int, float):
+        return None
+    result = float(value)
+    return result if math.isfinite(result) and result > 0.0 else None
+
+
+def _json_safe_evidence_antigravity(value: object) -> object:
+    if value is None or type(value) in (str, bool, int):
+        return value
+    if type(value) is float:
+        return value if math.isfinite(value) else None
+    if isinstance(value, Mapping):
+        return {
+            str(key): _json_safe_evidence_antigravity(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, (tuple, list)):
+        return [_json_safe_evidence_antigravity(item) for item in value]
+    return repr(value)
+
+
+def _run_passes(value: object, *, cpu_seconds: float, cpu_lanes: object) -> tuple[bool, str]:
+    payload = _canonical_gate_payload_antigravity(value, cpu_seconds=cpu_seconds)
+    backend = payload.get("backend")
+    reasons: list[str] = []
+    if backend not in {"mlx", "numba"}:
+        reasons.append("invalid_accelerated_backend")
+    for field_name in _REQUIRED_TRUE_GATE_FIELDS_ANTIGRAVITY:
+        if payload.get(field_name) is not True:
+            reasons.append(f"missing_or_false_{field_name}")
+    process_count = payload.get("process_count")
+    if type(process_count) is not int or process_count != 1:
+        reasons.append("invalid_single_process_evidence")
+    raw_diff = payload.get("max_abs_scalar_diff")
+    if type(raw_diff) not in (int, float) or not math.isfinite(float(raw_diff)) or float(raw_diff) < 0.0 or float(raw_diff) > ACCELERATION_TOLERANCE_ANTIGRAVITY:
         reasons.append("scalar_tolerance_exceeded")
-    seconds = _run_seconds(value)
-    if not math.isfinite(seconds) or seconds <= 0.0:
+    seconds = _finite_positive_antigravity(payload.get("seconds"))
+    if seconds is None:
         reasons.append("invalid_timing")
-    speed_ratio = cpu_seconds / seconds if math.isfinite(cpu_seconds) and seconds > 0.0 else float("nan")
-    if backend != "cpu" and (not math.isfinite(speed_ratio) or speed_ratio < ACCELERATION_SPEEDUP_MIN_ANTIGRAVITY):
+    valid_cpu_seconds = _finite_positive_antigravity(cpu_seconds)
+    speed_ratio = valid_cpu_seconds / seconds if valid_cpu_seconds is not None and seconds is not None else None
+    if speed_ratio is None or not math.isfinite(speed_ratio) or speed_ratio < ACCELERATION_SPEEDUP_MIN_ANTIGRAVITY:
         reasons.append("speed_ratio_below_1.1")
-    lanes = _read_field(value, "lanes", ())
-    if backend != "cpu" and lanes != cpu_lanes:
+    lanes = _lanes_antigravity(payload.get("lanes"))
+    reference_lanes = _lanes_antigravity(cpu_lanes)
+    if lanes is None or reference_lanes is None or lanes != reference_lanes:
         reasons.append("lane_coordinates_mismatch")
-    version = _read_field(value, "version", None)
-    device = _read_field(value, "device", None)
-    if backend != "cpu" and (not version or not device):
+    version = payload.get("version")
+    device = payload.get("device")
+    if type(version) is not str or not version or type(device) is not str or not device:
         reasons.append("device_provenance_missing")
     return not reasons, ";".join(reasons)
 
@@ -335,7 +412,7 @@ def choose_backend_antigravity(
     without importing optional packages.
     """
     cpu_seconds = _run_seconds(cpu)
-    cpu_lanes = _read_field(cpu, "lanes", ())
+    cpu_lanes = _canonical_gate_payload_antigravity(cpu).get("lanes")
     candidates = tuple(item for item in (mlx, numba) if item is not None)
     evidence: list[dict[str, object]] = []
     passing: list[tuple[float, str, object]] = []
@@ -347,21 +424,12 @@ def choose_backend_antigravity(
         passed, reason = _run_passes(item, cpu_seconds=cpu_seconds, cpu_lanes=cpu_lanes)
         seconds = _run_seconds(item)
         ratio = cpu_seconds / seconds if math.isfinite(cpu_seconds) and seconds > 0 else None
-        if isinstance(item, BackendRunAntigravity):
-            payload = item.to_payload(cpu_seconds=cpu_seconds)
-        elif isinstance(item, Mapping):
-            payload = dict(item)
-        else:
-            payload = {
-                key: _read_field(item, key)
-                for key in (
-                    "backend", "available", "seconds", "lanes", "max_diff", "finite",
-                    "synchronized", "masks_match", "candidate_presence_match",
-                    "survival_counts_match", "lane_coordinates_match", "device", "version",
-                )
-            }
+        payload = _canonical_gate_payload_antigravity(item, cpu_seconds=cpu_seconds)
         payload.update({"speed_ratio_vs_cpu": ratio, "passed_gate": passed, "gate_reason": reason or None})
-        evidence.append(payload)
+        safe_payload = _json_safe_evidence_antigravity(payload)
+        if not isinstance(safe_payload, dict):
+            raise AssertionError("gate evidence sanitizer must return a mapping")
+        evidence.append(safe_payload)
         if passed:
             passing.append((float(ratio), name, item))
         else:
@@ -400,17 +468,43 @@ def score_distance_cpu_antigravity(query: object, references: object, k: int) ->
     return score_channel_cpu_antigravity(query, references, k)
 
 
-def _load_mlx_antigravity() -> tuple[Any, object, str]:
+def _runtime_versions_antigravity(**optional: str) -> dict[str, str]:
+    versions = {
+        "python": platform.python_version(),
+        "numpy": str(np.__version__),
+    }
+    versions.update({key: value for key, value in optional.items() if value})
+    return versions
+
+
+def _load_mlx_antigravity() -> tuple[Any, object, str, Mapping[str, str]]:
+    versions = _runtime_versions_antigravity()
     try:
         import mlx.core as mx
     except Exception as error:  # pragma: no cover - depends on environment
-        raise BackendUnavailableAntigravity(f"mlx_import_unavailable:{type(error).__name__}") from error
+        raise BackendUnavailableAntigravity(
+            f"mlx_import_unavailable:{type(error).__name__}",
+            versions=versions,
+        ) from error
+    mlx_version = str(getattr(mx, "__version__", ""))
+    try:
+        mlx_metal_version = importlib_metadata.version("mlx-metal")
+    except importlib_metadata.PackageNotFoundError:
+        mlx_metal_version = "unavailable"
+    versions = _runtime_versions_antigravity(mlx=mlx_version or "unavailable", **{"mlx-metal": mlx_metal_version})
+    device_label: str | None = None
     try:
         device = mx.default_device()
         device_type = getattr(device, "type", None)
+        device_info = mx.device_info()
+        device_name = device_info.get("device_name") if isinstance(device_info, Mapping) else None
+        device_label = f"{device_name} [{device}]" if type(device_name) is str and device_name else str(device)
         if device_type != mx.DeviceType.gpu:
-            raise BackendUnavailableAntigravity("mlx_gpu_device_unavailable")
-        device_label = str(device)
+            raise BackendUnavailableAntigravity(
+                "mlx_gpu_device_unavailable",
+                versions=versions,
+                device=device_label,
+            )
         # Probe the exact dtype/operator path once.  MLX 0.32 on this Apple
         # device raises here because float64 is unsupported on Metal; that is
         # an honest fail-closed result, not permission to switch to float32.
@@ -423,18 +517,23 @@ def _load_mlx_antigravity() -> tuple[Any, object, str]:
         raise
     except Exception as error:
         raise BackendUnavailableAntigravity(
-            f"mlx_float64_unsupported_on_device:{type(error).__name__}"
+            f"mlx_float64_unsupported_on_device:{type(error).__name__}",
+            versions=versions,
+            device=device_label,
         ) from error
-    version = str(getattr(mx, "__version__", ""))
-    if not version:
-        raise BackendUnavailableAntigravity("mlx_version_unavailable")
-    return mx, device, device_label
+    if not mlx_version:
+        raise BackendUnavailableAntigravity(
+            "mlx_version_unavailable",
+            versions=versions,
+            device=device_label,
+        )
+    return mx, device, device_label, versions
 
 
 def score_distance_mlx_antigravity(query: object, references: object, k: int) -> float:
     """Compute the frozen float64 RMS/nearest-3/median score on Metal."""
     vector, matrix = _dense_inputs_antigravity(query, references, k)
-    mx, device, _ = _load_mlx_antigravity()
+    mx, device, _, versions = _load_mlx_antigravity()
     try:
         with mx.stream(device):
             query_mx = mx.array(vector.astype(np.float64, copy=False), dtype=mx.float64)
@@ -452,7 +551,9 @@ def score_distance_mlx_antigravity(query: object, references: object, k: int) ->
         if isinstance(error, BackendUnavailableAntigravity):
             raise
         raise BackendUnavailableAntigravity(
-            f"mlx_float64_distance_failed:{type(error).__name__}"
+            f"mlx_float64_distance_failed:{type(error).__name__}",
+            versions=versions,
+            device=str(device),
         ) from error
     if not math.isfinite(scalar):
         raise ValueError("MLX channel score is nonfinite")
@@ -666,6 +767,7 @@ def _run_stage_antigravity(
     selection: tuple[Mapping[str, object], ...],
     device: str | None,
     version: str | None,
+    versions: Mapping[str, str],
     numba_threads: int = 1,
 ) -> tuple[BackendRunAntigravity, tuple[dict[str, object], ...]]:
     payloads: tuple[dict[str, object], ...] = ()
@@ -698,6 +800,7 @@ def _run_stage_antigravity(
             available=True,
             device=device,
             version=version,
+            versions=versions,
             compile_warmup_included=True,
             transfer_included=True,
             materialization_included=True,
@@ -732,6 +835,7 @@ def benchmark_backends_antigravity(
         selection=selection,
         device="CPU",
         version=cpu_version,
+        versions=_runtime_versions_antigravity(),
         numba_threads=1,
     )
     cpu_payload = cpu_run.to_payload()
@@ -747,7 +851,7 @@ def benchmark_backends_antigravity(
     accelerated: list[BackendRunAntigravity] = []
 
     try:
-        mx, device, device_label = _load_mlx_antigravity()
+        mx, device, device_label, mlx_versions = _load_mlx_antigravity()
         mlx_version = str(getattr(mx, "__version__", FROZEN_CONFIG.mlx_version))
         mlx_run, mlx_payloads = _run_stage_antigravity(
             selected,
@@ -756,6 +860,7 @@ def benchmark_backends_antigravity(
             selection=selection,
             device=device_label,
             version=mlx_version,
+            versions=mlx_versions,
             numba_threads=1,
         )
         finite, masks, presence, survival, lanes, max_diff = _compare_stage_results_antigravity(cpu_payloads, mlx_payloads)
@@ -775,7 +880,8 @@ def benchmark_backends_antigravity(
             "mlx",
             str(error),
             version=FROZEN_CONFIG.mlx_version,
-            device="Apple GPU",
+            versions=error.versions,
+            device=error.device,
             selection=selection,
         )
     except Exception as error:
@@ -783,7 +889,11 @@ def benchmark_backends_antigravity(
             "mlx",
             f"mlx_benchmark_failed:{type(error).__name__}:{error}",
             version=FROZEN_CONFIG.mlx_version,
-            device="Apple GPU",
+            versions=_runtime_versions_antigravity(
+                mlx=FROZEN_CONFIG.mlx_version,
+                **{"mlx-metal": FROZEN_CONFIG.mlx_version},
+            ),
+            device="Apple M2 Max [Device(gpu, 0)]",
             selection=selection,
         )
     accelerated.append(mlx_run)
@@ -796,6 +906,7 @@ def benchmark_backends_antigravity(
         numba.set_num_threads(1)
         try:
             numba_version = str(getattr(numba, "__version__", FROZEN_CONFIG.numba_version))
+            numba_versions = _runtime_versions_antigravity(numba=numba_version)
             numba_run, numba_payloads = _run_stage_antigravity(
                 selected,
                 score_distance_numba_antigravity,
@@ -803,6 +914,7 @@ def benchmark_backends_antigravity(
                 selection=selection,
                 device="CPU",
                 version=numba_version,
+                versions=numba_versions,
                 numba_threads=1,
             )
             finite, masks, presence, survival, lanes, max_diff = _compare_stage_results_antigravity(cpu_payloads, numba_payloads)
@@ -820,12 +932,20 @@ def benchmark_backends_antigravity(
         finally:
             numba.set_num_threads(previous_threads)
     except BackendUnavailableAntigravity as error:
-        numba_run = BackendRunAntigravity.unavailable("numba", str(error), version=FROZEN_CONFIG.numba_version, device="CPU", selection=selection)
+        numba_run = BackendRunAntigravity.unavailable(
+            "numba",
+            str(error),
+            version=FROZEN_CONFIG.numba_version,
+            versions=error.versions or _runtime_versions_antigravity(numba=FROZEN_CONFIG.numba_version),
+            device=error.device or "CPU",
+            selection=selection,
+        )
     except Exception as error:
         numba_run = BackendRunAntigravity.unavailable(
             "numba",
             f"numba_benchmark_failed:{type(error).__name__}:{error}",
             version=FROZEN_CONFIG.numba_version,
+            versions=_runtime_versions_antigravity(numba=FROZEN_CONFIG.numba_version),
             device="CPU",
             selection=selection,
         )
