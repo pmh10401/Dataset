@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T00:23:16Z",
-  "generated_from_commit": "f7a34d82e855460bda7466aa53263e2665441a84",
+  "generated_at": "2026-08-10T00:41:34Z",
+  "generated_from_commit": "163587862cb7a268957d822c3f51d962628e4a39",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -4289,7 +4289,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
-      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix round 1 binds every session query to those exact candidate datasets/coordinates, rejects fabricated snapshots before database access, and restores a truthful private pin/root after injected close failures. Fix round 2 removes the SQLite-capable fixture constructor: only the exact verified replay can mint the module-private session capability, and snapshot/session/loader cross-check a canonical rank-ordered attestation of dataset, instance, raw length, depths, and original rank before query. Fix round 3 removes attacker pin replacements on close failure, restores the original verified inode when possible, validates retained dev/inode/SHA, and preserves separate descriptor-backed evidence if exact relinking is impossible; pin replacement, source pathname replacement, and source metadata drift have separate behavioral coverage. Task 4 replays the unchanged Exp440 calibration/scoring rule on all 30 frozen source candidates, generates seed-bound deterministic omission masks, copies score evidence into immutable Exp444 view contracts, and classifies the same coordinates into exhaustive stable/unstable review lanes without TEST labels. The source firewall rejects label-capable SQL before execution, excludes whole nonfinite TRAIN rows, preserves read-only float32 arrays, and keeps the official Exp444 root absent. Task 2 contracts and thin artifact wrappers remain immutable.",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix round 1 binds every session query to those exact candidate datasets/coordinates, rejects fabricated snapshots before database access, and restores a truthful private pin/root after injected close failures. Fix round 2 removes the SQLite-capable fixture constructor: only the exact verified replay can mint the module-private session capability, and snapshot/session/loader cross-check a canonical rank-ordered attestation of dataset, instance, raw length, depths, and original rank before query. Fix round 3 removes attacker pin replacements on close failure, restores the original verified inode when possible, validates retained dev/inode/SHA, and preserves separate descriptor-backed evidence if exact relinking is impossible; pin replacement, source pathname replacement, and source metadata drift have separate behavioral coverage. Task 4 replays the unchanged Exp440 calibration/scoring rule on all 30 frozen source candidates, generates seed-bound deterministic omission masks, copies score evidence into immutable Exp444 view contracts, and classifies the same coordinates into exhaustive stable/unstable review lanes without TEST labels. Task 4 fix round 1 independently rebuilds all 30 ranks from replayed score evidence with the public Exp441 global key inherited by Exp442, freezes the 14/16 review boundary in pure aggregation tests, and discards exceeding depth evidence whenever an omitted candidate is absent. The source firewall rejects label-capable SQL before execution, excludes whole nonfinite TRAIN rows, preserves read-only float32 arrays, and keeps the official Exp444 root absent. Task 2 contracts and thin artifact wrappers remain immutable.",
       "entrypoints": [
         "FROZEN_CONFIG",
         "frozen_config_payload_antigravity",
@@ -4319,9 +4319,12 @@
         "generate_omission_masks_antigravity",
         "required_survival_count_antigravity",
         "OriginalReplayAntigravity",
+        "aggregate_stability_views_antigravity",
         "classify_view_antigravity",
         "replay_original_candidate_antigravity",
+        "replay_original_candidates_antigravity",
         "score_stability_candidate_antigravity",
+        "verify_original_replay_ranks_antigravity",
         "canonical_json_bytes_antigravity",
         "write_create_only_antigravity",
         "pin_exact_regular_inventory_antigravity",
@@ -4351,6 +4354,8 @@
         "Every failed close verifies that retained pin dev/inode and SHA are the original descriptor-bound database. An attacker replacement at the owned pin is removed without touching other paths and relinked from verified source authority; if exact inode restoration is impossible, a separate private descriptor-backed SHA-verified evidence file/root is retained and the combined failure is surfaced.",
         "Task 4 omission masks use seed 44420260810, omit max(1, floor(0.10*n)), enumerate all combinations up to sixteen otherwise choose sixteen unique SHA-ordered masks, retain at least four TRAIN rows, and require ceil(0.875*view_count) survivors.",
         "Task 4 calls only the unchanged Exp440 fit_group_calibration_antigravity and score_test_row_antigravity functions with score_channel_cpu_antigravity; original coordinate/depth/strict-threshold control mismatches, unavailable refits, and nonfinite evidence fail closed without adaptive repair.",
+        "Task 4 aggregate control accepts exactly 30 unique source coordinates with original ranks 1-30, independently sorts replayed score evidence by CandidateEvidenceAntigravity.global_key, assigns fresh replayed ranks, and requires every rank and coordinate to equal the frozen Exp442 ordering.",
+        "Task 4 review aggregation requires 14 of 16 deterministic TRAIN-only views for stable_review; 13 of 16 is unstable_review, and candidate-absent views carry no agreeing depths even when copied scores exceed their strict thresholds.",
         "Task 4 stable_review and unstable_review are exhaustive and disjoint over the same frozen 30 source coordinates; no candidate is added, replaced, relocated, padded, promoted, or evaluated with TEST labels.",
         "Exp444 is descriptive-only: no scientific success criterion, winner, promotion, operational alert, or same-experiment reselection is available; the official run root remains absent and Exp440/442/443 roots/artifacts are immutable."
       ],
@@ -4444,12 +4449,32 @@
           "symbol": "def score_stability_candidate_antigravity"
         },
         {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/stability_antigravity.py",
+          "symbol": "def verify_original_replay_ranks_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/stability_antigravity.py",
+          "symbol": "def aggregate_stability_views_antigravity"
+        },
+        {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_masks_antigravity.py",
           "symbol": "def test_large_group_caps_at_sixteen_masks_antigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_stability_antigravity.py",
           "symbol": "def test_original_replay_requires_exact_exp442_candidate_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_stability_antigravity.py",
+          "symbol": "def test_aggregate_replay_recomputes_all_thirty_ranks_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_stability_antigravity.py",
+          "symbol": "def test_fourteen_of_sixteen_views_is_stable_review_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_stability_antigravity.py",
+          "symbol": "def test_candidate_absent_discards_exceeding_agreement_evidence_antigravity"
         }
       ]
     }
