@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T05:14:44Z",
-  "generated_from_commit": "acb83753478122eb686e43516bb1a3b60021bca5",
+  "generated_at": "2026-08-10T05:29:17Z",
+  "generated_from_commit": "347a462d4b56dff17cdab0cd3f93be8a8c669339",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -72,7 +72,8 @@
     "Exp444 Task 5 fix round 1: fail-closed canonical backend evidence, exact runtime provenance, and fresh real parity/speed rerun",
     "Exp444 Task 5 fix round 2: MLX versions authority and truthful unexpected-failure provenance",
     "Exp444 Task 6 review round 1: crash-recoverable unique-temp checkpoint/progress writes, strict prefix and checkpoint identity validation, numerically distinct replacement PIDs, and parent-owned terminal immutability",
-    "Exp444 Task 7: copied values-only inputs, closed source sessions before scheduling, exact 11-worker spawn execution, bounded out-of-order buffering, parent-only ordered persistence, interruption/resume/finalization re-entry, real PID ownership probes, truthful next-commit live progress, non-waiting cancellation, complete evidence-surface validation, read-only full checkpoint resume preflight with mutation-boundary revalidation, and real 30-candidate canonical-byte parity with zero TEST-label access"
+    "Exp444 Task 7: copied values-only inputs, closed source sessions before scheduling, exact 11-worker spawn execution, bounded out-of-order buffering, parent-only ordered persistence, interruption/resume/finalization re-entry, real PID ownership probes, truthful next-commit live progress, non-waiting cancellation, complete evidence-surface validation, read-only full checkpoint resume preflight with mutation-boundary revalidation, and real 30-candidate canonical-byte parity with zero TEST-label access",
+    "Repository execution policy and native Terra/Sol delegation routing"
   ],
   "nodes": [
     {
@@ -5651,5 +5652,35 @@
       "outcome": "Readiness first proves the 1,119-row DB population and exact two frozen exclusions, then hashes and pins raw bytes, enforces values-only SQL before execution, validates inherited authority bytes and immutable cache NPZ metadata, checks every eligible TEST identity against Exp291/cache n_test, proves 2,116 + 137 - 35 = 2,218 and Exp291/Exp404 Hard equality, and confirms 1,117/19/164/983/0 missing inventory with zero label access. Task 6 then compares 76 Policy A score arrays and candidates, replays exact 1117/137/2253/35/2218 route coordinates with 19 recomputed plus 1,098 imported rows, and only permits B/C after control_reproduction_passed. Task 7 persists the ordered policy-major prefix, terminal error/interruption semantics, and parent-only 57-unit progress/PID heartbeat evidence for resumable execution. The fix-round resume path validates the interrupted prefix, binds a replacement PID, reconciles at most one exact next record orphan, and completes the 57-unit replay without truncating parent-owned logs. Round 2 requires explicit replacement process/PID probe and validates/clears a canonical leftover state temp before prefix advancement. Round 3 rejects equal stored/replacement process identity before rebinding while retaining distinct new-PID resume. Task 8 adds readiness evidence, exact 11-worker spawn execution, resumable pin reuse and complete-checkpoint finalization re-entry, idempotent canonical prediction bytes, atomic next-dataset dimensions, and a real 19-unit semantic parity report with zero label access. Task 9 then checks inactive complete progress and all 57 ordered results without resume mutation, binds the 76-comparison control and Task 8 parity evidence, reroutes Policy A/B/C, freezes three canonical 1,117-row JSONLs linked to their runtime JSON identities, and publishes the exact 12-file create-only hash DAG with zero label access for later Task 10 evaluation. The Task 9 Sol fix independently reruns the complete Policy A archive control, requires exact control-byte identity, binds terminal progress/PID ownership to the 57-record checkpoint, and preserves canonical failure evidence at every publication commit phase. Task 10 then inspects the publication twice before any label-capable import, reads one contiguous binary TEST-label sequence per 1,117 frozen datasets through one pinned connection, reproduces the 1915/303/2003/191679 baseline and Policy A identity, computes independent A/B/C whole-population plus 19/1,098 diagnostics and exact 20,000-sample paired intervals, and creates a ten-file review-only evaluation whose full row/transition/bootstrap/hash replay never reopens labels or selects a winner. Mid-label failures carry truthful label-access-started evidence into a unique preserved audit sibling. Task 11 fixes the five-command operator boundary, requires one explicit safe resume basename and the external Python 3.14.6 environment, exposes no scientific override, publishes during successful new/resume finalization, keeps inspect read-only, retains the DB pin across publication failure, uses a finalization-only resume that leaves complete checkpoint/progress/PID/log bytes unchanged, removes the pin only after publication succeeds, emits JSON-safe wrapper failures, and performs the sole lazy evaluator import only after publication inspection. The official reviewed run completed all 57 units, froze three predictions, and evaluated exactly 1,117 datasets after freeze. Policies A and B were baseline-identical; Policy C added TP 1/FP 0 and rescued one dataset without regression, but both bootstrap lower bounds were zero, so no winner was selected. A post-publication database-close error is preserved while valid publication/evaluation hashes remain immutable, and the flow pauses before Exp444."
     }
   ],
-  "unknown_relationships": []
+  "unknown_relationships": [],
+  "unknowns": {
+    "root_policy_files": [
+      {
+        "path": "AGENTS.md",
+        "kind": "root_policy",
+        "mapped_callers": [],
+        "mapped_tests": [],
+        "runtime_relationship_status": "unknown",
+        "evidence": [
+          {
+            "path": "AGENTS.md",
+            "symbol": "# Project Execution Rules"
+          },
+          {
+            "path": "AGENTS.md",
+            "symbol": "## Native Delegation Policy"
+          }
+        ],
+        "reason": "AGENTS.md is interpreted by people and agent hosts rather than statically callable product code."
+      }
+    ],
+    "unmapped_relationships": [
+      {
+        "path": "AGENTS.md",
+        "relationship": "runtime callers and affected modules",
+        "status": "unknown",
+        "reason": "No static runtime edge is evidenced for the root policy file."
+      }
+    ]
+  }
 }

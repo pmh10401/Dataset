@@ -45,6 +45,15 @@ official sktime CPU implementations. Exp254 remains CPU-only for comparability.
 Future MLX-eligible stages include dense distance matrices, batched projections,
 tensor feature fusion, and neural embeddings when parity and speed gates pass.
 
+## Native Delegation Policy
+
+For native delegated implementation, use `sol_advisor_terra_implementer`
+(GPT-5.6 Terra / High). For design, commitment-boundary review, and final review,
+use a fresh `sol_advisor_sol_reviewer` (GPT-5.6 Sol / High).
+
+GPT-5.6 Luna / Max is not used for native delegation. Use it only when the user
+explicitly opts into the separate Luna task lane for that specific request.
+
 ## File Naming Policy
 
 All newly created files across all tasks and experiments must include `antigravity` in their file name (e.g., `antigravity_<name>.<ext>`, `<name>_antigravity.<ext>`).
