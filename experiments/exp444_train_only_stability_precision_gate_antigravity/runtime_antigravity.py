@@ -624,6 +624,12 @@ def _execute_runtime_antigravity(
     if type(reviewed_commit) is not str or not reviewed_commit:
         raise ValueError("Exp444 reviewed commit is invalid")
     FROZEN_CONFIG.validate()
+    # The official checkpoint must never be created or rebound without the
+    # authenticated full-population summary and Task5 CPU decision evidence.
+    # Import lazily so read-only finalization remains free of this authority.
+    if mode == "new":
+        from .provenance_antigravity import verify_exp444_provenance_antigravity
+        verify_exp444_provenance_antigravity()
     root = Path(FROZEN_CONFIG.run_root if run_root is None else run_root)
     context = _context_antigravity()
     process = current_process_identity_antigravity()
@@ -662,6 +668,8 @@ def _execute_runtime_antigravity(
                 attempt, store, None, status="complete", label_access_count=0,
                 resumed=True, finalization_only=True,
             )
+        from .provenance_antigravity import verify_exp444_provenance_antigravity
+        verify_exp444_provenance_antigravity()
         # Full record/prefix/orphan validation is read-only and must succeed
         # before progress/PID/events/text can be rebound.  The writable open
         # below repeats the same validation at the checkpoint mutation boundary.

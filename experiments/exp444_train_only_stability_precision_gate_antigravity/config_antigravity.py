@@ -37,6 +37,10 @@ _SHA256_FIELDS = {
     "exp442_selection_sha256",
     "exp442_selected_coordinate_identity_sha256",
     "environment_lock_sha256",
+    "backend_decision_authority_sha256",
+    "exp440_summary_sha256",
+    "exp440_manifest_sha256",
+    "exp440_artifact_map_sha256",
 }
 
 _INNER_THREAD_ENV_NAMES = (
@@ -97,6 +101,15 @@ class Exp444FrozenConfig:
     exp442_selection_path: str = str(_DATASET_ROOT / "exp442_terminal_eta_publication_repair_antigravity_20260808/attempts_antigravity/attempt_0000_antigravity/selection_antigravity.json")
     exp442_selection_sha256: str = FROZEN_INPUT_SHA256_ANTIGRAVITY["exp442_selection"]
     exp442_selected_coordinate_identity_sha256: str = FROZEN_INPUT_SHA256_ANTIGRAVITY["exp442_selected_coordinate_identity"]
+    exp440_publication_path: str = str(_DATASET_ROOT / "exp440_train_only_low_frequency_precision_gate_antigravity_20260808/publication_antigravity")
+    exp440_summary_path: str = str(_DATASET_ROOT / "exp440_train_only_low_frequency_precision_gate_antigravity_20260808/publication_antigravity/dataset_summary_antigravity.jsonl")
+    exp440_summary_sha256: str = "4eb59b7e1e540149a89a23896aa056b0fc99875fb01864e94e4358ea2e3dbb38"
+    exp440_manifest_path: str = str(_DATASET_ROOT / "exp440_train_only_low_frequency_precision_gate_antigravity_20260808/publication_antigravity/manifest_antigravity.json")
+    exp440_manifest_sha256: str = "3778a0e8770e06f4be87d1b87281c858518169c377ee6c53b78f32ce01d39e85"
+    exp440_artifact_map_path: str = str(_DATASET_ROOT / "exp440_train_only_low_frequency_precision_gate_antigravity_20260808/publication_antigravity/artifact_sha256_antigravity.json")
+    exp440_artifact_map_sha256: str = "7a083fa8f1287205d3469e36f2f88b95f72adecd90b3b79167aad673b3439a1a"
+    backend_decision_authority_identifier: str = "backend_decision_authority_antigravity.json"
+    backend_decision_authority_sha256: str = "6d2c614cd1ef81ecd1f3cc7e4c6f697122cbbf93f59286592ae54fc1f4cc1136"
     run_root: str = str(_RUN_ROOT)
     isolated_environment_root: str = str(_ENV_ROOT)
     environment_lock_path: str = str(Path(__file__).with_name("requirements_lock_antigravity.txt"))
@@ -168,7 +181,7 @@ class Exp444FrozenConfig:
             value = getattr(self, name)
             if type(value) is not str or len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
                 raise ValueError(f"{name} must be a lowercase SHA256")
-        for name in ("run_root", "isolated_environment_root", "environment_lock_path"):
+        for name in ("run_root", "isolated_environment_root", "environment_lock_path", "backend_decision_authority_identifier"):
             if type(getattr(self, name)) is not str or "antigravity" not in getattr(self, name):
                 raise ValueError(f"{name} must remain in the antigravity namespace")
 

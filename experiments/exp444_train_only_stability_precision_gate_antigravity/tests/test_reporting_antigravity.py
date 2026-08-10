@@ -117,6 +117,15 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "canonical|hash|contract"):
                 reporting.inspect_publication_antigravity(frozen.publication_root)
 
+    def test_runtime_leaf_captures_every_terminal_authority_surface_antigravity(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_runtime_antigravity_") as directory:
+            attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs))
+            with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
+                frozen = reporting.publish_prediction_antigravity(attempt)
+            runtime_leaf = __import__("json").loads((frozen.publication_root / reporting.RUNTIME_FILE_ANTIGRAVITY).read_text())
+            self.assertEqual(set(runtime_leaf["authorities"]), {"context", "state", "progress", "pid", "events", "text"})
+
 
 if __name__ == "__main__":
     unittest.main()

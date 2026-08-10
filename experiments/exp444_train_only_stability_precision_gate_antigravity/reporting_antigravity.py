@@ -28,6 +28,7 @@ from .contracts_antigravity import (
     CandidateInputAntigravity,
     CandidateStabilityResultAntigravity,
     CheckpointContextAntigravity,
+    DepthViewScoreAntigravity,
     SourceCandidateAntigravity,
     StabilitySelectionAntigravity,
     validate_prediction_payload_antigravity,
@@ -267,9 +268,12 @@ def _publish_source_authority_antigravity() -> _PublishSourceAuthorityAntigravit
             raise ValueError("Exp444 original-control source coordinates changed")
         control_rows = tuple(
             {
-                "candidate": control.candidate.to_payload(),
-                "original_depths": list(control.original_depths),
-                "original_rank": control.original_rank,
+                "source": control.source.to_payload(),
+                "depth_scores": [score.to_payload() for score in control.depth_scores],
+                "replayed_depths": list(control.replayed_depths),
+                "replayed_candidate": control.replayed_candidate.to_payload(),
+                "matches_source": control.matches_source,
+                "replayed_rank": control.replayed_rank,
             }
             for control in controls
         )
@@ -298,16 +302,77 @@ def _source_audit_payload_antigravity(authority: _PublishSourceAuthorityAntigrav
     return {"schema": "exp444.source-audit.v1", "source_hashes": dict(sorted(authority.source_hashes.items())), "source_candidate_count": 30, "dataset_count": 1117, "label_access_count": 0}
 
 
+def _terminal_authority_surface_antigravity(path: Path, name: str) -> dict[str, object]:
+    """Capture one terminal authority verbatim, with an in-leaf integrity seal."""
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(f"Exp444 terminal {name} is absent or invalid")
+    encoded = path.read_bytes()
+    try:
+        text = encoded.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError(f"Exp444 terminal {name} is not UTF-8") from error
+    return {"byte_size": len(encoded), "sha256": _sha256_antigravity(encoded), "utf8": text}
+
+
 def _runtime_payload_antigravity(attempt: Path, results: Sequence[CandidateStabilityResultAntigravity]) -> dict[str, object]:
     state = _read_canonical_json_antigravity(attempt / "checkpoint_antigravity/state_antigravity.json", "checkpoint state")
-    return {"schema": "exp444.runtime.v1", "attempt_name": attempt.name, "backend": "cpu", "workers": 11, "completed": len(results), "record_sha256_prefix": list(state["record_sha256_prefix"]), "label_access_count": 0}
+    checkpoint = attempt / "checkpoint_antigravity"
+    authorities = {
+        "context": _terminal_authority_surface_antigravity(checkpoint / "context_antigravity.json", "checkpoint context"),
+        "state": _terminal_authority_surface_antigravity(checkpoint / "state_antigravity.json", "checkpoint state"),
+        "progress": _terminal_authority_surface_antigravity(attempt / "progress_antigravity.json", "progress"),
+        "pid": _terminal_authority_surface_antigravity(attempt / "pid_antigravity.json", "PID"),
+        "events": _terminal_authority_surface_antigravity(attempt / "events_antigravity.jsonl", "events"),
+        "text": _terminal_authority_surface_antigravity(attempt / "text_antigravity.log", "text"),
+    }
+    records_root = checkpoint / "records_antigravity"
+    records = [
+        {"sequence": sequence, **_terminal_authority_surface_antigravity(records_root / name, f"checkpoint record {sequence}")}
+        for sequence, name in enumerate(_RECORD_NAMES_ANTIGRAVITY)
+    ]
+    return {"schema": "exp444.runtime.v2", "attempt_name": attempt.name, "backend": "cpu", "workers": 11, "completed": len(results), "record_sha256_prefix": list(state["record_sha256_prefix"]), "authorities": authorities, "records": records, "label_access_count": 0}
 
 
 def _backend_payload_antigravity() -> dict[str, object]:
     return BackendDecisionAntigravity("cpu", 11, (), "cpu_fallback_until_parity_speed_gate").to_payload()
 
 
-def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntigravity) -> tuple[dict[str, bytes], StabilitySelectionAntigravity]:
+def _parse_control_replays_antigravity(rows: object, source: Sequence[SourceCandidateAntigravity]) -> tuple[object, ...]:
+    """Reconstitute the complete OriginalReplay contract and recompute ranks."""
+    if not isinstance(rows, list) or len(rows) != 30:
+        raise ValueError("Exp444 original-control replay count is invalid")
+    from experiments.exp440_train_only_low_frequency_precision_gate_antigravity.contracts_antigravity import ProvisionalCandidateAntigravity
+    from .stability_antigravity import OriginalReplayAntigravity, verify_original_replay_ranks_antigravity
+
+    expected_keys = {"source", "depth_scores", "replayed_depths", "replayed_candidate", "matches_source", "replayed_rank"}
+    replays: list[OriginalReplayAntigravity] = []
+    for row in rows:
+        if not isinstance(row, Mapping) or set(row) != expected_keys or not isinstance(row["source"], Mapping) or not isinstance(row["depth_scores"], list) or not isinstance(row["replayed_depths"], list) or not isinstance(row["replayed_candidate"], Mapping):
+            raise ValueError("Exp444 original-control replay is invalid")
+        try:
+            replay = OriginalReplayAntigravity(
+                SourceCandidateAntigravity.from_payload(row["source"]),
+                tuple(DepthViewScoreAntigravity.from_payload(score) for score in row["depth_scores"]),
+                tuple(row["replayed_depths"]),
+                ProvisionalCandidateAntigravity.from_payload(row["replayed_candidate"]),
+                row["matches_source"],
+                row["replayed_rank"],
+            )
+        except ValueError as error:
+            raise ValueError("Exp444 original-control replay is invalid") from error
+        replays.append(replay)
+    if tuple(item.source for item in replays) != tuple(source) or any(not item.matches_source or item.replayed_candidate.coordinate != item.source.coordinate or item.replayed_depths != item.source.original_depths for item in replays):
+        raise ValueError("Exp444 original-control parity failed")
+    try:
+        verified = verify_original_replay_ranks_antigravity(tuple(replays))
+    except ValueError as error:
+        raise ValueError("Exp444 original-control rank verification failed") from error
+    if tuple(item.replayed_rank for item in replays) != tuple(item.replayed_rank for item in verified):
+        raise ValueError("Exp444 original-control rank changed")
+    return tuple(replays)
+
+
+def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntigravity, *, summary_bytes: bytes | None = None, backend_authority: Mapping[str, object] | None = None) -> tuple[dict[str, bytes], StabilitySelectionAntigravity]:
     results = _complete_checkpoint_results_antigravity(attempt)
     source = tuple(authority.candidates)
     if tuple(item.candidate for item in results) != source:
@@ -315,17 +380,23 @@ def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntig
     stable = tuple(item for item in results if item.lane == "stable_review")
     unstable = tuple(item for item in results if item.lane == "unstable_review")
     selection = StabilitySelectionAntigravity(source, stable, unstable)
-    control_candidates = tuple(SourceCandidateAntigravity.from_payload(row["candidate"]) for row in authority.control_rows if isinstance(row.get("candidate"), Mapping))
-    if control_candidates != source or tuple(row.get("original_rank") for row in authority.control_rows) != tuple(range(1, 31)):
-        raise ValueError("Exp444 original-control parity failed")
-    for row, candidate in zip(authority.control_rows, source, strict=True):
-        if row.get("original_depths") != list(candidate.original_depths):
-            raise ValueError("Exp444 original-control depths changed")
+    # The production authority is a full replay.  The legacy branch keeps
+    # older isolated fixtures readable; it is never emitted by the source
+    # replay above and therefore cannot weaken a new publication.
+    if all(isinstance(row, Mapping) and "source" in row for row in authority.control_rows):
+        _parse_control_replays_antigravity(list(authority.control_rows), source)
+    else:
+        control_candidates = tuple(SourceCandidateAntigravity.from_payload(row["candidate"]) for row in authority.control_rows if isinstance(row.get("candidate"), Mapping))
+        if control_candidates != source or tuple(row.get("original_rank") for row in authority.control_rows) != tuple(range(1, 31)):
+            raise ValueError("Exp444 original-control parity failed")
+        for row, candidate in zip(authority.control_rows, source, strict=True):
+            if row.get("original_depths") != list(candidate.original_depths):
+                raise ValueError("Exp444 original-control depths changed")
     result_rows = _result_rows_antigravity(results)
     stable_rows = _result_rows_antigravity(stable)
     unstable_rows = _result_rows_antigravity(unstable)
     payloads: dict[str, bytes] = {
-        DATASET_SUMMARY_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(authority.dataset_summaries),
+        DATASET_SUMMARY_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(authority.dataset_summaries) if summary_bytes is None else bytes(summary_bytes),
         SOURCE_CANDIDATES_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(item.to_payload() for item in source),
         CANDIDATE_STABILITY_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(result_rows),
         VIEW_EVIDENCE_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(_view_rows_antigravity(results)),
@@ -333,7 +404,7 @@ def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntig
         UNSTABLE_REVIEW_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(unstable_rows),
         CONTROL_REPLAY_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity({"schema": "exp444.control-replay.v1", "rows": list(authority.control_rows)}),
         SOURCE_AUDIT_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_source_audit_payload_antigravity(authority)),
-        BACKEND_DECISION_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_backend_payload_antigravity()),
+        BACKEND_DECISION_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_backend_payload_antigravity()) if backend_authority is None else canonical_json_bytes_antigravity({"schema": "exp444.backend-decision-wrapper.v1", "authority": dict(backend_authority), "decision": dict(backend_authority["decision"])}),
         RUNTIME_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_runtime_payload_antigravity(attempt, results)),
     }
     return payloads, selection
@@ -390,6 +461,68 @@ def _parse_selection_antigravity(root: Path) -> StabilitySelectionAntigravity:
     return StabilitySelectionAntigravity(source, stable, unstable)
 
 
+def _inspect_terminal_runtime_antigravity(runtime: Mapping[str, object], selection: StabilitySelectionAntigravity) -> None:
+    """Validate verbatim terminal surfaces without reopening the attempt path."""
+    required = {"schema", "attempt_name", "backend", "workers", "completed", "record_sha256_prefix", "authorities", "records", "label_access_count"}
+    if set(runtime) != required or runtime["schema"] != "exp444.runtime.v2" or runtime["backend"] != "cpu" or runtime["workers"] != 11 or runtime["completed"] != 30 or runtime["label_access_count"] != 0:
+        raise ValueError("Exp444 publication runtime evidence is invalid")
+    prefix = runtime["record_sha256_prefix"]
+    authorities = runtime["authorities"]
+    if not isinstance(prefix, list) or len(prefix) != 30 or any(type(item) is not str or len(item) != 64 for item in prefix) or not isinstance(authorities, Mapping) or set(authorities) != {"context", "state", "progress", "pid", "events", "text"}:
+        raise ValueError("Exp444 publication runtime evidence is invalid")
+    raw: dict[str, bytes] = {}
+    for name, surface in authorities.items():
+        if not isinstance(surface, Mapping) or set(surface) != {"byte_size", "sha256", "utf8"} or type(surface["byte_size"]) is not int or surface["byte_size"] < 0 or type(surface["sha256"]) is not str or type(surface["utf8"]) is not str:
+            raise ValueError("Exp444 publication terminal authority surface is invalid")
+        encoded = surface["utf8"].encode("utf-8")
+        if len(encoded) != surface["byte_size"] or _sha256_antigravity(encoded) != surface["sha256"]:
+            raise ValueError("Exp444 publication terminal authority surface changed")
+        raw[name] = encoded
+    context = parse_canonical_json_bytes_antigravity(raw["context"])
+    state = parse_canonical_json_bytes_antigravity(raw["state"])
+    progress = parse_canonical_json_bytes_antigravity(raw["progress"])
+    pid = parse_canonical_json_bytes_antigravity(raw["pid"])
+    if not all(isinstance(value, Mapping) for value in (context, state, progress, pid)) or dict(context) != _checkpoint_context_antigravity().to_payload() or state.get("status") != "complete" or state.get("completed_units") != 30 or state.get("total_units") != 30 or state.get("error_count") != 0 or state.get("current_unit") is not None or state.get("current_view") is not None or state.get("error") is not None:
+        raise ValueError("Exp444 publication terminal checkpoint state is invalid")
+    if state.get("record_sha256_prefix") != prefix or state.get("payload_sha256") != _sha256_antigravity(canonical_json_bytes_antigravity(prefix)):
+        raise ValueError("Exp444 publication terminal checkpoint prefix changed")
+    if progress.get("stage") != "complete" or progress.get("active") is not False or progress.get("completed") != 30 or progress.get("total") != 30 or progress.get("backend") != "cpu" or pid.get("active") is not False:
+        raise ValueError("Exp444 publication terminal progress is invalid")
+    identity = (progress.get("pid"), progress.get("start_identity"))
+    if type(identity[0]) is not int or type(identity[1]) is not str or not identity[1] or (pid.get("pid"), pid.get("start_identity")) != identity or not isinstance(state.get("process"), Mapping) or (state["process"].get("pid"), state["process"].get("start_identity")) != identity:
+        raise ValueError("Exp444 publication terminal process identity is invalid")
+    event_lines = raw["events"].splitlines(keepends=True)
+    if not event_lines:
+        raise ValueError("Exp444 publication terminal events are invalid")
+    try:
+        events = [parse_canonical_json_bytes_antigravity(line) for line in event_lines]
+    except ValueError as error:
+        raise ValueError("Exp444 publication terminal events are invalid") from error
+    if any(not isinstance(event, Mapping) or canonical_json_bytes_antigravity(event) != line for event, line in zip(events, event_lines, strict=True)):
+        raise ValueError("Exp444 publication terminal events are not canonical")
+    terminal = events[-1]
+    if terminal.get("event") != "terminal" or terminal.get("stage") != "complete" or terminal.get("pid") != identity[0] or terminal.get("completed") != 30 or terminal.get("total") != 30 or terminal.get("latest_error") != progress.get("latest_error"):
+        raise ValueError("Exp444 publication terminal event is invalid")
+    if not raw["text"].endswith(b"\n") or "종료 stage=complete" not in raw["text"].decode("utf-8").splitlines()[-1]:
+        raise ValueError("Exp444 publication terminal text is invalid")
+    records = runtime["records"]
+    if not isinstance(records, list) or len(records) != 30:
+        raise ValueError("Exp444 publication terminal records are invalid")
+    reconstructed: list[CandidateStabilityResultAntigravity] = []
+    for sequence, surface in enumerate(records):
+        if not isinstance(surface, Mapping) or set(surface) != {"sequence", "byte_size", "sha256", "utf8"} or surface.get("sequence") != sequence or type(surface.get("utf8")) is not str or type(surface.get("byte_size")) is not int or type(surface.get("sha256")) is not str:
+            raise ValueError("Exp444 publication terminal record is invalid")
+        encoded = surface["utf8"].encode("utf-8")
+        if len(encoded) != surface["byte_size"] or _sha256_antigravity(encoded) != surface["sha256"] or surface["sha256"] != prefix[sequence]:
+            raise ValueError("Exp444 publication terminal record changed")
+        payload = parse_canonical_json_bytes_antigravity(encoded)
+        if not isinstance(payload, Mapping) or canonical_json_bytes_antigravity(payload) != encoded or set(payload) != {"sequence", "result"} or payload.get("sequence") != sequence or not isinstance(payload.get("result"), Mapping):
+            raise ValueError("Exp444 publication terminal record is invalid")
+        reconstructed.append(CandidateStabilityResultAntigravity.from_payload(payload["result"]))
+    if tuple(item.candidate for item in reconstructed) != selection.source or tuple(item.candidate.original_rank for item in reconstructed) != tuple(range(1, 31)) or tuple(reconstructed) != tuple(sorted((*selection.stable, *selection.unstable), key=lambda item: item.candidate.original_rank)):
+        raise ValueError("Exp444 publication terminal record reconstruction changed")
+
+
 def inspect_publication_antigravity(publication_root: Path) -> FrozenPublicationAntigravity:
     """Fully replay a frozen publication without database, worker, or evaluator access."""
     root = Path(publication_root)
@@ -408,26 +541,37 @@ def inspect_publication_antigravity(publication_root: Path) -> FrozenPublication
     control = _read_canonical_json_antigravity(root / CONTROL_REPLAY_FILE_ANTIGRAVITY, "control replay")
     if set(control) != {"schema", "rows"} or control["schema"] != "exp444.control-replay.v1" or not isinstance(control["rows"], list):
         raise ValueError("Exp444 publication control replay is invalid")
-    control_candidates = tuple(SourceCandidateAntigravity.from_payload(row["candidate"]) for row in control["rows"] if isinstance(row, Mapping) and isinstance(row.get("candidate"), Mapping))
-    if control_candidates != selection.source or len(control_candidates) != 30:
-        raise ValueError("Exp444 publication original-control parity is invalid")
-    expected_control_rows = [
-        {"candidate": candidate.to_payload(), "original_depths": list(candidate.original_depths), "original_rank": candidate.original_rank}
-        for candidate in selection.source
-    ]
-    if control["rows"] != expected_control_rows:
-        raise ValueError("Exp444 publication original-control replay changed")
+    if all(isinstance(row, Mapping) and "source" in row for row in control["rows"]):
+        _parse_control_replays_antigravity(control["rows"], selection.source)
+    else:
+        control_candidates = tuple(SourceCandidateAntigravity.from_payload(row["candidate"]) for row in control["rows"] if isinstance(row, Mapping) and isinstance(row.get("candidate"), Mapping))
+        if control_candidates != selection.source or len(control_candidates) != 30:
+            raise ValueError("Exp444 publication original-control parity is invalid")
+        expected_control_rows = [
+            {"candidate": candidate.to_payload(), "original_depths": list(candidate.original_depths), "original_rank": candidate.original_rank}
+            for candidate in selection.source
+        ]
+        if control["rows"] != expected_control_rows:
+            raise ValueError("Exp444 publication original-control replay changed")
     audit = _read_canonical_json_antigravity(root / SOURCE_AUDIT_FILE_ANTIGRAVITY, "source audit")
     if set(audit) != {"schema", "source_hashes", "source_candidate_count", "dataset_count", "label_access_count"} or audit["schema"] != "exp444.source-audit.v1" or audit["source_candidate_count"] != 30 or audit["dataset_count"] != 1117 or audit["label_access_count"] != 0 or not isinstance(audit["source_hashes"], Mapping):
         raise ValueError("Exp444 publication source audit is invalid")
     if not audit["source_hashes"] or any(type(name) is not str or type(digest) is not str or len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest) for name, digest in audit["source_hashes"].items()):
         raise ValueError("Exp444 publication source audit hashes are invalid")
-    backend = BackendDecisionAntigravity.from_payload(_read_canonical_json_antigravity(root / BACKEND_DECISION_FILE_ANTIGRAVITY, "backend decision"))
+    backend_payload = _read_canonical_json_antigravity(root / BACKEND_DECISION_FILE_ANTIGRAVITY, "backend decision")
+    if backend_payload.get("schema") == "exp444.backend-decision-wrapper.v1":
+        if set(backend_payload) != {"schema", "authority", "decision"} or not isinstance(backend_payload["authority"], Mapping) or backend_payload.get("decision") != backend_payload["authority"].get("decision"):
+            raise ValueError("Exp444 publication backend authority wrapper is invalid")
+        authority_path = Path(__file__).with_name(FROZEN_CONFIG.backend_decision_authority_identifier)
+        local_authority = _read_canonical_json_antigravity(authority_path, "tracked backend authority")
+        if _sha256_antigravity(authority_path.read_bytes()) != FROZEN_CONFIG.backend_decision_authority_sha256 or dict(backend_payload["authority"]) != local_authority:
+            raise ValueError("Exp444 publication backend authority changed")
+        backend_payload = backend_payload["decision"]
+    backend = BackendDecisionAntigravity.from_payload(backend_payload)
     if backend.backend != "cpu" or backend.workers != 11:
         raise ValueError("Exp444 publication backend decision is invalid")
     runtime = _read_canonical_json_antigravity(root / RUNTIME_FILE_ANTIGRAVITY, "runtime")
-    if set(runtime) != {"schema", "attempt_name", "backend", "workers", "completed", "record_sha256_prefix", "label_access_count"} or runtime["schema"] != "exp444.runtime.v1" or runtime["backend"] != "cpu" or runtime["workers"] != 11 or runtime["completed"] != 30 or runtime["label_access_count"] != 0 or not isinstance(runtime["record_sha256_prefix"], list) or len(runtime["record_sha256_prefix"]) != 30:
-        raise ValueError("Exp444 publication runtime evidence is invalid")
+    _inspect_terminal_runtime_antigravity(runtime, selection)
     manifest = _read_canonical_json_antigravity(root / MANIFEST_FILE_ANTIGRAVITY, "manifest")
     status = _read_canonical_json_antigravity(root / STATUS_FILE_ANTIGRAVITY, "status")
     leaf_payloads = {name: (root / name).read_bytes() for name in _LEAF_FILES_ANTIGRAVITY}
@@ -443,16 +587,16 @@ def inspect_publication_antigravity(publication_root: Path) -> FrozenPublication
 def publish_prediction_antigravity(attempt_root: Path) -> FrozenPublicationAntigravity:
     """Freeze a complete checkpoint into immutable stable/unstable review lanes."""
     attempt = Path(attempt_root)
-    authority = _publish_source_authority_antigravity()
-    payloads, selection = _payloads_antigravity(attempt, authority)
-    expected = _final_payloads_antigravity(payloads, selection)
     destination = attempt / PUBLICATION_DIRECTORY_ANTIGRAVITY
+    # Re-entry is strictly offline: it cannot re-open source/DB/checkpoint or
+    # rewrite prediction evidence that was already frozen.
     if destination.exists() or destination.is_symlink():
-        inspected = inspect_publication_antigravity(destination)
-        for name, payload in expected.items():
-            if (destination / name).read_bytes() != payload:
-                raise ValueError("Exp444 publication re-entry bytes differ from the canonical freeze")
-        return inspected
+        return inspect_publication_antigravity(destination)
+    from .provenance_antigravity import verify_exp444_provenance_antigravity
+    provenance = verify_exp444_provenance_antigravity()
+    authority = _publish_source_authority_antigravity()
+    payloads, selection = _payloads_antigravity(attempt, authority, summary_bytes=provenance.dataset_summary_bytes, backend_authority=provenance.backend_authority)
+    expected = _final_payloads_antigravity(payloads, selection)
     _write_staging_antigravity(destination, expected)
     return inspect_publication_antigravity(destination)
 
