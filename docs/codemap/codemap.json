@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T02:42:14Z",
-  "generated_from_commit": "fe1a8e23461ed7c481813b79ed423dfad90558ce",
+  "generated_at": "2026-08-10T04:18:08Z",
+  "generated_from_commit": "1bf1de35572b75cfab1aff13836ec301379906b9",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -71,7 +71,8 @@
     "Exp444 Task 5: CPU/MLX/Numba dense-distance parity and fixed whole-view speed gate with explicit CPU fallback",
     "Exp444 Task 5 fix round 1: fail-closed canonical backend evidence, exact runtime provenance, and fresh real parity/speed rerun",
     "Exp444 Task 5 fix round 2: MLX versions authority and truthful unexpected-failure provenance",
-    "Exp444 Task 6 review round 1: crash-recoverable unique-temp checkpoint/progress writes, strict prefix and checkpoint identity validation, numerically distinct replacement PIDs, and parent-owned terminal immutability"
+    "Exp444 Task 6 review round 1: crash-recoverable unique-temp checkpoint/progress writes, strict prefix and checkpoint identity validation, numerically distinct replacement PIDs, and parent-owned terminal immutability",
+    "Exp444 Task 7: copied values-only inputs, closed source sessions before scheduling, exact 11-worker spawn execution, bounded out-of-order buffering, parent-only ordered persistence, interruption/resume/finalization re-entry, and real 30-candidate canonical-byte parity with zero TEST-label access"
   ],
   "nodes": [
     {
@@ -4294,7 +4295,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
-      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix round 1 binds every session query to those exact candidate datasets/coordinates, rejects fabricated snapshots before database access, and restores a truthful private pin/root after injected close failures. Fix round 2 removes the SQLite-capable fixture constructor: only the exact verified replay can mint the module-private session capability, and snapshot/session/loader cross-check a canonical rank-ordered attestation of dataset, instance, raw length, depths, and original rank before query. Fix round 3 removes attacker pin replacements on close failure, restores the original verified inode when possible, validates retained dev/inode/SHA, and preserves separate descriptor-backed evidence if exact relinking is impossible; pin replacement, source pathname replacement, and source metadata drift have separate behavioral coverage. Task 4 replays the unchanged Exp440 calibration/scoring rule on all 30 frozen source candidates, generates seed-bound deterministic omission masks, copies score evidence into immutable Exp444 view contracts, and classifies the same coordinates into exhaustive stable/unstable review lanes without TEST labels. Task 5 injects only the exact dense distance primitive for CPU, guarded float64 MLX, and float64 Numba paths, benchmarks the complete fixed size-5/lower-median/size-160 view stage in one process, records transfer/synchronization/materialization/device provenance and scalar/semantic parity, and retains CPU/11 workers when any backend is unavailable, lane-different, numerically different, or below the inclusive 1.1 speed gate. Task 5 fix round 1 makes every gate observation explicit and fail-closed, rejects malformed or nonfinite evidence without leaking it into canonical JSON, records exact Python/NumPy/Numba/MLX/MLX-Metal/device provenance, and replaces stale parity reporting with a fresh real rerun whose semantic comparator fields all match for Numba while speed does not. Task 5 fix round 2 additionally requires complete valid and consistent mlx/mlx-metal versions before MLX selection, preserves measured provenance on later unexpected failures, and records explicit unknown values when measurement never completed instead of copying frozen or machine-hardcoded provenance. Task 2 contracts, Task 4 engine, and thin artifact wrappers remain immutable.",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix rounds bind every query to those coordinates, remove caller-minted SQLite sessions, and preserve truthful descriptor-bound failure evidence. Task 4 replays the unchanged Exp440 calibration/scoring rule, creates deterministic omission views, and classifies the same 30 coordinates into exhaustive stable/unstable review lanes; corrective review preserves a valid empty score tuple when a view has no stable depth model and rejects reordered score evidence. Task 5 benchmarks only the exact dense-distance seam and retains CPU/11 workers because Numba is below 1.1x and MLX float64 is unavailable. Task 6 provides crash-recoverable ordered checkpoints and parent-owned atomic progress. Task 7 closes the verified values-only source session before scheduling, passes only copied immutable inputs to a spawn ProcessPoolExecutor, bounds pending plus buffered results by workers squared, commits the exact case-sensitive rank prefix in the parent, records worker attribution, supports SIGINT exact-prefix resume and complete finalization re-entry, and proves real sequential versus 11-worker canonical-byte identity for all 30 candidates with zero TEST-label access.",
       "entrypoints": [
         "FROZEN_CONFIG",
         "frozen_config_payload_antigravity",
@@ -4341,11 +4342,19 @@
         "score_distance_numba_antigravity",
         "fixed_benchmark_selection_antigravity",
         "choose_backend_antigravity",
-        "benchmark_backends_antigravity"
-        ,"Exp444CheckpointStoreAntigravity"
-        ,"ProcessIdentityAntigravity"
-        ,"current_process_identity_antigravity"
-        ,"ProgressWriterAntigravity"
+        "benchmark_backends_antigravity",
+        "Exp444CheckpointStoreAntigravity",
+        "ProcessIdentityAntigravity",
+        "current_process_identity_antigravity",
+        "ProgressWriterAntigravity",
+        "RuntimeOutcomeAntigravity",
+        "WorkerFailureAntigravity",
+        "ordered_parallel_map_antigravity",
+        "sequential_reference_antigravity",
+        "canonical_results_bytes_antigravity",
+        "production_worker_count_antigravity",
+        "run_new_antigravity",
+        "run_resume_antigravity"
       ],
       "tests": [
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_config_antigravity.py",
@@ -4357,7 +4366,9 @@
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_stability_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_backend_antigravity.py",
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_checkpoint_antigravity.py",
-        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_progress_antigravity.py"
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_progress_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_worker_parity_antigravity.py"
       ],
       "constraints": [
         "Direct requirements remain exactly mlx==0.32.0, numba==0.66.0, and numpy==2.4.6; the complete six-distribution lock is bound by SHA256 8835702b9793a5cc08b5e95621b49c0a4a4136325354da7a655761f6b91f3a94.",
@@ -4384,9 +4395,13 @@
         "Numba uses one serial compiled float64 accumulation loop and deterministic median-of-three; CPU remains selected unless finite scalar max diff <= 1e-5, independent mask/candidate/survival/lane parity, and end-to-end speed ratio >= 1.1 all pass.",
         "Every accelerated gate field must be explicitly present and exactly true: availability, finite output, mask/candidate-presence/survival/lane identity, synchronization, device transfer, compile/warmup policy, result materialization, single process, and no process pool; timing and scalar evidence must be finite exact numbers, process count an exact integer one, scalar difference <= 1e-5, and speed ratio >= 1.1.",
         "MLX selection additionally requires a versions mapping with valid non-sentinel string values for both mlx and mlx-metal and requires the primary version to equal versions.mlx. Unexpected failures preserve measured values or explicitly record unknown when lookup did not complete; frozen package versions and Apple hardware labels are never substituted as measurements.",
-        "The Task 6 checkpoint is create-only and candidate-major over the exact 0..29 prefix: result bytes are fsynced before atomic state replacement, unique same-directory temps are never authority and stale regular temps are deterministically discarded, running/interrupted/complete prefix payload hashes are validated, only one exact-next orphan may be reconciled, and terminal or interrupted old writers are immutable."
-        ,"The Task 6 parent progress writer atomically replaces canonical progress/PID JSON and appends fsynced JSONL/Korean text events; reopen strictly validates inactive current fields, CPU backend, exact nonnegative dimensions/counters, completed/total invariants, checkpoint path/owner/count/prefix hash, and a numerically distinct replacement PID before mutation; the locally constructing parent PID alone may mutate."
-        ,"The fresh fix-round-1 fixed benchmark loaded 30 values-only inputs with label access 0; CPU 222.18546649999917s versus Numba 222.89457920892164s (0.9968186184184505x) retained CPU/11 workers. Numba finite output, masks, candidate presence, survival counts, and lane coordinates all matched with max scalar diff 7.22356281457337e-08; MLX failed closed on Apple M2 Max with mlx==0.32.0 and mlx-metal==0.32.0 because the exact float64 Metal probe raised ValueError."
+        "The Task 6 checkpoint is create-only and candidate-major over the exact 0..29 prefix: result bytes are fsynced before atomic state replacement, unique same-directory temps are never authority and stale regular temps are deterministically discarded, running/interrupted/complete prefix payload hashes are validated, only one exact-next orphan may be reconciled, and terminal or interrupted old writers are immutable.",
+        "The Task 6 parent progress writer atomically replaces canonical progress/PID JSON and appends fsynced JSONL/Korean text events; reopen strictly validates inactive current fields, CPU backend, exact nonnegative dimensions/counters, completed/total invariants, checkpoint path/owner/count/prefix hash, and a numerically distinct replacement PID before mutation; the locally constructing parent PID alone may mutate.",
+        "The fresh fixed benchmark loaded 30 values-only inputs with label access 0; CPU 222.18546649999917s versus Numba 222.89457920892164s (0.9968186184184505x) retained CPU/11 workers. Numba matched every preregistered semantic field with max scalar diff 7.22356281457337e-08; MLX failed closed because the exact float64 Metal probe is unavailable.",
+        "A stability view may carry an empty depth-score tuple only when the unchanged Exp440 refit produced no stable depth model; such a view is candidate-absent, has no agreeing depth, and cannot survive. Nonempty copied score evidence must retain the exact source order and unique depths.",
+        "Task 7 production scheduling is CPU-only with exactly 11 spawn workers and seven inner numerical thread controls set to one. Only copied immutable candidate arrays/contracts enter children; the verified SQLite session is closed first, and only the parent writes checkpoint/progress/PID/events/text evidence.",
+        "Task 7 buffers out-of-order futures within workers squared, commits only the exact rank prefix, rejects source/config/backend context drift before resume mutation, records the failing dataset/candidate, and supports inactive SIGINT resume plus read-only complete finalization re-entry.",
+        "The real Task 7 parity command processed all 30 candidates with sequential SHA256 and 11-worker SHA256 both 729b31c0698fda6b60c17012a3fd2cae3f4b0899e01e5a3bf4d569902e814857, canonical byte equality true, and label access count zero."
       ],
       "evidence": [
         {
@@ -4560,6 +4575,42 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_progress_antigravity.py",
           "symbol": "class Exp444ProgressAntigravityTests"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/contracts_antigravity.py",
+          "symbol": "class StabilityViewAntigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/stability_antigravity.py",
+          "symbol": "def _copy_scores_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
+          "symbol": "def ordered_parallel_map_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
+          "symbol": "def sequential_reference_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
+          "symbol": "def run_new_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/runtime_antigravity.py",
+          "symbol": "def run_resume_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_sigint_exact_prefix_resume_and_complete_finalization_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_worker_parity_antigravity.py",
+          "symbol": "def test_one_worker_and_eleven_worker_have_identical_canonical_bytes_antigravity"
+        },
+        {
+          "path": "scratch/verify_exp444_worker_parity_antigravity.py",
+          "symbol": "def main"
         }
       ]
     }
@@ -5426,22 +5477,47 @@
           "symbol": "from experiments.exp441_hard_empty_single_shot_recovery_antigravity.artifacts_antigravity import ("
         }
       ]
+    },
+    {
+      "from": "exp444_stability_contracts",
+      "to": "sqlite_store",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/sources_antigravity.py",
+          "symbol": "def load_candidate_values_antigravity"
+        }
+      ]
+    },
+    {
+      "from": "exp444_stability_contracts",
+      "to": "exp438_frequency_runtime",
+      "type": "imports",
+      "evidence": [
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/stability_antigravity.py",
+          "symbol": "from experiments.exp440_train_only_low_frequency_precision_gate_antigravity.features_antigravity import ("
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/stability_antigravity.py",
+          "symbol": "from experiments.exp440_train_only_low_frequency_precision_gate_antigravity.scoring_antigravity import ("
+        }
+      ]
     }
   ],
   "flows": [
     {
-      "id": "exp438_readiness_flow",
-      "label": "Exp438 clean-HEAD readiness and acceleration gate",
-      "trigger": "Recover the exact frozen Exp437 stale-PID checkpoint through its existing runtime API, then run Exp438 readiness only after terminal/inactive or fresh live zero-error CPU predecessor evidence.",
+      "id": "exp444_ordered_runtime_flow",
+      "label": "Exp444 values-only 11-worker ordered replay",
+      "trigger": "After the Task 5 CPU backend decision and Task 6 checkpoint/progress authority are verified, materialize the frozen Exp442 30 candidates through the exact values-only source boundary, close the SQLite session, and start or resume the Task 7 runtime.",
       "steps": [
+        "research_control",
+        "exp444_stability_contracts",
         "exp438_frequency_runtime",
-        "exp436_contract_boundary",
-        "exp417_inputs",
-        "exp425_database",
         "sqlite_store",
         "artifact_utils"
       ],
-      "outcome": "The recovery launcher validates 938 durable progress/checkpoint records plus the intent-with-record crash window without mutation, resumes Exp437 from the exact clean commit, and Exp438 readiness records the verified concurrent or terminal predecessor snapshot before creating its root."
+      "outcome": "Eleven spawn workers receive only copied immutable TRAIN/TEST values and contracts, compute views out of order within a bounded window, and return results to the parent. The parent extends only the exact rank prefix, writes all progress evidence itself, preserves resumable SIGINT state, and reproduces the same canonical 30-result SHA256 as the sequential reference with zero TEST-label access."
     },
     {
       "id": "exp438_cpu_new_resume_flow",
