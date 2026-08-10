@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T04:45:11Z",
-  "generated_from_commit": "72d481f9c3fd4f40d2086bec36eeb89256fcb924",
+  "generated_at": "2026-08-10T05:01:08Z",
+  "generated_from_commit": "ac94bedd311c5b4e2659c098ddbe3d69eea195fb",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -72,7 +72,7 @@
     "Exp444 Task 5 fix round 1: fail-closed canonical backend evidence, exact runtime provenance, and fresh real parity/speed rerun",
     "Exp444 Task 5 fix round 2: MLX versions authority and truthful unexpected-failure provenance",
     "Exp444 Task 6 review round 1: crash-recoverable unique-temp checkpoint/progress writes, strict prefix and checkpoint identity validation, numerically distinct replacement PIDs, and parent-owned terminal immutability",
-    "Exp444 Task 7: copied values-only inputs, closed source sessions before scheduling, exact 11-worker spawn execution, bounded out-of-order buffering, parent-only ordered persistence, interruption/resume/finalization re-entry, real PID ownership probes, truthful next-commit live progress, non-waiting cancellation, complete evidence-surface validation, and real 30-candidate canonical-byte parity with zero TEST-label access"
+    "Exp444 Task 7: copied values-only inputs, closed source sessions before scheduling, exact 11-worker spawn execution, bounded out-of-order buffering, parent-only ordered persistence, interruption/resume/finalization re-entry, real PID ownership probes, truthful next-commit live progress, non-waiting cancellation, complete evidence-surface validation, read-only full checkpoint resume preflight with mutation-boundary revalidation, and real 30-candidate canonical-byte parity with zero TEST-label access"
   ],
   "nodes": [
     {
@@ -4295,7 +4295,7 @@
       "boundary": "Active isolated research",
       "layer": 1,
       "path": "experiments/exp444_train_only_stability_precision_gate_antigravity",
-      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix rounds bind every query to those coordinates, remove caller-minted SQLite sessions, and preserve truthful descriptor-bound failure evidence. Task 4 replays the unchanged Exp440 calibration/scoring rule, creates deterministic omission views, and classifies the same 30 coordinates into exhaustive stable/unstable review lanes; corrective review preserves a valid empty score tuple when a view has no stable depth model and rejects reordered score evidence. Task 5 benchmarks only the exact dense-distance seam and retains CPU/11 workers because Numba is below 1.1x and MLX float64 is unavailable. Task 6 provides crash-recoverable ordered checkpoints and parent-owned atomic progress. Task 7 closes the verified values-only source session before scheduling, passes only copied immutable inputs to a spawn ProcessPoolExecutor, bounds pending plus buffered results by workers squared, commits the exact case-sensitive rank prefix in the parent, records worker attribution, supports SIGINT exact-prefix resume and complete finalization re-entry, and proves real sequential versus 11-worker canonical-byte identity for all 30 candidates with zero TEST-label access. Task 7 fix round 1 restores real progress/checkpoint PID liveness probes, exposes the deterministic next-commit candidate before and during worker execution without inventing worker-internal view state, cancels pending futures and returns from interruption without waiting for active workers, validates complete checkpoint/progress/PID/event/text evidence coherently before read-only finalization re-entry, and pressure-tests more than workers-squared tasks, deliberate out-of-order completion, bounded pending-plus-buffered state, and dataset/candidate/view failure attribution.",
+      "role": "Task 2 freezes the Exp444 Python 3.14.6 environment and byte-identical lock inventory; Task 3 verifies the exact frozen Exp442/Exp404 source bytes, 30 selected coordinates, ranking/selection identity and zero-label governance, then exposes only copied normal TRAIN values and the 30 bound TEST values rows through a descriptor-pinned SQLite session. Fix rounds bind every query to those coordinates, remove caller-minted SQLite sessions, and preserve truthful descriptor-bound failure evidence. Task 4 replays the unchanged Exp440 calibration/scoring rule, creates deterministic omission views, and classifies the same 30 coordinates into exhaustive stable/unstable review lanes; corrective review preserves a valid empty score tuple when a view has no stable depth model and rejects reordered score evidence. Task 5 benchmarks only the exact dense-distance seam and retains CPU/11 workers because Numba is below 1.1x and MLX float64 is unavailable. Task 6 provides crash-recoverable ordered checkpoints and parent-owned atomic progress. Task 7 closes the verified values-only source session before scheduling, passes only copied immutable inputs to a spawn ProcessPoolExecutor, bounds pending plus buffered results by workers squared, commits the exact case-sensitive rank prefix in the parent, records worker attribution, supports SIGINT exact-prefix resume and complete finalization re-entry, and proves real sequential versus 11-worker canonical-byte identity for all 30 candidates with zero TEST-label access. Task 7 fix round 1 restores real progress/checkpoint PID liveness probes, exposes the deterministic next-commit candidate before and during worker execution without inventing worker-internal view state, cancels pending futures and returns from interruption without waiting for active workers, validates complete checkpoint/progress/PID/event/text evidence coherently before read-only finalization re-entry, and pressure-tests more than workers-squared tasks, deliberate out-of-order completion, bounded pending-plus-buffered state, and dataset/candidate/view failure attribution. Task 7 fix round 2 adds a read-only checkpoint inspection path that validates canonical context, state, payload hash, committed record SHA prefix, exact-next orphan inventory and real stored-owner liveness before any progress/PID/event/text ownership bytes change. Progress re-runs this full inspection immediately before its first rebind write, and the writable checkpoint open repeats the same validation at its mutation boundary.",
       "entrypoints": [
         "FROZEN_CONFIG",
         "frozen_config_payload_antigravity",
@@ -4344,6 +4344,7 @@
         "choose_backend_antigravity",
         "benchmark_backends_antigravity",
         "Exp444CheckpointStoreAntigravity",
+        "inspect_interrupted_antigravity",
         "ProcessIdentityAntigravity",
         "current_process_identity_antigravity",
         "ProgressWriterAntigravity",
@@ -4406,6 +4407,7 @@
         "Live progress truthfully names the next sequence eligible for ordered commit as the current candidate while its future is pending or buffered. The parent reports stage=candidate and leaves current_view/view_count null because worker-internal view progress is not observable.",
         "SIGINT and worker failure cancel pending futures and call executor shutdown with wait=false and cancel_futures=true, so checkpoint/progress interruption evidence is written without waiting for an unrelated active worker; normal completion still performs waiting shutdown.",
         "Complete finalization-only re-entry is read-only and requires canonical coherent checkpoint, progress, PID, JSONL event, and Korean text-log surfaces with matching process identity, counts, terminal state, checkpoint path, hashes, and context before accepting the 30-record result prefix.",
+        "Task 7 fix round 2 rejects a changed committed record, payload hash, malformed prefix, invalid exact-next orphan, context drift, or live stored owner through a full read-only checkpoint preflight before any progress authority mutation. The same preflight is invoked again inside ProgressWriter.open_interrupted immediately before its first owner write, and Exp444CheckpointStoreAntigravity.open_interrupted performs the full validation again before checkpoint rebinding.",
         "The real Task 7 parity command processed all 30 candidates with sequential SHA256 and 11-worker SHA256 both 729b31c0698fda6b60c17012a3fd2cae3f4b0899e01e5a3bf4d569902e814857, canonical byte equality true, and label access count zero."
       ],
       "evidence": [
@@ -4610,6 +4612,14 @@
           "symbol": "def _validate_complete_attempt_antigravity"
         },
         {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/checkpoint_antigravity.py",
+          "symbol": "def inspect_interrupted_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/progress_antigravity.py",
+          "symbol": "authority_preflight: Callable[[], None] | None = None"
+        },
+        {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_runtime_antigravity.py",
           "symbol": "def test_sigint_exact_prefix_resume_and_complete_finalization_antigravity"
         },
@@ -4628,6 +4638,22 @@
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_runtime_antigravity.py",
           "symbol": "def test_complete_reentry_rejects_missing_or_corrupt_attempt_evidence_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_checkpoint_antigravity.py",
+          "symbol": "def test_read_only_interrupted_preflight_rejects_changed_record_without_mutation_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_progress_antigravity.py",
+          "symbol": "def test_resume_authority_preflight_runs_before_first_owner_write_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_resume_rejects_corrupt_committed_authority_before_any_owner_bytes_change_antigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_runtime_antigravity.py",
+          "symbol": "def test_resume_revalidates_checkpoint_at_progress_rebind_boundary_antigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_worker_parity_antigravity.py",
@@ -5542,7 +5568,7 @@
         "sqlite_store",
         "artifact_utils"
       ],
-      "outcome": "Eleven spawn workers receive only copied immutable TRAIN/TEST values and contracts, compute views out of order within a bounded window, and return results to the parent. The parent exposes the truthful next-commit candidate without inventing worker-internal view progress, extends only the exact rank prefix, writes all progress evidence itself, rejects live old owners through real PID probes, returns from SIGINT without waiting for unrelated active workers, validates every complete terminal evidence surface before read-only re-entry, and preserves the same canonical 30-result SHA256 as the sequential reference with zero TEST-label access."
+      "outcome": "Eleven spawn workers receive only copied immutable TRAIN/TEST values and contracts, compute views out of order within a bounded window, and return results to the parent. The parent exposes the truthful next-commit candidate without inventing worker-internal view progress, extends only the exact rank prefix, writes all progress evidence itself, rejects live old owners through real PID probes, performs full read-only context/state/prefix/record/orphan validation before and at ownership mutation boundaries, returns from SIGINT without waiting for unrelated active workers, validates every complete terminal evidence surface before read-only re-entry, and preserves the same canonical 30-result SHA256 as the sequential reference with zero TEST-label access."
     },
     {
       "id": "exp438_cpu_new_resume_flow",
