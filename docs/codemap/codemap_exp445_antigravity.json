@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T18:49:29Z",
-  "generated_from_commit": "c07a63bdcd9f342473118dfa38b198a4a540569e",
+  "generated_at": "2026-08-10T19:07:16Z",
+  "generated_from_commit": "a254e29a1093705ffe2d0bfe0a921629ed688fa6",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -77,7 +77,8 @@
     "Exp445 frozen preregistration and four-command operator contract: immutable Exp444 predecessor, exact 30-record parity, label firewall, CPU/11 inherited backend revalidation, failure preservation, and descriptive-only governance before product implementation",
     "Exp445 Task 2 closed two-profile lifecycle identity boundary: fixed Exp444/Exp445 identity, schema, root, governing-document paths, predecessor requirement, and legacy-wrapper compatibility",
     "Exp445 Task 3: descriptor-pinned Exp440 summary-byte parser, closed values-only candidate/source-hash/control handoff, and path/SQLite-free publication authority composition without Exp442 sibling derivation",
-    "Exp445 Task 3 review fix: recursively immutable values-only control handoff, JSON materialization only at control-replay encoding, and real composed-control serialization evidence"
+    "Exp445 Task 3 review fix: recursively immutable values-only control handoff, JSON materialization only at control-replay encoding, and real composed-control serialization evidence",
+    "Exp445 Task 4 immutable predecessor authentication: descriptor-pinned Exp444 30-record terminal authority with no label, SQLite, publication, resume, evaluation, or mutation path."
   ],
   "nodes": [
     {
@@ -5093,6 +5094,41 @@
           "symbol": "def test_values_only_handoff_freezes_nested_rows_and_materializes_for_payloads_antigravity"
         }
       ]
+    },
+    {
+      "id": "exp445_predecessor_authority",
+      "label": "Exp445 immutable predecessor",
+      "type": "storage",
+      "boundary": "Exp445 predecessor authority",
+      "layer": 2,
+      "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity",
+      "role": "Read-only verifier that descriptor-pins the fixed Exp444 terminal attempt, checks the exact terminal and ordered 30-wrapper SHA authorities, rejects mutable or live state, and returns only immutable parity authority. It neither opens SQLite nor invokes Exp444 publication, resume, checkpoint, or evaluation code.",
+      "entrypoints": [
+        "verify_exp444_predecessor_antigravity",
+        "Exp444PredecessorAuthorityAntigravity"
+      ],
+      "tests": [
+        "experiments/exp445_exp444_publication_source_authority_repair_antigravity/tests/test_predecessor_antigravity.py::Exp444PredecessorAuthorityAntigravityTests"
+      ],
+      "constraints": [
+        "Fixed Exp444 root, attempt name, reviewed commit, terminal SHA256 values, ordered 30-wrapper SHA prefix, and aggregate prefix SHA are closed constants.",
+        "All reads are descriptor-relative no-follow checks over an exact inventory; terminal and record leaves must be single-linked regular files and identities are revalidated after reading.",
+        "The source database is not opened and must have exactly one link. The verifier never writes, renames, unlinks, publishes, resumes, evaluates, or creates the Exp445 official root."
+      ],
+      "evidence": [
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/profile_antigravity.py",
+          "symbol": "EXP444_TERMINAL_SHA256_ANTIGRAVITY"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/profile_antigravity.py",
+          "symbol": "EXP444_RECORD_SHA256_PREFIX_ANTIGRAVITY"
+        },
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/predecessor_antigravity.py",
+          "symbol": "def verify_exp444_predecessor_antigravity"
+        }
+      ]
     }
   ],
   "edges": [
@@ -5987,6 +6023,17 @@
           "symbol": "_dispatch_antigravity"
         }
       ]
+    },
+    {
+      "from": "exp445_predecessor_authority",
+      "to": "exp444_stability_contracts",
+      "type": "reads",
+      "evidence": [
+        {
+          "path": "experiments/exp445_exp444_publication_source_authority_repair_antigravity/predecessor_antigravity.py",
+          "symbol": "def verify_exp444_predecessor_antigravity"
+        }
+      ]
     }
   ],
   "flows": [
@@ -6050,6 +6097,16 @@
         "sqlite_store"
       ],
       "outcome": "The evaluator opens one read-only TEST-label session only after matching Task8 content and root identity, queries Task8 summary order, computes baseline/frozen/stable/unstable lanes and deterministic paired bootstrap, rechecks Task8 after close/computation/pre-commit, and creates a ten-leaf descriptive-only evaluation. Existing replay remains label-free. Round-4 regressions preserve truthful audit state across label/query/close/complete-write failures and require semantic replay rejection after a refreshed artifact map. Task 3 publication composition authenticates Exp440 summary bytes through provenance and keeps the Exp442 source boundary values-only and closed before authority composition."
+    },
+    {
+      "id": "exp445_predecessor_authentication_flow",
+      "label": "Exp445 immutable predecessor authentication",
+      "trigger": "The later Exp445 lifecycle invokes verify_exp444_predecessor_antigravity before any Exp445 root allocation.",
+      "steps": [
+        "exp445_predecessor_authority",
+        "exp444_stability_contracts"
+      ],
+      "outcome": "Only the descriptor-pinned, exact Exp444 complete 30-record authority can be handed to later Exp445 parity checks; unsafe, mutable, live, or published/evaluated predecessor evidence is rejected without mutation."
     }
   ],
   "unknown_relationships": [],
