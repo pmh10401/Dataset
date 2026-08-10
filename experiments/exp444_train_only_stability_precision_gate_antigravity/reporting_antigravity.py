@@ -8,11 +8,13 @@ evaluation entrypoint), opens no database, and mutates no attempt authority.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import stat
 from types import MappingProxyType
 from uuid import uuid4
 
@@ -64,16 +66,15 @@ _LEAF_FILES_ANTIGRAVITY = (
 )
 _PUBLICATION_FILES_ANTIGRAVITY = frozenset((*_LEAF_FILES_ANTIGRAVITY, MANIFEST_FILE_ANTIGRAVITY, STATUS_FILE_ANTIGRAVITY, ARTIFACT_SHA256_FILE_ANTIGRAVITY))
 _RECORD_NAMES_ANTIGRAVITY = tuple(f"{index:04d}_record_antigravity.json" for index in range(FROZEN_CONFIG.source_candidate_count))
+_PINNED_PUBLICATION_HOOK_ANTIGRAVITY = None  # deterministic test-only race seam
+_STAGING_BEFORE_RENAME_HOOK_ANTIGRAVITY = None  # deterministic test-only race seam
 
 
 def _sha256_antigravity(value: bytes) -> str:
     return sha256(value).hexdigest()
 
 
-def _read_canonical_json_antigravity(path: Path, name: str) -> Mapping[str, object]:
-    if path.is_symlink() or not path.is_file():
-        raise ValueError(f"Exp444 {name} is absent or invalid")
-    encoded = path.read_bytes()
+def _read_canonical_json_bytes_antigravity(encoded: bytes, name: str) -> Mapping[str, object]:
     try:
         payload = parse_canonical_json_bytes_antigravity(encoded)
     except ValueError as error:
@@ -83,10 +84,13 @@ def _read_canonical_json_antigravity(path: Path, name: str) -> Mapping[str, obje
     return dict(payload)
 
 
-def _read_canonical_jsonl_antigravity(path: Path, name: str) -> tuple[dict[str, object], ...]:
+def _read_canonical_json_antigravity(path: Path, name: str) -> Mapping[str, object]:
     if path.is_symlink() or not path.is_file():
         raise ValueError(f"Exp444 {name} is absent or invalid")
-    encoded = path.read_bytes()
+    return _read_canonical_json_bytes_antigravity(path.read_bytes(), name)
+
+
+def _read_canonical_jsonl_bytes_antigravity(encoded: bytes, name: str) -> tuple[dict[str, object], ...]:
     if not encoded:
         return ()
     if not encoded.endswith(b"\n"):
@@ -103,6 +107,58 @@ def _read_canonical_jsonl_antigravity(path: Path, name: str) -> tuple[dict[str, 
     if canonical_jsonl_bytes_antigravity(rows) != encoded:
         raise ValueError(f"Exp444 {name} is not canonical")
     return tuple(rows)
+
+
+def _read_canonical_jsonl_antigravity(path: Path, name: str) -> tuple[dict[str, object], ...]:
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(f"Exp444 {name} is absent or invalid")
+    return _read_canonical_jsonl_bytes_antigravity(path.read_bytes(), name)
+
+
+@contextmanager
+def _pinned_publication_payloads_antigravity(root: Path):
+    """Hold every publication leaf on one root descriptor through inspection."""
+    root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    descriptors: list[int] = []
+    try:
+        before = os.fstat(root_fd)
+        expected = set(_PUBLICATION_FILES_ANTIGRAVITY)
+        if set(os.listdir(root_fd)) != expected:
+            raise ValueError("Exp444 publication inventory is invalid")
+        payloads: dict[str, bytes] = {}
+        identities: dict[str, tuple[int, int, int, int, int]] = {}
+        for name in sorted(expected):
+            fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=root_fd)
+            descriptors.append(fd)
+            first = os.fstat(fd)
+            if not stat.S_ISREG(first.st_mode) or first.st_nlink != 1:
+                raise ValueError("Exp444 publication leaf must be a single-linked regular file")
+            chunks: list[bytes] = []
+            while block := os.read(fd, 1024 * 1024):
+                chunks.append(block)
+            payloads[name] = b"".join(chunks)
+            last = os.fstat(fd)
+            named = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
+            identity = (first.st_dev, first.st_ino, first.st_size, first.st_mtime_ns, first.st_ctime_ns)
+            if identity != (last.st_dev, last.st_ino, last.st_size, last.st_mtime_ns, last.st_ctime_ns) or (first.st_dev, first.st_ino) != (named.st_dev, named.st_ino):
+                raise ValueError("Exp444 publication leaf changed during pinned read")
+            identities[name] = identity
+        if _PINNED_PUBLICATION_HOOK_ANTIGRAVITY is not None:
+            _PINNED_PUBLICATION_HOOK_ANTIGRAVITY(root)
+        yield payloads
+        if set(os.listdir(root_fd)) != expected:
+            raise ValueError("Exp444 publication inventory changed during inspection")
+        for name, identity in identities.items():
+            named = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
+            if (named.st_dev, named.st_ino, named.st_size, named.st_mtime_ns, named.st_ctime_ns) != identity:
+                raise ValueError("Exp444 publication entry changed during inspection")
+        after = os.fstat(root_fd)
+        if (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_ctime_ns) != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_ctime_ns):
+            raise ValueError("Exp444 publication root changed during inspection")
+    finally:
+        for fd in descriptors:
+            os.close(fd)
+        os.close(root_fd)
 
 
 def _ensure_label_free_antigravity(value: object, name: str) -> None:
@@ -427,31 +483,78 @@ def _write_staging_antigravity(destination: Path, payloads: Mapping[str, bytes])
     staging = destination.with_name(f".{destination.name}.{uuid4().hex}.staging_antigravity")
     if staging.exists() or staging.is_symlink():
         raise ValueError("Exp444 publication staging path already exists")
-    staging.mkdir(mode=0o700)
+    parent = destination.parent
+    parent_fd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    staging_fd = -1
+    staging_identity: tuple[int, int] | None = None
+    staging_children: dict[str, tuple[int, int, int, int, int]] = {}
     try:
-        for name in (*_LEAF_FILES_ANTIGRAVITY, MANIFEST_FILE_ANTIGRAVITY, STATUS_FILE_ANTIGRAVITY, ARTIFACT_SHA256_FILE_ANTIGRAVITY):
-            path = staging / name
-            with path.open("xb") as output:
-                output.write(payloads[name])
-                output.flush()
-                os.fsync(output.fileno())
-            if path.read_bytes() != payloads[name]:
+        os.mkdir(staging.name, 0o700, dir_fd=parent_fd)
+        staging_fd = os.open(staging.name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent_fd)
+        status = os.fstat(staging_fd)
+        if not stat.S_ISDIR(status.st_mode) or stat.S_IMODE(status.st_mode) != 0o700:
+            raise ValueError("Exp444 publication staging directory is invalid")
+        staging_identity = (status.st_dev, status.st_ino)
+        names = (*_LEAF_FILES_ANTIGRAVITY, MANIFEST_FILE_ANTIGRAVITY, STATUS_FILE_ANTIGRAVITY, ARTIFACT_SHA256_FILE_ANTIGRAVITY)
+        for name in names:
+            fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=staging_fd)
+            try:
+                offset = 0
+                while offset < len(payloads[name]):
+                    written = os.write(fd, payloads[name][offset:])
+                    if written == 0:
+                        raise OSError("Exp444 publication staging write made no progress")
+                    offset += written
+                os.fsync(fd)
+                child = os.fstat(fd)
+                staging_children[name] = (child.st_dev, child.st_ino, child.st_size, child.st_mtime_ns, child.st_ctime_ns)
+            finally:
+                os.close(fd)
+        os.fsync(staging_fd)
+        with _pinned_publication_payloads_antigravity(staging) as staged:
+            if staged != payloads:
+                raise ValueError("Exp444 publication staging bytes changed")
+        if _STAGING_BEFORE_RENAME_HOOK_ANTIGRAVITY is not None:
+            _STAGING_BEFORE_RENAME_HOOK_ANTIGRAVITY(staging)
+        current_staging = os.stat(staging.name, dir_fd=parent_fd, follow_symlinks=False)
+        if staging_identity != (current_staging.st_dev, current_staging.st_ino):
+            raise ValueError("Exp444 publication staging directory changed")
+        for name, identity in staging_children.items():
+            current = os.stat(name, dir_fd=staging_fd, follow_symlinks=False)
+            if identity != (current.st_dev, current.st_ino, current.st_size, current.st_mtime_ns, current.st_ctime_ns):
+                raise ValueError("Exp444 publication staging entry changed")
+        with _pinned_publication_payloads_antigravity(staging) as staged:
+            if staged != payloads:
                 raise ValueError("Exp444 publication staging bytes changed")
         exclusive_rename_antigravity(staging, destination)
+        os.fsync(parent_fd)
+        with _pinned_publication_payloads_antigravity(destination) as published:
+            if published != payloads:
+                raise ValueError("Exp444 publication destination bytes changed")
     except BaseException:
-        if staging.exists() and staging.is_dir() and not staging.is_symlink():
-            for item in staging.iterdir():
-                if item.is_file() and not item.is_symlink():
-                    item.unlink()
-            staging.rmdir()
+        if staging_identity is not None:
+            try:
+                current = os.stat(staging.name, dir_fd=parent_fd, follow_symlinks=False)
+                if (current.st_dev, current.st_ino) == staging_identity and stat.S_ISDIR(current.st_mode):
+                    names = set(os.listdir(staging_fd)) if staging_fd >= 0 else set()
+                    if names.issubset(set((*_LEAF_FILES_ANTIGRAVITY, MANIFEST_FILE_ANTIGRAVITY, STATUS_FILE_ANTIGRAVITY, ARTIFACT_SHA256_FILE_ANTIGRAVITY))):
+                        for name in names:
+                            os.unlink(name, dir_fd=staging_fd)
+                        os.rmdir(staging.name, dir_fd=parent_fd)
+            except OSError:
+                pass
         raise
+    finally:
+        if staging_fd >= 0:
+            os.close(staging_fd)
+        os.close(parent_fd)
 
 
-def _parse_selection_antigravity(root: Path) -> StabilitySelectionAntigravity:
-    source = tuple(SourceCandidateAntigravity.from_payload(row) for row in _read_canonical_jsonl_antigravity(root / SOURCE_CANDIDATES_FILE_ANTIGRAVITY, "source candidates"))
-    results = tuple(CandidateStabilityResultAntigravity.from_payload(row) for row in _read_canonical_jsonl_antigravity(root / CANDIDATE_STABILITY_FILE_ANTIGRAVITY, "candidate stability"))
-    stable = tuple(CandidateStabilityResultAntigravity.from_payload(row) for row in _read_canonical_jsonl_antigravity(root / STABLE_REVIEW_FILE_ANTIGRAVITY, "stable review"))
-    unstable = tuple(CandidateStabilityResultAntigravity.from_payload(row) for row in _read_canonical_jsonl_antigravity(root / UNSTABLE_REVIEW_FILE_ANTIGRAVITY, "unstable review"))
+def _parse_selection_antigravity(payloads: Mapping[str, bytes]) -> StabilitySelectionAntigravity:
+    source = tuple(SourceCandidateAntigravity.from_payload(row) for row in _read_canonical_jsonl_bytes_antigravity(payloads[SOURCE_CANDIDATES_FILE_ANTIGRAVITY], "source candidates"))
+    results = tuple(CandidateStabilityResultAntigravity.from_payload(row) for row in _read_canonical_jsonl_bytes_antigravity(payloads[CANDIDATE_STABILITY_FILE_ANTIGRAVITY], "candidate stability"))
+    stable = tuple(CandidateStabilityResultAntigravity.from_payload(row) for row in _read_canonical_jsonl_bytes_antigravity(payloads[STABLE_REVIEW_FILE_ANTIGRAVITY], "stable review"))
+    unstable = tuple(CandidateStabilityResultAntigravity.from_payload(row) for row in _read_canonical_jsonl_bytes_antigravity(payloads[UNSTABLE_REVIEW_FILE_ANTIGRAVITY], "unstable review"))
     if tuple(item.candidate for item in results) != source:
         raise ValueError("Exp444 publication lane ordering changed")
     expected_stable = tuple(item for item in results if item.lane == "stable_review")
@@ -526,61 +629,49 @@ def _inspect_terminal_runtime_antigravity(runtime: Mapping[str, object], selecti
 def inspect_publication_antigravity(publication_root: Path) -> FrozenPublicationAntigravity:
     """Fully replay a frozen publication without database, worker, or evaluator access."""
     root = Path(publication_root)
-    if root.is_symlink() or not root.is_dir() or tuple(sorted(item.name for item in root.iterdir())) != tuple(sorted(_PUBLICATION_FILES_ANTIGRAVITY)):
+    if root.is_symlink() or not root.is_dir():
         raise ValueError("Exp444 publication inventory is invalid")
-    selection = _parse_selection_antigravity(root)
-    summaries = _read_canonical_jsonl_antigravity(root / DATASET_SUMMARY_FILE_ANTIGRAVITY, "dataset summary")
-    if len(summaries) != 1117 or tuple(row.get("dataset") for row in summaries) != tuple(sorted(row.get("dataset") for row in summaries)) or len({row.get("dataset") for row in summaries}) != 1117:
-        raise ValueError("Exp444 publication dataset summaries are invalid")
-    _ensure_label_free_antigravity(summaries, "dataset summary")
-    for name in (VIEW_EVIDENCE_FILE_ANTIGRAVITY,):
-        _ensure_label_free_antigravity(_read_canonical_jsonl_antigravity(root / name, name), name)
-    ordered_results = tuple(sorted((*selection.stable, *selection.unstable), key=lambda item: item.candidate.original_rank))
-    if (root / VIEW_EVIDENCE_FILE_ANTIGRAVITY).read_bytes() != canonical_jsonl_bytes_antigravity(_view_rows_antigravity(ordered_results)):
-        raise ValueError("Exp444 publication view evidence changed")
-    control = _read_canonical_json_antigravity(root / CONTROL_REPLAY_FILE_ANTIGRAVITY, "control replay")
-    if set(control) != {"schema", "rows"} or control["schema"] != "exp444.control-replay.v1" or not isinstance(control["rows"], list):
-        raise ValueError("Exp444 publication control replay is invalid")
-    if all(isinstance(row, Mapping) and "source" in row for row in control["rows"]):
-        _parse_control_replays_antigravity(control["rows"], selection.source)
-    else:
-        control_candidates = tuple(SourceCandidateAntigravity.from_payload(row["candidate"]) for row in control["rows"] if isinstance(row, Mapping) and isinstance(row.get("candidate"), Mapping))
-        if control_candidates != selection.source or len(control_candidates) != 30:
-            raise ValueError("Exp444 publication original-control parity is invalid")
-        expected_control_rows = [
-            {"candidate": candidate.to_payload(), "original_depths": list(candidate.original_depths), "original_rank": candidate.original_rank}
-            for candidate in selection.source
-        ]
-        if control["rows"] != expected_control_rows:
-            raise ValueError("Exp444 publication original-control replay changed")
-    audit = _read_canonical_json_antigravity(root / SOURCE_AUDIT_FILE_ANTIGRAVITY, "source audit")
-    if set(audit) != {"schema", "source_hashes", "source_candidate_count", "dataset_count", "label_access_count"} or audit["schema"] != "exp444.source-audit.v1" or audit["source_candidate_count"] != 30 or audit["dataset_count"] != 1117 or audit["label_access_count"] != 0 or not isinstance(audit["source_hashes"], Mapping):
-        raise ValueError("Exp444 publication source audit is invalid")
-    if not audit["source_hashes"] or any(type(name) is not str or type(digest) is not str or len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest) for name, digest in audit["source_hashes"].items()):
-        raise ValueError("Exp444 publication source audit hashes are invalid")
-    backend_payload = _read_canonical_json_antigravity(root / BACKEND_DECISION_FILE_ANTIGRAVITY, "backend decision")
-    if backend_payload.get("schema") == "exp444.backend-decision-wrapper.v1":
-        if set(backend_payload) != {"schema", "authority", "decision"} or not isinstance(backend_payload["authority"], Mapping) or backend_payload.get("decision") != backend_payload["authority"].get("decision"):
-            raise ValueError("Exp444 publication backend authority wrapper is invalid")
-        authority_path = Path(__file__).with_name(FROZEN_CONFIG.backend_decision_authority_identifier)
-        local_authority = _read_canonical_json_antigravity(authority_path, "tracked backend authority")
-        if _sha256_antigravity(authority_path.read_bytes()) != FROZEN_CONFIG.backend_decision_authority_sha256 or dict(backend_payload["authority"]) != local_authority:
-            raise ValueError("Exp444 publication backend authority changed")
-        backend_payload = backend_payload["decision"]
-    backend = BackendDecisionAntigravity.from_payload(backend_payload)
-    if backend.backend != "cpu" or backend.workers != 11:
-        raise ValueError("Exp444 publication backend decision is invalid")
-    runtime = _read_canonical_json_antigravity(root / RUNTIME_FILE_ANTIGRAVITY, "runtime")
-    _inspect_terminal_runtime_antigravity(runtime, selection)
-    manifest = _read_canonical_json_antigravity(root / MANIFEST_FILE_ANTIGRAVITY, "manifest")
-    status = _read_canonical_json_antigravity(root / STATUS_FILE_ANTIGRAVITY, "status")
-    leaf_payloads = {name: (root / name).read_bytes() for name in _LEAF_FILES_ANTIGRAVITY}
-    expected = _final_payloads_antigravity(leaf_payloads, selection)
-    for name, payload in expected.items():
-        if (root / name).read_bytes() != payload:
-            raise ValueError(f"Exp444 publication {name} hash or contract changed")
-    if manifest["label_access_count"] != 0 or status.get("label_access_count") != 0:
-        raise ValueError("Exp444 publication label governance is invalid")
+    with _pinned_publication_payloads_antigravity(root) as payloads:
+        selection = _parse_selection_antigravity(payloads)
+        summaries = _read_canonical_jsonl_bytes_antigravity(payloads[DATASET_SUMMARY_FILE_ANTIGRAVITY], "dataset summary")
+        if len(summaries) != 1117 or tuple(row.get("dataset") for row in summaries) != tuple(sorted(row.get("dataset") for row in summaries)) or len({row.get("dataset") for row in summaries}) != 1117:
+            raise ValueError("Exp444 publication dataset summaries are invalid")
+        _ensure_label_free_antigravity(summaries, "dataset summary")
+        _ensure_label_free_antigravity(_read_canonical_jsonl_bytes_antigravity(payloads[VIEW_EVIDENCE_FILE_ANTIGRAVITY], VIEW_EVIDENCE_FILE_ANTIGRAVITY), VIEW_EVIDENCE_FILE_ANTIGRAVITY)
+        ordered_results = tuple(sorted((*selection.stable, *selection.unstable), key=lambda item: item.candidate.original_rank))
+        if payloads[VIEW_EVIDENCE_FILE_ANTIGRAVITY] != canonical_jsonl_bytes_antigravity(_view_rows_antigravity(ordered_results)):
+            raise ValueError("Exp444 publication view evidence changed")
+        control = _read_canonical_json_bytes_antigravity(payloads[CONTROL_REPLAY_FILE_ANTIGRAVITY], "control replay")
+        if set(control) != {"schema", "rows"} or control["schema"] != "exp444.control-replay.v1" or not isinstance(control["rows"], list):
+            raise ValueError("Exp444 publication control replay is invalid")
+        if all(isinstance(row, Mapping) and "source" in row for row in control["rows"]):
+            _parse_control_replays_antigravity(control["rows"], selection.source)
+        else:
+            control_candidates = tuple(SourceCandidateAntigravity.from_payload(row["candidate"]) for row in control["rows"] if isinstance(row, Mapping) and isinstance(row.get("candidate"), Mapping))
+            expected_control_rows = [{"candidate": candidate.to_payload(), "original_depths": list(candidate.original_depths), "original_rank": candidate.original_rank} for candidate in selection.source]
+            if control_candidates != selection.source or control["rows"] != expected_control_rows:
+                raise ValueError("Exp444 publication original-control replay changed")
+        audit = _read_canonical_json_bytes_antigravity(payloads[SOURCE_AUDIT_FILE_ANTIGRAVITY], "source audit")
+        if set(audit) != {"schema", "source_hashes", "source_candidate_count", "dataset_count", "label_access_count"} or audit["schema"] != "exp444.source-audit.v1" or audit["source_candidate_count"] != 30 or audit["dataset_count"] != 1117 or audit["label_access_count"] != 0 or not isinstance(audit["source_hashes"], Mapping) or not audit["source_hashes"]:
+            raise ValueError("Exp444 publication source audit is invalid")
+        backend_payload = _read_canonical_json_bytes_antigravity(payloads[BACKEND_DECISION_FILE_ANTIGRAVITY], "backend decision")
+        if backend_payload.get("schema") == "exp444.backend-decision-wrapper.v1":
+            authority_path = Path(__file__).with_name(FROZEN_CONFIG.backend_decision_authority_identifier)
+            local_authority = _read_canonical_json_antigravity(authority_path, "tracked backend authority")
+            if set(backend_payload) != {"schema", "authority", "decision"} or not isinstance(backend_payload["authority"], Mapping) or backend_payload.get("decision") != backend_payload["authority"].get("decision") or _sha256_antigravity(authority_path.read_bytes()) != FROZEN_CONFIG.backend_decision_authority_sha256 or dict(backend_payload["authority"]) != local_authority:
+                raise ValueError("Exp444 publication backend authority changed")
+            backend_payload = backend_payload["decision"]
+        backend = BackendDecisionAntigravity.from_payload(backend_payload)
+        if backend.backend != "cpu" or backend.workers != 11:
+            raise ValueError("Exp444 publication backend decision is invalid")
+        _inspect_terminal_runtime_antigravity(_read_canonical_json_bytes_antigravity(payloads[RUNTIME_FILE_ANTIGRAVITY], "runtime"), selection)
+        manifest = _read_canonical_json_bytes_antigravity(payloads[MANIFEST_FILE_ANTIGRAVITY], "manifest")
+        status = _read_canonical_json_bytes_antigravity(payloads[STATUS_FILE_ANTIGRAVITY], "status")
+        expected = _final_payloads_antigravity({name: payloads[name] for name in _LEAF_FILES_ANTIGRAVITY}, selection)
+        if any(payloads[name] != payload for name, payload in expected.items()):
+            raise ValueError("Exp444 publication hash or contract changed")
+        if manifest["label_access_count"] != 0 or status.get("label_access_count") != 0:
+            raise ValueError("Exp444 publication label governance is invalid")
     return FrozenPublicationAntigravity(root, manifest, selection)
 
 

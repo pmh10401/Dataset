@@ -75,6 +75,20 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
         self.assertEqual((outcome.status, outcome.completed_count), ("complete", 30))
         return root / "attempts_antigravity/attempt_0000_antigravity", inputs
 
+    def _published_antigravity(self, directory: str):
+        attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+        authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs))
+        with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
+            return reporting.publish_prediction_antigravity(attempt)
+
+    @staticmethod
+    def _regenerate_publication_hashes_antigravity(frozen, leaf_name: str, leaf_payload: bytes) -> None:
+        payloads = {name: (frozen.publication_root / name).read_bytes() for name in reporting._LEAF_FILES_ANTIGRAVITY}
+        payloads[leaf_name] = leaf_payload
+        expected = reporting._final_payloads_antigravity(payloads, frozen.selection)
+        for name, value in expected.items():
+            (frozen.publication_root / name).write_bytes(value)
+
     def test_publish_and_read_only_inspect_conserve_every_source_coordinate_antigravity(self) -> None:
         with tempfile.TemporaryDirectory(prefix="exp444_reporting_antigravity_") as directory:
             attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
@@ -125,6 +139,109 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
                 frozen = reporting.publish_prediction_antigravity(attempt)
             runtime_leaf = __import__("json").loads((frozen.publication_root / reporting.RUNTIME_FILE_ANTIGRAVITY).read_text())
             self.assertEqual(set(runtime_leaf["authorities"]), {"context", "state", "progress", "pid", "events", "text"})
+
+    def test_inspection_rejects_hardlinked_publication_leaf_antigravity(self) -> None:
+        """A second name for a leaf must not become a mutable inspection authority."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_hardlink_antigravity_") as directory:
+            attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs))
+            with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
+                frozen = reporting.publish_prediction_antigravity(attempt)
+            leaf = frozen.publication_root / reporting.RUNTIME_FILE_ANTIGRAVITY
+            hardlink = frozen.publication_root.parent / "runtime_hardlink_antigravity.json"
+            __import__("os").link(leaf, hardlink)
+            with self.assertRaisesRegex(ValueError, "single-linked|hardlink|invalid"):
+                reporting.inspect_publication_antigravity(frozen.publication_root)
+
+    def test_existing_publication_reentry_does_not_open_authorities_antigravity(self) -> None:
+        """A valid publication is inspected from its frozen leaves before any live authority."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_reentry_antigravity_") as directory:
+            attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs))
+            with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
+                reporting.publish_prediction_antigravity(attempt)
+            with (
+                mock.patch.object(reporting, "_publish_source_authority_antigravity", side_effect=AssertionError("source opened")),
+                mock.patch.object(reporting, "_complete_checkpoint_results_antigravity", side_effect=AssertionError("checkpoint opened")),
+                mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity", side_effect=AssertionError("provenance opened")),
+            ):
+                self.assertEqual(reporting.publish_prediction_antigravity(attempt).stable_count, 15)
+
+    def test_inspection_rejects_directory_entry_replacement_after_pin_antigravity(self) -> None:
+        """Replacing a name after all leaf descriptors are pinned must invalidate inspection."""
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_replace_antigravity_") as directory:
+            attempt, inputs = self._complete_attempt_antigravity(Path(directory) / "run_antigravity")
+            authority = reporting._PublishSourceAuthorityAntigravity(tuple(item.candidate for item in inputs), tuple({"dataset": f"Summary_{index:04d}"} for index in range(1117)), {"database": "a" * 64}, tuple({"candidate": item.candidate.to_payload(), "original_depths": list(item.candidate.original_depths), "original_rank": item.candidate.original_rank} for item in inputs))
+            with mock.patch.object(reporting, "_publish_source_authority_antigravity", return_value=authority):
+                frozen = reporting.publish_prediction_antigravity(attempt)
+            def replace_leaf(_root: Path) -> None:
+                leaf = frozen.publication_root / reporting.RUNTIME_FILE_ANTIGRAVITY
+                replacement = leaf.with_name("runtime_replacement_antigravity.json")
+                replacement.write_bytes(leaf.read_bytes())
+                __import__("os").replace(replacement, leaf)
+            with mock.patch.object(reporting, "_PINNED_PUBLICATION_HOOK_ANTIGRAVITY", replace_leaf, create=True):
+                with self.assertRaisesRegex(ValueError, "entry changed|inventory changed"):
+                    reporting.inspect_publication_antigravity(frozen.publication_root)
+
+    def test_inspection_rejects_substituted_backend_wrapper_with_regenerated_hashes_antigravity(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_backend_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payload = __import__("json").loads((frozen.publication_root / reporting.BACKEND_DECISION_FILE_ANTIGRAVITY).read_text())
+            payload["authority"]["task5_log_utf8"] += "substitution\n"
+            self._regenerate_publication_hashes_antigravity(frozen, reporting.BACKEND_DECISION_FILE_ANTIGRAVITY, reporting.canonical_json_bytes_antigravity(payload))
+            with self.assertRaisesRegex(ValueError, "backend authority"):
+                reporting.inspect_publication_antigravity(frozen.publication_root)
+
+    def test_inspection_rejects_rewritten_runtime_surface_with_regenerated_hashes_antigravity(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_runtime_rewrite_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payload = __import__("json").loads((frozen.publication_root / reporting.RUNTIME_FILE_ANTIGRAVITY).read_text())
+            surface = payload["authorities"]["text"]
+            surface["utf8"] = "종료 stage=interrupted\n"
+            raw = surface["utf8"].encode()
+            surface["byte_size"] = len(raw)
+            surface["sha256"] = hashlib.sha256(raw).hexdigest()
+            self._regenerate_publication_hashes_antigravity(frozen, reporting.RUNTIME_FILE_ANTIGRAVITY, reporting.canonical_json_bytes_antigravity(payload))
+            with self.assertRaisesRegex(ValueError, "terminal text"):
+                reporting.inspect_publication_antigravity(frozen.publication_root)
+
+    def test_inspection_rejects_substituted_control_with_regenerated_hashes_antigravity(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_control_rewrite_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payload = __import__("json").loads((frozen.publication_root / reporting.CONTROL_REPLAY_FILE_ANTIGRAVITY).read_text())
+            payload["rows"][0]["original_rank"] = 30
+            self._regenerate_publication_hashes_antigravity(frozen, reporting.CONTROL_REPLAY_FILE_ANTIGRAVITY, reporting.canonical_json_bytes_antigravity(payload))
+            with self.assertRaisesRegex(ValueError, "original-control"):
+                reporting.inspect_publication_antigravity(frozen.publication_root)
+
+    def test_staging_rejects_entry_replacement_before_rename_antigravity(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_staging_entry_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payloads = {name: (frozen.publication_root / name).read_bytes() for name in reporting._PUBLICATION_FILES_ANTIGRAVITY}
+            destination = frozen.publication_root.parent / "replacement_publication_antigravity"
+            def replace_entry(staging: Path) -> None:
+                leaf = staging / reporting.RUNTIME_FILE_ANTIGRAVITY
+                replacement = staging / "runtime_replacement_antigravity.json"
+                replacement.write_bytes(leaf.read_bytes())
+                __import__("os").replace(replacement, leaf)
+            with mock.patch.object(reporting, "_STAGING_BEFORE_RENAME_HOOK_ANTIGRAVITY", replace_entry, create=True):
+                with self.assertRaisesRegex(ValueError, "staging|changed"):
+                    reporting._write_staging_antigravity(destination, payloads)
+            self.assertFalse(destination.exists())
+
+    def test_staging_rejects_directory_replacement_before_rename_antigravity(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_staging_dir_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payloads = {name: (frozen.publication_root / name).read_bytes() for name in reporting._PUBLICATION_FILES_ANTIGRAVITY}
+            destination = frozen.publication_root.parent / "replacement_publication_antigravity"
+            def replace_directory(staging: Path) -> None:
+                moved = staging.with_name("moved_staging_antigravity")
+                __import__("os").replace(staging, moved)
+                staging.mkdir(mode=0o700)
+            with mock.patch.object(reporting, "_STAGING_BEFORE_RENAME_HOOK_ANTIGRAVITY", replace_directory, create=True):
+                with self.assertRaisesRegex(ValueError, "staging|changed|inventory"):
+                    reporting._write_staging_antigravity(destination, payloads)
+            self.assertFalse(destination.exists())
 
 
 if __name__ == "__main__":

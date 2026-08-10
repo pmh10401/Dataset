@@ -24,6 +24,17 @@ class Exp444ProvenanceAntigravityTests(unittest.TestCase):
         checked = provenance.verify_exp444_provenance_antigravity()
         self.assertEqual((len(checked.dataset_summary_bytes.splitlines()), checked.backend_decision.backend, checked.backend_decision.workers), (1117, "cpu", 11))
 
+    def test_pinned_bundle_rejects_absent_or_mismatched_summary_antigravity(self) -> None:
+        """The summary authority is exact bytes, never an optional best-effort input."""
+        with tempfile.TemporaryDirectory(prefix="exp444_summary_authority_antigravity_") as directory:
+            root = Path(directory)
+            expected = sha256(b"summary\n").hexdigest()
+            with self.assertRaisesRegex((ValueError, FileNotFoundError), "provenance|No such"):
+                provenance._read_pinned_bundle_antigravity(root, (("dataset_summary_antigravity.jsonl", expected),))
+            (root / "dataset_summary_antigravity.jsonl").write_bytes(b"different\n")
+            with self.assertRaisesRegex(ValueError, "SHA256"):
+                provenance._read_pinned_bundle_antigravity(root, (("dataset_summary_antigravity.jsonl", expected),))
+
 
 if __name__ == "__main__":
     unittest.main()
