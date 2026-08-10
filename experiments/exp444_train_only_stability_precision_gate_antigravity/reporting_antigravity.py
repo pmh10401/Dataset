@@ -374,6 +374,26 @@ class _PublishSourceAuthorityAntigravity:
             raise ValueError("Exp444 original-control replay count is invalid")
 
 
+def _freeze_json_value_antigravity(value: object) -> object:
+    """Recursively detach the closed handoff from every mutable JSON container."""
+    if isinstance(value, Mapping):
+        return MappingProxyType({key: _freeze_json_value_antigravity(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_json_value_antigravity(item) for item in value)
+    return value
+
+
+def _json_payload_value_antigravity(value: object) -> object:
+    """Materialize a frozen handoff into ordinary JSON containers at encoding only."""
+    if isinstance(value, Mapping):
+        return {key: _json_payload_value_antigravity(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_json_payload_value_antigravity(item) for item in value]
+    if isinstance(value, list):
+        return [_json_payload_value_antigravity(item) for item in value]
+    return value
+
+
 @dataclass(frozen=True)
 class _ValuesOnlyPublishAuthorityAntigravity:
     """Detached, closed-session authority for the publication source replay."""
@@ -384,8 +404,8 @@ class _ValuesOnlyPublishAuthorityAntigravity:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "candidates", tuple(self.candidates))
-        object.__setattr__(self, "source_hashes", MappingProxyType(dict(self.source_hashes)))
-        object.__setattr__(self, "control_rows", tuple(MappingProxyType(dict(row)) for row in self.control_rows))
+        object.__setattr__(self, "source_hashes", _freeze_json_value_antigravity(self.source_hashes))
+        object.__setattr__(self, "control_rows", tuple(_freeze_json_value_antigravity(row) for row in self.control_rows))
         if len(self.candidates) != FROZEN_CONFIG.source_candidate_count or any(not isinstance(item, SourceCandidateAntigravity) for item in self.candidates):
             raise ValueError("Exp444 values-only authority candidates are invalid")
         if len(self.control_rows) != FROZEN_CONFIG.source_candidate_count:
@@ -629,7 +649,7 @@ def _payloads_antigravity(attempt: Path, authority: _PublishSourceAuthorityAntig
         VIEW_EVIDENCE_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(_view_rows_antigravity(results)),
         STABLE_REVIEW_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(stable_rows),
         UNSTABLE_REVIEW_FILE_ANTIGRAVITY: canonical_jsonl_bytes_antigravity(unstable_rows),
-        CONTROL_REPLAY_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity({"schema": "exp444.control-replay.v1", "rows": list(authority.control_rows)}),
+        CONTROL_REPLAY_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity({"schema": "exp444.control-replay.v1", "rows": _json_payload_value_antigravity(authority.control_rows)}),
         SOURCE_AUDIT_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_source_audit_payload_antigravity(authority)),
         BACKEND_DECISION_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(_backend_payload_antigravity()) if backend_authority is None else canonical_json_bytes_antigravity({"schema": "exp444.backend-decision-wrapper.v1", "authority": dict(backend_authority), "decision": dict(backend_authority["decision"])}),
         RUNTIME_FILE_ANTIGRAVITY: canonical_json_bytes_antigravity(runtime_payload),

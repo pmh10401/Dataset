@@ -50,6 +50,10 @@ class Exp445PublicationSourceAuthorityAntigravityTests(unittest.TestCase):
             authority = reporting._compose_publish_source_authority_antigravity(summaries, values)
         self.assertEqual(authority.dataset_summaries, summaries)
         self.assertEqual((len(authority.candidates), len(authority.dataset_summaries), len(authority.control_rows)), (30, 1117, 30))
+        control_payload = artifacts.canonical_json_bytes_antigravity(
+            {"schema": "exp444.control-replay.v1", "rows": reporting._json_payload_value_antigravity(values.control_rows)}
+        )
+        self.assertEqual(len(artifacts.parse_canonical_json_bytes_antigravity(control_payload)["rows"]), 30)
 
     def test_publication_wrapper_exposes_no_source_authority_override_antigravity(self) -> None:
         """Accepting source bytes or a handoff publicly would bypass provenance capture."""
@@ -72,6 +76,25 @@ class Exp445PublicationSourceAuthorityAntigravityTests(unittest.TestCase):
             handoff.source_hashes["replacement"] = "0" * 64
         with self.assertRaises(TypeError):
             handoff.control_rows[0]["replacement"] = "forbidden"
+
+    def test_values_only_handoff_freezes_nested_rows_and_materializes_for_payloads_antigravity(self) -> None:
+        """Nested control values must be immutable until the explicit JSON encoding boundary."""
+        snapshot = sources.verify_frozen_sources_antigravity()
+        session = snapshot.session
+        try:
+            rows = tuple({"nested": {"depths": [1, 2]}} for _ in snapshot.candidates)
+            handoff = reporting._ValuesOnlyPublishAuthorityAntigravity(snapshot.candidates, snapshot.source_hashes, rows)
+        finally:
+            assert session is not None
+            session.close()
+        with self.assertRaises(TypeError):
+            handoff.control_rows[0]["nested"]["depths"][0] = 99
+        payload = reporting._json_payload_value_antigravity({"rows": handoff.control_rows})
+        self.assertEqual(payload, {"rows": [{"nested": {"depths": [1, 2]}}] * 30})
+        self.assertEqual(
+            artifacts.parse_canonical_json_bytes_antigravity(artifacts.canonical_json_bytes_antigravity(payload)),
+            payload,
+        )
 
     def test_summary_parser_rejects_noncanonical_malformed_order_count_and_label_rows_antigravity(self) -> None:
         """A parser accepting any malformed or label-bearing summary would lose Exp440 authority."""

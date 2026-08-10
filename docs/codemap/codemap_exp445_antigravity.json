@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T17:12:59Z",
-  "generated_from_commit": "7043422306189468d3a04e763d7878372294dbf4",
+  "generated_at": "2026-08-10T18:42:17Z",
+  "generated_from_commit": "41b7245e883c38e91ac1df5a9c06916bfa4e3a4c",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -76,7 +76,8 @@
     "Repository execution policy and native Terra/Sol delegation routing",
     "Exp445 frozen preregistration and four-command operator contract: immutable Exp444 predecessor, exact 30-record parity, label firewall, CPU/11 inherited backend revalidation, failure preservation, and descriptive-only governance before product implementation",
     "Exp445 Task 2 closed two-profile lifecycle identity boundary: fixed Exp444/Exp445 identity, schema, root, governing-document paths, predecessor requirement, and legacy-wrapper compatibility",
-    "Exp445 Task 3: descriptor-pinned Exp440 summary-byte parser, closed values-only candidate/source-hash/control handoff, and path/SQLite-free publication authority composition without Exp442 sibling derivation"
+    "Exp445 Task 3: descriptor-pinned Exp440 summary-byte parser, closed values-only candidate/source-hash/control handoff, and path/SQLite-free publication authority composition without Exp442 sibling derivation",
+    "Exp445 Task 3 review fix: recursively immutable values-only control handoff, JSON materialization only at control-replay encoding, and real composed-control serialization evidence"
   ],
   "nodes": [
     {
@@ -4500,7 +4501,11 @@
         "validate_execution_identity_antigravity",
         "load_worker_parity_authority_antigravity",
         "validate_worker_parity_authority_payload_antigravity",
-        "_validate_reviewed_commit_antigravity"
+        "_validate_reviewed_commit_antigravity",
+        "_parse_dataset_summaries_antigravity",
+        "_capture_values_only_publish_authority_antigravity",
+        "_compose_publish_source_authority_antigravity",
+        "_json_payload_value_antigravity"
       ],
       "tests": [
         "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_profiles_antigravity.py",
@@ -4576,7 +4581,11 @@
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/profiles_antigravity.py",
-          "symbol": "EXP444_PROFILE_ANTIGRAVITY / EXP445_PROFILE_ANTIGRAVITY"
+          "symbol": "EXP444_PROFILE_ANTIGRAVITY"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/profiles_antigravity.py",
+          "symbol": "EXP445_PROFILE_ANTIGRAVITY"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_profiles_antigravity.py",
