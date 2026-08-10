@@ -187,6 +187,7 @@ class ProgressWriterAntigravity:
             raise ValueError("progress diagnostic log policy is invalid")
         self._exp445_diagnostic_log_failures_antigravity = _exp445_diagnostic_log_failures_antigravity
         self._terminal_log_failure_antigravity = False
+        self._unrecorded_log_failure_antigravity = False
         self._ensure_append_files_antigravity()
 
     @classmethod
@@ -373,7 +374,7 @@ class ProgressWriterAntigravity:
             except BaseException:
                 # Diagnostic persistence must never replace the original
                 # compute/progress failure or block core JSON/PID closeout.
-                pass
+                self._unrecorded_log_failure_antigravity = True
 
     def _require_active_antigravity(self) -> None:
         if os.getpid() != self._local_owner_pid:
@@ -502,6 +503,11 @@ class ProgressWriterAntigravity:
         sequence = authority.sequence
         if sequence >= self.total or authority.total_units != self.total or authority.process != self.process:
             raise ValueError("progress committed checkpoint authority is invalid")
+        if (
+            type(abstention) is not bool
+            or abstention != (authority.current_lane == "unstable_review")
+        ):
+            raise ValueError("progress committed checkpoint authority is invalid")
         if type(dataset) is not str or not dataset:
             raise ValueError("progress committed dataset is invalid")
         if not isinstance(dimensions, Mapping) or set(dimensions) != {
@@ -535,18 +541,19 @@ class ProgressWriterAntigravity:
         )}
         if (
             any(type(value) is not int or value < 0 for value in counters.values())
-            or counters["imported"] + counters["recomputed"] != counters["completed"]
-            or counters["success"] + counters["error"] != counters["completed"]
-            or counters["abstention"] > counters["success"]
         ):
             raise ValueError("progress committed recovery authority is invalid")
-        for name in (
-            "train_count", "train_missing", "train_used", "train_excluded",
-            "test_count", "test_rows", "raw_length", "target_length",
-        ):
+        for name in dimensions:
             value = persisted[name]
             if value is not None and (type(value) is not int or value < 0):
                 raise ValueError("progress committed recovery authority is invalid")
+        if (
+            any(persisted[name] is not None for name in (
+                "train_missing", "train_used", "train_excluded",
+            ))
+            or any(persisted[name] != dimensions[name] for name in dimensions)
+        ):
+            raise ValueError("progress committed recovery authority is invalid")
         for name in ("throughput", "elapsed_seconds", "eta_seconds"):
             value = persisted[name]
             if type(value) not in (int, float) or not math.isfinite(float(value)) or float(value) < 0:
@@ -560,6 +567,16 @@ class ProgressWriterAntigravity:
         before = counters["completed"] == sequence
         after = counters["completed"] == sequence + 1
         if not before and not after:
+            raise ValueError("progress committed recovery authority is invalid")
+        expected_counters = {
+            "completed": sequence if before else sequence + 1,
+            "imported": 0,
+            "recomputed": sequence if before else sequence + 1,
+            "success": sequence if before else sequence + 1,
+            "abstention": authority.abstention_before if before else authority.abstention_after,
+            "error": 0,
+        }
+        if counters != expected_counters:
             raise ValueError("progress committed recovery authority is invalid")
         if before:
             if (
@@ -588,7 +605,7 @@ class ProgressWriterAntigravity:
             return
         self._counters["completed"] += 1
         self._counters["recomputed"] += 1
-        self._counters["abstention"] += int(abstention)
+        self._counters["abstention"] += 1 if authority.current_lane == "unstable_review" else 0
         self._counters["success"] += 1
         self._current_dataset = None
         self._current_candidate_index = None
@@ -917,6 +934,11 @@ class ProgressWriterAntigravity:
     @property
     def terminal_log_failure_antigravity(self) -> bool:
         return self._terminal_log_failure_antigravity
+
+    @property
+    def log_failure_blocks_success_antigravity(self) -> bool:
+        """Exp445 must not report clean success if a failed append had no marker."""
+        return self._terminal_log_failure_antigravity or self._unrecorded_log_failure_antigravity
 
 
 __all__ = ["ProgressWriterAntigravity"]

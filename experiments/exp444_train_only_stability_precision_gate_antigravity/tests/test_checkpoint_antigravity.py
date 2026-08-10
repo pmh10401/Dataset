@@ -95,8 +95,24 @@ class Exp444CheckpointAntigravityTests(unittest.TestCase):
             mutation(payload)
             path.write_bytes(canonical_json_bytes_antigravity(payload))
 
+        def mutate_context_and_rebind_state(root: Path) -> None:
+            context_path = root / "context_antigravity.json"
+            context = json.loads(context_path.read_text())
+            context["inner_threads"] = True
+            context_bytes = canonical_json_bytes_antigravity(context)
+            context_path.write_bytes(context_bytes)
+            mutate_state(
+                root / "state_antigravity.json",
+                lambda state: state.update({"context_sha256": hashlib.sha256(context_bytes).hexdigest()}),
+            )
+
         cases = (
+            ("context_inner_threads_bool", mutate_context_and_rebind_state),
             ("extra_state_key", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"extra": 1}))),
+            ("completed_bool", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"completed_units": True}))),
+            ("total_bool", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"total_units": True}))),
+            ("error_count_bool", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"error_count": False}))),
+            ("process_pid_bool", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"process": {"pid": True, "start_identity": "start-A"}}))),
             ("forged_completed", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"completed_units": 0}))),
             ("forged_context", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"context_sha256": "0" * 64}))),
             ("forged_error", lambda root: mutate_state(root / "state_antigravity.json", lambda state: state.update({"status": "error", "error_count": 1, "error": {"type": "RuntimeError", "message": "forged"}}))),

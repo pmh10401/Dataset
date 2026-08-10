@@ -12,6 +12,18 @@ from unittest import mock
 from experiments.exp444_train_only_stability_precision_gate_antigravity.artifacts_antigravity import (
     canonical_json_bytes_antigravity,
 )
+from experiments.exp444_train_only_stability_precision_gate_antigravity.config_antigravity import (
+    FROZEN_CONFIG,
+    scientific_config_sha256_antigravity,
+)
+from experiments.exp444_train_only_stability_precision_gate_antigravity.contracts_antigravity import (
+    CandidateStabilityResultAntigravity,
+    CheckpointContextAntigravity,
+    DepthViewScoreAntigravity,
+    OmissionMaskAntigravity,
+    SourceCandidateAntigravity,
+    StabilityViewAntigravity,
+)
 
 
 def _write_checkpoint_state_antigravity(
@@ -44,7 +56,71 @@ def _write_checkpoint_state_antigravity(
     return state
 
 
+def _committed_success_fixture_antigravity(attempt: Path):
+    """Build one real stable prefix plus its already-durable progress state."""
+    from experiments.exp444_train_only_stability_precision_gate_antigravity.checkpoint_antigravity import (
+        Exp444CheckpointStoreAntigravity,
+        ProcessIdentityAntigravity,
+    )
+    from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import (
+        ProgressWriterAntigravity,
+    )
+
+    process = ProcessIdentityAntigravity(44_601, "progress-recovery")
+    context = CheckpointContextAntigravity(
+        FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity,
+        scientific_config_sha256_antigravity(), FROZEN_CONFIG.environment_lock_sha256,
+        30, FROZEN_CONFIG.cpu_workers, FROZEN_CONFIG.inner_threads, "a" * 40,
+    )
+    checkpoint = attempt / "checkpoint_antigravity"
+    store = Exp444CheckpointStoreAntigravity.create(checkpoint, context, process)
+    candidate = SourceCandidateAntigravity("Recovery", 0, 16, (1, 2), 1)
+    scores = (
+        DepthViewScoreAntigravity(1, 2.0, 1.0, True, 2.0, 0.5),
+        DepthViewScoreAntigravity(2, 2.0, 1.0, True, 2.0, 0.5),
+    )
+    view = StabilityViewAntigravity(
+        OmissionMaskAntigravity(0, (0,), hashlib.sha256(b"recovery").hexdigest()),
+        (1, 2, 3, 4), scores, (1, 2), True,
+    )
+    result = CandidateStabilityResultAntigravity(candidate, (view,), 1, 1, "stable_review")
+    writer = ProgressWriterAntigravity.create(
+        attempt, total=30, process=process,
+        checkpoint_path=checkpoint / "state_antigravity.json",
+    )
+    writer.start_candidate_antigravity("Recovery", 0, train_count=4, test_count=1, raw_length=16)
+    store.commit_antigravity(0, result)
+    writer.complete_candidate_antigravity()
+    return writer, store.committed_prefix_authority_antigravity(0), {
+        "train_count": 4, "test_count": 1, "test_rows": 1,
+        "raw_length": 16, "target_length": 16,
+    }
+
+
 class Exp444ProgressAntigravityTests(unittest.TestCase):
+    def test_exp445_committed_recovery_rejects_forged_official_history_antigravity(self) -> None:
+        """A durable prefix fixes all Exp445 progress counters and candidate dimensions."""
+        mutations = (
+            ("imported", lambda progress: progress.update({"imported": 1, "recomputed": 0})),
+            ("recomputed", lambda progress: progress.update({"imported": 1, "recomputed": 0})),
+            ("abstention", lambda progress: progress.update({"abstention": 1})),
+            ("train_missing", lambda progress: progress.update({"train_missing": 0})),
+            ("train_used", lambda progress: progress.update({"train_used": 0})),
+            ("train_excluded", lambda progress: progress.update({"train_excluded": 0})),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name), tempfile.TemporaryDirectory(prefix="exp445_forged_progress_antigravity_") as directory:
+                attempt = Path(directory) / "attempt_0000_antigravity"; attempt.mkdir()
+                writer, authority, dimensions = _committed_success_fixture_antigravity(attempt)
+                progress_path = attempt / "progress_antigravity.json"
+                payload = json.loads(progress_path.read_text())
+                mutate(payload)
+                progress_path.write_bytes(canonical_json_bytes_antigravity(payload))
+                with self.assertRaisesRegex(ValueError, "recovery authority"):
+                    writer.reconcile_committed_success_antigravity(
+                        authority, dataset="Recovery", dimensions=dimensions,
+                    )
+
     def test_exp445_diagnostic_log_failures_do_not_block_core_terminal_authority_antigravity(self) -> None:
         """Persistent append faults must leave Exp445 progress/PID complete and auditable."""
         from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity

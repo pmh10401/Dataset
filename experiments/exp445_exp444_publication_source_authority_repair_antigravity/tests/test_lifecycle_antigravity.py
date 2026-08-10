@@ -280,6 +280,38 @@ class Exp445LifecycleAntigravityTests(unittest.TestCase):
             self.assertEqual((state["status"], state["completed_units"], progress["stage"], progress["completed"], pid["active"]), ("complete", 30, "complete", 30, False))
             self.assertTrue((attempt / "log_failure_antigravity.json").is_file())
 
+    def test_nonterminal_log_and_marker_failure_still_blocks_clean_success_antigravity(self) -> None:
+        """An unauditable nonterminal append fault remains irreversible despite later healthy logs."""
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import runtime_antigravity as runtime
+        from experiments.exp444_train_only_stability_precision_gate_antigravity import progress_antigravity
+        from experiments.exp444_train_only_stability_precision_gate_antigravity.progress_antigravity import ProgressWriterAntigravity
+
+        inputs = _inputs_antigravity(); authority = self._authority_antigravity(inputs); faulted = [False]
+        with tempfile.TemporaryDirectory(prefix="exp445_unmarked_log_fault_antigravity_") as directory:
+            root = Path(directory) / "exp445_exp444_publication_source_authority_repair_antigravity_20260810"
+            profile = self._test_profile_antigravity(lifecycle_antigravity._EXP445_PROFILE_ANTIGRAVITY, root)
+            original_event = ProgressWriterAntigravity._append_event_antigravity
+            def ordered(active, *, commit, progress, **_kwargs):
+                for index, item in enumerate(active):
+                    progress(stage="active", sequence=index); commit(index, item, _result_antigravity(item))
+                return tuple(_result_antigravity(item) for item in active)
+            def fail_one_candidate_start(writer, event, stage, extra=None):
+                if event == "candidate_start" and not faulted[0]:
+                    faulted[0] = True
+                    raise OSError("one nonterminal event fault")
+                return original_event(writer, event, stage, extra)
+            with (
+                mock.patch.object(lifecycle_antigravity, "_EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.readiness_antigravity.EXP445_PROFILE_ANTIGRAVITY", profile), mock.patch.object(runtime, "readiness_for_profile_antigravity"), mock.patch.object(runtime, "current_clean_head_antigravity", return_value=_COMMIT_ANTIGRAVITY), mock.patch.object(runtime, "current_process_identity_antigravity", return_value=ProcessIdentityAntigravity(99203, "exp445-unmarked-log")), mock.patch.object(runtime, "_load_source_inputs_antigravity", return_value=(inputs, 0)), mock.patch.object(runtime, "ordered_parallel_map_antigravity", side_effect=ordered), mock.patch.object(runtime, "_verify_exp445_predecessor_antigravity", return_value=authority), mock.patch.object(ProgressWriterAntigravity, "_append_event_antigravity", new=fail_one_candidate_start), mock.patch.object(progress_antigravity, "write_create_only_antigravity", side_effect=OSError("marker write fault")), mock.patch("experiments.exp444_train_only_stability_precision_gate_antigravity.provenance_antigravity.verify_exp444_provenance_antigravity"),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "diagnostic log"):
+                    lifecycle_antigravity.run_new_antigravity(_COMMIT_ANTIGRAVITY)
+            attempt = root / "attempts_antigravity/attempt_0000_antigravity"
+            progress = json.loads((attempt / "progress_antigravity.json").read_text())
+            pid = json.loads((attempt / "pid_antigravity.json").read_text())
+            self.assertEqual((progress["stage"], progress["completed"], pid["active"]), ("complete", 30, False))
+            self.assertFalse((attempt / "log_failure_antigravity.json").exists())
+
     def test_nonfinal_wrapper_mismatch_writes_only_exact_next_error_record_antigravity(self) -> None:
         """Writing a successful mismatching result before rejecting it would invalidate failure evidence."""
         from experiments.exp445_exp444_publication_source_authority_repair_antigravity import lifecycle_antigravity

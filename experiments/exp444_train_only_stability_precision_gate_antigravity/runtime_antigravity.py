@@ -930,7 +930,7 @@ def _execute_runtime_antigravity(
         if writer is None:
             raise ValueError("Exp444 active progress writer is unavailable")
         writer.close_antigravity("complete")
-        if profile is EXP445_PROFILE_ANTIGRAVITY and writer.terminal_log_failure_antigravity:
+        if profile is EXP445_PROFILE_ANTIGRAVITY and writer.log_failure_blocks_success_antigravity:
             raise RuntimeError("Exp445 diagnostic log failure blocks clean success")
         return _outcome_antigravity(
             attempt, store, writer, status="complete", label_access_count=label_access_count,

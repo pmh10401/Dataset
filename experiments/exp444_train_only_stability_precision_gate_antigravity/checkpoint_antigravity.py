@@ -188,6 +188,10 @@ class CommittedPrefixAuthorityAntigravity:
     status: str
     process: ProcessIdentityAntigravity
     result: CandidateStabilityResultAntigravity
+    lanes: tuple[str, ...]
+    abstention_before: int
+    abstention_after: int
+    current_lane: str
 
     def __post_init__(self) -> None:
         if type(self.sequence) is not int or self.sequence < 0:
@@ -211,6 +215,21 @@ class CommittedPrefixAuthorityAntigravity:
             raise ValueError("committed prefix process is invalid")
         if type(self.result) is not CandidateStabilityResultAntigravity:
             raise ValueError("committed prefix result is invalid")
+        if (
+            type(self.lanes) is not tuple
+            or len(self.lanes) != self.sequence + 1
+            or any(lane not in {"stable_review", "unstable_review"} for lane in self.lanes)
+            or self.current_lane not in {"stable_review", "unstable_review"}
+            or self.current_lane != self.result.lane
+            or self.lanes[-1] != self.current_lane
+        ):
+            raise ValueError("committed prefix lanes are invalid")
+        if type(self.abstention_before) is not int or type(self.abstention_after) is not int:
+            raise ValueError("committed prefix abstention counts are invalid")
+        expected_before = sum(lane == "unstable_review" for lane in self.lanes[:-1])
+        expected_after = expected_before + int(self.current_lane == "unstable_review")
+        if self.abstention_before != expected_before or self.abstention_after != expected_after:
+            raise ValueError("committed prefix abstention counts are invalid")
 
 
 def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
@@ -535,7 +554,9 @@ class Exp444CheckpointStoreAntigravity:
             raise ValueError("checkpoint committed authority sequence is invalid")
         if self._status not in {"running", "complete"} or self._error_count != 0:
             raise ValueError("checkpoint committed authority status is invalid")
-        expected_context = _context_payload_antigravity(self.context)
+        expected_context_bytes = canonical_json_bytes_antigravity(
+            _context_payload_antigravity(self.context)
+        )
         root_fd, root_identity = _open_pinned_directory_antigravity(None, self.root)
         try:
             try:
@@ -545,10 +566,10 @@ class Exp444CheckpointStoreAntigravity:
                     raise ValueError("checkpoint committed authority inventory is invalid")
             except OSError as error:
                 raise ValueError("checkpoint committed authority inventory is invalid") from error
-            context_payload, context_bytes = _read_pinned_canonical_leaf_antigravity(
+            _context_payload, context_bytes = _read_pinned_canonical_leaf_antigravity(
                 root_fd, "context_antigravity.json"
             )
-            if dict(context_payload) != expected_context:
+            if context_bytes != expected_context_bytes:
                 raise ValueError("checkpoint committed authority context changed")
             context_sha = _context_sha_antigravity(context_bytes)
             state, _state_bytes = _read_pinned_canonical_leaf_antigravity(
@@ -557,16 +578,39 @@ class Exp444CheckpointStoreAntigravity:
             if set(state) != _CHECKPOINT_STATE_KEYS_ANTIGRAVITY:
                 raise ValueError("checkpoint committed authority state schema is invalid")
             prefix_payload = state["record_sha256_prefix"]
+            process_payload = state["process"]
+            if (
+                type(state["context_sha256"]) is not str
+                or _SHA256.fullmatch(state["context_sha256"]) is None
+                or type(state["status"]) is not str
+                or type(state["completed_units"]) is not int
+                or type(state["total_units"]) is not int
+                or type(state["error_count"]) is not int
+                or state["current_unit"] is not None
+                or state["current_view"] is not None
+                or type(state["payload_sha256"]) is not str
+                or _SHA256.fullmatch(state["payload_sha256"]) is None
+                or type(prefix_payload) is not list
+                or any(type(value) is not str or _SHA256.fullmatch(value) is None for value in prefix_payload)
+                or type(process_payload) is not dict
+                or set(process_payload) != {"pid", "start_identity"}
+                or type(process_payload["pid"]) is not int
+                or process_payload["pid"] < 1
+                or type(process_payload["start_identity"]) is not str
+                or not process_payload["start_identity"]
+                or state["error"] is not None
+                or type(state["updated_at"]) is not str
+            ):
+                raise ValueError("checkpoint committed authority state types are invalid")
             if (
                 state["context_sha256"] != context_sha
                 or state["status"] != self._status
                 or state["total_units"] != self.context.total_units
                 or state["completed_units"] != sequence + 1
                 or state["completed_units"] != len(self._prefix)
-                or type(prefix_payload) is not list
                 or tuple(prefix_payload) != tuple(self._prefix)
                 or state["payload_sha256"] != _payload_hash_antigravity(tuple(self._prefix))
-                or state["process"] != self.process.to_payload_antigravity()
+                or process_payload != self.process.to_payload_antigravity()
                 or state["error_count"] != 0
                 or state["error"] is not None
                 or state["current_unit"] is not None
@@ -579,8 +623,7 @@ class Exp444CheckpointStoreAntigravity:
             except ValueError as error:
                 raise ValueError("checkpoint committed authority timestamp is invalid") from error
             if (
-                any(type(value) is not str or _SHA256.fullmatch(value) is None for value in prefix_payload)
-                or (state["status"] == "complete") != (len(self._prefix) == self.context.total_units)
+                (state["status"] == "complete") != (len(self._prefix) == self.context.total_units)
             ):
                 raise ValueError("checkpoint committed authority state changed")
             records_fd, records_identity = _open_pinned_directory_antigravity(root_fd, "records_antigravity")
@@ -591,6 +634,7 @@ class Exp444CheckpointStoreAntigravity:
                 if tuple(sorted(os.listdir(records_fd))) != expected_names:
                     raise ValueError("checkpoint committed authority record inventory is invalid")
                 result: CandidateStabilityResultAntigravity | None = None
+                lanes: list[str] = []
                 for index, expected_sha in enumerate(self._prefix):
                     record, encoded = _read_pinned_canonical_leaf_antigravity(
                         records_fd, f"{index:04d}_record_antigravity.json"
@@ -600,6 +644,7 @@ class Exp444CheckpointStoreAntigravity:
                     parsed = _validate_record_payload_antigravity(index, record, encoded)
                     if parsed is None:
                         raise ValueError("checkpoint committed authority record is not a success")
+                    lanes.append(parsed.lane)
                     if index == sequence:
                         result = parsed
                 _assert_pinned_directory_antigravity(root_fd, "records_antigravity", records_fd, records_identity)
@@ -611,6 +656,8 @@ class Exp444CheckpointStoreAntigravity:
             return CommittedPrefixAuthorityAntigravity(
                 sequence, self._prefix[sequence], tuple(self._prefix), context_sha,
                 self.context.total_units, self._status, self.process, result,
+                tuple(lanes), sum(lane == "unstable_review" for lane in lanes[:-1]),
+                sum(lane == "unstable_review" for lane in lanes), result.lane,
             )
         finally:
             os.close(root_fd)
