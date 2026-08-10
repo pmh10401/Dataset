@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T23:34:06Z",
-  "generated_from_commit": "ab46652c883f07f4abe489ea5d62e4bf86b0f3b4",
+  "generated_at": "2026-08-10T23:43:07Z",
+  "generated_from_commit": "0529afb3c4e6b245604c6fbb508b3e6b4fb4de78",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -95,7 +95,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve the verified full-population references and immutable review-only evidence. Exp444 is the frozen 30/30 label-free predecessor. Exp445 implementation is verified by a controller-captured 244-test regression and now awaits fresh clean-HEAD Sol review; readiness/new require the exact clean reviewed commit, inspect reads only the fixed Exp445 publication, and evaluate double-inspects it before lazily reaching TEST labels. No official Exp445 root or artifact exists.",
+      "role": "The control ledgers preserve the verified full-population references and immutable review-only evidence. Exp444 is the frozen 30/30 label-free predecessor. Exp445 implementation is verified by a controller-captured 244-test regression and a shipped fresh clean-HEAD Sol review; official readiness is its next gated action. Readiness/new require the exact clean reviewed commit, inspect reads only the fixed Exp445 publication, and evaluate double-inspects it before lazily reaching TEST labels. No official Exp445 root or artifact exists.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -144,7 +144,7 @@
         "Exp445 preserves Exp444/Exp442 bytes, keeps the inherited CPU worker policy at max(1, logical_cpu_count - 1) = 11 on this 12-logical-CPU Mac with one inner thread, and revalidates the inherited backend-decision and sequential/11-worker parity authority by SHA without a new benchmark or backend reselection.",
         "Before each candidate record write, Exp445 compares the canonical wrapper SHA with the same ordered predecessor SHA; before the 30th write it revalidates the predecessor and aggregate prefix authority. A mismatch preserves post-allocation failed evidence and blocks terminal completion/publication rather than rolling back completed state.",
         "Readiness and new failures before fixed-root allocation are mutation-free and leave the root absent. After allocation, failures preserve the single-use Exp445 root with create-only records/failure/publication/evaluation artifacts; Exp444 and Exp442 are never mutated and Exp445 has no same-root retry or resume command.",
-        "Exp445 is implementation_verified_awaiting_clean_head_final_review: controller-captured Exp444 205 and Exp445 39 tests passed with exit 0, but no official execution, publication, evaluation, or TEST-label access is claimed. Its four-command operator contract has no resume or scientific override; Exp444/Exp442 bytes are immutable; new performs index-by-index and aggregate 30-record parity before create-only publication; CPU/11 backend authority is fixed without backend reselection; evaluation remains descriptive-only with no champion or operational promotion.",
+        "Exp445 is implementation_verified_awaiting_official_readiness: controller-captured Exp444 205 and Exp445 39 tests passed with exit 0, and fresh Sol High shipped clean candidate 09903c608fb78508ae8fdd343594e3d99dfee660. No official execution, publication, evaluation, or TEST-label access is claimed. Its four-command operator contract has no resume or scientific override; Exp444/Exp442 bytes are immutable; new performs index-by-index and aggregate 30-record parity before create-only publication; CPU/11 backend authority is fixed without backend reselection; evaluation remains descriptive-only with no champion or operational promotion.",
         "Exp445 Task 2 exposes no profile selector or lifecycle route: only two reviewed profile constants exist, arbitrary identity/root/schema values fail closed, and the Exp444 config/checkpoint internals accept only the Exp444 singleton.",
         "Task 5 round 3 validates the fixed Exp445 readiness entrypoint through wrong/dirty commit, document, config, environment/package/topology, provenance/backend, worker-parity, label-access, predecessor, and existing/symlink-root boundaries before root allocation; a fully valid mocked handoff remains CPU/11, inner-1, and zero-label.",
         "Exp445 Task 7 exposes only readiness --reviewed-commit, new --reviewed-commit, inspect, and evaluate; publication is create-only and same-root retry is rejected; terminal, predecessor, record-prefix, aggregate, and descriptor-pinned Exp440-summary gates fail before staging, while partial/post-rename failures retain create-only failure evidence and no canonical complete publication.",
@@ -670,7 +670,7 @@
         },
         {
           "path": "EXPERIMENT_CATALOG.json",
-          "symbol": "\"status\": \"implementation_verified_awaiting_clean_head_final_review\""
+          "symbol": "\"status\": \"implementation_verified_awaiting_official_readiness\""
         },
         {
           "path": "RESEARCH_STATE.json",
@@ -6222,7 +6222,7 @@
     {
       "id": "exp445_predecessor_authentication_flow",
       "label": "Exp445 four-command parity, publication, and evaluation boundary",
-      "trigger": "After fresh clean-HEAD Sol review, run exactly one fixed command: readiness/new with an exact clean reviewed commit, or inspect/evaluate without overrides. Evaluate first performs two independent Exp445-only frozen-publication inspections.",
+      "trigger": "Fresh clean-HEAD Sol review shipped candidate 09903c608fb78508ae8fdd343594e3d99dfee660. Official readiness is next; thereafter run exactly one fixed command: readiness/new with an exact clean reviewed commit, or inspect/evaluate without overrides. Evaluate first performs two independent Exp445-only frozen-publication inspections.",
       "steps": [
         "research_control",
         "exp445_predecessor_authority",
