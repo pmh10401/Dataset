@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
+import json
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -36,16 +37,21 @@ class _PublicationAntigravity:
 
 
 class _LabelsAntigravity:
-    def __init__(self, rows: dict[str, tuple[tuple[int, int], ...]], events: list[str]) -> None:
+    def __init__(self, rows: dict[str, tuple[tuple[int, int], ...]], events: list[str], *, fail_dataset: str | None = None, fail_close: bool = False) -> None:
         self.rows, self.events, self.closed = rows, events, False
+        self.fail_dataset, self.fail_close = fail_dataset, fail_close
 
     def labels_for_dataset_antigravity(self, dataset: str) -> tuple[tuple[int, int], ...]:
         self.events.append(f"query:{dataset}")
+        if dataset == self.fail_dataset:
+            raise RuntimeError(f"query {dataset} failed")
         return self.rows[dataset]
 
     def close_antigravity(self) -> None:
         self.closed = True
         self.events.append("close_labels")
+        if self.fail_close:
+            raise RuntimeError("close labels failed")
 
 
 class _DependenciesAntigravity:
@@ -53,9 +59,10 @@ class _DependenciesAntigravity:
     dataset_count = 2
     label_count = 4
 
-    def __init__(self, root: Path, *, tamper_second: bool = False, tamper_inspection: int | None = None, fail_open: bool = False, fail_after_labels: bool = False) -> None:
+    def __init__(self, root: Path, *, tamper_second: bool = False, tamper_inspection: int | None = None, fail_open: bool = False, fail_after_labels: bool = False, fail_query: str | None = None, fail_close: bool = False) -> None:
         self.root, self.events = root, []
         self.tamper_second, self.tamper_inspection, self.fail_open, self.fail_after_labels = tamper_second, tamper_inspection, fail_open, fail_after_labels
+        self.fail_query, self.fail_close = fail_query, fail_close
         candidates = (_CandidateAntigravity("A", 1), _CandidateAntigravity("B", 0))
         self.selection = type("SelectionAntigravity", (), {"source": candidates, "stable": (candidates[0],), "unstable": (candidates[1],)})()
         leaf = {"dataset_summary_antigravity.jsonl": "a" * 64, "source_audit_antigravity.json": "b" * 64}
@@ -92,7 +99,7 @@ class _DependenciesAntigravity:
         self.events.append("open_labels")
         if self.fail_open:
             raise RuntimeError("open failed")
-        return _LabelsAntigravity({"A": ((0, 0), (1, 1)), "B": ((0, 0), (1, 0))}, self.events)
+        return _LabelsAntigravity({"A": ((0, 0), (1, 1)), "B": ((0, 0), (1, 0))}, self.events, fail_dataset=self.fail_query, fail_close=self.fail_close)
 
     def evaluation_root_antigravity(self) -> Path:
         return self.root / "evaluation_antigravity"
@@ -103,6 +110,26 @@ class _DependenciesAntigravity:
 
 
 class FrozenEvaluationAntigravityTests(unittest.TestCase):
+    def _single_audit_payload_antigravity(self, root: Path) -> dict[str, object]:
+        audits = list(root.glob("evaluation_audit_*_antigravity.json"))
+        self.assertEqual(len(audits), 1)
+        return json.loads(audits[0].read_text())
+
+    def _evaluated_payloads_antigravity(self, root: Path) -> tuple[_DependenciesAntigravity, dict[str, bytes]]:
+        dependencies = _DependenciesAntigravity(root)
+        evaluate_frozen_publication_antigravity(dependencies=dependencies)
+        evaluation_root = dependencies.evaluation_root_antigravity()
+        return dependencies, {name: (evaluation_root / name).read_bytes() for name in evaluation.EVALUATION_NAMES_ANTIGRAVITY}
+
+    def _refresh_artifact_map_antigravity(self, payloads: dict[str, bytes]) -> dict[str, bytes]:
+        refreshed = dict(payloads)
+        refreshed["artifact_sha256_antigravity.json"] = evaluation.canonical_json_bytes_antigravity({
+            "schema": "exp444.evaluation-artifact-sha256.v1",
+            "self_excluded": "artifact_sha256_antigravity.json",
+            "files": {name: sha256(refreshed[name]).hexdigest() for name in evaluation.EVALUATION_NAMES_ANTIGRAVITY[:-1]},
+        })
+        return refreshed
+
     def test_production_population_baseline_and_lane_conservation_gates_fail_closed_antigravity(self) -> None:
         """Wrong frozen population, baseline, or lane deltas must fail before payload creation."""
         identity = {"source_order": [["A", 0]], "stable": [["A", 0]], "unstable": []}
@@ -231,3 +258,99 @@ class FrozenEvaluationAntigravityTests(unittest.TestCase):
             audit = next(Path(directory).glob("evaluation_audit_*_antigravity.json")).read_text()
             self.assertIn('"phase":"commit_write"', audit)
             self.assertIn('"commit_state":"partial"', audit)
+
+    def test_second_label_query_failure_audits_the_completed_first_dataset_antigravity(self) -> None:
+        """Removing query accounting or close-on-query-error would lose truthful evidence."""
+        with tempfile.TemporaryDirectory(prefix="exp444_second_query_audit_antigravity_") as directory:
+            dependencies = _DependenciesAntigravity(Path(directory), fail_query="B")
+            with self.assertRaisesRegex(RuntimeError, "query B failed"):
+                evaluate_frozen_publication_antigravity(dependencies=dependencies)
+            audit = self._single_audit_payload_antigravity(Path(directory))
+            self.assertEqual({name: audit[name] for name in ("phase", "query_attempts", "query_completions", "rows", "session_state", "commit_state")}, {
+                "phase": "labels_open", "query_attempts": 2, "query_completions": 1, "rows": 2,
+                "session_state": "closed", "commit_state": "none",
+            })
+
+    def test_label_session_close_failure_audits_all_successful_queries_antigravity(self) -> None:
+        """Suppressing a close failure or resetting counters would falsify the audit sibling."""
+        with tempfile.TemporaryDirectory(prefix="exp444_close_audit_antigravity_") as directory:
+            dependencies = _DependenciesAntigravity(Path(directory), fail_close=True)
+            with self.assertRaisesRegex(RuntimeError, "close labels failed"):
+                evaluate_frozen_publication_antigravity(dependencies=dependencies)
+            audit = self._single_audit_payload_antigravity(Path(directory))
+            self.assertEqual({name: audit[name] for name in ("phase", "query_attempts", "query_completions", "rows", "session_state", "commit_state")}, {
+                "phase": "labels_open", "query_attempts": 2, "query_completions": 2, "rows": 4,
+                "session_state": "close_failed", "commit_state": "none",
+            })
+
+    def test_complete_writer_then_failure_preserves_complete_evaluation_audit_antigravity(self) -> None:
+        """Downgrading a complete destination to partial after a late writer error is incorrect."""
+        with tempfile.TemporaryDirectory(prefix="exp444_complete_write_audit_antigravity_") as directory:
+            dependencies = _DependenciesAntigravity(Path(directory))
+            written: dict[str, bytes] = {}
+            real_writer = evaluation._publish_create_only_antigravity
+
+            def write_all_then_fail(root: Path, payloads: object) -> None:
+                self.assertIsInstance(payloads, dict)
+                written.update(payloads)
+                real_writer(root, payloads)
+                raise RuntimeError("writer failed after complete evaluation")
+
+            with mock.patch.object(evaluation, "_publish_create_only_antigravity", side_effect=write_all_then_fail), self.assertRaisesRegex(RuntimeError, "complete evaluation"):
+                evaluate_frozen_publication_antigravity(dependencies=dependencies)
+            root = dependencies.evaluation_root_antigravity()
+            self.assertEqual({path.name for path in root.iterdir()}, set(evaluation.EVALUATION_NAMES_ANTIGRAVITY))
+            self.assertEqual({name: (root / name).read_bytes() for name in evaluation.EVALUATION_NAMES_ANTIGRAVITY}, written)
+            artifact = json.loads((root / "artifact_sha256_antigravity.json").read_text())
+            self.assertEqual({name: sha256((root / name).read_bytes()).hexdigest() for name in evaluation.EVALUATION_NAMES_ANTIGRAVITY[:-1]}, artifact["files"])
+            audit = self._single_audit_payload_antigravity(Path(directory))
+            self.assertEqual({name: audit[name] for name in ("phase", "commit_state")}, {"phase": "commit_write", "commit_state": "complete"})
+
+    def test_complete_evaluation_reentry_replays_without_labels_or_audit_antigravity(self) -> None:
+        """Taking the label branch on an existing complete evaluation would violate replay isolation."""
+        with tempfile.TemporaryDirectory(prefix="exp444_complete_reentry_antigravity_") as directory:
+            dependencies, before = self._evaluated_payloads_antigravity(Path(directory))
+            first = inspect_evaluation_antigravity(dependencies=dependencies)
+            with mock.patch.object(dependencies, "open_labels_antigravity", side_effect=AssertionError("labels must stay closed")):
+                second = evaluate_frozen_publication_antigravity(dependencies=dependencies)
+            root = dependencies.evaluation_root_antigravity()
+            self.assertEqual(second.evaluation_sha256, first.evaluation_sha256)
+            self.assertEqual({name: (root / name).read_bytes() for name in evaluation.EVALUATION_NAMES_ANTIGRAVITY}, before)
+            self.assertEqual(list(Path(directory).glob("evaluation_audit_*_antigravity.json")), [])
+
+    def test_replay_rejects_semantic_mutations_after_artifact_map_refresh_antigravity(self) -> None:
+        """Schema/order/transition gates must reject mutations even with a current artifact map."""
+        with tempfile.TemporaryDirectory(prefix="exp444_semantic_replay_antigravity_") as directory:
+            _, payloads = self._evaluated_payloads_antigravity(Path(directory))
+
+            with self.subTest(mutation="nonofficial two-row payload under production replay"):
+                with self.assertRaisesRegex(ValueError, "dataset|query|rows"):
+                    evaluation._result_from_payloads_antigravity(payloads, production=True)
+
+            def mutate_jsonl(name: str, transform: object) -> dict[str, bytes]:
+                changed = dict(payloads)
+                rows = [json.loads(line) for line in changed[name].splitlines()]
+                transform(rows)
+                changed[name] = evaluation.canonical_jsonl_bytes_antigravity(rows)
+                return self._refresh_artifact_map_antigravity(changed)
+
+            with self.subTest(mutation="metric extra key"):
+                changed = mutate_jsonl("dataset_metrics_antigravity.jsonl", lambda rows: rows[0].update({"extra": 1}))
+                with self.assertRaisesRegex(ValueError, "metrics"):
+                    evaluation._result_from_payloads_antigravity(changed)
+            with self.subTest(mutation="metric row reorder"):
+                changed = mutate_jsonl("dataset_metrics_antigravity.jsonl", lambda rows: rows.reverse())
+                with self.assertRaisesRegex(ValueError, "metrics"):
+                    evaluation._result_from_payloads_antigravity(changed)
+            with self.subTest(mutation="transition extra key"):
+                changed = mutate_jsonl("candidate_transitions_antigravity.jsonl", lambda rows: rows[0].update({"extra": 1}))
+                with self.assertRaisesRegex(ValueError, "transitions"):
+                    evaluation._result_from_payloads_antigravity(changed)
+            with self.subTest(mutation="transition reorder"):
+                changed = mutate_jsonl("candidate_transitions_antigravity.jsonl", lambda rows: rows.reverse())
+                with self.assertRaisesRegex(ValueError, "transitions"):
+                    evaluation._result_from_payloads_antigravity(changed)
+            with self.subTest(mutation="frozen source prediction false"):
+                changed = mutate_jsonl("candidate_transitions_antigravity.jsonl", lambda rows: rows[0].update({"frozen_source_predicted": False}))
+                with self.assertRaisesRegex(ValueError, "transitions"):
+                    evaluation._result_from_payloads_antigravity(changed)
