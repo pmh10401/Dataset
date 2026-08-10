@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T08:53:55Z",
-  "generated_from_commit": "61501d08b4966f044bf55d746c9a142a4516782a",
+  "generated_at": "2026-08-10T09:04:09Z",
+  "generated_from_commit": "7f7c7b7ea60217cdd70c3e8fea2b58df8b931bfe",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -83,7 +83,7 @@
       "boundary": "Research governance",
       "layer": 0,
       "path": "RESEARCH_STATE.json",
-      "role": "The control ledgers preserve Exp404/Exp416 as the verified full-population reference and the completed review-only Exp442/Exp443 evidence. Exp444 governance is frozen in its approved design, implementation plan, preregistration, and runbook: it reviews only the frozen Exp442 30 candidates through deterministic normal-TRAIN perturbation stability, has descriptive-only status without a scientific success or promotion rule, and is implemented by exp444_stability_contracts through the research_control -> exp444_stability_contracts call edge; its official root remains absent.",
+      "role": "The control ledgers preserve Exp404/Exp416 as the verified full-population reference and the completed review-only Exp442/Exp443 evidence. Exp444 governance is frozen in its approved design, implementation plan, preregistration, and runbook: it reviews only the frozen Exp442 30 candidates through deterministic normal-TRAIN perturbation stability, has descriptive-only status without a scientific success or promotion rule, and is implemented by exp444_stability_contracts through the research_control -> exp444_stability_contracts call edge; its official root remains absent. Exp444 Task8 publication freeze is complete and independently accepted at functional commit 61501d08 with the Task8 ledger handoff; Task9 has not started, the official root remains absent, no official run/prediction/evaluation has run, and TEST-label access remains zero.",
       "entrypoints": [
         "active_experiment",
         "active_phase",
@@ -539,6 +539,10 @@
         {
           "path": "docs/EXP444_RUNBOOK_antigravity_KO.md",
           "symbol": "## 고정된 미래 명령 (현재 실행 불가)"
+        },
+        {
+          "path": ".superpowers/sdd/2026-08-10-exp444-train-only-stability-precision-gate-antigravity/progress.md",
+          "symbol": "# SDD ledger — plan: docs/superpowers/plans/2026-08-10-exp444-train-only-stability-precision-gate-antigravity.md"
         }
       ]
     },
