@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-10T02:10:00Z",
-  "generated_from_commit": "d9ef121d9a76c65f1c535d20bb9c36c74e563e21",
+  "generated_at": "2026-08-10T02:31:42Z",
+  "generated_from_commit": "a5e12c6c30f4f6318391b2f03c3204efc78eae71",
   "scope": [
     "Exp417 TRAIN-only model, preprocessing, inputs and checkpoints",
     "Exp424 frozen MPS score-cache authority",
@@ -71,7 +71,7 @@
     "Exp444 Task 5: CPU/MLX/Numba dense-distance parity and fixed whole-view speed gate with explicit CPU fallback",
     "Exp444 Task 5 fix round 1: fail-closed canonical backend evidence, exact runtime provenance, and fresh real parity/speed rerun",
     "Exp444 Task 5 fix round 2: MLX versions authority and truthful unexpected-failure provenance",
-    "Exp444 Task 6: ordered create-only checkpoint prefix, stale-PID/orphan reconciliation, and parent-owned atomic progress/PID/event/text evidence"
+    "Exp444 Task 6 review round 1: crash-recoverable unique-temp checkpoint/progress writes, strict prefix and checkpoint identity validation, numerically distinct replacement PIDs, and parent-owned terminal immutability"
   ],
   "nodes": [
     {
@@ -4384,8 +4384,8 @@
         "Numba uses one serial compiled float64 accumulation loop and deterministic median-of-three; CPU remains selected unless finite scalar max diff <= 1e-5, independent mask/candidate/survival/lane parity, and end-to-end speed ratio >= 1.1 all pass.",
         "Every accelerated gate field must be explicitly present and exactly true: availability, finite output, mask/candidate-presence/survival/lane identity, synchronization, device transfer, compile/warmup policy, result materialization, single process, and no process pool; timing and scalar evidence must be finite exact numbers, process count an exact integer one, scalar difference <= 1e-5, and speed ratio >= 1.1.",
         "MLX selection additionally requires a versions mapping with valid non-sentinel string values for both mlx and mlx-metal and requires the primary version to equal versions.mlx. Unexpected failures preserve measured values or explicitly record unknown when lookup did not complete; frozen package versions and Apple hardware labels are never substituted as measurements.",
-        "The Task 6 checkpoint is create-only and candidate-major over the exact 0..29 prefix: result bytes are fsynced before atomic state replacement, state stores the record hash prefix, only one exact-next orphan may be reconciled, terminal errors are immutable, and resume requires a distinct replacement process with an inactive stored PID."
-        ,"The Task 6 parent progress writer atomically replaces canonical progress/PID JSON and appends fsynced JSONL/Korean text events; it records dataset/candidate/view dimensions, TRAIN/TEST sizes, backend, counters, throughput, elapsed time, ETA, checkpoint, and latest error, and terminal fields are null/immutable."
+        "The Task 6 checkpoint is create-only and candidate-major over the exact 0..29 prefix: result bytes are fsynced before atomic state replacement, unique same-directory temps are never authority and stale regular temps are deterministically discarded, running/interrupted/complete prefix payload hashes are validated, only one exact-next orphan may be reconciled, and terminal or interrupted old writers are immutable."
+        ,"The Task 6 parent progress writer atomically replaces canonical progress/PID JSON and appends fsynced JSONL/Korean text events; reopen strictly validates inactive current fields, CPU backend, exact nonnegative dimensions/counters, completed/total invariants, checkpoint path/owner/count/prefix hash, and a numerically distinct replacement PID before mutation; the locally constructing parent PID alone may mutate."
         ,"The fresh fix-round-1 fixed benchmark loaded 30 values-only inputs with label access 0; CPU 222.18546649999917s versus Numba 222.89457920892164s (0.9968186184184505x) retained CPU/11 workers. Numba finite output, masks, candidate presence, survival counts, and lane coordinates all matched with max scalar diff 7.22356281457337e-08; MLX failed closed on Apple M2 Max with mlx==0.32.0 and mlx-metal==0.32.0 because the exact float64 Metal probe raised ValueError."
       ],
       "evidence": [
@@ -4542,8 +4542,16 @@
           "symbol": "def current_process_identity_antigravity"
         },
         {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/checkpoint_antigravity.py",
+          "symbol": "def _discard_stale_atomic_temps_antigravity"
+        },
+        {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/progress_antigravity.py",
           "symbol": "class ProgressWriterAntigravity"
+        },
+        {
+          "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/progress_antigravity.py",
+          "symbol": "def _discard_stale_atomic_temps_antigravity"
         },
         {
           "path": "experiments/exp444_train_only_stability_precision_gate_antigravity/tests/test_checkpoint_antigravity.py",
