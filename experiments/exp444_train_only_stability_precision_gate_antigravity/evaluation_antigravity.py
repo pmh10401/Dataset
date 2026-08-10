@@ -118,39 +118,34 @@ class _FrozenDependenciesAntigravity:
             values.setdefault(row["dataset"], set()).update(indices)
         return values
 
-    def open_labels_antigravity(self, _identity: Mapping[str, object]) -> _LabelSessionAntigravity:
-        return _open_verified_labels_antigravity(Path(FROZEN_CONFIG.database_path), FROZEN_CONFIG.database_sha256)
+    def open_labels_antigravity(self, identity: Mapping[str, object]) -> _LabelSessionAntigravity:
+        return _open_verified_labels_antigravity(Path(FROZEN_CONFIG.database_path), FROZEN_CONFIG.database_sha256, tuple(identity["dataset_order"]))
 
     def evaluation_root_antigravity(self) -> Path:
         return Path(FROZEN_CONFIG.run_root) / "evaluation_antigravity"
 
 
 class _SqliteLabelsAntigravity:
-    def __init__(self, connection: object) -> None:
-        self._connection = connection
+    def __init__(self, connection: object, dataset_order: tuple[str, ...]) -> None:
+        if not dataset_order or any(type(dataset) is not str or not dataset for dataset in dataset_order) or len(set(dataset_order)) != len(dataset_order):
+            raise ValueError("label dataset order is invalid")
+        self._connection, self._dataset_order, self._next = connection, dataset_order, 0
 
     def labels_for_dataset_antigravity(self, dataset: str) -> tuple[tuple[int, int], ...]:
-        if type(dataset) is not str or not dataset:
-            raise ValueError("label query dataset is invalid")
+        if self._next >= len(self._dataset_order) or dataset != self._dataset_order[self._next]:
+            raise ValueError("label query order is invalid")
         cursor = self._connection.execute("""SELECT i.instance_index, i.label
 FROM instances AS i JOIN datasets AS d ON d.id = i.dataset_id
 WHERE d.name = ? AND i.split = 'TEST' ORDER BY i.instance_index""", (dataset,))
+        self._next += 1
         return tuple(cursor.fetchall())
-
-    def execute_for_test_antigravity(self, query: str) -> None:
-        """Narrow test probe proving the authorizer, never a production escape hatch."""
-        try:
-            self._connection.execute(query)
-        except Exception as error:
-            raise ValueError("label authorizer rejected query") from error
-        raise ValueError("label query boundary accepted an unexpected query")
 
     def close_antigravity(self) -> None:
         self._connection.close()
 
 
 @contextmanager
-def _open_verified_labels_antigravity(database: Path, expected_sha256: str):
+def _open_verified_labels_antigravity(database: Path, expected_sha256: str, dataset_order: tuple[str, ...]):
     """Open exactly one descriptor-bound, hash-bound TEST-label session lazily."""
     inputs = importlib.import_module("experiments.exp417_causal_multihorizon_shadow.inputs")
     sqlite3 = importlib.import_module("sqlite3")
@@ -164,7 +159,7 @@ def _open_verified_labels_antigravity(database: Path, expected_sha256: str):
             return sqlite3.SQLITE_DENY
         connection.set_authorizer(authorizer)
         try:
-            yield _SqliteLabelsAntigravity(connection)
+            yield _SqliteLabelsAntigravity(connection, dataset_order)
         finally:
             connection.set_authorizer(None)
 
@@ -329,7 +324,7 @@ def _audit_antigravity(dependencies: object, *, phase: str, identity: Mapping[st
     write_create_only_antigravity(path, canonical_json_bytes_antigravity(payload))
 
 
-def _result_from_payloads_antigravity(payloads: Mapping[str, bytes]) -> FrozenEvaluationAntigravity:
+def _result_from_payloads_antigravity(payloads: Mapping[str, bytes], *, production: bool = False) -> FrozenEvaluationAntigravity:
     if set(payloads) != set(EVALUATION_NAMES_ANTIGRAVITY):
         raise ValueError("evaluation inventory is invalid")
     artifact = parse_canonical_json_bytes_antigravity(payloads["artifact_sha256_antigravity.json"])
@@ -351,7 +346,7 @@ def _result_from_payloads_antigravity(payloads: Mapping[str, bytes]) -> FrozenEv
     transitions = [parse_canonical_json_bytes_antigravity(line + b"\n") for line in payloads["candidate_transitions_antigravity.jsonl"].splitlines()]
     if not all(isinstance(row, Mapping) for row in transitions):
         raise ValueError("evaluation transitions are invalid")
-    _validate_prepublication_antigravity(identity, rows, transitions, attempts=len(rows), completions=len(rows), label_rows=sum(sum(row["baseline"]) for row in rows), production=False)
+    _validate_prepublication_antigravity(identity, rows, transitions, attempts=len(rows), completions=len(rows), label_rows=sum(sum(row["baseline"]) for row in rows), production=production)
     reconstructed = _payloads_antigravity(identity, rows, transitions)
     if any(payloads[name] != reconstructed[name] for name in EVALUATION_NAMES_ANTIGRAVITY):
         raise ValueError("evaluation derived replay changed")
@@ -367,7 +362,7 @@ def inspect_evaluation_antigravity(*, dependencies: object | None = None) -> Fro
     from .artifacts_antigravity import pin_exact_regular_inventory_antigravity
     with pin_exact_regular_inventory_antigravity(root, EVALUATION_NAMES_ANTIGRAVITY) as pinned:
         payloads = dict(pinned.payloads)
-    result = _result_from_payloads_antigravity(payloads)
+    result = _result_from_payloads_antigravity(payloads, production=isinstance(dependencies, _FrozenDependenciesAntigravity))
     publication = dependencies.inspect_publication_antigravity()
     identity = dependencies.publication_identity_antigravity(publication)
     if not _identity_equal_antigravity(result.publication_identity, identity):
@@ -402,11 +397,16 @@ def evaluate_frozen_publication_antigravity(*, dependencies: object | None = Non
                 labels = _labels_antigravity(session.labels_for_dataset_antigravity(dataset), dataset)
                 completions += 1; row_count += len(labels); labels_by_dataset[dataset] = labels
         finally:
-            if manager is not None:
-                manager.__exit__(None, None, None)
+            try:
+                if manager is not None:
+                    manager.__exit__(None, None, None)
+                else:
+                    session.close_antigravity()
+            except BaseException:
+                session_state = "close_failed"
+                raise
             else:
-                session.close_antigravity()
-            session_state = "closed"
+                session_state = "closed"
         phase = "post_close_reinspection"
         post_close = dependencies.inspect_publication_antigravity(); post_close_identity = dependencies.publication_identity_antigravity(post_close)
         if not _identity_equal_antigravity(identity, post_close_identity):
@@ -429,15 +429,16 @@ def evaluate_frozen_publication_antigravity(*, dependencies: object | None = Non
         _validate_prepublication_antigravity(identity, metric_rows, transitions, attempts=attempts, completions=completions, label_rows=row_count, production=isinstance(dependencies, _FrozenDependenciesAntigravity))
         hook = getattr(dependencies, "after_labels_antigravity", None)
         if hook is not None: hook()
+        payloads = _payloads_antigravity(identity, metric_rows, transitions)
         phase = "post_compute_reinspection"
         final_publication = dependencies.inspect_publication_antigravity(); final_identity = dependencies.publication_identity_antigravity(final_publication)
         if not _identity_equal_antigravity(identity, final_identity):
             raise ValueError("Task8 publication changed after labels")
-        payloads = _payloads_antigravity(identity, metric_rows, transitions)
         phase = "pre_commit_reinspection"
         final_publication = dependencies.inspect_publication_antigravity(); final_identity = dependencies.publication_identity_antigravity(final_publication)
         if not _identity_equal_antigravity(identity, final_identity):
             raise ValueError("Task8 publication changed before evaluation commit")
+        phase = "commit_write"
         _publish_create_only_antigravity(root, payloads)
         result = _result_from_payloads_antigravity(payloads)
         return FrozenEvaluationAntigravity(result.status, result.scientific_winner_selected, result.evaluation_sha256, result.publication_identity, attempts, completions, row_count, result.baseline_confusion, result.frozen_source_confusion, result.stable_confusion, result.unstable_confusion)

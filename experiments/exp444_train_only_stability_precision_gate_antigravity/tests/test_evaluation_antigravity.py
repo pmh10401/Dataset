@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 from experiments.exp444_train_only_stability_precision_gate_antigravity.evaluation_antigravity import (
     evaluate_frozen_publication_antigravity,
@@ -126,12 +127,13 @@ class FrozenEvaluationAntigravityTests(unittest.TestCase):
             connection.executemany("INSERT INTO instances VALUES(1,?, 'TEST',?)", ((0, 0), (1, 1)))
             connection.commit(); connection.close()
             digest = sha256(database.read_bytes()).hexdigest()
-            with evaluation._open_verified_labels_antigravity(database, digest) as labels:
+            with evaluation._open_verified_labels_antigravity(database, digest, ("A",)) as labels:
                 self.assertEqual(labels.labels_for_dataset_antigravity("A"), ((0, 0), (1, 1)))
-                with self.assertRaisesRegex(ValueError, "authorizer|query"):
-                    labels.execute_for_test_antigravity("SELECT label FROM instances")
+                self.assertFalse(hasattr(labels, "execute_for_test_antigravity"))
+                with self.assertRaisesRegex(ValueError, "order"):
+                    labels.labels_for_dataset_antigravity("A")
             with self.assertRaisesRegex(ValueError, "SHA256"):
-                with evaluation._open_verified_labels_antigravity(database, "0" * 64):
+                with evaluation._open_verified_labels_antigravity(database, "0" * 64, ("A",)):
                     pass
     def test_import_firewall_keeps_sqlite_unloaded_until_post_freeze_branch_antigravity(self) -> None:
         """Moving the real label dependency to module scope must fail this isolated import."""
@@ -213,3 +215,17 @@ class FrozenEvaluationAntigravityTests(unittest.TestCase):
             self.assertEqual(len(audits), 1)
             self.assertIn('"commit_state":"none"', audits[0].read_text())
             self.assertIn('"query_attempts":0', audits[0].read_text())
+
+    def test_partial_writer_failure_records_commit_write_partial_audit_antigravity(self) -> None:
+        """A writer exception after destination creation must retain truthful partial evidence."""
+        with tempfile.TemporaryDirectory(prefix="exp444_partial_write_antigravity_") as directory:
+            dependencies = _DependenciesAntigravity(Path(directory))
+            def fail_writer(root: Path, _payloads: object) -> None:
+                root.mkdir(mode=0o700)
+                (root / "partial_antigravity.json").write_text("partial")
+                raise RuntimeError("writer failed")
+            with mock.patch.object(evaluation, "_publish_create_only_antigravity", side_effect=fail_writer), self.assertRaisesRegex(RuntimeError, "writer"):
+                evaluate_frozen_publication_antigravity(dependencies=dependencies)
+            audit = next(Path(directory).glob("evaluation_audit_*_antigravity.json")).read_text()
+            self.assertIn('"phase":"commit_write"', audit)
+            self.assertIn('"commit_state":"partial"', audit)

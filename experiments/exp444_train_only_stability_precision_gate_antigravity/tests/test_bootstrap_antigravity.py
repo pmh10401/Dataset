@@ -41,3 +41,14 @@ class PairedBootstrapAntigravityTests(unittest.TestCase):
                 ({"dataset": "A", "tp": 1, "fp": 0, "fn": 0, "tn": 1},),
                 ({"dataset": "B", "tp": 1, "fp": 0, "fn": 0, "tn": 1},),
             )
+
+    def test_full_1117_population_replays_literal_pcg64_intervals_antigravity(self) -> None:
+        """Changing frozen population sampling or macro aggregation must fail these independent literals."""
+        baseline = tuple({"dataset": f"D{index:04d}", "tp": 1, "fp": 0, "fn": 1, "tn": 2} for index in range(1117))
+        comparator = list(baseline); comparator[0] = {"dataset": "D0000", "tp": 2, "fp": 0, "fn": 0, "tn": 2}
+        result = paired_bootstrap_antigravity(baseline, tuple(comparator))
+        self.assertEqual(result.sample_indices_sha256, "a1ecb839acc9439ae698388806d15a4610069ac4f388795d2bbf766a3f74888c")
+        self.assertAlmostEqual(result.micro_delta, 0.00039777247414485295)
+        self.assertAlmostEqual(result.macro_delta, 0.0002984183825723852)
+        self.assertEqual(result.micro_interval, (0.0, 0.0011926058437686793))
+        self.assertEqual(result.macro_interval, (0.0, 0.0008952551477171555))
