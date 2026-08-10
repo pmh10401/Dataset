@@ -34,6 +34,18 @@ def _view(candidate: SourceCandidateAntigravity, view_index: int = 0, survived: 
 
 
 class Exp444ContractsAntigravityTests(unittest.TestCase):
+    def test_legacy_checkpoint_context_payload_remains_eight_fields_antigravity(self) -> None:
+        """Adding Exp445 profile fields to the legacy wrapper would change frozen Exp444 bytes."""
+        context = CheckpointContextAntigravity(
+            FROZEN_CONFIG.experiment_id, FROZEN_CONFIG.run_identity,
+            scientific_config_sha256_antigravity(), FROZEN_CONFIG.environment_lock_sha256,
+            30, 11, 1, "a" * 40,
+        )
+        self.assertEqual(tuple(context.to_payload()), (
+            "experiment_id", "run_identity", "scientific_config_sha256", "environment_lock_sha256",
+            "total_units", "outer_workers", "inner_threads", "reviewed_commit",
+        ))
+
     def test_source_and_mask_round_trip_and_exact_types(self) -> None:
         source = _source()
         self.assertEqual(SourceCandidateAntigravity.from_payload(source.to_payload()), source)

@@ -1,7 +1,7 @@
 """Label-free Exp444 readiness evidence for the fixed lifecycle."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
 import subprocess
@@ -17,6 +17,11 @@ from .provenance_antigravity import (
 from .artifacts_antigravity import parse_canonical_json_bytes_antigravity
 from .sources_antigravity import load_candidate_values_antigravity, verify_frozen_sources_antigravity
 from .stability_antigravity import replay_original_candidates_antigravity
+from .profiles_antigravity import (
+    EXP444_PROFILE_ANTIGRAVITY,
+    EXP445_PROFILE_ANTIGRAVITY,
+    LifecycleProfileAntigravity,
+)
 
 
 _HEX_ANTIGRAVITY = frozenset("0123456789abcdef")
@@ -41,6 +46,7 @@ class ReadinessEvidenceAntigravity:
     reviewed_design_sha256: str
     preregistration_sha256: str
     worker_parity_authority_sha256: str
+    profile_experiment_id: str = field(default="Exp444", repr=False)
 
     def __post_init__(self) -> None:
         if type(self.reviewed_commit) is not str or len(self.reviewed_commit) != 40 or any(char not in _HEX_ANTIGRAVITY for char in self.reviewed_commit):
@@ -49,17 +55,22 @@ class ReadinessEvidenceAntigravity:
             raise ValueError("Exp444 readiness candidate/control count is invalid")
         if self.label_access_count != 0 or self.backend != "cpu" or self.workers != FROZEN_CONFIG.cpu_workers:
             raise ValueError("Exp444 readiness governance is invalid")
-        if (
-            self.reviewed_design_sha256 != FROZEN_CONFIG.reviewed_design_sha256
-            or self.preregistration_sha256 != FROZEN_CONFIG.preregistration_sha256
-            or self.worker_parity_authority_sha256 != FROZEN_CONFIG.worker_parity_authority_sha256
-        ):
+        documents = {
+            "Exp444": (FROZEN_CONFIG.reviewed_design_sha256, FROZEN_CONFIG.preregistration_sha256),
+            "Exp445": (
+                "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
+                "20d73ed9cebfbd4cd40d4d3354197907483ac9092a8392e93e9bf1b44027a37a",
+            ),
+        }
+        if self.profile_experiment_id not in documents or (
+            self.reviewed_design_sha256, self.preregistration_sha256
+        ) != documents[self.profile_experiment_id] or self.worker_parity_authority_sha256 != FROZEN_CONFIG.worker_parity_authority_sha256:
             raise ValueError("Exp444 readiness reviewed evidence is invalid")
         object.__setattr__(self, "source_hashes", MappingProxyType(dict(self.source_hashes)))
 
     def to_payload_antigravity(self) -> dict[str, object]:
         return {
-            "schema": "exp444.readiness.v1", "reviewed_commit": self.reviewed_commit,
+            "schema": f"{self.profile_experiment_id.lower()}.readiness.v1", "reviewed_commit": self.reviewed_commit,
             "source_hashes": dict(sorted(self.source_hashes.items())),
             "source_candidate_count": self.source_candidate_count, "control_count": self.control_count,
             "label_access_count": self.label_access_count, "backend": self.backend,
@@ -73,6 +84,59 @@ class ReadinessEvidenceAntigravity:
 
 def _run_root_antigravity() -> Path:
     return Path(FROZEN_CONFIG.run_root)
+
+
+def _require_closed_profile_antigravity(profile: object) -> LifecycleProfileAntigravity:
+    if profile is EXP444_PROFILE_ANTIGRAVITY:
+        return EXP444_PROFILE_ANTIGRAVITY
+    if profile is EXP445_PROFILE_ANTIGRAVITY:
+        return EXP445_PROFILE_ANTIGRAVITY
+    raise ValueError("lifecycle profile is invalid")
+
+
+def _profile_document_sha256_antigravity(profile: LifecycleProfileAntigravity) -> dict[str, str]:
+    profile = _require_closed_profile_antigravity(profile)
+    expected = (
+        ("1bb76f19d07ef312d5ac5498414d0c914ce94b99c5912e0bbcf3f0197c1400e8", "347ba8f0e37d2f185b98ed65acdc936fd2238cea5e97ed0fecd34cabcc1974db")
+        if profile is EXP444_PROFILE_ANTIGRAVITY else
+        ("099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d", "20d73ed9cebfbd4cd40d4d3354197907483ac9092a8392e93e9bf1b44027a37a")
+    )
+    output: dict[str, str] = {}
+    for key, path, expected_sha in zip(("reviewed_design_sha256", "preregistration_sha256"), (profile.reviewed_design_path, profile.preregistration_path), expected, strict=True):
+        if path.is_symlink() or not path.is_file() or sha256(path.read_bytes()).hexdigest() != expected_sha:
+            raise ValueError("profile reviewed document SHA256 changed")
+        output[key] = expected_sha
+    return output
+
+
+def readiness_for_profile_antigravity(profile: LifecycleProfileAntigravity, reviewed_commit: str) -> ReadinessEvidenceAntigravity:
+    """Validate the label-free authority for exactly one closed lifecycle profile."""
+    profile = _require_closed_profile_antigravity(profile)
+    validate_execution_identity_antigravity(reviewed_commit)
+    _profile_document_sha256_antigravity(profile)
+    if profile.run_root.exists() or profile.run_root.is_symlink():
+        raise ValueError("fixed profile run root must be absent")
+    FROZEN_CONFIG.validate()
+    environment = verify_environment_antigravity()
+    if environment.inner_threads != 1 or environment.outer_workers != 11:
+        raise ValueError("profile readiness environment topology changed")
+    provenance = verify_exp444_provenance_antigravity()
+    if provenance.backend_decision.backend != "cpu" or provenance.backend_decision.workers != 11:
+        raise ValueError("profile readiness backend decision changed")
+    if profile.predecessor_required:
+        from experiments.exp445_exp444_publication_source_authority_repair_antigravity.predecessor_antigravity import verify_exp444_predecessor_antigravity
+        verify_exp444_predecessor_antigravity()
+    inputs, source_hashes, labels = _materialize_values_antigravity()
+    controls = replay_original_candidates_antigravity(inputs)  # type: ignore[arg-type]
+    if len(controls) != 30 or any(not item.matches_source for item in controls):
+        raise ValueError("profile readiness original control replay failed")
+    documents = _profile_document_sha256_antigravity(profile)
+    return ReadinessEvidenceAntigravity(
+        reviewed_commit, source_hashes, len(inputs), len(controls), labels, "cpu", 11,
+        FROZEN_CONFIG.environment_lock_sha256, scientific_config_sha256_antigravity(),
+        documents["reviewed_design_sha256"], documents["preregistration_sha256"],
+        FROZEN_CONFIG.worker_parity_authority_sha256, profile.experiment_id,
+    )
 
 
 def current_clean_head_antigravity() -> str:
@@ -167,6 +231,8 @@ def validate_readiness_payload_antigravity(payload: Mapping[str, object]) -> dic
         "reviewed_design_sha256", "preregistration_sha256", "worker_parity_authority_sha256",
     }:
         raise ValueError("Exp444 readiness payload schema is invalid")
+    if payload["schema"] not in {"exp444.readiness.v1", "exp445.readiness.v1"}:
+        raise ValueError("Exp444 readiness payload schema is invalid")
     hashes = payload["source_hashes"]
     if not isinstance(hashes, Mapping) or not hashes or any(type(name) is not str or type(value) is not str or len(value) != 64 or any(char not in _HEX_ANTIGRAVITY for char in value) for name, value in hashes.items()):
         raise ValueError("Exp444 readiness source hashes are invalid")
@@ -175,6 +241,7 @@ def validate_readiness_payload_antigravity(payload: Mapping[str, object]) -> dic
         payload["label_access_count"], payload["backend"], payload["workers"],
         payload["environment_lock_sha256"], payload["scientific_config_sha256"],
         payload["reviewed_design_sha256"], payload["preregistration_sha256"], payload["worker_parity_authority_sha256"],
+        "Exp445" if payload["schema"] == "exp445.readiness.v1" else "Exp444",
     )
     if evidence.environment_lock_sha256 != FROZEN_CONFIG.environment_lock_sha256 or evidence.scientific_config_sha256 != scientific_config_sha256_antigravity():
         raise ValueError("Exp444 readiness frozen identity changed")
@@ -224,4 +291,5 @@ __all__ = [
     "ReadinessEvidenceAntigravity", "current_clean_head_antigravity", "run_readiness_antigravity",
     "validate_readiness_for_run_antigravity", "validate_execution_identity_antigravity",
     "load_worker_parity_authority_antigravity", "validate_worker_parity_authority_payload_antigravity",
+    "readiness_for_profile_antigravity",
 ]

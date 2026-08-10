@@ -646,6 +646,51 @@ class CheckpointContextAntigravity:
 
 
 @dataclass(frozen=True)
+class ProfileCheckpointContextAntigravity:
+    """Exp445-only identity context; legacy Exp444 context bytes stay unchanged."""
+
+    experiment_id: str
+    schema: str
+    run_identity: str
+    scientific_config_sha256: str
+    environment_lock_sha256: str
+    total_units: int
+    outer_workers: int
+    inner_threads: int
+    reviewed_commit: str
+    reviewed_design_sha256: str
+    preregistration_sha256: str
+
+    def __post_init__(self) -> None:
+        if (self.experiment_id, self.schema, self.run_identity) != (
+            "Exp445", "exp445", "exp445-exp444-publication-source-authority-repair-antigravity-20260810",
+        ):
+            raise ValueError("checkpoint profile identity is invalid")
+        if self.scientific_config_sha256 != scientific_config_sha256_antigravity() or self.environment_lock_sha256 != FROZEN_CONFIG.environment_lock_sha256:
+            raise ValueError("checkpoint profile inherited hashes are invalid")
+        if (self.total_units, self.outer_workers, self.inner_threads) != (30, 11, 1):
+            raise ValueError("checkpoint profile topology is invalid")
+        if type(self.reviewed_commit) is not str or len(self.reviewed_commit) != 40 or any(character not in "0123456789abcdef" for character in self.reviewed_commit):
+            raise ValueError("checkpoint profile reviewed commit is invalid")
+        if (self.reviewed_design_sha256, self.preregistration_sha256) != (
+            "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
+            "20d73ed9cebfbd4cd40d4d3354197907483ac9092a8392e93e9bf1b44027a37a",
+        ):
+            raise ValueError("checkpoint profile document authority is invalid")
+
+    def to_payload(self) -> dict[str, object]:
+        return {name: getattr(self, name) for name in self.__dataclass_fields__}
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, object]) -> "ProfileCheckpointContextAntigravity":
+        return cls(**_exact_payload(payload, set(cls.__dataclass_fields__)))
+
+    def validate_antigravity(self) -> bool:
+        self.__post_init__()
+        return True
+
+
+@dataclass(frozen=True)
 class CheckpointStateAntigravity:
     status: str
     completed_units: int
@@ -724,7 +769,7 @@ __all__ = [
     "OmissionMaskAntigravity", "DepthViewScoreAntigravity",
     "StabilityViewAntigravity", "CandidateStabilityResultAntigravity",
     "StabilitySelectionAntigravity", "BackendDecisionAntigravity",
-    "CheckpointContextAntigravity", "CheckpointStateAntigravity",
+    "CheckpointContextAntigravity", "ProfileCheckpointContextAntigravity", "CheckpointStateAntigravity",
     "EvaluationSummaryAntigravity", "canonical_contract_sha256_antigravity",
     "validate_prediction_payload_antigravity",
 ]

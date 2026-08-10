@@ -24,6 +24,7 @@ from concurrent.futures import FIRST_COMPLETED, Future, ProcessPoolExecutor, wai
 from dataclasses import dataclass
 from multiprocessing import get_context
 from pathlib import Path
+import hashlib
 import math
 import re
 from typing import Any
@@ -40,9 +41,11 @@ from .contracts_antigravity import (
     CandidateInputAntigravity,
     CandidateStabilityResultAntigravity,
     CheckpointContextAntigravity,
+    ProfileCheckpointContextAntigravity,
 )
 from .progress_antigravity import ProgressWriterAntigravity
 from .readiness_antigravity import current_clean_head_antigravity
+from .profiles_antigravity import EXP444_PROFILE_ANTIGRAVITY, EXP445_PROFILE_ANTIGRAVITY, LifecycleProfileAntigravity
 
 
 _ATTEMPT_NAME_ANTIGRAVITY = re.compile(r"attempt_[0-9]{4}_antigravity$")
@@ -55,6 +58,13 @@ _COMPLETE_PROGRESS_KEYS_ANTIGRAVITY = frozenset({
     "eta_seconds", "checkpoint", "heartbeat", "latest_error",
 })
 _COMPLETE_PID_KEYS_ANTIGRAVITY = frozenset({"pid", "start_identity", "active", "heartbeat"})
+
+
+def _verify_exp445_predecessor_antigravity():
+    """Keep Exp444 imports independent from the later Exp445 package."""
+    from experiments.exp445_exp444_publication_source_authority_repair_antigravity.predecessor_antigravity import verify_exp444_predecessor_antigravity
+
+    return verify_exp444_predecessor_antigravity()
 
 
 def _error_view_index_antigravity(error: BaseException) -> int | None:
@@ -369,6 +379,24 @@ def _context_antigravity(reviewed_commit: str) -> CheckpointContextAntigravity:
     )
 
 
+def _context_for_profile_antigravity(
+    profile: LifecycleProfileAntigravity, reviewed_commit: str,
+) -> CheckpointContextAntigravity | ProfileCheckpointContextAntigravity:
+    if profile is EXP444_PROFILE_ANTIGRAVITY:
+        return _context_antigravity(reviewed_commit)
+    if profile is not EXP445_PROFILE_ANTIGRAVITY:
+        raise ValueError("runtime lifecycle profile is invalid")
+    from .readiness_antigravity import _profile_document_sha256_antigravity
+
+    documents = _profile_document_sha256_antigravity(profile)
+    return ProfileCheckpointContextAntigravity(
+        profile.experiment_id, profile.schema, profile.run_identity,
+        scientific_config_sha256_antigravity(), FROZEN_CONFIG.environment_lock_sha256,
+        30, 11, 1, reviewed_commit,
+        documents["reviewed_design_sha256"], documents["preregistration_sha256"],
+    )
+
+
 def _validate_reviewed_commit_antigravity(reviewed_commit: str) -> str:
     """Reject non-current review identities before any source or runtime mutation."""
     if type(reviewed_commit) is not str or len(reviewed_commit) != 40 or any(character not in "0123456789abcdef" for character in reviewed_commit):
@@ -634,6 +662,7 @@ def _execute_runtime_antigravity(
     attempt_name: str | None,
     run_root: Path | str | None,
     executor_factory: Callable[..., object] | None,
+    profile: LifecycleProfileAntigravity = EXP444_PROFILE_ANTIGRAVITY,
 ) -> RuntimeOutcomeAntigravity:
     _validate_reviewed_commit_antigravity(reviewed_commit)
     FROZEN_CONFIG.validate()
@@ -643,8 +672,13 @@ def _execute_runtime_antigravity(
     if mode == "new":
         from .provenance_antigravity import verify_exp444_provenance_antigravity
         verify_exp444_provenance_antigravity()
-    root = Path(FROZEN_CONFIG.run_root if run_root is None else run_root)
-    context = _context_antigravity(reviewed_commit)
+    if profile not in (EXP444_PROFILE_ANTIGRAVITY, EXP445_PROFILE_ANTIGRAVITY):
+        raise ValueError("runtime lifecycle profile is invalid")
+    if profile is EXP445_PROFILE_ANTIGRAVITY and (mode != "new" or run_root is not None or attempt_name is not None):
+        raise ValueError("Exp445 supports fixed new execution only")
+    root = Path(profile.run_root if profile is EXP445_PROFILE_ANTIGRAVITY else (FROZEN_CONFIG.run_root if run_root is None else run_root))
+    context = _context_for_profile_antigravity(profile, reviewed_commit)
+    predecessor = _verify_exp445_predecessor_antigravity() if profile is EXP445_PROFILE_ANTIGRAVITY else None
     process = current_process_identity_antigravity()
     # The source session is a values-only capability.  It must be fully
     # materialized and closed before *any* new-root or interrupted-owner
@@ -784,6 +818,22 @@ def _execute_runtime_antigravity(
         def commit(sequence: int, candidate: CandidateInputAntigravity, result: CandidateStabilityResultAntigravity) -> None:
             if writer is None:
                 raise ValueError("Exp444 active progress writer is unavailable")
+            if predecessor is not None:
+                record_sha = hashlib.sha256(
+                    canonical_json_bytes_antigravity({"sequence": sequence, "result": result.to_payload()})
+                ).hexdigest()
+                if record_sha != predecessor.record_sha256_prefix[sequence]:
+                    raise ValueError("Exp445 predecessor record parity mismatch")
+                if sequence == 29:
+                    fresh = _verify_exp445_predecessor_antigravity()
+                    if fresh.record_sha256_prefix != predecessor.record_sha256_prefix:
+                        raise ValueError("Exp445 predecessor authority changed before final record")
+                    candidate_prefix = tuple(store.record_sha256_prefix_antigravity) + (record_sha,)
+                    aggregate = hashlib.sha256(
+                        canonical_json_bytes_antigravity(list(candidate_prefix))
+                    ).hexdigest()
+                    if aggregate != predecessor.record_prefix_payload_sha256 or aggregate != fresh.record_prefix_payload_sha256:
+                        raise ValueError("Exp445 predecessor aggregate parity mismatch")
             _persist_commit_antigravity(store, writer, sequence, candidate, result)
 
         def progress(*, stage: str, sequence: int | None, **_state: object) -> None:
@@ -827,6 +877,14 @@ def _execute_runtime_antigravity(
         if writer is not None and writer.stage_antigravity not in {"complete", "error", "failed", "interrupted", "interrupted_resumable"}:
             if store.status_antigravity not in {"complete", "error"} and store.completed_count_antigravity < FROZEN_CONFIG.source_candidate_count:
                 store.commit_error_antigravity(store.completed_count_antigravity, error)
+                if predecessor is not None:
+                    # Exp445's parity failure is a durable exact-next error
+                    # record, so its parent-owned progress must advance to the
+                    # same terminal prefix before it closes failed.
+                    writer.complete_candidate_antigravity(
+                        "error", recomputed=True,
+                        error=str(error) or type(error).__name__,
+                    )
             writer.close_antigravity("error", str(error) or type(error).__name__)
         raise
 
@@ -843,6 +901,22 @@ def run_new_antigravity(
         attempt_name=None,
         run_root=run_root,
         executor_factory=executor_factory,
+    )
+
+
+def run_new_for_profile_antigravity(
+    profile: LifecycleProfileAntigravity, reviewed_commit: str,
+) -> RuntimeOutcomeAntigravity:
+    """Internal entrypoint for Exp445's fixed new-only profile."""
+    if profile is not EXP445_PROFILE_ANTIGRAVITY:
+        raise ValueError("runtime lifecycle profile is invalid")
+    return _execute_runtime_antigravity(
+        reviewed_commit=reviewed_commit,
+        mode="new",
+        attempt_name=None,
+        run_root=None,
+        executor_factory=None,
+        profile=profile,
     )
 
 
@@ -866,7 +940,7 @@ __all__ = [
     "RuntimeOutcomeAntigravity", "WorkerFailureAntigravity",
     "ordered_parallel_map_antigravity", "sequential_reference_antigravity",
     "canonical_results_bytes_antigravity", "production_worker_count_antigravity",
-    "run_new_antigravity", "run_resume_antigravity",
+    "run_new_antigravity", "run_new_for_profile_antigravity", "run_resume_antigravity",
     "_score_candidate_worker_antigravity", "_worker_initializer_antigravity",
     "_THREAD_VARIABLES_ANTIGRAVITY",
 ]

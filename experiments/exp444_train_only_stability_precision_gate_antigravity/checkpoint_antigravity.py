@@ -30,6 +30,7 @@ from .config_antigravity import FROZEN_CONFIG
 from .contracts_antigravity import (
     CandidateStabilityResultAntigravity,
     CheckpointContextAntigravity,
+    ProfileCheckpointContextAntigravity,
 )
 
 
@@ -190,8 +191,11 @@ def _default_pid_probe_antigravity(process: ProcessIdentityAntigravity) -> bool:
     return True
 
 
-def _context_payload_antigravity(context: CheckpointContextAntigravity) -> dict[str, object]:
-    if type(context) is not CheckpointContextAntigravity:
+_CheckpointContextLikeAntigravity = CheckpointContextAntigravity | ProfileCheckpointContextAntigravity
+
+
+def _context_payload_antigravity(context: _CheckpointContextLikeAntigravity) -> dict[str, object]:
+    if type(context) not in {CheckpointContextAntigravity, ProfileCheckpointContextAntigravity}:
         raise ValueError("checkpoint context identity is invalid")
     context.validate_antigravity()
     return context.to_payload()
@@ -292,7 +296,7 @@ class Exp444CheckpointStoreAntigravity:
     def __init__(
         self,
         root: Path,
-        context: CheckpointContextAntigravity,
+        context: _CheckpointContextLikeAntigravity,
         process: ProcessIdentityAntigravity,
         prefix: tuple[str, ...],
         status: str,
@@ -313,7 +317,7 @@ class Exp444CheckpointStoreAntigravity:
     def create(
         cls,
         root: Path,
-        context: CheckpointContextAntigravity,
+        context: _CheckpointContextLikeAntigravity,
         process: ProcessIdentityAntigravity,
     ) -> "Exp444CheckpointStoreAntigravity":
         context_payload = _context_payload_antigravity(context)
@@ -347,7 +351,7 @@ class Exp444CheckpointStoreAntigravity:
 
     @staticmethod
     def _state_payload(
-        *, context_sha: str, context: CheckpointContextAntigravity,
+        *, context_sha: str, context: _CheckpointContextLikeAntigravity,
         process: ProcessIdentityAntigravity, prefix: tuple[str, ...],
         status: str, error_count: int, error: Mapping[str, object] | None,
     ) -> dict[str, object]:
@@ -457,7 +461,7 @@ class Exp444CheckpointStoreAntigravity:
     def open_interrupted(
         cls,
         root: Path,
-        context: CheckpointContextAntigravity,
+        context: _CheckpointContextLikeAntigravity,
         replacement_process: ProcessIdentityAntigravity,
         pid_probe: Callable[[ProcessIdentityAntigravity], bool] | None = None,
         *,
@@ -601,7 +605,7 @@ class Exp444CheckpointStoreAntigravity:
     def inspect_interrupted_antigravity(
         cls,
         root: Path,
-        context: CheckpointContextAntigravity,
+        context: _CheckpointContextLikeAntigravity,
         replacement_process: ProcessIdentityAntigravity,
         pid_probe: Callable[[ProcessIdentityAntigravity], bool] | None = None,
     ) -> CheckpointResumeInspectionAntigravity:
