@@ -89,4 +89,3 @@ Task 7 이후 byte-unchanged였기 때문에 위 Task 7 authority를 재사용�
 fresh Sol High read-only review가 현재 clean HEAD에 대해 `ship`이고 unresolved
 Critical/Important finding이 없어야 official readiness가 가능하다. 그 전에는
 공식 실행·예측·평가·승격을 하지 않는다.
-
