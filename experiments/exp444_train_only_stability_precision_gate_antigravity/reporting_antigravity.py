@@ -660,13 +660,16 @@ def _quarantine_rejected_destination_antigravity(parent_fd: int, destination_nam
 
 def _add_quarantine_note_antigravity(error: BaseException, destination: Path, evidence: _PublicationQuarantineAntigravity, observed_identity: tuple[int, int] | None, staging_identity: tuple[int, int] | None) -> None:
     """Keep the original rejection while attaching bounded quarantine evidence."""
-    identity_known = observed_identity is not None
-    identity_match = "unknown" if not identity_known else str(observed_identity == staging_identity)
-    if evidence.name is None:
-        note = f"Exp444 rejected publication quarantine requires operator intervention; canonical={destination}; identity_known={identity_known}; identity_match={identity_match}; {evidence.error}"
-    else:
-        note = f"Exp444 rejected publication quarantined at {destination.parent / evidence.name}; identity_known={identity_known}; identity_match={identity_match}; parent_fsynced={evidence.parent_fsynced}; error={evidence.error or 'none'}"
-    error.add_note(note)
+    try:
+        identity_known = observed_identity is not None
+        identity_match = "unknown" if not identity_known else str(observed_identity == staging_identity)
+        if evidence.name is None:
+            note = f"Exp444 rejected publication quarantine requires operator intervention; canonical={destination}; identity_known={identity_known}; identity_match={identity_match}; {evidence.error}"
+        else:
+            note = f"Exp444 rejected publication quarantined at {destination.parent / evidence.name}; identity_known={identity_known}; identity_match={identity_match}; parent_fsynced={evidence.parent_fsynced}; error={evidence.error or 'none'}"
+        error.add_note(note)
+    except BaseException:
+        pass
 
 
 def _write_staging_antigravity(destination: Path, payloads: Mapping[str, bytes], *, parent_fd: int | None = None) -> None:

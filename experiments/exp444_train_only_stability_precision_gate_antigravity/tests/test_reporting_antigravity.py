@@ -470,6 +470,36 @@ class Exp444ReportingAntigravityTests(unittest.TestCase):
                 [f"Exp444 rejected publication quarantine requires operator intervention; canonical={destination}; identity_known=False; identity_match=unknown; quarantine_name=OSError"],
             )
 
+    def test_quarantine_note_failure_reraises_the_original_post_rename_rejection_antigravity(self) -> None:
+        """A failed annotation cannot replace the rejected publication or its quarantined bytes."""
+        class NoteRejectingOSErrorAntigravity(OSError):
+            def add_note(self, note: str) -> None:
+                raise RuntimeError("injected quarantine note failure")
+
+        with tempfile.TemporaryDirectory(prefix="exp444_reporting_quarantine_note_antigravity_") as directory:
+            frozen = self._published_antigravity(directory)
+            payloads = {name: (frozen.publication_root / name).read_bytes() for name in reporting._PUBLICATION_FILES_ANTIGRAVITY}
+            destination = frozen.publication_root.parent / "note_failure_publication_antigravity"
+            parent_identity = (destination.parent.stat().st_dev, destination.parent.stat().st_ino)
+            original_fsync = reporting.os.fsync
+            publication_error = NoteRejectingOSErrorAntigravity("injected post-rename note rejection")
+
+            def reject_after_rename(fd: int) -> None:
+                current = reporting.os.fstat(fd)
+                if destination.exists() and (current.st_dev, current.st_ino) == parent_identity:
+                    raise publication_error
+                original_fsync(fd)
+
+            with mock.patch.object(reporting.os, "fsync", side_effect=reject_after_rename):
+                with self.assertRaises(NoteRejectingOSErrorAntigravity) as raised:
+                    reporting._write_staging_antigravity(destination, payloads)
+            self.assertIs(raised.exception, publication_error)
+            self.assertEqual(str(raised.exception), "injected post-rename note rejection")
+            self.assertFalse(destination.exists())
+            quarantines = [path for path in destination.parent.iterdir() if destination.name in path.name and "quarantine_antigravity" in path.name]
+            self.assertEqual(len(quarantines), 1)
+            self.assertEqual({path.name: path.read_bytes() for path in quarantines[0].iterdir()}, payloads)
+
     def test_nonempty_replacement_is_quarantined_with_operator_bytes_antigravity(self) -> None:
         """A nonempty substituted destination must survive in quarantine, never at the canonical name."""
         with tempfile.TemporaryDirectory(prefix="exp444_reporting_nonempty_quarantine_antigravity_") as directory:
