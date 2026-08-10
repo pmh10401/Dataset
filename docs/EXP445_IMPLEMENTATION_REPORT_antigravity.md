@@ -2,11 +2,10 @@
 
 ## Current status
 
-`Exp445` is `implementation_verified_awaiting_clean_head_final_review`. The
-implementation and its non-official verification are complete; a fresh Sol High
-review of the exact clean candidate is still required before official readiness.
-This is not official execution evidence: readiness, `new`, publication,
-evaluation, TEST-label access, and promotion remain unperformed and blocked.
+`Exp445` is `implementation_verified_awaiting_official_readiness`. A fresh Sol
+High clean-HEAD review shipped the reviewed candidate; official readiness is the
+next gated action. This is not official execution evidence: readiness, `new`,
+publication, evaluation, TEST-label access, and promotion remain unperformed.
 
 ## Frozen authority
 
@@ -26,6 +25,8 @@ Exp442 external artifacts are not touched by this governance record.
 
 - Functional implementation commit: `c8a0ad351d701b11df69fac66bd7c95284e644be`
 - Functional map commit: `477399062818b49dcc01101e3a83e723c8ec7d44`
+- Fresh Sol High clean-HEAD review: candidate
+  `09903c608fb78508ae8fdd343594e3d99dfee660`, verdict `ship`.
 - Controller-captured full regression: Exp444 `205` tests in `195.955` seconds
   and Exp445 `39` tests in `1.397` seconds; both `OK`, sentinels
   `exp444=0 exp445=0`, outer exit `0` (total `244`). This includes the fixed
