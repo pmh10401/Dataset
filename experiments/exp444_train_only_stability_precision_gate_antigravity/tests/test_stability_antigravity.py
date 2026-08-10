@@ -6,6 +6,10 @@ import unittest
 
 import numpy as np
 
+from experiments.exp440_train_only_low_frequency_precision_gate_antigravity.contracts_antigravity import (
+    ProvisionalCandidateAntigravity,
+)
+from experiments.exp444_train_only_stability_precision_gate_antigravity import stability_antigravity as stability_module
 from experiments.exp444_train_only_stability_precision_gate_antigravity.contracts_antigravity import (
     CandidateInputAntigravity,
     CandidateStabilityResultAntigravity,
@@ -43,7 +47,90 @@ def _fixture_input_antigravity() -> CandidateInputAntigravity:
     return CandidateInputAntigravity(candidate, tuple(range(8)), train, test)
 
 
+def _sixteen_views_antigravity(survival_count: int) -> tuple[StabilityViewAntigravity, ...]:
+    views: list[StabilityViewAntigravity] = []
+    for index in range(16):
+        survived = index < survival_count
+        scores = (_depth_antigravity(1, True), _depth_antigravity(2, survived))
+        views.append(
+            StabilityViewAntigravity(
+                OmissionMaskAntigravity(index, (index,), f"{index + 1:064x}"),
+                (100, 101, 102, 103),
+                scores,
+                (1, 2) if survived else (1,),
+                survived,
+            )
+        )
+    return tuple(views)
+
+
+def _rank_replay_antigravity(rank: int, *, ratio: float) -> object:
+    source = SourceCandidateAntigravity(f"Dataset{rank:02d}", rank, 32, (1, 2), rank)
+    scores = (_depth_antigravity(1, True), _depth_antigravity(2, True))
+    candidate = ProvisionalCandidateAntigravity(
+        source.dataset,
+        source.instance_index,
+        source.raw_length,
+        source.original_depths,
+        2,
+        ratio,
+        0.5,
+    )
+    return stability_module.OriginalReplayAntigravity(source, scores, source.original_depths, candidate, True)
+
+
 class Exp444StabilityAntigravityTests(unittest.TestCase):
+    def test_fourteen_of_sixteen_views_is_stable_review_antigravity(self) -> None:
+        source = SourceCandidateAntigravity("Stable", 1, 32, (1, 2), 1)
+        result = stability_module.aggregate_stability_views_antigravity(
+            source, _sixteen_views_antigravity(14)
+        )
+        self.assertIsInstance(result, CandidateStabilityResultAntigravity)
+        self.assertEqual((result.survival_count, result.required_survival_count, result.lane), (14, 14, "stable_review"))
+
+    def test_thirteen_of_sixteen_views_is_unstable_review_antigravity(self) -> None:
+        source = SourceCandidateAntigravity("Unstable", 1, 32, (1, 2), 1)
+        result = stability_module.aggregate_stability_views_antigravity(
+            source, _sixteen_views_antigravity(13)
+        )
+        self.assertIsInstance(result, CandidateStabilityResultAntigravity)
+        self.assertEqual((result.survival_count, result.required_survival_count, result.lane), (13, 14, "unstable_review"))
+
+    def test_aggregate_replay_recomputes_all_thirty_ranks_antigravity(self) -> None:
+        # Input order is reversed; only the unchanged Exp441/Exp442 global key
+        # can recover the frozen 1..30 source ranks from replayed score evidence.
+        replays = tuple(
+            _rank_replay_antigravity(rank, ratio=float(31 - rank))
+            for rank in reversed(range(1, 31))
+        )
+        ranked = stability_module.verify_original_replay_ranks_antigravity(replays)
+        self.assertEqual(tuple(item.coordinate for item in ranked), tuple((f"Dataset{rank:02d}", rank) for rank in range(1, 31)))
+        self.assertEqual(tuple(item.replayed_rank for item in ranked), tuple(range(1, 31)))
+        self.assertTrue(all(item.replayed_rank == item.original_rank for item in ranked))
+
+    def test_aggregate_replay_rejects_frozen_rank_mismatch_antigravity(self) -> None:
+        replays = [
+            _rank_replay_antigravity(rank, ratio=float(31 - rank))
+            for rank in range(1, 31)
+        ]
+        first, second = replays[:2]
+        replays[0] = replace(first, source=replace(first.source, original_rank=2))
+        replays[1] = replace(second, source=replace(second.source, original_rank=1))
+        with self.assertRaisesRegex(ValueError, "aggregate replay rank"):
+            stability_module.verify_original_replay_ranks_antigravity(tuple(replays))
+
+    def test_candidate_absent_discards_exceeding_agreement_evidence_antigravity(self) -> None:
+        source = SourceCandidateAntigravity("Absent", 1, 32, (1, 2), 1)
+        view = stability_module._view_from_scores_antigravity(
+            OmissionMaskAntigravity(0, (0,), "1" * 64),
+            (1, 2, 3, 4),
+            (_depth_antigravity(1, True), _depth_antigravity(2, True)),
+            source.original_depths,
+            False,
+        )
+        self.assertEqual(view.agreeing_depths, ())
+        self.assertFalse(view.survived)
+
     def test_original_replay_requires_exact_exp442_candidate_antigravity(self) -> None:
         fixture = _fixture_input_antigravity()
         replay = replay_original_candidate_antigravity(fixture)

@@ -1,7 +1,7 @@
 """Exact Exp440 replay and deterministic TRAIN-only Exp444 stability views."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 from typing import Callable, Iterable, Sequence
 
@@ -20,6 +20,9 @@ from experiments.exp440_train_only_low_frequency_precision_gate_antigravity.feat
 )
 from experiments.exp440_train_only_low_frequency_precision_gate_antigravity.scoring_antigravity import (
     score_test_row_antigravity,
+)
+from experiments.exp441_hard_empty_single_shot_recovery_antigravity.contracts_antigravity import (
+    CandidateEvidenceAntigravity,
 )
 
 from .config_antigravity import FROZEN_CONFIG
@@ -90,6 +93,7 @@ class OriginalReplayAntigravity:
     replayed_depths: tuple[int, ...]
     replayed_candidate: ProvisionalCandidateAntigravity
     matches_source: bool = True
+    replayed_rank: int | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.source, SourceCandidateAntigravity):
@@ -104,6 +108,8 @@ class OriginalReplayAntigravity:
             raise ValueError("original replay candidate is invalid")
         if type(self.matches_source) is not bool:
             raise ValueError("matches_source must be bool")
+        if self.replayed_rank is not None and (type(self.replayed_rank) is not int or self.replayed_rank < 1):
+            raise ValueError("replayed_rank must be a positive exact integer or None")
         object.__setattr__(self, "depth_scores", scores)
         object.__setattr__(self, "replayed_depths", depths)
 
@@ -122,11 +128,6 @@ class OriginalReplayAntigravity:
 
     @property
     def original_rank(self) -> int:
-        return self.source.original_rank
-
-    @property
-    def replayed_rank(self) -> int:
-        """The rank carried by the exact Exp442 source replay."""
         return self.source.original_rank
 
     @property
@@ -225,6 +226,64 @@ def replay_original_candidate_antigravity(
     return OriginalReplayAntigravity(source, scores, replayed_copy.depths, replayed_copy, True)
 
 
+def _frozen_exp442_global_key_antigravity(
+    replay: OriginalReplayAntigravity,
+) -> tuple[float, float, str, int]:
+    """Return the exact public Exp441 key inherited by Exp442 selection."""
+    candidate = replay.replayed_candidate
+    evidence = CandidateEvidenceAntigravity(
+        candidate.dataset,
+        candidate.instance_index,
+        candidate.raw_length,
+        candidate.depths,
+        candidate.agreement_count,
+        candidate.second_excess_ratio,
+        candidate.second_empirical_rank,
+    )
+    return evidence.global_key
+
+
+def verify_original_replay_ranks_antigravity(
+    replays: Sequence[OriginalReplayAntigravity],
+) -> tuple[OriginalReplayAntigravity, ...]:
+    """Independently recompute and verify all thirty frozen Exp442 ranks."""
+    values = tuple(replays)
+    if len(values) != FROZEN_CONFIG.source_candidate_count or any(
+        not isinstance(item, OriginalReplayAntigravity) for item in values
+    ):
+        raise ValueError("aggregate replay requires exactly 30 candidates")
+    coordinates = tuple(item.coordinate for item in values)
+    if len(coordinates) != len(set(coordinates)) or len({item.source.dataset for item in values}) != len(values):
+        raise ValueError("aggregate replay coordinates are duplicated")
+    expected_ranks = tuple(range(1, FROZEN_CONFIG.source_candidate_count + 1))
+    if tuple(sorted(item.original_rank for item in values)) != expected_ranks:
+        raise ValueError("aggregate replay source ranks are not 1-30")
+    ranked = tuple(sorted(values, key=_frozen_exp442_global_key_antigravity))
+    with_ranks = tuple(replace(item, replayed_rank=rank) for rank, item in enumerate(ranked, start=1))
+    if any(item.original_rank != item.replayed_rank for item in with_ranks):
+        raise ValueError("aggregate replay rank differs from frozen Exp442 ranking")
+    source_order = tuple(item.coordinate for item in sorted(values, key=lambda item: item.original_rank))
+    replay_order = tuple(item.coordinate for item in with_ranks)
+    if replay_order != source_order:
+        raise ValueError("aggregate replay rank coordinates differ from frozen Exp442 ranking")
+    return with_ranks
+
+
+def replay_original_candidates_antigravity(
+    candidate_inputs: Sequence[CandidateInputAntigravity],
+    distance: Distance = score_channel_cpu_antigravity,
+) -> tuple[OriginalReplayAntigravity, ...]:
+    """Replay and independently rank-verify the exact 30-candidate control."""
+    inputs = tuple(candidate_inputs)
+    if len(inputs) != FROZEN_CONFIG.source_candidate_count or any(
+        not isinstance(item, CandidateInputAntigravity) for item in inputs
+    ):
+        raise ValueError("original control requires exactly 30 candidate inputs")
+    return verify_original_replay_ranks_antigravity(
+        tuple(replay_original_candidate_antigravity(item, distance=distance) for item in inputs)
+    )
+
+
 def _view_from_scores_antigravity(
     mask: object,
     retained_indices: tuple[int, ...],
@@ -232,9 +291,29 @@ def _view_from_scores_antigravity(
     original_depths: tuple[int, ...],
     candidate_present: bool,
 ) -> StabilityViewAntigravity:
-    agreeing = tuple(sorted({score.depth for score in scores if score.exceeds and score.depth in original_depths}))
+    agreeing = (
+        tuple(sorted({score.depth for score in scores if score.exceeds and score.depth in original_depths}))
+        if candidate_present
+        else ()
+    )
     survived = bool(candidate_present and len(agreeing) >= FROZEN_CONFIG.minimum_consensus_depths)
     return StabilityViewAntigravity(mask, retained_indices, scores, agreeing, survived)
+
+
+def aggregate_stability_views_antigravity(
+    source: SourceCandidateAntigravity,
+    views: Sequence[StabilityViewAntigravity],
+) -> CandidateStabilityResultAntigravity:
+    """Apply the frozen 0.875 review-lane boundary to immutable views."""
+    if not isinstance(source, SourceCandidateAntigravity):
+        raise ValueError("stability aggregate source is invalid")
+    ordered_views = tuple(views)
+    if not ordered_views or any(not isinstance(item, StabilityViewAntigravity) for item in ordered_views):
+        raise ValueError("stability aggregate views are invalid")
+    survival_count = sum(item.survived for item in ordered_views)
+    required = required_survival_count_antigravity(len(ordered_views))
+    lane = "stable_review" if survival_count >= required else "unstable_review"
+    return CandidateStabilityResultAntigravity(source, ordered_views, survival_count, required, lane)
 
 
 def score_stability_candidate_antigravity(
@@ -283,16 +362,18 @@ def score_stability_candidate_antigravity(
                 candidate is not None,
             )
         )
-    ordered_views = tuple(sorted(views, key=lambda item: item.view_index))
-    survival_count = sum(item.survived for item in ordered_views)
-    required = required_survival_count_antigravity(len(ordered_views))
-    lane = "stable_review" if survival_count >= required else "unstable_review"
-    return CandidateStabilityResultAntigravity(source, ordered_views, survival_count, required, lane)
+    return aggregate_stability_views_antigravity(
+        source,
+        tuple(sorted(views, key=lambda item: item.view_index)),
+    )
 
 
 __all__ = [
     "OriginalReplayAntigravity",
+    "aggregate_stability_views_antigravity",
     "classify_view_antigravity",
     "replay_original_candidate_antigravity",
+    "replay_original_candidates_antigravity",
     "score_stability_candidate_antigravity",
+    "verify_original_replay_ranks_antigravity",
 ]
